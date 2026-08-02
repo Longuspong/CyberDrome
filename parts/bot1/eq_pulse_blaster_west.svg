@@ -2,20 +2,32 @@
      data-part-id="eq_pulse_blaster" data-type="equipment" data-direction="west">
   <title>Puls-Blaster (west)</title>
   <!--
-    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung west.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
   -->
-<!-- gespiegelt aus der east-Variante -->
-<g transform="translate(128,0) scale(-1,1)">
-<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-
-  <rect x="74" y="58" width="9" height="12" rx="2.5" fill="var(--c-metal)"/>
-  <path d="M78 60 H100 L102 68 H78 Z" fill="var(--c-plate)"/>
-  <rect x="100" y="61" width="8" height="6" rx="2" fill="var(--c-plate-dark)"/>
-  <circle cx="106" cy="64" r="2.2" fill="var(--c-glow)" stroke="none"/>
-  <path d="M80 65 H98" stroke="var(--c-accent)" stroke-width="1.6"/>
-
-</g>
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M47.77 54.21 L53.5 50.16 L53.5 45.39 L47.77 49.44 Z" fill="var(--c-plate-dark)"/>
+  <path d="M53.5 45.39 L51.11 43.7 L45.39 47.75 L47.77 49.44 Z" fill="var(--c-plate)"/>
+  <path d="M45.39 52.52 L47.77 54.21 L47.77 49.44 L45.39 47.75 Z" fill="var(--c-plate-dark)"/>
+  <path d="M62.09 49.16 L54.45 43.76 L46.82 49.16 L54.45 54.56 Z" fill="var(--c-plate-light)"/>
+  <path d="M54.45 61.24 L62.09 55.84 L62.09 49.16 L54.45 54.56 Z" fill="var(--c-plate-dark)"/>
+  <path d="M46.82 55.84 L54.45 61.24 L54.45 54.56 L46.82 49.16 Z" fill="var(--c-plate)"/>
+  <path d="M64.48 48.34 L73.07 54.42 L73.07 52.99 L64.48 46.91 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M73.64 52.58 L65.05 46.51 L64.48 46.91 L73.07 52.99 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M73.07 54.42 L73.64 54.01 L73.64 52.58 L73.07 52.99 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M63.52 71.59 L74.02 64.16 L74.02 51.75 L63.52 59.18 Z" fill="var(--c-plate-dark)"/>
+  <path d="M53.02 64.16 L63.52 71.59 L63.52 59.18 L53.02 51.75 Z" fill="var(--c-plate)"/>
+  <path d="M74.02 51.75 L63.52 44.33 L53.02 51.75 L63.52 59.18 Z" fill="var(--c-plate-light)"/>
+  <path d="M53.4 56.17 L62.0 62.25 L62.0 60.82 L53.4 54.74 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M62.57 60.41 L53.98 54.34 L53.4 54.74 L62.0 60.82 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M63.05 57.77 L70.68 52.37 L70.68 43.78 L63.05 49.18 Z" fill="var(--c-plate-dark)"/>
+  <path d="M62.0 62.25 L62.57 61.84 L62.57 60.41 L62.0 60.82 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M57.32 53.72 L63.05 57.77 L63.05 49.18 L57.32 45.13 Z" fill="var(--c-metal)"/>
+  <path d="M70.68 43.78 L64.95 39.73 L57.32 45.13 L63.05 49.18 Z" fill="var(--c-metal)"/>
 </g>
 </svg>

@@ -2,16 +2,28 @@
      data-part-id="scout_core" data-type="core" data-direction="south">
   <title>Vireo Impulskern (south)</title>
   <!--
-    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
   -->
-<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-
-  <circle cx="64" cy="67" r="7" fill="var(--c-plate-dark)"/>
-  <circle cx="64" cy="67" r="4.4" fill="var(--c-glow)" stroke="none"/>
-  <circle cx="64" cy="67" r="4.4" opacity="0.9"/>
-  <path d="M64 60 V63 M64 71 V74 M57 67 H60 M68 67 H71" stroke="var(--c-accent)" stroke-width="1.6"/>
-
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M48.54 52.54 L49.68 53.35 L49.68 52.39 L48.54 51.58 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M53.79 61.5 L54.74 62.17 L54.74 60.74 L53.79 60.07 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M48.82 51.38 L48.54 51.58 L49.68 52.39 L49.97 52.19 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M49.68 53.35 L49.97 53.14 L49.97 52.19 L49.68 52.39 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.74 62.17 L55.03 61.97 L55.03 60.54 L54.74 60.74 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.07 59.87 L53.79 60.07 L54.74 60.74 L55.03 60.54 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M59.04 58.4 L58.73 56.65 L57.86 54.74 L56.56 52.95 L55.03 51.56 L53.49 50.78 L52.19 50.73 L51.32 51.42 L51.02 52.73 L51.32 54.48 L52.19 56.4 L53.49 58.19 L55.03 59.58 L56.56 60.36 L57.86 60.41 L58.73 59.72 Z" fill="var(--c-plate-dark)"/>
+  <path d="M57.13 57.59 L56.94 56.51 L56.4 55.33 L55.59 54.22 L54.64 53.36 L53.7 52.88 L52.89 52.84 L52.35 53.27 L52.16 54.08 L52.35 55.17 L52.89 56.35 L53.7 57.46 L54.64 58.32 L55.59 58.8 L56.4 58.84 L56.94 58.41 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M53.79 51.48 L54.74 52.15 L54.74 50.72 L53.79 50.04 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M58.85 59.83 L59.99 60.64 L59.99 59.68 L58.85 58.87 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.74 52.15 L55.03 51.95 L55.03 50.52 L54.74 50.72 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M59.13 58.67 L58.85 58.87 L59.99 59.68 L60.28 59.48 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.07 49.84 L53.79 50.04 L54.74 50.72 L55.03 50.52 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M59.99 60.64 L60.28 60.43 L60.28 59.48 L59.99 59.68 Z" fill="var(--c-accent)" stroke="none"/>
 </g>
 </svg>

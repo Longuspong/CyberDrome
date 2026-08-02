@@ -2,20 +2,44 @@
      data-part-id="scout_feet" data-type="feet" data-direction="west">
   <title>Vireo Sprintbeine (west)</title>
   <!--
-    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung west.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
   -->
-<!-- gespiegelt aus der east-Variante -->
-<g transform="translate(128,0) scale(-1,1)">
-<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-
-  <path d="M58 88 H68 L66 104 L59 104 Z" fill="var(--c-plate-dark)"/>
-  <path d="M62 88 H72 L71 104 L64 104 Z" fill="var(--c-plate)"/>
-  <circle cx="67" cy="105" r="4.2" fill="var(--c-metal)"/>
-  <path d="M58 110 H76 L78 118 H55 Z" fill="var(--c-plate)"/>
-  <path d="M56 116 H77" stroke="var(--c-accent)" stroke-width="1.6"/>
-
-</g>
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M59.23 85.32 L64.0 81.94 L64.0 80.51 L59.23 83.88 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M64.0 80.51 L63.52 80.17 L58.75 83.55 L59.23 83.88 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M58.75 84.98 L59.23 85.32 L59.23 83.88 L58.75 83.55 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M58.27 87.9 L73.55 98.7 L73.55 92.02 L58.27 81.22 Z" fill="var(--c-plate)"/>
+  <path d="M80.23 87.29 L64.95 76.49 L58.27 81.22 L73.55 92.02 Z" fill="var(--c-plate-light)"/>
+  <path d="M46.82 94.09 L51.59 90.72 L51.59 89.28 L46.82 92.66 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M51.59 89.28 L51.11 88.95 L46.34 92.32 L46.82 92.66 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M46.34 93.75 L46.82 94.09 L46.82 92.66 L46.34 92.32 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M73.55 98.7 L80.23 93.97 L80.23 87.29 L73.55 92.02 Z" fill="var(--c-plate-dark)"/>
+  <path d="M64.0 83.92 L71.64 89.32 L71.64 75.0 L64.0 69.6 Z" fill="var(--c-plate)"/>
+  <path d="M71.64 89.32 L75.93 86.28 L75.93 71.96 L71.64 75.0 Z" fill="var(--c-plate-dark)"/>
+  <path d="M45.86 96.67 L61.14 107.47 L61.14 100.79 L45.86 89.99 Z" fill="var(--c-plate)"/>
+  <path d="M67.82 96.07 L52.54 85.27 L45.86 89.99 L61.14 100.79 Z" fill="var(--c-plate-light)"/>
+  <path d="M75.93 71.96 L68.3 66.56 L64.0 69.6 L71.64 75.0 Z" fill="var(--c-plate-light)"/>
+  <path d="M61.14 107.47 L67.82 102.75 L67.82 96.07 L61.14 100.79 Z" fill="var(--c-plate-dark)"/>
+  <path d="M77.84 69.1 L68.3 62.35 L62.09 66.74 L71.64 73.49 Z" fill="var(--c-metal)"/>
+  <path d="M62.09 71.51 L71.64 78.26 L71.64 73.49 L62.09 66.74 Z" fill="var(--c-metal)"/>
+  <path d="M71.64 78.26 L77.84 73.87 L77.84 69.1 L71.64 73.49 Z" fill="var(--c-plate-dark)"/>
+  <path d="M52.07 92.36 L59.7 97.76 L59.7 83.44 L52.07 78.04 Z" fill="var(--c-plate)"/>
+  <path d="M59.7 97.76 L64.0 94.72 L64.0 80.4 L59.7 83.44 Z" fill="var(--c-plate-dark)"/>
+  <path d="M63.52 66.4 L72.11 72.47 L72.11 61.97 L63.52 55.9 Z" fill="var(--c-plate)"/>
+  <path d="M64.0 80.4 L56.36 75.0 L52.07 78.04 L59.7 83.44 Z" fill="var(--c-plate-light)"/>
+  <path d="M72.11 72.47 L76.89 69.1 L76.89 58.6 L72.11 61.97 Z" fill="var(--c-plate-dark)"/>
+  <path d="M76.89 58.6 L68.3 52.52 L63.52 55.9 L72.11 61.97 Z" fill="var(--c-plate-light)"/>
+  <path d="M65.91 77.54 L56.36 70.79 L50.16 75.17 L59.7 81.92 Z" fill="var(--c-metal)"/>
+  <path d="M50.16 79.95 L59.7 86.7 L59.7 81.92 L50.16 75.17 Z" fill="var(--c-metal)"/>
+  <path d="M59.7 86.7 L65.91 82.31 L65.91 77.54 L59.7 81.92 Z" fill="var(--c-plate-dark)"/>
+  <path d="M51.11 75.17 L59.7 81.25 L59.7 70.75 L51.11 64.67 Z" fill="var(--c-plate)"/>
+  <path d="M59.7 81.25 L64.48 77.87 L64.48 67.37 L59.7 70.75 Z" fill="var(--c-plate-dark)"/>
+  <path d="M64.48 67.37 L55.89 61.3 L51.11 64.67 L59.7 70.75 Z" fill="var(--c-plate-light)"/>
 </g>
 </svg>

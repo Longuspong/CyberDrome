@@ -2,16 +2,32 @@
      data-part-id="eq_deflector" data-type="equipment" data-direction="south">
   <title>Deflektor-Schild (south)</title>
   <!--
-    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
   -->
-<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-
-  <rect x="92" y="60" width="8" height="11" rx="2.5" fill="var(--c-metal)"/>
-  <path d="M98 48 Q114 52 114 66 Q114 80 98 84 Z" fill="var(--c-plate)"/>
-  <path d="M100 54 Q110 57 110 66 Q110 75 100 78 Z" fill="var(--c-plate-dark)"/>
-  <path d="M104 60 V72" stroke="var(--c-accent)" stroke-width="2.2"/>
-
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M47.96 68.84 L51.4 66.41 L51.4 40.63 L47.96 43.06 Z" fill="var(--c-plate)"/>
+  <path d="M47.01 68.16 L47.96 68.84 L47.96 43.06 L47.01 42.39 Z" fill="var(--c-plate-light)"/>
+  <path d="M57.32 52.37 L64.95 57.77 L64.95 49.18 L57.32 43.78 Z" fill="var(--c-metal)"/>
+  <path d="M64.95 57.77 L70.68 53.72 L70.68 45.13 L64.95 49.18 Z" fill="var(--c-plate-dark)"/>
+  <path d="M63.05 39.73 L57.32 43.78 L64.95 49.18 L70.68 45.13 Z" fill="var(--c-metal)"/>
+  <path d="M47.77 68.43 L61.14 77.88 L61.14 52.11 L47.77 42.66 Z" fill="var(--c-plate)"/>
+  <path d="M49.11 66.37 L58.65 73.12 L58.65 54.98 L49.11 48.23 Z" fill="var(--c-plate-dark)"/>
+  <path d="M52.26 66.41 L54.55 68.03 L54.55 55.62 L52.26 54.0 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.55 68.03 L55.03 67.69 L55.03 55.28 L54.55 55.62 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M50.44 39.96 L47.01 42.39 L47.96 43.06 L51.4 40.63 Z" fill="var(--c-plate-light)"/>
+  <path d="M58.65 73.12 L59.23 72.71 L59.23 54.58 L58.65 54.98 Z" fill="var(--c-plate-dark)"/>
+  <path d="M61.14 77.88 L64.0 75.86 L64.0 50.08 L61.14 52.11 Z" fill="var(--c-plate-dark)"/>
+  <path d="M61.52 78.42 L64.95 75.99 L64.95 50.22 L61.52 52.65 Z" fill="var(--c-plate)"/>
+  <path d="M60.56 77.75 L61.52 78.42 L61.52 52.65 L60.56 51.97 Z" fill="var(--c-plate-light)"/>
+  <path d="M52.74 53.66 L52.26 54.0 L54.55 55.62 L55.03 55.28 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M49.68 47.83 L49.11 48.23 L58.65 54.98 L59.23 54.58 Z" fill="var(--c-plate)"/>
+  <path d="M50.64 40.63 L47.77 42.66 L61.14 52.11 L64.0 50.08 Z" fill="var(--c-plate-light)"/>
+  <path d="M64.0 49.54 L60.56 51.97 L61.52 52.65 L64.95 50.22 Z" fill="var(--c-plate-light)"/>
 </g>
 </svg>

@@ -2,14 +2,26 @@
      data-part-id="scout_core" data-type="core" data-direction="north">
   <title>Vireo Impulskern (north)</title>
   <!--
-    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
   -->
-<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-
-  <rect x="56" y="57" width="16" height="14" rx="3" fill="var(--c-plate-dark)"/>
-  <path d="M59 61 H69 M59 66 H69" stroke="var(--c-glow)" stroke-width="2"/>
-
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M67.72 38.97 L68.87 39.78 L68.87 38.83 L67.72 38.02 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M72.97 47.93 L73.93 48.61 L73.93 47.18 L72.97 46.5 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M68.87 38.83 L69.15 38.62 L68.01 37.81 L67.72 38.02 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M68.87 39.78 L69.15 39.58 L69.15 38.62 L68.87 38.83 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M73.93 48.61 L74.21 48.4 L74.21 46.97 L73.93 47.18 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M73.93 47.18 L74.21 46.97 L73.26 46.3 L72.97 46.5 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M72.97 37.91 L73.93 38.58 L73.93 37.15 L72.97 36.48 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M78.03 46.26 L79.18 47.07 L79.18 46.12 L78.03 45.31 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M73.93 38.58 L74.21 38.38 L74.21 36.95 L73.93 37.15 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M79.18 46.12 L79.46 45.91 L78.32 45.1 L78.03 45.31 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M73.93 37.15 L74.21 36.95 L73.26 36.27 L72.97 36.48 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M79.18 47.07 L79.46 46.87 L79.46 45.91 L79.18 46.12 Z" fill="var(--c-accent)" stroke="none"/>
 </g>
 </svg>

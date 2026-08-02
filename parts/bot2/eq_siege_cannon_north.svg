@@ -2,15 +2,32 @@
      data-part-id="eq_siege_cannon" data-type="equipment" data-direction="north">
   <title>Belagerungskanone (north)</title>
   <!--
-    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
   -->
-<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-
-  <rect x="20" y="56" width="12" height="16" rx="3" fill="var(--c-metal)"/>
-  <path d="M12 56 H30 L30 76 H14 Z" fill="var(--c-plate-dark)"/>
-  <path d="M16 62 H28 M16 70 H28" stroke="var(--c-accent)" stroke-width="1.8"/>
-
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M77.36 50.6 L85.0 56.0 L85.0 50.28 L77.36 44.88 Z" fill="var(--c-plate-dark)"/>
+  <path d="M85.0 50.28 L87.86 48.25 L80.23 42.85 L77.36 44.88 Z" fill="var(--c-plate)"/>
+  <path d="M85.0 56.0 L87.86 53.98 L87.86 48.25 L85.0 50.28 Z" fill="var(--c-plate-dark)"/>
+  <path d="M75.46 57.42 L85.96 50.0 L76.41 43.25 L65.91 50.67 Z" fill="var(--c-plate-light)"/>
+  <path d="M75.46 65.06 L85.96 57.63 L85.96 50.0 L75.46 57.42 Z" fill="var(--c-plate-dark)"/>
+  <path d="M65.91 58.31 L75.46 65.06 L75.46 57.42 L65.91 50.67 Z" fill="var(--c-plate)"/>
+  <path d="M52.54 56.94 L63.05 49.52 L63.05 47.61 L52.54 55.03 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M52.54 55.03 L63.05 47.61 L62.47 47.2 L51.97 54.63 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M51.97 56.54 L52.54 56.94 L52.54 55.03 L51.97 54.63 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M51.59 68.6 L64.95 78.05 L64.95 63.73 L51.59 54.28 Z" fill="var(--c-plate)"/>
+  <path d="M64.95 78.05 L77.36 69.27 L77.36 54.95 L64.95 63.73 Z" fill="var(--c-plate-dark)"/>
+  <path d="M64.95 63.73 L77.36 54.95 L64.0 45.5 L51.59 54.28 Z" fill="var(--c-plate-light)"/>
+  <path d="M66.48 66.8 L76.98 59.37 L76.98 57.46 L66.48 64.89 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M66.48 64.89 L76.98 57.46 L76.41 57.06 L65.91 64.48 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.93 54.89 L65.43 62.32 L65.43 53.73 L54.93 46.3 Z" fill="var(--c-metal)"/>
+  <path d="M65.43 53.73 L73.07 48.33 L62.57 40.9 L54.93 46.3 Z" fill="var(--c-metal)"/>
+  <path d="M65.43 62.32 L73.07 56.92 L73.07 48.33 L65.43 53.73 Z" fill="var(--c-plate-dark)"/>
+  <path d="M65.91 66.39 L66.48 66.8 L66.48 64.89 L65.91 64.48 Z" fill="var(--c-accent)" stroke="none"/>
 </g>
 </svg>

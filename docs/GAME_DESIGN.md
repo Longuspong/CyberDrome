@@ -13,6 +13,7 @@ Asset-Produktion nicht wieder an unbedachtem Umfang scheitert.
 | Setting | Cyberpunk / Neon |
 | Engine | Godot |
 | Plattformen | Android (Mobile) und Desktop |
+| Perspektive | **Isometrisch**, Kamera 45 Grad von oben auf ein gedrehtes Gitter |
 | Grafikstil | **SVG, modular** – ausdruecklich *kein* Pixelart |
 
 ## 2. Warum SVG statt Pixelart
@@ -41,8 +42,8 @@ Daraus folgen die drei Regeln, die alles andere bestimmen:
    ueber Anker.
 2. **Farbe ist ein Parameter, keine Bildinformation** – Fraktionen, Seltenheits­stufen
    und Spielerfarben sind reines Umfaerben, kein neues Asset.
-3. **Vier Richtungen sind das Maximum** – West wird aus Ost gespiegelt, das
-   halbiert die Profilansichten. Keine Zwischenwinkel, keine Isometrie-Achtel.
+3. **Vier Richtungen sind das Maximum** – und sie werden nicht gezeichnet,
+   sondern aus einer Quader-Definition projiziert. Keine Zwischenwinkel.
 
 Die Grenze der Skalierbarkeit ist damit nicht mehr die Zeichenarbeit, sondern
 die Rendering-Kosten auf Android (siehe `docs/GODOT_INTEGRATION.md`).
@@ -69,36 +70,49 @@ Technisch faellt das ohne Sonderfall an: die Slots sind exakt die `equip_*`-Anke
 des Koerper-Teils. Ein Chassis bekommt einen dritten Slot, indem es einen dritten
 Anker in seine JSON schreibt. `parts/bot2` (HX-Molok) zeigt den Drei-Slot-Fall.
 
-## 4. Vier Richtungen
+## 4. Perspektive und die vier Richtungen
 
-`north` (vom Betrachter weg), `south` (zum Betrachter), `east`, `west`.
+Die Kamera steht im 45-Grad-Winkel ueber einem um 45 Grad gedrehten Gitter. Ein
+Bodenfeld ist damit eine Raute im Verhaeltnis sqrt(2):1. Von jedem Quader sind
+immer genau drei Flaechen sichtbar: zwei Flanken und die Oberseite – das ist
+der Unterschied zu einer Frontalansicht, die flach wirkt.
+
+Die vier Richtungen zeigen auf die vier Diagonalen des Bildschirms:
+
+| Richtung | Auf dem Bildschirm |
+|---|---|
+| `south` | unten-links (zum Betrachter) |
+| `east`  | unten-rechts |
+| `north` | oben-rechts (vom Betrachter weg) |
+| `west`  | oben-links |
 
 Konventionen:
 
-* `west` wird aus `east` gespiegelt – das Generator-Skript macht das automatisch.
-* **`links` / `rechts` in Ankernamen sind bildschirmseitig gemeint**, nicht aus
-  Sicht des Bots. Sonst waeren die Namen zwischen Nord- und Suedansicht getauscht.
-* In der Nordansicht liegt die Ausruestung *hinter* dem Koerper. Das steuert
-  das Koerper-Teil ueber `slot_z` – die Ausruestung selbst braucht dafuer keine
-  eigene Variante.
-* In den Profilansichten wird nicht automatisch gespiegelt: beide Arme zeigen
-  nach vorn.
+* **`links` / `rechts` in Ankernamen meinen die Seiten des BOTS**, nicht den
+  Bildschirm. Beim Drehen bleibt eine Waffe dadurch am selben Arm.
+* **Das Licht haengt am Bildschirm, nicht am Bot.** Oberseiten hell, linke
+  Flanken mittel, rechte Flanken dunkel – in allen vier Richtungen gleich.
+  Deshalb ist Spiegeln auf dem Bildschirm keine gueltige Abkuerzung mehr:
+  eine gespiegelte Waffe bekaeme ihre Lichtseite auf die falsche Flanke.
+  Waffen werden stattdessen symmetrisch um ihren eigenen Anker modelliert und
+  passen so an beide Arme.
+* **Die Zeichenreihenfolge ist die Kameratiefe** (`-px - py + pz`) und faellt
+  aus der Geometrie ab. In der Nordansicht rutscht die Ausruestung von selbst
+  hinter den Koerper, der Schulterpod von selbst vor den Kopf – ohne
+  handgepflegte Tabelle und ohne eigene Teil-Variante.
 
 ## 5. Asset-Budget
 
-Pro Set (= Bot-Familie) bei vier Richtungen:
+Pro Set (= Bot-Familie) bei vier Richtungen entstehen 4 SVG-Dateien je Teil,
+also **24 SVGs** fuer ein Set mit zwei Ausruestungs­gegenstaenden.
 
-| Teil | Dateien |
-|---|---|
-| Koerper | 4 |
-| Kopf | 4 |
-| Fuesse | 4 |
-| Kern | 4 |
-| Ausruestung, je Stueck | 4 |
+Entscheidend ist aber der *Autoren*-Aufwand, und der ist ein Viertel davon:
+ein Teil wird einmal als Quader-Definition beschrieben, die vier Ansichten
+erzeugt der Renderer. Vier handgezeichnete Ansichten pro Teil waeren nicht nur
+vierfache Arbeit, sondern wuerden bei jeder Aenderung auseinanderlaufen.
 
-Ein Set mit zwei Ausruestungs­gegenstaenden = **24 SVGs**. Ausruestung ist
-set-uebergreifend nutzbar, solange die Anker passen – die Bibliothek kann im Tool
-set-uebergreifend angezeigt werden.
+Ausruestung ist set-uebergreifend nutzbar, solange die Anker passen – die
+Bibliothek kann im Tool set-uebergreifend angezeigt werden.
 
 Realistische Zielgroesse fuer einen ersten spielbaren Stand: 3–4 Chassis-Familien
 plus ein gemeinsamer Ausruestungs-Pool. Das sind ~100–150 SVG-Dateien, nicht
@@ -119,8 +133,9 @@ Optionen, damit das Anker-Format sie nicht ausschliesst:
 ## 7. Offene Punkte
 
 * Kampfsystem: Aktionspunkte vs. feste Aktionen pro Zug
-* Gitter: quadratisch oder hexagonal (die Tile-Raute im Tool ist bislang nur
-  eine optische Orientierungshilfe, keine Festlegung)
+* Feldgroesse relativ zur Einheit: der Bot ueberragt sein Feld derzeit deutlich
+  (Fussabdruck im Feld, Oberkoerper darueber hinaus). Ob das bei vollen Karten
+  traegt, zeigt erst die erste echte Map.
 * Progression: Teile-Loot vs. Crafting vs. beides
 * Wie viele Drones bildet der Spieler pro Gefecht auf
 * Mobile-Steuerung: direkte Tile-Beruehrung vs. Cursor + Bestaetigung

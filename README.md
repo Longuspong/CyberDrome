@@ -1,6 +1,7 @@
 # CyberDrome
 
-Rundenbasiertes 2D-Tactics-RPG im Cyberpunk-/Neon-Setting.
+Rundenbasiertes 2D-Tactics-RPG im Cyberpunk-/Neon-Setting, **isometrisch**
+(Kamera 45 Grad von oben auf ein gedrehtes Gitter).
 Ziel-Engine: **Godot**, Ziel-Plattformen: **Android** und **Desktop**.
 
 Gespielt wird mit **Drones** – modularen Kampfmaschinen, die aus einem **Kern**,
@@ -96,7 +97,7 @@ parts/                       Teile-Bibliothek
   bot2/                      HX-Molok // Juggernaut (3 Ausruestungsanker)
 builds/                      Export-Ziel (Inhalt ist gitignored)
 tools/
-  build_sample_parts.py      erzeugt den Beispielsatz; ausfuehrbare Format-Spec
+  build_sample_parts.py      Iso-Renderer + Beispielsatz; ausfuehrbare Format-Spec
 docs/
   GAME_DESIGN.md             Setting, Drone-Aufbau, Asset-Strategie
   GODOT_INTEGRATION.md       wie die Exporte spaeter in die Engine kommen
@@ -106,26 +107,39 @@ docs/
 
 Kurzfassung – Details in [`parts/README.md`](parts/README.md):
 
+* **Isometrische Kamera, 45 Grad von oben.** Ein Bodenfeld ist eine Raute im
+  Verhaeltnis sqrt(2):1 – im Tool 76 x 54 px um `(64, 96)`. Von jedem Quader
+  sind immer drei Flaechen sichtbar: zwei Flanken und die Oberseite.
+* **Das Licht haengt am Bildschirm, nicht am Bot:** Oberseiten
+  `--c-plate-light`, linke Flanken `--c-plate`, rechte Flanken
+  `--c-plate-dark`. Das ist keine Geschmacksfrage, sondern die Beleuchtung.
 * Ein gemeinsames Koordinatensystem: `viewBox="0 0 128 128"`, Mittelachse
-  `x=64`, Bodenlinie `y=120`. Jedes Teil zeichnet dort, wo es am fertigen Bot
-  sitzt.
+  `x=64`. Jedes Teil zeichnet dort, wo es am fertigen Bot sitzt.
 * Keine Hex-Farben im SVG, nur `var(--c-plate)`, `var(--c-accent)` usw.
 * Der Koerper definiert die Sockel-Anker (`head`, `feet`, `core`, `equip_*`),
-  jedes andere Teil genau einen Anker `mount`.
+  jedes andere Teil genau einen Anker `mount`. `links`/`rechts` meinen die
+  Seiten des **Bots**, nicht den Bildschirm.
 * Wie viele Ausruestungsslots ein Bot hat, ergibt sich allein daraus, wie viele
   `equip_*`-Anker sein Koerper besitzt – ohne Sonderfall im Code.
 
-Beispiel-Prompt fuer neue Teile:
+**Der guenstigste Weg zu neuen Teilen** ist nicht, vier Richtungen zu zeichnen,
+sondern das Teil **einmal** als Quader-Definition in `tools/build_sample_parts.py`
+zu beschreiben:
 
-> Erzeuge ein SVG-Teil fuer CyberDrome nach `parts/README.md`:
-> viewBox 0 0 128 128, Mittelachse x=64, Bodenlinie y=120, Farben ausschliesslich
-> ueber `var(--c-plate)`, `--c-plate-dark`, `--c-plate-light`, `--c-metal`,
-> `--c-accent`, `--c-glow`, `--c-visor`, `--c-outline`.
-> Typ: `head`, Richtung: `south`, Stil: schwerer Cyberpunk-Bunkerkopf.
-> Zeichne nur den Bereich, in dem der Kopf am fertigen Bot sitzt (ca. y 20–46).
+```python
+SCOUT_HEAD = [
+    B((-6.5, 6.5), (-7.5, 7.5), (66, 76), "plate"),   # (vorn, links, hoch)
+    B((-7, 7), (-8, 8), (76, 78), "light"),           # Helmdach
+    B((6.5, 7.1), (-5.5, 5.5), (68.5, 73), "visor"),  # Visier vorn
+]
+```
 
-Danach im Tool ueber *Neues Teil importieren…* einfuegen und die Anker auf der
-Buehne setzen.
+Der Renderer erzeugt daraus alle vier Ansichten. Sichtbarkeit, Beleuchtung und
+Zeichenreihenfolge fallen ab: das Visier verschwindet in der Nordansicht von
+selbst, die Kuehlrippen auf der Rueckseite erscheinen dort.
+
+Wer stattdessen fertige SVGs einfuegen will, nutzt im Tool *Neues Teil
+importieren…* und setzt die Anker anschliessend auf der Buehne.
 
 ## REST-API
 
@@ -153,6 +167,15 @@ haengt an den Datenstrukturen, nicht am DOM.
 
 **Kein Flask.** `http.server` reicht fuer ein lokales Werkzeug vollstaendig und
 haelt `python3 main.py` als einzigen Startbefehl aufrecht.
+
+**Teile werden als Quader definiert, nicht als SVG gezeichnet.** Der Generator
+in `tools/build_sample_parts.py` projiziert eine bot-lokale Quader-Beschreibung
+in alle vier Richtungen und leitet Sichtbarkeit, Beleuchtung und
+Zeichenreihenfolge daraus ab. Vier handgezeichnete Ansichten pro Teil waeren
+nicht nur vierfache Arbeit, sondern wuerden bei jeder Aenderung auseinander
+laufen – genau der Fehler, an dem das Vorgaengerprojekt gescheitert ist.
+Fertige SVGs aus anderer Quelle funktionieren weiterhin; sie muessen sich nur
+an dieselbe Projektion halten.
 
 **Richtungsunabhaengige Teil-IDs.** Ein Loadout speichert `scout_head`, nicht
 `scout_head_south`. Ein Richtungswechsel loest dieselbe ID gegen die passende

@@ -4,24 +4,63 @@ build_sample_parts.py -- Generator fuer den mitgelieferten Beispiel-Teilesatz.
 
 Dieses Skript ist bewusst Teil des Repos: es dient gleichzeitig als
 *ausfuehrbare Spezifikation* des Part-Formats. Wer ein neues Bot-Set
-anlegen will, kann hier abschauen, welche Felder erwartet werden, und
-das Ergebnis mit
+anlegen will, kann hier abschauen, wie ein Teil definiert wird, und das
+Ergebnis mit
 
     python3 tools/build_sample_parts.py
 
 neu erzeugen.
 
-Koordinatensystem
------------------
-Alle Teile teilen sich EIN gemeinsames Koordinatensystem: viewBox "0 0 128 128".
-Dadurch sind Anker direkt vergleichbar und das Zusammensetzen ist eine
-reine Translation.
 
-    x = 64   -> Mittelachse
-    y = 120  -> Bodenlinie (Tile-Kontaktpunkt)
+Isometrische Kamera, 45 Grad von oben
+=====================================
+Das Spiel schaut im 45-Grad-Winkel auf ein um 45 Grad gedrehtes Gitter. Ein
+Bodenfeld wird dadurch zur Raute im Verhaeltnis sqrt(2):1 -- hier 76 x 54 px
+mit dem Mittelpunkt (64, 96).
 
-"links" / "rechts" sind immer BILDSCHIRM-seitig gemeint, nicht aus Sicht
-des Bots. Das haelt die Anker ueber alle vier Richtungen hinweg eindeutig.
+Weltkoordinaten (px, py = Gitterachsen, pz = Hoehe) projizieren so:
+
+    x = 64 + cos(45) * (px - py) * SCALE
+    y = 96 - (0.5 * (px + py) + cos(45) * pz) * SCALE
+
+Daraus ergibt sich der typische Iso-Look:
+
+  * Die Kamera steht in Richtung (-1, -1, +1). Sichtbar sind daher IMMER genau
+    drei Flaechen jedes Quaders: die -px-Flanke (auf dem Bildschirm nach
+    unten-links), die -py-Flanke (unten-rechts) und die Oberseite.
+  * Weil der Bot 45 Grad zur Kamera steht, sieht man zwei Flanken statt nur
+    einer Frontflaeche. Genau das unterscheidet die Iso- von einer
+    Frontalansicht -- eine schraeg zur Kamera stehende Kiste zeigt Volumen,
+    eine frontale sieht flach aus.
+  * Beleuchtung liegt fest im Bildschirmraum, nicht am Bot: Oberseiten hell,
+    linke Flanken mittel, rechte Flanken dunkel. Dadurch wirken alle vier
+    Richtungen wie vom selben Licht getroffen.
+
+Ein Teil wird deshalb NICHT vier Mal gezeichnet. Es wird einmal als Sammlung
+von Quadern in **bot-lokalen** Koordinaten beschrieben
+
+    f   nach vorn (Blickrichtung des Bots)
+    l   nach links (aus Sicht des Bots)
+    z   nach oben
+
+und der Renderer erzeugt daraus alle vier Richtungen. Das ist der eigentliche
+Gewinn: eine Definition, vier konsistente Ansichten, und Rueckseiten-Details
+(Kuehlrippen, Schubduesen) verschwinden von selbst, sobald sie von der Kamera
+abgewandt sind.
+
+Sichtbarkeit und Zeichenreihenfolge ermittelt der Renderer selbst: jede
+Flaeche wird gegen die Kamerarichtung geprueft und anschliessend nach Tiefe
+sortiert (Maler-Algorithmus). Auch die Zeichenebene der Ausruestungsslots
+(slot_z) faellt dabei ab -- ein Arm, der naeher an der Kamera liegt, wird
+automatisch vor den Torso gelegt.
+
+
+Links und rechts
+----------------
+Ankernamen beziehen sich auf die Seiten des BOTS, nicht auf den Bildschirm:
+`equip_left` ist immer der linke Arm der Drone. Beim Drehen bleibt eine Waffe
+dadurch am selben Arm, statt beim Richtungswechsel die Seite zu tauschen.
+
 
 Farben
 ------
@@ -34,6 +73,7 @@ SVG-Datei anzufassen.
 from __future__ import annotations
 
 import json
+import math
 import pathlib
 import shutil
 
@@ -41,12 +81,71 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 PARTS_DIR = ROOT / "parts"
 
 # ---------------------------------------------------------------------------
-# Palettenrollen -- jede Rolle ist eine CSS-Variable, die im SVG benutzt wird.
+# Projektion
+# ---------------------------------------------------------------------------
+COS45 = math.cos(math.radians(45))   # 0.70710678
+CENTER_X = 64.0
+GROUND_Y = 96.0
+
+# Massstab zwischen Entwurfs- und Bildschirmeinheiten. Die Formen unten sind in
+# gut lesbaren Entwurfseinheiten notiert; SCALE bringt den Bot auf eine Groesse,
+# die die 128x128-Kachel ausfuellt. Ein Mech ueberragt sein Bodenfeld dabei
+# bewusst -- so wird er auf dem Handy nicht zur Briefmarke.
+SCALE = 1.35
+
+TILE_HALF_W = 38.0                   # Halbbreite der Bodenraute in Pixeln
+TILE_HALF_H = TILE_HALF_W * COS45    # 26.87 -- Verhaeltnis sqrt(2):1
+
+# Hoehe, die genau auf y = 64 projiziert -- der Referenzpunkt "mount" jedes
+# Koerpers, damit er im Werkzeug auf CANVAS_ORIGIN landet.
+MOUNT_Z = round((GROUND_Y - 64.0) / (COS45 * SCALE), 2)
+
+# Blickrichtung der Kamera. Sichtbar ist eine Flaeche, wenn ihre Normale
+# hierhin zeigt.
+VIEW = (-1.0, -1.0, 1.0)
+
+# Bot-lokale Achsen je Blickrichtung.
+#   F = Vorwaerts-Vektor in Gitterkoordinaten
+#   L = Links-Vektor  (= z-Achse kreuz F)
+# Auf dem Bildschirm: -px zeigt nach unten-links, -py nach unten-rechts.
+FACINGS = {
+    "south": ((-1, 0), (0, -1)),   # blickt nach unten-links
+    "east":  ((0, -1), (1, 0)),    # blickt nach unten-rechts
+    "north": ((1, 0), (0, 1)),     # blickt nach oben-rechts
+    "west":  ((0, 1), (-1, 0)),    # blickt nach oben-links
+}
+DIRECTIONS = ["south", "west", "east", "north"]
+
+
+def to_world(point, facing):
+    """Bot-lokal (f, l, z) -> Gitterkoordinaten (px, py, pz)."""
+    f, l, z = point
+    (fx, fy), (lx, ly) = FACINGS[facing]
+    return (f * fx + l * lx, f * fy + l * ly, z)
+
+
+def to_screen(world):
+    px, py, pz = world
+    return (round(CENTER_X + COS45 * (px - py) * SCALE, 2),
+            round(GROUND_Y - (0.5 * (px + py) + COS45 * pz) * SCALE, 2))
+
+
+def project(point, facing):
+    return to_screen(to_world(point, facing))
+
+
+def closeness(world):
+    """Groesser = naeher an der Kamera. Basis fuer den Maler-Algorithmus."""
+    return -world[0] - world[1] + world[2]
+
+
+# ---------------------------------------------------------------------------
+# Palette
 # ---------------------------------------------------------------------------
 PALETTE_ROLES = [
-    "plate",       # Haupt-Panzerung
-    "plate_dark",  # Schattenseite / Untergrund
-    "plate_light", # Highlight-Kante
+    "plate",       # linke Flanken
+    "plate_dark",  # rechte Flanken, Schatten
+    "plate_light", # Oberseiten
     "metal",       # Gelenke, Rahmen, Mechanik
     "accent",      # Neon-Streifen
     "glow",        # Kern / Emission
@@ -55,380 +154,322 @@ PALETTE_ROLES = [
 ]
 
 DEFAULT_PALETTE = {
-    "plate": "#232a3d",
-    "plate_dark": "#151a29",
-    "plate_light": "#3a4560",
+    "plate": "#28304a",
+    "plate_dark": "#161c2e",
+    "plate_light": "#41507a",
     "metal": "#5b6785",
     "accent": "#2de2e6",
     "glow": "#ff2d95",
     "visor": "#7cf9ff",
-    "outline": "#0a0d16",
+    "outline": "#080b13",
 }
 
 JUGG_PALETTE = {
-    "plate": "#3a2a33",
-    "plate_dark": "#20151c",
-    "plate_light": "#57404c",
+    "plate": "#3d2b35",
+    "plate_dark": "#22161d",
+    "plate_light": "#5d4551",
     "metal": "#7d6b78",
     "accent": "#ff8a3d",
     "glow": "#ffd447",
     "visor": "#ffb057",
-    "outline": "#120b10",
+    "outline": "#100a0e",
 }
 
 C = {role: f"var(--c-{role.replace('_', '-')})" for role in PALETTE_ROLES}
 
-# Standard-Zeichenreihenfolge pro Typ (kann pro Teil ueberschrieben werden).
-DEFAULT_Z = {
-    "feet": 10,
-    "body": 20,
-    "core": 26,
-    "equipment": 30,
-    "equipment_left": 30,
-    "equipment_right": 30,
-    "head": 40,
+# Material = (Oberseite, linke Flanke, rechte Flanke, Kontur?)
+MATERIALS = {
+    "plate":  (C["plate_light"], C["plate"], C["plate_dark"], True),
+    "dark":   (C["plate"], C["plate_dark"], C["plate_dark"], True),
+    "light":  (C["plate_light"], C["plate_light"], C["plate"], True),
+    "metal":  (C["metal"], C["metal"], C["plate_dark"], True),
+    "visor":  (C["visor"], C["visor"], C["visor"], True),
+    "glow":   (C["glow"], C["glow"], C["glow"], False),
+    "accent": (C["accent"], C["accent"], C["accent"], False),
 }
 
-DIRECTIONS = ["south", "west", "east", "north"]
+DEFAULT_Z = {
+    "feet": 10, "body": 20, "core": 26,
+    "equipment": 30, "equipment_left": 30, "equipment_right": 30, "head": 40,
+}
 
 
 # ---------------------------------------------------------------------------
-# Hilfsfunktionen
+# Primitive: alles ist ein Quader oder eine Scheibe
 # ---------------------------------------------------------------------------
-def g(content: str, extra: str = "") -> str:
-    """Umschliesst Inhalt mit den gemeinsamen Stroke-Defaults."""
-    return (
-        f'<g fill="none" stroke="{C["outline"]}" stroke-width="1.6" '
-        f'stroke-linejoin="round" stroke-linecap="round"{(" " + extra) if extra else ""}>\n'
-        f"{content}\n</g>"
-    )
+def B(f, l, z, mat):
+    """Quader aus (min, max)-Paaren in bot-lokalen Koordinaten."""
+    return ("box", f, l, z, mat)
 
 
-def mirror_x(value: float) -> float:
-    return round(128 - value, 2)
+def D(f, l_center, z_center, radius, mat, segments=16):
+    """Scheibe auf der nach vorn gerichteten Flaeche (Kern, Muendung, Linse)."""
+    return ("disc", f, l_center, z_center, radius, mat, segments)
 
 
-def mirrored_anchors(anchors: dict[str, tuple[float, float]]) -> dict:
-    """Spiegelt Anker an der Mittelachse und tauscht left/right-Namen."""
-    swap = {"equip_left": "equip_right", "equip_right": "equip_left"}
-    return {
-        swap.get(name, name): (mirror_x(x), y) for name, (x, y) in anchors.items()
-    }
+def _box_faces(f, l, z):
+    """Alle sechs Flaechen als (lokale Normale, Eckpunkte)."""
+    f0, f1 = f
+    l0, l1 = l
+    z0, z1 = z
+    return [
+        ((1, 0, 0),  [(f1, l0, z0), (f1, l1, z0), (f1, l1, z1), (f1, l0, z1)]),
+        ((-1, 0, 0), [(f0, l1, z0), (f0, l0, z0), (f0, l0, z1), (f0, l1, z1)]),
+        ((0, 1, 0),  [(f1, l1, z0), (f0, l1, z0), (f0, l1, z1), (f1, l1, z1)]),
+        ((0, -1, 0), [(f0, l0, z0), (f1, l0, z0), (f1, l0, z1), (f0, l0, z1)]),
+        ((0, 0, 1),  [(f0, l0, z1), (f1, l0, z1), (f1, l1, z1), (f0, l1, z1)]),
+        ((0, 0, -1), [(f0, l1, z0), (f1, l1, z0), (f1, l0, z0), (f0, l0, z0)]),
+    ]
 
 
-def mirror_svg(inner: str) -> str:
-    return (
-        '<!-- gespiegelt aus der east-Variante -->\n'
-        '<g transform="translate(128,0) scale(-1,1)">\n' + inner + "\n</g>"
-    )
+def _shade(world_normal, mat):
+    """
+    Ordnet einer Weltnormalen ihre Farbe zu. Das Licht haengt am Bildschirm,
+    nicht am Bot -- deshalb wird hier die WELT-Normale ausgewertet.
+    """
+    top, left, right, stroke = MATERIALS[mat]
+    nx, ny, nz = world_normal
+    if nz > 0.5:
+        return top, stroke
+    if nx < -0.5:      # Flanke nach unten-links
+        return left, stroke
+    if ny < -0.5:      # Flanke nach unten-rechts
+        return right, stroke
+    return None, stroke   # abgewandt
 
 
-# ---------------------------------------------------------------------------
-# SCOUT  (parts/bot1) -- schlanker Aufklaerer
-# ---------------------------------------------------------------------------
-
-SCOUT_BODY_SOUTH = g(f"""
-  <path d="M36 52 L47 46 L49 68 L38 72 Z" fill="{C['plate_dark']}"/>
-  <path d="M92 52 L81 46 L79 68 L90 72 Z" fill="{C['plate_dark']}"/>
-  <path d="M47 45 H81 L86 60 L81 84 H47 L42 60 Z" fill="{C['plate']}"/>
-  <path d="M52 45 H76 L78 53 H50 Z" fill="{C['plate_light']}"/>
-  <rect x="58" y="38" width="12" height="9" rx="2.5" fill="{C['metal']}"/>
-  <path d="M54 57 H74" stroke="{C['accent']}" stroke-width="2.4"/>
-  <path d="M50 76 H78" stroke="{C['accent']}" stroke-width="1.8" opacity="0.7"/>
-  <circle cx="64" cy="67" r="8.5" fill="{C['plate_dark']}"/>
-  <path d="M47 83 H81 L78 90 H50 Z" fill="{C['metal']}"/>
-""")
-
-SCOUT_BODY_NORTH = g(f"""
-  <path d="M36 52 L47 46 L49 68 L38 72 Z" fill="{C['plate_dark']}"/>
-  <path d="M92 52 L81 46 L79 68 L90 72 Z" fill="{C['plate_dark']}"/>
-  <path d="M47 45 H81 L86 60 L81 84 H47 L42 60 Z" fill="{C['plate_dark']}"/>
-  <rect x="53" y="50" width="22" height="26" rx="3" fill="{C['plate']}"/>
-  <path d="M57 55 H71 M57 61 H71 M57 67 H71" stroke="{C['plate_light']}" stroke-width="1.6"/>
-  <rect x="58" y="38" width="12" height="9" rx="2.5" fill="{C['metal']}"/>
-  <circle cx="64" cy="63" r="4" fill="{C['glow']}" stroke="none"/>
-  <path d="M47 83 H81 L78 90 H50 Z" fill="{C['metal']}"/>
-""")
-
-SCOUT_BODY_EAST = g(f"""
-  <path d="M55 47 L74 47 L79 62 L74 84 L55 84 L52 62 Z" fill="{C['plate']}"/>
-  <path d="M55 47 L74 47 L75 54 L55 54 Z" fill="{C['plate_light']}"/>
-  <rect x="58" y="38" width="11" height="9" rx="2.5" fill="{C['metal']}"/>
-  <path d="M58 60 H74" stroke="{C['accent']}" stroke-width="2.4"/>
-  <circle cx="70" cy="67" r="7" fill="{C['plate_dark']}"/>
-  <path d="M50 50 L57 47 L59 68 L51 71 Z" fill="{C['plate_dark']}"/>
-  <path d="M56 83 H76 L74 90 H57 Z" fill="{C['metal']}"/>
-""")
-
-SCOUT_HEAD_SOUTH = g(f"""
-  <path d="M64 12 V22" stroke="{C['metal']}" stroke-width="2"/>
-  <circle cx="64" cy="11" r="2.6" fill="{C['glow']}" stroke="none"/>
-  <path d="M52 24 Q64 17 76 24 L78 38 Q64 44 50 38 Z" fill="{C['plate']}"/>
-  <path d="M53 27 Q64 22 75 27 L75 33 Q64 37 53 33 Z" fill="{C['visor']}" stroke="none"/>
-  <path d="M53 27 Q64 22 75 27 L75 33 Q64 37 53 33 Z" fill="none"/>
-  <path d="M50 38 H78 L76 43 H52 Z" fill="{C['metal']}"/>
-""")
-
-SCOUT_HEAD_NORTH = g(f"""
-  <path d="M64 12 V22" stroke="{C['metal']}" stroke-width="2"/>
-  <circle cx="64" cy="11" r="2.6" fill="{C['glow']}" stroke="none"/>
-  <path d="M52 24 Q64 17 76 24 L78 38 Q64 44 50 38 Z" fill="{C['plate_dark']}"/>
-  <path d="M58 28 H70 M58 33 H70" stroke="{C['plate_light']}" stroke-width="1.6"/>
-  <path d="M50 38 H78 L76 43 H52 Z" fill="{C['metal']}"/>
-""")
-
-SCOUT_HEAD_EAST = g(f"""
-  <path d="M64 12 V22" stroke="{C['metal']}" stroke-width="2"/>
-  <circle cx="64" cy="11" r="2.6" fill="{C['glow']}" stroke="none"/>
-  <path d="M54 25 Q64 17 74 25 L75 38 Q63 43 53 38 Z" fill="{C['plate']}"/>
-  <path d="M64 26 Q71 24 74 28 L74 34 Q69 36 64 35 Z" fill="{C['visor']}" stroke="none"/>
-  <path d="M64 26 Q71 24 74 28 L74 34 Q69 36 64 35 Z"/>
-  <path d="M53 38 H75 L73 43 H55 Z" fill="{C['metal']}"/>
-""")
-
-SCOUT_FEET_SOUTH = g(f"""
-  <path d="M52 88 H60 L59 104 L53 104 Z" fill="{C['plate']}"/>
-  <path d="M68 88 H76 L75 104 L69 104 Z" fill="{C['plate']}"/>
-  <circle cx="56" cy="105" r="4" fill="{C['metal']}"/>
-  <circle cx="72" cy="105" r="4" fill="{C['metal']}"/>
-  <path d="M50 109 H62 L64 118 H48 Z" fill="{C['plate_dark']}"/>
-  <path d="M66 109 H78 L80 118 H64 Z" fill="{C['plate_dark']}"/>
-  <path d="M49 116 H63 M65 116 H79" stroke="{C['accent']}" stroke-width="1.6"/>
-""")
-
-SCOUT_FEET_NORTH = g(f"""
-  <path d="M52 88 H60 L59 104 L53 104 Z" fill="{C['plate_dark']}"/>
-  <path d="M68 88 H76 L75 104 L69 104 Z" fill="{C['plate_dark']}"/>
-  <circle cx="56" cy="105" r="4" fill="{C['metal']}"/>
-  <circle cx="72" cy="105" r="4" fill="{C['metal']}"/>
-  <path d="M50 109 H62 L62 118 H48 Z" fill="{C['plate']}"/>
-  <path d="M66 109 H78 L80 118 H66 Z" fill="{C['plate']}"/>
-""")
-
-SCOUT_FEET_EAST = g(f"""
-  <path d="M58 88 H68 L66 104 L59 104 Z" fill="{C['plate_dark']}"/>
-  <path d="M62 88 H72 L71 104 L64 104 Z" fill="{C['plate']}"/>
-  <circle cx="67" cy="105" r="4.2" fill="{C['metal']}"/>
-  <path d="M58 110 H76 L78 118 H55 Z" fill="{C['plate']}"/>
-  <path d="M56 116 H77" stroke="{C['accent']}" stroke-width="1.6"/>
-""")
-
-SCOUT_CORE_SOUTH = g(f"""
-  <circle cx="64" cy="67" r="7" fill="{C['plate_dark']}"/>
-  <circle cx="64" cy="67" r="4.4" fill="{C['glow']}" stroke="none"/>
-  <circle cx="64" cy="67" r="4.4" opacity="0.9"/>
-  <path d="M64 60 V63 M64 71 V74 M57 67 H60 M68 67 H71" stroke="{C['accent']}" stroke-width="1.6"/>
-""")
-
-SCOUT_CORE_EAST = g(f"""
-  <circle cx="70" cy="67" r="5.8" fill="{C['plate_dark']}"/>
-  <circle cx="70" cy="67" r="3.6" fill="{C['glow']}" stroke="none"/>
-  <circle cx="70" cy="67" r="3.6" opacity="0.9"/>
-""")
-
-SCOUT_CORE_NORTH = g(f"""
-  <rect x="56" y="57" width="16" height="14" rx="3" fill="{C['plate_dark']}"/>
-  <path d="M59 61 H69 M59 66 H69" stroke="{C['glow']}" stroke-width="2"/>
-""")
-
-# --- Ausruestung: Puls-Blaster (Griffpunkt = mount) --------------------------
-EQ_BLASTER_SOUTH = g(f"""
-  <rect x="27" y="58" width="9" height="13" rx="2.5" fill="{C['metal']}"/>
-  <path d="M20 62 H31 L33 74 H22 Z" fill="{C['plate']}"/>
-  <rect x="17" y="65" width="6" height="5" rx="1.5" fill="{C['plate_dark']}"/>
-  <circle cx="19" cy="67.5" r="2" fill="{C['glow']}" stroke="none"/>
-  <path d="M22 70 H31" stroke="{C['accent']}" stroke-width="1.6"/>
-""")
-
-EQ_BLASTER_EAST = g(f"""
-  <rect x="74" y="58" width="9" height="12" rx="2.5" fill="{C['metal']}"/>
-  <path d="M78 60 H100 L102 68 H78 Z" fill="{C['plate']}"/>
-  <rect x="100" y="61" width="8" height="6" rx="2" fill="{C['plate_dark']}"/>
-  <circle cx="106" cy="64" r="2.2" fill="{C['glow']}" stroke="none"/>
-  <path d="M80 65 H98" stroke="{C['accent']}" stroke-width="1.6"/>
-""")
-
-EQ_BLASTER_NORTH = g(f"""
-  <rect x="27" y="58" width="9" height="13" rx="2.5" fill="{C['metal']}"/>
-  <path d="M22 62 H33 L33 74 H24 Z" fill="{C['plate_dark']}"/>
-  <path d="M25 66 H31" stroke="{C['accent']}" stroke-width="1.6"/>
-""")
-
-# --- Ausruestung: Deflektor-Schild ------------------------------------------
-EQ_SHIELD_SOUTH = g(f"""
-  <rect x="92" y="60" width="8" height="11" rx="2.5" fill="{C['metal']}"/>
-  <path d="M98 48 Q114 52 114 66 Q114 80 98 84 Z" fill="{C['plate']}"/>
-  <path d="M100 54 Q110 57 110 66 Q110 75 100 78 Z" fill="{C['plate_dark']}"/>
-  <path d="M104 60 V72" stroke="{C['accent']}" stroke-width="2.2"/>
-""")
-
-EQ_SHIELD_EAST = g(f"""
-  <rect x="72" y="60" width="8" height="11" rx="2.5" fill="{C['metal']}"/>
-  <path d="M78 48 Q86 52 86 66 Q86 80 78 84 Z" fill="{C['plate']}"/>
-  <path d="M82 58 V74" stroke="{C['accent']}" stroke-width="2.2"/>
-""")
-
-EQ_SHIELD_NORTH = g(f"""
-  <rect x="92" y="60" width="8" height="11" rx="2.5" fill="{C['metal']}"/>
-  <path d="M98 48 Q114 52 114 66 Q114 80 98 84 Z" fill="{C['plate_dark']}"/>
-  <path d="M102 56 H110 M102 66 H110 M102 76 H110" stroke="{C['plate_light']}" stroke-width="1.6"/>
-""")
+def _emit(points_local, world_normal, mat, facing):
+    color, stroke = _shade(world_normal, mat)
+    if color is None:
+        return None
+    world_points = [to_world(p, facing) for p in points_local]
+    depth = sum(closeness(w) for w in world_points) / len(world_points)
+    coords = " L".join(f"{x} {y}" for x, y in (to_screen(w) for w in world_points))
+    extra = "" if stroke else ' stroke="none"'
+    return (depth, f'  <path d="M{coords} Z" fill="{color}"{extra}/>')
 
 
-# ---------------------------------------------------------------------------
-# JUGGERNAUT (parts/bot2) -- schwerer Rahmen, 3 Ausruestungsslots
-# ---------------------------------------------------------------------------
+def render(shapes, facing):
+    """Projiziert alle Formen, verwirft abgewandte Flaechen, sortiert nach Tiefe."""
+    faces = []
+    for shape in shapes:
+        if shape[0] == "box":
+            _, f, l, z, mat = shape
+            for local_normal, points in _box_faces(f, l, z):
+                wn = to_world(local_normal, facing)
+                emitted = _emit(points, wn, mat, facing)
+                if emitted:
+                    faces.append(emitted)
+        elif shape[0] == "disc":
+            _, f, lc, zc, radius, mat, segments = shape
+            points = [
+                (f, lc + radius * math.cos(2 * math.pi * i / segments),
+                 zc + radius * math.sin(2 * math.pi * i / segments))
+                for i in range(segments)
+            ]
+            wn = to_world((1, 0, 0), facing)
+            emitted = _emit(points, wn, mat, facing)
+            if emitted:
+                faces.append(emitted)
+        else:
+            raise ValueError(f"Unbekanntes Primitiv: {shape[0]}")
 
-JUGG_BODY_SOUTH = g(f"""
-  <path d="M28 48 L44 42 L47 70 L31 76 Z" fill="{C['plate_dark']}"/>
-  <path d="M100 48 L84 42 L81 70 L97 76 Z" fill="{C['plate_dark']}"/>
-  <path d="M42 42 H86 L92 60 L86 86 H42 L36 60 Z" fill="{C['plate']}"/>
-  <path d="M48 42 H80 L82 52 H46 Z" fill="{C['plate_light']}"/>
-  <rect x="56" y="34" width="16" height="10" rx="2.5" fill="{C['metal']}"/>
-  <rect x="46" y="56" width="36" height="6" rx="2" fill="{C['plate_dark']}"/>
-  <path d="M49 59 H79" stroke="{C['accent']}" stroke-width="2.2"/>
-  <circle cx="64" cy="72" r="10" fill="{C['plate_dark']}"/>
-  <path d="M42 85 H86 L82 93 H46 Z" fill="{C['metal']}"/>
-""")
-
-JUGG_BODY_NORTH = g(f"""
-  <path d="M28 48 L44 42 L47 70 L31 76 Z" fill="{C['plate_dark']}"/>
-  <path d="M100 48 L84 42 L81 70 L97 76 Z" fill="{C['plate_dark']}"/>
-  <path d="M42 42 H86 L92 60 L86 86 H42 L36 60 Z" fill="{C['plate_dark']}"/>
-  <rect x="48" y="46" width="32" height="34" rx="4" fill="{C['plate']}"/>
-  <path d="M53 52 H75 M53 60 H75 M53 68 H75" stroke="{C['plate_light']}" stroke-width="2"/>
-  <rect x="56" y="34" width="16" height="10" rx="2.5" fill="{C['metal']}"/>
-  <circle cx="64" cy="74" r="4.5" fill="{C['glow']}" stroke="none"/>
-  <path d="M42 85 H86 L82 93 H46 Z" fill="{C['metal']}"/>
-""")
-
-JUGG_BODY_EAST = g(f"""
-  <path d="M46 48 L56 43 L58 70 L48 74 Z" fill="{C['plate_dark']}"/>
-  <path d="M52 43 H82 L88 60 L82 86 H52 L48 60 Z" fill="{C['plate']}"/>
-  <path d="M52 43 H82 L83 52 H52 Z" fill="{C['plate_light']}"/>
-  <rect x="56" y="34" width="15" height="10" rx="2.5" fill="{C['metal']}"/>
-  <path d="M55 59 H82" stroke="{C['accent']}" stroke-width="2.2"/>
-  <circle cx="72" cy="72" r="8" fill="{C['plate_dark']}"/>
-  <path d="M52 85 H84 L81 93 H55 Z" fill="{C['metal']}"/>
-""")
-
-JUGG_HEAD_SOUTH = g(f"""
-  <path d="M48 22 H80 L82 36 L76 42 H52 L46 36 Z" fill="{C['plate']}"/>
-  <rect x="50" y="26" width="28" height="8" rx="2" fill="{C['visor']}" stroke="none"/>
-  <rect x="50" y="26" width="28" height="8" rx="2"/>
-  <path d="M46 18 H54 V24 H46 Z" fill="{C['metal']}"/>
-  <path d="M74 18 H82 V24 H74 Z" fill="{C['metal']}"/>
-  <path d="M52 42 H76 L74 46 H54 Z" fill="{C['metal']}"/>
-""")
-
-JUGG_HEAD_NORTH = g(f"""
-  <path d="M48 22 H80 L82 36 L76 42 H52 L46 36 Z" fill="{C['plate_dark']}"/>
-  <path d="M54 28 H74 M54 34 H74" stroke="{C['plate_light']}" stroke-width="2"/>
-  <path d="M46 18 H54 V24 H46 Z" fill="{C['metal']}"/>
-  <path d="M74 18 H82 V24 H74 Z" fill="{C['metal']}"/>
-  <path d="M52 42 H76 L74 46 H54 Z" fill="{C['metal']}"/>
-""")
-
-JUGG_HEAD_EAST = g(f"""
-  <path d="M50 22 H78 L80 36 L74 42 H54 L48 36 Z" fill="{C['plate']}"/>
-  <path d="M64 26 H78 L79 34 H64 Z" fill="{C['visor']}" stroke="none"/>
-  <path d="M64 26 H78 L79 34 H64 Z"/>
-  <path d="M48 18 H58 V24 H48 Z" fill="{C['metal']}"/>
-  <path d="M54 42 H76 L74 46 H56 Z" fill="{C['metal']}"/>
-""")
-
-JUGG_FEET_SOUTH = g(f"""
-  <path d="M44 91 H60 L58 106 L46 106 Z" fill="{C['plate']}"/>
-  <path d="M68 91 H84 L82 106 L70 106 Z" fill="{C['plate']}"/>
-  <circle cx="52" cy="107" r="5" fill="{C['metal']}"/>
-  <circle cx="76" cy="107" r="5" fill="{C['metal']}"/>
-  <path d="M40 111 H62 L64 121 H37 Z" fill="{C['plate_dark']}"/>
-  <path d="M66 111 H88 L91 121 H64 Z" fill="{C['plate_dark']}"/>
-  <path d="M39 118 H63 M65 118 H90" stroke="{C['accent']}" stroke-width="1.8"/>
-""")
-
-JUGG_FEET_NORTH = g(f"""
-  <path d="M44 91 H60 L58 106 L46 106 Z" fill="{C['plate_dark']}"/>
-  <path d="M68 91 H84 L82 106 L70 106 Z" fill="{C['plate_dark']}"/>
-  <circle cx="52" cy="107" r="5" fill="{C['metal']}"/>
-  <circle cx="76" cy="107" r="5" fill="{C['metal']}"/>
-  <path d="M40 111 H62 L62 121 H38 Z" fill="{C['plate']}"/>
-  <path d="M66 111 H88 L90 121 H66 Z" fill="{C['plate']}"/>
-""")
-
-JUGG_FEET_EAST = g(f"""
-  <path d="M52 91 H68 L66 106 L54 106 Z" fill="{C['plate_dark']}"/>
-  <path d="M58 91 H76 L74 106 L62 106 Z" fill="{C['plate']}"/>
-  <circle cx="68" cy="107" r="5.2" fill="{C['metal']}"/>
-  <path d="M52 112 H82 L85 121 H48 Z" fill="{C['plate']}"/>
-  <path d="M49 118 H84" stroke="{C['accent']}" stroke-width="1.8"/>
-""")
-
-JUGG_CORE_SOUTH = g(f"""
-  <circle cx="64" cy="72" r="8.5" fill="{C['plate_dark']}"/>
-  <path d="M64 65 L70 69 V76 L64 80 L58 76 V69 Z" fill="{C['glow']}" stroke="none"/>
-  <path d="M64 65 L70 69 V76 L64 80 L58 76 V69 Z" opacity="0.9"/>
-""")
-
-JUGG_CORE_EAST = g(f"""
-  <circle cx="72" cy="72" r="7" fill="{C['plate_dark']}"/>
-  <path d="M72 66 L77 70 V76 L72 79 L67 76 V70 Z" fill="{C['glow']}" stroke="none"/>
-  <path d="M72 66 L77 70 V76 L72 79 L67 76 V70 Z" opacity="0.9"/>
-""")
-
-JUGG_CORE_NORTH = g(f"""
-  <rect x="54" y="64" width="20" height="16" rx="3" fill="{C['plate_dark']}"/>
-  <path d="M58 69 H70 M58 75 H70" stroke="{C['glow']}" stroke-width="2.4"/>
-""")
-
-EQ_CANNON_SOUTH = g(f"""
-  <rect x="20" y="56" width="12" height="16" rx="3" fill="{C['metal']}"/>
-  <path d="M8 56 H26 L28 76 H10 Z" fill="{C['plate']}"/>
-  <rect x="2" y="60" width="8" height="10" rx="2" fill="{C['plate_dark']}"/>
-  <circle cx="6" cy="65" r="2.6" fill="{C['glow']}" stroke="none"/>
-  <path d="M12 72 H26" stroke="{C['accent']}" stroke-width="2"/>
-""")
-
-EQ_CANNON_EAST = g(f"""
-  <rect x="76" y="56" width="12" height="15" rx="3" fill="{C['metal']}"/>
-  <path d="M80 56 H108 L110 72 H80 Z" fill="{C['plate']}"/>
-  <rect x="108" y="59" width="10" height="9" rx="2" fill="{C['plate_dark']}"/>
-  <circle cx="115" cy="63.5" r="2.6" fill="{C['glow']}" stroke="none"/>
-  <path d="M84 68 H106" stroke="{C['accent']}" stroke-width="2"/>
-""")
-
-EQ_CANNON_NORTH = g(f"""
-  <rect x="20" y="56" width="12" height="16" rx="3" fill="{C['metal']}"/>
-  <path d="M12 56 H30 L30 76 H14 Z" fill="{C['plate_dark']}"/>
-  <path d="M16 62 H28 M16 70 H28" stroke="{C['accent']}" stroke-width="1.8"/>
-""")
-
-EQ_DRONEPOD_SOUTH = g(f"""
-  <rect x="58" y="24" width="12" height="8" rx="2" fill="{C['metal']}"/>
-  <path d="M50 8 H78 L82 20 L64 26 L46 20 Z" fill="{C['plate']}"/>
-  <path d="M56 12 H72 L74 19 L64 22 L54 19 Z" fill="{C['plate_dark']}"/>
-  <circle cx="64" cy="16" r="3" fill="{C['glow']}" stroke="none"/>
-""")
-
-EQ_DRONEPOD_EAST = g(f"""
-  <rect x="58" y="24" width="11" height="8" rx="2" fill="{C['metal']}"/>
-  <path d="M52 9 H76 L79 20 L63 25 L49 20 Z" fill="{C['plate']}"/>
-  <circle cx="66" cy="16" r="3" fill="{C['glow']}" stroke="none"/>
-""")
-
-EQ_DRONEPOD_NORTH = g(f"""
-  <rect x="58" y="24" width="12" height="8" rx="2" fill="{C['metal']}"/>
-  <path d="M50 8 H78 L82 20 L64 26 L46 20 Z" fill="{C['plate_dark']}"/>
-  <path d="M52 14 H76" stroke="{C['plate_light']}" stroke-width="2"/>
-""")
+    faces.sort(key=lambda item: item[0])     # hinten zuerst
+    body = "\n".join(svg for _, svg in faces)
+    return (f'<g stroke="{C["outline"]}" stroke-width="0.9" stroke-linejoin="round">\n'
+            f"{body}\n</g>")
 
 
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# RX-Vireo // Scout  (parts/bot1)
+#
+# Silhouette geht vor Detail: wenige grosse Volumen mit sichtbaren Luecken
+# dazwischen. Der Hals trennt Kopf und Schultern, die Schulterpanzer stehen
+# seitlich vom Torso ab, die Arme haengen herunter statt in die Kamera zu
+# zeigen -- eine nach vorn gerichtete Waffe verschmilzt in der Iso-Ansicht
+# sonst mit Torso und Beinen.
+#
+# Hoehenprofil in Entwurfseinheiten:
+#   Fuesse 0..7   Beine 7..36   Hueften 34..41   Torso 41..62
+#   Schultern 52..64   Hals 62..66   Kopf 66..78   Antenne bis 89
+# ===========================================================================
+
+SCOUT_BODY = [
+    # -- Hueftblock -------------------------------------------------------
+    B((-6.5, 6.5), (-10, 10), (34, 41), "metal"),
+    # -- Torso in zwei Stufen, nach oben breiter --------------------------
+    B((-6.5, 7.5), (-9, 9), (41, 49), "plate"),
+    B((-7, 8), (-11, 11), (49, 60), "plate"),
+    B((-6.5, 7.5), (-10, 10), (60, 62.5), "light"),      # Brustdach
+    # Brustpanel, Kernsockel, Neon -- erhaben auf der Frontflaeche
+    B((8, 8.6), (-7, 7), (44, 58), "dark"),
+    B((8.6, 9.1), (-6, 6), (55, 57), "accent"),
+    B((8.6, 9.2), (-5, 5), (45, 53), "dark"),
+    # Rueckseite: Kuehlrippen, verschwinden sobald der Bot herschaut
+    B((-7.6, -7), (-8, 8), (44, 58), "dark"),
+    B((-8.1, -7.6), (-6, 6), (46, 47.5), "light"),
+    B((-8.1, -7.6), (-6, 6), (50, 51.5), "light"),
+    B((-8.1, -7.6), (-6, 6), (54, 55.5), "light"),
+    # -- Schulterpanzer, deutlich vom Torso abgesetzt ---------------------
+    B((-6.5, 6.5), (11.5, 19), (52, 62), "plate"),
+    B((-7, 7), (11, 19.5), (62, 64.5), "light"),
+    B((-6.5, 6.5), (-19, -11.5), (52, 62), "plate"),
+    B((-7, 7), (-19.5, -11), (62, 64.5), "light"),
+    B((6.5, 7.1), (13, 17.5), (56, 58), "accent"),
+    B((6.5, 7.1), (-17.5, -13), (56, 58), "accent"),
+    # -- Hals: die Luecke, die den Kopf lesbar macht ----------------------
+    B((-3.5, 3.5), (-4, 4), (62.5, 66), "metal"),
+]
+
+SCOUT_HEAD = [
+    B((-6.5, 6.5), (-7.5, 7.5), (66, 76), "plate"),
+    B((-7, 7), (-8, 8), (76, 78), "light"),              # Helmdach
+    B((6.5, 7.1), (-5.5, 5.5), (68.5, 73), "visor"),
+    B((-7.1, -6.5), (-4, 4), (69, 70.5), "light"),       # Nackenrippen
+    B((-7.1, -6.5), (-4, 4), (72, 73.5), "light"),
+    B((-1, 1), (4, 5.5), (78, 86), "metal"),             # Antenne
+    B((-2, 2), (3, 6.5), (86, 89), "glow"),
+]
+
+SCOUT_FEET = [
+    B((-4.5, 4.5), (4, 9), (25, 36), "plate"),           # Oberschenkel
+    B((-4.5, 4.5), (-9, -4), (25, 36), "plate"),
+    B((-5, 5), (3, 9.5), (20, 25), "metal"),             # Kniegelenke
+    B((-5, 5), (-9.5, -3), (20, 25), "metal"),
+    B((-4, 4), (4, 8.5), (7, 22), "plate"),              # Unterschenkel
+    B((-4, 4), (-8.5, -4), (7, 22), "plate"),
+    B((-7, 9), (3, 10), (0, 7), "plate"),                # Fuesse
+    B((-7, 9), (-10, -3), (0, 7), "plate"),
+    B((9, 9.5), (4, 9), (2, 3.5), "accent"),
+    B((9, 9.5), (-9, -4), (2, 3.5), "accent"),
+]
+
+SCOUT_CORE = [
+    D(9.4, 0, 49, 4.2, "dark"),
+    D(9.8, 0, 49, 2.6, "glow"),
+    B((9.9, 10.2), (-0.5, 0.5), (53.5, 55), "accent"),
+    B((9.9, 10.2), (-0.5, 0.5), (43, 44.5), "accent"),
+    B((9.9, 10.2), (-6, -4.8), (48.5, 49.5), "accent"),
+    B((9.9, 10.2), (4.8, 6), (48.5, 49.5), "accent"),
+]
+
+# --- Ausruestung ------------------------------------------------------------
+# Waffen sind SYMMETRISCH um ihren eigenen Anker modelliert und dadurch an
+# beiden Armen verwendbar. In der Iso-Ansicht waere Spiegeln auf dem Bildschirm
+# geometrisch falsch -- die Beleuchtung haengt am Bildschirm, eine gespiegelte
+# Kiste bekaeme ihre Lichtseite auf die falsche Flanke. Der symmetrische Aufbau
+# loest das ohne zweite Datei.
+EQ_BLASTER = [
+    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Oberarm am Anker
+    B((-5, 6), (-5.5, 5.5), (33, 46), "plate"),          # Gehaeuse
+    B((6, 14), (-4, 4), (35, 42), "plate"),              # Lauf nach vorn
+    B((14, 16.5), (-3, 3), (36, 41), "dark"),            # Muendungsblock
+    D(16.8, 0, 38.5, 2.0, "glow"),
+    B((-4, 5), (5.5, 6.1), (42.5, 44), "accent"),
+    B((-4, 5), (-6.1, -5.5), (42.5, 44), "accent"),
+]
+
+EQ_SHIELD = [
+    B((-3, 3), (-4, 4), (45, 54), "metal"),
+    B((7, 10), (-7, 7), (31, 58), "plate"),
+    B((10, 10.6), (-5, 5), (35, 54), "dark"),
+    B((10.6, 11.1), (-1.2, 1.2), (38, 51), "accent"),
+    B((6.6, 10.2), (-7.6, -6.6), (31, 58), "light"),     # Kantenprofil
+    B((6.6, 10.2), (6.6, 7.6), (31, 58), "light"),
+]
+
+
+# ===========================================================================
+# HX-Molok // Juggernaut  (parts/bot2) -- drei Ausruestungsanker
+# Breiter und gedrungener; der dritte Anker sitzt hinter dem Kopf.
+# ===========================================================================
+
+JUGG_BODY = [
+    B((-8, 8), (-13, 13), (31, 39), "metal"),
+    B((-8, 9), (-12, 12), (39, 47), "plate"),
+    B((-8.5, 10), (-15, 15), (47, 58), "plate"),
+    B((-8, 9), (-14, 14), (58, 61), "light"),
+    B((10, 10.7), (-10, 10), (42, 56), "dark"),
+    B((10.7, 11.3), (-8, 8), (52, 54.5), "accent"),
+    B((10.7, 11.4), (-7, 7), (43, 51), "dark"),
+    # Rueckseite: Reaktorblock
+    B((-9.1, -8.5), (-11, 11), (42, 56), "dark"),
+    B((-9.6, -9.1), (-9, 9), (44, 46), "light"),
+    B((-9.6, -9.1), (-9, 9), (48, 50), "light"),
+    B((-9.6, -9.1), (-9, 9), (52, 54), "light"),
+    # Schulterplatten
+    B((-8, 8), (15.5, 26), (48, 59), "plate"),
+    B((-8.5, 8.5), (15, 26.5), (59, 62), "light"),
+    B((-8, 8), (-26, -15.5), (48, 59), "plate"),
+    B((-8.5, 8.5), (-26.5, -15), (59, 62), "light"),
+    B((8, 8.6), (18, 23), (52, 54.5), "accent"),
+    B((8, 8.6), (-23, -18), (52, 54.5), "accent"),
+    B((-5, 5), (-6, 6), (61, 64), "metal"),
+]
+
+JUGG_HEAD = [
+    B((-8, 8.5), (-10, 10), (64, 74), "plate"),
+    B((-8.5, 9), (-10.5, 10.5), (74, 76.5), "light"),
+    B((8.5, 9.2), (-8, 8), (66.5, 71), "visor"),
+    B((-8.6, -8), (-6, 6), (67, 68.5), "light"),
+    B((-8.6, -8), (-6, 6), (70, 71.5), "light"),
+    B((-5, 5), (10, 13), (68, 74), "metal"),             # Seitensensoren
+    B((-5, 5), (-13, -10), (68, 74), "metal"),
+]
+
+JUGG_FEET = [
+    B((-5.5, 5.5), (5, 11.5), (24, 33), "plate"),
+    B((-5.5, 5.5), (-11.5, -5), (24, 33), "plate"),
+    B((-6, 6), (4, 12), (18, 24), "metal"),
+    B((-6, 6), (-12, -4), (18, 24), "metal"),
+    B((-5, 5), (5, 11), (7, 20), "plate"),
+    B((-5, 5), (-11, -5), (7, 20), "plate"),
+    B((-9, 11), (4, 13), (0, 7), "plate"),
+    B((-9, 11), (-13, -4), (0, 7), "plate"),
+    B((11, 11.6), (5, 12), (1.5, 3.5), "accent"),
+    B((11, 11.6), (-12, -5), (1.5, 3.5), "accent"),
+]
+
+JUGG_CORE = [
+    D(11.0, 0, 47, 5.5, "dark"),
+    B((11.3, 11.7), (-3.6, 3.6), (43.5, 50.5), "glow"),
+    B((11.3, 11.7), (-2, 2), (41.5, 52.5), "glow"),
+]
+
+EQ_CANNON = [
+    B((-4, 4), (-5.5, 5.5), (42, 51), "metal"),
+    B((-6, 7), (-7, 7), (28, 43), "plate"),
+    B((7, 18), (-5, 5), (31, 39), "plate"),
+    B((18, 21), (-4, 4), (32, 38), "dark"),
+    D(21.3, 0, 35, 2.5, "glow"),
+    B((-5, 6), (7, 7.6), (39.5, 41.5), "accent"),
+    B((-5, 6), (-7.6, -7), (39.5, 41.5), "accent"),
+]
+
+# Der Pod sitzt hinter dem Kopf auf der Schulterbruecke und zeigt vor allem
+# seine Oberseite -- das deutlichste Beispiel dafuer, wie stark die
+# 45-Grad-Kamera waagerechte Flaechen betont. In der Nordansicht schiebt ihn
+# die Tiefensortierung von selbst vor den Kopf.
+EQ_DRONE_POD = [
+    B((-8, 2), (-5, 5), (59, 62), "metal"),
+    B((-10, 4), (-8, 8), (62, 69), "plate"),
+    B((-10.5, 4.5), (-8.5, 8.5), (69, 71), "light"),
+    B((4, 4.6), (-6, 6), (63.5, 67.5), "dark"),
+    D(4.9, 0, 65.5, 1.9, "glow"),
+    B((-7, -3), (-2, 2), (71, 74.5), "accent"),
+]
+
+
+# ===========================================================================
 # Teile-Spezifikation
 #
-# Jeder Eintrag: (id, type, {direction: (svg_inner, anchors)}, extras)
-# "west" wird automatisch aus "east" gespiegelt, wenn nicht angegeben.
-# ---------------------------------------------------------------------------
+# Anker werden in bot-lokalen Koordinaten angegeben und pro Richtung mit
+# derselben Projektion berechnet wie die Grafik -- Grafik und Anker koennen
+# also nicht auseinanderlaufen.
+# ===========================================================================
+
+# Bezugspunkt des Torsos, gegen den die Zeichenebene der Arme bestimmt wird.
+TORSO_REF = (0.0, 0.0, 50.0)
 
 SETS = [
     {
@@ -439,99 +480,43 @@ SETS = [
         "palette": DEFAULT_PALETTE,
         "parts": [
             {
-                "id": "scout_body",
-                "type": "body",
-                "name": "Vireo Chassis",
-                "tags": ["light", "scout"],
-                "dirs": {
-                    "south": (SCOUT_BODY_SOUTH, {
-                        "mount": (64, 64),
-                        "head": (64, 42),
-                        "feet": (64, 88),
-                        "equip_left": (40, 62),
-                        "equip_right": (88, 62),
-                        "core": (64, 67),
-                    }),
-                    "north": (SCOUT_BODY_NORTH, {
-                        "mount": (64, 64),
-                        "head": (64, 42),
-                        "feet": (64, 88),
-                        "equip_left": (40, 62),
-                        "equip_right": (88, 62),
-                        "core": (64, 63),
-                    }),
-                    "east": (SCOUT_BODY_EAST, {
-                        "mount": (64, 64),
-                        "head": (64, 42),
-                        "feet": (64, 88),
-                        "equip_left": (56, 62),
-                        "equip_right": (70, 62),
-                        "core": (70, 67),
-                    }),
-                },
-                "slot_z": {
-                    "south": {"equip_left": 30, "equip_right": 30},
-                    "north": {"equip_left": 14, "equip_right": 14},
-                    "east": {"equip_left": 14, "equip_right": 32},
-                    "west": {"equip_left": 32, "equip_right": 14},
+                "id": "scout_body", "type": "body", "name": "Vireo Chassis",
+                "tags": ["light", "scout"], "shapes": SCOUT_BODY,
+                "anchors": {
+                    "mount": (0, 0, MOUNT_Z),    # projiziert exakt auf (64, 64)
+                    "head": (0, 0, 66),
+                    "feet": (0, 0, 36),
+                    "core": (8.8, 0, 49),
+                    "equip_left": (0, 19.5, 52),
+                    "equip_right": (0, -19.5, 52),
                 },
             },
             {
-                "id": "scout_head",
-                "type": "head",
-                "name": "Vireo Sensorkopf",
-                "tags": ["light", "sensor"],
-                "dirs": {
-                    "south": (SCOUT_HEAD_SOUTH, {"mount": (64, 42)}),
-                    "north": (SCOUT_HEAD_NORTH, {"mount": (64, 42)}),
-                    "east": (SCOUT_HEAD_EAST, {"mount": (64, 42)}),
-                },
+                "id": "scout_head", "type": "head", "name": "Vireo Sensorkopf",
+                "tags": ["light", "sensor"], "shapes": SCOUT_HEAD,
+                "anchors": {"mount": (0, 0, 66), "sensor": (7.1, 0, 70.7)},
             },
             {
-                "id": "scout_feet",
-                "type": "feet",
-                "name": "Vireo Sprintbeine",
-                "tags": ["light", "fast"],
-                "dirs": {
-                    "south": (SCOUT_FEET_SOUTH, {"mount": (64, 88), "ground": (64, 119)}),
-                    "north": (SCOUT_FEET_NORTH, {"mount": (64, 88), "ground": (64, 119)}),
-                    "east": (SCOUT_FEET_EAST, {"mount": (64, 88), "ground": (66, 119)}),
-                },
+                "id": "scout_feet", "type": "feet", "name": "Vireo Sprintbeine",
+                "tags": ["light", "fast"], "shapes": SCOUT_FEET,
+                "anchors": {"mount": (0, 0, 36), "ground": (1, 0, 0)},
             },
             {
-                "id": "scout_core",
-                "type": "core",
-                "name": "Vireo Impulskern",
-                "tags": ["core", "energy"],
-                "dirs": {
-                    "south": (SCOUT_CORE_SOUTH, {"mount": (64, 67)}),
-                    "north": (SCOUT_CORE_NORTH, {"mount": (64, 63)}),
-                    "east": (SCOUT_CORE_EAST, {"mount": (70, 67)}),
-                },
+                "id": "scout_core", "type": "core", "name": "Vireo Impulskern",
+                "tags": ["core", "energy"], "shapes": SCOUT_CORE,
+                "anchors": {"mount": (8.8, 0, 49)},
             },
             {
-                "id": "eq_pulse_blaster",
-                "type": "equipment",
-                "name": "Puls-Blaster",
-                "tags": ["weapon", "ranged"],
+                "id": "eq_pulse_blaster", "type": "equipment", "name": "Puls-Blaster",
+                "tags": ["weapon", "ranged"], "shapes": EQ_BLASTER,
                 "slots": ["equip_left", "equip_right"],
-                "dirs": {
-                    "south": (EQ_BLASTER_SOUTH, {"mount": (31, 64)}),
-                    "north": (EQ_BLASTER_NORTH, {"mount": (31, 64)}),
-                    "east": (EQ_BLASTER_EAST, {"mount": (78, 64)}),
-                },
+                "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
             },
             {
-                "id": "eq_deflector",
-                "type": "equipment",
-                "name": "Deflektor-Schild",
-                "tags": ["defense"],
+                "id": "eq_deflector", "type": "equipment", "name": "Deflektor-Schild",
+                "tags": ["defense"], "shapes": EQ_SHIELD,
                 "slots": ["equip_left", "equip_right"],
-                "dirs": {
-                    "south": (EQ_SHIELD_SOUTH, {"mount": (96, 64)}),
-                    "north": (EQ_SHIELD_NORTH, {"mount": (96, 64)}),
-                    "east": (EQ_SHIELD_EAST, {"mount": (76, 64)}),
-                },
+                "anchors": {"mount": (0, 0, 52)},
             },
         ],
     },
@@ -543,102 +528,44 @@ SETS = [
         "palette": JUGG_PALETTE,
         "parts": [
             {
-                "id": "jugg_body",
-                "type": "body",
-                "name": "Molok Chassis",
-                "tags": ["heavy"],
-                "dirs": {
-                    "south": (JUGG_BODY_SOUTH, {
-                        "mount": (64, 64),
-                        "head": (64, 44),
-                        "feet": (64, 91),
-                        "equip_left": (36, 62),
-                        "equip_right": (92, 62),
-                        "equip_shoulder": (64, 28),
-                        "core": (64, 72),
-                    }),
-                    "north": (JUGG_BODY_NORTH, {
-                        "mount": (64, 64),
-                        "head": (64, 44),
-                        "feet": (64, 91),
-                        "equip_left": (36, 62),
-                        "equip_right": (92, 62),
-                        "equip_shoulder": (64, 28),
-                        "core": (64, 74),
-                    }),
-                    "east": (JUGG_BODY_EAST, {
-                        "mount": (64, 64),
-                        "head": (64, 44),
-                        "feet": (64, 91),
-                        "equip_left": (54, 62),
-                        "equip_right": (76, 62),
-                        "equip_shoulder": (62, 28),
-                        "core": (72, 72),
-                    }),
-                },
-                "slot_z": {
-                    "south": {"equip_left": 30, "equip_right": 30, "equip_shoulder": 18},
-                    "north": {"equip_left": 14, "equip_right": 14, "equip_shoulder": 44},
-                    "east": {"equip_left": 14, "equip_right": 32, "equip_shoulder": 18},
-                    "west": {"equip_left": 32, "equip_right": 14, "equip_shoulder": 18},
+                "id": "jugg_body", "type": "body", "name": "Molok Chassis",
+                "tags": ["heavy"], "shapes": JUGG_BODY,
+                "anchors": {
+                    "mount": (0, 0, MOUNT_Z),
+                    "head": (0, 0, 64),
+                    "feet": (0, 0, 33),
+                    "core": (10.5, 0, 47),
+                    "equip_left": (0, 26.5, 49),
+                    "equip_right": (0, -26.5, 49),
+                    "equip_shoulder": (-5, 0, 61),
                 },
             },
             {
-                "id": "jugg_head",
-                "type": "head",
-                "name": "Molok Bunkerkopf",
-                "tags": ["heavy", "armored"],
-                "dirs": {
-                    "south": (JUGG_HEAD_SOUTH, {"mount": (64, 44)}),
-                    "north": (JUGG_HEAD_NORTH, {"mount": (64, 44)}),
-                    "east": (JUGG_HEAD_EAST, {"mount": (64, 44)}),
-                },
+                "id": "jugg_head", "type": "head", "name": "Molok Bunkerkopf",
+                "tags": ["heavy", "armored"], "shapes": JUGG_HEAD,
+                "anchors": {"mount": (0, 0, 64), "sensor": (9.2, 0, 68.7)},
             },
             {
-                "id": "jugg_feet",
-                "type": "feet",
-                "name": "Molok Standbeine",
-                "tags": ["heavy", "slow"],
-                "dirs": {
-                    "south": (JUGG_FEET_SOUTH, {"mount": (64, 91), "ground": (64, 121)}),
-                    "north": (JUGG_FEET_NORTH, {"mount": (64, 91), "ground": (64, 121)}),
-                    "east": (JUGG_FEET_EAST, {"mount": (64, 91), "ground": (66, 121)}),
-                },
+                "id": "jugg_feet", "type": "feet", "name": "Molok Standbeine",
+                "tags": ["heavy", "slow"], "shapes": JUGG_FEET,
+                "anchors": {"mount": (0, 0, 33), "ground": (1, 0, 0)},
             },
             {
-                "id": "jugg_core",
-                "type": "core",
-                "name": "Molok Fusionskern",
-                "tags": ["core", "fusion"],
-                "dirs": {
-                    "south": (JUGG_CORE_SOUTH, {"mount": (64, 72)}),
-                    "north": (JUGG_CORE_NORTH, {"mount": (64, 74)}),
-                    "east": (JUGG_CORE_EAST, {"mount": (72, 72)}),
-                },
+                "id": "jugg_core", "type": "core", "name": "Molok Fusionskern",
+                "tags": ["core", "fusion"], "shapes": JUGG_CORE,
+                "anchors": {"mount": (10.5, 0, 47)},
             },
             {
-                "id": "eq_siege_cannon",
-                "type": "equipment",
-                "name": "Belagerungskanone",
-                "tags": ["weapon", "heavy"],
-                "slots": ["equip_left", "equip_right"],
-                "dirs": {
-                    "south": (EQ_CANNON_SOUTH, {"mount": (26, 64)}),
-                    "north": (EQ_CANNON_NORTH, {"mount": (26, 64)}),
-                    "east": (EQ_CANNON_EAST, {"mount": (82, 64)}),
-                },
+                "id": "eq_siege_cannon", "type": "equipment",
+                "name": "Belagerungskanone", "tags": ["weapon", "heavy"],
+                "shapes": EQ_CANNON, "slots": ["equip_left", "equip_right"],
+                "anchors": {"mount": (0, 0, 49), "muzzle": (21.3, 0, 35)},
             },
             {
-                "id": "eq_drone_pod",
-                "type": "equipment",
-                "name": "Drohnen-Pod",
-                "tags": ["support", "shoulder"],
+                "id": "eq_drone_pod", "type": "equipment", "name": "Drohnen-Pod",
+                "tags": ["support", "shoulder"], "shapes": EQ_DRONE_POD,
                 "slots": ["equip_shoulder"],
-                "dirs": {
-                    "south": (EQ_DRONEPOD_SOUTH, {"mount": (64, 28)}),
-                    "north": (EQ_DRONEPOD_NORTH, {"mount": (64, 28)}),
-                    "east": (EQ_DRONEPOD_EAST, {"mount": (63, 28)}),
-                },
+                "anchors": {"mount": (0, 0, 61)},
             },
         ],
     },
@@ -649,23 +576,47 @@ SVG_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" 
      data-part-id="{pid}" data-type="{ptype}" data-direction="{direction}">
   <title>{name} ({direction})</title>
   <!--
-    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung {direction}.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
   -->
 {body}
 </svg>
 """
 
 
+def slot_draw_order(part: dict, direction: str) -> dict:
+    """
+    Zeichenebene je Slot -- direkt aus der Kameratiefe des Ankers.
+
+    Die Tiefe IST die Zeichenreihenfolge: was naeher an der Kamera liegt, wird
+    spaeter gezeichnet. Damit stimmt die Ueberdeckung in allen vier Richtungen
+    von selbst, ohne handgepflegte Tabellen. Beispiele:
+
+      * Sued: der linke Arm liegt vorn, der rechte hinter dem Torso.
+      * Nord: genau umgekehrt -- und der Schulterpod schiebt sich vor den Kopf,
+        weil er dann das kameranaechste Teil ist.
+    """
+    order = {}
+    for name, local in part["anchors"].items():
+        if name == "mount":
+            continue
+        order[name] = round(closeness(to_world(local, direction)), 1)
+    return order
+
+
 def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
-               inner: str, anchors: dict, palette: dict) -> None:
+               palette: dict) -> None:
     pid = part["id"]
     stem = f"{pid}_{direction}"
 
     svg = SVG_TEMPLATE.format(
         pid=pid, ptype=part["type"], direction=direction,
-        name=part.get("name", pid), body=inner,
+        name=part.get("name", pid), body=render(part["shapes"], direction),
     )
     (set_dir / f"{stem}.svg").write_text(svg, encoding="utf-8")
 
@@ -677,17 +628,22 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
         "direction": direction,
         "svg": f"{stem}.svg",
         "view_box": [0, 0, 128, 128],
-        "z_index": part.get("z_index", DEFAULT_Z.get(part["type"], 20)),
+        # Fuer den Koerper ist die eigene Ebene ebenfalls seine Kameratiefe --
+        # so liegt er in derselben Skala wie die slot_z-Werte darunter. Alle
+        # anderen Teile behalten einen Standardwert fuer die Einzelvorschau,
+        # im zusammengebauten Bot gewinnt ohnehin slot_z des Koerpers.
+        "z_index": (round(closeness(to_world(TORSO_REF, direction)), 1)
+                    if part["type"] == "body"
+                    else part.get("z_index", DEFAULT_Z.get(part["type"], 20))),
         "anchors": [
-            {"name": name, "x": x, "y": y} for name, (x, y) in anchors.items()
+            {"name": name, **dict(zip(("x", "y"), project(local, direction)))}
+            for name, local in part["anchors"].items()
         ],
         "color_scheme": dict(palette),
         "tags": part.get("tags", []),
     }
     if part["type"] == "body":
-        slot_z = part.get("slot_z", {}).get(direction)
-        if slot_z:
-            meta["slot_z"] = slot_z
+        meta["slot_z"] = slot_draw_order(part, direction)
     if "slots" in part:
         meta["slots"] = part["slots"]
 
@@ -704,31 +660,21 @@ def main() -> None:
         set_dir.mkdir(parents=True)
 
         (set_dir / "set.json").write_text(
-            json.dumps(
-                {
-                    "id": spec["id"],
-                    "name": spec["name"],
-                    "description": spec["description"],
-                    "palette": spec["palette"],
-                },
-                indent=2, ensure_ascii=False,
-            ) + "\n",
+            json.dumps({
+                "id": spec["id"], "name": spec["name"],
+                "description": spec["description"], "palette": spec["palette"],
+            }, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
 
         for part in spec["parts"]:
-            dirs = dict(part["dirs"])
-            if "west" not in dirs and "east" in dirs:
-                east_inner, east_anchors = dirs["east"]
-                dirs["west"] = (mirror_svg(east_inner), mirrored_anchors(east_anchors))
             for direction in DIRECTIONS:
-                if direction not in dirs:
-                    continue
-                inner, anchors = dirs[direction]
-                write_part(set_dir, spec["id"], part, direction, inner, anchors,
-                           spec["palette"])
+                write_part(set_dir, spec["id"], part, direction, spec["palette"])
 
         print(f"[ok] {spec['dir']}: {len(list(set_dir.glob('*.svg')))} SVGs geschrieben")
+
+    print(f"\nIso-Kamera 45 Grad  |  Bodenfeld {2 * TILE_HALF_W:.0f} x "
+          f"{2 * TILE_HALF_H:.0f} px um ({CENTER_X:.0f}, {GROUND_Y:.0f})")
 
 
 if __name__ == "__main__":

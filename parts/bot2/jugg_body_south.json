@@ -11,60 +11,63 @@
     128,
     128
   ],
-  "z_index": 20,
+  "z_index": 50.0,
   "anchors": [
     {
       "name": "mount",
-      "x": 64,
-      "y": 64
+      "x": 64.0,
+      "y": 64.0
     },
     {
       "name": "head",
-      "x": 64,
-      "y": 44
+      "x": 64.0,
+      "y": 34.91
     },
     {
       "name": "feet",
-      "x": 64,
-      "y": 91
-    },
-    {
-      "name": "equip_left",
-      "x": 36,
-      "y": 62
-    },
-    {
-      "name": "equip_right",
-      "x": 92,
-      "y": 62
-    },
-    {
-      "name": "equip_shoulder",
-      "x": 64,
-      "y": 28
+      "x": 64.0,
+      "y": 64.5
     },
     {
       "name": "core",
-      "x": 64,
-      "y": 72
+      "x": 53.98,
+      "y": 58.22
+    },
+    {
+      "name": "equip_left",
+      "x": 89.3,
+      "y": 67.11
+    },
+    {
+      "name": "equip_right",
+      "x": 38.7,
+      "y": 31.34
+    },
+    {
+      "name": "equip_shoulder",
+      "x": 68.77,
+      "y": 34.39
     }
   ],
   "color_scheme": {
-    "plate": "#3a2a33",
-    "plate_dark": "#20151c",
-    "plate_light": "#57404c",
+    "plate": "#3d2b35",
+    "plate_dark": "#22161d",
+    "plate_light": "#5d4551",
     "metal": "#7d6b78",
     "accent": "#ff8a3d",
     "glow": "#ffd447",
     "visor": "#ffb057",
-    "outline": "#120b10"
+    "outline": "#100a0e"
   },
   "tags": [
     "heavy"
   ],
   "slot_z": {
-    "equip_left": 30,
-    "equip_right": 30,
-    "equip_shoulder": 18
+    "head": 64,
+    "feet": 33,
+    "core": 57.5,
+    "equip_left": 75.5,
+    "equip_right": 22.5,
+    "equip_shoulder": 56
   }
 }

@@ -384,8 +384,20 @@ textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 1
    Sonderfall im Code.
    ========================================================================== */
 
+/* -- Iso-Kamera: 45 Grad von oben ------------------------------------------
+   Die Teile sind bereits projiziert (siehe tools/build_sample_parts.py), das
+   Tool rechnet also nur noch in Bildschirmkoordinaten. Diese Konstanten
+   beschreiben das Bodenfeld, damit die Hilfslinien zur Grafik passen:
+
+     x = 64 + lat                     seitlich, unverzerrt
+     y = 96 - cos(45 Grad)*(t + h)    Tiefe und Hoehe -- bei 45 Grad identisch
+
+   Ein um 45 Grad gedrehtes Quadrat wird damit zur Raute im Verhaeltnis
+   sqrt(2):1, also 76 x 54 px.                                              */
 const CANVAS_ORIGIN = { x: 64, y: 64 };  // hier landet der "mount" des Bodys
-const GROUND_Y = 120;
+const GROUND_Y = 96;                     // Bildschirm-y des Feldmittelpunkts
+const TILE_HALF_W = 38;
+const TILE_HALF_H = TILE_HALF_W * Math.SQRT1_2;   // 26.87
 
 const DIR_LABEL  = { north: "Nord", west: "West", east: "Ost", south: "Sued" };
 const TYPE_LABEL = {
@@ -541,15 +553,19 @@ function newEntry(partId) {
 }
 
 /**
- * Ausruestung ist meist nur fuer EINE Seite gezeichnet. Landet so ein Teil im
- * Slot der Gegenseite, wird es automatisch gespiegelt -- das spart ein zweites
- * SVG pro Waffe. Nur in der Front-/Rueckansicht sinnvoll: im Profil zeigen
- * beide Arme in dieselbe Richtung, dort waere Spiegeln falsch.
- * Teile koennen das per "no_auto_flip": true in der JSON abschalten.
+ * Optionales Spiegeln fuer Ausruestung, die nur fuer EINE Seite gezeichnet ist.
+ *
+ * Standardmaessig AUS: in der Iso-Ansicht ist Spiegeln auf dem Bildschirm
+ * geometrisch falsch -- die Beleuchtung haengt am Bildschirm, nicht am Bot,
+ * und eine gespiegelte Kiste bekaeme ihre Lichtseite auf die falsche Flanke.
+ * Der saubere Weg ist, Waffen symmetrisch um ihren eigenen Anker zu
+ * modellieren (so wie die Beispielteile). Wer flache, frontal gezeichnete
+ * Teile verwendet, aktiviert das Verhalten per "auto_flip": true in der JSON.
+ * Der Schalter "Spiegeln" in der Feinjustierung bleibt davon unberuehrt.
  */
 function shouldAutoFlip(part, slotName) {
   if (!part || !part.type.startsWith("equipment")) return false;
-  if (part.no_auto_flip) return false;
+  if (!part.auto_flip) return false;
   if (state.direction !== "south" && state.direction !== "north") return false;
 
   const bodyEntry = state.loadout.body;
@@ -696,10 +712,21 @@ function renderGuides() {
     parts.push(`<path d="M64 0V128M0 64H128" stroke="#2de2e6" stroke-width="0.4" opacity="0.35" fill="none"/>`);
   }
   if (state.view.ground) {
-    // Tile-Raute als Standflaeche -- Orientierung fuer die spaetere Tactics-Map.
-    parts.push(`<path d="M64 ${GROUND_Y - 12}L112 ${GROUND_Y}L64 ${GROUND_Y + 12}L16 ${GROUND_Y}Z"
-      fill="#2de2e6" opacity="0.07" stroke="#2de2e6" stroke-opacity="0.3" stroke-width="0.5"/>`);
-    parts.push(`<path d="M0 ${GROUND_Y}H128" stroke="#ff2d95" stroke-width="0.4" opacity="0.35"/>`);
+    // Bodenfeld der Iso-Map: Raute im Verhaeltnis sqrt(2):1 bei 45 Grad Kamera.
+    const w = TILE_HALF_W, h = TILE_HALF_H;
+    const diamond = (cx, cy, k = 1) =>
+      `M${cx} ${cy - h * k}L${cx + w * k} ${cy}L${cx} ${cy + h * k}L${cx - w * k} ${cy}Z`;
+
+    // Nachbarfelder andeuten -- macht die Blickrichtung sofort lesbar.
+    for (const [dx, dy] of [[-w, -h], [w, -h], [-w, h], [w, h]]) {
+      parts.push(`<path d="${diamond(64 + dx, GROUND_Y + dy)}" fill="none"
+        stroke="#2de2e6" stroke-opacity="0.12" stroke-width="0.4"/>`);
+    }
+    parts.push(`<path d="${diamond(64, GROUND_Y)}" fill="#2de2e6" opacity="0.08"
+      stroke="#2de2e6" stroke-opacity="0.38" stroke-width="0.6"/>`);
+    // Blickrichtung: Pfeil zur Vorderkante des Feldes.
+    parts.push(`<path d="M64 ${GROUND_Y + h * 0.45}L64 ${GROUND_Y + h * 0.92}"
+      stroke="#ff2d95" stroke-width="0.7" opacity="0.5"/>`);
   }
   el("layer-guides").innerHTML = parts.join("");
 }
@@ -1428,10 +1455,13 @@ function wireEvents() {
         direction: el("imp-dir").value,
         view_box: [0, 0, 128, 128],
         color_scheme: { ...state.palette },
+        // Platzhalter-Anker in der Groessenordnung der Beispielteile --
+        // anschliessend auf der Buehne per "Anker bearbeiten" zurechtziehen.
         anchors: el("imp-type").value === "body"
-          ? [{ name: "mount", x: 64, y: 64 }, { name: "head", x: 64, y: 42 },
-             { name: "feet", x: 64, y: 88 }, { name: "core", x: 64, y: 67 },
-             { name: "equip_left", x: 40, y: 62 }, { name: "equip_right", x: 88, y: 62 }]
+          ? [{ name: "mount", x: 64, y: 64 }, { name: "head", x: 64, y: 33 },
+             { name: "feet", x: 64, y: 62 }, { name: "core", x: 55.6, y: 55.2 },
+             { name: "equip_left", x: 82.6, y: 59.5 },
+             { name: "equip_right", x: 45.4, y: 33.2 }]
           : [{ name: "mount", x: 64, y: 64 }],
       },
     };

@@ -15,19 +15,24 @@
   "anchors": [
     {
       "name": "mount",
-      "x": 26,
-      "y": 64
+      "x": 64.0,
+      "y": 49.22
+    },
+    {
+      "name": "muzzle",
+      "x": 84.33,
+      "y": 48.21
     }
   ],
   "color_scheme": {
-    "plate": "#3a2a33",
-    "plate_dark": "#20151c",
-    "plate_light": "#57404c",
+    "plate": "#3d2b35",
+    "plate_dark": "#22161d",
+    "plate_light": "#5d4551",
     "metal": "#7d6b78",
     "accent": "#ff8a3d",
     "glow": "#ffd447",
     "visor": "#ffb057",
-    "outline": "#120b10"
+    "outline": "#100a0e"
   },
   "tags": [
     "weapon",

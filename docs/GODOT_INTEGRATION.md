@@ -29,13 +29,19 @@ Szene zusammengesetzt.
 
 ```
 Drone (Node2D)
-├── Feet   (Sprite2D)   z_index 10
-├── Body   (Sprite2D)   z_index 20
-├── Core   (Sprite2D)   z_index 26
-├── EquipL (Sprite2D)   z_index 30
-├── EquipR (Sprite2D)   z_index 30
-└── Head   (Sprite2D)   z_index 40
+├── Feet   (Sprite2D)
+├── Body   (Sprite2D)
+├── Core   (Sprite2D)
+├── EquipL (Sprite2D)
+├── EquipR (Sprite2D)
+└── Head   (Sprite2D)
 ```
+
+Die `z_index`-Werte stehen **pro Richtung** in `slot_z` des Koerper-Teils und
+sind nichts anderes als die Kameratiefe des jeweiligen Ankers. Sie muessen beim
+Richtungswechsel mitgesetzt werden – dann stimmt die Ueberdeckung von selbst
+(in der Nordansicht rutscht die Ausruestung hinter den Koerper, ein
+Schulterpod vor den Kopf).
 
 **Vorteile**
 
@@ -52,8 +58,11 @@ Drone (Node2D)
   Offsets aus der JSON sind dann gar nicht noetig.
 * `Sprite2D.centered = false` und alle Teile auf Position `(0,0)`. Die
   Anker-Mathematik steckt bereits in der Grafik.
-* `z_index` je Richtung setzen: in der Nordansicht liegt Ausruestung hinter dem
-  Koerper. Die Werte stehen in `slot_z` des Koerper-Teils.
+* `z_index` je Richtung aus `slot_z` uebernehmen (siehe oben). Wer das
+  vergisst, bekommt Waffen, die in der Nordansicht vor dem Ruecken schweben.
+* Die Perspektive ist isometrisch (Kamera 45 Grad, Bodenfeld als Raute im
+  Verhaeltnis sqrt(2):1). Ein TileMap mit Modus *Isometric* und passendem
+  Zellverhaeltnis deckt sich mit der Raute, die das Werkzeug einblendet.
 
 ### Farben zur Laufzeit
 
@@ -113,7 +122,7 @@ zusammengesetzt ist:
   "set": "bot2",
   "direction": "south",
   "origin": { "x": 64, "y": 64 },
-  "ground_y": 120,
+  "ground_y": 96,                  // Mittelpunkt des Bodenfeldes im Sprite
   "palette": { "plate": "#3a2a33", "accent": "#ff8a3d", "…": "…" },
   "slots": {
     "body":       { "part_id": "jugg_body",       "offset": {"x":0,"y":0}, "scale":1, "rotate":0, "flip":false, "z":null },

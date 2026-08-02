@@ -2,15 +2,21 @@
      data-part-id="jugg_core" data-type="core" data-direction="south">
   <title>Molok Fusionskern (south)</title>
   <!--
-    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
   -->
-<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-
-  <circle cx="64" cy="72" r="8.5" fill="var(--c-plate-dark)"/>
-  <path d="M64 65 L70 69 V76 L64 80 L58 76 V69 Z" fill="var(--c-glow)" stroke="none"/>
-  <path d="M64 65 L70 69 V76 L64 80 L58 76 V69 Z" opacity="0.9"/>
-
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M58.75 62.27 L58.35 59.98 L57.21 57.47 L55.51 55.13 L53.5 53.31 L51.49 52.29 L49.79 52.22 L48.65 53.12 L48.25 54.85 L48.65 57.14 L49.79 59.65 L51.49 61.99 L53.5 63.81 L55.51 64.83 L57.21 64.9 L58.35 64.0 Z" fill="var(--c-plate-dark)"/>
+  <path d="M49.39 59.94 L56.27 64.8 L56.27 58.12 L49.39 53.26 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M50.92 62.93 L54.74 65.63 L54.74 55.13 L50.92 52.43 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M54.74 65.63 L55.12 65.36 L55.12 54.86 L54.74 55.13 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M49.78 52.99 L49.39 53.26 L56.27 58.12 L56.65 57.85 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M56.27 64.8 L56.65 64.53 L56.65 57.85 L56.27 58.12 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M51.3 52.16 L50.92 52.43 L54.74 55.13 L55.12 54.86 Z" fill="var(--c-glow)" stroke="none"/>
 </g>
 </svg>

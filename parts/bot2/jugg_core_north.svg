@@ -2,14 +2,20 @@
      data-part-id="jugg_core" data-type="core" data-direction="north">
   <title>Molok Fusionskern (north)</title>
   <!--
-    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
   -->
-<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-
-  <rect x="54" y="64" width="20" height="16" rx="3" fill="var(--c-plate-dark)"/>
-  <path d="M58 69 H70 M58 75 H70" stroke="var(--c-glow)" stroke-width="2.4"/>
-
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M71.35 44.42 L78.22 49.28 L78.22 42.6 L71.35 37.74 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M72.88 47.41 L76.7 50.11 L76.7 39.61 L72.88 36.91 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M76.7 50.11 L77.08 49.84 L77.08 39.34 L76.7 39.61 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M78.22 42.6 L78.61 42.33 L71.73 37.47 L71.35 37.74 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M78.22 49.28 L78.61 49.01 L78.61 42.33 L78.22 42.6 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M76.7 39.61 L77.08 39.34 L73.26 36.64 L72.88 36.91 Z" fill="var(--c-glow)" stroke="none"/>
 </g>
 </svg>

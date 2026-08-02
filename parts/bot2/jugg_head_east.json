@@ -15,19 +15,24 @@
   "anchors": [
     {
       "name": "mount",
-      "x": 64,
-      "y": 44
+      "x": 64.0,
+      "y": 34.91
+    },
+    {
+      "name": "sensor",
+      "x": 72.78,
+      "y": 36.63
     }
   ],
   "color_scheme": {
-    "plate": "#3a2a33",
-    "plate_dark": "#20151c",
-    "plate_light": "#57404c",
+    "plate": "#3d2b35",
+    "plate_dark": "#22161d",
+    "plate_light": "#5d4551",
     "metal": "#7d6b78",
     "accent": "#ff8a3d",
     "glow": "#ffd447",
     "visor": "#ffb057",
-    "outline": "#120b10"
+    "outline": "#100a0e"
   },
   "tags": [
     "heavy",
