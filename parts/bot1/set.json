@@ -1,0 +1,15 @@
+{
+  "id": "bot1",
+  "name": "RX-Vireo // Scout",
+  "description": "Leichter Aufklaerer-Drone. Zwei Ausruestungsanker.",
+  "palette": {
+    "plate": "#232a3d",
+    "plate_dark": "#151a29",
+    "plate_light": "#3a4560",
+    "metal": "#5b6785",
+    "accent": "#2de2e6",
+    "glow": "#ff2d95",
+    "visor": "#7cf9ff",
+    "outline": "#0a0d16"
+  }
+}

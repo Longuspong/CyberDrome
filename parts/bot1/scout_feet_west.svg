@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="scout_feet" data-type="feet" data-direction="west">
+  <title>Vireo Sprintbeine (west)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<!-- gespiegelt aus der east-Variante -->
+<g transform="translate(128,0) scale(-1,1)">
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M58 88 H68 L66 104 L59 104 Z" fill="var(--c-plate-dark)"/>
+  <path d="M62 88 H72 L71 104 L64 104 Z" fill="var(--c-plate)"/>
+  <circle cx="67" cy="105" r="4.2" fill="var(--c-metal)"/>
+  <path d="M58 110 H76 L78 118 H55 Z" fill="var(--c-plate)"/>
+  <path d="M56 116 H77" stroke="var(--c-accent)" stroke-width="1.6"/>
+
+</g>
+</g>
+</svg>

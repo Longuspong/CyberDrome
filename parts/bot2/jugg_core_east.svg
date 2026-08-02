@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="jugg_core" data-type="core" data-direction="east">
+  <title>Molok Fusionskern (east)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <circle cx="72" cy="72" r="7" fill="var(--c-plate-dark)"/>
+  <path d="M72 66 L77 70 V76 L72 79 L67 76 V70 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M72 66 L77 70 V76 L72 79 L67 76 V70 Z" opacity="0.9"/>
+
+</g>
+</svg>

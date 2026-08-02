@@ -1,0 +1,40 @@
+{
+  "id": "eq_siege_cannon",
+  "set": "bot2",
+  "type": "equipment",
+  "name": "Belagerungskanone",
+  "direction": "south",
+  "svg": "eq_siege_cannon_south.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 30,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 26,
+      "y": 64
+    }
+  ],
+  "color_scheme": {
+    "plate": "#3a2a33",
+    "plate_dark": "#20151c",
+    "plate_light": "#57404c",
+    "metal": "#7d6b78",
+    "accent": "#ff8a3d",
+    "glow": "#ffd447",
+    "visor": "#ffb057",
+    "outline": "#120b10"
+  },
+  "tags": [
+    "weapon",
+    "heavy"
+  ],
+  "slots": [
+    "equip_left",
+    "equip_right"
+  ]
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_siege_cannon" data-type="equipment" data-direction="east">
+  <title>Belagerungskanone (east)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <rect x="76" y="56" width="12" height="15" rx="3" fill="var(--c-metal)"/>
+  <path d="M80 56 H108 L110 72 H80 Z" fill="var(--c-plate)"/>
+  <rect x="108" y="59" width="10" height="9" rx="2" fill="var(--c-plate-dark)"/>
+  <circle cx="115" cy="63.5" r="2.6" fill="var(--c-glow)" stroke="none"/>
+  <path d="M84 68 H106" stroke="var(--c-accent)" stroke-width="2"/>
+
+</g>
+</svg>

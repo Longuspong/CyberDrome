@@ -1,0 +1,25 @@
+# Exportierte Bots -- Arbeitsergebnisse der Werkstatt, kein Quellmaterial.
+# Ein Build, der ins Spiel soll, wird bewusst mit -f hinzugefuegt.
+builds/*
+!builds/.gitkeep
+
+# Im Tool gespeicherte Farbpaletten (lokale Arbeitsstaende)
+palettes.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Godot (kommt spaeter)
+.godot/
+.import/
+export_presets.cfg
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp

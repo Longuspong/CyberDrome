@@ -1,0 +1,36 @@
+{
+  "id": "jugg_head",
+  "set": "bot2",
+  "type": "head",
+  "name": "Molok Bunkerkopf",
+  "direction": "west",
+  "svg": "jugg_head_west.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 40,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64,
+      "y": 44
+    }
+  ],
+  "color_scheme": {
+    "plate": "#3a2a33",
+    "plate_dark": "#20151c",
+    "plate_light": "#57404c",
+    "metal": "#7d6b78",
+    "accent": "#ff8a3d",
+    "glow": "#ffd447",
+    "visor": "#ffb057",
+    "outline": "#120b10"
+  },
+  "tags": [
+    "heavy",
+    "armored"
+  ]
+}

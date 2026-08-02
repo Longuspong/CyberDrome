@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="scout_head" data-type="head" data-direction="west">
+  <title>Vireo Sensorkopf (west)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<!-- gespiegelt aus der east-Variante -->
+<g transform="translate(128,0) scale(-1,1)">
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M64 12 V22" stroke="var(--c-metal)" stroke-width="2"/>
+  <circle cx="64" cy="11" r="2.6" fill="var(--c-glow)" stroke="none"/>
+  <path d="M54 25 Q64 17 74 25 L75 38 Q63 43 53 38 Z" fill="var(--c-plate)"/>
+  <path d="M64 26 Q71 24 74 28 L74 34 Q69 36 64 35 Z" fill="var(--c-visor)" stroke="none"/>
+  <path d="M64 26 Q71 24 74 28 L74 34 Q69 36 64 35 Z"/>
+  <path d="M53 38 H75 L73 43 H55 Z" fill="var(--c-metal)"/>
+
+</g>
+</g>
+</svg>

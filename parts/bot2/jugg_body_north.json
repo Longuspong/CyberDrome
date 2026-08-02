@@ -1,0 +1,70 @@
+{
+  "id": "jugg_body",
+  "set": "bot2",
+  "type": "body",
+  "name": "Molok Chassis",
+  "direction": "north",
+  "svg": "jugg_body_north.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 20,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64,
+      "y": 64
+    },
+    {
+      "name": "head",
+      "x": 64,
+      "y": 44
+    },
+    {
+      "name": "feet",
+      "x": 64,
+      "y": 91
+    },
+    {
+      "name": "equip_left",
+      "x": 36,
+      "y": 62
+    },
+    {
+      "name": "equip_right",
+      "x": 92,
+      "y": 62
+    },
+    {
+      "name": "equip_shoulder",
+      "x": 64,
+      "y": 28
+    },
+    {
+      "name": "core",
+      "x": 64,
+      "y": 74
+    }
+  ],
+  "color_scheme": {
+    "plate": "#3a2a33",
+    "plate_dark": "#20151c",
+    "plate_light": "#57404c",
+    "metal": "#7d6b78",
+    "accent": "#ff8a3d",
+    "glow": "#ffd447",
+    "visor": "#ffb057",
+    "outline": "#120b10"
+  },
+  "tags": [
+    "heavy"
+  ],
+  "slot_z": {
+    "equip_left": 14,
+    "equip_right": 14,
+    "equip_shoulder": 44
+  }
+}

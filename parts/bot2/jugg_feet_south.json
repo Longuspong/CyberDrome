@@ -1,0 +1,41 @@
+{
+  "id": "jugg_feet",
+  "set": "bot2",
+  "type": "feet",
+  "name": "Molok Standbeine",
+  "direction": "south",
+  "svg": "jugg_feet_south.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 10,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64,
+      "y": 91
+    },
+    {
+      "name": "ground",
+      "x": 64,
+      "y": 121
+    }
+  ],
+  "color_scheme": {
+    "plate": "#3a2a33",
+    "plate_dark": "#20151c",
+    "plate_light": "#57404c",
+    "metal": "#7d6b78",
+    "accent": "#ff8a3d",
+    "glow": "#ffd447",
+    "visor": "#ffb057",
+    "outline": "#120b10"
+  },
+  "tags": [
+    "heavy",
+    "slow"
+  ]
+}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_deflector" data-type="equipment" data-direction="north">
+  <title>Deflektor-Schild (north)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <rect x="92" y="60" width="8" height="11" rx="2.5" fill="var(--c-metal)"/>
+  <path d="M98 48 Q114 52 114 66 Q114 80 98 84 Z" fill="var(--c-plate-dark)"/>
+  <path d="M102 56 H110 M102 66 H110 M102 76 H110" stroke="var(--c-plate-light)" stroke-width="1.6"/>
+
+</g>
+</svg>

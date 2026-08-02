@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CyberDrome // SVG-Werkstatt</title>
+<style>
+/* =========================================================================
+   CyberDrome SVG-Werkstatt -- Oberflaeche
+   Alles inline, keine externen Ressourcen: das Tool laeuft komplett offline.
+   ========================================================================= */
+:root {
+  --bg:        #0b0e17;
+  --bg-panel:  #121728;
+  --bg-raised: #1a2036;
+  --bg-input:  #0e1220;
+  --line:      #263049;
+  --text:      #dbe3f4;
+  --text-dim:  #7f8cab;
+  --neon:      #2de2e6;
+  --neon-2:    #ff2d95;
+  --warn:      #ffb347;
+  --ok:        #58e07a;
+  --radius:    8px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+button, select, input, textarea { font: inherit; color: inherit; }
+h1, h2, h3, h4 { margin: 0; font-weight: 600; }
+
+/* ---- Kopfzeile --------------------------------------------------------- */
+header {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--bg-panel);
+  border-bottom: 1px solid var(--line); flex: 0 0 auto;
+}
+.logo { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
+.logo b { color: var(--neon); }
+.logo span { color: var(--neon-2); }
+.spacer { flex: 1 1 auto; }
+
+/* ---- Richtungs-Pad ----------------------------------------------------- */
+.dirpad { display: grid; grid-template-columns: repeat(3, 30px); grid-template-rows: repeat(2, 26px); gap: 3px; }
+.dirpad button { padding: 0; font-size: 11px; }
+.dirpad .d-north { grid-column: 2; grid-row: 1; }
+.dirpad .d-west  { grid-column: 1; grid-row: 2; }
+.dirpad .d-south { grid-column: 2; grid-row: 2; }
+.dirpad .d-east  { grid-column: 3; grid-row: 2; }
+
+/* ---- Steuerelemente ---------------------------------------------------- */
+button {
+  background: var(--bg-raised); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 6px 11px; cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+button:hover:not(:disabled) { border-color: var(--neon); color: #fff; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button.on { background: var(--neon); border-color: var(--neon); color: #04121a; font-weight: 600; }
+button.primary { background: linear-gradient(135deg, var(--neon), #0fb2c8); border-color: transparent; color: #04121a; font-weight: 600; }
+button.danger:hover { border-color: var(--neon-2); color: var(--neon-2); }
+button.tiny { padding: 3px 7px; font-size: 11px; }
+
+select, input[type=text], input[type=number], textarea {
+  background: var(--bg-input); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 5px 8px; width: 100%;
+}
+select:focus, input:focus, textarea:focus { outline: none; border-color: var(--neon); }
+input[type=range] { width: 100%; accent-color: var(--neon); }
+input[type=color] {
+  width: 100%; height: 26px; padding: 0; border: 1px solid var(--line);
+  border-radius: 5px; background: var(--bg-input); cursor: pointer;
+}
+label.field { display: block; margin-bottom: 8px; }
+label.field > span { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 3px; }
+.row { display: flex; gap: 6px; align-items: center; }
+.row > * { min-width: 0; }
+
+/* ---- Layout ------------------------------------------------------------ */
+main { flex: 1 1 auto; display: grid; grid-template-columns: 272px 1fr 300px; min-height: 0; }
+aside { background: var(--bg-panel); overflow-y: auto; display: flex; flex-direction: column; }
+aside.left  { border-right: 1px solid var(--line); }
+aside.right { border-left: 1px solid var(--line); }
+.panel { padding: 12px; border-bottom: 1px solid var(--line); }
+.panel > h3 {
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 9px;
+}
+
+/* ---- Bibliothek -------------------------------------------------------- */
+.lib-group { margin-bottom: 14px; }
+.lib-group > h4 {
+  font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--neon); margin-bottom: 6px; padding-bottom: 3px;
+  border-bottom: 1px solid var(--line);
+}
+.lib-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.lib-card {
+  background: var(--bg-raised); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 4px; cursor: grab;
+  text-align: center; position: relative; transition: border-color .12s;
+}
+.lib-card:hover { border-color: var(--neon); }
+.lib-card.active { border-color: var(--neon); box-shadow: 0 0 0 1px var(--neon) inset; }
+.lib-card.missing { opacity: .35; cursor: not-allowed; }
+.lib-card svg { display: block; width: 100%; height: auto; }
+.lib-card .cap {
+  font-size: 9.5px; color: var(--text-dim); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lib-card .slotchips {
+  position: absolute; top: 2px; right: 3px; font-size: 8px;
+  color: var(--neon-2); letter-spacing: .05em;
+}
+
+/* ---- Canvas ------------------------------------------------------------ */
+.stage {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(circle at 50% 40%, #16203a 0%, #070a12 70%);
+  min-width: 0; overflow: hidden;
+}
+#canvas {
+  width: min(78vh, 100%); height: auto; max-height: 92%;
+  image-rendering: auto; touch-action: none;
+}
+.stage.dropping::after {
+  content: ""; position: absolute; inset: 10px;
+  border: 2px dashed var(--neon); border-radius: 12px; pointer-events: none;
+}
+.stage-hud {
+  position: absolute; left: 12px; top: 12px; display: flex; gap: 6px; flex-wrap: wrap;
+  max-width: calc(100% - 24px);
+}
+.stage-foot {
+  position: absolute; left: 12px; bottom: 10px; right: 12px;
+  font-size: 11px; color: var(--text-dim);
+  display: flex; gap: 14px; justify-content: space-between; pointer-events: none;
+}
+.anchor-handle { cursor: grab; }
+.anchor-handle:active { cursor: grabbing; }
+#layer-bot > g { cursor: pointer; }
+#layer-bot > g[data-selected] { filter: drop-shadow(0 0 1.5px var(--neon)) drop-shadow(0 0 3px var(--neon)); }
+
+/* ---- Slot-Liste -------------------------------------------------------- */
+.slot {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 7px 8px; margin-bottom: 6px; background: var(--bg-raised);
+  cursor: pointer;
+}
+.slot.sel { border-color: var(--neon); }
+.slot.empty { border-style: dashed; }
+.slot .slot-head { display: flex; align-items: center; gap: 6px; }
+.slot .slot-name {
+  font-size: 10px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--text-dim); flex: 1 1 auto;
+}
+.slot .slot-part { font-size: 12.5px; }
+.slot .slot-part.none { color: var(--text-dim); font-style: italic; }
+.slot .warn { color: var(--warn); font-size: 11px; }
+
+/* ---- Palette ----------------------------------------------------------- */
+.palette-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.swatch-label { font-size: 10px; color: var(--text-dim); }
+
+/* ---- Sonstiges --------------------------------------------------------- */
+.hint { font-size: 11px; color: var(--text-dim); line-height: 1.45; }
+.kbd {
+  background: var(--bg-input); border: 1px solid var(--line); border-radius: 4px;
+  padding: 0 4px; font-family: ui-monospace, monospace; font-size: 10.5px;
+}
+#toast {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--bg-raised); border: 1px solid var(--line); border-left: 3px solid var(--neon);
+  padding: 9px 16px; border-radius: var(--radius); transition: transform .22s ease;
+  z-index: 50; max-width: 70vw; box-shadow: 0 8px 28px #0008;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.err { border-left-color: var(--neon-2); }
+#toast.ok  { border-left-color: var(--ok); }
+
+dialog {
+  background: var(--bg-panel); color: var(--text); border: 1px solid var(--line);
+  border-radius: 12px; padding: 0; width: min(560px, 92vw);
+}
+dialog::backdrop { background: #000a; }
+dialog .dlg-body { padding: 16px; }
+dialog h2 { font-size: 14px; margin-bottom: 12px; }
+textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 11.5px; resize: vertical; }
+.dlg-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--line); }
+
+@media (max-width: 1100px) {
+  main { grid-template-columns: 220px 1fr 260px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><b>Cyber</b><span>Drome</span> &middot; SVG-Werkstatt</div>
+
+  <label class="row" style="gap:6px">
+    <span class="swatch-label">Set</span>
+    <select id="set-select" style="width:160px"></select>
+  </label>
+
+  <div class="dirpad" id="dirpad" title="Blickrichtung des Bots">
+    <button class="d-north" data-dir="north">N</button>
+    <button class="d-west"  data-dir="west">W</button>
+    <button class="d-south" data-dir="south">S</button>
+    <button class="d-east"  data-dir="east">O</button>
+  </div>
+
+  <div class="spacer"></div>
+
+  <input type="text" id="build-name" value="drone_01" style="width:150px" title="Dateiname des Exports">
+  <button id="btn-save"        class="primary" title="SVG + JSON nach /builds/ schreiben">Ins Repo speichern</button>
+  <button id="btn-save-all"    title="Alle vier Richtungen als Einzeldateien + Spritesheet exportieren">Alle 4 Richtungen</button>
+  <button id="btn-download"    title="SVG lokal herunterladen">SVG</button>
+  <button id="btn-png"         title="PNG rendern und herunterladen">PNG</button>
+  <button id="btn-load"        title="Gespeicherten Build laden">Laden</button>
+</header>
+
+<main>
+  <!-- ================= Bibliothek ================= -->
+  <aside class="left">
+    <div class="panel" style="border-bottom:1px solid var(--line)">
+      <h3>Bibliothek</h3>
+      <input type="text" id="lib-filter" placeholder="Filter (Name, Tag, Typ)&hellip;">
+      <label class="row" style="margin-top:7px;gap:6px;font-size:11px;color:var(--text-dim)">
+        <input type="checkbox" id="lib-all-sets" style="width:auto"> Teile aller Sets zeigen
+      </label>
+    </div>
+    <div class="panel" id="library" style="flex:1 1 auto"></div>
+  </aside>
+
+  <!-- ================= Buehne ================= -->
+  <section class="stage" id="stage">
+    <div class="stage-hud">
+      <button id="tg-grid"    class="tiny" data-view="grid">Raster</button>
+      <button id="tg-ground"  class="tiny" data-view="ground">Tile</button>
+      <button id="tg-anchors" class="tiny" data-view="anchors">Anker</button>
+      <button id="tg-edit"    class="tiny" data-view="editAnchors" title="Anker des gewaehlten Teils mit der Maus verschieben">Anker bearbeiten</button>
+      <button id="btn-anchor-save" class="tiny" disabled title="Geaenderte Anker in die JSON des Teils schreiben">Anker speichern</button>
+      <button id="btn-random" class="tiny">Zufall</button>
+    </div>
+
+    <svg id="canvas" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+      <g id="layer-guides"></g>
+      <g id="layer-bot"></g>
+      <g id="layer-anchors"></g>
+    </svg>
+
+    <div class="stage-foot">
+      <span id="foot-left"></span>
+      <span id="foot-right"><span class="kbd">Pfeiltasten</span> verschieben &middot; <span class="kbd">Shift</span> = fein &middot; <span class="kbd">Entf</span> leert Slot</span>
+    </div>
+  </section>
+
+  <!-- ================= Inspektor ================= -->
+  <aside class="right">
+    <div class="panel">
+      <h3>Aufbau</h3>
+      <div id="slots"></div>
+    </div>
+
+    <div class="panel" id="panel-transform">
+      <h3>Feinjustierung <span id="transform-target" style="color:var(--neon);text-transform:none;letter-spacing:0"></span></h3>
+      <div id="transform-body">
+        <p class="hint">Kein Slot gewaehlt.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Farbpalette</h3>
+      <div class="row" style="margin-bottom:8px">
+        <select id="palette-select"></select>
+        <button id="btn-palette-save" class="tiny" title="Aktuelle Farben unter dem Namen im Feld speichern">Sichern</button>
+      </div>
+      <div class="palette-grid" id="palette-grid"></div>
+      <label class="row" style="margin-top:8px;gap:6px;font-size:11px;color:var(--text-dim)">
+        <input type="checkbox" id="slot-palette-override" style="width:auto">
+        Eigene Farben nur fuer gewaehlten Slot
+      </label>
+    </div>
+
+    <div class="panel">
+      <h3>Werkzeuge</h3>
+      <button id="btn-import" style="width:100%;margin-bottom:6px">Neues Teil importieren&hellip;</button>
+      <button id="btn-reload" style="width:100%;margin-bottom:6px">Bibliothek neu einlesen</button>
+      <button id="btn-clear" class="danger" style="width:100%">Aufbau zuruecksetzen</button>
+    </div>
+
+    <div class="panel">
+      <h3>Kurzanleitung</h3>
+      <p class="hint">
+        Teil aus der Bibliothek anklicken oder auf die Buehne ziehen. Ausruestung
+        landet im naechstgelegenen freien Anker. Slot rechts anwaehlen, dann mit
+        den Pfeiltasten oder den Reglern feinjustieren.<br><br>
+        <b>Anker bearbeiten</b> zeigt die Ankerpunkte des gewaehlten Teils als
+        Griffe &ndash; verschieben und mit <b>Anker speichern</b> zurueck in die
+        JSON schreiben.
+      </p>
+    </div>
+  </aside>
+</main>
+
+<div id="toast"></div>
+
+<!-- Import-Dialog -->
+<dialog id="dlg-import">
+  <div class="dlg-body">
+    <h2>Neues Teil importieren</h2>
+    <p class="hint" style="margin:0 0 12px">
+      SVG-Quelltext einfuegen (z.&nbsp;B. von Claude Code generiert). Ideal ist eine
+      <code>viewBox="0 0 128 128"</code> und Farben ueber <code>var(--c-plate)</code> &amp; Co.
+      Fehlende Anker koennen anschliessend direkt auf der Buehne gesetzt werden.
+    </p>
+    <div class="row" style="margin-bottom:8px">
+      <label class="field" style="flex:1"><span>Set-Ordner</span><input type="text" id="imp-set" value="bot1"></label>
+      <label class="field" style="flex:1"><span>Dateiname (ohne Endung)</span><input type="text" id="imp-stem" value="neues_teil_south"></label>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <label class="field" style="flex:1"><span>Typ</span>
+        <select id="imp-type">
+          <option value="core">core</option><option value="head">head</option>
+          <option value="body">body</option><option value="feet">feet</option>
+          <option value="equipment" selected>equipment</option>
+          <option value="equipment_left">equipment_left</option>
+          <option value="equipment_right">equipment_right</option>
+        </select>
+      </label>
+      <label class="field" style="flex:1"><span>Richtung</span>
+        <select id="imp-dir">
+          <option>south</option><option>west</option><option>east</option><option>north</option>
+        </select>
+      </label>
+      <label class="field" style="flex:1"><span>Anzeigename</span><input type="text" id="imp-name" value="Neues Teil"></label>
+    </div>
+    <label class="field"><span>SVG-Quelltext</span><textarea id="imp-svg" placeholder="&lt;svg viewBox=&quot;0 0 128 128&quot;&gt;&hellip;&lt;/svg&gt;"></textarea></label>
+  </div>
+  <div class="dlg-foot">
+    <button data-close="dlg-import">Abbrechen</button>
+    <button id="imp-go" class="primary">Anlegen</button>
+  </div>
+</dialog>
+
+<!-- Lade-Dialog -->
+<dialog id="dlg-load">
+  <div class="dlg-body">
+    <h2>Gespeicherten Bot laden</h2>
+    <div id="load-list" class="hint"></div>
+  </div>
+  <div class="dlg-foot"><button data-close="dlg-load">Schliessen</button></div>
+</dialog>
+
+<script>
+"use strict";
+/* ==========================================================================
+   CyberDrome SVG-Werkstatt -- Frontend
+   --------------------------------------------------------------------------
+   Bewusst Vanilla-JS ohne Framework und ohne SVG.js: das Tool soll offline,
+   ohne Build-Schritt und ohne node_modules laufen. Die SVG-Manipulation
+   beschraenkt sich auf <g>-Container plus transform-Attribut -- dafuer waere
+   eine Bibliothek reiner Ballast. Wer spaeter doch SVG.js will, muss nur
+   renderBot() austauschen; alles andere haengt an den Datenstrukturen, nicht
+   am DOM.
+
+   Zentrale Idee -- das Anker-System
+   ---------------------------------
+   Alle Teile leben im selben Koordinatensystem (viewBox 0 0 128 128).
+   * Der BODY definiert Sockel-Anker: head, feet, core, equip_*.
+   * Jedes andere Teil definiert genau einen Anker "mount" (Gegenstueck).
+   * Zusammensetzen ist damit eine reine Verschiebung:
+         offset = body.anchor[slot] - teil.anchor["mount"]
+   Ein Slot existiert genau dann, wenn der Body den passenden Anker hat.
+   Ein Body mit einem einzigen "equip_center" hat also automatisch nur einen
+   Ausruestungsslot, einer mit drei "equip_*"-Ankern hat drei -- ohne
+   Sonderfall im Code.
+   ========================================================================== */
+
+const CANVAS_ORIGIN = { x: 64, y: 64 };  // hier landet der "mount" des Bodys
+const GROUND_Y = 120;
+
+const DIR_LABEL  = { north: "Nord", west: "West", east: "Ost", south: "Sued" };
+const TYPE_LABEL = {
+  core: "Kern", head: "Kopf", body: "Koerper", feet: "Fuesse",
+  equipment: "Ausruestung (universal)",
+  equipment_left: "Ausruestung links", equipment_right: "Ausruestung rechts",
+};
+const TYPE_ORDER = ["body", "head", "feet", "core",
+                    "equipment", "equipment_left", "equipment_right"];
+const DEFAULT_Z = {
+  feet: 10, body: 20, core: 26,
+  equipment: 30, equipment_left: 30, equipment_right: 30, head: 40,
+};
+const PALETTE_ROLES = ["plate", "plate_dark", "plate_light", "metal",
+                       "accent", "glow", "visor", "outline"];
+const ROLE_LABEL = {
+  plate: "Panzerung", plate_dark: "Schatten", plate_light: "Kante",
+  metal: "Mechanik", accent: "Neon", glow: "Kern-Glow",
+  visor: "Visier", outline: "Kontur",
+};
+/** Slots, die nicht aus equip_* stammen -- Reihenfolge = Anzeigereihenfolge. */
+const FIXED_SLOTS = [
+  { slot: "body", anchor: null,   type: "body", label: "Koerper" },
+  { slot: "head", anchor: "head", type: "head", label: "Kopf" },
+  { slot: "feet", anchor: "feet", type: "feet", label: "Fuesse" },
+  { slot: "core", anchor: "core", type: "core", label: "Kern" },
+];
+
+const cssVar = (role) => "--c-" + role.replace(/_/g, "-");
+
+// ---------------------------------------------------------------------------
+// Zustand
+// ---------------------------------------------------------------------------
+const state = {
+  library: null,
+  sets: [],
+  activeSet: null,
+  direction: "south",
+  /** slot -> { partId, offset:{x,y}, scale, rotate, flip, z, palette } */
+  loadout: {},
+  selectedSlot: null,
+  palettes: {},
+  paletteName: "",
+  palette: {},
+  view: { grid: false, ground: true, anchors: false, editAnchors: false },
+  /** uid -> geaenderte, noch nicht gespeicherte Anker */
+  anchorEdits: {},
+};
+
+const el = (id) => document.getElementById(id);
+
+// ---------------------------------------------------------------------------
+// API-Zugriff
+// ---------------------------------------------------------------------------
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json" }, ...options,
+  });
+  let data = null;
+  try { data = await res.json(); } catch { /* leere Antwort ist ok */ }
+  if (!res.ok) throw new Error((data && data.error) || `HTTP ${res.status}`);
+  return data;
+}
+
+let toastTimer = null;
+function toast(message, kind = "") {
+  const node = el("toast");
+  node.textContent = message;
+  node.className = "show " + kind;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { node.className = kind; }, 3200);
+}
+
+// ---------------------------------------------------------------------------
+// Teile nachschlagen
+// ---------------------------------------------------------------------------
+function currentSet() {
+  return state.sets.find((s) => s.id === state.activeSet) || null;
+}
+
+/** Alle Teile, in denen gesucht werden darf (aktives Set oder alle). */
+function searchableParts() {
+  return el("lib-all-sets").checked
+    ? state.sets.flatMap((s) => s.parts)
+    : (currentSet() ? currentSet().parts : []);
+}
+
+/**
+ * Loest eine Teil-ID fuer die aktuelle Richtung auf. Teile werden im Loadout
+ * richtungsunabhaengig gespeichert (nur die id), damit ein Richtungswechsel
+ * automatisch die passende Variante zieht.
+ */
+function resolvePart(partId, direction = state.direction) {
+  if (!partId) return null;
+  const pool = state.sets.flatMap((s) => s.parts);
+  return pool.find((p) => p.id === partId && p.direction === direction) || null;
+}
+
+/** Anker eines Teils als {name: {x,y}} -- inklusive ungespeicherter Edits. */
+function anchorsOf(part) {
+  if (!part) return {};
+  const list = state.anchorEdits[part.uid] || part.anchors || [];
+  const map = {};
+  for (const a of list) map[a.name] = { x: a.x, y: a.y };
+  return map;
+}
+
+// ---------------------------------------------------------------------------
+// Slot-Definitionen -- ergeben sich aus den Ankern des aktiven Bodys
+// ---------------------------------------------------------------------------
+function slotDefs() {
+  const bodyEntry = state.loadout.body;
+  const bodyPart = bodyEntry ? resolvePart(bodyEntry.partId) : null;
+  const bodyAnchors = anchorsOf(bodyPart);
+
+  const defs = [];
+  for (const fixed of FIXED_SLOTS) {
+    if (fixed.slot === "body") { defs.push({ ...fixed }); continue; }
+    if (!bodyPart || bodyAnchors[fixed.anchor]) defs.push({ ...fixed });
+  }
+  const equipAnchors = Object.keys(bodyAnchors)
+    .filter((name) => name.startsWith("equip_")).sort();
+  for (const anchor of equipAnchors) {
+    defs.push({
+      slot: anchor, anchor, type: "equipment",
+      label: "Ausruestung " + anchor.replace("equip_", ""),
+    });
+  }
+  if (!bodyPart) {
+    // Ohne Body kennen wir die Slots nicht -- zwei generische anbieten.
+    defs.push({ slot: "equip_left",  anchor: "equip_left",  type: "equipment", label: "Ausruestung links" });
+    defs.push({ slot: "equip_right", anchor: "equip_right", type: "equipment", label: "Ausruestung rechts" });
+  }
+  return defs;
+}
+
+/** Darf ein Teil in einen Slot? */
+function fitsSlot(part, def) {
+  if (!part) return false;
+  if (def.type === "equipment") {
+    if (!part.type.startsWith("equipment")) return false;
+    if (part.type === "equipment_left"  && def.slot !== "equip_left")  return false;
+    if (part.type === "equipment_right" && def.slot !== "equip_right") return false;
+    if (Array.isArray(part.slots) && part.slots.length && !part.slots.includes(def.slot)) return false;
+    return true;
+  }
+  return part.type === def.type;
+}
+
+function newEntry(partId) {
+  return { partId, offset: { x: 0, y: 0 }, scale: 1, rotate: 0, flip: false,
+           z: null, palette: null };
+}
+
+/**
+ * Ausruestung ist meist nur fuer EINE Seite gezeichnet. Landet so ein Teil im
+ * Slot der Gegenseite, wird es automatisch gespiegelt -- das spart ein zweites
+ * SVG pro Waffe. Nur in der Front-/Rueckansicht sinnvoll: im Profil zeigen
+ * beide Arme in dieselbe Richtung, dort waere Spiegeln falsch.
+ * Teile koennen das per "no_auto_flip": true in der JSON abschalten.
+ */
+function shouldAutoFlip(part, slotName) {
+  if (!part || !part.type.startsWith("equipment")) return false;
+  if (part.no_auto_flip) return false;
+  if (state.direction !== "south" && state.direction !== "north") return false;
+
+  const bodyEntry = state.loadout.body;
+  const bodyPart = bodyEntry ? resolvePart(bodyEntry.partId) : null;
+  if (!bodyPart) return false;
+
+  const socket = anchorsOf(bodyPart)[slotName];
+  const mount = anchorsOf(part).mount;
+  if (!socket || !mount) return false;
+
+  const socketSide = Math.sign(socket.x - CANVAS_ORIGIN.x);
+  const mountSide = Math.sign(mount.x - CANVAS_ORIGIN.x);
+  return socketSide !== 0 && mountSide !== 0 && socketSide !== mountSide;
+}
+
+// ---------------------------------------------------------------------------
+// Platzierung: berechnet die Transformation eines Slots
+// ---------------------------------------------------------------------------
+function placementFor(slotName) {
+  const entry = state.loadout[slotName];
+  if (!entry) return null;
+  const part = resolvePart(entry.partId);
+  if (!part) return { part: null, missing: true, entry };
+
+  const anchors = anchorsOf(part);
+  const mount = anchors.mount || { x: CANVAS_ORIGIN.x, y: CANVAS_ORIGIN.y };
+
+  let target;
+  if (slotName === "body") {
+    target = { ...CANVAS_ORIGIN };
+  } else {
+    const bodyEntry = state.loadout.body;
+    const bodyPart = bodyEntry ? resolvePart(bodyEntry.partId) : null;
+    if (bodyPart) {
+      const bodyAnchors = anchorsOf(bodyPart);
+      const bodyMount = bodyAnchors.mount || { ...CANVAS_ORIGIN };
+      const socket = bodyAnchors[slotName];
+      if (!socket) return { part, missing: false, noSocket: true, entry };
+      // Body-Verschiebung mitrechnen, damit Kinder mitwandern.
+      const bodyOff = state.loadout.body.offset;
+      target = {
+        x: socket.x + (CANVAS_ORIGIN.x - bodyMount.x) + bodyOff.x,
+        y: socket.y + (CANVAS_ORIGIN.y - bodyMount.y) + bodyOff.y,
+      };
+    } else {
+      target = { x: mount.x, y: mount.y };  // freistehende Vorschau
+    }
+  }
+
+  const tx = target.x - mount.x + entry.offset.x;
+  const ty = target.y - mount.y + entry.offset.y;
+  return { part, entry, tx, ty, mount, missing: false };
+}
+
+function transformString(pl) {
+  const { tx, ty, mount, entry } = pl;
+  const sx = (entry.flip ? -1 : 1) * entry.scale;
+  const sy = entry.scale;
+  return [
+    `translate(${round(tx)} ${round(ty)})`,
+    `rotate(${round(entry.rotate)} ${round(mount.x)} ${round(mount.y)})`,
+    `translate(${round(mount.x)} ${round(mount.y)})`,
+    `scale(${round(sx, 4)} ${round(sy, 4)})`,
+    `translate(${round(-mount.x)} ${round(-mount.y)})`,
+  ].join(" ");
+}
+
+function effectiveZ(slotName, part, entry) {
+  if (entry.z !== null && entry.z !== undefined) return entry.z;
+  const bodyEntry = state.loadout.body;
+  const bodyPart = bodyEntry ? resolvePart(bodyEntry.partId) : null;
+  if (bodyPart && bodyPart.slot_z && bodyPart.slot_z[slotName] !== undefined) {
+    return bodyPart.slot_z[slotName];
+  }
+  if (part && part.z_index !== undefined && part.z_index !== null) return part.z_index;
+  return DEFAULT_Z[part ? part.type : "body"] ?? 20;
+}
+
+const round = (v, digits = 2) => Number.parseFloat(Number(v).toFixed(digits));
+
+// ---------------------------------------------------------------------------
+// Rendering: Bot
+// ---------------------------------------------------------------------------
+function paletteStyle(palette) {
+  return PALETTE_ROLES
+    .filter((role) => palette && palette[role])
+    .map((role) => `${cssVar(role)}:${palette[role]}`)
+    .join(";");
+}
+
+function buildBotLayer(direction = state.direction, forExport = false) {
+  const prevDirection = state.direction;
+  state.direction = direction;
+
+  const pieces = [];
+  for (const def of slotDefs()) {
+    const pl = placementFor(def.slot);
+    if (!pl || !pl.part || pl.noSocket) continue;
+    pieces.push({
+      slot: def.slot,
+      z: effectiveZ(def.slot, pl.part, pl.entry),
+      transform: transformString(pl),
+      inner: pl.part.svg_inner,
+      palette: pl.entry.palette,
+      name: pl.part.name,
+    });
+  }
+  pieces.sort((a, b) => a.z - b.z || a.slot.localeCompare(b.slot));
+
+  state.direction = prevDirection;
+
+  return pieces.map((piece) => {
+    const style = piece.palette ? ` style="${paletteStyle(piece.palette)}"` : "";
+    const sel = (!forExport && piece.slot === state.selectedSlot)
+      ? ' data-selected="1"' : "";
+    return `<g data-slot="${piece.slot}"${sel} transform="${piece.transform}"${style}>`
+         + `<title>${escapeXml(piece.name)}</title>${piece.inner}</g>`;
+  }).join("\n");
+}
+
+function escapeXml(text) {
+  return String(text).replace(/[<>&"]/g, (c) =>
+    ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
+}
+
+function renderCanvas() {
+  const svg = el("canvas");
+  svg.setAttribute("style", paletteStyle(state.palette));
+  el("layer-bot").innerHTML = buildBotLayer();
+  renderGuides();
+  renderAnchorLayer();
+  el("foot-left").textContent =
+    `${currentSet() ? currentSet().name : "-"} · ${DIR_LABEL[state.direction]}`;
+}
+
+function renderGuides() {
+  const parts = [];
+  if (state.view.grid) {
+    const lines = [];
+    for (let i = 0; i <= 128; i += 8) {
+      lines.push(`M${i} 0V128`, `M0 ${i}H128`);
+    }
+    parts.push(`<path d="${lines.join("")}" stroke="#2de2e6" stroke-width="0.25" opacity="0.18" fill="none"/>`);
+    parts.push(`<path d="M64 0V128M0 64H128" stroke="#2de2e6" stroke-width="0.4" opacity="0.35" fill="none"/>`);
+  }
+  if (state.view.ground) {
+    // Tile-Raute als Standflaeche -- Orientierung fuer die spaetere Tactics-Map.
+    parts.push(`<path d="M64 ${GROUND_Y - 12}L112 ${GROUND_Y}L64 ${GROUND_Y + 12}L16 ${GROUND_Y}Z"
+      fill="#2de2e6" opacity="0.07" stroke="#2de2e6" stroke-opacity="0.3" stroke-width="0.5"/>`);
+    parts.push(`<path d="M0 ${GROUND_Y}H128" stroke="#ff2d95" stroke-width="0.4" opacity="0.35"/>`);
+  }
+  el("layer-guides").innerHTML = parts.join("");
+}
+
+function renderAnchorLayer() {
+  const layer = el("layer-anchors");
+  if (!state.view.anchors && !state.view.editAnchors) { layer.innerHTML = ""; return; }
+
+  const marks = [];
+  const editSlot = state.selectedSlot;
+
+  for (const def of slotDefs()) {
+    const pl = placementFor(def.slot);
+    if (!pl || !pl.part || pl.noSocket) continue;
+    const editable = state.view.editAnchors && def.slot === editSlot;
+    if (!state.view.anchors && !editable) continue;
+
+    const anchors = anchorsOf(pl.part);
+    for (const [name, point] of Object.entries(anchors)) {
+      const x = round(point.x + pl.tx);
+      const y = round(point.y + pl.ty);
+      const color = name === "mount" ? "#ff2d95" : "#2de2e6";
+      marks.push(
+        `<g class="${editable ? "anchor-handle" : ""}"
+            data-anchor="${escapeXml(name)}" data-slot="${def.slot}">
+           <circle cx="${x}" cy="${y}" r="${editable ? 3.2 : 1.9}"
+                   fill="${color}" fill-opacity="${editable ? 0.35 : 0.9}"
+                   stroke="${color}" stroke-width="0.6"/>
+           <path d="M${x - 3} ${y}H${x + 3}M${x} ${y - 3}V${y + 3}"
+                 stroke="${color}" stroke-width="0.5" opacity="0.8"/>
+           ${editable ? `<text x="${x + 4.5}" y="${y - 3}" font-size="3.4"
+                fill="${color}" style="pointer-events:none">${escapeXml(name)}</text>` : ""}
+         </g>`);
+    }
+  }
+  layer.innerHTML = marks.join("");
+}
+
+// ---------------------------------------------------------------------------
+// Rendering: Bibliothek
+// ---------------------------------------------------------------------------
+function renderLibrary() {
+  const filter = el("lib-filter").value.trim().toLowerCase();
+  const groups = new Map();
+
+  for (const part of searchableParts()) {
+    if (part.direction !== state.direction) continue;
+    if (filter) {
+      const haystack = [part.name, part.id, part.type, part.set,
+                        ...(part.tags || [])].join(" ").toLowerCase();
+      if (!haystack.includes(filter)) continue;
+    }
+    if (!groups.has(part.type)) groups.set(part.type, []);
+    groups.get(part.type).push(part);
+  }
+
+  const ordered = [...groups.entries()].sort(
+    (a, b) => TYPE_ORDER.indexOf(a[0]) - TYPE_ORDER.indexOf(b[0]));
+
+  const usedIds = new Set(Object.values(state.loadout).map((e) => e && e.partId));
+
+  const html = ordered.map(([type, parts]) => {
+    const cards = parts.map((part) => {
+      const vb = (part.view_box || [0, 0, 128, 128]).join(" ");
+      const chips = (part.slots || []).map((s) => s.replace("equip_", "")[0].toUpperCase()).join("");
+      return `
+        <div class="lib-card${usedIds.has(part.id) ? " active" : ""}"
+             draggable="true" data-uid="${part.uid}" title="${escapeXml(part.name)} — ${part.id}">
+          ${chips ? `<span class="slotchips">${chips}</span>` : ""}
+          <svg viewBox="${vb}" style="${paletteStyle(state.palette)}">${part.svg_inner}</svg>
+          <div class="cap">${escapeXml(part.name)}</div>
+        </div>`;
+    }).join("");
+    return `<div class="lib-group"><h4>${TYPE_LABEL[type] || type} (${parts.length})</h4>
+              <div class="lib-grid">${cards}</div></div>`;
+  }).join("");
+
+  el("library").innerHTML = html ||
+    `<p class="hint">Keine Teile fuer <b>${DIR_LABEL[state.direction]}</b>
+      gefunden.<br>Ggf. Filter leeren oder &bdquo;Teile aller Sets&ldquo; aktivieren.</p>`;
+}
+
+// ---------------------------------------------------------------------------
+// Rendering: Slot-Liste
+// ---------------------------------------------------------------------------
+function renderSlots() {
+  const container = el("slots");
+
+  const html = slotDefs().map((def) => {
+    const entry = state.loadout[def.slot];
+    const part = entry ? resolvePart(entry.partId) : null;
+    const candidates = searchableParts().filter(
+      (p) => p.direction === state.direction && fitsSlot(p, def));
+
+    let warn = "";
+    if (entry && !part) warn = `<span class="warn" title="Fuer diese Richtung existiert keine Variante">⚠ fehlt</span>`;
+
+    const options = [`<option value="">— leer —</option>`].concat(
+      candidates.map((p) =>
+        `<option value="${p.id}"${entry && entry.partId === p.id ? " selected" : ""}>${escapeXml(p.name)}</option>`)
+    );
+    // Ein gewaehltes Teil, das es in dieser Richtung nicht gibt, trotzdem anzeigen.
+    if (entry && !candidates.some((p) => p.id === entry.partId)) {
+      options.push(`<option value="${entry.partId}" selected>${escapeXml(entry.partId)} (?)</option>`);
+    }
+
+    return `
+      <div class="slot${state.selectedSlot === def.slot ? " sel" : ""}${entry ? "" : " empty"}"
+           data-slot="${def.slot}">
+        <div class="slot-head">
+          <span class="slot-name">${escapeXml(def.label)}</span>
+          ${warn}
+          ${entry ? `<button class="tiny danger" data-clear="${def.slot}" title="Slot leeren">✕</button>` : ""}
+        </div>
+        <select data-slot-select="${def.slot}">${options.join("")}</select>
+      </div>`;
+  }).join("");
+
+  container.innerHTML = html;
+}
+
+// ---------------------------------------------------------------------------
+// Rendering: Feinjustierung
+// ---------------------------------------------------------------------------
+function renderTransform() {
+  const slot = state.selectedSlot;
+  const entry = slot ? state.loadout[slot] : null;
+  const target = el("transform-target");
+  const body = el("transform-body");
+
+  if (!entry) {
+    target.textContent = "";
+    body.innerHTML = `<p class="hint">Kein Slot gewaehlt.</p>`;
+    el("btn-anchor-save").disabled = true;
+    return;
+  }
+
+  const part = resolvePart(entry.partId);
+  target.textContent = part ? part.name : entry.partId;
+  const z = effectiveZ(slot, part, entry);
+  el("btn-anchor-save").disabled = !(part && state.anchorEdits[part.uid]);
+
+  body.innerHTML = `
+    <div class="row" style="margin-bottom:8px">
+      <label class="field" style="flex:1;margin:0"><span>Versatz X</span>
+        <input type="number" step="0.5" data-t="offsetX" value="${entry.offset.x}"></label>
+      <label class="field" style="flex:1;margin:0"><span>Versatz Y</span>
+        <input type="number" step="0.5" data-t="offsetY" value="${entry.offset.y}"></label>
+    </div>
+    <label class="field"><span>Groesse &times;${entry.scale.toFixed(2)}</span>
+      <input type="range" min="0.5" max="1.8" step="0.01" data-t="scale" value="${entry.scale}"></label>
+    <label class="field"><span>Drehung ${entry.rotate}&deg;</span>
+      <input type="range" min="-180" max="180" step="1" data-t="rotate" value="${entry.rotate}"></label>
+    <div class="row" style="margin-bottom:8px">
+      <button class="tiny${entry.flip ? " on" : ""}" data-t="flip" style="flex:1">Spiegeln</button>
+      <label class="field" style="flex:1;margin:0"><span>Ebene (z)</span>
+        <input type="number" step="1" data-t="z" value="${z}" title="Leeren fuer Automatik"></label>
+    </div>
+    <div class="row">
+      <button class="tiny" data-t="reset" style="flex:1">Zuruecksetzen</button>
+      <button class="tiny danger" data-t="clear" style="flex:1">Slot leeren</button>
+    </div>`;
+}
+
+/**
+ * Welche Farbwerte zeigen die Regler gerade? Entweder die globale Palette
+ * oder -- bei aktivem Override -- die des gewaehlten Slots.
+ */
+function paletteTarget() {
+  if (el("slot-palette-override").checked && state.selectedSlot) {
+    const entry = state.loadout[state.selectedSlot];
+    if (entry) return entry.palette || state.palette;
+  }
+  return state.palette;
+}
+
+function renderPalette() {
+  const shown = paletteTarget();
+  el("palette-grid").innerHTML = PALETTE_ROLES.map((role) => `
+    <label class="field" style="margin:0">
+      <span>${ROLE_LABEL[role]}</span>
+      <input type="color" data-role="${role}" value="${shown[role] || "#000000"}">
+    </label>`).join("");
+
+  const select = el("palette-select");
+  select.innerHTML = Object.keys(state.palettes)
+    .map((name) => `<option${name === state.paletteName ? " selected" : ""}>${escapeXml(name)}</option>`)
+    .join("");
+}
+
+function renderAll() {
+  renderLibrary();
+  renderSlots();
+  renderTransform();
+  renderPalette();
+  renderCanvas();
+}
+
+// ---------------------------------------------------------------------------
+// Aktionen
+// ---------------------------------------------------------------------------
+function assignPart(slotName, partId) {
+  if (!partId) {
+    delete state.loadout[slotName];
+  } else {
+    const existing = state.loadout[slotName];
+    if (existing) {
+      state.loadout[slotName] = { ...existing, partId };
+    } else {
+      const entry = newEntry(partId);
+      entry.flip = shouldAutoFlip(resolvePart(partId), slotName);
+      state.loadout[slotName] = entry;
+    }
+  }
+  if (slotName === "body") pruneInvalidSlots();
+  state.selectedSlot = slotName;
+  renderAll();
+}
+
+/** Nach einem Body-Wechsel Slots entfernen, die es nicht mehr gibt. */
+function pruneInvalidSlots() {
+  const valid = new Set(slotDefs().map((d) => d.slot));
+  for (const slot of Object.keys(state.loadout)) {
+    if (!valid.has(slot)) delete state.loadout[slot];
+  }
+}
+
+/** Zielslot fuer ein Teil finden -- optional am naechsten zu einem Punkt. */
+function pickSlotFor(part, point = null) {
+  const defs = slotDefs().filter((d) => fitsSlot(part, d));
+  if (!defs.length) return null;
+  if (defs.length === 1) return defs[0].slot;
+
+  const bodyEntry = state.loadout.body;
+  const bodyPart = bodyEntry ? resolvePart(bodyEntry.partId) : null;
+
+  if (point && bodyPart) {
+    const bodyAnchors = anchorsOf(bodyPart);
+    const bodyMount = bodyAnchors.mount || { ...CANVAS_ORIGIN };
+    const dx = CANVAS_ORIGIN.x - bodyMount.x + bodyEntry.offset.x;
+    const dy = CANVAS_ORIGIN.y - bodyMount.y + bodyEntry.offset.y;
+    let best = null, bestDist = Infinity;
+    for (const def of defs) {
+      const socket = bodyAnchors[def.anchor];
+      if (!socket) continue;
+      const dist = (socket.x + dx - point.x) ** 2 + (socket.y + dy - point.y) ** 2;
+      if (dist < bestDist) { bestDist = dist; best = def.slot; }
+    }
+    if (best) return best;
+  }
+  // Sonst: erster freier Slot, sonst der erste ueberhaupt.
+  const free = defs.find((d) => !state.loadout[d.slot]);
+  return (free || defs[0]).slot;
+}
+
+function clearLoadout() {
+  state.loadout = {};
+  state.selectedSlot = null;
+  renderAll();
+}
+
+function randomize() {
+  const pool = searchableParts().filter((p) => p.direction === state.direction);
+  const pick = (fn) => {
+    const options = pool.filter(fn);
+    return options.length ? options[Math.floor(Math.random() * options.length)] : null;
+  };
+  state.loadout = {};
+  const body = pick((p) => p.type === "body");
+  if (!body) { toast("Keine Koerper-Teile vorhanden.", "err"); return; }
+  state.loadout.body = newEntry(body.id);
+
+  for (const def of slotDefs()) {
+    if (def.slot === "body") continue;
+    const part = pick((p) => fitsSlot(p, def));
+    if (part && Math.random() > (def.type === "equipment" ? 0.25 : 0.05)) {
+      state.loadout[def.slot] = newEntry(part.id);
+    }
+  }
+  state.selectedSlot = "body";
+  renderAll();
+}
+
+// ---------------------------------------------------------------------------
+// Export
+// ---------------------------------------------------------------------------
+function buildStandaloneSvg(direction = state.direction, opts = {}) {
+  const layer = buildBotLayer(direction, true);
+  const style = paletteStyle(state.palette);
+  const size = opts.size || 128;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="${size}" height="${size}"
+     data-direction="${direction}" style="${style}">
+  <title>${escapeXml(el("build-name").value)} (${direction})</title>
+${layer}
+</svg>
+`;
+}
+
+/** Spritesheet: alle vier Richtungen nebeneinander (Reihenfolge S, W, O, N). */
+function buildSpriteSheet() {
+  const order = ["south", "west", "east", "north"];
+  const frames = order.map((dir, index) =>
+    `  <g transform="translate(${index * 128} 0)" data-direction="${dir}">
+${buildBotLayer(dir, true)}
+  </g>`).join("\n");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 128" width="512" height="128"
+     style="${paletteStyle(state.palette)}" data-frames="${order.join(",")}">
+  <title>${escapeXml(el("build-name").value)} — Spritesheet</title>
+${frames}
+</svg>
+`;
+}
+
+function loadoutPayload(direction = state.direction) {
+  return {
+    name: el("build-name").value,
+    set: state.activeSet,
+    direction,
+    origin: CANVAS_ORIGIN,
+    ground_y: GROUND_Y,
+    palette: { ...state.palette },
+    palette_name: state.paletteName,
+    slots: Object.fromEntries(Object.entries(state.loadout).map(([slot, e]) => [
+      slot, {
+        part_id: e.partId, offset: e.offset, scale: e.scale,
+        rotate: e.rotate, flip: e.flip, z: e.z,
+        palette: e.palette || null,
+      },
+    ])),
+    generated_by: "CyberDrome SVG-Werkstatt",
+  };
+}
+
+function downloadBlob(filename, text, mime = "image/svg+xml") {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const link = document.createElement("a");
+  link.href = url; link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function saveToRepo(name, svgText, loadout) {
+  return api("/api/build", {
+    method: "POST",
+    body: JSON.stringify({ name, svg: svgText, loadout }),
+  });
+}
+
+function validName() {
+  const name = el("build-name").value.trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/.test(name)) {
+    toast("Ungueltiger Dateiname (erlaubt: A-Z a-z 0-9 _ - .)", "err");
+    return null;
+  }
+  if (!state.loadout.body) {
+    toast("Ohne Koerper-Teil gibt es nichts zu exportieren.", "err");
+    return null;
+  }
+  return name;
+}
+
+/** SVG -> PNG ueber ein Offscreen-Canvas (funktioniert offline). */
+function svgToPng(svgText, width, height) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml" }));
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("PNG-Rendering fehlgeschlagen")));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("SVG konnte nicht geladen werden")); };
+    img.src = url;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Anker-Bearbeitung auf der Buehne
+// ---------------------------------------------------------------------------
+let dragAnchor = null;
+
+function canvasPoint(event) {
+  const svg = el("canvas");
+  const rect = svg.getBoundingClientRect();
+  return {
+    x: ((event.clientX - rect.left) / rect.width) * 128,
+    y: ((event.clientY - rect.top) / rect.height) * 128,
+  };
+}
+
+el("canvas").addEventListener("pointerdown", (event) => {
+  if (!state.view.editAnchors) return;
+  const handle = event.target.closest("[data-anchor]");
+  if (!handle) return;
+  const slot = handle.dataset.slot;
+  if (slot !== state.selectedSlot) return;
+  dragAnchor = { slot, name: handle.dataset.anchor };
+  el("canvas").setPointerCapture(event.pointerId);
+  event.preventDefault();
+});
+
+el("canvas").addEventListener("pointermove", (event) => {
+  if (!dragAnchor) return;
+  const pl = placementFor(dragAnchor.slot);
+  if (!pl || !pl.part) return;
+  const point = canvasPoint(event);
+
+  const list = (state.anchorEdits[pl.part.uid] ||
+                pl.part.anchors.map((a) => ({ ...a }))).map((a) => ({ ...a }));
+  const anchor = list.find((a) => a.name === dragAnchor.name);
+  if (!anchor) return;
+  anchor.x = round(point.x - pl.tx);
+  anchor.y = round(point.y - pl.ty);
+  state.anchorEdits[pl.part.uid] = list;
+
+  renderCanvas();
+  el("btn-anchor-save").disabled = false;
+});
+
+const endAnchorDrag = () => {
+  if (!dragAnchor) return;
+  dragAnchor = null;
+  renderAll();
+};
+el("canvas").addEventListener("pointerup", endAnchorDrag);
+el("canvas").addEventListener("pointercancel", endAnchorDrag);
+
+async function saveAnchors() {
+  const slot = state.selectedSlot;
+  const pl = slot ? placementFor(slot) : null;
+  if (!pl || !pl.part) return;
+  const part = pl.part;
+  const edits = state.anchorEdits[part.uid];
+  if (!edits) { toast("Keine Anker-Aenderungen offen.", "err"); return; }
+
+  const meta = { ...part, anchors: edits };
+  delete meta.svg_inner; delete meta.uid; delete meta.stem;
+
+  try {
+    await api(`/api/part/${part.set}/${part.stem}`, {
+      method: "PUT", body: JSON.stringify(meta),
+    });
+    part.anchors = edits.map((a) => ({ ...a }));
+    delete state.anchorEdits[part.uid];
+    toast(`Anker gespeichert: ${part.set}/${part.stem}.json`, "ok");
+    renderAll();
+  } catch (error) {
+    toast("Speichern fehlgeschlagen: " + error.message, "err");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Event-Verdrahtung
+// ---------------------------------------------------------------------------
+function wireEvents() {
+  // -- Richtung ----------------------------------------------------------
+  el("dirpad").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-dir]");
+    if (!button) return;
+    state.direction = button.dataset.dir;
+    [...el("dirpad").children].forEach((b) => b.classList.toggle("on", b === button));
+    renderAll();
+  });
+
+  // -- Set ---------------------------------------------------------------
+  el("set-select").addEventListener("change", (event) => {
+    state.activeSet = event.target.value;
+    const set = currentSet();
+    if (set && set.palette) applyPalette(set.palette, set.name);
+    renderAll();
+  });
+
+  // -- Bibliothek --------------------------------------------------------
+  el("lib-filter").addEventListener("input", renderLibrary);
+  el("lib-all-sets").addEventListener("change", () => { renderLibrary(); renderSlots(); });
+
+  el("library").addEventListener("click", (event) => {
+    const card = event.target.closest(".lib-card");
+    if (!card) return;
+    const part = state.sets.flatMap((s) => s.parts).find((p) => p.uid === card.dataset.uid);
+    if (!part) return;
+    const slot = pickSlotFor(part);
+    if (!slot) { toast(`Kein passender Slot fuer "${part.name}".`, "err"); return; }
+    assignPart(slot, part.id);
+  });
+
+  el("library").addEventListener("dragstart", (event) => {
+    const card = event.target.closest(".lib-card");
+    if (!card) return;
+    event.dataTransfer.setData("text/plain", card.dataset.uid);
+    event.dataTransfer.effectAllowed = "copy";
+  });
+
+  const stage = el("stage");
+  stage.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    stage.classList.add("dropping");
+  });
+  stage.addEventListener("dragleave", () => stage.classList.remove("dropping"));
+  stage.addEventListener("drop", (event) => {
+    event.preventDefault();
+    stage.classList.remove("dropping");
+    const uid = event.dataTransfer.getData("text/plain");
+    const part = state.sets.flatMap((s) => s.parts).find((p) => p.uid === uid);
+    if (!part) return;
+    const slot = pickSlotFor(part, canvasPoint(event));
+    if (!slot) { toast(`Kein passender Slot fuer "${part.name}".`, "err"); return; }
+    assignPart(slot, part.id);
+  });
+
+  // -- Slots -------------------------------------------------------------
+  el("slots").addEventListener("click", (event) => {
+    const clearButton = event.target.closest("[data-clear]");
+    if (clearButton) {
+      delete state.loadout[clearButton.dataset.clear];
+      if (clearButton.dataset.clear === "body") pruneInvalidSlots();
+      renderAll();
+      return;
+    }
+    const slot = event.target.closest(".slot");
+    if (!slot) return;
+    state.selectedSlot = slot.dataset.slot;
+    renderSlots(); renderTransform(); renderCanvas();
+  });
+
+  el("slots").addEventListener("change", (event) => {
+    const select = event.target.closest("[data-slot-select]");
+    if (!select) return;
+    assignPart(select.dataset.slotSelect, select.value);
+  });
+
+  // -- Buehne: Slot per Klick waehlen ------------------------------------
+  el("canvas").addEventListener("click", (event) => {
+    if (state.view.editAnchors) return;
+    const group = event.target.closest("[data-slot]");
+    if (!group || !group.closest("#layer-bot")) return;
+    state.selectedSlot = group.dataset.slot;
+    renderSlots(); renderTransform(); renderCanvas();
+  });
+
+  // -- Feinjustierung ----------------------------------------------------
+  el("transform-body").addEventListener("input", (event) => {
+    const input = event.target.closest("[data-t]");
+    if (!input) return;
+    const entry = state.loadout[state.selectedSlot];
+    if (!entry) return;
+    const value = input.value;
+    switch (input.dataset.t) {
+      case "offsetX": entry.offset.x = Number(value) || 0; break;
+      case "offsetY": entry.offset.y = Number(value) || 0; break;
+      case "scale":   entry.scale = Number(value); break;
+      case "rotate":  entry.rotate = Number(value); break;
+      case "z":       entry.z = value === "" ? null : Number(value); break;
+      default: return;
+    }
+    renderCanvas();
+    const label = input.closest("label")?.querySelector("span");
+    if (label && input.dataset.t === "scale") label.textContent = `Groesse ×${entry.scale.toFixed(2)}`;
+    if (label && input.dataset.t === "rotate") label.textContent = `Drehung ${entry.rotate}°`;
+  });
+
+  el("transform-body").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-t]");
+    if (!button) return;
+    const slot = state.selectedSlot;
+    const entry = state.loadout[slot];
+    if (!entry) return;
+    switch (button.dataset.t) {
+      case "flip":  entry.flip = !entry.flip; break;
+      case "reset": Object.assign(entry, newEntry(entry.partId)); break;
+      case "clear":
+        delete state.loadout[slot];
+        if (slot === "body") pruneInvalidSlots();
+        break;
+    }
+    renderAll();
+  });
+
+  // -- Ansichts-Schalter -------------------------------------------------
+  for (const id of ["tg-grid", "tg-ground", "tg-anchors", "tg-edit"]) {
+    const button = el(id);
+    button.classList.toggle("on", !!state.view[button.dataset.view]);
+    button.addEventListener("click", () => {
+      const key = button.dataset.view;
+      state.view[key] = !state.view[key];
+      button.classList.toggle("on", state.view[key]);
+      if (key === "editAnchors" && state.view[key] && !state.selectedSlot) {
+        toast("Erst einen Slot rechts anwaehlen.", "err");
+      }
+      renderCanvas();
+    });
+  }
+  el("btn-anchor-save").addEventListener("click", saveAnchors);
+  el("btn-random").addEventListener("click", randomize);
+  el("btn-clear").addEventListener("click", clearLoadout);
+
+  // -- Palette -----------------------------------------------------------
+  el("palette-grid").addEventListener("input", (event) => {
+    const input = event.target.closest("[data-role]");
+    if (!input) return;
+    const role = input.dataset.role;
+    if (el("slot-palette-override").checked && state.selectedSlot) {
+      const entry = state.loadout[state.selectedSlot];
+      if (entry) {
+        entry.palette = { ...(entry.palette || state.palette), [role]: input.value };
+      }
+    } else {
+      state.palette[role] = input.value;
+    }
+    renderCanvas();
+    renderLibrary();
+  });
+
+  el("slot-palette-override").addEventListener("change", (event) => {
+    const entry = state.selectedSlot ? state.loadout[state.selectedSlot] : null;
+    if (event.target.checked && !entry) {
+      toast("Erst einen Slot anwaehlen.", "err");
+      event.target.checked = false;
+    } else if (!event.target.checked && entry) {
+      entry.palette = null;   // Slot faellt auf die globale Palette zurueck
+      renderCanvas();
+    }
+    renderPalette();
+  });
+
+  el("palette-select").addEventListener("change", (event) => {
+    applyPalette(state.palettes[event.target.value], event.target.value);
+    renderAll();
+  });
+
+  el("btn-palette-save").addEventListener("click", async () => {
+    const name = prompt("Palette speichern als:", state.paletteName || "Eigene Palette");
+    if (!name) return;
+    state.palettes[name] = { ...state.palette };
+    try {
+      await api("/api/palettes", {
+        method: "PUT", body: JSON.stringify({ palettes: state.palettes }),
+      });
+      state.paletteName = name;
+      renderPalette();
+      toast(`Palette "${name}" gespeichert.`, "ok");
+    } catch (error) { toast("Fehler: " + error.message, "err"); }
+  });
+
+  // -- Export ------------------------------------------------------------
+  el("btn-save").addEventListener("click", async () => {
+    const name = validName();
+    if (!name) return;
+    try {
+      const result = await saveToRepo(name, buildStandaloneSvg(), loadoutPayload());
+      toast(`Gespeichert: ${result.svg} + ${result.json}`, "ok");
+      refreshBuildList();
+    } catch (error) { toast("Fehler: " + error.message, "err"); }
+  });
+
+  el("btn-save-all").addEventListener("click", async () => {
+    const name = validName();
+    if (!name) return;
+    try {
+      for (const direction of ["south", "west", "east", "north"]) {
+        await saveToRepo(`${name}_${direction}`,
+                         buildStandaloneSvg(direction), loadoutPayload(direction));
+      }
+      await saveToRepo(`${name}_sheet`, buildSpriteSheet(), loadoutPayload());
+      toast(`5 Dateien geschrieben (4 Richtungen + Spritesheet).`, "ok");
+      refreshBuildList();
+    } catch (error) { toast("Fehler: " + error.message, "err"); }
+  });
+
+  el("btn-download").addEventListener("click", () => {
+    const name = validName();
+    if (!name) return;
+    downloadBlob(`${name}_${state.direction}.svg`, buildStandaloneSvg());
+  });
+
+  el("btn-png").addEventListener("click", async () => {
+    const name = validName();
+    if (!name) return;
+    const size = Number(prompt("PNG-Kantenlaenge in Pixeln:", "256")) || 256;
+    try {
+      const blob = await svgToPng(buildStandaloneSvg(state.direction, { size }), size, size);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = `${name}_${state.direction}.png`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { toast("PNG-Export fehlgeschlagen: " + error.message, "err"); }
+  });
+
+  // -- Laden -------------------------------------------------------------
+  el("btn-load").addEventListener("click", async () => {
+    await refreshBuildList();
+    el("dlg-load").showModal();
+  });
+
+  el("load-list").addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-build]");
+    if (!button) return;
+    try {
+      const { loadout } = await api(`/api/builds/${button.dataset.build}`);
+      applyLoadout(loadout);
+      el("dlg-load").close();
+      toast(`"${button.dataset.build}" geladen.`, "ok");
+    } catch (error) { toast("Fehler: " + error.message, "err"); }
+  });
+
+  // -- Import ------------------------------------------------------------
+  el("btn-import").addEventListener("click", () => {
+    el("imp-set").value = state.activeSet || "bot1";
+    el("imp-dir").value = state.direction;
+    el("dlg-import").showModal();
+  });
+
+  el("imp-go").addEventListener("click", async () => {
+    const payload = {
+      set: el("imp-set").value.trim(),
+      stem: el("imp-stem").value.trim(),
+      svg: el("imp-svg").value,
+      meta: {
+        id: el("imp-stem").value.trim(),
+        name: el("imp-name").value.trim(),
+        type: el("imp-type").value,
+        direction: el("imp-dir").value,
+        view_box: [0, 0, 128, 128],
+        color_scheme: { ...state.palette },
+        anchors: el("imp-type").value === "body"
+          ? [{ name: "mount", x: 64, y: 64 }, { name: "head", x: 64, y: 42 },
+             { name: "feet", x: 64, y: 88 }, { name: "core", x: 64, y: 67 },
+             { name: "equip_left", x: 40, y: 62 }, { name: "equip_right", x: 88, y: 62 }]
+          : [{ name: "mount", x: 64, y: 64 }],
+      },
+    };
+    try {
+      await api("/api/part", { method: "POST", body: JSON.stringify(payload) });
+      el("dlg-import").close();
+      await loadLibrary(true);
+      toast(`Teil "${payload.stem}" angelegt — Anker jetzt auf der Buehne setzen.`, "ok");
+    } catch (error) { toast("Fehler: " + error.message, "err"); }
+  });
+
+  el("btn-reload").addEventListener("click", async () => {
+    await loadLibrary(true);
+    toast("Bibliothek neu eingelesen.", "ok");
+  });
+
+  document.querySelectorAll("[data-close]").forEach((button) => {
+    button.addEventListener("click", () => el(button.dataset.close).close());
+  });
+
+  // -- Tastatur ----------------------------------------------------------
+  window.addEventListener("keydown", (event) => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (["INPUT", "SELECT", "TEXTAREA"].includes(tag)) return;
+    const entry = state.selectedSlot ? state.loadout[state.selectedSlot] : null;
+    if (!entry) return;
+
+    const step = event.shiftKey ? 0.25 : 1;
+    const moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0],
+                    ArrowUp: [0, -step], ArrowDown: [0, step] };
+    if (moves[event.key]) {
+      entry.offset.x = round(entry.offset.x + moves[event.key][0]);
+      entry.offset.y = round(entry.offset.y + moves[event.key][1]);
+      renderCanvas(); renderTransform();
+      event.preventDefault();
+    } else if (event.key === "Delete" || event.key === "Backspace") {
+      delete state.loadout[state.selectedSlot];
+      if (state.selectedSlot === "body") pruneInvalidSlots();
+      renderAll();
+      event.preventDefault();
+    } else if (event.key.toLowerCase() === "f") {
+      entry.flip = !entry.flip;
+      renderCanvas(); renderTransform();
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Laden / Anwenden
+// ---------------------------------------------------------------------------
+function applyPalette(palette, name = "") {
+  if (!palette) return;
+  state.palette = { ...palette };
+  if (name) state.paletteName = name;
+  renderPalette();
+}
+
+function applyLoadout(loadout) {
+  if (!loadout) return;
+  if (loadout.set && state.sets.some((s) => s.id === loadout.set)) {
+    state.activeSet = loadout.set;
+    el("set-select").value = loadout.set;
+  }
+  if (loadout.direction) {
+    state.direction = loadout.direction;
+    [...el("dirpad").children].forEach(
+      (b) => b.classList.toggle("on", b.dataset.dir === state.direction));
+  }
+  if (loadout.palette) applyPalette(loadout.palette, loadout.palette_name || "");
+  if (loadout.name) el("build-name").value = loadout.name;
+
+  state.loadout = {};
+  for (const [slot, data] of Object.entries(loadout.slots || {})) {
+    state.loadout[slot] = {
+      partId: data.part_id,
+      offset: { x: Number(data.offset?.x) || 0, y: Number(data.offset?.y) || 0 },
+      scale: Number(data.scale) || 1,
+      rotate: Number(data.rotate) || 0,
+      flip: !!data.flip,
+      z: data.z ?? null,
+      palette: data.palette || null,
+    };
+  }
+  state.selectedSlot = state.loadout.body ? "body" : null;
+  renderAll();
+}
+
+async function refreshBuildList() {
+  try {
+    const { builds } = await api("/api/builds");
+    el("load-list").innerHTML = builds.length
+      ? builds.map((b) => `<div class="row" style="margin-bottom:5px">
+           <span style="flex:1">${escapeXml(b.name)}</span>
+           <button class="tiny" data-build="${escapeXml(b.name)}">Laden</button>
+         </div>`).join("")
+      : "<p>Noch nichts gespeichert.</p>";
+  } catch (error) {
+    el("load-list").innerHTML = `<p>Fehler: ${escapeXml(error.message)}</p>`;
+  }
+}
+
+async function loadLibrary(refresh = false) {
+  const data = await api("/api/library" + (refresh ? "?refresh=1" : ""));
+  state.library = data;
+  state.sets = data.sets;
+
+  for (const warning of data.warnings || []) toast(warning, "err");
+
+  el("set-select").innerHTML = state.sets
+    .map((s) => `<option value="${escapeXml(s.id)}">${escapeXml(s.name)}</option>`)
+    .join("");
+
+  if (!state.activeSet || !state.sets.some((s) => s.id === state.activeSet)) {
+    state.activeSet = state.sets.length ? state.sets[0].id : null;
+  }
+  el("set-select").value = state.activeSet || "";
+  renderAll();
+}
+
+async function boot() {
+  wireEvents();
+  [...el("dirpad").children].forEach(
+    (b) => b.classList.toggle("on", b.dataset.dir === state.direction));
+
+  try {
+    const { palettes } = await api("/api/palettes");
+    state.palettes = palettes;
+    const first = Object.keys(palettes)[0];
+    applyPalette(palettes[first], first);
+  } catch (error) {
+    toast("Paletten konnten nicht geladen werden: " + error.message, "err");
+  }
+
+  try {
+    await loadLibrary(true);
+    // Startaufbau: erster Body des ersten Sets, damit sofort etwas zu sehen ist.
+    const set = currentSet();
+    if (set) {
+      if (set.palette) applyPalette(set.palette, set.name);
+      const body = set.parts.find((p) => p.type === "body" && p.direction === state.direction);
+      if (body) { assignPart("body", body.id); }
+    }
+  } catch (error) {
+    toast("Bibliothek konnte nicht geladen werden: " + error.message, "err");
+  }
+}
+
+boot();
+</script>
+</body>
+</html>

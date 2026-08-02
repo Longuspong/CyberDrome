@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="jugg_body" data-type="body" data-direction="east">
+  <title>Molok Chassis (east)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M46 48 L56 43 L58 70 L48 74 Z" fill="var(--c-plate-dark)"/>
+  <path d="M52 43 H82 L88 60 L82 86 H52 L48 60 Z" fill="var(--c-plate)"/>
+  <path d="M52 43 H82 L83 52 H52 Z" fill="var(--c-plate-light)"/>
+  <rect x="56" y="34" width="15" height="10" rx="2.5" fill="var(--c-metal)"/>
+  <path d="M55 59 H82" stroke="var(--c-accent)" stroke-width="2.2"/>
+  <circle cx="72" cy="72" r="8" fill="var(--c-plate-dark)"/>
+  <path d="M52 85 H84 L81 93 H55 Z" fill="var(--c-metal)"/>
+
+</g>
+</svg>

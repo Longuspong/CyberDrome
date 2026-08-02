@@ -1,0 +1,36 @@
+{
+  "id": "scout_core",
+  "set": "bot1",
+  "type": "core",
+  "name": "Vireo Impulskern",
+  "direction": "south",
+  "svg": "scout_core_south.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 26,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64,
+      "y": 67
+    }
+  ],
+  "color_scheme": {
+    "plate": "#232a3d",
+    "plate_dark": "#151a29",
+    "plate_light": "#3a4560",
+    "metal": "#5b6785",
+    "accent": "#2de2e6",
+    "glow": "#ff2d95",
+    "visor": "#7cf9ff",
+    "outline": "#0a0d16"
+  },
+  "tags": [
+    "core",
+    "energy"
+  ]
+}

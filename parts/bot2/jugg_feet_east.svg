@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="jugg_feet" data-type="feet" data-direction="east">
+  <title>Molok Standbeine (east)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M52 91 H68 L66 106 L54 106 Z" fill="var(--c-plate-dark)"/>
+  <path d="M58 91 H76 L74 106 L62 106 Z" fill="var(--c-plate)"/>
+  <circle cx="68" cy="107" r="5.2" fill="var(--c-metal)"/>
+  <path d="M52 112 H82 L85 121 H48 Z" fill="var(--c-plate)"/>
+  <path d="M49 118 H84" stroke="var(--c-accent)" stroke-width="1.8"/>
+
+</g>
+</svg>

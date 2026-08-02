@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="scout_body" data-type="body" data-direction="north">
+  <title>Vireo Chassis (north)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M36 52 L47 46 L49 68 L38 72 Z" fill="var(--c-plate-dark)"/>
+  <path d="M92 52 L81 46 L79 68 L90 72 Z" fill="var(--c-plate-dark)"/>
+  <path d="M47 45 H81 L86 60 L81 84 H47 L42 60 Z" fill="var(--c-plate-dark)"/>
+  <rect x="53" y="50" width="22" height="26" rx="3" fill="var(--c-plate)"/>
+  <path d="M57 55 H71 M57 61 H71 M57 67 H71" stroke="var(--c-plate-light)" stroke-width="1.6"/>
+  <rect x="58" y="38" width="12" height="9" rx="2.5" fill="var(--c-metal)"/>
+  <circle cx="64" cy="63" r="4" fill="var(--c-glow)" stroke="none"/>
+  <path d="M47 83 H81 L78 90 H50 Z" fill="var(--c-metal)"/>
+
+</g>
+</svg>

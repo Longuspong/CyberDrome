@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_drone_pod" data-type="equipment" data-direction="east">
+  <title>Drohnen-Pod (east)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <rect x="58" y="24" width="11" height="8" rx="2" fill="var(--c-metal)"/>
+  <path d="M52 9 H76 L79 20 L63 25 L49 20 Z" fill="var(--c-plate)"/>
+  <circle cx="66" cy="16" r="3" fill="var(--c-glow)" stroke="none"/>
+
+</g>
+</svg>

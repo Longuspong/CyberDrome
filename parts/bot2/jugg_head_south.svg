@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="jugg_head" data-type="head" data-direction="south">
+  <title>Molok Bunkerkopf (south)</title>
+  <!--
+    Gemeinsames Koordinatensystem 128x128, Bodenlinie y=120, Mittelachse x=64.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+    Anker liegen in der zugehoerigen .json und werden hier NICHT gezeichnet.
+  -->
+<g fill="none" stroke="var(--c-outline)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M48 22 H80 L82 36 L76 42 H52 L46 36 Z" fill="var(--c-plate)"/>
+  <rect x="50" y="26" width="28" height="8" rx="2" fill="var(--c-visor)" stroke="none"/>
+  <rect x="50" y="26" width="28" height="8" rx="2"/>
+  <path d="M46 18 H54 V24 H46 Z" fill="var(--c-metal)"/>
+  <path d="M74 18 H82 V24 H74 Z" fill="var(--c-metal)"/>
+  <path d="M52 42 H76 L74 46 H54 Z" fill="var(--c-metal)"/>
+
+</g>
+</svg>
