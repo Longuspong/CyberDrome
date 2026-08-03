@@ -868,6 +868,21 @@ function renderSlots() {
   container.innerHTML = html;
 }
 
+/**
+ * Slot-Auswahl markieren, OHNE die Liste neu zu bauen.
+ *
+ * Ein Klick auf ein <select> waehlt zugleich seinen Slot an. Wuerde das
+ * renderSlots() ausloesen, ersetzte innerHTML das gerade angeklickte Element --
+ * das native Dropdown blitzt auf und schliesst sich sofort wieder. Von allem,
+ * was renderSlots() zeichnet, haengt ohnehin nur diese eine Klasse an der
+ * Auswahl.
+ */
+function markSelectedSlot() {
+  for (const node of el("slots").querySelectorAll(".slot")) {
+    node.classList.toggle("sel", node.dataset.slot === state.selectedSlot);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Rendering: Feinjustierung
 // ---------------------------------------------------------------------------
@@ -1290,7 +1305,7 @@ function wireEvents() {
     const slot = event.target.closest(".slot");
     if (!slot) return;
     state.selectedSlot = slot.dataset.slot;
-    renderSlots(); renderTransform(); renderCanvas();
+    markSelectedSlot(); renderTransform(); renderCanvas();
   });
 
   el("slots").addEventListener("change", (event) => {
@@ -1305,7 +1320,7 @@ function wireEvents() {
     const group = event.target.closest("[data-slot]");
     if (!group || !group.closest("#layer-bot")) return;
     state.selectedSlot = group.dataset.slot;
-    renderSlots(); renderTransform(); renderCanvas();
+    markSelectedSlot(); renderTransform(); renderCanvas();
   });
 
   // -- Feinjustierung ----------------------------------------------------
