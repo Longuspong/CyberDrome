@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="mage_core" data-type="core" data-direction="north">
+  <title>Nimbus Arkankern (north)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M72.02 45.5 L72.28 44.53 L72.59 42.36 L72.21 43.75 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M76.36 50.66 L75.29 50.42 L76.88 50.77 L78.41 51.12 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L72.28 46.85 L73.02 48.3 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L73.02 48.3 L74.1 49.58 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M72.28 44.53 L73.02 44.12 L73.65 41.78 L72.59 42.36 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L72.02 45.5 L72.28 46.85 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L74.1 49.58 L75.29 50.42 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L72.28 44.53 L72.02 45.5 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M77.1 50.25 L76.36 50.66 L78.41 51.12 L79.47 50.54 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L75.29 50.42 L76.36 50.66 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.6 40.33 L74.93 40.6 L75.51 40.19 L74.18 39.93 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M80.95 50.86 L80.27 51.71 L80.84 51.31 L81.52 50.46 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L73.02 44.12 L72.28 44.53 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L76.36 50.66 L77.1 50.25 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.02 44.12 L74.1 44.37 L75.18 42.12 L73.65 41.78 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L74.1 44.37 L73.02 44.12 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M75.18 42.12 L76.88 43.33 L77.96 43.32 L76.77 42.48 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L77.1 50.25 L77.36 49.28 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M77.36 49.28 L77.1 50.25 L79.47 50.54 L79.85 49.15 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L75.29 45.21 L74.1 44.37 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M79.47 47.22 L79.85 49.15 L80.04 47.39 L79.77 46.05 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M81.18 49.55 L80.95 50.86 L81.52 50.46 L81.76 49.15 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M74.93 40.6 L76.41 41.4 L76.98 41.0 L75.51 40.19 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L77.36 49.28 L77.1 47.94 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L76.36 46.48 L75.29 45.21 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M76.88 43.33 L78.41 45.15 L79.03 44.59 L77.96 43.32 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M73.74 48.07 L73.74 48.07 L77.1 47.94 L76.36 46.48 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M78.41 45.15 L79.47 47.22 L79.77 46.05 L79.03 44.59 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M71.02 40.28 L72.67 40.61 L73.24 40.2 L71.59 39.87 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M80.13 53.34 L79.29 54.39 L79.86 53.99 L80.7 52.93 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M74.1 44.37 L75.29 45.21 L76.88 43.33 L75.18 42.12 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M77.1 47.94 L77.36 49.28 L79.85 49.15 L79.47 47.22 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M76.41 41.4 L77.88 42.68 L78.46 42.28 L76.98 41.0 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M80.95 47.91 L81.18 49.55 L81.76 49.15 L81.52 47.51 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M75.29 45.21 L76.36 46.48 L78.41 45.15 L76.88 43.33 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M76.36 46.48 L77.1 47.94 L79.47 47.22 L78.41 45.15 Z" fill="var(--c-glow)" stroke="var(--c-glow)" stroke-width="0.4"/>
+  <path d="M77.88 42.68 L79.22 44.3 L79.79 43.89 L78.46 42.28 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M80.27 46.1 L80.95 47.91 L81.52 47.51 L80.84 45.7 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M79.22 44.3 L80.27 46.1 L80.84 45.7 L79.79 43.89 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M72.67 40.61 L74.5 41.61 L75.07 41.2 L73.24 40.2 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M80.42 51.71 L80.13 53.34 L80.7 52.93 L80.99 51.31 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M80.13 49.68 L80.42 51.71 L80.99 51.31 L80.7 49.27 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M74.5 41.61 L76.33 43.19 L76.9 42.79 L75.07 41.2 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M76.33 43.19 L77.98 45.2 L78.55 44.79 L76.9 42.79 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M79.29 47.43 L80.13 49.68 L80.7 49.27 L79.86 47.03 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M77.98 45.2 L79.29 47.43 L79.86 47.03 L78.55 44.79 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+</g>
+</svg>

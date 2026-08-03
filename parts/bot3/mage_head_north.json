@@ -1,0 +1,43 @@
+{
+  "id": "mage_head",
+  "code": "HED-003",
+  "set": "bot3",
+  "type": "head",
+  "name": "Nimbus Flachhelm",
+  "direction": "north",
+  "svg": "mage_head_north.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 40,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 37.77
+    },
+    {
+      "name": "sensor",
+      "x": 74.12,
+      "y": 23.55
+    }
+  ],
+  "color_scheme": {
+    "plate": "#2f2450",
+    "plate_light": "#524088",
+    "plate_dark": "#1a142d",
+    "metal": "#6f5f97",
+    "visor": "#d6b8ff",
+    "glow": "#ffe5ff",
+    "accent": "#d6b8ff",
+    "outline": "#0d0818"
+  },
+  "tags": [
+    "round",
+    "mage",
+    "sensor"
+  ]
+}

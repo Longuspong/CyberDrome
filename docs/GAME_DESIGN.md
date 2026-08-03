@@ -41,7 +41,9 @@ Daraus folgen die drei Regeln, die alles andere bestimmen:
 1. **Teile werden nie zusammengebacken** – die Kombination entsteht zur Laufzeit
    ueber Anker.
 2. **Farbe ist ein Parameter, keine Bildinformation** – Fraktionen, Seltenheits­stufen
-   und Spielerfarben sind reines Umfaerben, kein neues Asset.
+   und Spielerfarben sind reines Umfaerben, kein neues Asset. Eingestellt wird
+   ueber **vier Kategorien je Bauteiltyp**; die acht CSS-Rollen im SVG leiten
+   sich daraus ab (Details in `parts/README.md`, Abschnitt 4a).
 3. **Vier Richtungen sind das Maximum** – und sie werden nicht gezeichnet,
    sondern aus einer Quader-Definition projiziert. Keine Zwischenwinkel.
 
@@ -107,11 +109,35 @@ Aktueller Bestand:
 | `COR-002` | Molok Fusionskern | bot2 |
 | `EQP-003` | Belagerungskanone | bot2 |
 | `EQP-004` | Drohnen-Pod | bot2 |
+| `CHS-003` | Nimbus Chassis | bot3 |
+| `HED-003` | Nimbus Flachhelm | bot3 |
+| `LEG-003` | Nimbus Fahrwerk | bot3 |
+| `COR-003` | Nimbus Arkankern | bot3 |
+| `EQP-005` | Runenstab | bot3 |
+| `EQP-006` | Orbit-Fokus | bot3 |
 
 Der Code ist bewusst getrennt vom Datei-Slug (`scout_body`), der die Dateinamen
 traegt und beim Stoebern im Ordner lesbar bleiben soll. Ein exportiertes
 Loadout enthaelt beides plus den Klarnamen – damit laesst es sich ohne die
 Bibliothek lesen.
+
+## 3b. Die drei Sets und was sie beweisen sollen
+
+Ein Set ist eine Autoren-Schublade, kein Bausatz (siehe Abschnitt 5). Die drei
+mitgelieferten Sets decken bewusst je einen anderen Fall ab:
+
+| Set | Silhouette | zeigt |
+|---|---|---|
+| `bot1` RX-Vireo // Scout | schlank, kantig, zweibeinig | den Standardfall: zwei Ausruestungsanker |
+| `bot2` HX-Molok // Juggernaut | breit, gedrungen, kantig | den dritten Anker (Schulterpod) |
+| `bot3` AR-Nimbus // Technomant | **rund**, flacher Helm, **Fahrgestell statt Beinen** | dass Formensprache und Fortbewegung frei sind |
+
+`bot3` ist der Gegenentwurf zu den ersten beiden: Rotationskoerper statt
+gestapelter Quader, ein weit auskragender flacher Helm statt eines Visierkopfs,
+zwei grosse Raeder auf einer Achse statt Beinen. Technisch aendert das nichts –
+es ist derselbe Anker-Vertrag, dieselbe Projektion, dieselben vier Richtungen.
+Genau das ist der Punkt: ein Rad ist nur ein Rotationskoerper um die
+Bot-Links-Achse, kein Sonderfall in Code oder Format.
 
 ## 4. Perspektive und die vier Richtungen
 

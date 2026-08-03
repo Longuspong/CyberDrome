@@ -86,6 +86,13 @@ Kein Teil enthaelt Hardcoded-Hex-Werte. Alles laeuft ueber CSS Custom
 Properties (siehe PALETTE_ROLES). Das Werkstatt-Tool setzt diese Variablen
 auf dem Container -- damit ist Umfaerben in Echtzeit moeglich, ohne die
 SVG-Datei anzufassen.
+
+Eine Palette wird aber nicht mehr ueber diese acht Rollen bedient, sondern
+ueber **genau vier Kategorien je Bauteiltyp** (siehe CATEGORIES). Ein Kopf
+faerbt Panzerung / Mechanik / Visier / Kontur, ein Kern Gehaeuse / Kernglut /
+Energieringe / Kontur. Die acht CSS-Rollen fallen daraus ab -- Kante und
+Schatten der Panzerung werden aus der Grundfarbe abgeleitet, damit die
+Iso-Beleuchtung gar nicht erst falsch eingestellt werden kann.
 """
 
 from __future__ import annotations
@@ -171,27 +178,100 @@ PALETTE_ROLES = [
     "outline",     # Kontur
 ]
 
-DEFAULT_PALETTE = {
-    "plate": "#28304a",
-    "plate_dark": "#161c2e",
-    "plate_light": "#41507a",
-    "metal": "#5b6785",
-    "accent": "#2de2e6",
-    "glow": "#ff2d95",
-    "visor": "#7cf9ff",
-    "outline": "#080b13",
+# --- Vier Kategorien je Bauteiltyp ----------------------------------------
+#
+# Acht flache Farbrollen sind zum Bemalen zu viele -- und drei davon (plate,
+# plate_light, plate_dark) duerfen ohnehin nicht frei gewaehlt werden: sie SIND
+# die Beleuchtung. Eine Palette wird deshalb ueber genau vier Kategorien je
+# Bauteiltyp bedient; welche vier das sind, haengt davon ab, was der Typ
+# ueberhaupt bemalt. Die acht CSS-Rollen leiten sich daraus ab.
+#
+#   base   unveraendert
+#   light  Oberseiten -- multiplikativ aufgehellt, damit Ton und Saettigung
+#          erhalten bleiben (Mischen mit Weiss wuerde ausbleichen)
+#   dark   rechte Flanken / Schatten
+#   hot    Emission: dieselbe Farbe, additiv Richtung Weiss gezogen
+SHADES = {"base": (1.0, 0), "light": (1.62, 6), "dark": (0.56, 0), "hot": (1.0, 45)}
+
+PALETTE_TYPES = ("body", "head", "feet", "core", "equipment")
+
+_HULL = ("hull", "Panzerung",
+         {"plate": "base", "plate_light": "light", "plate_dark": "dark"})
+_MECH = ("mech", "Mechanik", {"metal": "base"})
+_NEON = ("neon", "Neon", {"accent": "base", "glow": "hot", "visor": "hot"})
+_LINE = ("line", "Kontur", {"outline": "base"})
+
+# Jede Zeile deckt alle acht Rollen ab -- so bleibt keine CSS-Variable ungesetzt,
+# auch wenn ein spaeter importiertes Teil eine Rolle nutzt, die der mitgelieferte
+# Satz fuer diesen Typ nicht braucht.
+CATEGORIES = {
+    "body": [_HULL, _MECH, _NEON, _LINE],
+    "feet": [_HULL, _MECH, _NEON, _LINE],
+    "equipment": [_HULL, _MECH, _NEON, _LINE],
+    "head": [_HULL, _MECH,
+             ("visor", "Visier", {"visor": "base", "glow": "hot", "accent": "base"}),
+             _LINE],
+    "core": [("case", "Gehaeuse",
+              {"plate": "base", "plate_light": "light", "plate_dark": "dark",
+               "metal": "light"}),
+             ("ember", "Kernglut", {"glow": "base", "visor": "hot"}),
+             ("rings", "Energieringe", {"accent": "base"}),
+             _LINE],
 }
 
-JUGG_PALETTE = {
-    "plate": "#3d2b35",
-    "plate_dark": "#22161d",
-    "plate_light": "#5d4551",
-    "metal": "#7d6b78",
-    "accent": "#ff8a3d",
-    "glow": "#ffd447",
-    "visor": "#ffb057",
-    "outline": "#100a0e",
-}
+
+def palette_type(part_type: str) -> str:
+    """equipment_left / equipment_right teilen sich die Kategorien von equipment."""
+    return "equipment" if part_type.startswith("equipment") else part_type
+
+
+def _shade_hex(color: str, shade: str) -> str:
+    factor, offset = SHADES[shade]
+    raw = color.lstrip("#")
+    channels = (int(raw[i:i + 2], 16) for i in (0, 2, 4))
+    return "#" + "".join(
+        f"{max(0, min(255, round(c * factor + offset))):02x}" for c in channels
+    )
+
+
+def resolve_roles(colors: dict, part_type: str) -> dict:
+    """Vier Kategoriefarben -> die acht CSS-Rollen eines Bauteiltyps."""
+    roles = {}
+    for key, _label, mapping in CATEGORIES[palette_type(part_type)]:
+        base = colors.get(key)
+        if not base:
+            continue
+        for role, shade in mapping.items():
+            roles[role] = _shade_hex(base, shade)
+    return roles
+
+
+def make_palette(hull, mech, neon, visor, ember, rings, line) -> dict:
+    """Set-Palette: vier Kategorien fuer jeden der fuenf Bauteiltypen."""
+    armour = {"hull": hull, "mech": mech, "neon": neon, "line": line}
+    return {
+        "body": dict(armour),
+        "feet": dict(armour),
+        "equipment": dict(armour),
+        "head": {"hull": hull, "mech": mech, "visor": visor, "line": line},
+        "core": {"case": hull, "ember": ember, "rings": rings, "line": line},
+    }
+
+
+DEFAULT_PALETTE = make_palette(
+    hull="#28304a", mech="#5b6785", neon="#2de2e6", visor="#7cf9ff",
+    ember="#ff2d95", rings="#2de2e6", line="#080b13",
+)
+
+JUGG_PALETTE = make_palette(
+    hull="#3d2b35", mech="#7d6b78", neon="#ff8a3d", visor="#ffb057",
+    ember="#ffd447", rings="#ff8a3d", line="#100a0e",
+)
+
+MAGE_PALETTE = make_palette(
+    hull="#2f2450", mech="#6f5f97", neon="#b06bff", visor="#d6b8ff",
+    ember="#7cf9ff", rings="#ff5ec7", line="#0d0818",
+)
 
 C = {role: f"var(--c-{role.replace('_', '-')})" for role in PALETTE_ROLES}
 
@@ -225,6 +305,90 @@ def D(f, l_center, z_center, radius, mat, segments=16):
     return ("disc", f, l_center, z_center, radius, mat, segments)
 
 
+def L(center, profile, mat, axis="z", segments=14, caps=True):
+    """
+    Rotationskoerper -- alles Runde entsteht hier.
+
+    ``profile`` ist ein Streckenzug aus (radius, achsposition)-Paaren, der um
+    eine bot-lokale Achse gedreht wird. Damit fallen Zylinder, Kegel, Kuppeln,
+    Raeder und Ringe aus einer einzigen Definition:
+
+        [(9, 12), (9, 26)]                       Zylinder
+        [(10.6, 50), (6.4, 57.5), (0, 58.6)]     Kuppel (Radius laeuft auf 0)
+        [(6.2, 6), (7.4, 7.2), (6.2, 8.4), (6.2, 6)]   geschlossen -> Ring
+
+    ``center`` sind die beiden Koordinaten quer zur Achse, in bot-lokaler
+    Reihenfolge ohne die Achse selbst:
+
+        axis="z"  center=(f, l)   Profil laeuft ueber die Hoehe   -> stehend
+        axis="l"  center=(f, z)   Profil laeuft nach links        -> Rad
+        axis="f"  center=(l, z)   Profil laeuft nach vorn         -> Ring/Orb
+
+    Ein geschlossenes Profil (erster Punkt == letzter) ist ein Mantel ohne
+    Deckel; ``caps=False`` unterdrueckt die Deckel auch bei offenen Profilen
+    (Leuchtbaender, Rohre).
+    """
+    return ("lathe", tuple(center), tuple(profile), mat, axis, segments, caps)
+
+
+# Basis je Achse: (Achsrichtung, u, v) in bot-lokalen Koordinaten (f, l, z).
+_LATHE_AXES = {
+    "z": ((0, 0, 1), (1, 0, 0), (0, 1, 0)),
+    "l": ((0, 1, 0), (1, 0, 0), (0, 0, 1)),
+    "f": ((1, 0, 0), (0, 1, 0), (0, 0, 1)),
+}
+
+
+def _lathe_faces(center, profile, axis, segments, caps):
+    """Alle Flaechen eines Rotationskoerpers als (lokale Normale, Eckpunkte)."""
+    a, u, v = _LATHE_AXES[axis]
+    c0, c1 = center
+
+    # Mittelpunkt in bot-lokalen Koordinaten: die beiden Nicht-Achsen-Werte
+    # sitzen auf u und v.
+    origin = tuple(c0 * u[i] + c1 * v[i] for i in range(3))
+
+    def at(radius, along, angle):
+        cos_a, sin_a = math.cos(angle), math.sin(angle)
+        return tuple(origin[i] + along * a[i]
+                     + radius * cos_a * u[i] + radius * sin_a * v[i]
+                     for i in range(3))
+
+    def normal(n_radial, n_along, angle):
+        cos_a, sin_a = math.cos(angle), math.sin(angle)
+        length = math.hypot(n_radial, n_along) or 1.0
+        return tuple((n_along * a[i]
+                      + n_radial * cos_a * u[i] + n_radial * sin_a * v[i]) / length
+                     for i in range(3))
+
+    angles = [2 * math.pi * i / segments for i in range(segments)]
+    closed = profile[0] == profile[-1]
+    faces = []
+
+    for (r0, t0), (r1, t1) in zip(profile, profile[1:]):
+        # Aussennormale des Profilabschnitts in der (radius, achse)-Ebene.
+        n_radial, n_along = (t1 - t0), -(r1 - r0)
+        for index, angle in enumerate(angles):
+            nxt = angles[(index + 1) % segments]
+            mid = angle + math.pi / segments
+            quad = [p for p in (at(r0, t0, angle), at(r0, t0, nxt),
+                                at(r1, t1, nxt), at(r1, t1, angle))]
+            # Entartete Flaechen (Radius laeuft auf 0) faltet der Renderer
+            # ohnehin zu einem Dreieck zusammen -- das ist gewollt.
+            faces.append((normal(n_radial, n_along, mid), quad))
+
+    if caps and not closed:
+        for radius, along, sign in ((profile[-1][0], profile[-1][1], 1),
+                                    (profile[0][0], profile[0][1], -1)):
+            if radius <= 0:
+                continue
+            ring = [at(radius, along, angle) for angle in
+                    (angles if sign > 0 else list(reversed(angles)))]
+            faces.append((tuple(sign * a[i] for i in range(3)), ring))
+
+    return faces
+
+
 def _box_faces(f, l, z):
     """Alle sechs Flaechen als (lokale Normale, Eckpunkte)."""
     f0, f1 = f
@@ -244,27 +408,83 @@ def _shade(world_normal, mat):
     """
     Ordnet einer Weltnormalen ihre Farbe zu. Das Licht haengt am Bildschirm,
     nicht am Bot -- deshalb wird hier die WELT-Normale ausgewertet.
+
+    Sichtbar ist eine Flaeche, wenn ihre Normale der Kamera entgegen zeigt.
+    Fuer achsparallele Quader-Flaechen ist dieser Test gleichbedeutend mit
+    "eine der drei Kamera-zugewandten Richtungen"; erst die vielen schraegen
+    Facetten eines Rotationskoerpers brauchen ihn wirklich.
     """
     top, left, right, stroke = MATERIALS[mat]
     nx, ny, nz = world_normal
+    if nx * VIEW[0] + ny * VIEW[1] + nz * VIEW[2] <= 1e-9:
+        return None, stroke   # abgewandt
     if nz > 0.5:
         return top, stroke
-    if nx < -0.5:      # Flanke nach unten-links
-        return left, stroke
-    if ny < -0.5:      # Flanke nach unten-rechts
-        return right, stroke
-    return None, stroke   # abgewandt
+    # Auf dem Bildschirm zeigt -px nach unten-links, -py nach unten-rechts.
+    # Welche der beiden Flanken es ist, entscheidet die staerkere Komponente.
+    return (left if nx <= ny else right), stroke
 
 
-def _emit(points_local, world_normal, mat, facing):
+def _emit(points_local, world_normal, mat, facing, seam=False):
+    """
+    Eine Flaeche -> (Tiefe, SVG-Pfad). ``None``, wenn sie abgewandt ist.
+
+    ``seam=True`` zieht die Kontur eines Facets in seiner EIGENEN Farbe statt
+    in der Outline-Farbe. Das ist der Unterschied zwischen einem runden Koerper
+    und einem Drahtgitter: ein Rotationskoerper besteht aus vielen kleinen
+    Facetten, deren gemeinsame Kanten keine Kanten des Objekts sind. Der
+    Eigenfarb-Strich deckt zugleich die Antialiasing-Fugen zwischen ihnen ab.
+    """
     color, stroke = _shade(world_normal, mat)
     if color is None:
         return None
     world_points = [to_world(p, facing) for p in points_local]
     depth = sum(closeness(w) for w in world_points) / len(world_points)
     coords = " L".join(f"{x} {y}" for x, y in (to_screen(w) for w in world_points))
-    extra = "" if stroke else ' stroke="none"'
+    if seam:
+        extra = f' stroke="{color}" stroke-width="0.4"'
+    else:
+        extra = "" if stroke else ' stroke="none"'
     return (depth, f'  <path d="M{coords} Z" fill="{color}"{extra}/>')
+
+
+def _convex_hull(points):
+    """Monotone chain -- fuer die Silhouette eines Rotationskoerpers."""
+    points = sorted(set(points))
+    if len(points) < 3:
+        return points
+
+    def half(seq):
+        out = []
+        for p in seq:
+            while len(out) >= 2:
+                (ax, ay), (bx, by) = out[-2], out[-1]
+                if (bx - ax) * (p[1] - ay) - (by - ay) * (p[0] - ax) > 0:
+                    break
+                out.pop()
+            out.append(p)
+        return out[:-1]
+
+    return half(points) + half(list(reversed(points)))
+
+
+def _silhouette(all_points, facing, mat):
+    """
+    Aussenkontur eines Rotationskoerpers, damit er zum Strichbild der
+    Quader-Teile passt.
+
+    Die konvexe Huelle der projizierten Punkte ist fuer konvexe Profile
+    (Zylinder, Kegel, Kuppel, Orb) exakt die Silhouette. Gezeichnet wird sie
+    HINTER den eigenen Flaechen -- sichtbar bleibt dadurch genau die aeussere
+    Haelfte des Strichs, also dasselbe Bild wie bei einem Quader.
+    """
+    if not MATERIALS[mat][3]:
+        return None          # Leuchtmaterial traegt auch sonst keine Kontur
+    hull = _convex_hull([to_screen(w) for w in all_points])
+    if len(hull) < 3:
+        return None
+    coords = " L".join(f"{x} {y}" for x, y in hull)
+    return f'  <path d="M{coords} Z" fill="none"/>'
 
 
 def render(shapes, facing):
@@ -289,6 +509,23 @@ def render(shapes, facing):
             emitted = _emit(points, wn, mat, facing)
             if emitted:
                 faces.append(emitted)
+        elif shape[0] == "lathe":
+            _, center, profile, mat, axis, segments, caps = shape
+            shell = _lathe_faces(center, profile, axis, segments, caps)
+            visible = []
+            for local_normal, points in shell:
+                wn = to_world(local_normal, facing)
+                emitted = _emit(points, wn, mat, facing, seam=True)
+                if emitted:
+                    visible.append(emitted)
+            if visible:
+                world_points = [to_world(p, facing)
+                                for _, quad in shell for p in quad]
+                outline = _silhouette(world_points, facing, mat)
+                if outline:
+                    # knapp hinter die eigenen Flaechen
+                    visible.append((min(d for d, _ in visible) - 0.01, outline))
+            faces.extend(visible)
         else:
             raise ValueError(f"Unbekanntes Primitiv: {shape[0]}")
 
@@ -479,6 +716,124 @@ EQ_DRONE_POD = [
 
 
 # ===========================================================================
+# AR-Nimbus // Technomant  (parts/bot3) -- Rundungen statt Kanten
+#
+# Der Gegenentwurf zu den ersten beiden Sets: die dort gestapelten Quader
+# weichen Rotationskoerpern (siehe L()). Kuppeln, Orbs und Ringe geben die
+# weiche, magier-hafte Silhouette; das Cyber-Setting bleibt ueber Neonbaender
+# und Sensorik erhalten.
+#
+# Statt Beinen ein FAHRGESTELL: zwei grosse Raeder auf einer Achse quer zum
+# Bot, dazu eine Stuetzrolle vorn. Ein Rad ist dabei nichts weiter als ein
+# Rotationskoerper um die Bot-Links-Achse -- die Beleuchtung faellt aus der
+# Projektion ab wie bei jedem anderen Teil.
+#
+# Hoehenprofil in Entwurfseinheiten:
+#   Raeder 0..19   Wanne 11..27   Torso 27..53   Schulterkuppel 53..59
+#   Hals 58..61    Flachhelm 61..72
+# ===========================================================================
+
+MAGE_BODY = [
+    # -- Huefte: gerundeter Sockel auf dem Fahrgestell --------------------
+    L((0, 0), [(7.0, 27), (8.6, 31), (8.8, 35)], "metal", segments=16),
+    # -- Torso: EINE durchgehende Rundung statt gestapelter Kisten --------
+    L((0, 0), [(8.6, 35), (10.0, 42), (10.2, 49), (9.4, 53)], "plate"),
+    # Schulterkuppel laeuft auf Radius 0 aus -- daher die weiche Silhouette.
+    L((0, 0), [(9.4, 53), (8.2, 56.2), (5.2, 58.4), (0, 59.2)], "light"),
+    # Umlaufendes Neonband: bei einem Rotationskoerper die natuerliche Zier,
+    # weil es in jeder Blickrichtung gleich gut sitzt.
+    L((0, 0), [(10.4, 45.0), (10.4, 46.2)], "accent", caps=False, segments=18),
+    # -- Brustsaeule + Kernsockel vorn ------------------------------------
+    L((6.2, 0), [(4.0, 38), (4.4, 45), (3.8, 50)], "dark", segments=12),
+    # -- Rueckenmodul: Reaktorwulst mit Kuehlringen -----------------------
+    L((-7.2, 0), [(4.4, 40), (5.0, 46), (4.2, 52)], "dark", segments=12),
+    L((-7.2, 0), [(5.3, 42.0), (5.3, 42.8)], "light", caps=False, segments=12),
+    L((-7.2, 0), [(5.3, 45.2), (5.3, 46.0)], "light", caps=False, segments=12),
+    L((-7.2, 0), [(5.3, 48.4), (5.3, 49.2)], "light", caps=False, segments=12),
+    # -- Schulterorbs: die Rundung, die den Magier ausmacht ---------------
+    L((0, 13.8), [(0, 44.6), (3.6, 46.3), (5.0, 49.6), (3.6, 52.9), (0, 54.6)], "plate"),
+    L((0, -13.8), [(0, 44.6), (3.6, 46.3), (5.0, 49.6), (3.6, 52.9), (0, 54.6)], "plate"),
+    L((0, 13.8), [(5.3, 49.2), (5.3, 50.0)], "accent", caps=False, segments=16),
+    L((0, -13.8), [(5.3, 49.2), (5.3, 50.0)], "accent", caps=False, segments=16),
+    # -- Hals: die Luecke, die den Helm lesbar macht ----------------------
+    L((0, 0), [(3.6, 58.2), (3.8, 61)], "metal", segments=12),
+]
+
+# Flacher Helm.
+#
+# Eine breit auskragende Krempe verdeckt bei einer 45-Grad-Kamera zwangslaeufig
+# alles darunter -- ein Visierschlitz an der Front waere schlicht nie zu sehen.
+# Das Sensorband sitzt deshalb auf der SENKRECHTEN AUSSENKANTE der Krempe: die
+# liegt in jeder Blickrichtung auf der Silhouette. Die Kuppel darueber ist
+# flacher als ihr Radius breit ist, und genau diese waagerechte Flaeche zeigt
+# die Kamera voll -- daraus liest sich "flach".
+MAGE_HEAD = [
+    L((0, 0), [(4.6, 61.0), (5.4, 62.6)], "metal", segments=12),   # Halsansatz
+    L((0, 0), [(7.8, 62.6), (8.6, 66.0)], "dark", segments=16),    # Kapuze
+    L((0, 0), [(8.6, 66.0), (9.4, 67.2)], "plate", segments=16),
+    L((0, 0), [(9.4, 67.2), (10.6, 67.7)], "light", segments=20),  # Krempe unten
+    L((0, 0), [(10.6, 67.7), (10.6, 69.0)], "visor", caps=False, segments=20),
+    L((0, 0), [(10.6, 69.0), (9.4, 69.6)], "light", segments=20),  # Krempe oben
+    L((0, 0), [(9.4, 69.6), (7.8, 71.0), (4.4, 72.3), (0, 72.7)], "plate"),
+    L((0, 0), [(3.8, 72.2), (3.8, 72.9)], "accent", caps=False, segments=14),
+]
+
+# Fahrbarer Untersatz statt Beinen.
+MAGE_DRIVE = [
+    # Wanne, unten gerundet
+    L((0, 0), [(5.6, 11.5), (8.8, 15), (9.4, 21), (7.8, 27)], "plate"),
+    L((0, 0), [(9.5, 17.0), (9.5, 18.0)], "accent", caps=False, segments=18),
+    B((-2.2, 2.2), (-14.2, 14.2), (8.6, 10.6), "metal"),          # Achse
+    # Raeder: Rotationskoerper um die Bot-Links-Achse -- mehr braucht ein Rad
+    # in dieser Projektion nicht.
+    L((0, 9.8), [(9.8, 10.8), (9.8, 14.2)], "dark", axis="l", segments=18),
+    L((0, 9.8), [(9.8, -14.2), (9.8, -10.8)], "dark", axis="l", segments=18),
+    L((0, 9.8), [(5.8, 14.2), (5.8, 14.9)], "metal", axis="l", segments=16),
+    L((0, 9.8), [(5.8, -14.9), (5.8, -14.2)], "metal", axis="l", segments=16),
+    L((0, 9.8), [(2.4, 14.9), (2.4, 15.6)], "accent", axis="l", segments=12),
+    L((0, 9.8), [(2.4, -15.6), (2.4, -14.9)], "accent", axis="l", segments=12),
+    # Ausleger + Stuetzrolle vorn -- sonst stuende der Bot auf der Nase.
+    B((4.0, 11.0), (-2.0, 2.0), (7.2, 9.6), "metal"),
+    L((11.0, 4.6), [(4.4, -2.2), (4.4, 2.2)], "dark", axis="l", segments=14),
+    L((11.0, 4.6), [(1.8, 2.2), (1.8, 2.8)], "glow", axis="l", segments=10),
+]
+
+MAGE_CORE = [
+    D(10.2, 0, 43, 5.6, "dark"),
+    # Orb, der nach vorn aus dem Sockel tritt
+    L((0, 43), [(0, 10.2), (2.8, 11.2), (4.0, 12.6), (2.8, 14.0), (0, 15.0)],
+      "glow", axis="f"),
+    L((0, 43), [(6.2, 11.0), (6.2, 11.6)], "accent", axis="f", caps=False, segments=20),
+    L((0, 43), [(5.0, 13.0), (5.0, 13.6)], "accent", axis="f", caps=False, segments=20),
+]
+
+EQ_RUNE_STAFF = [
+    L((0, 0), [(3.4, 41), (3.8, 47), (3.4, 50)], "metal", segments=12),   # Oberarm
+    L((1.0, 0), [(3.0, 31), (3.6, 40)], "plate", segments=12),            # Unterarm
+    L((1.0, 0), [(4.2, 29), (4.2, 31.6)], "dark", segments=12),           # Faust
+    # Der Stab laeuft VOR dem Arm nach oben. Nach vorn gerichtet wuerde er in
+    # der Iso-Ansicht mit Torso und Fahrgestell verschmelzen.
+    L((7.6, 0), [(1.1, 22), (1.1, 55)], "metal", segments=10),
+    L((7.6, 0), [(2.3, 33), (2.3, 34.4)], "accent", caps=False, segments=10),
+    L((7.6, 0), [(2.9, 54), (3.6, 56.2), (2.9, 58.4)], "plate", segments=12),
+    L((7.6, 0), [(0, 58.6), (2.2, 59.6), (3.0, 61.0), (2.2, 62.4), (0, 63.4)], "glow"),
+    L((7.6, 0), [(4.4, 60.4), (4.4, 61.6)], "accent", caps=False, segments=18),
+]
+
+EQ_ORBIT_FOCUS = [
+    L((0, 0), [(3.4, 41), (3.8, 47), (3.4, 50)], "metal", segments=12),
+    L((1.2, 0), [(3.2, 33), (3.8, 40)], "plate", segments=12),
+    L((1.2, 0), [(4.6, 30), (5.0, 32), (4.4, 33.6)], "dark", segments=12),
+    # Schwebender Fokusring vor der Hand. Geschlossenes Profil (erster Punkt
+    # == letzter) -> Mantel ohne Deckel, also ein echter Ring mit Loch.
+    L((0, 30.5), [(6.4, 6.5), (7.6, 7.6), (6.4, 8.7), (6.4, 6.5)],
+      "accent", axis="f", segments=18),
+    L((0, 30.5), [(0, 6.4), (1.9, 6.9), (2.6, 7.6), (1.9, 8.3), (0, 8.8)],
+      "glow", axis="f", segments=12),
+]
+
+
+# ===========================================================================
 # Teile-Spezifikation
 #
 # Anker werden in bot-lokalen Koordinaten angegeben und pro Richtung mit
@@ -588,6 +943,59 @@ SETS = [
             },
         ],
     },
+    {
+        "dir": "bot3",
+        "id": "bot3",
+        "name": "AR-Nimbus // Technomant",
+        "description": "Gerundete Support-DROME auf Fahrgestell. "
+                       "Zwei Ausruestungsanker.",
+        "palette": MAGE_PALETTE,
+        "parts": [
+            {
+                "id": "mage_body", "code": "CHS-003", "type": "body",
+                "name": "Nimbus Chassis", "tags": ["round", "mage", "support"],
+                "shapes": MAGE_BODY,
+                "anchors": {
+                    "mount": (0, 0, MOUNT_Z),
+                    "head": (0, 0, 61),
+                    "feet": (0, 0, 27),
+                    "core": (10.2, 0, 43),
+                    "equip_left": (0, 13.8, 47),
+                    "equip_right": (0, -13.8, 47),
+                },
+            },
+            {
+                "id": "mage_head", "code": "HED-003", "type": "head",
+                "name": "Nimbus Flachhelm", "tags": ["round", "mage", "sensor"],
+                "shapes": MAGE_HEAD,
+                "anchors": {"mount": (0, 0, 61), "sensor": (10.6, 0, 68.4)},
+            },
+            {
+                "id": "mage_drive", "code": "LEG-003", "type": "feet",
+                "name": "Nimbus Fahrwerk", "tags": ["wheels", "round", "fast"],
+                "shapes": MAGE_DRIVE,
+                "anchors": {"mount": (0, 0, 27), "ground": (1, 0, 0)},
+            },
+            {
+                "id": "mage_core", "code": "COR-003", "type": "core",
+                "name": "Nimbus Arkankern", "tags": ["core", "arcane"],
+                "shapes": MAGE_CORE,
+                "anchors": {"mount": (10.2, 0, 43)},
+            },
+            {
+                "id": "eq_rune_staff", "code": "EQP-005", "type": "equipment",
+                "name": "Runenstab", "tags": ["weapon", "arcane", "round"],
+                "shapes": EQ_RUNE_STAFF,
+                "anchors": {"mount": (0, 0, 47), "muzzle": (7.6, 0, 61.0)},
+            },
+            {
+                "id": "eq_orbit_focus", "code": "EQP-006", "type": "equipment",
+                "name": "Orbit-Fokus", "tags": ["support", "arcane", "round"],
+                "shapes": EQ_ORBIT_FOCUS,
+                "anchors": {"mount": (0, 0, 47), "muzzle": (7.6, 0, 30.5)},
+            },
+        ],
+    },
 ]
 
 
@@ -659,7 +1067,11 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
             {"name": name, **dict(zip(("x", "y"), project(local, direction)))}
             for name, local in part["anchors"].items()
         ],
-        "color_scheme": dict(palette),
+        # Referenzfarben: die acht CSS-Rollen, wie sie sich aus den vier
+        # Kategorien DIESES Bauteiltyps ergeben. Rein dokumentierend --
+        # gezeichnet wird immer mit der aktiven Palette der Werkstatt.
+        "color_scheme": resolve_roles(palette[palette_type(part["type"])],
+                                      part["type"]),
         "tags": part.get("tags", []),
     }
     if part["type"] == "body":

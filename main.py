@@ -39,8 +39,10 @@ REST-API
     GET    /api/builds                   -> Liste gespeicherter Bots
     GET    /api/builds/<name>            -> gespeicherten Bot laden
     POST   /api/build                    -> Bot speichern {name, svg, loadout}
-    GET    /api/palettes                 -> gespeicherte Farbpaletten
-    PUT    /api/palettes                 -> Farbpaletten ueberschreiben
+    GET    /api/palettes                 -> Farbpaletten + Kategorien je Bauteiltyp
+    PUT    /api/palettes                 -> Farbpaletten ueberschreiben (anlegen,
+                                            umbenennen und loeschen laufen
+                                            ebenfalls hierueber)
 
     GET    /parts/...                    -> statische Teil-Dateien
     GET    /builds/...                   -> statische Build-Dateien
@@ -76,33 +78,93 @@ PART_TYPES = ("core", "head", "body", "feet",
 
 MAX_BODY_BYTES = 8 * 1024 * 1024  # 8 MB -- reicht fuer sehr grosse SVGs
 
-DEFAULT_PALETTES = {
-    "Neon Cyan": {
-        "plate": "#232a3d", "plate_dark": "#151a29", "plate_light": "#3a4560",
-        "metal": "#5b6785", "accent": "#2de2e6", "glow": "#ff2d95",
-        "visor": "#7cf9ff", "outline": "#0a0d16",
-    },
-    "Ember Rust": {
-        "plate": "#3a2a33", "plate_dark": "#20151c", "plate_light": "#57404c",
-        "metal": "#7d6b78", "accent": "#ff8a3d", "glow": "#ffd447",
-        "visor": "#ffb057", "outline": "#120b10",
-    },
-    "Toxic Lime": {
-        "plate": "#1e2b22", "plate_dark": "#111a14", "plate_light": "#31462f",
-        "metal": "#5f7a5c", "accent": "#9dff4d", "glow": "#d4ff2b",
-        "visor": "#c8ff8a", "outline": "#08120b",
-    },
-    "Void Violet": {
-        "plate": "#2a2140", "plate_dark": "#171227", "plate_light": "#453764",
-        "metal": "#6f5f97", "accent": "#a76bff", "glow": "#ff5ec7",
-        "visor": "#d3b6ff", "outline": "#0d0818",
-    },
-    "Ghost Mono": {
-        "plate": "#2b2f36", "plate_dark": "#191c21", "plate_light": "#454b56",
-        "metal": "#7b828e", "accent": "#dfe6f0", "glow": "#ffffff",
-        "visor": "#c3ccd9", "outline": "#0c0e12",
-    },
+# ---------------------------------------------------------------------------
+# Farbpaletten: vier Kategorien je Bauteiltyp
+#
+# Eine Palette wird nicht mehr ueber die acht CSS-Rollen bedient, sondern ueber
+# genau VIER Kategorien -- und welche vier das sind, haengt am Bauteiltyp. Ein
+# Kopf faerbt etwas anderes als ein Kern. Die acht Rollen leiten sich daraus im
+# Frontend ab (Kante und Schatten der Panzerung aus der Grundfarbe), damit die
+# Iso-Beleuchtung gar nicht erst falsch eingestellt werden kann.
+#
+# Der Server kennt die Kategorien nur, um Paletten zu pruefen und alte, flache
+# Paletten zu uebersetzen -- gerechnet wird im Frontend.
+# ---------------------------------------------------------------------------
+PALETTE_TYPES = ("body", "head", "feet", "core", "equipment")
+
+PALETTE_CATEGORIES = {
+    "body": ("hull", "mech", "neon", "line"),
+    "feet": ("hull", "mech", "neon", "line"),
+    "equipment": ("hull", "mech", "neon", "line"),
+    "head": ("hull", "mech", "visor", "line"),
+    "core": ("case", "ember", "rings", "line"),
 }
+
+# Welche der alten acht Rollen eine Kategorie ersetzt. Nur fuer die Migration
+# von Paletten aus der Zeit vor den Kategorien.
+LEGACY_ROLE = {
+    "hull": "plate", "case": "plate", "mech": "metal", "neon": "accent",
+    "visor": "visor", "ember": "glow", "rings": "accent", "line": "outline",
+}
+
+HEX_COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+def _palette(hull: str, mech: str, neon: str, visor: str,
+             ember: str, rings: str, line: str) -> dict:
+    armour = {"hull": hull, "mech": mech, "neon": neon, "line": line}
+    return {
+        "body": dict(armour), "feet": dict(armour), "equipment": dict(armour),
+        "head": {"hull": hull, "mech": mech, "visor": visor, "line": line},
+        "core": {"case": hull, "ember": ember, "rings": rings, "line": line},
+    }
+
+
+DEFAULT_PALETTES = {
+    "Neon Cyan": _palette("#232a3d", "#5b6785", "#2de2e6", "#7cf9ff",
+                          "#ff2d95", "#2de2e6", "#0a0d16"),
+    "Ember Rust": _palette("#3a2a33", "#7d6b78", "#ff8a3d", "#ffb057",
+                           "#ffd447", "#ff8a3d", "#120b10"),
+    "Toxic Lime": _palette("#1e2b22", "#5f7a5c", "#9dff4d", "#c8ff8a",
+                           "#d4ff2b", "#9dff4d", "#08120b"),
+    "Void Violet": _palette("#2a2140", "#6f5f97", "#a76bff", "#d3b6ff",
+                            "#ff5ec7", "#a76bff", "#0d0818"),
+    "Ghost Mono": _palette("#2b2f36", "#7b828e", "#dfe6f0", "#c3ccd9",
+                           "#ffffff", "#dfe6f0", "#0c0e12"),
+}
+
+FALLBACK_PALETTE = DEFAULT_PALETTES["Neon Cyan"]
+
+
+def normalize_palette(value, fallback: dict = None) -> dict:
+    """
+    Bringt eine Palette in die Kategorie-Form -- egal, woher sie kommt.
+
+    Akzeptiert sowohl die aktuelle Form ``{typ: {kategorie: farbe}}`` als auch
+    eine alte flache Palette ``{rolle: farbe}``; letztere wird ueber
+    LEGACY_ROLE uebersetzt. Fehlende oder unsinnige Werte fallen auf
+    ``fallback`` zurueck, damit nie eine halbe Palette ins Frontend geraet.
+    """
+    fallback = fallback or FALLBACK_PALETTE
+    if not isinstance(value, dict):
+        return {t: dict(colors) for t, colors in fallback.items()}
+
+    flat = {k: v for k, v in value.items()
+            if isinstance(v, str) and HEX_COLOR.match(v)}
+    per_type = {t: value.get(t) for t in PALETTE_TYPES
+                if isinstance(value.get(t), dict)}
+
+    result = {}
+    for part_type, keys in PALETTE_CATEGORIES.items():
+        source = per_type.get(part_type, {})
+        colors = {}
+        for key in keys:
+            candidate = source.get(key) or flat.get(LEGACY_ROLE[key])
+            colors[key] = (candidate if isinstance(candidate, str)
+                           and HEX_COLOR.match(candidate)
+                           else fallback[part_type][key])
+        result[part_type] = colors
+    return result
 
 
 class ApiError(Exception):
@@ -216,6 +278,11 @@ def scan_library() -> dict:
                 set_meta["id"] = set_dir.name  # Ordnername gewinnt immer
             except json.JSONDecodeError as exc:
                 warnings.append(f"{set_dir.name}/set.json ist kaputt: {exc}")
+
+        # Set-Paletten koennen noch die alte flache Form haben -- das Frontend
+        # bekommt grundsaetzlich Kategorien.
+        if set_meta.get("palette"):
+            set_meta["palette"] = normalize_palette(set_meta["palette"])
 
         parts = []
         for json_path in sorted(set_dir.glob("*.json")):
@@ -422,12 +489,23 @@ def api_get_build(name: str) -> dict:
 
 
 def api_get_palettes() -> dict:
+    stored = None
     if PALETTE_FILE.is_file():
         try:
-            return {"palettes": json.loads(PALETTE_FILE.read_text(encoding="utf-8"))}
+            stored = json.loads(PALETTE_FILE.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
-            pass
-    return {"palettes": DEFAULT_PALETTES}
+            stored = None
+    if not isinstance(stored, dict) or not stored:
+        stored = DEFAULT_PALETTES
+
+    # Alte, flache Paletten werden beim Lesen uebersetzt statt beim Schreiben:
+    # eine palettes.json aus einer frueheren Version bleibt so brauchbar, ohne
+    # dass jemand eine Migration anstossen muss.
+    return {
+        "palettes": {name: normalize_palette(value)
+                     for name, value in stored.items()},
+        "categories": {t: list(keys) for t, keys in PALETTE_CATEGORIES.items()},
+    }
 
 
 def api_put_palettes(payload: dict) -> dict:
@@ -437,8 +515,11 @@ def api_put_palettes(payload: dict) -> dict:
     for pname, colors in palettes.items():
         if not isinstance(colors, dict):
             raise ApiError(400, f"Palette {pname!r}: Farbwerte muessen ein Objekt sein")
-    write_json(PALETTE_FILE, palettes)
-    return {"ok": True, "count": len(palettes)}
+        if not str(pname).strip():
+            raise ApiError(400, "Paletten brauchen einen Namen")
+    clean = {name: normalize_palette(colors) for name, colors in palettes.items()}
+    write_json(PALETTE_FILE, clean)
+    return {"ok": True, "count": len(clean)}
 
 
 def write_json(path: pathlib.Path, data) -> None:
