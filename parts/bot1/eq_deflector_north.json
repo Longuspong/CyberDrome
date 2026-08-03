@@ -32,9 +32,5 @@
   },
   "tags": [
     "defense"
-  ],
-  "slots": [
-    "equip_left",
-    "equip_right"
   ]
 }

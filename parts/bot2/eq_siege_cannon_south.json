@@ -38,9 +38,5 @@
   "tags": [
     "weapon",
     "heavy"
-  ],
-  "slots": [
-    "equip_left",
-    "equip_right"
   ]
 }

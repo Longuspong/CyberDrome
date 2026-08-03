@@ -527,13 +527,11 @@ SETS = [
             {
                 "id": "eq_pulse_blaster", "code": "EQP-001", "type": "equipment", "name": "Puls-Blaster",
                 "tags": ["weapon", "ranged"], "shapes": EQ_BLASTER,
-                "slots": ["equip_left", "equip_right"],
                 "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
             },
             {
                 "id": "eq_deflector", "code": "EQP-002", "type": "equipment", "name": "Deflektor-Schild",
                 "tags": ["defense"], "shapes": EQ_SHIELD,
-                "slots": ["equip_left", "equip_right"],
                 "anchors": {"mount": (0, 0, 52)},
             },
         ],
@@ -576,10 +574,13 @@ SETS = [
             {
                 "id": "eq_siege_cannon", "code": "EQP-003", "type": "equipment",
                 "name": "Belagerungskanone", "tags": ["weapon", "heavy"],
-                "shapes": EQ_CANNON, "slots": ["equip_left", "equip_right"],
+                "shapes": EQ_CANNON,
                 "anchors": {"mount": (0, 0, 49), "muzzle": (21.3, 0, 35)},
             },
             {
+                # Einziges Beispielteil mit "slots": ein Schulterpod gehoert auf
+                # die Schulter. Alle uebrigen Ausruestungen lassen das Feld weg
+                # und passen damit in jeden equip_*-Anker -- auch set-fremde.
                 "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment", "name": "Drohnen-Pod",
                 "tags": ["support", "shoulder"], "shapes": EQ_DRONE_POD,
                 "slots": ["equip_shoulder"],
