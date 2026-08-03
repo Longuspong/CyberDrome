@@ -1,5 +1,6 @@
 {
   "id": "eq_deflector",
+  "code": "EQP-002",
   "set": "bot1",
   "type": "equipment",
   "name": "Deflektor-Schild",

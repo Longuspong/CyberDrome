@@ -1,5 +1,6 @@
 {
   "id": "eq_siege_cannon",
+  "code": "EQP-003",
   "set": "bot2",
   "type": "equipment",
   "name": "Belagerungskanone",

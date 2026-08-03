@@ -1,5 +1,6 @@
 {
   "id": "scout_body",
+  "code": "CHS-001",
   "set": "bot1",
   "type": "body",
   "name": "Vireo Chassis",

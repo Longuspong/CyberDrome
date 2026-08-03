@@ -6,7 +6,8 @@ CyberDrome SVG-Werkstatt -- lokaler Entwicklungsserver
 Startet einen kleinen HTTP-Server auf http://127.0.0.1:8000, der
 
   * das Frontend (index.html) ausliefert,
-  * die Teile-Bibliothek aus PARTS_DIR einliest und als JSON bereitstellt,
+  * die Teile-Bibliothek aus PARTS_DIR einliest und als JSON bereitstellt
+    (inklusive Pruefung auf doppelt vergebene Teile-Codes),
   * Aenderungen an Teil-Metadaten (Anker, Farben) zurueckschreibt,
   * fertig zusammengesetzte Bots als SVG + JSON nach BUILDS_DIR exportiert.
 
@@ -67,6 +68,8 @@ BUILDS_DIR = ROOT / "builds"
 PALETTE_FILE = ROOT / "palettes.json"
 
 SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
+# Game-Design-Code eines Teils: COR/HED/CHS/LEG/EQP + laufende Nummer.
+CODE_RE = re.compile(r"^[A-Z]{3}-[0-9]{3,4}$")
 DIRECTIONS = ("north", "west", "east", "south")
 PART_TYPES = ("core", "head", "body", "feet",
               "equipment", "equipment_left", "equipment_right")
@@ -177,6 +180,7 @@ def load_part(json_path: pathlib.Path, set_id: str) -> dict:
         raise ApiError(500, f"{json_path.name}: SVG {svg_name} fehlt")
 
     meta.setdefault("id", stem)
+    meta.setdefault("code", "")          # Game-Design-Code, s. parts/README.md
     meta.setdefault("name", meta["id"])
     meta.setdefault("type", "body")
     meta.setdefault("direction", "south")
@@ -225,8 +229,32 @@ def scan_library() -> dict:
         set_meta["parts"] = parts
         sets.append(set_meta)
 
+    warnings.extend(duplicate_code_warnings(sets))
+
     return {"sets": sets, "warnings": warnings, "parts_dir": str(PARTS_DIR),
             "directions": list(DIRECTIONS), "part_types": list(PART_TYPES)}
+
+
+def duplicate_code_warnings(sets: list[dict]) -> list[str]:
+    """
+    Teile-Codes (CHS-001, EQP-004, ...) muessen projektweit eindeutig sein --
+    sie sind der Schluessel, unter dem das Game Design ein Teil referenziert.
+    Ein Duplikat faellt sonst erst in der Balancing-Tabelle auf.
+
+    Die vier Richtungsvarianten eines Teils teilen sich Code und id; erst wenn
+    zwei UNTERSCHIEDLICHE Teile denselben Code tragen, ist es ein Fehler.
+    """
+    owners: dict[str, set[str]] = {}
+    for set_meta in sets:
+        for part in set_meta["parts"]:
+            code = part.get("code")
+            if code:
+                owners.setdefault(code, set()).add(f"{part['set']}/{part['id']}")
+
+    return [
+        f"Teile-Code {code} doppelt vergeben: {', '.join(sorted(ids))}"
+        for code, ids in sorted(owners.items()) if len(ids) > 1
+    ]
 
 
 def get_library(refresh: bool = False) -> dict:
@@ -253,6 +281,11 @@ def validate_meta(meta: dict) -> dict:
     direction = meta.get("direction", "south")
     if direction not in DIRECTIONS:
         raise ApiError(400, f"Unbekannte Richtung: {direction!r}")
+
+    code = meta.get("code", "")
+    if code and not CODE_RE.match(str(code)):
+        raise ApiError(400, f"Ungueltiger Teile-Code {code!r} "
+                            f"(erwartet z. B. CHS-001, EQP-042)")
 
     anchors = meta.get("anchors", [])
     if not isinstance(anchors, list):
@@ -591,7 +624,9 @@ def main() -> int:
     print(line)
     print(f"  Parts   : {PARTS_DIR}")
     print(f"  Builds  : {BUILDS_DIR}")
-    print(f"  Sets    : {len(library['sets'])}  |  Teile: {part_count}")
+    coded = sum(1 for s in library["sets"] for p in s["parts"] if p.get("code"))
+    print(f"  Sets    : {len(library['sets'])}  |  Teile: {part_count}"
+          f"  |  mit Code: {coded}")
     for warning in library["warnings"]:
         print(f"  ! {warning}")
     print(f"\n  -> {url}\n")

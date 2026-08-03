@@ -81,7 +81,7 @@ verschiebung = body.anker[slotname] - teil.anker["mount"]
 Der Body selbst wird so gelegt, dass sein `mount` auf `(64, 64)` landet.
 
 > **`links` und `rechts` meinen die Seiten des BOTS**, nicht den Bildschirm.
-> `equip_left` ist immer der linke Arm der Drone. Beim Drehen bleibt eine Waffe
+> `equip_left` ist immer der linke Arm der DROME. Beim Drehen bleibt eine Waffe
 > dadurch am selben Arm, statt beim Richtungswechsel die Seite zu tauschen.
 
 ### Wie viele Ausruestungsslots ein Bot hat
@@ -115,10 +115,11 @@ Pflichtfelder sind fett, alles andere ist optional.
 
 ```jsonc
 {
-  "id": "scout_body",        // **Teil-ID, richtungsunabhaengig.**
+  "id": "scout_body",        // **Datei-Slug, richtungsunabhaengig.**
                              // Alle vier Richtungsvarianten teilen sich diese ID --
                              // dadurch findet das Tool beim Richtungswechsel die
                              // passende Variante automatisch.
+  "code": "CHS-001",         // **Teile-Code fuers Game Design** (s. Abschnitt 3a)
   "set": "bot1",             // wird beim Einlesen aus dem Ordnernamen gesetzt
   "type": "body",            // **core | head | body | feet |
                              //    equipment | equipment_left | equipment_right**
@@ -154,6 +155,37 @@ Pflichtfelder sind fett, alles andere ist optional.
   "tags": ["light", "scout"] // frei; wird vom Bibliotheks-Filter durchsucht
 }
 ```
+
+### 3a. Teile-Code
+
+Neben dem Datei-Slug traegt jedes Teil einen kurzen, stabilen **Code**. Er ist
+das, was in Balancing-Tabellen, Loot-Listen und Speicherstaenden steht, und
+aendert sich nie -- auch wenn Teil oder Datei umbenannt werden.
+
+| Praefix | Teiletyp |
+|---|---|
+| `COR` | Kern |
+| `HED` | Kopf |
+| `CHS` | Koerper / Chassis |
+| `LEG` | Fuesse |
+| `EQP` | Ausruestung |
+
+Format: drei Grossbuchstaben, Bindestrich, drei- bis vierstellige Nummer
+(`CHS-001`, `EQP-0042`). Die Nummer laeuft je Typ durch, quer ueber alle Sets.
+
+**Codes muessen projektweit eindeutig sein.** Der Server meldet Duplikate beim
+Einlesen als Warnung, der Generator bricht bei einer Kollision ab. Die vier
+Richtungsvarianten eines Teils teilen sich denselben Code -- das ist kein
+Duplikat, sondern der Normalfall.
+
+Der Code ist bewusst getrennt vom Slug: der Slug traegt die Dateinamen und soll
+beim Stoebern im Ordner lesbar bleiben (`scout_body_south.svg`), der Code soll
+kurz und stabil sein. Das Werkstatt-Tool zeigt beides als
+`CHS-001 · Vireo Chassis`, der Filter greift auf beide zu.
+
+Das Feld ist optional. Ein frisch importiertes Teil ohne Code funktioniert
+vollstaendig, taucht in Game-Design-Tabellen aber nicht sauber auf -- der
+Import-Dialog hat deshalb ein Feld dafuer.
 
 ### Zeichenreihenfolge = Kameratiefe
 
@@ -218,7 +250,7 @@ korrekt.
 {
   "id": "bot1",
   "name": "RX-Vireo // Scout",
-  "description": "Leichter Aufklaerer-Drone. Zwei Ausruestungsanker.",
+  "description": "Leichte Aufklaerer-DROME. Zwei Ausruestungsanker.",
   "palette": { "plate": "#28304a", "accent": "#2de2e6", "…": "…" }
 }
 ```

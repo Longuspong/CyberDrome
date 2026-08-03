@@ -1,5 +1,6 @@
 {
   "id": "eq_drone_pod",
+  "code": "EQP-004",
   "set": "bot2",
   "type": "equipment",
   "name": "Drohnen-Pod",

@@ -14,7 +14,7 @@ Zur Laufzeit ist das eine ganz normale Bitmap.
 Das bedeutet:
 
 * Modulares Zusammensetzen findet **in der Szene** statt, nicht in einer
-  SVG-Datei: ein `Node2D` pro Drone, darunter ein `Sprite2D` je Teil.
+  SVG-Datei: ein `Node2D` pro DROME, darunter ein `Sprite2D` je Teil.
 * Umfaerben zur Laufzeit passiert ueber **Shader oder `modulate`**, nicht ueber
   CSS-Variablen. Die CSS-Variablen sind ein reines Autoren-Werkzeug.
 
@@ -24,11 +24,11 @@ Daraus ergeben sich zwei gangbare Pipelines.
 
 ## Pipeline A – Teile einzeln importieren (empfohlen)
 
-Jedes Teil-SVG wandert als eigene Textur nach Godot. Die Drone wird in der
+Jedes Teil-SVG wandert als eigene Textur nach Godot. Die DROME wird in der
 Szene zusammengesetzt.
 
 ```
-Drone (Node2D)
+DROME (Node2D)
 ├── Feet   (Sprite2D)
 ├── Body   (Sprite2D)
 ├── Core   (Sprite2D)
@@ -48,7 +48,7 @@ Schulterpod vor den Kopf).
 * Jede Kombination ohne neuen Export-Lauf – genau der Punkt, wegen dem das
   Projekt auf SVG setzt.
 * Teile lassen sich einzeln animieren (Rueckstoss, Trefferzucken, Wippen).
-* Ein Chassis-Wechsel tauscht eine Textur, nicht eine ganze Drone.
+* Ein Chassis-Wechsel tauscht eine Textur, nicht eine ganze DROME.
 
 **Zu beachten**
 
@@ -89,7 +89,7 @@ Sinnvoll fuer:
 * UI: Portraits, Loadout-Vorschau, Menue-Icons
 * Marketing-Material und Mockups
 
-Nicht sinnvoll fuer Spieler-Drones – die sollen ja frei kombinierbar sein.
+Nicht sinnvoll fuer Spieler-DROMEs – die sollen ja frei kombinierbar sein.
 
 Der Button **Alle 4 Richtungen** schreibt dafuer in einem Rutsch
 `<name>_south.svg`, `_west`, `_east`, `_north` plus `<name>_sheet.svg`
@@ -125,14 +125,17 @@ zusammengesetzt ist:
   "ground_y": 96,                  // Mittelpunkt des Bodenfeldes im Sprite
   "palette": { "plate": "#3a2a33", "accent": "#ff8a3d", "…": "…" },
   "slots": {
-    "body":       { "part_id": "jugg_body",       "offset": {"x":0,"y":0}, "scale":1, "rotate":0, "flip":false, "z":null },
-    "head":       { "part_id": "jugg_head",       "…": "…" },
-    "equip_right":{ "part_id": "eq_siege_cannon", "flip": true, "…": "…" }
+    "body":       { "part_id": "jugg_body", "code": "CHS-002", "name": "Molok Chassis",
+                    "offset": {"x":0,"y":0}, "scale":1, "rotate":0, "flip":false, "z":null },
+    "head":       { "part_id": "jugg_head", "code": "HED-002", "…": "…" },
+    "equip_right":{ "part_id": "eq_siege_cannon", "code": "EQP-003", "…": "…" }
   }
 }
 ```
 
-`part_id` ist richtungsunabhaengig. Ein Godot-Loader kann daraus die Texturen
+`code` ist die stabile Kennung fuers Game Design, `name` der Klarname – beide
+sind redundant zur `part_id`, machen ein Loadout aber ohne die Bibliothek
+lesbar. `part_id` ist richtungsunabhaengig. Ein Godot-Loader kann daraus die Texturen
 `res://parts/<set>/<part_id>_<direction>.png` aufloesen und die vier Ansichten
 aus einer einzigen Loadout-Datei bauen. Das ist der Grund fuer die
 richtungslosen IDs.

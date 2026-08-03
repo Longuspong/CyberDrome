@@ -22,7 +22,7 @@ Das ist die zentrale Lehre aus dem Vorgaengerprojekt: dort ist die
 Asset-Produktion an der Sprite-Kombinatorik gescheitert.
 
 Bei modularen Einheiten mit vier Blickrichtungen waechst der Aufwand
-multiplikativ. Ein Bot aus Kern + Kopf + Koerper + Fuessen + zwei
+multiplikativ. Eine DROME aus Kern + Kopf + Koerper + Fuessen + zwei
 Ausruestungsslots braucht als Pixelart **pro Kombination** einen Sprite. Bei
 je fuenf Varianten und vier Richtungen sind das
 
@@ -48,9 +48,10 @@ Daraus folgen die drei Regeln, die alles andere bestimmen:
 Die Grenze der Skalierbarkeit ist damit nicht mehr die Zeichenarbeit, sondern
 die Rendering-Kosten auf Android (siehe `docs/GODOT_INTEGRATION.md`).
 
-## 3. Die Drone
+## 3. Die DROME
 
-Eine Drone ist die Spieleinheit. Sie besteht aus:
+**DROME** = *Death Robot Omni Machine Executor*. Die Spieleinheit. Sie besteht
+aus:
 
 | Bestandteil | Anzahl | Rolle im Spiel (Entwurf) |
 |---|---|---|
@@ -69,6 +70,48 @@ Eine Drone ist die Spieleinheit. Sie besteht aus:
 Technisch faellt das ohne Sonderfall an: die Slots sind exakt die `equip_*`-Anker
 des Koerper-Teils. Ein Chassis bekommt einen dritten Slot, indem es einen dritten
 Anker in seine JSON schreibt. `parts/bot2` (HX-Molok) zeigt den Drei-Slot-Fall.
+
+## 3a. Teile-Codes
+
+Jedes Teil traegt neben seinem Klarnamen einen kurzen, stabilen **Code**. Der
+Klarname ist das, was Spieler und Werkstatt zeigen (*Vireo Chassis*); der Code
+ist das, was in Balancing-Tabellen, Loot-Listen, Rezepten und Speicherstaenden
+steht. Er aendert sich nie, auch wenn ein Teil umbenannt oder die Datei
+verschoben wird.
+
+| Praefix | Teiletyp |
+|---|---|
+| `COR` | Kern |
+| `HED` | Kopf |
+| `CHS` | Koerper / Chassis |
+| `LEG` | Fuesse |
+| `EQP` | Ausruestung |
+
+Die Nummer laeuft je Typ durch, quer ueber alle Sets: `CHS-001` ist das Vireo-,
+`CHS-002` das Molok-Chassis. Codes muessen projektweit eindeutig sein – Server
+und Generator pruefen das beim Einlesen bzw. Erzeugen.
+
+Aktueller Bestand:
+
+| Code | Teil | Set |
+|---|---|---|
+| `CHS-001` | Vireo Chassis | bot1 |
+| `HED-001` | Vireo Sensorkopf | bot1 |
+| `LEG-001` | Vireo Sprintbeine | bot1 |
+| `COR-001` | Vireo Impulskern | bot1 |
+| `EQP-001` | Puls-Blaster | bot1 |
+| `EQP-002` | Deflektor-Schild | bot1 |
+| `CHS-002` | Molok Chassis | bot2 |
+| `HED-002` | Molok Bunkerkopf | bot2 |
+| `LEG-002` | Molok Standbeine | bot2 |
+| `COR-002` | Molok Fusionskern | bot2 |
+| `EQP-003` | Belagerungskanone | bot2 |
+| `EQP-004` | Drohnen-Pod | bot2 |
+
+Der Code ist bewusst getrennt vom Datei-Slug (`scout_body`), der die Dateinamen
+traegt und beim Stoebern im Ordner lesbar bleiben soll. Ein exportiertes
+Loadout enthaelt beides plus den Klarnamen – damit laesst es sich ohne die
+Bibliothek lesen.
 
 ## 4. Perspektive und die vier Richtungen
 
@@ -137,5 +180,5 @@ Optionen, damit das Anker-Format sie nicht ausschliesst:
   (Fussabdruck im Feld, Oberkoerper darueber hinaus). Ob das bei vollen Karten
   traegt, zeigt erst die erste echte Map.
 * Progression: Teile-Loot vs. Crafting vs. beides
-* Wie viele Drones bildet der Spieler pro Gefecht auf
+* Wie viele DROMEs bildet der Spieler pro Gefecht auf
 * Mobile-Steuerung: direkte Tile-Beruehrung vs. Cursor + Bestaetigung

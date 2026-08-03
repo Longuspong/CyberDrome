@@ -4,10 +4,10 @@ Rundenbasiertes 2D-Tactics-RPG im Cyberpunk-/Neon-Setting, **isometrisch**
 (Kamera 45 Grad von oben auf ein gedrehtes Gitter).
 Ziel-Engine: **Godot**, Ziel-Plattformen: **Android** und **Desktop**.
 
-Gespielt wird mit **Drones** – modularen Kampfmaschinen, die aus einem **Kern**,
-drei Hauptteilen (**Kopf**, **Koerper**, **Fuesse**) und den **Ausruestungs­gegenstaenden**
-bestehen, die der Koerper ueber seine Anker zulaesst (meist zwei, gelegentlich
-einer oder drei).
+Gespielt wird mit **DROMEs** – *Death Robot Omni Machine Executor* –, modularen
+Kampfmaschinen aus einem **Kern**, drei Hauptteilen (**Kopf**, **Koerper**,
+**Fuesse**) und den **Ausruestungs­gegenstaenden**, die der Koerper ueber seine
+Anker zulaesst (meist zwei, gelegentlich einer oder drei).
 
 Die komplette Optik laeuft ueber **SVG** statt Pixelart. Der Grund ist bewusst
 gewaehlt: modulare Teile lassen sich kombinieren, umfaerben und aufloesungs­frei
@@ -21,7 +21,7 @@ Aktueller Stand: **SVG-Werkstatt** (Schritt 1). Noch kein Godot-Projekt.
 ## SVG-Werkstatt
 
 Lokales Tool zum Sichten, Zusammensetzen, Umfaerben und Feinjustieren der
-modularen Bot-Teile – und zum Export fertiger Drones zurueck ins Repo.
+modularen DROME-Teile – und zum Export fertiger DROMEs zurueck ins Repo.
 
 ### Starten
 
@@ -46,7 +46,7 @@ ein Entwickler-Werkzeug und gehoert nicht ins offene Netz.
 
 | | |
 |---|---|
-| **Bibliothek** | alle Teile nach Typ gruppiert, mit Live-Vorschau in der aktiven Palette, Filter nach Name/Tag/Typ, optional set-uebergreifend |
+| **Bibliothek** | alle Teile nach Typ gruppiert, mit Live-Vorschau in der aktiven Palette und Teile-Code, Filter nach Code/Name/Tag/Typ, optional set-uebergreifend |
 | **Vier Richtungen** | N / W / O / S; beim Umschalten werden alle Teile automatisch auf ihre Variante fuer diese Richtung gewechselt |
 | **Anker-Montage** | Teile rasten ueber die Ankerpunkte aus der JSON ein – kein manuelles Positionieren noetig |
 | **Bestuecken** | Klick in der Bibliothek, Drag & Drop auf die Buehne (landet im naechstgelegenen passenden Anker) oder Dropdown pro Slot |
@@ -99,7 +99,7 @@ builds/                      Export-Ziel (Inhalt ist gitignored)
 tools/
   build_sample_parts.py      Iso-Renderer + Beispielsatz; ausfuehrbare Format-Spec
 docs/
-  GAME_DESIGN.md             Setting, Drone-Aufbau, Asset-Strategie
+  GAME_DESIGN.md             Setting, DROME-Aufbau, Teile-Codes, Asset-Strategie
   GODOT_INTEGRATION.md       wie die Exporte spaeter in die Engine kommen
 ```
 
@@ -119,8 +119,10 @@ Kurzfassung – Details in [`parts/README.md`](parts/README.md):
 * Der Koerper definiert die Sockel-Anker (`head`, `feet`, `core`, `equip_*`),
   jedes andere Teil genau einen Anker `mount`. `links`/`rechts` meinen die
   Seiten des **Bots**, nicht den Bildschirm.
-* Wie viele Ausruestungsslots ein Bot hat, ergibt sich allein daraus, wie viele
-  `equip_*`-Anker sein Koerper besitzt – ohne Sonderfall im Code.
+* Wie viele Ausruestungsslots eine DROME hat, ergibt sich allein daraus, wie
+  viele `equip_*`-Anker ihr Koerper besitzt – ohne Sonderfall im Code.
+* Jedes Teil bekommt einen **Teile-Code** (`CHS-001`, `EQP-004`) als stabile
+  Kennung fuers Game Design, zusaetzlich zum Klarnamen.
 
 **Der guenstigste Weg zu neuen Teilen** ist nicht, vier Richtungen zu zeichnen,
 sondern das Teil **einmal** als Quader-Definition in `tools/build_sample_parts.py`

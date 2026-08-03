@@ -1,5 +1,6 @@
 {
   "id": "eq_pulse_blaster",
+  "code": "EQP-001",
   "set": "bot1",
   "type": "equipment",
   "name": "Puls-Blaster",
