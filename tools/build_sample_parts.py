@@ -55,10 +55,28 @@ sortiert (Maler-Algorithmus). Auch die Zeichenebene der Ausruestungsslots
 automatisch vor den Torso gelegt.
 
 
+Teile-Codes
+-----------
+Jedes Teil traegt zusaetzlich zum Dateinamen-Slug (`id`) einen kurzen, stabilen
+**Code** fuer das Game Design -- `CHS-001`, `HED-002`, `EQP-004`. Der Code ist
+das, was in Balancing-Tabellen, Loot-Listen und Rezepten steht; er aendert sich
+nie, auch wenn Teil oder Datei umbenannt werden.
+
+    COR   Kern       (Core)
+    HED   Kopf       (Head)
+    CHS   Koerper    (Chassis)
+    LEG   Fuesse     (Legs)
+    EQP   Ausruestung (Equipment)
+
+Die Nummer laeuft je Typ durch, quer ueber alle Sets. Codes muessen im ganzen
+Projekt eindeutig sein -- der Server warnt beim Einlesen, wenn zwei Teile
+denselben Code tragen.
+
+
 Links und rechts
 ----------------
 Ankernamen beziehen sich auf die Seiten des BOTS, nicht auf den Bildschirm:
-`equip_left` ist immer der linke Arm der Drone. Beim Drehen bleibt eine Waffe
+`equip_left` ist immer der linke Arm der DROME. Beim Drehen bleibt eine Waffe
 dadurch am selben Arm, statt beim Richtungswechsel die Seite zu tauschen.
 
 
@@ -476,11 +494,11 @@ SETS = [
         "dir": "bot1",
         "id": "bot1",
         "name": "RX-Vireo // Scout",
-        "description": "Leichter Aufklaerer-Drone. Zwei Ausruestungsanker.",
+        "description": "Leichte Aufklaerer-DROME. Zwei Ausruestungsanker.",
         "palette": DEFAULT_PALETTE,
         "parts": [
             {
-                "id": "scout_body", "type": "body", "name": "Vireo Chassis",
+                "id": "scout_body", "code": "CHS-001", "type": "body", "name": "Vireo Chassis",
                 "tags": ["light", "scout"], "shapes": SCOUT_BODY,
                 "anchors": {
                     "mount": (0, 0, MOUNT_Z),    # projiziert exakt auf (64, 64)
@@ -492,28 +510,28 @@ SETS = [
                 },
             },
             {
-                "id": "scout_head", "type": "head", "name": "Vireo Sensorkopf",
+                "id": "scout_head", "code": "HED-001", "type": "head", "name": "Vireo Sensorkopf",
                 "tags": ["light", "sensor"], "shapes": SCOUT_HEAD,
                 "anchors": {"mount": (0, 0, 66), "sensor": (7.1, 0, 70.7)},
             },
             {
-                "id": "scout_feet", "type": "feet", "name": "Vireo Sprintbeine",
+                "id": "scout_feet", "code": "LEG-001", "type": "feet", "name": "Vireo Sprintbeine",
                 "tags": ["light", "fast"], "shapes": SCOUT_FEET,
                 "anchors": {"mount": (0, 0, 36), "ground": (1, 0, 0)},
             },
             {
-                "id": "scout_core", "type": "core", "name": "Vireo Impulskern",
+                "id": "scout_core", "code": "COR-001", "type": "core", "name": "Vireo Impulskern",
                 "tags": ["core", "energy"], "shapes": SCOUT_CORE,
                 "anchors": {"mount": (8.8, 0, 49)},
             },
             {
-                "id": "eq_pulse_blaster", "type": "equipment", "name": "Puls-Blaster",
+                "id": "eq_pulse_blaster", "code": "EQP-001", "type": "equipment", "name": "Puls-Blaster",
                 "tags": ["weapon", "ranged"], "shapes": EQ_BLASTER,
                 "slots": ["equip_left", "equip_right"],
                 "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
             },
             {
-                "id": "eq_deflector", "type": "equipment", "name": "Deflektor-Schild",
+                "id": "eq_deflector", "code": "EQP-002", "type": "equipment", "name": "Deflektor-Schild",
                 "tags": ["defense"], "shapes": EQ_SHIELD,
                 "slots": ["equip_left", "equip_right"],
                 "anchors": {"mount": (0, 0, 52)},
@@ -528,7 +546,7 @@ SETS = [
         "palette": JUGG_PALETTE,
         "parts": [
             {
-                "id": "jugg_body", "type": "body", "name": "Molok Chassis",
+                "id": "jugg_body", "code": "CHS-002", "type": "body", "name": "Molok Chassis",
                 "tags": ["heavy"], "shapes": JUGG_BODY,
                 "anchors": {
                     "mount": (0, 0, MOUNT_Z),
@@ -541,28 +559,28 @@ SETS = [
                 },
             },
             {
-                "id": "jugg_head", "type": "head", "name": "Molok Bunkerkopf",
+                "id": "jugg_head", "code": "HED-002", "type": "head", "name": "Molok Bunkerkopf",
                 "tags": ["heavy", "armored"], "shapes": JUGG_HEAD,
                 "anchors": {"mount": (0, 0, 64), "sensor": (9.2, 0, 68.7)},
             },
             {
-                "id": "jugg_feet", "type": "feet", "name": "Molok Standbeine",
+                "id": "jugg_feet", "code": "LEG-002", "type": "feet", "name": "Molok Standbeine",
                 "tags": ["heavy", "slow"], "shapes": JUGG_FEET,
                 "anchors": {"mount": (0, 0, 33), "ground": (1, 0, 0)},
             },
             {
-                "id": "jugg_core", "type": "core", "name": "Molok Fusionskern",
+                "id": "jugg_core", "code": "COR-002", "type": "core", "name": "Molok Fusionskern",
                 "tags": ["core", "fusion"], "shapes": JUGG_CORE,
                 "anchors": {"mount": (10.5, 0, 47)},
             },
             {
-                "id": "eq_siege_cannon", "type": "equipment",
+                "id": "eq_siege_cannon", "code": "EQP-003", "type": "equipment",
                 "name": "Belagerungskanone", "tags": ["weapon", "heavy"],
                 "shapes": EQ_CANNON, "slots": ["equip_left", "equip_right"],
                 "anchors": {"mount": (0, 0, 49), "muzzle": (21.3, 0, 35)},
             },
             {
-                "id": "eq_drone_pod", "type": "equipment", "name": "Drohnen-Pod",
+                "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment", "name": "Drohnen-Pod",
                 "tags": ["support", "shoulder"], "shapes": EQ_DRONE_POD,
                 "slots": ["equip_shoulder"],
                 "anchors": {"mount": (0, 0, 61)},
@@ -622,6 +640,7 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
 
     meta = {
         "id": pid,
+        "code": part["code"],
         "set": set_id,
         "type": part["type"],
         "name": part.get("name", pid),
@@ -673,8 +692,19 @@ def main() -> None:
 
         print(f"[ok] {spec['dir']}: {len(list(set_dir.glob('*.svg')))} SVGs geschrieben")
 
+    # Codes muessen projektweit eindeutig sein -- hier gleich mitpruefen.
+    seen = {}
+    for spec in SETS:
+        for part in spec["parts"]:
+            code = part["code"]
+            if code in seen:
+                raise SystemExit(f"Doppelter Teile-Code {code}: "
+                                 f"{seen[code]} und {spec['id']}/{part['id']}")
+            seen[code] = f"{spec['id']}/{part['id']}"
+
     print(f"\nIso-Kamera 45 Grad  |  Bodenfeld {2 * TILE_HALF_W:.0f} x "
           f"{2 * TILE_HALF_H:.0f} px um ({CENTER_X:.0f}, {GROUND_Y:.0f})")
+    print(f"{len(seen)} Teile-Codes vergeben: {', '.join(sorted(seen))}")
 
 
 if __name__ == "__main__":

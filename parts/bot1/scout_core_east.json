@@ -1,5 +1,6 @@
 {
   "id": "scout_core",
+  "code": "COR-001",
   "set": "bot1",
   "type": "core",
   "name": "Vireo Impulskern",

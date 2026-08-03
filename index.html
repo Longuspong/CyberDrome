@@ -109,8 +109,12 @@ aside.right { border-left: 1px solid var(--line); }
 .lib-card.active { border-color: var(--neon); box-shadow: 0 0 0 1px var(--neon) inset; }
 .lib-card.missing { opacity: .35; cursor: not-allowed; }
 .lib-card svg { display: block; width: 100%; height: auto; }
+.lib-card .code {
+  font-family: ui-monospace, monospace; font-size: 8.5px; letter-spacing: .04em;
+  color: var(--neon); margin-top: 2px;
+}
 .lib-card .cap {
-  font-size: 9.5px; color: var(--text-dim); margin-top: 2px;
+  font-size: 9.5px; color: var(--text-dim); margin-top: 1px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .lib-card .slotchips {
@@ -218,7 +222,7 @@ textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 1
 
   <div class="spacer"></div>
 
-  <input type="text" id="build-name" value="drone_01" style="width:150px" title="Dateiname des Exports">
+  <input type="text" id="build-name" value="drome_01" style="width:150px" title="Dateiname des Exports">
   <button id="btn-save"        class="primary" title="SVG + JSON nach /builds/ schreiben">Ins Repo speichern</button>
   <button id="btn-save-all"    title="Alle vier Richtungen als Einzeldateien + Spritesheet exportieren">Alle 4 Richtungen</button>
   <button id="btn-download"    title="SVG lokal herunterladen">SVG</button>
@@ -342,6 +346,9 @@ textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 1
       </label>
       <label class="field" style="flex:1"><span>Anzeigename</span><input type="text" id="imp-name" value="Neues Teil"></label>
     </div>
+    <label class="field"><span>Teile-Code fuers Game Design &mdash; leer lassen geht auch
+      (COR/HED/CHS/LEG/EQP + Nummer, z.&nbsp;B. <code>EQP-005</code>)</span>
+      <input type="text" id="imp-code" value="" placeholder="EQP-005"></label>
     <label class="field"><span>SVG-Quelltext</span><textarea id="imp-svg" placeholder="&lt;svg viewBox=&quot;0 0 128 128&quot;&gt;&hellip;&lt;/svg&gt;"></textarea></label>
   </div>
   <div class="dlg-foot">
@@ -427,6 +434,17 @@ const FIXED_SLOTS = [
 ];
 
 const cssVar = (role) => "--c-" + role.replace(/_/g, "-");
+
+/**
+ * Anzeigename eines Teils: "CHS-001 · Vireo Chassis".
+ *
+ * Der Code ist die stabile Kennung fuers Game Design (Balancing-Tabellen,
+ * Loot-Listen); der Klarname ist das, was der Spieler sieht. Teile ohne Code
+ * -- etwa frisch importierte -- zeigen nur den Namen.
+ */
+function partLabel(part) {
+  return part.code ? `${part.code} · ${part.name}` : part.name;
+}
 
 // ---------------------------------------------------------------------------
 // Zustand
@@ -775,7 +793,7 @@ function renderLibrary() {
   for (const part of searchableParts()) {
     if (part.direction !== state.direction) continue;
     if (filter) {
-      const haystack = [part.name, part.id, part.type, part.set,
+      const haystack = [part.name, part.code, part.id, part.type, part.set,
                         ...(part.tags || [])].join(" ").toLowerCase();
       if (!haystack.includes(filter)) continue;
     }
@@ -792,11 +810,13 @@ function renderLibrary() {
     const cards = parts.map((part) => {
       const vb = (part.view_box || [0, 0, 128, 128]).join(" ");
       const chips = (part.slots || []).map((s) => s.replace("equip_", "")[0].toUpperCase()).join("");
+      const tip = `${part.code ? part.code + " · " : ""}${part.name}  (${part.id})`;
       return `
         <div class="lib-card${usedIds.has(part.id) ? " active" : ""}"
-             draggable="true" data-uid="${part.uid}" title="${escapeXml(part.name)} — ${part.id}">
+             draggable="true" data-uid="${part.uid}" title="${escapeXml(tip)}">
           ${chips ? `<span class="slotchips">${chips}</span>` : ""}
           <svg viewBox="${vb}" style="${paletteStyle(state.palette)}">${part.svg_inner}</svg>
+          ${part.code ? `<div class="code">${escapeXml(part.code)}</div>` : ""}
           <div class="cap">${escapeXml(part.name)}</div>
         </div>`;
     }).join("");
@@ -826,7 +846,7 @@ function renderSlots() {
 
     const options = [`<option value="">— leer —</option>`].concat(
       candidates.map((p) =>
-        `<option value="${p.id}"${entry && entry.partId === p.id ? " selected" : ""}>${escapeXml(p.name)}</option>`)
+        `<option value="${p.id}"${entry && entry.partId === p.id ? " selected" : ""}>${escapeXml(partLabel(p))}</option>`)
     );
     // Ein gewaehltes Teil, das es in dieser Richtung nicht gibt, trotzdem anzeigen.
     if (entry && !candidates.some((p) => p.id === entry.partId)) {
@@ -865,7 +885,7 @@ function renderTransform() {
   }
 
   const part = resolvePart(entry.partId);
-  target.textContent = part ? part.name : entry.partId;
+  target.textContent = part ? partLabel(part) : entry.partId;
   const z = effectiveZ(slot, part, entry);
   el("btn-anchor-save").disabled = !(part && state.anchorEdits[part.uid]);
 
@@ -1051,7 +1071,12 @@ function loadoutPayload(direction = state.direction) {
     palette_name: state.paletteName,
     slots: Object.fromEntries(Object.entries(state.loadout).map(([slot, e]) => [
       slot, {
-        part_id: e.partId, offset: e.offset, scale: e.scale,
+        // code + name sind fuers Game Design da und redundant zur part_id --
+        // ein Loadout laesst sich dadurch ohne die Bibliothek lesen.
+        part_id: e.partId,
+        code: (resolvePart(e.partId) || {}).code || null,
+        name: (resolvePart(e.partId) || {}).name || null,
+        offset: e.offset, scale: e.scale,
         rotate: e.rotate, flip: e.flip, z: e.z,
         palette: e.palette || null,
       },
@@ -1450,6 +1475,7 @@ function wireEvents() {
       svg: el("imp-svg").value,
       meta: {
         id: el("imp-stem").value.trim(),
+        code: el("imp-code").value.trim().toUpperCase(),
         name: el("imp-name").value.trim(),
         type: el("imp-type").value,
         direction: el("imp-dir").value,
