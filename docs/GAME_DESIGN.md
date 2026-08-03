@@ -146,16 +146,24 @@ Konventionen:
 
 ## 5. Asset-Budget
 
-Pro Set (= Bot-Familie) bei vier Richtungen entstehen 4 SVG-Dateien je Teil,
-also **24 SVGs** fuer ein Set mit zwei Ausruestungs­gegenstaenden.
+Pro Set bei vier Richtungen entstehen 4 SVG-Dateien je Teil, also **24 SVGs**
+fuer ein Set mit zwei Ausruestungs­gegenstaenden.
+
+Ein **Set ist eine Autoren-Schublade, kein Bausatz**: es fasst zusammen, was
+gemeinsam entworfen wurde, und bringt eine Startpalette mit. Es gibt keine
+fertigen DROMEs zum Auswaehlen – **Archetypen entstehen dadurch, dass der
+Spieler Teile kombiniert**, quer durch alle Sets. Die Werkstatt zeigt deshalb
+immer die gesamte Bibliothek; eingegrenzt wird ueber den Filter, nicht ueber
+das Set.
 
 Entscheidend ist aber der *Autoren*-Aufwand, und der ist ein Viertel davon:
 ein Teil wird einmal als Quader-Definition beschrieben, die vier Ansichten
 erzeugt der Renderer. Vier handgezeichnete Ansichten pro Teil waeren nicht nur
 vierfache Arbeit, sondern wuerden bei jeder Aenderung auseinanderlaufen.
 
-Ausruestung ist set-uebergreifend nutzbar, solange die Anker passen – die
-Bibliothek kann im Tool set-uebergreifend angezeigt werden.
+Ausruestung ist set-uebergreifend nutzbar, solange die Anker passen. Ein Teil
+schraenkt sich nur dann auf bestimmte Anker ein, wenn es das ueber `slots`
+ausdruecklich tut – wie der Drohnen-Pod, der auf die Schulter gehoert.
 
 Realistische Zielgroesse fuer einen ersten spielbaren Stand: 3–4 Chassis-Familien
 plus ein gemeinsamer Ausruestungs-Pool. Das sind ~100–150 SVG-Dateien, nicht

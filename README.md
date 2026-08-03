@@ -46,7 +46,7 @@ ein Entwickler-Werkzeug und gehoert nicht ins offene Netz.
 
 | | |
 |---|---|
-| **Bibliothek** | alle Teile nach Typ gruppiert, mit Live-Vorschau in der aktiven Palette und Teile-Code, Filter nach Code/Name/Tag/Typ, optional set-uebergreifend |
+| **Bibliothek** | **immer alle Teile aus allen Sets**, nach Typ gruppiert, mit Live-Vorschau in der aktiven Palette und Teile-Code, Filter nach Code/Name/Tag/Typ/Set |
 | **Vier Richtungen** | N / W / O / S; beim Umschalten werden alle Teile automatisch auf ihre Variante fuer diese Richtung gewechselt |
 | **Anker-Montage** | Teile rasten ueber die Ankerpunkte aus der JSON ein – kein manuelles Positionieren noetig |
 | **Bestuecken** | Klick in der Bibliothek (angewaehlter Slot, sonst erster freier), Drag & Drop auf die Buehne (naechstgelegener passender Anker) oder Dropdown pro Slot |
@@ -58,7 +58,9 @@ ein Entwickler-Werkzeug und gehoert nicht ins offene Netz.
 
 ### Bedienung in 30 Sekunden
 
-1. Set oben links waehlen – ein Koerper ist bereits gesetzt.
+1. Loslegen – ein Koerper ist bereits gesetzt, und die Bibliothek zeigt alle
+   Teile aller Sets. Das Set-Dropdown oben links waehlt keinen Bausatz aus,
+   sondern nur die Startpalette und das Ziel-Set beim Importieren.
 2. Teile in der Bibliothek anklicken. Ausruestung landet im angewaehlten Slot,
    sonst im ersten freien; per Drag & Drop entscheidet die Fallposition. Wer
    einen belegten Slot neu bestuecken will, waehlt ihn rechts an und klickt

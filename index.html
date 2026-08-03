@@ -208,7 +208,8 @@ textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 1
 <header>
   <div class="logo"><b>Cyber</b><span>Drome</span> &middot; SVG-Werkstatt</div>
 
-  <label class="row" style="gap:6px">
+  <label class="row" style="gap:6px"
+         title="Setzt die Startpalette und das Ziel-Set beim Importieren. Die Bibliothek zeigt immer alle Teile -- Sets sind Schubladen, keine Bausaetze.">
     <span class="swatch-label">Set</span>
     <select id="set-select" style="width:160px"></select>
   </label>
@@ -235,10 +236,7 @@ textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 1
   <aside class="left">
     <div class="panel" style="border-bottom:1px solid var(--line)">
       <h3>Bibliothek</h3>
-      <input type="text" id="lib-filter" placeholder="Filter (Name, Tag, Typ)&hellip;">
-      <label class="row" style="margin-top:7px;gap:6px;font-size:11px;color:var(--text-dim)">
-        <input type="checkbox" id="lib-all-sets" style="width:auto"> Teile aller Sets zeigen
-      </label>
+      <input type="text" id="lib-filter" placeholder="Filter (Name, Tag, Typ, Set)&hellip;">
     </div>
     <div class="panel" id="library" style="flex:1 1 auto"></div>
   </aside>
@@ -496,11 +494,17 @@ function currentSet() {
   return state.sets.find((s) => s.id === state.activeSet) || null;
 }
 
-/** Alle Teile, in denen gesucht werden darf (aktives Set oder alle). */
+/**
+ * Alle Teile, aus denen gebaut werden darf -- immer die aus jedem Set.
+ *
+ * Ein Set ist eine Autoren-Schublade, kein Bausatz: es fasst zusammen, was
+ * gemeinsam entworfen wurde, und liefert eine Startpalette. Es gibt keine
+ * fertigen DROMEs zum Auswaehlen -- Archetypen entstehen dadurch, dass man
+ * Teile kombiniert, und dafuer muss alles jederzeit greifbar sein. Zum
+ * Eingrenzen dient der Filter, der auch Set-Namen durchsucht.
+ */
 function searchableParts() {
-  return el("lib-all-sets").checked
-    ? state.sets.flatMap((s) => s.parts)
-    : (currentSet() ? currentSet().parts : []);
+  return state.sets.flatMap((s) => s.parts);
 }
 
 /**
@@ -810,7 +814,8 @@ function renderLibrary() {
     const cards = parts.map((part) => {
       const vb = (part.view_box || [0, 0, 128, 128]).join(" ");
       const chips = (part.slots || []).map((s) => s.replace("equip_", "")[0].toUpperCase()).join("");
-      const tip = `${part.code ? part.code + " · " : ""}${part.name}  (${part.id})`;
+      const setName = (state.sets.find((s) => s.id === part.set) || {}).name || part.set;
+      const tip = `${part.code ? part.code + " · " : ""}${part.name}  (${part.id})\naus ${setName}`;
       return `
         <div class="lib-card${usedIds.has(part.id) ? " active" : ""}"
              draggable="true" data-uid="${part.uid}" title="${escapeXml(tip)}">
@@ -1256,7 +1261,6 @@ function wireEvents() {
 
   // -- Bibliothek --------------------------------------------------------
   el("lib-filter").addEventListener("input", renderLibrary);
-  el("lib-all-sets").addEventListener("change", () => { renderLibrary(); renderSlots(); });
 
   el("library").addEventListener("click", (event) => {
     const card = event.target.closest(".lib-card");
