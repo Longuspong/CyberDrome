@@ -49,7 +49,7 @@ ein Entwickler-Werkzeug und gehoert nicht ins offene Netz.
 | **Bibliothek** | alle Teile nach Typ gruppiert, mit Live-Vorschau in der aktiven Palette und Teile-Code, Filter nach Code/Name/Tag/Typ, optional set-uebergreifend |
 | **Vier Richtungen** | N / W / O / S; beim Umschalten werden alle Teile automatisch auf ihre Variante fuer diese Richtung gewechselt |
 | **Anker-Montage** | Teile rasten ueber die Ankerpunkte aus der JSON ein – kein manuelles Positionieren noetig |
-| **Bestuecken** | Klick in der Bibliothek, Drag & Drop auf die Buehne (landet im naechstgelegenen passenden Anker) oder Dropdown pro Slot |
+| **Bestuecken** | Klick in der Bibliothek (angewaehlter Slot, sonst erster freier), Drag & Drop auf die Buehne (naechstgelegener passender Anker) oder Dropdown pro Slot |
 | **Feinjustierung** | Versatz, Groesse, Drehung, Spiegeln, Zeichenebene je Slot – Pfeiltasten zum Nudgen, `Shift` fuer 0,25er-Schritte |
 | **Anker-Editor** | Ankerpunkte direkt auf der Buehne verschieben und in die JSON des Teils zurueckschreiben |
 | **Palette** | acht Farbrollen, Presets speicherbar, optional pro Slot abweichend |
@@ -59,8 +59,10 @@ ein Entwickler-Werkzeug und gehoert nicht ins offene Netz.
 ### Bedienung in 30 Sekunden
 
 1. Set oben links waehlen – ein Koerper ist bereits gesetzt.
-2. Teile in der Bibliothek anklicken. Ausruestung sucht sich den passenden
-   freien Anker; per Drag & Drop entscheidet die Fallposition.
+2. Teile in der Bibliothek anklicken. Ausruestung landet im angewaehlten Slot,
+   sonst im ersten freien; per Drag & Drop entscheidet die Fallposition. Wer
+   einen belegten Slot neu bestuecken will, waehlt ihn rechts an und klickt
+   dann in der Bibliothek.
 3. Slot rechts anwaehlen, dann mit Pfeiltasten oder Reglern feinjustieren.
 4. Namen oben eintragen, **Ins Repo speichern** → `builds/<name>.svg` + `.json`.
 

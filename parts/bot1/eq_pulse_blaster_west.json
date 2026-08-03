@@ -38,9 +38,5 @@
   "tags": [
     "weapon",
     "ranged"
-  ],
-  "slots": [
-    "equip_left",
-    "equip_right"
   ]
 }

@@ -868,6 +868,21 @@ function renderSlots() {
   container.innerHTML = html;
 }
 
+/**
+ * Slot-Auswahl markieren, OHNE die Liste neu zu bauen.
+ *
+ * Ein Klick auf ein <select> waehlt zugleich seinen Slot an. Wuerde das
+ * renderSlots() ausloesen, ersetzte innerHTML das gerade angeklickte Element --
+ * das native Dropdown blitzt auf und schliesst sich sofort wieder. Von allem,
+ * was renderSlots() zeichnet, haengt ohnehin nur diese eine Klasse an der
+ * Auswahl.
+ */
+function markSelectedSlot() {
+  for (const node of el("slots").querySelectorAll(".slot")) {
+    node.classList.toggle("sel", node.dataset.slot === state.selectedSlot);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Rendering: Feinjustierung
 // ---------------------------------------------------------------------------
@@ -974,11 +989,24 @@ function pruneInvalidSlots() {
   }
 }
 
-/** Zielslot fuer ein Teil finden -- optional am naechsten zu einem Punkt. */
+/**
+ * Zielslot fuer ein Teil finden -- optional am naechsten zu einem Punkt.
+ *
+ * Reihenfolge der Absichten, von der staerksten zur schwaechsten:
+ *   1. ein angewaehlter, passender und noch leerer Slot -- der Nutzer hat das
+ *      Ziel bereits benannt;
+ *   2. bei Drag & Drop die Fallposition;
+ *   3. der erste freie passende Slot;
+ *   4. sind alle belegt, der angewaehlte Slot -- sonst lage jede weitere
+ *      Ausruestung wieder im ersten und man kaeme an den zweiten nie heran.
+ */
 function pickSlotFor(part, point = null) {
   const defs = slotDefs().filter((d) => fitsSlot(part, d));
   if (!defs.length) return null;
   if (defs.length === 1) return defs[0].slot;
+
+  const selected = defs.find((d) => d.slot === state.selectedSlot);
+  if (selected && !state.loadout[selected.slot]) return selected.slot;
 
   const bodyEntry = state.loadout.body;
   const bodyPart = bodyEntry ? resolvePart(bodyEntry.partId) : null;
@@ -997,9 +1025,9 @@ function pickSlotFor(part, point = null) {
     }
     if (best) return best;
   }
-  // Sonst: erster freier Slot, sonst der erste ueberhaupt.
   const free = defs.find((d) => !state.loadout[d.slot]);
-  return (free || defs[0]).slot;
+  if (free) return free.slot;
+  return (selected || defs[0]).slot;
 }
 
 function clearLoadout() {
@@ -1277,7 +1305,7 @@ function wireEvents() {
     const slot = event.target.closest(".slot");
     if (!slot) return;
     state.selectedSlot = slot.dataset.slot;
-    renderSlots(); renderTransform(); renderCanvas();
+    markSelectedSlot(); renderTransform(); renderCanvas();
   });
 
   el("slots").addEventListener("change", (event) => {
@@ -1292,7 +1320,7 @@ function wireEvents() {
     const group = event.target.closest("[data-slot]");
     if (!group || !group.closest("#layer-bot")) return;
     state.selectedSlot = group.dataset.slot;
-    renderSlots(); renderTransform(); renderCanvas();
+    markSelectedSlot(); renderTransform(); renderCanvas();
   });
 
   // -- Feinjustierung ----------------------------------------------------
