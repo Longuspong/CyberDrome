@@ -14,6 +14,8 @@ parts/
     ...
   bot2/
     ...
+  bot3/
+    ...
 ```
 
 Der Server liest jede `*.json` (ausser `set.json`) als ein Teil und erwartet
@@ -238,9 +240,40 @@ Die Zuordnung der ersten drei ist keine Geschmacksfrage: sie ist die
 Beleuchtung. Wer sie vertauscht, bekommt Teile, die im Verbund falsch
 beleuchtet aussehen.
 
-Beim Export schreibt das Tool die aktiven Werte als `style="--c-plate:…"` in
-das Wurzel-`<svg>`. Die Datei ist damit standalone und rendert ueberall
-korrekt.
+### 4a. Bedient wird ueber vier Kategorien je Bauteiltyp
+
+Diese acht Rollen sind die Ausgabe, nicht die Eingabe. Zum Einstellen waeren
+sie zu viele -- und drei davon duerfen ohnehin nicht frei gewaehlt werden, weil
+sie die Beleuchtung *sind*. Eine Palette hat deshalb **genau vier Kategorien**,
+und welche vier das sind, haengt am Bauteiltyp:
+
+| Bauteiltyp | die vier Kategorien | gesetzte Rollen |
+|---|---|---|
+| `body`, `feet` | Panzerung · Mechanik · Neon · Kontur | alle acht |
+| `equipment*` | Panzerung · Mechanik · Neon · Kontur | alle acht |
+| `head` | Panzerung · Mechanik · **Visier** · Kontur | alle acht |
+| `core` | **Gehaeuse · Kernglut · Energieringe** · Kontur | alle acht |
+
+Die Ableitung:
+
+* **Panzerung / Gehaeuse** setzt `--c-plate` und erzeugt `--c-plate-light`
+  (multiplikativ aufgehellt) und `--c-plate-dark` (abgedunkelt) daraus.
+  Multiplikativ statt "mit Weiss mischen", damit Ton und Saettigung erhalten
+  bleiben -- eine beleuchtete Flaeche soll nach demselben Material aussehen.
+* **Neon / Visier / Kernglut** setzen ihre Rolle direkt, die uebrigen
+  Leuchtrollen bekommen eine aufgehellte Variante.
+* Jede Kategorienliste deckt alle acht Rollen ab. Ein importiertes Teil trifft
+  damit nie auf eine ungesetzte Variable, auch wenn es eine Rolle nutzt, die
+  sein Typ sonst nicht braucht.
+
+Im Werkstatt-Tool waehlt man den Bauteiltyp ueber die Chips im Paletten-Panel;
+ein angewaehlter Slot stellt ihn automatisch mit. Paletten lassen sich dort
+anlegen (wahlweise als Kopie einer vorhandenen), sichern und loeschen -- sie
+liegen in `palettes.json` und sind nicht an einen Bot gebunden.
+
+Beim Export bekommt **jede Teil-Gruppe ihre eigenen acht Rollen** als
+`style="--c-plate:…"`, weil sie sich je nach Bauteiltyp aus anderen vier
+Kategorien ergeben. Die Datei ist damit weiterhin standalone.
 
 ---
 
@@ -251,11 +284,21 @@ korrekt.
   "id": "bot1",
   "name": "RX-Vireo // Scout",
   "description": "Leichte Aufklaerer-DROME. Zwei Ausruestungsanker.",
-  "palette": { "plate": "#28304a", "accent": "#2de2e6", "…": "…" }
+  "palette": {
+    "body":      { "hull": "#28304a", "mech": "#5b6785", "neon": "#2de2e6", "line": "#080b13" },
+    "feet":      { "hull": "#28304a", "mech": "#5b6785", "neon": "#2de2e6", "line": "#080b13" },
+    "equipment": { "hull": "#28304a", "mech": "#5b6785", "neon": "#2de2e6", "line": "#080b13" },
+    "head":      { "hull": "#28304a", "mech": "#5b6785", "visor": "#7cf9ff", "line": "#080b13" },
+    "core":      { "case": "#28304a", "ember": "#ff2d95", "rings": "#2de2e6", "line": "#080b13" }
+  }
 }
 ```
 
 Die `palette` wird beim Umschalten auf das Set als Standardpalette geladen.
+
+Eine alte, flache Palette (`{"plate": "#…", "accent": "#…"}`) funktioniert
+weiterhin: der Server uebersetzt sie beim Einlesen in Kategorien. Das gilt
+ebenso fuer `palettes.json` und fuer gespeicherte Builds.
 
 ---
 
@@ -304,7 +347,7 @@ generierte Grafiken):
 
 **Variante C – generiert (empfohlen fuer ganze Sets):**
 `tools/build_sample_parts.py` beschreibt ein Teil **einmal** als Sammlung von
-Quadern in bot-lokalen Koordinaten
+Primitiven in bot-lokalen Koordinaten
 
 ```python
 SCOUT_HEAD = [
@@ -320,9 +363,34 @@ verschwinden von selbst, sobald sie von der Kamera abgewandt sind. Fuer eigene
 Sets kopieren und anpassen -- das ist mit Abstand der guenstigste Weg zu vier
 konsistenten Ansichten.
 
-> Achtung: `build_sample_parts.py` loescht `parts/bot1` und `parts/bot2`
-> komplett, bevor es sie neu schreibt. Eigene Teile gehoeren in einen anderen
-> Set-Ordner.
+Es gibt drei Primitive:
+
+| | |
+|---|---|
+| `B(f, l, z, mat)` | Quader aus (min, max)-Paaren |
+| `D(f, l, z, r, mat)` | nach vorn gerichtete Scheibe (Muendung, Linse) |
+| `L(center, profile, mat, axis, caps)` | **Rotationskoerper** |
+
+`L` ist alles Runde: ein Streckenzug aus `(radius, achsposition)`-Paaren wird
+um eine bot-lokale Achse gedreht. Zylinder, Kegel, Kuppeln, Orbs, Ringe und
+Raeder sind derselbe Aufruf mit anderem Profil (`parts/bot3` zeigt alle Faelle):
+
+```python
+L((0, 0), [(9, 12), (9, 26)], "plate")                    # Zylinder
+L((0, 0), [(10, 50), (6.4, 57), (0, 58.6)], "light")      # Kuppel
+L((0, 9.8), [(9.8, 10.8), (9.8, 14.2)], "dark", axis="l") # Rad
+L((0, 30), [(6.4, 6.5), (7.6, 7.6), (6.4, 8.7), (6.4, 6.5)],
+  "accent", axis="f")                                     # geschlossen -> Ring
+```
+
+Die Facetten eines Rotationskoerpers tragen bewusst **keine** Outline: ihre
+gemeinsamen Kanten sind keine Kanten des Objekts, ein Strich dort ergaebe ein
+Drahtgitter. Stattdessen zieht der Renderer eine Silhouette aus der konvexen
+Huelle -- das Strichbild passt damit zu den Quader-Teilen.
+
+> Achtung: `build_sample_parts.py` loescht `parts/bot1`, `parts/bot2` und
+> `parts/bot3` komplett, bevor es sie neu schreibt. Eigene Teile gehoeren in
+> einen anderen Set-Ordner.
 
 ---
 

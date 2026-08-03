@@ -1,0 +1,43 @@
+{
+  "id": "mage_drive",
+  "code": "LEG-003",
+  "set": "bot3",
+  "type": "feet",
+  "name": "Nimbus Fahrwerk",
+  "direction": "north",
+  "svg": "mage_drive_north.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 10,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 70.23
+    },
+    {
+      "name": "ground",
+      "x": 64.95,
+      "y": 95.33
+    }
+  ],
+  "color_scheme": {
+    "plate": "#2f2450",
+    "plate_light": "#524088",
+    "plate_dark": "#1a142d",
+    "metal": "#6f5f97",
+    "accent": "#b06bff",
+    "glow": "#dd98ff",
+    "visor": "#dd98ff",
+    "outline": "#0d0818"
+  },
+  "tags": [
+    "wheels",
+    "round",
+    "fast"
+  ]
+}

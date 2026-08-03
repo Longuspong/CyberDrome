@@ -22,12 +22,12 @@
   ],
   "color_scheme": {
     "plate": "#28304a",
-    "plate_dark": "#161c2e",
-    "plate_light": "#41507a",
-    "metal": "#5b6785",
-    "accent": "#2de2e6",
+    "plate_light": "#47547e",
+    "plate_dark": "#161b29",
+    "metal": "#47547e",
     "glow": "#ff2d95",
-    "visor": "#7cf9ff",
+    "visor": "#ff5ac2",
+    "accent": "#2de2e6",
     "outline": "#080b13"
   },
   "tags": [

@@ -52,7 +52,7 @@ ein Entwickler-Werkzeug und gehoert nicht ins offene Netz.
 | **Bestuecken** | Klick in der Bibliothek (angewaehlter Slot, sonst erster freier), Drag & Drop auf die Buehne (naechstgelegener passender Anker) oder Dropdown pro Slot |
 | **Feinjustierung** | Versatz, Groesse, Drehung, Spiegeln, Zeichenebene je Slot – Pfeiltasten zum Nudgen, `Shift` fuer 0,25er-Schritte |
 | **Anker-Editor** | Ankerpunkte direkt auf der Buehne verschieben und in die JSON des Teils zurueckschreiben |
-| **Palette** | acht Farbrollen, Presets speicherbar, optional pro Slot abweichend |
+| **Palette** | **genau vier Farbkategorien je Bauteiltyp**, Paletten anlegen / sichern / loeschen, optional pro Slot abweichend |
 | **Import** | von Claude Code generierten SVG-Quelltext einfuegen → Tool legt SVG + JSON an |
 | **Export** | SVG + JSON nach `/builds/`, alle vier Richtungen auf einmal, Spritesheet, SVG-/PNG-Download |
 
@@ -74,6 +74,27 @@ ein Entwickler-Werkzeug und gehoert nicht ins offene Netz.
 | `Shift` + Pfeil | um 0,25 verschieben |
 | `F` | gewaehlten Slot spiegeln |
 | `Entf` | gewaehlten Slot leeren |
+
+### Farben: vier Kategorien statt acht Regler
+
+Ein Teil zeichnet mit acht CSS-Rollen, aber eingestellt werden **genau vier
+Kategorien – und welche vier, haengt am Bauteiltyp**:
+
+| Bauteiltyp | die vier Kategorien |
+|---|---|
+| Koerper, Fuesse, Ausruestung | Panzerung · Mechanik · Neon · Kontur |
+| Kopf | Panzerung · Mechanik · **Visier** · Kontur |
+| Kern | **Gehaeuse · Kernglut · Energieringe** · Kontur |
+
+Kante und Schatten der Panzerung leitet das Tool aus der Grundfarbe ab. Das ist
+kein Komfort, sondern eine Absicherung: die drei Panzerungs-Rollen *sind* die
+Iso-Beleuchtung, einzeln gesetzt ergeben sie falsch beleuchtete Teile.
+
+Den Typ waehlen die Chips im Paletten-Panel; ein angewaehlter Slot stellt ihn
+automatisch mit. **Neu…** legt eine Palette an – wahlweise als vollstaendige
+Kopie einer vorhandenen –, **Sichern** schreibt die aktuellen Farben hinein,
+**✕** loescht sie. Paletten liegen in `palettes.json`, gehoeren keinem Bot und
+lassen sich jederzeit wieder auf einen beliebigen Aufbau anwenden.
 
 ### Anker verschieben
 
@@ -99,6 +120,7 @@ parts/                       Teile-Bibliothek
   README.md                  >> Format-Spezifikation: Anker, JSON, Farben <<
   bot1/                      RX-Vireo // Scout      (2 Ausruestungsanker)
   bot2/                      HX-Molok // Juggernaut (3 Ausruestungsanker)
+  bot3/                      AR-Nimbus // Technomant (rund, Fahrgestell)
 builds/                      Export-Ziel (Inhalt ist gitignored)
 tools/
   build_sample_parts.py      Iso-Renderer + Beispielsatz; ausfuehrbare Format-Spec
@@ -119,7 +141,12 @@ Kurzfassung – Details in [`parts/README.md`](parts/README.md):
   `--c-plate-dark`. Das ist keine Geschmacksfrage, sondern die Beleuchtung.
 * Ein gemeinsames Koordinatensystem: `viewBox="0 0 128 128"`, Mittelachse
   `x=64`. Jedes Teil zeichnet dort, wo es am fertigen Bot sitzt.
-* Keine Hex-Farben im SVG, nur `var(--c-plate)`, `var(--c-accent)` usw.
+* Keine Hex-Farben im SVG, nur `var(--c-plate)`, `var(--c-accent)` usw. Die
+  acht Rollen sind aber nur die Ausgabe: eingestellt wird ueber **vier
+  Kategorien je Bauteiltyp** (Kopf: Panzerung/Mechanik/Visier/Kontur, Kern:
+  Gehaeuse/Kernglut/Energieringe/Kontur). Kante und Schatten der Panzerung
+  leitet das Tool aus der Grundfarbe ab -- die Iso-Beleuchtung kann so gar
+  nicht falsch eingestellt werden.
 * Der Koerper definiert die Sockel-Anker (`head`, `feet`, `core`, `equip_*`),
   jedes andere Teil genau einen Anker `mount`. `links`/`rechts` meinen die
   Seiten des **Bots**, nicht den Bildschirm.
@@ -144,6 +171,10 @@ Der Renderer erzeugt daraus alle vier Ansichten. Sichtbarkeit, Beleuchtung und
 Zeichenreihenfolge fallen ab: das Visier verschwindet in der Nordansicht von
 selbst, die Kuehlrippen auf der Rueckseite erscheinen dort.
 
+Neben dem Quader `B` gibt es die Scheibe `D` und den Rotationskoerper `L` --
+letzterer ist alles Runde: Zylinder, Kuppel, Orb, Ring und Rad sind derselbe
+Aufruf mit anderem Profil. `parts/bot3` besteht fast vollstaendig daraus.
+
 Wer stattdessen fertige SVGs einfuegen will, nutzt im Tool *Neues Teil
 importieren…* und setzt die Anker anschliessend auf der Buehne.
 
@@ -157,7 +188,7 @@ importieren…* und setzt die Anker anschliessend auf der Buehne.
 | `DELETE` | `/api/part/<set>/<stem>` | Teil loeschen |
 | `GET` | `/api/builds` · `/api/builds/<name>` | Builds listen / laden |
 | `POST` | `/api/build` | Build speichern (`{name, svg, loadout}`) |
-| `GET`/`PUT` | `/api/palettes` | Farbpaletten |
+| `GET`/`PUT` | `/api/palettes` | Farbpaletten (Kategorien je Bauteiltyp) |
 
 Alle Pfadsegmente werden gegen `^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$` geprueft,
 zusaetzlich wird der aufgeloeste Pfad gegen das erlaubte Verzeichnis validiert.

@@ -1,0 +1,70 @@
+{
+  "id": "mage_body",
+  "code": "CHS-003",
+  "set": "bot3",
+  "type": "body",
+  "name": "Nimbus Chassis",
+  "direction": "north",
+  "svg": "mage_body_north.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 50.0,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 64.0
+    },
+    {
+      "name": "head",
+      "x": 64.0,
+      "y": 37.77
+    },
+    {
+      "name": "feet",
+      "x": 64.0,
+      "y": 70.23
+    },
+    {
+      "name": "core",
+      "x": 73.74,
+      "y": 48.07
+    },
+    {
+      "name": "equip_left",
+      "x": 50.83,
+      "y": 41.82
+    },
+    {
+      "name": "equip_right",
+      "x": 77.17,
+      "y": 60.45
+    }
+  ],
+  "color_scheme": {
+    "plate": "#2f2450",
+    "plate_light": "#524088",
+    "plate_dark": "#1a142d",
+    "metal": "#6f5f97",
+    "accent": "#b06bff",
+    "glow": "#dd98ff",
+    "visor": "#dd98ff",
+    "outline": "#0d0818"
+  },
+  "tags": [
+    "round",
+    "mage",
+    "support"
+  ],
+  "slot_z": {
+    "head": 61,
+    "feet": 27,
+    "core": 32.8,
+    "equip_left": 33.2,
+    "equip_right": 60.8
+  }
+}

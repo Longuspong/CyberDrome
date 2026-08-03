@@ -1,0 +1,37 @@
+{
+  "id": "mage_core",
+  "code": "COR-003",
+  "set": "bot3",
+  "type": "core",
+  "name": "Nimbus Arkankern",
+  "direction": "north",
+  "svg": "mage_core_north.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 26,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 73.74,
+      "y": 48.07
+    }
+  ],
+  "color_scheme": {
+    "plate": "#2f2450",
+    "plate_light": "#524088",
+    "plate_dark": "#1a142d",
+    "metal": "#524088",
+    "glow": "#7cf9ff",
+    "visor": "#a9ffff",
+    "accent": "#ff5ec7",
+    "outline": "#0d0818"
+  },
+  "tags": [
+    "core",
+    "arcane"
+  ]
+}

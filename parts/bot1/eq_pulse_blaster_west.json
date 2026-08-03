@@ -27,12 +27,12 @@
   ],
   "color_scheme": {
     "plate": "#28304a",
-    "plate_dark": "#161c2e",
-    "plate_light": "#41507a",
+    "plate_light": "#47547e",
+    "plate_dark": "#161b29",
     "metal": "#5b6785",
     "accent": "#2de2e6",
-    "glow": "#ff2d95",
-    "visor": "#7cf9ff",
+    "glow": "#5affff",
+    "visor": "#5affff",
     "outline": "#080b13"
   },
   "tags": [

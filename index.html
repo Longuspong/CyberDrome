@@ -170,6 +170,8 @@ aside.right { border-left: 1px solid var(--line); }
 
 /* ---- Palette ----------------------------------------------------------- */
 .palette-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.palette-types { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.palette-types button { padding: 2px 6px; font-size: 10.5px; }
 .swatch-label { font-size: 10px; color: var(--text-dim); }
 
 /* ---- Sonstiges --------------------------------------------------------- */
@@ -280,10 +282,18 @@ textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 1
 
     <div class="panel">
       <h3>Farbpalette</h3>
+      <select id="palette-select" title="Gespeicherte Palette anwenden"
+              style="margin-bottom:6px"></select>
       <div class="row" style="margin-bottom:8px">
-        <select id="palette-select"></select>
-        <button id="btn-palette-save" class="tiny" title="Aktuelle Farben unter dem Namen im Feld speichern">Sichern</button>
+        <button id="btn-palette-new" class="tiny" style="flex:1"
+                title="Neue Palette anlegen -- wahlweise als Kopie einer vorhandenen">Neu&hellip;</button>
+        <button id="btn-palette-save" class="tiny" style="flex:1"
+                title="Aktuelle Farben in die gewaehlte Palette schreiben">Sichern</button>
+        <button id="btn-palette-del" class="tiny danger"
+                title="Gewaehlte Palette loeschen">&#10005;</button>
       </div>
+      <div class="palette-types" id="palette-types"
+           title="Jeder Bauteiltyp hat genau vier Farbkategorien -- welche vier, haengt davon ab, was der Typ bemalt."></div>
       <div class="palette-grid" id="palette-grid"></div>
       <label class="row" style="margin-top:8px;gap:6px;font-size:11px;color:var(--text-dim)">
         <input type="checkbox" id="slot-palette-override" style="width:auto">
@@ -355,6 +365,27 @@ textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 1
   </div>
 </dialog>
 
+<!-- Paletten-Dialog -->
+<dialog id="dlg-palette">
+  <div class="dlg-body">
+    <h2>Neue Farbpalette</h2>
+    <p class="hint" style="margin:0 0 12px">
+      Paletten liegen in <code>palettes.json</code> und lassen sich jederzeit wieder
+      auf einen beliebigen Aufbau anwenden &ndash; eine Palette ist damit
+      wiederverwendbar und nicht an einen Bot gebunden. Als Vorlage dient
+      entweder eine gespeicherte Palette oder das, was gerade eingestellt ist.
+    </p>
+    <label class="field"><span>Name</span>
+      <input type="text" id="pal-name" value="Eigene Palette"></label>
+    <label class="field"><span>Vorlage</span>
+      <select id="pal-base"></select></label>
+  </div>
+  <div class="dlg-foot">
+    <button data-close="dlg-palette">Abbrechen</button>
+    <button id="pal-go" class="primary">Anlegen</button>
+  </div>
+</dialog>
+
 <!-- Lade-Dialog -->
 <dialog id="dlg-load">
   <div class="dlg-body">
@@ -416,13 +447,71 @@ const DEFAULT_Z = {
   feet: 10, body: 20, core: 26,
   equipment: 30, equipment_left: 30, equipment_right: 30, head: 40,
 };
-const PALETTE_ROLES = ["plate", "plate_dark", "plate_light", "metal",
-                       "accent", "glow", "visor", "outline"];
-const ROLE_LABEL = {
-  plate: "Panzerung", plate_dark: "Schatten", plate_light: "Kante",
-  metal: "Mechanik", accent: "Neon", glow: "Kern-Glow",
-  visor: "Visier", outline: "Kontur",
+/* -- Farbpalette: vier Kategorien je Bauteiltyp -----------------------------
+   Ein Teil zeichnet mit acht CSS-Rollen (--c-plate, --c-plate-light,
+   --c-plate-dark, --c-metal, --c-accent, --c-glow, --c-visor, --c-outline).
+   Zum BEDIENEN sind das zu viele -- und drei davon duerfen ohnehin nicht frei
+   gewaehlt werden: Kante und Schatten der Panzerung SIND die Iso-Beleuchtung,
+   wer sie einzeln setzt, bekommt falsch beleuchtete Teile.
+
+   Eine Palette hat deshalb genau VIER Kategorien je Bauteiltyp, und welche
+   vier das sind, haengt davon ab, was der Typ ueberhaupt bemalt: ein Kopf hat
+   ein Visier, ein Kern eine Kernglut. Die acht Rollen leiten sich daraus ab.
+   Jede Kategorienliste deckt alle acht Rollen ab, damit auch ein spaeter
+   importiertes Teil nie auf eine ungesetzte Variable trifft.                */
+const PALETTE_TYPES = ["body", "head", "feet", "core", "equipment"];
+const PALETTE_TYPE_LABEL = {
+  body: "Koerper", head: "Kopf", feet: "Fuesse", core: "Kern",
+  equipment: "Ausruestung",
 };
+
+/* Ableitung der uebrigen Rollen aus der Kategoriefarbe.
+   Multiplikativ statt "mit Weiss mischen": so bleiben Ton und Saettigung
+   erhalten: eine aufgehellte Flaeche sieht nach demselben Material aus. */
+const SHADES = { base: [1, 0], light: [1.62, 6], dark: [0.56, 0], hot: [1, 45] };
+
+const CAT_HULL = { key: "hull", label: "Panzerung",
+  roles: { plate: "base", plate_light: "light", plate_dark: "dark" } };
+const CAT_MECH = { key: "mech", label: "Mechanik", roles: { metal: "base" } };
+const CAT_NEON = { key: "neon", label: "Neon",
+  roles: { accent: "base", glow: "hot", visor: "hot" } };
+const CAT_LINE = { key: "line", label: "Kontur", roles: { outline: "base" } };
+
+const PALETTE_CATEGORIES = {
+  body: [CAT_HULL, CAT_MECH, CAT_NEON, CAT_LINE],
+  feet: [CAT_HULL, CAT_MECH, CAT_NEON, CAT_LINE],
+  equipment: [CAT_HULL, CAT_MECH, CAT_NEON, CAT_LINE],
+  head: [CAT_HULL, CAT_MECH,
+         { key: "visor", label: "Visier",
+           roles: { visor: "base", glow: "hot", accent: "base" } },
+         CAT_LINE],
+  core: [{ key: "case", label: "Gehaeuse",
+           roles: { plate: "base", plate_light: "light", plate_dark: "dark",
+                    metal: "light" } },
+         { key: "ember", label: "Kernglut",
+           roles: { glow: "base", visor: "hot" } },
+         { key: "rings", label: "Energieringe", roles: { accent: "base" } },
+         CAT_LINE],
+};
+
+/** Welche alte Rolle eine Kategorie ersetzt -- nur fuer Altbestand. */
+const LEGACY_ROLE = {
+  hull: "plate", case: "plate", mech: "metal", neon: "accent",
+  visor: "visor", ember: "glow", rings: "accent", line: "outline",
+};
+
+function makePalette(hull, mech, neon, visor, ember, rings, line) {
+  const armour = { hull, mech, neon, line };
+  return {
+    body: { ...armour }, feet: { ...armour }, equipment: { ...armour },
+    head: { hull, mech, visor, line },
+    core: { case: hull, ember, rings, line },
+  };
+}
+
+/** Notnagel, falls Server und Set beide nichts liefern. */
+const FALLBACK_PALETTE = makePalette("#232a3d", "#5b6785", "#2de2e6", "#7cf9ff",
+                                     "#ff2d95", "#2de2e6", "#0a0d16");
 /** Slots, die nicht aus equip_* stammen -- Reihenfolge = Anzeigereihenfolge. */
 const FIXED_SLOTS = [
   { slot: "body", anchor: null,   type: "body", label: "Koerper" },
@@ -432,6 +521,58 @@ const FIXED_SLOTS = [
 ];
 
 const cssVar = (role) => "--c-" + role.replace(/_/g, "-");
+
+/** equipment_left / equipment_right teilen sich die Kategorien von equipment. */
+function paletteTypeOf(partType) {
+  const type = String(partType || "body");
+  return type.startsWith("equipment") ? "equipment" : type;
+}
+
+function shadeHex(color, shade) {
+  const [factor, offset] = SHADES[shade];
+  const value = Number.parseInt(String(color).replace("#", ""), 16);
+  return "#" + [value >> 16 & 255, value >> 8 & 255, value & 255]
+    .map((channel) => Math.max(0, Math.min(255, Math.round(channel * factor + offset)))
+      .toString(16).padStart(2, "0")).join("");
+}
+
+/** Die vier Kategoriefarben eines Typs -- fehlende ergaenzt, alte uebersetzt. */
+function categoryColors(source, partType) {
+  const type = paletteTypeOf(partType);
+  const from = (source && typeof source === "object") ? source : {};
+  const colors = {};
+  for (const category of PALETTE_CATEGORIES[type] || PALETTE_CATEGORIES.body) {
+    colors[category.key] = from[category.key]
+      || from[LEGACY_ROLE[category.key]]          // flache Palette von frueher
+      || FALLBACK_PALETTE[type][category.key];
+  }
+  return colors;
+}
+
+/** Vier Kategorien -> die acht CSS-Rollen dieses Bauteiltyps. */
+function resolveRoles(colors, partType) {
+  const roles = {};
+  for (const category of PALETTE_CATEGORIES[paletteTypeOf(partType)]) {
+    const base = colors[category.key];
+    if (!base) continue;
+    for (const [role, shade] of Object.entries(category.roles)) {
+      roles[role] = shadeHex(base, shade);
+    }
+  }
+  return roles;
+}
+
+/** Palette (alle Typen) in die Kategorie-Form bringen. */
+function normalizePalette(value) {
+  const source = (value && typeof value === "object") ? value : {};
+  const palette = {};
+  for (const type of PALETTE_TYPES) {
+    // Eine alte, flache Palette hat keine Typ-Ebene -- dann ist die Quelle
+    // fuer jeden Typ dieselbe, und categoryColors uebersetzt die Rollen.
+    palette[type] = categoryColors(source[type] || source, type);
+  }
+  return palette;
+}
 
 /**
  * Anzeigename eines Teils: "CHS-001 · Vireo Chassis".
@@ -457,7 +598,12 @@ const state = {
   selectedSlot: null,
   palettes: {},
   paletteName: "",
-  palette: {},
+  /** {bauteiltyp: {kategorie: farbe}} -- vier Kategorien je Typ */
+  palette: normalizePalette(null),
+  /** welcher Bauteiltyp gerade im Paletten-Panel bearbeitet wird */
+  paletteType: "body",
+  /** letzter Slot, an den paletteType angeglichen wurde */
+  paletteSyncedSlot: null,
   view: { grid: false, ground: true, anchors: false, editAnchors: false },
   /** uid -> geaenderte, noch nicht gespeicherte Anker */
   anchorEdits: {},
@@ -671,11 +817,30 @@ const round = (v, digits = 2) => Number.parseFloat(Number(v).toFixed(digits));
 // ---------------------------------------------------------------------------
 // Rendering: Bot
 // ---------------------------------------------------------------------------
-function paletteStyle(palette) {
-  return PALETTE_ROLES
-    .filter((role) => palette && palette[role])
-    .map((role) => `${cssVar(role)}:${palette[role]}`)
+/**
+ * style="…"-Wert fuer ein Teil des angegebenen Typs.
+ *
+ * Jede Teil-Gruppe bekommt ihre eigenen acht Rollen, weil sie sich je nach
+ * Bauteiltyp aus anderen vier Kategorien ergeben. Der Export ist damit
+ * weiterhin standalone: die Werte stehen im SVG.
+ */
+function paletteStyle(palette, partType = "body") {
+  const type = paletteTypeOf(partType);
+  const colors = (palette && palette[type]) || FALLBACK_PALETTE[type];
+  return styleFromRoles(resolveRoles(colors, type));
+}
+
+function styleFromRoles(roles) {
+  return Object.entries(roles).map(([role, value]) => `${cssVar(role)}:${value}`)
     .join(";");
+}
+
+/** Farben eines belegten Slots -- eigene Slot-Farben schlagen die Palette. */
+function slotStyle(partType, entry) {
+  const colors = entry && entry.palette
+    ? categoryColors(entry.palette, partType)
+    : (state.palette[paletteTypeOf(partType)] || FALLBACK_PALETTE[paletteTypeOf(partType)]);
+  return styleFromRoles(resolveRoles(colors, partType));
 }
 
 function buildBotLayer(direction = state.direction, forExport = false) {
@@ -691,7 +856,7 @@ function buildBotLayer(direction = state.direction, forExport = false) {
       z: effectiveZ(def.slot, pl.part, pl.entry),
       transform: transformString(pl),
       inner: pl.part.svg_inner,
-      palette: pl.entry.palette,
+      style: slotStyle(pl.part.type, pl.entry),
       name: pl.part.name,
     });
   }
@@ -700,7 +865,7 @@ function buildBotLayer(direction = state.direction, forExport = false) {
   state.direction = prevDirection;
 
   return pieces.map((piece) => {
-    const style = piece.palette ? ` style="${paletteStyle(piece.palette)}"` : "";
+    const style = ` style="${piece.style}"`;
     const sel = (!forExport && piece.slot === state.selectedSlot)
       ? ' data-selected="1"' : "";
     return `<g data-slot="${piece.slot}"${sel} transform="${piece.transform}"${style}>`
@@ -820,7 +985,7 @@ function renderLibrary() {
         <div class="lib-card${usedIds.has(part.id) ? " active" : ""}"
              draggable="true" data-uid="${part.uid}" title="${escapeXml(tip)}">
           ${chips ? `<span class="slotchips">${chips}</span>` : ""}
-          <svg viewBox="${vb}" style="${paletteStyle(state.palette)}">${part.svg_inner}</svg>
+          <svg viewBox="${vb}" style="${paletteStyle(state.palette, part.type)}">${part.svg_inner}</svg>
           ${part.code ? `<div class="code">${escapeXml(part.code)}</div>` : ""}
           <div class="cap">${escapeXml(part.name)}</div>
         </div>`;
@@ -931,30 +1096,63 @@ function renderTransform() {
     </div>`;
 }
 
+function slotPartType(slotName) {
+  const def = slotDefs().find((d) => d.slot === slotName);
+  return def ? paletteTypeOf(def.type) : null;
+}
+
 /**
- * Welche Farbwerte zeigen die Regler gerade? Entweder die globale Palette
- * oder -- bei aktivem Override -- die des gewaehlten Slots.
+ * Welcher Bauteiltyp steht gerade im Paletten-Panel?
+ *
+ * Die Typ-Chips sind die Steuerung, aber ein frisch angewaehlter Slot zieht
+ * den Typ mit -- wer den Kopf anwaehlt, will dessen Visierfarbe sehen und
+ * nicht erst noch einen Chip klicken. Ein danach geklickter Chip bleibt
+ * stehen, bis die Slot-Auswahl wechselt.
  */
-function paletteTarget() {
+function activePaletteType() {
+  if (el("slot-palette-override").checked && state.selectedSlot) {
+    return slotPartType(state.selectedSlot) || state.paletteType;
+  }
+  if (state.selectedSlot !== state.paletteSyncedSlot) {
+    state.paletteSyncedSlot = state.selectedSlot;
+    const type = slotPartType(state.selectedSlot);
+    if (type) state.paletteType = type;
+  }
+  return state.paletteType;
+}
+
+/**
+ * Welche Farbwerte zeigen die Regler gerade? Entweder die Palette des
+ * aktiven Bauteiltyps oder -- bei aktivem Override -- die des Slots.
+ */
+function paletteTarget(type) {
   if (el("slot-palette-override").checked && state.selectedSlot) {
     const entry = state.loadout[state.selectedSlot];
-    if (entry) return entry.palette || state.palette;
+    if (entry) return categoryColors(entry.palette || state.palette[type], type);
   }
-  return state.palette;
+  return state.palette[type] || FALLBACK_PALETTE[type];
 }
 
 function renderPalette() {
-  const shown = paletteTarget();
-  el("palette-grid").innerHTML = PALETTE_ROLES.map((role) => `
+  const type = activePaletteType();
+  const shown = paletteTarget(type);
+
+  el("palette-types").innerHTML = PALETTE_TYPES.map((t) => `
+    <button class="tiny${t === type ? " on" : ""}" data-ptype="${t}">
+      ${PALETTE_TYPE_LABEL[t]}</button>`).join("");
+
+  el("palette-grid").innerHTML = PALETTE_CATEGORIES[type].map((category) => `
     <label class="field" style="margin:0">
-      <span>${ROLE_LABEL[role]}</span>
-      <input type="color" data-role="${role}" value="${shown[role] || "#000000"}">
+      <span>${category.label}</span>
+      <input type="color" data-cat="${category.key}"
+             value="${shown[category.key] || "#000000"}">
     </label>`).join("");
 
   const select = el("palette-select");
   select.innerHTML = Object.keys(state.palettes)
     .map((name) => `<option${name === state.paletteName ? " selected" : ""}>${escapeXml(name)}</option>`)
     .join("");
+  el("btn-palette-del").disabled = Object.keys(state.palettes).length < 2;
 }
 
 function renderAll() {
@@ -1100,7 +1298,7 @@ function loadoutPayload(direction = state.direction) {
     direction,
     origin: CANVAS_ORIGIN,
     ground_y: GROUND_Y,
-    palette: { ...state.palette },
+    palette: normalizePalette(state.palette),
     palette_name: state.paletteName,
     slots: Object.fromEntries(Object.entries(state.loadout).map(([slot, e]) => [
       slot, {
@@ -1309,7 +1507,7 @@ function wireEvents() {
     const slot = event.target.closest(".slot");
     if (!slot) return;
     state.selectedSlot = slot.dataset.slot;
-    markSelectedSlot(); renderTransform(); renderCanvas();
+    markSelectedSlot(); renderTransform(); renderPalette(); renderCanvas();
   });
 
   el("slots").addEventListener("change", (event) => {
@@ -1324,7 +1522,7 @@ function wireEvents() {
     const group = event.target.closest("[data-slot]");
     if (!group || !group.closest("#layer-bot")) return;
     state.selectedSlot = group.dataset.slot;
-    markSelectedSlot(); renderTransform(); renderCanvas();
+    markSelectedSlot(); renderTransform(); renderPalette(); renderCanvas();
   });
 
   // -- Feinjustierung ----------------------------------------------------
@@ -1384,17 +1582,27 @@ function wireEvents() {
   el("btn-clear").addEventListener("click", clearLoadout);
 
   // -- Palette -----------------------------------------------------------
+  el("palette-types").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-ptype]");
+    if (!button) return;
+    state.paletteType = button.dataset.ptype;
+    state.paletteSyncedSlot = state.selectedSlot;   // Chip schlaegt Slot-Sync
+    renderPalette();
+  });
+
   el("palette-grid").addEventListener("input", (event) => {
-    const input = event.target.closest("[data-role]");
+    const input = event.target.closest("[data-cat]");
     if (!input) return;
-    const role = input.dataset.role;
+    const key = input.dataset.cat;
+    const type = activePaletteType();
     if (el("slot-palette-override").checked && state.selectedSlot) {
       const entry = state.loadout[state.selectedSlot];
       if (entry) {
-        entry.palette = { ...(entry.palette || state.palette), [role]: input.value };
+        entry.palette = { ...categoryColors(entry.palette || state.palette[type], type),
+                          [key]: input.value };
       }
     } else {
-      state.palette[role] = input.value;
+      state.palette[type] = { ...state.palette[type], [key]: input.value };
     }
     renderCanvas();
     renderLibrary();
@@ -1417,18 +1625,73 @@ function wireEvents() {
     renderAll();
   });
 
-  el("btn-palette-save").addEventListener("click", async () => {
-    const name = prompt("Palette speichern als:", state.paletteName || "Eigene Palette");
-    if (!name) return;
-    state.palettes[name] = { ...state.palette };
+  el("btn-palette-new").addEventListener("click", () => {
+    el("pal-name").value = nextPaletteName();
+    el("pal-base").innerHTML =
+      `<option value="">Aktuelle Farben</option>` + Object.keys(state.palettes)
+        .map((name) => `<option value="${escapeXml(name)}">${escapeXml(name)}</option>`)
+        .join("");
+    el("dlg-palette").showModal();
+  });
+
+  el("pal-go").addEventListener("click", async () => {
+    const name = el("pal-name").value.trim();
+    if (!name) { toast("Die Palette braucht einen Namen.", "err"); return; }
+    if (state.palettes[name] && !confirm(`"${name}" gibt es schon. Ueberschreiben?`)) return;
+
+    const base = el("pal-base").value;
+    // Eine neue Palette ist immer eine vollstaendige Kopie -- Vorlage und
+    // Kopie teilen sich hinterher nichts, sonst waere "wiederverwendbar"
+    // nur bis zur ersten Aenderung wahr.
+    const colors = normalizePalette(base ? state.palettes[base] : state.palette);
+    state.palettes[name] = colors;
     try {
-      await api("/api/palettes", {
-        method: "PUT", body: JSON.stringify({ palettes: state.palettes }),
-      });
-      state.paletteName = name;
+      await savePalettes();
+      applyPalette(colors, name);
+      el("dlg-palette").close();
+      renderAll();
+      toast(`Palette "${name}" angelegt.`, "ok");
+    } catch (error) {
+      delete state.palettes[name];
+      toast("Fehler: " + error.message, "err");
+    }
+  });
+
+  el("btn-palette-save").addEventListener("click", async () => {
+    const name = state.paletteName || el("palette-select").value;
+    if (!name) { toast("Erst eine Palette anlegen.", "err"); return; }
+    const previous = state.palettes[name];
+    state.palettes[name] = normalizePalette(state.palette);
+    try {
+      await savePalettes();
       renderPalette();
       toast(`Palette "${name}" gespeichert.`, "ok");
-    } catch (error) { toast("Fehler: " + error.message, "err"); }
+    } catch (error) {
+      if (previous) state.palettes[name] = previous;
+      toast("Fehler: " + error.message, "err");
+    }
+  });
+
+  el("btn-palette-del").addEventListener("click", async () => {
+    const name = state.paletteName || el("palette-select").value;
+    const names = Object.keys(state.palettes);
+    if (!name || names.length < 2) {
+      toast("Die letzte Palette laesst sich nicht loeschen.", "err");
+      return;
+    }
+    if (!confirm(`Palette "${name}" loeschen?`)) return;
+    const removed = state.palettes[name];
+    delete state.palettes[name];
+    try {
+      await savePalettes();
+      const next = Object.keys(state.palettes)[0];
+      applyPalette(state.palettes[next], next);
+      renderAll();
+      toast(`Palette "${name}" geloescht.`, "ok");
+    } catch (error) {
+      state.palettes[name] = removed;
+      toast("Fehler: " + error.message, "err");
+    }
   });
 
   // -- Export ------------------------------------------------------------
@@ -1512,7 +1775,11 @@ function wireEvents() {
         type: el("imp-type").value,
         direction: el("imp-dir").value,
         view_box: [0, 0, 128, 128],
-        color_scheme: { ...state.palette },
+        // Referenzfarben des Teils: die acht Rollen, wie sie sich aus den vier
+        // Kategorien seines Typs ergeben. Dokumentierend -- gezeichnet wird
+        // immer mit der aktiven Palette.
+        color_scheme: resolveRoles(
+          state.palette[paletteTypeOf(el("imp-type").value)], el("imp-type").value),
         // Platzhalter-Anker in der Groessenordnung der Beispielteile --
         // anschliessend auf der Buehne per "Anker bearbeiten" zurechtziehen.
         anchors: el("imp-type").value === "body"
@@ -1570,9 +1837,23 @@ function wireEvents() {
 // ---------------------------------------------------------------------------
 // Laden / Anwenden
 // ---------------------------------------------------------------------------
+function savePalettes() {
+  return api("/api/palettes", {
+    method: "PUT", body: JSON.stringify({ palettes: state.palettes }),
+  });
+}
+
+/** "Eigene Palette", "Eigene Palette 2", ... -- nie ein Name, den es gibt. */
+function nextPaletteName(stem = "Eigene Palette") {
+  if (!state.palettes[stem]) return stem;
+  let index = 2;
+  while (state.palettes[`${stem} ${index}`]) index += 1;
+  return `${stem} ${index}`;
+}
+
 function applyPalette(palette, name = "") {
   if (!palette) return;
-  state.palette = { ...palette };
+  state.palette = normalizePalette(palette);
   if (name) state.paletteName = name;
   renderPalette();
 }
@@ -1646,10 +1927,14 @@ async function boot() {
 
   try {
     const { palettes } = await api("/api/palettes");
-    state.palettes = palettes;
-    const first = Object.keys(palettes)[0];
-    applyPalette(palettes[first], first);
+    state.palettes = Object.fromEntries(Object.entries(palettes)
+      .map(([name, colors]) => [name, normalizePalette(colors)]));
+    const first = Object.keys(state.palettes)[0];
+    applyPalette(state.palettes[first], first);
   } catch (error) {
+    // Ohne Paletten waere das Panel unbedienbar -- lieber der Notnagel.
+    state.palettes = { "Neon Cyan": normalizePalette(FALLBACK_PALETTE) };
+    applyPalette(FALLBACK_PALETTE, "Neon Cyan");
     toast("Paletten konnten nicht geladen werden: " + error.message, "err");
   }
 
