@@ -415,27 +415,30 @@ SIL_FACINGS = ("south", "east")
 SIL_ERROR = 0.85      # NUR fuer Ausruestung -- Rahmenteile haben keine Grenze
 
 
-def _shape_polygons(shape, facing):
-    """Alle Flaechen eines Primitivs als projizierte Bildschirm-Polygone."""
+def _shape_faces(shape):
+    """Alle Flaechen eines Primitivs als (lokale Normale, Eckpunkte)."""
     kind = shape[0]
     if kind == "box":
         _, f, l, z, _mat = shape
-        faces = _box_faces(f, l, z)
-    elif kind == "disc":
+        return _box_faces(f, l, z)
+    if kind == "disc":
         _, f, l_center, z_center, radius, _mat, segments = shape
-        faces = [((1, 0, 0), [
+        return [((1, 0, 0), [
             (f, l_center + radius * math.cos(2 * math.pi * i / segments),
              z_center + radius * math.sin(2 * math.pi * i / segments))
             for i in range(segments)])]
-    else:
-        _, center, profile, _mat, axis, segments, caps = shape
-        faces = _lathe_faces(center, profile, axis, segments, caps)
+    _, center, profile, _mat, axis, segments, caps = shape
+    return _lathe_faces(center, profile, axis, segments, caps)
 
+
+def _shape_polygons(shape, facing):
+    """Alle Flaechen eines Primitivs als projizierte Bildschirm-Polygone."""
     # ALLE Flaechen, auch abgewandte: gesucht ist die gefuellte Umrissflaeche,
     # und dafuer ist die Rueckseite eines Koerpers deckungsgleich mit seiner
     # Vorderseite. Die Sichtbarkeitspruefung aus render() waere hier falsch --
     # sie wuerde Hohlraeume in die Silhouette schneiden, die keiner sieht.
-    return [[project(point, facing) for point in points] for _normal, points in faces]
+    return [[project(point, facing) for point in points]
+            for _normal, points in _shape_faces(shape)]
 
 
 def _inside(polygon, x: float, y: float) -> bool:
@@ -501,6 +504,81 @@ def silhouette_distance(a, b) -> float:
         union = len(grid_a | grid_b)
         scores.append(len(grid_a & grid_b) / union if union else 1.0)
     return sum(scores) / len(scores)
+
+
+# ---------------------------------------------------------------------------
+# Sitzregel: der Kern gehoert INS Chassis, nicht davor
+# ---------------------------------------------------------------------------
+# Ein Kern ist kein Anbauteil. Er sitzt in einem Schacht der Brustplatte (oder,
+# wo der Rahmen es hergibt, der Rueckenplatte) und muss aussehen, als waere er
+# mit dem Chassis verschmolzen.
+#
+# Das ist keine Geschmacksfrage, sondern faellt aus der Zeichenweise:
+# der zusammengebaute Bot hat KEINEN Tiefenpuffer. Der Kern wird nach dem
+# Koerper gezeichnet und deckt ihn an seiner Stelle vollstaendig ab -- steht er
+# vor der Panzerung, liest sich das nicht als Tiefe, sondern als aufgeklebte
+# Plakette. Und weil derselbe Kern auf jedes Chassis passen soll, kann ihm das
+# Chassis diese Tiefe auch nicht nachtraeglich abnehmen.
+#
+# Gemessen wird deshalb in der Ebene der Sockelflaeche -- also von vorn auf die
+# Brust geschaut, nicht mit der Iso-Kamera. Fuer jede Rasterzelle der
+# (l, z)-Ebene, die der Kern belegt:
+#
+#   AUFBAU   vorderste Tiefe des Kerns minus vorderste Tiefe des Chassis
+#            an derselben Stelle -- wie weit der Kern vorsteht
+#   FREI     Anteil der Kernflaeche, hinter der ueberhaupt kein Chassis liegt.
+#            Dort haengt der Kern buchstaeblich in der Luft; genau das war der
+#            Fehler des alten Nimbus-Orbs und des alten Molok-Kreuzes.
+#
+# Die Richtung ergibt sich aus dem Anker: sitzt er vor der Mittelachse, zeigt
+# der Sockel nach vorn, sonst nach hinten. Ein Kern am Ruecken ist damit
+# ausdruecklich erlaubt -- er wird nur genauso streng gemessen.
+SEAT_RES = 0.25        # Rasterweite der Sockelebene in Entwurfseinheiten
+SEAT_MAX_PROUD = 1.0   # so weit darf ein Kern hoechstens vorstehen
+SEAT_MAX_FREE = 0.02   # Toleranz fuer Randzellen des Rasters
+
+
+def _raster(polygon, res: float):
+    """Rasterzellen, deren Mittelpunkt im Polygon liegt."""
+    if len(polygon) < 3:
+        return
+    u0 = math.floor(min(x for x, _ in polygon) / res)
+    u1 = math.ceil(max(x for x, _ in polygon) / res)
+    v0 = math.floor(min(y for _, y in polygon) / res)
+    v1 = math.ceil(max(y for _, y in polygon) / res)
+    for u in range(u0, u1 + 1):
+        for v in range(v0, v1 + 1):
+            if _inside(polygon, (u + 0.5) * res, (v + 0.5) * res):
+                yield (u, v)
+
+
+def _depth_map(shapes, sign: float, res: float = SEAT_RES) -> dict:
+    """Vorderste Tiefe je Zelle der (l, z)-Ebene, entlang sign * f gemessen."""
+    depth: dict = {}
+    for shape in shapes:
+        for _normal, points in _shape_faces(shape):
+            front = max(sign * point[0] for point in points)
+            for cell in _raster([(p[1], p[2]) for p in points], res):
+                if front > depth.get(cell, -1e9):
+                    depth[cell] = front
+    return depth
+
+
+def core_seat(core_shapes, body_shapes, anchor) -> tuple:
+    """(Aufbau ueber der Panzerung, Anteil freihaengender Kernflaeche)."""
+    sign = 1.0 if anchor[0] >= 0 else -1.0
+    core = _depth_map(core_shapes, sign)
+    if not core:
+        return 0.0, 0.0
+    body = _depth_map(body_shapes, sign)
+    proud, free = 0.0, 0
+    for cell, front in core.items():
+        base = body.get(cell)
+        if base is None:
+            free += 1
+        else:
+            proud = max(proud, front - base)
+    return proud, free / len(core)
 
 
 # Basis je Achse: (Achsrichtung, u, v) in bot-lokalen Koordinaten (f, l, z).
@@ -728,10 +806,13 @@ SCOUT_BODY = [
     B((-6.5, 7.5), (-9, 9), (41, 49), "plate"),
     B((-7, 8), (-11, 11), (49, 60), "plate"),
     B((-6.5, 7.5), (-10, 10), (60, 62.5), "light"),      # Brustdach
-    # Brustpanel, Kernsockel, Neon -- erhaben auf der Frontflaeche
-    B((8, 8.6), (-7, 7), (44, 58), "dark"),
-    B((8.6, 9.1), (-6, 6), (55, 57), "accent"),
-    B((8.6, 9.2), (-5, 5), (45, 53), "dark"),
+    # Brustpanel, Kernsockel, Neon -- erhaben auf der Frontflaeche.
+    # Der Sockel ist groesser als der Kern, der spaeter hineingeht: er muss ihn
+    # bis in die aeussersten Energiestreifen tragen, sonst haengt der Kern an
+    # seinem Rand ueber der Kante.
+    B((8, 8.6), (-7, 7), (43, 58), "dark"),
+    B((8.6, 9.1), (-6, 6), (55.4, 57.4), "accent"),
+    B((8.6, 9.2), (-6.5, 6.5), (43.4, 54.6), "dark"),
     # Rueckseite: Kuehlrippen, verschwinden sobald der Bot herschaut
     B((-7.6, -7), (-8, 8), (44, 58), "dark"),
     B((-8.1, -7.6), (-6, 6), (46, 47.5), "light"),
@@ -771,13 +852,16 @@ SCOUT_FEET = [
     B((9, 9.5), (-9, -4), (2, 3.5), "accent"),
 ]
 
+# Impulskern: eine Scheibe, buendig im Kernsockel der Brustplatte (Front 9.2).
+# Scheiben haben keine Tiefe -- deshalb bleibt hier nur zu pruefen, dass die
+# vier Energiestreifen nicht ueber den Sockel hinausragen.
 SCOUT_CORE = [
-    D(9.4, 0, 49, 4.2, "dark"),
-    D(9.8, 0, 49, 2.6, "glow"),
-    B((9.9, 10.2), (-0.5, 0.5), (53.5, 55), "accent"),
-    B((9.9, 10.2), (-0.5, 0.5), (43, 44.5), "accent"),
-    B((9.9, 10.2), (-6, -4.8), (48.5, 49.5), "accent"),
-    B((9.9, 10.2), (4.8, 6), (48.5, 49.5), "accent"),
+    D(9.3, 0, 49, 4.4, "dark"),
+    D(9.45, 0, 49, 2.6, "glow"),
+    B((9.45, 9.6), (-0.5, 0.5), (52.6, 54.0), "accent"),
+    B((9.45, 9.6), (-0.5, 0.5), (44.0, 45.4), "accent"),
+    B((9.45, 9.6), (-5.9, -4.7), (48.5, 49.5), "accent"),
+    B((9.45, 9.6), (4.7, 5.9), (48.5, 49.5), "accent"),
 ]
 
 # --- Ausruestung ------------------------------------------------------------
@@ -861,10 +945,12 @@ JUGG_BODY = [
     # Pauldrons. Statt eines Halses macht hier die Einkerbung zwischen Deck
     # und Pauldron den Kopf als eigenes Volumen lesbar.
     B((-7.5, 9), (-11.5, 11.5), (61, 64), "light"),
-    # Brustpanzer
-    B((10, 10.8), (-11, 11), (47, 59), "dark"),
-    B((10.8, 11.4), (-8, 8), (55.5, 58), "accent"),
-    B((10.8, 11.5), (-7, 7), (48, 54), "dark"),
+    # Brustpanzer mit Kernsockel. Der Sockel sitzt auf Brustmitte und ist hoch
+    # genug fuer das ganze Fusionskreuz -- der alte reichte nur bis z=54, und
+    # das Kreuz hing unten ueber die Kante hinaus ins Leere.
+    B((10, 10.8), (-11, 11), (46, 59), "dark"),
+    B((10.8, 11.4), (-8, 8), (56.8, 58.4), "accent"),
+    B((10.8, 11.5), (-7, 7), (46.6, 56.2), "dark"),
     # -- Auspuffstapel: zwei stehende Rohre ueber Schulterhoehe ------------
     L((-9.5, 10.5), [(2.6, 55), (2.6, 72), (3.3, 72), (3.3, 74)], "metal", segments=12),
     L((-9.5, -10.5), [(2.6, 55), (2.6, 72), (3.3, 72), (3.3, 74)], "metal", segments=12),
@@ -934,10 +1020,16 @@ JUGG_FEET = [
     B((-14, -11), (-14.5, -10.5), (0, 3), "dark"),
 ]
 
+# Fusionskreuz auf einer Sockelscheibe -- beides bleibt innerhalb des
+# Kernsockels der Brustplatte (Front 11.5), das Kreuz kommt gerade so weit
+# heraus, dass es leuchtet und nicht absteht.
 JUGG_CORE = [
-    D(11.0, 0, 47, 5.5, "dark"),
-    B((11.3, 11.7), (-3.6, 3.6), (43.5, 50.5), "glow"),
-    B((11.3, 11.7), (-2, 2), (41.5, 52.5), "glow"),
+    # Sechseck statt Kreis: der Molok bekommt eine geschraubte Industrieplatte.
+    # Zwei runde Kerne (Vireo, Nimbus) sind genug -- ab dem dritten faengt der
+    # Silhouetten-Test an, sie miteinander zu verwechseln.
+    D(11.2, 0, 51.4, 4.7, "dark", 6),
+    B((11.5, 11.8), (-3.4, 3.4), (49.8, 53.0), "glow"),
+    B((11.5, 11.8), (-1.9, 1.9), (47.6, 55.2), "glow"),
 ]
 
 # Belagerungskanone -- ausdruecklich KEIN vergroesserter Blaster.
@@ -1031,8 +1123,13 @@ MAGE_BODY = [
     # Umlaufendes Neonband: bei einem Rotationskoerper die natuerliche Zier,
     # weil es in jeder Blickrichtung gleich gut sitzt.
     L((0, 0), [(10.4, 45.0), (10.4, 46.2)], "accent", caps=False, segments=18),
-    # -- Brustsaeule + Kernsockel vorn ------------------------------------
-    L((6.2, 0), [(4.0, 38), (4.4, 45), (3.8, 50)], "dark", segments=12),
+    # -- Kernflansch vorn --------------------------------------------------
+    # Ein RUNDER Torso kann keinen flachen Kern tragen: zur Seite hin faellt
+    # er weg, und der Kern haengt an seinem Rand in der Luft. Der Flansch ist
+    # deshalb ein nach vorn liegender Zylinder mit ebener Stirn -- die Flaeche,
+    # in die der Arkankern hineingeht.
+    L((0, 44), [(5.0, 6.0), (5.0, 11.4)], "dark", axis="f", segments=16),
+    L((0, 44), [(5.3, 10.3), (5.3, 10.9)], "light", axis="f", caps=False, segments=16),
     # -- Rueckenmodul: Reaktorwulst mit Kuehlringen -----------------------
     L((-7.2, 0), [(4.4, 40), (5.0, 46), (4.2, 52)], "dark", segments=12),
     L((-7.2, 0), [(5.3, 42.0), (5.3, 42.8)], "light", caps=False, segments=12),
@@ -1086,13 +1183,15 @@ MAGE_DRIVE = [
     L((11.0, 4.6), [(1.8, 2.2), (1.8, 2.8)], "glow", axis="l", segments=10),
 ]
 
+# Arkankern: eine Linse in der Stirn des Kernflansches (Front 12.2), kein
+# freischwebender Orb mehr. Der alte stand fast fuenf Einheiten vor dem Torso
+# und hing seitlich ueber dessen Rundung hinaus -- aus West und Nord blieben
+# davon zwei Ringe in der Luft uebrig.
 MAGE_CORE = [
-    D(10.2, 0, 43, 5.6, "dark"),
-    # Orb, der nach vorn aus dem Sockel tritt
-    L((0, 43), [(0, 10.2), (2.8, 11.2), (4.0, 12.6), (2.8, 14.0), (0, 15.0)],
-      "glow", axis="f"),
-    L((0, 43), [(6.2, 11.0), (6.2, 11.6)], "accent", axis="f", caps=False, segments=20),
-    L((0, 43), [(5.0, 13.0), (5.0, 13.6)], "accent", axis="f", caps=False, segments=20),
+    D(11.5, 0, 44, 4.4, "dark"),
+    D(11.75, 0, 44, 2.9, "glow"),
+    L((0, 44), [(4.6, 11.5), (4.6, 11.9)], "accent", axis="f", caps=False, segments=20),
+    L((0, 44), [(3.3, 11.6), (3.3, 11.9)], "accent", axis="f", caps=False, segments=20),
 ]
 
 EQ_RUNE_STAFF = [
@@ -1146,7 +1245,6 @@ STRIX_BODY = [
     B((-5.5, 6), (-7.5, 7.5), (40, 58), "plate"),
     B((-6, 6.5), (-8, 8), (58, 60.5), "light"),
     B((6, 6.6), (-5.5, 5.5), (43, 57), "dark"),
-    B((6.6, 7.2), (-1.6, 1.6), (52.5, 56), "accent"),
     # -- Gegengewichts-Ausleger -------------------------------------------
     # Laeuft nach hinten-oben ueber den Kopf hinaus und ist das Merkmal, an
     # dem dieser Rahmen auch als reine Schattenform erkennbar bleibt.
@@ -1154,10 +1252,10 @@ STRIX_BODY = [
     B((-14, -8.5), (-3.5, 3.5), (59, 68), "plate"),
     B((-14.5, -8), (-4, 4), (68, 70), "light"),
     B((-14.6, -14), (-2.5, 2.5), (61, 66), "accent"),
-    # Kuehlrippen auf der Rueckseite des Auslegers
-    B((-9.6, -9), (-3, 3), (48, 49.5), "light"),
-    B((-9.6, -9), (-3, 3), (52, 53.5), "light"),
-    B((-9.6, -9), (-3, 3), (56, 57.5), "light"),
+    # Kuehlrippen ueber und unter dem Kernschacht: sie rahmen ihn ein, statt
+    # die Flaeche zu belegen, auf der er sitzt.
+    B((-9.6, -9), (-3, 3), (46.6, 48.1), "light"),
+    B((-9.6, -9), (-3, 3), (56.4, 57.9), "light"),
     # -- Waffenjoch vor der Brust: ein Lager statt zweier Arme -------------
     B((5.5, 10), (-9.5, -6.5), (47, 54), "metal"),
     B((5.5, 10), (6.5, 9.5), (47, 54), "metal"),
@@ -1208,16 +1306,24 @@ STRIX_FEET = [
     B((9, 13), (-6.9, -4.6), (0, 2), "dark"),
 ]
 
-# Kernschacht statt Kernscheibe: ein senkrechter Leuchtspalt in der
-# Brustplatte. Ein Kern wird ueber die Glut gelesen, nicht ueber die Form --
-# aber wenn schon drei runde Kerne existieren, ist der vierte besser eckig.
+# Kernschacht statt Kernscheibe: ein senkrechter Leuchtspalt, eingelassen in
+# den Gegengewichts-Ausleger. Ein Kern wird ueber die Glut gelesen, nicht ueber
+# die Form -- aber wenn schon drei runde Kerne existieren, ist der vierte
+# besser eckig.
+#
+# Warum am RUECKEN: die Brust dieses Rahmens gehoert dem Waffenjoch, und die
+# Schienen-Lanze liegt genau davor. Ein Kern dort waere im bestueckten Bot aus
+# Sued und Ost verdeckt -- also aus den beiden Richtungen, in denen man ihn
+# sehen wuerde. Der Ausleger ist die einzige grosse freie Flaeche des Rahmens.
+#
+# Die Tiefen sind der eigentliche Entwurf: das Gehaeuse liegt hinter der
+# Aussenflaeche des Auslegers (-9.0), nur der Leuchtspalt kommt eine
+# Fingerbreite heraus. Zwischen den Kuehlrippen liest sich das als Schacht.
 STRIX_CORE = [
-    B((6.6, 7.4), (-3.4, 3.4), (44.5, 55.5), "dark"),
-    B((7.4, 7.9), (-1.1, 1.1), (46, 54), "glow"),
-    B((7.4, 7.8), (-3.0, -1.6), (47, 47.8), "accent"),
-    B((7.4, 7.8), (1.6, 3.0), (47, 47.8), "accent"),
-    B((7.4, 7.8), (-3.0, -1.6), (52.2, 53), "accent"),
-    B((7.4, 7.8), (1.6, 3.0), (52.2, 53), "accent"),
+    B((-9.0, -8.4), (-1.7, 1.7), (48.0, 55.2), "dark"),
+    B((-9.25, -9.0), (-1.1, 1.1), (48.6, 54.6), "glow"),
+    B((-9.2, -9.0), (-3.0, -1.9), (48.6, 54.6), "accent"),
+    B((-9.2, -9.0), (1.9, 3.0), (48.6, 54.6), "accent"),
 ]
 
 # Schienen-Lanze -- die schwerste Waffe im Bestand und der Gegenpol zur
@@ -1339,7 +1445,7 @@ SETS = [
                     "mount": (0, 0, MOUNT_Z),
                     "head": (0, 0, 64),
                     "feet": (0, 0, 33),
-                    "core": (10.5, 0, 47),
+                    "core": (11.0, 0, 51.4),
                     "equip_left": (0, 26.5, 49),
                     "equip_right": (0, -26.5, 49),
                     # Auf dem Rueckendeck zwischen den Auspuffstapeln.
@@ -1370,7 +1476,7 @@ SETS = [
             {
                 "id": "jugg_core", "code": "COR-002", "type": "core", "name": "Molok Fusionskern",
                 "tags": ["core", "fusion"], "shapes": JUGG_CORE,
-                "anchors": {"mount": (10.5, 0, 47)},
+                "anchors": {"mount": (11.0, 0, 51.4)},
             },
             {
                 "id": "eq_siege_cannon", "code": "EQP-003", "type": "equipment",
@@ -1408,7 +1514,7 @@ SETS = [
                     "mount": (0, 0, MOUNT_Z),
                     "head": (0, 0, 61),
                     "feet": (0, 0, 27),
-                    "core": (10.2, 0, 43),
+                    "core": (11.4, 0, 44),
                     "equip_left": (0, 13.8, 47),
                     "equip_right": (0, -13.8, 47),
                 },
@@ -1433,7 +1539,7 @@ SETS = [
                 "id": "mage_core", "code": "COR-003", "type": "core",
                 "name": "Nimbus Arkankern", "tags": ["core", "arcane"],
                 "shapes": MAGE_CORE,
-                "anchors": {"mount": (10.2, 0, 43)},
+                "anchors": {"mount": (11.4, 0, 44)},
             },
             {
                 "id": "eq_rune_staff", "code": "EQP-005", "type": "equipment",
@@ -1467,7 +1573,8 @@ SETS = [
                     "mount": (0, 0, MOUNT_Z),
                     "head": (0, 0, 63),
                     "feet": (0, 0, 34),
-                    "core": (6.6, 0, 50),
+                    # Am Ruecken statt an der Brust -- siehe STRIX_CORE.
+                    "core": (-9.0, 0, 51.6),
                     # Genau ein Anker -- und er sitzt auf der Mittelachse im
                     # Joch, nicht seitlich am Arm.
                     "equip_center": (6, 0, 51),
@@ -1491,7 +1598,7 @@ SETS = [
                 "id": "strix_core", "code": "COR-004", "type": "core",
                 "name": "Strix Zielrechner", "tags": ["core", "optics"],
                 "shapes": STRIX_CORE,
-                "anchors": {"mount": (6.6, 0, 50)},
+                "anchors": {"mount": (-9.0, 0, 51.6)},
             },
             {
                 "id": "eq_rail_lance", "code": "EQP-007", "type": "equipment",
@@ -1629,6 +1736,8 @@ def main() -> None:
             seen[code] = f"{spec['id']}/{part['id']}"
 
     check_slot_rules()
+    check_mounts()
+    check_core_seat()
     check_silhouettes()
     print_slot_matrix()
 
@@ -1666,6 +1775,75 @@ def check_slot_rules() -> None:
                 raise SystemExit(f"{where}: unbekannte Montageklasse")
             if part.get("category", DEFAULT_CATEGORY) not in EQUIP_CATEGORIES:
                 raise SystemExit(f"{where}: unbekannte Bauart")
+
+
+# Rahmenteile, deren "mount" DERSELBE bot-lokale Punkt sein muss wie der
+# Sockel-Anker des Koerpers. Ausruestung gehoert bewusst nicht dazu: ihr Anker
+# sitzt in ihrer eigenen Mitte, damit dasselbe Teil an den linken wie an den
+# rechten Arm passt (siehe parts/README.md, Abschnitt 6).
+SOCKET_SLOTS = ("head", "feet", "core")
+
+
+def check_mounts() -> None:
+    """Kopf, Fuesse und Kern muessen exakt auf ihrem Sockel sitzen."""
+    for spec in SETS:
+        body = next((p for p in spec["parts"] if p["type"] == "body"), None)
+        if not body:
+            continue
+        for slot in SOCKET_SLOTS:
+            part = next((p for p in spec["parts"] if p["type"] == slot), None)
+            if not part or slot not in body["anchors"]:
+                continue
+            socket, mount = body["anchors"][slot], part["anchors"]["mount"]
+            if tuple(socket) != tuple(mount):
+                raise SystemExit(
+                    f"{spec['id']}/{part['id']}: mount {mount} sitzt nicht auf "
+                    f"dem Sockel {socket} von {body['id']}. Beide Anker "
+                    f"beschreiben denselben Punkt am Bot -- laufen sie "
+                    f"auseinander, haengt das Teil im zusammengebauten Bot "
+                    f"genau um die Differenz daneben."
+                )
+
+
+def check_core_seat() -> None:
+    """
+    Die Sitzregel als Test: ein Kern steht nicht vor dem Chassis.
+
+    Der Wert AUFBAU ist die Hoehe, mit der der Kern aus der Panzerung
+    heraussteht, FREI der Anteil seiner Flaeche ohne Chassis dahinter. Beides
+    hat dieselbe Ursache, wenn es schiefgeht -- der Kern wurde fuer sich
+    entworfen und nicht fuer seinen Schacht -- und dieselbe Wirkung: er sieht
+    aufgeklebt aus, weil die Iso-Ansicht seine Tiefe nicht zeigen kann.
+    """
+    rows, problems = [], []
+    for spec in SETS:
+        body = next((p for p in spec["parts"] if p["type"] == "body"), None)
+        core = next((p for p in spec["parts"] if p["type"] == "core"), None)
+        if not body or not core or "core" not in body["anchors"]:
+            continue
+        proud, free = core_seat(core["shapes"], body["shapes"],
+                                body["anchors"]["core"])
+        seat = "Ruecken" if body["anchors"]["core"][0] < 0 else "Brust"
+        rows.append((f"{spec['id']}/{core['id']}", seat, proud, free))
+        if proud > SEAT_MAX_PROUD or free > SEAT_MAX_FREE:
+            problems.append((f"{spec['id']}/{core['id']}", proud, free))
+
+    print(f"\nKernsitz (Aufbau bis {SEAT_MAX_PROUD:.1f} Einheiten, "
+          f"freihaengend bis {SEAT_MAX_FREE:.0%}):")
+    for name, seat, proud, free in rows:
+        print(f"  {name:<22} {seat:<8} Aufbau {proud:4.2f}  frei {free:5.1%}")
+
+    if problems:
+        lines = "\n".join(f"  {name}: Aufbau {proud:.2f}, frei {free:.0%}"
+                          for name, proud, free in problems)
+        raise SystemExit(
+            "Sitzregel verletzt -- ein Kern steht vor dem Chassis:\n" + lines +
+            "\n\nIm zusammengebauten Bot gibt es keinen Tiefenpuffer: der Kern "
+            "wird nach dem Koerper gezeichnet und deckt ihn ab. Was vorsteht, "
+            "sieht deshalb nicht tief aus, sondern aufgeklebt. Kern flacher in "
+            "den Schacht legen -- oder dem Chassis einen Sockel geben, der so "
+            "weit vorkommt wie der Kern."
+        )
 
 
 def check_silhouettes() -> None:

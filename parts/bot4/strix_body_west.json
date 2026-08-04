@@ -31,8 +31,8 @@
     },
     {
       "name": "core",
-      "x": 57.7,
-      "y": 43.82
+      "x": 72.59,
+      "y": 52.82
     },
     {
       "name": "equip_center",
@@ -58,7 +58,7 @@
   "slot_z": {
     "head": 63,
     "feet": 34,
-    "core": 43.4,
+    "core": 60.6,
     "equip_center": 45
   },
   "slot_rules": {

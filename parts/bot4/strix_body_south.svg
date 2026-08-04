@@ -11,20 +11,17 @@
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
   -->
 <g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
-  <path d="M69.73 42.08 L75.46 46.13 L75.46 44.7 L69.73 40.65 Z" fill="var(--c-plate-light)"/>
+  <path d="M69.73 43.42 L75.46 47.47 L75.46 46.03 L69.73 41.98 Z" fill="var(--c-plate-light)"/>
+  <path d="M70.3 41.58 L69.73 41.98 L75.46 46.03 L76.03 45.63 Z" fill="var(--c-plate-light)"/>
   <path d="M62.09 49.72 L52.54 56.47 L65.91 65.92 L75.46 59.17 Z" fill="var(--c-metal)"/>
-  <path d="M70.3 40.24 L69.73 40.65 L75.46 44.7 L76.03 44.29 Z" fill="var(--c-plate-light)"/>
+  <path d="M75.46 47.47 L76.03 47.06 L76.03 45.63 L75.46 46.03 Z" fill="var(--c-plate)"/>
   <path d="M52.54 62.19 L65.91 71.64 L65.91 65.92 L52.54 56.47 Z" fill="var(--c-metal)"/>
-  <path d="M75.46 46.13 L76.03 45.72 L76.03 44.29 L75.46 44.7 Z" fill="var(--c-plate)"/>
-  <path d="M69.73 38.26 L75.46 42.31 L75.46 40.88 L69.73 36.83 Z" fill="var(--c-plate-light)"/>
   <path d="M65.91 71.64 L75.46 64.89 L75.46 59.17 L65.91 65.92 Z" fill="var(--c-plate-dark)"/>
-  <path d="M70.3 36.42 L69.73 36.83 L75.46 40.88 L76.03 40.47 Z" fill="var(--c-plate-light)"/>
-  <path d="M75.46 42.31 L76.03 41.91 L76.03 40.47 L75.46 40.88 Z" fill="var(--c-plate)"/>
-  <path d="M69.73 34.44 L75.46 38.49 L75.46 37.06 L69.73 33.01 Z" fill="var(--c-plate-light)"/>
-  <path d="M70.3 32.61 L69.73 33.01 L75.46 37.06 L76.03 36.66 Z" fill="var(--c-plate-light)"/>
+  <path d="M69.73 34.06 L75.46 38.11 L75.46 36.68 L69.73 32.63 Z" fill="var(--c-plate-light)"/>
+  <path d="M70.3 32.22 L69.73 32.63 L75.46 36.68 L76.03 36.27 Z" fill="var(--c-plate-light)"/>
   <path d="M64.95 46.01 L72.59 51.41 L72.59 36.14 L64.95 30.74 Z" fill="var(--c-plate)"/>
   <path d="M74.98 26.63 L79.75 30.01 L79.75 25.23 L74.98 21.86 Z" fill="var(--c-accent)" stroke="none"/>
-  <path d="M75.46 38.49 L76.03 38.09 L76.03 36.66 L75.46 37.06 Z" fill="var(--c-plate)"/>
+  <path d="M75.46 38.11 L76.03 37.71 L76.03 36.27 L75.46 36.68 Z" fill="var(--c-plate)"/>
   <path d="M72.59 51.41 L76.41 48.71 L76.41 33.44 L72.59 36.14 Z" fill="var(--c-plate-dark)"/>
   <path d="M79.75 30.01 L80.32 29.6 L80.32 24.83 L79.75 25.23 Z" fill="var(--c-accent)" stroke="none"/>
   <path d="M75.55 21.45 L74.98 21.86 L79.75 25.23 L80.32 24.83 Z" fill="var(--c-accent)" stroke="none"/>
@@ -45,11 +42,8 @@
   <path d="M74.02 16.69 L67.82 21.08 L75.46 26.48 L81.66 22.09 Z" fill="var(--c-plate-light)"/>
   <path d="M62.09 28.8 L50.16 37.23 L65.43 48.03 L77.36 39.6 Z" fill="var(--c-plate-light)"/>
   <path d="M67.82 22.99 L75.46 28.39 L75.46 26.48 L67.82 21.08 Z" fill="var(--c-plate-light)"/>
-  <path d="M55.6 49.66 L58.65 51.82 L58.65 48.48 L55.6 46.32 Z" fill="var(--c-accent)" stroke="none"/>
   <path d="M75.46 28.39 L81.66 24.0 L81.66 22.09 L75.46 26.48 Z" fill="var(--c-plate)"/>
   <path d="M62.95 63.12 L63.52 62.71 L63.52 49.35 L62.95 49.76 Z" fill="var(--c-plate-dark)"/>
-  <path d="M58.65 51.82 L59.23 51.42 L59.23 48.08 L58.65 48.48 Z" fill="var(--c-accent)" stroke="none"/>
-  <path d="M56.17 45.92 L55.6 46.32 L58.65 48.48 L59.23 48.08 Z" fill="var(--c-accent)" stroke="none"/>
   <path d="M63.52 31.47 L57.8 35.52 L64.48 40.25 L70.2 36.2 Z" fill="var(--c-metal)"/>
   <path d="M53.02 41.93 L52.45 42.33 L62.95 49.76 L63.52 49.35 Z" fill="var(--c-plate)"/>
   <path d="M49.68 38.69 L44.43 42.4 L63.52 55.9 L68.77 52.19 Z" fill="var(--c-metal)"/>

@@ -472,7 +472,7 @@ verschieden bleibt.
 Silhouetten-Abstand (1.00 = ununterscheidbar; Grenze 0.85, aber nur fuer
 Ausruestung -- Pruefstein 0.91), engstes Paar je Typ:
   body       0.85  bot1/scout_body / bot2/jugg_body
-  core       0.71  bot2/jugg_core / bot3/mage_core
+  core       0.82  bot2/jugg_core / bot3/mage_core
   equipment  0.66  bot1/eq_pulse_blaster / bot2/eq_siege_cannon
   feet       0.66  bot1/scout_feet / bot4/strix_feet
   head       0.88  bot2/jugg_head / bot3/mage_head
@@ -541,6 +541,79 @@ Bausatz; ein Chassis darf sich die Beine eines anderen ausleihen.
 
 ---
 
+## 6b. Sitzregel: der Kern gehoert INS Chassis
+
+> Ein Kern ist kein Anbauteil. Er sitzt in einem **Schacht der Brustplatte** --
+> oder, wo der Rahmen es hergibt, der Rueckenplatte -- und soll aussehen, als
+> waere er mit dem Chassis verschmolzen.
+
+Das ist keine Geschmacksfrage, sondern faellt aus der Zeichenweise. Der
+zusammengebaute Bot hat **keinen Tiefenpuffer**: Teile werden nacheinander
+gezeichnet, der Kern kommt nach dem Koerper und deckt ihn an seiner Stelle
+vollstaendig ab. Steht er vor der Panzerung, liest sich das deshalb nicht als
+Tiefe, sondern als aufgeklebte Plakette -- und weil derselbe Kern auf jedes
+Chassis passen soll, kann ihm das Chassis diese Tiefe auch nicht nachtraeglich
+abnehmen.
+
+### Der Test dazu
+
+Gemessen wird **in der Ebene der Sockelflaeche** -- von vorn auf die Brust
+geschaut, nicht mit der Iso-Kamera. Fuer jede Rasterzelle der `(l, z)`-Ebene,
+die der Kern belegt:
+
+| | |
+|---|---|
+| **AUFBAU** | vorderste Tiefe des Kerns minus vorderste Tiefe des Chassis an derselben Stelle -- wie weit der Kern vorsteht. Grenze: **1.0 Entwurfseinheiten** |
+| **FREI**   | Anteil der Kernflaeche, hinter der ueberhaupt kein Chassis liegt. Dort haengt der Kern in der Luft. Grenze: **2 %** (Randzellen des Rasters) |
+
+Die Richtung ergibt sich aus dem Anker: sitzt er vor der Mittelachse, zeigt
+der Sockel nach vorn, sonst nach hinten. **Ein Kern am Ruecken ist also
+ausdruecklich erlaubt** -- er wird nur genauso streng gemessen.
+
+Beide Werte haben dieselbe Ursache, wenn sie ausschlagen: der Kern wurde fuer
+sich entworfen und nicht fuer seinen Schacht. Der Bestand hat das einmal
+komplett vorgefuehrt:
+
+| Kern | alt | woran es lag |
+|---|---|---|
+| COR-004 Strix | Aufbau 1.30 | Gehaeuse lag als Platte **auf** der Brust statt darin -- und schob sich dabei vor das Waffenjoch, das eigentlich davor liegt |
+| COR-001 Vireo | Aufbau 2.70 | Scheibe sass korrekt, aber der untere Energiestreifen ragte unter die Brustplatte |
+| COR-002 Molok | Aufbau 3.70 | Leuchtkreuz ragte unten ueber die Kante des Kernsockels hinaus |
+| COR-003 Nimbus | Aufbau 4.99 | Orb stand vor dem Torso und hing seitlich ueber dessen Rundung; aus West und Nord blieben zwei Ringe in der Luft |
+
+### Brust oder Ruecken
+
+Regelfall ist die Brust. Der Strix (bot4) ist der Gegenfall und zeigt, wann
+sich der Ruecken lohnt: seine Brust gehoert dem Waffenjoch, und die
+Schienen-Lanze liegt genau davor. Ein Kern dort waere im bestueckten Bot aus
+Sued und Ost verdeckt gewesen -- also aus genau den beiden Richtungen, aus
+denen man ihn sieht. Sein Zielrechner sitzt deshalb im
+Gegengewichts-Ausleger, zwischen den Kuehlrippen, und ist aus West und Nord
+zu sehen.
+
+Die Frage ist also nicht "Brust oder Ruecken?", sondern: **wo hat dieser
+Rahmen eine Flaeche, die gross genug ist und frei bleibt, wenn der Bot
+bestueckt ist?**
+
+### Was daraus fuer den Entwurf folgt
+
+* **Der Koerper baut den Schacht, der Kern legt sich hinein.** Der Sockel auf
+  der Brustplatte muss groesser sein als der Kern -- bis in dessen aeusserste
+  Zierstreifen.
+* **Ein runder Torso braucht eine ebene Stirn.** Zur Seite hin faellt eine
+  Rundung weg, und ein flacher Kern haengt an seinem Rand in der Luft. Der
+  Nimbus loest das mit einem nach vorn liegenden Zylinder (`axis="f"`) als
+  Kernflansch.
+* **Scheibe (`D`) statt Quader**, wo es geht: eine Scheibe hat keine Tiefe und
+  kann deshalb gar nicht abstehen. Genau deshalb sassen Vireo und Molok schon
+  vorher fast richtig.
+* Ein **flach eingelassenes** Gehaeuse, dessen Stirn mit der Panzerung
+  fluchtet, deckt die Platte exakt ab und verschwindet optisch in ihr -- das
+  ist der billigste Weg zu "verschmolzen". Die sichtbare Kante liefert dann
+  der Rahmen, den das Chassis um den Schacht zieht.
+
+---
+
 ## 7. Neues Teil anlegen
 
 **Variante A – ueber das Tool** (schnellster Weg fuer von Claude Code
@@ -549,7 +622,8 @@ generierte Grafiken):
 1. *Neues Teil importieren…* im rechten Panel
 2. SVG-Quelltext einfuegen, Set / Dateiname / Typ / Richtung setzen
 3. Anlegen. Das Tool schreibt SVG + JSON mit Platzhalter-Ankern.
-4. Slot anwaehlen → *Anker bearbeiten* → Griffe auf der Buehne ziehen →
+4. Slot anwaehlen → *Anker bearbeiten* → am Achsenkreuz ziehen (Pfeil = nur
+   diese Bot-Achse, Mitte = frei) oder rechts im Anker-Block abzaehlen →
    *Anker speichern*.
 
 **Variante B – von Hand:** SVG + JSON in den Set-Ordner legen, im Tool auf

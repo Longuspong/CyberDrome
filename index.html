@@ -154,6 +154,25 @@ aside.right { border-left: 1px solid var(--line); }
 }
 .anchor-handle { cursor: grab; }
 .anchor-handle:active { cursor: grabbing; }
+.anchor-axis { cursor: crosshair; }
+
+/* ---- Anker-Block der Feinjustierung ------------------------------------ */
+.anchor-block {
+  margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line);
+}
+.anchor-block > h4 {
+  font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--neon); margin-bottom: 6px;
+}
+.anchor-block .dirty {
+  color: var(--warn); letter-spacing: 0; text-transform: none; font-weight: 400;
+}
+.axis-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.axis-row button { flex: 1 1 0; padding: 2px 0; font-size: 10.5px; }
+.axis-dot { width: 7px; height: 7px; border-radius: 2px; flex: 0 0 auto; }
+.axis-name {
+  font-size: 10.5px; color: var(--text-dim); width: 34px; flex: 0 0 auto;
+}
 #layer-bot > g { cursor: pointer; }
 #layer-bot > g[data-selected] { filter: drop-shadow(0 0 1.5px var(--neon)) drop-shadow(0 0 3px var(--neon)); }
 
@@ -326,9 +345,11 @@ textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 1
         Teil aus der Bibliothek anklicken oder auf die Buehne ziehen. Ausruestung
         landet im naechstgelegenen freien Anker. Slot rechts anwaehlen, dann mit
         den Pfeiltasten oder den Reglern feinjustieren.<br><br>
-        <b>Anker bearbeiten</b> zeigt die Ankerpunkte des gewaehlten Teils als
-        Griffe &ndash; verschieben und mit <b>Anker speichern</b> zurueck in die
-        JSON schreiben.
+        <b>Anker bearbeiten</b> setzt ein Achsenkreuz auf den Anker des
+        gewaehlten Teils: am Pfeil ziehen bewegt ihn nur auf dieser Achse des
+        Bots (<b>V</b>or, <b>L</b>inks, <b>H</b>och), der Punkt in der Mitte
+        frei. Abzaehlen geht rechts im Anker-Block. <b>Anker speichern</b>
+        schreibt zurueck in die JSON.
       </p>
     </div>
   </aside>
@@ -446,6 +467,55 @@ const CANVAS_ORIGIN = { x: 64, y: 64 };  // hier landet der "mount" des Bodys
 const GROUND_Y = 96;                     // Bildschirm-y des Feldmittelpunkts
 const TILE_HALF_W = 38;
 const TILE_HALF_H = TILE_HALF_W * Math.SQRT1_2;   // 26.87
+
+/* -- Die drei Achsen des Bots auf dem Bildschirm ---------------------------
+   Bildschirmkoordinaten reichen zum ZEICHNEN, aber nicht zum VERSCHIEBEN: wer
+   einen Anker "zwei Einheiten nach vorn" ziehen will, meint die Achse des
+   Bots, und die liegt in der Iso-Ansicht schraeg. Ohne Fuehrung wird daraus
+   ein Ratespiel -- dieselbe Mausbewegung nach unten-links kann "vor" oder
+   "runter" heissen, je nachdem, was man treffen wollte.
+
+   Die Zahlen sind dieselbe Projektion wie in tools/build_sample_parts.py,
+   nur nach den drei bot-lokalen Achsen aufgeloest:
+
+     x = 64 + cos(45 Grad)*(px - py)*SCALE
+     y = 96 - (0.5*(px + py) + cos(45 Grad)*pz)*SCALE
+
+   Auf dem Bildschirm heisst das: HOCH ist senkrecht, VOR und LINKS laufen
+   diagonal auseinander -- die klassische Iso-Schere.                       */
+const ISO_SCALE = 1.35;                        // Entwurfseinheit -> Pixel
+const ISO_LAT = Math.SQRT1_2 * ISO_SCALE;      // 0.955 px seitlich je Einheit
+const ISO_DEPTH = 0.5 * ISO_SCALE;             // 0.675 px tief je Einheit
+const ISO_UP = Math.SQRT1_2 * ISO_SCALE;       // 0.955 px hoch je Einheit
+
+/** Vorwaerts- und Links-Vektor des Bots in Gitterkoordinaten je Richtung. */
+const FACING_AXES = {
+  south: { f: [-1, 0], l: [0, -1] },
+  east:  { f: [0, -1], l: [1, 0] },
+  north: { f: [1, 0],  l: [0, 1] },
+  west:  { f: [0, 1],  l: [-1, 0] },
+};
+
+/** Die drei Achsen, wie sie im Gizmo erscheinen. */
+const AXES = [
+  { key: "f", label: "vor",   short: "V", color: "#ff2d95" },
+  { key: "l", label: "links", short: "L", color: "#2de2e6" },
+  { key: "z", label: "hoch",  short: "H", color: "#ffb347" },
+];
+
+/** Bildschirm-Versatz einer bot-lokalen Achse fuer EINE Entwurfseinheit. */
+function axisVector(axis, direction = state.direction) {
+  if (axis === "z") return { x: 0, y: -ISO_UP };
+  const [px, py] = (FACING_AXES[direction] || FACING_AXES.south)[axis];
+  return { x: ISO_LAT * (px - py), y: -ISO_DEPTH * (px + py) };
+}
+
+/** Dieselbe Achse auf Laenge 1 -- fuer die Projektion einer Mausbewegung. */
+function axisUnit(axis, direction = state.direction) {
+  const v = axisVector(axis, direction);
+  const len = Math.hypot(v.x, v.y) || 1;
+  return { x: v.x / len, y: v.y / len, len };
+}
 
 const DIR_LABEL  = { north: "Nord", west: "West", east: "Ost", south: "Sued" };
 const TYPE_LABEL = {
@@ -638,6 +708,10 @@ const state = {
   view: { grid: false, ground: true, anchors: false, editAnchors: false },
   /** uid -> geaenderte, noch nicht gespeicherte Anker */
   anchorEdits: {},
+  /** welcher Anker des gewaehlten Teils gerade am Gizmo haengt */
+  editAnchor: null,
+  /** waehrend eines mount-Drags: {uid, anchors} vom Beginn des Ziehens */
+  anchorFreeze: null,
 };
 
 const el = (id) => document.getElementById(id);
@@ -702,6 +776,28 @@ function anchorsOf(part) {
   const map = {};
   for (const a of list) map[a.name] = { x: a.x, y: a.y };
   return map;
+}
+
+/**
+ * Anker fuer die PLATZIERUNG -- waehrend eines "mount"-Drags eingefroren.
+ *
+ * Der "mount" eines Teils ist der Punkt, mit dem es auf seinem Sockel klebt.
+ * Verschiebt man ihn, wandert nicht der Punkt, sondern das TEIL -- und zwar in
+ * die Gegenrichtung. Rechnete die Platzierung waehrend des Ziehens live mit,
+ * liefe der Griff der Maus davon: die Verschiebung des Teils veraendert die
+ * Lage des Griffs, was die naechste Mausbewegung erneut verstaerkt. Genau so
+ * ist der Anker frueher "weggeflogen".
+ *
+ * Deshalb rechnet die Platzierung waehrend eines mount-Drags mit den Ankern
+ * VOM BEGINN des Ziehens: das Teil steht still, der Griff folgt der Maus, und
+ * erst beim Loslassen rueckt der Aufbau nach. Alle anderen Anker (die Sockel
+ * eines Koerpers) bleiben live -- dort ist das Mitwandern der angehaengten
+ * Teile ja gerade das, was man sehen will.
+ */
+function layoutAnchorsOf(part) {
+  const freeze = state.anchorFreeze;
+  if (part && freeze && freeze.uid === part.uid) return freeze.anchors;
+  return anchorsOf(part);
 }
 
 // ---------------------------------------------------------------------------
@@ -800,8 +896,8 @@ function shouldAutoFlip(part, slotName) {
   const bodyPart = bodyEntry ? resolvePart(bodyEntry.partId) : null;
   if (!bodyPart) return false;
 
-  const socket = anchorsOf(bodyPart)[slotName];
-  const mount = anchorsOf(part).mount;
+  const socket = layoutAnchorsOf(bodyPart)[slotName];
+  const mount = layoutAnchorsOf(part).mount;
   if (!socket || !mount) return false;
 
   const socketSide = Math.sign(socket.x - CANVAS_ORIGIN.x);
@@ -818,7 +914,7 @@ function placementFor(slotName) {
   const part = resolvePart(entry.partId);
   if (!part) return { part: null, missing: true, entry };
 
-  const anchors = anchorsOf(part);
+  const anchors = layoutAnchorsOf(part);
   const mount = anchors.mount || { x: CANVAS_ORIGIN.x, y: CANVAS_ORIGIN.y };
 
   let target;
@@ -828,7 +924,7 @@ function placementFor(slotName) {
     const bodyEntry = state.loadout.body;
     const bodyPart = bodyEntry ? resolvePart(bodyEntry.partId) : null;
     if (bodyPart) {
-      const bodyAnchors = anchorsOf(bodyPart);
+      const bodyAnchors = layoutAnchorsOf(bodyPart);
       const bodyMount = bodyAnchors.mount || { ...CANVAS_ORIGIN };
       const socket = bodyAnchors[slotName];
       if (!socket) return { part, missing: false, noSocket: true, entry };
@@ -978,6 +1074,57 @@ function renderGuides() {
   el("layer-guides").innerHTML = parts.join("");
 }
 
+/**
+ * Welcher Anker des Teils haengt gerade am Gizmo?
+ *
+ * Ein Koerper hat mehrere Anker; drei Achsenpfeile an jedem waeren ein
+ * Drahtknaeuel. Es fuehrt deshalb immer genau EINER das Gizmo, und ein Klick
+ * auf einen anderen Griff reicht es weiter.
+ */
+function activeAnchorName(part) {
+  const names = Object.keys(anchorsOf(part));
+  if (!names.length) return null;
+  if (state.editAnchor && names.includes(state.editAnchor)) return state.editAnchor;
+  return names.includes("mount") ? "mount" : names[0];
+}
+
+/**
+ * Das Achsenkreuz an einem Anker.
+ *
+ * Drei Pfeile in den bot-lokalen Achsen -- vor, links, hoch -- statt eines
+ * blossen Punktes. Zieht man an einem Pfeil, laeuft der Anker NUR auf dieser
+ * Achse; der Punkt in der Mitte bleibt fuer freies Verschieben. In der
+ * Iso-Ansicht ist das kein Komfort: dieselbe Mausbewegung ist ohne Fuehrung
+ * zwei- bis dreideutig, und "einmal um eine Einheit nach vorn" laesst sich
+ * sonst gar nicht ausdruecken.
+ */
+function anchorGizmo(x, y, slot, name) {
+  const ARM = 11, BACK = 3.4;
+  const parts = [];
+  for (const axis of AXES) {
+    const u = axisUnit(axis.key);
+    const x0 = round(x - u.x * BACK), y0 = round(y - u.y * BACK);
+    const x1 = round(x + u.x * ARM),  y1 = round(y + u.y * ARM);
+    // Spitze als kleines Dreieck quer zur Achse.
+    const tipX = round(x + u.x * (ARM + 2.6)), tipY = round(y + u.y * (ARM + 2.6));
+    const nx = round(-u.y * 1.5), ny = round(u.x * 1.5);
+    parts.push(
+      `<g class="anchor-axis" data-anchor="${escapeXml(name)}" data-slot="${slot}"
+          data-axis="${axis.key}">
+         <path d="M${x0} ${y0}L${x1} ${y1}" stroke="${axis.color}"
+               stroke-width="0.7" opacity="0.85"/>
+         <path d="M${tipX} ${tipY}L${round(x1 + nx)} ${round(y1 + ny)}
+                  L${round(x1 - nx)} ${round(y1 - ny)}Z" fill="${axis.color}"/>
+         <text x="${round(x + u.x * (ARM + 5.4))}" y="${round(y + u.y * (ARM + 5.4) + 1.2)}"
+               font-size="3.2" fill="${axis.color}" text-anchor="middle"
+               style="pointer-events:none">${axis.short}</text>
+         <path d="M${x0} ${y0}L${tipX} ${tipY}" stroke="transparent"
+               stroke-width="3.2" fill="none"/>
+       </g>`);
+  }
+  return parts.join("");
+}
+
 function renderAnchorLayer() {
   const layer = el("layer-anchors");
   if (!state.view.anchors && !state.view.editAnchors) { layer.innerHTML = ""; return; }
@@ -991,17 +1138,21 @@ function renderAnchorLayer() {
     const editable = state.view.editAnchors && def.slot === editSlot;
     if (!state.view.anchors && !editable) continue;
 
+    const active = editable ? activeAnchorName(pl.part) : null;
     const anchors = anchorsOf(pl.part);
     for (const [name, point] of Object.entries(anchors)) {
       const x = round(point.x + pl.tx);
       const y = round(point.y + pl.ty);
       const color = name === "mount" ? "#ff2d95" : "#2de2e6";
+      const chosen = name === active;
+      if (chosen) marks.push(anchorGizmo(x, y, def.slot, name));
       marks.push(
         `<g class="${editable ? "anchor-handle" : ""}"
-            data-anchor="${escapeXml(name)}" data-slot="${def.slot}">
+            data-anchor="${escapeXml(name)}" data-slot="${def.slot}"
+            data-axis="free">
            <circle cx="${x}" cy="${y}" r="${editable ? 3.2 : 1.9}"
-                   fill="${color}" fill-opacity="${editable ? 0.35 : 0.9}"
-                   stroke="${color}" stroke-width="0.6"/>
+                   fill="${color}" fill-opacity="${chosen ? 0.55 : editable ? 0.25 : 0.9}"
+                   stroke="${color}" stroke-width="${chosen ? 0.9 : 0.6}"/>
            <path d="M${x - 3} ${y}H${x + 3}M${x} ${y - 3}V${y + 3}"
                  stroke="${color}" stroke-width="0.5" opacity="0.8"/>
            ${editable ? `<text x="${x + 4.5}" y="${y - 3}" font-size="3.4"
@@ -1176,7 +1327,74 @@ function renderTransform() {
     <div class="row">
       <button class="tiny" data-t="reset" style="flex:1">Zuruecksetzen</button>
       <button class="tiny danger" data-t="clear" style="flex:1">Slot leeren</button>
+    </div>
+    ${anchorPanel(part)}`;
+}
+
+/**
+ * Anker-Block der Feinjustierung -- nur bei eingeschaltetem Anker-Modus.
+ *
+ * Die Buehne ist zum Zielen da, dieser Block zum Abzaehlen. Beides zeigt
+ * dieselben drei Achsen, damit man mitten in einer Korrektur von der Maus auf
+ * die Tastatur wechseln kann, ohne umzudenken.
+ */
+function anchorPanel(part) {
+  if (!state.view.editAnchors || !part) return "";
+  const anchors = anchorsOf(part);
+  const names = Object.keys(anchors);
+  if (!names.length) {
+    return `<p class="hint" style="margin-top:10px">Dieses Teil hat keine Anker.</p>`;
+  }
+  const name = activeAnchorName(part);
+  const point = anchors[name];
+  const dirty = !!state.anchorEdits[part.uid];
+
+  return `
+    <div class="anchor-block">
+      <h4>Anker${dirty ? ` <span class="dirty">geaendert</span>` : ""}</h4>
+      <select data-a="pick" style="margin-bottom:6px">
+        ${names.map((n) => `<option value="${escapeXml(n)}"${n === name ? " selected" : ""}>${escapeXml(n)}</option>`).join("")}
+      </select>
+      <div class="row" style="margin-bottom:6px">
+        <label class="field" style="flex:1;margin:0"><span>x</span>
+          <input type="number" step="0.25" data-a="x" value="${point.x}"></label>
+        <label class="field" style="flex:1;margin:0"><span>y</span>
+          <input type="number" step="0.25" data-a="y" value="${point.y}"></label>
+      </div>
+      ${AXES.map((axis) => `
+        <div class="axis-row">
+          <span class="axis-dot" style="background:${axis.color}"></span>
+          <span class="axis-name">${axis.label}</span>
+          <button class="tiny" data-a="nudge" data-axis="${axis.key}" data-units="-1">&minus;1</button>
+          <button class="tiny" data-a="nudge" data-axis="${axis.key}" data-units="-0.25">&minus;&frac14;</button>
+          <button class="tiny" data-a="nudge" data-axis="${axis.key}" data-units="0.25">+&frac14;</button>
+          <button class="tiny" data-a="nudge" data-axis="${axis.key}" data-units="1">+1</button>
+        </div>`).join("")}
+      <p class="hint" style="margin-top:6px">
+        Einheiten des Bots, nicht des Bildschirms. Auf der Buehne am Pfeil
+        ziehen &rarr; nur diese Achse, in Viertelschritten;
+        <span class="kbd">Shift</span> stufenlos. Punkt in der Mitte = frei.
+      </p>
     </div>`;
+}
+
+/** Zahlenfelder nachziehen, ohne das Panel neu zu bauen (waehrend des Ziehens). */
+function renderAnchorFields() {
+  const body = el("transform-body");
+  const slot = state.selectedSlot;
+  const pl = slot ? placementFor(slot) : null;
+  if (!pl || !pl.part) return;
+  const point = anchorsOf(pl.part)[activeAnchorName(pl.part)];
+  if (!point) return;
+  for (const key of ["x", "y"]) {
+    const input = body.querySelector(`[data-a="${key}"]`);
+    if (input && document.activeElement !== input) input.value = point[key];
+  }
+  const flag = body.querySelector(".anchor-block .dirty");
+  if (!flag) {
+    const head = body.querySelector(".anchor-block h4");
+    if (head) head.insertAdjacentHTML("beforeend", ` <span class="dirty">geaendert</span>`);
+  }
 }
 
 function slotPartType(slotName) {
@@ -1483,8 +1701,32 @@ el("canvas").addEventListener("pointerdown", (event) => {
   if (!handle) return;
   const slot = handle.dataset.slot;
   if (slot !== state.selectedSlot) return;
-  dragAnchor = { slot, name: handle.dataset.anchor };
+
+  const pl = placementFor(slot);
+  if (!pl || !pl.part) return;
+  const name = handle.dataset.anchor;
+  const start = anchorsOf(pl.part)[name];
+  if (!start) return;
+
+  // Der angefasste Griff uebernimmt das Gizmo -- so waehlt derselbe Klick den
+  // Anker aus, der ihn auch zieht.
+  state.editAnchor = name;
+
+  // Gezogen wird ab jetzt relativ zu diesen beiden Punkten -- nie gegen die
+  // laufend neu berechnete Platzierung, sonst schaukelt sich der Zug auf.
+  dragAnchor = {
+    slot, name,
+    axis: handle.dataset.axis || "free",
+    origin: { ...start },                 // Anker beim Anfassen
+    pointer: canvasPoint(event),          // Maus beim Anfassen
+  };
+  // Nur der "mount" verschiebt sein eigenes Teil -- nur dort muss der Aufbau
+  // stillstehen, damit der Griff der Maus folgen kann (siehe layoutAnchorsOf).
+  if (name === "mount") {
+    state.anchorFreeze = { uid: pl.part.uid, anchors: anchorsOf(pl.part) };
+  }
   el("canvas").setPointerCapture(event.pointerId);
+  renderCanvas();
   event.preventDefault();
 });
 
@@ -1492,27 +1734,85 @@ el("canvas").addEventListener("pointermove", (event) => {
   if (!dragAnchor) return;
   const pl = placementFor(dragAnchor.slot);
   if (!pl || !pl.part) return;
+
   const point = canvasPoint(event);
+  let dx = point.x - dragAnchor.pointer.x;
+  let dy = point.y - dragAnchor.pointer.y;
+
+  // Achsenpfeil: nur der Anteil der Mausbewegung ENTLANG der Achse zaehlt.
+  // Gerastert wird dabei in ENTWURFSEINHEITEN, nicht in Pixeln -- Teile sind
+  // in Einheiten beschrieben, und nur darin ist "ein Viertel" eine Aussage.
+  if (dragAnchor.axis !== "free") {
+    const u = axisUnit(dragAnchor.axis);
+    let units = (dx * u.x + dy * u.y) / u.len;
+    if (!event.shiftKey) units = Math.round(units * 4) / 4;
+    dx = u.x * u.len * units;
+    dy = u.y * u.len * units;
+  }
 
   const list = (state.anchorEdits[pl.part.uid] ||
                 pl.part.anchors.map((a) => ({ ...a }))).map((a) => ({ ...a }));
   const anchor = list.find((a) => a.name === dragAnchor.name);
   if (!anchor) return;
-  anchor.x = round(point.x - pl.tx);
-  anchor.y = round(point.y - pl.ty);
+  anchor.x = round(dragAnchor.origin.x + dx);
+  anchor.y = round(dragAnchor.origin.y + dy);
   state.anchorEdits[pl.part.uid] = list;
 
   renderCanvas();
+  renderAnchorFields();
   el("btn-anchor-save").disabled = false;
 });
 
 const endAnchorDrag = () => {
   if (!dragAnchor) return;
   dragAnchor = null;
+  state.anchorFreeze = null;   // jetzt darf der Aufbau nachruecken
   renderAll();
 };
 el("canvas").addEventListener("pointerup", endAnchorDrag);
 el("canvas").addEventListener("pointercancel", endAnchorDrag);
+
+/**
+ * Anker um eine feste Zahl Einheiten auf einer bot-lokalen Achse verschieben.
+ *
+ * Das Gegenstueck zum Ziehen: was sich mit der Maus nur treffen laesst, laesst
+ * sich hier abzaehlen. Ein halber Schritt reicht in der Regel -- eine
+ * Entwurfseinheit ist knapp ein Pixel der 128er-Kachel.
+ */
+function nudgeAnchor(axis, units) {
+  const slot = state.selectedSlot;
+  const pl = slot ? placementFor(slot) : null;
+  if (!pl || !pl.part) return;
+  const name = activeAnchorName(pl.part);
+  if (!name) return;
+
+  const v = axisVector(axis);
+  const list = (state.anchorEdits[pl.part.uid] ||
+                pl.part.anchors.map((a) => ({ ...a }))).map((a) => ({ ...a }));
+  const anchor = list.find((a) => a.name === name);
+  if (!anchor) return;
+  anchor.x = round(anchor.x + v.x * units);
+  anchor.y = round(anchor.y + v.y * units);
+  state.anchorEdits[pl.part.uid] = list;
+  renderCanvas();
+  renderAnchorFields();
+  el("btn-anchor-save").disabled = false;
+}
+
+/** Anker auf einen genauen Bildschirmwert setzen (Zahlenfelder). */
+function setAnchorValue(name, key, value) {
+  const slot = state.selectedSlot;
+  const pl = slot ? placementFor(slot) : null;
+  if (!pl || !pl.part || !Number.isFinite(value)) return;
+  const list = (state.anchorEdits[pl.part.uid] ||
+                pl.part.anchors.map((a) => ({ ...a }))).map((a) => ({ ...a }));
+  const anchor = list.find((a) => a.name === name);
+  if (!anchor) return;
+  anchor[key] = round(value);
+  state.anchorEdits[pl.part.uid] = list;
+  renderCanvas();
+  el("btn-anchor-save").disabled = false;
+}
 
 async function saveAnchors() {
   const slot = state.selectedSlot;
@@ -1648,6 +1948,30 @@ function wireEvents() {
     if (label && input.dataset.t === "rotate") label.textContent = `Drehung ${entry.rotate}°`;
   });
 
+  // -- Anker-Block -------------------------------------------------------
+  el("transform-body").addEventListener("input", (event) => {
+    const input = event.target.closest("[data-a]");
+    if (!input) return;
+    const slot = state.selectedSlot;
+    const pl = slot ? placementFor(slot) : null;
+    if (!pl || !pl.part) return;
+    if (input.dataset.a === "pick") {
+      state.editAnchor = input.value;
+      renderTransform();
+      renderCanvas();
+      return;
+    }
+    if (input.dataset.a === "x" || input.dataset.a === "y") {
+      setAnchorValue(activeAnchorName(pl.part), input.dataset.a, Number(input.value));
+    }
+  });
+
+  el("transform-body").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-a='nudge']");
+    if (!button) return;
+    nudgeAnchor(button.dataset.axis, Number(button.dataset.units));
+  });
+
   el("transform-body").addEventListener("click", (event) => {
     const button = event.target.closest("button[data-t]");
     if (!button) return;
@@ -1676,6 +2000,7 @@ function wireEvents() {
       if (key === "editAnchors" && state.view[key] && !state.selectedSlot) {
         toast("Erst einen Slot rechts anwaehlen.", "err");
       }
+      if (key === "editAnchors") renderTransform();   // Anker-Block ein/aus
       renderCanvas();
     });
   }

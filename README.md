@@ -52,7 +52,7 @@ ein Entwickler-Werkzeug und gehoert nicht ins offene Netz.
 | **Bestuecken** | Klick in der Bibliothek (angewaehlter Slot, sonst erster freier), Drag & Drop auf die Buehne (naechstgelegener passender Anker) oder Dropdown pro Slot |
 | **Slotregeln** | jeder Ausruestungsslot zeigt, was er annimmt (*bis mittel*, *bis leicht · Support*); unpassende Teile tauchen dort gar nicht erst auf, und beim Chassiswechsel wird gemeldet, was abfaellt |
 | **Feinjustierung** | Versatz, Groesse, Drehung, Spiegeln, Zeichenebene je Slot – Pfeiltasten zum Nudgen, `Shift` fuer 0,25er-Schritte |
-| **Anker-Editor** | Ankerpunkte direkt auf der Buehne verschieben und in die JSON des Teils zurueckschreiben |
+| **Anker-Editor** | Achsenkreuz auf dem Anker: ziehen entlang der Bot-Achsen (vor/links/hoch), stufenweise nudgen, zurueckschreiben in die JSON des Teils |
 | **Palette** | **genau vier Farbkategorien je Bauteiltyp**, Paletten anlegen / sichern / loeschen, optional pro Slot abweichend |
 | **Import** | von Claude Code generierten SVG-Quelltext einfuegen → Tool legt SVG + JSON an |
 | **Export** | SVG + JSON nach `/builds/`, alle vier Richtungen auf einmal, Spritesheet, SVG-/PNG-Download |
@@ -104,11 +104,31 @@ Waffe zwei Pixel zu tief im Arm sitzt, ist Nachziehen schneller als jeder
 Prompt:
 
 1. Slot rechts anwaehlen
-2. **Anker bearbeiten** einschalten – die Anker des Teils werden zu Griffen
-3. Griff ziehen; die Vorschau aktualisiert sich live
-4. **Anker speichern** schreibt die neuen Werte in die `.json` des Teils
+2. **Anker bearbeiten** einschalten – ein Achsenkreuz setzt sich auf den Anker
+3. Am **Pfeil** ziehen bewegt den Anker nur auf dieser Achse **des Bots**, in
+   Viertel-Einheiten; `Shift` dabei gedrueckt halten macht es stufenlos.
+   Der **Punkt in der Mitte** verschiebt frei. Hat ein Teil mehrere Anker,
+   uebernimmt ein Klick auf einen anderen Griff das Achsenkreuz.
+4. Wer lieber abzaehlt als zielt, nimmt den **Anker-Block** rechts: Auswahl,
+   genaue x/y-Werte und `±1` / `±¼` je Achse.
+5. **Anker speichern** schreibt die neuen Werte in die `.json` des Teils
 
-Verschiebt man den Anker eines Koerpers, wandert alles mit, was daran haengt.
+| Pfeil | Achse | auf dem Bildschirm |
+|---|---|---|
+| **V** | vor   | diagonal, Richtung Blickrichtung des Bots |
+| **L** | links | diagonal, zur linken Seite des Bots |
+| **H** | hoch  | senkrecht |
+
+Das Achsenkreuz ist kein Komfort, sondern der Grund, warum sich Anker
+ueberhaupt verlaesslich setzen lassen: in der Iso-Ansicht ist eine
+Mausbewegung nach unten-links mehrdeutig – sie kann *vor* oder *runter*
+heissen. Ohne Fuehrung trifft man den gemeinten Punkt nur zufaellig.
+
+Verschiebt man den Anker eines Koerpers, wandert alles mit, was daran haengt –
+live, waehrend man zieht. Beim `mount` eines angebauten Teils steht die
+Vorschau dagegen bis zum Loslassen still: dieser Anker verschiebt nicht sich
+selbst, sondern das Teil, und liefe die Vorschau mit, zoege der Griff sich
+selbst davon.
 
 ---
 
@@ -157,6 +177,14 @@ Kurzfassung – Details in [`parts/README.md`](parts/README.md):
   in einen Slot darf, sagen `mount_class` / `category` auf der Ausruestung und
   `slot_rules` auf dem Koerper: ein Sprinter traegt keine Belagerungskanone,
   eine Schulterbruecke kein Schild.
+* **Ein Kern sitzt IM Chassis, nicht davor.** Er gehoert in einen Schacht der
+  Brust- oder Rueckenplatte und darf hoechstens eine Entwurfseinheit
+  heraussehen. Regelfall ist die Brust; wo sie besetzt ist, ist der Ruecken die
+  bessere Wahl (der Strix traegt seinen Kern im Gegengewichts-Ausleger, weil
+  vor seiner Brust die Lanze liegt). Der Grund ist die Zeichenweise: der zusammengebaute Bot hat
+  keinen Tiefenpuffer, der Kern deckt den Koerper an seiner Stelle vollstaendig
+  ab – was vorsteht, wirkt nicht tief, sondern aufgeklebt. Der Generator misst
+  das (`parts/README.md`, Abschnitt 6b) und bricht ab.
 * **Zwei Teile mit unterschiedlicher Spielfunktion muessen sich an der
   Silhouette unterscheiden** – nicht an der Groesse. Im Iso-Bild ist Groesse
   keine verlaessliche Information, und in einem deterministischen Tactics ist
