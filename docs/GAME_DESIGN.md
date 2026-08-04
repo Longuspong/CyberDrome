@@ -142,7 +142,7 @@ mitgelieferten Sets decken bewusst je einen anderen Fall ab:
 | Set | Silhouette | zeigt |
 |---|---|---|
 | `bot1` RX-Vireo // Scout | schlank, kantig, zweibeinig | den Standardfall: zwei Ausruestungsanker |
-| `bot2` HX-Molok // Juggernaut | breit, gedrungen, kantig | den dritten Anker (Schulterpod) |
+| `bot2` HX-Molok // Juggernaut | geduckt: Panzerschuerze, Keil-Torso, Pauldrons ueber dem Kopfsockel | den dritten Anker (Schulterpod) |
 | `bot3` AR-Nimbus // Technomant | **rund**, flacher Helm, **Fahrgestell statt Beinen** | dass Formensprache und Fortbewegung frei sind |
 | `bot4` LR-Strix // Marksman | schmal, hoch, **Gegengewichts-Ausleger ueber dem Kopf** | den Ein-Slot-Fall -- eine Waffe, dafuer die schwerste |
 
@@ -219,11 +219,18 @@ in die Form. Umgekehrt gilt: **haben zwei Teile dieselbe Funktion, wird das
 Bauteil wiederverwendet** statt leicht abgewandelt kopiert -- ein Set ist eine
 Autoren-Schublade, kein Bausatz.
 
-`tools/build_sample_parts.py` prueft das bei jedem Lauf: die Teile werden
-uniform normiert und ihre Risse verglichen. Ab 0.80 Deckung bricht der
-Generator bei Ausruestung ab, bei Rahmenteilen meldet er einen Hinweis. Wie das
-Mass funktioniert und welche Merkmale taugen, steht in `parts/README.md`,
-Abschnitt 6a.
+`tools/build_sample_parts.py` prueft das bei jedem Lauf: es projiziert jedes
+Teil mit derselben Kamera wie die Grafik und vergleicht die gefuellten
+Umrissflaechen aus zwei Blickrichtungen. Ab 0.85 Deckung bricht der Generator
+bei Ausruestung ab, bei Rahmenteilen meldet er ab 0.86 einen Hinweis.
+
+**Der Test ersetzt das Hinsehen nicht.** Er faengt zuverlaessig den Fall
+"abgeschrieben und groesser gezogen"; ob zwei Rahmen dieselbe Formensprache
+sprechen, entscheidet weiterhin das Auge. Genau daran ist das Molok-Chassis
+einmal vorbeigekommen -- ein Vireo mit breiteren Kisten --, bevor es
+Panzerschuerze, Keil-Torso und hochsitzende Pauldrons bekam. Wie das Mass
+funktioniert, wo es saettigt und welche Merkmale taugen, steht in
+`parts/README.md`, Abschnitt 6a.
 
 ## 4. Perspektive und die vier Richtungen
 

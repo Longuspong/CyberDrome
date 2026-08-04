@@ -388,63 +388,105 @@ def L(center, profile, mat, axis="z", segments=14, caps=True):
 # Form, andere Groesse" identisch wird, "lang und duenn" gegen "kurz und dick"
 # aber nicht. Verglichen wird ueber die Schnittmenge (IoU).
 #
-# Die Grenze steht bei 0.80. Zur Einordnung: die erste Belagerungskanone --
-# ein Blaster mit groesseren Zahlen -- lag bei 0.85, das engste erlaubte Paar
-# im aktuellen Bestand bei 0.63. Dazwischen ist genug Luft, dass die Grenze
-# keine Formen verbietet, die sich wirklich unterscheiden.
-SIL_RES = 20
-SIL_ERROR = 0.80      # Ausruestung: harte Grenze, der Generator bricht ab
-SIL_WARN = 0.80       # alle uebrigen Typen: nur ein Hinweis
+# Gemessen wird die GEFUELLTE UMRISSFLAECHE aus zwei Blickrichtungen -- mit
+# derselben Projektion wie die Grafik. Zwei Richtungen, weil ein Teil aus einer
+# einzigen Ansicht schmaler oder breiter wirken kann, als es ist.
+#
+# Was das Mass NICHT kann
+# -----------------------
+# Es sieht den Umriss, nicht die Formensprache. Zwei kompakte Kloetze decken
+# sich als gefuellte Flaeche zwangslaeufig weitgehend, auch wenn der eine ein
+# Bunkerkopf und der andere ein runder Krempenhelm ist -- bei Koepfen und
+# Kernen saettigt der Wert deshalb hoch. Brauchbar ist dort die REIHENFOLGE
+# (welches Paar liegt am engsten), nicht die absolute Zahl.
+#
+# Bei Ausruestung ist der Abstand dagegen sauber zweigeteilt: der Pruefstein
+# -- die alte, vom Blaster abgeschriebene Kanone -- liegt bei 0.91, das engste
+# ehrliche Paar im Bestand bei 0.66. In diese Luecke passt eine harte Grenze,
+# und nur deshalb ist sie dort eine.
+SIL_RES = 28
+SIL_FACINGS = ("south", "east")
+SIL_ERROR = 0.85      # Ausruestung: harte Grenze, der Generator bricht ab
+SIL_WARN = 0.86       # Rahmenteile: nur ein Hinweis, das Mass saettigt dort
 
 
-def _shape_bounds(shape):
-    """Achsparalleler Huellquader eines Primitivs in bot-lokalen Koordinaten."""
+def _shape_polygons(shape, facing):
+    """Alle Flaechen eines Primitivs als projizierte Bildschirm-Polygone."""
     kind = shape[0]
     if kind == "box":
         _, f, l, z, _mat = shape
-        return (tuple(sorted(f)), tuple(sorted(l)), tuple(sorted(z)))
-    if kind == "disc":
-        _, f, l_center, z_center, radius, _mat, _seg = shape
-        return ((f, f), (l_center - radius, l_center + radius),
-                (z_center - radius, z_center + radius))
+        faces = _box_faces(f, l, z)
+    elif kind == "disc":
+        _, f, l_center, z_center, radius, _mat, segments = shape
+        faces = [((1, 0, 0), [
+            (f, l_center + radius * math.cos(2 * math.pi * i / segments),
+             z_center + radius * math.sin(2 * math.pi * i / segments))
+            for i in range(segments)])]
+    else:
+        _, center, profile, _mat, axis, segments, caps = shape
+        faces = _lathe_faces(center, profile, axis, segments, caps)
 
-    _, center, profile, _mat, axis, _seg, _caps = shape
-    r_max = max(r for r, _t in profile)
-    along = (min(t for _r, t in profile), max(t for _r, t in profile))
-    c0, c1 = center
-    cross0 = (c0 - r_max, c0 + r_max)
-    cross1 = (c1 - r_max, c1 + r_max)
-    if axis == "z":                      # center = (f, l), Profil ueber z
-        return (cross0, cross1, along)
-    if axis == "l":                      # center = (f, z), Profil ueber l
-        return (cross0, along, cross1)
-    return (along, cross0, cross1)       # axis == "f": center = (l, z)
+    # ALLE Flaechen, auch abgewandte: gesucht ist die gefuellte Umrissflaeche,
+    # und dafuer ist die Rueckseite eines Koerpers deckungsgleich mit seiner
+    # Vorderseite. Die Sichtbarkeitspruefung aus render() waere hier falsch --
+    # sie wuerde Hohlraeume in die Silhouette schneiden, die keiner sieht.
+    return [[project(point, facing) for point in points] for _normal, points in faces]
 
 
-def silhouette(shapes) -> tuple[frozenset, frozenset]:
-    """Zwei uniform normierte Belegungsraster: Seitenriss und Aufriss."""
-    bounds = [_shape_bounds(s) for s in shapes]
-    extent = [(min(b[i][0] for b in bounds), max(b[i][1] for b in bounds))
-              for i in range(3)]
-    scale = max(hi - lo for lo, hi in extent) or 1.0
-    center = [(lo + hi) / 2 for lo, hi in extent]
+def _inside(polygon, x: float, y: float) -> bool:
+    """Punkt-in-Polygon per Strahlenschnitt."""
+    hit = False
+    count = len(polygon)
+    for index in range(count):
+        x0, y0 = polygon[index]
+        x1, y1 = polygon[(index + 1) % count]
+        if (y0 > y) != (y1 > y):
+            if x < x0 + (y - y0) / (y1 - y0) * (x1 - x0):
+                hit = not hit
+    return hit
 
-    def cell(value, axis, ceil=False):
-        t = (value - center[axis]) / scale * SIL_RES + SIL_RES / 2
-        t = math.ceil(t) if ceil else math.floor(t)
-        return max(0, min(SIL_RES, int(t)))
 
-    def raster(axis_u, axis_v):
+def silhouette(shapes, facings=SIL_FACINGS) -> tuple:
+    """
+    Die gefuellte Umrissflaeche eines Teils, je Blickrichtung ein Raster.
+
+    Projiziert wird mit derselben Kamera wie die Grafik -- gemessen wird also
+    genau das, was der Spieler sieht, und nicht ein Ersatzmass aus
+    Huellquadern. Ein Rotationskoerper ist dadurch rund und nicht eckig.
+
+    Normiert wird UNIFORM: ein Massstab fuer beide Bildschirmachsen, um den
+    eigenen Mittelpunkt. Dadurch wird "gleiche Form, andere Groesse" identisch,
+    waehrend "lang und duenn" gegen "kurz und dick" verschieden bleibt.
+    """
+    grids = []
+    for facing in facings:
+        polygons = [poly for shape in shapes
+                    for poly in _shape_polygons(shape, facing)]
+        xs = [x for poly in polygons for x, _ in poly]
+        ys = [y for poly in polygons for _, y in poly]
+        span = max(max(xs) - min(xs), max(ys) - min(ys)) or 1.0
+        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+
+        def to_cell(point):
+            x, y = point
+            return ((x - cx) / span * SIL_RES + SIL_RES / 2,
+                    (y - cy) / span * SIL_RES + SIL_RES / 2)
+
         grid = set()
-        for bb in bounds:
-            u0, u1 = cell(bb[axis_u][0], axis_u), cell(bb[axis_u][1], axis_u, True)
-            v0, v1 = cell(bb[axis_v][0], axis_v), cell(bb[axis_v][1], axis_v, True)
-            for u in range(u0, max(u1, u0 + 1)):
-                for v in range(v0, max(v1, v0 + 1)):
-                    grid.add((u, v))
-        return frozenset(grid)
-
-    return raster(0, 2), raster(1, 2)
+        for polygon in polygons:
+            cells = [to_cell(point) for point in polygon]
+            if len(cells) < 3:
+                continue
+            u0 = max(0, int(min(u for u, _ in cells)))
+            u1 = min(SIL_RES, int(max(u for u, _ in cells)) + 1)
+            v0 = max(0, int(min(v for _, v in cells)))
+            v1 = min(SIL_RES, int(max(v for _, v in cells)) + 1)
+            for u in range(u0, u1):
+                for v in range(v0, v1):
+                    if (u, v) not in grid and _inside(cells, u + 0.5, v + 0.5):
+                        grid.add((u, v))
+        grids.append(frozenset(grid))
+    return tuple(grids)
 
 
 def silhouette_distance(a, b) -> float:
@@ -784,27 +826,52 @@ EQ_SHIELD = [
 # Breiter und gedrungener; der dritte Anker sitzt hinter dem Kopf.
 # ===========================================================================
 
+# Molok-Chassis -- ausdruecklich KEIN breiterer Vireo.
+#
+# Der Vireo ist ein gerader Kistenstapel mit Hals, flachen Schulterplatten
+# darunter und offener Huefte. Wer daraus nur breitere Kisten macht, bekommt
+# genau denselben Umriss in gross -- derselbe Fehler wie beim Blaster, nur eine
+# Ebene hoeher. Drei Merkmale drehen die Umrisslinie stattdessen um:
+#
+#   * eine PANZERSCHUERZE, die ueber die Oberschenkel haengt und die
+#     Silhouette nach unten schliesst -- beim Sprinter klafft dort eine Luecke;
+#   * ein Torso als KEIL, unten schmal, oben breit, statt eines geraden Stapels;
+#   * PAULDRONS, die HOEHER sitzen als der Kopfsockel, dazu zwei stehende
+#     Auspuffstapel dahinter. Der Rahmen wirkt dadurch geduckt und hat keinen
+#     sichtbaren Hals -- die Vireo-Silhouette hat beides umgekehrt.
 JUGG_BODY = [
-    B((-8, 8), (-13, 13), (31, 39), "metal"),
-    B((-8, 9), (-12, 12), (39, 47), "plate"),
-    B((-8.5, 10), (-15, 15), (47, 58), "plate"),
-    B((-8, 9), (-14, 14), (58, 61), "light"),
-    B((10, 10.7), (-10, 10), (42, 56), "dark"),
-    B((10.7, 11.3), (-8, 8), (52, 54.5), "accent"),
-    B((10.7, 11.4), (-7, 7), (43, 51), "dark"),
-    # Rueckseite: Reaktorblock
-    B((-9.1, -8.5), (-11, 11), (42, 56), "dark"),
-    B((-9.6, -9.1), (-9, 9), (44, 46), "light"),
-    B((-9.6, -9.1), (-9, 9), (48, 50), "light"),
-    B((-9.6, -9.1), (-9, 9), (52, 54), "light"),
-    # Schulterplatten
-    B((-8, 8), (15.5, 26), (48, 59), "plate"),
-    B((-8.5, 8.5), (15, 26.5), (59, 62), "light"),
-    B((-8, 8), (-26, -15.5), (48, 59), "plate"),
-    B((-8.5, 8.5), (-26.5, -15), (59, 62), "light"),
-    B((8, 8.6), (18, 23), (52, 54.5), "accent"),
-    B((8, 8.6), (-23, -18), (52, 54.5), "accent"),
-    B((-5, 5), (-6, 6), (61, 64), "metal"),
+    # -- Huefte mit Panzerschuerze ----------------------------------------
+    B((-7, 7), (-11, 11), (31, 38), "metal"),
+    B((-6.5, 7), (11, 15), (26, 39), "plate"),
+    B((-6.5, 7), (-15, -11), (26, 39), "plate"),
+    B((7, 9.5), (-8.5, 8.5), (25, 37), "plate"),
+    B((9.5, 10.1), (-5, 5), (28, 30), "accent"),
+    B((-7.5, -7), (-9, 9), (27, 37), "dark"),
+    # -- Torso als Keil: unten schmal, oben breit -------------------------
+    B((-7, 8), (-10, 10), (38, 46), "plate"),
+    B((-8, 9.5), (-13, 13), (46, 55), "plate"),
+    B((-8.5, 10), (-15, 15), (55, 61), "plate"),
+    # Das Deck ist SCHMALER als der Torso darunter. Der Molok hat keinen Hals
+    # -- aber ohne irgendeine Luecke verschwindet der Kopf zwischen den
+    # Pauldrons. Statt eines Halses macht hier die Einkerbung zwischen Deck
+    # und Pauldron den Kopf als eigenes Volumen lesbar.
+    B((-7.5, 9), (-11.5, 11.5), (61, 64), "light"),
+    # Brustpanzer
+    B((10, 10.8), (-11, 11), (47, 59), "dark"),
+    B((10.8, 11.4), (-8, 8), (55.5, 58), "accent"),
+    B((10.8, 11.5), (-7, 7), (48, 54), "dark"),
+    # -- Auspuffstapel: zwei stehende Rohre ueber Schulterhoehe ------------
+    L((-9.5, 10.5), [(2.6, 55), (2.6, 72), (3.3, 72), (3.3, 74)], "metal", segments=12),
+    L((-9.5, -10.5), [(2.6, 55), (2.6, 72), (3.3, 72), (3.3, 74)], "metal", segments=12),
+    L((-9.5, 10.5), [(3.4, 64), (3.4, 65.5)], "accent", caps=False, segments=12),
+    L((-9.5, -10.5), [(3.4, 64), (3.4, 65.5)], "accent", caps=False, segments=12),
+    # -- Pauldrons: sitzen HOCH und flankieren den Kopf --------------------
+    B((-8, 8), (15, 26), (52, 66), "plate"),
+    B((-8.5, 8.5), (14.5, 26.5), (66, 69), "light"),
+    B((-8, 8), (-26, -15), (52, 66), "plate"),
+    B((-8.5, 8.5), (-26.5, -14.5), (66, 69), "light"),
+    B((8, 8.6), (17.5, 23.5), (59, 62), "accent"),
+    B((8, 8.6), (-23.5, -17.5), (59, 62), "accent"),
 ]
 
 JUGG_HEAD = [
@@ -1270,7 +1337,8 @@ SETS = [
                     "core": (10.5, 0, 47),
                     "equip_left": (0, 26.5, 49),
                     "equip_right": (0, -26.5, 49),
-                    "equip_shoulder": (-5, 0, 61),
+                    # Auf dem Rueckendeck zwischen den Auspuffstapeln.
+                    "equip_shoulder": (-7, 0, 63),
                 },
                 # Der Schulteranker ist KEIN dritter Arm. Er sitzt hinter dem
                 # Kopf auf der Schulterbruecke, hat keinen Gegenhalt und nichts,

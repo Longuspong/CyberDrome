@@ -46,8 +46,8 @@
     },
     {
       "name": "equip_shoulder",
-      "x": 59.23,
-      "y": 41.14
+      "x": 57.32,
+      "y": 40.59
     }
   ],
   "color_scheme": {
@@ -69,7 +69,7 @@
     "core": 36.5,
     "equip_left": 22.5,
     "equip_right": 75.5,
-    "equip_shoulder": 66
+    "equip_shoulder": 70
   },
   "slot_rules": {
     "equip_left": {

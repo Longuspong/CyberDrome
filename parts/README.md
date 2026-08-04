@@ -447,6 +447,8 @@ nicht eine Struktur in der Flaeche, die bei 40 Pixeln verschwindet:
 | `LEG-001` Vireo | schmaler Stand, gerade Stelzen, eine Zehe | schnell |
 | `LEG-002` Molok | breiter Stand auf Auslegern, Hydraulikzylinder, Ferse | langsam, standfest |
 | `LEG-004` Strix | Knick nach hinten, digitigrad | federnd, mittel |
+| `CHS-001` Vireo | gerader Kistenstapel, sichtbarer Hals, offene Huefte | leicht, beweglich |
+| `CHS-002` Molok | Panzerschuerze, Keil-Torso, Pauldrons ueber dem Kopfsockel | schwer, geduckt |
 | `CHS-004` Strix | Gegengewichts-Ausleger ueber dem Kopf | Ein-Slot-Rahmen |
 
 Die drei Waffenbeispiele sind bewusst so verteilt, dass **Proportion** die
@@ -455,30 +457,56 @@ Praezision. Das funktioniert auch als reine Schattenform.
 
 ### Der Test dazu
 
-`tools/build_sample_parts.py` prueft die Regel bei jedem Lauf. Jedes Teil wird
-**uniform** normiert -- ein gemeinsamer Massstab ueber alle drei Achsen, um
-seinen eigenen Mittelpunkt -- und in zwei Belegungsraster eingetragen,
-Seitenriss und Aufriss. Uniform ist der springende Punkt: dadurch wird "gleiche
-Form, andere Groesse" identisch, waehrend "lang und duenn" gegen "kurz und
-dick" verschieden bleibt. Verglichen wird ueber die Schnittmenge.
+`tools/build_sample_parts.py` prueft die Regel bei jedem Lauf. Gemessen wird
+die **gefuellte Umrissflaeche** -- mit derselben Projektion, die auch die
+Grafik erzeugt, aus zwei Blickrichtungen (Sued und Ost). Es wird also genau
+das verglichen, was der Spieler sieht, und nicht ein Ersatzmass aus
+Huellquadern: ein Rotationskoerper ist dabei rund und nicht eckig.
+
+Normiert wird **uniform** -- ein Massstab fuer beide Bildschirmachsen, um den
+eigenen Mittelpunkt. Das ist der springende Punkt: dadurch wird "gleiche Form,
+andere Groesse" identisch, waehrend "lang und duenn" gegen "kurz und dick"
+verschieden bleibt.
 
 ```
-Silhouetten-Abstand (1.00 = ununterscheidbar, Grenze 0.80, Pruefstein 0.85)
-  equipment  0.63  bot1/eq_pulse_blaster / bot2/eq_drone_pod
+Silhouetten-Abstand (1.00 = ununterscheidbar, Grenze 0.85, Pruefstein 0.91)
+  body       0.85  bot1/scout_body / bot2/jugg_body
+  core       0.71  bot2/jugg_core / bot3/mage_core
+  equipment  0.66  bot1/eq_pulse_blaster / bot2/eq_siege_cannon
+  feet       0.66  bot1/scout_feet / bot4/strix_feet
+  head       0.88  bot2/jugg_head / bot3/mage_head
 ```
 
-* **Ausruestung: ab 0.80 bricht der Generator ab.** An der Waffe liest der
+* **Ausruestung: ab 0.85 bricht der Generator ab.** An der Waffe liest der
   Spieler Reichweite und Rolle ab; diese Auskunft darf nicht fehlen.
-* **Rahmenteile: ab 0.80 nur ein Hinweis.** Ein Bein wird im Verbund gelesen,
-  nicht einzeln, und die Auswahl ist dort klein. Grenzwertig bleibt aber
-  grenzwertig -- wenn zwei Beinpaare unterschiedliche Bewegungswerte haben,
-  gehoert der Unterschied trotzdem in die Form.
+* **Rahmenteile: ab 0.86 nur ein Hinweis** -- aus dem Grund gleich darunter.
 
 Der **Pruefstein** ist die erste Belagerungskanone: exakt der Aufbau des
 Blasters mit groesseren Zahlen, im Generator als `EQ_CANNON_V1` aufbewahrt. Sie
-liegt bei 0.85. Der Generator misst sie bei jedem Lauf mit und bricht ab, wenn
-sie *nicht* mehr auffaellt -- ein Test, der nichts mehr faengt, meldet sonst
-einfach weiter "alles in Ordnung".
+liegt bei 0.91, das engste ehrliche Ausruestungspaar bei 0.66 -- in diese
+Luecke passt eine harte Grenze, und nur deshalb ist sie dort eine. Der
+Generator misst den Pruefstein bei jedem Lauf mit und bricht ab, wenn er
+*nicht* mehr auffaellt: ein Test, der nichts mehr faengt, meldet sonst einfach
+weiter "alles in Ordnung".
+
+### Was der Test nicht kann
+
+**Er sieht den Umriss, nicht die Formensprache.** Zwei kompakte Kloetze decken
+sich als gefuellte Flaeche zwangslaeufig weitgehend, auch wenn der eine ein
+Bunkerkopf und der andere ein runder Krempenhelm ist. Bei Koepfen und Kernen
+saettigt der Wert deshalb hoch; brauchbar ist dort die **Reihenfolge** --
+welches Paar liegt am engsten --, nicht die absolute Zahl.
+
+Bei Ausruestung ist der Abstand dagegen sauber zweigeteilt, weil Waffen sich
+in der Proportion unterscheiden duerfen und muessen. Nur dort ist die Grenze
+hart.
+
+Das heisst auch: **der Test ersetzt das Hinsehen nicht.** Er faengt den Fall
+"abgeschrieben und groesser gezogen" zuverlaessig. Ob zwei Rahmen dieselbe
+Formensprache sprechen -- gerader Kistenstapel mit Hals gegen gerade denselben
+Stapel, nur breiter --, entscheidet weiterhin das Auge. Genau daran ist das
+Molok-Chassis einmal vorbeigekommen, bevor es Panzerschuerze, hochsitzende
+Pauldrons und Auspuffstapel bekam.
 
 ### Wenn zwei Teile dieselbe Funktion haben
 
