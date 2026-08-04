@@ -1,0 +1,43 @@
+{
+  "id": "strix_head",
+  "code": "HED-004",
+  "set": "bot4",
+  "type": "head",
+  "name": "Strix Okularkopf",
+  "direction": "east",
+  "svg": "strix_head_east.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 40,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 35.86
+    },
+    {
+      "name": "sensor",
+      "x": 73.36,
+      "y": 37.7
+    }
+  ],
+  "color_scheme": {
+    "plate": "#1c3330",
+    "plate_light": "#335954",
+    "plate_dark": "#101d1b",
+    "metal": "#557d71",
+    "visor": "#c2ffd7",
+    "glow": "#efffff",
+    "accent": "#c2ffd7",
+    "outline": "#060f0d"
+  },
+  "tags": [
+    "marksman",
+    "sensor",
+    "optics"
+  ]
+}

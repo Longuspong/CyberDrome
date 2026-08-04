@@ -66,5 +66,13 @@
     "core": 32.8,
     "equip_left": 60.8,
     "equip_right": 33.2
+  },
+  "slot_rules": {
+    "equip_left": {
+      "max_class": "medium"
+    },
+    "equip_right": {
+      "max_class": "medium"
+    }
   }
 }

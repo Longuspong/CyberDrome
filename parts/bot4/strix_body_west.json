@@ -1,0 +1,69 @@
+{
+  "id": "strix_body",
+  "code": "CHS-004",
+  "set": "bot4",
+  "type": "body",
+  "name": "Strix Chassis",
+  "direction": "west",
+  "svg": "strix_body_west.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 50.0,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 64.0
+    },
+    {
+      "name": "head",
+      "x": 64.0,
+      "y": 35.86
+    },
+    {
+      "name": "feet",
+      "x": 64.0,
+      "y": 63.54
+    },
+    {
+      "name": "core",
+      "x": 57.7,
+      "y": 43.82
+    },
+    {
+      "name": "equip_center",
+      "x": 58.27,
+      "y": 43.27
+    }
+  ],
+  "color_scheme": {
+    "plate": "#1c3330",
+    "plate_light": "#335954",
+    "plate_dark": "#101d1b",
+    "metal": "#557d71",
+    "accent": "#6dff9f",
+    "glow": "#9affcc",
+    "visor": "#9affcc",
+    "outline": "#060f0d"
+  },
+  "tags": [
+    "marksman",
+    "light",
+    "sniper"
+  ],
+  "slot_z": {
+    "head": 63,
+    "feet": 34,
+    "core": 43.4,
+    "equip_center": 45
+  },
+  "slot_rules": {
+    "equip_center": {
+      "max_class": "heavy"
+    }
+  }
+}

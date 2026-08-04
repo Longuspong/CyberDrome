@@ -273,6 +273,11 @@ MAGE_PALETTE = make_palette(
     ember="#7cf9ff", rings="#ff5ec7", line="#0d0818",
 )
 
+STRIX_PALETTE = make_palette(
+    hull="#1c3330", mech="#557d71", neon="#6dff9f", visor="#c2ffd7",
+    ember="#6dff9f", rings="#2fbf8c", line="#060f0d",
+)
+
 C = {role: f"var(--c-{role.replace('_', '-')})" for role in PALETTE_ROLES}
 
 # Material = (Oberseite, linke Flanke, rechte Flanke, Kontur?)
@@ -290,6 +295,42 @@ DEFAULT_Z = {
     "feet": 10, "body": 20, "core": 26,
     "equipment": 30, "equipment_left": 30, "equipment_right": 30, "head": 40,
 }
+
+
+# ---------------------------------------------------------------------------
+# Montageklasse und Bauart -- die Spielregel hinter den Ausruestungsslots
+# ---------------------------------------------------------------------------
+# Ein Anker sagt nur, WO etwas sitzt. Fuer ein deterministisches Tactics muss
+# ein Slot aber auch sagen, WAS dort sitzen darf -- sonst traegt der Sprinter
+# die Belagerungskanone, und die Silhouette luegt ueber die Reichweite.
+#
+#   mount_class   was die Halterung tragen muss:  light < medium < heavy
+#   category      Bauart:  weapon | shield | support
+#
+# Ein Koerper beschreibt seine Slots ueber ``slot_rules``:
+#
+#     "slot_rules": {
+#         "equip_left":     {"max_class": "medium"},
+#         "equip_shoulder": {"max_class": "light", "categories": ["support"]},
+#     }
+#
+# Fehlt eine Regel, nimmt der Slot alles an -- importierte Teile funktionieren
+# damit unveraendert weiter.
+MOUNT_CLASSES = ("light", "medium", "heavy")
+EQUIP_CATEGORIES = ("weapon", "shield", "support")
+DEFAULT_MOUNT_CLASS = "light"
+DEFAULT_CATEGORY = "weapon"
+
+
+def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
+    """Darf ein Ausruestungsteil in einen Slot mit dieser Regel?"""
+    if not rule:
+        return True
+    limit = rule.get("max_class", MOUNT_CLASSES[-1])
+    if MOUNT_CLASSES.index(mount_class) > MOUNT_CLASSES.index(limit):
+        return False
+    allowed = rule.get("categories")
+    return not allowed or category in allowed
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +370,90 @@ def L(center, profile, mat, axis="z", segments=14, caps=True):
     (Leuchtbaender, Rohre).
     """
     return ("lathe", tuple(center), tuple(profile), mat, axis, segments, caps)
+
+
+# ---------------------------------------------------------------------------
+# Lesbarkeitsregel: keine zwei Teile mit derselben Silhouette
+# ---------------------------------------------------------------------------
+# CyberDrome ist deterministisch. Wer eine DROME ansieht, muss ihre Funktion
+# ablesen koennen -- Reichweite, Rolle, Gewicht. Das geht nur ueber die
+# SILHOUETTE. Groesse taugt dafuer nicht: die Kachel ist klein, Teile
+# ueberlappen, und ein Bot weiter hinten auf der Karte ist ohnehin kleiner.
+# Eine Belagerungskanone, die nur ein grosser Blaster ist, ist deshalb kein
+# Schoenheitsfehler, sondern ein Regelfehler.
+#
+# Der Test dazu: jedes Teil wird UNIFORM normiert (gemeinsamer Massstab ueber
+# alle drei Achsen, um seinen eigenen Mittelpunkt) und in zwei Belegungsraster
+# eingetragen -- Seitenriss (f, z) und Aufriss (l, z). Uniform, damit "gleiche
+# Form, andere Groesse" identisch wird, "lang und duenn" gegen "kurz und dick"
+# aber nicht. Verglichen wird ueber die Schnittmenge (IoU).
+#
+# Die Grenze steht bei 0.80. Zur Einordnung: die erste Belagerungskanone --
+# ein Blaster mit groesseren Zahlen -- lag bei 0.85, das engste erlaubte Paar
+# im aktuellen Bestand bei 0.63. Dazwischen ist genug Luft, dass die Grenze
+# keine Formen verbietet, die sich wirklich unterscheiden.
+SIL_RES = 20
+SIL_ERROR = 0.80      # Ausruestung: harte Grenze, der Generator bricht ab
+SIL_WARN = 0.80       # alle uebrigen Typen: nur ein Hinweis
+
+
+def _shape_bounds(shape):
+    """Achsparalleler Huellquader eines Primitivs in bot-lokalen Koordinaten."""
+    kind = shape[0]
+    if kind == "box":
+        _, f, l, z, _mat = shape
+        return (tuple(sorted(f)), tuple(sorted(l)), tuple(sorted(z)))
+    if kind == "disc":
+        _, f, l_center, z_center, radius, _mat, _seg = shape
+        return ((f, f), (l_center - radius, l_center + radius),
+                (z_center - radius, z_center + radius))
+
+    _, center, profile, _mat, axis, _seg, _caps = shape
+    r_max = max(r for r, _t in profile)
+    along = (min(t for _r, t in profile), max(t for _r, t in profile))
+    c0, c1 = center
+    cross0 = (c0 - r_max, c0 + r_max)
+    cross1 = (c1 - r_max, c1 + r_max)
+    if axis == "z":                      # center = (f, l), Profil ueber z
+        return (cross0, cross1, along)
+    if axis == "l":                      # center = (f, z), Profil ueber l
+        return (cross0, along, cross1)
+    return (along, cross0, cross1)       # axis == "f": center = (l, z)
+
+
+def silhouette(shapes) -> tuple[frozenset, frozenset]:
+    """Zwei uniform normierte Belegungsraster: Seitenriss und Aufriss."""
+    bounds = [_shape_bounds(s) for s in shapes]
+    extent = [(min(b[i][0] for b in bounds), max(b[i][1] for b in bounds))
+              for i in range(3)]
+    scale = max(hi - lo for lo, hi in extent) or 1.0
+    center = [(lo + hi) / 2 for lo, hi in extent]
+
+    def cell(value, axis, ceil=False):
+        t = (value - center[axis]) / scale * SIL_RES + SIL_RES / 2
+        t = math.ceil(t) if ceil else math.floor(t)
+        return max(0, min(SIL_RES, int(t)))
+
+    def raster(axis_u, axis_v):
+        grid = set()
+        for bb in bounds:
+            u0, u1 = cell(bb[axis_u][0], axis_u), cell(bb[axis_u][1], axis_u, True)
+            v0, v1 = cell(bb[axis_v][0], axis_v), cell(bb[axis_v][1], axis_v, True)
+            for u in range(u0, max(u1, u0 + 1)):
+                for v in range(v0, max(v1, v0 + 1)):
+                    grid.add((u, v))
+        return frozenset(grid)
+
+    return raster(0, 2), raster(1, 2)
+
+
+def silhouette_distance(a, b) -> float:
+    """Mittlere Deckungsgleichheit beider Risse -- 1.0 = ununterscheidbar."""
+    scores = []
+    for grid_a, grid_b in zip(a, b):
+        union = len(grid_a | grid_b)
+        scores.append(len(grid_a & grid_b) / union if union else 1.0)
+    return sum(scores) / len(scores)
 
 
 # Basis je Achse: (Achsrichtung, u, v) in bot-lokalen Koordinaten (f, l, z).
@@ -624,6 +749,26 @@ EQ_BLASTER = [
     B((-4, 5), (-6.1, -5.5), (42.5, 44), "accent"),
 ]
 
+# Pruefstein, kein Teil.
+#
+# So sah die Belagerungskanone aus, bevor es die Lesbarkeitsregel gab: exakt
+# der Aufbau des Blasters -- Stumpf am Anker, Gehaeuse, Lauf nach vorn,
+# Muendungsblock, Glut, zwei Neonstreifen --, nur mit groesseren Zahlen. Genau
+# der Fall, den die Regel verbietet.
+#
+# Die Form bleibt im Repo, damit check_silhouettes() an ihr nachweisen kann,
+# dass es sie noch findet. Ein Test, der nichts mehr faengt, faellt sonst nicht
+# auf -- er meldet einfach weiter "alles in Ordnung".
+EQ_CANNON_V1 = [
+    B((-4, 4), (-5.5, 5.5), (42, 51), "metal"),
+    B((-6, 7), (-7, 7), (28, 43), "plate"),
+    B((7, 18), (-5, 5), (31, 39), "plate"),
+    B((18, 21), (-4, 4), (32, 38), "dark"),
+    D(21.3, 0, 35, 2.5, "glow"),
+    B((-5, 6), (7, 7.6), (39.5, 41.5), "accent"),
+    B((-5, 6), (-7.6, -7), (39.5, 41.5), "accent"),
+]
+
 EQ_SHIELD = [
     B((-3, 3), (-4, 4), (45, 54), "metal"),
     B((7, 10), (-7, 7), (31, 58), "plate"),
@@ -672,17 +817,49 @@ JUGG_HEAD = [
     B((-5, 5), (-13, -10), (68, 74), "metal"),
 ]
 
+# Standbeine, nicht "Sprintbeine in gross".
+#
+# Die Vireo-Beine und diese hier haben unterschiedliche Spielwerte -- also
+# muessen sie unterschiedlich AUSSEHEN, und zwar an der Silhouette, nicht an
+# der Groesse. Drei Merkmale tragen das: der weit nach aussen versetzte Stand
+# auf Hueftauslegern, die stehenden Hydraulikzylinder vor dem Oberschenkel
+# (Rotationskoerper -- am Sprintbein gibt es keinen) und der Standfuss, der
+# nach vorn UND nach hinten greift. Das Sprintbein hat eine Zehe, dieses hier
+# eine Ferse: daran liest man ab, dass es Rueckstoss abstuetzt statt zu rennen.
 JUGG_FEET = [
-    B((-5.5, 5.5), (5, 11.5), (24, 33), "plate"),
-    B((-5.5, 5.5), (-11.5, -5), (24, 33), "plate"),
-    B((-6, 6), (4, 12), (18, 24), "metal"),
-    B((-6, 6), (-12, -4), (18, 24), "metal"),
-    B((-5, 5), (5, 11), (7, 20), "plate"),
-    B((-5, 5), (-11, -5), (7, 20), "plate"),
-    B((-9, 11), (4, 13), (0, 7), "plate"),
-    B((-9, 11), (-13, -4), (0, 7), "plate"),
-    B((11, 11.6), (5, 12), (1.5, 3.5), "accent"),
-    B((11, 11.6), (-12, -5), (1.5, 3.5), "accent"),
+    # Hueftausleger -- der breite Stand faengt schon an der Huefte an
+    B((-4.5, 4.5), (5, 16), (29, 34), "metal"),
+    B((-4.5, 4.5), (-16, -5), (29, 34), "metal"),
+    B((-5, 5), (9, 16.5), (30.5, 32.5), "accent"),
+    B((-5, 5), (-16.5, -9), (30.5, 32.5), "accent"),
+    # Oberschenkel: kurz und dick
+    B((-5.5, 5.5), (9, 16), (19, 30), "plate"),
+    B((-5.5, 5.5), (-16, -9), (19, 30), "plate"),
+    # Hydraulikzylinder vor dem Oberschenkel
+    L((7, 12.5), [(2.4, 18), (2.4, 29)], "dark", segments=12),
+    L((7, -12.5), [(2.4, 18), (2.4, 29)], "dark", segments=12),
+    L((7, 12.5), [(3.0, 26.5), (3.0, 28)], "accent", caps=False, segments=12),
+    L((7, -12.5), [(3.0, 26.5), (3.0, 28)], "accent", caps=False, segments=12),
+    # Kniepanzer, kragt nach aussen aus
+    B((-6.5, 6.5), (8, 17.5), (14, 19), "plate"),
+    B((-6.5, 6.5), (-17.5, -8), (14, 19), "plate"),
+    B((-7, 7), (7.5, 18), (19, 20.5), "light"),
+    B((-7, 7), (-18, -7.5), (19, 20.5), "light"),
+    # Unterschenkel: staemmig, kaum laenger als der Knie-Block hoch ist
+    B((-5.5, 5.5), (9.5, 16), (6, 14), "metal"),
+    B((-5.5, 5.5), (-16, -9.5), (6, 14), "metal"),
+    # Standfuss mit Ferse
+    B((-11, 12), (8, 17), (0, 6), "plate"),
+    B((-11, 12), (-17, -8), (0, 6), "plate"),
+    B((-11.5, 12.5), (7.5, 17.5), (6, 7.5), "light"),
+    B((-11.5, 12.5), (-17.5, -7.5), (6, 7.5), "light"),
+    # Krallen vorn, Sporn hinten
+    B((12, 15), (9, 11.5), (0, 2.5), "dark"),
+    B((12, 15), (13.5, 16), (0, 2.5), "dark"),
+    B((12, 15), (-11.5, -9), (0, 2.5), "dark"),
+    B((12, 15), (-16, -13.5), (0, 2.5), "dark"),
+    B((-14, -11), (10.5, 14.5), (0, 3), "dark"),
+    B((-14, -11), (-14.5, -10.5), (0, 3), "dark"),
 ]
 
 JUGG_CORE = [
@@ -691,14 +868,53 @@ JUGG_CORE = [
     B((11.3, 11.7), (-2, 2), (41.5, 52.5), "glow"),
 ]
 
+# Belagerungskanone -- ausdruecklich KEIN vergroesserter Blaster.
+#
+# Der Blaster ist ein Rohr am Arm: schmal, glatt, ein Lauf. Diese hier bekommt
+# drei Merkmale, die kein Handrohr je hat, und jedes davon liegt auf der
+# Silhouette statt in der Flaeche:
+#
+#   * eine MUENDUNGSBREMSE mit zwei Fluegeln quer zum Rohr -- sie gibt der
+#     Waffe vorn eine Breite, die man auch bei halber Groesse noch erkennt;
+#   * ein liegendes TROMMELMAGAZIN hinter dem Verschluss, das nach hinten
+#     ueber den Bot hinausragt;
+#   * eine ABSTUETZSTREBE nach unten -- das Bauteil sagt "wird abgestuetzt",
+#     also "schwer, kurze Reichweite pro Zug".
+#
+# Der Lauf ist dabei bewusst KUERZER im Verhaeltnis zur Masse als beim
+# Blaster: gedrungen liest sich als Artillerie, lang und duenn als Praezision
+# (siehe eq_rail_lance).
 EQ_CANNON = [
-    B((-4, 4), (-5.5, 5.5), (42, 51), "metal"),
-    B((-6, 7), (-7, 7), (28, 43), "plate"),
-    B((7, 18), (-5, 5), (31, 39), "plate"),
-    B((18, 21), (-4, 4), (32, 38), "dark"),
-    D(21.3, 0, 35, 2.5, "glow"),
-    B((-5, 6), (7, 7.6), (39.5, 41.5), "accent"),
-    B((-5, 6), (-7.6, -7), (39.5, 41.5), "accent"),
+    # Halterung am Anker: kurzer Stumpf, kein ausmodellierter Arm
+    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),
+    # Verschlussblock -- die Masse sitzt hinten
+    B((-8, 5), (-7.5, 7.5), (34, 45.5), "plate"),
+    B((-8.5, 5.5), (-8, 8), (45.5, 47.5), "light"),
+    B((5, 5.6), (-5.5, 5.5), (37, 43), "dark"),
+    # Trommelmagazin, liegend quer zum Bot und weit hinten
+    L((-10.5, 40), [(4.4, -7), (4.8, -6), (4.8, 6), (4.4, 7)],
+      "dark", axis="l", segments=14),
+    L((-10.5, 40), [(5.1, -3), (5.1, -2)], "accent", axis="l",
+      caps=False, segments=14),
+    L((-10.5, 40), [(5.1, 2), (5.1, 3)], "accent", axis="l",
+      caps=False, segments=14),
+    # Rohr: Ruecklaufhuelse, dann ein deutlich duenneres Stueck. Die
+    # Verjuengung ist noetig, damit die Muendungsbremse davor ueberhaupt als
+    # eigene Form lesbar wird -- an einem durchgehend dicken Rohr verschwindet
+    # sie in der Silhouette.
+    B((5.6, 11), (-4.6, 4.6), (36.5, 43.5), "plate"),
+    B((11, 20), (-2.8, 2.8), (37.6, 42.4), "dark"),
+    # Muendungsbremse: DAS Silhouetten-Merkmal. Die Fluegel liegen flach und
+    # greifen tief nach vorn, damit sie als quer stehende Finnen lesen und
+    # nicht als angeklebte Blechlaschen.
+    B((20, 24), (-3.6, 3.6), (36.8, 43.2), "plate"),
+    B((18.8, 24.5), (-9.5, -3.6), (38.6, 41.4), "dark"),
+    B((18.8, 24.5), (3.6, 9.5), (38.6, 41.4), "dark"),
+    B((24, 24.6), (-3, 3), (37.5, 42.5), "accent"),
+    D(24.9, 0, 40, 2.2, "glow"),
+    # Abstuetzstrebe nach unten
+    B((-1, 3), (-2.6, 2.6), (26, 34), "metal"),
+    B((-4, 6), (-4, 4), (23, 26.5), "dark"),
 ]
 
 # Der Pod sitzt hinter dem Kopf auf der Schulterbruecke und zeigt vor allem
@@ -834,6 +1050,139 @@ EQ_ORBIT_FOCUS = [
 
 
 # ===========================================================================
+# LR-Strix // Marksman  (parts/bot4) -- EIN Ausruestungsanker
+#
+# Der Gegenentwurf zum Juggernaut auf der Slot-Seite. Molok kauft sich seine
+# drei Slots mit Masse und Langsamkeit; Strix macht das Gegenteil und hat
+# genau EINEN -- zentral auf der Mittelachse, dafuer voll belastbar. Das ist
+# eine Balancing-Achse, die ohne eine einzige Zahl auskommt: eine Waffe, dafuer
+# die schwerste im Spiel.
+#
+# Damit man das ansieht, traegt der Rahmen kein Armpaar, sondern ein JOCH vor
+# der Brust, und dahinter einen Gegengewichts-Ausleger, der nach hinten-oben
+# ueber den Kopf hinauslaeuft. Beides liegt auf der Silhouette -- man erkennt
+# einen Strix an der schraegen Rueckenlinie, bevor man die Waffe sieht.
+#
+# Hoehenprofil in Entwurfseinheiten:
+#   Beine 0..34   Torso 34..60   Joch 48..57   Ausleger 46..70   Kopf 63..78
+# ===========================================================================
+
+STRIX_BODY = [
+    # -- Huefte -----------------------------------------------------------
+    B((-5, 5), (-7, 7), (34, 40), "metal"),
+    # -- Torso: schmal und hoch. Breite gehoert dem Juggernaut. ------------
+    B((-5.5, 6), (-7.5, 7.5), (40, 58), "plate"),
+    B((-6, 6.5), (-8, 8), (58, 60.5), "light"),
+    B((6, 6.6), (-5.5, 5.5), (43, 57), "dark"),
+    B((6.6, 7.2), (-1.6, 1.6), (52.5, 56), "accent"),
+    # -- Gegengewichts-Ausleger -------------------------------------------
+    # Laeuft nach hinten-oben ueber den Kopf hinaus und ist das Merkmal, an
+    # dem dieser Rahmen auch als reine Schattenform erkennbar bleibt.
+    B((-9, -5), (-4, 4), (46, 62), "plate"),
+    B((-14, -8.5), (-3.5, 3.5), (59, 68), "plate"),
+    B((-14.5, -8), (-4, 4), (68, 70), "light"),
+    B((-14.6, -14), (-2.5, 2.5), (61, 66), "accent"),
+    # Kuehlrippen auf der Rueckseite des Auslegers
+    B((-9.6, -9), (-3, 3), (48, 49.5), "light"),
+    B((-9.6, -9), (-3, 3), (52, 53.5), "light"),
+    B((-9.6, -9), (-3, 3), (56, 57.5), "light"),
+    # -- Waffenjoch vor der Brust: ein Lager statt zweier Arme -------------
+    B((5.5, 10), (-9.5, -6.5), (47, 54), "metal"),
+    B((5.5, 10), (6.5, 9.5), (47, 54), "metal"),
+    B((5, 10.5), (-10, 10), (54, 56.5), "metal"),
+    B((10.5, 11.1), (-8, -6.5), (48, 53), "accent"),
+    B((10.5, 11.1), (6.5, 8), (48, 53), "accent"),
+    # -- Hals --------------------------------------------------------------
+    B((-3, 3), (-3.5, 3.5), (60.5, 63), "metal"),
+]
+
+# Aufklaerer-Kopf mit EINEM langen Okular statt eines breiten Visierbands --
+# ein Fernrohr liest sich anders als ein Sichtschlitz, und genau das ist der
+# Unterschied zwischen "sieht viel" und "sieht weit".
+STRIX_HEAD = [
+    B((-5, 5), (-4.5, 4.5), (63, 71), "plate"),
+    B((-5.5, 5.5), (-5, 5), (71, 73), "light"),
+    B((5, 9.5), (-2.2, 2.2), (65.8, 70.2), "metal"),
+    D(9.8, 0, 68, 2.0, "visor"),
+    # Rueckenfinne mit Antennenband
+    B((-6.5, -5), (-1.2, 1.2), (66, 78), "metal"),
+    B((-6.8, -5.2), (-1.7, 1.7), (72, 75.5), "accent"),
+    # Seitliche Windmesser
+    B((-3, 3), (4.5, 6), (67.5, 69), "metal"),
+    B((-3, 3), (-6, -4.5), (67.5, 69), "metal"),
+]
+
+# Digitigrade Beine: der Knick zeigt nach HINTEN. Vireo rennt auf geraden
+# Stelzen, Molok steht auf Ferse und Sporn -- Strix federt. Drei Beinformen,
+# drei Bewegungsprofile, in der Silhouette unterscheidbar.
+STRIX_FEET = [
+    B((-4, 4), (3.5, 8), (23, 34), "plate"),
+    B((-4, 4), (-8, -3.5), (23, 34), "plate"),
+    # Sprunggelenk
+    L((-1.5, 5.75), [(2.6, 20.5), (2.6, 23.5)], "metal", segments=12),
+    L((-1.5, -5.75), [(2.6, 20.5), (2.6, 23.5)], "metal", segments=12),
+    # Unterschenkel, nach hinten geknickt
+    B((-9, -1), (4.2, 7.3), (13, 21), "plate"),
+    B((-9, -1), (-7.3, -4.2), (13, 21), "plate"),
+    B((-9.3, -8.7), (4.6, 6.9), (15, 19), "accent"),
+    B((-9.3, -8.7), (-6.9, -4.6), (15, 19), "accent"),
+    # Mittelfuss laeuft von hinten-oben nach vorn-unten
+    B((-9, 2), (4.4, 7.1), (7, 13.5), "metal"),
+    B((-9, 2), (-7.1, -4.4), (7, 13.5), "metal"),
+    # Schmale Standklaue: kleine Aufstandsflaeche, dafuer eine lange Zehe
+    B((-3, 9), (4, 7.5), (0, 5), "plate"),
+    B((-3, 9), (-7.5, -4), (0, 5), "plate"),
+    B((9, 13), (4.6, 6.9), (0, 2), "dark"),
+    B((9, 13), (-6.9, -4.6), (0, 2), "dark"),
+]
+
+# Kernschacht statt Kernscheibe: ein senkrechter Leuchtspalt in der
+# Brustplatte. Ein Kern wird ueber die Glut gelesen, nicht ueber die Form --
+# aber wenn schon drei runde Kerne existieren, ist der vierte besser eckig.
+STRIX_CORE = [
+    B((6.6, 7.4), (-3.4, 3.4), (44.5, 55.5), "dark"),
+    B((7.4, 7.9), (-1.1, 1.1), (46, 54), "glow"),
+    B((7.4, 7.8), (-3.0, -1.6), (47, 47.8), "accent"),
+    B((7.4, 7.8), (1.6, 3.0), (47, 47.8), "accent"),
+    B((7.4, 7.8), (-3.0, -1.6), (52.2, 53), "accent"),
+    B((7.4, 7.8), (1.6, 3.0), (52.2, 53), "accent"),
+]
+
+# Schienen-Lanze -- die schwerste Waffe im Bestand und der Gegenpol zur
+# Belagerungskanone: dort gedrungen und breit, hier ueberlang und duenn. Zwei
+# parallele Schienen mit Energiespalt statt eines Rohrs, ein weit vorn
+# sitzender Zielblock, eine Stabilisatorgabel. Aus der Silhouette faellt
+# "grosse Reichweite, ein Schuss" ab, ohne dass ein Tooltip es sagen muss.
+EQ_RAIL_LANCE = [
+    # Wiegenlager -- sitzt im Joch des Chassis, nicht an einem Arm
+    B((-4, 3), (-5, 5), (47.5, 54.5), "metal"),
+    B((-6, -1), (-5.5, 5.5), (45, 56), "plate"),
+    # Kondensatorbank, liegend
+    L((-3, 50.5), [(4.4, -6.2), (4.8, -5.2), (4.8, 5.2), (4.4, 6.2)],
+      "dark", axis="l", segments=12),
+    L((-3, 50.5), [(5.1, -2.6), (5.1, -1.6)], "accent", axis="l",
+      caps=False, segments=12),
+    L((-3, 50.5), [(5.1, 1.6), (5.1, 2.6)], "accent", axis="l",
+      caps=False, segments=12),
+    # Zwei Schienen mit Energiespalt: eine Linie, kein Rohr
+    B((3, 26), (-2.7, -1.2), (49.4, 52.4), "metal"),
+    B((3, 26), (1.2, 2.7), (49.4, 52.4), "metal"),
+    B((5, 25), (-1.1, 1.1), (50.3, 51.5), "accent"),
+    B((26, 29), (-2.9, 2.9), (49.1, 52.7), "dark"),
+    D(29.3, 0, 50.9, 1.7, "glow"),
+    # Zielblock weit vorn obenauf
+    B((7, 18), (-2.3, 2.3), (52.4, 55.4), "dark"),
+    B((7.5, 17.5), (-2.7, 2.7), (55.4, 56.5), "light"),
+    D(18.3, 0, 53.9, 1.5, "visor"),
+    # Stabilisatorgabel nach vorn-unten
+    B((11, 13), (-6.8, -2.8), (41, 49.4), "metal"),
+    B((11, 13), (2.8, 6.8), (41, 49.4), "metal"),
+    B((9.5, 15), (-7.8, -5.8), (39.5, 41.5), "dark"),
+    B((9.5, 15), (5.8, 7.8), (39.5, 41.5), "dark"),
+]
+
+
+# ===========================================================================
 # Teile-Spezifikation
 #
 # Anker werden in bot-lokalen Koordinaten angegeben und pro Richtung mit
@@ -863,6 +1212,14 @@ SETS = [
                     "equip_left": (0, 19.5, 52),
                     "equip_right": (0, -19.5, 52),
                 },
+                # Ein Sprinter traegt keine Artillerie. Die Grenze steht hier
+                # und nicht in einer Balancing-Tabelle, weil sie sonst erst im
+                # Kampf auffaellt -- und weil ein Vireo mit Belagerungskanone
+                # eine Silhouette haette, die ueber seine Reichweite luegt.
+                "slot_rules": {
+                    "equip_left": {"max_class": "medium"},
+                    "equip_right": {"max_class": "medium"},
+                },
             },
             {
                 "id": "scout_head", "code": "HED-001", "type": "head", "name": "Vireo Sensorkopf",
@@ -882,11 +1239,16 @@ SETS = [
             {
                 "id": "eq_pulse_blaster", "code": "EQP-001", "type": "equipment", "name": "Puls-Blaster",
                 "tags": ["weapon", "ranged"], "shapes": EQ_BLASTER,
+                "mount_class": "light", "category": "weapon",
                 "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
             },
             {
                 "id": "eq_deflector", "code": "EQP-002", "type": "equipment", "name": "Deflektor-Schild",
                 "tags": ["defense"], "shapes": EQ_SHIELD,
+                # Ein Schild ist sperrig, nicht schwer -- "medium" haelt es von
+                # den Schulter- und Jochlagern fern, ohne es an einem
+                # Standardarm einzuschraenken.
+                "mount_class": "medium", "category": "shield",
                 "anchors": {"mount": (0, 0, 52)},
             },
         ],
@@ -910,6 +1272,17 @@ SETS = [
                     "equip_right": (0, -26.5, 49),
                     "equip_shoulder": (-5, 0, 61),
                 },
+                # Der Schulteranker ist KEIN dritter Arm. Er sitzt hinter dem
+                # Kopf auf der Schulterbruecke, hat keinen Gegenhalt und nichts,
+                # woran sich ein Schild abstuetzen koennte -- dort gehoert
+                # Sensorik und Support hin, nichts Schweres und nichts, was
+                # gehalten werden muss.
+                "slot_rules": {
+                    "equip_left": {"max_class": "heavy"},
+                    "equip_right": {"max_class": "heavy"},
+                    "equip_shoulder": {"max_class": "light",
+                                       "categories": ["support"]},
+                },
             },
             {
                 "id": "jugg_head", "code": "HED-002", "type": "head", "name": "Molok Bunkerkopf",
@@ -930,15 +1303,18 @@ SETS = [
                 "id": "eq_siege_cannon", "code": "EQP-003", "type": "equipment",
                 "name": "Belagerungskanone", "tags": ["weapon", "heavy"],
                 "shapes": EQ_CANNON,
-                "anchors": {"mount": (0, 0, 49), "muzzle": (21.3, 0, 35)},
+                "mount_class": "heavy", "category": "weapon",
+                "anchors": {"mount": (0, 0, 49), "muzzle": (24.9, 0, 40)},
             },
             {
                 # Einziges Beispielteil mit "slots": ein Schulterpod gehoert auf
-                # die Schulter. Alle uebrigen Ausruestungen lassen das Feld weg
-                # und passen damit in jeden equip_*-Anker -- auch set-fremde.
+                # die Schulter, und zwar auf diesen einen Anker. "slots" ist die
+                # harte Ankerliste, "mount_class"/"category" die allgemeine
+                # Regel -- die meisten Teile brauchen nur letztere.
                 "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment", "name": "Drohnen-Pod",
                 "tags": ["support", "shoulder"], "shapes": EQ_DRONE_POD,
                 "slots": ["equip_shoulder"],
+                "mount_class": "light", "category": "support",
                 "anchors": {"mount": (0, 0, 61)},
             },
         ],
@@ -963,6 +1339,10 @@ SETS = [
                     "equip_left": (0, 13.8, 47),
                     "equip_right": (0, -13.8, 47),
                 },
+                "slot_rules": {
+                    "equip_left": {"max_class": "medium"},
+                    "equip_right": {"max_class": "medium"},
+                },
             },
             {
                 "id": "mage_head", "code": "HED-003", "type": "head",
@@ -986,13 +1366,68 @@ SETS = [
                 "id": "eq_rune_staff", "code": "EQP-005", "type": "equipment",
                 "name": "Runenstab", "tags": ["weapon", "arcane", "round"],
                 "shapes": EQ_RUNE_STAFF,
+                "mount_class": "light", "category": "weapon",
                 "anchors": {"mount": (0, 0, 47), "muzzle": (7.6, 0, 61.0)},
             },
             {
                 "id": "eq_orbit_focus", "code": "EQP-006", "type": "equipment",
                 "name": "Orbit-Fokus", "tags": ["support", "arcane", "round"],
                 "shapes": EQ_ORBIT_FOCUS,
+                "mount_class": "light", "category": "support",
                 "anchors": {"mount": (0, 0, 47), "muzzle": (7.6, 0, 30.5)},
+            },
+        ],
+    },
+    {
+        "dir": "bot4",
+        "id": "bot4",
+        "name": "LR-Strix // Marksman",
+        "description": "Schmaler Scharfschuetzen-Rahmen. EIN zentraler "
+                       "Ausruestungsanker, dafuer voll belastbar.",
+        "palette": STRIX_PALETTE,
+        "parts": [
+            {
+                "id": "strix_body", "code": "CHS-004", "type": "body",
+                "name": "Strix Chassis", "tags": ["marksman", "light", "sniper"],
+                "shapes": STRIX_BODY,
+                "anchors": {
+                    "mount": (0, 0, MOUNT_Z),
+                    "head": (0, 0, 63),
+                    "feet": (0, 0, 34),
+                    "core": (6.6, 0, 50),
+                    # Genau ein Anker -- und er sitzt auf der Mittelachse im
+                    # Joch, nicht seitlich am Arm.
+                    "equip_center": (6, 0, 51),
+                },
+                # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin.
+                "slot_rules": {"equip_center": {"max_class": "heavy"}},
+            },
+            {
+                "id": "strix_head", "code": "HED-004", "type": "head",
+                "name": "Strix Okularkopf", "tags": ["marksman", "sensor", "optics"],
+                "shapes": STRIX_HEAD,
+                "anchors": {"mount": (0, 0, 63), "sensor": (9.8, 0, 68)},
+            },
+            {
+                "id": "strix_feet", "code": "LEG-004", "type": "feet",
+                "name": "Strix Federbeine", "tags": ["marksman", "digitigrad"],
+                "shapes": STRIX_FEET,
+                "anchors": {"mount": (0, 0, 34), "ground": (2, 0, 0)},
+            },
+            {
+                "id": "strix_core", "code": "COR-004", "type": "core",
+                "name": "Strix Zielrechner", "tags": ["core", "optics"],
+                "shapes": STRIX_CORE,
+                "anchors": {"mount": (6.6, 0, 50)},
+            },
+            {
+                "id": "eq_rail_lance", "code": "EQP-007", "type": "equipment",
+                "name": "Schienen-Lanze", "tags": ["weapon", "heavy", "sniper"],
+                "shapes": EQ_RAIL_LANCE,
+                # Schwer wie die Belagerungskanone -- an einen Sprinterarm
+                # kommt sie damit ebenso wenig.
+                "mount_class": "heavy", "category": "weapon",
+                "anchors": {"mount": (0, 0, 51), "muzzle": (29.3, 0, 50.9)},
             },
         ],
     },
@@ -1076,6 +1511,11 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
     }
     if part["type"] == "body":
         meta["slot_z"] = slot_draw_order(part, direction)
+        if "slot_rules" in part:
+            meta["slot_rules"] = part["slot_rules"]
+    if part["type"].startswith("equipment"):
+        meta["mount_class"] = part.get("mount_class", DEFAULT_MOUNT_CLASS)
+        meta["category"] = part.get("category", DEFAULT_CATEGORY)
     if "slots" in part:
         meta["slots"] = part["slots"]
 
@@ -1115,9 +1555,134 @@ def main() -> None:
                                  f"{seen[code]} und {spec['id']}/{part['id']}")
             seen[code] = f"{spec['id']}/{part['id']}"
 
+    check_slot_rules()
+    check_silhouettes()
+    print_slot_matrix()
+
     print(f"\nIso-Kamera 45 Grad  |  Bodenfeld {2 * TILE_HALF_W:.0f} x "
           f"{2 * TILE_HALF_H:.0f} px um ({CENTER_X:.0f}, {GROUND_Y:.0f})")
     print(f"{len(seen)} Teile-Codes vergeben: {', '.join(sorted(seen))}")
+
+
+def all_parts():
+    for spec in SETS:
+        for part in spec["parts"]:
+            yield spec, part
+
+
+def check_slot_rules() -> None:
+    """Regeln muessen sich auf existierende Anker und bekannte Werte beziehen."""
+    for spec, part in all_parts():
+        where = f"{spec['id']}/{part['id']}"
+        if part["type"] == "body":
+            anchors = set(part["anchors"])
+            for slot, rule in part.get("slot_rules", {}).items():
+                if slot not in anchors:
+                    raise SystemExit(f"{where}: slot_rules nennt {slot!r}, "
+                                     f"aber der Anker fehlt")
+                limit = rule.get("max_class", MOUNT_CLASSES[-1])
+                if limit not in MOUNT_CLASSES:
+                    raise SystemExit(f"{where}/{slot}: unbekannte "
+                                     f"Montageklasse {limit!r}")
+                for category in rule.get("categories", ()):
+                    if category not in EQUIP_CATEGORIES:
+                        raise SystemExit(f"{where}/{slot}: unbekannte "
+                                         f"Bauart {category!r}")
+        elif part["type"].startswith("equipment"):
+            if part.get("mount_class", DEFAULT_MOUNT_CLASS) not in MOUNT_CLASSES:
+                raise SystemExit(f"{where}: unbekannte Montageklasse")
+            if part.get("category", DEFAULT_CATEGORY) not in EQUIP_CATEGORIES:
+                raise SystemExit(f"{where}: unbekannte Bauart")
+
+
+def check_silhouettes() -> None:
+    """
+    Die Lesbarkeitsregel als Test.
+
+    Zwei Ausruestungsteile duerfen sich nicht allein durch ihre Groesse
+    unterscheiden -- im Iso-Bild ist Groesse keine verlaessliche Information.
+    Fuer Ausruestung ist das ein Abbruch: an der Waffe liest der Spieler
+    Reichweite und Rolle ab, und ein deterministisches Tactics darf ihm diese
+    Auskunft nicht verweigern. Fuer Rahmenteile bleibt es ein Hinweis -- ein
+    Bein wird im Verbund gelesen, nicht einzeln, und die Auswahl ist dort
+    ohnehin klein.
+    """
+    # Erst nachweisen, dass der Test ueberhaupt noch etwas findet.
+    probe = silhouette_distance(silhouette(EQ_BLASTER), silhouette(EQ_CANNON_V1))
+    if probe < SIL_ERROR:
+        raise SystemExit(
+            f"Der Silhouetten-Test ist stumpf geworden: die alte, absichtlich "
+            f"vom Blaster abgeschriebene Belagerungskanone kommt nur noch auf "
+            f"{probe:.2f} und liegt damit unter SIL_ERROR ({SIL_ERROR:.2f}). "
+            f"Erst Mass oder Grenze reparieren, dann weiter."
+        )
+
+    by_type: dict[str, list] = {}
+    for spec, part in all_parts():
+        key = "equipment" if part["type"].startswith("equipment") else part["type"]
+        by_type.setdefault(key, []).append(
+            (f"{spec['id']}/{part['id']}", silhouette(part["shapes"])))
+
+    problems, hints, closest = [], [], []
+    for part_type, entries in sorted(by_type.items()):
+        worst = None
+        for i, (name_a, sil_a) in enumerate(entries):
+            for name_b, sil_b in entries[i + 1:]:
+                score = silhouette_distance(sil_a, sil_b)
+                if worst is None or score > worst[0]:
+                    worst = (score, name_a, name_b)
+                if part_type == "equipment" and score >= SIL_ERROR:
+                    problems.append((score, name_a, name_b))
+                elif part_type != "equipment" and score >= SIL_WARN:
+                    hints.append((score, part_type, name_a, name_b))
+        if worst:
+            closest.append((part_type, worst))
+
+    print(f"\nSilhouetten-Abstand (1.00 = ununterscheidbar, Grenze "
+          f"{SIL_ERROR:.2f}, Pruefstein {probe:.2f}), engstes Paar je Typ:")
+    for part_type, (score, name_a, name_b) in closest:
+        print(f"  {part_type:<10} {score:.2f}  {name_a} / {name_b}")
+
+    for score, part_type, name_a, name_b in hints:
+        print(f"  [hinweis] {part_type}: {name_a} und {name_b} liegen bei "
+              f"{score:.2f} -- grenzwertig.")
+
+    if problems:
+        lines = "\n".join(f"  {a} und {b} decken sich zu {score:.0%}"
+                          for score, a, b in problems)
+        raise SystemExit(
+            "Lesbarkeitsregel verletzt -- zwei Ausruestungsteile haben "
+            "dieselbe Silhouette:\n" + lines +
+            "\n\nGroesse allein unterscheidet im Iso-Bild nicht: die Kachel "
+            "ist klein, Teile ueberlappen, ein Bot weiter hinten ist ohnehin "
+            "kleiner. Wer nur skaliert, baut eine Waffe, deren Reichweite man "
+            "ihr nicht ansieht. Silhouetten-Merkmal ergaenzen (Muendungsbremse, "
+            "Magazin, Strebe, Klinge, ...) und erneut erzeugen."
+        )
+
+
+def print_slot_matrix() -> None:
+    """Welche Ausruestung passt an welchen Slot -- das Ergebnis der Regeln."""
+    equipment = [(spec, part) for spec, part in all_parts()
+                 if part["type"].startswith("equipment")]
+
+    print("\nAusruestung x Slot:")
+    for spec, body in all_parts():
+        if body["type"] != "body":
+            continue
+        rules = body.get("slot_rules", {})
+        for slot in sorted(a for a in body["anchors"] if a.startswith("equip_")):
+            rule = rules.get(slot)
+            limit = (rule or {}).get("max_class", MOUNT_CLASSES[-1])
+            cats = (rule or {}).get("categories") or list(EQUIP_CATEGORIES)
+            allowed = [
+                eq_part["code"] for _eq_spec, eq_part in equipment
+                if fits_rule(eq_part.get("mount_class", DEFAULT_MOUNT_CLASS),
+                             eq_part.get("category", DEFAULT_CATEGORY), rule)
+                and slot in eq_part.get("slots", [slot])
+            ]
+            print(f"  {spec['id']}/{slot:<14} bis {limit:<7}"
+                  f"{'/'.join(cats):<22} {' '.join(allowed) or '--'}")
 
 
 if __name__ == "__main__":

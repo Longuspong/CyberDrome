@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="strix_core" data-type="core" data-direction="west">
+  <title>Strix Zielrechner (west)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung west.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M58.46 45.06 L59.8 44.11 L59.8 43.35 L58.46 44.3 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M59.8 43.35 L59.42 43.08 L58.08 44.03 L58.46 44.3 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M58.08 44.79 L58.46 45.06 L58.46 44.3 L58.08 44.03 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.07 48.16 L55.41 47.22 L55.41 46.46 L54.07 47.4 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M55.41 46.46 L55.03 46.19 L53.69 47.13 L54.07 47.4 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M55.89 47.84 L57.99 46.35 L57.99 38.71 L55.89 40.2 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M53.69 47.89 L54.07 48.16 L54.07 47.4 L53.69 47.13 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M58.46 40.1 L59.8 39.15 L59.8 38.39 L58.46 39.33 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M59.8 38.39 L59.42 38.12 L58.08 39.06 L58.46 39.33 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.45 51.36 L60.95 46.77 L60.95 36.27 L54.45 40.86 Z" fill="var(--c-plate-dark)"/>
+  <path d="M58.08 39.83 L58.46 40.1 L58.46 39.33 L58.08 39.06 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M55.41 47.5 L55.89 47.84 L55.89 40.2 L55.41 39.86 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M57.99 38.71 L57.51 38.38 L55.41 39.86 L55.89 40.2 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M53.69 50.82 L54.45 51.36 L54.45 40.86 L53.69 40.32 Z" fill="var(--c-plate-dark)"/>
+  <path d="M54.07 43.2 L55.41 42.26 L55.41 41.49 L54.07 42.44 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M55.41 41.49 L55.03 41.22 L53.69 42.17 L54.07 42.44 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M53.69 42.93 L54.07 43.2 L54.07 42.44 L53.69 42.17 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M60.95 36.27 L60.18 35.73 L53.69 40.32 L54.45 40.86 Z" fill="var(--c-plate)"/>
+</g>
+</svg>

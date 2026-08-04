@@ -76,6 +76,14 @@ DIRECTIONS = ("north", "west", "east", "south")
 PART_TYPES = ("core", "head", "body", "feet",
               "equipment", "equipment_left", "equipment_right")
 
+# Montageklasse und Bauart -- die Regel hinter den Ausruestungsslots.
+# Ein Anker sagt nur, WO etwas sitzt; erst diese beiden Felder sagen, WAS dort
+# sitzen darf. Details in parts/README.md, Abschnitt 2a.
+MOUNT_CLASSES = ("light", "medium", "heavy")
+EQUIP_CATEGORIES = ("weapon", "shield", "support")
+DEFAULT_MOUNT_CLASS = "light"     # importierte Teile passen ueberallhin ...
+DEFAULT_CATEGORY = "weapon"       # ... ausser auf ausdruecklich engere Slots
+
 MAX_BODY_BYTES = 8 * 1024 * 1024  # 8 MB -- reicht fuer sehr grosse SVGs
 
 # ---------------------------------------------------------------------------
@@ -248,6 +256,12 @@ def load_part(json_path: pathlib.Path, set_id: str) -> dict:
     meta.setdefault("direction", "south")
     meta.setdefault("anchors", [])
     meta.setdefault("view_box", [0, 0, 128, 128])
+    # Ausruestung bekommt Montageklasse und Bauart auch dann, wenn die Datei
+    # sie nicht nennt -- das Frontend soll die Slotregel nicht mit Sonderfaellen
+    # fuer alte Teile auswerten muessen.
+    if str(meta["type"]).startswith("equipment"):
+        meta.setdefault("mount_class", DEFAULT_MOUNT_CLASS)
+        meta.setdefault("category", DEFAULT_CATEGORY)
     meta["set"] = set_id
     meta["stem"] = stem
     meta["svg"] = svg_name
@@ -297,9 +311,12 @@ def scan_library() -> dict:
         sets.append(set_meta)
 
     warnings.extend(duplicate_code_warnings(sets))
+    warnings.extend(slot_rule_warnings(sets))
 
     return {"sets": sets, "warnings": warnings, "parts_dir": str(PARTS_DIR),
-            "directions": list(DIRECTIONS), "part_types": list(PART_TYPES)}
+            "directions": list(DIRECTIONS), "part_types": list(PART_TYPES),
+            "mount_classes": list(MOUNT_CLASSES),
+            "equip_categories": list(EQUIP_CATEGORIES)}
 
 
 def duplicate_code_warnings(sets: list[dict]) -> list[str]:
@@ -322,6 +339,28 @@ def duplicate_code_warnings(sets: list[dict]) -> list[str]:
         f"Teile-Code {code} doppelt vergeben: {', '.join(sorted(ids))}"
         for code, ids in sorted(owners.items()) if len(ids) > 1
     ]
+
+
+def slot_rule_warnings(sets: list[dict]) -> list[str]:
+    """
+    Eine Slotregel ohne zugehoerigen Anker ist wirkungslos -- und wirkungslos
+    heisst hier: der Slot nimmt wieder alles an. Genau der Fall, in dem der
+    Sprinter doch die Belagerungskanone traegt, deshalb wird er gemeldet.
+    """
+    messages = []
+    for set_meta in sets:
+        for part in set_meta["parts"]:
+            rules = part.get("slot_rules")
+            if not isinstance(rules, dict):
+                continue
+            anchors = {a.get("name") for a in part.get("anchors", [])
+                       if isinstance(a, dict)}
+            for slot in sorted(set(rules) - anchors):
+                messages.append(
+                    f"{part['set']}/{part['stem']}: slot_rules nennt {slot}, "
+                    f"aber der Anker fehlt -- die Regel greift nicht"
+                )
+    return messages
 
 
 def get_library(refresh: bool = False) -> dict:
@@ -359,14 +398,14 @@ def validate_meta(meta: dict) -> dict:
         raise ApiError(400, "'anchors' muss ein Array sein")
 
     clean_anchors = []
-    seen = set()
+    anchor_names = set()
     for anchor in anchors:
         if not isinstance(anchor, dict) or "name" not in anchor:
             raise ApiError(400, "Jeder Anker braucht mindestens 'name', 'x', 'y'")
         name = str(anchor["name"])
-        if name in seen:
+        if name in anchor_names:
             raise ApiError(400, f"Doppelter Ankername: {name!r}")
-        seen.add(name)
+        anchor_names.add(name)
         try:
             x = round(float(anchor.get("x", 0)), 3)
             y = round(float(anchor.get("y", 0)), 3)
@@ -375,10 +414,70 @@ def validate_meta(meta: dict) -> dict:
         clean_anchors.append({"name": name, "x": x, "y": y})
 
     meta["anchors"] = clean_anchors
+    validate_slot_fields(meta, anchor_names)
     # Ableitbare/serverseitige Felder nie aus dem Client uebernehmen.
     for key in ("svg_inner", "uid", "stem"):
         meta.pop(key, None)
     return meta
+
+
+def validate_slot_fields(meta: dict, anchor_names: set) -> None:
+    """
+    Montageklasse / Bauart auf der Ausruestung, ``slot_rules`` auf dem Koerper.
+
+    Zusammen sind das die Regel, die verhindert, dass ein Sprinter eine
+    Belagerungskanone traegt oder ein Schild auf einer Schulterbruecke landet.
+    Ein Slot ohne Regel nimmt weiterhin alles an -- wer nichts angibt, bekommt
+    das alte Verhalten.
+    """
+    if str(meta.get("type", "")).startswith("equipment"):
+        mount_class = meta.get("mount_class", DEFAULT_MOUNT_CLASS)
+        if mount_class not in MOUNT_CLASSES:
+            raise ApiError(400, f"Unbekannte Montageklasse {mount_class!r} "
+                                f"(erlaubt: {', '.join(MOUNT_CLASSES)})")
+        category = meta.get("category", DEFAULT_CATEGORY)
+        if category not in EQUIP_CATEGORIES:
+            raise ApiError(400, f"Unbekannte Bauart {category!r} "
+                                f"(erlaubt: {', '.join(EQUIP_CATEGORIES)})")
+        meta["mount_class"] = mount_class
+        meta["category"] = category
+
+    rules = meta.get("slot_rules")
+    if rules is None:
+        return
+    if not isinstance(rules, dict):
+        raise ApiError(400, "'slot_rules' muss ein Objekt sein")
+
+    clean = {}
+    for slot, rule in rules.items():
+        slot = str(slot)
+        if not slot.startswith("equip_"):
+            raise ApiError(400, f"slot_rules: {slot!r} ist kein Ausruestungsslot")
+        if anchor_names and slot not in anchor_names:
+            raise ApiError(400, f"slot_rules nennt {slot!r}, "
+                                f"aber das Teil hat keinen solchen Anker")
+        if not isinstance(rule, dict):
+            raise ApiError(400, f"slot_rules[{slot!r}] muss ein Objekt sein")
+
+        entry = {}
+        if "max_class" in rule:
+            if rule["max_class"] not in MOUNT_CLASSES:
+                raise ApiError(400, f"slot_rules[{slot!r}]: unbekannte "
+                                    f"Montageklasse {rule['max_class']!r}")
+            entry["max_class"] = rule["max_class"]
+        if "categories" in rule:
+            categories = rule["categories"]
+            if not isinstance(categories, list) or not categories:
+                raise ApiError(400, f"slot_rules[{slot!r}]: 'categories' muss "
+                                    f"eine nicht leere Liste sein")
+            for category in categories:
+                if category not in EQUIP_CATEGORIES:
+                    raise ApiError(400, f"slot_rules[{slot!r}]: unbekannte "
+                                        f"Bauart {category!r}")
+            entry["categories"] = list(categories)
+        clean[slot] = entry
+
+    meta["slot_rules"] = clean
 
 
 def looks_like_svg(text: str) -> bool:

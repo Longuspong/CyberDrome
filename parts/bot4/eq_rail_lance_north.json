@@ -1,0 +1,45 @@
+{
+  "id": "eq_rail_lance",
+  "code": "EQP-007",
+  "set": "bot4",
+  "type": "equipment",
+  "name": "Schienen-Lanze",
+  "direction": "north",
+  "svg": "eq_rail_lance_north.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 30,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 47.32
+    },
+    {
+      "name": "muzzle",
+      "x": 91.97,
+      "y": 27.63
+    }
+  ],
+  "color_scheme": {
+    "plate": "#1c3330",
+    "plate_light": "#335954",
+    "plate_dark": "#101d1b",
+    "metal": "#557d71",
+    "accent": "#6dff9f",
+    "glow": "#9affcc",
+    "visor": "#9affcc",
+    "outline": "#060f0d"
+  },
+  "tags": [
+    "weapon",
+    "heavy",
+    "sniper"
+  ],
+  "mount_class": "heavy",
+  "category": "weapon"
+}

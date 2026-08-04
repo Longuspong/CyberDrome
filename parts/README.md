@@ -16,6 +16,8 @@ parts/
     ...
   bot3/
     ...
+  bot4/
+    ...
 ```
 
 Der Server liest jede `*.json` (ausser `set.json`) als ein Teil und erwartet
@@ -97,7 +99,8 @@ Ergibt sich **allein aus den Ankern des Bodys**. Jeder Anker, dessen Name mit
 | `equip_center`                                  | 1             |
 | `equip_left`, `equip_right`, `equip_shoulder`   | 3             |
 
-`parts/bot2` (Juggernaut) zeigt den Drei-Slot-Fall.
+`parts/bot2` (Juggernaut) zeigt den Drei-Slot-Fall, `parts/bot4` (Marksman)
+den Ein-Slot-Fall.
 
 ### Zusaetzliche Anker
 
@@ -110,6 +113,81 @@ automatisch bestueckt. Nuetzlich als Marker fuer die spaetere Godot-Seite:
 * `fx_*` – Ankerpunkte fuer Partikeleffekte
 
 ---
+
+## 2a. Was in einen Slot darf: Montageklasse und Bauart
+
+Der Anker sagt, **wo** etwas sitzt. Er sagt nichts darueber, **was** dort
+sitzen darf -- und das reicht nicht. Ohne eine zweite Aussage traegt ein
+Sprinter-Chassis eine Belagerungskanone, laeuft damit sechs Felder und schiesst
+Leuten in den Ruecken. Nicht weil das ausbalanciert waere, sondern weil ihm
+niemand widersprochen hat.
+
+Deshalb zwei Felder auf der Ausruestung und eines auf dem Koerper:
+
+| Feld | wo | Werte |
+|---|---|---|
+| `mount_class` | Ausruestung | `light` < `medium` < `heavy` |
+| `category` | Ausruestung | `weapon` · `shield` · `support` |
+| `slot_rules` | Koerper | je Slot `max_class` und/oder `categories` |
+
+```jsonc
+// auf dem Koerper
+"slot_rules": {
+  "equip_left":     { "max_class": "heavy" },
+  "equip_right":    { "max_class": "heavy" },
+  "equip_shoulder": { "max_class": "light", "categories": ["support"] }
+}
+
+// auf der Ausruestung
+"mount_class": "heavy",
+"category": "weapon"
+```
+
+Ein Teil passt, wenn seine Klasse die `max_class` des Slots nicht ueberschreitet
+**und** seine `category` in `categories` steht. Fehlt `categories`, sind alle
+Bauarten erlaubt; fehlt die ganze Regel, nimmt der Slot alles an.
+
+`mount_class` ist keine reine Gewichtsangabe, sondern **was die Halterung
+aushalten muss**: Masse, Rueckstoss, Hebel. Ein Schild ist `medium`, weil es
+sperrig ist und gehalten werden will, nicht weil es schwer waere.
+
+### Voreinstellungen
+
+| fehlt | gilt | warum |
+|---|---|---|
+| `mount_class` | `light` | passt ueberallhin -- ein importiertes Teil ist nie gesperrt |
+| `category` | `weapon` | der haeufigste Fall; hindert es an ausdruecklich engeren Slots |
+| `slot_rules[slot]` | keine Einschraenkung | altes Verhalten bleibt erhalten |
+
+Wer ein Support-Modul importiert, muss `category` also setzen, sonst kommt es
+nicht auf eine Schulterbruecke. Das ist Absicht: lieber einmal ein Feld
+nachtragen als stillschweigend jeden Slot aufmachen.
+
+### `slots` oder `slot_rules`?
+
+Beides existiert und meint Verschiedenes:
+
+* **`slots`** auf dem Teil ist die *harte Ankerliste* -- "dieses Teil gehoert
+  genau an `equip_shoulder`". Fuer Teile, die geometrisch nur an einer Stelle
+  funktionieren, wie den Drohnen-Pod.
+* **`slot_rules`** auf dem Koerper ist die *allgemeine Regel* -- "hier passt
+  alles bis mittelschwer". Sie gilt auch fuer Teile aus Sets, die es beim
+  Entwurf des Chassis noch gar nicht gab.
+
+Die Regel ist der Normalfall, die Ankerliste die Ausnahme.
+
+### Der aktuelle Bestand
+
+| Slot | nimmt | daraus folgt |
+|---|---|---|
+| `bot1` Vireo, beide Arme | bis `medium` | Blaster, Schild, Runenstab, Orbit-Fokus |
+| `bot2` Molok, beide Arme | bis `heavy` | alles, auch Kanone und Lanze |
+| `bot2` Molok, Schulter | bis `light`, nur `support` | Drohnen-Pod, Orbit-Fokus |
+| `bot3` Nimbus, beide Arme | bis `medium` | wie Vireo |
+| `bot4` Strix, Mitte | bis `heavy` | alles -- aber nur einmal |
+
+`tools/build_sample_parts.py` druckt diese Tabelle bei jedem Lauf aus den
+Daten, statt sie hier abzuschreiben.
 
 ## 3. Metadaten-JSON
 
@@ -153,6 +231,11 @@ Pflichtfelder sind fett, alles andere ist optional.
 
   "slots": ["equip_left", "equip_right"],  // NUR auf Ausruestung: erlaubte Slots.
                                            // Fehlt das Feld -> passt ueberallhin.
+  "mount_class": "medium",   // NUR auf Ausruestung: light | medium | heavy
+  "category": "shield",      // NUR auf Ausruestung: weapon | shield | support
+  "slot_rules": {            // NUR auf Body-Teilen: was der Slot annimmt.
+    "equip_shoulder": { "max_class": "light", "categories": ["support"] }
+  },                         // Details in Abschnitt 2a.
   "auto_flip": false,        // NUR auf Ausruestung, s. Abschnitt 6
   "tags": ["light", "scout"] // frei; wird vom Bibliotheks-Filter durchsucht
 }
@@ -331,6 +414,83 @@ deutlich besser.
 
 ---
 
+## 6a. Lesbarkeitsregel: keine zwei Funktionen mit derselben Silhouette
+
+> **Zwei Teile mit unterschiedlicher Spielfunktion muessen sich an der
+> SILHOUETTE unterscheiden -- nicht an der Groesse, nicht an der Farbe.**
+
+CyberDrome ist deterministisch. Wer eine gegnerische DROME ansieht, soll vor
+seinem Zug wissen, was sie kann: wie weit sie schiesst, wie weit sie laeuft, ob
+sie deckt oder austeilt. Diese Auskunft gibt die Form. Groesse gibt sie nicht:
+
+* die Kachel ist klein, auf dem Handy besonders;
+* Teile ueberlappen sich im Verbund, und was hinten liegt, ist angeschnitten;
+* eine Einheit weiter hinten auf der Karte ist ohnehin kleiner.
+
+Eine Belagerungskanone, die nur ein groesser gezogener Blaster ist, ist deshalb
+**kein Schoenheitsfehler, sondern ein Regelfehler** -- der Spieler kann ihre
+Reichweite nicht sehen und trifft seine Entscheidung ohne die Information, die
+das Spielsystem ihm verspricht. Dasselbe gilt fuer ein Energieschwert, das wie
+ein Energiedolch aussieht.
+
+### Was ein Silhouetten-Merkmal ist
+
+Etwas, das auf der **Aussenkante** liegt und dort eine eigene Form macht --
+nicht eine Struktur in der Flaeche, die bei 40 Pixeln verschwindet:
+
+| Teil | Merkmal | liest sich als |
+|---|---|---|
+| `EQP-001` Puls-Blaster | ein glattes Rohr, sonst nichts | leicht, kurze Reichweite |
+| `EQP-003` Belagerungskanone | Muendungsbremse mit Querfluegeln, Trommelmagazin, Abstuetzstrebe | schwer, abgestuetzt |
+| `EQP-007` Schienen-Lanze | ueberlanger duenner Doppellauf, Zielblock, Gabel | Praezision, grosse Reichweite |
+| `EQP-002` Deflektor-Schild | flache Wand quer zur Blickrichtung | Deckung |
+| `LEG-001` Vireo | schmaler Stand, gerade Stelzen, eine Zehe | schnell |
+| `LEG-002` Molok | breiter Stand auf Auslegern, Hydraulikzylinder, Ferse | langsam, standfest |
+| `LEG-004` Strix | Knick nach hinten, digitigrad | federnd, mittel |
+| `CHS-004` Strix | Gegengewichts-Ausleger ueber dem Kopf | Ein-Slot-Rahmen |
+
+Die drei Waffenbeispiele sind bewusst so verteilt, dass **Proportion** die
+Aussage traegt: gedrungen und breit heisst Artillerie, lang und duenn heisst
+Praezision. Das funktioniert auch als reine Schattenform.
+
+### Der Test dazu
+
+`tools/build_sample_parts.py` prueft die Regel bei jedem Lauf. Jedes Teil wird
+**uniform** normiert -- ein gemeinsamer Massstab ueber alle drei Achsen, um
+seinen eigenen Mittelpunkt -- und in zwei Belegungsraster eingetragen,
+Seitenriss und Aufriss. Uniform ist der springende Punkt: dadurch wird "gleiche
+Form, andere Groesse" identisch, waehrend "lang und duenn" gegen "kurz und
+dick" verschieden bleibt. Verglichen wird ueber die Schnittmenge.
+
+```
+Silhouetten-Abstand (1.00 = ununterscheidbar, Grenze 0.80, Pruefstein 0.85)
+  equipment  0.63  bot1/eq_pulse_blaster / bot2/eq_drone_pod
+```
+
+* **Ausruestung: ab 0.80 bricht der Generator ab.** An der Waffe liest der
+  Spieler Reichweite und Rolle ab; diese Auskunft darf nicht fehlen.
+* **Rahmenteile: ab 0.80 nur ein Hinweis.** Ein Bein wird im Verbund gelesen,
+  nicht einzeln, und die Auswahl ist dort klein. Grenzwertig bleibt aber
+  grenzwertig -- wenn zwei Beinpaare unterschiedliche Bewegungswerte haben,
+  gehoert der Unterschied trotzdem in die Form.
+
+Der **Pruefstein** ist die erste Belagerungskanone: exakt der Aufbau des
+Blasters mit groesseren Zahlen, im Generator als `EQ_CANNON_V1` aufbewahrt. Sie
+liegt bei 0.85. Der Generator misst sie bei jedem Lauf mit und bricht ab, wenn
+sie *nicht* mehr auffaellt -- ein Test, der nichts mehr faengt, meldet sonst
+einfach weiter "alles in Ordnung".
+
+### Wenn zwei Teile dieselbe Funktion haben
+
+Dann ist Wiederverwenden nicht nur erlaubt, sondern richtig: **dasselbe Teil
+benutzen**, statt eine leicht abgewandelte Kopie zu bauen. Zwei Beinpaare mit
+identischen Werten und minimal verschobenen Abstaenden sind der schlechteste
+aller Faelle -- sie kosten Arbeit, verwirren beim Lesen und behaupten einen
+Unterschied, den es nicht gibt. Ein Set ist eine Autoren-Schublade, kein
+Bausatz; ein Chassis darf sich die Beine eines anderen ausleihen.
+
+---
+
 ## 7. Neues Teil anlegen
 
 **Variante A – ueber das Tool** (schnellster Weg fuer von Claude Code
@@ -388,9 +548,9 @@ gemeinsamen Kanten sind keine Kanten des Objekts, ein Strich dort ergaebe ein
 Drahtgitter. Stattdessen zieht der Renderer eine Silhouette aus der konvexen
 Huelle -- das Strichbild passt damit zu den Quader-Teilen.
 
-> Achtung: `build_sample_parts.py` loescht `parts/bot1`, `parts/bot2` und
-> `parts/bot3` komplett, bevor es sie neu schreibt. Eigene Teile gehoeren in
-> einen anderen Set-Ordner.
+> Achtung: `build_sample_parts.py` loescht `parts/bot1` bis `parts/bot4`
+> komplett, bevor es sie neu schreibt. Eigene Teile gehoeren in einen anderen
+> Set-Ordner.
 
 ---
 

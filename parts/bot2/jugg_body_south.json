@@ -70,5 +70,19 @@
     "equip_left": 75.5,
     "equip_right": 22.5,
     "equip_shoulder": 56
+  },
+  "slot_rules": {
+    "equip_left": {
+      "max_class": "heavy"
+    },
+    "equip_right": {
+      "max_class": "heavy"
+    },
+    "equip_shoulder": {
+      "max_class": "light",
+      "categories": [
+        "support"
+      ]
+    }
   }
 }

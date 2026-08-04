@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="strix_head" data-type="head" data-direction="east">
+  <title>Strix Okularkopf (east)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung east.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M65.43 26.5 L71.16 30.55 L71.16 29.12 L65.43 25.07 Z" fill="var(--c-metal)"/>
+  <path d="M65.43 25.07 L71.16 29.12 L72.59 28.11 L66.86 24.06 Z" fill="var(--c-metal)"/>
+  <path d="M71.16 30.55 L72.59 29.54 L72.59 28.11 L71.16 29.12 Z" fill="var(--c-plate-dark)"/>
+  <path d="M58.08 30.43 L60.37 28.81 L60.37 17.36 L58.08 18.98 Z" fill="var(--c-plate-dark)"/>
+  <path d="M56.65 29.42 L58.08 30.43 L58.08 18.98 L56.65 17.96 Z" fill="var(--c-metal)"/>
+  <path d="M57.41 24.91 L60.66 22.61 L60.66 19.27 L57.41 21.57 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M55.89 23.83 L57.41 24.91 L57.41 21.57 L55.89 20.49 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M55.89 20.49 L57.41 21.57 L60.66 19.27 L59.13 18.19 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.93 27.89 L64.48 34.64 L73.07 28.56 L63.52 21.81 Z" fill="var(--c-plate-light)"/>
+  <path d="M54.93 35.52 L64.48 42.27 L64.48 34.64 L54.93 27.89 Z" fill="var(--c-plate)"/>
+  <path d="M64.48 42.27 L73.07 36.2 L73.07 28.56 L64.48 34.64 Z" fill="var(--c-plate-dark)"/>
+  <path d="M56.65 17.96 L58.08 18.98 L60.37 17.36 L58.94 16.34 Z" fill="var(--c-metal)"/>
+  <path d="M53.98 25.98 L64.48 33.4 L74.02 26.65 L63.52 19.23 Z" fill="var(--c-plate-light)"/>
+  <path d="M55.41 33.59 L61.14 37.64 L61.14 36.21 L55.41 32.16 Z" fill="var(--c-metal)"/>
+  <path d="M55.41 32.16 L61.14 36.21 L62.57 35.2 L56.84 31.15 Z" fill="var(--c-metal)"/>
+  <path d="M61.14 37.64 L62.57 36.63 L62.57 35.2 L61.14 36.21 Z" fill="var(--c-plate-dark)"/>
+  <path d="M53.98 27.89 L64.48 35.31 L64.48 33.4 L53.98 25.98 Z" fill="var(--c-plate-light)"/>
+  <path d="M66.67 38.05 L70.97 41.09 L70.97 36.88 L66.67 33.85 Z" fill="var(--c-metal)"/>
+  <path d="M66.67 33.85 L70.97 36.88 L75.17 33.91 L70.87 30.88 Z" fill="var(--c-metal)"/>
+  <path d="M64.48 35.31 L74.02 28.56 L74.02 26.65 L64.48 33.4 Z" fill="var(--c-plate)"/>
+  <path d="M70.97 41.09 L75.17 38.12 L75.17 33.91 L70.97 36.88 Z" fill="var(--c-plate-dark)"/>
+  <path d="M75.26 36.35 L75.12 35.72 L74.71 35.4 L74.09 35.42 L73.36 35.79 L72.62 36.46 L72.01 37.31 L71.59 38.22 L71.45 39.05 L71.59 39.68 L72.01 40.01 L72.62 39.98 L73.36 39.61 L74.09 38.95 L74.71 38.1 L75.12 37.19 Z" fill="var(--c-visor)"/>
+</g>
+</svg>

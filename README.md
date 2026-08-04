@@ -50,6 +50,7 @@ ein Entwickler-Werkzeug und gehoert nicht ins offene Netz.
 | **Vier Richtungen** | N / W / O / S; beim Umschalten werden alle Teile automatisch auf ihre Variante fuer diese Richtung gewechselt |
 | **Anker-Montage** | Teile rasten ueber die Ankerpunkte aus der JSON ein – kein manuelles Positionieren noetig |
 | **Bestuecken** | Klick in der Bibliothek (angewaehlter Slot, sonst erster freier), Drag & Drop auf die Buehne (naechstgelegener passender Anker) oder Dropdown pro Slot |
+| **Slotregeln** | jeder Ausruestungsslot zeigt, was er annimmt (*bis mittel*, *bis leicht · Support*); unpassende Teile tauchen dort gar nicht erst auf, und beim Chassiswechsel wird gemeldet, was abfaellt |
 | **Feinjustierung** | Versatz, Groesse, Drehung, Spiegeln, Zeichenebene je Slot – Pfeiltasten zum Nudgen, `Shift` fuer 0,25er-Schritte |
 | **Anker-Editor** | Ankerpunkte direkt auf der Buehne verschieben und in die JSON des Teils zurueckschreiben |
 | **Palette** | **genau vier Farbkategorien je Bauteiltyp**, Paletten anlegen / sichern / loeschen, optional pro Slot abweichend |
@@ -118,9 +119,10 @@ main.py                      Entwicklungsserver + REST-API (nur stdlib)
 index.html                   Frontend, JS + CSS eingebettet, laeuft offline
 parts/                       Teile-Bibliothek
   README.md                  >> Format-Spezifikation: Anker, JSON, Farben <<
-  bot1/                      RX-Vireo // Scout      (2 Ausruestungsanker)
-  bot2/                      HX-Molok // Juggernaut (3 Ausruestungsanker)
+  bot1/                      RX-Vireo // Scout       (2 Anker, bis mittel)
+  bot2/                      HX-Molok // Juggernaut  (3 Anker, Schulter nur Support)
   bot3/                      AR-Nimbus // Technomant (rund, Fahrgestell)
+  bot4/                      LR-Strix // Marksman    (1 Anker, dafuer schwer)
 builds/                      Export-Ziel (Inhalt ist gitignored)
 tools/
   build_sample_parts.py      Iso-Renderer + Beispielsatz; ausfuehrbare Format-Spec
@@ -151,7 +153,16 @@ Kurzfassung – Details in [`parts/README.md`](parts/README.md):
   jedes andere Teil genau einen Anker `mount`. `links`/`rechts` meinen die
   Seiten des **Bots**, nicht den Bildschirm.
 * Wie viele Ausruestungsslots eine DROME hat, ergibt sich allein daraus, wie
-  viele `equip_*`-Anker ihr Koerper besitzt – ohne Sonderfall im Code.
+  viele `equip_*`-Anker ihr Koerper besitzt – ohne Sonderfall im Code. **Was**
+  in einen Slot darf, sagen `mount_class` / `category` auf der Ausruestung und
+  `slot_rules` auf dem Koerper: ein Sprinter traegt keine Belagerungskanone,
+  eine Schulterbruecke kein Schild.
+* **Zwei Teile mit unterschiedlicher Spielfunktion muessen sich an der
+  Silhouette unterscheiden** – nicht an der Groesse. Im Iso-Bild ist Groesse
+  keine verlaessliche Information, und in einem deterministischen Tactics ist
+  eine Waffe, der man ihre Reichweite nicht ansieht, ein Regelfehler. Der
+  Generator misst das und bricht bei Ausruestung ab
+  (`parts/README.md`, Abschnitt 6a).
 * Jedes Teil bekommt einen **Teile-Code** (`CHS-001`, `EQP-004`) als stabile
   Kennung fuers Game Design, zusaetzlich zum Klarnamen.
 

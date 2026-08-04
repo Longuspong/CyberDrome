@@ -144,6 +144,16 @@ richtungslosen IDs.
 Feinjustierungen und muessen beim Aufbau in der Szene mit uebernommen werden
 (`Sprite2D.position`, `.scale`, `.rotation`, `.flip_h`).
 
+### Slotregeln gehoeren auch in die Engine
+
+Ein Loadout sagt nur, was gesteckt *ist* -- nicht, ob es das darf. Ob ein Teil
+in einen Slot gehoert, entscheiden `mount_class` / `category` der Ausruestung
+gegen `slot_rules` des Koerpers (`parts/README.md`, Abschnitt 2a). Die Werkstatt
+prueft das beim Bauen, aber eine Loadout-Datei kann von Hand entstehen, aus
+einem aelteren Stand kommen oder spaeter aus einem Spielstand geladen werden.
+Der Godot-Loader muss die Regel deshalb erneut anwenden -- sonst haelt sie nur
+im Werkzeug, und genau dort braucht sie niemand.
+
 ---
 
 ## Empfohlene Reihenfolge
