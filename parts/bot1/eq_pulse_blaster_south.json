@@ -38,5 +38,7 @@
   "tags": [
     "weapon",
     "ranged"
-  ]
+  ],
+  "mount_class": "light",
+  "category": "weapon"
 }

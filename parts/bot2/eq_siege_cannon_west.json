@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 43.67,
-      "y": 48.21
+      "x": 40.23,
+      "y": 41.01
     }
   ],
   "color_scheme": {
@@ -38,5 +38,7 @@
   "tags": [
     "weapon",
     "heavy"
-  ]
+  ],
+  "mount_class": "heavy",
+  "category": "weapon"
 }

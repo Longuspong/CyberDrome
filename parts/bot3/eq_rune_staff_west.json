@@ -39,5 +39,7 @@
     "weapon",
     "arcane",
     "round"
-  ]
+  ],
+  "mount_class": "light",
+  "category": "weapon"
 }

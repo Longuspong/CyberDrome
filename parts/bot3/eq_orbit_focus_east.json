@@ -39,5 +39,7 @@
     "support",
     "arcane",
     "round"
-  ]
+  ],
+  "mount_class": "light",
+  "category": "support"
 }

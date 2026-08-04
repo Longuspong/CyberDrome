@@ -1,0 +1,42 @@
+{
+  "id": "strix_feet",
+  "code": "LEG-004",
+  "set": "bot4",
+  "type": "feet",
+  "name": "Strix Federbeine",
+  "direction": "south",
+  "svg": "strix_feet_south.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 10,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 63.54
+    },
+    {
+      "name": "ground",
+      "x": 62.09,
+      "y": 97.35
+    }
+  ],
+  "color_scheme": {
+    "plate": "#1c3330",
+    "plate_light": "#335954",
+    "plate_dark": "#101d1b",
+    "metal": "#557d71",
+    "accent": "#6dff9f",
+    "glow": "#9affcc",
+    "visor": "#9affcc",
+    "outline": "#060f0d"
+  },
+  "tags": [
+    "marksman",
+    "digitigrad"
+  ]
+}

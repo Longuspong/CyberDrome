@@ -1,0 +1,37 @@
+{
+  "id": "strix_core",
+  "code": "COR-004",
+  "set": "bot4",
+  "type": "core",
+  "name": "Strix Zielrechner",
+  "direction": "east",
+  "svg": "strix_core_east.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 26,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 70.3,
+      "y": 52.73
+    }
+  ],
+  "color_scheme": {
+    "plate": "#1c3330",
+    "plate_light": "#335954",
+    "plate_dark": "#101d1b",
+    "metal": "#335954",
+    "glow": "#6dff9f",
+    "visor": "#9affcc",
+    "accent": "#2fbf8c",
+    "outline": "#060f0d"
+  },
+  "tags": [
+    "core",
+    "optics"
+  ]
+}

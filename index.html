@@ -121,6 +121,12 @@ aside.right { border-left: 1px solid var(--line); }
   position: absolute; top: 2px; right: 3px; font-size: 8px;
   color: var(--neon-2); letter-spacing: .05em;
 }
+/* Montageklasse links, Bauart/Slotbindung rechts -- in einer Ecke gebuendelt
+   verschmelzen die Buchstaben zu einem Kuerzel, das niemand mehr liest. */
+.lib-card .classchip {
+  position: absolute; top: 2px; left: 3px; font-size: 8px;
+  color: var(--warn); letter-spacing: .05em;
+}
 
 /* ---- Canvas ------------------------------------------------------------ */
 .stage {
@@ -167,6 +173,11 @@ aside.right { border-left: 1px solid var(--line); }
 .slot .slot-part { font-size: 12.5px; }
 .slot .slot-part.none { color: var(--text-dim); font-style: italic; }
 .slot .warn { color: var(--warn); font-size: 11px; }
+.slot .slot-rule {
+  font-size: 9.5px; color: var(--text-dim); letter-spacing: .03em;
+  border: 1px solid var(--line); border-radius: 999px; padding: 0 6px;
+  white-space: nowrap;
+}
 
 /* ---- Palette ----------------------------------------------------------- */
 .palette-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
@@ -189,6 +200,7 @@ aside.right { border-left: 1px solid var(--line); }
 #toast.show { transform: translateX(-50%) translateY(0); }
 #toast.err { border-left-color: var(--neon-2); }
 #toast.ok  { border-left-color: var(--ok); }
+#toast.warn { border-left-color: var(--warn); }
 
 dialog {
   background: var(--bg-panel); color: var(--text); border: 1px solid var(--line);
@@ -447,6 +459,25 @@ const DEFAULT_Z = {
   feet: 10, body: 20, core: 26,
   equipment: 30, equipment_left: 30, equipment_right: 30, head: 40,
 };
+
+/* -- Montageklasse und Bauart ----------------------------------------------
+   Ein Anker sagt nur, WO ein Teil sitzt. Fuer ein deterministisches Tactics
+   muss ein Slot aber auch sagen, WAS dort sitzen darf -- sonst traegt der
+   Sprinter die Belagerungskanone, und seine Silhouette luegt ueber seine
+   Reichweite.
+
+   Der Koerper beschreibt seine Slots ueber "slot_rules", die Ausruestung
+   traegt "mount_class" (light < medium < heavy) und "category". Ein Slot ohne
+   Regel nimmt weiterhin alles an -- importierte Teile funktionieren
+   unveraendert weiter. Details in parts/README.md, Abschnitt 2a.            */
+const MOUNT_CLASSES = ["light", "medium", "heavy"];
+const DEFAULT_MOUNT_CLASS = "light";
+const DEFAULT_CATEGORY = "weapon";
+const MOUNT_CLASS_LABEL = { light: "leicht", medium: "mittel", heavy: "schwer" };
+const CATEGORY_LABEL = { weapon: "Waffe", shield: "Schild", support: "Support" };
+/* Kuerzel fuer die Ecke der Bibliothekskarte: L/M/S + W/D/U. */
+const MOUNT_CLASS_CHIP = { light: "L", medium: "M", heavy: "S" };
+const CATEGORY_CHIP = { weapon: "W", shield: "D", support: "U" };
 /* -- Farbpalette: vier Kategorien je Bauteiltyp -----------------------------
    Ein Teil zeichnet mit acht CSS-Rollen (--c-plate, --c-plate-light,
    --c-plate-dark, --c-metal, --c-accent, --c-glow, --c-visor, --c-outline).
@@ -688,10 +719,12 @@ function slotDefs() {
   }
   const equipAnchors = Object.keys(bodyAnchors)
     .filter((name) => name.startsWith("equip_")).sort();
+  const rules = (bodyPart && bodyPart.slot_rules) || {};
   for (const anchor of equipAnchors) {
     defs.push({
       slot: anchor, anchor, type: "equipment",
       label: "Ausruestung " + anchor.replace("equip_", ""),
+      rule: rules[anchor] || null,
     });
   }
   if (!bodyPart) {
@@ -702,15 +735,42 @@ function slotDefs() {
   return defs;
 }
 
+const mountClassOf = (part) =>
+  MOUNT_CLASSES.includes(part.mount_class) ? part.mount_class : DEFAULT_MOUNT_CLASS;
+const categoryOf = (part) => part.category || DEFAULT_CATEGORY;
+
+/**
+ * Warum ein Ausruestungsteil NICHT in einen Slot darf -- oder null.
+ *
+ * Als Grund statt als Wahrheitswert, damit die Oberflaeche erklaeren kann,
+ * warum eine Waffe fehlt. "Ist nicht in der Liste" ist beim Bauen die
+ * frustrierendste aller Antworten.
+ */
+function equipBlockReason(part, def) {
+  if (part.type === "equipment_left"  && def.slot !== "equip_left")  return "nur linker Arm";
+  if (part.type === "equipment_right" && def.slot !== "equip_right") return "nur rechter Arm";
+  if (Array.isArray(part.slots) && part.slots.length && !part.slots.includes(def.slot)) {
+    return "gehoert an " + part.slots.map((s) => s.replace("equip_", "")).join("/");
+  }
+  const rule = def.rule;
+  if (!rule) return null;
+  const limit = rule.max_class || MOUNT_CLASSES[MOUNT_CLASSES.length - 1];
+  if (MOUNT_CLASSES.indexOf(mountClassOf(part)) > MOUNT_CLASSES.indexOf(limit)) {
+    return `zu schwer (Slot traegt bis ${MOUNT_CLASS_LABEL[limit]})`;
+  }
+  if (Array.isArray(rule.categories) && rule.categories.length
+      && !rule.categories.includes(categoryOf(part))) {
+    return `falsche Bauart (Slot nimmt ${rule.categories.map((c) => CATEGORY_LABEL[c] || c).join("/")})`;
+  }
+  return null;
+}
+
 /** Darf ein Teil in einen Slot? */
 function fitsSlot(part, def) {
   if (!part) return false;
   if (def.type === "equipment") {
     if (!part.type.startsWith("equipment")) return false;
-    if (part.type === "equipment_left"  && def.slot !== "equip_left")  return false;
-    if (part.type === "equipment_right" && def.slot !== "equip_right") return false;
-    if (Array.isArray(part.slots) && part.slots.length && !part.slots.includes(def.slot)) return false;
-    return true;
+    return equipBlockReason(part, def) === null;
   }
   return part.type === def.type;
 }
@@ -978,12 +1038,22 @@ function renderLibrary() {
   const html = ordered.map(([type, parts]) => {
     const cards = parts.map((part) => {
       const vb = (part.view_box || [0, 0, 128, 128]).join(" ");
-      const chips = (part.slots || []).map((s) => s.replace("equip_", "")[0].toUpperCase()).join("");
       const setName = (state.sets.find((s) => s.id === part.set) || {}).name || part.set;
-      const tip = `${part.code ? part.code + " · " : ""}${part.name}  (${part.id})\naus ${setName}`;
+      let chips = (part.slots || []).map((s) => s.replace("equip_", "")[0].toUpperCase()).join("");
+      let classChip = "";
+      let tip = `${part.code ? part.code + " · " : ""}${part.name}  (${part.id})\naus ${setName}`;
+      if (type.startsWith("equipment")) {
+        // Montageklasse und Bauart entscheiden, an welches Chassis das Teil
+        // ueberhaupt passt -- das gehoert auf die Karte, nicht in ein Menue.
+        const mc = mountClassOf(part), cat = categoryOf(part);
+        classChip = MOUNT_CLASS_CHIP[mc] || "?";
+        chips = (CATEGORY_CHIP[cat] || "?") + chips;
+        tip += `\n${MOUNT_CLASS_LABEL[mc]} · ${CATEGORY_LABEL[cat] || cat}`;
+      }
       return `
         <div class="lib-card${usedIds.has(part.id) ? " active" : ""}"
              draggable="true" data-uid="${part.uid}" title="${escapeXml(tip)}">
+          ${classChip ? `<span class="classchip">${classChip}</span>` : ""}
           ${chips ? `<span class="slotchips">${chips}</span>` : ""}
           <svg viewBox="${vb}" style="${paletteStyle(state.palette, part.type)}">${part.svg_inner}</svg>
           ${part.code ? `<div class="code">${escapeXml(part.code)}</div>` : ""}
@@ -1014,6 +1084,18 @@ function renderSlots() {
     let warn = "";
     if (entry && !part) warn = `<span class="warn" title="Fuer diese Richtung existiert keine Variante">⚠ fehlt</span>`;
 
+    // Was der Slot annimmt, steht am Slot -- sonst wirkt eine fehlende Waffe
+    // im Dropdown wie ein Fehler des Werkzeugs statt wie eine Regel.
+    let rule = "";
+    if (def.rule) {
+      const limit = def.rule.max_class;
+      const cats = def.rule.categories;
+      const parts = [];
+      if (limit) parts.push("bis " + MOUNT_CLASS_LABEL[limit]);
+      if (cats && cats.length) parts.push(cats.map((c) => CATEGORY_LABEL[c] || c).join("/"));
+      rule = `<span class="slot-rule">${escapeXml(parts.join(" · "))}</span>`;
+    }
+
     const options = [`<option value="">— leer —</option>`].concat(
       candidates.map((p) =>
         `<option value="${p.id}"${entry && entry.partId === p.id ? " selected" : ""}>${escapeXml(partLabel(p))}</option>`)
@@ -1028,6 +1110,7 @@ function renderSlots() {
            data-slot="${def.slot}">
         <div class="slot-head">
           <span class="slot-name">${escapeXml(def.label)}</span>
+          ${rule}
           ${warn}
           ${entry ? `<button class="tiny danger" data-clear="${def.slot}" title="Slot leeren">✕</button>` : ""}
         </div>
@@ -1184,11 +1267,30 @@ function assignPart(slotName, partId) {
   renderAll();
 }
 
-/** Nach einem Body-Wechsel Slots entfernen, die es nicht mehr gibt. */
+/**
+ * Nach einem Body-Wechsel aufraeumen.
+ *
+ * Zwei Faelle: den Slot gibt es am neuen Chassis gar nicht mehr, oder es gibt
+ * ihn, aber seine Regel ist enger -- eine Belagerungskanone bleibt beim
+ * Wechsel vom Juggernaut auf den Scout nicht einfach am Arm haengen. Der
+ * zweite Fall wird gemeldet, weil das Teil sonst wortlos verschwindet.
+ */
 function pruneInvalidSlots() {
-  const valid = new Set(slotDefs().map((d) => d.slot));
-  for (const slot of Object.keys(state.loadout)) {
-    if (!valid.has(slot)) delete state.loadout[slot];
+  const defs = new Map(slotDefs().map((d) => [d.slot, d]));
+  const dropped = [];
+  for (const [slot, entry] of Object.entries(state.loadout)) {
+    const def = defs.get(slot);
+    if (!def) { delete state.loadout[slot]; continue; }
+    const part = entry && resolvePart(entry.partId);
+    if (!part || def.type !== "equipment") continue;
+    const reason = equipBlockReason(part, def);
+    if (reason) {
+      dropped.push(`${partLabel(part)} (${reason})`);
+      delete state.loadout[slot];
+    }
+  }
+  if (dropped.length) {
+    toast("Passt nicht an dieses Chassis: " + dropped.join(", "), "warn");
   }
 }
 

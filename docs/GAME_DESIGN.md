@@ -71,7 +71,15 @@ aus:
 
 Technisch faellt das ohne Sonderfall an: die Slots sind exakt die `equip_*`-Anker
 des Koerper-Teils. Ein Chassis bekommt einen dritten Slot, indem es einen dritten
-Anker in seine JSON schreibt. `parts/bot2` (HX-Molok) zeigt den Drei-Slot-Fall.
+Anker in seine JSON schreibt.
+
+> **Woher der dritte Slot des Molok kommt.** Er ist kein Balancing-Entwurf,
+> sondern ein Format-Beleg: `bot2` ist als Beispiel dafuer entstanden, dass die
+> Slotzahl allein aus den Ankern faellt und im Code kein Sonderfall noetig ist
+> (siehe 3b). Dass daraus eine Einheit mit drei vollwertigen Waffenarmen wird,
+> war nie die Absicht -- und ist auch nicht der Fall: der Schulteranker nimmt
+> nur leichte Support-Module (Abschnitt 3c). `bot4` (LR-Strix) zeigt seither
+> die Gegenrichtung mit genau einem Slot.
 
 ## 3a. Teile-Codes
 
@@ -115,22 +123,28 @@ Aktueller Bestand:
 | `COR-003` | Nimbus Arkankern | bot3 |
 | `EQP-005` | Runenstab | bot3 |
 | `EQP-006` | Orbit-Fokus | bot3 |
+| `CHS-004` | Strix Chassis | bot4 |
+| `HED-004` | Strix Okularkopf | bot4 |
+| `LEG-004` | Strix Federbeine | bot4 |
+| `COR-004` | Strix Zielrechner | bot4 |
+| `EQP-007` | Schienen-Lanze | bot4 |
 
 Der Code ist bewusst getrennt vom Datei-Slug (`scout_body`), der die Dateinamen
 traegt und beim Stoebern im Ordner lesbar bleiben soll. Ein exportiertes
 Loadout enthaelt beides plus den Klarnamen – damit laesst es sich ohne die
 Bibliothek lesen.
 
-## 3b. Die drei Sets und was sie beweisen sollen
+## 3b. Die vier Sets und was sie beweisen sollen
 
-Ein Set ist eine Autoren-Schublade, kein Bausatz (siehe Abschnitt 5). Die drei
+Ein Set ist eine Autoren-Schublade, kein Bausatz (siehe Abschnitt 5). Die vier
 mitgelieferten Sets decken bewusst je einen anderen Fall ab:
 
 | Set | Silhouette | zeigt |
 |---|---|---|
 | `bot1` RX-Vireo // Scout | schlank, kantig, zweibeinig | den Standardfall: zwei Ausruestungsanker |
-| `bot2` HX-Molok // Juggernaut | breit, gedrungen, kantig | den dritten Anker (Schulterpod) |
+| `bot2` HX-Molok // Juggernaut | geduckt: Panzerschuerze, Keil-Torso, Pauldrons ueber dem Kopfsockel | den dritten Anker (Schulterpod) |
 | `bot3` AR-Nimbus // Technomant | **rund**, flacher Helm, **Fahrgestell statt Beinen** | dass Formensprache und Fortbewegung frei sind |
+| `bot4` LR-Strix // Marksman | schmal, hoch, **Gegengewichts-Ausleger ueber dem Kopf** | den Ein-Slot-Fall -- eine Waffe, dafuer die schwerste |
 
 `bot3` ist der Gegenentwurf zu den ersten beiden: Rotationskoerper statt
 gestapelter Quader, ein weit auskragender flacher Helm statt eines Visierkopfs,
@@ -138,6 +152,85 @@ zwei grosse Raeder auf einer Achse statt Beinen. Technisch aendert das nichts �
 es ist derselbe Anker-Vertrag, dieselbe Projektion, dieselben vier Richtungen.
 Genau das ist der Punkt: ein Rad ist nur ein Rotationskoerper um die
 Bot-Links-Achse, kein Sonderfall in Code oder Format.
+
+`bot4` ist der Gegenentwurf auf der **Slot**-Seite. Molok kauft sich drei Anker
+mit Masse und Traegheit; Strix macht das Gegenteil und hat genau einen -- zentral
+im Joch vor der Brust, dafuer ohne Obergrenze. Damit man das ansieht, traegt der
+Rahmen kein Armpaar, sondern ein Joch und dahinter einen Gegengewichts-Ausleger,
+der nach hinten-oben ueber den Kopf laeuft. Man erkennt einen Strix an der
+schraegen Rueckenlinie, bevor man die Waffe sieht -- genau so, wie es Abschnitt
+3d verlangt.
+
+## 3c. Slots sind spezifiziert, nicht nur gezaehlt
+
+Ein Anker sagt, **wo** etwas sitzt. Fuer ein deterministisches Tactics muss ein
+Slot aber auch sagen, **was** dort sitzen darf -- sonst traegt ein mobiler
+Sprinter eine Belagerungskanone und schiesst damit reihenweise Leuten in den
+Ruecken. Nicht weil das ausbalanciert waere, sondern weil ihm niemand
+widersprochen hat.
+
+Jede Ausruestung traegt deshalb eine **Montageklasse** (`light` < `medium` <
+`heavy` -- was die Halterung an Masse, Rueckstoss und Hebel aushalten muss) und
+eine **Bauart** (`weapon` · `shield` · `support`). Jeder Slot eines Chassis
+sagt, bis zu welcher Klasse und fuer welche Bauarten er zustaendig ist:
+
+| Chassis | Slot | nimmt |
+|---|---|---|
+| `CHS-001` RX-Vireo | beide Arme | bis mittel |
+| `CHS-002` HX-Molok | beide Arme | bis schwer |
+| `CHS-002` HX-Molok | Schulter | bis leicht, nur Support |
+| `CHS-003` AR-Nimbus | beide Arme | bis mittel |
+| `CHS-004` LR-Strix | Mitte (einziger) | bis schwer |
+
+Damit ist die Belagerungskanone dort, wo sie hingehoert: an einem Rahmen, der
+sie tragen kann und dafuer langsam ist. Und die Molok-Schulter ist das, wonach
+sie aussieht -- eine Bruecke hinter dem Kopf, ohne Gegenhalt und ohne Hand:
+Sensorik und Drohnen ja, Schild oder schweres Geraet nein.
+
+**Das ist die Balancing-Achse, die ohne eine einzige Zahl auskommt.** Ein
+Chassis kauft Slots mit Traegheit (Molok: drei Anker, einer davon eingeschraenkt)
+oder verzichtet auf sie und bekommt dafuer die Obergrenze geschenkt (Strix: ein
+Anker, dafuer voll belastbar). Erst die Zahlen darueber entscheiden ueber
+Feinheiten -- die Grobstruktur steht schon in den Ankern.
+
+Format und Voreinstellungen: `parts/README.md`, Abschnitt 2a.
+
+## 3d. Lesbarkeitsregel: keine zwei Funktionen mit derselben Silhouette
+
+> **Zwei Teile mit unterschiedlicher Spielfunktion muessen sich an der
+> SILHOUETTE unterscheiden -- nicht an der Groesse, nicht an der Farbe.**
+
+Das Spiel ist deterministisch: wer eine gegnerische DROME ansieht, soll vor
+seinem Zug wissen, was sie kann. Diese Auskunft gibt die Form, und nur die
+Form. Groesse gibt sie nicht -- die Kachel ist klein, Teile ueberlappen sich,
+und eine Einheit weiter hinten auf der Karte ist ohnehin kleiner.
+
+Eine Belagerungskanone, die nur ein groesser gezogener Blaster ist, ist deshalb
+**kein Schoenheitsfehler, sondern ein Regelfehler**: der Spieler trifft seine
+Entscheidung ohne die Information, die das Spielsystem ihm verspricht. Dasselbe
+gilt fuer ein Energieschwert, das aussieht wie ein Energiedolch.
+
+Die Regel wirkt am schaerfsten dort, wo die Auswahl gross ist und die Funktion
+weit auseinanderliegt -- bei **Waffen**. Bei Rahmenteilen ist sie milder: ein
+Bein wird im Verbund gelesen, nicht einzeln, und die Auswahl ist klein. Milder
+heisst aber nicht "egal": Beine haben unmittelbare Auswirkungen aufs Spiel, und
+wenn zwei Beinpaare verschiedene Bewegungswerte haben, gehoert der Unterschied
+in die Form. Umgekehrt gilt: **haben zwei Teile dieselbe Funktion, wird das
+Bauteil wiederverwendet** statt leicht abgewandelt kopiert -- ein Set ist eine
+Autoren-Schublade, kein Bausatz.
+
+`tools/build_sample_parts.py` prueft das bei jedem Lauf: es projiziert jedes
+Teil mit derselben Kamera wie die Grafik und vergleicht die gefuellten
+Umrissflaechen aus zwei Blickrichtungen. Ab 0.85 Deckung bricht der Generator
+bei Ausruestung ab, bei Rahmenteilen meldet er ab 0.86 einen Hinweis.
+
+**Der Test ersetzt das Hinsehen nicht.** Er faengt zuverlaessig den Fall
+"abgeschrieben und groesser gezogen"; ob zwei Rahmen dieselbe Formensprache
+sprechen, entscheidet weiterhin das Auge. Genau daran ist das Molok-Chassis
+einmal vorbeigekommen -- ein Vireo mit breiteren Kisten --, bevor es
+Panzerschuerze, Keil-Torso und hochsitzende Pauldrons bekam. Wie das Mass
+funktioniert, wo es saettigt und welche Merkmale taugen, steht in
+`parts/README.md`, Abschnitt 6a.
 
 ## 4. Perspektive und die vier Richtungen
 
@@ -187,9 +280,10 @@ ein Teil wird einmal als Quader-Definition beschrieben, die vier Ansichten
 erzeugt der Renderer. Vier handgezeichnete Ansichten pro Teil waeren nicht nur
 vierfache Arbeit, sondern wuerden bei jeder Aenderung auseinanderlaufen.
 
-Ausruestung ist set-uebergreifend nutzbar, solange die Anker passen. Ein Teil
-schraenkt sich nur dann auf bestimmte Anker ein, wenn es das ueber `slots`
-ausdruecklich tut – wie der Drohnen-Pod, der auf die Schulter gehoert.
+Ausruestung ist set-uebergreifend nutzbar, solange Anker **und Slotregel**
+passen: ein Slot nimmt nur, was seine Montageklasse und Bauart zulassen
+(Abschnitt 3c). Zusaetzlich kann sich ein Teil ueber `slots` auf bestimmte Anker
+festlegen – wie der Drohnen-Pod, der auf die Schulter gehoert.
 
 Realistische Zielgroesse fuer einen ersten spielbaren Stand: 3–4 Chassis-Familien
 plus ein gemeinsamer Ausruestungs-Pool. Das sind ~100–150 SVG-Dateien, nicht
