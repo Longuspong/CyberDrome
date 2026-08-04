@@ -85,7 +85,9 @@ TYPE_STATS = {
 # Kurzfassung je Teil, damit die Mappe ohne das Dokument lesbar bleibt.
 READING = {
     "CHS-001": ("schlank, kantig, zweibeinig", "leichter Standardrahmen, zwei Arme"),
-    "CHS-002": ("breit, gedrungen, Schulterplatten", "schwerer Rahmen, drei Anker"),
+    "CHS-002": ("geduckt: Panzerschuerze, Keil-Torso, Pauldrons ueber dem "
+                "Kopfsockel, Auspuffstapel",
+                "schwerer Rahmen, drei Anker -- Schulter nur fuer Support"),
     "CHS-003": ("rund, Fahrgestell statt Beinen", "Support-Rahmen, weiche Formensprache"),
     "CHS-004": ("schmal und hoch, Gegengewichts-Ausleger ueber dem Kopf",
                 "Ein-Slot-Rahmen, Scharfschuetze"),
@@ -593,9 +595,12 @@ def sheet_silhouettes(book) -> None:
     widths(sheet, {"A": 14, "B": 26, "C": 26, "D": 12, "E": 46})
     row = title(
         sheet, 1, "Silhouetten-Abstand",
-        "1.00 hiesse ununterscheidbar. Ab 0.80 bricht der Generator bei "
-        "Ausruestung ab -- an der Waffe liest der Spieler ihre Rolle ab. "
-        "Bei Rahmenteilen ist es nur ein Hinweis.",
+        f"1.00 hiesse ununterscheidbar. Bei AUSRUESTUNG ist "
+        f"{gen.SIL_ERROR:.2f} eine harte Grenze -- dort bricht der Generator "
+        f"ab, weil der Spieler an der Waffe ihre Rolle abliest. Bei "
+        f"RAHMENTEILEN ist es ab {gen.SIL_WARN:.2f} nur ein Hinweis: das Mass "
+        f"saettigt bei kompakten Teilen, zwei Kloetze decken sich als Flaeche "
+        f"auch dann, wenn sie voellig verschieden gebaut sind.",
     )
     row = header_row(sheet, row, ["Typ", "Teil A", "Teil B", "Abstand", "Bewertung"])
 
@@ -613,10 +618,16 @@ def sheet_silhouettes(book) -> None:
                 pairs.append((gen.silhouette_distance(sil_a, sil_b),
                               f"{code_a} {name_a}", f"{code_b} {name_b}"))
         pairs.sort(reverse=True)
+        strict = part_type == "equipment"
+        limit = gen.SIL_ERROR if strict else gen.SIL_WARN
         for score, name_a, name_b in pairs[:3]:      # nur die engsten drei
-            if score >= gen.SIL_ERROR:
-                verdict = "VERLETZT die Lesbarkeitsregel"
-            elif score >= gen.SIL_ERROR - 0.08:
+            if score >= limit:
+                # Nur bei Ausruestung ist das ein Regelverstoss. Bei
+                # Rahmenteilen ist die Grenze ein Hinweis -- die Mappe darf
+                # daraus keinen Fehler machen, den es nicht gibt.
+                verdict = ("VERLETZT die Lesbarkeitsregel" if strict else
+                           "Hinweis -- ansehen, ob die Form wirklich traegt")
+            elif score >= limit - 0.08:
                 verdict = "grenzwertig -- im Auge behalten"
             else:
                 verdict = "unterscheidbar"
@@ -637,6 +648,218 @@ def sheet_silhouettes(book) -> None:
                             f"{gen.silhouette_distance(gen.silhouette(gen.EQ_BLASTER), gen.silhouette(gen.EQ_CANNON_V1)):.2f}"
                             " -- genau der Fall, den die Regel verbietet.")
     cell.font = NOTE_FONT
+
+
+# ---------------------------------------------------------------------------
+# Selbstpruefung
+# ---------------------------------------------------------------------------
+# Ein winziger Formel-Rechner. Er kann genau die Funktionen, die diese Mappe
+# benutzt -- mehr soll er nicht koennen. Sein Zweck ist, die geschriebene
+# Formel selbst auszuwerten statt einer nachgebauten Zweitfassung: nur so
+# faellt ein verrutschter Bezug auf.
+_TOKEN = __import__("re").compile(
+    r'\s*("(?:[^"]|"")*"|[A-Z]+\$?\d+|\$?[A-Z]+\$?\d+|[A-Za-z]+(?=\()|'
+    r'<=|>=|<>|[(),=<>&:]|-?\d+(?:\.\d+)?)')
+
+
+def _range(sheet, start: str, end: str) -> list:
+    """Werte eines Zellbereichs, zeilenweise."""
+    from openpyxl.utils import range_boundaries
+    reference = f"{start}:{end}".replace("$", "")
+    c0, r0, c1, r1 = range_boundaries(reference)
+    return [sheet.cell(row=r, column=c).value
+            for r in range(r0, r1 + 1) for c in range(c0, c1 + 1)]
+
+
+def evaluate(sheet, formula: str):
+    """Wertet eine Formel dieser Mappe aus. Kennt IF/AND/OR/ISNUMBER/SEARCH."""
+    if not isinstance(formula, str) or not formula.startswith("="):
+        return formula
+
+    tokens, position = [], 1
+    while position < len(formula):
+        match = _TOKEN.match(formula, position)
+        if not match:
+            raise SystemExit(f"Formel nicht lesbar ab {formula[position:][:30]!r}")
+        tokens.append(match.group(1))
+        position = match.end()
+
+    index = 0
+
+    def peek():
+        return tokens[index] if index < len(tokens) else None
+
+    def take(expected=None):
+        nonlocal index
+        token = tokens[index]
+        if expected and token != expected:
+            raise SystemExit(f"Erwartet {expected!r}, gefunden {token!r}")
+        index += 1
+        return token
+
+    def cell(reference: str):
+        column, row = "", ""
+        for char in reference.replace("$", ""):
+            (column := column + char) if char.isalpha() else (row := row + char)
+        from openpyxl.utils import column_index_from_string
+        value = sheet.cell(row=int(row),
+                           column=column_index_from_string(column)).value
+        # Verweist eine Formel auf eine andere Formel, wird die mit
+        # ausgerechnet -- sonst vergliche man gegen einen Formeltext.
+        return evaluate(sheet, value) if isinstance(value, str) else value
+
+    def call(name: str):
+        take("(")
+        args = []
+        while True:
+            args.append(expression())
+            if peek() == ",":
+                take(",")
+                continue
+            take(")")
+            break
+        if name == "IF":
+            return args[1] if args[0] else args[2]
+        if name == "AND":
+            return all(args)
+        if name == "OR":
+            return any(args)
+        if name == "ISNUMBER":
+            return isinstance(args[0], (int, float)) and not isinstance(args[0], bool)
+        if name == "SEARCH":
+            needle, haystack = str(args[0]).lower(), str(args[1]).lower()
+            return haystack.index(needle) + 1 if needle in haystack else "#VALUE!"
+        if name == "MATCH":
+            return args[1].index(args[0]) + 1 if args[0] in args[1] else "#N/A"
+        if name in ("SUM", "COUNTIF"):
+            raise SystemExit(f"{name} gehoert nicht in die Matrix")
+        raise SystemExit(f"Funktion {name} kennt der Pruef-Rechner nicht")
+
+    def atom():
+        token = take()
+        if token == "(":
+            value = expression()
+            take(")")
+            return value
+        if token.startswith('"'):
+            return token[1:-1].replace('""', '"')
+        if token.replace("-", "").replace(".", "").isdigit():
+            return float(token) if "." in token else int(token)
+        if token.isalpha():
+            return call(token)
+        if peek() == ":":                      # Bereich, z. B. $B$1:$D$1
+            take(":")
+            return _range(sheet, token, take())
+        return cell(token)
+
+    def expression():
+        left = atom()
+        while peek() == "&":
+            take("&")
+            left = f"{left}{atom()}"
+        if peek() in ("<=", ">=", "<>", "=", "<", ">"):
+            operator = take()
+            right = expression()
+            if isinstance(left, str) and "#" in str(left):
+                return False
+            return {"<=": lambda a, b: a <= b, ">=": lambda a, b: a >= b,
+                    "=": lambda a, b: a == b, "<>": lambda a, b: a != b,
+                    "<": lambda a, b: a < b, ">": lambda a, b: a > b}[operator](left, right)
+        return left
+
+    return expression()
+
+
+def verify(path: pathlib.Path, parts: list[dict]) -> None:
+    """
+    Rechnet die Kompatibilitaetsmatrix nach -- ohne Excel.
+
+    Die Matrix besteht aus Formeln, und eine Formel mit einem verrutschten
+    Bezug faellt beim Ansehen nicht auf: sie liefert einfach eine falsche
+    Antwort. Hier wird deshalb dieselbe Frage zweimal gestellt -- einmal an die
+    Zellen der Mappe, einmal an fits_rule() im Generator, also an die Regel
+    selbst -- und beide Antworten muessen uebereinstimmen.
+    """
+    from openpyxl import load_workbook
+
+    book = load_workbook(path)
+    sheet = book["Kompatibilitaet"]
+
+    ranks = {sheet.cell(row=1, column=column).value: column - 1
+             for column in (2, 3, 4)}
+    if ranks != {"leicht": 1, "mittel": 2, "schwer": 3}:
+        raise SystemExit(f"Nachschlagereihe B1:D1 stimmt nicht: {ranks}")
+
+    # Kopfzeilen der Slotspalten finden
+    head_slot = next(r for r in range(1, 20)
+                     if sheet.cell(row=r, column=6).value == "Slot")
+    rank_row = head_slot + 2
+    cats_row = head_slot + 3
+    first_data = head_slot + 5
+
+    equipment = {p["code"]: p for p in parts
+                 if base_type(p["type"]) == "equipment"}
+    bodies = {}
+    for part in parts:
+        if base_type(part["type"]) == "body":
+            for slot in equip_slots(part):
+                bodies[(part.get("name", part["id"]), slot)] = \
+                    part.get("slot_rules", {}).get(slot)
+
+    columns = []
+    column = 7
+    while sheet.cell(row=head_slot, column=column).value:
+        columns.append((column,
+                        sheet.cell(row=head_slot - 1, column=column).value,
+                        sheet.cell(row=head_slot, column=column).value))
+        column += 1
+    if len(columns) != len(bodies):
+        raise SystemExit(f"{len(columns)} Slotspalten, aber {len(bodies)} Slots")
+
+    checked = 0
+    row = first_data
+    while sheet.cell(row=row, column=1).value:
+        code = sheet.cell(row=row, column=1).value
+        part = equipment[code]
+        for column, chassis, slot in columns:
+            rule = bodies[(chassis, slot)]
+            # Was die Regel sagt ...
+            expected = (
+                gen.fits_rule(part.get("mount_class", gen.DEFAULT_MOUNT_CLASS),
+                              part.get("category", gen.DEFAULT_CATEGORY), rule)
+                and (not part.get("slots") or slot in part["slots"])
+            )
+            # ... und was die Zellen der Mappe hergeben.
+            # ... und was die FORMEL in der Zelle tatsaechlich rechnet.
+            # Nicht was sie rechnen soll: eine nachgebaute Zweitfassung wuerde
+            # denselben Denkfehler zweimal machen und ihn deshalb nie finden.
+            actual = evaluate(sheet, sheet.cell(row=row, column=column).value)
+            if actual != ("ja" if expected else "–"):
+                raise SystemExit(
+                    f"Matrix widerspricht der Regel: {code} an "
+                    f"{chassis}/{slot} -- Regel sagt "
+                    f"{'ja' if expected else 'nein'}, Formel rechnet {actual!r}")
+            checked += 1
+        row += 1
+
+    # Die COUNTIF-Bereiche der Legende muessen die Datenzeilen treffen.
+    legend = book["Legende"]
+    for legend_row in range(1, legend.max_row + 1):
+        formula = legend.cell(row=legend_row, column=2).value
+        if not isinstance(formula, str) or not formula.startswith("=COUNTIF"):
+            continue
+        label = legend.cell(row=legend_row, column=1).value
+        span = formula.split("!$D$")[1].split(",")[0]      # z. B. "5:$D$27"
+        start, end = (int(x.lstrip("$D$").lstrip("$")) for x in span.split(":"))
+        found = sum(1 for r in range(start, end + 1)
+                    if book["Teile"].cell(row=r, column=4).value == label)
+        expected = sum(1 for p in parts if TYPE_LABEL[base_type(p["type"])] == label)
+        if found != expected:
+            raise SystemExit(f"COUNTIF-Bereich fuer {label} trifft {found} "
+                             f"statt {expected} Zeilen")
+
+    print(f"[ok] Matrix gegen die Slotregel geprueft: {checked} Zellen, "
+          f"kein Widerspruch")
 
 
 # ---------------------------------------------------------------------------
@@ -661,6 +884,7 @@ def main() -> None:
 
     book.save(target)
     print(f"[ok] {target}  ({len(parts)} Teile, {len(book.sheetnames)} Blaetter)")
+    verify(target, parts)
 
 
 if __name__ == "__main__":
