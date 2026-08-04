@@ -394,20 +394,25 @@ def L(center, profile, mat, axis="z", segments=14, caps=True):
 #
 # Was das Mass NICHT kann
 # -----------------------
-# Es sieht den Umriss, nicht die Formensprache. Zwei kompakte Kloetze decken
-# sich als gefuellte Flaeche zwangslaeufig weitgehend, auch wenn der eine ein
-# Bunkerkopf und der andere ein runder Krempenhelm ist -- bei Koepfen und
-# Kernen saettigt der Wert deshalb hoch. Brauchbar ist dort die REIHENFOLGE
-# (welches Paar liegt am engsten), nicht die absolute Zahl.
+# Es sieht den Umriss, nicht die Formensprache -- und bei KOMPAKTEN Teilen
+# sieht es praktisch gar nichts mehr. Normiert wird jedes gedrungene Volumen
+# zu demselben Klumpen:
+#
+#   HED-002 Bunkerkopf   Quader        -> projiziert ein Sechseck, 64% Fuellung
+#   HED-003 Flachhelm    Kuppel+Krempe -> projiziert eine Raute,   64% Fuellung
+#
+# Diese beiden kommen damit auf 0.88, obwohl sie einander nicht im
+# Entferntesten aehnlich sehen. Fuer Rahmenteile gibt es deshalb KEINE Grenze,
+# nur die Tabelle mit dem jeweils engsten Paar -- die Reihenfolge ist
+# brauchbar, die absolute Zahl nicht.
 #
 # Bei Ausruestung ist der Abstand dagegen sauber zweigeteilt: der Pruefstein
 # -- die alte, vom Blaster abgeschriebene Kanone -- liegt bei 0.91, das engste
 # ehrliche Paar im Bestand bei 0.66. In diese Luecke passt eine harte Grenze,
-# und nur deshalb ist sie dort eine.
+# und nur deshalb gibt es dort ueberhaupt eine.
 SIL_RES = 28
 SIL_FACINGS = ("south", "east")
-SIL_ERROR = 0.85      # Ausruestung: harte Grenze, der Generator bricht ab
-SIL_WARN = 0.86       # Rahmenteile: nur ein Hinweis, das Mass saettigt dort
+SIL_ERROR = 0.85      # NUR fuer Ausruestung -- Rahmenteile haben keine Grenze
 
 
 def _shape_polygons(shape, facing):
@@ -1671,9 +1676,21 @@ def check_silhouettes() -> None:
     unterscheiden -- im Iso-Bild ist Groesse keine verlaessliche Information.
     Fuer Ausruestung ist das ein Abbruch: an der Waffe liest der Spieler
     Reichweite und Rolle ab, und ein deterministisches Tactics darf ihm diese
-    Auskunft nicht verweigern. Fuer Rahmenteile bleibt es ein Hinweis -- ein
-    Bein wird im Verbund gelesen, nicht einzeln, und die Auswahl ist dort
-    ohnehin klein.
+    Auskunft nicht verweigern.
+
+    Fuer RAHMENTEILE gibt es bewusst KEINE Grenze mehr, nur noch die Tabelle.
+    Der Grund ist nicht Nachsicht, sondern dass das Mass dort nichts aussagt:
+    jedes kompakte Teil wird normiert zu demselben Klumpen. Bunkerkopf (ein
+    Quader, projiziert ein Sechseck) und Flachhelm (Kuppel mit Krempe,
+    projiziert eine Raute) fuellen beide 64 Prozent des Rahmens an derselben
+    Stelle und kommen damit auf 0.88 -- obwohl sie einander nicht im
+    Entferntesten aehnlich sehen.
+
+    Eine Grenze, die nur Fehlalarme produziert, ist schlimmer als keine: sie
+    gewoehnt einem an, Hinweise zu ueberlesen, und dann geht auch ein echter
+    unter. Was bleibt, ist die REIHENFOLGE -- welches Paar liegt am engsten --,
+    und die ist als blosse Information brauchbar. Ob zwei Rahmen dieselbe
+    Formensprache sprechen, entscheidet ohnehin das Auge.
     """
     # Erst nachweisen, dass der Test ueberhaupt noch etwas findet.
     probe = silhouette_distance(silhouette(EQ_BLASTER), silhouette(EQ_CANNON_V1))
@@ -1691,7 +1708,7 @@ def check_silhouettes() -> None:
         by_type.setdefault(key, []).append(
             (f"{spec['id']}/{part['id']}", silhouette(part["shapes"])))
 
-    problems, hints, closest = [], [], []
+    problems, closest = [], []
     for part_type, entries in sorted(by_type.items()):
         worst = None
         for i, (name_a, sil_a) in enumerate(entries):
@@ -1701,19 +1718,14 @@ def check_silhouettes() -> None:
                     worst = (score, name_a, name_b)
                 if part_type == "equipment" and score >= SIL_ERROR:
                     problems.append((score, name_a, name_b))
-                elif part_type != "equipment" and score >= SIL_WARN:
-                    hints.append((score, part_type, name_a, name_b))
         if worst:
             closest.append((part_type, worst))
 
-    print(f"\nSilhouetten-Abstand (1.00 = ununterscheidbar, Grenze "
-          f"{SIL_ERROR:.2f}, Pruefstein {probe:.2f}), engstes Paar je Typ:")
+    print(f"\nSilhouetten-Abstand (1.00 = ununterscheidbar; Grenze "
+          f"{SIL_ERROR:.2f}, aber nur fuer Ausruestung -- Pruefstein "
+          f"{probe:.2f}), engstes Paar je Typ:")
     for part_type, (score, name_a, name_b) in closest:
         print(f"  {part_type:<10} {score:.2f}  {name_a} / {name_b}")
-
-    for score, part_type, name_a, name_b in hints:
-        print(f"  [hinweis] {part_type}: {name_a} und {name_b} liegen bei "
-              f"{score:.2f} -- grenzwertig.")
 
     if problems:
         lines = "\n".join(f"  {a} und {b} decken sich zu {score:.0%}"

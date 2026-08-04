@@ -598,9 +598,10 @@ def sheet_silhouettes(book) -> None:
         f"1.00 hiesse ununterscheidbar. Bei AUSRUESTUNG ist "
         f"{gen.SIL_ERROR:.2f} eine harte Grenze -- dort bricht der Generator "
         f"ab, weil der Spieler an der Waffe ihre Rolle abliest. Bei "
-        f"RAHMENTEILEN ist es ab {gen.SIL_WARN:.2f} nur ein Hinweis: das Mass "
-        f"saettigt bei kompakten Teilen, zwei Kloetze decken sich als Flaeche "
-        f"auch dann, wenn sie voellig verschieden gebaut sind.",
+        f"RAHMENTEILEN gibt es KEINE Grenze und kein Urteil: das Mass "
+        f"saettigt dort, jedes gedrungene Teil wird normiert zum selben "
+        f"Klumpen. Brauchbar ist nur die Reihenfolge -- welches Paar liegt "
+        f"am engsten. Ob die Formen wirklich verschieden sind, sagt das Auge.",
     )
     row = header_row(sheet, row, ["Typ", "Teil A", "Teil B", "Abstand", "Bewertung"])
 
@@ -619,15 +620,15 @@ def sheet_silhouettes(book) -> None:
                               f"{code_a} {name_a}", f"{code_b} {name_b}"))
         pairs.sort(reverse=True)
         strict = part_type == "equipment"
-        limit = gen.SIL_ERROR if strict else gen.SIL_WARN
-        for score, name_a, name_b in pairs[:3]:      # nur die engsten drei
-            if score >= limit:
-                # Nur bei Ausruestung ist das ein Regelverstoss. Bei
-                # Rahmenteilen ist die Grenze ein Hinweis -- die Mappe darf
-                # daraus keinen Fehler machen, den es nicht gibt.
-                verdict = ("VERLETZT die Lesbarkeitsregel" if strict else
-                           "Hinweis -- ansehen, ob die Form wirklich traegt")
-            elif score >= limit - 0.08:
+        for rank, (score, name_a, name_b) in enumerate(pairs[:3]):
+            if not strict:
+                # Rahmenteile bekommen KEIN Urteil. Das Mass saettigt dort --
+                # zwei kompakte Teile decken sich als Flaeche, egal wie
+                # verschieden sie gebaut sind. Was bleibt, ist die Reihenfolge.
+                verdict = "engstes Paar dieses Typs" if rank == 0 else ""
+            elif score >= gen.SIL_ERROR:
+                verdict = "VERLETZT die Lesbarkeitsregel"
+            elif score >= gen.SIL_ERROR - 0.08:
                 verdict = "grenzwertig -- im Auge behalten"
             else:
                 verdict = "unterscheidbar"
