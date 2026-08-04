@@ -222,7 +222,10 @@ Autoren-Schublade, kein Bausatz.
 `tools/build_sample_parts.py` prueft das bei jedem Lauf: es projiziert jedes
 Teil mit derselben Kamera wie die Grafik und vergleicht die gefuellten
 Umrissflaechen aus zwei Blickrichtungen. Ab 0.85 Deckung bricht der Generator
-bei Ausruestung ab, bei Rahmenteilen meldet er ab 0.86 einen Hinweis.
+bei Ausruestung ab. **Fuer Rahmenteile gibt es keine Grenze**, nur eine
+Tabelle: dort saettigt das Mass -- jedes gedrungene Teil wird normiert zum
+selben Klumpen, und ein kantiger Bunkerkopf kommt gegen einen runden
+Krempenhelm auf 0.88, obwohl die beiden nichts miteinander zu tun haben.
 
 **Der Test ersetzt das Hinsehen nicht.** Er faengt zuverlaessig den Fall
 "abgeschrieben und groesser gezogen"; ob zwei Rahmen dieselbe Formensprache

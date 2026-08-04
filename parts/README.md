@@ -469,7 +469,8 @@ andere Groesse" identisch, waehrend "lang und duenn" gegen "kurz und dick"
 verschieden bleibt.
 
 ```
-Silhouetten-Abstand (1.00 = ununterscheidbar, Grenze 0.85, Pruefstein 0.91)
+Silhouetten-Abstand (1.00 = ununterscheidbar; Grenze 0.85, aber nur fuer
+Ausruestung -- Pruefstein 0.91), engstes Paar je Typ:
   body       0.85  bot1/scout_body / bot2/jugg_body
   core       0.71  bot2/jugg_core / bot3/mage_core
   equipment  0.66  bot1/eq_pulse_blaster / bot2/eq_siege_cannon
@@ -479,7 +480,8 @@ Silhouetten-Abstand (1.00 = ununterscheidbar, Grenze 0.85, Pruefstein 0.91)
 
 * **Ausruestung: ab 0.85 bricht der Generator ab.** An der Waffe liest der
   Spieler Reichweite und Rolle ab; diese Auskunft darf nicht fehlen.
-* **Rahmenteile: ab 0.86 nur ein Hinweis** -- aus dem Grund gleich darunter.
+* **Rahmenteile: gar keine Grenze**, nur die Tabelle -- aus dem Grund gleich
+  darunter.
 
 Der **Pruefstein** ist die erste Belagerungskanone: exakt der Aufbau des
 Blasters mit groesseren Zahlen, im Generator als `EQ_CANNON_V1` aufbewahrt. Sie
@@ -489,17 +491,37 @@ Generator misst den Pruefstein bei jedem Lauf mit und bricht ab, wenn er
 *nicht* mehr auffaellt: ein Test, der nichts mehr faengt, meldet sonst einfach
 weiter "alles in Ordnung".
 
-### Was der Test nicht kann
+### Warum Rahmenteile keine Grenze haben
 
-**Er sieht den Umriss, nicht die Formensprache.** Zwei kompakte Kloetze decken
-sich als gefuellte Flaeche zwangslaeufig weitgehend, auch wenn der eine ein
-Bunkerkopf und der andere ein runder Krempenhelm ist. Bei Koepfen und Kernen
-saettigt der Wert deshalb hoch; brauchbar ist dort die **Reihenfolge** --
-welches Paar liegt am engsten --, nicht die absolute Zahl.
+**Der Test sieht den Umriss, nicht die Formensprache** -- und bei kompakten
+Teilen sieht er praktisch gar nichts mehr. Normiert wird jedes gedrungene
+Volumen zum selben Klumpen:
+
+```
+HED-002 Bunkerkopf          HED-003 Flachhelm
+Quader -> Sechseck          Kuppel + Krempe -> Raute
+64 % Fuellung, mittig       64 % Fuellung, mittig
+                 Abstand 0.88
+```
+
+Diese beiden sehen einander nicht im Entferntesten aehnlich -- der eine ist
+kantig mit Seitensensoren, der andere rund mit auskragender Krempe. Trotzdem
+liegen sie am oberen Ende des Bereichs, weil beide ihren Rahmen gleich stark
+und an derselben Stelle fuellen.
+
+Es gab dort einmal einen Schwellwert. Er hatte im gesamten Bestand **null
+Treffer und zwei Fehlalarme** (Kopf 0.88, Chassis 0.85 -- beide in Ordnung)
+und ist deshalb entfernt worden. Eine Grenze, die nur Fehlalarme produziert,
+ist schlimmer als keine: sie gewoehnt einem an, Hinweise zu ueberlesen, und
+dann geht auch ein echter unter.
+
+Geblieben ist die Tabelle mit dem engsten Paar je Typ. Die **Reihenfolge** ist
+brauchbar -- so faellt auf, wenn ein neues Chassis verdaechtig weit oben
+einsteigt --, die absolute Zahl nicht.
 
 Bei Ausruestung ist der Abstand dagegen sauber zweigeteilt, weil Waffen sich
-in der Proportion unterscheiden duerfen und muessen. Nur dort ist die Grenze
-hart.
+in der Proportion unterscheiden duerfen und muessen: Pruefstein 0.91, engstes
+ehrliches Paar 0.66. Nur dort gibt es ueberhaupt eine Grenze.
 
 Das heisst auch: **der Test ersetzt das Hinsehen nicht.** Er faengt den Fall
 "abgeschrieben und groesser gezogen" zuverlaessig. Ob zwei Rahmen dieselbe
