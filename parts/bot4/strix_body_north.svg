@@ -22,11 +22,8 @@
   <path d="M65.91 71.64 L75.46 64.89 L75.46 59.17 L65.91 65.92 Z" fill="var(--c-plate-dark)"/>
   <path d="M64.48 47.19 L74.98 54.61 L74.98 41.25 L64.48 33.83 Z" fill="var(--c-plate-dark)"/>
   <path d="M80.23 47.48 L81.66 48.49 L81.66 43.72 L80.23 42.71 Z" fill="var(--c-accent)" stroke="none"/>
-  <path d="M68.77 40.35 L71.83 42.51 L71.83 39.17 L68.77 37.01 Z" fill="var(--c-accent)" stroke="none"/>
   <path d="M81.66 48.49 L82.23 48.09 L82.23 43.31 L81.66 43.72 Z" fill="var(--c-accent)" stroke="none"/>
   <path d="M78.32 45.44 L83.57 41.73 L64.48 28.23 L59.23 31.94 Z" fill="var(--c-metal)"/>
-  <path d="M71.83 42.51 L72.4 42.1 L72.4 38.76 L71.83 39.17 Z" fill="var(--c-accent)" stroke="none"/>
-  <path d="M71.83 39.17 L72.4 38.76 L69.35 36.6 L68.77 37.01 Z" fill="var(--c-accent)" stroke="none"/>
   <path d="M74.98 54.61 L75.55 54.21 L75.55 40.85 L74.98 41.25 Z" fill="var(--c-plate-dark)"/>
   <path d="M81.66 43.72 L82.23 43.31 L80.8 42.3 L80.23 42.71 Z" fill="var(--c-accent)" stroke="none"/>
   <path d="M59.23 34.33 L78.32 47.83 L78.32 45.44 L59.23 31.94 Z" fill="var(--c-metal)"/>
@@ -36,26 +33,23 @@
   <path d="M78.32 47.15 L82.61 44.11 L79.75 42.09 L75.46 45.13 Z" fill="var(--c-metal)"/>
   <path d="M51.59 56.47 L65.91 66.59 L65.91 49.41 L51.59 39.28 Z" fill="var(--c-plate)"/>
   <path d="M65.91 66.59 L76.89 58.83 L76.89 41.65 L65.91 49.41 Z" fill="var(--c-plate-dark)"/>
+  <path d="M51.97 55.97 L57.7 60.02 L57.7 58.59 L51.97 54.54 Z" fill="var(--c-plate-light)"/>
+  <path d="M57.7 58.59 L58.27 58.18 L52.54 54.13 L51.97 54.54 Z" fill="var(--c-plate-light)"/>
   <path d="M78.32 47.83 L83.57 44.11 L83.57 41.73 L78.32 45.44 Z" fill="var(--c-plate-dark)"/>
   <path d="M65.91 49.41 L76.89 41.65 L62.57 31.52 L51.59 39.28 Z" fill="var(--c-plate-light)"/>
-  <path d="M51.97 54.63 L57.7 58.68 L57.7 57.25 L51.97 53.2 Z" fill="var(--c-plate-light)"/>
-  <path d="M57.7 57.25 L58.27 56.85 L52.54 52.8 L51.97 53.2 Z" fill="var(--c-plate-light)"/>
+  <path d="M57.7 60.02 L58.27 59.62 L58.27 58.18 L57.7 58.59 Z" fill="var(--c-plate)"/>
   <path d="M65.91 47.7 L77.84 39.26 L62.57 28.46 L50.64 36.9 Z" fill="var(--c-plate-light)"/>
-  <path d="M57.7 58.68 L58.27 58.28 L58.27 56.85 L57.7 57.25 Z" fill="var(--c-plate)"/>
-  <path d="M51.97 50.82 L57.7 54.87 L57.7 53.43 L51.97 49.38 Z" fill="var(--c-plate-light)"/>
-  <path d="M57.7 53.43 L58.27 53.03 L52.54 48.98 L51.97 49.38 Z" fill="var(--c-plate-light)"/>
   <path d="M51.59 55.46 L59.23 60.86 L59.23 45.59 L51.59 40.19 Z" fill="var(--c-plate)"/>
   <path d="M64.48 40.25 L70.2 36.2 L63.52 31.47 L57.8 35.52 Z" fill="var(--c-metal)"/>
   <path d="M57.8 37.91 L64.48 42.63 L64.48 40.25 L57.8 35.52 Z" fill="var(--c-metal)"/>
   <path d="M59.23 60.86 L63.05 58.16 L63.05 42.89 L59.23 45.59 Z" fill="var(--c-plate-dark)"/>
-  <path d="M57.7 54.87 L58.27 54.46 L58.27 53.03 L57.7 53.43 Z" fill="var(--c-plate)"/>
   <path d="M50.64 39.28 L65.91 50.08 L65.91 47.7 L50.64 36.9 Z" fill="var(--c-plate-light)"/>
   <path d="M64.48 42.63 L70.2 38.58 L70.2 36.2 L64.48 40.25 Z" fill="var(--c-plate-dark)"/>
-  <path d="M51.97 47.0 L57.7 51.05 L57.7 49.62 L51.97 45.57 Z" fill="var(--c-plate-light)"/>
-  <path d="M57.7 49.62 L58.27 49.21 L52.54 45.16 L51.97 45.57 Z" fill="var(--c-plate-light)"/>
+  <path d="M51.97 46.62 L57.7 50.67 L57.7 49.23 L51.97 45.18 Z" fill="var(--c-plate-light)"/>
   <path d="M65.91 50.08 L77.84 41.65 L77.84 39.26 L65.91 47.7 Z" fill="var(--c-plate)"/>
+  <path d="M57.7 49.23 L58.27 48.83 L52.54 44.78 L51.97 45.18 Z" fill="var(--c-plate-light)"/>
   <path d="M59.23 45.59 L63.05 42.89 L55.41 37.49 L51.59 40.19 Z" fill="var(--c-plate-light)"/>
-  <path d="M57.7 51.05 L58.27 50.64 L58.27 49.21 L57.7 49.62 Z" fill="var(--c-plate)"/>
+  <path d="M57.7 50.67 L58.27 50.26 L58.27 48.83 L57.7 49.23 Z" fill="var(--c-plate)"/>
   <path d="M47.29 46.77 L53.98 51.49 L53.98 42.9 L47.29 38.18 Z" fill="var(--c-plate)"/>
   <path d="M47.68 45.94 L52.45 49.31 L52.45 44.54 L47.68 41.16 Z" fill="var(--c-accent)" stroke="none"/>
   <path d="M53.98 51.49 L59.23 47.78 L59.23 39.19 L53.98 42.9 Z" fill="var(--c-plate-dark)"/>

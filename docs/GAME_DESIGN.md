@@ -57,7 +57,7 @@ aus:
 
 | Bestandteil | Anzahl | Rolle im Spiel (Entwurf) |
 |---|---|---|
-| **Kern** | 1 | Identitaet der Einheit: Energie, Fertigkeitspool, Grundwerte |
+| **Kern** | 1 | Identitaet der Einheit: Energie, Fertigkeitspool, Grundwerte. Sitzt **im** Chassis (Brust- oder Rueckenplatte), nicht davor – die Sitzregel dazu steht in [`parts/README.md`](../parts/README.md), Abschnitt 6b |
 | **Kopf** | 1 | Sensorik: Sicht, Trefferchance, Statusresistenz |
 | **Koerper** | 1 | Chassis: HP, Panzerung – **bestimmt die Zahl der Ausruestungsanker** |
 | **Fuesse** | 1 | Bewegungsreichweite, Gelaendeverhalten, Ausweichen |
