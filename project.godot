@@ -21,6 +21,7 @@ config/icon="res://assets/parts/bot1/scout_head_south.svg"
 [autoload]
 
 EventBus="*res://autoload/event_bus.gd"
+TerrainDB="*res://autoload/terrain_db.gd"
 PartDB="*res://autoload/part_db.gd"
 GameState="*res://autoload/game_state.gd"
 

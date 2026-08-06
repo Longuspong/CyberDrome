@@ -1,0 +1,85 @@
+{
+  "_kommentar": [
+    "Alle Stellschrauben ausserhalb der Bauteile. Der Code liest hier und",
+    "hartkodiert nichts -- Balancing laeuft ohne Codeaenderung.",
+    "Die Bauteilwerte selbst stehen NICHT hier, sondern in der Tabelle STATS",
+    "in tools/build_sample_parts.py, weil sie zum Bauteil gehoeren und mit",
+    "ihm erzeugt werden."
+  ],
+
+  "squad_size": 2,
+  "squad_size_min": 1,
+  "squad_size_max": 4,
+
+  "grid_width": 20,
+  "grid_height": 20,
+
+  "tick_threshold": 100,
+  "tick_queue_length": 8,
+
+  "cycle_limit": 30,
+
+  "threat_tolerance": 0.12,
+  "threat_attempts": 200,
+  "build_attempts": 50,
+
+  "deployment": {
+    "_kommentar": "Spieler unten links, Gegner oben rechts.",
+    "rows": 2,
+    "columns": 6
+  },
+
+  "map": {
+    "block_tiles": [8, 14],
+    "block_clump": [1, 3],
+    "step_chains": [2, 4],
+    "step_chain_length": [3, 6],
+    "drift_patches": [1, 3],
+    "drift_patch_size": [4, 9],
+    "drift_rails": [1, 2],
+    "drift_rail_length": [5, 8],
+    "haze_patches": [2, 3],
+    "haze_patch_size": [4, 8],
+    "max_attempts": 20
+  },
+
+  "ai": {
+    "_kommentar": "Gewichte der Nutzenbewertung. Siehe scripts/battle/ai_controller.gd.",
+    "damage_weight": 1.0,
+    "kill_bonus": 100.0,
+    "threatened_penalty": 8.0,
+    "drift_penalty": 15.0,
+    "haze_bonus": 12.0,
+    "haze_hp_threshold": 0.5,
+    "heal_multiplier": 1.5,
+    "heal_hp_threshold": 0.4,
+    "action_delay": 0.4
+  },
+
+  "enemy_names": ["VEX", "NUL", "KRA", "ORB", "ZYN", "HEX"],
+
+  "mutators": [
+    {"id": "clean", "name": "Sauberer Lauf",
+     "description": "Kein Mutator. Die Karte, wie sie gewuerfelt wurde."},
+    {"id": "overclock", "name": "Uebertaktung",
+     "description": "Alle SPD +6", "spd_bonus": 6},
+    {"id": "brownout", "name": "Brownout",
+     "description": "Alle en_regen halbiert", "en_regen_scale": 0.5},
+    {"id": "armorbreak", "name": "Panzerbruch",
+     "description": "Alle DEF -3", "def_bonus": -3},
+    {"id": "scrapfield", "name": "Schrottfeld",
+     "description": "Doppelt so viele BLOCK-Felder", "block_scale": 2.0},
+    {"id": "oilspill", "name": "Oelhavarie",
+     "description": "Doppelt so viele DRIFT-Felder", "drift_scale": 2.0},
+    {"id": "sensorstorm", "name": "Sensorsturm",
+     "description": "Doppelt so viele HAZE-Felder", "haze_scale": 2.0},
+    {"id": "terracing", "name": "Terrassierung",
+     "description": "Doppelt so viele STEP-Ketten", "step_scale": 2.0},
+    {"id": "flattened", "name": "Planiert",
+     "description": "Karte ohne STEP, DRIFT und HAZE",
+     "step_scale": 0.0, "drift_scale": 0.0, "haze_scale": 0.0},
+    {"id": "bloodletting", "name": "Aderlass",
+     "description": "Alle verlieren zu Zugbeginn 3 Integritaet",
+     "turn_damage": 3}
+  ]
+}

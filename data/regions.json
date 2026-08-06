@@ -1,0 +1,46 @@
+{
+  "_kommentar": [
+    "Drei Regionen. Jede belegt alle fuenf Terrainklassen.",
+    "Die Zeilen einer Klasse sind reine Umbenennungen -- mechanisch identisch.",
+    "Die Spiellogik fragt NIEMALS den Typ ab, immer nur die Klasse; deshalb",
+    "ist eine neue Region dieser Datensatz plus fuenf Tiles und sonst nichts.",
+    "",
+    "Einzige erlaubte Abweichung ueber die Optik hinaus: flow_direction der",
+    "DRIFT-Auspraegung. ZERO = ungerichtet (der DROME schlittert in seiner",
+    "eigenen Laufrichtung weiter), fester Wert = gerichtetes Foerderband.",
+    "Beide laufen durch denselben Code."
+  ],
+
+  "regions": [
+    {
+      "id": "city",
+      "name": "Sektor City",
+      "normal": {"id": "asphalt", "name": "Asphalt", "svg": "asphalt.svg"},
+      "step":   {"id": "kerb", "name": "Bordstein-Podest", "svg": "kerb.svg"},
+      "block":  {"id": "pillar", "name": "Betonpfeiler", "svg": "pillar.svg"},
+      "drift":  {"id": "oilfilm", "name": "Oelfilm", "svg": "oilfilm.svg",
+                 "flow_direction": [0, 0]},
+      "haze":   {"id": "steam", "name": "Dampfschwaden", "svg": "steam.svg"}
+    },
+    {
+      "id": "green",
+      "name": "Gruenzone",
+      "normal": {"id": "meadow", "name": "Wiese", "svg": "meadow.svg"},
+      "step":   {"id": "rootbase", "name": "Wurzelsockel", "svg": "rootbase.svg"},
+      "block":  {"id": "boulder", "name": "Felsblock", "svg": "boulder.svg"},
+      "drift":  {"id": "mudrun", "name": "Schlammrinne", "svg": "mudrun.svg",
+                 "flow_direction": [0, 0]},
+      "haze":   {"id": "tallgrass", "name": "Hohes Gras", "svg": "tallgrass.svg"}
+    },
+    {
+      "id": "plant7",
+      "name": "Anlage 7",
+      "normal": {"id": "grating", "name": "Gitterrost", "svg": "grating.svg"},
+      "step":   {"id": "catwalk", "name": "Wartungsbuehne", "svg": "catwalk.svg"},
+      "block":  {"id": "reactor", "name": "Reaktorsaeule", "svg": "reactor.svg"},
+      "drift":  {"id": "magrail", "name": "Magnetschiene", "svg": "magrail.svg",
+                 "flow_direction": [1, 0]},
+      "haze":   {"id": "jamfield", "name": "Stoerfeld", "svg": "jamfield.svg"}
+    }
+  ]
+}
