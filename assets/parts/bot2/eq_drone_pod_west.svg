@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_drone_pod" data-type="equipment" data-direction="west">
+  <title>Drohnen-Pod (west)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung west.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#100a0e" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M54.45 36.73 L65.91 28.63 L65.91 24.81 L54.45 32.91 Z" fill="#22181e"/>
+  <path d="M65.91 24.81 L65.34 24.41 L53.88 32.51 L54.45 32.91 Z" fill="#3d2b35"/>
+  <path d="M76.41 38.84 L66.86 32.09 L57.32 38.84 L66.86 45.59 Z" fill="#7d6b78"/>
+  <path d="M53.88 36.33 L54.45 36.73 L54.45 32.91 L53.88 32.51 Z" fill="#22181e"/>
+  <path d="M66.86 48.45 L76.41 41.7 L76.41 38.84 L66.86 45.59 Z" fill="#22181e"/>
+  <path d="M57.32 41.7 L66.86 48.45 L66.86 45.59 L57.32 38.84 Z" fill="#7d6b78"/>
+  <path d="M81.18 31.48 L67.82 22.03 L52.54 32.83 L65.91 42.28 Z" fill="#694c5c"/>
+  <path d="M82.14 29.57 L67.82 19.45 L51.59 30.92 L65.91 41.05 Z" fill="#694c5c"/>
+  <path d="M65.91 48.97 L81.18 38.17 L81.18 31.48 L65.91 42.28 Z" fill="#22181e"/>
+  <path d="M52.54 39.52 L65.91 48.97 L65.91 42.28 L52.54 32.83 Z" fill="#3d2b35"/>
+  <path d="M72.59 28.26 L68.77 25.56 L64.95 28.26 L68.77 30.96 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M68.77 34.3 L72.59 31.6 L72.59 28.26 L68.77 30.96 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M64.95 31.6 L68.77 34.3 L68.77 30.96 L64.95 28.26 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M65.91 42.96 L82.14 31.48 L82.14 29.57 L65.91 41.05 Z" fill="#3d2b35"/>
+  <path d="M51.59 32.83 L65.91 42.96 L65.91 41.05 L51.59 30.92 Z" fill="#694c5c"/>
+</g>
+</svg>

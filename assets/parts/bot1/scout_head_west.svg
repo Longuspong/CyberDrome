@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="scout_head" data-type="head" data-direction="west">
+  <title>Vireo Sensorkopf (west)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung west.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M52.54 29.94 L63.05 22.51 L63.05 18.21 L52.54 25.64 Z" fill="#7cf9ff"/>
+  <path d="M63.05 18.21 L62.47 17.81 L51.97 25.23 L52.54 25.64 Z" fill="#7cf9ff"/>
+  <path d="M51.97 29.53 L52.54 29.94 L52.54 25.64 L51.97 25.23 Z" fill="#7cf9ff"/>
+  <path d="M77.36 22.78 L64.95 14.0 L50.64 24.13 L63.05 32.9 Z" fill="#47547e"/>
+  <path d="M66.96 37.63 L74.6 32.23 L74.6 30.79 L66.96 36.19 Z" fill="#28304a"/>
+  <path d="M74.6 30.79 L74.02 30.39 L66.39 35.79 L66.96 36.19 Z" fill="#47547e"/>
+  <path d="M63.05 42.45 L77.36 32.32 L77.36 22.78 L63.05 32.9 Z" fill="#161b29"/>
+  <path d="M78.32 20.87 L64.95 11.42 L49.68 22.22 L63.05 31.67 Z" fill="#47547e"/>
+  <path d="M50.64 33.67 L63.05 42.45 L63.05 32.9 L50.64 24.13 Z" fill="#28304a"/>
+  <path d="M66.96 34.76 L74.6 29.36 L74.6 27.93 L66.96 33.33 Z" fill="#28304a"/>
+  <path d="M74.6 27.93 L74.02 27.52 L66.39 32.92 L66.96 33.33 Z" fill="#47547e"/>
+  <path d="M66.39 37.22 L66.96 37.63 L66.96 36.19 L66.39 35.79 Z" fill="#47547e"/>
+  <path d="M66.39 34.36 L66.96 34.76 L66.96 33.33 L66.39 32.92 Z" fill="#47547e"/>
+  <path d="M63.05 33.58 L78.32 22.78 L78.32 20.87 L63.05 31.67 Z" fill="#28304a"/>
+  <path d="M49.68 24.13 L63.05 33.58 L63.05 31.67 L49.68 22.22 Z" fill="#47547e"/>
+  <path d="M57.8 24.58 L59.7 25.93 L59.7 18.29 L57.8 16.94 Z" fill="#5b6785"/>
+  <path d="M59.7 25.93 L61.14 24.92 L61.14 17.28 L59.7 18.29 Z" fill="#161b29"/>
+  <path d="M61.14 17.28 L59.23 15.93 L57.8 16.94 L59.7 18.29 Z" fill="#5b6785"/>
+  <path d="M63.05 14.42 L59.23 11.72 L55.89 14.08 L59.7 16.78 Z" fill="#a9ffff" stroke="none"/>
+  <path d="M55.89 16.94 L59.7 19.64 L59.7 16.78 L55.89 14.08 Z" fill="#a9ffff" stroke="none"/>
+  <path d="M59.7 19.64 L63.05 17.28 L63.05 14.42 L59.7 16.78 Z" fill="#a9ffff" stroke="none"/>
+</g>
+</svg>

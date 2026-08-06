@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="scout_core" data-type="core" data-direction="east">
+  <title>Vireo Impulskern (east)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung east.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M77.65 53.01 L78.8 52.2 L78.8 51.25 L77.65 52.06 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M77.51 51.95 L77.65 52.06 L78.8 51.25 L78.65 51.14 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M77.51 52.91 L77.65 53.01 L77.65 52.06 L77.51 51.95 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M72.69 60.82 L73.64 60.14 L73.64 58.8 L72.69 59.48 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M72.54 60.71 L72.69 60.82 L72.69 59.48 L72.54 59.38 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M72.54 59.38 L72.69 59.48 L73.64 58.8 L73.5 58.7 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M77.08 52.53 L76.76 51.15 L75.85 50.43 L74.49 50.49 L72.88 51.3 L71.27 52.76 L69.91 54.63 L69.0 56.64 L68.68 58.47 L69.0 59.85 L69.91 60.57 L71.27 60.52 L72.88 59.7 L74.49 58.25 L75.85 56.37 L76.76 54.37 Z" fill="#161b29"/>
+  <path d="M75.5 53.85 L75.31 53.03 L74.78 52.61 L73.97 52.64 L73.02 53.12 L72.07 53.98 L71.27 55.09 L70.73 56.28 L70.54 57.36 L70.73 58.17 L71.27 58.6 L72.07 58.57 L73.02 58.09 L73.97 57.23 L74.78 56.12 L75.31 54.93 Z" fill="#ff2d95" stroke="none"/>
+  <path d="M72.69 52.61 L73.64 51.93 L73.64 50.59 L72.69 51.27 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M72.54 52.5 L72.69 52.61 L72.69 51.27 L72.54 51.17 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M72.54 51.17 L72.69 51.27 L73.64 50.59 L73.5 50.49 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M67.53 60.16 L68.68 59.35 L68.68 58.4 L67.53 59.21 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M67.39 59.11 L67.53 59.21 L68.68 58.4 L68.53 58.3 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M67.39 60.06 L67.53 60.16 L67.53 59.21 L67.39 59.11 Z" fill="#2de2e6" stroke="none"/>
+</g>
+</svg>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="jugg_head" data-type="head" data-direction="east">
+  <title>Molok Bunkerkopf (east)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung east.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#100a0e" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M50.64 30.69 L62.09 22.59 L62.09 21.16 L50.64 29.26 Z" fill="#3d2b35"/>
+  <path d="M50.06 28.86 L50.64 29.26 L62.09 21.16 L61.52 20.76 Z" fill="#694c5c"/>
+  <path d="M68.77 20.96 L78.32 27.71 L78.32 21.99 L68.77 15.24 Z" fill="#7d6b78"/>
+  <path d="M68.77 15.24 L78.32 21.99 L81.18 19.96 L71.64 13.21 Z" fill="#7d6b78"/>
+  <path d="M50.64 27.83 L62.09 19.73 L62.09 18.3 L50.64 26.4 Z" fill="#3d2b35"/>
+  <path d="M50.06 25.99 L50.64 26.4 L62.09 18.3 L61.52 17.89 Z" fill="#694c5c"/>
+  <path d="M78.32 27.71 L81.18 25.69 L81.18 19.96 L78.32 21.99 Z" fill="#22181e"/>
+  <path d="M50.06 30.29 L50.64 30.69 L50.64 29.26 L50.06 28.86 Z" fill="#694c5c"/>
+  <path d="M50.06 27.42 L50.64 27.83 L50.64 26.4 L50.06 25.99 Z" fill="#694c5c"/>
+  <path d="M46.82 26.71 L62.57 37.85 L81.66 24.35 L65.91 13.21 Z" fill="#694c5c"/>
+  <path d="M45.86 24.32 L62.57 36.14 L82.61 21.96 L65.91 10.15 Z" fill="#694c5c"/>
+  <path d="M62.57 47.39 L81.66 33.89 L81.66 24.35 L62.57 37.85 Z" fill="#22181e"/>
+  <path d="M65.15 44.13 L80.42 33.33 L80.42 29.03 L65.15 39.83 Z" fill="#ffb057"/>
+  <path d="M46.82 36.26 L62.57 47.39 L62.57 37.85 L46.82 26.71 Z" fill="#3d2b35"/>
+  <path d="M64.48 39.36 L65.15 39.83 L80.42 29.03 L79.75 28.56 Z" fill="#ffb057"/>
+  <path d="M46.82 36.49 L56.36 43.24 L56.36 37.51 L46.82 30.76 Z" fill="#7d6b78"/>
+  <path d="M62.57 38.52 L82.61 24.35 L82.61 21.96 L62.57 36.14 Z" fill="#3d2b35"/>
+  <path d="M46.82 30.76 L56.36 37.51 L59.23 35.49 L49.68 28.74 Z" fill="#7d6b78"/>
+  <path d="M64.48 43.66 L65.15 44.13 L65.15 39.83 L64.48 39.36 Z" fill="#ffb057"/>
+  <path d="M45.86 26.71 L62.57 38.52 L62.57 36.14 L45.86 24.32 Z" fill="#694c5c"/>
+  <path d="M56.36 43.24 L59.23 41.21 L59.23 35.49 L56.36 37.51 Z" fill="#22181e"/>
+</g>
+</svg>

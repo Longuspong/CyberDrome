@@ -1,0 +1,37 @@
+{
+  "id": "bot2",
+  "name": "HX-Molok // Juggernaut",
+  "description": "Schwerer Rahmen. Drei Ausruestungsanker (inkl. Schulterpod).",
+  "palette": {
+    "body": {
+      "hull": "#3d2b35",
+      "mech": "#7d6b78",
+      "neon": "#ff8a3d",
+      "line": "#100a0e"
+    },
+    "feet": {
+      "hull": "#3d2b35",
+      "mech": "#7d6b78",
+      "neon": "#ff8a3d",
+      "line": "#100a0e"
+    },
+    "equipment": {
+      "hull": "#3d2b35",
+      "mech": "#7d6b78",
+      "neon": "#ff8a3d",
+      "line": "#100a0e"
+    },
+    "head": {
+      "hull": "#3d2b35",
+      "mech": "#7d6b78",
+      "visor": "#ffb057",
+      "line": "#100a0e"
+    },
+    "core": {
+      "case": "#3d2b35",
+      "ember": "#ffd447",
+      "rings": "#ff8a3d",
+      "line": "#100a0e"
+    }
+  }
+}

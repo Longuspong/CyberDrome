@@ -1,0 +1,37 @@
+{
+  "id": "bot4",
+  "name": "LR-Strix // Marksman",
+  "description": "Schmaler Scharfschuetzen-Rahmen. EIN zentraler Ausruestungsanker, dafuer voll belastbar.",
+  "palette": {
+    "body": {
+      "hull": "#1c3330",
+      "mech": "#557d71",
+      "neon": "#6dff9f",
+      "line": "#060f0d"
+    },
+    "feet": {
+      "hull": "#1c3330",
+      "mech": "#557d71",
+      "neon": "#6dff9f",
+      "line": "#060f0d"
+    },
+    "equipment": {
+      "hull": "#1c3330",
+      "mech": "#557d71",
+      "neon": "#6dff9f",
+      "line": "#060f0d"
+    },
+    "head": {
+      "hull": "#1c3330",
+      "mech": "#557d71",
+      "visor": "#c2ffd7",
+      "line": "#060f0d"
+    },
+    "core": {
+      "case": "#1c3330",
+      "ember": "#6dff9f",
+      "rings": "#2fbf8c",
+      "line": "#060f0d"
+    }
+  }
+}

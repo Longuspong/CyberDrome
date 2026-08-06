@@ -334,6 +334,201 @@ def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Spielwerte -- die einzige Balancing-Tabelle des Projekts
+# ---------------------------------------------------------------------------
+# Bis hierher beschreibt eine Teil-Definition nur, wie ein Teil AUSSIEHT und wo
+# es sitzt. Ab hier steht, was es im Kampf TUT. Beides gehoert in dieselbe
+# Datei, weil ein zweites Bauteil-Datenmodell daneben der teuerste Fehler
+# waere, den dieses Projekt machen kann: die Anker liefen von den Werten weg,
+# und niemand koennte sagen, welche Seite recht hat.
+#
+# Die Werte landen ueber ``write_part`` als Block ``stats`` in jeder der vier
+# Richtungs-JSONs eines Teils. Sie sind richtungsunabhaengig -- deshalb stehen
+# sie hier einmal und nicht viermal.
+#
+# Ein DROME hat KEINE Grundwerte. Jeder Stat ist ausschliesslich die Summe
+# seiner Teile; ein Rumpf ohne Antrieb hat mov 0 und kommt nicht in den Kampf.
+#
+# Slots des Repos (nicht die sechs des Entwurfsdokuments):
+#
+#     body   Chassis   traegt HP, DEF, Traglast -- und bestimmt ueber seine
+#                      equip_*-Anker, wie viele Ausruestungsslots es gibt
+#     core   Kern      Energie, Regeneration, Energie-Ausstoss
+#     feet   Antrieb   MOV, SPD und -- die eigentliche Kaufentscheidung --
+#                      die Traversierungsflags
+#     head   Sensorik  kleine Boni; hier sitzt der Blick durch Haze-Felder
+#     equipment        Waffen, Schilde, Support -- gewaehren die Aktionen
+#
+# Reine Zahlen, keine Logik: der Kampfcode liest ``stats`` aus der JSON und
+# hat keinen einzigen Balancing-Wert in sich.
+
+# Vollstaendiger Satz mit Nullwerten. Jedes Teil ueberschreibt nur, was es
+# tatsaechlich beitraegt -- so ist an der Tabelle unten auf einen Blick
+# erkennbar, wofuer ein Teil da ist.
+STAT_DEFAULTS = {
+    # Grundwerte (additiv ueber alle Teile)
+    "hp": 0, "en_max": 0, "en_regen": 0,
+    "spd": 0, "mov": 0, "atk": 0, "def": 0,
+    # Baukosten
+    "weight": 0, "power_draw": 0,
+    # Nur body: was das Chassis traegt
+    "weight_capacity": 0,
+    # Nur core: was der Kern liefert
+    "power_output": 0,
+    # Traversierung -- im Regelfall am Antrieb, technisch an jedem Teil moeglich
+    "can_pass_units": False,     # durch besetzte Felder ziehen (nie darauf enden)
+    "can_enter_steps": False,    # Stufen betreten
+    "can_pass_blocks": False,    # Post-MVP (Tunnelbauer). Bleibt ueberall False.
+    "ignores_drift": False,      # immun gegen Drift-Zonen
+    "drift_modifier": 0,         # addiert auf die Gleitdistanz
+    "step_cost_reduced": False,  # Stufe kostet 1 MP statt 2
+    # Sensorik -- an jedem Slot moeglich, im Bestand an Koepfen
+    "grants_ignore_haze": False,
+}
+
+# Ausruestung gewaehrt genau eine Aktion. ``power`` > 0 ist Schaden,
+# ``power`` < 0 ist Heilung. Ohne ``action`` ist ein Teil rein passiv.
+#
+#   category    attack | ability   -- welches Budget der Zug verbraucht
+#   targeting   single | self | tile | aoe_around_target
+#
+# Regel aus dem Entwurf, hier hart eingehalten: jede Aktion mit Reichweite > 1
+# braucht Sichtlinie. Ohne sie waere das ganze Terrainsystem Dekoration.
+STATS = {
+    # --- CHASSIS (body) ----------------------------------------------------
+    # HP, DEF, Traglast. SPD/MOV sind Auf- und Abschlaege auf den Antrieb.
+    "scout_body":  {"hp":  60, "def": 1, "spd":  2, "mov":  0, "weight_capacity": 18},
+    "jugg_body":   {"hp": 130, "def": 5, "spd": -2, "mov": -1, "weight_capacity": 28},
+    "mage_body":   {"hp":  85, "def": 2, "spd":  0, "mov":  0, "weight_capacity": 20,
+                    "en_max": 10},
+    "strix_body":  {"hp":  70, "def": 2, "spd":  1, "mov":  0, "weight_capacity": 22},
+
+    # --- KERN (core) -------------------------------------------------------
+    # Energie und Ausstoss. Der Ausstoss deckelt, was drumherum haengen darf.
+    "scout_core":  {"en_max": 40, "en_regen":  8, "power_output": 12, "weight": 3},
+    "jugg_core":   {"en_max": 70, "en_regen": 12, "power_output": 16, "weight": 6},
+    "mage_core":   {"en_max": 85, "en_regen": 14, "power_output": 14, "weight": 5},
+    "strix_core":  {"en_max": 50, "en_regen": 10, "power_output": 13, "weight": 4,
+                    "atk": 2},
+
+    # --- ANTRIEB (feet) ----------------------------------------------------
+    # Vier Antriebe, vier klar getrennte Traversierungsprofile. Die Zahlen sind
+    # der Preis, die Flags sind der Grund. Lesart der Extreme:
+    #
+    #   Standbeine  langsam und stumpf, aber die schweren Fuesse greifen -- der
+    #               einzige Antrieb im Bestand, der eine Oelspur als Deckungs-
+    #               linie nutzen kann, statt darueber hinwegzuschlittern.
+    #   Fahrwerk    der schnellste Antrieb, kommt aber weder ueber Stufen noch
+    #               auf Drift zum Stehen: es hat nichts, womit es greifen kann.
+    "scout_feet":  {"mov": 4, "spd": 11, "weight": 3, "power_draw": 4,
+                    "can_pass_units": True, "can_enter_steps": True},
+    "jugg_feet":   {"mov": 3, "spd":  8, "weight": 6, "power_draw": 2, "def": 2,
+                    "ignores_drift": True},
+    "mage_drive":  {"mov": 5, "spd": 14, "weight": 4, "power_draw": 4,
+                    "drift_modifier": 1},
+    "strix_feet":  {"mov": 4, "spd":  9, "weight": 5, "power_draw": 4,
+                    "can_enter_steps": True, "step_cost_reduced": True},
+
+    # --- SENSORIK (head) ---------------------------------------------------
+    # Der Kopf ist der guenstige Slot fuer kleine Boni -- und der Ort, an dem
+    # der Blick durch Haze-Felder sitzt. Haze ist damit kein absoluter Konter
+    # gegen Fernkampf, sondern kostet einen Kopf mit schlechteren Werten.
+    "scout_head":  {"spd": 2, "weight": 2, "power_draw": 2,
+                    "grants_ignore_haze": True},
+    "jugg_head":   {"hp": 15, "def": 2, "weight": 4, "power_draw": 1},
+    "mage_head":   {"en_max": 15, "en_regen": 3, "weight": 2, "power_draw": 2},
+    "strix_head":  {"atk": 4, "weight": 3, "power_draw": 3,
+                    "grants_ignore_haze": True},
+
+    # --- AUSRUESTUNG (equipment) -------------------------------------------
+    "eq_pulse_blaster": {
+        "weight": 5, "power_draw": 3,
+        "action": {"id": "act_pulse", "display_name": "Puls-Salve",
+                   "category": "attack", "targeting": "single",
+                   "range_tiles": 4, "power": 12, "en_cost": 0,
+                   "requires_line_of_sight": True},
+    },
+    # Passiv. Ein Schild ist kein Knopf, sondern eine Entscheidung beim Bauen.
+    "eq_deflector": {"def": 5, "weight": 4, "power_draw": 2},
+
+    "eq_siege_cannon": {
+        "weight": 8, "power_draw": 5,
+        "action": {"id": "act_siege", "display_name": "Belagerungsschlag",
+                   "category": "attack", "targeting": "aoe_around_target",
+                   "range_tiles": 6, "aoe_radius": 1, "power": 18, "en_cost": 5,
+                   "requires_line_of_sight": True},
+    },
+    "eq_drone_pod": {
+        "weight": 3, "power_draw": 4,
+        "action": {"id": "act_dronepod", "display_name": "Reparaturdrohnen",
+                   "category": "ability", "targeting": "aoe_around_target",
+                   "range_tiles": 3, "aoe_radius": 1, "power": -10, "en_cost": 12,
+                   "requires_line_of_sight": True},
+    },
+    # Reichweite 1 und damit ohne Sichtlinie: der Runenstab ist die einzige
+    # Nahkampfwaffe im Bestand. Er ist der Grund, warum ein Haze-Feld ein
+    # Korridor ist und keine Sackgasse -- wer darin steht, kann immer noch
+    # zuschlagen, nur nicht mehr schiessen.
+    "eq_rune_staff": {
+        "weight": 4, "power_draw": 2,
+        "action": {"id": "act_runestaff", "display_name": "Runenschlag",
+                   "category": "attack", "targeting": "single",
+                   "range_tiles": 1, "power": 18, "en_cost": 0,
+                   "requires_line_of_sight": False},
+    },
+    "eq_orbit_focus": {
+        "weight": 3, "power_draw": 3, "atk": 1,
+        "action": {"id": "act_orbitpull", "display_name": "Orbit-Sog",
+                   "category": "ability", "targeting": "single",
+                   "range_tiles": 4, "power": 0, "en_cost": 8,
+                   "push_tiles": -2, "requires_line_of_sight": True},
+    },
+    "eq_rail_lance": {
+        "weight": 8, "power_draw": 5,
+        "action": {"id": "act_raillance", "display_name": "Schienenschuss",
+                   "category": "attack", "targeting": "single",
+                   "range_tiles": 7, "power": 16, "en_cost": 6,
+                   "requires_line_of_sight": True},
+    },
+}
+
+ACTION_DEFAULTS = {
+    "id": "", "display_name": "", "category": "attack", "targeting": "single",
+    "range_tiles": 1, "aoe_radius": 0, "en_cost": 0, "power": 0,
+    "requires_line_of_sight": False, "push_tiles": 0, "status_effect": None,
+}
+
+
+def part_stats(part_id: str) -> dict:
+    """Vollstaendiger Statblock eines Teils: Defaults plus seine Abweichungen."""
+    raw = STATS.get(part_id, {})
+    unknown = set(raw) - set(STAT_DEFAULTS) - {"action"}
+    if unknown:
+        raise SystemExit(f"[stats] {part_id}: unbekannte Felder {sorted(unknown)}")
+
+    stats = dict(STAT_DEFAULTS)
+    stats.update({k: v for k, v in raw.items() if k != "action"})
+
+    action = raw.get("action")
+    if action is not None:
+        unknown = set(action) - set(ACTION_DEFAULTS)
+        if unknown:
+            raise SystemExit(f"[stats] {part_id}: unbekannte Aktionsfelder {sorted(unknown)}")
+        merged = dict(ACTION_DEFAULTS)
+        merged.update(action)
+        # Die Regel aus dem Entwurf, hier als Zusicherung statt als Kommentar.
+        if merged["range_tiles"] > 1 and not merged["requires_line_of_sight"]:
+            raise SystemExit(
+                f"[stats] {part_id}: Reichweite {merged['range_tiles']} ohne "
+                f"Sichtlinie -- ohne diese Regel ist das Terrain Dekoration"
+            )
+        stats["action"] = merged
+    else:
+        stats["action"] = None
+    return stats
+
+
+# ---------------------------------------------------------------------------
 # Primitive: alles ist ein Quader oder eine Scheibe
 # ---------------------------------------------------------------------------
 def B(f, l, z, mat):
@@ -1698,6 +1893,9 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
         meta["category"] = part.get("category", DEFAULT_CATEGORY)
     if "slots" in part:
         meta["slots"] = part["slots"]
+    # Spielwerte. Richtungsunabhaengig, deshalb in allen vier JSONs identisch --
+    # gepflegt wird ausschliesslich die Tabelle STATS weiter oben.
+    meta["stats"] = part_stats(pid)
 
     (set_dir / f"{stem}.json").write_text(
         json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
@@ -1739,6 +1937,7 @@ def main() -> None:
     check_mounts()
     check_core_seat()
     check_silhouettes()
+    check_stats()
     print_slot_matrix()
 
     print(f"\nIso-Kamera 45 Grad  |  Bodenfeld {2 * TILE_HALF_W:.0f} x "
@@ -1917,6 +2116,90 @@ def check_silhouettes() -> None:
             "ihr nicht ansieht. Silhouetten-Merkmal ergaenzen (Muendungsbremse, "
             "Magazin, Strebe, Klinge, ...) und erneut erzeugen."
         )
+
+
+def check_stats() -> None:
+    """
+    Die Baubarkeitsregel als Test: jeder Bausatz muss sich selbst bauen koennen.
+
+    Ein Chassis, das seine eigenen Anker nicht bestuecken kann, ist kein
+    Balancing-Problem, sondern ein Datenfehler -- es faellt nur erst in der
+    Werkstatt auf, wenn der Spieler schon klickt. Deshalb wird hier fuer jeden
+    Satz der naheliegendste Aufbau durchgerechnet: eigener Kopf, eigener Kern,
+    eigener Antrieb und die eigene Ausruestung in so vielen Slots, wie das
+    Chassis Anker hat.
+
+    Geprueft werden die vier Regeln, die auch die Werkstatt spaeter prueft:
+    Pflichtteile, Traglast, Energie, und mov/spd mindestens 1.
+    """
+    for spec, part in all_parts():
+        if part["id"] not in STATS:
+            raise SystemExit(f"{spec['id']}/{part['id']}: kein Eintrag in STATS")
+
+    rows = []
+    for spec in SETS:
+        parts = {p["type"]: p for p in spec["parts"] if not
+                 p["type"].startswith("equipment")}
+        body = parts.get("body")
+        if not body:
+            continue
+        slots = sorted(a for a in body["anchors"] if a.startswith("equip_"))
+        rules = body.get("slot_rules", {})
+
+        chosen = [body] + [parts[t] for t in ("head", "feet", "core") if t in parts]
+        equipment = [p for p in spec["parts"] if p["type"].startswith("equipment")]
+        # Waffen zuerst -- ein Aufbau ohne Waffe ist per Regel ungueltig.
+        equipment.sort(key=lambda p: p.get("category", DEFAULT_CATEGORY) != "weapon")
+        for slot in slots:
+            fit = next((p for p in equipment if p not in chosen and
+                        fits_rule(p.get("mount_class", DEFAULT_MOUNT_CLASS),
+                                  p.get("category", DEFAULT_CATEGORY),
+                                  rules.get(slot))), None)
+            if fit:
+                chosen.append(fit)
+
+        stats = {k: 0 for k in ("hp", "en_max", "spd", "mov", "atk", "def",
+                                "weight", "power_draw")}
+        capacity = output = 0
+        has_weapon = False
+        for p in chosen:
+            s = part_stats(p["id"])
+            for k in stats:
+                stats[k] += s[k]
+            capacity += s["weight_capacity"]
+            output += s["power_output"]
+            if p.get("category") == "weapon":
+                has_weapon = True
+
+        where = spec["id"]
+        problems = []
+        if not has_weapon:
+            problems.append("keine Waffe")
+        if stats["weight"] > capacity:
+            problems.append(f"Traglast {stats['weight']}/{capacity}")
+        if stats["power_draw"] > output:
+            problems.append(f"Energie {stats['power_draw']}/{output}")
+        if stats["mov"] < 1:
+            problems.append(f"mov {stats['mov']}")
+        if stats["spd"] < 1:
+            problems.append(f"spd {stats['spd']}")
+        if problems:
+            raise SystemExit(
+                f"{where}: der eigene Standardaufbau ist ungueltig -- "
+                f"{', '.join(problems)}.\n"
+                f"Ein Bausatz, der sich selbst nicht bauen kann, ist ein "
+                f"Datenfehler. Traglast des Chassis, Ausstoss des Kerns oder "
+                f"die Gewichte der Teile in STATS anpassen."
+            )
+        rows.append((where, stats, capacity, output))
+
+    print("\nStandardaufbau je Bausatz (eigene Teile, alle Anker belegt):")
+    print(f"  {'':<7}{'HP':>5}{'EN':>5}{'SPD':>5}{'MOV':>5}{'ATK':>5}{'DEF':>5}"
+          f"{'  Last':>10}{'  Energie':>11}")
+    for where, s, capacity, output in rows:
+        print(f"  {where:<7}{s['hp']:>5}{s['en_max']:>5}{s['spd']:>5}"
+              f"{s['mov']:>5}{s['atk']:>5}{s['def']:>5}"
+              f"{s['weight']:>7}/{capacity:<3}{s['power_draw']:>8}/{output:<3}")
 
 
 def print_slot_matrix() -> None:

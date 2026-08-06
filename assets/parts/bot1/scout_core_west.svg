@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="scout_core" data-type="core" data-direction="west">
+  <title>Vireo Impulskern (west)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung west.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M59.47 40.15 L60.61 39.34 L60.61 38.39 L59.47 39.2 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M60.61 38.39 L60.47 38.29 L59.32 39.1 L59.47 39.2 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M59.32 40.05 L59.47 40.15 L59.47 39.2 L59.32 39.1 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M54.5 47.96 L55.46 47.28 L55.46 45.95 L54.5 46.62 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M54.36 47.86 L54.5 47.96 L54.5 46.62 L54.36 46.52 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M55.46 45.95 L55.31 45.84 L54.36 46.52 L54.5 46.62 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M54.5 39.75 L55.46 39.07 L55.46 37.74 L54.5 38.41 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M54.36 39.65 L54.5 39.75 L54.5 38.41 L54.36 38.31 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M55.46 37.74 L55.31 37.63 L54.36 38.31 L54.5 38.41 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M49.35 47.31 L50.49 46.5 L50.49 45.54 L49.35 46.35 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M50.49 45.54 L50.35 45.44 L49.2 46.25 L49.35 46.35 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M49.2 47.2 L49.35 47.31 L49.35 46.35 L49.2 46.25 Z" fill="#2de2e6" stroke="none"/>
+</g>
+</svg>

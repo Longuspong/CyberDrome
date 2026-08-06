@@ -1,0 +1,38 @@
+; DROME -- Godot-Projekt
+;
+; Die Projektwurzel IST die Repo-Wurzel. Das ist Absicht und steht so schon in
+; docs/GODOT_INTEGRATION.md: ein Loader loest Texturen ueber res://... auf, und
+; die SVG-Werkstatt (python3 main.py) laeuft unveraendert daneben weiter.
+;
+; Godot liest ausschliesslich assets/parts/ -- den gebackenen Satz. Der
+; Quellbaum parts/ traegt eine .gdignore, weil seine CSS-Variablen im
+; Rasterizer schwarz werden.
+
+config_version=5
+
+[application]
+
+config/name="DROME"
+config/description="Isometrisches Taktik-RPG. MVP: Werkstatt und Chaos-Virus."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://assets/parts/bot1/scout_head_south.svg"
+
+[autoload]
+
+EventBus="*res://autoload/event_bus.gd"
+PartDB="*res://autoload/part_db.gd"
+GameState="*res://autoload/game_state.gd"
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

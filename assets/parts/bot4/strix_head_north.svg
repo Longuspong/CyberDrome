@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="strix_head" data-type="head" data-direction="north">
+  <title>Strix Okularkopf (north)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#060f0d" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M70.87 31.3 L75.17 28.26 L75.17 24.06 L70.87 27.1 Z" fill="#101d1b"/>
+  <path d="M70.87 27.1 L75.17 24.06 L70.97 21.09 L66.67 24.13 Z" fill="#557d71"/>
+  <path d="M66.67 28.33 L70.87 31.3 L70.87 27.1 L66.67 24.13 Z" fill="#557d71"/>
+  <path d="M56.84 30.55 L62.57 26.5 L62.57 25.07 L56.84 29.12 Z" fill="#101d1b"/>
+  <path d="M56.84 29.12 L62.57 25.07 L61.14 24.06 L55.41 28.11 Z" fill="#557d71"/>
+  <path d="M55.41 29.54 L56.84 30.55 L56.84 29.12 L55.41 28.11 Z" fill="#557d71"/>
+  <path d="M63.52 34.64 L73.07 27.89 L64.48 21.81 L54.93 28.56 Z" fill="#335954"/>
+  <path d="M63.52 42.27 L73.07 35.52 L73.07 27.89 L63.52 34.64 Z" fill="#101d1b"/>
+  <path d="M54.93 36.2 L63.52 42.27 L63.52 34.64 L54.93 28.56 Z" fill="#1c3330"/>
+  <path d="M63.52 33.4 L74.02 25.98 L64.48 19.23 L53.98 26.65 Z" fill="#335954"/>
+  <path d="M66.86 37.64 L72.59 33.59 L72.59 32.16 L66.86 36.21 Z" fill="#101d1b"/>
+  <path d="M66.86 36.21 L72.59 32.16 L71.16 31.15 L65.43 35.2 Z" fill="#557d71"/>
+  <path d="M65.43 36.63 L66.86 37.64 L66.86 36.21 L65.43 35.2 Z" fill="#557d71"/>
+  <path d="M63.52 35.31 L74.02 27.89 L74.02 25.98 L63.52 33.4 Z" fill="#1c3330"/>
+  <path d="M53.98 28.56 L63.52 35.31 L63.52 33.4 L53.98 26.65 Z" fill="#335954"/>
+  <path d="M56.65 36.57 L58.94 38.19 L58.94 26.74 L56.65 25.12 Z" fill="#557d71"/>
+  <path d="M58.94 38.19 L60.37 37.18 L60.37 25.73 L58.94 26.74 Z" fill="#101d1b"/>
+  <path d="M55.89 30.71 L59.13 33.01 L59.13 29.67 L55.89 27.37 Z" fill="#c2ffd7" stroke="none"/>
+  <path d="M59.13 33.01 L60.66 31.93 L60.66 28.59 L59.13 29.67 Z" fill="#c2ffd7" stroke="none"/>
+  <path d="M59.13 29.67 L60.66 28.59 L57.41 26.29 L55.89 27.37 Z" fill="#c2ffd7" stroke="none"/>
+  <path d="M58.94 26.74 L60.37 25.73 L58.08 24.11 L56.65 25.12 Z" fill="#557d71"/>
+</g>
+</svg>

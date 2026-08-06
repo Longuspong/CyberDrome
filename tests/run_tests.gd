@@ -1,0 +1,65 @@
+extends SceneTree
+
+## Testlauf ohne Editor:
+##
+##     godot --headless --script res://tests/run_tests.gd
+##
+## Bewusst kein Test-Framework als Abhaengigkeit. Das Projekt kommt bis hierher
+## ohne node_modules und ohne pip aus; ein Runner in 40 Zeilen haelt das
+## durch, und die Tests sind dieselben.
+
+var _passed := 0
+var _failed := 0
+var _current := ""
+
+const SUITES := [
+	"res://tests/test_drome_build.gd",
+	"res://tests/test_grid.gd",
+	"res://tests/test_tick_bus.gd",
+	"res://tests/test_reachability.gd",
+]
+
+
+## _initialize() statt _init(): zu Zeiten von _init() steht der Baum noch nicht,
+## die Autoloads (PartDB!) fehlen, und ein quit() dort verpufft -- der Prozess
+## laeuft dann bis zum Timeout weiter, statt einen Exitcode zu liefern.
+func _initialize() -> void:
+	print("\n=== DROME Tests ===\n")
+	for path in SUITES:
+		if not ResourceLoader.exists(path):
+			print("  [uebersprungen] %s fehlt noch" % path)
+			continue
+		var suite = load(path).new()
+		suite.t = self
+		var name: String = path.get_file().get_basename()
+		print("-- %s" % name)
+		for method in suite.get_method_list():
+			if not method["name"].begins_with("test_"):
+				continue
+			_current = "%s.%s" % [name, method["name"]]
+			suite.call(method["name"])
+		print("")
+
+	print("=== %d bestanden, %d fehlgeschlagen ===" % [_passed, _failed])
+	quit(1 if _failed > 0 else 0)
+
+
+func ok(condition: bool, message: String) -> void:
+	if condition:
+		_passed += 1
+	else:
+		_failed += 1
+		print("  [FEHLER] %s: %s" % [_current, message])
+
+
+func equal(actual, expected, message: String) -> void:
+	if actual == expected:
+		_passed += 1
+	else:
+		_failed += 1
+		print("  [FEHLER] %s: %s\n           erwartet %s, war %s"
+			% [_current, message, expected, actual])
+
+
+func note(text: String) -> void:
+	print("  %s" % text)

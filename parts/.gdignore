@@ -1,0 +1,8 @@
+# Godot ignoriert diesen Baum bewusst.
+#
+# Die Teile hier zeichnen mit CSS-Variablen (var(--c-plate)). Godots
+# SVG-Rasterizer loest die nicht auf und rastert alles schwarz -- nachgemessen
+# mit 4.3: genau eine Farbe, #000000. Fuer die Engine liegt der gebackene Satz
+# unter assets/parts/, erzeugt von tools/bake_godot_assets.py.
+#
+# Dieser Baum bleibt die Quelle: hier arbeitet die SVG-Werkstatt (python3 main.py).

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="strix_core" data-type="core" data-direction="north">
+  <title>Strix Zielrechner (north)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#060f0d" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M52.35 53.79 L53.4 54.53 L53.4 48.81 L52.35 48.06 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M53.4 54.53 L53.59 54.4 L53.59 48.67 L53.4 48.81 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M53.79 55.11 L57.03 57.4 L57.03 50.53 L53.79 48.23 Z" fill="#101d1b"/>
+  <path d="M54.12 55.11 L56.22 56.59 L56.22 50.87 L54.12 49.38 Z" fill="#6dff9f" stroke="none"/>
+  <path d="M53.4 48.81 L53.59 48.67 L52.54 47.93 L52.35 48.06 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M56.22 56.59 L56.46 56.42 L56.46 50.7 L56.22 50.87 Z" fill="#6dff9f" stroke="none"/>
+  <path d="M57.03 57.4 L57.6 57.0 L57.6 50.12 L57.03 50.53 Z" fill="#101d1b"/>
+  <path d="M57.03 57.1 L58.08 57.84 L58.08 52.11 L57.03 51.37 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M58.08 57.84 L58.27 57.71 L58.27 51.98 L58.08 52.11 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M56.22 50.87 L56.46 50.7 L54.36 49.21 L54.12 49.38 Z" fill="#6dff9f" stroke="none"/>
+  <path d="M57.03 50.53 L57.6 50.12 L54.36 47.83 L53.79 48.23 Z" fill="#1c3330"/>
+  <path d="M58.08 52.11 L58.27 51.98 L57.22 51.24 L57.03 51.37 Z" fill="#2fbf8c" stroke="none"/>
+</g>
+</svg>
