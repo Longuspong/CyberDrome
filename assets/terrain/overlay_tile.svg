@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>Feldmarkierung</title>
+  <!-- Erzeugt von tools/build_terrain_tiles.py. Weiss, damit die
+       Szene per modulate einfaerben kann: blau = erreichbar,
+       rot = Ziel, grau = keine Sichtlinie, gelb = ausgewaehlt. -->
+  <path d="M64.00 122.87 L26.00 96.00 L64.00 69.13 L102.00 96.00 Z" fill="#ffffff"/>
+</svg>
