@@ -304,6 +304,16 @@ textarea { min-height: 150px; font-family: ui-monospace, monospace; font-size: 1
       <div id="slots"></div>
     </div>
 
+    <div class="panel" id="panel-combat">
+      <h3>Kampfwerte</h3>
+      <div id="combat-body"></div>
+    </div>
+
+    <div class="panel" id="panel-squad">
+      <h3>Squad</h3>
+      <div id="squad-body"></div>
+    </div>
+
     <div class="panel" id="panel-transform">
       <h3>Feinjustierung <span id="transform-target" style="color:var(--neon);text-transform:none;letter-spacing:0"></span></h3>
       <div id="transform-body">
@@ -1456,12 +1466,315 @@ function renderPalette() {
   el("btn-palette-del").disabled = Object.keys(state.palettes).length < 2;
 }
 
+// ---------------------------------------------------------------------------
+// Kampfwerte
+// ---------------------------------------------------------------------------
+// Die Werte selbst stehen in den Teil-JSONs unter "stats" -- erzeugt von
+// tools/build_sample_parts.py. Hier wird nur summiert und angezeigt.
+//
+// WICHTIG: massgeblich ist immer die Engine. Ein Loadout speichert Teile-IDs,
+// keine Werte; das Spiel rechnet sie beim Laden neu aus. Was hier steht, ist
+// Anzeige -- laufen beide je auseinander, hat diese Seite den Fehler.
+
+// >>> STATS-BLOCK ANFANG (tools/check_workshop_stats.js liest genau diesen
+// Bereich heraus und rechnet ihn gegen die Werte der Engine gegen. Marker
+// nicht entfernen -- ohne sie faellt die Absicherung still aus.)
+const SUM_KEYS = ["hp", "en_max", "en_regen", "spd", "mov", "atk", "def",
+                  "weight", "power_draw", "weight_capacity", "power_output",
+                  "drift_modifier"];
+const FLAG_KEYS = ["can_pass_units", "can_enter_steps", "can_pass_blocks",
+                   "ignores_drift", "step_cost_reduced", "grants_ignore_haze"];
+
+const STAT_ROWS = [
+  ["hp", "Integritaet"], ["en_max", "Energie"], ["en_regen", "EN-Regen"],
+  ["spd", "SPD"], ["mov", "MOV"], ["atk", "ATK"], ["def", "DEF"],
+];
+
+const FLAG_LABEL = {
+  can_pass_units: "zieht durch Einheiten",
+  can_enter_steps: "betritt Stufen",
+  ignores_drift: "immun gegen Drift",
+  step_cost_reduced: "Stufen kosten 1 MP",
+  grants_ignore_haze: "sieht durch Haze",
+};
+
+const SLOT_LABEL_DE = {
+  body: "Chassis", head: "Sensorik", feet: "Antrieb", core: "Kern",
+  equip_left: "Ausruestung links", equip_right: "Ausruestung rechts",
+  equip_shoulder: "Schulterhalterung", equip_center: "Zentralhalterung",
+};
+
+const statsOf = (part) => (part && part.stats) || {};
+
+/** Summiert die Werte eines Aufbaus. Flags sind ODER, alles andere additiv. */
+function buildStats(loadout) {
+  const total = {};
+  for (const key of SUM_KEYS) total[key] = 0;
+  for (const key of FLAG_KEYS) total[key] = false;
+  let bestWeapon = 0;
+
+  for (const [slot, entry] of Object.entries(loadout || {})) {
+    if (!entry || !entry.partId) continue;
+    const part = resolvePart(entry.partId);
+    if (!part) continue;
+    const s = statsOf(part);
+    for (const key of SUM_KEYS) total[key] += Number(s[key] || 0);
+    for (const key of FLAG_KEYS) total[key] = total[key] || Boolean(s[key]);
+    if (s.action && Number(s.action.power) > bestWeapon) bestWeapon = Number(s.action.power);
+  }
+  total.best_weapon = bestWeapon;
+  for (const key of ["hp", "en_max", "atk", "def"]) total[key] = Math.max(0, total[key]);
+  return total;
+}
+
+/**
+ * Die vier Regeln aus dem Entwurf, plus die Slotregel des Chassis.
+ * Gibt Klartext zurueck -- der Spieler soll nicht raten, welche Regel bricht.
+ */
+function validateLoadout(loadout) {
+  const problems = [];
+  const partIn = (slot) => {
+    const entry = (loadout || {})[slot];
+    return entry && entry.partId ? resolvePart(entry.partId) : null;
+  };
+
+  for (const slot of ["body", "head", "feet", "core"]) {
+    if (!partIn(slot)) problems.push(`${SLOT_LABEL_DE[slot]} fehlt`);
+  }
+
+  const bodyPart = partIn("body");
+  const equipSlots = bodyPart
+    ? Object.keys(anchorsOf(bodyPart)).filter((n) => n.startsWith("equip_")).sort()
+    : [];
+
+  let hasWeapon = false;
+  for (const slot of equipSlots) {
+    const part = partIn(slot);
+    if (!part) continue;
+    if (categoryOf(part) === "weapon") hasWeapon = true;
+    const def = slotDefs().find((d) => d.slot === slot);
+    if (def && !fitsSlot(part, def)) {
+      problems.push(`${part.name} passt nicht in ${SLOT_LABEL_DE[slot] || slot}`);
+    }
+  }
+  if (!hasWeapon) problems.push("Keine Waffe bestueckt");
+
+  const t = buildStats(loadout);
+  if (t.weight > t.weight_capacity) {
+    problems.push(`Traglast ueberschritten: ${t.weight} / ${t.weight_capacity}`);
+  }
+  if (t.power_draw > t.power_output) {
+    problems.push(`Energiebedarf zu hoch: ${t.power_draw} / ${t.power_output}`);
+  }
+  if (t.mov < 1) problems.push(`Bewegung zu gering: mov ${t.mov} (mindestens 1)`);
+  if (t.spd < 1) problems.push(`Geschwindigkeit zu gering: spd ${t.spd} (mindestens 1)`);
+  return problems;
+}
+
+function threatScore(loadout) {
+  const t = buildStats(loadout);
+  return t.hp * 1 + t.atk * 6 + t.def * 8 + t.spd * 3 + t.mov * 4
+       + t.en_max * 0.5 + t.best_weapon * 2;
+}
+// <<< STATS-BLOCK ENDE
+
+/** Ein Balken mit Klartextmeldung bei Ueberschreitung. */
+function meter(label, value, limit) {
+  const over = value > limit;
+  const pct = limit > 0 ? Math.min(100, (value / limit) * 100) : (value > 0 ? 100 : 0);
+  return `
+    <div style="margin:6px 0 2px;display:flex;justify-content:space-between;font-size:11px">
+      <span>${label}</span>
+      <span style="color:${over ? "var(--bad,#ff6b6b)" : "inherit"}">${value} / ${limit}</span>
+    </div>
+    <div style="height:6px;background:#00000055;border-radius:3px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${over ? "#ff6b6b" : "var(--neon)"}"></div>
+    </div>`;
+}
+
+/** Aufbau, der beim Hovern ueber ein Bibliotheks-Teil entstuende. */
+let hoverPreview = null;
+
+function previewLoadoutWith(part) {
+  const slot = pickSlotFor(part);
+  if (!slot) return null;
+  const next = {};
+  for (const [key, entry] of Object.entries(state.loadout)) next[key] = entry;
+  next[slot] = { ...(next[slot] || newEntry(part.id)), partId: part.id };
+
+  // Ein Chassiswechsel kann Ausruestungsslots wegnehmen. Was nicht mehr passt,
+  // faellt ab -- sonst verspricht die Vorschau Werte fuer einen Aufbau, den es
+  // so gar nicht geben kann.
+  if (part.type === "body") {
+    const anchors = anchorsOf(part);
+    for (const key of Object.keys(next)) {
+      if (key.startsWith("equip_") && !anchors[key]) delete next[key];
+    }
+  }
+  return { slot, loadout: next };
+}
+
+function renderCombat() {
+  const base = buildStats(state.loadout);
+  const preview = hoverPreview ? buildStats(hoverPreview.loadout) : null;
+  const problems = validateLoadout(state.loadout);
+
+  const rows = STAT_ROWS.map(([key, label]) => {
+    const now = base[key];
+    let delta = "";
+    if (preview && preview[key] !== now) {
+      const diff = preview[key] - now;
+      const good = key === "weight" || key === "power_draw" ? diff < 0 : diff > 0;
+      delta = `<span style="color:${good ? "#6bd97a" : "#ff6b6b"}">
+                 ${diff > 0 ? "+" : ""}${diff}</span>`;
+    }
+    return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:1px 0">
+              <span style="opacity:.75">${label}</span>
+              <span>${now} ${delta}</span>
+            </div>`;
+  }).join("");
+
+  const flags = FLAG_KEYS.filter((k) => base[k] && FLAG_LABEL[k])
+    .map((k) => FLAG_LABEL[k]);
+  if (base.drift_modifier) flags.push(`Gleitweite ${base.drift_modifier > 0 ? "+" : ""}${base.drift_modifier}`);
+
+  el("combat-body").innerHTML = `
+    ${rows}
+    ${meter("Gewicht / Traglast", base.weight, base.weight_capacity)}
+    ${meter("Energiebedarf / Ausstoss", base.power_draw, base.power_output)}
+    ${flags.length ? `<p class="hint" style="margin-top:8px">${flags.join(" · ")}</p>` : ""}
+    <div style="margin-top:8px;font-size:11px;opacity:.7">Threat Score ${Math.round(threatScore(state.loadout))}</div>
+    ${problems.length
+      ? `<div style="margin-top:8px;font-size:11px;color:#ff6b6b">
+           ${problems.map((p) => `&bull; ${escapeXml(p)}`).join("<br>")}
+         </div>`
+      : `<div style="margin-top:8px;font-size:11px;color:#6bd97a">Aufbau ist gueltig.</div>`}
+    ${hoverPreview
+      ? `<p class="hint" style="margin-top:6px">Vorschau fuer
+           ${SLOT_LABEL_DE[hoverPreview.slot] || hoverPreview.slot}</p>` : ""}`;
+}
+
+// ---------------------------------------------------------------------------
+// Squad
+// ---------------------------------------------------------------------------
+// Der Kampf braucht mehrere DROMEs. Die Werkstatt baut weiterhin genau einen
+// -- der Squad ist eine Ablage daneben, kein Umbau der Bedienung.
+
+const squad = { size: 2, slots: [null, null, null, null], active: 0 };
+
+function loadoutPayload(name) {
+  const slots = {};
+  for (const [slot, entry] of Object.entries(state.loadout)) {
+    if (!entry || !entry.partId) continue;
+    const part = resolvePart(entry.partId);
+    slots[slot] = {
+      part_id: entry.partId,
+      code: (part && part.code) || "",
+      name: (part && part.name) || entry.partId,
+    };
+  }
+  return {
+    name: name || el("build-name").value.trim() || "DROME",
+    set: state.activeSet,
+    direction: state.direction,
+    palette: state.palette,
+    slots,
+  };
+}
+
+function renderSquad() {
+  const cards = [];
+  for (let i = 0; i < squad.size; i++) {
+    const member = squad.slots[i];
+    const problems = member ? validateLoadout(member.loadoutState) : ["leer"];
+    const ok = member && problems.length === 0;
+    cards.push(`
+      <div style="border:1px solid ${ok ? "var(--neon)" : "var(--line)"};
+                  border-radius:4px;padding:6px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b style="font-size:12px">${escapeXml(member ? member.name : "Platz " + (i + 1))}</b>
+          <span>
+            <button data-squad-take="${i}" style="font-size:11px">Uebernehmen</button>
+            ${member ? `<button data-squad-clear="${i}" class="danger" style="font-size:11px">&times;</button>` : ""}
+          </span>
+        </div>
+        ${member
+          ? `<div style="font-size:11px;opacity:.7">Threat ${Math.round(threatScore(member.loadoutState))}${
+               problems.length ? ` &bull; <span style="color:#ff6b6b">${escapeXml(problems[0])}</span>` : ""}</div>`
+          : `<div style="font-size:11px;opacity:.5">frei</div>`}
+      </div>`);
+  }
+
+  const filled = squad.slots.slice(0, squad.size).filter(Boolean);
+  const ready = filled.length === squad.size
+    && filled.every((m) => validateLoadout(m.loadoutState).length === 0);
+
+  el("squad-body").innerHTML = `
+    <div class="row" style="margin-bottom:6px;align-items:center;gap:6px">
+      <label style="font-size:11px">Groesse</label>
+      <select id="squad-size">${[1, 2, 3, 4].map((n) =>
+        `<option value="${n}"${n === squad.size ? " selected" : ""}>${n}</option>`).join("")}</select>
+    </div>
+    ${cards.join("")}
+    <button id="squad-save" style="width:100%"${ready ? "" : " disabled"}>
+      ${ready ? "Squad fuer den Kampf sichern" : "Squad unvollstaendig"}
+    </button>
+    <p class="hint" style="margin-top:6px">
+      Schreibt <code>builds/squad.json</code>. Die Godot-Kampfszene liest sie
+      beim Start.
+    </p>`;
+
+  el("squad-size").addEventListener("change", (e) => {
+    squad.size = Number(e.target.value);
+    renderSquad();
+  });
+  el("squad-save").addEventListener("click", saveSquad);
+  for (const button of el("squad-body").querySelectorAll("[data-squad-take]")) {
+    button.addEventListener("click", () => {
+      const index = Number(button.dataset.squadTake);
+      const problems = validateLoadout(state.loadout);
+      if (problems.length) { toast(problems[0], "err"); return; }
+      squad.slots[index] = {
+        name: el("build-name").value.trim() || `DROME-${index + 1}`,
+        loadoutState: JSON.parse(JSON.stringify(state.loadout)),
+        payload: loadoutPayload(el("build-name").value.trim() || `DROME-${index + 1}`),
+      };
+      renderSquad();
+      toast(`Platz ${index + 1} uebernommen.`, "ok");
+    });
+  }
+  for (const button of el("squad-body").querySelectorAll("[data-squad-clear]")) {
+    button.addEventListener("click", () => {
+      squad.slots[Number(button.dataset.squadClear)] = null;
+      renderSquad();
+    });
+  }
+}
+
+async function saveSquad() {
+  const members = squad.slots.slice(0, squad.size).filter(Boolean);
+  try {
+    await api("/api/squad", {
+      method: "POST",
+      body: JSON.stringify({
+        squad_size: squad.size,
+        squad: members.map((m) => m.payload),
+      }),
+    });
+    toast(`Squad mit ${members.length} DROMEs gesichert.`, "ok");
+  } catch (error) {
+    toast(`Squad nicht gesichert: ${error.message}`, "err");
+  }
+}
+
 function renderAll() {
   renderLibrary();
   renderSlots();
   renderTransform();
   renderPalette();
   renderCanvas();
+  renderCombat();
+  renderSquad();
 }
 
 // ---------------------------------------------------------------------------
@@ -1870,6 +2183,20 @@ function wireEvents() {
     const slot = pickSlotFor(part);
     if (!slot) { toast(`Kein passender Slot fuer "${part.name}".`, "err"); return; }
     assignPart(slot, part.id);
+  });
+
+  // Delta-Anzeige: beim Hovern zeigt das Kampfwerte-Panel, wie sich die Werte
+  // aendern WUERDEN. Nur Anzeige -- state.loadout bleibt unberuehrt.
+  el("library").addEventListener("mouseover", (event) => {
+    const card = event.target.closest(".lib-card");
+    if (!card) return;
+    const part = state.sets.flatMap((s) => s.parts).find((p) => p.uid === card.dataset.uid);
+    if (!part) return;
+    const preview = previewLoadoutWith(part);
+    if (preview && preview !== hoverPreview) { hoverPreview = preview; renderCombat(); }
+  });
+  el("library").addEventListener("mouseleave", () => {
+    if (hoverPreview) { hoverPreview = null; renderCombat(); }
   });
 
   el("library").addEventListener("dragstart", (event) => {

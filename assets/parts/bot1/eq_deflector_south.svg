@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_deflector" data-type="equipment" data-direction="south">
+  <title>Deflektor-Schild (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M47.96 68.84 L51.4 66.41 L51.4 40.63 L47.96 43.06 Z" fill="#28304a"/>
+  <path d="M47.01 68.16 L47.96 68.84 L47.96 43.06 L47.01 42.39 Z" fill="#47547e"/>
+  <path d="M57.32 52.37 L64.95 57.77 L64.95 49.18 L57.32 43.78 Z" fill="#5b6785"/>
+  <path d="M64.95 57.77 L70.68 53.72 L70.68 45.13 L64.95 49.18 Z" fill="#161b29"/>
+  <path d="M63.05 39.73 L57.32 43.78 L64.95 49.18 L70.68 45.13 Z" fill="#5b6785"/>
+  <path d="M47.77 68.43 L61.14 77.88 L61.14 52.11 L47.77 42.66 Z" fill="#28304a"/>
+  <path d="M49.11 66.37 L58.65 73.12 L58.65 54.98 L49.11 48.23 Z" fill="#161b29"/>
+  <path d="M52.26 66.41 L54.55 68.03 L54.55 55.62 L52.26 54.0 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M54.55 68.03 L55.03 67.69 L55.03 55.28 L54.55 55.62 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M50.44 39.96 L47.01 42.39 L47.96 43.06 L51.4 40.63 Z" fill="#47547e"/>
+  <path d="M58.65 73.12 L59.23 72.71 L59.23 54.58 L58.65 54.98 Z" fill="#161b29"/>
+  <path d="M61.14 77.88 L64.0 75.86 L64.0 50.08 L61.14 52.11 Z" fill="#161b29"/>
+  <path d="M61.52 78.42 L64.95 75.99 L64.95 50.22 L61.52 52.65 Z" fill="#28304a"/>
+  <path d="M60.56 77.75 L61.52 78.42 L61.52 52.65 L60.56 51.97 Z" fill="#47547e"/>
+  <path d="M52.74 53.66 L52.26 54.0 L54.55 55.62 L55.03 55.28 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M49.68 47.83 L49.11 48.23 L58.65 54.98 L59.23 54.58 Z" fill="#28304a"/>
+  <path d="M50.64 40.63 L47.77 42.66 L61.14 52.11 L64.0 50.08 Z" fill="#47547e"/>
+  <path d="M64.0 49.54 L60.56 51.97 L61.52 52.65 L64.95 50.22 Z" fill="#47547e"/>
+</g>
+</svg>

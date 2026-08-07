@@ -1,0 +1,37 @@
+{
+  "id": "bot3",
+  "name": "AR-Nimbus // Technomant",
+  "description": "Gerundete Support-DROME auf Fahrgestell. Zwei Ausruestungsanker.",
+  "palette": {
+    "body": {
+      "hull": "#2f2450",
+      "mech": "#6f5f97",
+      "neon": "#b06bff",
+      "line": "#0d0818"
+    },
+    "feet": {
+      "hull": "#2f2450",
+      "mech": "#6f5f97",
+      "neon": "#b06bff",
+      "line": "#0d0818"
+    },
+    "equipment": {
+      "hull": "#2f2450",
+      "mech": "#6f5f97",
+      "neon": "#b06bff",
+      "line": "#0d0818"
+    },
+    "head": {
+      "hull": "#2f2450",
+      "mech": "#6f5f97",
+      "visor": "#d6b8ff",
+      "line": "#0d0818"
+    },
+    "core": {
+      "case": "#2f2450",
+      "ember": "#7cf9ff",
+      "rings": "#ff5ec7",
+      "line": "#0d0818"
+    }
+  }
+}

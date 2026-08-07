@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_pulse_blaster" data-type="equipment" data-direction="east">
+  <title>Puls-Blaster (east)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung east.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M65.43 49.02 L74.02 55.09 L74.02 53.66 L65.43 47.59 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M65.43 47.59 L74.02 53.66 L74.6 53.26 L66.0 47.18 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M74.02 55.09 L74.6 54.69 L74.6 53.26 L74.02 53.66 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M64.48 72.26 L74.98 64.84 L74.98 52.43 L64.48 59.85 Z" fill="#161b29"/>
+  <path d="M53.98 64.84 L64.48 72.26 L64.48 59.85 L53.98 52.43 Z" fill="#28304a"/>
+  <path d="M53.98 52.43 L64.48 59.85 L74.98 52.43 L64.48 45.0 Z" fill="#47547e"/>
+  <path d="M54.36 56.85 L62.95 62.92 L62.95 61.49 L54.36 55.42 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M54.36 55.42 L62.95 61.49 L63.52 61.09 L54.93 55.01 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M65.91 62.66 L73.55 68.06 L81.18 62.66 L73.55 57.26 Z" fill="#47547e"/>
+  <path d="M63.05 57.77 L70.68 52.37 L70.68 43.78 L63.05 49.18 Z" fill="#161b29"/>
+  <path d="M73.55 74.74 L81.18 69.34 L81.18 62.66 L73.55 68.06 Z" fill="#161b29"/>
+  <path d="M65.91 69.34 L73.55 74.74 L73.55 68.06 L65.91 62.66 Z" fill="#28304a"/>
+  <path d="M57.32 53.72 L63.05 57.77 L63.05 49.18 L57.32 45.13 Z" fill="#5b6785"/>
+  <path d="M57.32 45.13 L63.05 49.18 L70.68 43.78 L64.95 39.73 Z" fill="#5b6785"/>
+  <path d="M62.95 62.92 L63.52 62.52 L63.52 61.09 L62.95 61.49 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M76.89 74.8 L82.61 70.75 L82.61 65.97 L76.89 70.02 Z" fill="#161b29"/>
+  <path d="M81.95 69.24 L81.8 68.61 L81.39 68.28 L80.77 68.31 L80.04 68.68 L79.31 69.34 L78.69 70.19 L78.27 71.1 L78.13 71.94 L78.27 72.57 L78.69 72.89 L79.31 72.87 L80.04 72.5 L80.77 71.84 L81.39 70.98 L81.8 70.07 Z" fill="#5affff" stroke="none"/>
+  <path d="M74.5 68.34 L76.89 70.02 L82.61 65.97 L80.23 64.29 Z" fill="#28304a"/>
+  <path d="M74.5 73.11 L76.89 74.8 L76.89 70.02 L74.5 68.34 Z" fill="#161b29"/>
+</g>
+</svg>

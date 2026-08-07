@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-terrain="kerb" data-class="step">
+  <title>Bordstein-Podest</title>
+  <!--
+    Erzeugt von tools/build_terrain_tiles.py -- nicht von Hand bearbeiten.
+    Dieselbe Projektion wie die Bauteile: Iso-Kamera 45 Grad, Bodenraute
+    76 x 54 px um (64, 96). Nur so steht ein Bot auf seinem Feld
+    und nicht daneben.
+  -->
+<g stroke="#0d0f14" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M64.0 57.38 L28.28 82.64 L64.0 107.89 L99.72 82.64 Z" fill="#7e8495"/>
+  <path d="M28.28 96.0 L64.0 121.26 L64.0 107.89 L28.28 82.64 Z" fill="#4a4e58"/>
+  <path d="M64.0 121.26 L99.72 96.0 L99.72 82.64 L64.0 107.89 Z" fill="#292c31"/>
+</g></svg>

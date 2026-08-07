@@ -1,0 +1,4 @@
+# Erzeugte Baeume. Sie gehoeren ins Repo, damit das Spiel ohne Werkzeuglauf
+# startet -- aber ein Diff darueber hilft niemandem.
+assets/parts/** linguist-generated=true
+parts/**        linguist-generated=true

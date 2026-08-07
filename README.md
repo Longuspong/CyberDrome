@@ -14,7 +14,32 @@ gewaehlt: modulare Teile lassen sich kombinieren, umfaerben und aufloesungs­fre
 skalieren, ohne dass fuer jede Kombination ein eigener Sprite gezeichnet werden
 muss. Siehe [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 
-Aktueller Stand: **SVG-Werkstatt** (Schritt 1). Noch kein Godot-Projekt.
+Aktueller Stand: **SVG-Werkstatt** plus **spielbarer Kampf-MVP** in Godot 4.3.
+
+```bash
+python3 main.py                  # SVG-Werkstatt im Browser
+godot --path .                   # Spiel (Werkstatt-Squad -> Chaos-Virus)
+godot --headless --script res://tests/run_tests.gd    # Tests
+node tools/check_workshop_stats.js                    # Werkstatt gegen Engine
+```
+
+Das Spiel hat ein Hauptmenue mit zwei Wegen: **Werkstatt** (Loadout bauen)
+und **Chaos-Virus** (Kampf). Godot rastert die Quell-SVGs nicht direkt -- es
+kennt keine CSS-Variablen --, deshalb erzeugt `tools/bake_godot_assets.py`
+den Satz unter `assets/parts/`.
+
+### Zwei Werkstaetten, zwei Aufgaben
+
+| | |
+|---|---|
+| **SVG-Werkstatt** (`python3 main.py`) | Bauteile zeichnen und importieren, Anker setzen, Paletten pflegen. Das Asset-Werkzeug. |
+| **Godot-Werkstatt** (im Spiel) | Loadout bauen, Stats sehen, Squad zusammenstellen und in den Kampf schicken. |
+
+Beide schreiben denselben Squad -- die Godot-Werkstatt nach
+`user://squad.json`, die SVG-Werkstatt nach `builds/squad.json`. Beim Start
+gewinnt die neuere. Nur der erste Weg ueberlebt einen Export: `builds/` liegt
+im Repo und nicht im Spielpaket, die SVG-Werkstatt ist ein Entwicklerwerkzeug
+und laeuft ohnehin nur neben dem Quellbaum.
 
 ---
 
@@ -228,6 +253,7 @@ importieren…* und setzt die Anker anschliessend auf der Buehne.
 | `GET` | `/api/builds` · `/api/builds/<name>` | Builds listen / laden |
 | `POST` | `/api/build` | Build speichern (`{name, svg, loadout}`) |
 | `GET`/`PUT` | `/api/palettes` | Farbpaletten (Kategorien je Bauteiltyp) |
+| `POST` | `/api/squad` | Squad fuer den Kampf sichern (`builds/squad.json`) |
 
 Alle Pfadsegmente werden gegen `^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$` geprueft,
 zusaetzlich wird der aufgeloeste Pfad gegen das erlaubte Verzeichnis validiert.

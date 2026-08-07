@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="jugg_core" data-type="core" data-direction="west">
+  <title>Molok Fusionskern (west)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung west.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#100a0e" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M49.78 42.99 L56.27 38.4 L56.27 35.35 L49.78 39.94 Z" fill="#ffd447" stroke="none"/>
+  <path d="M51.21 44.08 L54.84 41.52 L54.84 34.26 L51.21 36.83 Z" fill="#ffd447" stroke="none"/>
+  <path d="M56.27 35.35 L55.98 35.15 L49.49 39.74 L49.78 39.94 Z" fill="#ffd447" stroke="none"/>
+  <path d="M50.92 43.88 L51.21 44.08 L51.21 36.83 L50.92 36.62 Z" fill="#ffd447" stroke="none"/>
+  <path d="M49.49 42.79 L49.78 42.99 L49.78 39.94 L49.49 39.74 Z" fill="#ffd447" stroke="none"/>
+  <path d="M54.84 34.26 L54.55 34.06 L50.92 36.62 L51.21 36.83 Z" fill="#ffd447" stroke="none"/>
+</g>
+</svg>

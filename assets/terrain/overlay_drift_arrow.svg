@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>Drift-Richtung</title>
+  <!-- Nur fuer gerichtete Drift (Magnetschiene). Ungerichtete
+       Drift traegt stattdessen die Schliere im Tile selbst. -->
+  <path d="M52.22 102.61 L74.26 96.16 L61.34 87.03 Z" fill="#ffffff" opacity="0.85"/>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="mage_core" data-type="core" data-direction="south">
+  <title>Nimbus Arkankern (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#0d0818" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M57.22 64.73 L56.9 62.9 L55.99 60.89 L54.63 59.02 L53.02 57.56 L51.41 56.74 L50.05 56.69 L49.14 57.41 L48.82 58.79 L49.14 60.62 L50.05 62.63 L51.41 64.5 L53.02 65.96 L54.63 66.78 L55.99 66.83 L56.9 66.11 Z" fill="#1a142d"/>
+  <path d="M55.55 63.89 L55.34 62.68 L54.74 61.36 L53.84 60.12 L52.78 59.16 L51.72 58.62 L50.83 58.59 L50.23 59.06 L50.02 59.97 L50.23 61.18 L50.83 62.5 L51.72 63.74 L52.78 64.7 L53.84 65.24 L54.74 65.27 L55.34 64.8 Z" fill="#7cf9ff" stroke="none"/>
+  <path d="M55.48 65.48 L55.92 64.92 L55.64 65.12 L55.19 65.68 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M51.95 58.14 L51.08 57.97 L50.79 58.17 L51.67 58.35 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M51.67 56.62 L50.44 56.38 L50.06 56.65 L51.28 56.89 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M56.57 66.85 L57.2 66.07 L56.82 66.34 L56.19 67.12 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M55.92 64.92 L56.08 64.06 L55.79 64.26 L55.64 65.12 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M52.93 58.68 L51.95 58.14 L51.67 58.35 L52.64 58.88 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M53.02 57.37 L51.67 56.62 L51.28 56.89 L52.64 57.64 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M57.2 66.07 L57.41 64.87 L57.03 65.14 L56.82 66.34 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M53.9 59.52 L52.93 58.68 L52.64 58.88 L53.61 59.72 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M56.08 64.06 L55.92 62.97 L55.64 63.18 L55.79 64.26 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M55.92 62.97 L55.48 61.78 L55.19 61.98 L55.64 63.18 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M54.78 60.59 L53.9 59.52 L53.61 59.72 L54.49 60.79 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M55.48 61.78 L54.78 60.59 L54.49 60.79 L55.19 61.98 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M57.41 64.87 L57.2 63.36 L56.82 63.63 L57.03 65.14 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M54.38 58.54 L53.02 57.37 L52.64 57.64 L54.0 58.81 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M57.2 63.36 L56.57 61.69 L56.19 61.96 L56.82 63.63 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M55.6 60.03 L54.38 58.54 L54.0 58.81 L55.22 60.3 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+  <path d="M56.57 61.69 L55.6 60.03 L55.22 60.3 L56.19 61.96 Z" fill="#ff5ec7" stroke="#ff5ec7" stroke-width="0.4"/>
+</g>
+</svg>

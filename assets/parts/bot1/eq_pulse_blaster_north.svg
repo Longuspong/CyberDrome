@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_pulse_blaster" data-type="equipment" data-direction="north">
+  <title>Puls-Blaster (north)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M74.5 50.16 L80.23 54.21 L80.23 49.44 L74.5 45.39 Z" fill="#161b29"/>
+  <path d="M80.23 49.44 L82.61 47.75 L76.89 43.7 L74.5 45.39 Z" fill="#28304a"/>
+  <path d="M80.23 54.21 L82.61 52.52 L82.61 47.75 L80.23 49.44 Z" fill="#161b29"/>
+  <path d="M73.55 54.56 L81.18 49.16 L73.55 43.76 L65.91 49.16 Z" fill="#47547e"/>
+  <path d="M65.91 55.84 L73.55 61.24 L73.55 54.56 L65.91 49.16 Z" fill="#28304a"/>
+  <path d="M73.55 61.24 L81.18 55.84 L81.18 49.16 L73.55 54.56 Z" fill="#161b29"/>
+  <path d="M54.93 54.42 L63.52 48.34 L63.52 46.91 L54.93 52.99 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M54.93 52.99 L63.52 46.91 L62.95 46.51 L54.36 52.58 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M54.36 54.01 L54.93 54.42 L54.93 52.99 L54.36 52.58 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M53.98 64.16 L64.48 71.59 L64.48 59.18 L53.98 51.75 Z" fill="#28304a"/>
+  <path d="M64.48 71.59 L74.98 64.16 L74.98 51.75 L64.48 59.18 Z" fill="#161b29"/>
+  <path d="M64.48 59.18 L74.98 51.75 L64.48 44.33 L53.98 51.75 Z" fill="#47547e"/>
+  <path d="M66.0 62.25 L74.6 56.17 L74.6 54.74 L66.0 60.82 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M66.0 60.82 L74.6 54.74 L74.02 54.34 L65.43 60.41 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M57.32 52.37 L64.95 57.77 L64.95 49.18 L57.32 43.78 Z" fill="#5b6785"/>
+  <path d="M65.43 61.84 L66.0 62.25 L66.0 60.82 L65.43 60.41 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M64.95 57.77 L70.68 53.72 L70.68 45.13 L64.95 49.18 Z" fill="#161b29"/>
+  <path d="M64.95 49.18 L70.68 45.13 L63.05 39.73 L57.32 43.78 Z" fill="#5b6785"/>
+</g>
+</svg>

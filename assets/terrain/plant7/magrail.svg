@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-terrain="magrail" data-class="drift">
+  <title>Magnetschiene</title>
+  <!--
+    Erzeugt von tools/build_terrain_tiles.py -- nicht von Hand bearbeiten.
+    Dieselbe Projektion wie die Bauteile: Iso-Kamera 45 Grad, Bodenraute
+    76 x 54 px um (64, 96). Nur so steht ein Bot auf seinem Feld
+    und nicht daneben.
+  -->
+<g stroke="#0a0d11" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M64.0 67.79 L26.0 94.66 L64.0 121.53 L102.0 94.66 Z" fill="#40546e"/>
+  <path d="M74.64 82.51 L47.28 101.85 L53.36 106.15 L80.72 86.81 Z" fill="#3d8fd6" stroke="none"/>
+  <path d="M53.36 106.49 L80.72 87.14 L80.72 86.81 L53.36 106.15 Z" fill="#3d8fd6" stroke="none"/>
+  <path d="M47.28 102.19 L53.36 106.49 L53.36 106.15 L47.28 101.85 Z" fill="#3d8fd6" stroke="none"/>
+  <path d="M64.0 122.87 L102.0 96.0 L102.0 94.66 L64.0 121.53 Z" fill="#141b24"/>
+  <path d="M26.0 96.0 L64.0 122.87 L64.0 121.53 L26.0 94.66 Z" fill="#243040"/>
+</g></svg>
