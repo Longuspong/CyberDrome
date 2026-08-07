@@ -13,6 +13,14 @@ extends Control
 ## diese Szene ist der Loadout-Builder.
 
 const PREVIEW_SCALE := 2.4
+const PREVIEW_SIZE := 520
+
+## Wo im Vorschaufeld der Bodenpunkt des DROME sitzt. Nicht 0.5 -- ein Bot
+## ragt nach oben, nicht nach unten.
+const GROUND_FRACTION := 0.72
+
+## Kantenlaenge der Miniatur in der Bibliothek.
+const THUMB_SIZE := 44
 const DIRECTIONS := ["south", "west", "east", "north"]
 const DIR_LABEL := {"south": "Sued", "west": "West", "east": "Ost", "north": "Nord"}
 
@@ -142,27 +150,41 @@ func _build_ui() -> void:
 		button.pressed.connect(func():
 			_facing = direction
 			_refresh_preview()
+			# Die Miniaturen zeigen die Variante fuer diese Ansicht und
+			# muessen deshalb mitwechseln.
+			_refresh_library()
 			_refresh_direction_buttons())
 		button.set_meta("direction", direction)
 		_direction_buttons.append(button)
 		top_row.add_child(button)
 
 	var viewport := SubViewportContainer.new()
-	viewport.custom_minimum_size = Vector2(520, 520)
-	viewport.size_flags_vertical = Control.SIZE_EXPAND_FILL | Control.SIZE_SHRINK_CENTER
-	viewport.size_flags_horizontal = Control.SIZE_EXPAND_FILL | Control.SIZE_SHRINK_CENTER
+	viewport.custom_minimum_size = Vector2(PREVIEW_SIZE, PREVIEW_SIZE)
+	# NUR SHRINK_CENTER, nicht zusammen mit EXPAND_FILL: mit FILL waere der
+	# Container so breit wie die Spalte, der SubViewport bliebe aber bei seiner
+	# festen Groesse und wuerde an dessen linker Kante gezeichnet. Genau daher
+	# stand der Bot links statt mittig.
+	viewport.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	viewport.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	center.add_child(viewport)
+
 	var sub := SubViewport.new()
-	sub.size = Vector2i(520, 520)
+	sub.size = Vector2i(PREVIEW_SIZE, PREVIEW_SIZE)
 	sub.transparent_bg = true
 	sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	viewport.add_child(sub)
+
 	_preview_root = Node2D.new()
 	# Die Bauteile zeichnen in einem 128x128-Raum mit der Bodenraute um
-	# (64, 96). Zentriert wird ueber genau diesen Punkt, damit der Bot beim
-	# Richtungswechsel nicht springt.
-	_preview_root.position = Vector2(sub.size) * 0.5 \
-		- IsoView.SPRITE_ORIGIN * PREVIEW_SCALE
+	# (64, 96). Ausgerichtet wird ueber genau diesen Punkt -- so bleibt der Bot
+	# beim Richtungswechsel stehen, statt zu springen.
+	#
+	# Waagerecht mittig, senkrecht auf GROUND_FRACTION: ein DROME steht auf
+	# seinem Bodenfeld und ragt nach oben. Legte man den Bodenpunkt in die
+	# Mitte, waere die untere Haelfte leer und der Kopf am oberen Rand.
+	_preview_root.position = Vector2(
+		PREVIEW_SIZE * 0.5 - IsoView.SPRITE_ORIGIN.x * PREVIEW_SCALE,
+		PREVIEW_SIZE * GROUND_FRACTION - IsoView.SPRITE_ORIGIN.y * PREVIEW_SCALE)
 	_preview_root.scale = Vector2(PREVIEW_SCALE, PREVIEW_SCALE)
 	sub.add_child(_preview_root)
 
@@ -281,11 +303,24 @@ func _refresh_library() -> void:
 	for child in _library.get_children():
 		child.queue_free()
 
+	var equipped: StringName = _build.slots.get(_selected_slot, &"")
 	for part in _candidates_for(_selected_slot):
 		var button := Button.new()
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.text = "%s  %s" % [part.code, part.display_name]
+		button.text = "  %s  %s" % [part.code, part.display_name]
 		button.tooltip_text = _part_tooltip(part)
+		button.custom_minimum_size = Vector2(0, THUMB_SIZE + 8)
+		button.toggle_mode = true
+		button.button_pressed = part.id == equipped
+
+		# Die Miniatur ist dasselbe Asset, aus dem gleich der Bot entsteht --
+		# nicht ein zweites Vorschaubild, das irgendwann davon abweicht.
+		# ``expand_icon`` skaliert die 128er-Textur auf die Knopfhoehe.
+		var path: String = part.view(_facing).get("svg", "")
+		if path != "" and ResourceLoader.exists(path):
+			button.icon = load(path)
+			button.expand_icon = true
+
 		button.pressed.connect(func():
 			_build.slots[_selected_slot] = part.id
 			_after_change())
