@@ -2,3 +2,7 @@
 # startet -- aber ein Diff darueber hilft niemandem.
 assets/parts/** linguist-generated=true
 parts/**        linguist-generated=true
+
+# Erzeugte Teileliste. Kommt aus tools/export_parts_table.py, wird nicht von
+# Hand gepflegt -- und als Binaerdatei diffbar zu machen hilft niemandem.
+docs/*.xlsx     linguist-generated=true binary
