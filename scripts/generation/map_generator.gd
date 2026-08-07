@@ -79,6 +79,23 @@ static func deployment_zone(grid: Grid, is_player: bool) -> Array[Vector2i]:
 				tiles.append(Vector2i(column, grid.height - 1 - row))
 			else:
 				tiles.append(Vector2i(grid.width - 1 - column, row))
+
+	# Aufgestellt wird in dieser Reihenfolge -- deshalb steht sie hier und
+	# nicht dem Zufall ueberlassen.
+	#
+	# Isometrisch ist x+y die Bildschirmtiefe: was hoehere Summe hat, liegt
+	# weiter unten. Ohne diese Sortierung faengt jede Zone an ihrer Ecke an,
+	# und beide Squads landen auf den beiden SEITLICHEN Spitzen der Raute --
+	# auf gleicher Hoehe, links und rechts. Der Entwurf will "unten links"
+	# gegen "oben rechts", und genau das faellt heraus, wenn der Spieler von
+	# der tiefsten Kachel seiner Zone aus aufstellt und der Gegner von der
+	# hoechsten seiner.
+	tiles.sort_custom(func(a: Vector2i, b: Vector2i):
+		var da := a.x + a.y
+		var db := b.x + b.y
+		if da != db:
+			return da > db if is_player else da < db
+		return a.x < b.x)
 	return tiles
 
 

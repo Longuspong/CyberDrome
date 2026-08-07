@@ -23,10 +23,23 @@ godot --headless --script res://tests/run_tests.gd    # Tests
 node tools/check_workshop_stats.js                    # Werkstatt gegen Engine
 ```
 
-Die beiden Werkzeuge teilen sich das Repo und die Bauteile: die Werkstatt
-schreibt `builds/squad.json`, die Kampfszene liest sie. Godot rastert die
-Quell-SVGs nicht direkt -- es kennt keine CSS-Variablen --, deshalb erzeugt
-`tools/bake_godot_assets.py` den Satz unter `assets/parts/`.
+Das Spiel hat ein Hauptmenue mit zwei Wegen: **Werkstatt** (Loadout bauen)
+und **Chaos-Virus** (Kampf). Godot rastert die Quell-SVGs nicht direkt -- es
+kennt keine CSS-Variablen --, deshalb erzeugt `tools/bake_godot_assets.py`
+den Satz unter `assets/parts/`.
+
+### Zwei Werkstaetten, zwei Aufgaben
+
+| | |
+|---|---|
+| **SVG-Werkstatt** (`python3 main.py`) | Bauteile zeichnen und importieren, Anker setzen, Paletten pflegen. Das Asset-Werkzeug. |
+| **Godot-Werkstatt** (im Spiel) | Loadout bauen, Stats sehen, Squad zusammenstellen und in den Kampf schicken. |
+
+Beide schreiben denselben Squad -- die Godot-Werkstatt nach
+`user://squad.json`, die SVG-Werkstatt nach `builds/squad.json`. Beim Start
+gewinnt die neuere. Nur der erste Weg ueberlebt einen Export: `builds/` liegt
+im Repo und nicht im Spielpaket, die SVG-Werkstatt ist ein Entwicklerwerkzeug
+und laeuft ohnehin nur neben dem Quellbaum.
 
 ---
 

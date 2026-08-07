@@ -14,12 +14,6 @@ extends Node2D
 
 signal died(unit)
 
-## Reihenfolge, in der Slots angelegt werden. Die tatsaechliche Ueberdeckung
-## entscheidet slot_z; das hier ist nur ein stabiler Ausgangszustand fuer
-## Slots, fuer die das Chassis keine Tiefe kennt.
-const SLOT_ORDER := ["feet", "body", "core", "equip_left", "equip_center",
-	"equip_right", "equip_shoulder", "head"]
-
 var unit_id: StringName
 var display_name: String = "DROME"
 var build: DromeBuild
@@ -68,53 +62,10 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 func _build_sprites() -> void:
-	for child in _sprites.values():
-		child.queue_free()
-	_sprites.clear()
-	if build == null:
-		return
-
-	var chassis := build.body()
-	var slot_z: Dictionary = {}
-	if chassis != null:
-		slot_z = chassis.view(facing).get("slot_z", {})
-
-	# Die Tiefe des Ankers IST die Zeichenreihenfolge. Damit stimmt die
-	# Ueberdeckung in allen vier Richtungen von selbst: in der Nordansicht
-	# rutscht die Ausruestung hinter den Koerper, ein Schulterpod vor den Kopf.
-	#
-	# Die Rohwerte sind Kameratiefen (32 bis 72) und taugen NICHT direkt als
-	# z_index: Kindknoten rechnen relativ zum Elternknoten, und ein Aufschlag
-	# von 70 wuerde das Bauteil in die Tiefenstufe einer ganz anderen Reihe
-	# schieben -- der Kopf laege dann vor einem Betonpfeiler drei Felder
-	# weiter vorn. Gebraucht wird nur die REIHENFOLGE, also wird auf 0..n
-	# normalisiert.
-	var ordered: Array = []
-	for slot in SLOT_ORDER:
-		var part := build.part_in(slot)
-		if part == null:
-			continue
-		var view := part.view(facing)
-		var depth: float = float(view.get("z_index", 50)) if slot == "body" \
-			else float(slot_z.get(slot, 20))
-		ordered.append({"slot": slot, "part": part, "view": view, "depth": depth})
-	ordered.sort_custom(func(a, b): return a["depth"] < b["depth"])
-
-	for rank in ordered.size():
-		var entry: Dictionary = ordered[rank]
-		var path: String = entry["view"].get("svg", "")
-		if path == "" or not ResourceLoader.exists(path):
-			push_warning("Unit %s: Textur fehlt fuer %s (%s)"
-				% [unit_id, entry["slot"], path])
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = load(path)
-		sprite.centered = false
-		sprite.position = Vector2.ZERO
-		sprite.z_index = rank
-		add_child(sprite)
-		_sprites[entry["slot"]] = sprite
-
+	# Zusammengesetzt wird ueber DromeSprites -- dieselbe Funktion, die auch
+	# die Werkstatt-Vorschau benutzt. Zwei Zusammenbauten waeren zwei
+	# Gelegenheiten, dass der Bot im Kampf anders aussieht als beim Bauen.
+	_sprites = DromeSprites.assemble(self, build, facing)
 	_apply_haze_tint()
 
 
@@ -147,9 +98,8 @@ func set_in_haze(value: bool) -> void:
 
 
 func _apply_haze_tint() -> void:
-	var tint := Color(0.55, 0.60, 0.70, 0.75) if _in_haze else Color.WHITE
-	for sprite in _sprites.values():
-		sprite.modulate = tint
+	DromeSprites.tint(_sprites,
+		Color(0.55, 0.60, 0.70, 0.75) if _in_haze else Color.WHITE)
 
 
 # ---------------------------------------------------------------------------

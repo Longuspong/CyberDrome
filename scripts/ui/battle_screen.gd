@@ -26,6 +26,8 @@ var _status: Label
 var _end_turn: Button
 var _tooltip: Label
 var _mutator_banner: PanelContainer
+var _tick_bars: TickBarPanel
+var _action_ring: ActionRing
 
 
 func _ready() -> void:
@@ -59,6 +61,7 @@ func _start_battle() -> void:
 	camera.position = IsoView.grid_center(battle.grid.width, battle.grid.height)
 	camera.zoom = Vector2(0.62, 0.62)
 
+	_tick_bars.rebuild(battle.units, battle.tick_bus)
 	_show_mutator()
 	_next_turn()
 
@@ -125,7 +128,15 @@ func _run_ai_turn() -> void:
 func _end_current_turn() -> void:
 	view.clear_overlays()
 	view.clear_path_preview()
+	_action_ring.hide_ring()
+
+	# Erst der echte Zug, dann die Inszenierung: der Balken zeigt, was schon
+	# passiert ist, und bestimmt nichts.
+	var finished := battle.active_unit
 	battle.end_turn()
+	if finished != null:
+		_tick_bars.play_turn_end(finished.unit_id, battle.tick_bus)
+
 	if battle.outcome == BattleManager.Outcome.RUNNING:
 		_next_turn()
 
@@ -177,6 +188,18 @@ func _on_hover(tile: Vector2i) -> void:
 
 	_tooltip.text = _tooltip_for(tile)
 
+	# Aktionsring: beim Hovern ueber einen DROME erscheinen die Aktionen ueber
+	# der Einheit. Nur wenn keine Aktion vorgewaehlt ist -- sonst kaeme der
+	# Ring dem Zielen in die Quere.
+	var hovered := battle.resolver.unit_at(tile)
+	if _selected_action == null and hovered != null and battle.active_unit != null \
+			and battle.active_unit.is_player:
+		if not _action_ring.is_showing_for(tile):
+			_action_ring.show_for(battle, hovered,
+				hovered.get_global_transform_with_canvas().origin)
+	else:
+		_action_ring.hide_ring()
+
 	if _selected_action != null:
 		view.clear_path_preview()
 		return
@@ -215,6 +238,16 @@ func _tooltip_for(tile: Vector2i) -> String:
 				lines.append("Vorschau: %d %s" % [absi(amount),
 					"Heilung" if amount < 0 else "Schaden"])
 	return "\n".join(lines)
+
+
+## Aus dem Aktionsring gewaehlt. Geht denselben Weg wie ein Klick in der
+## Aktionsleiste -- der Ring ist eine zweite Bedienung, keine zweite Regel.
+func _on_ring_action(action: ActionData, target_tile: Vector2i) -> void:
+	if battle.use_action(target_tile, action):
+		_selected_action = null
+		_refresh_reachable()
+		_refresh_action_bar()
+		_refresh_status()
 
 
 func _on_click(tile: Vector2i) -> void:
@@ -285,6 +318,8 @@ func _refresh_status() -> void:
 
 
 func _refresh_tick_queue() -> void:
+	if _tick_bars != null:
+		_tick_bars.sync(battle.tick_bus)
 	for child in _tick_queue.get_children():
 		child.queue_free()
 	if battle.tick_bus == null:
@@ -352,6 +387,8 @@ func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 
 func _on_unit_died(unit: Unit) -> void:
 	unit.visible = false
+	_tick_bars.drop_unit(unit.unit_id)
+	_action_ring.hide_ring()
 	_refresh_tick_queue()
 
 
@@ -382,7 +419,7 @@ func _build_ui() -> void:
 	_ui.add_child(_status)
 
 	_tooltip = Label.new()
-	_tooltip.position = Vector2(24, 74)
+	_tooltip.position = Vector2(24, 240)
 	_tooltip.add_theme_color_override("font_color", Color(0.8, 0.86, 0.95))
 	_ui.add_child(_tooltip)
 
@@ -414,6 +451,15 @@ func _build_ui() -> void:
 	pause.position = Vector2(1460, 16)
 	pause.pressed.connect(_toggle_pause)
 	_ui.add_child(pause)
+
+	_tick_bars = TickBarPanel.new()
+	_tick_bars.position = Vector2(24, 104)
+	_tick_bars.add_theme_constant_override("separation", 3)
+	_ui.add_child(_tick_bars)
+
+	_action_ring = ActionRing.new()
+	_action_ring.action_chosen.connect(_on_ring_action)
+	_ui.add_child(_action_ring)
 
 	_mutator_banner = PanelContainer.new()
 	_mutator_banner.position = Vector2(560, 300)
@@ -459,6 +505,13 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	var back := Button.new()
 	back.text = "Zurueck zur Werkstatt"
 	back.pressed.connect(func():
+		GameState.battle_seed = 0
+		get_tree().change_scene_to_file("res://scenes/workshop.tscn"))
+	box.add_child(back)
+
+	var menu := Button.new()
+	menu.text = "Hauptmenue"
+	menu.pressed.connect(func():
 		GameState.battle_seed = 0
 		get_tree().change_scene_to_file("res://scenes/main.tscn"))
 	box.add_child(back)

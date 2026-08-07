@@ -14,6 +14,11 @@ const SQUAD_PATH := "user://squad.json"
 ## sie legt ihren Squad neben die Builds. Beim Start gewinnt der neuere der
 ## beiden, damit ein frisch gebauter Squad nicht von einem alten Spielstand
 ## verdeckt wird.
+##
+## Dieser Weg ueberlebt einen Export NICHT: builds/ liegt im Repo und nicht im
+## Spielpaket. Das ist kein Mangel -- die SVG-Werkstatt laeuft ohnehin nur
+## neben dem Quellbaum. Im ausgelieferten Spiel baut man in der
+## Godot-Werkstatt, und die schreibt nach user://.
 const WORKSHOP_SQUAD_PATH := "res://builds/squad.json"
 
 ## Wie viele DROMEs ein Squad hat. Konfigurierbar 1-4.

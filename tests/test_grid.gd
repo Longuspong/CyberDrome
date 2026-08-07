@@ -209,6 +209,27 @@ func test_deployment_zones_stay_clear() -> void:
 					"Aufstellungsfeld %s bleibt frei" % tile)
 
 
+func test_deployment_runs_bottom_left_against_top_right() -> void:
+	# Isometrisch ist x+y die Bildschirmtiefe. Ohne die Sortierung in
+	# deployment_zone() faengt jede Zone an ihrer Ecke an, und beide Squads
+	# landen auf den seitlichen Spitzen der Raute -- auf gleicher Hoehe.
+	var grid := Grid.new(20, 20)
+	var player := MapGenerator.deployment_zone(grid, true)
+	var enemy := MapGenerator.deployment_zone(grid, false)
+
+	var player_first: Vector2i = player[0]
+	var enemy_first: Vector2i = enemy[0]
+	t.ok(player_first.x + player_first.y > enemy_first.x + enemy_first.y,
+		"der Spieler stellt tiefer auf als der Gegner (%s vs %s)"
+		% [player_first, enemy_first])
+
+	# Und auf dem Bildschirm heisst das: links unten gegen rechts oben.
+	var player_pos := IsoView.map_to_local(player_first)
+	var enemy_pos := IsoView.map_to_local(enemy_first)
+	t.ok(player_pos.x < enemy_pos.x, "Spieler links, Gegner rechts")
+	t.ok(player_pos.y > enemy_pos.y, "Spieler unten, Gegner oben")
+
+
 func test_same_seed_gives_the_same_map() -> void:
 	# Ein Akzeptanzkriterium: denselben Seed zweimal spielen und exakt
 	# dieselbe Karte bekommen.
