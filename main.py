@@ -565,6 +565,41 @@ def api_save_build(payload: dict) -> dict:
     return {"ok": True, "svg": f"builds/{name}.svg", "json": f"builds/{name}.json"}
 
 
+def api_save_squad(payload: dict) -> dict:
+    """
+    Schreibt den Squad, mit dem die Kampfszene startet.
+
+    Bewusst EINE Datei statt mehrerer Builds: der Kampf braucht die Gruppe,
+    nicht die einzelnen Bots, und ein Squad aus Dateien zusammenzusuchen waere
+    eine zweite Stelle, an der die Reihenfolge stehen muesste.
+
+    Der Inhalt ist dasselbe Loadout-Format wie in builds/<name>.json -- nur als
+    Liste. Es stehen ausschliesslich Teile-IDs darin, keine Werte: die Engine
+    rechnet die Stats beim Laden aus den Bauteilen neu aus. Ein Squad kann
+    deshalb nicht veralten, wenn sich das Balancing aendert.
+    """
+    members = payload.get("squad")
+    if not isinstance(members, list) or not members:
+        raise ApiError(400, "'squad' muss eine nicht-leere Liste sein")
+    if len(members) > 4:
+        raise ApiError(400, "Ein Squad hat hoechstens 4 DROMEs")
+
+    for index, member in enumerate(members):
+        if not isinstance(member, dict):
+            raise ApiError(400, f"Squad-Eintrag {index} ist kein Objekt")
+        if not isinstance(member.get("slots"), dict) or not member["slots"]:
+            raise ApiError(400, f"Squad-Eintrag {index} hat keine Slots")
+
+    size = payload.get("squad_size", len(members))
+    if not isinstance(size, int) or not 1 <= size <= 4:
+        raise ApiError(400, "'squad_size' muss zwischen 1 und 4 liegen")
+
+    BUILDS_DIR.mkdir(parents=True, exist_ok=True)
+    target = resolve_within(BUILDS_DIR, "squad.json")
+    write_json(target, {"squad_size": size, "squad": members})
+    return {"ok": True, "path": "builds/squad.json", "count": len(members)}
+
+
 def api_list_builds() -> dict:
     if not BUILDS_DIR.is_dir():
         return {"builds": []}
@@ -715,6 +750,9 @@ class WorkshopHandler(BaseHTTPRequestHandler):
 
         if method == "POST" and rest == ["build"]:
             return api_save_build(self.read_json_body())
+
+        if method == "POST" and rest == ["squad"]:
+            return api_save_squad(self.read_json_body())
 
         if method == "POST" and rest == ["part"]:
             return api_create_part(self.read_json_body())

@@ -14,7 +14,19 @@ gewaehlt: modulare Teile lassen sich kombinieren, umfaerben und aufloesungs­fre
 skalieren, ohne dass fuer jede Kombination ein eigener Sprite gezeichnet werden
 muss. Siehe [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 
-Aktueller Stand: **SVG-Werkstatt** (Schritt 1). Noch kein Godot-Projekt.
+Aktueller Stand: **SVG-Werkstatt** plus **spielbarer Kampf-MVP** in Godot 4.3.
+
+```bash
+python3 main.py                  # SVG-Werkstatt im Browser
+godot --path .                   # Spiel (Werkstatt-Squad -> Chaos-Virus)
+godot --headless --script res://tests/run_tests.gd    # Tests
+node tools/check_workshop_stats.js                    # Werkstatt gegen Engine
+```
+
+Die beiden Werkzeuge teilen sich das Repo und die Bauteile: die Werkstatt
+schreibt `builds/squad.json`, die Kampfszene liest sie. Godot rastert die
+Quell-SVGs nicht direkt -- es kennt keine CSS-Variablen --, deshalb erzeugt
+`tools/bake_godot_assets.py` den Satz unter `assets/parts/`.
 
 ---
 
@@ -228,6 +240,7 @@ importieren…* und setzt die Anker anschliessend auf der Buehne.
 | `GET` | `/api/builds` · `/api/builds/<name>` | Builds listen / laden |
 | `POST` | `/api/build` | Build speichern (`{name, svg, loadout}`) |
 | `GET`/`PUT` | `/api/palettes` | Farbpaletten (Kategorien je Bauteiltyp) |
+| `POST` | `/api/squad` | Squad fuer den Kampf sichern (`builds/squad.json`) |
 
 Alle Pfadsegmente werden gegen `^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$` geprueft,
 zusaetzlich wird der aufgeloeste Pfad gegen das erlaubte Verzeichnis validiert.
