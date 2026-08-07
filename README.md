@@ -171,10 +171,39 @@ parts/                       Teile-Bibliothek
 builds/                      Export-Ziel (Inhalt ist gitignored)
 tools/
   build_sample_parts.py      Iso-Renderer + Beispielsatz; ausfuehrbare Format-Spec
+  export_parts_table.py      Teile-Uebersicht als Excel-Mappe (erzeugt, nicht gepflegt)
 docs/
   GAME_DESIGN.md             Setting, DROME-Aufbau, Teile-Codes, Asset-Strategie
   GODOT_INTEGRATION.md       wie die Exporte spaeter in die Engine kommen
+  cyberdrome_teile.xlsx      erzeugte Teileliste -- ein Blatt je Bauteiltyp
 ```
+
+## Teileliste als Excel-Mappe
+
+```bash
+python3 tools/export_parts_table.py            # -> docs/cyberdrome_teile.xlsx
+```
+
+Ein Blatt je Bauteiltyp -- **Koerperteile**, **Kopfteile**, **Fussteile**,
+**Kerne** -- und zwei fuer die Ausruestung, getrennt nach **Waffe** und
+**Sonstigem** (Schild, Support). Jedes Blatt zeigt nur die Werte, die sein Typ
+ueberhaupt fuehrt; ein Kopf hat keine Traglast, ein Kern keine Bewegung.
+Darueber liegt das Blatt **Alle Teile** mit dem vollen Wertesatz zum Filtern,
+darunter **Chassis & Slots** und die **Kompatibilitaets**-Matrix.
+
+Alle Zahlen kommen aus den Teil-JSONs. Wer einen Wert aendern will, aendert ihn
+dort und laesst die Mappe neu erzeugen -- eine von Hand gefuehrte Teileliste
+laeuft nach dem dritten Set auseinander.
+
+Das Skript prueft sich beim Erzeugen selbst: es rechnet die Formeln der Mappe
+nach und vergleicht sie gegen die Regeln im Code -- die Slot-Matrix gegen
+`fits_rule()`, die Threat-Spalten gegen `DromeBuild.threat_score()`. Ein
+verrutschter Zellbezug faellt beim Ansehen nicht auf, eine falsche Antwort
+schon.
+
+Die Formeln haben nach dem Lauf noch keine gespeicherten Ergebnisse -- Excel
+und LibreOffice rechnen sie beim Oeffnen aus. Nur Werkzeuge, die die Datei ohne
+Tabellenprogramm lesen (pandas, Vorschaubilder), sehen dort leere Zellen.
 
 ## Ein neues Teil hinzufuegen
 
