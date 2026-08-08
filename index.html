@@ -1571,7 +1571,7 @@ function validateLoadout(loadout) {
   return problems;
 }
 
-function threatScore(loadout) {
+function powerScore(loadout) {
   const t = buildStats(loadout);
   return t.hp * 1 + t.atk * 6 + t.def * 8 + t.spd * 3 + t.mov * 4
        + t.en_max * 0.5 + t.best_weapon * 2;
@@ -1643,7 +1643,7 @@ function renderCombat() {
     ${meter("Gewicht / Traglast", base.weight, base.weight_capacity)}
     ${meter("Energiebedarf / Ausstoss", base.power_draw, base.power_output)}
     ${flags.length ? `<p class="hint" style="margin-top:8px">${flags.join(" · ")}</p>` : ""}
-    <div style="margin-top:8px;font-size:11px;opacity:.7">Threat Score ${Math.round(threatScore(state.loadout))}</div>
+    <div style="margin-top:8px;font-size:11px;opacity:.7">Kampfwert ${Math.round(powerScore(state.loadout))}</div>
     ${problems.length
       ? `<div style="margin-top:8px;font-size:11px;color:#ff6b6b">
            ${problems.map((p) => `&bull; ${escapeXml(p)}`).join("<br>")}
@@ -1699,7 +1699,7 @@ function renderSquad() {
           </span>
         </div>
         ${member
-          ? `<div style="font-size:11px;opacity:.7">Threat ${Math.round(threatScore(member.loadoutState))}${
+          ? `<div style="font-size:11px;opacity:.7">Kampfwert ${Math.round(powerScore(member.loadoutState))}${
                problems.length ? ` &bull; <span style="color:#ff6b6b">${escapeXml(problems[0])}</span>` : ""}</div>`
           : `<div style="font-size:11px;opacity:.5">frei</div>`}
       </div>`);

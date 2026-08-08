@@ -100,15 +100,15 @@ func test_same_seed_gives_the_same_battle() -> void:
 			"derselbe erlittene Schaden bei %s" % a["units"][i]["name"])
 
 
-func test_enemy_threat_matches_the_player_squad() -> void:
+func test_enemy_power_matches_the_player_squad() -> void:
 	var player := _squad()
-	var target := DromeBuild.squad_threat(player)
-	var tolerance := Config.get_float("threat_tolerance", 0.12)
+	var target := DromeBuild.squad_power(player)
+	var tolerance := Config.get_float("power_tolerance", 0.12)
 	var misses := 0
 	for i in 30:
 		var generator := EnemyGenerator.new(7000 + i)
 		generator.generate(player.size(), target)
-		if absf(generator.achieved_threat - target) / target > tolerance:
+		if absf(generator.achieved_power - target) / target > tolerance:
 			misses += 1
 	t.ok(misses <= 3, "das Gegner-Matching trifft die Toleranz (%d von 30 daneben)"
 		% misses)

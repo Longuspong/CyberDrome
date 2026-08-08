@@ -9,6 +9,23 @@ extends RefCounted
 ##
 ## Die Gewichte stehen in data/config.json und nicht hier. Eine KI, deren
 ## Verhalten man nur durch Neukompilieren aendern kann, wird nicht getunt.
+##
+## ### Aggro ist ein Summand, kein Filter
+##
+## Die Aggro-Tabelle (scripts/battle/aggro_table.gd) ERSETZT die Zielwahl
+## nicht, sie geht als weiterer Term in dieselbe Bewertung ein. Der Unterschied
+## ist nicht kosmetisch: als Filter wuerde ein Gegner an einem sicheren Abschuss
+## vorbeilaufen, weil ein anderer DROME weiter oben in der Tabelle steht. Das
+## liest sich als Fehler, nicht als Aggro.
+##
+## Eingehaengt wird der ANTEIL am Tabellenmaximum (0..1), nicht der Rohwert.
+## Der Rohwert waechst ueber das Gefecht unbegrenzt und liefe sonst gegen
+## Schadenspunkte davon; der Anteil traegt dieselbe Rangfolge und skaliert mit
+## jeder Balancing-Aenderung von selbst mit.
+##
+## Der EINZIGE harte Zwang ist die Provokation -- und die steht nicht hier,
+## sondern in ActionResolver.target_blocker(), weil sie eine Regel ueber
+## gueltige Ziele ist und fuer beide Seiten gelten muss.
 
 var battle: BattleManager
 var _weights: Dictionary = {}
@@ -42,6 +59,7 @@ func take_step() -> Dictionary:
 		if battle.resolver.target_blocker(battle.active_unit,
 				best["target"].tile, best["action"]) == "":
 			battle.use_action(best["target"].tile, best["action"])
+			_remember_target(battle.active_unit, best)
 			return best
 		return {"kind": "move", "move_to": battle.active_unit.tile}
 
@@ -117,10 +135,10 @@ func _position_score(unit: Unit, tile: Vector2i) -> float:
 	var score := 0.0
 	var grid := battle.grid
 
-	# Wer das Zielfeld bedrohen kann, macht es unattraktiv.
+	# Wer das Zielfeld beschiessen kann, macht es unattraktiv.
 	for foe in battle.enemies_of(unit):
-		if _threatens(foe, tile):
-			score -= _w("threatened_penalty", 8.0)
+		if _can_strike(foe, tile):
+			score -= _w("exposed_penalty", 8.0)
 
 	# Nicht freiwillig auf Eis parken.
 	if grid.terrain_class(tile) == Terrain.TClass.DRIFT \
@@ -146,7 +164,10 @@ func _has_melee(unit: Unit) -> bool:
 ## Koennte dieser Gegner das Feld unter Beschuss nehmen? Grobe Abschaetzung
 ## ueber die Distanz -- eine vollstaendige Reichweitenrechnung fuer jeden
 ## Gegner auf jedem Feld waere fuer den Gewinn zu teuer.
-func _threatens(foe: Unit, tile: Vector2i) -> bool:
+##
+## Hat mit der Aggro-Tabelle nichts zu tun: hier geht es um die Gefahr eines
+## FELDES, dort um die Aufmerksamkeit gegenueber einer EINHEIT.
+func _can_strike(foe: Unit, tile: Vector2i) -> bool:
 	var reach := foe.stat("mov")
 	for action in foe.actions():
 		if action.is_attack():
@@ -186,7 +207,47 @@ func _action_score(unit: Unit, action: ActionData, target: Unit) -> float:
 	score += float(damage) * _w("damage_weight", 1.0)
 	if damage >= target.hp:
 		score += _w("kill_bonus", 100.0)
+	score += _aggro_score(unit, target)
 	return score
+
+
+## Der Aggro-Anteil der Bewertung. Zwei Summanden mit verschiedenen Aufgaben:
+## der Anteil an der Tabelle sagt WEN dieser Gegner am liebsten haette, der
+## Amtsinhaber-Bonus verhindert, dass die Zielwahl bei fast gleichauf liegenden
+## Werten von Zug zu Zug flackert. Ohne den zweiten wirkt die Aggro fuer den
+## Spieler wie Zufall und laesst sich nicht steuern.
+func _aggro_score(unit: Unit, target: Unit) -> float:
+	if unit.aggro == null or unit.aggro.is_empty():
+		return 0.0
+	var score := unit.aggro.share(target.unit_id) * _w("aggro_weight", 10.0)
+	if unit.aggro.current_target == target.unit_id:
+		score += _incumbent_bonus(unit)
+	return score
+
+
+## Wie zaeh haelt dieser Gegner an seinem Ziel fest? Ein Wert pro Bauart reicht,
+## um spuerbar unterschiedliches Verhalten zu erzeugen -- ohne eine Zeile
+## KI-Code. Der Aufhaenger ist die Reichweite der eigenen Waffe: wer aus sieben
+## Feldern schiesst, hat sich auf sein Ziel eingerichtet und laesst sich nicht
+## von jedem Kratzer umlenken. Wer im Nahkampf steht, schon.
+func _incumbent_bonus(unit: Unit) -> float:
+	var longest := 0
+	for action in unit.actions():
+		if action.is_attack():
+			longest = maxi(longest, action.range_tiles)
+	if longest >= int(_w("ranged_from_range", 3.0)):
+		return _w("incumbent_bonus_ranged", 12.0)
+	return _w("incumbent_bonus_melee", 6.0)
+
+
+## Wen dieser Gegner tatsaechlich angegriffen hat. Der Amtsinhaber ist damit
+## bekannt -- er bekommt den Bonus oben und ist vom Verfall ausgenommen.
+func _remember_target(unit: Unit, step: Dictionary) -> void:
+	if unit == null or unit.aggro == null:
+		return
+	var action: ActionData = step["action"]
+	if action.is_attack():
+		unit.aggro.current_target = step["target"].unit_id
 
 
 # ---------------------------------------------------------------------------

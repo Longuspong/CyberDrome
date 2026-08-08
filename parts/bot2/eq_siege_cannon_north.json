@@ -60,6 +60,7 @@
     "drift_modifier": 0,
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
+    "aggro_bonus": 0,
     "action": {
       "id": "act_siege",
       "display_name": "Belagerungsschlag",
@@ -71,7 +72,10 @@
       "power": 18,
       "requires_line_of_sight": true,
       "push_tiles": 0,
-      "status_effect": null
+      "status_effect": null,
+      "aggro_coeff": 1.0,
+      "aggro_flat": 0,
+      "taunt_turns": 0
     }
   }
 }

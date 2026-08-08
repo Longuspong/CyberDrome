@@ -437,7 +437,7 @@ func _refresh_stats() -> void:
 	var text := ""
 	if not flags.is_empty():
 		text += "[color=#8ab4d8]%s[/color]\n\n" % " · ".join(flags)
-	text += "Threat Score %d\n\n" % int(round(_build.threat_score()))
+	text += "Kampfwert %d\n\n" % int(round(_build.power_score()))
 	if problems.is_empty():
 		text += "[color=#6bd97a]Aufbau ist gueltig.[/color]"
 	else:

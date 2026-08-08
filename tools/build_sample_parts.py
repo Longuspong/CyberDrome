@@ -384,6 +384,13 @@ STAT_DEFAULTS = {
     "step_cost_reduced": False,  # Stufe kostet 1 MP statt 2
     # Sensorik -- an jedem Slot moeglich, im Bestand an Koepfen
     "grants_ignore_haze": False,
+    # Aggro-Generierung in Prozentpunkten. Kein Bauteil im Bestand fuehrt ihn:
+    # Aufmerksamkeit entsteht aus Aktionen, nicht aus Identitaet. Ein Chassis
+    # oder Kern mit einem Grundwert darauf waere genau die Abkuerzung, die das
+    # System entwertet -- dann tankt, wer das richtige Teil traegt, statt wer
+    # das Richtige tut. Vorgesehen ist der Wert allein fuer Support-Module
+    # (Koeder, Provokationssender), die dafuer einen Ausruestungsslot kosten.
+    "aggro_bonus": 0,
 }
 
 # Ausruestung gewaehrt genau eine Aktion. ``power`` > 0 ist Schaden,
@@ -394,6 +401,23 @@ STAT_DEFAULTS = {
 #
 # Regel aus dem Entwurf, hier hart eingehalten: jede Aktion mit Reichweite > 1
 # braucht Sichtlinie. Ohne sie waere das ganze Terrainsystem Dekoration.
+#
+# ``aggro_coeff`` sagt, wie LAUT eine Aktion ist -- wie stark ihre Wirkung in
+# die Aggro-Tabelle der Gegner eingeht (scripts/battle/aggro_table.gd). Das
+# Raster, an dem sich neue Aktionen ausrichten:
+#
+#   1.0    normaler Angriff, die Grundlinie -- steht deshalb nirgends dabei
+#   0.5    Heilung: der Techniker ist angreifbar, aber kein Aggro-Magnet
+#   0.35   Praezisionswaffen: viel Schaden, wenig Krach
+#
+# Der Koeffizient haengt ausdruecklich NICHT an der Reichweite. Er ist der
+# Hebel, mit dem sich "wie viel richtet die Waffe an" von "wie sehr provoziert
+# sie" trennen laesst -- eine Ableitung aus range_tiles waere untunebar und
+# eine zweite, stillschweigende Wahrheit ueber die Auffaelligkeit einer Waffe.
+#
+# ``aggro_flat`` ist der Pauschalwert fuer Aktionen ohne Wirkungsmenge, und
+# ``taunt_turns`` macht eine Aktion zur Provokation (harter Zwang, befristet).
+# Kein Bauteil im Bestand provoziert bislang.
 STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
     # HP, DEF, Traglast. SPD/MOV sind Auf- und Abschlaege auf den Antrieb.
@@ -463,7 +487,7 @@ STATS = {
         "action": {"id": "act_dronepod", "display_name": "Reparaturdrohnen",
                    "category": "ability", "targeting": "aoe_around_target",
                    "range_tiles": 3, "aoe_radius": 1, "power": -10, "en_cost": 12,
-                   "requires_line_of_sight": True},
+                   "requires_line_of_sight": True, "aggro_coeff": 0.5},
     },
     # Reichweite 1 und damit ohne Sichtlinie: der Runenstab ist die einzige
     # Nahkampfwaffe im Bestand. Er ist der Grund, warum ein Haze-Feld ein
@@ -481,14 +505,15 @@ STATS = {
         "action": {"id": "act_orbitpull", "display_name": "Orbit-Sog",
                    "category": "ability", "targeting": "single",
                    "range_tiles": 4, "power": 0, "en_cost": 8,
-                   "push_tiles": -2, "requires_line_of_sight": True},
+                   "push_tiles": -2, "requires_line_of_sight": True,
+                   "aggro_flat": 8},
     },
     "eq_rail_lance": {
         "weight": 8, "power_draw": 5,
         "action": {"id": "act_raillance", "display_name": "Schienenschuss",
                    "category": "attack", "targeting": "single",
                    "range_tiles": 7, "power": 16, "en_cost": 6,
-                   "requires_line_of_sight": True},
+                   "requires_line_of_sight": True, "aggro_coeff": 0.35},
     },
 }
 
@@ -496,6 +521,7 @@ ACTION_DEFAULTS = {
     "id": "", "display_name": "", "category": "attack", "targeting": "single",
     "range_tiles": 1, "aoe_radius": 0, "en_cost": 0, "power": 0,
     "requires_line_of_sight": False, "push_tiles": 0, "status_effect": None,
+    "aggro_coeff": 1.0, "aggro_flat": 0, "taunt_turns": 0,
 }
 
 

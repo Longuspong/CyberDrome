@@ -139,10 +139,10 @@ const STOCK = {
 
 // Erwartungswerte aus dem Testlauf der Engine (tests/test_drome_build.gd).
 const EXPECTED = {
-  bot1: { hp: 60, en_max: 40, spd: 15, mov: 4, atk: 0, def: 6, threat: 213 },
-  bot2: { hp: 145, en_max: 70, spd: 6, mov: 2, atk: 0, def: 9, threat: 314 },
-  bot3: { hp: 85, en_max: 110, spd: 14, mov: 5, atk: 1, def: 2, threat: 260 },
-  bot4: { hp: 70, en_max: 50, spd: 10, mov: 4, atk: 6, def: 2, threat: 225 },
+  bot1: { hp: 60, en_max: 40, spd: 15, mov: 4, atk: 0, def: 6, power: 213 },
+  bot2: { hp: 145, en_max: 70, spd: 6, mov: 2, atk: 0, def: 9, power: 314 },
+  bot3: { hp: 85, en_max: 110, spd: 14, mov: 5, atk: 1, def: 2, power: 260 },
+  bot4: { hp: 70, en_max: 50, spd: 10, mov: 4, atk: 6, def: 2, power: 225 },
 };
 
 console.log("\n=== Werkstatt gegen Engine ===\n");
@@ -155,7 +155,7 @@ for (const [setId, assignment] of Object.entries(STOCK)) {
     for (const key of ["hp", "en_max", "spd", "mov", "atk", "def"]) {
       check(`${setId}.${key}`, stats[key], want[key]);
     }
-    check(`${setId}.threat`, Math.round(sandbox.threatScore(loadout)), want.threat);
+    check(`${setId}.power`, Math.round(sandbox.powerScore(loadout)), want.power);
     const problems = sandbox.validateLoadout(loadout);
     check(`${setId} ist gueltig`, problems, []);
   });
