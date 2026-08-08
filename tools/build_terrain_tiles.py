@@ -44,11 +44,12 @@ from __future__ import annotations
 import json
 import pathlib
 import sys
+from xml.etree import ElementTree
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from build_sample_parts import (  # noqa: E402
-    COS45, SCALE, TILE_HALF_W, B, project, render, _shade_hex,
+    COS45, SCALE, TILE_HALF_W, B, project, render, svg_comment_body, _shade_hex,
 )
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -128,7 +129,7 @@ SVG_HEAD = (
     'width="128" height="128"\n     data-terrain="{tid}" data-class="{tclass}">\n'
     '  <title>{name}</title>\n'
     '  <!--\n'
-    '    Erzeugt von tools/build_terrain_tiles.py -- nicht von Hand bearbeiten.\n'
+    '    Erzeugt von tools/build_terrain_tiles.py, nicht von Hand bearbeiten.\n'
     '    Dieselbe Projektion wie die Bauteile: Iso-Kamera 45 Grad, Bodenraute\n'
     '    {tw:.0f} x {th:.0f} px um (64, 96). Nur so steht ein Bot auf seinem Feld\n'
     '    und nicht daneben.\n'
@@ -174,6 +175,16 @@ def _tile_shapes(terrain_class: str, tid: str):
 
 
 def _write(path: pathlib.Path, text: str) -> bool:
+    # Wie bei den Bauteilen: eine Datei, die sich SVG nennt, muss wohlgeformtes
+    # XML sein. Der haeufigste Weg, das zu verletzen, ist ein Gedankenstrich im
+    # Kommentar -- "--" ist dort verboten (siehe svg_comment_body).
+    if path.suffix == ".svg":
+        try:
+            ElementTree.fromstring(text)
+        except ElementTree.ParseError as error:
+            raise SystemExit(
+                f"[terrain] {path.name} ist kein wohlgeformtes XML: {error}"
+            ) from error
     current = path.read_text(encoding="utf-8") if path.exists() else None
     if current == text:
         return False

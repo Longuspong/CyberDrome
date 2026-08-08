@@ -100,7 +100,9 @@ from __future__ import annotations
 import json
 import math
 import pathlib
+import re
 import shutil
+from xml.etree import ElementTree
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PARTS_DIR = ROOT / "parts"
@@ -1937,21 +1939,38 @@ SETS = [
 ]
 
 
-SVG_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
-     data-part-id="{pid}" data-type="{ptype}" data-direction="{direction}">
-  <title>{name} ({direction})</title>
-  <!--
+SVG_NOTE = """
     Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung {direction}.
     Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
     Projektion:  x = 64 + cos(45)*(px - py)*SCALE
                  y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
     Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
-    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-  -->
+  """
+
+SVG_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="{pid}" data-type="{ptype}" data-direction="{direction}">
+  <title>{name} ({direction})</title>
+  <!--{note}-->
 {body}
 </svg>
 """
+
+
+def svg_comment_body(text: str) -> str:
+    """
+    Kommentartext, der in einem XML-Kommentar stehen DARF.
+
+    ``--`` ist dort verboten, und ausgerechnet in diesem Projekt steht der
+    Gedankenstrich in fast jedem erklaerenden Satz. Browser und Godot sind
+    nachsichtig; ElementTree, lxml und jedes Werkzeug, das die Dateien strikt
+    parst, brechen dagegen ab. Deshalb wird hier zusammengezogen, statt sich
+    darauf zu verlassen, dass niemand einen Gedankenstrich schreibt. Ein
+    Bindestrich unmittelbar vor dem Kommentarende ist aus demselben Grund
+    ebenfalls unzulaessig.
+    """
+    return re.sub(r"-{2,}", "-", text).rstrip("-")
 
 
 def slot_draw_order(part: dict, direction: str) -> dict:
@@ -1982,7 +2001,18 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
     svg = SVG_TEMPLATE.format(
         pid=pid, ptype=part["type"], direction=direction,
         name=part.get("name", pid), body=render(part["shapes"], direction),
+        note=svg_comment_body(SVG_NOTE.format(direction=direction)),
     )
+    # Eine Datei, die sich SVG nennt, muss wohlgeformtes XML sein. Godot und
+    # jeder Browser sehen darueber hinweg, ein strikter Parser nicht -- und
+    # der Fehler faellt dann irgendwann in einem Werkzeug auf, das mit dem
+    # Teil gar nichts zu tun hat. Hier kostet die Pruefung nichts.
+    try:
+        ElementTree.fromstring(svg)
+    except ElementTree.ParseError as error:
+        raise SystemExit(
+            f"{set_id}/{stem}.svg ist kein wohlgeformtes XML: {error}"
+        ) from error
     (set_dir / f"{stem}.svg").write_text(svg, encoding="utf-8")
 
     meta = {

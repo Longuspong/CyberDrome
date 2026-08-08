@@ -7,7 +7,7 @@
     Projektion:  x = 64 + cos(45)*(px - py)*SCALE
                  y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
     Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
-    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
   -->
 <g stroke="#060f0d" stroke-width="0.9" stroke-linejoin="round">

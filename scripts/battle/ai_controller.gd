@@ -203,13 +203,12 @@ func _action_score(unit: Unit, action: ActionData, target: Unit) -> float:
 			score *= _w("heal_multiplier", 1.5)
 		return score
 
-	# Eine Provokation auf ein Ziel, das dieser DROME bereits provoziert hat,
-	# bewirkt nichts -- dieselbe Ueberlegung wie bei einer Heilung auf
-	# Vollleben. Ohne diese Zeile erneuert die KI die Sperre jeden Zug und
-	# macht aus einer befristeten Zwangsmechanik eine dauerhafte.
-	if action.is_taunt() and action.power <= 0 \
-			and target.taunted_by() == unit.unit_id:
-		return 0.0
+	# Der Wert einer Provokation steckt nicht im Schaden -- meistens richtet
+	# sie gar keinen an --, sondern in dem Angriff, den sie verhindert.
+	if action.is_taunt():
+		score += _taunt_score(unit, action, target)
+		if action.power <= 0:
+			return score
 
 	var damage := battle.resolver.preview_damage(unit, target, action)
 	score += float(damage) * _w("damage_weight", 1.0)
@@ -231,6 +230,99 @@ func _aggro_score(unit: Unit, target: Unit) -> float:
 	if unit.aggro.current_target == target.unit_id:
 		score += _incumbent_bonus(unit)
 	return score
+
+
+## Was ist es wert, ein feindliches Ziel auf sich selbst umzulenken?
+##
+## Der Schaden taugt dafuer nicht als Mass: eine Provokation richtet keinen an,
+## und `preview_damage` liefert dann die Mindestmenge 1. Damit waere die
+## staerkste Aktion im Spiel die billigste der Bewertung -- die KI besaesse
+## sie und benutzte sie nie.
+##
+## Gerechnet wird deshalb in LEBENSLEISTEN statt in Schadenspunkten. Nicht wie
+## viel Schaden umgelenkt wird, entscheidet, sondern wie viel er dort und hier
+## jeweils AUSMACHT: zwoelf Schaden auf einen angeschlagenen Techniker sind
+## etwas anderes als zwoelf Schaden auf ein volles Molok-Chassis.
+##
+##     gewinn = anteil_beim_opfer - anteil_bei_mir     (je Zug, in Leisten)
+##
+## Daraus faellt das gewuenschte Verhalten heraus, ohne dass irgendwo "Tank"
+## steht -- dieselbe Emergenz, auf der auch die Aggro selbst beruht:
+##
+##   * Ein dickes Chassis provoziert, weil sein eigener Anteil klein ist.
+##   * Ein duenner Gegner laesst es bleiben: sein Anteil ist groesser als der
+##     des Opfers, der Gewinn negativ. Er wuerde sich nur selbst verheizen.
+##   * Wer ohnehin schon das Ziel ist, gewinnt nichts -- das Opfer ist dann er
+##     selbst, und der Gewinn ist exakt null. Kein Sonderfall noetig.
+##
+## Die Obergrenze ist bewusst gesetzt: mehr als eine ganze Lebensleiste laesst
+## sich nicht retten, egal wie lange die Sperre haelt. Zusammen mit
+## ``rescue_bonus`` bleibt der beste denkbare Wert damit unter ``kill_bonus``
+## -- ein sicherer Abschuss geht der Umlenkung vor, und das soll er auch.
+func _taunt_score(unit: Unit, action: ActionData, target: Unit) -> float:
+	# Eine Sperre, die schon steht, noch einmal zu setzen bringt nichts --
+	# dieselbe Ueberlegung wie eine Heilung auf Vollleben. Ohne das erneuert
+	# die KI sie jeden Zug und macht aus einer befristeten Zwangsmechanik eine
+	# dauerhafte.
+	if target.taunted_by() == unit.unit_id:
+		return 0.0
+
+	var victim := _most_endangered_by(target, unit)
+	if victim.is_empty():
+		return 0.0                      # das Ziel bedroht gerade niemanden
+
+	var incoming := _best_damage(target, unit)
+	var to_me := float(incoming) / maxf(1.0, float(unit.hp))
+	var gain: float = float(victim["share"]) - to_me
+	if gain <= 0.0:
+		return 0.0
+
+	var saved := minf(gain * float(action.taunt_turns), 1.0)
+	var score := saved * _w("taunt_weight", 50.0)
+
+	# Einen Abschuss zu verhindern ist mehr wert als Schaden zu verteilen --
+	# aber nur, wenn der Treffer mich nicht seinerseits umlegt. Sonst tauscht
+	# die KI einen Verlust gegen einen anderen.
+	var doomed: Unit = victim["unit"]
+	if doomed != unit and int(victim["damage"]) >= doomed.hp and incoming < unit.hp:
+		score += _w("rescue_bonus", 45.0)
+	return score
+
+
+## Der staerkste Angriff, den ``attacker`` gegen ``victim`` fuehren koennte.
+##
+## Ohne Ruecksicht auf Reichweite, Budget und Energie -- eine Abschaetzung wie
+## _can_strike() eine ist. Die genaue Rechnung fuer jede Einheit gegen jede
+## andere waere fuer den Gewinn zu teuer, und die Zahl geht ohnehin nur als
+## Verhaeltnis in die Bewertung ein.
+func _best_damage(attacker: Unit, victim: Unit) -> int:
+	var best := 0
+	for action in attacker.actions():
+		if action.is_attack():
+			best = maxi(best, battle.resolver.preview_damage(attacker, victim, action))
+	return best
+
+
+## Wen auf der eigenen Seite bedroht ``threat`` am staerksten?
+##
+## Gemessen am ANTEIL der Lebensleiste, nicht am Schaden. Sonst waere immer der
+## Dickste das vermeintliche Opfer, und die KI wuerde ausgerechnet den
+## schuetzen, der es am wenigsten braucht.
+##
+## ``mover`` steht in seiner eigenen Liste mit drin. Das ist Absicht: ist er
+## selbst das gefaehrdetste Ziel, hebt sich der Gewinn oben auf null auf.
+func _most_endangered_by(threat: Unit, mover: Unit) -> Dictionary:
+	var worst := {}
+	for ally in battle.allies_of(mover):
+		if not _can_strike(threat, ally.tile):
+			continue
+		var damage := _best_damage(threat, ally)
+		if damage <= 0:
+			continue
+		var share := float(damage) / maxf(1.0, float(ally.hp))
+		if worst.is_empty() or share > float(worst["share"]):
+			worst = {"unit": ally, "damage": damage, "share": share}
+	return worst
 
 
 ## Wie zaeh haelt dieser Gegner an seinem Ziel fest? Ein Wert pro Bauart reicht,

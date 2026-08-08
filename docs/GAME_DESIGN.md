@@ -447,7 +447,45 @@ gewoehnlichen Aggro, die einen Abschuss nie verhindert.
 Die KI erneuert eine Sperre, die sie bereits haelt, **nicht** -- eine
 Provokation auf ein bereits provoziertes Ziel bewertet sie mit 0, dieselbe
 Ueberlegung wie bei einer Heilung auf Vollleben. Ohne das waere aus der
-befristeten Zwangsmechanik eine dauerhafte geworden. Durchgesetzt wird sie in
+befristeten Zwangsmechanik eine dauerhafte geworden.
+
+### 6g. Was eine Umlenkung wert ist
+
+Der Schaden taugt als Mass nicht: eine Provokation richtet keinen an, und die
+Schadensvorschau liefert dann die Mindestmenge 1. Die staerkste Aktion im
+Spiel waere damit die billigste der Bewertung -- die KI besaesse sie und
+benutzte sie nie.
+
+Gerechnet wird deshalb in **Lebensleisten** statt in Schadenspunkten. Nicht
+wie viel Schaden umgelenkt wird, entscheidet, sondern wie viel er dort und
+hier jeweils ausmacht:
+
+```
+gewinn = anteil_beim_opfer - anteil_bei_mir        (je Zug, in Leisten)
+wert   = min(gewinn x sperrdauer, 1) x taunt_weight
+```
+
+Zwoelf Schaden auf einen angeschlagenen Techniker sind etwas anderes als
+zwoelf Schaden auf ein volles Molok-Chassis -- und aus genau diesem
+Unterschied faellt das gewuenschte Verhalten heraus, ohne dass irgendwo
+„Tank" steht. Dieselbe Emergenz, auf der auch die Aggro selbst beruht:
+
+* Ein dickes Chassis provoziert, weil sein eigener Anteil klein ist.
+* Ein duenner Gegner laesst es bleiben -- sein Anteil ist groesser als der des
+  Opfers, der Gewinn negativ. Er wuerde sich nur selbst verheizen.
+* Wer ohnehin schon das Ziel ist, gewinnt nichts: das gefaehrdetste Ziel ist
+  dann er selbst, und der Gewinn ist exakt null. Kein Sonderfall noetig.
+
+Gemessen wird das gefaehrdetste Ziel am **Anteil** seiner Lebensleiste, nicht
+am Schaden -- sonst waere immer der Dickste das vermeintliche Opfer, und die
+KI schuetzte ausgerechnet den, der es am wenigsten braucht.
+
+Dazu ein `rescue_bonus`, wenn der Schuetzling sonst ausscheiden wuerde und der
+Provozierende den Treffer selbst uebersteht. Die Obergrenze ist bewusst
+gesetzt: mehr als eine ganze Lebensleiste laesst sich nicht retten, egal wie
+lange die Sperre haelt. `taunt_weight + rescue_bonus` bleibt damit unter
+`kill_bonus` -- **ein sicherer Abschuss geht der Umlenkung vor**, und das soll
+er auch. `tests/test_aggro.gd` prueft diese Invariante. Durchgesetzt wird sie in
 `ActionResolver.target_blocker()` -- der Funktion, die ohnehin beantwortet, ob
 ein Ziel gueltig ist, und deren Begruendung unveraendert in den Tooltip wandert.
 Damit gilt sie fuer beide Seiten mit einer einzigen Regel: die KI fragt
@@ -460,7 +498,7 @@ hintereinander provozieren bringt dadurch nichts. Nach Ablauf steht die Quelle
 knapp vorn, aber nicht uneinholbar -- das Gefecht kippt zurueck ins normale
 Tabellenmodell, statt hart umzuschalten.
 
-### 6g. Der Spieler muss die Tabelle sehen koennen
+### 6h. Der Spieler muss die Tabelle sehen koennen
 
 Nicht als Zugabe, sondern als Bedingung. Der Kampf ist deterministisch und
 verspricht, dass sich jede Aktion vorher durchrechnen laesst; die TICK-Leiste
@@ -473,7 +511,7 @@ Im Tooltip einer gegnerischen DROME steht deshalb die Rangfolge in Anteilen,
 mit einer Markierung am aktuellen Ziel. Rohwerte werden nicht gezeigt: sie
 bedeuten nichts.
 
-### 6h. Was das System nicht ist
+### 6i. Was das System nicht ist
 
 * keine Zielwahl fuer den Spieler -- die ist vollstaendig unabhaengig
 * keine Positionierung und keine Faehigkeitswahl der KI
@@ -506,20 +544,23 @@ Optionen, damit das Anker-Format sie nicht ausschliesst:
   durchdacht, die Werte in `data/config.json` sind Setzungen. `decay_rate` und
   die Amtsinhaber-Boni steuern dieselbe Groesse -- die Traegheit der Zielwahl.
   Immer nur eins von beiden anfassen.
-* **Der Gegner-Generator wuerfelt den Koedersender mit.** Damit provozieren
-  Gegner den Spieler -- die Sperre sitzt beim Provozierten und wirkt in beide
-  Richtungen, beim Spieler faerben sich die gesperrten Ziele grau mit dem Grund
-  im Tooltip. Messbare Folge ueber dieselben 25 Testkaempfe: 21:4 statt 18:7
-  fuer den Spieler. Der Grund ist nicht der Sender, sondern die Bewertung: die
-  KI gibt einen Slot fuer ein Modul aus, dessen Nutzen ihre Nutzenfunktion gar
-  nicht kennt -- sie zaehlt Schaden, und eine Provokation richtet keinen an.
-  Zwei Auswege, beide offen: der KI beibringen, was eine Umlenkung wert ist,
-  oder reine Support-Module aus dem Gegner-Wurf nehmen. Das Erste ist das
-  richtige, das Zweite das billige.
-* **Der Kampfwert sieht `aggro_bonus` nicht.** Bewusst so: der Wert einer
+* **Das Gegner-Matching filtert den Koedersender heraus.** Gemessen ueber 400
+  erzeugte Gegner: im rohen Wurf tragen ihn **11,2 %**, nach dem Abgleich gegen
+  den Kampfwert nur noch **4,8 %**. Der Grund ist kein Fehler, sondern die
+  Folge einer bewussten Entscheidung -- der Kampfwert sieht `aggro_bonus`
+  nicht, ein Sender-Aufbau misst sich deshalb schwaecher und faellt aus der
+  Toleranz. Damit ist eine gerade erst gebaute Mechanik bei Gegnern fast nie
+  zu sehen. Entweder bekommt `aggro_bonus` ein Gewicht im Kampfwert, oder die
+  Seltenheit ist gewollt. Nicht entschieden.
+* **Der Kampfwert sieht `aggro_bonus` bewusst nicht.** Der Wert einer
   Aggro-Erhoehung haengt vollstaendig davon ab, wer sie traegt -- auf einem
   Molok viel, auf einem Strix nichts. Eine lineare Gewichtung waere eine
-  erfundene Zahl. Das Gegner-Matching unterschaetzt einen Sender-Aufbau also.
+  erfundene Zahl. Der Preis dafuer steht eine Zeile hoeher.
+* **Gegner koennen den Spieler provozieren.** Die Sperre sitzt beim
+  Provozierten und wirkt in beide Richtungen; beim Spieler faerben sich die
+  gesperrten Ziele grau, der Grund steht im Tooltip. Bislang passiert das
+  wegen der Seltenheit des Senders kaum -- ob es sich gut anfuehlt, wenn es
+  haeufiger passiert, muss ein Playtest zeigen.
 * **Aggro-Reduktion** (Aggro abwerfen, sich tot stellen) existiert nicht. Das
   Modell traegt sie problemlos, sie ist nur nicht entworfen.
 * Feldgroesse relativ zur Einheit: der Bot ueberragt sein Feld derzeit deutlich

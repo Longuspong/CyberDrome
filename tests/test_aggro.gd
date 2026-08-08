@@ -419,25 +419,96 @@ func test_the_beacon_costs_a_slot_and_the_strix_cannot_pay_it() -> void:
 		% ", ".join(molok.validate()))
 
 
-func test_the_ai_does_not_renew_a_taunt_it_already_holds() -> void:
-	# Sonst wird aus einer befristeten Zwangsmechanik eine dauerhafte.
-	var battle := BattleManager.new()
-	battle.setup(9113, [_melee()])
-	var controller := AIController.new(battle)
-	var foe: Unit = battle.living(false)[0]
-	var victim: Unit = battle.living(true)[0]
+# ---------------------------------------------------------------------------
+# Was eine Umlenkung wert ist
+# ---------------------------------------------------------------------------
 
+## Baut eine Lage, in der eine Provokation ueberhaupt etwas bewirken KANN:
+## zwei Gegner und ein Spieler-DROME, alle in Reichweite voneinander.
+func _redirect_case(seed_value: int, tough_hp: int, fragile_hp: int) -> Dictionary:
+	var battle := BattleManager.new()
+	battle.setup(seed_value, [_melee(), _sniper()])
+	var foes := battle.living(false)
+	var case := {
+		"battle": battle,
+		"controller": AIController.new(battle),
+		"tough": foes[0],
+		"fragile": foes[1],
+		"threat": battle.living(true)[0],
+	}
+	case["tough"].stats["hp_max"] = tough_hp
+	case["tough"].hp = tough_hp
+	case["fragile"].stats["hp_max"] = fragile_hp
+	case["fragile"].hp = fragile_hp
+	# Nebeneinander -- _can_strike() rechnet ueber die Distanz.
+	case["threat"].tile = Vector2i(5, 5)
+	case["tough"].tile = Vector2i(5, 6)
+	case["fragile"].tile = Vector2i(6, 5)
+	return case
+
+
+func _taunt_action() -> ActionData:
 	var taunt := ActionData.new()
 	taunt.id = &"act_test_taunt"
 	taunt.category = ActionData.Category.ABILITY
 	taunt.taunt_turns = 3
+	return taunt
 
-	t.ok(controller._action_score(foe, taunt, victim) > 0.0,
+
+func test_a_tough_drome_redirects_and_a_fragile_one_does_not() -> void:
+	# Der Kern der Bewertung: gerechnet wird in Lebensleisten, nicht in
+	# Schadenspunkten. Wer selbst duenner ist als der, den er schuetzen
+	# will, gewinnt nichts -- er verheizt sich nur.
+	var case := _redirect_case(9114, 300, 30)
+	var controller: AIController = case["controller"]
+
+	var tough_score := controller._taunt_score(
+		case["tough"], _taunt_action(), case["threat"])
+	var fragile_score := controller._taunt_score(
+		case["fragile"], _taunt_action(), case["threat"])
+
+	t.ok(tough_score > 0.0,
+		"das robuste Chassis lenkt den Angriff auf sich (%.1f)" % tough_score)
+	t.equal(fragile_score, 0.0,
+		"der duenne Gegner laesst es bleiben -- er ist selbst das gefaehrdetste Ziel")
+	case["battle"].free()
+
+
+func test_a_redirect_is_worthless_when_there_is_nobody_to_protect() -> void:
+	var case := _redirect_case(9115, 300, 30)
+	var controller: AIController = case["controller"]
+	# Der Schuetzling ist ausser Reichweite: es gibt nichts umzulenken.
+	case["fragile"].tile = Vector2i(19, 19)
+	t.equal(controller._taunt_score(case["tough"], _taunt_action(), case["threat"]), 0.0,
+		"wen niemand bedroht, den muss man auch nicht wegprovozieren")
+	case["battle"].free()
+
+
+func test_the_ai_does_not_renew_a_taunt_it_already_holds() -> void:
+	# Sonst wird aus einer befristeten Zwangsmechanik eine dauerhafte.
+	var case := _redirect_case(9116, 300, 30)
+	var controller: AIController = case["controller"]
+	var taunt := _taunt_action()
+
+	t.ok(controller._action_score(case["tough"], taunt, case["threat"]) > 0.0,
 		"ein freies Ziel zu provozieren ist etwas wert")
-	victim.apply_taunt(foe.unit_id, 3)
-	t.equal(controller._action_score(foe, taunt, victim), 0.0,
+	case["threat"].apply_taunt(case["tough"].unit_id, 3)
+	t.equal(controller._action_score(case["tough"], taunt, case["threat"]), 0.0,
 		"ein bereits provoziertes Ziel erneut zu provozieren nicht")
-	battle.free()
+	case["battle"].free()
+
+
+func test_a_certain_kill_always_beats_the_best_possible_redirect() -> void:
+	# Eine Invariante der Gewichte, kein Spielzustand: die Umlenkung ist nach
+	# oben gedeckelt (hoechstens eine gerettete Lebensleiste plus der Bonus
+	# fuers verhinderte Ausscheiden). Waere die Summe groesser als kill_bonus,
+	# liefe die KI an sicheren Abschuessen vorbei, um jemanden umzulenken.
+	var ai := Config.section("ai")
+	var best_redirect: float = float(ai.get("taunt_weight", 50.0)) \
+		+ float(ai.get("rescue_bonus", 45.0))
+	t.ok(float(ai.get("kill_bonus", 100.0)) > best_redirect,
+		"kill_bonus (%.0f) liegt ueber der bestmoeglichen Umlenkung (%.0f)"
+		% [float(ai.get("kill_bonus", 100.0)), best_redirect])
 
 
 # ---------------------------------------------------------------------------

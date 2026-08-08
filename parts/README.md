@@ -299,6 +299,31 @@ Fehlt `slot_z`, greift der `z_index` des Teils, sonst dieser Standard:
 
 ---
 
+## 3c. Ein SVG muss wohlgeformtes XML sein
+
+Klingt selbstverstaendlich, ist es nicht. Browser und Godot sehen ueber
+vieles hinweg, ein strikter Parser (ElementTree, lxml, jedes Werkzeug, das
+die Dateien einliest statt sie anzuzeigen) bricht dagegen ab -- und der
+Fehler faellt dann irgendwann an einer Stelle auf, die mit dem Teil nichts
+zu tun hat.
+
+Der haeufigste Stolperstein in genau diesem Projekt ist der **Gedankenstrich**:
+
+```xml
+<!-- Erzeugt von build_sample_parts.py -- nicht von Hand bearbeiten. -->
+```
+
+`--` ist innerhalb eines XML-Kommentars verboten, und hier steht er in fast
+jedem erklaerenden Satz. Beide Generatoren ziehen ihn deshalb ueber
+`svg_comment_body()` zu einem einfachen Bindestrich zusammen, und alle drei
+Wege, auf denen ein SVG ins Repo kommt -- `build_sample_parts.py`,
+`build_terrain_tiles.py` und der Import in der Werkstatt -- pruefen vor dem
+Schreiben, dass sich die Datei parsen laesst. Ein importiertes SVG, das das
+nicht tut, wird mit Begruendung abgewiesen.
+
+Dasselbe gilt fuer alles andere, was XML verbietet: ein nacktes `&` gehoert
+als `&amp;` geschrieben, ein `<` in einem Text als `&lt;`.
+
 ## 4. Farben: keine Hex-Werte im SVG
 
 Jedes Teil zeichnet ausschliesslich mit CSS Custom Properties. Nur so
