@@ -40,6 +40,31 @@ var push_tiles: int = 0
 
 var status_effect = null
 
+## Wie laut ist diese Aktion? Multiplikator auf die Aggro, die ihre Wirkung
+## erzeugt (scripts/battle/aggro_table.gd). 1.0 ist die Grundlinie, alles
+## andere ist relativ dazu zu lesen:
+##
+##     1.0   normaler Angriff -- die Baseline
+##     0.5   Heilung: der Techniker ist angreifbar, aber kein Aggro-Magnet
+##     0.35  Praezisionswaffen: viel Schaden, wenig Krach
+##
+## Steht ausdruecklich pro Aktion in den Bauteil-Daten und wird NICHT aus
+## ``range_tiles`` abgeleitet. Eine Ableitung waere eine zweite, stillschweigende
+## Wahrheit darueber, wie auffaellig eine Waffe ist -- und untunebar dazu.
+var aggro_coeff: float = 1.0
+
+## Pauschale Aggro fuer Aktionen ohne Wirkungsmenge. Der Orbit-Sog richtet
+## keinen Schaden an, zerrt sein Ziel aber zwei Felder aus der Stellung; ohne
+## diesen Wert waere ein reiner Kontroll-Aufbau vollkommen lautlos.
+##
+## Der einzige Teil der Formel, der NICHT mit der Schadenskurve mitskaliert --
+## bei groesseren Balancing-Aenderungen also von Hand nachzuziehen.
+var aggro_flat: int = 0
+
+## > 0 macht die Aktion zu einer Provokation: das Ziel muss fuer so viele
+## EIGENE Zuege den Verursacher angreifen. Harter Zwang, deshalb befristet.
+var taunt_turns: int = 0
+
 
 static func from_meta(meta: Dictionary, owner_name: String = "") -> ActionData:
 	var action := ActionData.new()
@@ -54,7 +79,14 @@ static func from_meta(meta: Dictionary, owner_name: String = "") -> ActionData:
 	action.requires_line_of_sight = meta.get("requires_line_of_sight", false)
 	action.push_tiles = meta.get("push_tiles", 0)
 	action.status_effect = meta.get("status_effect")
+	action.aggro_coeff = float(meta.get("aggro_coeff", 1.0))
+	action.aggro_flat = meta.get("aggro_flat", 0)
+	action.taunt_turns = meta.get("taunt_turns", 0)
 	return action
+
+
+func is_taunt() -> bool:
+	return taunt_turns > 0
 
 
 func is_attack() -> bool:

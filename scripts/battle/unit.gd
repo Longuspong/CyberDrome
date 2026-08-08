@@ -30,6 +30,19 @@ var stats: Dictionary = {}
 ## Aktive Statuseffekte: id -> { cycles_left, spd, def, ... }
 var statuses: Dictionary = {}
 
+## Die Aggro-Buchfuehrung dieses DROME -- nur bei Gegnern belegt, bei
+## Spieler-DROMEs immer null. Wer die Zielwahl des Spielers trifft, ist der
+## Spieler; eine Tabelle, die niemand liest, waere eine zweite Wahrheit.
+var aggro: AggroTable = null
+
+## Provokation: solange gesetzt, darf dieser DROME nur die Quelle angreifen.
+## { "source": unit_id, "turns_left": int } oder leer.
+##
+## Sitzt beim PROVOZIERTEN, nicht beim Provozierenden -- deshalb funktioniert
+## der Zwang in beide Richtungen, obwohl nur Gegner eine Aggro-Tabelle haben.
+## Durchgesetzt wird er an genau einer Stelle: ActionResolver.target_blocker().
+var taunt_lock: Dictionary = {}
+
 ## Kampfbilanz fuer den Ergebnisbildschirm
 var damage_dealt: int = 0
 var damage_taken: int = 0
@@ -47,6 +60,8 @@ static func create(from_build: DromeBuild, id: StringName, player: bool) -> Unit
 	unit.hp = unit.stats["hp_max"]
 	unit.en = unit.stats["en_max"]
 	unit.name = "Unit_%s" % id
+	if not player:
+		unit.aggro = AggroTable.new()
 	return unit
 
 
@@ -183,6 +198,37 @@ func tick_statuses() -> bool:
 			statuses.erase(id)
 			changed = true
 	return changed
+
+
+# ---------------------------------------------------------------------------
+# Provokation
+# ---------------------------------------------------------------------------
+
+func is_taunted() -> bool:
+	return not taunt_lock.is_empty() and int(taunt_lock.get("turns_left", 0)) > 0
+
+
+func taunted_by():
+	return taunt_lock.get("source") if is_taunted() else null
+
+
+func apply_taunt(source_id, turns: int) -> void:
+	taunt_lock = {"source": source_id, "turns_left": maxi(1, turns)}
+
+
+func clear_taunt() -> void:
+	taunt_lock = {}
+
+
+## Zu Beginn des eigenen Zuges. Die Provokation laeuft in EIGENEN Zuegen ab,
+## nicht in Zyklen -- "drei Zuege lang" ist das, was der Spieler abzaehlt, und
+## Statuseffekte rechnen an derselben Stelle genauso.
+func tick_taunt() -> void:
+	if taunt_lock.is_empty():
+		return
+	taunt_lock["turns_left"] = int(taunt_lock.get("turns_left", 0)) - 1
+	if int(taunt_lock["turns_left"]) <= 0:
+		taunt_lock = {}
 
 
 func status_names() -> Array[String]:

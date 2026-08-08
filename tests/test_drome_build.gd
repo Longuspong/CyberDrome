@@ -1,6 +1,6 @@
 extends RefCounted
 
-## M2: Stat-Berechnung, Validierung, Threat Score.
+## M2: Stat-Berechnung, Validierung, Kampfwert.
 
 var t
 
@@ -34,7 +34,7 @@ func _stock(set_id: String) -> DromeBuild:
 
 
 func test_library_loaded() -> void:
-	t.equal(PartDB.parts.size(), 23, "23 Bauteile erwartet")
+	t.equal(PartDB.parts.size(), 24, "24 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausaetze erwartet")
 	for part in PartDB.parts.values():
 		t.equal(part.views.size(), 4, "%s braucht vier Ansichten" % part.id)
@@ -47,9 +47,9 @@ func test_stock_builds_are_valid() -> void:
 		t.ok(problems.is_empty(), "%s: %s" % [set_id, ", ".join(problems)])
 		if problems.is_empty():
 			var s := build.stats()
-			t.note("%s  hp %3d  en %3d  spd %2d  mov %d  atk %d  def %d  threat %.0f"
+			t.note("%s  hp %3d  en %3d  spd %2d  mov %d  atk %d  def %d  kampfwert %.0f"
 				% [set_id, s["hp_max"], s["en_max"], s["spd"], s["mov"],
-					s["atk"], s["def"], build.threat_score()])
+					s["atk"], s["def"], build.power_score()])
 
 
 func test_stats_are_pure_sum() -> void:
@@ -125,12 +125,12 @@ func test_chassis_swap_drops_equipment_that_no_longer_fits() -> void:
 		"die nicht mehr passende Kanone faellt aus der Rechnung")
 
 
-func test_threat_score_rewards_the_obviously_stronger_build() -> void:
+func test_power_score_rewards_the_obviously_stronger_build() -> void:
 	var heavy := _stock("bot2")
 	var light := _stock("bot1")
-	t.ok(heavy.threat_score() > light.threat_score(),
-		"der Molok ist bedrohlicher als der Vireo (%.0f vs %.0f)"
-		% [heavy.threat_score(), light.threat_score()])
+	t.ok(heavy.power_score() > light.power_score(),
+		"der Molok ist staerker als der Vireo (%.0f vs %.0f)"
+		% [heavy.power_score(), light.power_score()])
 
 
 func test_loadout_survives_a_round_trip() -> void:

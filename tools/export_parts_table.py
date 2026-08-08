@@ -29,10 +29,10 @@ Darueber liegt das Blatt „Alle Teile“ mit dem vollen Wertesatz aller Teile i
 einer Tabelle. Es ist die Fassung zum Filtern und Sortieren; die Typblaetter
 sind die Fassung zum Lesen.
 
-Der Threat-Beitrag
-------------------
+Der Kampfwert-Beitrag
+---------------------
 Die Typblaetter tragen eine gemeinsame Vergleichszahl: den Beitrag des Teils
-zum Threat Score aus ``scripts/core/drome_build.gd``. Das ist die einzige
+zum Kampfwert aus ``scripts/core/drome_build.gd``. Das ist die einzige
 Gewichtung, die das Spiel selbst benutzt (das Gegner-Matching des Chaos-Virus
 haengt daran), und sie ist linear -- der Score eines Aufbaus ist damit die
 Summe der Beitraege seiner Teile. Deshalb laesst sich ueber diese eine Spalte
@@ -103,12 +103,12 @@ TYPE_ROLE = {
     "equipment": "Waffen, Schilde, Support-Module -- alles, was Aktionen gewaehrt",
 }
 
-# Gewichtung des Threat Score aus scripts/core/drome_build.gd. Wer sie dort
+# Gewichtung des Kampfwerts aus scripts/core/drome_build.gd. Wer sie dort
 # aendert, aendert sie hier mit -- sonst rechnet die Mappe eine zweite,
 # stillschweigend andere Staerke aus als das Spiel.
-THREAT_WEIGHTS = {"hp": 1.0, "atk": 6.0, "def": 8.0,
+POWER_WEIGHTS = {"hp": 1.0, "atk": 6.0, "def": 8.0,
                   "spd": 3.0, "mov": 4.0, "en_max": 0.5}
-THREAT_BEST_WEAPON = 2.0
+POWER_BEST_WEAPON = 2.0
 
 # Was ein Spielwert bedeutet und woran er haengt. Wird zur Legende und zu den
 # Kommentaren an den Spaltenkoepfen.
@@ -138,6 +138,12 @@ GLOSSARY = {
     "step_cost_reduced": ("Stufen billiger", "Stufen kosten weniger Bewegung."),
     "grants_ignore_haze": ("sieht durch Haze", "Haze-Felder blockieren die "
                                                "Sichtlinie dieses DROME nicht."),
+    "aggro_bonus": ("Aggro +%", "Wie viel mehr Aufmerksamkeit alles erzeugt, "
+                                "was der Traeger tut -- in Prozentpunkten, "
+                                "additiv ueber alle Teile. Der einzige Weg zu "
+                                "Aggro ohne eigene Aktion, und er kostet einen "
+                                "Ausruestungsslot. Geht NICHT in den Kampfwert "
+                                "ein."),
 }
 
 # Aktionsfelder -- aus scripts/core/action_data.gd.
@@ -149,6 +155,15 @@ ACTION_GLOSSARY = {
                        "statt zweier Felder."),
     "requires_line_of_sight": ("Sichtlinie", "Braucht freie Sicht zum Ziel."),
     "push_tiles": ("Schub", "Positiv = wegstossen, negativ = heranziehen."),
+    "aggro_coeff": ("Aggro x", "Wie LAUT die Aktion ist: Multiplikator auf die "
+                               "Aggro, die ihre Wirkung erzeugt. 1.0 ist die "
+                               "Grundlinie, 0.5 Heilung, 0.35 Praezision. "
+                               "Trennt „wie viel Schaden“ von „wie sehr "
+                               "provoziert es“ -- deshalb ueberlebt der Strix "
+                               "in der zweiten Reihe."),
+    "taunt_turns": ("Provokation", "Fuer so viele EIGENE Zuege muss das Ziel "
+                                   "den Verursacher angreifen. Der einzige "
+                                   "harte Zwang im Spiel, deshalb befristet."),
 }
 
 # Silhouetten-Merkmal und was es dem Spieler sagen soll.
@@ -183,6 +198,9 @@ READING = {
     "EQP-004": ("flacher Pod auf der Schulterbruecke", "Support, keine Waffe"),
     "EQP-005": ("langer duenner Stab mit Kopfglut", "arkane Waffe"),
     "EQP-006": ("schwebender Ring vor der Hand", "Support, arkan"),
+    "EQP-008": ("duenner Mast ueber Kopfhoehe, drei waagerechte Sendeschirme, "
+                "Gegengewicht hinten-unten",
+                "laut und unbewaffnet -- zieht Aufmerksamkeit und provoziert"),
     "EQP-007": ("ueberlanger duenner Doppellauf, Zielblock, Gabel",
                 "Praezision, grosse Reichweite"),
 }
@@ -232,9 +250,9 @@ def flag(part: dict, key: str) -> str:
     return "ja" if stat(part, key) else "–"
 
 
-def threat_of(part: dict, keys) -> float:
-    """Beitrag eines Teils zum Threat Score -- nur ueber die genannten Werte."""
-    return sum(THREAT_WEIGHTS[key] * stat(part, key) for key in keys)
+def power_of(part: dict, keys) -> float:
+    """Beitrag eines Teils zum Kampfwert -- nur ueber die genannten Werte."""
+    return sum(POWER_WEIGHTS[key] * stat(part, key) for key in keys)
 
 
 # ---------------------------------------------------------------------------
@@ -338,16 +356,16 @@ def head_columns(set_names) -> list[Column]:
     ]
 
 
-def threat_column(keys) -> Column:
-    terms = " · ".join(f"{THREAT_WEIGHTS[k]:g}×{GLOSSARY[k][0]}" for k in keys)
+def power_column(keys) -> Column:
+    terms = " · ".join(f"{POWER_WEIGHTS[k]:g}×{GLOSSARY[k][0]}" for k in keys)
 
     def build(letters, row, keys=keys):
         return "=" + "+".join(
-            f"{letters[key]}{row}*{THREAT_WEIGHTS[key]:g}" for key in keys)
+            f"{letters[key]}{row}*{POWER_WEIGHTS[key]:g}" for key in keys)
 
-    return Column("threat", "Threat-Beitrag", 13, formula=build, fmt="0.0",
+    return Column("power", "Kampfwert-Beitrag", 13, formula=build, fmt="0.0",
                   summary=True, bar=True,
-                  note="Beitrag zum Threat Score aus drome_build.gd: "
+                  note="Beitrag zum Kampfwert aus drome_build.gd: "
                        f"{terms}. Die Werte, die dieser Bauteiltyp gar nicht "
                        "fuehrt, sind ueberall 0 und stehen deshalb nicht in "
                        "der Formel. Ueber diese Spalte lassen sich Teile "
@@ -465,7 +483,7 @@ def sheet_all(book, parts, set_names) -> tuple[int, int]:
         # Hier stehen alle sechs Werte der Gewichtung als Spalte, also geht
         # die volle Formel. Das ist die einzige Stelle der Mappe, an der sich
         # ein Kopf mit einer Waffe vergleichen laesst.
-        threat_column(list(THREAT_WEIGHTS)),
+        power_column(list(POWER_WEIGHTS)),
         Column("tags", "Tags", 24, lambda p: ", ".join(p.get("tags", []))),
     ]
 
@@ -651,15 +669,15 @@ def sheet_legend(book, parts_range, type_letter) -> None:
     row += 1
 
     sheet.cell(row=row, column=1,
-               value="Threat-Beitrag").font = Font(name=FONT, bold=True, size=12)
+               value="Kampfwert-Beitrag").font = Font(name=FONT, bold=True, size=12)
     sheet.cell(row=row, column=2,
                value="die einzige Spalte, die Teile verschiedener Typen "
                      "vergleichbar macht").font = NOTE_FONT
     row += 1
     weights = " + ".join(f"{weight:g} × {GLOSSARY[key][0]}"
-                         for key, weight in THREAT_WEIGHTS.items())
+                         for key, weight in POWER_WEIGHTS.items())
     for text in [
-        f"Gewichtung aus DromeBuild.threat_score(): {weights}. Das Spiel "
+        f"Gewichtung aus DromeBuild.power_score(): {weights}. Das Spiel "
         "benutzt genau diese Zahl, um dem Spielersquad ein gleich starkes "
         "Gegnersquad gegenueberzustellen (Chaos-Virus).",
         "Sie ist linear -- der Score eines Aufbaus ist die Summe der "
@@ -670,13 +688,18 @@ def sheet_legend(book, parts_range, type_letter) -> None:
         "Typ ueberhaupt fuehrt. Die uebrigen sind dort bei jedem Teil null, "
         "das Ergebnis ist also dasselbe -- die Selbstpruefung des Skripts "
         "besteht darauf.",
-        f"Waffen gehen zusaetzlich mit {THREAT_BEST_WEAPON:g} × Power ein, "
+        f"Waffen gehen zusaetzlich mit {POWER_BEST_WEAPON:g} × Power ein, "
         "aber nur die STAERKSTE Waffe eines Aufbaus. Das haengt an der "
         "Bestueckung, nicht am Teil, und steht deshalb auf dem Waffenblatt "
         "in einer eigenen Spalte daneben.",
         "Was der Score NICHT abbildet: Reichweite, Traglast, Energiebedarf "
         "und alles Gelaende. Ein Antrieb, der Stufen betreten darf, ist "
         "dadurch keinen Punkt wert -- im Gefecht aber oft entscheidend.",
+        "Ebenfalls nicht enthalten ist die Aggro. Der Kampfwert sagt, wie "
+        "stark ein Aufbau IST; die Aggro sagt, wie sehr er einen bestimmten "
+        "Gegner stoert, und entsteht erst im Gefecht aus Aktionen "
+        "(scripts/battle/aggro_table.gd). Zwei verschiedene Fragen -- sie "
+        "hiessen frueher beide \u201eThreat\u201c.",
     ]:
         cell = sheet.cell(row=row, column=1, value="• " + text)
         cell.font = BODY_FONT
@@ -1151,7 +1174,7 @@ def verify(path: pathlib.Path, parts: list[dict], layout: dict) -> None:
 
     book = load_workbook(path)
     checked = _verify_matrix(book, parts)
-    checked += _verify_threat(book, layout)
+    checked += _verify_power(book, layout)
     checked += _verify_counts(book, parts)
     print(f"[ok] {checked} Formelzellen gegen die Regel geprueft, "
           f"kein Widerspruch")
@@ -1216,9 +1239,9 @@ def _verify_matrix(book, parts: list[dict]) -> int:
     return checked
 
 
-def _verify_threat(book, layout: dict) -> int:
+def _verify_power(book, layout: dict) -> int:
     """
-    Die Threat-Spalten gegen threat_score() aus drome_build.gd.
+    Die Kampfwert-Spalten gegen power_score() aus drome_build.gd.
 
     Geprueft wird zweierlei. Erstens: rechnet die Formel in der Zelle
     denselben Beitrag aus wie die Gewichtung des Spiels. Zweitens -- und das
@@ -1233,16 +1256,16 @@ def _verify_threat(book, layout: dict) -> int:
         group, keys, first = spec["group"], spec["keys"], spec["first"]
         column = next(c for c in range(1, sheet.max_column + 1)
                       if sheet.cell(row=first - 1, column=c).value
-                      == "Threat-Beitrag")
+                      == "Kampfwert-Beitrag")
 
-        for key in THREAT_WEIGHTS:
+        for key in POWER_WEIGHTS:
             if key in keys:
                 continue
             for part in group:
                 if stat(part, key) != 0:
                     raise SystemExit(
                         f"{sheet_name}: {part['code']} hat {key}="
-                        f"{stat(part, key)}, aber die Threat-Formel dieses "
+                        f"{stat(part, key)}, aber die Kampfwert-Formel dieses "
                         f"Blatts fuehrt {key} nicht mit")
 
         for offset, part in enumerate(group):
@@ -1252,10 +1275,10 @@ def _verify_threat(book, layout: dict) -> int:
                     f"{sheet_name}, Zeile {row}: erwartet {part.get('code')}, "
                     f"gefunden {sheet.cell(row=row, column=1).value!r}")
             actual = evaluate(sheet, sheet.cell(row=row, column=column).value)
-            expected = threat_of(part, keys)
+            expected = power_of(part, keys)
             if abs(actual - expected) > 1e-9:
                 raise SystemExit(
-                    f"{sheet_name}: Threat-Beitrag von {part['code']} rechnet "
+                    f"{sheet_name}: Kampfwert-Beitrag von {part['code']} rechnet "
                     f"{actual}, die Gewichtung ergibt {expected}")
             checked += 1
 
@@ -1265,7 +1288,7 @@ def _verify_threat(book, layout: dict) -> int:
         # Und die Kennzahlen darunter: MIN/AVERAGE/MAX muessen genau die
         # Datenzeilen treffen, nicht eine zu viel oder zu wenig.
         summary = first + len(group) + 1
-        values = [threat_of(p, keys) for p in group]
+        values = [power_of(p, keys) for p in group]
         for label, function in (("Minimum", min), ("Mittel", None), ("Maximum", max)):
             if sheet.cell(row=summary, column=1).value != label:
                 raise SystemExit(
@@ -1275,7 +1298,7 @@ def _verify_threat(book, layout: dict) -> int:
             actual = evaluate(sheet, sheet.cell(row=summary, column=column).value)
             if abs(actual - expected) > 1e-9:
                 raise SystemExit(
-                    f"{sheet_name}: {label} ueber Threat rechnet {actual}, "
+                    f"{sheet_name}: {label} ueber den Kampfwert rechnet {actual}, "
                     f"erwartet {expected}")
             checked += 1
             summary += 1
@@ -1310,21 +1333,21 @@ def build(target: pathlib.Path) -> tuple[int, int]:
     # und wird danach nach vorn geschoben.
     parts_range = sheet_all(book, parts, set_names)
 
-    # Blatt -> was dort steht, mit welcher Threat-Formel, ab welcher Zeile.
+    # Blatt -> was dort steht, mit welcher Kampfwert-Formel, ab welcher Zeile.
     # Die Selbstpruefung liest daraus, welche Formel wo stehen muss.
     layout: dict[str, dict] = {
-        "Alle Teile": {"group": parts, "keys": list(THREAT_WEIGHTS),
+        "Alle Teile": {"group": parts, "keys": list(POWER_WEIGHTS),
                        "first": parts_range[0], "summary": False},
     }
 
-    def add(name, heading, note, part_type, columns, threat_keys, categories=None):
+    def add(name, heading, note, part_type, columns, power_keys, categories=None):
         group = [p for p in parts
                  if base_type(p["type"]) == part_type
                  and (categories is None or p.get("category") in categories)]
-        columns = columns + [threat_column(threat_keys)] + reading_columns()
+        columns = columns + [power_column(power_keys)] + reading_columns()
         sheet_type(book, name, heading, note, group, columns)
         # Titel (Zeile 1) + Untertitel (2) + Leerzeile (3) + Kopfzeile (4)
-        layout[name] = {"group": group, "keys": threat_keys,
+        layout[name] = {"group": group, "keys": power_keys,
                         "first": 5, "summary": True}
 
     add("Koerperteile",
@@ -1432,6 +1455,12 @@ def build(target: pathlib.Path) -> tuple[int, int]:
                           else "–") if action(p) else None,
                note=ACTION_GLOSSARY["requires_line_of_sight"][1]),
         action_column("push_tiles", 8, summary=False),
+        # Die beiden Aggro-Spalten stehen nur hier: Aggro entsteht aus
+        # Aktionen und aus Ausruestung, nie aus einem Rahmenteil. Auf einem
+        # Kopf- oder Antriebsblatt waeren sie durchgehend leer.
+        action_column("aggro_coeff", 9, summary=False),
+        action_column("taunt_turns", 11, summary=False),
+        stat_column("aggro_bonus", 10, summary=False),
     ]
 
     add("Ausruestung Waffen",
@@ -1455,13 +1484,13 @@ def build(target: pathlib.Path) -> tuple[int, int]:
                    fmt="0.0", summary=True,
                    note="Schaden je Gewichtspunkt -- die Waehrung, in der die "
                         "Traglast des Chassis bezahlt wird."),
-            Column("best_weapon", "Threat als staerkste Waffe", 14,
+            Column("best_weapon", "Kampfwert als staerkste Waffe", 14,
                    formula=lambda L, r: (
-                       f'={L["act_power"]}{r}*{THREAT_BEST_WEAPON:g}'),
+                       f'={L["act_power"]}{r}*{POWER_BEST_WEAPON:g}'),
                    fmt="0.0", summary=True,
-                   note="Zusatzbeitrag zum Threat Score -- aber nur fuer die "
+                   note="Zusatzbeitrag zum Kampfwert -- aber nur fuer die "
                         "staerkste Waffe eines Aufbaus, nicht fuer jede. "
-                        "Deshalb steht der Wert neben dem Threat-Beitrag und "
+                        "Deshalb steht der Wert neben dem Kampfwert-Beitrag und "
                         "nicht darin."),
         ],
         ["atk", "def"], categories=["weapon"])

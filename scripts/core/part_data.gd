@@ -71,6 +71,14 @@ var step_cost_reduced: bool = false
 ## Sensorik
 var grants_ignore_haze: bool = false
 
+## Aggro-Generierung in Prozentpunkten. Der EINZIGE Weg, Aufmerksamkeit zu
+## erzeugen, ohne dafuer zu handeln -- und er kostet einen Ausruestungsslot.
+##
+## Additiv wie jeder andere Stat (+20 und +20 ergeben +40); die Formel in
+## AggroTable macht daraus den Faktor 1.4. Multiplikativ waere er der einzige
+## Wert im Bestand, der sich nicht wie die anderen summiert.
+var aggro_bonus: int = 0
+
 ## Gewaehrte Aktion, oder null bei passiven Teilen
 var action: ActionData = null
 
@@ -116,6 +124,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.drift_modifier = stats.get("drift_modifier", 0)
 	part.step_cost_reduced = stats.get("step_cost_reduced", false)
 	part.grants_ignore_haze = stats.get("grants_ignore_haze", false)
+	part.aggro_bonus = stats.get("aggro_bonus", 0)
 
 	var action_meta = stats.get("action")
 	if action_meta != null:

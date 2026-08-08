@@ -229,6 +229,9 @@ func _tooltip_for(tile: Vector2i) -> String:
 				other.spd(), other.def()])
 		if not other.status_names().is_empty():
 			lines.append("Effekte: " + ", ".join(other.status_names()))
+		var aggro := _aggro_line(other)
+		if aggro != "":
+			lines.append(aggro)
 		if _selected_action != null and unit != null:
 			var blocker := battle.resolver.target_blocker(unit, tile, _selected_action)
 			if blocker != "":
@@ -238,6 +241,35 @@ func _tooltip_for(tile: Vector2i) -> String:
 				lines.append("Vorschau: %d %s" % [absi(amount),
 					"Heilung" if amount < 0 else "Schaden"])
 	return "\n".join(lines)
+
+
+## Worauf dieser DROME achtet -- als Rangfolge mit Anteilen.
+##
+## Das ist keine Zugabe, sondern Bedingung. Der Kampf ist deterministisch und
+## verspricht dem Spieler, dass er jede Aktion vorher durchrechnen kann; die
+## TICK-Leiste legt die Zugreihenfolge sogar acht Zuege im Voraus offen. Eine
+## verdeckte Aggro-Tabelle waere die einzige Stelle, an der ein Gegner etwas
+## tut, das der Spieler nicht nachvollziehen kann -- und damit fuer ihn nicht
+## von Zufall zu unterscheiden.
+##
+## Angezeigt werden Anteile, keine Rohwerte: die Zahl an sich bedeutet nichts,
+## nur die Rangfolge (siehe AggroTable).
+func _aggro_line(unit: Unit) -> String:
+	if unit.is_taunted():
+		var forcer := battle.resolver.unit_by_id(unit.taunted_by())
+		if forcer != null:
+			return "Provoziert von %s (noch %d Zuege)" % [forcer.display_name,
+				int(unit.taunt_lock.get("turns_left", 0))]
+	if unit.aggro == null or unit.aggro.is_empty():
+		return ""
+	var parts: Array[String] = []
+	for row in unit.aggro.ranking():
+		var other := battle.resolver.unit_by_id(row["id"])
+		if other == null:
+			continue
+		parts.append("%s %d%%%s" % [other.display_name, int(round(row["share"] * 100.0)),
+			" <" if row["id"] == unit.aggro.current_target else ""])
+	return "" if parts.is_empty() else "Achtet auf: " + "  ".join(parts)
 
 
 ## Aus dem Aktionsring gewaehlt. Geht denselben Weg wie ein Klick in der

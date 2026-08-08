@@ -173,7 +173,7 @@ tools/
   build_sample_parts.py      Iso-Renderer + Beispielsatz; ausfuehrbare Format-Spec
   export_parts_table.py      Teile-Uebersicht als Excel-Mappe (erzeugt, nicht gepflegt)
 docs/
-  GAME_DESIGN.md             Setting, DROME-Aufbau, Teile-Codes, Asset-Strategie
+  GAME_DESIGN.md             Setting, DROME-Aufbau, Teile-Codes, Aggro, Asset-Strategie
   GODOT_INTEGRATION.md       wie die Exporte spaeter in die Engine kommen
   cyberdrome_teile.xlsx      erzeugte Teileliste -- ein Blatt je Bauteiltyp
 ```
@@ -197,7 +197,7 @@ laeuft nach dem dritten Set auseinander.
 
 Das Skript prueft sich beim Erzeugen selbst: es rechnet die Formeln der Mappe
 nach und vergleicht sie gegen die Regeln im Code -- die Slot-Matrix gegen
-`fits_rule()`, die Threat-Spalten gegen `DromeBuild.threat_score()`. Ein
+`fits_rule()`, die Kampfwert-Spalten gegen `DromeBuild.power_score()`. Ein
 verrutschter Zellbezug faellt beim Ansehen nicht auf, eine falsche Antwort
 schon.
 

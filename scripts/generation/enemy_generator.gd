@@ -14,21 +14,21 @@ extends RefCounted
 
 var rng := RandomNumberGenerator.new()
 
-## Wie oft musste das Squad neu gewuerfelt werden, bis der Threat Score passte?
+## Wie oft musste das Squad neu gewuerfelt werden, bis der Kampfwert passte?
 var attempts_used: int = 0
-var achieved_threat: float = 0.0
+var achieved_power: float = 0.0
 
 
 func _init(battle_seed: int = 0) -> void:
 	rng.seed = battle_seed
 
 
-## Erzeugt ``count`` Gegner, deren Gesamtstaerke nahe an ``target_threat``
+## Erzeugt ``count`` Gegner, deren Gesamtstaerke nahe an ``target_power``
 ## liegt. Innerhalb der Toleranz wird sofort genommen, sonst gewinnt der beste
 ## Treffer aus allen Versuchen.
-func generate(count: int, target_threat: float) -> Array:
-	var tolerance := Config.get_float("threat_tolerance", 0.12)
-	var attempts := Config.get_int("threat_attempts", 200)
+func generate(count: int, target_power: float) -> Array:
+	var tolerance := Config.get_float("power_tolerance", 0.12)
+	var attempts := Config.get_int("power_attempts", 200)
 	var names := _draw_names(count)
 
 	var best: Array = []
@@ -39,13 +39,13 @@ func generate(count: int, target_threat: float) -> Array:
 		var squad: Array = []
 		for i in count:
 			squad.append(_random_build(names[i]))
-		var threat := DromeBuild.squad_threat(squad)
-		var error: float = absf(threat - target_threat)
+		var power := DromeBuild.squad_power(squad)
+		var error: float = absf(power - target_power)
 		if error < best_error:
 			best_error = error
 			best = squad
-			achieved_threat = threat
-		if target_threat <= 0.0 or error / target_threat <= tolerance:
+			achieved_power = power
+		if target_power <= 0.0 or error / target_power <= tolerance:
 			return squad
 
 	return best

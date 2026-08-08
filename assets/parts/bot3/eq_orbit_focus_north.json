@@ -61,6 +61,7 @@
     "drift_modifier": 0,
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
+    "aggro_bonus": 0,
     "action": {
       "id": "act_orbitpull",
       "display_name": "Orbit-Sog",
@@ -72,7 +73,10 @@
       "power": 0,
       "requires_line_of_sight": true,
       "push_tiles": -2,
-      "status_effect": null
+      "status_effect": null,
+      "aggro_coeff": 1.0,
+      "aggro_flat": 8,
+      "taunt_turns": 0
     }
   }
 }

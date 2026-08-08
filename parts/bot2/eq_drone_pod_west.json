@@ -58,6 +58,7 @@
     "drift_modifier": 0,
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
+    "aggro_bonus": 0,
     "action": {
       "id": "act_dronepod",
       "display_name": "Reparaturdrohnen",
@@ -69,7 +70,10 @@
       "power": -10,
       "requires_line_of_sight": true,
       "push_tiles": 0,
-      "status_effect": null
+      "status_effect": null,
+      "aggro_coeff": 0.5,
+      "aggro_flat": 0,
+      "taunt_turns": 0
     }
   }
 }

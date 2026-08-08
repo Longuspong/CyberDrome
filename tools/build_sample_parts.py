@@ -100,7 +100,9 @@ from __future__ import annotations
 import json
 import math
 import pathlib
+import re
 import shutil
+from xml.etree import ElementTree
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PARTS_DIR = ROOT / "parts"
@@ -384,6 +386,13 @@ STAT_DEFAULTS = {
     "step_cost_reduced": False,  # Stufe kostet 1 MP statt 2
     # Sensorik -- an jedem Slot moeglich, im Bestand an Koepfen
     "grants_ignore_haze": False,
+    # Aggro-Generierung in Prozentpunkten. Kein Bauteil im Bestand fuehrt ihn:
+    # Aufmerksamkeit entsteht aus Aktionen, nicht aus Identitaet. Ein Chassis
+    # oder Kern mit einem Grundwert darauf waere genau die Abkuerzung, die das
+    # System entwertet -- dann tankt, wer das richtige Teil traegt, statt wer
+    # das Richtige tut. Vorgesehen ist der Wert allein fuer Support-Module
+    # (Koeder, Provokationssender), die dafuer einen Ausruestungsslot kosten.
+    "aggro_bonus": 0,
 }
 
 # Ausruestung gewaehrt genau eine Aktion. ``power`` > 0 ist Schaden,
@@ -394,11 +403,33 @@ STAT_DEFAULTS = {
 #
 # Regel aus dem Entwurf, hier hart eingehalten: jede Aktion mit Reichweite > 1
 # braucht Sichtlinie. Ohne sie waere das ganze Terrainsystem Dekoration.
+#
+# ``aggro_coeff`` sagt, wie LAUT eine Aktion ist -- wie stark ihre Wirkung in
+# die Aggro-Tabelle der Gegner eingeht (scripts/battle/aggro_table.gd). Das
+# Raster, an dem sich neue Aktionen ausrichten:
+#
+#   1.0    normaler Angriff, die Grundlinie -- steht deshalb nirgends dabei
+#   0.5    Heilung: der Techniker ist angreifbar, aber kein Aggro-Magnet
+#   0.35   Praezisionswaffen: viel Schaden, wenig Krach
+#
+# Der Koeffizient haengt ausdruecklich NICHT an der Reichweite. Er ist der
+# Hebel, mit dem sich "wie viel richtet die Waffe an" von "wie sehr provoziert
+# sie" trennen laesst -- eine Ableitung aus range_tiles waere untunebar und
+# eine zweite, stillschweigende Wahrheit ueber die Auffaelligkeit einer Waffe.
+#
+# ``aggro_flat`` ist der Pauschalwert fuer Aktionen ohne Wirkungsmenge, und
+# ``taunt_turns`` macht eine Aktion zur Provokation (harter Zwang, befristet).
+# Kein Bauteil im Bestand provoziert bislang.
 STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
     # HP, DEF, Traglast. SPD/MOV sind Auf- und Abschlaege auf den Antrieb.
     "scout_body":  {"hp":  60, "def": 1, "spd":  2, "mov":  0, "weight_capacity": 18},
-    "jugg_body":   {"hp": 130, "def": 5, "spd": -2, "mov": -1, "weight_capacity": 28},
+    # Traglast 31 statt 28: der Molok hat DREI Anker (GDD 3b), konnte sie aber
+    # mit eigenen Teilen nie alle belegen -- es gab bis zum Koedersender nur
+    # zwei Ausruestungsteile im Satz, deshalb ist es nie aufgefallen. Ein
+    # Chassis, das seine eigenen Anker nicht bestuecken kann, ist ein
+    # Datenfehler und kein Balancing (siehe check_stock_builds).
+    "jugg_body":   {"hp": 130, "def": 5, "spd": -2, "mov": -1, "weight_capacity": 31},
     "mage_body":   {"hp":  85, "def": 2, "spd":  0, "mov":  0, "weight_capacity": 20,
                     "en_max": 10},
     "strix_body":  {"hp":  70, "def": 2, "spd":  1, "mov":  0, "weight_capacity": 22},
@@ -463,12 +494,24 @@ STATS = {
         "action": {"id": "act_dronepod", "display_name": "Reparaturdrohnen",
                    "category": "ability", "targeting": "aoe_around_target",
                    "range_tiles": 3, "aoe_radius": 1, "power": -10, "en_cost": 12,
-                   "requires_line_of_sight": True},
+                   "requires_line_of_sight": True, "aggro_coeff": 0.5},
     },
     # Reichweite 1 und damit ohne Sichtlinie: der Runenstab ist die einzige
     # Nahkampfwaffe im Bestand. Er ist der Grund, warum ein Haze-Feld ein
     # Korridor ist und keine Sackgasse -- wer darin steht, kann immer noch
     # zuschlagen, nur nicht mehr schiessen.
+    # Das einzige Teil im Bestand mit aggro_bonus -- und das einzige, das
+    # provozieren kann. Beides gehoert zusammen: wer Aufmerksamkeit auf sich
+    # ziehen will, bezahlt dafuer einen Ausruestungsslot (GAME_DESIGN 6b).
+    # Die Provokation ist harter Zwang und deshalb teuer und befristet.
+    "eq_bait_beacon": {
+        "weight": 3, "power_draw": 3, "aggro_bonus": 25,
+        "action": {"id": "act_provoke", "display_name": "Stoersignal",
+                   "category": "ability", "targeting": "single",
+                   "range_tiles": 3, "power": 0, "en_cost": 14,
+                   "requires_line_of_sight": True, "taunt_turns": 3},
+    },
+
     "eq_rune_staff": {
         "weight": 4, "power_draw": 2,
         "action": {"id": "act_runestaff", "display_name": "Runenschlag",
@@ -481,14 +524,15 @@ STATS = {
         "action": {"id": "act_orbitpull", "display_name": "Orbit-Sog",
                    "category": "ability", "targeting": "single",
                    "range_tiles": 4, "power": 0, "en_cost": 8,
-                   "push_tiles": -2, "requires_line_of_sight": True},
+                   "push_tiles": -2, "requires_line_of_sight": True,
+                   "aggro_flat": 8},
     },
     "eq_rail_lance": {
         "weight": 8, "power_draw": 5,
         "action": {"id": "act_raillance", "display_name": "Schienenschuss",
                    "category": "attack", "targeting": "single",
                    "range_tiles": 7, "power": 16, "en_cost": 6,
-                   "requires_line_of_sight": True},
+                   "requires_line_of_sight": True, "aggro_coeff": 0.35},
     },
 }
 
@@ -496,6 +540,7 @@ ACTION_DEFAULTS = {
     "id": "", "display_name": "", "category": "attack", "targeting": "single",
     "range_tiles": 1, "aoe_radius": 0, "en_cost": 0, "power": 0,
     "requires_line_of_sight": False, "push_tiles": 0, "status_effect": None,
+    "aggro_coeff": 1.0, "aggro_flat": 0, "taunt_turns": 0,
 }
 
 
@@ -1289,6 +1334,76 @@ EQ_DRONE_POD = [
     B((-7, -3), (-2, 2), (71, 74.5), "accent"),
 ]
 
+# Koedersender -- laut, aber ausdruecklich KEINE Waffe.
+#
+# Das Modul ist der einzige Weg im Bestand, Aufmerksamkeit zu erzeugen, ohne
+# dafuer zu handeln (GAME_DESIGN 6b), und der einzige, der provozieren kann.
+# Genau das muss die Silhouette sagen -- und zwar OHNE die Formensprache einer
+# Waffe zu benutzen:
+#
+#   * kein Rohr, keine Muendung, nichts, was nach vorn zeigt. Jede Waffe im
+#     Bestand greift nach vorn; dieses Teil tut es an keiner Stelle.
+#   * ein duenner MAST nach oben, der ueber den Kopf hinausreicht -- die
+#     einzige Ausruestung, die das tut;
+#   * drei KREUZE aus flachen Streben am Mast, nach oben kuerzer werdend --
+#     Sendeantennen, keine Laeufe, und mit deutlichem Abstand voneinander;
+#   * ein GEGENGEWICHT nach hinten-unten: das Teil ist kopflastig, und man
+#     sieht ihm an, dass es getragen und nicht gehalten wird.
+#
+# Der Runenstab ist der Nachbar, gegen den sich das abgrenzen muss -- auch er
+# laeuft senkrecht nach oben. Er ist aber ein Stab AM ARM mit einer Glut obenauf
+# (Rotationskoerper, rund, durchgehend schlank); der Sender hat keinen Arm,
+# dafuer die Kreuztreppe und das Gewicht hinten.
+#
+# Zwei verworfene Anlaeufe, beide lehrreich genug, um sie aufzuschreiben:
+#
+# 1. Die Kreuze waren zuerst waagerechte SCHEIBEN. Ein waagerechter Kreis mit
+#    Radius r projiziert unter dieser Kamera aber immer zur Ellipse mit der
+#    Halbhoehe 0.5*r*SCALE -- er liest sich als praller Koerper, nie als
+#    duenner Schirm. Gekreuzte Streben behalten ihre Duenne, weil zwischen
+#    den Armen der Hintergrund steht.
+# 2. Die Abstaende waren zu klein. Zwei waagerechte Formen trennen sich auf
+#    dem Bildschirm nur um dz*COS45*SCALE, brauchen also
+#
+#        dz  >  0.71 * (r1 + r2)
+#
+#    um sich nicht zu ueberlappen. Mit dz = 4 und Radien um 8 verschmolzen die
+#    drei zu einem Kegel -- das Teil sah aus wie eine Laterne.
+#
+# Beides hat der Silhouetten-Test NICHT gefangen, und das ist kein Mangel: er
+# misst den Umriss, und eine Laterne ist ein ebenso einmaliger Umriss wie eine
+# Antenne. Er haette also zu Recht bestanden. Genau der Fall, fuer den in
+# GAME_DESIGN 3d steht, dass der Test das Hinsehen nicht ersetzt -- er faengt
+# "abgeschrieben und groesser gezogen", nicht "sagt die falsche Funktion".
+EQ_BAIT_BEACON = [
+    # Halterung am Anker -- derselbe kurze Stumpf wie bei Blaster und Schild.
+    B((-3, 3), (-4, 4), (46, 54), "metal"),
+    # Gegengewicht nach hinten-unten: das Modul ist kopflastig, und man sieht
+    # ihm an, dass es getragen und nicht gehalten wird.
+    B((-10, -2.5), (-5.5, 5.5), (38.5, 46.5), "plate"),
+    B((-10.5, -3), (-6, 6), (46.5, 48), "light"),
+    B((-10.8, -10.2), (-3.5, 3.5), (40, 45), "accent"),
+    # Mast -- laeuft ueber jede Kopfhoehe im Bestand hinaus (61 bis 72).
+    L((0, 0), [(1.5, 50), (1.5, 80)], "metal", segments=10),
+    # Drei KREUZE aus flachen Streben statt Scheiben. Ein waagerechter Kreis
+    # projiziert unter dieser Kamera immer zur 2:1-Ellipse und liest sich als
+    # praller Koerper, nie als duenner Schirm -- drei davon uebereinander
+    # ergaben eine Pagode. Gekreuzte Streben behalten dagegen ihre Duenne,
+    # weil zwischen den Armen der Hintergrund steht.
+    B((-7.6, 7.6), (-1.1, 1.1), (56.5, 57.4), "plate"),
+    B((-1.1, 1.1), (-7.6, 7.6), (56.5, 57.4), "plate"),
+    B((-6.8, 6.8), (-0.5, 0.5), (57.4, 57.7), "accent"),
+    B((-0.5, 0.5), (-6.8, 6.8), (57.4, 57.7), "accent"),
+    B((-5.6, 5.6), (-1.0, 1.0), (67.0, 67.9), "plate"),
+    B((-1.0, 1.0), (-5.6, 5.6), (67.0, 67.9), "plate"),
+    B((-4.9, 4.9), (-0.5, 0.5), (67.9, 68.2), "accent"),
+    B((-0.5, 0.5), (-4.9, 4.9), (67.9, 68.2), "accent"),
+    B((-3.6, 3.6), (-0.9, 0.9), (76.0, 76.9), "plate"),
+    B((-0.9, 0.9), (-3.6, 3.6), (76.0, 76.9), "plate"),
+    # Signalspitze auf dem Mast, nicht auf dem obersten Schirm
+    L((0, 0), [(0, 83.4), (1.9, 81.4), (1.9, 79.8), (0, 79.2)], "glow", segments=12),
+]
+
 
 # ===========================================================================
 # AR-Nimbus // Technomant  (parts/bot3) -- Rundungen statt Kanten
@@ -1691,6 +1806,21 @@ SETS = [
                 "mount_class": "light", "category": "support",
                 "anchors": {"mount": (0, 0, 61)},
             },
+            {
+                # Bewusst OHNE "slots": der Sender passt an jeden Arm und auf
+                # die Molok-Schulter. Nur so kostet er auch etwas. Waere er
+                # schulterfest, koennte ihn allein der Molok tragen -- und
+                # zwar in einem Slot, in dem ohnehin keine Waffe sitzen darf.
+                # Am Strix mit seinem einzigen Anker ist er dagegen gar nicht
+                # tragbar, ohne dass der Aufbau seine Waffe verliert und damit
+                # ungueltig wird. Das ist die Slot-Achse aus Abschnitt 3c, auf
+                # die Aggro angewandt: eine Kaufentscheidung ohne eine Zahl.
+                "id": "eq_bait_beacon", "code": "EQP-008", "type": "equipment",
+                "name": "Koedersender", "tags": ["support", "beacon", "aggro"],
+                "shapes": EQ_BAIT_BEACON,
+                "mount_class": "light", "category": "support",
+                "anchors": {"mount": (0, 0, 52)},
+            },
         ],
     },
     {
@@ -1809,21 +1939,38 @@ SETS = [
 ]
 
 
-SVG_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
-     data-part-id="{pid}" data-type="{ptype}" data-direction="{direction}">
-  <title>{name} ({direction})</title>
-  <!--
+SVG_NOTE = """
     Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung {direction}.
     Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
     Projektion:  x = 64 + cos(45)*(px - py)*SCALE
                  y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
     Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
-    Definition -- nicht von Hand bearbeiten, sondern dort aendern.
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
-  -->
+  """
+
+SVG_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="{pid}" data-type="{ptype}" data-direction="{direction}">
+  <title>{name} ({direction})</title>
+  <!--{note}-->
 {body}
 </svg>
 """
+
+
+def svg_comment_body(text: str) -> str:
+    """
+    Kommentartext, der in einem XML-Kommentar stehen DARF.
+
+    ``--`` ist dort verboten, und ausgerechnet in diesem Projekt steht der
+    Gedankenstrich in fast jedem erklaerenden Satz. Browser und Godot sind
+    nachsichtig; ElementTree, lxml und jedes Werkzeug, das die Dateien strikt
+    parst, brechen dagegen ab. Deshalb wird hier zusammengezogen, statt sich
+    darauf zu verlassen, dass niemand einen Gedankenstrich schreibt. Ein
+    Bindestrich unmittelbar vor dem Kommentarende ist aus demselben Grund
+    ebenfalls unzulaessig.
+    """
+    return re.sub(r"-{2,}", "-", text).rstrip("-")
 
 
 def slot_draw_order(part: dict, direction: str) -> dict:
@@ -1854,7 +2001,18 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
     svg = SVG_TEMPLATE.format(
         pid=pid, ptype=part["type"], direction=direction,
         name=part.get("name", pid), body=render(part["shapes"], direction),
+        note=svg_comment_body(SVG_NOTE.format(direction=direction)),
     )
+    # Eine Datei, die sich SVG nennt, muss wohlgeformtes XML sein. Godot und
+    # jeder Browser sehen darueber hinweg, ein strikter Parser nicht -- und
+    # der Fehler faellt dann irgendwann in einem Werkzeug auf, das mit dem
+    # Teil gar nichts zu tun hat. Hier kostet die Pruefung nichts.
+    try:
+        ElementTree.fromstring(svg)
+    except ElementTree.ParseError as error:
+        raise SystemExit(
+            f"{set_id}/{stem}.svg ist kein wohlgeformtes XML: {error}"
+        ) from error
     (set_dir / f"{stem}.svg").write_text(svg, encoding="utf-8")
 
     meta = {

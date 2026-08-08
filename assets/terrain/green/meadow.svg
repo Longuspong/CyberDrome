@@ -2,7 +2,7 @@
      data-terrain="meadow" data-class="normal">
   <title>Wiese</title>
   <!--
-    Erzeugt von tools/build_terrain_tiles.py -- nicht von Hand bearbeiten.
+    Erzeugt von tools/build_terrain_tiles.py, nicht von Hand bearbeiten.
     Dieselbe Projektion wie die Bauteile: Iso-Kamera 45 Grad, Bodenraute
     76 x 54 px um (64, 96). Nur so steht ein Bot auf seinem Feld
     und nicht daneben.

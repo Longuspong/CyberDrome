@@ -60,6 +60,7 @@ import sys
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from xml.etree import ElementTree
 from urllib.parse import unquote, urlparse, parse_qs
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -484,6 +485,28 @@ def looks_like_svg(text: str) -> bool:
     return "<svg" in text[:2000].lower() and "</svg>" in text.lower()
 
 
+def check_well_formed(text: str) -> None:
+    """
+    Ein importiertes SVG muss wohlgeformtes XML sein.
+
+    Browser und Godot sehen ueber vieles hinweg, ein strikter Parser nicht --
+    und dann faellt der Fehler irgendwann in einem Werkzeug auf, das mit dem
+    Teil nichts zu tun hat. Der haeufigste Stolperstein ist ausgerechnet ein
+    Gedankenstrich: "--" ist innerhalb eines XML-Kommentars verboten.
+
+    Die beiden Generatoren pruefen dasselbe, bevor sie schreiben. Der Import
+    ist der dritte und letzte Weg, auf dem ein SVG ins Repo kommt.
+    """
+    try:
+        ElementTree.fromstring(text)
+    except ElementTree.ParseError as error:
+        hint = ""
+        if "--" in text:
+            hint = (" Haeufigste Ursache: ein doppelter Bindestrich in einem "
+                    "<!-- Kommentar -->, dort ist er nicht erlaubt.")
+        raise ApiError(400, f"'svg' ist kein wohlgeformtes XML: {error}.{hint}")
+
+
 # ---------------------------------------------------------------------------
 # API-Endpunkte
 # ---------------------------------------------------------------------------
@@ -510,6 +533,7 @@ def api_create_part(payload: dict) -> dict:
 
     if not isinstance(svg_text, str) or not looks_like_svg(svg_text):
         raise ApiError(400, "'svg' enthaelt kein gueltiges <svg>-Dokument")
+    check_well_formed(svg_text)
 
     set_dir = resolve_within(PARTS_DIR, set_id)
     set_dir.mkdir(parents=True, exist_ok=True)
@@ -553,6 +577,7 @@ def api_save_build(payload: dict) -> dict:
 
     if not isinstance(svg_text, str) or not looks_like_svg(svg_text):
         raise ApiError(400, "'svg' enthaelt kein gueltiges <svg>-Dokument")
+    check_well_formed(svg_text)
     if not isinstance(loadout, dict):
         raise ApiError(400, "'loadout' muss ein Objekt sein")
 

@@ -1,7 +1,7 @@
 class_name DromeBuild
 extends RefCounted
 
-## Ein zusammengebauter DROME: Slots -> Stats, Validierung, Threat Score.
+## Ein zusammengebauter DROME: Slots -> Stats, Validierung, Kampfwert.
 ##
 ## Keine Godot-Knoten, keine UI. Diese Klasse muss ohne laufende Szene testbar
 ## sein -- sie ist die Grundlage fuer Werkstatt, Gegner-Generator und KI
@@ -118,6 +118,7 @@ func stats() -> Dictionary:
 		"can_pass_blocks": false, "ignores_drift": false,
 		"drift_modifier": 0, "step_cost_reduced": false,
 		"grants_ignore_haze": false,
+		"aggro_bonus": 0,
 	}
 	for part in all_parts():
 		total["hp_max"] += part.hp
@@ -139,6 +140,7 @@ func stats() -> Dictionary:
 		total["step_cost_reduced"] = total["step_cost_reduced"] or part.step_cost_reduced
 		total["grants_ignore_haze"] = total["grants_ignore_haze"] or part.grants_ignore_haze
 		total["drift_modifier"] += part.drift_modifier
+		total["aggro_bonus"] += part.aggro_bonus
 
 	# Negative Summen sind sinnlos, aber ein DROME darf sie erreichen -- die
 	# Validierung faengt das ab und sagt dem Spieler, welche Regel bricht.
@@ -258,13 +260,19 @@ func _slot_label(slot: String) -> String:
 
 
 # ---------------------------------------------------------------------------
-# Threat Score
+# Kampfwert
 # ---------------------------------------------------------------------------
 
 ## Errechnete Staerke eines Aufbaus. Basis fuers Gegner-Matching im
-## Chaos-Virus: das Gegnersquad wird so lange neu gewuerfelt, bis sein Score
+## Chaos-Virus: das Gegnersquad wird so lange neu gewuerfelt, bis sein Wert
 ## nahe genug am Spielersquad liegt.
-func threat_score() -> float:
+##
+## NICHT zu verwechseln mit der Aggro (scripts/battle/aggro_table.gd). Der
+## Kampfwert beschreibt, wie stark ein Aufbau IST, und existiert vor dem
+## Gefecht; Aggro beschreibt, wie sehr eine Einheit einen bestimmten Gegner
+## stoert, und entsteht erst im Gefecht aus Aktionen. Beide hiessen einmal
+## "Threat" -- daher die ausdrueckliche Notiz.
+func power_score() -> float:
 	var total := stats()
 	var best_weapon := 0
 	for part in equipment():
@@ -281,10 +289,10 @@ func threat_score() -> float:
 	)
 
 
-static func squad_threat(builds: Array) -> float:
+static func squad_power(builds: Array) -> float:
 	var total := 0.0
 	for build in builds:
-		total += build.threat_score()
+		total += build.power_score()
 	return total
 
 

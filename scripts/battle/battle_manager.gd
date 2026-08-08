@@ -43,7 +43,7 @@ func setup(seed_value: int, player_builds: Array) -> void:
 	grid = MapGenerator.new(battle_seed).generate(region, mutator.map_scales())
 
 	var enemy_builds := EnemyGenerator.new(battle_seed).generate(
-		player_builds.size(), DromeBuild.squad_threat(player_builds))
+		player_builds.size(), DromeBuild.squad_power(player_builds))
 
 	units.clear()
 	_spawn(player_builds, true)
@@ -105,10 +105,15 @@ func begin_next_turn() -> Unit:
 	if active_unit == null or not active_unit.is_alive():
 		return null
 
-	# Energie, Statuseffekte, Aderlass -- in dieser Reihenfolge.
+	# Energie, Statuseffekte, Provokation, Aderlass -- in dieser Reihenfolge.
 	active_unit.regenerate()
 	if active_unit.tick_statuses():
 		_refresh_speeds()
+	# Die Provokation laeuft in EIGENEN Zuegen ab und deshalb hier, zusammen mit
+	# den Statuseffekten. Der Verfall der Aggro laeuft dagegen im Zyklus -- ein
+	# Zug ist in diesem Spiel keine gleichmaessige Zeiteinheit (siehe
+	# AggroTable.decay).
+	active_unit.tick_taunt()
 	var bleed := mutator.turn_damage()
 	if bleed > 0:
 		active_unit.hp = maxi(0, active_unit.hp - bleed)
@@ -134,11 +139,24 @@ func end_turn() -> void:
 	turn_state = null
 
 	if cycle_closed:
+		_decay_aggro()
 		EventBus.cycle_ended.emit(tick_bus.cycle_count)
 		if tick_bus.cycle_count > _cycle_limit:
 			_finish(Outcome.DRAW)
 			return
 	_check_victory()
+
+
+## Einmal je Zyklus verblassen alle Aggro-Eintraege ausser denen des jeweils
+## aktuellen Ziels. Der Zyklus ist die einzige gleichmaessige Uhr im Kampf --
+## ein Zug ist es nicht, weil SPD bestimmt, wie oft jemand drankommt.
+func _decay_aggro() -> void:
+	var section := Config.section("aggro")
+	var rate := float(section.get("decay_rate", 0.15))
+	var drop := float(section.get("decay_drop_below", 1.0))
+	for unit in units:
+		if unit.aggro != null:
+			unit.aggro.decay(rate, drop)
 
 
 ## Statuseffekte koennen SPD veraendert haben. Der TICK-Bus muss das
@@ -237,6 +255,7 @@ func allies_of(unit: Unit) -> Array:
 
 func _handle_death(unit: Unit) -> void:
 	grid.clear_occupant(unit.tile)
+	resolver.forget_unit(unit)
 	tick_bus.set_alive(unit.unit_id, false)
 	EventBus.unit_died.emit(unit)
 	_check_victory()

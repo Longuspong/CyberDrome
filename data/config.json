@@ -19,8 +19,8 @@
 
   "cycle_limit": 30,
 
-  "threat_tolerance": 0.12,
-  "threat_attempts": 200,
+  "power_tolerance": 0.12,
+  "power_attempts": 200,
   "build_attempts": 50,
 
   "deployment": {
@@ -43,11 +43,41 @@
     "max_attempts": 20
   },
 
+  "aggro": {
+    "_kommentar": [
+      "Das Zielwahl-Modell der Gegner. Siehe scripts/battle/aggro_table.gd.",
+      "Hier stehen die Stellschrauben des MODELLS. Wie stark die KI die",
+      "Tabelle gewichtet, steht dagegen unten unter 'ai' -- das ist eine",
+      "Frage der Nutzenbewertung, nicht des Modells.",
+      "decay_rate und die incumbent_bonus-Werte steuern beide dieselbe",
+      "Groesse: die Traegheit der Zielwahl. Wer beide gleichzeitig anzieht,",
+      "macht die Aggro unbeweglich. Immer nur eins von beiden anfassen."
+    ],
+    "near_distance": 1,
+    "proximity_near": 1.5,
+    "proximity_far": 1.0,
+    "decay_rate": 0.15,
+    "decay_drop_below": 1.0,
+    "taunt_factor": 1.1
+  },
+
   "ai": {
-    "_kommentar": "Gewichte der Nutzenbewertung. Siehe scripts/battle/ai_controller.gd.",
+    "_kommentar": [
+      "Gewichte der Nutzenbewertung. Siehe scripts/battle/ai_controller.gd.",
+      "Eine Invariante zwischen dreien davon: taunt_weight + rescue_bonus",
+      "muss UNTER kill_bonus bleiben. Sonst laeuft die KI an sicheren",
+      "Abschuessen vorbei, um jemanden umzulenken -- und das liest sich als",
+      "Fehler, nicht als Taktik. tests/test_aggro.gd prueft es."
+    ],
     "damage_weight": 1.0,
     "kill_bonus": 100.0,
-    "threatened_penalty": 8.0,
+    "aggro_weight": 10.0,
+    "incumbent_bonus_melee": 6.0,
+    "incumbent_bonus_ranged": 12.0,
+    "ranged_from_range": 3,
+    "taunt_weight": 50.0,
+    "rescue_bonus": 45.0,
+    "exposed_penalty": 8.0,
     "drift_penalty": 15.0,
     "haze_bonus": 12.0,
     "haze_hp_threshold": 0.5,

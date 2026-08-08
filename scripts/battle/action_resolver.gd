@@ -31,7 +31,12 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 ## leere Durchreichungen -- wichtig ist nur, dass es sie als Kettenglieder
 ## GIBT, damit Energieschild und Ruestung spaeter ohne Umbau eingehaengt
 ## werden koennen.
-func apply_damage(source: Unit, target: Unit, raw: int) -> int:
+##
+## ``action`` dient allein der Aggro-Buchung (dem Koeffizienten der Aktion).
+## Sie darf fehlen: Schaden ohne Aktion -- Aderlass, spaeter Schaden ueber
+## Zeit -- bucht dann mit dem Grundkoeffizienten 1.0.
+func apply_damage(source: Unit, target: Unit, raw: int,
+		action: ActionData = null) -> int:
 	var amount := raw
 
 	amount = _absorb_shield(source, target, amount)      # 1. Post-MVP
@@ -43,6 +48,13 @@ func apply_damage(source: Unit, target: Unit, raw: int) -> int:
 	target.damage_taken += amount
 	if source != null:
 		source.damage_dealt += amount
+
+	# Gebucht wird die TATSAECHLICH angerichtete Menge, nach der ganzen Kette.
+	# Weil jeder Schaden hier durchlaeuft, braucht die Aggro keine eigene Liste
+	# von Sonderfaellen: Flaechenschaden bucht pro getroffenem DROME, weil er
+	# hier pro Feld ankommt, und was immer spaeter dazukommt, bucht mit.
+	_book_aggro(target, source, float(amount),
+		action.aggro_coeff if action != null else 1.0)
 
 	EventBus.unit_damaged.emit(target, amount, source)
 	EventBus.log_line("%s trifft %s fuer %d Schaden."
@@ -64,11 +76,22 @@ func _apply_armor(_source: Unit, _target: Unit, amount: int) -> int:
 	return amount
 
 
-func heal(source: Unit, target: Unit, amount: int) -> int:
+func heal(source: Unit, target: Unit, amount: int, action: ActionData = null) -> int:
 	var before := target.hp
 	target.hp = mini(target.stat("hp_max"), target.hp + amount)
 	var healed := target.hp - before
 	if healed > 0:
+		# Gegen ALLE Gegner des Geheilten, nicht nur gegen den, der ihn
+		# angeschlagen hat. Sonst waere der Techniker genau in dem Moment
+		# unangreifbar, in dem er am wertvollsten ist.
+		#
+		# Und: die TATSAECHLICH geheilte Menge, nicht die nominelle. Deshalb
+		# steht die Buchung hier unten und nicht oben -- Heilen auf Vollleben
+		# waere sonst eine Gratis-Aggro-Maschine.
+		for observer in units:
+			if observer.is_player != target.is_player:
+				_book_aggro(observer, source, float(healed),
+					action.aggro_coeff if action != null else 1.0)
 		EventBus.unit_healed.emit(target, healed, source)
 		EventBus.log_line("%s repariert %s um %d Integritaet."
 			% [source.display_name if source else "?", target.display_name, healed])
@@ -77,9 +100,72 @@ func heal(source: Unit, target: Unit, amount: int) -> int:
 
 func _kill(unit: Unit) -> void:
 	grid.clear_occupant(unit.tile)
+	forget_unit(unit)
 	EventBus.log_line("%s ist ausgefallen." % unit.display_name)
 	EventBus.unit_died.emit(unit)
 	unit.died.emit(unit)
+
+
+# ---------------------------------------------------------------------------
+# Aggro
+# ---------------------------------------------------------------------------
+
+## Ein DROME faellt aus: sein Eintrag verschwindet aus jeder Tabelle, und wen
+## er provoziert hatte, ist wieder frei -- sonst stuende der Provozierte
+## untaetig herum und wartete auf ein Ziel, das es nicht mehr gibt.
+##
+## Aggro ist begegnungslokal. Sie ueberlebt weder ein Ziel noch das Gefecht.
+## Oeffentlich, weil es zwei Wege in den Tod gibt: die Mitigationskette hier
+## und den Aderlass im BattleManager. Beide muessen hier durch.
+func forget_unit(unit: Unit) -> void:
+	for other in units:
+		if other.aggro != null:
+			other.aggro.forget(unit.unit_id)
+		if other.taunted_by() == unit.unit_id:
+			other.clear_taunt()
+
+
+## Die EINZIGE Stelle, an der Aggro gebucht wird.
+##
+## Dieselbe Regel wie bei apply_damage() und move_unit(): gaebe es eine zweite,
+## waere jede kuenftige Schadensquelle eine Gelegenheit, die Buchung zu
+## vergessen -- und der Fehler faellt erst auf, wenn ein Gegner sich
+## unerklaerlich verhaelt.
+##
+## ``observer`` ist der DROME, dessen Tabelle waechst; ``actor`` der, der die
+## Aufmerksamkeit auf sich zieht.
+func _book_aggro(observer: Unit, actor: Unit, base: float, coeff: float) -> void:
+	if observer == null or actor == null or observer.aggro == null:
+		return
+	if not observer.is_alive() or observer.is_player == actor.is_player:
+		return
+	# Gebucht wird auch gegen einen actor, den der observer gerade gar nicht
+	# anvisieren KANN -- etwa weil er in einem Haze-Feld steht. Gefiltert wird
+	# ausschliesslich bei der Zielwahl. Sonst waere Haze ein Aggro-Reset und
+	# aus der Deckung zu schiessen kostenlos.
+	observer.aggro.add(actor.unit_id, AggroTable.contribution(
+		base, coeff, Grid.distance(actor.tile, observer.tile),
+		actor.stat("aggro_bonus")))
+
+
+## Provokation: harter Zwang beim Ziel plus ein Eintrag in dessen Tabelle.
+##
+## Der neue Wert leitet sich vom Tabellenmaximum ab und wird NICHT addiert.
+## Zweimal hintereinander provozieren bringt dadurch praktisch nichts -- man
+## ist ja bereits das Maximum. Eine flache Addition wuerde durch Wiederholung
+## zur dauerhaften Aggro-Sperre und die Tabelle entwerten.
+##
+## Nach Ablauf steht die Quelle knapp vorn, aber nicht uneinholbar: das Gefecht
+## kippt zurueck ins normale Tabellenmodell, statt hart umzuschalten.
+func _apply_taunt(source: Unit, target: Unit, action: ActionData) -> void:
+	target.apply_taunt(source.unit_id, action.taunt_turns)
+	if target.aggro != null:
+		var factor := float(Config.section("aggro").get("taunt_factor", 1.1))
+		target.aggro.entries[source.unit_id] = maxf(
+			target.aggro.value_of(source.unit_id),
+			target.aggro.peak_excluding(source.unit_id) * factor)
+	EventBus.log_line("%s provoziert %s fuer %d Zuege."
+		% [source.display_name, target.display_name, action.taunt_turns])
 
 
 # ---------------------------------------------------------------------------
@@ -108,6 +194,15 @@ func unit_at(tile: Vector2i) -> Unit:
 	return null
 
 
+func unit_by_id(unit_id) -> Unit:
+	if unit_id == null:
+		return null
+	for unit in units:
+		if unit.unit_id == unit_id:
+			return unit
+	return null
+
+
 ## Alle Felder in Reichweite der Aktion -- unabhaengig davon, ob dort etwas
 ## Sinnvolles steht. Die Sichtlinie entscheidet erst danach.
 func tiles_in_range(source: Unit, action: ActionData) -> Array[Vector2i]:
@@ -128,6 +223,17 @@ func tiles_in_range(source: Unit, action: ActionData) -> Array[Vector2i]:
 func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
 	if action.targeting == ActionData.Targeting.SELF:
 		return "" if tile == source.tile else "Nur auf sich selbst"
+
+	# Provokation. Steht bewusst HIER und nicht in der KI: sie ist eine Regel
+	# ueber gueltige Ziele, keine Vorliebe. Damit gilt sie fuer beide Seiten --
+	# die KI fragt diese Funktion in _targets_from(), und beim Spieler faerbt
+	# sich das Feld grau und der Grund steht im Tooltip. Eine zweite
+	# Durchsetzung in der KI waere eine zweite Regel.
+	if action.is_attack() and source.is_taunted():
+		var forcer := unit_by_id(source.taunted_by())
+		if forcer != null and forcer.is_alive() and tile != forcer.tile:
+			return "Von %s provoziert" % forcer.display_name
+
 	if Grid.distance(source.tile, tile) > action.range_tiles:
 		return "Ausser Reichweite"
 	if action.requires_line_of_sight:
@@ -172,13 +278,19 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		if target == null:
 			continue
 		if action.is_heal():
-			heal(source, target, action.heal_amount())
+			heal(source, target, action.heal_amount(), action)
 		elif action.power > 0:
-			apply_damage(source, target, action.power + source.atk())
+			apply_damage(source, target, action.power + source.atk(), action)
+		elif action.aggro_flat > 0:
+			# Wirkung ohne Wirkungsmenge -- Stossen, Ziehen, reine Kontrolle.
+			# Ohne den Pauschalwert waere ein Kontroll-Aufbau lautlos.
+			_book_aggro(target, source, float(action.aggro_flat), action.aggro_coeff)
 		if action.push_tiles != 0 and target != source:
 			_shove(source, target, action.push_tiles)
 		if action.status_effect != null:
 			_apply_status(target, action.status_effect)
+		if action.is_taunt() and target != source:
+			_apply_taunt(source, target, action)
 
 	if action.targeting == ActionData.Targeting.SELF:
 		_apply_self_effects(source, action)

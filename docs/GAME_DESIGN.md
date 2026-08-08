@@ -117,6 +117,7 @@ Aktueller Bestand:
 | `COR-002` | Molok Fusionskern | bot2 |
 | `EQP-003` | Belagerungskanone | bot2 |
 | `EQP-004` | Drohnen-Pod | bot2 |
+| `EQP-008` | Koedersender | bot2 |
 | `CHS-003` | Nimbus Chassis | bot3 |
 | `HED-003` | Nimbus Flachhelm | bot3 |
 | `LEG-003` | Nimbus Fahrwerk | bot3 |
@@ -181,6 +182,14 @@ sagt, bis zu welcher Klasse und fuer welche Bauarten er zustaendig ist:
 | `CHS-002` HX-Molok | Schulter | bis leicht, nur Support |
 | `CHS-003` AR-Nimbus | beide Arme | bis mittel |
 | `CHS-004` LR-Strix | Mitte (einziger) | bis schwer |
+
+> **Nachtrag zur Traglast des Molok.** Sie ist mit dem Koedersender von 28 auf
+> 31 gestiegen. Das ist keine Aufwertung, sondern eine Korrektur: bis dahin gab
+> es im Satz nur zwei Ausruestungsteile fuer drei Anker, deshalb ist nie
+> aufgefallen, dass das Chassis seine eigenen drei Anker gar nicht bestuecken
+> konnte. Ein Chassis, das das nicht kann, ist ein Datenfehler und kein
+> Balancing -- `check_stock_builds()` in `tools/build_sample_parts.py` prueft
+> es seither bei jedem Lauf.
 
 Damit ist die Belagerungskanone dort, wo sie hingehoert: an einem Rahmen, der
 sie tragen kann und dafuer langsam ist. Und die Molok-Schulter ist das, wonach
@@ -292,7 +301,230 @@ Realistische Zielgroesse fuer einen ersten spielbaren Stand: 3–4 Chassis-Famil
 plus ein gemeinsamer Ausruestungs-Pool. Das sind ~100–150 SVG-Dateien, nicht
 mehrere tausend Sprites.
 
-## 6. Zustaende und Animation
+## 6. Aggro: wie ein Gegner sein Ziel waehlt
+
+Jeder Gegner fuehrt Buch darueber, wie sehr ihn jede Spielereinheit stoert,
+und bezieht das in seine Zielwahl ein. Mehr ist es nicht. Positionierung,
+Faehigkeitswahl und Annaeherung bleiben Sache des `AIController` -- **Aggro
+beantwortet WEN, nicht WIE**.
+
+Der Begriff ist bewusst neu. Was frueher `threat_score()` hiess, heisst jetzt
+**Kampfwert** und ist etwas anderes: die errechnete Staerke eines *Aufbaus*,
+Grundlage des Gegner-Matchings, vor dem Gefecht bekannt und fuer beide Seiten
+dieselbe Zahl. **Aggro** sagt, wie sehr eine Einheit *einen bestimmten Gegner*
+stoert, entsteht erst im Gefecht und ist fuer jeden Gegner eine andere Zahl.
+Das Wort „Threat" kommt im Projekt nicht mehr vor -- es hat zwei Fragen
+bezeichnet, die nichts miteinander zu tun haben.
+
+### 6a. Nur Gegner fuehren eine Tabelle
+
+Spieler-DROMEs bekommen keine. Ihre Ziele waehlt der Spieler, und eine
+Tabelle, die niemand liest, waere eine zweite Wahrheit ueber die Zielwahl.
+
+Die Tabelle sitzt **pro Gegner**, nicht global. Nur so laesst sich eine
+Gegnergruppe aufteilen: zwei Gegner bleiben am Molok haengen, waehrend der
+Rest den Techniker verfolgt. Eine gemeinsame Zahl je Spielerfigur wuerde die
+ganze Gruppe immer auf dasselbe Ziel synchronisieren.
+
+### 6b. Aggro entsteht aus Aktionen, nie aus Identitaet
+
+Kein Chassis, kein Kern und keine Klasse erzeugt Aggro. Nur ausgefuehrte
+Aktionen mit messbarer Wirkung: angerichteter Schaden, tatsaechlich geheilte
+Integritaet, der Pauschalwert einer Kontroll-Aktion.
+
+Daraus folgt: **Tanken ist emergent, keine Rolle.** Wer vorne steht und laut
+zuschlaegt, haelt die Aufmerksamkeit -- auch ohne dass irgendwo „Tank" steht.
+Wer nur herumsteht, verliert sie. Ein Grundwert auf dem Chassis waere genau
+die Abkuerzung, die das entwertet: dann taenkt, wer das richtige Teil traegt,
+statt wer das Richtige tut.
+
+Der einzige Weg zu Aufmerksamkeit ohne eigene Aktion ist der Bauteil-Stat
+`aggro_bonus` -- und der kostet einen **Ausruestungsslot**. Im Bestand fuehrt
+ihn genau ein Teil: der **Koedersender** (`EQP-008`), leichtes Support-Modul,
++25 Prozentpunkte, dazu die einzige Provokation des Spiels.
+
+Er ist bewusst **nicht** auf die Schulter festgelegt. Waere er es, koennte ihn
+allein der Molok tragen -- und zwar in einem Slot, in dem ohnehin keine Waffe
+sitzen darf; er waere damit geschenkt. So kostet er ueberall einen Slot, und die
+Achse aus Abschnitt 3c greift von selbst:
+
+| Chassis | was der Sender kostet |
+|---|---|
+| `CHS-002` Molok | einen von drei Ankern -- auf der Schulter konkurriert er nur mit dem Drohnen-Pod |
+| `CHS-001` Vireo, `CHS-003` Nimbus | einen von zwei Ankern, also eine Waffe oder das Schild |
+| `CHS-004` Strix | **gar nicht tragbar** -- sein einziger Anker haelt die Lanze, und ein Aufbau ohne Waffe ist ungueltig |
+
+Der Strix ist damit der Beleg, dass die Regel beisst: die Einheit, die am
+wenigsten Aufmerksamkeit erzeugen will, kann sie auch nicht kaufen -- ohne dass
+irgendwo eine Zahl darueber entscheidet.
+
+### 6c. Die Formel
+
+```
+delta = wirkung x aggro_coeff x naehe x (1 + aggro_bonus / 100)
+```
+
+| Faktor | Bedeutung | wo er steht |
+|---|---|---|
+| `wirkung` | die TATSAECHLICHE Menge -- Schaden nach der Mitigationskette, Heilung nach dem Deckeln auf `hp_max` | faellt im `ActionResolver` an |
+| `aggro_coeff` | wie laut die Aktion ist | Aktions-Metadaten des Bauteils |
+| `naehe` | Nahbereichs-Bonus | `data/config.json` |
+| `aggro_bonus` | Generierung aus Ausruestung, in Prozentpunkten | Bauteil-Stats |
+
+Der Koeffizient ist der eigentliche Designhebel: er entkoppelt „wie viel
+richtet die Waffe an" von „wie sehr provoziert sie". Das Raster --
+Grundlinie `1.0`, Heilung `0.5`, Praezisionswaffen `0.35` -- steht in
+`tools/build_sample_parts.py` ueber der STATS-Tabelle. Die Verhaeltnisse sind
+der Kern, die absoluten Zahlen sind Setzungen ohne Playtest.
+
+Der Strix ist der Fall, fuer den es das gibt: `0.35` bei Power 16 und
+Reichweite 7. Er richtet mehr Schaden an als der Nahkaempfer und zieht
+trotzdem weniger Aufmerksamkeit -- ohne eine einzige Sonderregel. Umgekehrt
+ist der Runenstab bei Reichweite 1 laut und bekommt den Naehe-Faktor obendrauf.
+
+Der Koeffizient haengt ausdruecklich **nicht** an `range_tiles`. Eine
+Ableitung waere untunebar und eine zweite, stillschweigende Wahrheit darueber,
+wie auffaellig eine Waffe ist.
+
+### 6d. Gebucht wird an genau einer Stelle
+
+`ActionResolver._book_aggro()` -- aufgerufen aus `apply_damage()` und
+`heal()`, sonst nirgends. Dieselbe Regel wie beim Schaden selbst und bei der
+Position eines DROME.
+
+Das ist nicht Ordnungsliebe, sondern der Grund, warum die Aggro keine Liste
+von Sonderfaellen braucht. Weil **jeder** Schaden durch `apply_damage()`
+laeuft, bucht Flaechenschaden von selbst pro getroffenem DROME, und was immer
+spaeter dazukommt -- Schaden ueber Zeit, Reflexschaden, Umgebungsschaden --
+bucht mit, ohne dass jemand daran denken muss. Ueberheilung ist aus demselben
+Grund schon geloest: `heal()` gibt zurueck, was wirklich angekommen ist.
+
+Gebucht wird auch gegen Einheiten, die der Gegner **gerade nicht anvisieren
+kann** -- etwa weil sie in einem Haze-Feld stehen. Gefiltert wird
+ausschliesslich bei der Zielwahl. Sonst waere ein Haze-Feld ein Aggro-Reset
+und aus der Deckung zu schiessen kostenlos.
+
+### 6e. Verfall laeuft im ZYKLUS, nicht im Zug
+
+Einmal je Zyklus verblassen alle Eintraege -- ausser denen des aktuellen
+Ziels. Ohne Verfall zementiert ein grosser Treffer aus Zyklus 1 die Zielwahl
+fuer das ganze Gefecht; mit zu starkem Verfall wird jeder Zug zur Neuwahl.
+
+**Der Takt ist der Zyklus, weil ein Zug in diesem Spiel keine gleichmaessige
+Zeiteinheit ist.** SPD bestimmt, wie oft jemand drankommt. Verfiele die
+Tabelle pro eigenem Zug, wuerde ein schneller Gegner die Beitraege aller
+Nicht-Ziele schneller abbauen und dadurch *staerker* an seinem Ziel kleben als
+ein langsamer. Niemand wuerde das als Absicht lesen. Der Zyklus ist die
+einzige gleichmaessige Uhr im Kampf.
+
+### 6f. Aggro ist ein Summand, Provokation ist eine Regel
+
+Die Tabelle **ersetzt** die Zielwahl der KI nicht, sie geht als weiterer Term
+in dieselbe Nutzenbewertung ein. Als Filter wuerde ein Gegner an einem
+sicheren Abschuss vorbeilaufen, weil ein anderer DROME weiter oben in der
+Tabelle steht -- das liest sich als Fehler, nicht als Aggro.
+
+Eingehaengt wird der **Anteil am Tabellenmaximum** (0..1), nicht der Rohwert.
+Der Rohwert waechst ueber das Gefecht unbegrenzt und liefe gegen
+Schadenspunkte davon; der Anteil traegt dieselbe Rangfolge und skaliert mit
+jeder Balancing-Aenderung von selbst mit. Die Zahl an sich bedeutet nichts --
+massgeblich ist nur die Rangfolge innerhalb einer Tabelle.
+
+Dazu ein **Amtsinhaber-Bonus** auf das zuletzt angegriffene Ziel. Er
+verhindert, dass die Zielwahl bei fast gleichauf liegenden Werten von Zug zu
+Zug flackert; fuer den Spieler waere das nicht von Zufall zu unterscheiden.
+Seine Hoehe haengt an der eigenen Waffenreichweite: wer aus sieben Feldern
+schiesst, hat sich auf sein Ziel eingerichtet und laesst sich nicht von jedem
+Kratzer umlenken. Das ist der billigste Charakterisierungshebel im ganzen
+System -- ein Wert je Bauart, ohne eine Zeile KI-Code.
+
+Der **einzige harte Zwang** ist die Provokation (`Stoersignal`, die Aktion des
+Koedersenders). Sie kommt ausschliesslich aus einer Faehigkeit, kostet Energie,
+ist auf drei Zuege befristet und darf deshalb maechtig sein: der Provozierte
+laeuft an einem sicheren Abschuss vorbei. Genau das ist der Unterschied zur
+gewoehnlichen Aggro, die einen Abschuss nie verhindert.
+
+Die KI erneuert eine Sperre, die sie bereits haelt, **nicht** -- eine
+Provokation auf ein bereits provoziertes Ziel bewertet sie mit 0, dieselbe
+Ueberlegung wie bei einer Heilung auf Vollleben. Ohne das waere aus der
+befristeten Zwangsmechanik eine dauerhafte geworden.
+
+### 6g. Was eine Umlenkung wert ist
+
+Der Schaden taugt als Mass nicht: eine Provokation richtet keinen an, und die
+Schadensvorschau liefert dann die Mindestmenge 1. Die staerkste Aktion im
+Spiel waere damit die billigste der Bewertung -- die KI besaesse sie und
+benutzte sie nie.
+
+Gerechnet wird deshalb in **Lebensleisten** statt in Schadenspunkten. Nicht
+wie viel Schaden umgelenkt wird, entscheidet, sondern wie viel er dort und
+hier jeweils ausmacht:
+
+```
+gewinn = anteil_beim_opfer - anteil_bei_mir        (je Zug, in Leisten)
+wert   = min(gewinn x sperrdauer, 1) x taunt_weight
+```
+
+Zwoelf Schaden auf einen angeschlagenen Techniker sind etwas anderes als
+zwoelf Schaden auf ein volles Molok-Chassis -- und aus genau diesem
+Unterschied faellt das gewuenschte Verhalten heraus, ohne dass irgendwo
+„Tank" steht. Dieselbe Emergenz, auf der auch die Aggro selbst beruht:
+
+* Ein dickes Chassis provoziert, weil sein eigener Anteil klein ist.
+* Ein duenner Gegner laesst es bleiben -- sein Anteil ist groesser als der des
+  Opfers, der Gewinn negativ. Er wuerde sich nur selbst verheizen.
+* Wer ohnehin schon das Ziel ist, gewinnt nichts: das gefaehrdetste Ziel ist
+  dann er selbst, und der Gewinn ist exakt null. Kein Sonderfall noetig.
+
+Gemessen wird das gefaehrdetste Ziel am **Anteil** seiner Lebensleiste, nicht
+am Schaden -- sonst waere immer der Dickste das vermeintliche Opfer, und die
+KI schuetzte ausgerechnet den, der es am wenigsten braucht.
+
+Dazu ein `rescue_bonus`, wenn der Schuetzling sonst ausscheiden wuerde und der
+Provozierende den Treffer selbst uebersteht. Die Obergrenze ist bewusst
+gesetzt: mehr als eine ganze Lebensleiste laesst sich nicht retten, egal wie
+lange die Sperre haelt. `taunt_weight + rescue_bonus` bleibt damit unter
+`kill_bonus` -- **ein sicherer Abschuss geht der Umlenkung vor**, und das soll
+er auch. `tests/test_aggro.gd` prueft diese Invariante. Durchgesetzt wird sie in
+`ActionResolver.target_blocker()` -- der Funktion, die ohnehin beantwortet, ob
+ein Ziel gueltig ist, und deren Begruendung unveraendert in den Tooltip wandert.
+Damit gilt sie fuer beide Seiten mit einer einzigen Regel: die KI fragt
+dieselbe Funktion, und beim Spieler faerbt sich das Feld grau mit dem Grund
+daneben. Eine zweite Durchsetzung in der KI waere eine zweite Regel.
+
+Wiederholtes Provozieren eskaliert **nicht**: der neue Wert leitet sich vom
+Tabellenmaximum *ohne den Verursacher* ab und wird nicht addiert. Zweimal
+hintereinander provozieren bringt dadurch nichts. Nach Ablauf steht die Quelle
+knapp vorn, aber nicht uneinholbar -- das Gefecht kippt zurueck ins normale
+Tabellenmodell, statt hart umzuschalten.
+
+### 6h. Der Spieler muss die Tabelle sehen koennen
+
+Nicht als Zugabe, sondern als Bedingung. Der Kampf ist deterministisch und
+verspricht, dass sich jede Aktion vorher durchrechnen laesst; die TICK-Leiste
+legt die Zugreihenfolge sogar acht Zuege im Voraus offen. Eine verdeckte
+Aggro-Tabelle waere die einzige Stelle, an der ein Gegner etwas taete, das der
+Spieler nicht nachvollziehen kann -- und damit fuer ihn nicht von Zufall zu
+unterscheiden.
+
+Im Tooltip einer gegnerischen DROME steht deshalb die Rangfolge in Anteilen,
+mit einer Markierung am aktuellen Ziel. Rohwerte werden nicht gezeigt: sie
+bedeuten nichts.
+
+### 6i. Was das System nicht ist
+
+* keine Zielwahl fuer den Spieler -- die ist vollstaendig unabhaengig
+* keine Positionierung und keine Faehigkeitswahl der KI
+* nichts, was das Gefecht ueberlebt: Aggro ist begegnungslokal und wird beim
+  Ausfall eines Ziels und beim Gefechtsende verworfen
+
+Die vier Eigenschaften, die das Modell tragen muss -- emergentes Tanken, kein
+Flackern, keine Eskalation bei Provokations-Spam, Schutz der Backline durch
+den Koeffizienten -- stehen als Tests in `tests/test_aggro.gd`. Sie sind vor
+jedem Balancing geschrieben worden, weil sie nicht pruefen, ob die Zahlen gut
+sind, sondern ob Balancing ueberhaupt Sinn ergibt.
+
+## 7. Zustaende und Animation
 
 Bewusst **noch nicht** entschieden – erst wenn die Statik steht. Notiert als
 Optionen, damit das Anker-Format sie nicht ausschliesst:
@@ -304,9 +536,33 @@ Optionen, damit das Anker-Format sie nicht ausschliesst:
 * Eigene Teil-Varianten fuer Zustaende (beschaedigt, offline) – teuer, daher nur
   fuer wenige Schluesselteile.
 
-## 7. Offene Punkte
+## 8. Offene Punkte
 
 * Kampfsystem: Aktionspunkte vs. feste Aktionen pro Zug
+* **Aggro-Zahlen sind ungetestet.** Das Modell steht und ist durch Tests
+  abgesichert, aber nie gespielt worden. Die Verhaeltnisse in 6c sind
+  durchdacht, die Werte in `data/config.json` sind Setzungen. `decay_rate` und
+  die Amtsinhaber-Boni steuern dieselbe Groesse -- die Traegheit der Zielwahl.
+  Immer nur eins von beiden anfassen.
+* **Das Gegner-Matching filtert den Koedersender heraus.** Gemessen ueber 400
+  erzeugte Gegner: im rohen Wurf tragen ihn **11,2 %**, nach dem Abgleich gegen
+  den Kampfwert nur noch **4,8 %**. Der Grund ist kein Fehler, sondern die
+  Folge einer bewussten Entscheidung -- der Kampfwert sieht `aggro_bonus`
+  nicht, ein Sender-Aufbau misst sich deshalb schwaecher und faellt aus der
+  Toleranz. Damit ist eine gerade erst gebaute Mechanik bei Gegnern fast nie
+  zu sehen. Entweder bekommt `aggro_bonus` ein Gewicht im Kampfwert, oder die
+  Seltenheit ist gewollt. Nicht entschieden.
+* **Der Kampfwert sieht `aggro_bonus` bewusst nicht.** Der Wert einer
+  Aggro-Erhoehung haengt vollstaendig davon ab, wer sie traegt -- auf einem
+  Molok viel, auf einem Strix nichts. Eine lineare Gewichtung waere eine
+  erfundene Zahl. Der Preis dafuer steht eine Zeile hoeher.
+* **Gegner koennen den Spieler provozieren.** Die Sperre sitzt beim
+  Provozierten und wirkt in beide Richtungen; beim Spieler faerben sich die
+  gesperrten Ziele grau, der Grund steht im Tooltip. Bislang passiert das
+  wegen der Seltenheit des Senders kaum -- ob es sich gut anfuehlt, wenn es
+  haeufiger passiert, muss ein Playtest zeigen.
+* **Aggro-Reduktion** (Aggro abwerfen, sich tot stellen) existiert nicht. Das
+  Modell traegt sie problemlos, sie ist nur nicht entworfen.
 * Feldgroesse relativ zur Einheit: der Bot ueberragt sein Feld derzeit deutlich
   (Fussabdruck im Feld, Oberkoerper darueber hinaus). Ob das bei vollen Karten
   traegt, zeigt erst die erste echte Map.
