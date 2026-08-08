@@ -203,6 +203,14 @@ func _action_score(unit: Unit, action: ActionData, target: Unit) -> float:
 			score *= _w("heal_multiplier", 1.5)
 		return score
 
+	# Eine Provokation auf ein Ziel, das dieser DROME bereits provoziert hat,
+	# bewirkt nichts -- dieselbe Ueberlegung wie bei einer Heilung auf
+	# Vollleben. Ohne diese Zeile erneuert die KI die Sperre jeden Zug und
+	# macht aus einer befristeten Zwangsmechanik eine dauerhafte.
+	if action.is_taunt() and action.power <= 0 \
+			and target.taunted_by() == unit.unit_id:
+		return 0.0
+
 	var damage := battle.resolver.preview_damage(unit, target, action)
 	score += float(damage) * _w("damage_weight", 1.0)
 	if damage >= target.hp:

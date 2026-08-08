@@ -117,6 +117,7 @@ Aktueller Bestand:
 | `COR-002` | Molok Fusionskern | bot2 |
 | `EQP-003` | Belagerungskanone | bot2 |
 | `EQP-004` | Drohnen-Pod | bot2 |
+| `EQP-008` | Koedersender | bot2 |
 | `CHS-003` | Nimbus Chassis | bot3 |
 | `HED-003` | Nimbus Flachhelm | bot3 |
 | `LEG-003` | Nimbus Fahrwerk | bot3 |
@@ -181,6 +182,14 @@ sagt, bis zu welcher Klasse und fuer welche Bauarten er zustaendig ist:
 | `CHS-002` HX-Molok | Schulter | bis leicht, nur Support |
 | `CHS-003` AR-Nimbus | beide Arme | bis mittel |
 | `CHS-004` LR-Strix | Mitte (einziger) | bis schwer |
+
+> **Nachtrag zur Traglast des Molok.** Sie ist mit dem Koedersender von 28 auf
+> 31 gestiegen. Das ist keine Aufwertung, sondern eine Korrektur: bis dahin gab
+> es im Satz nur zwei Ausruestungsteile fuer drei Anker, deshalb ist nie
+> aufgefallen, dass das Chassis seine eigenen drei Anker gar nicht bestuecken
+> konnte. Ein Chassis, das das nicht kann, ist ein Datenfehler und kein
+> Balancing -- `check_stock_builds()` in `tools/build_sample_parts.py` prueft
+> es seither bei jedem Lauf.
 
 Damit ist die Belagerungskanone dort, wo sie hingehoert: an einem Rahmen, der
 sie tragen kann und dafuer langsam ist. Und die Molok-Schulter ist das, wonach
@@ -330,11 +339,24 @@ die Abkuerzung, die das entwertet: dann taenkt, wer das richtige Teil traegt,
 statt wer das Richtige tut.
 
 Der einzige Weg zu Aufmerksamkeit ohne eigene Aktion ist der Bauteil-Stat
-`aggro_bonus` -- und der kostet einen **Ausruestungsslot**. Das ist dieselbe
-Balancing-Achse wie in Abschnitt 3c: ein Provokationsmodul als leichtes
-Support-Modul passt auf die Molok-Schulter, aber nicht in den einen Slot des
-Strix, ohne dass der seine Waffe aufgibt. Wer laut sein will, bezahlt dafuer.
-Im Bestand fuehrt bislang kein Teil den Wert.
+`aggro_bonus` -- und der kostet einen **Ausruestungsslot**. Im Bestand fuehrt
+ihn genau ein Teil: der **Koedersender** (`EQP-008`), leichtes Support-Modul,
++25 Prozentpunkte, dazu die einzige Provokation des Spiels.
+
+Er ist bewusst **nicht** auf die Schulter festgelegt. Waere er es, koennte ihn
+allein der Molok tragen -- und zwar in einem Slot, in dem ohnehin keine Waffe
+sitzen darf; er waere damit geschenkt. So kostet er ueberall einen Slot, und die
+Achse aus Abschnitt 3c greift von selbst:
+
+| Chassis | was der Sender kostet |
+|---|---|
+| `CHS-002` Molok | einen von drei Ankern -- auf der Schulter konkurriert er nur mit dem Drohnen-Pod |
+| `CHS-001` Vireo, `CHS-003` Nimbus | einen von zwei Ankern, also eine Waffe oder das Schild |
+| `CHS-004` Strix | **gar nicht tragbar** -- sein einziger Anker haelt die Lanze, und ein Aufbau ohne Waffe ist ungueltig |
+
+Der Strix ist damit der Beleg, dass die Regel beisst: die Einheit, die am
+wenigsten Aufmerksamkeit erzeugen will, kann sie auch nicht kaufen -- ohne dass
+irgendwo eine Zahl darueber entscheidet.
 
 ### 6c. Die Formel
 
@@ -416,9 +438,16 @@ schiesst, hat sich auf sein Ziel eingerichtet und laesst sich nicht von jedem
 Kratzer umlenken. Das ist der billigste Charakterisierungshebel im ganzen
 System -- ein Wert je Bauart, ohne eine Zeile KI-Code.
 
-Der **einzige harte Zwang** ist die Provokation. Sie kommt ausschliesslich aus
-einer Faehigkeit, ist befristet und darf deshalb maechtig sein: der Provozierte
-laeuft an einem sicheren Abschuss vorbei. Durchgesetzt wird sie in
+Der **einzige harte Zwang** ist die Provokation (`Stoersignal`, die Aktion des
+Koedersenders). Sie kommt ausschliesslich aus einer Faehigkeit, kostet Energie,
+ist auf drei Zuege befristet und darf deshalb maechtig sein: der Provozierte
+laeuft an einem sicheren Abschuss vorbei. Genau das ist der Unterschied zur
+gewoehnlichen Aggro, die einen Abschuss nie verhindert.
+
+Die KI erneuert eine Sperre, die sie bereits haelt, **nicht** -- eine
+Provokation auf ein bereits provoziertes Ziel bewertet sie mit 0, dieselbe
+Ueberlegung wie bei einer Heilung auf Vollleben. Ohne das waere aus der
+befristeten Zwangsmechanik eine dauerhafte geworden. Durchgesetzt wird sie in
 `ActionResolver.target_blocker()` -- der Funktion, die ohnehin beantwortet, ob
 ein Ziel gueltig ist, und deren Begruendung unveraendert in den Tooltip wandert.
 Damit gilt sie fuer beide Seiten mit einer einzigen Regel: die KI fragt
@@ -477,12 +506,20 @@ Optionen, damit das Anker-Format sie nicht ausschliesst:
   durchdacht, die Werte in `data/config.json` sind Setzungen. `decay_rate` und
   die Amtsinhaber-Boni steuern dieselbe Groesse -- die Traegheit der Zielwahl.
   Immer nur eins von beiden anfassen.
-* **Provokation hat noch kein Bauteil.** Der Mechanismus ist gebaut und
-  getestet, aber keine Ausruestung gewaehrt sie. Dasselbe gilt fuer
-  `aggro_bonus`: der Stat wird gelesen, kein Teil fuehrt ihn.
-* **Darf ein Gegner den Spieler provozieren?** Technisch ja -- die Sperre
-  sitzt beim Provozierten und wirkt in beide Richtungen. Ob eine Zwangsmechanik
-  gegen den Spieler zum Spiel passt, ist nicht entschieden.
+* **Der Gegner-Generator wuerfelt den Koedersender mit.** Damit provozieren
+  Gegner den Spieler -- die Sperre sitzt beim Provozierten und wirkt in beide
+  Richtungen, beim Spieler faerben sich die gesperrten Ziele grau mit dem Grund
+  im Tooltip. Messbare Folge ueber dieselben 25 Testkaempfe: 21:4 statt 18:7
+  fuer den Spieler. Der Grund ist nicht der Sender, sondern die Bewertung: die
+  KI gibt einen Slot fuer ein Modul aus, dessen Nutzen ihre Nutzenfunktion gar
+  nicht kennt -- sie zaehlt Schaden, und eine Provokation richtet keinen an.
+  Zwei Auswege, beide offen: der KI beibringen, was eine Umlenkung wert ist,
+  oder reine Support-Module aus dem Gegner-Wurf nehmen. Das Erste ist das
+  richtige, das Zweite das billige.
+* **Der Kampfwert sieht `aggro_bonus` nicht.** Bewusst so: der Wert einer
+  Aggro-Erhoehung haengt vollstaendig davon ab, wer sie traegt -- auf einem
+  Molok viel, auf einem Strix nichts. Eine lineare Gewichtung waere eine
+  erfundene Zahl. Das Gegner-Matching unterschaetzt einen Sender-Aufbau also.
 * **Aggro-Reduktion** (Aggro abwerfen, sich tot stellen) existiert nicht. Das
   Modell traegt sie problemlos, sie ist nur nicht entworfen.
 * Feldgroesse relativ zur Einheit: der Bot ueberragt sein Feld derzeit deutlich

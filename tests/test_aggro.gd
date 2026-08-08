@@ -350,6 +350,97 @@ func test_control_without_damage_is_not_silent() -> void:
 
 
 # ---------------------------------------------------------------------------
+# Der Koedersender -- das einzige Teil, das Aggro ohne Handeln erzeugt
+# ---------------------------------------------------------------------------
+
+func test_the_beacon_is_a_light_support_module_with_a_taunt() -> void:
+	var part := PartDB.get_part(&"eq_bait_beacon")
+	t.ok(part != null, "EQP-008 ist im Bestand")
+	t.equal(part.mount_class, "light", "leicht -- passt auch auf die Molok-Schulter")
+	t.equal(part.category, "support", "Support, keine Waffe")
+	t.ok(part.aggro_bonus > 0, "es fuehrt als einziges Teil aggro_bonus")
+	t.ok(part.action != null and part.action.is_taunt(),
+		"und als einziges eine Provokation")
+	t.ok(part.action.taunt_turns > 0 and part.action.en_cost > 0,
+		"befristet und nicht umsonst -- harter Zwang muss beides sein")
+
+
+func test_the_beacon_raises_the_aggro_its_carrier_generates() -> void:
+	# Zwei identische Aufbauten, einer mit Sender im zweiten Slot. Bei exakt
+	# gleichem Schaden muss der Traeger mehr Aggro erzeugen -- sonst ist der
+	# Stat irgendwo auf dem Weg von der Bauteil-JSON zur Formel verlorengegangen.
+	var plain := DromeBuild.create("OHNE", {
+		"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core",
+		"equip_left": &"eq_pulse_blaster"})
+	var loud := DromeBuild.create("MIT", {
+		"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core",
+		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_bait_beacon"})
+	t.ok(loud.stats()["aggro_bonus"] > 0, "der Aufbau summiert den Bonus")
+
+	var arena := _arena([
+		{"build": plain, "tile": Vector2i(9, 8)},
+		{"build": loud, "tile": Vector2i(8, 9)},
+	], Vector2i(9, 9))
+	var resolver: ActionResolver = arena["resolver"]
+	var quiet: Unit = arena["units"][0]
+	var noisy: Unit = arena["units"][1]
+	var foe: Unit = arena["foe"]
+
+	foe.hp = foe.stat("hp_max")
+	resolver.apply_damage(quiet, foe, 20, _attack_of(quiet))
+	foe.hp = foe.stat("hp_max")
+	resolver.apply_damage(noisy, foe, 20, _attack_of(noisy))
+
+	t.ok(foe.aggro.value_of(noisy.unit_id) > foe.aggro.value_of(quiet.unit_id),
+		"der Sender-Traeger erzeugt bei gleichem Schaden mehr Aggro (%.1f vs %.1f)"
+		% [foe.aggro.value_of(noisy.unit_id), foe.aggro.value_of(quiet.unit_id)])
+	_free(arena)
+
+
+func test_the_beacon_costs_a_slot_and_the_strix_cannot_pay_it() -> void:
+	# Die Behauptung aus GAME_DESIGN 6b, als Test: Praesenz-Aggro kostet einen
+	# Ausruestungsslot. Wer nur einen hat, kann sie nicht kaufen.
+	var strix := DromeBuild.create("STRIX", {
+		"body": &"strix_body", "head": &"strix_head",
+		"feet": &"strix_feet", "core": &"strix_core",
+		"equip_center": &"eq_bait_beacon"})
+	t.ok(not strix.is_valid(),
+		"der Strix mit Sender statt Lanze ist ungueltig: %s"
+		% ", ".join(strix.validate()))
+
+	var molok := DromeBuild.create("MOLOK", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon", "equip_shoulder": &"eq_bait_beacon"})
+	t.ok(molok.is_valid(),
+		"der Molok traegt ihn auf der Schulter und behaelt seine Waffe: %s"
+		% ", ".join(molok.validate()))
+
+
+func test_the_ai_does_not_renew_a_taunt_it_already_holds() -> void:
+	# Sonst wird aus einer befristeten Zwangsmechanik eine dauerhafte.
+	var battle := BattleManager.new()
+	battle.setup(9113, [_melee()])
+	var controller := AIController.new(battle)
+	var foe: Unit = battle.living(false)[0]
+	var victim: Unit = battle.living(true)[0]
+
+	var taunt := ActionData.new()
+	taunt.id = &"act_test_taunt"
+	taunt.category = ActionData.Category.ABILITY
+	taunt.taunt_turns = 3
+
+	t.ok(controller._action_score(foe, taunt, victim) > 0.0,
+		"ein freies Ziel zu provozieren ist etwas wert")
+	victim.apply_taunt(foe.unit_id, 3)
+	t.equal(controller._action_score(foe, taunt, victim), 0.0,
+		"ein bereits provoziertes Ziel erneut zu provozieren nicht")
+	battle.free()
+
+
+# ---------------------------------------------------------------------------
 # Begegnungslokal
 # ---------------------------------------------------------------------------
 

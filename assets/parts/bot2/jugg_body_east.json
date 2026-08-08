@@ -95,7 +95,7 @@
     "def": 5,
     "weight": 0,
     "power_draw": 0,
-    "weight_capacity": 28,
+    "weight_capacity": 31,
     "power_output": 0,
     "can_pass_units": false,
     "can_enter_steps": false,

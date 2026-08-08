@@ -138,6 +138,12 @@ GLOSSARY = {
     "step_cost_reduced": ("Stufen billiger", "Stufen kosten weniger Bewegung."),
     "grants_ignore_haze": ("sieht durch Haze", "Haze-Felder blockieren die "
                                                "Sichtlinie dieses DROME nicht."),
+    "aggro_bonus": ("Aggro +%", "Wie viel mehr Aufmerksamkeit alles erzeugt, "
+                                "was der Traeger tut -- in Prozentpunkten, "
+                                "additiv ueber alle Teile. Der einzige Weg zu "
+                                "Aggro ohne eigene Aktion, und er kostet einen "
+                                "Ausruestungsslot. Geht NICHT in den Kampfwert "
+                                "ein."),
 }
 
 # Aktionsfelder -- aus scripts/core/action_data.gd.
@@ -149,6 +155,15 @@ ACTION_GLOSSARY = {
                        "statt zweier Felder."),
     "requires_line_of_sight": ("Sichtlinie", "Braucht freie Sicht zum Ziel."),
     "push_tiles": ("Schub", "Positiv = wegstossen, negativ = heranziehen."),
+    "aggro_coeff": ("Aggro x", "Wie LAUT die Aktion ist: Multiplikator auf die "
+                               "Aggro, die ihre Wirkung erzeugt. 1.0 ist die "
+                               "Grundlinie, 0.5 Heilung, 0.35 Praezision. "
+                               "Trennt „wie viel Schaden“ von „wie sehr "
+                               "provoziert es“ -- deshalb ueberlebt der Strix "
+                               "in der zweiten Reihe."),
+    "taunt_turns": ("Provokation", "Fuer so viele EIGENE Zuege muss das Ziel "
+                                   "den Verursacher angreifen. Der einzige "
+                                   "harte Zwang im Spiel, deshalb befristet."),
 }
 
 # Silhouetten-Merkmal und was es dem Spieler sagen soll.
@@ -183,6 +198,9 @@ READING = {
     "EQP-004": ("flacher Pod auf der Schulterbruecke", "Support, keine Waffe"),
     "EQP-005": ("langer duenner Stab mit Kopfglut", "arkane Waffe"),
     "EQP-006": ("schwebender Ring vor der Hand", "Support, arkan"),
+    "EQP-008": ("duenner Mast ueber Kopfhoehe, drei waagerechte Sendeschirme, "
+                "Gegengewicht hinten-unten",
+                "laut und unbewaffnet -- zieht Aufmerksamkeit und provoziert"),
     "EQP-007": ("ueberlanger duenner Doppellauf, Zielblock, Gabel",
                 "Praezision, grosse Reichweite"),
 }
@@ -1437,6 +1455,12 @@ def build(target: pathlib.Path) -> tuple[int, int]:
                           else "–") if action(p) else None,
                note=ACTION_GLOSSARY["requires_line_of_sight"][1]),
         action_column("push_tiles", 8, summary=False),
+        # Die beiden Aggro-Spalten stehen nur hier: Aggro entsteht aus
+        # Aktionen und aus Ausruestung, nie aus einem Rahmenteil. Auf einem
+        # Kopf- oder Antriebsblatt waeren sie durchgehend leer.
+        action_column("aggro_coeff", 9, summary=False),
+        action_column("taunt_turns", 11, summary=False),
+        stat_column("aggro_bonus", 10, summary=False),
     ]
 
     add("Ausruestung Waffen",

@@ -422,7 +422,12 @@ STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
     # HP, DEF, Traglast. SPD/MOV sind Auf- und Abschlaege auf den Antrieb.
     "scout_body":  {"hp":  60, "def": 1, "spd":  2, "mov":  0, "weight_capacity": 18},
-    "jugg_body":   {"hp": 130, "def": 5, "spd": -2, "mov": -1, "weight_capacity": 28},
+    # Traglast 31 statt 28: der Molok hat DREI Anker (GDD 3b), konnte sie aber
+    # mit eigenen Teilen nie alle belegen -- es gab bis zum Koedersender nur
+    # zwei Ausruestungsteile im Satz, deshalb ist es nie aufgefallen. Ein
+    # Chassis, das seine eigenen Anker nicht bestuecken kann, ist ein
+    # Datenfehler und kein Balancing (siehe check_stock_builds).
+    "jugg_body":   {"hp": 130, "def": 5, "spd": -2, "mov": -1, "weight_capacity": 31},
     "mage_body":   {"hp":  85, "def": 2, "spd":  0, "mov":  0, "weight_capacity": 20,
                     "en_max": 10},
     "strix_body":  {"hp":  70, "def": 2, "spd":  1, "mov":  0, "weight_capacity": 22},
@@ -493,6 +498,18 @@ STATS = {
     # Nahkampfwaffe im Bestand. Er ist der Grund, warum ein Haze-Feld ein
     # Korridor ist und keine Sackgasse -- wer darin steht, kann immer noch
     # zuschlagen, nur nicht mehr schiessen.
+    # Das einzige Teil im Bestand mit aggro_bonus -- und das einzige, das
+    # provozieren kann. Beides gehoert zusammen: wer Aufmerksamkeit auf sich
+    # ziehen will, bezahlt dafuer einen Ausruestungsslot (GAME_DESIGN 6b).
+    # Die Provokation ist harter Zwang und deshalb teuer und befristet.
+    "eq_bait_beacon": {
+        "weight": 3, "power_draw": 3, "aggro_bonus": 25,
+        "action": {"id": "act_provoke", "display_name": "Stoersignal",
+                   "category": "ability", "targeting": "single",
+                   "range_tiles": 3, "power": 0, "en_cost": 14,
+                   "requires_line_of_sight": True, "taunt_turns": 3},
+    },
+
     "eq_rune_staff": {
         "weight": 4, "power_draw": 2,
         "action": {"id": "act_runestaff", "display_name": "Runenschlag",
@@ -1315,6 +1332,76 @@ EQ_DRONE_POD = [
     B((-7, -3), (-2, 2), (71, 74.5), "accent"),
 ]
 
+# Koedersender -- laut, aber ausdruecklich KEINE Waffe.
+#
+# Das Modul ist der einzige Weg im Bestand, Aufmerksamkeit zu erzeugen, ohne
+# dafuer zu handeln (GAME_DESIGN 6b), und der einzige, der provozieren kann.
+# Genau das muss die Silhouette sagen -- und zwar OHNE die Formensprache einer
+# Waffe zu benutzen:
+#
+#   * kein Rohr, keine Muendung, nichts, was nach vorn zeigt. Jede Waffe im
+#     Bestand greift nach vorn; dieses Teil tut es an keiner Stelle.
+#   * ein duenner MAST nach oben, der ueber den Kopf hinausreicht -- die
+#     einzige Ausruestung, die das tut;
+#   * drei KREUZE aus flachen Streben am Mast, nach oben kuerzer werdend --
+#     Sendeantennen, keine Laeufe, und mit deutlichem Abstand voneinander;
+#   * ein GEGENGEWICHT nach hinten-unten: das Teil ist kopflastig, und man
+#     sieht ihm an, dass es getragen und nicht gehalten wird.
+#
+# Der Runenstab ist der Nachbar, gegen den sich das abgrenzen muss -- auch er
+# laeuft senkrecht nach oben. Er ist aber ein Stab AM ARM mit einer Glut obenauf
+# (Rotationskoerper, rund, durchgehend schlank); der Sender hat keinen Arm,
+# dafuer die Kreuztreppe und das Gewicht hinten.
+#
+# Zwei verworfene Anlaeufe, beide lehrreich genug, um sie aufzuschreiben:
+#
+# 1. Die Kreuze waren zuerst waagerechte SCHEIBEN. Ein waagerechter Kreis mit
+#    Radius r projiziert unter dieser Kamera aber immer zur Ellipse mit der
+#    Halbhoehe 0.5*r*SCALE -- er liest sich als praller Koerper, nie als
+#    duenner Schirm. Gekreuzte Streben behalten ihre Duenne, weil zwischen
+#    den Armen der Hintergrund steht.
+# 2. Die Abstaende waren zu klein. Zwei waagerechte Formen trennen sich auf
+#    dem Bildschirm nur um dz*COS45*SCALE, brauchen also
+#
+#        dz  >  0.71 * (r1 + r2)
+#
+#    um sich nicht zu ueberlappen. Mit dz = 4 und Radien um 8 verschmolzen die
+#    drei zu einem Kegel -- das Teil sah aus wie eine Laterne.
+#
+# Beides hat der Silhouetten-Test NICHT gefangen, und das ist kein Mangel: er
+# misst den Umriss, und eine Laterne ist ein ebenso einmaliger Umriss wie eine
+# Antenne. Er haette also zu Recht bestanden. Genau der Fall, fuer den in
+# GAME_DESIGN 3d steht, dass der Test das Hinsehen nicht ersetzt -- er faengt
+# "abgeschrieben und groesser gezogen", nicht "sagt die falsche Funktion".
+EQ_BAIT_BEACON = [
+    # Halterung am Anker -- derselbe kurze Stumpf wie bei Blaster und Schild.
+    B((-3, 3), (-4, 4), (46, 54), "metal"),
+    # Gegengewicht nach hinten-unten: das Modul ist kopflastig, und man sieht
+    # ihm an, dass es getragen und nicht gehalten wird.
+    B((-10, -2.5), (-5.5, 5.5), (38.5, 46.5), "plate"),
+    B((-10.5, -3), (-6, 6), (46.5, 48), "light"),
+    B((-10.8, -10.2), (-3.5, 3.5), (40, 45), "accent"),
+    # Mast -- laeuft ueber jede Kopfhoehe im Bestand hinaus (61 bis 72).
+    L((0, 0), [(1.5, 50), (1.5, 80)], "metal", segments=10),
+    # Drei KREUZE aus flachen Streben statt Scheiben. Ein waagerechter Kreis
+    # projiziert unter dieser Kamera immer zur 2:1-Ellipse und liest sich als
+    # praller Koerper, nie als duenner Schirm -- drei davon uebereinander
+    # ergaben eine Pagode. Gekreuzte Streben behalten dagegen ihre Duenne,
+    # weil zwischen den Armen der Hintergrund steht.
+    B((-7.6, 7.6), (-1.1, 1.1), (56.5, 57.4), "plate"),
+    B((-1.1, 1.1), (-7.6, 7.6), (56.5, 57.4), "plate"),
+    B((-6.8, 6.8), (-0.5, 0.5), (57.4, 57.7), "accent"),
+    B((-0.5, 0.5), (-6.8, 6.8), (57.4, 57.7), "accent"),
+    B((-5.6, 5.6), (-1.0, 1.0), (67.0, 67.9), "plate"),
+    B((-1.0, 1.0), (-5.6, 5.6), (67.0, 67.9), "plate"),
+    B((-4.9, 4.9), (-0.5, 0.5), (67.9, 68.2), "accent"),
+    B((-0.5, 0.5), (-4.9, 4.9), (67.9, 68.2), "accent"),
+    B((-3.6, 3.6), (-0.9, 0.9), (76.0, 76.9), "plate"),
+    B((-0.9, 0.9), (-3.6, 3.6), (76.0, 76.9), "plate"),
+    # Signalspitze auf dem Mast, nicht auf dem obersten Schirm
+    L((0, 0), [(0, 83.4), (1.9, 81.4), (1.9, 79.8), (0, 79.2)], "glow", segments=12),
+]
+
 
 # ===========================================================================
 # AR-Nimbus // Technomant  (parts/bot3) -- Rundungen statt Kanten
@@ -1716,6 +1803,21 @@ SETS = [
                 "slots": ["equip_shoulder"],
                 "mount_class": "light", "category": "support",
                 "anchors": {"mount": (0, 0, 61)},
+            },
+            {
+                # Bewusst OHNE "slots": der Sender passt an jeden Arm und auf
+                # die Molok-Schulter. Nur so kostet er auch etwas. Waere er
+                # schulterfest, koennte ihn allein der Molok tragen -- und
+                # zwar in einem Slot, in dem ohnehin keine Waffe sitzen darf.
+                # Am Strix mit seinem einzigen Anker ist er dagegen gar nicht
+                # tragbar, ohne dass der Aufbau seine Waffe verliert und damit
+                # ungueltig wird. Das ist die Slot-Achse aus Abschnitt 3c, auf
+                # die Aggro angewandt: eine Kaufentscheidung ohne eine Zahl.
+                "id": "eq_bait_beacon", "code": "EQP-008", "type": "equipment",
+                "name": "Koedersender", "tags": ["support", "beacon", "aggro"],
+                "shapes": EQ_BAIT_BEACON,
+                "mount_class": "light", "category": "support",
+                "anchors": {"mount": (0, 0, 52)},
             },
         ],
     },
