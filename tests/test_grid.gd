@@ -88,6 +88,53 @@ func test_units_never_break_sight() -> void:
 		"DROMEs unterbrechen die Sichtlinie nie")
 
 
+func test_sight_is_symmetric_on_a_cluttered_map() -> void:
+	# Die Behauptung des Determinismus-Versprechens, als Test: wer sich sehen
+	# kann, sieht sich von beiden Seiten. Ein nackter Bresenham leistet das
+	# nicht -- bei halben Schritten entscheidet das Vorzeichen der
+	# Fehlervariablen, und das haengt daran, an welchem Ende man anfaengt.
+	# Ohne Symmetrie kann A auf B schiessen und B nicht auf A, und das ist als
+	# Regel nicht lesbar, sondern nur als Willkuer.
+	var grid := Grid.new(14, 14)
+	for tile in [Vector2i(4, 4), Vector2i(5, 4), Vector2i(7, 8), Vector2i(9, 3),
+			Vector2i(6, 10), Vector2i(10, 9), Vector2i(3, 9)]:
+		grid.set_terrain_class(tile, Terrain.TClass.BLOCK)
+	for tile in [Vector2i(8, 5), Vector2i(8, 6), Vector2i(2, 6), Vector2i(11, 11)]:
+		grid.set_terrain_class(tile, Terrain.TClass.HAZE)
+
+	var mismatches := 0
+	var tiles := grid.all_tiles()
+	for from in tiles:
+		for to in tiles:
+			if grid.has_line_of_sight(from, to) != grid.has_line_of_sight(to, from):
+				mismatches += 1
+	t.equal(mismatches, 0,
+		"Sicht ist auf jedem Feldpaar richtungsunabhaengig (%d Abweichungen)"
+		% mismatches)
+
+
+func test_the_line_itself_is_the_same_in_both_directions() -> void:
+	# Die Symmetrie sitzt in line() und nicht in den Sicht-Funktionen: wer die
+	# Rasterung kuenftig fuer etwas anderes aufruft -- Flaechenwaffen, Zielhilfe
+	# --, erbt sie, ohne davon wissen zu muessen. Die Reihenfolge bleibt dabei
+	# die vom Startpunkt aus gesehene, damit sight_blocker() weiterhin das
+	# naechstliegende Hindernis nennt.
+	var grid := _open_grid(12)
+	for dx in range(-5, 6):
+		for dy in range(-5, 6):
+			if dx == 0 and dy == 0:
+				continue
+			var from := Vector2i(6, 6)
+			var to := from + Vector2i(dx, dy)
+			var forward := grid.line(from, to)
+			var backward := grid.line(to, from)
+			backward.reverse()
+			t.equal(forward, backward,
+				"Linie %s -> %s ist die umgekehrte Rueckrichtung" % [from, to])
+			t.equal(forward[0], from, "sie beginnt beim Startpunkt")
+			t.equal(forward[forward.size() - 1], to, "und endet beim Ziel")
+
+
 func test_sight_blocker_names_the_reason() -> void:
 	# Der Tooltip an einem grauen Ziel soll sagen, WARUM.
 	var grid := _open_grid()

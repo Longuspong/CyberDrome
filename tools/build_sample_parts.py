@@ -386,12 +386,14 @@ STAT_DEFAULTS = {
     "step_cost_reduced": False,  # Stufe kostet 1 MP statt 2
     # Sensorik -- an jedem Slot moeglich, im Bestand an Koepfen
     "grants_ignore_haze": False,
-    # Aggro-Generierung in Prozentpunkten. Kein Bauteil im Bestand fuehrt ihn:
+    # Aggro-Generierung in Prozentpunkten. Genau EIN Bauteil im Bestand fuehrt
+    # ihn -- der Koedersender EQP-008 mit +25, und der kostet dafuer einen
+    # Ausruestungsslot. Kein Chassis und kein Kern hat einen Grundwert darauf:
     # Aufmerksamkeit entsteht aus Aktionen, nicht aus Identitaet. Ein Chassis
-    # oder Kern mit einem Grundwert darauf waere genau die Abkuerzung, die das
-    # System entwertet -- dann tankt, wer das richtige Teil traegt, statt wer
-    # das Richtige tut. Vorgesehen ist der Wert allein fuer Support-Module
-    # (Koeder, Provokationssender), die dafuer einen Ausruestungsslot kosten.
+    # mit aggro_bonus waere genau die Abkuerzung, die das System entwertet --
+    # dann tankt, wer das richtige Teil traegt, statt wer das Richtige tut.
+    # Der Wert bleibt deshalb Support-Modulen vorbehalten (Koeder,
+    # Provokationssender), die dafuer einen Ausruestungsslot bezahlen.
     "aggro_bonus": 0,
 }
 
@@ -419,7 +421,8 @@ STAT_DEFAULTS = {
 #
 # ``aggro_flat`` ist der Pauschalwert fuer Aktionen ohne Wirkungsmenge, und
 # ``taunt_turns`` macht eine Aktion zur Provokation (harter Zwang, befristet).
-# Kein Bauteil im Bestand provoziert bislang.
+# Genau eine Aktion im Bestand provoziert: das Stoersignal des Koedersenders
+# EQP-008, drei Zuege lang und fuer 14 Energie.
 STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
     # HP, DEF, Traglast. SPD/MOV sind Auf- und Abschlaege auf den Antrieb.
