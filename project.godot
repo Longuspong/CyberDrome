@@ -7,15 +7,28 @@
 ; Godot liest ausschliesslich assets/parts/ -- den gebackenen Satz. Der
 ; Quellbaum parts/ traegt eine .gdignore, weil seine CSS-Variablen im
 ; Rasterizer schwarz werden.
+;
+; ACHTUNG beim Oeffnen im Editor: Godot schreibt diese Datei beim Speichern neu
+; und ersetzt dabei den Kopf durch seinen englischen Standardtext. Die drei
+; Absaetze hierueber sind schon einmal so verschwunden. Wer sie nach einem
+; Editor-Lauf im Diff vermisst, holt sie zurueck, statt den Verlust zu
+; committen.
 
 config_version=5
+
+[animation]
+
+; Von Godot 4.7 beim Migrieren gesetzt. Betrifft ausschliesslich 3D-Skelette
+; und hat in diesem Projekt keine Wirkung -- bleibt aber stehen, damit der
+; Editor die Datei nicht bei jedem Start erneut anfasst.
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
 config/name="DROME"
 config/description="Isometrisches Taktik-RPG. MVP: Werkstatt und Chaos-Virus."
 run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.3", "GL Compatibility")
+config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://assets/parts/bot1/scout_head_south.svg"
 
 [autoload]

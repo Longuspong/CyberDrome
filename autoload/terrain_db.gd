@@ -68,9 +68,29 @@ func get_region(region_id: StringName) -> Terrain.Region:
 
 
 ## Zieht eine Region aus dem Seed. Derselbe Seed ergibt dieselbe Region.
+##
+## ### Warum hier ausdruecklich nach TEXT sortiert wird
+##
+## Hier stand ``keys.sort()`` mit dem Kommentar, das sei stabil. Das ist es
+## nicht: die Schluessel sind ``StringName``, und ``Array.sort()`` vergleicht
+## die nicht alphabetisch, sondern nach ihrer internen Adresse. Die haengt
+## davon ab, in welcher Reihenfolge die Namen im Prozess zum ersten Mal
+## auftauchen -- also von Ladereihenfolge und Engine-Version, nicht vom Seed.
+##
+## Nachgemessen beim Umstieg von Godot 4.3 auf 4.7: derselbe Seed, dieselbe
+## Zufallsfolge (``randi``, ``randf`` und ``randi_range`` liefern bitgleiche
+## Werte), aber eine andere Karte -- unter 4.3 kam ``city, green, plant7``
+## heraus, unter 4.7 ``green, city, plant7``. Damit war "derselbe Seed ergibt
+## denselben Kampf" ueber Versionsgrenzen hinweg gebrochen, und zwar
+## stillschweigend: die Reproduzierbarkeits-Tests vergleichen zwei Laeufe
+## DERSELBEN Engine und blieben deshalb gruen.
+##
+## ``str()`` vor dem Vergleich macht daraus eine Sortierung nach Inhalt. Unter
+## 4.3 aendert das nichts -- dort waren die Schluessel ohnehin ``String`` und
+## damit alphabetisch --, bestehende Seeds behalten also ihre Bedeutung.
 func pick_region(rng: RandomNumberGenerator) -> Terrain.Region:
 	if regions.is_empty():
 		return null
 	var keys := regions.keys()
-	keys.sort()          # stabil, damit der Seed verlaesslich dasselbe zieht
+	keys.sort_custom(func(a, b): return str(a) < str(b))
 	return regions[keys[rng.randi() % keys.size()]]

@@ -6,3 +6,10 @@ parts/**        linguist-generated=true
 # Erzeugte Teileliste. Kommt aus tools/export_parts_table.py, wird nicht von
 # Hand gepflegt -- und als Binaerdatei diffbar zu machen hilft niemandem.
 docs/*.xlsx     linguist-generated=true binary
+
+# Von der Engine erzeugte Kennungen und Import-Einstellungen. Sie gehoeren ins
+# Repo -- die .uid sind stabile Skript-Kennungen, mit denen Szenen ihre
+# Skripte auch nach dem Verschieben wiederfinden --, aber ein Diff darueber
+# hilft niemandem.
+*.uid           linguist-generated=true
+*.import        linguist-generated=true

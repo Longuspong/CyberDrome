@@ -3,6 +3,12 @@
 Vorausschau, damit die Werkstatt nichts produziert, was spaeter nicht in die
 Engine passt. Es gibt noch kein Godot-Projekt im Repo.
 
+> **Engine-Version: 4.7.** Sie steht an drei Stellen und muss an allen dreien
+> zusammenpassen: `project.godot` (`config/features`), der Session-Hook
+> (`.claude/hooks/session-start.sh`, Version **und** SHA-256) und dieser
+> Absatz. Was beim Umstieg von 4.3 auf 4.7 zu beachten war, steht unten unter
+> *Engine-Wechsel*.
+
 ---
 
 ## Die entscheidende Einschraenkung
@@ -184,3 +190,40 @@ im Werkzeug, und genau dort braucht sie niemand.
 3. Erst danach Kampfsystem und Map. Solange die Darstellung nicht steht, ist
    jede Regelarbeit Spekulation.
 4. Farb-Shader zuletzt – bis dahin genuegt ein Import-Satz je Palette.
+
+---
+
+## Engine-Wechsel
+
+Beim Umstieg von 4.3 auf 4.7 gemessen -- als Merkzettel fuer den naechsten:
+
+**Was die Engine am Baum aendert.** 114 `.import`-Dateien bekommen neue
+Parameter (`compress/uastc_level`, `compress/rdo_quality_loss`,
+`process/channel_remap/*`), und ab 4.4 legt Godot je Skript eine `.uid` an --
+41 Dateien, zusammen gut zwei Kilobyte. Beide gehoeren ins Repo: die `.uid`
+sind stabile Kennungen, mit denen Szenen ihre Skripte auch nach dem
+Verschieben wiederfinden.
+
+**Was der Editor am Baum aendert.** `project.godot` wird beim Speichern neu
+geschrieben, samt Ersetzen des Kopfkommentars durch den englischen
+Standardtext. Der Hinweis steht jetzt in der Datei selbst.
+
+**Was NICHT anders wurde.** Der Zufallsgenerator: `randi`, `randf` und
+`randi_range` liefern bei gleichem Seed bitgleiche Folgen. Und der
+SVG-Rasterizer kennt weiterhin keine CSS-Variablen -- ein Quell-SVG rastert
+auch unter 4.7 zu genau einer Farbe, `#000000`. Der Bake-Schritt bleibt also.
+
+**Was still gebrochen war und den Umstieg fast ueberlebt haette.**
+`TerrainDB.pick_region()` sortierte die Region-IDs mit `Array.sort()`. Unter
+4.3 waren die Schluessel `String` und wurden alphabetisch sortiert; unter 4.7
+sind sie `StringName`, und deren Vergleich laeuft ueber die interne Adresse.
+Ergebnis: **derselbe Seed, eine andere Karte** -- bei identischer
+Zufallsfolge. Die Reproduzierbarkeits-Tests haben das nicht gesehen, weil sie
+zwei Laeufe *derselben* Engine vergleichen.
+
+Daraus die Regel: **auf `StringName` nie `sort()`**, immer
+`sort_custom(func(a, b): return str(a) < str(b))`. Und ein Test, der
+Reproduzierbarkeit sichern soll, muss den INHALT der Reihenfolge festhalten,
+nicht die Gleichheit zweier Laeufe
+(`tests/test_battle.gd`,
+`test_region_choice_follows_the_alphabet_not_the_memory_layout`).

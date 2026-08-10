@@ -14,7 +14,7 @@ gewaehlt: modulare Teile lassen sich kombinieren, umfaerben und aufloesungs­fre
 skalieren, ohne dass fuer jede Kombination ein eigener Sprite gezeichnet werden
 muss. Siehe [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 
-Aktueller Stand: **SVG-Werkstatt** plus **spielbarer Kampf-MVP** in Godot 4.3.
+Aktueller Stand: **SVG-Werkstatt** plus **spielbarer Kampf-MVP** in Godot 4.7.
 
 ```bash
 python3 main.py                  # SVG-Werkstatt im Browser

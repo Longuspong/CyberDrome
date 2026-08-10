@@ -186,6 +186,45 @@ func test_same_seed_gives_the_same_battle() -> void:
 			"derselbe erlittene Schaden bei %s" % a["units"][i]["name"])
 
 
+## Der Test, der oben FEHLT -- und zwar prinzipiell.
+##
+## test_same_seed_gives_the_same_battle() vergleicht zwei Laeufe DERSELBEN
+## Engine. Genau daran ist ein Bruch vorbeigelaufen: unter Godot 4.7 zog
+## derselbe Seed eine andere Region als unter 4.3, weil ``Array.sort()`` auf
+## ``StringName`` nach interner Adresse sortiert und nicht alphabetisch. Beide
+## Laeufe waren in sich einig, nur nicht miteinander -- gruener Test, kaputtes
+## Versprechen.
+##
+## Deshalb wird hier nicht "zweimal dasselbe" geprueft, sondern der INHALT der
+## Reihenfolge: die Auswahl muss der alphabetischen Folge der Region-IDs
+## entsprechen. Das ist die einzige Formulierung, die eine Engine nicht
+## unbemerkt umdeuten kann.
+func test_region_choice_follows_the_alphabet_not_the_memory_layout() -> void:
+	var ids: Array[String] = []
+	for key in TerrainDB.regions:
+		ids.append(str(key))
+	ids.sort()
+	t.ok(ids.size() >= 2, "es gibt mehr als eine Region, sonst prueft das nichts")
+
+	var seen := {}
+	for seed_value in range(40):
+		# Denselben Wurf zweimal: einmal fuer den erwarteten Index, einmal fuer
+		# die echte Auswahl. Beide starten bei demselben Seed.
+		var counter := RandomNumberGenerator.new()
+		counter.seed = seed_value
+		var expected: String = ids[counter.randi() % ids.size()]
+
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var region := TerrainDB.pick_region(rng)
+		t.equal(str(region.id), expected,
+			"Seed %d zieht die alphabetisch %d. Region" % [seed_value,
+				ids.find(expected) + 1])
+		seen[expected] = true
+	t.equal(seen.size(), ids.size(),
+		"und ueber 40 Seeds kommt jede Region auch wirklich vor")
+
+
 func test_enemy_power_matches_the_player_squad() -> void:
 	var player := _squad()
 	var target := DromeBuild.squad_power(player)

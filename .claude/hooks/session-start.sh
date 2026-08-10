@@ -8,9 +8,14 @@
 # DROME davor verdeckt, sieht ohnehin kein Unit-Test.
 #
 # Die Version ist an project.godot gebunden:
-#   config/features=PackedStringArray("4.3", "GL Compatibility")
+#   config/features=PackedStringArray("4.7", "GL Compatibility")
 # Wer sie dort hebt, hebt sie hier mit -- sonst importiert eine andere
 # Engine die Assets, als das Projekt erwartet.
+#
+# Und die Pruefsumme unten gehoert mit gehoben. Sie steht nicht als Formalie
+# da: sie ist der Grund, warum "es lief hier gruen durch" ueberhaupt eine
+# Aussage ist. Die neue holt man aus der SHA512-SUMS.txt des Release und
+# rechnet die SHA-256 des SO bestaetigten Archivs aus.
 
 set -euo pipefail
 
@@ -20,14 +25,18 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
-GODOT_VERSION="4.3-stable"
+GODOT_VERSION="4.7-stable"
 GODOT_ZIP="Godot_v${GODOT_VERSION}_linux.x86_64.zip"
 GODOT_BIN_NAME="Godot_v${GODOT_VERSION}_linux.x86_64"
 GODOT_URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/${GODOT_ZIP}"
 
 # Genau das Archiv, gegen das die Suite hier gruen gelaufen ist. Ein
 # stillschweigend ausgetauschtes Binary faellt damit auf, statt zu wirken.
-GODOT_SHA256="7de56444b130b10af84d19c7e0cf63cf9e9937ee4ba94364c3b7dd114253ca21"
+#
+# Gegengeprueft gegen die von Godot veroeffentlichte SHA512-SUMS.txt desselben
+# Release -- die Zahl hier ist also nicht der Hash von irgendetwas, das einmal
+# heruntergeladen wurde, sondern der eines Archivs mit bestaetigter Herkunft.
+GODOT_SHA256="0b1a6c54c2c619c12e169fe9241edda4b81080b519451cec2984bf0d2c6cb73c"
 
 INSTALL_DIR="/opt/godot/${GODOT_VERSION}"
 GODOT_BIN="${INSTALL_DIR}/${GODOT_BIN_NAME}"
