@@ -600,9 +600,48 @@ Optionen, damit das Anker-Format sie nicht ausschliesst:
 * Eigene Teil-Varianten fuer Zustaende (beschaedigt, offline) – teuer, daher nur
   fuer wenige Schluesselteile.
 
+## 7a. Angriff, Faehigkeit, Schadensart
+
+Drei Begriffe, die auseinandergehalten werden muessen, weil die Oberflaeche sie
+inzwischen getrennt anzeigt:
+
+**Angriff** ist, was eine Waffe von sich aus tut -- Puls-Salve, Schienenschuss,
+Runenschlag. **Faehigkeit** ist alles darueber hinaus: ziehen, reparieren,
+provozieren. Beide sind je Zug einmal verfuegbar und nicht gegeneinander
+tauschbar (`TurnState`). Daraus folgt eine Regel fuer neue Teile: **eine Waffe
+wird als `attack` gefuehrt, nicht als `ability`** -- sonst nimmt sie dem Aufbau
+still seine Faehigkeitsaktion weg, und der Spieler sieht nur, dass etwas fehlt.
+`tests/test_drome_build.gd` haelt das fest.
+
+**Zweimal dasselbe Teil ergibt EINE Aktion.** Zwei Orbit-Fokusse summieren ihre
+Stats weiter, aber die Aktionsliste zeigt den Orbit-Sog einmal: das Budget gibt
+ihn ohnehin nur einmal her, und ein zweiter Eintrag verspraeche eine Wahl, die
+es nicht gibt.
+
+**Schadensart ist vorerst durchgehend `normal`.** Eine Schadensordnung --
+Resistenzen, Anfaelligkeiten, Ruestungstypen -- ist nicht entschieden, und
+solange sie es nicht ist, gibt es genau einen Wert. Das Feld existiert
+trotzdem schon (`ActionData.damage_type`) und steht in jedem Tooltip: eine
+Anzeige, die den Wert verschweigt, muesste beim Nachziehen ueberall gesucht
+werden, und `ActionResolver._apply_armor()` ist der Haken, an dem die Ordnung
+einmal haengt. Im MVP reicht die Kette den Schaden dort unveraendert durch.
+
 ## 8. Offene Punkte
 
 * Kampfsystem: Aktionspunkte vs. feste Aktionen pro Zug
+* **Schadensordnung.** Siehe 7a: bis auf Weiteres ist jede Aktion `normal`.
+  Offen ist, ob es ueberhaupt mehrere Arten geben soll -- und wenn ja, ob sie
+  multiplikativ wirken (dann bricht die Nachrechenbarkeit im Kopf, die
+  `mitigate()` ausdruecklich schuetzt) oder als weiterer flacher, gedeckelter
+  Abzug.
+* **Der dritte Slot des Molok ist selten bezahlbar.** Nach zwei bestueckten
+  Ankern gibt der Fusionskern meist keine Energie mehr fuer den dritten her.
+  Das ist als Balancing plausibel, aber ungetestet -- und im Playtest im Weg.
+  Deshalb gibt es den Schalter `playtest.ignore_build_limits`, der genau die
+  beiden Budgetgrenzen aufhebt (Werkstatt: *„Playtest: Traglast und Energie
+  nicht erzwingen"*). Gegner werden davon nicht beruehrt. Zu entscheiden ist,
+  ob der Kern mehr Ausstoss bekommt, die Schulter billiger wird, oder ob drei
+  volle Slots gar nicht vorgesehen sind.
 * **Aggro-Zahlen sind ungetestet.** Das Modell steht und ist durch Tests
   abgesichert, aber nie gespielt worden. Die Verhaeltnisse in 6c sind
   durchdacht, die Werte in `data/config.json` sind Setzungen. `decay_rate` und

@@ -26,7 +26,25 @@ node tools/check_workshop_stats.js                    # Werkstatt gegen Engine
 Das Spiel hat ein Hauptmenue mit zwei Wegen: **Werkstatt** (Loadout bauen)
 und **Chaos-Virus** (Kampf). Godot rastert die Quell-SVGs nicht direkt -- es
 kennt keine CSS-Variablen --, deshalb erzeugt `tools/bake_godot_assets.py`
-den Satz unter `assets/parts/`.
+den Satz unter `assets/parts/`. Wie fein er gerastert wird, stellt
+`tools/set_import_scale.py` ein (Vierfach; die Engine rechnet ueber
+`IsoView.fit_sprite()` auf den 128er Entwurfsraum zurueck).
+
+### Kampf bedienen
+
+| | |
+|---|---|
+| **Klick auf einen DROME** | heftet seinen **Aktionsring** an -- er bleibt stehen, bis er geloest wird |
+| **Zeiger auf eine Aktion** | faerbt ihre **Reichweite** ein und schreibt die **Schadenszahl** ueber jedes Ziel, ohne dass sie gewaehlt sein muss |
+| **Klick auf ein freies Feld** | laeuft dorthin (Pfad und Gleitweg werden vorher gezeigt) |
+| **Rechtsklick / ESC** | loest der Reihe nach: gewaehlte Aktion, angehefteter Ring, Bewegung |
+| **Leertaste** | Zug beenden |
+
+Der Ring liess sich vorher nicht bedienen: er hing am Hovern und verschwand,
+sobald der Zeiger die Einheit verliess -- zwischen DROME und Knoepfen liegt
+leere Flaeche. Die Aktionsleiste wiederum stand rechnerisch 790 Pixel unter
+dem Bildrand. Beides ist behoben; die Leiste ist jetzt nach Budget getrennt
+(**Angriff** / **Faehigkeit**, mit der Zahl der verbliebenen Aktionen).
 
 ### Zwei Werkstaetten, zwei Aufgaben
 
@@ -34,6 +52,38 @@ den Satz unter `assets/parts/`.
 |---|---|
 | **SVG-Werkstatt** (`python3 main.py`) | Bauteile zeichnen und importieren, Anker setzen, Paletten pflegen. Das Asset-Werkzeug. |
 | **Godot-Werkstatt** (im Spiel) | Loadout bauen, Stats sehen, Squad zusammenstellen und in den Kampf schicken. |
+
+### Godot-Werkstatt in Kurzform
+
+Links steht die **ganze Bibliothek**, nach Bauteiltyp gruppiert -- nicht nur,
+was in den gerade angewaehlten Slot passt. Der Zeiger auf einem Teil zeigt
+sofort beides: **wie es aussieht** (die Vorschau in der Mitte baut es
+probeweise ein) und **was es aendert** (ein Feld direkt neben der Liste nennt
+jede Wertaenderung, Traglast und Energie vorher/nachher und die Regeln, die
+danach brechen wuerden). Der Klick raeumt selbst in den passenden Halter ein:
+angewaehlter Slot, sonst erster freier, sonst erster, der ueberhaupt passt.
+Was in kein Halter dieses Chassis darf, wird nicht weggelassen, sondern
+ausgegraut und begruendet.
+
+Rechts steht, **wo was steckt** (mit Miniatur, weil ein Teilename nicht sagt,
+ob es der leuchtende Ring oder der Stab ist), was der Aufbau **wert** ist -- in
+Gruppen statt als Zahlenliste -- und was er im Kampf **tun kann**: seine
+Aktionen, getrennt nach Angriff und Faehigkeit.
+
+#### Playtest: Grenzen abschaltbar
+
+Ein Molok hat drei Anker, aber nach zwei bestueckten Slots gibt der Kern
+selten noch Energie fuer den dritten her. Das ist beabsichtigtes Balancing --
+und im Playtest im Weg: um zu *wissen*, ob drei volle Slots zu stark waeren,
+muss man sie einmal bauen und spielen koennen.
+
+Der Schalter **„Playtest: Traglast und Energie nicht erzwingen"** hebt genau
+diese beiden Budgetgrenzen auf. Ueberschritten wird weiterhin angezeigt, nur
+nicht mehr als Fehler gewertet. Alles andere gilt unveraendert -- vier Sockel,
+eine Waffe, passende Teile in passenden Haltern, `mov` und `spd` mindestens 1
+--, und die **Gegner werden weiter streng gewuerfelt**: sonst verschoebe der
+Schalter still den Massstab, gegen den getestet wird. Voreinstellung in
+`data/config.json` unter `playtest.ignore_build_limits`.
 
 Beide schreiben denselben Squad -- die Godot-Werkstatt nach
 `user://squad.json`, die SVG-Werkstatt nach `builds/squad.json`. Beim Start
@@ -171,7 +221,16 @@ parts/                       Teile-Bibliothek
 builds/                      Export-Ziel (Inhalt ist gitignored)
 tools/
   build_sample_parts.py      Iso-Renderer + Beispielsatz; ausfuehrbare Format-Spec
+  bake_godot_assets.py       loest die CSS-Variablen auf -> assets/parts/
+  set_import_scale.py        wie fein Godot rastert (Vierfach) + Mipmaps
   export_parts_table.py      Teile-Uebersicht als Excel-Mappe (erzeugt, nicht gepflegt)
+tests/
+  run_tests.gd               Testlauf ohne Editor
+  screenshot.gd              Bild einer Szene -- Tiefensortierung, Verdeckung
+  screenshot_combat_ui.gd    Bild der Kampf-BEDIENUNG: Ring angeheftet, Reichweite,
+                             Schadensvorschau. Kein Unit-Test sieht, ob ein Ring
+                             verschwindet, sobald man den Zeiger zu ihm bewegt.
+  visual_check.gd            Blicktest fuer die Projektion allein
 docs/
   GAME_DESIGN.md             Setting, DROME-Aufbau, Teile-Codes, Aggro, Asset-Strategie
   GODOT_INTEGRATION.md       wie die Exporte spaeter in die Engine kommen

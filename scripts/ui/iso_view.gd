@@ -23,11 +23,41 @@ extends RefCounted
 const TILE_W := 76.0
 const TILE_H := 54.0
 
-## Grosse aller Teil- und Tile-Bilder.
+## Grosse aller Teil- und Tile-Bilder -- im ENTWURFSRAUM, nicht in Pixeln.
+## Jedes SVG dieses Projekts zeichnet in ``viewBox="0 0 128 128"``.
 const SPRITE_SIZE := 128
 
 ## Wo die Feldmitte innerhalb eines solchen Bildes liegt.
 const SPRITE_ORIGIN := Vector2(64.0, 96.0)
+
+
+## Rechnet einen Sprite auf den 128er Entwurfsraum zurueck.
+##
+## Godot rastert die SVGs feiner, als sie nominell sind (siehe
+## tools/set_import_scale.py) -- sonst waere der DROME in der Werkstatt
+## sichtbar verpixelt, weil dort 128 Pixel auf ueber 300 hochgezogen werden.
+## Eine 512er Textur ist damit aber viermal so gross wie das Feld, auf dem sie
+## stehen soll.
+##
+## Der Faktor wird an der Textur GEMESSEN und steht nirgends im Code. Damit
+## bleiben alle Positionsrechnungen -- Bodenraute, Anker, Zeichenreihenfolge --
+## im Entwurfsraum, und die Rasterung laesst sich aendern, ohne eine einzige
+## Zeile hier anzufassen.
+static func fit_sprite(sprite: Sprite2D) -> void:
+	var texture := sprite.texture
+	if texture == null or texture.get_width() <= 0:
+		return
+	var factor := float(SPRITE_SIZE) / float(texture.get_width())
+	sprite.scale = Vector2(factor, factor)
+
+
+## Setzt den Drehpunkt eines Sprites auf die Feldmitte. Nur fuer die Teile, die
+## sich drehen -- der Drift-Pfeil. ``offset`` zaehlt in Texturpixeln und muss
+## deshalb durch denselben Faktor, den fit_sprite() gesetzt hat.
+static func pivot_on_tile_center(sprite: Sprite2D) -> void:
+	var factor: float = sprite.scale.x if sprite.scale.x != 0.0 else 1.0
+	sprite.offset = -SPRITE_ORIGIN / factor
+	sprite.position += SPRITE_ORIGIN
 
 
 ## Feld -> Bildschirmposition der Feldmitte.

@@ -29,12 +29,15 @@ const OVERLAY_TILE := "res://assets/terrain/overlay_tile.svg"
 const OVERLAY_OUTLINE := "res://assets/terrain/overlay_outline.svg"
 const OVERLAY_ARROW := "res://assets/terrain/overlay_drift_arrow.svg"
 
-## Farben der Feldmarkierungen. Dieselbe Raute, vier Bedeutungen.
+## Farben der Feldmarkierungen. Dieselbe Raute, fuenf Bedeutungen.
 const COLOR_REACHABLE := Color(0.25, 0.55, 1.0, 0.38)
 const COLOR_TARGET := Color(1.0, 0.25, 0.25, 0.42)
 const COLOR_BLOCKED := Color(0.55, 0.55, 0.58, 0.38)
 const COLOR_ACTIVE := Color(1.0, 0.85, 0.25, 0.85)
 const COLOR_HAZE := Color(0.75, 0.82, 0.95, 0.30)
+
+## Der Umriss der Flaechenwirkung unter dem Zeiger.
+const COLOR_SPLASH := Color(1.0, 0.55, 0.15, 0.9)
 
 ## Der gelaufene Teil des Weges und der gerutschte -- bewusst verschiedene
 ## Farben. Der Spieler muss VOR dem Klick sehen, dass er wegrutschen wird.
@@ -46,6 +49,7 @@ var grid: Grid
 var _world: Node2D
 var _overlays: Node2D
 var _paths: Node2D
+var _numbers: DamagePainter
 var _tile_sprites: Dictionary = {}
 var _overlay_pool: Array[Sprite2D] = []
 
@@ -66,6 +70,10 @@ func _ready() -> void:
 	_paths = PathPainter.new()
 	_paths.name = "Paths"
 	add_child(_paths)
+
+	_numbers = DamagePainter.new()
+	_numbers.name = "DamagePreview"
+	add_child(_numbers)
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +100,7 @@ func build_terrain(battle_grid: Grid) -> void:
 			# Fehlendes Tile wird als Fehlmarkierung sichtbar, nicht ersetzt.
 			sprite.texture = load(OVERLAY_TILE)
 			sprite.modulate = Color.MAGENTA
+		IsoView.fit_sprite(sprite)
 		_world.add_child(sprite)
 		_tile_sprites[tile] = sprite
 
@@ -114,13 +123,13 @@ func _add_drift_marker(tile: Vector2i) -> void:
 	arrow.position = IsoView.sprite_position(tile)
 	arrow.z_index = IsoView.depth(tile) * DEPTH_STRIDE + 1
 	arrow.modulate = Color(0.6, 0.95, 1.0, 0.9)
+	IsoView.fit_sprite(arrow)
 	# Der Pfeil zeigt in Gitterrichtung +x. Die anderen drei ergeben sich
 	# durch Drehung um Vielfache von 90 Grad um die Feldmitte.
 	var turns := {Vector2i(1, 0): 0.0, Vector2i(0, 1): 90.0,
 		Vector2i(-1, 0): 180.0, Vector2i(0, -1): 270.0}
 	arrow.rotation_degrees = turns.get(flow, 0.0)
-	arrow.offset = -IsoView.SPRITE_ORIGIN
-	arrow.position += IsoView.SPRITE_ORIGIN
+	IsoView.pivot_on_tile_center(arrow)
 	_world.add_child(arrow)
 
 
@@ -131,6 +140,7 @@ func _add_haze_veil(tile: Vector2i) -> void:
 	var veil := Sprite2D.new()
 	veil.texture = load(OVERLAY_TILE)
 	veil.centered = false
+	IsoView.fit_sprite(veil)
 	veil.position = IsoView.sprite_position(tile)
 	veil.z_index = IsoView.depth(tile) * DEPTH_STRIDE + 12
 	veil.modulate = COLOR_HAZE
@@ -192,8 +202,24 @@ func paint(sets: Array) -> void:
 			sprite.z_index = IsoView.depth(tile) * DEPTH_STRIDE + 2
 			sprite.modulate = entry["color"]
 			sprite.texture = load(entry.get("texture", OVERLAY_TILE))
+			# Die Sprites im Pool wechseln ihre Textur -- Umriss und Raute
+			# koennen verschieden fein gerastert sein, also wird nach JEDEM
+			# Wechsel neu angepasst.
+			IsoView.fit_sprite(sprite)
 			sprite.visible = true
 			index += 1
+
+
+## Die Schadenszahlen ueber den Zielen. ``entries`` ist eine Liste aus
+## { tile, text, heal, lethal } -- gerechnet wird sie im Kampfbildschirm, hier
+## wird sie nur gezeichnet.
+func show_damage_preview(entries: Array) -> void:
+	_numbers.entries = entries
+	_numbers.queue_redraw()
+
+
+func clear_damage_preview() -> void:
+	show_damage_preview([])
 
 
 func set_path_preview(walked: Array, slide: Array) -> void:
@@ -248,3 +274,46 @@ class PathPainter extends Node2D:
 			draw_line(a + dir * travelled, a + dir * (travelled + seg),
 				BattleView.COLOR_SLIDE, 3.0, true)
 			travelled += 12.0
+
+
+## Schreibt die Schadensvorschau ueber die Ziele.
+##
+## Als gezeichneter Text und nicht als Label je Einheit: die Zahlen wechseln
+## bei jeder Zeigerbewegung, und ein Knoten, der dabei entsteht und vergeht,
+## haengt zwangslaeufig irgendwann als Rest im Baum.
+##
+## Ein toedlicher Treffer bekommt eine eigene Farbe. Das ist die eine Zahl, die
+## der Spieler nicht ueberlesen darf.
+class DamagePainter extends Node2D:
+	const COLOR_DAMAGE := Color(1.0, 0.86, 0.42)
+	const COLOR_LETHAL := Color(1.0, 0.36, 0.32)
+	const COLOR_HEAL := Color(0.45, 0.95, 0.6)
+	const COLOR_SHADOW := Color(0.0, 0.0, 0.0, 0.85)
+	const FONT_SIZE := 22
+
+	var entries: Array = []
+
+	func _ready() -> void:
+		# Ueber den Feldern, aber unter dem Aktionsring -- der liegt in der
+		# CanvasLayer und damit ohnehin darueber.
+		z_index = 4010
+
+	func _draw() -> void:
+		var font := ThemeDB.fallback_font
+		for entry in entries:
+			var text: String = entry.get("text", "")
+			if text == "":
+				continue
+			var color: Color = COLOR_HEAL if entry.get("heal", false) \
+				else (COLOR_LETHAL if entry.get("lethal", false) else COLOR_DAMAGE)
+			# Ueber dem Kopf, nicht auf der Brust: darunter steht der DROME.
+			var at: Vector2 = IsoView.map_to_local(entry["tile"]) + Vector2(0, -74)
+			var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT,
+				-1, FONT_SIZE).x
+			var origin := at - Vector2(width * 0.5, 0)
+			# Schatten zuerst: die Zahl steht ueber wechselndem Untergrund und
+			# waere auf hellem Terrain sonst nicht zu lesen.
+			font.draw_string(get_canvas_item(), origin + Vector2(2, 2), text,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, COLOR_SHADOW)
+			font.draw_string(get_canvas_item(), origin, text,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, color)

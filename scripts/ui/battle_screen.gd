@@ -13,9 +13,19 @@ const AI_STEP_DELAY := 0.4
 
 var battle: BattleManager
 var _selected_action: ActionData = null
+
+## Aktion, ueber der der Zeiger gerade steht -- in der Aktionsleiste oder im
+## Ring. Ihre Reichweite wird eingefaerbt, ohne dass sie gewaehlt sein muss:
+## der Spieler soll sehen koennen, wie weit etwas reicht, bevor er es waehlt.
+var _hovered_action: ActionData = null
+
 var _reachable: Dictionary = {}
 var _busy: bool = false
 var _paused: bool = false
+
+## Feld, ueber dem der Zeiger zuletzt stand. Fuer den Flaechenumriss: bei einer
+## Flaechenaktion muss VOR dem Klick sichtbar sein, wen sie mittrifft.
+var _hover_tile: Vector2i = Vector2i(-1, -1)
 
 # UI
 var _ui: CanvasLayer
@@ -96,6 +106,8 @@ func _next_turn() -> void:
 		return
 
 	_selected_action = null
+	_hovered_action = null
+	_action_ring.hide_ring()
 	_refresh_reachable()
 	_refresh_tick_queue()
 	_refresh_action_bar()
@@ -128,6 +140,8 @@ func _run_ai_turn() -> void:
 func _end_current_turn() -> void:
 	view.clear_overlays()
 	view.clear_path_preview()
+	view.clear_damage_preview()
+	_hovered_action = null
 	_action_ring.hide_ring()
 
 	# Erst der echte Zug, dann die Inszenierung: der Balken zeigt, was schon
@@ -157,10 +171,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_SPACE:
 				_end_current_turn()
 			KEY_ESCAPE:
+				# Eine Ebene je Druck: erst die gewaehlte Aktion, dann der
+				# angeheftete Ring, dann die Bewegung.
 				if _selected_action != null:
 					_selected_action = null
 					_refresh_reachable()
 					_refresh_action_bar()
+				elif _action_ring.pinned:
+					_action_ring.hide_ring()
 				else:
 					battle.undo_movement()
 					_refresh_reachable()
@@ -175,6 +193,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _selected_action != null:
 				_selected_action = null
 				_refresh_action_bar()
+			elif _action_ring.pinned:
+				_action_ring.hide_ring()
 			else:
 				battle.undo_movement()
 			_refresh_reachable()
@@ -186,28 +206,45 @@ func _on_hover(tile: Vector2i) -> void:
 		_tooltip.text = ""
 		return
 
+	var changed := tile != _hover_tile
+	_hover_tile = tile
 	_tooltip.text = _tooltip_for(tile)
 
 	# Aktionsring: beim Hovern ueber einen DROME erscheinen die Aktionen ueber
-	# der Einheit. Nur wenn keine Aktion vorgewaehlt ist -- sonst kaeme der
-	# Ring dem Zielen in die Quere.
+	# der Einheit. Ein angehefteter Ring bleibt dagegen stehen -- sonst waere
+	# er unbedienbar, weil zwischen Einheit und Knoepfen leere Flaeche liegt.
 	var hovered := battle.resolver.unit_at(tile)
-	if _selected_action == null and hovered != null and battle.active_unit != null \
-			and battle.active_unit.is_player:
-		if not _action_ring.is_showing_for(tile):
-			_action_ring.show_for(battle, hovered,
-				hovered.get_global_transform_with_canvas().origin)
-	else:
-		_action_ring.hide_ring()
+	if not _action_ring.pinned:
+		if _selected_action == null and hovered != null \
+				and battle.active_unit != null and battle.active_unit.is_player:
+			if not _action_ring.is_showing_for(tile):
+				_action_ring.show_for(battle, hovered, _ring_anchor(hovered))
+		else:
+			_action_ring.hide_ring()
 
 	if _selected_action != null:
 		view.clear_path_preview()
+		# Der Flaechenumriss haengt am Zielfeld und muss deshalb bei jeder
+		# Feldaenderung neu.
+		if changed:
+			_refresh_reachable()
 		return
 	if _reachable.has(tile):
 		var entry: Dictionary = _reachable[tile]
 		view.set_path_preview(entry["path"], entry["slide_path"])
 	else:
 		view.clear_path_preview()
+
+
+## Wo der Ring haengt: mittig ueber dem Kopf des DROME.
+##
+## Bezugspunkt ist nicht der Knotenursprung -- der liegt in der oberen linken
+## Ecke des 128er Bildes und damit merklich links neben dem Bot. Genommen wird
+## die Mittelachse des Bildes, und zwar durch die Leinwandtransformation, damit
+## der Kamerazoom mitgerechnet ist.
+func _ring_anchor(unit: Unit) -> Vector2:
+	return unit.get_global_transform_with_canvas() \
+		* Vector2(IsoView.SPRITE_ORIGIN.x, 0.0)
 
 
 func _tooltip_for(tile: Vector2i) -> String:
@@ -232,14 +269,21 @@ func _tooltip_for(tile: Vector2i) -> String:
 		var aggro := _aggro_line(other)
 		if aggro != "":
 			lines.append(aggro)
-		if _selected_action != null and unit != null:
-			var blocker := battle.resolver.target_blocker(unit, tile, _selected_action)
+		# Auch die nur gehoverte Aktion rechnet ihre Vorschau -- man soll
+		# vergleichen koennen, ohne sich vorher festzulegen.
+		var shown: ActionData = _selected_action if _selected_action != null \
+			else _hovered_action
+		if shown != null and unit != null:
+			var blocker := battle.resolver.target_blocker(unit, tile, shown)
 			if blocker != "":
-				lines.append(blocker)
+				lines.append("%s: %s" % [shown.display_name, blocker])
 			else:
-				var amount := battle.resolver.preview_damage(unit, other, _selected_action)
-				lines.append("Vorschau: %d %s" % [absi(amount),
-					"Heilung" if amount < 0 else "Schaden"])
+				var amount := battle.resolver.preview_damage(unit, other, shown)
+				var wirkung: String = shown.effect_summary() if amount == 0 \
+					else "%d %s" % [absi(amount), "Heilung" if amount < 0
+						else "Schaden %s" % shown.damage_type_label()]
+				lines.append("%s: %s%s" % [shown.display_name, wirkung,
+					"  (Ausfall)" if amount > 0 and amount >= other.hp else ""])
 	return "\n".join(lines)
 
 
@@ -275,13 +319,32 @@ func _aggro_line(unit: Unit) -> String:
 ## Aus dem Aktionsring gewaehlt. Geht denselben Weg wie ein Klick in der
 ## Aktionsleiste -- der Ring ist eine zweite Bedienung, keine zweite Regel.
 func _on_ring_action(action: ActionData, target_tile: Vector2i) -> void:
-	if battle.use_action(target_tile, action):
-		_selected_action = null
-		_refresh_reachable()
-		_refresh_action_bar()
-		_refresh_status()
+	if not battle.use_action(target_tile, action):
+		return
+	_selected_action = null
+	_hovered_action = null
+	_refresh_reachable()
+	_refresh_action_bar()
+	_refresh_status()
+	# Der Ring bleibt am selben Ziel stehen und zeigt jetzt den neuen Stand:
+	# weniger Integritaet, verbrauchtes Budget, veraenderte Gruende. Wer zwei
+	# Aktionen auf dasselbe Ziel legen will, soll es nicht zweimal anklicken
+	# muessen.
+	var target := battle.resolver.unit_at(target_tile)
+	if _action_ring.pinned and target != null and target.is_alive():
+		_action_ring.show_for(battle, target, _ring_anchor(target), true)
+	else:
+		_action_ring.hide_ring()
 
 
+## Ein Klick auf ein Feld. Drei Faelle, in dieser Reihenfolge:
+##
+##     1. Es ist eine Aktion gewaehlt -> sie wird auf dieses Feld angewendet.
+##     2. Dort steht ein DROME        -> sein Aktionsring wird angeheftet.
+##     3. Das Feld ist erreichbar     -> es wird hingelaufen.
+##
+## Fall 2 ist der Grund, warum der Kampf ueberhaupt bedienbar ist: der Ring
+## verschwand vorher, sobald der Zeiger die Einheit verliess.
 func _on_click(tile: Vector2i) -> void:
 	if _selected_action != null:
 		if battle.use_action(tile, _selected_action):
@@ -290,20 +353,55 @@ func _on_click(tile: Vector2i) -> void:
 			_refresh_action_bar()
 			_refresh_status()
 		return
+
+	var unit := battle.active_unit
+	var clicked := battle.resolver.unit_at(tile)
+	if clicked != null and unit != null and unit.is_player:
+		if _action_ring.pinned and _action_ring.is_showing_for(tile):
+			_action_ring.hide_ring()
+		else:
+			_action_ring.hide_ring()
+			_action_ring.show_for(battle, clicked, _ring_anchor(clicked), true)
+		return
+
 	if _reachable.has(tile):
+		# Wer losgeht, meint nicht mehr den Ring von vorhin -- er zeigte den
+		# Stand von einem anderen Feld aus.
+		_action_ring.hide_ring()
 		battle.move_active_to(tile)
 		_refresh_reachable()
 		_refresh_status()
+
+
+## Der Zeiger steht auf einem Aktionsknopf: seine Reichweite wird eingefaerbt,
+## ohne dass die Aktion gewaehlt ist.
+func _on_action_hovered(action) -> void:
+	var next: ActionData = action as ActionData
+	if next == _hovered_action:
+		return
+	_hovered_action = next
+	_refresh_reachable()
 
 
 # ---------------------------------------------------------------------------
 # Anzeige
 # ---------------------------------------------------------------------------
 
+## Was auf der Karte eingefaerbt ist. Genau drei Zustaende, und sie schliessen
+## sich aus:
+##
+##     keine Aktion    -> wohin komme ich (blau)
+##     Aktion gewaehlt -> wen treffe ich (rot), wen nicht und warum (grau)
+##     Aktion gehovert -> wie weit reicht sie (rot, aber nichts ist gewaehlt)
+##
+## Der dritte Fall ist neu und der Grund, warum sich der Kampf ueberhaupt
+## planen laesst: die Reichweite einer Waffe stand vorher nirgends, ausser man
+## waehlte sie aus und gab damit die Bewegungsvorschau auf.
 func _refresh_reachable() -> void:
 	var unit := battle.active_unit
 	if unit == null:
 		view.clear_overlays()
+		view.clear_damage_preview()
 		return
 
 	var sets: Array = [{
@@ -311,16 +409,21 @@ func _refresh_reachable() -> void:
 		"texture": BattleView.OVERLAY_OUTLINE,
 	}]
 
-	if _selected_action == null:
+	var shown: ActionData = _selected_action if _selected_action != null \
+		else _hovered_action
+
+	if shown == null:
 		_reachable = battle.reachable_for_active() if unit.is_player else {}
 		var tiles: Array = _reachable.keys()
 		sets.append({"tiles": tiles, "color": BattleView.COLOR_REACHABLE})
+		view.clear_damage_preview()
 	else:
-		_reachable = {}
+		if _selected_action != null:
+			_reachable = {}
 		var valid: Array = []
 		var blocked: Array = []
-		for tile in battle.resolver.tiles_in_range(unit, _selected_action):
-			if battle.resolver.target_blocker(unit, tile, _selected_action) == "":
+		for tile in battle.resolver.tiles_in_range(unit, shown):
+			if battle.resolver.target_blocker(unit, tile, shown) == "":
 				valid.append(tile)
 			elif battle.resolver.unit_at(tile) != null:
 				# Ungueltige Ziele IN Reichweite werden grau statt rot -- mit
@@ -329,9 +432,51 @@ func _refresh_reachable() -> void:
 				blocked.append(tile)
 		sets.append({"tiles": blocked, "color": BattleView.COLOR_BLOCKED})
 		sets.append({"tiles": valid, "color": BattleView.COLOR_TARGET})
+		var splash := _splash_tiles(unit, shown)
+		if not splash.is_empty():
+			sets.append({"tiles": splash, "color": BattleView.COLOR_SPLASH,
+				"texture": BattleView.OVERLAY_OUTLINE})
+		view.show_damage_preview(_damage_preview(unit, shown))
 
 	view.paint(sets)
 	view.refresh_all_depths(battle.units)
+
+
+## Der Flaechenumriss unter dem Zeiger. Eine Flaechenaktion trifft mehr als das
+## Feld, auf das gezielt wird -- auch eigene DROMEs. Das muss vor dem Klick zu
+## sehen sein und nicht danach im Kampflog.
+func _splash_tiles(unit: Unit, action: ActionData) -> Array:
+	if action.aoe_radius <= 0 or not battle.grid.in_bounds(_hover_tile):
+		return []
+	if battle.resolver.target_blocker(unit, _hover_tile, action) != "":
+		return []
+	return battle.resolver.affected_tiles(_hover_tile, action)
+
+
+## Die Schadenszahl ueber jedem Ziel in Reichweite.
+##
+## Dieselbe Rechnung, die auch der Treffer benutzt (ActionResolver.mitigate) --
+## eine zweite, "ungefaehre" Vorschau waere genau die Stelle, an der das
+## Versprechen bricht, dass sich jede Aktion vorher durchrechnen laesst.
+func _damage_preview(unit: Unit, action: ActionData) -> Array:
+	var entries: Array = []
+	for other in battle.units:
+		if not other.is_alive():
+			continue
+		if not battle.resolver.is_meaningful_target(unit, other, action):
+			continue
+		if battle.resolver.target_blocker(unit, other.tile, action) != "":
+			continue
+		var amount := battle.resolver.preview_damage(unit, other, action)
+		if amount == 0:
+			continue
+		entries.append({
+			"tile": other.tile,
+			"text": "%d" % absi(amount),
+			"heal": amount < 0,
+			"lethal": amount > 0 and amount >= other.hp,
+		})
+	return entries
 
 
 func _refresh_status() -> void:
@@ -371,29 +516,66 @@ func _refresh_tick_queue() -> void:
 		_tick_queue.add_child(label)
 
 
+## Die Aktionsleiste, getrennt nach Budget.
+##
+## Angriff und Faehigkeit sind zwei Budgets und werden deshalb als zwei Gruppen
+## gezeigt, jede mit ihrer Ueberschrift. Vorher standen alle Aktionen in einer
+## Reihe -- damit war einem Aufbau nicht anzusehen, dass ein Puls-Blaster und
+## ein Runenstab sich dasselbe Budget teilen, ein Orbit-Fokus dagegen ein
+## eigenes hat.
 func _refresh_action_bar() -> void:
 	for child in _action_bar.get_children():
 		child.queue_free()
 	var unit := battle.active_unit
 	if unit == null or not unit.is_player or battle.turn_state == null:
 		return
-	for action in unit.actions():
-		var button := Button.new()
-		var blocker := battle.turn_state.blocker_for(action)
-		button.text = "%s  (EN %d)" % [action.display_name, action.en_cost]
-		if blocker != "":
-			button.disabled = true
-			button.tooltip_text = blocker
-		else:
-			button.tooltip_text = "Reichweite %d%s" % [action.range_tiles,
-				", Sichtlinie noetig" if action.requires_line_of_sight else ""]
-		if action == _selected_action:
-			button.modulate = Color(1.0, 0.85, 0.3)
-		button.pressed.connect(func():
-			_selected_action = null if _selected_action == action else action
-			_refresh_reachable()
-			_refresh_action_bar())
-		_action_bar.add_child(button)
+
+	for category in [ActionData.Category.ATTACK, ActionData.Category.ABILITY]:
+		var actions := unit.actions_of(category)
+		if actions.is_empty():
+			continue
+		var group := VBoxContainer.new()
+		group.add_theme_constant_override("separation", 2)
+
+		var heading := Label.new()
+		var left: int = battle.turn_state.actions_left(category)
+		heading.text = "%s  (%d)" % [ActionData.CATEGORY_LABEL[category], left]
+		heading.add_theme_font_size_override("font_size", 11)
+		heading.modulate = Color(0.62, 0.78, 0.92) if left > 0 \
+			else Color(0.5, 0.5, 0.55)
+		group.add_child(heading)
+
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		group.add_child(row)
+		for action in actions:
+			row.add_child(_action_button(action))
+		_action_bar.add_child(group)
+
+
+func _action_button(action: ActionData) -> Button:
+	var button := Button.new()
+	var blocker := battle.turn_state.blocker_for(action)
+	# Die Kurzform steht auf dem Knopf, die vollstaendige Beschreibung im
+	# Tooltip -- und beide kommen aus ActionData, nicht aus dieser Datei.
+	button.text = "%s   %s" % [action.display_name, action.headline()]
+	var described: Array[String] = action.description_lines()
+	if blocker != "":
+		button.disabled = true
+		described.push_front("Geht nicht: %s" % blocker)
+	button.tooltip_text = "\n".join(described)
+	if action == _selected_action:
+		button.modulate = Color(1.0, 0.85, 0.3)
+	button.pressed.connect(func():
+		_selected_action = null if _selected_action == action else action
+		_action_ring.hide_ring()
+		_refresh_reachable()
+		_refresh_action_bar())
+	# Auch ein gesperrter Knopf zeigt beim Hovern seine Reichweite: wer wissen
+	# will, ob er im naechsten Zug herankommt, braucht dafuer keine Energie.
+	button.mouse_entered.connect(func(): _on_action_hovered(action))
+	button.mouse_exited.connect(func(): _on_action_hovered(null))
+	return button
 
 
 func _show_mutator() -> void:
@@ -427,6 +609,7 @@ func _on_unit_died(unit: Unit) -> void:
 func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	view.clear_overlays()
 	view.clear_path_preview()
+	view.clear_damage_preview()
 	_status.text = "%s nach %d Zyklen.  Seed: %d" % [
 		BattleManager.outcome_label(outcome), battle.tick_bus.cycle_count,
 		battle.battle_seed]
@@ -436,6 +619,27 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 # ---------------------------------------------------------------------------
 # UI-Aufbau
 # ---------------------------------------------------------------------------
+
+## Haengt ein Bedienelement an die untere Bildkante, ``above_bottom`` Pixel
+## darueber.
+##
+## Der Umweg ist noetig, weil ``set_anchors_preset(PRESET_BOTTOM_LEFT)`` genau
+## das NICHT tut: der Preset setzt die Anker und rechnet die Abstaende auf die
+## bisherige Lage zurueck; ein danach gesetztes ``position`` zaehlt dann zur
+## Unterkante HINZU. Die Aktionsleiste stand dadurch bei y = 900 + 830 = 1730
+## -- also weit unter dem Bildrand, unsichtbar. Damit gab es im Kampf keine
+## Aktionsleiste, und der einzige verbliebene Weg zu einer Aktion war der
+## Aktionsring, der beim Hinfahren verschwand.
+func _place_bottom(control: Control, x: float, above_bottom: float) -> void:
+	control.anchor_left = 0.0
+	control.anchor_right = 0.0
+	control.anchor_top = 1.0
+	control.anchor_bottom = 1.0
+	control.offset_left = x
+	control.offset_right = x
+	control.offset_top = -above_bottom
+	control.offset_bottom = -above_bottom
+
 
 func _build_ui() -> void:
 	_ui = CanvasLayer.new()
@@ -455,20 +659,30 @@ func _build_ui() -> void:
 	_tooltip.add_theme_color_override("font_color", Color(0.8, 0.86, 0.95))
 	_ui.add_child(_tooltip)
 
+	# Die Leiste traegt jetzt zwei Gruppen mit Ueberschrift und braucht deshalb
+	# mehr Hoehe als frueher.
 	_action_bar = HBoxContainer.new()
-	_action_bar.add_theme_constant_override("separation", 8)
-	_action_bar.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_action_bar.position = Vector2(24, 830)
+	_action_bar.add_theme_constant_override("separation", 22)
 	_ui.add_child(_action_bar)
+	_place_bottom(_action_bar, 24, 100)
+
+	var legend := Label.new()
+	legend.add_theme_font_size_override("font_size", 11)
+	legend.modulate = Color(0.6, 0.66, 0.74)
+	legend.text = "Klick auf einen DROME heftet seinen Aktionsring an  ·  "\
+		+ "Zeiger auf eine Aktion zeigt ihre Reichweite  ·  "\
+		+ "Rechtsklick/ESC loest, Leertaste beendet den Zug"
+	_ui.add_child(legend)
+	_place_bottom(legend, 24, 128)
 
 	_end_turn = Button.new()
 	_end_turn.text = "Zug beenden  (Leertaste)"
-	_end_turn.position = Vector2(1340, 826)
 	_end_turn.custom_minimum_size = Vector2(230, 44)
 	_end_turn.pressed.connect(func():
 		if not _busy and not _paused:
 			_end_current_turn())
 	_ui.add_child(_end_turn)
+	_place_bottom(_end_turn, 1340, 70)
 
 	_log = RichTextLabel.new()
 	_log.position = Vector2(1240, 120)
@@ -491,6 +705,7 @@ func _build_ui() -> void:
 
 	_action_ring = ActionRing.new()
 	_action_ring.action_chosen.connect(_on_ring_action)
+	_action_ring.action_hovered.connect(_on_action_hovered)
 	_ui.add_child(_action_ring)
 
 	_mutator_banner = PanelContainer.new()
@@ -546,6 +761,9 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	menu.pressed.connect(func():
 		GameState.battle_seed = 0
 		get_tree().change_scene_to_file("res://scenes/main.tscn"))
-	box.add_child(back)
+	# Stand hier ``box.add_child(back)`` -- derselbe Knopf ein zweites Mal.
+	# Godot lehnt das ab ("already has a parent"), der Knopf ins Hauptmenue
+	# tauchte nie auf, und vom Ergebnisbildschirm fuehrte nur ein Weg zurueck.
+	box.add_child(menu)
 
 	_ui.add_child(panel)

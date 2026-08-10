@@ -120,3 +120,105 @@ func test_energy_shortfall_is_named_with_numbers() -> void:
 		t.ok(reason.begins_with("Energie:"),
 			"fehlende Energie wird mit Zahlen genannt: '%s'" % reason)
 	battle.free()
+
+
+# ---------------------------------------------------------------------------
+# Was der Ring anbietet und was die Karte dazu schreibt
+# ---------------------------------------------------------------------------
+
+func test_the_ring_never_offers_a_pointless_target() -> void:
+	# Regeltechnisch darf ein Angriff auf den eigenen DROME gehen -- die
+	# Mitigationskette fragt nicht nach Seiten. Angeboten wird er trotzdem
+	# nicht, und die Schadensvorschau auf der Karte muss dieselbe Antwort
+	# geben: sonst stuende ueber dem eigenen Techniker eine Zahl, die wie eine
+	# Drohung aussieht. Deshalb gibt es die Regel genau einmal.
+	var battle := BattleManager.new()
+	battle.setup(2024, _squad())
+	var actor := battle.begin_next_turn()
+	var ally: Unit = null
+	for other in battle.allies_of(actor):
+		if other != actor:
+			ally = other
+	var foe: Unit = battle.enemies_of(actor)[0]
+
+	for action in actor.actions():
+		var hits_foe := battle.resolver.is_meaningful_target(actor, foe, action)
+		t.equal(hits_foe, not action.is_heal(),
+			"%s zielt auf Gegner, wenn sie Schaden macht" % action.id)
+		if ally != null:
+			var hits_ally := battle.resolver.is_meaningful_target(actor, ally, action)
+			t.equal(hits_ally, action.is_heal(),
+				"%s zielt auf Verbuendete nur, wenn sie repariert" % action.id)
+	battle.free()
+
+
+func test_an_action_without_damage_previews_no_damage() -> void:
+	# Der Orbit-Sog zieht sein Ziel zwei Felder und richtet nichts an --
+	# execute() wendet Schaden nur bei power > 0 an. Die Vorschau rechnete
+	# trotzdem max(1, 0 + atk - def) und schrieb "1 Schaden" ueber ein Ziel,
+	# dem nichts passiert. Genau die Zahl stand im Aktionsring.
+	var grid := Grid.new(8, 8)
+	grid.fill(Terrain.TClass.NORMAL)
+	var mage := DromeBuild.create("MAGIER", {
+		"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core",
+		"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus"})
+	var caster := Unit.create(mage, &"P0", true)
+	var victim := Unit.create(mage, &"E0", false)
+	caster.tile = Vector2i(2, 2)
+	victim.tile = Vector2i(4, 2)
+	var resolver := ActionResolver.new(grid, [caster, victim])
+
+	for action in caster.actions():
+		var preview := resolver.preview_damage(caster, victim, action)
+		if action.power > 0:
+			t.ok(preview > 0, "%s verspricht Schaden und macht welchen" % action.id)
+		else:
+			t.equal(preview, 0,
+				"%s verspricht keinen Schaden, weil sie keinen anrichtet" % action.id)
+			t.ok(action.effect_summary() != "",
+				"stattdessen steht dort, was sie tut: '%s'"
+				% action.effect_summary())
+
+	caster.free()
+	victim.free()
+
+
+func test_budgets_are_reported_per_category() -> void:
+	# Die Aktionsleiste schreibt die Zahl ueber die Gruppe: "Angriff (0)" sagt
+	# in einem Blick, was "Angriff verbraucht" erst nach dem Hovern verraet.
+	var battle := BattleManager.new()
+	battle.setup(777, _squad())
+	var actor := battle.begin_next_turn()
+	var state := battle.turn_state
+	t.equal(state.actions_left(ActionData.Category.ATTACK), 1, "ein Angriff je Zug")
+	t.equal(state.actions_left(ActionData.Category.ABILITY), 1, "eine Faehigkeit je Zug")
+
+	var attack: ActionData = null
+	for action in actor.actions():
+		if action.is_attack():
+			attack = action
+	if attack != null:
+		state.consume(attack)
+		t.equal(state.actions_left(ActionData.Category.ATTACK), 0,
+			"nach dem Angriff ist das Angriffsbudget leer")
+		t.equal(state.actions_left(ActionData.Category.ABILITY), 1,
+			"das Faehigkeitsbudget ist davon unberuehrt")
+	battle.free()
+
+
+func test_every_action_offers_a_readable_description() -> void:
+	# Die Beschreibung steht an genau einer Stelle (ActionData) und wird von
+	# Werkstatt, Aktionsleiste und Ring gelesen. Drei Texte fuer dieselbe
+	# Aktion waeren drei Gelegenheiten, dass einer eine Reichweite nennt, die
+	# nicht mehr stimmt.
+	for part in PartDB.parts.values():
+		if part.action == null:
+			continue
+		var lines: Array[String] = part.action.description_lines()
+		t.ok(lines.size() >= 3, "%s wird in mehr als einer Zeile erklaert"
+			% part.action.id)
+		t.ok(part.action.headline().contains("Rw"),
+			"die Kurzform nennt die Reichweite: '%s'" % part.action.headline())
+		t.ok("\n".join(lines).contains(part.display_name),
+			"%s nennt das Bauteil, aus dem sie kommt" % part.action.id)

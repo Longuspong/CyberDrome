@@ -59,7 +59,11 @@ func _random_build(display_name: String) -> DromeBuild:
 	var attempts := Config.get_int("build_attempts", 50)
 	for _i in attempts:
 		var build := _roll(display_name)
-		if build.is_valid():
+		# Ausdruecklich die strengen Regeln: haengt der Spieler seine
+		# Budgetgrenzen im Playtest aus (DromeBuild.ignore_limits), sollen
+		# seine Gegner deswegen nicht mit aufruesten. Sonst verschoebe der
+		# Schalter still den Massstab, gegen den getestet wird.
+		if build.is_strictly_valid():
 			return build
 	return _fallback(display_name)
 
@@ -106,7 +110,7 @@ func _fallback(display_name: String) -> DromeBuild:
 		"feet": &"scout_feet", "core": &"scout_core",
 		"equip_left": &"eq_pulse_blaster",
 	})
-	if not build.is_valid():
+	if not build.is_strictly_valid():
 		push_error("EnemyGenerator: selbst der Notfall-Aufbau ist ungueltig: %s"
 			% ", ".join(build.validate()))
 	return build

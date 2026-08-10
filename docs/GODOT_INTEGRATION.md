@@ -100,10 +100,30 @@ Der Button **Alle 4 Richtungen** schreibt dafuer in einem Rutsch
 
 ## Import-Einstellungen
 
-| Ziel | Empfohlener SVG-Import-`scale` | Ergebnis pro Teil |
+| Ziel | SVG-Import-`scale` | Ergebnis pro Teil |
 |---|---|---|
 | Mobile, 1× | 2 | 256 × 256 px |
-| Desktop / HiDPI | 4 | 512 × 512 px |
+| Desktop / HiDPI | **4 (eingestellt)** | 512 × 512 px |
+
+Gesetzt wird das nicht von Hand in 114 `.import`-Dateien, sondern von
+`tools/set_import_scale.py`; danach einmal `godot --headless --path . --import`,
+sonst liegt im Cache noch die alte Rasterung.
+
+**Warum ueberhaupt hochskaliert wird.** Godot rastert ein SVG in seiner
+Nenngroesse -- aus `width="128"` werden 128 Pixel, und danach ist es eine Bitmap
+wie jede andere. Die Werkstatt zeigt den DROME mit Faktor 2,4; 128 Pixel auf
+ueber 300 gezogen sind sichtbar verpixelt, und zwar genau an den langen
+Diagonalen, aus denen die Iso-Ansicht besteht. Der Grafikstil dieses Projekts
+ist ausdruecklich *kein* Pixelart -- ein zu grob gerasterter Import gibt genau
+den Vorteil wieder her, fuer den SVG gewaehlt wurde.
+
+**Und warum das im Code nichts kostet.** Die Engine rechnet jeden Sprite ueber
+`IsoView.fit_sprite()` auf den 128er Entwurfsraum zurueck, und zwar mit einem
+Faktor, den sie an der Textur MISST. Damit bleiben Bodenraute, Anker und
+Zeichenreihenfolge unveraendert, und die Rasterung laesst sich aendern, ohne
+eine Zeile Code anzufassen. Mipmaps stehen mit an: dieselbe Textur wird im
+Kampf verkleinert gezeigt (Kamerazoom 0,62), und eine 512er Textur ohne
+Mipmaps flimmert beim Verkleinern mehr, als sie beim Vergroessern gewinnt.
 
 Die Werkstatt liefert zusaetzlich einen PNG-Export mit frei waehlbarer
 Kantenlaenge – nuetzlich, um eine Aufloesung zu pruefen, bevor der ganze Satz
