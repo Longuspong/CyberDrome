@@ -20,12 +20,22 @@ extends VBoxContainer
 ## Widersprechen sich Queue und Balken, ist die Queue richtig und der Balken
 ## hat einen Bug.
 
-const DRAIN_TIME := 0.25
-const CARRY_TIME := 0.15
+## Wie lange der Reset und der Uebertrag dauern.
+##
+## Beide waren zu kurz, um als Bewegung wahrgenommen zu werden: bei 0.25
+## Sekunden fuer das Leerlaufen sah der Balken nicht aus, als liefe er leer,
+## sondern als sei er umgesprungen -- und damit war die ganze Inszenierung
+## umsonst, die diesen Sprung gerade vermeiden sollte. Der Zugwechsel wartet
+## jetzt darauf, also ist die Zeit auch nicht mehr geschenkt.
+const DRAIN_TIME := 0.60
+const CARRY_TIME := 0.40
 
-const COLOR_FILL := Color(0.30, 0.72, 0.95)
+## Die Fraktionsfarben kommen aus Teams -- dieselben, die Bodenring und
+## Statusbadge benutzen. Wer hier eine eigene definiert, hat einen DROME, der
+## auf der Karte blau ist und in der Leiste tuerkis.
+const COLOR_FILL := Teams.PLAYER
+const COLOR_ENEMY := Teams.ENEMY
 const COLOR_CARRY := Color(1.0, 0.78, 0.25)
-const COLOR_ENEMY := Color(0.95, 0.42, 0.38)
 const COLOR_TRACK := Color(0.10, 0.12, 0.17)
 
 var _rows: Dictionary = {}          ## unit_id -> Row
@@ -112,7 +122,10 @@ func sync(bus: TickBus) -> void:
 
 
 ## Inszeniert den Zugwechsel: erst leerlaufen, dann der Uebertrag.
-## Der Aufrufer wartet darauf -- so bleibt die Reihenfolge lesbar.
+##
+## ``await`` darauf: der Kampfbildschirm haelt den naechsten Zug so lange an.
+## Ohne das lief die Animation noch, waehrend die naechste Einheit bereits zog
+## -- zwei Bewegungen gleichzeitig, von denen keine mehr zuzuordnen war.
 func play_turn_end(unit_id, bus: TickBus) -> void:
 	var row: Row = _rows.get(unit_id)
 	if row == null:
@@ -122,12 +135,16 @@ func play_turn_end(unit_id, bus: TickBus) -> void:
 		else clampf(float(state["tick"]) / float(state["threshold"]), 0.0, 1.0)
 
 	var tween := create_tween()
-	tween.tween_property(row.bar, "fill", 0.0, DRAIN_TIME)
-	tween.parallel().tween_property(row.bar, "carry", 0.0, DRAIN_TIME)
+	tween.tween_property(row.bar, "fill", 0.0, DRAIN_TIME) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.parallel().tween_property(row.bar, "carry", 0.0, DRAIN_TIME) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	if carry > 0.0:
-		tween.tween_property(row.bar, "carry", carry, CARRY_TIME)
+		tween.tween_property(row.bar, "carry", carry, CARRY_TIME) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	if not state.is_empty():
 		tween.tween_callback(func(): _update_tooltip(row, state))
+	await tween.finished
 
 
 func _update_tooltip(row: Row, state: Dictionary) -> void:

@@ -59,11 +59,17 @@ Schulterpod vor den Kopf).
 **Zu beachten**
 
 * Alle Teile mit **demselben Import-`scale`** importieren. Da alle Teile im
-  gleichen 128×128-Raum liegen, ist jede Teil-Textur gleich gross und die
-  Sprites liegen bei identischer Position automatisch korrekt uebereinander –
-  Offsets aus der JSON sind dann gar nicht noetig.
-* `Sprite2D.centered = false` und alle Teile auf Position `(0,0)`. Die
-  Anker-Mathematik steckt bereits in der Grafik.
+  gleichen 128×128-Raum liegen, ist jede Teil-Textur gleich gross, und die
+  Anker der JSONs sind direkt miteinander verrechenbar.
+* `Sprite2D.centered = false`, und jedes Teil um
+  `body.anker[slot] - teil.anker["mount"]` verschieben (parts/README.md,
+  Abschnitt 2). **Nicht** alle Teile auf `(0,0)` legen: fuer Kopf, Fuesse und
+  Kern faellt dabei zwar `(0,0)` heraus – ihr `mount` IST der Sockel –, aber
+  der Anker eines Ausruestungsteils sitzt bewusst in seiner EIGENEN Mitte,
+  damit dasselbe Teil an den linken wie an den rechten Arm passt. Ohne die
+  Verschiebung landet jede Ausruestung auf der Mittelachse des Bots, waehrend
+  die Sockel beim Drehen um ihn herumwandern – der Fehler wechselt dann mit
+  der Richtung die Seite.
 * `z_index` je Richtung aus `slot_z` uebernehmen (siehe oben). Wer das
   vergisst, bekommt Waffen, die in der Nordansicht vor dem Ruecken schweben.
 * Die Perspektive ist isometrisch (Kamera 45 Grad, Bodenfeld als Raute im

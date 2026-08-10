@@ -36,6 +36,10 @@ const COLOR_HEADING := Color(0.62, 0.78, 0.92)
 const COLOR_PINNED := Color(1.0, 0.85, 0.3)
 const OFFSET_ABOVE := Vector2(0, -28)
 
+## Hoehe einer Aktionszeile. Gross genug, dass das Symbol darin erkennbar
+## bleibt -- ein 11-Punkt-Knopf haette es auf Textzeilenhoehe gequetscht.
+const ICON_SIZE := 30
+
 var _rows: VBoxContainer
 var _title: Label
 var _hint: Label
@@ -140,18 +144,24 @@ func _rows_for(battle: BattleManager, actor: Unit, target: Unit,
 		button.add_theme_font_size_override("font_size", 11)
 		button.modulate = COLOR_BLOCKED if reason != "" else COLOR_READY
 		button.disabled = reason != ""
+		# Das Symbol steht vorn, die WIRKUNG dahinter. Der Name der Aktion
+		# steckt im Symbol und im Tooltip -- im Ring waere er die dritte Stelle,
+		# an der dasselbe Wort steht, und die Zeile, gegen die der Spieler
+		# entscheidet, ist ohnehin die Zahl.
+		button.icon = ActionIcons.texture_for(action)
+		button.expand_icon = true
+		button.custom_minimum_size = Vector2(0, ICON_SIZE)
 
 		var described: Array[String] = action.description_lines()
 		if reason != "":
-			button.text = "%s — %s" % [action.display_name, reason]
+			button.text = reason
 			described.push_front("Geht nicht: %s" % reason)
 		else:
 			var amount := battle.resolver.preview_damage(actor, target, action)
 			var wirkung: String = action.effect_summary() if amount == 0 \
 				else "%d %s" % [absi(amount),
 					"Reparatur" if amount < 0 else "Schaden"]
-			button.text = "%s   %s   (EN %d)" % [action.display_name, wirkung,
-				action.en_cost]
+			button.text = "%s   (EN %d)" % [wirkung, action.en_cost]
 			var chosen: ActionData = action
 			button.pressed.connect(func(): action_chosen.emit(chosen, _target_tile))
 		button.tooltip_text = "\n".join(described)

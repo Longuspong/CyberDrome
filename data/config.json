@@ -19,6 +19,21 @@
 
   "cycle_limit": 30,
 
+  "pacing": {
+    "_kommentar": [
+      "Tempo der Inszenierung. Rein visuell -- an der Mechanik aendert sich",
+      "nichts, und die TICK-Queue bleibt massgeblich. Zu knappe Werte machen",
+      "den Kampf nicht schneller, sondern unlesbar: die Zuege gingen",
+      "ineinander ueber, und welcher KI-Schritt der Angriff war, war nicht",
+      "mehr zu erkennen.",
+      "ai_step_delay       Pause zwischen zwei Schritten eines KI-Zuges",
+      "turn_handover_delay Pause nach dem Leerlaufen des TICK-Balkens,",
+      "                    bevor die naechste Einheit uebernimmt"
+    ],
+    "ai_step_delay": 0.65,
+    "turn_handover_delay": 0.35
+  },
+
   "playtest": {
     "_kommentar": [
       "ignore_build_limits hebt im Spiel die beiden Budgetgrenzen auf --",

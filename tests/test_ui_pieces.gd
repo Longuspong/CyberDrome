@@ -222,3 +222,64 @@ func test_every_action_offers_a_readable_description() -> void:
 			"die Kurzform nennt die Reichweite: '%s'" % part.action.headline())
 		t.ok("\n".join(lines).contains(part.display_name),
 			"%s nennt das Bauteil, aus dem sie kommt" % part.action.id)
+
+
+# ---------------------------------------------------------------------------
+# Aktionssymbole
+# ---------------------------------------------------------------------------
+
+func test_every_action_has_its_own_symbol() -> void:
+	# Die Symbole ersetzen im Kampf den Namen der Aktion. Damit haengt an
+	# ihnen, ob der Spieler seinen Knopf wiederfindet -- und "generic" heisst
+	# genau, dass keine Regel gegriffen hat: die Aktion macht weder Schaden
+	# noch repariert, zieht, stoesst oder provoziert sie.
+	#
+	# Wer dieses Bauteil baut, muss ein Symbol dazu bauen. Der Test steht hier,
+	# damit er es beim Bauen erfaehrt und nicht im Playtest, wo alle Knoepfe
+	# gleich aussehen.
+	for part in PartDB.parts.values():
+		if part.action == null:
+			continue
+		var key := ActionIcons.key_for(part.action)
+		t.ok(key != "generic",
+			"%s (%s) faellt auf das Platzhaltersymbol zurueck"
+			% [part.action.id, part.id])
+		t.ok(ActionIcons.texture(key) != null,
+			"das Symbol '%s' fuer %s existiert als Datei" % [key, part.action.id])
+
+
+func test_symbols_separate_actions_that_do_different_things() -> void:
+	# Zwei Aktionen mit derselben Wirkung duerfen -- und sollen -- dasselbe
+	# Symbol haben; zwei mit verschiedener Wirkung nicht. Ohne diese Zusicherung
+	# waere das Symbol eine Verzierung und keine Auskunft.
+	var pull := ActionData.from_meta({"id": "t_pull", "push_tiles": -2,
+		"range_tiles": 4})
+	var push := ActionData.from_meta({"id": "t_push", "push_tiles": 2,
+		"range_tiles": 4})
+	var blade := ActionData.from_meta({"id": "t_blade", "range_tiles": 1,
+		"power": 18})
+	var shot := ActionData.from_meta({"id": "t_shot", "range_tiles": 6,
+		"power": 12})
+	var mend := ActionData.from_meta({"id": "t_mend", "range_tiles": 3,
+		"power": -12})
+	var quiet := ActionData.from_meta({"id": "t_quiet", "range_tiles": 2})
+
+	t.ok(ActionIcons.key_for(pull) != ActionIcons.key_for(push),
+		"Sog und Stoss sind Gegenstuecke und sehen verschieden aus")
+	t.ok(ActionIcons.key_for(blade) != ActionIcons.key_for(shot),
+		"Nahkampf sieht anders aus als ein Schuss")
+	t.equal(ActionIcons.key_for(mend), "heal",
+		"negative Wirkung ist eine Reparatur, egal auf welche Entfernung")
+
+	# Die Rangfolge: eine Flaechenreparatur ist eine REPARATUR. Was das Ziel
+	# davon hat, steht ueber der Frage, wie viele Felder mitgenommen werden.
+	var area_mend := ActionData.from_meta({"id": "t_area_mend", "power": -8,
+		"aoe_radius": 2, "range_tiles": 3})
+	t.equal(ActionIcons.key_for(area_mend), "heal",
+		"Flaechenreparatur bleibt eine Reparatur")
+
+	# Und der Gegenbeweis: der Platzhalter ist erreichbar. Gaebe es diesen Fall
+	# nicht, waere die Pruefung oben eine Zusicherung, die nie fehlschlagen
+	# kann -- und damit schlimmer als keine.
+	t.equal(ActionIcons.key_for(quiet), "generic",
+		"eine Aktion ohne erkennbare Wirkung bekommt den leeren Rahmen")

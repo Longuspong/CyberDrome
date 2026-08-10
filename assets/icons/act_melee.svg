@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Nahkampf - Hammer -->
+  <g fill="none" stroke="#ffffff" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 50 L34 30"/>
+    <path d="M32 16 L50 34 L42 42 L24 24 Z" fill="#ffffff"/>
+  </g>
+</svg>
