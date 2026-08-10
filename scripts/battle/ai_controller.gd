@@ -210,6 +210,14 @@ func _action_score(unit: Unit, action: ActionData, target: Unit) -> float:
 		if action.power <= 0:
 			return score
 
+	# Dieselbe Falle an einer anderen Aktion: eine Aktion OHNE Wirkungsmenge
+	# darf nicht ueber preview_damage() bewertet werden. Die liefert die
+	# Mindestmenge 1 und macht aus "richtet nichts an" ein "richtet ein
+	# bisschen was an" -- genug, damit die KI sie zieht, weil das
+	# Faehigkeitsbudget eines Angriffs-Aufbaus ohnehin frei ist.
+	if action.power <= 0:
+		return score + _shove_score(unit, action, target)
+
 	var damage := battle.resolver.preview_damage(unit, target, action)
 	score += float(damage) * _w("damage_weight", 1.0)
 	if damage >= target.hp:
@@ -289,6 +297,59 @@ func _taunt_score(unit: Unit, action: ActionData, target: Unit) -> float:
 	return score
 
 
+## Was ist es wert, ein Ziel zu verschieben?
+##
+## Der Orbit-Sog hat Staerke 0 und ``push_tiles`` -2. Ueber den Schaden bewertet
+## kam er auf die Mindestmenge 1 und wurde damit JEDEN Zug gezogen -- das
+## Faehigkeitsbudget ist bei einem Angriffs-Aufbau ohnehin frei. Ein Strix mit
+## Reichweite sieben hat sich so Zug um Zug seinen eigenen Vorteil weggezogen
+## und den Gegner ins Handgemenge geholt.
+##
+## Gerechnet wird deshalb in REICHWEITEN statt in Feldern -- dieselbe
+## Ueberlegung wie bei der Provokation (GAME_DESIGN 6g), nur auf eine andere
+## Groesse angewandt. Nicht wie weit jemand geschoben wird, entscheidet,
+## sondern auf welche Seite des Reichweitenvergleichs er dabei geraet:
+##
+##   * Wer weiter schiesst als sein Ziel, will Abstand. Heranziehen ist fuer
+##     ihn negativ, und eine negative Bewertung faellt in _best_move() heraus.
+##   * Wer kuerzer schiesst, will den Abstand schliessen. Fuer ihn ist
+##     derselbe Zug positiv.
+##   * Bei gleicher Reichweite gewinnt keiner etwas: 0, die Aktion bleibt
+##     ungenutzt.
+##
+## Kein Sonderfall fuer "Nahkaempfer" noetig -- das faellt aus dem Vergleich
+## heraus, so wie das Tanken aus den Lebensleisten faellt.
+##
+## Der Landepunkt ist geschaetzt (``before + push_tiles``, an der Kartenkante
+## abgeschnitten) und beruecksichtigt weder Hindernisse noch Drift. Das ist
+## dieselbe Groessenordnung von Naeherung wie in _can_strike() und
+## _best_damage(): die Zahl geht nur als Vorzeichen und grobes Mass ein, und
+## die genaue Rechnung waere fuer den Gewinn zu teuer.
+func _shove_score(unit: Unit, action: ActionData, target: Unit) -> float:
+	if action.push_tiles == 0:
+		return 0.0
+	var before := Grid.distance(unit.tile, target.tile)
+	var after := maxi(0, before + action.push_tiles)
+	if after == before:
+		return 0.0
+
+	var wanted := signi(_longest_attack_range(target) - _longest_attack_range(unit))
+	if wanted == 0:
+		return 0.0
+	return float(before - after) * float(wanted) * _w("shove_weight", 4.0)
+
+
+## Die groesste Angriffsreichweite dieses Aufbaus. Null, wenn er keine Waffe
+## traegt -- was die Validierung eigentlich ausschliesst, aber die Bewertung
+## soll daran nicht haengen.
+func _longest_attack_range(unit: Unit) -> int:
+	var longest := 0
+	for action in unit.actions():
+		if action.is_attack():
+			longest = maxi(longest, action.range_tiles)
+	return longest
+
+
 ## Der staerkste Angriff, den ``attacker`` gegen ``victim`` fuehren koennte.
 ##
 ## Ohne Ruecksicht auf Reichweite, Budget und Energie -- eine Abschaetzung wie
@@ -331,11 +392,7 @@ func _most_endangered_by(threat: Unit, mover: Unit) -> Dictionary:
 ## Feldern schiesst, hat sich auf sein Ziel eingerichtet und laesst sich nicht
 ## von jedem Kratzer umlenken. Wer im Nahkampf steht, schon.
 func _incumbent_bonus(unit: Unit) -> float:
-	var longest := 0
-	for action in unit.actions():
-		if action.is_attack():
-			longest = maxi(longest, action.range_tiles)
-	if longest >= int(_w("ranged_from_range", 3.0)):
+	if _longest_attack_range(unit) >= int(_w("ranged_from_range", 3.0)):
 		return _w("incumbent_bonus_ranged", 12.0)
 	return _w("incumbent_bonus_melee", 6.0)
 

@@ -11,6 +11,13 @@ extends RefCounted
 ##   2. Die Zielwahl flackert nicht bei fast gleichauf liegenden Werten.
 ##   3. Wiederholtes Provozieren eskaliert nicht.
 ##   4. Ein leiser Koeffizient schuetzt die Backline auch bei mehr Schaden.
+##   5. Anhaltende Wirkung loest ein einmal gesetztes Ziel ab.
+##
+## Die ersten vier pruefen alle die Ober- und die Kurzfristseite. Die fuenfte
+## kam spaeter dazu und prueft die Langfristseite -- sie war rot, und zwar aus
+## zwei Gruenden gleichzeitig: der eingefrorene Amtsinhaber und ein
+## incumbent_bonus, der ueber dem gesamten Wertebereich des Aggro-Terms lag.
+## Beides sah im Spiel nicht nach einem Fehler aus, sondern nach Absicht.
 ##
 ## Gebaut wird ohne Szene und ohne Kampf, wo es geht: die Tabelle ist reine
 ## Logik, und ein Test, der dafuer eine Karte wuerfeln muss, prueft am Ende
@@ -157,25 +164,85 @@ func test_healing_is_booked_against_every_foe_and_only_what_landed() -> void:
 # 2. Kein Flackern
 # ---------------------------------------------------------------------------
 
-func test_the_incumbent_is_exempt_from_decay() -> void:
+func test_the_incumbent_decays_slower_but_it_decays() -> void:
+	# Frueher war der Amtsinhaber ganz vom Verfall ausgenommen. Das war die
+	# Ursache der Decke aus dem Test darunter: gegen eine eingefrorene Summe
+	# kommt kein Herausforderer an. Er verfaellt jetzt mit, nur langsamer --
+	# gerade genug, dass ein Ziel nicht mitten im Anlauf wegrutscht.
 	var arena := _arena([
 		{"build": _melee(), "tile": Vector2i(9, 8)},
 		{"build": _melee(), "tile": Vector2i(8, 9)},
 	], Vector2i(9, 9))
 	var foe: Unit = arena["foe"]
 	foe.aggro.add(&"P0", 100.0)
-	foe.aggro.add(&"P1", 101.0)
+	foe.aggro.add(&"P1", 100.0)
 	foe.aggro.current_target = &"P0"
 
 	for _i in 10:
-		foe.aggro.decay(0.15, 1.0)
+		foe.aggro.decay(0.15, 1.0, 0.5)
 
-	t.ok(foe.aggro.value_of(&"P0") > foe.aggro.value_of(&"P1"),
-		"das aktuelle Ziel verliert keinen Boden, waehrend andere abbauen (%.1f vs %.1f)"
-		% [foe.aggro.value_of(&"P0"), foe.aggro.value_of(&"P1")])
-	t.equal(foe.aggro.value_of(&"P0"), 100.0,
-		"und zwar unveraendert -- der Amtsinhaber ist ausgenommen")
+	var incumbent := foe.aggro.value_of(&"P0")
+	var other := foe.aggro.value_of(&"P1")
+	t.ok(incumbent > other,
+		"das aktuelle Ziel baut langsamer ab als die anderen (%.1f vs %.1f)"
+		% [incumbent, other])
+	t.ok(incumbent < 100.0,
+		"aber es baut ab -- eingefroren war es die Ursache der Aggro-Decke (%.1f)"
+		% incumbent)
 	_free(arena)
+
+
+func test_sustained_pressure_can_always_take_the_target_over() -> void:
+	# Die Langfristseite des Modells, und die einzige Zusicherung, die dem
+	# Spieler ueberhaupt Einfluss auf die gegnerische Zielwahl gibt: wer lange
+	# genug draufhaelt, BEKOMMT das Ziel.
+	#
+	# Vorher ging das nicht, aus zwei Gruenden gleichzeitig. Der Amtsinhaber
+	# war vom Verfall ausgenommen, waehrend ein Herausforderer mit d Aggro je
+	# Zyklus bei d * (1 - rate) / rate saettigt -- bei rate 0.15 das
+	# 5,67-fache. Und selbst wer die Tabelle anfuehrte, kam nicht durch: der
+	# Aggro-Term ist ein ANTEIL und damit auf aggro_weight (10) gedeckelt,
+	# der incumbent_bonus_ranged stand auf 12. Die Traegheit war groesser als
+	# der gesamte Wertebereich dessen, wogegen sie antritt.
+	var battle := BattleManager.new()
+	battle.setup(9117, [_melee(), _sniper()])
+	var foe: Unit = battle.living(false)[0]
+	var incumbent: Unit = battle.living(true)[0]
+	var challenger: Unit = battle.living(true)[1]
+	var controller := AIController.new(battle)
+
+	# Ein grosser Treffer frueh im Gefecht -- der Fall, den GAME_DESIGN 6e
+	# ausdruecklich nicht zementieren will.
+	foe.aggro.add(incumbent.unit_id, 240.0)
+	foe.aggro.current_target = incumbent.unit_id
+
+	var took_over_in := 0
+	for cycle in 30:
+		foe.aggro.add(challenger.unit_id, 40.0)
+		if controller._aggro_score(foe, challenger) > controller._aggro_score(foe, incumbent):
+			took_over_in = cycle + 1
+			break
+		foe.aggro.decay(0.15, 1.0, 0.5)
+
+	t.ok(took_over_in > 0,
+		"anhaltende Wirkung loest ein einmal gesetztes Ziel ab (Zyklus %d, %.1f gegen %.1f)"
+		% [took_over_in, foe.aggro.value_of(challenger.unit_id),
+			foe.aggro.value_of(incumbent.unit_id)])
+	battle.free()
+
+
+func test_the_incumbent_bonus_stays_under_the_aggro_weight() -> void:
+	# Als Invariante, weil sie beim Tunen unsichtbar bricht. Der Aggro-Term
+	# ist ein Anteil (0..1) mal aggro_weight und damit nach oben gedeckelt.
+	# Steht ein incumbent_bonus darueber, kann ihn kein Herausforderer je
+	# aufholen -- die Tabelle waere fuer die Zielwahl wirkungslos, und zwar
+	# ohne dass irgendetwas danach aussieht.
+	var ai := Config.section("ai")
+	var weight := float(ai.get("aggro_weight", 10.0))
+	for key in ["incumbent_bonus_melee", "incumbent_bonus_ranged"]:
+		t.ok(float(ai.get(key, 0.0)) < weight,
+			"%s (%.1f) bleibt unter aggro_weight (%.1f)"
+			% [key, float(ai.get(key, 0.0)), weight])
 
 
 func test_the_target_does_not_flicker_at_a_one_percent_difference() -> void:

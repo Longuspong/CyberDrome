@@ -83,6 +83,92 @@ func test_damage_actually_happens() -> void:
 	t.ok(dealt > 0, "im Kampf wurde Schaden verursacht (%d)" % dealt)
 
 
+## Zwei Molok-Aufbauten, die sich nur in der Waffe unterscheiden -- und beide
+## tragen den Orbit-Sog auf der Schulter. Damit haengt der Unterschied im
+## Verhalten allein an der Reichweite, so wie die Bewertung es behauptet.
+func _with_orbit_pull(display_name: String, weapon: StringName) -> DromeBuild:
+	return DromeBuild.create(display_name, {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": weapon, "equip_shoulder": &"eq_orbit_focus"})
+
+
+func _pull_action(unit: Unit) -> ActionData:
+	for action in unit.actions():
+		if action.push_tiles != 0:
+			return action
+	return null
+
+
+func test_the_ai_does_not_drag_its_target_into_its_own_face() -> void:
+	# Der Orbit-Sog hat Staerke 0 und wurde ueber preview_damage() bewertet --
+	# das liefert die Mindestmenge 1. Zusammen mit dem Faehigkeitsbudget, das
+	# ein Angriffs-Aufbau ohnehin nicht braucht, hat die KI ihn jeden Zug
+	# gezogen und sich als Fernkaempfer selbst den Abstand genommen.
+	var battle := BattleManager.new()
+	battle.setup(9210, [_with_orbit_pull("SCHUETZE", &"eq_rail_lance"),
+		_with_orbit_pull("NAHKAMPF", &"eq_rune_staff")])
+	var controller := AIController.new(battle)
+	var sniper: Unit = battle.living(true)[0]
+	var brawler: Unit = battle.living(true)[1]
+	sniper.tile = Vector2i(4, 4)
+	brawler.tile = Vector2i(4, 8)
+
+	var pull := _pull_action(sniper)
+	t.ok(pull != null and pull.power <= 0,
+		"der Orbit-Sog zieht und richtet dabei keinen Schaden an")
+
+	t.ok(controller._shove_score(sniper, pull, brawler) < 0.0,
+		"wer weiter schiesst, will den Abstand behalten (%.1f)"
+		% controller._shove_score(sniper, pull, brawler))
+	t.ok(controller._action_score(sniper, pull, brawler) <= 0.0,
+		"und zieht deshalb gar nicht -- _best_move() verwirft alles <= 0")
+
+	t.ok(controller._shove_score(brawler, pull, sniper) > 0.0,
+		"wer kuerzer schiesst, will ihn schliessen (%.1f)"
+		% controller._shove_score(brawler, pull, sniper))
+	battle.free()
+
+
+func test_armour_can_never_swallow_a_whole_hit() -> void:
+	# Der schwerste im Bestand baubare Aufbau gegen die schwaechste Waffe:
+	# DEF 14 (Chassis 5 + Bunkerkopf 2 + Standbeine 2 + Deflektor 5) gegen den
+	# Puls-Blaster mit Staerke 12. Ueber den flachen Abzug blieb davon die
+	# Mindestmenge 1 -- 145 Integritaet bei 1 Schaden je Treffer sind 145
+	# Treffer, und cycle_limit steht auf 30. Der Kampf konnte nicht enden.
+	var bunker := DromeBuild.create("BUNKER", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"})
+	t.ok(bunker.is_valid(), "der Bunker ist baubar: %s" % ", ".join(bunker.validate()))
+	t.equal(bunker.stats()["def"], 14, "und kommt auf DEF 14")
+
+	var grid := Grid.new(10, 10)
+	grid.fill(Terrain.TClass.NORMAL)
+	var shooter := Unit.create(_squad()[0], &"P0", true)
+	var wall := Unit.create(bunker, &"E0", false)
+	shooter.tile = Vector2i(2, 2)
+	wall.tile = Vector2i(4, 2)
+	var resolver := ActionResolver.new(grid, [shooter, wall])
+
+	var blaster: ActionData = null
+	for action in shooter.actions():
+		if action.is_attack():
+			blaster = action
+	var dealt := resolver.preview_damage(shooter, wall, blaster)
+
+	t.ok(dealt >= int(ceil(blaster.power * 0.5)),
+		"DEF nimmt hoechstens die Haelfte weg: %d von %d" % [dealt, blaster.power])
+	var hits := int(ceil(float(wall.stat("hp_max")) / float(dealt)))
+	t.ok(hits <= Config.get_int("cycle_limit", 30),
+		"und der Bunker faellt innerhalb des Zyklus-Limits (%d Treffer)" % hits)
+	t.equal(resolver.apply_damage(shooter, wall, blaster.power + shooter.atk(), blaster), dealt,
+		"die Vorschau sagt genau das, was die Ausfuehrung tut")
+
+	shooter.free()
+	wall.free()
+
+
 func test_same_seed_gives_the_same_battle() -> void:
 	# Akzeptanzkriterium: denselben Seed zweimal spielen und exakt dasselbe
 	# bekommen -- Karte, Region, Mutator, Gegner, Ausgang.
