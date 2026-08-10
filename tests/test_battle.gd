@@ -169,6 +169,93 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	wall.free()
 
 
+## Ein Aufbau mit Flaechenwaffe und Flaechenheilung -- beides auf einem Molok,
+## damit ein einziger DROME beide Seiten der Frage stellt: wen trifft ein Radius?
+func _siege_and_drones(display_name: String) -> DromeBuild:
+	return DromeBuild.create(display_name, {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon", "equip_shoulder": &"eq_drone_pod"})
+
+
+func _action_by_id(unit: Unit, id: StringName) -> ActionData:
+	for action in unit.actions():
+		if action.id == id:
+			return action
+	return null
+
+
+func test_an_area_hit_only_touches_who_it_means() -> void:
+	# Der Belagerungsschlag hat Radius 1. Zielte er auf ein Nachbarfeld, lag der
+	# Schuetze SELBST im Radius -- und execute() wendete die Wirkung auf jeden an,
+	# der auf einem getroffenen Feld stand, ohne nach der Seite zu fragen. Ein
+	# Molok im Handgemenge schoss sich so Zug um Zug selbst zusammen, und weder
+	# Vorschau noch KI zeigten es an: beide bewerten das anvisierte Ziel.
+	var build := _siege_and_drones("BELAGERER")
+	t.ok(build.is_valid(), "der Belagerer ist baubar: %s" % ", ".join(build.validate()))
+
+	var grid := Grid.new(12, 12)
+	grid.fill(Terrain.TClass.NORMAL)
+	var shooter := Unit.create(build, &"E0", false)
+	var comrade := Unit.create(build, &"E1", false)
+	var foe := Unit.create(_squad()[0], &"P0", true)
+	var second_foe := Unit.create(_squad()[0], &"P1", true)
+	shooter.tile = Vector2i(5, 5)
+	foe.tile = Vector2i(6, 5)          # Nachbarfeld: der Schuetze liegt im Radius
+	comrade.tile = Vector2i(6, 6)      # ebenfalls im Radius, eigene Seite
+	second_foe.tile = Vector2i(6, 4)   # im Radius, gegnerische Seite
+	var resolver := ActionResolver.new(grid, [shooter, comrade, foe, second_foe])
+
+	var siege := _action_by_id(shooter, &"act_siege")
+	t.ok(siege != null and siege.aoe_radius > 0, "der Belagerungsschlag ist eine Flaeche")
+	t.ok(shooter.tile in resolver.affected_tiles(foe.tile, siege),
+		"und der Schuetze steht bei diesem Ziel wirklich in der eigenen Flaeche")
+
+	var expected := resolver.preview_damage(shooter, foe, siege)
+	t.ok(resolver.execute(shooter, foe.tile, siege), "der Schuss geht raus")
+
+	t.equal(shooter.hp, shooter.stat("hp_max"), "der Schuetze nimmt keinen eigenen Schaden")
+	t.equal(comrade.hp, comrade.stat("hp_max"), "der Verbuendete im Radius bleibt heil")
+	t.equal(foe.hp, foe.stat("hp_max") - expected, "das Ziel nimmt genau die Vorschau")
+	t.ok(second_foe.hp < second_foe.stat("hp_max"),
+		"der zweite Gegner im Radius wird mitgenommen -- die Flaeche bleibt eine Flaeche")
+
+	shooter.free()
+	comrade.free()
+	foe.free()
+	second_foe.free()
+
+
+func test_area_repair_does_not_patch_up_the_enemy() -> void:
+	# Dieselbe Stelle von der anderen Seite: die Reparaturdrohnen haben Radius 1
+	# und heilten damit jeden im Umkreis -- auch den Gegner, der neben dem
+	# Verbuendeten stand.
+	var grid := Grid.new(12, 12)
+	grid.fill(Terrain.TClass.NORMAL)
+	var medic := Unit.create(_siege_and_drones("SANI"), &"E0", false)
+	var patient := Unit.create(_siege_and_drones("PATIENT"), &"E1", false)
+	var foe := Unit.create(_squad()[0], &"P0", true)
+	medic.tile = Vector2i(5, 5)
+	patient.tile = Vector2i(6, 5)
+	foe.tile = Vector2i(7, 5)          # neben dem Patienten, also im Radius
+	patient.hp = 40
+	foe.hp = 20
+	var resolver := ActionResolver.new(grid, [medic, patient, foe])
+
+	var drones := _action_by_id(medic, &"act_dronepod")
+	t.ok(drones != null and drones.is_heal(), "die Reparaturdrohnen heilen")
+	t.ok(foe.tile in resolver.affected_tiles(patient.tile, drones),
+		"und der Gegner steht bei diesem Ziel in der Flaeche")
+
+	t.ok(resolver.execute(medic, patient.tile, drones), "die Drohnen fliegen")
+	t.equal(patient.hp, 40 + drones.heal_amount(), "der Verbuendete wird repariert")
+	t.equal(foe.hp, 20, "der Gegner in derselben Flaeche bekommt nichts ab")
+
+	medic.free()
+	patient.free()
+	foe.free()
+
+
 func test_same_seed_gives_the_same_battle() -> void:
 	# Akzeptanzkriterium: denselben Seed zweimal spielen und exakt dasselbe
 	# bekommen -- Karte, Region, Mutator, Gegner, Ausgang.

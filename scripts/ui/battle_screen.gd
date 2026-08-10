@@ -488,8 +488,14 @@ func _refresh_reachable() -> void:
 
 
 ## Der Flaechenumriss unter dem Zeiger. Eine Flaechenaktion trifft mehr als das
-## Feld, auf das gezielt wird -- auch eigene DROMEs. Das muss vor dem Klick zu
-## sehen sein und nicht danach im Kampflog.
+## Feld, auf das gezielt wird; wie weit sie reicht, muss vor dem Klick zu sehen
+## sein und nicht danach im Kampflog.
+##
+## Der Umriss zeigt die REICHWEITE, nicht die Opfer -- getroffen wird darin nur,
+## wen die Aktion ueberhaupt meint (ActionResolver.is_meaningful_target). Die
+## Schadenszahlen in _damage_preview() fragen dieselbe Regel, Umriss und Zahlen
+## widersprechen sich also nicht mehr: ein eigener DROME im Umriss bekommt keine
+## Zahl, weil ihm auch nichts passiert.
 func _splash_tiles(unit: Unit, action: ActionData) -> Array:
 	if action.aoe_radius <= 0 or not battle.grid.in_bounds(_hover_tile):
 		return []
