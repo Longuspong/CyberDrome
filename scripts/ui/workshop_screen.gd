@@ -799,14 +799,30 @@ func _refresh_actions() -> void:
 	var any := false
 	for category in [ActionData.Category.ATTACK, ActionData.Category.ABILITY]:
 		for action in _build.actions_of(category):
+			# Dasselbe Symbol wie im Kampf, hier aber NEBEN dem Namen und nicht
+			# statt seiner: in der Werkstatt waehlt der Spieler Bauteile aus und
+			# braucht ihre Namen. Das Symbol steht daneben, damit er es hier
+			# lernt und im Kampf schon kennt.
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 6)
+			row.tooltip_text = "\n".join(action.description_lines())
+			row.mouse_filter = Control.MOUSE_FILTER_STOP
+			row.modulate = Color(0.85, 0.9, 0.95) if action.is_attack() \
+				else Color(0.72, 0.85, 0.98)
+
+			var icon := TextureRect.new()
+			icon.texture = ActionIcons.texture_for(action)
+			icon.custom_minimum_size = Vector2(16, 16)
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			row.add_child(icon)
+
 			var label := Label.new()
 			label.text = "%s   %s" % [action.display_name, action.headline()]
 			label.add_theme_font_size_override("font_size", 11)
-			label.tooltip_text = "\n".join(action.description_lines())
-			label.mouse_filter = Control.MOUSE_FILTER_STOP
-			label.modulate = Color(0.85, 0.9, 0.95) if action.is_attack() \
-				else Color(0.72, 0.85, 0.98)
-			_action_list.add_child(label)
+			row.add_child(label)
+
+			_action_list.add_child(row)
 			any = true
 
 	if not any:

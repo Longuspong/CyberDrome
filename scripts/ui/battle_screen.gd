@@ -6,7 +6,23 @@ extends Node2D
 ## aussieht, die BattleView. Dieser Knoten uebersetzt nur Klicks in Zuege und
 ## Zustaende in Anzeigen.
 
-const AI_STEP_DELAY := 0.4
+## Wie schnell der Kampf ablaeuft.
+##
+## Die Werte standen als eine einzige Konstante im Code und waren zu knapp: der
+## Zug wechselte, waehrend der TICK-Balken noch lief, und zwei KI-Schritte
+## folgten so dicht aufeinander, dass nicht zu sehen war, welcher davon der
+## Angriff war. Ein Kampf, dem man nicht folgen kann, ist nicht schneller --
+## er ist nur kuerzer.
+##
+## Aus der Konfiguration, damit sich das Tempo ohne Codeaenderung nachziehen
+## laesst (data/config.json, Abschnitt "pacing").
+var _ai_step_delay: float = 0.65
+var _turn_handover_delay: float = 0.35
+
+## Kamerastoss beim Treffer. Der Ausschlag skaliert mit dem Anteil der
+## Integritaet, den der Treffer gekostet hat.
+const CAMERA_SHAKE_MAX := 9.0
+const CAMERA_SHAKE_TIME := 0.26
 
 @onready var view: BattleView = $BattleView
 @onready var camera: Camera2D = $Camera2D
@@ -44,11 +60,18 @@ func _ready() -> void:
 	battle = BattleManager.new()
 	add_child(battle)
 
+	var pacing := Config.section("pacing")
+	_ai_step_delay = float(pacing.get("ai_step_delay", _ai_step_delay))
+	_turn_handover_delay = float(pacing.get("turn_handover_delay",
+		_turn_handover_delay))
+
 	_build_ui()
 
 	EventBus.log_message.connect(_on_log)
 	EventBus.unit_moved.connect(_on_unit_moved)
 	EventBus.unit_died.connect(_on_unit_died)
+	EventBus.unit_damaged.connect(_on_unit_damaged)
+	EventBus.unit_healed.connect(_on_unit_healed)
 	EventBus.tick_bus_changed.connect(_refresh_tick_queue)
 	battle.battle_over.connect(_on_battle_over)
 
@@ -70,6 +93,7 @@ func _start_battle() -> void:
 
 	camera.position = IsoView.grid_center(battle.grid.width, battle.grid.height)
 	camera.zoom = Vector2(0.62, 0.62)
+	view.set_pixel_scale(camera.zoom.x)
 
 	_tick_bars.rebuild(battle.units, battle.tick_bus)
 	_show_mutator()
@@ -112,6 +136,7 @@ func _next_turn() -> void:
 	_refresh_tick_queue()
 	_refresh_action_bar()
 	_refresh_status()
+	_refresh_badges()
 
 	if not unit.is_player:
 		_run_ai_turn()
@@ -126,17 +151,28 @@ func _run_ai_turn() -> void:
 	for _step_index in 6:
 		if battle.outcome != BattleManager.Outcome.RUNNING:
 			break
-		await get_tree().create_timer(AI_STEP_DELAY).timeout
+		await get_tree().create_timer(_ai_step_delay).timeout
 		while _paused:
 			await get_tree().process_frame
 		if controller.take_step().is_empty():
 			break
 		_refresh_status()
-	await get_tree().create_timer(AI_STEP_DELAY).timeout
+		_refresh_badges()
+	await get_tree().create_timer(_ai_step_delay).timeout
 	_busy = false
 	_end_current_turn()
 
 
+## Zugende und Uebergabe.
+##
+## Der naechste Zug beginnt erst, wenn der TICK-Balken seine Bewegung beendet
+## hat. Vorher lief beides gleichzeitig: der Balken der abtretenden Einheit
+## leerte sich, waehrend die naechste schon markiert war und die KI bereits
+## lief. Beide Vorgaenge waren einzeln richtig animiert und zusammen nicht mehr
+## auseinanderzuhalten -- der Kampf sprang, statt uebergeben zu werden.
+##
+## ``_busy`` bleibt waehrend der Uebergabe gesetzt, sonst faellt ein Klick in
+## die Luecke und trifft eine Einheit, die noch gar nicht am Zug ist.
 func _end_current_turn() -> void:
 	view.clear_overlays()
 	view.clear_path_preview()
@@ -147,10 +183,16 @@ func _end_current_turn() -> void:
 	# Erst der echte Zug, dann die Inszenierung: der Balken zeigt, was schon
 	# passiert ist, und bestimmt nichts.
 	var finished := battle.active_unit
+	var was_busy := _busy
 	battle.end_turn()
 	if finished != null:
-		_tick_bars.play_turn_end(finished.unit_id, battle.tick_bus)
+		finished.set_active(false)
+		_busy = true
+		await _tick_bars.play_turn_end(finished.unit_id, battle.tick_bus)
+		await get_tree().create_timer(_turn_handover_delay).timeout
+		_busy = was_busy
 
+	_refresh_badges()
 	if battle.outcome == BattleManager.Outcome.RUNNING:
 		_next_turn()
 
@@ -326,6 +368,7 @@ func _on_ring_action(action: ActionData, target_tile: Vector2i) -> void:
 	_refresh_reachable()
 	_refresh_action_bar()
 	_refresh_status()
+	_refresh_badges()
 	# Der Ring bleibt am selben Ziel stehen und zeigt jetzt den neuen Stand:
 	# weniger Integritaet, verbrauchtes Budget, veraenderte Gruende. Wer zwei
 	# Aktionen auf dasselbe Ziel legen will, soll es nicht zweimal anklicken
@@ -352,6 +395,7 @@ func _on_click(tile: Vector2i) -> void:
 			_refresh_reachable()
 			_refresh_action_bar()
 			_refresh_status()
+			_refresh_badges()
 		return
 
 	var unit := battle.active_unit
@@ -371,6 +415,7 @@ func _on_click(tile: Vector2i) -> void:
 		battle.move_active_to(tile)
 		_refresh_reachable()
 		_refresh_status()
+		_refresh_badges()
 
 
 ## Der Zeiger steht auf einem Aktionsknopf: seine Reichweite wird eingefaerbt,
@@ -553,12 +598,31 @@ func _refresh_action_bar() -> void:
 		_action_bar.add_child(group)
 
 
+## Ein Aktionsknopf: das Symbol traegt die Aktion, die Zahlen darunter das,
+## was sich nicht zeichnen laesst.
+##
+## Der Knopf trug vorher "Runenschlag   Angriff · Rw 1" als Fliesstext. Das ist
+## im Kampf die falsche Form: der Spieler sucht dort nicht nach einem Namen,
+## sondern nach einer Wirkung, und drei Woerter lesen sich langsamer als eine
+## Silhouette. Der Name bleibt vollstaendig im Tooltip -- zusammen mit dem
+## Bauteil, das die Aktion gibt.
+##
+## Reichweite und Energiekosten bleiben dagegen als ZAHL auf dem Knopf. Sie
+## sind kein Klartext, sondern der Kern des Versprechens, dass sich jeder Zug
+## vorher durchrechnen laesst; als Symbol waeren sie geraten.
+const ACTION_ICON_SIZE := Vector2(46, 46)
+
 func _action_button(action: ActionData) -> Button:
 	var button := Button.new()
 	var blocker := battle.turn_state.blocker_for(action)
-	# Die Kurzform steht auf dem Knopf, die vollstaendige Beschreibung im
-	# Tooltip -- und beide kommen aus ActionData, nicht aus dieser Datei.
-	button.text = "%s   %s" % [action.display_name, action.headline()]
+	button.icon = ActionIcons.texture_for(action)
+	button.expand_icon = true
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	button.custom_minimum_size = ACTION_ICON_SIZE + Vector2(18, 26)
+	button.text = "Rw %d%s" % [action.range_tiles,
+		"   EN %d" % action.en_cost if action.en_cost > 0 else ""]
+	button.add_theme_font_size_override("font_size", 10)
 	var described: Array[String] = action.description_lines()
 	if blocker != "":
 		button.disabled = true
@@ -597,6 +661,49 @@ func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 	for other in battle.units:
 		other.set_in_haze(
 			battle.grid.terrain_class(other.tile) == Terrain.TClass.HAZE)
+	_refresh_badges()
+
+
+## Ein Treffer muss man sehen, nicht im Protokoll nachlesen.
+##
+## Der Kampf wuerfelt nicht: es gibt keinen Trefferwurf und kein Vorbeischiessen,
+## und damit auch nichts, was von sich aus nach Einschlag aussieht. Ohne
+## Rueckstoss, Erschuetterung und Kamerastoss aendert ein Angriff nur eine Zahl.
+##
+## Der Kamerastoss haengt am ANTEIL des Schadens, nicht an der Rohzahl: 20
+## Schaden sind an einem Molok ein Kratzer und an einem Vireo ein Drittel seiner
+## Integritaet. Ein Stoss, der beides gleich laut inszeniert, luegt ueber die
+## Lage.
+func _on_unit_damaged(unit: Unit, amount: int, source) -> void:
+	if source is Unit and source != unit:
+		source.play_attack(unit.tile)
+	unit.play_hit()
+	var maximum: int = maxi(1, unit.stat("hp_max"))
+	_shake_camera(clampf(float(amount) / float(maximum), 0.0, 1.0))
+	_refresh_badges()
+
+
+func _on_unit_healed(unit: Unit, _amount: int, _source) -> void:
+	unit.play_heal()
+	_refresh_badges()
+
+
+## Kurzer Kamerastoss, der von selbst zur Ruhe kommt. ``severity`` ist der
+## Anteil der Maximalintegritaet, den der Treffer gekostet hat.
+func _shake_camera(severity: float) -> void:
+	var strength := CAMERA_SHAKE_MAX * severity
+	if strength < 0.6:
+		return
+	var home := camera.offset
+	var tween := create_tween()
+	var steps := 6
+	for i in steps:
+		var decay := 1.0 - float(i) / float(steps)
+		tween.tween_property(camera, "offset",
+			home + Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0))
+				* strength * decay,
+			CAMERA_SHAKE_TIME / float(steps))
+	tween.tween_property(camera, "offset", home, CAMERA_SHAKE_TIME / float(steps))
 
 
 func _on_unit_died(unit: Unit) -> void:
@@ -604,12 +711,39 @@ func _on_unit_died(unit: Unit) -> void:
 	_tick_bars.drop_unit(unit.unit_id)
 	_action_ring.hide_ring()
 	_refresh_tick_queue()
+	_refresh_badges()
+
+
+## Die Balken ueber den Figuren. Gefuellt wird hier, gezeichnet in der
+## BattleView -- dieselbe Trennung wie bei der Schadensvorschau.
+func _refresh_badges() -> void:
+	var entries: Array = []
+	var active := battle.active_unit
+	for unit in battle.units:
+		if not unit.is_alive():
+			continue
+		var tick := 0.0
+		if battle.tick_bus != null:
+			var state := battle.tick_bus.bar_state(unit.unit_id)
+			tick = state.get("fill", 0.0) if not state.is_empty() else 0.0
+		entries.append({
+			"tile": unit.tile,
+			"name": unit.display_name,
+			"hp": unit.hp, "hp_max": unit.stat("hp_max"),
+			"en": unit.en, "en_max": unit.stat("en_max"),
+			"tick": tick,
+			"is_player": unit.is_player,
+			"active": unit == active,
+		})
+		unit.set_active(unit == active)
+	view.show_unit_badges(entries)
 
 
 func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	view.clear_overlays()
 	view.clear_path_preview()
 	view.clear_damage_preview()
+	view.show_unit_badges([])
 	_status.text = "%s nach %d Zyklen.  Seed: %d" % [
 		BattleManager.outcome_label(outcome), battle.tick_bus.cycle_count,
 		battle.battle_seed]
