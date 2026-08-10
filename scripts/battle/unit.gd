@@ -4,9 +4,8 @@ extends Node2D
 ## Ein DROME im Kampf: Darstellung und Laufzeitwerte.
 ##
 ## Zusammengesetzt wird er wie in der Werkstatt -- ein Sprite2D je Bauteil,
-## alle auf Position (0,0), ``centered = false``, Zeichenreihenfolge aus
-## ``slot_z`` des Chassis. Die Anker-Mathematik steckt bereits in der Grafik;
-## Offsets aus der JSON sind deshalb gar nicht noetig.
+## ``centered = false``, auf den Sockel des Chassis verschoben,
+## Zeichenreihenfolge aus ``slot_z``. Beides rechnet DromeSprites.
 ##
 ## Das ist keine Bequemlichkeit, sondern ein Akzeptanzkriterium: der Spieler
 ## muss den Bot, den er gebaut hat, im Kampf wiedererkennen. Dieselben Teile,

@@ -14,6 +14,7 @@ var _current := ""
 
 const SUITES := [
 	"res://tests/test_drome_build.gd",
+	"res://tests/test_drome_sprites.gd",
 	"res://tests/test_grid.gd",
 	"res://tests/test_tick_bus.gd",
 	"res://tests/test_reachability.gd",
@@ -33,9 +34,18 @@ func _initialize() -> void:
 		if not ResourceLoader.exists(path):
 			print("  [uebersprungen] %s fehlt noch" % path)
 			continue
-		var suite = load(path).new()
-		suite.t = self
 		var name: String = path.get_file().get_basename()
+		# Ein Suite-Script mit Syntaxfehler laedt nicht. Ohne diese Pruefung
+		# lief der Durchgang danach in einen Fehlerlauf ohne Ausgabe und ohne
+		# Exitcode -- ein Tippfehler in einer Suite sah damit aus wie ein
+		# haengender Testlauf. Hier wird daraus ein Fehlschlag mit Namen.
+		var script = load(path)
+		var suite = script.new() if script is GDScript else null
+		if suite == null:
+			_current = name
+			ok(false, "Suite laedt nicht (Syntaxfehler in %s?)" % path)
+			continue
+		suite.t = self
 		print("-- %s" % name)
 		for method in suite.get_method_list():
 			if not method["name"].begins_with("test_"):
