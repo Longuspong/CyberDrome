@@ -11,8 +11,9 @@ Stylesheet, nicht aus der Datei.
 
 Godots SVG-Rasterizer kennt keine CSS-Variablen. Er loest sie nicht auf und
 faellt auf Schwarz zurueck: importiert man ein Teil unveraendert, ist es eine
-schwarze Flaeche. Nachgemessen mit Godot 4.3 -- ein Teil ergibt genau eine
-Farbe, ``#000000``.
+schwarze Flaeche. Nachgemessen mit Godot 4.3 und beim Umstieg erneut mit 4.7
+-- ein Teil ergibt beide Male genau eine Farbe, ``#000000``. Dieser Schritt
+faellt also auch mit einer neueren Engine nicht weg.
 
 Deshalb dieser Schritt. Er ersetzt jede Variable durch den konkreten Hex-Wert
 aus ``color_scheme`` der Teil-JSON -- also aus genau der Palette, die der
