@@ -9,11 +9,19 @@ extends RefCounted
 ## jede Aktion vorher exakt durchrechnen koennen.
 
 ## Welches Budget des Zuges die Aktion verbraucht.
+##
+## Das ist die Trennung, die der Spieler sieht und nach der er plant: ein
+## ANGRIFF ist das, was eine Waffe von sich aus tut -- Blaster, Schienenschuss,
+## Runenschlag --, eine FAEHIGKEIT alles, was darueber hinaus geht: ziehen,
+## reparieren, provozieren. Beide Budgets stehen je Zug einmal zur Verfuegung
+## und sind nicht gegeneinander tauschbar. Eine Waffe, die als Faehigkeit
+## gefuehrt wird, nimmt dem Aufbau deshalb still seine Faehigkeitsaktion weg.
 enum Category { ATTACK, ABILITY }
 
 enum Targeting { SINGLE, SELF, TILE, AOE_AROUND_TARGET }
 
 const CATEGORY_NAMES := {"attack": Category.ATTACK, "ability": Category.ABILITY}
+const CATEGORY_LABEL := {Category.ATTACK: "Angriff", Category.ABILITY: "Faehigkeit"}
 const TARGETING_NAMES := {
 	"single": Targeting.SINGLE,
 	"self": Targeting.SELF,
@@ -21,9 +29,27 @@ const TARGETING_NAMES := {
 	"aoe_around_target": Targeting.AOE_AROUND_TARGET,
 }
 
+## Schadensarten. Bis auf ``normal`` ist noch keine entschieden -- die
+## Schadensordnung (Resistenzen, Anfaelligkeiten, Ruestungstypen) ist offen.
+##
+## Das Feld existiert trotzdem schon, und zwar mit genau einem Wert: solange
+## jede Aktion "normal" ist, ist die Anzeige ehrlich und die spaetere Erweiterung
+## kostet kein Umschreiben. ActionResolver._apply_armor() ist der Haken, an dem
+## sie einmal haengt; im MVP reicht die Kette den Schaden dort unveraendert
+## durch.
+const DAMAGE_TYPE_LABEL := {&"normal": "normal"}
+
 var id: StringName
 var display_name: String
 var category: Category = Category.ATTACK
+
+## Wo diese Aktion herkommt. Rein fuer die Anzeige: der Spieler soll im Kampf
+## sehen, welches Bauteil ihm diese Zeile gibt.
+var source_part_name: String = ""
+var source_part_code: String = ""
+
+## Siehe DAMAGE_TYPE_LABEL. Im Bestand immer &"normal".
+var damage_type: StringName = &"normal"
 var targeting: Targeting = Targeting.SINGLE
 var range_tiles: int = 1
 var aoe_radius: int = 0
@@ -66,10 +92,14 @@ var aggro_flat: int = 0
 var taunt_turns: int = 0
 
 
-static func from_meta(meta: Dictionary, owner_name: String = "") -> ActionData:
+static func from_meta(meta: Dictionary, owner_name: String = "",
+		owner_code: String = "") -> ActionData:
 	var action := ActionData.new()
 	action.id = StringName(meta.get("id", ""))
 	action.display_name = meta.get("display_name", owner_name)
+	action.source_part_name = owner_name
+	action.source_part_code = owner_code
+	action.damage_type = StringName(meta.get("damage_type", "normal"))
 	action.category = CATEGORY_NAMES.get(meta.get("category", "attack"), Category.ATTACK)
 	action.targeting = TARGETING_NAMES.get(meta.get("targeting", "single"), Targeting.SINGLE)
 	action.range_tiles = meta.get("range_tiles", 1)
@@ -99,6 +129,71 @@ func is_heal() -> bool:
 
 func heal_amount() -> int:
 	return -power
+
+
+func category_label() -> String:
+	return CATEGORY_LABEL.get(category, "Aktion")
+
+
+func damage_type_label() -> String:
+	return DAMAGE_TYPE_LABEL.get(damage_type, str(damage_type))
+
+
+## Was diese Aktion tut, wenn sie KEINE Wirkungsmenge hat -- Stossen, Ziehen,
+## Provozieren. Steht dort, wo sonst die Schadenszahl steht: "0 Schaden" waere
+## richtig gerechnet und trotzdem eine Falschauskunft ueber die Aktion.
+func effect_summary() -> String:
+	var parts: Array[String] = []
+	if push_tiles > 0:
+		parts.append("stoesst %d" % push_tiles)
+	elif push_tiles < 0:
+		parts.append("zieht %d heran" % absi(push_tiles))
+	if is_taunt():
+		parts.append("provoziert %d Zuege" % taunt_turns)
+	if status_effect != null:
+		parts.append("Effekt")
+	return " · ".join(parts) if not parts.is_empty() else "ohne Schaden"
+
+
+## Kurzform fuer eine Zeile: "Angriff · Rw 4 · EN 0".
+func headline() -> String:
+	var parts: Array[String] = [category_label(), "Rw %d" % range_tiles]
+	if en_cost > 0:
+		parts.append("EN %d" % en_cost)
+	return " · ".join(parts)
+
+
+## Was diese Aktion tut, vollstaendig und in Klartext.
+##
+## Die EINE Beschreibung: Werkstatt-Tooltip, Aktionsleiste und Aktionsring
+## lesen alle hier. Drei Texte fuer dieselbe Aktion waeren drei Gelegenheiten,
+## dass einer davon eine Reichweite nennt, die nicht mehr stimmt -- und in
+## einem Spiel, das verspricht, dass sich jede Aktion vorher durchrechnen
+## laesst, ist eine falsche Tooltip-Zahl ein Regelfehler.
+func description_lines() -> Array[String]:
+	var lines: Array[String] = []
+	lines.append("%s · Reichweite %d" % [category_label(), range_tiles])
+	if is_heal():
+		lines.append("Reparatur %d" % heal_amount())
+	elif power > 0:
+		lines.append("Staerke %d · Schadensart %s" % [power, damage_type_label()])
+	lines.append("Energie %d" % en_cost)
+	if aoe_radius > 0:
+		lines.append("Flaeche: Radius %d um das Ziel" % aoe_radius)
+	if requires_line_of_sight:
+		lines.append("braucht Sichtlinie")
+	if push_tiles > 0:
+		lines.append("stoesst %d Feld(er) zurueck" % push_tiles)
+	elif push_tiles < 0:
+		lines.append("zieht %d Feld(er) heran" % absi(push_tiles))
+	if is_taunt():
+		lines.append("provoziert fuer %d Zuege" % taunt_turns)
+	if targeting == Targeting.SELF:
+		lines.append("wirkt nur auf den eigenen DROME")
+	if source_part_name != "":
+		lines.append("aus: %s%s" % [source_part_name,
+			" (%s)" % source_part_code if source_part_code != "" else ""])
+	return lines
 
 
 func _to_string() -> String:

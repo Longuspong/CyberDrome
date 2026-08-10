@@ -160,9 +160,15 @@ func move_profile() -> MoveProfile:
 	return MoveProfile.from_stats(stats, unit_id, tile)
 
 
-## Alle Aktionen dieses DROME -- die seiner Teile.
+## Alle Aktionen dieses DROME -- die seiner Teile, jede genau einmal.
 func actions() -> Array:
 	return build.actions() if build != null else []
+
+
+## Die Aktionen eines Budgets. Angriff und Faehigkeit sind getrennt zu planen
+## und werden deshalb auch getrennt angezeigt.
+func actions_of(category: ActionData.Category) -> Array:
+	return build.actions_of(category) if build != null else []
 
 
 func can_afford(action: ActionData) -> bool:

@@ -128,7 +128,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 
 	var action_meta = stats.get("action")
 	if action_meta != null:
-		part.action = ActionData.from_meta(action_meta, part.display_name)
+		part.action = ActionData.from_meta(action_meta, part.display_name, part.code)
 	return part
 
 

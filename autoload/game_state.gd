@@ -35,8 +35,24 @@ var battle_seed: int = 0
 ## Ergebnis des letzten Kampfes, fuer den Ergebnisbildschirm
 var last_result: Dictionary = {}
 
+## Playtest: Traglast- und Energiegrenze zaehlen nicht als Fehler.
+##
+## Der Wert lebt hier, weil er die Sitzung betrifft und nicht einen einzelnen
+## DROME -- durchgesetzt wird er in DromeBuild. Das Setzen laeuft ueber genau
+## diesen Setter, damit Werkstatt, Hauptmenue und Kampf gar nicht erst
+## auseinanderlaufen koennen.
+var ignore_build_limits: bool = false:
+	set(value):
+		ignore_build_limits = value
+		DromeBuild.ignore_limits = value
+
 
 func _ready() -> void:
+	# Voreinstellung aus data/config.json -- wer standardmaessig mit offenen
+	# Grenzen testen will, stellt es dort ein und muss es nicht jedes Mal in
+	# der Werkstatt anhaken.
+	ignore_build_limits = bool(Config.section("playtest").get(
+		"ignore_build_limits", false))
 	load_squad()
 
 
@@ -48,7 +64,11 @@ func new_seed() -> int:
 ## Squad als JSON. Bewusst dasselbe Loadout-Format wie die SVG-Werkstatt es
 ## exportiert -- ein Build aus builds/ laesst sich damit direkt spielen.
 func save_squad() -> void:
-	var payload := {"squad_size": squad_size, "squad": []}
+	var payload := {
+		"squad_size": squad_size,
+		"ignore_build_limits": ignore_build_limits,
+		"squad": [],
+	}
 	for build in squad:
 		payload["squad"].append(build.to_loadout())
 	var file := FileAccess.open(SQUAD_PATH, FileAccess.WRITE)
@@ -73,6 +93,12 @@ func load_squad() -> void:
 		return
 
 	squad_size = parsed.get("squad_size", squad_size)
+	# Ein im Playtest gebauter Squad kann Aufbauten enthalten, die ohne den
+	# Schalter ungueltig waeren. Der Schalter gehoert deshalb zum Spielstand --
+	# sonst laege beim naechsten Start ein Squad da, den das Spiel selbst
+	# ablehnt, ohne dass jemand etwas geaendert haette.
+	ignore_build_limits = bool(parsed.get("ignore_build_limits",
+		ignore_build_limits))
 	for loadout in parsed.get("squad", []):
 		var build := DromeBuild.from_loadout(loadout)
 		if build != null:

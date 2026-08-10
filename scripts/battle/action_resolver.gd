@@ -213,10 +213,20 @@ func _apply_taunt(source: Unit, target: Unit, action: ActionData) -> void:
 ## Was wuerde diese Aktion anrichten? Benutzt exakt dieselbe Rechnung wie die
 ## Ausfuehrung, nur ohne sie anzuwenden -- dieselbe Funktion, nicht dieselbe
 ## Formel zweimal aufgeschrieben.
+##
+## Eine Aktion OHNE Wirkungsmenge liefert 0 und nicht die Mindestmenge 1. Das
+## ist dieselbe Bedingung, unter der execute() ueberhaupt Schaden anwendet
+## (``action.power > 0``) -- der Orbit-Sog zieht sein Ziel zwei Felder, richtet
+## aber nichts an. Ohne diese Zeile rechnete die Vorschau ``max(1, 0 + atk -
+## def)`` und schrieb "1 Schaden" ueber ein Ziel, dem nichts passiert. Die KI
+## hatte genau diese Falle schon umgangen, indem sie vorher abbog
+## (AIController._action_score); die Anzeige lief weiter hinein.
 func preview_damage(source: Unit, target: Unit, action: ActionData) -> int:
 	if action.is_heal():
 		var missing := target.stat("hp_max") - target.hp
 		return -mini(action.heal_amount(), missing)
+	if action.power <= 0:
+		return 0
 	return mitigate(source, target, action.power + source.atk())
 
 
@@ -284,6 +294,26 @@ func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
 	if unit_at(tile) == null:
 		return "Kein Ziel"
 	return ""
+
+
+## Ist dieses Ziel ueberhaupt gemeint?
+##
+## Regeltechnisch darf ein Angriff auf den eigenen DROME gehen und eine
+## Reparatur auf den Gegner -- die Mitigationskette fragt nicht nach Seiten.
+## Angeboten wird beides trotzdem nicht: es waere nie das, was der Spieler
+## meint, und in einer Schadensvorschau ueber dem eigenen Techniker steht sonst
+## eine Zahl, die wie eine Drohung aussieht.
+##
+## Steht hier und nicht in der UI, weil Aktionsring und Schadensvorschau
+## dieselbe Antwort brauchen. Zwei Kopien waeren zwei Gelegenheiten, dass der
+## Ring eine Aktion anbietet, deren Zahl daneben fehlt.
+func is_meaningful_target(source: Unit, target: Unit, action: ActionData) -> bool:
+	if source == null or target == null:
+		return false
+	if target == source:
+		return action.is_heal() or action.targeting == ActionData.Targeting.SELF
+	var friendly := target.is_player == source.is_player
+	return action.is_heal() == friendly
 
 
 ## Welche Felder trifft die Aktion, wenn sie auf ``tile`` gezielt wird?

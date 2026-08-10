@@ -70,6 +70,10 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String) -> Dicti
 		sprite.texture = load(path)
 		sprite.centered = false
 		sprite.position = Vector2.ZERO
+		# Die Textur ist feiner gerastert als der Entwurfsraum (siehe
+		# tools/set_import_scale.py). Hier wird sie darauf zurueckgerechnet --
+		# sonst stuende ein DROME viermal zu gross neben seinem Feld.
+		IsoView.fit_sprite(sprite)
 		sprite.z_index = rank
 		parent.add_child(sprite)
 		sprites[entry["slot"]] = sprite

@@ -47,9 +47,15 @@ func spend_movement(cost: int) -> void:
 
 
 func can_use(action: ActionData) -> bool:
-	if action.category == ActionData.Category.ATTACK:
-		return attack_actions > 0
-	return ability_actions > 0
+	return actions_left(action.category) > 0
+
+
+## Wie viel von diesem Budget noch da ist. Die Aktionsleiste schreibt die Zahl
+## ueber die Gruppe -- "Angriff (0)" sagt in einem Blick, was "Angriff
+## verbraucht" erst nach dem Hovern verraet.
+func actions_left(category: ActionData.Category) -> int:
+	return attack_actions if category == ActionData.Category.ATTACK \
+		else ability_actions
 
 
 ## Warum geht diese Aktion nicht? Leerer String = sie geht.

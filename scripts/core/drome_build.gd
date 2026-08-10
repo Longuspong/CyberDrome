@@ -21,6 +21,27 @@ extends RefCounted
 ## Ein DROME hat keine Grundwerte. Jeder Stat ist die Summe seiner Teile.
 const SOCKET_SLOTS := ["body", "head", "feet", "core"]
 
+## Playtest-Schalter: Traglast und Energiebedarf zaehlen nicht mehr als Fehler.
+##
+## Beide Grenzen sind Balancing und bleiben es -- ein Molok, dessen dritter
+## Anker regelmaessig leer bleibt, weil der Kern die Energie nicht hergibt, ist
+## eine bewusste Entscheidung und keine Panne. Nur ist genau diese Grenze im
+## Playtest im Weg: um zu WISSEN, ob drei volle Slots zu stark waeren, muss man
+## sie einmal bauen und spielen koennen.
+##
+## Der Schalter hebt deshalb ausschliesslich die beiden Budgetgrenzen auf. Was
+## ein Aufbau ueberhaupt sein muss -- vier Sockel, eine Waffe, passende Teile in
+## passenden Haltern, mov und spd mindestens 1 --, gilt weiter: das sind keine
+## Stellschrauben, sondern die Bedingungen dafuer, dass ein DROME im Kampf
+## ueberhaupt handeln kann.
+##
+## Statisch und nicht je Aufbau, weil er eine Eigenschaft der SITZUNG ist und
+## nicht des DROME. Gesetzt wird er an genau einer Stelle (GameState), damit
+## Werkstatt, Hauptmenue und Kampf nicht auseinanderlaufen koennen. Der
+## Gegnergenerator fragt bewusst ``is_strictly_valid()`` und bleibt streng --
+## sonst wuerde ein Playtest-Schalter unbemerkt auch die Gegner aufruesten.
+static var ignore_limits: bool = false
+
 var display_name: String = "DROME"
 
 ## slot -> part_id. Slots ohne Eintrag sind leer.
@@ -77,6 +98,38 @@ func equip_slots() -> Array[String]:
 	return chassis.equip_slots()
 
 
+## In welchen Slot gehoert dieses Teil?
+##
+## Sockelteile in ihren Sockel. Ausruestung in ``preferred``, wenn dieser
+## Halter sie nimmt -- sonst in den ersten freien passenden, sonst in den
+## ersten passenden ueberhaupt. Leerer String heisst: nirgendwo, dieses Chassis
+## hat keinen Halter dafuer.
+##
+## Dieselbe Reihenfolge wie in der SVG-Werkstatt (README: "angewaehlter Slot,
+## sonst erster freier"), damit ein Klick in beiden Werkstaetten dasselbe tut.
+## Steht hier und nicht in der Oberflaeche, weil es eine Aussage ueber den
+## Aufbau ist und nicht ueber die Bedienung -- und weil es sich hier ohne
+## laufende Szene pruefen laesst.
+func slot_for(part: PartData, preferred: String = "") -> String:
+	if part == null:
+		return ""
+	if part.type != PartData.Type.EQUIPMENT:
+		return part.slot_name()
+	var chassis := body()
+	if chassis == null:
+		return ""
+	var slots := equip_slots()
+	if preferred in slots and chassis.accepts(part, preferred):
+		return preferred
+	for slot in slots:
+		if chassis.accepts(part, slot) and part_in(slot) == null:
+			return slot
+	for slot in slots:
+		if chassis.accepts(part, slot):
+			return slot
+	return ""
+
+
 func equipment() -> Array:
 	var result: Array = []
 	for slot in equip_slots():
@@ -94,13 +147,37 @@ func weapons() -> Array:
 	return result
 
 
-## Alle Aktionen, die dieser Aufbau gewaehrt.
+## Alle Aktionen, die dieser Aufbau gewaehrt -- jede genau einmal.
+##
+## ### Warum zweimal dasselbe Teil nicht zwei Eintraege ergibt
+##
+## Zwei Orbit-Fokusse gaben frueher zweimal "Orbit-Sog" in Aktionsleiste und
+## Aktionsring. Das war keine zweite Moeglichkeit, sondern eine doppelte
+## Zeile fuer dieselbe: die Budgets des Zuges stehen EINMAL zur Verfuegung
+## (ein Angriff, eine Faehigkeit, siehe TurnState), also laesst sich die
+## Aktion so oder so nur einmal ausfuehren. Der zweite Eintrag versprach dem
+## Spieler eine Wahl, die es nicht gab.
+##
+## Der doppelte Anbau bleibt trotzdem sinnvoll -- Stats summieren sich weiter
+## (zwei Fokusse sind +2 ATK), nur die Aktionsliste tut es nicht.
+##
+## Entdoppelt wird ueber die Aktions-ID, nicht ueber das Teil: zwei
+## verschiedene Teile mit derselben Aktion sind dieselbe Aktion.
 func actions() -> Array:
 	var result: Array = []
+	var seen := {}
 	for part in all_parts():
-		if part.action != null:
-			result.append(part.action)
+		if part.action == null or seen.has(part.action.id):
+			continue
+		seen[part.action.id] = true
+		result.append(part.action)
 	return result
+
+
+## Die Aktionen einer Kategorie. Angriff und Faehigkeit sind getrennte Budgets
+## und werden dem Spieler deshalb auch getrennt gezeigt.
+func actions_of(category: ActionData.Category) -> Array:
+	return actions().filter(func(action): return action.category == category)
 
 
 # ---------------------------------------------------------------------------
@@ -206,10 +283,20 @@ func clone() -> DromeBuild:
 # Validierung
 # ---------------------------------------------------------------------------
 
-## Alle verletzten Regeln im Klartext. Leer = gueltig.
-## Die UI zeigt diese Liste unveraendert an: der Spieler soll nicht raten,
-## welche der vier Regeln bricht.
+## Alle verletzten Regeln im Klartext, Budgetgrenzen eingeschlossen. Leer =
+## gueltig. Die UI zeigt diese Liste unveraendert an: der Spieler soll nicht
+## raten, welche der Regeln bricht.
 func validate() -> Array[String]:
+	var problems := structural_problems()
+	problems.append_array(budget_problems())
+	return problems
+
+
+## Was ein DROME sein MUSS, damit er im Kampf handeln kann. Diese Liste haengt
+## nicht am Playtest-Schalter -- ohne Antrieb kommt niemand vom Feld, ohne
+## Waffe richtet niemand etwas aus, und ein Teil im falschen Halter haengt
+## sichtbar in der Luft.
+func structural_problems() -> Array[String]:
 	var problems: Array[String] = []
 
 	for slot in SOCKET_SLOTS:
@@ -228,12 +315,6 @@ func validate() -> Array[String]:
 					% [part.display_name, _slot_label(slot)])
 
 	var total := stats()
-	if total["weight"] > total["weight_capacity"]:
-		problems.append("Traglast ueberschritten: %d / %d"
-			% [total["weight"], total["weight_capacity"]])
-	if total["power_draw"] > total["power_output"]:
-		problems.append("Energiebedarf zu hoch: %d / %d"
-			% [total["power_draw"], total["power_output"]])
 	if total["mov"] < 1:
 		problems.append("Bewegung zu gering: mov %d (mindestens 1)" % total["mov"])
 	if total["spd"] < 1:
@@ -242,7 +323,36 @@ func validate() -> Array[String]:
 	return problems
 
 
+## Die beiden Budgetgrenzen: Traglast und Energie. Genau die, die der
+## Playtest-Schalter aufhebt (siehe ``ignore_limits``).
+func budget_problems() -> Array[String]:
+	var problems: Array[String] = []
+	var total := stats()
+	if total["weight"] > total["weight_capacity"]:
+		problems.append("Traglast ueberschritten: %d / %d"
+			% [total["weight"], total["weight_capacity"]])
+	if total["power_draw"] > total["power_output"]:
+		problems.append("Energiebedarf zu hoch: %d / %d"
+			% [total["power_draw"], total["power_output"]])
+	return problems
+
+
+## Was diesen Aufbau JETZT davon abhaelt, in den Kampf zu gehen. Im Playtest
+## sind das nur noch die strukturellen Regeln.
+func blocking_problems() -> Array[String]:
+	if ignore_limits:
+		return structural_problems()
+	return validate()
+
+
 func is_valid() -> bool:
+	return blocking_problems().is_empty()
+
+
+## Gueltig nach den vollen Regeln, unabhaengig vom Playtest-Schalter. Der
+## Gegnergenerator fragt das -- Gegner sollen kanonisch baubar bleiben, auch
+## wenn der Spieler seine eigenen Grenzen gerade aushebelt.
+func is_strictly_valid() -> bool:
 	return validate().is_empty()
 
 

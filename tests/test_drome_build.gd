@@ -150,3 +150,169 @@ func test_every_ranged_action_requires_line_of_sight() -> void:
 			t.ok(part.action.requires_line_of_sight,
 				"%s hat Reichweite %d und braucht Sichtlinie"
 				% [part.id, part.action.range_tiles])
+
+
+# ---------------------------------------------------------------------------
+# Aktionen: einmal je Wirkung, getrennt nach Budget
+# ---------------------------------------------------------------------------
+
+func test_the_same_part_twice_grants_one_action() -> void:
+	# Zwei Orbit-Fokusse am Nimbus. Die Stats summieren sich, die Aktionsliste
+	# nicht: das Budget des Zuges gibt den Orbit-Sog ohnehin nur einmal her,
+	# und ein zweiter Eintrag verspraeche eine Wahl, die es nicht gibt.
+	var build := DromeBuild.create("DOPPELT", {
+		"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core",
+		"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus",
+	})
+	var single: int = build.stats()["atk"]
+	var actions_before := build.actions().size()
+
+	build.slots["equip_left"] = &"eq_orbit_focus"
+	t.equal(build.stats()["atk"], single + 1,
+		"zwei Fokusse geben weiterhin zweimal ATK")
+	t.equal(build.actions().size(), 1,
+		"aber nur EINEN Orbit-Sog (vorher waren es %d Eintraege)" % actions_before)
+
+
+func test_actions_are_split_by_budget() -> void:
+	var build := DromeBuild.create("GEMISCHT", {
+		"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core",
+		"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus",
+	})
+	var attacks := build.actions_of(ActionData.Category.ATTACK)
+	var abilities := build.actions_of(ActionData.Category.ABILITY)
+	t.equal(attacks.size(), 1, "der Runenstab ist ein Angriff")
+	t.equal(abilities.size(), 1, "der Orbit-Sog ist eine Faehigkeit")
+	t.equal(attacks.size() + abilities.size(), build.actions().size(),
+		"jede Aktion gehoert zu genau einem Budget")
+
+
+func test_weapons_are_plain_attacks() -> void:
+	# Eine Waffe schiesst; sie ist keine Faehigkeit. Waere der Blaster als
+	# Faehigkeit gefuehrt, naehme er dem Aufbau still seine Faehigkeitsaktion
+	# weg -- und der Spieler saehe nur, dass etwas fehlt.
+	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+		if part.category != "weapon" or part.action == null:
+			continue
+		t.ok(part.action.is_attack(),
+			"%s ist eine Waffe und damit ein normaler Angriff" % part.id)
+		t.equal(str(part.action.damage_type), "normal",
+			"%s richtet normalen Schaden an" % part.id)
+
+
+func test_every_action_names_its_source_part() -> void:
+	for part in PartDB.parts.values():
+		if part.action == null:
+			continue
+		t.equal(part.action.source_part_name, part.display_name,
+			"%s nennt sein Bauteil" % part.action.id)
+		var described := "\n".join(part.action.description_lines())
+		t.ok(described.contains("Reichweite"),
+			"%s beschreibt seine Reichweite" % part.action.id)
+
+
+# ---------------------------------------------------------------------------
+# Wohin ein Klick in der Bibliothek einraeumt
+# ---------------------------------------------------------------------------
+
+func test_a_part_finds_its_own_slot() -> void:
+	# Die Werkstatt zeigt links ALLE Teile. Damit muss der Klick selbst
+	# entscheiden, wohin -- sonst waere die Liste nur ein Katalog zum Ansehen.
+	var build := _stock("bot2")          # Molok: drei Anker
+	var head := PartDB.get_part(&"strix_head")
+	t.equal(build.slot_for(head), "head", "ein Kopf geht in den Kopfslot")
+
+	var chassis := PartDB.get_part(&"scout_body")
+	t.equal(build.slot_for(chassis), "body", "ein Chassis in den Chassisslot")
+
+	# Ausruestung: angewaehlter Halter zuerst, wenn er sie nimmt.
+	var blaster := PartDB.get_part(&"eq_pulse_blaster")
+	t.equal(build.slot_for(blaster, "equip_right"), "equip_right",
+		"der angewaehlte Halter gewinnt")
+
+	# Die Schulter des Molok nimmt nur leichte Support-Module. Eine schwere
+	# Kanone landet deshalb NICHT dort, auch wenn die Schulter angewaehlt ist.
+	var cannon := PartDB.get_part(&"eq_siege_cannon")
+	var target := build.slot_for(cannon, "equip_shoulder")
+	t.ok(target != "equip_shoulder",
+		"die Kanone landet nicht auf der Schulter, sondern in %s" % target)
+	t.ok(PartDB.get_part(build.slots["body"]).accepts(cannon, target),
+		"und der gewaehlte Halter nimmt sie wirklich")
+
+
+func test_a_part_that_fits_nowhere_says_so() -> void:
+	# Der Vireo nimmt an beiden Armen nur bis mittel -- die Belagerungskanone
+	# ist schwer und passt an ihm nirgendwohin. Die Bibliothek zeigt sie
+	# trotzdem, ausgegraut und mit Grund; dafuer muss "nirgendwo" eine Antwort
+	# sein und kein Zufallsslot.
+	var build := _stock("bot1")
+	var cannon := PartDB.get_part(&"eq_siege_cannon")
+	t.equal(build.slot_for(cannon), "",
+		"was in keinen Halter darf, bekommt keinen zugewiesen")
+
+
+func test_the_first_free_holder_wins_before_an_occupied_one() -> void:
+	var build := DromeBuild.create("HALBVOLL", {
+		"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core",
+		"equip_left": &"eq_pulse_blaster",
+	})
+	var shield := PartDB.get_part(&"eq_deflector")
+	t.equal(build.slot_for(shield), "equip_right",
+		"der freie Halter wird vor dem belegten genommen")
+	build.slots["equip_right"] = shield.id
+	t.equal(build.slot_for(shield), "equip_left",
+		"ist alles belegt, wird der erste passende ersetzt")
+
+
+# ---------------------------------------------------------------------------
+# Playtest: die beiden Budgetgrenzen abschaltbar
+# ---------------------------------------------------------------------------
+
+## Ein Molok mit drei bestueckten Slots. Genau der Fall, an dem der Schalter
+## haengt: der Fusionskern gibt nicht genug Energie fuer alle drei her.
+func _overloaded_molok() -> DromeBuild:
+	return DromeBuild.create("VOLLBESTUECKT", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_pulse_blaster",
+		"equip_shoulder": &"eq_drone_pod",
+	})
+
+
+func test_playtest_switch_lifts_only_the_two_budgets() -> void:
+	var build := _overloaded_molok()
+	t.ok(not build.budget_problems().is_empty(),
+		"drei volle Slots sprengen Traglast oder Energie: %s"
+		% ", ".join(build.validate()))
+	t.ok(not build.is_valid(), "und sind damit normal ungueltig")
+
+	DromeBuild.ignore_limits = true
+	t.ok(build.is_valid(), "im Playtest ist derselbe Aufbau baubar")
+	t.ok(not build.is_strictly_valid(),
+		"die strengen Regeln sagen weiterhin nein")
+	t.ok(not build.budget_problems().is_empty(),
+		"und die Ueberschreitung wird weiterhin genannt, nicht verschwiegen")
+
+	# Was ein DROME sein MUSS, bleibt auch im Playtest Pflicht.
+	var crippled := DromeBuild.create("OHNE", {"body": &"jugg_body"})
+	t.ok(not crippled.is_valid(),
+		"fehlende Sockel bleiben auch im Playtest ein Fehler: %s"
+		% ", ".join(crippled.blocking_problems()))
+	DromeBuild.ignore_limits = false
+	t.ok(not build.is_valid(), "ausgeschaltet gilt wieder die Grenze")
+
+
+func test_enemies_stay_strict_while_the_player_playtests() -> void:
+	# Sonst verschoebe der Schalter still den Massstab: der Spieler testet
+	# einen ueberladenen Aufbau gegen ebenso ueberladene Gegner und lernt
+	# nichts ueber sein Balancing.
+	DromeBuild.ignore_limits = true
+	var squad := EnemyGenerator.new(4711).generate(3, 600.0)
+	for build in squad:
+		t.ok(build.is_strictly_valid(),
+			"Gegner %s haelt die vollen Regeln ein: %s"
+			% [build.display_name, ", ".join(build.validate())])
+	DromeBuild.ignore_limits = false

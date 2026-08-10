@@ -37,6 +37,12 @@ func _ready() -> void:
 		warn.modulate = Color(1.0, 0.42, 0.42)
 		box.add_child(warn)
 
+	if GameState.ignore_build_limits:
+		var playtest := Label.new()
+		playtest.text = "Playtest: Traglast- und Energiegrenze sind aus."
+		playtest.modulate = Color(1.0, 0.72, 0.3)
+		box.add_child(playtest)
+
 	box.add_child(_spacer(10))
 
 	var workshop := Button.new()
@@ -111,6 +117,9 @@ func _squad_problems() -> Array[String]:
 	if GameState.squad.is_empty():
 		problems.append("Squad ist leer.")
 	for build in GameState.squad:
-		for line in build.validate():
+		# blocking_problems() und nicht validate(): im Playtest sind Traglast
+		# und Energie ausdruecklich erlaubt, und ein Knopf, der dann trotzdem
+		# grau bleibt, waere der Schalter ohne Wirkung.
+		for line in build.blocking_problems():
 			problems.append("%s: %s" % [build.display_name, line])
 	return problems
