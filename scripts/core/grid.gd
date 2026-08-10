@@ -252,8 +252,31 @@ func sight_blocker(from: Vector2i, to: Vector2i, ignore_haze: bool = false) -> S
 	return ""
 
 
-## Bresenham, beide Endpunkte eingeschlossen.
+## Bresenham, beide Endpunkte eingeschlossen -- und RICHTUNGSUNABHAENGIG.
+##
+## Der nackte Bresenham ist es nicht: bei halben Schritten entscheidet das
+## Vorzeichen der Fehlervariablen, welches der beiden gleich weit entfernten
+## Felder genommen wird, und das Vorzeichen haengt daran, an welchem Ende man
+## anfaengt. Bei 56 von 220 Richtungen im Umkreis von sieben Feldern laufen
+## Hin- und Rueckweg deshalb ueber verschiedene Felder. Liegt auf genau einem
+## davon ein Pfeiler oder eine Schwade, kann A auf B schiessen und B nicht auf
+## A -- in einem Spiel, das jede Aktion vorher durchrechnen laesst, ist das
+## nicht als Regel lesbar, sondern nur als Willkuer.
+##
+## Der Fix sitzt hier und nicht in den beiden Sicht-Funktionen, aus demselben
+## Grund wie ueberall sonst im Projekt: es gibt genau eine Rasterung, und wer
+## sie kuenftig aufruft, erbt die Symmetrie, ohne davon wissen zu muessen.
+##
+## Gerastert wird immer vom kanonisch kleineren Endpunkt aus; ist ``from``
+## nicht dieser, wird die fertige Linie umgedreht. Die Reihenfolge bleibt
+## dadurch die vom Schuetzen aus gesehene -- ``sight_blocker()`` nennt weiterhin
+## das Hindernis, das dem Schuetzen am naechsten liegt.
 func line(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	if to.x < from.x or (to.x == from.x and to.y < from.y):
+		var flipped := line(to, from)
+		flipped.reverse()
+		return flipped
+
 	var tiles: Array[Vector2i] = []
 	var x0 := from.x
 	var y0 := from.y

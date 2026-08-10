@@ -37,12 +37,7 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 ## Zeit -- bucht dann mit dem Grundkoeffizienten 1.0.
 func apply_damage(source: Unit, target: Unit, raw: int,
 		action: ActionData = null) -> int:
-	var amount := raw
-
-	amount = _absorb_shield(source, target, amount)      # 1. Post-MVP
-	amount = _apply_armor(source, target, amount)        # 2. Post-MVP
-	amount = amount - target.def()                       # 3. DEF flach abziehen
-	amount = maxi(1, amount)                             # 4. Mindestens 1
+	var amount := mitigate(source, target, raw)
 
 	target.hp = maxi(0, target.hp - amount)
 	target.damage_taken += amount
@@ -63,6 +58,49 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	if target.hp <= 0:
 		_kill(target)
 	return amount
+
+
+## Die Mitigationskette als reine Rechnung: was kommt von ``raw`` an?
+##
+## Vorschau UND Ausfuehrung rufen exakt diese Funktion auf, aus demselben Grund
+## wie bei ``Grid.drift_result()``: eine zweite, "vereinfachte" Rechnung fuer
+## die Vorschau ist genau die Stelle, an der das Versprechen bricht, dass sich
+## jede Aktion vorher durchrechnen laesst.
+##
+## Die Kette ist geordnet und hat vier Glieder. Schritt 1 und 2 sind im MVP
+## leere Durchreichungen -- wichtig ist nur, dass es sie als Kettenglieder
+## GIBT, damit Energieschild und Ruestung spaeter ohne Umbau eingehaengt
+## werden koennen.
+##
+## ### Warum DEF gedeckelt ist
+##
+## Der flache Abzug allein macht Aufbauten unangreifbar. DEF 14 ist im Bestand
+## baubar (Molok-Chassis 5 + Bunkerkopf 2 + Standbeine 2 + Deflektor 5), und
+## gegen den Puls-Blaster mit Staerke 12 blieb davon die Mindestmenge 1 uebrig
+## -- 145 Treffer bis zum Ausfall, bei ``cycle_limit`` 30 also nie. 13,7 % aller
+## gueltigen Aufbauten erreichen DEF >= 10; das ist selten genug, dass es in
+## wenigen Playtests durchrutscht, und haeufig genug, dass es irgendwann als
+## Kampf auftritt, der nicht endet.
+##
+## ``maxi(1, ...)`` war als Bremse gegen die Null gedacht und wurde dabei zur
+## Spielregel. Der Deckel ersetzt sie nicht, er kommt davor: DEF nimmt hoechstens
+## ``def_max_reduction`` der ankommenden Menge weg. Ein flacher, gedeckelter
+## Abzug bleibt eine Subtraktion und damit im Kopf nachrechenbar -- anders als
+## eine multiplikative Mitigation, und Nachrechenbarkeit ist hier ausdrueckliche
+## Designabsicht.
+func mitigate(source: Unit, target: Unit, raw: int) -> int:
+	var amount := raw
+	amount = _absorb_shield(source, target, amount)      # 1. Post-MVP
+	amount = _apply_armor(source, target, amount)        # 2. Post-MVP
+	amount = maxi(_armor_floor(amount), amount - target.def())  # 3. DEF, gedeckelt
+	return maxi(1, amount)                               # 4. Mindestens 1
+
+
+## Was DEF stehen lassen MUSS. Aufgerundet, damit der Deckel bei ungeraden
+## Staerken nicht stillschweigend zugunsten der Panzerung ausfaellt.
+func _armor_floor(amount: int) -> int:
+	var share := float(Config.section("combat").get("def_max_reduction", 0.5))
+	return int(ceil(float(amount) * (1.0 - clampf(share, 0.0, 1.0))))
 
 
 ## Post-MVP: Energieschild absorbiert. Der Haken existiert, damit ein Schild
@@ -173,14 +211,13 @@ func _apply_taunt(source: Unit, target: Unit, action: ActionData) -> void:
 # ---------------------------------------------------------------------------
 
 ## Was wuerde diese Aktion anrichten? Benutzt exakt dieselbe Rechnung wie die
-## Ausfuehrung, nur ohne sie anzuwenden.
+## Ausfuehrung, nur ohne sie anzuwenden -- dieselbe Funktion, nicht dieselbe
+## Formel zweimal aufgeschrieben.
 func preview_damage(source: Unit, target: Unit, action: ActionData) -> int:
 	if action.is_heal():
 		var missing := target.stat("hp_max") - target.hp
 		return -mini(action.heal_amount(), missing)
-	var raw := action.power + source.atk()
-	return maxi(1, _apply_armor(source, target,
-		_absorb_shield(source, target, raw)) - target.def())
+	return mitigate(source, target, action.power + source.atk())
 
 
 # ---------------------------------------------------------------------------

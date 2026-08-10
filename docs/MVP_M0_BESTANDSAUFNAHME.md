@@ -1,5 +1,13 @@
 # M0 — Bestandsaufnahme vor dem DROME-MVP
 
+> **Historisches Dokument. Es beschreibt den Stand VOR dem MVP und wird nicht
+> nachgeführt.** Was hier als fehlend oder offen steht, ist es überwiegend
+> nicht mehr: das Godot-Projekt existiert, der Bestand umfasst inzwischen 24
+> Bauteile statt 23 (der Ködersender EQP-008 kam dazu), Terrain-Assets liegen
+> unter `assets/terrain/`. Die drei Grundsatzfragen aus §6 sind entschieden und
+> in `docs/GAME_DESIGN.md` begründet — dort steht der aktuelle Stand, hier der
+> Ausgangspunkt.
+
 Erstes Abgabeergebnis nach §0.1 des Build-Prompts: **erst lesen, dann schreiben.**
 Dieses Dokument hält fest, was im Repository tatsächlich existiert, und wo der
 Build-Prompt von diesem Bestand abweicht. Es wird noch **keine** Zeile

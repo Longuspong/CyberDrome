@@ -36,7 +36,8 @@ extends RefCounted
 var entries: Dictionary = {}
 
 ## Wen dieser Gegner zuletzt tatsaechlich angegriffen hat. Der Amtsinhaber
-## bekommt einen Bonus (Traegheit) und ist vom Verfall ausgenommen.
+## bekommt in der KI einen Bonus (Traegheit) und verfaellt hier langsamer als
+## die anderen -- ausgenommen ist er nicht, siehe decay().
 var current_target = null
 
 
@@ -133,14 +134,26 @@ func ranking() -> Array:
 # Verfall
 # ---------------------------------------------------------------------------
 
-## Alte Beitraege verblassen -- ausser denen des aktuellen Ziels. Ohne Verfall
-## zementiert ein einzelner grosser Treffer in Zyklus 1 die Zielwahl fuer das
-## ganze Gefecht; mit zu starkem Verfall wird jeder Zug zur Neuwahl.
+## Alte Beitraege verblassen. Ohne Verfall zementiert ein einzelner grosser
+## Treffer in Zyklus 1 die Zielwahl fuer das ganze Gefecht; mit zu starkem
+## Verfall wird jeder Zug zur Neuwahl.
 ##
-## Dass der Amtsinhaber ausgenommen ist, ist kein Detail: er verliert keinen
-## Boden, waehrend alle anderen abbauen. Das ist dieselbe Traegheit, die der
-## Amtsinhaber-Bonus in der KI erzeugt, nur ueber die Zeit statt ueber die
-## einzelne Entscheidung.
+## **JEDER Eintrag verfaellt, auch der des aktuellen Ziels** -- nur langsamer,
+## um ``incumbent_scale``. Frueher war der Amtsinhaber ganz ausgenommen, und
+## das hat genau den Zustand hergestellt, gegen den der Verfall antritt:
+## ``add()`` ist eine unbegrenzte Summe, ein Herausforderer mit ``d`` Aggro je
+## Zyklus saettigt dagegen bei ``d * (1 - rate) / rate``. Bei rate 0.15 ist das
+## das 5,67-fache seines Beitrags. Wer in den ersten Zyklen genug aufgebaut
+## hatte, war ab dann dauerhaft das Ziel -- kein anderer Aufbau konnte ihn
+## abloesen, egal wie lange er wie hart zuschlug. Im Playtest sieht das nicht
+## nach einem Fehler aus, sondern nach "der Gegner ist auf meinen Molok
+## fixiert", also nach genau dem, was das System verspricht.
+##
+## Die Traegheit sitzt jetzt allein im Amtsinhaber-Bonus der KI, und das ist
+## auch begrifflich sauberer: Verfall ist ein Parameter des MODELLS, Traegheit
+## eine Frage der NUTZENBEWERTUNG. Der langsamere Satz hier ist kein zweiter
+## Traegheitshebel, sondern die Zusicherung, dass ein Ziel nicht mitten im
+## Anlauf wegrutscht.
 ##
 ## **Der Takt ist der ZYKLUS, nicht der eigene Zug.** Ein Zug ist in diesem
 ## Spiel keine gleichmaessige Zeiteinheit -- SPD entscheidet, wie oft jemand
@@ -148,13 +161,15 @@ func ranking() -> Array:
 ## Gegner die Beitraege aller Nicht-Ziele schneller abbauen und dadurch
 ## STAERKER an seinem Ziel kleben als ein langsamer. Niemand wuerde das als
 ## Absicht lesen. Der Zyklus ist die einzige gleichmaessige Uhr im Kampf.
-func decay(rate: float, drop_below: float) -> void:
+func decay(rate: float, drop_below: float, incumbent_scale: float = 0.5) -> void:
 	for unit_id in entries.keys():
-		if unit_id == current_target:
-			continue
-		var value := float(entries[unit_id]) * (1.0 - rate)
+		var scale: float = incumbent_scale if unit_id == current_target else 1.0
+		var value := float(entries[unit_id]) * (1.0 - rate * scale)
 		if value < drop_below:
-			entries.erase(unit_id)
+			# Ueber forget(), damit ein current_target, dessen Eintrag gerade
+			# verschwindet, nicht als Amtsinhaber ohne Tabellenzeile stehen
+			# bleibt -- er bekaeme sonst den Bonus auf einen Anteil von null.
+			forget(unit_id)
 		else:
 			entries[unit_id] = value
 

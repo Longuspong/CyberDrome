@@ -406,9 +406,30 @@ und aus der Deckung zu schiessen kostenlos.
 
 ### 6e. Verfall laeuft im ZYKLUS, nicht im Zug
 
-Einmal je Zyklus verblassen alle Eintraege -- ausser denen des aktuellen
-Ziels. Ohne Verfall zementiert ein grosser Treffer aus Zyklus 1 die Zielwahl
-fuer das ganze Gefecht; mit zu starkem Verfall wird jeder Zug zur Neuwahl.
+Einmal je Zyklus verblassen **alle** Eintraege, auch der des aktuellen Ziels --
+dieser nur langsamer, um `decay_scale_incumbent`. Ohne Verfall zementiert ein
+grosser Treffer aus Zyklus 1 die Zielwahl fuer das ganze Gefecht; mit zu
+starkem Verfall wird jeder Zug zur Neuwahl.
+
+**Der Amtsinhaber war einmal ganz ausgenommen, und das hat genau den Zustand
+hergestellt, gegen den dieser Absatz antritt.** `add()` ist eine unbegrenzte
+Summe; ein Herausforderer, der `d` Aggro je Zyklus erzeugt, saettigt dagegen
+bei `d · (1−r)/r` -- bei `decay_rate` 0.15 das 5,67-fache seines Beitrags.
+Gegen einen eingefrorenen Wert darueber kam er nie an. Wer in den ersten
+Zyklen genug aufgebaut hatte, war ab dann dauerhaft das Ziel, egal wie lange
+wer wie hart zuschlug.
+
+Das ist der unangenehme Sorte Fehler: es sieht nicht nach einem aus. Es sieht
+nach „der Gegner ist auf meinen Molok fixiert" aus, also nach genau dem, was
+das System verspricht. Aufgefallen waere es erst als Frustration -- „ich
+kriege ihn nicht von meinem Techniker runter" --, und dann haette man an
+`decay_rate` und `aggro_weight` gedreht, wo die Ursache nicht liegt.
+
+Die Traegheit sitzt deshalb jetzt allein im Amtsinhaber-Bonus (§6f), und das
+ist auch begrifflich sauber: **Verfall ist ein Parameter des Modells,
+Traegheit eine Frage der Nutzenbewertung.** Der langsamere Satz hier ist kein
+zweiter Traegheitshebel, sondern nur die Zusicherung, dass ein Ziel nicht
+mitten im Anlauf wegrutscht.
 
 **Der Takt ist der Zyklus, weil ein Zug in diesem Spiel keine gleichmaessige
 Zeiteinheit ist.** SPD bestimmt, wie oft jemand drankommt. Verfiele die
@@ -437,6 +458,16 @@ Seine Hoehe haengt an der eigenen Waffenreichweite: wer aus sieben Feldern
 schiesst, hat sich auf sein Ziel eingerichtet und laesst sich nicht von jedem
 Kratzer umlenken. Das ist der billigste Charakterisierungshebel im ganzen
 System -- ein Wert je Bauart, ohne eine Zeile KI-Code.
+
+**Er muss unter `aggro_weight` bleiben, und das ist keine Geschmacksfrage.**
+Der Aggro-Term ist ein Anteil zwischen 0 und 1 und damit nach oben auf
+`aggro_weight` gedeckelt. Steht ein Amtsinhaber-Bonus darueber, kann ihn kein
+Herausforderer je aufholen -- die Tabelle waere fuer die Zielwahl vollstaendig
+wirkungslos, ohne dass irgendetwas danach aussieht. Genau das war mit 12 gegen
+10 der Fall: ein Fernkaempfer konnte sein Ziel ueber die Aggro **nie**
+wechseln, nur ueber Schadensunterschiede und `kill_bonus`. Zusammen mit dem
+eingefrorenen Verfall aus §6e waren das zwei Sperren hintereinander vor
+derselben Tuer. `tests/test_aggro.gd` prueft die Invariante.
 
 Der **einzige harte Zwang** ist die Provokation (`Stoersignal`, die Aktion des
 Koedersenders). Sie kommt ausschliesslich aus einer Faehigkeit, kostet Energie,
@@ -498,6 +529,30 @@ hintereinander provozieren bringt dadurch nichts. Nach Ablauf steht die Quelle
 knapp vorn, aber nicht uneinholbar -- das Gefecht kippt zurueck ins normale
 Tabellenmodell, statt hart umzuschalten.
 
+**Dieselbe Falle stand an einer zweiten Aktion.** Der Orbit-Sog hat Staerke 0
+und `push_tiles` -2; ueber `preview_damage()` bewertet kam er auf die
+Mindestmenge 1. Weil das Faehigkeitsbudget eines Angriffs-Aufbaus ohnehin frei
+ist, hat die KI ihn damit **jeden Zug** gezogen -- ein Strix mit Reichweite
+sieben hat sich Zug um Zug seinen eigenen Vorteil weggezogen und den Gegner
+ins Handgemenge geholt.
+
+Die Regel daraus ist allgemeiner als beide Faelle: **eine Aktion ohne
+Wirkungsmenge darf nie ueber die Schadensvorschau bewertet werden.** Gerechnet
+wird auch hier in der Groesse, die zaehlt -- bei der Provokation in
+Lebensleisten, beim Stoss in **Reichweiten**:
+
+```
+wunsch = sign(reichweite_des_ziels - meine_reichweite)
+wert   = (abstand_vorher - abstand_nachher) x wunsch x shove_weight
+```
+
+Wer weiter schiesst als sein Ziel, will Abstand: Heranziehen wird negativ, und
+eine negative Bewertung faellt in `_best_move()` heraus -- die Aktion bleibt
+einfach ungenutzt. Wer kuerzer schiesst, will den Abstand schliessen; fuer ihn
+ist derselbe Zug positiv. Bei gleicher Reichweite gewinnt keiner etwas. Kein
+Sonderfall fuer „Nahkaempfer" noetig, das faellt aus dem Vergleich heraus --
+dieselbe Emergenz wie ueberall sonst in diesem Kapitel.
+
 ### 6h. Der Spieler muss die Tabelle sehen koennen
 
 Nicht als Zugabe, sondern als Bedingung. Der Kampf ist deterministisch und
@@ -518,11 +573,20 @@ bedeuten nichts.
 * nichts, was das Gefecht ueberlebt: Aggro ist begegnungslokal und wird beim
   Ausfall eines Ziels und beim Gefechtsende verworfen
 
-Die vier Eigenschaften, die das Modell tragen muss -- emergentes Tanken, kein
-Flackern, keine Eskalation bei Provokations-Spam, Schutz der Backline durch
-den Koeffizienten -- stehen als Tests in `tests/test_aggro.gd`. Sie sind vor
-jedem Balancing geschrieben worden, weil sie nicht pruefen, ob die Zahlen gut
-sind, sondern ob Balancing ueberhaupt Sinn ergibt.
+Die Eigenschaften, die das Modell tragen muss, stehen als Tests in
+`tests/test_aggro.gd`. Sie sind vor jedem Balancing geschrieben worden, weil
+sie nicht pruefen, ob die Zahlen gut sind, sondern ob Balancing ueberhaupt Sinn
+ergibt: emergentes Tanken, kein Flackern, keine Eskalation bei
+Provokations-Spam, Schutz der Backline durch den Koeffizienten -- und, spaeter
+dazugekommen, dass anhaltende Wirkung ein einmal gesetztes Ziel **ablösen
+kann**.
+
+Die fuenfte fehlte, und sie war rot. Die ersten vier pruefen alle die Ober- und
+die Kurzfristseite; die Langfristseite hat niemand angesehen, und dort lagen
+zwei Sperren gleichzeitig (§6e, §6f). Das ist die Lehre, die ueber das
+Aggro-System hinausgeht: **eine Doku, die gut begruendet, wird beim
+Codeschreiben nicht mehr gegengeprueft.** Der billigste Schutz ist, die
+Kernbehauptungen als Testfaelle zu formulieren statt als Prosa.
 
 ## 7. Zustaende und Animation
 
@@ -543,7 +607,29 @@ Optionen, damit das Anker-Format sie nicht ausschliesst:
   abgesichert, aber nie gespielt worden. Die Verhaeltnisse in 6c sind
   durchdacht, die Werte in `data/config.json` sind Setzungen. `decay_rate` und
   die Amtsinhaber-Boni steuern dieselbe Groesse -- die Traegheit der Zielwahl.
-  Immer nur eins von beiden anfassen.
+  Immer nur eins von beiden anfassen. Die eine Ausnahme ist bereits gemacht:
+  beide wurden zusammen umgestellt, weil sie zusammen die Zielwahl blockiert
+  haben (§6e, §6f). Ab hier gilt die Regel wieder.
+* **Energie ist im Kampf keine Ressource.** Die niedrigste Regeneration im
+  Bestand ist 8 pro Zug, und fuenf von sieben Aktionen kosten hoechstens so
+  viel -- sie sind damit dauerhaft gratis. `en_max` zwischen 40 und 110 wird
+  im Kampf nie angetastet, der Arkankern mit 85 Energie ist fuer einen
+  Runenstab-Aufbau (Kosten 0) reine Dekoration, und der Mutator **Brownout**
+  greift kaum: bei halbierter Regeneration decken die en_max-Vorraete die
+  Differenz laenger, als ein Gefecht dauert. Energie wirkt real nur beim
+  *Bauen*, ueber `power_draw` gegen `power_output`. Das ist eine legitime
+  Designwahl, aber vermutlich nicht die beabsichtigte. **Bewusst nicht
+  angefasst:** erst beobachten, ob es im Playtest jemandem auffaellt. Wenn
+  nicht, ist das selbst die Antwort. Der billigste Hebel waere danach,
+  `en_regen` zu halbieren und die Kosten zu lassen.
+* **`_can_strike()` schaetzt die Gefahr eines Feldes ueber `mov + range`.**
+  Ein Strix mit Reichweite 7 und mov 4 bedroht damit alles im Umkreis von 11 --
+  im Mittel 43 % einer 20x20-Karte. Weil die Kandidatenfelder der KI nur
+  `mov` auseinanderliegen, fallen sie oft alle gemeinsam in diesen Radius oder
+  gemeinsam heraus: gemessen in 55 % der Gefechtslagen gegen einen Strix,
+  gegen einen Nahkaempfer nur in 14 %. `exposed_penalty` wird dort zu einem
+  konstanten Abzug, der nichts mehr unterscheidet. Beobachtungsauftrag: faellt
+  im Playtest auf, dass die KI sich nicht positioniert?
 * **Das Gegner-Matching filtert den Koedersender heraus.** Gemessen ueber 400
   erzeugte Gegner: im rohen Wurf tragen ihn **11,2 %**, nach dem Abgleich gegen
   den Kampfwert nur noch **4,8 %**. Der Grund ist kein Fehler, sondern die

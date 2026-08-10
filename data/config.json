@@ -43,6 +43,20 @@
     "max_attempts": 20
   },
 
+  "combat": {
+    "_kommentar": [
+      "def_max_reduction deckelt, wieviel der flache DEF-Abzug von der",
+      "ankommenden Menge wegnehmen darf. 0.5 = hoechstens die Haelfte.",
+      "Ohne den Deckel griff nur noch die Mindestmenge 1, und ein Aufbau",
+      "mit DEF 14 war gegen eine Waffe mit Staerke 12 faktisch unangreifbar:",
+      "145 Integritaet bei 1 Schaden je Treffer sind mehr, als cycle_limit",
+      "hergibt. Auf 0.0 gesetzt ist der alte, ungedeckelte Abzug wieder da.",
+      "Siehe ActionResolver.mitigate() -- Vorschau und Ausfuehrung teilen",
+      "sich diese Rechnung."
+    ],
+    "def_max_reduction": 0.5
+  },
+
   "aggro": {
     "_kommentar": [
       "Das Zielwahl-Modell der Gegner. Siehe scripts/battle/aggro_table.gd.",
@@ -51,12 +65,19 @@
       "Frage der Nutzenbewertung, nicht des Modells.",
       "decay_rate und die incumbent_bonus-Werte steuern beide dieselbe",
       "Groesse: die Traegheit der Zielwahl. Wer beide gleichzeitig anzieht,",
-      "macht die Aggro unbeweglich. Immer nur eins von beiden anfassen."
+      "macht die Aggro unbeweglich. Immer nur eins von beiden anfassen.",
+      "decay_scale_incumbent ist die Ausnahme von dieser Regel und gehoert",
+      "zu decay_rate: es verlangsamt den Verfall des aktuellen Ziels, statt",
+      "ihn wie frueher ganz auszusetzen. Ausgesetzt war er die eigentliche",
+      "Ursache der Unbeweglichkeit -- gegen eine eingefrorene Summe kommt",
+      "ein Herausforderer nicht an, weil er selbst bei d*(1-rate)/rate",
+      "saettigt. Auf 0.0 gesetzt ist das alte Verhalten wieder da."
     ],
     "near_distance": 1,
     "proximity_near": 1.5,
     "proximity_far": 1.0,
     "decay_rate": 0.15,
+    "decay_scale_incumbent": 0.5,
     "decay_drop_below": 1.0,
     "taunt_factor": 1.1
   },
@@ -67,16 +88,24 @@
       "Eine Invariante zwischen dreien davon: taunt_weight + rescue_bonus",
       "muss UNTER kill_bonus bleiben. Sonst laeuft die KI an sicheren",
       "Abschuessen vorbei, um jemanden umzulenken -- und das liest sich als",
-      "Fehler, nicht als Taktik. tests/test_aggro.gd prueft es."
+      "Fehler, nicht als Taktik. tests/test_aggro.gd prueft es.",
+      "Und eine zweite: beide incumbent_bonus-Werte muessen UNTER",
+      "aggro_weight bleiben. Der Aggro-Term ist ein Anteil und damit auf",
+      "aggro_weight gedeckelt -- ein groesserer Bonus macht die Tabelle fuer",
+      "die Zielwahl wirkungslos, weil kein Herausforderer ihn je aufholen",
+      "kann. Genau das war mit 12 gegen 10 der Fall: ein Fernkaempfer konnte",
+      "sein Ziel ueber die Tabelle NIE wechseln. tests/test_aggro.gd prueft",
+      "auch das."
     ],
     "damage_weight": 1.0,
     "kill_bonus": 100.0,
     "aggro_weight": 10.0,
-    "incumbent_bonus_melee": 6.0,
-    "incumbent_bonus_ranged": 12.0,
+    "incumbent_bonus_melee": 3.0,
+    "incumbent_bonus_ranged": 5.0,
     "ranged_from_range": 3,
     "taunt_weight": 50.0,
     "rescue_bonus": 45.0,
+    "shove_weight": 4.0,
     "exposed_penalty": 8.0,
     "drift_penalty": 15.0,
     "haze_bonus": 12.0,

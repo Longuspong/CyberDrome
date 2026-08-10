@@ -147,16 +147,18 @@ func end_turn() -> void:
 	_check_victory()
 
 
-## Einmal je Zyklus verblassen alle Aggro-Eintraege ausser denen des jeweils
-## aktuellen Ziels. Der Zyklus ist die einzige gleichmaessige Uhr im Kampf --
-## ein Zug ist es nicht, weil SPD bestimmt, wie oft jemand drankommt.
+## Einmal je Zyklus verblassen alle Aggro-Eintraege -- die des jeweils
+## aktuellen Ziels langsamer, aber sie verblassen. Der Zyklus ist die einzige
+## gleichmaessige Uhr im Kampf; ein Zug ist es nicht, weil SPD bestimmt, wie
+## oft jemand drankommt.
 func _decay_aggro() -> void:
 	var section := Config.section("aggro")
 	var rate := float(section.get("decay_rate", 0.15))
 	var drop := float(section.get("decay_drop_below", 1.0))
+	var incumbent := float(section.get("decay_scale_incumbent", 0.5))
 	for unit in units:
 		if unit.aggro != null:
-			unit.aggro.decay(rate, drop)
+			unit.aggro.decay(rate, drop, incumbent)
 
 
 ## Statuseffekte koennen SPD veraendert haben. Der TICK-Bus muss das
