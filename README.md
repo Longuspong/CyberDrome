@@ -80,8 +80,8 @@ muss man sie einmal bauen und spielen koennen.
 Der Schalter **„Playtest: Traglast und Energie nicht erzwingen"** hebt genau
 diese beiden Budgetgrenzen auf. Ueberschritten wird weiterhin angezeigt, nur
 nicht mehr als Fehler gewertet. Alles andere gilt unveraendert -- vier Sockel,
-eine Waffe, passende Teile in passenden Haltern, `mov` und `spd` mindestens 1
---, und die **Gegner werden weiter streng gewuerfelt**: sonst verschoebe der
+passende Teile in passenden Haltern, `mov` und `spd` mindestens 1 --, und die
+**Gegner werden weiter streng gewuerfelt**: sonst verschoebe der
 Schalter still den Massstab, gegen den getestet wird. Voreinstellung in
 `data/config.json` unter `playtest.ignore_build_limits`.
 

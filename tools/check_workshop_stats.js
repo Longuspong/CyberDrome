@@ -139,10 +139,14 @@ const STOCK = {
 
 // Erwartungswerte aus dem Testlauf der Engine (tests/test_drome_build.gd).
 const EXPECTED = {
-  bot1: { hp: 60, en_max: 40, spd: 15, mov: 4, atk: 0, def: 6, power: 213 },
+  // SPD enthaelt den Abzug der Zuladung (DromeBuild.payload_slowdown): je vier
+  // Punkte Ausruestungsgewicht ein Punkt weniger. Der Molok bleibt bei 6, weil
+  // sein pauschales Chassis-SPD von -2 im selben Zug entfallen ist -- dieselbe
+  // Schwere, jetzt aus dem Gewicht statt aus einer Konstante.
+  bot1: { hp: 60, en_max: 40, spd: 13, mov: 4, atk: 0, def: 6, power: 207 },
   bot2: { hp: 145, en_max: 70, spd: 6, mov: 2, atk: 0, def: 9, power: 314 },
-  bot3: { hp: 85, en_max: 110, spd: 14, mov: 5, atk: 1, def: 2, power: 260 },
-  bot4: { hp: 70, en_max: 50, spd: 10, mov: 4, atk: 6, def: 2, power: 225 },
+  bot3: { hp: 85, en_max: 110, spd: 13, mov: 5, atk: 1, def: 2, power: 257 },
+  bot4: { hp: 70, en_max: 50, spd: 8, mov: 4, atk: 6, def: 2, power: 219 },
 };
 
 console.log("\n=== Werkstatt gegen Engine ===\n");
@@ -164,14 +168,28 @@ for (const [setId, assignment] of Object.entries(STOCK)) {
 // Die Validierung muss dieselben Regeln nennen wie DromeBuild.validate().
 withSlotDefs({ body: "scout_body" }, () => {
   const problems = sandbox.validateLoadout(loadoutOf({ body: "scout_body" }));
-  for (const expected of ["Sensorik fehlt", "Antrieb fehlt", "Kern fehlt",
-                          "Keine Waffe bestueckt"]) {
+  // "Keine Waffe bestueckt" steht hier bewusst NICHT mehr: ein waffenloser
+  // Aufbau ist eine Entscheidung, kein Fehler (DromeBuild.structural_problems).
+  for (const expected of ["Sensorik fehlt", "Antrieb fehlt", "Kern fehlt"]) {
     if (!problems.includes(expected)) {
       failures += 1;
       console.log(`  [FEHLER] leerer Aufbau meldet "${expected}" nicht`);
     }
   }
 });
+
+// Und die Gegenprobe zu derselben Regel: der waffenlose Techniker ist baubar.
+// Ohne sie koennte die Waffenpflicht hier unbemerkt wieder einziehen, waehrend
+// die Engine sie laengst abgelegt hat -- zwei Werkstaetten, zwei Wahrheiten.
+{
+  const technician = { body: "jugg_body", head: "jugg_head", feet: "jugg_feet",
+                       core: "jugg_core", equip_left: "eq_deflector",
+                       equip_shoulder: "eq_drone_pod" };
+  withSlotDefs(technician, () => {
+    check("waffenloser Techniker ist baubar",
+      sandbox.validateLoadout(loadoutOf(technician)), []);
+  });
+}
 
 // Ueberladen: der Vireo traegt 18.
 withSlotDefs(

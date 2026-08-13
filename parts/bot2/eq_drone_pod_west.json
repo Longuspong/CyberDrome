@@ -66,7 +66,7 @@
       "targeting": "aoe_around_target",
       "range_tiles": 3,
       "aoe_radius": 1,
-      "en_cost": 12,
+      "en_cost": 28,
       "power": -10,
       "requires_line_of_sight": true,
       "push_tiles": 0,

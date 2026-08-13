@@ -422,7 +422,64 @@ STAT_DEFAULTS = {
 # ``aggro_flat`` ist der Pauschalwert fuer Aktionen ohne Wirkungsmenge, und
 # ``taunt_turns`` macht eine Aktion zur Provokation (harter Zwang, befristet).
 # Genau eine Aktion im Bestand provoziert: das Stoersignal des Koedersenders
-# EQP-008, drei Zuege lang und fuer 14 Energie.
+# EQP-008, drei Zuege lang.
+
+# --- Was eine Faehigkeit kostet ---------------------------------------------
+#
+# Nach Regel statt nach Gefuehl. Der Bezug ist nicht der Tank, sondern das
+# ENERGIEBUDGET, das ein mittlerer Aufbau in der ERSTEN HAELFTE eines Gefechts
+# zur Verfuegung hat.
+#
+#     budget = en_max + 5 * en_regen        (Molok-Kern: 70 + 5*12 = 130)
+#
+# Die erste Haelfte und nicht das ganze Gefecht -- das ist der eigentliche
+# Kunstgriff. Gemessen ist ein DROME zehn bis vierzehn Mal am Zug (nicht sieben,
+# wie die 28 Zuege aus tests/test_battle.gd auf den ersten Blick nahelegen: wer
+# schneller ist, zieht oefter). Ueber ein GANZES Gefecht regeneriert selbst ein
+# Molok rund 190 Punkte und ein Nimbus fast 280. Bemisst man die Kosten daran,
+# ist die Faehigkeit in der Eroeffnung -- also dann, wenn sie entscheidet --
+# praktisch gratis und erst am Ende knapp. Genau andersherum ist es richtig.
+#
+# Daraus faellt die Kostenstufe aus der einzigen Frage, die man an eine
+# Faehigkeit stellen muss: wie oft soll sie vorkommen, solange es zaehlt?
+#
+#     kosten = budget / anwendungen
+#
+# Die Stufen sind bewusst grob. Eine feinere Skala waere Genauigkeit ohne
+# Aussage: welche Faehigkeit "stark" ist, entscheidet ihre WIRKUNG, und die
+# laesst sich nicht auf zwei Stellen hinter dem Komma begruenden.
+#
+#   stark    harter Zwang oder Flaechenwirkung, die ein Gefecht kippt
+#   mittel   spuerbare Wirkung auf ein Ziel oder eine kleine Flaeche
+#   schwach  Kontrolle ohne Wirkungsmenge -- schieben, ziehen, stellen
+#
+# Gemessen ueber 40 Gefechte kommt dabei heraus: Stoersignal 0.5, Reparatur-
+# drohnen 1.9, Orbit-Sog 5.3 Einsaetze je Gefecht. Die Kosten sind die
+# OBERGRENZE, nicht der Fahrplan -- was davon tatsaechlich gezogen wird,
+# entscheidet die Lage, und eine Provokation lohnt sich eben selten.
+# tests/test_battle.gd haelt dieses Band fest.
+#
+# Die Untergrenze ist der KLEINSTE Tank im Bestand (Vireo-Kern, en_max 40):
+# eine Faehigkeit, die teurer waere als er, koennte an einem Vireo nie gezogen
+# werden. Ein Teil, das an einem Chassis grundsaetzlich tot ist, waere ein
+# Datenfehler und kein Balancing -- deshalb prueft check_ability_costs() das.
+# Der Vireo-Kern ist damit die eigentliche Decke fuer "stark": 130/4 waere 33,
+# aber auch 45 waere noch vertretbar -- 40 waere es nicht mehr.
+ABILITY_BUDGET = 140
+ABILITY_USES_IN_THE_FIRST_HALF = {"stark": 4, "mittel": 5, "schwach": 7}
+SMALLEST_TANK = 40
+
+# Spiegelt spd_weight_step aus data/config.json. Steht hier nur, damit die
+# Baubarkeitspruefung unten dasselbe Tempo ausrechnet wie das Spiel; die
+# Stellschraube selbst gehoert in die Konfiguration und nicht hierher.
+SPD_WEIGHT_STEP = 4
+
+
+def ability_cost(tier: str) -> int:
+    """Energiekosten einer Faehigkeit aus ihrer Stufe. Die EINZIGE Stelle."""
+    return round(ABILITY_BUDGET / ABILITY_USES_IN_THE_FIRST_HALF[tier])
+
+
 STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
     # HP, DEF, Traglast. SPD/MOV sind Auf- und Abschlaege auf den Antrieb.
@@ -432,7 +489,14 @@ STATS = {
     # zwei Ausruestungsteile im Satz, deshalb ist es nie aufgefallen. Ein
     # Chassis, das seine eigenen Anker nicht bestuecken kann, ist ein
     # Datenfehler und kein Balancing (siehe check_stock_builds).
-    "jugg_body":   {"hp": 130, "def": 5, "spd": -2, "mov": -1, "weight_capacity": 31},
+    #
+    # 31 -> 33, und SPD -2 -> 0. Zwei schwere Waffen an zwei schweren Armen
+    # (2x8 = 16 auf 17 freie Punkte) waren vorher um EINEN Punkt unmoeglich --
+    # der schwere Slot war eine Erlaubnis, die das Budget wieder einkassierte.
+    # Der SPD-Abschlag faellt weg, weil die Masse jetzt selbst bremst
+    # (DromeBuild.payload_slowdown); ein pauschales -2 obendrauf zaehlte
+    # dieselbe Schwere ein zweites Mal. Mit Schulterpod bleibt es bei 35 > 33.
+    "jugg_body":   {"hp": 130, "def": 5, "spd":  0, "mov": -1, "weight_capacity": 33},
     "mage_body":   {"hp":  85, "def": 2, "spd":  0, "mov":  0, "weight_capacity": 20,
                     "en_max": 10},
     "strix_body":  {"hp":  70, "def": 2, "spd":  1, "mov":  0, "weight_capacity": 22},
@@ -485,18 +549,26 @@ STATS = {
     # Passiv. Ein Schild ist kein Knopf, sondern eine Entscheidung beim Bauen.
     "eq_deflector": {"def": 5, "weight": 4, "power_draw": 2},
 
+    # Das einzige rein MECHANISCHE Geschuetz im Bestand: Pulver, Masse, Hebel.
+    # Deshalb power_draw 0 und en_cost 0 -- sie zieht keinen Strom, weder im
+    # Stand noch beim Schuss. Bezahlt wird sie in Gewicht (8, der schwerste
+    # Wert im Bestand) und in Tempo: ueber DromeBuild.payload_slowdown kostet
+    # sie an JEDEM Chassis zwei Punkte SPD. Frueher trug sie power_draw 5, und
+    # das war Balancing im Kostuem der Fiktion -- der Spieler las
+    # "Energiebedarf" an einer Kanone und konnte sich nichts darunter denken.
     "eq_siege_cannon": {
-        "weight": 8, "power_draw": 5,
+        "weight": 8, "power_draw": 0,
         "action": {"id": "act_siege", "display_name": "Belagerungsschlag",
                    "category": "attack", "targeting": "aoe_around_target",
-                   "range_tiles": 6, "aoe_radius": 1, "power": 18, "en_cost": 5,
+                   "range_tiles": 6, "aoe_radius": 1, "power": 18, "en_cost": 0,
                    "requires_line_of_sight": True},
     },
     "eq_drone_pod": {
         "weight": 3, "power_draw": 4,
         "action": {"id": "act_dronepod", "display_name": "Reparaturdrohnen",
                    "category": "ability", "targeting": "aoe_around_target",
-                   "range_tiles": 3, "aoe_radius": 1, "power": -10, "en_cost": 12,
+                   "range_tiles": 3, "aoe_radius": 1, "power": -10,
+                   "en_cost": ability_cost("mittel"),
                    "requires_line_of_sight": True, "aggro_coeff": 0.5},
     },
     # Reichweite 1 und damit ohne Sichtlinie: der Runenstab ist die einzige
@@ -511,7 +583,8 @@ STATS = {
         "weight": 3, "power_draw": 3, "aggro_bonus": 25,
         "action": {"id": "act_provoke", "display_name": "Stoersignal",
                    "category": "ability", "targeting": "single",
-                   "range_tiles": 3, "power": 0, "en_cost": 14,
+                   "range_tiles": 3, "power": 0,
+                   "en_cost": ability_cost("stark"),
                    "requires_line_of_sight": True, "taunt_turns": 3},
     },
 
@@ -526,7 +599,8 @@ STATS = {
         "weight": 3, "power_draw": 3, "atk": 1,
         "action": {"id": "act_orbitpull", "display_name": "Orbit-Sog",
                    "category": "ability", "targeting": "single",
-                   "range_tiles": 4, "power": 0, "en_cost": 8,
+                   "range_tiles": 4, "power": 0,
+                   "en_cost": ability_cost("schwach"),
                    "push_tiles": -2, "requires_line_of_sight": True,
                    "aggro_flat": 8},
     },
@@ -2098,6 +2172,7 @@ def main() -> None:
     check_mounts()
     check_core_seat()
     check_silhouettes()
+    check_ability_costs()
     check_stats()
     print_slot_matrix()
 
@@ -2279,6 +2354,45 @@ def check_silhouettes() -> None:
         )
 
 
+def check_ability_costs() -> None:
+    """
+    Keine Aktion darf teurer sein als der kleinste Tank im Bestand.
+
+    Die Energiekosten sind mit ability_cost() bewusst hoch angesetzt -- eine
+    Faehigkeit soll in einem Gefecht ein paar Mal vorkommen und nicht jeden Zug.
+    Genau daran laesst sich aber vorbeirechnen: waere eine Faehigkeit teurer als
+    ``en_max`` des kleinsten Kerns, koennte der Aufbau sie nie ziehen. Das Teil
+    passte dann an den Slot, stuende in der Aktionsleiste und waere trotzdem tot
+    -- ein Datenfehler, der sich als Balancing tarnt.
+
+    Geprueft wird gegen den KLEINSTEN Kern und nicht gegen den gerade gebauten
+    Aufbau: welchen Kern jemand einbaut, ist seine Entscheidung, und eine
+    Faehigkeit soll an keiner davon grundsaetzlich unbenutzbar sein.
+    """
+    smallest = min(part_stats(pid)["en_max"] for pid in STATS
+                   if pid.endswith("_core"))
+    if smallest != SMALLEST_TANK:
+        raise SystemExit(
+            f"SMALLEST_TANK steht auf {SMALLEST_TANK}, der kleinste Kern im "
+            f"Bestand hat aber en_max {smallest}. Die Konstante wird zur Luege, "
+            f"sobald sich ein Kern aendert -- bitte nachziehen."
+        )
+
+    for _spec, part in all_parts():
+        action = STATS.get(part["id"], {}).get("action")
+        if not action:
+            continue
+        cost = action.get("en_cost", 0)
+        if cost > smallest:
+            raise SystemExit(
+                f"{part['id']}: '{action['display_name']}' kostet {cost} "
+                f"Energie, der kleinste Kern im Bestand hat aber nur "
+                f"en_max {smallest}. Die Aktion waere dort nie ziehbar.\n"
+                f"Entweder eine guenstigere Stufe in ability_cost() waehlen "
+                f"oder den kleinsten Kern anheben."
+            )
+
+
 def check_stats() -> None:
     """
     Die Baubarkeitsregel als Test: jeder Bausatz muss sich selbst bauen koennen.
@@ -2291,7 +2405,10 @@ def check_stats() -> None:
     Chassis Anker hat.
 
     Geprueft werden die vier Regeln, die auch die Werkstatt spaeter prueft:
-    Pflichtteile, Traglast, Energie, und mov/spd mindestens 1.
+    Pflichtteile, Traglast, Energie, und mov/spd mindestens 1. Die Waffe steht
+    zusaetzlich in der Liste -- fuer einen SPIELER ist ein waffenloser Aufbau
+    eine zulaessige Entscheidung, fuer einen Bausatz waere sein Standardaufbau
+    ohne Waffe aber als Vorlage wertlos.
     """
     for spec, part in all_parts():
         if part["id"] not in STATS:
@@ -2307,30 +2424,59 @@ def check_stats() -> None:
         slots = sorted(a for a in body["anchors"] if a.startswith("equip_"))
         rules = body.get("slot_rules", {})
 
-        chosen = [body] + [parts[t] for t in ("head", "feet", "core") if t in parts]
+        sockets = [body] + [parts[t] for t in ("head", "feet", "core")
+                            if t in parts]
+        capacity = sum(part_stats(p["id"])["weight_capacity"] for p in sockets)
+        output = sum(part_stats(p["id"])["power_output"] for p in sockets)
+
         equipment = [p for p in spec["parts"] if p["type"].startswith("equipment")]
-        # Waffen zuerst -- ein Aufbau ohne Waffe ist per Regel ungueltig.
+        # Waffen zuerst -- ein Bausatz, dessen Standardaufbau nichts anrichtet,
+        # ist als Vorlage wertlos, auch wenn die Regeln ihn inzwischen zulassen.
         equipment.sort(key=lambda p: p.get("category", DEFAULT_CATEGORY) != "weapon")
+
+        # Bestueckt wird BUDGETBEWUSST: das erste Teil, das an den Slot passt
+        # UND in Traglast und Energie noch hineingeht. Vorher nahm die Auswahl
+        # blind das erstbeste passende und lief damit in ihre eigene
+        # Fehlermeldung -- der Molok traegt zwei schwere Waffen, aber nicht
+        # zusaetzlich den Schulterpod, und das ist Absicht und kein Datenfehler.
+        chosen = list(sockets)
+        used_weight = sum(part_stats(p["id"])["weight"] for p in sockets)
+        used_power = sum(part_stats(p["id"])["power_draw"] for p in sockets)
         for slot in slots:
-            fit = next((p for p in equipment if p not in chosen and
-                        fits_rule(p.get("mount_class", DEFAULT_MOUNT_CLASS),
-                                  p.get("category", DEFAULT_CATEGORY),
-                                  rules.get(slot))), None)
-            if fit:
-                chosen.append(fit)
+            for p in equipment:
+                if p in chosen:
+                    continue
+                if not fits_rule(p.get("mount_class", DEFAULT_MOUNT_CLASS),
+                                 p.get("category", DEFAULT_CATEGORY),
+                                 rules.get(slot)):
+                    continue
+                s = part_stats(p["id"])
+                if used_weight + s["weight"] > capacity:
+                    continue
+                if used_power + s["power_draw"] > output:
+                    continue
+                chosen.append(p)
+                used_weight += s["weight"]
+                used_power += s["power_draw"]
+                break
 
         stats = {k: 0 for k in ("hp", "en_max", "spd", "mov", "atk", "def",
                                 "weight", "power_draw")}
-        capacity = output = 0
         has_weapon = False
+        payload = 0
         for p in chosen:
             s = part_stats(p["id"])
             for k in stats:
                 stats[k] += s[k]
-            capacity += s["weight_capacity"]
-            output += s["power_output"]
+            if p["type"].startswith("equipment"):
+                payload += s["weight"]
             if p.get("category") == "weapon":
                 has_weapon = True
+
+        # Dieselbe Kopplung wie DromeBuild.payload_slowdown(): die Zuladung
+        # bremst. Ohne sie zeigte die Tabelle hier ein Tempo an, das es im Spiel
+        # nicht gibt -- und die spd-Pruefung unten liefe ins Leere.
+        stats["spd"] -= payload // SPD_WEIGHT_STEP
 
         where = spec["id"]
         problems = []

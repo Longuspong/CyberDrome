@@ -634,14 +634,26 @@ einmal haengt. Im MVP reicht die Kette den Schaden dort unveraendert durch.
   multiplikativ wirken (dann bricht die Nachrechenbarkeit im Kopf, die
   `mitigate()` ausdruecklich schuetzt) oder als weiterer flacher, gedeckelter
   Abzug.
-* **Der dritte Slot des Molok ist selten bezahlbar.** Nach zwei bestueckten
-  Ankern gibt der Fusionskern meist keine Energie mehr fuer den dritten her.
-  Das ist als Balancing plausibel, aber ungetestet -- und im Playtest im Weg.
-  Deshalb gibt es den Schalter `playtest.ignore_build_limits`, der genau die
-  beiden Budgetgrenzen aufhebt (Werkstatt: *„Playtest: Traglast und Energie
-  nicht erzwingen"*). Gegner werden davon nicht beruehrt. Zu entscheiden ist,
-  ob der Kern mehr Ausstoss bekommt, die Schulter billiger wird, oder ob drei
-  volle Slots gar nicht vorgesehen sind.
+* **Der dritte Slot des Molok ist selten bezahlbar.** Teilweise beantwortet.
+  Die urspruengliche Diagnose war falsch: bei EIGENEN Sockeln reisst nicht die
+  Energie, sondern die **Traglast**, und zwar um genau einen Punkt -- zwei
+  schwere Arme wogen 32 bei Kapazitaet 31. Der schwere Slot war damit eine
+  Erlaubnis, die das Budget wieder einkassierte. Nach Energie fuehlt es sich
+  nur an, sobald man Sockel aus fremden Bausaetzen mischt: Ausstoss kommt
+  ausschliesslich aus dem Kern (12 bis 16), waehrend Kopf und Antrieb je nach
+  Satz 3 bis 7 ziehen. Von 7680 strukturell gueltigen Molok-Aufbauten mit drei
+  belegten Ankern scheiterten 5228 allein an der Energie.
+
+  Geaendert: Traglast 31 → 33, Chassis-SPD -2 → 0 (die Masse bremst jetzt
+  selbst, siehe unten), und die Belagerungskanone zieht keinen Strom mehr.
+  **Zwei schwere Arme sind seither baubar (32 von 33), drei volle Slots mit
+  Schulterpod nicht (35).** Das ist die Antwort auf die dritte der drei Fragen
+  -- drei volle Anker sind nicht vorgesehen, zwei schwere aber sehr wohl.
+
+  Offen bleibt, ob der Ausstoss ueberhaupt nur aus dem Kern kommen soll. Ihn
+  auch aufs Chassis zu legen waere der strukturelle Hebel dagegen, dass fremde
+  Sockel das ganze Ausruestungsbudget auffressen. Der Schalter
+  `playtest.ignore_build_limits` bleibt fuers Ausprobieren.
 * **Aggro-Zahlen sind ungetestet.** Das Modell steht und ist durch Tests
   abgesichert, aber nie gespielt worden. Die Verhaeltnisse in 6c sind
   durchdacht, die Werte in `data/config.json` sind Setzungen. `decay_rate` und
@@ -649,18 +661,36 @@ einmal haengt. Im MVP reicht die Kette den Schaden dort unveraendert durch.
   Immer nur eins von beiden anfassen. Die eine Ausnahme ist bereits gemacht:
   beide wurden zusammen umgestellt, weil sie zusammen die Zielwahl blockiert
   haben (§6e, §6f). Ab hier gilt die Regel wieder.
-* **Energie ist im Kampf keine Ressource.** Die niedrigste Regeneration im
-  Bestand ist 8 pro Zug, und fuenf von sieben Aktionen kosten hoechstens so
-  viel -- sie sind damit dauerhaft gratis. `en_max` zwischen 40 und 110 wird
-  im Kampf nie angetastet, der Arkankern mit 85 Energie ist fuer einen
-  Runenstab-Aufbau (Kosten 0) reine Dekoration, und der Mutator **Brownout**
-  greift kaum: bei halbierter Regeneration decken die en_max-Vorraete die
-  Differenz laenger, als ein Gefecht dauert. Energie wirkt real nur beim
-  *Bauen*, ueber `power_draw` gegen `power_output`. Das ist eine legitime
-  Designwahl, aber vermutlich nicht die beabsichtigte. **Bewusst nicht
-  angefasst:** erst beobachten, ob es im Playtest jemandem auffaellt. Wenn
-  nicht, ist das selbst die Antwort. Der billigste Hebel waere danach,
-  `en_regen` zu halbieren und die Kosten zu lassen.
+* ~~**Energie ist im Kampf keine Ressource.**~~ **Beantwortet.** Der Befund
+  stimmte: fuenf von sieben Aktionen kosteten hoechstens eine Zugregeneration
+  und waren damit dauerhaft gratis; Energie wirkte real nur beim *Bauen*. Die
+  Antwort ist nicht der vermutete Hebel (`en_regen` halbieren) geworden,
+  sondern eine Trennung nach dem, was ein Teil IST:
+
+  > **Masse bremst, Strom kostet.**
+
+  Mechanische Teile zahlen in Gewicht und Tempo, energetische in Energie. Die
+  Belagerungskanone ist Pulver und Hebel -- sie hat `power_draw` 0 und
+  `en_cost` 0 und bezahlt ueber `DromeBuild.payload_slowdown()` an jedem
+  Chassis zwei Punkte SPD. Vorher trug sie `power_draw` 5, und der
+  Energiebedarf war ein Universalhebel, der auf jedem Teil klebte, egal ob es
+  physikalisch Strom braucht: Balancing im Kostuem der Fiktion.
+
+  Die Kosten der **Faehigkeiten** stehen seither nicht mehr nach Gefuehl,
+  sondern nach Regel (`ability_cost()` in `tools/build_sample_parts.py`).
+  Bezugsgroesse ist das Energiebudget der ERSTEN HAELFTE eines Gefechts, nicht
+  des ganzen: gemessen ist ein DROME zehn bis vierzehn Mal am Zug, ueber ein
+  ganzes Gefecht regeneriert ein Nimbus fast 280 Punkte. Bemisst man daran, ist
+  die Faehigkeit in der Eroeffnung -- also dann, wenn sie entscheidet --
+  praktisch gratis. Gemessen ueber 40 Gefechte kommen jetzt 0.5 (Stoersignal),
+  1.9 (Reparaturdrohnen) und 5.3 (Orbit-Sog) Einsaetze je Gefecht heraus;
+  `tests/test_battle.gd` haelt dieses Band fest. Die Decke fuer die teuerste
+  Stufe ist der kleinste Kern im Bestand (`en_max` 40) -- eine Faehigkeit, die
+  an einem Chassis grundsaetzlich unziehbar waere, ist ein Datenfehler und kein
+  Balancing, und `check_ability_costs()` laesst sie nicht durch.
+
+  Offen bleibt davon genau ein Punkt: ob eine **Abklingzeit** die feinere
+  Bremse waere als der Preis. Das laesst sich nur spielen, nicht ausrechnen.
 * **`_can_strike()` schaetzt die Gefahr eines Feldes ueber `mov + range`.**
   Ein Strix mit Reichweite 7 und mov 4 bedroht damit alles im Umkreis von 11 --
   im Mittel 43 % einer 20x20-Karte. Weil die Kandidatenfelder der KI nur

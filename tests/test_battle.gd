@@ -256,6 +256,76 @@ func test_area_repair_does_not_patch_up_the_enemy() -> void:
 	foe.free()
 
 
+## Ein Squad, das ALLE drei Faehigkeiten des Bestands traegt -- sonst misst der
+## Test unten nur, was zufaellig mitgewuerfelt wurde.
+func _ability_squad() -> Array:
+	return [
+		DromeBuild.create("KOEDER", {
+			"body": &"jugg_body", "head": &"jugg_head",
+			"feet": &"jugg_feet", "core": &"jugg_core",
+			"equip_left": &"eq_siege_cannon", "equip_shoulder": &"eq_bait_beacon"}),
+		DromeBuild.create("SANI", {
+			"body": &"mage_body", "head": &"mage_head",
+			"feet": &"mage_drive", "core": &"mage_core",
+			"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus"}),
+	]
+
+
+func test_abilities_are_scarce_but_never_dead() -> void:
+	# Die Energiekosten der Faehigkeiten sind aus einer Regel abgeleitet
+	# (tools/build_sample_parts.py, ability_cost) und liegen rund zweieinhalb
+	# Mal ueber den alten Werten. Diese Rechnung kann auf zwei Arten kippen, und
+	# beide fallen erst im Spiel auf:
+	#
+	#   zu teuer    die Faehigkeit steht in der Aktionsleiste und wird nie
+	#               gezogen -- der Ausruestungsslot ist dann verschenkt
+	#   zu billig   sie wird jeden Zug gezogen, weil das Faehigkeitsbudget
+	#               eines Angriffs-Aufbaus ohnehin frei ist. Genau daran ist
+	#               der Orbit-Sog schon einmal gescheitert.
+	#
+	# Gemessen wird deshalb das BAND, nicht die Zahl: eine feste Erwartung waere
+	# bei einer nutzenbasierten KI ohnehin nur eine Momentaufnahme.
+	var uses := {}
+	var battles := 20
+	for i in battles:
+		var battle := BattleManager.new()
+		battle.setup(7000 + i, _ability_squad())
+		var controller := AIController.new(battle)
+		var guard := 0
+		while battle.outcome == BattleManager.Outcome.RUNNING and guard < MAX_TURNS:
+			guard += 1
+			var unit := battle.begin_next_turn()
+			if unit == null:
+				if battle.outcome != BattleManager.Outcome.RUNNING:
+					break
+				continue
+			for _step in 6:
+				if battle.outcome != BattleManager.Outcome.RUNNING:
+					break
+				var step := controller.take_step()
+				if step.is_empty():
+					break
+				if step.get("kind") != "action":
+					continue
+				var action: ActionData = step["action"]
+				if action.category == ActionData.Category.ABILITY:
+					uses[action.id] = uses.get(action.id, 0) + 1
+			if battle.outcome == BattleManager.Outcome.RUNNING:
+				battle.end_turn()
+		battle.free()
+
+	for id in [&"act_provoke", &"act_dronepod", &"act_orbitpull"]:
+		t.ok(uses.get(id, 0) > 0,
+			"%s wird in %d Gefechten mindestens einmal gezogen (%d)"
+			% [id, battles, uses.get(id, 0)])
+
+	for id in uses:
+		var per_battle := float(uses[id]) / float(battles)
+		t.ok(per_battle < 8.0,
+			"%s bleibt knapp: %.1f Einsaetze je Gefecht" % [id, per_battle])
+	t.note("Faehigkeiten je Gefecht: %s" % str(uses))
+
+
 func test_same_seed_gives_the_same_battle() -> void:
 	# Akzeptanzkriterium: denselben Seed zweimal spielen und exakt dasselbe
 	# bekommen -- Karte, Region, Mutator, Gegner, Ausgang.

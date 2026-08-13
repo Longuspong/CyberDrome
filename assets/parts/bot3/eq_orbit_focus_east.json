@@ -69,7 +69,7 @@
       "targeting": "single",
       "range_tiles": 4,
       "aoe_radius": 0,
-      "en_cost": 8,
+      "en_cost": 20,
       "power": 0,
       "requires_line_of_sight": true,
       "push_tiles": -2,

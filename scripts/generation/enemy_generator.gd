@@ -63,7 +63,14 @@ func _random_build(display_name: String) -> DromeBuild:
 		# Budgetgrenzen im Playtest aus (DromeBuild.ignore_limits), sollen
 		# seine Gegner deswegen nicht mit aufruesten. Sonst verschoebe der
 		# Schalter still den Massstab, gegen den getestet wird.
-		if build.is_strictly_valid():
+		#
+		# Die Waffe wird hier SEPARAT verlangt. Fuer den Spieler ist ein Aufbau
+		# ohne Waffe eine zulaessige Entscheidung (DromeBuild.structural_problems),
+		# fuer einen Gegner waere sie keine: ein Squad, das nichts anrichten kann,
+		# laeuft das Gefecht bis ans ``cycle_limit`` und endet unentschieden. Der
+		# Spieler haette dann einen Kampf verloren bekommen, den der Wuerfel
+		# entschieden hat.
+		if build.is_strictly_valid() and not build.weapons().is_empty():
 			return build
 	return _fallback(display_name)
 

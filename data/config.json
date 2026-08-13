@@ -47,6 +47,19 @@
     "ignore_build_limits": false
   },
 
+  "_kommentar_zuladung": [
+    "spd_weight_step koppelt das Tempo an die Masse: je so viel Gewicht an",
+    "AUSRUESTUNG ein Punkt SPD weniger, abgerundet. Damit zahlt ein",
+    "mechanisches Teil in dem, was es ist -- eine Belagerungskanone zieht",
+    "keinen Strom, sie wiegt, und sie ist ueberall langsamer. Frueher trug sie",
+    "power_draw 5, und der Energiebedarf war ein Universalhebel auf jedem Teil.",
+    "Nur die Ausruestung zaehlt, nicht die Sockel: die traegt das Chassis ueber",
+    "weight_capacity, und der Antrieb sagt ueber sein eigenes spd schon, wie",
+    "flink er ist. Auf 0 gesetzt ist die Kopplung aus.",
+    "Siehe DromeBuild.payload_slowdown()."
+  ],
+  "spd_weight_step": 4,
+
   "power_tolerance": 0.12,
   "power_attempts": 200,
   "build_attempts": 50,

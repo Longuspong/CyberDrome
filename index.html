@@ -1506,12 +1506,21 @@ const SLOT_LABEL_DE = {
 
 const statsOf = (part) => (part && part.stats) || {};
 
+/**
+ * Je so viel Gewicht an AUSRUESTUNG ein Punkt SPD weniger -- die Zuladung
+ * bremst. Spiegelt DromeBuild.payload_slowdown() und spd_weight_step aus
+ * data/config.json; tools/check_workshop_stats.js haelt beide Werkstaetten
+ * gegeneinander, damit sie nicht auseinanderlaufen.
+ */
+const SPD_WEIGHT_STEP = 4;
+
 /** Summiert die Werte eines Aufbaus. Flags sind ODER, alles andere additiv. */
 function buildStats(loadout) {
   const total = {};
   for (const key of SUM_KEYS) total[key] = 0;
   for (const key of FLAG_KEYS) total[key] = false;
   let bestWeapon = 0;
+  let payload = 0;
 
   for (const [slot, entry] of Object.entries(loadout || {})) {
     if (!entry || !entry.partId) continue;
@@ -1520,9 +1529,11 @@ function buildStats(loadout) {
     const s = statsOf(part);
     for (const key of SUM_KEYS) total[key] += Number(s[key] || 0);
     for (const key of FLAG_KEYS) total[key] = total[key] || Boolean(s[key]);
+    if (slot.startsWith("equip_")) payload += Number(s.weight || 0);
     if (s.action && Number(s.action.power) > bestWeapon) bestWeapon = Number(s.action.power);
   }
   total.best_weapon = bestWeapon;
+  total.spd -= Math.floor(payload / SPD_WEIGHT_STEP);
   for (const key of ["hp", "en_max", "atk", "def"]) total[key] = Math.max(0, total[key]);
   return total;
 }
@@ -1547,17 +1558,18 @@ function validateLoadout(loadout) {
     ? Object.keys(anchorsOf(bodyPart)).filter((n) => n.startsWith("equip_")).sort()
     : [];
 
-  let hasWeapon = false;
+  // "Keine Waffe bestueckt" stand hier einmal als Fehler. Ein Aufbau ohne
+  // Waffe ist inzwischen eine Entscheidung: welche Aktionen ein DROME hat, sagt
+  // seine Ausruestung, und wer Deflektor und Reparaturdrohnen traegt, hat eben
+  // keinen Angriff. Siehe DromeBuild.structural_problems().
   for (const slot of equipSlots) {
     const part = partIn(slot);
     if (!part) continue;
-    if (categoryOf(part) === "weapon") hasWeapon = true;
     const def = slotDefs().find((d) => d.slot === slot);
     if (def && !fitsSlot(part, def)) {
       problems.push(`${part.name} passt nicht in ${SLOT_LABEL_DE[slot] || slot}`);
     }
   }
-  if (!hasWeapon) problems.push("Keine Waffe bestueckt");
 
   const t = buildStats(loadout);
   if (t.weight > t.weight_capacity) {

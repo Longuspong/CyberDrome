@@ -219,6 +219,8 @@ func stats() -> Dictionary:
 		total["drift_modifier"] += part.drift_modifier
 		total["aggro_bonus"] += part.aggro_bonus
 
+	total["spd"] -= payload_slowdown()
+
 	# Negative Summen sind sinnlos, aber ein DROME darf sie erreichen -- die
 	# Validierung faengt das ab und sagt dem Spieler, welche Regel bricht.
 	total["hp_max"] = maxi(0, total["hp_max"])
@@ -226,6 +228,41 @@ func stats() -> Dictionary:
 	total["def"] = maxi(0, total["def"])
 	total["atk"] = maxi(0, total["atk"])
 	return total
+
+
+## Wie sehr die ZULADUNG bremst: je ``spd_weight_step`` Gewicht an Ausruestung
+## ein Punkt SPD weniger.
+##
+## ### Warum die Masse und nicht die Energie
+##
+## Was ein Bauteil kostet, soll dem entsprechen, was es IST. Eine Pulverkanone
+## zieht keinen Strom -- sie wiegt. Frueher trug sie ``power_draw`` 5, und der
+## Energiebedarf war damit ein Universalhebel, der auf jedem Teil klebte, egal
+## ob es physikalisch Strom braucht. Das war Balancing im Kostuem der Fiktion:
+## der Spieler las "Energiebedarf" und konnte sich nichts darunter vorstellen.
+##
+## Jetzt gilt: **Masse bremst, Strom kostet.** Mechanische Teile (Kanone) zahlen
+## in Gewicht und Tempo, energetische (Blaster, Lanze, Fokus) in Energie. Der
+## schwere Slot bleibt die Erlaubnis, das Tempo ist der Preis.
+##
+## Gerechnet wird auf der AUSRUESTUNG, nicht auf dem Gesamtgewicht. Die Sockel
+## sind der Rahmen -- ihr Gewicht traegt das Chassis per ``weight_capacity``, und
+## der Antrieb sagt ueber sein eigenes ``spd`` schon, wie flink er ist. Zoege das
+## Gesamtgewicht mit, bestrafte die Rechnung denselben Rahmen zweimal, und jeder
+## voll ausgelastete Aufbau kaeme auf denselben Abzug -- die Formel wuerde
+## aufhoeren, zwischen Kanone und Runenstab zu unterscheiden. Genau das ist aber
+## ihr Zweck: dieselbe Waffe bremst an jedem Chassis gleich viel.
+##
+## Abgerundet, damit leichte Module (Gewicht 3) gratis bleiben und der Abzug
+## erst bei echter Zuladung einsetzt.
+func payload_slowdown() -> int:
+	var step := Config.get_int("spd_weight_step", 4)
+	if step <= 0:
+		return 0
+	var payload := 0
+	for part in equipment():
+		payload += part.weight
+	return payload / step
 
 
 ## Was ein einzelnes Teil an den Stats aendern wuerde -- fuer die Delta-Anzeige
@@ -293,18 +330,28 @@ func validate() -> Array[String]:
 
 
 ## Was ein DROME sein MUSS, damit er im Kampf handeln kann. Diese Liste haengt
-## nicht am Playtest-Schalter -- ohne Antrieb kommt niemand vom Feld, ohne
-## Waffe richtet niemand etwas aus, und ein Teil im falschen Halter haengt
-## sichtbar in der Luft.
+## nicht am Playtest-Schalter -- ohne Antrieb kommt niemand vom Feld, und ein
+## Teil im falschen Halter haengt sichtbar in der Luft.
+##
+## ### Warum "keine Waffe" hier NICHT mehr steht
+##
+## Ein Aufbau ohne Waffe war frueher ungueltig. Das nahm dem Slotmodell aber
+## genau die Aussage, fuer die es da ist: welche Aktionen ein DROME hat, sagt
+## seine Ausruestung -- und wer Schraubenschluessel und Reparaturdrohnen traegt,
+## hat eben keinen Angriff. Das ist eine Entscheidung mit Folgen, keine Panne,
+## und der Kampf traegt sie schon: ``TurnState`` vergibt das Angriffsbudget
+## ohnehin nur an Aktionen, die es gibt, und die Aktionsleiste bleibt dann leer.
+##
+## Wer sein ganzes Squad so baut, gewinnt kein Gefecht mehr -- das ist dann
+## seine Rechnung. Der Gegnergenerator setzt weiter garantiert eine Waffe, damit
+## dieselbe Freiheit nicht als unentscheidbares Gefecht auf den Spieler
+## zurueckfaellt (siehe EnemyGenerator._roll).
 func structural_problems() -> Array[String]:
 	var problems: Array[String] = []
 
 	for slot in SOCKET_SLOTS:
 		if part_in(slot) == null:
 			problems.append("%s fehlt" % _slot_label(slot))
-
-	if weapons().is_empty():
-		problems.append("Keine Waffe bestueckt")
 
 	var chassis := body()
 	if chassis != null:
