@@ -85,6 +85,27 @@ passende Teile in passenden Haltern, `mov` und `spd` mindestens 1 --, und die
 Schalter still den Massstab, gegen den getestet wird. Voreinstellung in
 `data/config.json` unter `playtest.ignore_build_limits`.
 
+#### Playtest: womit Faehigkeiten gebremst werden
+
+Eine Faehigkeit steht jeden Zug zur Verfuegung, und ein Angriffs-Aufbau
+braucht sein Faehigkeitsbudget ohnehin nicht -- ohne Bremse zieht er sie
+deshalb immer. Womit man sie knapp haelt, laesst sich nicht ausrechnen, nur
+spielen. Deshalb gibt es beide Wege, umschaltbar in `data/config.json` unter
+`abilities.brake`:
+
+| Modus | was bremst | was zur Entscheidung wird |
+|---|---|---|
+| `energie` (Vorgabe) | `en_cost` gilt, die Abklingzeit ruht | der **Kern** -- ein Arkankern zieht oefter als ein Impulskern |
+| `abklingzeit` | `cooldown_turns` gilt, es wird **keine** Energie abgebucht | der **Zug** -- nicht „kann ich mir das leisten", sondern „jetzt oder gleich" |
+| `beides` | beide Bremsen | als Vergleichspunkt gedacht, nicht als Vorgabe |
+
+Umschalten, Spiel neu starten, spielen. Beide Werte stehen an den Bauteilen
+und werden aus **derselben** Stufe abgeleitet (`ability_cost` und
+`ability_cooldown` in `tools/build_sample_parts.py`) -- ein Moduswechsel
+aendert damit die Art der Knappheit, nicht die Rangfolge der Faehigkeiten.
+Gemessene Wirkung und die Designfrage dahinter stehen in `docs/GAME_DESIGN.md`
+§8.
+
 Beide schreiben denselben Squad -- die Godot-Werkstatt nach
 `user://squad.json`, die SVG-Werkstatt nach `builds/squad.json`. Beim Start
 gewinnt die neuere. Nur der erste Weg ueberlebt einen Export: `builds/` liegt

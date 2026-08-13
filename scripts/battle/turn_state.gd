@@ -64,8 +64,14 @@ func blocker_for(action: ActionData) -> String:
 	if not can_use(action):
 		return "Angriff verbraucht" if action.category == ActionData.Category.ATTACK \
 			else "Faehigkeit verbraucht"
-	if unit != null and unit.en < action.en_cost:
-		return "Energie: %d/%d" % [unit.en, action.en_cost]
+	# Die Abklingzeit steht VOR der Energie. Im Modus ``abklingzeit`` kostet die
+	# Aktion gar nichts, und "Energie: 70/0" waere als Sperrgrund Unsinn; im
+	# Modus ``beides`` ist die Wartezeit die Sperre, die der Spieler nicht durch
+	# Nachladen aufloesen kann -- also die, die er zuerst lesen muss.
+	if unit != null and unit.cooldown_left(action) > 0:
+		return "Abklingzeit: noch %d Zug/Zuege" % unit.cooldown_left(action)
+	if unit != null and unit.en < action.en_cost_now():
+		return "Energie: %d/%d" % [unit.en, action.en_cost_now()]
 	return ""
 
 
@@ -74,6 +80,12 @@ func consume(action: ActionData) -> void:
 		attack_actions = maxi(0, attack_actions - 1)
 	else:
 		ability_actions = maxi(0, ability_actions - 1)
+	# Die Abklingzeit beginnt hier und nicht im ActionResolver: sie gehoert zum
+	# BUDGET des Zuges und nicht zur Wirkung der Aktion. Der Resolver wendet
+	# Schaden an, auch ohne dass jemand am Zug ist (Aderlass) -- eine Wartezeit
+	# haette dort keinen Zug, in dem sie ablaufen koennte.
+	if unit != null:
+		unit.start_cooldown(action)
 	committed = true
 
 

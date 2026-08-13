@@ -689,8 +689,37 @@ einmal haengt. Im MVP reicht die Kette den Schaden dort unveraendert durch.
   an einem Chassis grundsaetzlich unziehbar waere, ist ein Datenfehler und kein
   Balancing, und `check_ability_costs()` laesst sie nicht durch.
 
-  Offen bleibt davon genau ein Punkt: ob eine **Abklingzeit** die feinere
-  Bremse waere als der Preis. Das laesst sich nur spielen, nicht ausrechnen.
+  Offen blieb davon ein Punkt: ob eine **Abklingzeit** die feinere Bremse waere
+  als der Preis. Sie ist inzwischen gebaut -- als zweiter Weg, nicht als Ersatz,
+  umschaltbar ueber `abilities.brake` in `data/config.json`:
+
+  | | `energie` | `abklingzeit` | `beides` |
+  |---|---|---|---|
+  | Stoersignal | 0,47 | 0,45 | 0,42 |
+  | Reparaturdrohnen | 1,88 | 1,80 | 1,50 |
+  | Orbit-Sog | **5,35** | **3,08** | 3,05 |
+  | Sieg / Niederlage | 17 / 22 | 18 / 21 | 19 / 20 |
+
+  Einsaetze je Gefecht, 40 Gefechte je Modus, dieselben Seeds. Das Ergebnis ist
+  eindeutiger als erwartet: **nur der Orbit-Sog aendert sich.** Die anderen
+  beiden liegen ohnehin weit unter jeder Grenze -- sie werden nicht vom Preis
+  begrenzt, sondern von der Bewertung der KI, und eine Provokation lohnt sich
+  eben selten. Die Wartezeit greift also genau dort, wo der Preis nicht griff:
+  bei der billigen Faehigkeit, die sich sonst jeden zweiten Zug ziehen laesst.
+
+  Daraus folgen zwei Dinge. Erstens ist `beides` kaum von `abklingzeit` zu
+  unterscheiden -- die Wartezeit dominiert, der Preis kommt danach gar nicht
+  mehr zum Tragen. Zweitens sind die beiden Bremsen keine Alternativen fuer
+  dieselbe Aufgabe: der Preis macht den **Kern** zur Entscheidung (ein
+  Arkankern zieht oefter als ein Impulskern), die Wartezeit macht ihn
+  gleichgueltig und dafuer den **Zug** zur Entscheidung -- nicht "kann ich mir
+  das leisten", sondern "will ich sie jetzt oder gleich". Welche der beiden
+  Fragen das Spiel stellen soll, ist eine Designentscheidung und keine
+  Messung. Die Zahlen sagen nur, dass beide funktionieren.
+
+  Die Ausgaenge verschieben sich ueber alle drei Modi um weniger als eine
+  Standardabweichung -- keiner der Modi ist fuer sich genommen staerker oder
+  schwaecher, sie fuehlen sich nur anders an. Genau deshalb ist der Schalter da.
 * **`_can_strike()` schaetzt die Gefahr eines Feldes ueber `mov + range`.**
   Ein Strix mit Reichweite 7 und mov 4 bedroht damit alles im Umkreis von 11 --
   im Mittel 43 % einer 20x20-Karte. Weil die Kandidatenfelder der KI nur

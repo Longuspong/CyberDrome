@@ -344,7 +344,7 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 	if not source.can_afford(action):
 		return false
 
-	source.spend_energy(action.en_cost)
+	source.spend_energy(action.en_cost_now())
 
 	for affected in affected_tiles(tile, action):
 		var target := unit_at(affected)

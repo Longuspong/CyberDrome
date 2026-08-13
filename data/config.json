@@ -60,6 +60,29 @@
   ],
   "spd_weight_step": 4,
 
+  "abilities": {
+    "_kommentar": [
+      "Womit eine Faehigkeit knapp gehalten wird. Umschaltbar, weil sich die",
+      "Frage nicht ausrechnen laesst -- nur spielen.",
+      "  energie      der Preis bremst. en_cost gilt, die Abklingzeit nicht.",
+      "               Zweimal hintereinander geht, wenn der Tank es hergibt --",
+      "               danach ist er leer. Der KERN wird zur Entscheidung.",
+      "  abklingzeit  die Wartezeit bremst. cooldown_turns gilt, en_cost wird",
+      "               NICHT abgebucht. Der Rhythmus ist fuer jeden Aufbau",
+      "               gleich, der Kern damit gleichgueltig. Der ZUG wird zur",
+      "               Entscheidung: nicht 'kann ich mir das leisten', sondern",
+      "               'will ich sie jetzt oder gleich'.",
+      "  beides       beide Bremsen. Als Vergleichspunkt gedacht, nicht als",
+      "               Voreinstellung -- zwei Bremsen auf derselben Groesse",
+      "               sind schwer auseinanderzuhalten, wenn eine zu hart ist.",
+      "Siehe ActionData.brake(). Die Werte selbst (en_cost, cooldown_turns)",
+      "stehen an den Bauteilen und werden in tools/build_sample_parts.py aus",
+      "einer Stufe abgeleitet -- beide aus DERSELBEN, damit ein Umschalten",
+      "die Rangfolge der Faehigkeiten nicht durcheinanderbringt."
+    ],
+    "brake": "energie"
+  },
+
   "power_tolerance": 0.12,
   "power_attempts": 200,
   "build_attempts": 50,

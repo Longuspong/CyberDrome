@@ -469,6 +469,10 @@ ABILITY_BUDGET = 140
 ABILITY_USES_IN_THE_FIRST_HALF = {"stark": 4, "mittel": 5, "schwach": 7}
 SMALLEST_TANK = 40
 
+# Gemessen, nicht geschaetzt: ein DROME ist zehn bis vierzehn Mal am Zug, im
+# Mittel elf. Bezugsgroesse der Abklingzeit -- siehe ability_cooldown().
+TURNS_PER_BATTLE = 11
+
 # Spiegelt spd_weight_step aus data/config.json. Steht hier nur, damit die
 # Baubarkeitspruefung unten dasselbe Tempo ausrechnet wie das Spiel; die
 # Stellschraube selbst gehoert in die Konfiguration und nicht hierher.
@@ -478,6 +482,41 @@ SPD_WEIGHT_STEP = 4
 def ability_cost(tier: str) -> int:
     """Energiekosten einer Faehigkeit aus ihrer Stufe. Die EINZIGE Stelle."""
     return round(ABILITY_BUDGET / ABILITY_USES_IN_THE_FIRST_HALF[tier])
+
+
+def ability_cooldown(tier: str) -> int:
+    """
+    Die Abklingzeit derselben Stufe -- die zweite Bremse.
+
+    Gerechnet auf den GEMESSENEN Zuegen je Gefecht (zehn bis vierzehn, im
+    Mittel elf) statt auf dem Energiebudget:
+
+        abklingzeit = zuege_je_gefecht / anwendungen
+
+    Beide Bremsen kommen damit aus DERSELBEN Stufe. Das ist der Punkt: schaltet
+    man in data/config.json von ``energie`` auf ``abklingzeit`` um, aendert sich
+    die ART der Knappheit, nicht die Rangfolge der Faehigkeiten. Waeren es zwei
+    unabhaengige Tabellen, verglichen zwei Playtests nicht mehr dieselbe Frage
+    -- und die Antwort waere wertlos.
+
+    ### Warum die Untergrenze 2 ist und nicht 1
+
+    Eine Abklingzeit von 1 ist keine. Der Zug vergibt ohnehin nur EIN
+    Faehigkeitsbudget (``TurnState``), die Aktion ist also im selben Zug schon
+    verbraucht; bis zum naechsten eigenen Zug waere eine Sperre von 1 laengst
+    abgelaufen. Sie stuende in der Aktionsleiste und haette nie gegriffen.
+
+    ### Und warum die Rangfolge hier grober ist als beim Preis
+
+    In ganzen Zuegen laesst sich 11/5 = 2.2 nicht von 11/7 = 1.6 unterscheiden
+    -- beide runden auf 2, beide stossen an dieselbe Untergrenze. Die
+    Abklingzeit trennt deshalb nur ``stark`` von den anderen beiden, waehrend
+    der Preis alle drei trennt. Das ist keine Ungenauigkeit der Rechnung,
+    sondern eine Eigenschaft der Bremse, und sie gehoert zum Vergleich dazu:
+    eine Wartezeit ist ein grobes Werkzeug. Wer sie feiner haben will, braucht
+    mehr Zuege je Gefecht -- oder den Preis.
+    """
+    return max(2, round(TURNS_PER_BATTLE / ABILITY_USES_IN_THE_FIRST_HALF[tier]))
 
 
 STATS = {
@@ -569,6 +608,7 @@ STATS = {
                    "category": "ability", "targeting": "aoe_around_target",
                    "range_tiles": 3, "aoe_radius": 1, "power": -10,
                    "en_cost": ability_cost("mittel"),
+                   "cooldown_turns": ability_cooldown("mittel"),
                    "requires_line_of_sight": True, "aggro_coeff": 0.5},
     },
     # Reichweite 1 und damit ohne Sichtlinie: der Runenstab ist die einzige
@@ -585,6 +625,7 @@ STATS = {
                    "category": "ability", "targeting": "single",
                    "range_tiles": 3, "power": 0,
                    "en_cost": ability_cost("stark"),
+                   "cooldown_turns": ability_cooldown("stark"),
                    "requires_line_of_sight": True, "taunt_turns": 3},
     },
 
@@ -601,6 +642,7 @@ STATS = {
                    "category": "ability", "targeting": "single",
                    "range_tiles": 4, "power": 0,
                    "en_cost": ability_cost("schwach"),
+                   "cooldown_turns": ability_cooldown("schwach"),
                    "push_tiles": -2, "requires_line_of_sight": True,
                    "aggro_flat": 8},
     },
@@ -617,7 +659,7 @@ ACTION_DEFAULTS = {
     "id": "", "display_name": "", "category": "attack", "targeting": "single",
     "range_tiles": 1, "aoe_radius": 0, "en_cost": 0, "power": 0,
     "requires_line_of_sight": False, "push_tiles": 0, "status_effect": None,
-    "aggro_coeff": 1.0, "aggro_flat": 0, "taunt_turns": 0,
+    "aggro_coeff": 1.0, "aggro_flat": 0, "taunt_turns": 0, "cooldown_turns": 0,
 }
 
 

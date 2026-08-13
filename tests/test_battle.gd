@@ -326,6 +326,142 @@ func test_abilities_are_scarce_but_never_dead() -> void:
 	t.note("Faehigkeiten je Gefecht: %s" % str(uses))
 
 
+## Spielt ``battles`` Gefechte mit dem Faehigkeits-Squad und zaehlt, welche
+## Faehigkeit wie oft gezogen wurde. Gibt zusaetzlich die Ausgaenge zurueck.
+func _measure_abilities(battles: int) -> Dictionary:
+	var uses := {}
+	var outcomes := {}
+	for i in battles:
+		var battle := BattleManager.new()
+		battle.setup(7000 + i, _ability_squad())
+		var controller := AIController.new(battle)
+		var guard := 0
+		while battle.outcome == BattleManager.Outcome.RUNNING and guard < MAX_TURNS:
+			guard += 1
+			var unit := battle.begin_next_turn()
+			if unit == null:
+				if battle.outcome != BattleManager.Outcome.RUNNING:
+					break
+				continue
+			for _step in 6:
+				if battle.outcome != BattleManager.Outcome.RUNNING:
+					break
+				var step := controller.take_step()
+				if step.is_empty():
+					break
+				if step.get("kind") != "action":
+					continue
+				var action: ActionData = step["action"]
+				if action.category == ActionData.Category.ABILITY:
+					uses[action.id] = uses.get(action.id, 0) + 1
+			if battle.outcome == BattleManager.Outcome.RUNNING:
+				battle.end_turn()
+		var label := BattleManager.outcome_label(battle.outcome)
+		outcomes[label] = outcomes.get(label, 0) + 1
+		battle.free()
+	return {"uses": uses, "outcomes": outcomes}
+
+
+## Der Schalter wird fuer die Dauer eines Blocks umgelegt und danach ZURUECK.
+## Ohne das Zuruecksetzen liefe der Rest der Suite im falschen Modus, und die
+## Reihenfolge der Tests entschiede ueber ihr Ergebnis.
+##
+## Gibt zurueck, was ``body`` zurueckgibt. Das ist keine Bequemlichkeit: eine
+## Lambda in GDScript faengt ihre Umgebung als KOPIE ein, eine Zuweisung darin
+## erreicht die aeussere Variable also nie. Wer das Ergebnis braucht, muss es
+## herausreichen.
+func _with_brake(mode: String, body: Callable):
+	var before = Config.section("abilities").get("brake", ActionData.BRAKE_ENERGY)
+	Config.data()["abilities"]["brake"] = mode
+	var result = body.call()
+	Config.data()["abilities"]["brake"] = before
+	return result
+
+
+func test_the_cooldown_is_a_real_second_brake() -> void:
+	# Die Abklingzeit ist als VERGLEICHSPUNKT gebaut, nicht als Ersatz: ob eine
+	# Wartezeit besser bremst als ein Preis, laesst sich nicht ausrechnen. Der
+	# Test haelt fest, dass beide Modi ueberhaupt verschieden wirken -- ein
+	# Schalter, der nichts aendert, waere als Playtest-Werkzeug wertlos.
+	var beacon: ActionData = null
+	for action in _ability_squad()[0].actions():
+		if action.id == &"act_provoke":
+			beacon = action
+	t.ok(beacon != null, "der Koedersender bringt das Stoersignal mit")
+	t.ok(beacon.cooldown_turns > 1,
+		"das Stoersignal hat eine Abklingzeit (%d Zuege)" % beacon.cooldown_turns)
+
+	_with_brake(ActionData.BRAKE_ENERGY, func():
+		t.equal(beacon.en_cost_now(), beacon.en_cost,
+			"im Preis-Modus kostet es Energie")
+		t.equal(beacon.cooldown_now(), 0,
+			"und die Abklingzeit ruht"))
+
+	_with_brake(ActionData.BRAKE_COOLDOWN, func():
+		t.equal(beacon.en_cost_now(), 0,
+			"im Wartezeit-Modus wird KEINE Energie abgebucht")
+		t.equal(beacon.cooldown_now(), beacon.cooldown_turns,
+			"dafuer greift die Abklingzeit"))
+
+	_with_brake(ActionData.BRAKE_BOTH, func():
+		t.ok(beacon.en_cost_now() > 0 and beacon.cooldown_now() > 0,
+			"im Modus 'beides' bremsen beide"))
+
+
+func test_a_cooldown_blocks_and_then_lets_go() -> void:
+	_with_brake(ActionData.BRAKE_COOLDOWN, func():
+		var battle := BattleManager.new()
+		battle.setup(7001, _ability_squad())
+		var unit: Unit = battle.living(true)[0]
+		var ability: ActionData = null
+		for action in unit.actions():
+			if action.category == ActionData.Category.ABILITY:
+				ability = action
+		t.ok(ability != null and ability.cooldown_now() > 0,
+			"der Aufbau bringt eine Faehigkeit mit Abklingzeit mit")
+
+		var state := TurnState.begin(unit)
+		t.equal(state.blocker_for(ability), "",
+			"vor dem ersten Einsatz ist sie frei")
+
+		state.consume(ability)
+		t.equal(unit.cooldown_left(ability), ability.cooldown_now(),
+			"nach dem Einsatz laeuft die Abklingzeit")
+
+		# Ein frischer Zug bringt das Budget zurueck -- die Wartezeit nicht.
+		var next_turn := TurnState.begin(unit)
+		t.ok(next_turn.blocker_for(ability).begins_with("Abklingzeit"),
+			"und sie sperrt auch im naechsten Zug: '%s'"
+			% next_turn.blocker_for(ability))
+
+		for _i in ability.cooldown_now():
+			unit.tick_cooldowns()
+		t.equal(unit.cooldown_left(ability), 0, "danach ist sie abgelaufen")
+		t.equal(TurnState.begin(unit).blocker_for(ability), "",
+			"und die Aktion wieder frei")
+		battle.free())
+
+
+func test_the_two_brakes_produce_different_battles() -> void:
+	# Die eigentliche Frage des Playtests, als Messung: bremst die Wartezeit
+	# ueberhaupt anders als der Preis? Verglichen werden dieselben Seeds, damit
+	# der Unterschied nicht aus der Karte kommt.
+	var by_energy: Dictionary = _with_brake(ActionData.BRAKE_ENERGY,
+		func(): return _measure_abilities(12))
+	var by_cooldown: Dictionary = _with_brake(ActionData.BRAKE_COOLDOWN,
+		func(): return _measure_abilities(12))
+
+	t.note("Preis:     %s  %s" % [str(by_energy["uses"]), str(by_energy["outcomes"])])
+	t.note("Wartezeit: %s  %s" % [str(by_cooldown["uses"]), str(by_cooldown["outcomes"])])
+	t.ok(by_energy["uses"] != by_cooldown["uses"],
+		"die beiden Bremsen ergeben verschiedene Gefechte")
+
+	for id in by_cooldown["uses"]:
+		var per_battle := float(by_cooldown["uses"][id]) / 12.0
+		t.ok(per_battle < 8.0,
+			"auch mit Wartezeit bleibt %s knapp: %.1f je Gefecht" % [id, per_battle])
+
+
 func test_same_seed_gives_the_same_battle() -> void:
 	# Akzeptanzkriterium: denselben Seed zweimal spielen und exakt dasselbe
 	# bekommen -- Karte, Region, Mutator, Gegner, Ausgang.

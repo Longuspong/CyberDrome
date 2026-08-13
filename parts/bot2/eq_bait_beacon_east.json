@@ -71,7 +71,8 @@
       "status_effect": null,
       "aggro_coeff": 1.0,
       "aggro_flat": 0,
-      "taunt_turns": 3
+      "taunt_turns": 3,
+      "cooldown_turns": 3
     }
   }
 }
