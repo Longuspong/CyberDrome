@@ -283,3 +283,94 @@ func test_symbols_separate_actions_that_do_different_things() -> void:
 	# kann -- und damit schlimmer als keine.
 	t.equal(ActionIcons.key_for(quiet), "generic",
 		"eine Aktion ohne erkennbare Wirkung bekommt den leeren Rahmen")
+
+
+# ---------------------------------------------------------------------------
+# Die Werkstatt: welche Halter die Ausruestung angeboten bekommt
+# ---------------------------------------------------------------------------
+#
+# Die Bibliothek zeigt Bilder, keine Zeilen -- geprueft wird hier nicht das
+# Aussehen (dafuer gibt es das Bild aus tests/screenshot.gd), sondern die
+# einzige Regel, die der Umbau neu aufgeschrieben hat: welche Halterungen ein
+# Klick auf ein Ausruestungsteil anbietet und warum die uebrigen nicht.
+
+const Workshop := preload("res://scripts/ui/workshop_screen.gd")
+
+
+func _molok() -> DromeBuild:
+	return _build("MOLOK", {"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core"})
+
+
+func test_every_mount_of_the_chassis_is_offered_with_its_verdict() -> void:
+	# Der Molok hat drei Halter: zwei schwere Arme und eine leichte Schulter,
+	# die nur Support nimmt. Die Belagerungskanone ist schwer und eine Waffe --
+	# also zweimal ja, einmal nein, und das Nein mit Grund.
+	var choices := Workshop.slot_choices(_molok(),
+		PartDB.get_part(&"eq_siege_cannon"))
+	t.equal(choices.size(), 3, "alle drei Halter stehen zur Wahl")
+	t.equal(choices[0]["slot"], "equip_left", "Slot 1 ist der linke Arm")
+	t.equal(choices[0]["number"], 1, "und wird als 1 gezaehlt")
+	t.ok(choices[0]["allowed"] and choices[1]["allowed"],
+		"beide Arme nehmen die Kanone")
+	t.ok(not choices[2]["allowed"], "die leichte Schulter nicht")
+	t.ok(choices[2]["detail"].contains("leicht"),
+		"und sagt, woran es liegt: %s" % choices[2]["detail"])
+
+
+func test_the_offer_says_what_a_mount_currently_holds() -> void:
+	# Der Unterschied zwischen "frei" und "ersetzt X" ist der ganze Grund, die
+	# Liste ueberhaupt zu zeigen: sonst raeumte der Klick blind um.
+	var build := _molok()
+	build.slots["equip_left"] = &"eq_pulse_blaster"
+	var choices := Workshop.slot_choices(build, PartDB.get_part(&"eq_rail_lance"))
+	t.ok(choices[0]["detail"].contains("Puls-Blaster"),
+		"der belegte Halter nennt, was weichen wuerde: %s" % choices[0]["detail"])
+	t.equal(choices[1]["detail"], "frei", "der leere Halter heisst frei")
+
+	var same := Workshop.slot_choices(build, PartDB.get_part(&"eq_pulse_blaster"))
+	t.equal(same[0]["detail"], "steckt schon drin",
+		"und wo dasselbe Teil schon sitzt, wird nichts ersetzt")
+
+
+func test_a_light_support_part_reaches_the_shoulder() -> void:
+	# Der Gegenbeweis zur Absage oben: die Schulter ist kein toter Halter,
+	# sie ist ein waehlerischer.
+	var choices := Workshop.slot_choices(_molok(), PartDB.get_part(&"eq_drone_pod"))
+	t.ok(choices[2]["allowed"], "leichter Support darf auf die Schulter")
+	t.equal(choices[2]["number"], 3, "als dritter Halter")
+
+
+func test_a_rejected_mount_names_its_rule_not_just_a_no() -> void:
+	# Der Koedersender ist leicht -- an der Schulter scheitert er nicht an der
+	# Klasse. Die Absage muss dann die Kategorie nennen und nicht die Groesse.
+	var focus := Workshop.slot_choices(_molok(), PartDB.get_part(&"eq_rune_staff"))
+	t.ok(not focus[2]["allowed"], "eine leichte WAFFE darf trotzdem nicht")
+	t.ok(focus[2]["detail"].contains("Support"),
+		"weil die Schulter nur Support nimmt: %s" % focus[2]["detail"])
+
+
+func test_the_offer_never_disagrees_with_the_build_rule() -> void:
+	# Massgeblich ist chassis.accepts() -- dieselbe Regel, die den Aufbau beim
+	# Laden prueft. Die Liste ist eine Anzeige davon, keine zweite Regel.
+	for chassis in PartDB.of_type(PartData.Type.BODY):
+		var build := DromeBuild.create("PRUEF", {"body": chassis.id})
+		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+			var choices := Workshop.slot_choices(build, part)
+			t.equal(choices.size(), build.equip_slots().size(),
+				"%s bietet jeden seiner Halter an" % chassis.display_name)
+			for choice in choices:
+				t.equal(choice["allowed"], chassis.accepts(part, choice["slot"]),
+					"%s in %s: Angebot und Regel sagen dasselbe"
+					% [part.display_name, choice["slot"]])
+				t.ok(choice["detail"] != "",
+					"jede Zeile sagt etwas: %s" % choice["label"])
+
+
+func test_socket_parts_ask_nothing() -> void:
+	# Ein Chassis kann nur ins Chassis. Fuer Sockelteile gibt es nichts zu
+	# fragen -- und genau deshalb bauen sie sich weiterhin mit einem Klick ein.
+	t.ok(Workshop.slot_choices(_molok(), PartDB.get_part(&"scout_body")).is_empty(),
+		"ein Chassis bekommt keine Halterliste")
+	t.ok(Workshop.slot_choices(_molok(), PartDB.get_part(&"jugg_core")).is_empty(),
+		"ein Kern auch nicht")

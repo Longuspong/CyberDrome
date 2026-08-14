@@ -56,14 +56,23 @@ dem Bildrand. Beides ist behoben; die Leiste ist jetzt nach Budget getrennt
 ### Godot-Werkstatt in Kurzform
 
 Links steht die **ganze Bibliothek**, nach Bauteiltyp gruppiert -- nicht nur,
-was in den gerade angewaehlten Slot passt. Der Zeiger auf einem Teil zeigt
-sofort beides: **wie es aussieht** (die Vorschau in der Mitte baut es
-probeweise ein) und **was es aendert** (ein Feld direkt neben der Liste nennt
-jede Wertaenderung, Traglast und Energie vorher/nachher und die Regeln, die
-danach brechen wuerden). Der Klick raeumt selbst in den passenden Halter ein:
-angewaehlter Slot, sonst erster freier, sonst erster, der ueberhaupt passt.
-Was in kein Halter dieses Chassis darf, wird nicht weggelassen, sondern
-ausgegraut und begruendet.
+was in den gerade angewaehlten Slot passt. Sie besteht aus **Kacheln**: das
+Bauteil so gross, wie die Spalte es zulaesst, darueber nur sein Name. Gewaehlt
+wird damit das Bild und nicht die Zeile.
+
+Der Zeiger auf einer Kachel zeigt dreierlei: **wie es aussieht** (die Vorschau
+in der Mitte baut es probeweise ein), **was es ist** (Werte, Klasse, Wirkung --
+in einem Feld an der Kante der Bibliothek) und **was es aendert** (jede
+Wertaenderung, Traglast und Energie vorher/nachher und die Regeln, die danach
+brechen wuerden). Was in kein Halter dieses Chassis darf, wird nicht
+weggelassen, sondern gedaempft und begruendet.
+
+Sockelteile baut ein **Klick** ein -- ein Chassis kann ohnehin nur ins
+Chassis. Ausruestung hat mehrere Halter, und welcher gemeint ist, entscheidet
+der Spieler: der Klick oeffnet die **Halterliste direkt auf der Kachel**, eine
+Zeile je Halter mit Klasse und Belegung (`Slot 2 · rechts (schwer)  frei`).
+Halter, die das Teil nicht nehmen, stehen mit ihrem Grund dabei. Der Weg
+rechts zur Slotliste und zurueck entfaellt damit.
 
 Rechts steht, **wo was steckt** (mit Miniatur, weil ein Teilename nicht sagt,
 ob es der leuchtende Ring oder der Stab ist), was der Aufbau **wert** ist -- in
