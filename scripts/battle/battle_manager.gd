@@ -114,6 +114,7 @@ func begin_next_turn() -> Unit:
 	# Zug ist in diesem Spiel keine gleichmaessige Zeiteinheit (siehe
 	# AggroTable.decay).
 	active_unit.tick_taunt()
+	active_unit.tick_cooldowns()
 	var bleed := mutator.turn_damage()
 	if bleed > 0:
 		active_unit.hp = maxi(0, active_unit.hp - bleed)

@@ -332,17 +332,35 @@ func affected_tiles(tile: Vector2i, action: ActionData) -> Array[Vector2i]:
 # ---------------------------------------------------------------------------
 
 ## Fuehrt die Aktion aus. Gibt zurueck, ob sie ueberhaupt zulaessig war.
+##
+## EINE Schleife ueber die getroffenen Felder, auch fuer ``Targeting.SELF``:
+## ``affected_tiles()`` liefert dort das eigene Feld, darauf steht der Handelnde,
+## und ``is_meaningful_target()`` laesst ihn ausdruecklich durch. Ein zweiter
+## Zweig hinter der Schleife -- den es hier einmal gab -- wendete die Wirkung ein
+## zweites Mal an und haette die erste SELF-Aktion des Bestands still verdoppelt.
 func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 	if target_blocker(source, tile, action) != "":
 		return false
 	if not source.can_afford(action):
 		return false
 
-	source.spend_energy(action.en_cost)
+	source.spend_energy(action.en_cost_now())
 
 	for affected in affected_tiles(tile, action):
 		var target := unit_at(affected)
 		if target == null:
+			continue
+		# Die Flaeche fragt dieselbe Frage wie das Fadenkreuz: ist dieser DROME
+		# ueberhaupt gemeint? Ohne diese Zeile traf der Belagerungsschlag jeden,
+		# der im Radius stand -- den eigenen Verbuendeten, und bei einem Ziel auf
+		# dem Nachbarfeld den Schuetzen selbst. Ein Molok, der auf Tuchfuehlung
+		# feuerte, schoss sich damit Zug um Zug die eigene Integritaet weg, ohne
+		# dass Vorschau oder KI davon etwas ahnten: beide bewerten das ANVISIERTE
+		# Ziel, und dort stand die Zahl richtig.
+		#
+		# Dieselbe Zeile richtet die Reparaturdrohnen mit: deren Radius heilte
+		# bisher auch Gegner, die neben dem Verbuendeten standen.
+		if not is_meaningful_target(source, target, action):
 			continue
 		if action.is_heal():
 			heal(source, target, action.heal_amount(), action)
@@ -358,9 +376,6 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 			_apply_status(target, action.status_effect)
 		if action.is_taunt() and target != source:
 			_apply_taunt(source, target, action)
-
-	if action.targeting == ActionData.Targeting.SELF:
-		_apply_self_effects(source, action)
 
 	EventBus.tick_bus_changed.emit()
 	return true
@@ -426,8 +441,3 @@ func _apply_status(target: Unit, status) -> void:
 		return
 	target.apply_status(StringName(status.get("id", "status")),
 		int(status.get("cycles", 1)), status)
-
-
-func _apply_self_effects(source: Unit, action: ActionData) -> void:
-	if action.is_heal():
-		heal(source, source, action.heal_amount())

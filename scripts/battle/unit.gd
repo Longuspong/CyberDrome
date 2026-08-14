@@ -29,6 +29,10 @@ var stats: Dictionary = {}
 ## Aktive Statuseffekte: id -> { cycles_left, spd, def, ... }
 var statuses: Dictionary = {}
 
+## Laufende Abklingzeiten: action_id -> verbleibende EIGENE Zuege.
+## Nur belegt, wenn die Bremse ``abklingzeit`` oder ``beides`` aktiv ist.
+var cooldowns: Dictionary = {}
+
 ## Die Aggro-Buchfuehrung dieses DROME -- nur bei Gegnern belegt, bei
 ## Spieler-DROMEs immer null. Wer die Zielwahl des Spielers trifft, ist der
 ## Spieler; eine Tabelle, die niemand liest, waere eine zweite Wahrheit.
@@ -350,7 +354,7 @@ func actions_of(category: ActionData.Category) -> Array:
 
 
 func can_afford(action: ActionData) -> bool:
-	return en >= action.en_cost
+	return en >= action.en_cost_now()
 
 
 func spend_energy(amount: int) -> void:
@@ -413,6 +417,36 @@ func tick_taunt() -> void:
 	taunt_lock["turns_left"] = int(taunt_lock.get("turns_left", 0)) - 1
 	if int(taunt_lock["turns_left"]) <= 0:
 		taunt_lock = {}
+
+
+# ---------------------------------------------------------------------------
+# Abklingzeit
+# ---------------------------------------------------------------------------
+
+## Gezaehlt wird in EIGENEN Zuegen, genau wie die Provokation und die
+## Statuseffekte -- "noch zwei Zuege" ist das, was der Spieler abzaehlt. Ein
+## Zug ist in diesem Spiel keine gleichmaessige Zeiteinheit (der TICK-Balken
+## entscheidet, wer wann drankommt), und in Zyklen gezaehlt haette derselbe
+## Eintrag fuer einen schnellen und einen traegen DROME verschieden lang
+## gehalten. Genau das soll die Wartezeit NICHT: sie ist der Rhythmus, der fuer
+## alle gleich ist -- das ist ihr ganzer Unterschied zum Preis.
+func start_cooldown(action: ActionData) -> void:
+	var turns := action.cooldown_now()
+	if turns > 0:
+		cooldowns[action.id] = turns
+
+
+## Wie viele eigene Zuege diese Aktion noch aussetzt. 0 = sie geht.
+func cooldown_left(action: ActionData) -> int:
+	return int(cooldowns.get(action.id, 0))
+
+
+## Zu Beginn des eigenen Zuges, zusammen mit Provokation und Statuseffekten.
+func tick_cooldowns() -> void:
+	for id in cooldowns.keys():
+		cooldowns[id] = int(cooldowns[id]) - 1
+		if int(cooldowns[id]) <= 0:
+			cooldowns.erase(id)
 
 
 func status_names() -> Array[String]:

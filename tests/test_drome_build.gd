@@ -66,8 +66,104 @@ func test_empty_build_reports_every_missing_slot() -> void:
 	t.ok(problems.has("Chassis fehlt"), "leerer Aufbau meldet fehlendes Chassis")
 	t.ok(problems.has("Kern fehlt"), "leerer Aufbau meldet fehlenden Kern")
 	t.ok(problems.has("Antrieb fehlt"), "leerer Aufbau meldet fehlenden Antrieb")
-	t.ok(problems.has("Keine Waffe bestueckt"), "leerer Aufbau meldet fehlende Waffe")
 	t.ok(not build.is_valid(), "leerer Aufbau ist ungueltig")
+
+
+func test_a_build_without_a_weapon_is_a_decision_not_an_error() -> void:
+	# Frueher war "Keine Waffe bestueckt" ein struktureller Fehler. Das nahm dem
+	# Slotmodell die Aussage, fuer die es da ist: welche Aktionen ein DROME hat,
+	# sagt seine Ausruestung. Wer Deflektor und Reparaturdrohnen traegt, hat
+	# eben keinen Angriff -- eine Entscheidung mit Folgen, keine Panne.
+	var techniker := DromeBuild.create("TECHNIKER", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_deflector", "equip_shoulder": &"eq_drone_pod"})
+	t.ok(techniker.weapons().is_empty(), "der Techniker traegt keine Waffe")
+	t.ok(techniker.is_valid(),
+		"und ist trotzdem baubar: %s" % ", ".join(techniker.validate()))
+	t.ok(techniker.actions_of(ActionData.Category.ATTACK).is_empty(),
+		"die Folge steht in der Aktionsliste: kein Angriff")
+	t.ok(not techniker.actions_of(ActionData.Category.ABILITY).is_empty(),
+		"seine Faehigkeit hat er")
+
+
+func test_the_payload_slows_you_down() -> void:
+	# Masse bremst, Strom kostet. Die Belagerungskanone zieht keinen Strom mehr
+	# (power_draw 0, en_cost 0) -- bezahlt wird sie in Gewicht und Tempo.
+	var step := Config.get_int("spd_weight_step", 4)
+	var bare := DromeBuild.create("NACKT", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core"})
+	var armed := bare.clone()
+	armed.slots["equip_left"] = &"eq_siege_cannon"
+
+	var cannon := PartDB.get_part(&"eq_siege_cannon")
+	t.equal(cannon.power_draw, 0, "die Kanone braucht keinen Bau-Strom")
+	t.equal(cannon.action.en_cost, 0, "und keine Energie im Kampf")
+
+	t.equal(bare.payload_slowdown(), 0, "ohne Zuladung bremst nichts")
+	t.equal(armed.payload_slowdown(), cannon.weight / step,
+		"mit Kanone kostet die Zuladung Tempo")
+	t.equal(armed.stats()["spd"], bare.stats()["spd"] - armed.payload_slowdown(),
+		"und der Abzug steht in den Stats, nicht nur in der Rechnung")
+
+
+func test_the_same_weapon_slows_every_chassis_equally() -> void:
+	# Gerechnet wird auf der Ausruestung, nicht auf dem Gesamtgewicht. Deshalb
+	# bremst dieselbe Waffe ueberall gleich viel -- ein Aufbau kann sich seinem
+	# Tempoverlust nicht durch ein groesseres Chassis entziehen.
+	var molok := DromeBuild.create("MOLOK", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_rune_staff"})
+	var vireo := DromeBuild.create("VIREO", {
+		"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core",
+		"equip_left": &"eq_rune_staff"})
+	t.equal(molok.payload_slowdown(), vireo.payload_slowdown(),
+		"derselbe Runenstab, derselbe Abzug")
+
+	var heavy := molok.clone()
+	heavy.slots["equip_left"] = &"eq_siege_cannon"
+	t.ok(heavy.payload_slowdown() > molok.payload_slowdown(),
+		"die schwerere Waffe bremst staerker (%d gegen %d)"
+		% [heavy.payload_slowdown(), molok.payload_slowdown()])
+
+
+func test_the_molok_can_finally_hold_two_heavy_arms() -> void:
+	# Zwei schwere Waffen an zwei schweren Armen scheiterten an EINEM Punkt
+	# Traglast (32/31). Der schwere Slot war damit eine Erlaubnis, die das
+	# Budget wieder einkassierte.
+	var molok := DromeBuild.create("MOLOK", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_rail_lance"})
+	t.ok(molok.is_valid(), "zwei schwere Arme sind baubar: %s"
+		% ", ".join(molok.validate()))
+
+	# Der Schulterpod obendrauf bleibt ausserhalb -- die Traglast ist gelockert,
+	# nicht abgeschafft.
+	var overloaded := molok.clone()
+	overloaded.slots["equip_shoulder"] = &"eq_orbit_focus"
+	t.ok(not overloaded.is_valid(),
+		"mit Schulterpod reisst sie wieder: %s" % ", ".join(overloaded.validate()))
+
+
+func test_no_ability_costs_more_than_the_smallest_core_holds() -> void:
+	# Die Energiekosten der Faehigkeiten sind bewusst hoch -- drei bis vier
+	# Anwendungen je Gefecht. Waere eine davon teurer als der kleinste Tank im
+	# Bestand, stuende sie in der Aktionsleiste und liesse sich nie ziehen.
+	var smallest := 0
+	for part in PartDB.of_type(PartData.Type.CORE):
+		if smallest == 0 or part.en_max < smallest:
+			smallest = part.en_max
+
+	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+		if part.action == null:
+			continue
+		t.ok(part.action.en_cost <= smallest,
+			"%s kostet %d, kleinster Kern haelt %d"
+			% [part.action.display_name, part.action.en_cost, smallest])
 
 
 func test_overweight_is_named_not_just_rejected() -> void:
@@ -273,11 +369,14 @@ func test_the_first_free_holder_wins_before_an_occupied_one() -> void:
 
 ## Ein Molok mit drei bestueckten Slots. Genau der Fall, an dem der Schalter
 ## haengt: der Fusionskern gibt nicht genug Energie fuer alle drei her.
+## Der Aufbau, an dem die Traglast noch reisst: zwei schwere Arme UND der
+## Schulterpod. Zwei schwere Arme allein gehen inzwischen (32 von 33) -- der
+## dritte Anker ist die Grenze, nicht der zweite.
 func _overloaded_molok() -> DromeBuild:
 	return DromeBuild.create("VOLLBESTUECKT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_pulse_blaster",
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_rail_lance",
 		"equip_shoulder": &"eq_drone_pod",
 	})
 

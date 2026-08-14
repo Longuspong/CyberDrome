@@ -747,6 +747,12 @@ func _refresh_stats() -> void:
 				line.add_child(delta)
 			_stat_list.add_child(line)
 
+			# Der SPD-Wert oben ist bereits der Endwert. Ohne diese Zeile sieht
+			# der Spieler ihn sinken, wenn er eine Kanone anbaut, und findet den
+			# Grund nirgends -- die Zuladung steht in keiner der sieben Zahlen.
+			if key == "spd":
+				_add_payload_note()
+
 	_meter(_weight_bar, _weight_label, "Gewicht / Traglast",
 		base["weight"], base["weight_capacity"])
 	_meter(_power_bar, _power_label, "Energiebedarf / Ausstoss",
@@ -835,6 +841,26 @@ func _refresh_actions() -> void:
 
 ## Ein Balken mit Klartext -- der Spieler soll sehen, um WIE VIEL er drueber
 ## ist, nicht nur dass er drueber ist.
+## Woher der Tempoverlust kommt: "Zuladung 16  ->  -4 SPD".
+##
+## Steht direkt unter der SPD-Zeile und nur dann, wenn tatsaechlich etwas
+## abgezogen wird. Eine dauerhafte Zeile mit "-0" waere Rauschen; eine, die
+## fehlt, waere eine Zahl ohne Begruendung.
+func _add_payload_note() -> void:
+	var slowdown := _build.payload_slowdown()
+	if slowdown <= 0:
+		return
+	var payload := 0
+	for part in _build.equipment():
+		payload += part.weight
+
+	var note := Label.new()
+	note.text = "    Zuladung %d  ->  -%d SPD" % [payload, slowdown]
+	note.add_theme_font_size_override("font_size", 10)
+	note.modulate = COLOR_MUTED
+	_stat_list.add_child(note)
+
+
 func _meter(bar: ProgressBar, label: Label, title: String,
 		value: int, limit: int) -> void:
 	label.text = "%s   %d / %d" % [title, value, limit]

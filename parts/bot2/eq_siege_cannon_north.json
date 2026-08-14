@@ -50,7 +50,7 @@
     "atk": 0,
     "def": 0,
     "weight": 8,
-    "power_draw": 5,
+    "power_draw": 0,
     "weight_capacity": 0,
     "power_output": 0,
     "can_pass_units": false,
@@ -68,14 +68,15 @@
       "targeting": "aoe_around_target",
       "range_tiles": 6,
       "aoe_radius": 1,
-      "en_cost": 5,
+      "en_cost": 0,
       "power": 18,
       "requires_line_of_sight": true,
       "push_tiles": 0,
       "status_effect": null,
       "aggro_coeff": 1.0,
       "aggro_flat": 0,
-      "taunt_turns": 0
+      "taunt_turns": 0,
+      "cooldown_turns": 0
     }
   }
 }

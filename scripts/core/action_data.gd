@@ -91,6 +91,64 @@ var aggro_flat: int = 0
 ## EIGENE Zuege den Verursacher angreifen. Harter Zwang, deshalb befristet.
 var taunt_turns: int = 0
 
+## Wie viele EIGENE Zuege diese Aktion danach nicht zur Verfuegung steht.
+## 0 = keine Abklingzeit. Wirkt nur im Bremsmodus ``abklingzeit`` oder
+## ``beides`` -- siehe BRAKE unten.
+var cooldown_turns: int = 0
+
+
+# ---------------------------------------------------------------------------
+# Die Bremse: Preis oder Wartezeit
+# ---------------------------------------------------------------------------
+
+## Womit eine Faehigkeit knapp gehalten wird. Umschaltbar, weil sich die Frage
+## nicht ausrechnen laesst -- nur spielen.
+##
+##   energie      Der Preis bremst. ``en_cost`` gilt, ``cooldown_turns`` nicht.
+##                Eine Faehigkeit laesst sich zweimal hintereinander ziehen,
+##                wenn der Tank es hergibt -- dafuer ist er danach leer.
+##   abklingzeit  Die Wartezeit bremst. ``cooldown_turns`` gilt, ``en_cost``
+##                wird NICHT abgebucht. Der Rhythmus ist derselbe fuer jeden
+##                Aufbau, unabhaengig vom Kern.
+##   beides       Beide Bremsen. Ausdruecklich als Vergleichspunkt gedacht und
+##                nicht als Voreinstellung: zwei Bremsen auf derselben Groesse
+##                sind schwer auseinanderzuhalten, wenn eine davon zu hart ist.
+##
+## Der Unterschied ist nicht kosmetisch. Der Preis macht den KERN zur
+## Entscheidung -- ein Arkankern zieht oefter als ein Impulskern. Die Wartezeit
+## macht ihn bedeutungslos und dafuer den ZUG zur Entscheidung: nicht "kann ich
+## mir das leisten", sondern "will ich sie jetzt oder gleich".
+const BRAKE_ENERGY := "energie"
+const BRAKE_COOLDOWN := "abklingzeit"
+const BRAKE_BOTH := "beides"
+
+
+static func brake() -> String:
+	return str(Config.section("abilities").get("brake", BRAKE_ENERGY))
+
+
+static func energy_brakes() -> bool:
+	return brake() != BRAKE_COOLDOWN
+
+
+static func cooldown_brakes() -> bool:
+	return brake() != BRAKE_ENERGY
+
+
+## Was diese Aktion im aktuellen Bremsmodus WIRKLICH kostet.
+##
+## Die EINZIGE Stelle, an der ``en_cost`` gelesen wird, sobald es ums Bezahlen
+## geht -- Vorschau, Sperrgrund, Abbuchung und Werkstatt-Text fragen alle hier.
+## Zwei Lesarten waeren zwei Gelegenheiten, dass die Aktionsleiste einen Preis
+## nennt, den die Ausfuehrung nicht abbucht.
+func en_cost_now() -> int:
+	return en_cost if ActionData.energy_brakes() else 0
+
+
+## Und dasselbe fuer die Wartezeit.
+func cooldown_now() -> int:
+	return cooldown_turns if ActionData.cooldown_brakes() else 0
+
 
 static func from_meta(meta: Dictionary, owner_name: String = "",
 		owner_code: String = "") -> ActionData:
@@ -112,6 +170,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.aggro_coeff = float(meta.get("aggro_coeff", 1.0))
 	action.aggro_flat = meta.get("aggro_flat", 0)
 	action.taunt_turns = meta.get("taunt_turns", 0)
+	action.cooldown_turns = meta.get("cooldown_turns", 0)
 	return action
 
 
@@ -156,10 +215,16 @@ func effect_summary() -> String:
 
 
 ## Kurzform fuer eine Zeile: "Angriff · Rw 4 · EN 0".
+##
+## Genannt wird, was im aktuellen Bremsmodus tatsaechlich gilt. Ein "EN 35" an
+## einer Aktion, die gerade gar keine Energie abbucht, waere eine Falschauskunft
+## -- und zwar eine, nach der der Spieler seinen Kern aussucht.
 func headline() -> String:
 	var parts: Array[String] = [category_label(), "Rw %d" % range_tiles]
-	if en_cost > 0:
-		parts.append("EN %d" % en_cost)
+	if en_cost_now() > 0:
+		parts.append("EN %d" % en_cost_now())
+	if cooldown_now() > 0:
+		parts.append("AZ %d" % cooldown_now())
 	return " · ".join(parts)
 
 
@@ -177,7 +242,9 @@ func description_lines() -> Array[String]:
 		lines.append("Reparatur %d" % heal_amount())
 	elif power > 0:
 		lines.append("Staerke %d · Schadensart %s" % [power, damage_type_label()])
-	lines.append("Energie %d" % en_cost)
+	lines.append("Energie %d" % en_cost_now())
+	if cooldown_now() > 0:
+		lines.append("Abklingzeit %d Zuege" % cooldown_now())
 	if aoe_radius > 0:
 		lines.append("Flaeche: Radius %d um das Ziel" % aoe_radius)
 	if requires_line_of_sight:

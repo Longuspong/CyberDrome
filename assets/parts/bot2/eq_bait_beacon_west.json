@@ -64,14 +64,15 @@
       "targeting": "single",
       "range_tiles": 3,
       "aoe_radius": 0,
-      "en_cost": 14,
+      "en_cost": 35,
       "power": 0,
       "requires_line_of_sight": true,
       "push_tiles": 0,
       "status_effect": null,
       "aggro_coeff": 1.0,
       "aggro_flat": 0,
-      "taunt_turns": 3
+      "taunt_turns": 3,
+      "cooldown_turns": 3
     }
   }
 }

@@ -468,14 +468,22 @@ func test_the_beacon_raises_the_aggro_its_carrier_generates() -> void:
 
 func test_the_beacon_costs_a_slot_and_the_strix_cannot_pay_it() -> void:
 	# Die Behauptung aus GAME_DESIGN 6b, als Test: Praesenz-Aggro kostet einen
-	# Ausruestungsslot. Wer nur einen hat, kann sie nicht kaufen.
+	# Ausruestungsslot. Wer nur einen hat, bezahlt ihn mit seiner Waffe.
+	#
+	# Frueher war dieser Aufbau schlicht ungueltig ("Keine Waffe bestueckt").
+	# Seit ein waffenloser Aufbau eine Entscheidung sein darf, ist der Preis
+	# nicht mehr die Ablehnung, sondern die leere Angriffsliste -- und das ist
+	# die ehrlichere Formulierung derselben Aussage: der Strix KANN den Sender
+	# tragen, nur eben statt zu schiessen.
 	var strix := DromeBuild.create("STRIX", {
 		"body": &"strix_body", "head": &"strix_head",
 		"feet": &"strix_feet", "core": &"strix_core",
 		"equip_center": &"eq_bait_beacon"})
-	t.ok(not strix.is_valid(),
-		"der Strix mit Sender statt Lanze ist ungueltig: %s"
+	t.ok(strix.is_valid(),
+		"der Strix mit Sender statt Lanze ist baubar: %s"
 		% ", ".join(strix.validate()))
+	t.ok(strix.actions_of(ActionData.Category.ATTACK).is_empty(),
+		"und hat dafuer keinen einzigen Angriff mehr")
 
 	var molok := DromeBuild.create("MOLOK", {
 		"body": &"jugg_body", "head": &"jugg_head",
