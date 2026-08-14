@@ -34,19 +34,6 @@
     "turn_handover_delay": 0.35
   },
 
-  "playtest": {
-    "_kommentar": [
-      "ignore_build_limits hebt im Spiel die beiden Budgetgrenzen auf --",
-      "Traglast und Energiebedarf. Gedacht fuers Ausprobieren: um zu wissen,",
-      "ob ein Molok mit drei vollen Slots zu stark ist, muss man ihn einmal",
-      "bauen koennen. Alles andere bleibt gueltig (vier Sockel, eine Waffe,",
-      "passende Halter, mov/spd mindestens 1), und die Gegner werden weiter",
-      "streng gewuerfelt. In der Werkstatt gibt es denselben Schalter.",
-      "Fuer ein ausgeliefertes Spiel steht er auf false."
-    ],
-    "ignore_build_limits": false
-  },
-
   "_kommentar_zuladung": [
     "spd_weight_step koppelt das Tempo an die Masse: je so viel Gewicht an",
     "AUSRUESTUNG ein Punkt SPD weniger, abgerundet. Damit zahlt ein",

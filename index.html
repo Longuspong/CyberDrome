@@ -1571,13 +1571,11 @@ function validateLoadout(loadout) {
     }
   }
 
+  // Die beiden Bau-Deckel (Traglast, Energiebedarf) sind gestrichen: Energie
+  // ist Mana, Gewicht ist Tempo. Was bleibt, ist die strukturelle Untergrenze
+  // -- ein DROME, der sich nicht mehr bewegt, kann nicht kaempfen. Spiegelt
+  // DromeBuild.structural_problems().
   const t = buildStats(loadout);
-  if (t.weight > t.weight_capacity) {
-    problems.push(`Traglast ueberschritten: ${t.weight} / ${t.weight_capacity}`);
-  }
-  if (t.power_draw > t.power_output) {
-    problems.push(`Energiebedarf zu hoch: ${t.power_draw} / ${t.power_output}`);
-  }
   if (t.mov < 1) problems.push(`Bewegung zu gering: mov ${t.mov} (mindestens 1)`);
   if (t.spd < 1) problems.push(`Geschwindigkeit zu gering: spd ${t.spd} (mindestens 1)`);
   return problems;
@@ -1589,20 +1587,6 @@ function powerScore(loadout) {
        + t.en_max * 0.5 + t.best_weapon * 2;
 }
 // <<< STATS-BLOCK ENDE
-
-/** Ein Balken mit Klartextmeldung bei Ueberschreitung. */
-function meter(label, value, limit) {
-  const over = value > limit;
-  const pct = limit > 0 ? Math.min(100, (value / limit) * 100) : (value > 0 ? 100 : 0);
-  return `
-    <div style="margin:6px 0 2px;display:flex;justify-content:space-between;font-size:11px">
-      <span>${label}</span>
-      <span style="color:${over ? "var(--bad,#ff6b6b)" : "inherit"}">${value} / ${limit}</span>
-    </div>
-    <div style="height:6px;background:#00000055;border-radius:3px;overflow:hidden">
-      <div style="height:100%;width:${pct}%;background:${over ? "#ff6b6b" : "var(--neon)"}"></div>
-    </div>`;
-}
 
 /** Aufbau, der beim Hovern ueber ein Bibliotheks-Teil entstuende. */
 let hoverPreview = null;
@@ -1636,7 +1620,7 @@ function renderCombat() {
     let delta = "";
     if (preview && preview[key] !== now) {
       const diff = preview[key] - now;
-      const good = key === "weight" || key === "power_draw" ? diff < 0 : diff > 0;
+      const good = diff > 0;
       delta = `<span style="color:${good ? "#6bd97a" : "#ff6b6b"}">
                  ${diff > 0 ? "+" : ""}${diff}</span>`;
     }
@@ -1652,8 +1636,9 @@ function renderCombat() {
 
   el("combat-body").innerHTML = `
     ${rows}
-    ${meter("Gewicht / Traglast", base.weight, base.weight_capacity)}
-    ${meter("Energiebedarf / Ausstoss", base.power_draw, base.power_output)}
+    <div style="margin:6px 0 2px;display:flex;justify-content:space-between;font-size:12px;opacity:.75">
+      <span>Gewicht</span><span>${base.weight}</span>
+    </div>
     ${flags.length ? `<p class="hint" style="margin-top:8px">${flags.join(" · ")}</p>` : ""}
     <div style="margin-top:8px;font-size:11px;opacity:.7">Kampfwert ${Math.round(powerScore(state.loadout))}</div>
     ${problems.length

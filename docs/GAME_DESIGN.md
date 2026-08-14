@@ -634,26 +634,25 @@ einmal haengt. Im MVP reicht die Kette den Schaden dort unveraendert durch.
   multiplikativ wirken (dann bricht die Nachrechenbarkeit im Kopf, die
   `mitigate()` ausdruecklich schuetzt) oder als weiterer flacher, gedeckelter
   Abzug.
-* **Der dritte Slot des Molok ist selten bezahlbar.** Teilweise beantwortet.
-  Die urspruengliche Diagnose war falsch: bei EIGENEN Sockeln reisst nicht die
-  Energie, sondern die **Traglast**, und zwar um genau einen Punkt -- zwei
-  schwere Arme wogen 32 bei Kapazitaet 31. Der schwere Slot war damit eine
-  Erlaubnis, die das Budget wieder einkassierte. Nach Energie fuehlt es sich
-  nur an, sobald man Sockel aus fremden Bausaetzen mischt: Ausstoss kommt
-  ausschliesslich aus dem Kern (12 bis 16), waehrend Kopf und Antrieb je nach
-  Satz 3 bis 7 ziehen. Von 7680 strukturell gueltigen Molok-Aufbauten mit drei
-  belegten Ankern scheiterten 5228 allein an der Energie.
+* ~~**Der dritte Slot des Molok ist selten bezahlbar.**~~ **Beantwortet, indem
+  die Frage selbst weggefallen ist.** Die Zwischenstufe (Traglast 31 → 33,
+  Chassis-SPD -2 → 0, Belagerungskanone ohne Strom) lockerte den Deckel, liess
+  ihn aber stehen -- und damit blieb der Unsinn: zwei schwere Arme gingen (32
+  von 33), drei volle Slots (35) nicht, und ein **Vireo mit zwei Puls-Blastern**
+  riss die Traglast um genau einen Punkt (19/18). Der offensichtlichste
+  Standard-Aufbau war verboten. Aus Spielersicht war das kaputt.
 
-  Geaendert: Traglast 31 → 33, Chassis-SPD -2 → 0 (die Masse bremst jetzt
-  selbst, siehe unten), und die Belagerungskanone zieht keinen Strom mehr.
-  **Zwei schwere Arme sind seither baubar (32 von 33), drei volle Slots mit
-  Schulterpod nicht (35).** Das ist die Antwort auf die dritte der drei Fragen
-  -- drei volle Anker sind nicht vorgesehen, zwei schwere aber sehr wohl.
-
-  Offen bleibt, ob der Ausstoss ueberhaupt nur aus dem Kern kommen soll. Ihn
-  auch aufs Chassis zu legen waere der strukturelle Hebel dagegen, dass fremde
-  Sockel das ganze Ausruestungsbudget auffressen. Der Schalter
-  `playtest.ignore_build_limits` bleibt fuers Ausprobieren.
+  Die Konsequenz war nicht, den Deckel weiter zu justieren, sondern ihn ganz zu
+  streichen -- beide Bau-Budgets, Traglast wie Energiebedarf. Die Werkstatt ist
+  kein Tuersteher mehr: **Energie ist Mana, Gewicht ist Tempo** (siehe den
+  naechsten Punkt). Was einen vollen Aufbau bremst, ist der Preis im Kampf --
+  Zuladung zieht SPD, Faehigkeiten kosten `en_cost` --, kein Riegel davor. Die
+  natuerliche Obergrenze der Masse ist damit `spd >= 1`: man kann laden, bis der
+  DROME festfaehrt. `power_draw`, `weight_capacity` und `power_output` stehen
+  noch in den Teil-JSONs, werden aber von nichts mehr gelesen; sie fallen beim
+  naechsten Neugenerieren des Teilesatzes weg. Ebenso entfaellt der
+  Playtest-Schalter `playtest.ignore_build_limits`: ohne Budgetgrenze gibt es
+  nichts mehr abzuschalten.
 * **Aggro-Zahlen sind ungetestet.** Das Modell steht und ist durch Tests
   abgesichert, aber nie gespielt worden. Die Verhaeltnisse in 6c sind
   durchdacht, die Werte in `data/config.json` sind Setzungen. `decay_rate` und

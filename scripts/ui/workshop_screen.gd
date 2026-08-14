@@ -147,11 +147,7 @@ var _action_list: VBoxContainer
 var _problem_label: RichTextLabel
 var _squad_bar: HBoxContainer
 var _start_button: Button
-var _playtest_toggle: CheckBox
-var _weight_bar: ProgressBar
 var _weight_label: Label
-var _power_bar: ProgressBar
-var _power_label: Label
 var _power_label_total: Label
 var _name_field: LineEdit
 var _filter_field: LineEdit
@@ -328,17 +324,6 @@ func _build_preview_column() -> Control:
 	_squad_bar = HBoxContainer.new()
 	_squad_bar.add_theme_constant_override("separation", 8)
 	center.add_child(_squad_bar)
-
-	_playtest_toggle = CheckBox.new()
-	_playtest_toggle.text = "Playtest: Traglast und Energie nicht erzwingen"
-	_playtest_toggle.button_pressed = GameState.ignore_build_limits
-	_playtest_toggle.tooltip_text = "Zum Ausprobieren: die beiden Budgetgrenzen "\
-		+ "zaehlen dann nicht mehr als Fehler.\nAlles andere gilt weiter, und "\
-		+ "die Gegner werden unveraendert streng gewuerfelt."
-	_playtest_toggle.toggled.connect(func(pressed):
-		GameState.ignore_build_limits = pressed
-		_refresh_all())
-	center.add_child(_playtest_toggle)
 	return center
 
 
@@ -377,19 +362,13 @@ func _build_stats_column() -> Control:
 	_stat_list = VBoxContainer.new()
 	column.add_child(_stat_list)
 
+	# Gewicht steht als schlichte Zahl da, ohne Balken und ohne Deckel: es ist
+	# keine Grenze mehr, sondern nur die Herkunft des Tempoverlusts, der als
+	# "Zuladung -> -SPD" direkt unter der SPD-Zeile erklaert wird.
 	_weight_label = Label.new()
+	_weight_label.add_theme_font_size_override("font_size", 11)
+	_weight_label.modulate = COLOR_MUTED
 	column.add_child(_weight_label)
-	_weight_bar = ProgressBar.new()
-	_weight_bar.custom_minimum_size = Vector2(0, 10)
-	_weight_bar.show_percentage = false
-	column.add_child(_weight_bar)
-
-	_power_label = Label.new()
-	column.add_child(_power_label)
-	_power_bar = ProgressBar.new()
-	_power_bar.custom_minimum_size = Vector2(0, 10)
-	_power_bar.show_percentage = false
-	column.add_child(_power_bar)
 
 	column.add_child(_heading("Kann im Kampf"))
 	_action_list = VBoxContainer.new()
@@ -743,17 +722,8 @@ static func _part_spec_lines(part: PartData) -> Array[String]:
 	if not values.is_empty():
 		lines.append("  ".join(values))
 
-	var budget: Array[String] = []
 	if part.weight != 0:
-		budget.append("Gewicht %d" % part.weight)
-	if part.power_draw != 0:
-		budget.append("Energiebedarf %d" % part.power_draw)
-	if part.weight_capacity != 0:
-		budget.append("Traglast %d" % part.weight_capacity)
-	if part.power_output != 0:
-		budget.append("Ausstoss %d" % part.power_output)
-	if not budget.is_empty():
-		lines.append("  ".join(budget))
+		lines.append("Gewicht %d" % part.weight)
 
 	if part.type == PartData.Type.EQUIPMENT:
 		lines.append("Klasse %s · %s" % [_class_label(part.mount_class),
@@ -999,26 +969,18 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 	if not changed:
 		_delta_rows.add_child(_delta_line("keine Wertaenderung", COLOR_MUTED))
 
-	# Traglast und Energie stehen immer da, auch unveraendert: sie sind die
-	# beiden Grenzen, an denen ein Aufbau scheitert.
-	_delta_rows.add_child(_delta_line("Gewicht  %d / %d → %d / %d"
-		% [before["weight"], before["weight_capacity"],
-			after["weight"], after["weight_capacity"]],
-		COLOR_BAD if after["weight"] > after["weight_capacity"] else COLOR_MUTED))
-	_delta_rows.add_child(_delta_line("Energie  %d / %d → %d / %d"
-		% [before["power_draw"], before["power_output"],
-			after["power_draw"], after["power_output"]],
-		COLOR_BAD if after["power_draw"] > after["power_output"] else COLOR_MUTED))
+	# Gewicht steht immer da, auch unveraendert -- es ist kein Deckel mehr, aber
+	# der Grund, warum das Tempo faellt, und das soll die Vorschau zeigen.
+	if after["weight"] != before["weight"]:
+		_delta_rows.add_child(_delta_line("Gewicht  %d → %d"
+			% [before["weight"], after["weight"]], COLOR_MUTED))
 
-	var problems := _hover_build.blocking_problems()
+	var problems := _hover_build.validate()
 	if problems.is_empty():
 		_delta_rows.add_child(_delta_line("Aufbau bliebe gueltig", COLOR_GOOD))
 	else:
 		for line in problems:
 			_delta_rows.add_child(_delta_line("• %s" % line, COLOR_BAD))
-	if GameState.ignore_build_limits and not _hover_build.budget_problems().is_empty():
-		_delta_rows.add_child(_delta_line("Playtest: Grenze ueberschritten, "
-			+ "aber erlaubt", COLOR_WARN))
 
 	_delta_panel.visible = true
 	# Erst nach dem Layout kennt das Feld seine Groesse.
@@ -1098,10 +1060,7 @@ func _refresh_stats() -> void:
 			if key == "spd":
 				_add_payload_note()
 
-	_meter(_weight_bar, _weight_label, "Gewicht / Traglast",
-		base["weight"], base["weight_capacity"])
-	_meter(_power_bar, _power_label, "Energiebedarf / Ausstoss",
-		base["power_draw"], base["power_output"])
+	_weight_label.text = "Gewicht   %d" % base["weight"]
 
 	var flags: Array[String] = []
 	for flag in FLAG_LABEL:
@@ -1112,18 +1071,10 @@ func _refresh_stats() -> void:
 
 	_power_label_total.text = "Kampfwert %d" % int(round(_build.power_score()))
 
-	var problems := _build.blocking_problems()
+	var problems := _build.validate()
 	var text := ""
 	if not flags.is_empty():
 		text += "[color=#8ab4d8]%s[/color]\n" % " · ".join(flags)
-	# Im Playtest wird die ueberschrittene Grenze weiterhin GENANNT, nur nicht
-	# mehr als Fehler gewertet -- und sie steht VOR dem Urteil, damit
-	# "Aufbau ist gueltig" nicht ohne seine Einschraenkung dasteht. Ein Aufbau,
-	# der stillschweigend ueber seiner Traglast liegt, waere im naechsten
-	# Balancing-Durchgang nicht mehr erklaerbar.
-	if GameState.ignore_build_limits:
-		for line in _build.budget_problems():
-			text += "[color=#ffb84d]• %s (Playtest: erlaubt)[/color]\n" % line
 	if problems.is_empty():
 		text += "[color=#6bd97a]Aufbau ist gueltig.[/color]"
 	else:
@@ -1204,20 +1155,6 @@ func _add_payload_note() -> void:
 	note.add_theme_font_size_override("font_size", 10)
 	note.modulate = COLOR_MUTED
 	_stat_list.add_child(note)
-
-
-func _meter(bar: ProgressBar, label: Label, title: String,
-		value: int, limit: int) -> void:
-	label.text = "%s   %d / %d" % [title, value, limit]
-	bar.max_value = maxi(1, limit)
-	bar.value = mini(value, bar.max_value)
-	var over := value > limit
-	# Im Playtest bleibt der Balken sichtbar ueber der Grenze, faerbt sich aber
-	# nur warnend: die Zahl stimmt weiterhin, sie hindert nur nicht mehr.
-	var color := COLOR_WARN if over and GameState.ignore_build_limits \
-		else (COLOR_BAD if over else Color.WHITE)
-	label.modulate = color
-	bar.modulate = color if over else Color(0.35, 0.8, 0.95)
 
 
 func _refresh_preview() -> void:

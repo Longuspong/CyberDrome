@@ -130,10 +130,10 @@ func test_the_same_weapon_slows_every_chassis_equally() -> void:
 		% [heavy.payload_slowdown(), molok.payload_slowdown()])
 
 
-func test_the_molok_can_finally_hold_two_heavy_arms() -> void:
-	# Zwei schwere Waffen an zwei schweren Armen scheiterten an EINEM Punkt
-	# Traglast (32/31). Der schwere Slot war damit eine Erlaubnis, die das
-	# Budget wieder einkassierte.
+func test_the_molok_can_fill_all_three_slots() -> void:
+	# Zwei schwere Arme scheiterten frueher an EINEM Punkt Traglast (32/31), der
+	# dritte Slot obendrauf erst recht. Ohne Bau-Deckel ist das kein Riegel mehr:
+	# die Masse kostet Tempo (SPD), verbietet aber nichts.
 	var molok := DromeBuild.create("MOLOK", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
@@ -141,12 +141,12 @@ func test_the_molok_can_finally_hold_two_heavy_arms() -> void:
 	t.ok(molok.is_valid(), "zwei schwere Arme sind baubar: %s"
 		% ", ".join(molok.validate()))
 
-	# Der Schulterpod obendrauf bleibt ausserhalb -- die Traglast ist gelockert,
-	# nicht abgeschafft.
-	var overloaded := molok.clone()
-	overloaded.slots["equip_shoulder"] = &"eq_orbit_focus"
-	t.ok(not overloaded.is_valid(),
-		"mit Schulterpod reisst sie wieder: %s" % ", ".join(overloaded.validate()))
+	var full := molok.clone()
+	full.slots["equip_shoulder"] = &"eq_orbit_focus"
+	t.ok(full.is_valid(),
+		"und der dritte Slot obendrauf ebenso: %s" % ", ".join(full.validate()))
+	t.ok(full.payload_slowdown() >= molok.payload_slowdown(),
+		"der volle Aufbau bezahlt in Tempo, nicht mit einem Verbot")
 
 
 func test_no_ability_costs_more_than_the_smallest_core_holds() -> void:
@@ -166,21 +166,34 @@ func test_no_ability_costs_more_than_the_smallest_core_holds() -> void:
 			% [part.action.display_name, part.action.en_cost, smallest])
 
 
-func test_overweight_is_named_not_just_rejected() -> void:
-	# Der Vireo traegt 18. Kern und Antrieb des Molok wiegen allein schon mehr,
-	# als bei ihm nach Kopf und Waffe uebrig bleibt.
-	var build := DromeBuild.create("UEBERLADEN", {
+func test_the_vireo_can_carry_two_pulse_blasters() -> void:
+	# Der Fall, der das Modell gekippt hat: das leichteste Chassis mit den zwei
+	# Einsteigerwaffen wog 19 bei Kapazitaet 18 und liess sich um EINEN Punkt
+	# nicht bauen. Aus Spielersicht der offensichtlichste Standard-Aufbau -- und
+	# er war verboten. Ohne Bau-Deckel geht er.
+	var vireo := DromeBuild.create("VIREO", {
+		"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core",
+		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_pulse_blaster",
+	})
+	t.ok(vireo.is_valid(), "zwei Puls-Blaster am Vireo sind baubar: %s"
+		% ", ".join(vireo.validate()))
+
+
+func test_weight_no_longer_vetoes_a_build_only_slows_it() -> void:
+	# Ein Aufbau aus fremden, schweren Sockeln riss frueher die Traglast. Jetzt
+	# ist Gewicht ein Tempo-Preis, kein Verbot: die Validierung nennt keine
+	# Traglast mehr.
+	var build := DromeBuild.create("SCHWER", {
 		"body": &"scout_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": &"eq_pulse_blaster",
 	})
-	var problems := build.validate()
-	var found := false
-	for line in problems:
-		if line.begins_with("Traglast ueberschritten"):
-			found = true
-	t.ok(found, "Traglast wird beim Namen genannt, nicht nur abgelehnt: %s"
-		% ", ".join(problems))
+	t.ok(build.is_valid(), "der schwere Aufbau ist baubar: %s"
+		% ", ".join(build.validate()))
+	for line in build.validate():
+		t.ok(not line.begins_with("Traglast"),
+			"keine Traglast-Grenze mehr in der Validierung: %s" % line)
 
 
 func test_slot_rules_are_enforced() -> void:
@@ -364,14 +377,12 @@ func test_the_first_free_holder_wins_before_an_occupied_one() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Playtest: die beiden Budgetgrenzen abschaltbar
+# Keine Bau-Budgets: nur die strukturelle Untergrenze gilt
 # ---------------------------------------------------------------------------
 
-## Ein Molok mit drei bestueckten Slots. Genau der Fall, an dem der Schalter
-## haengt: der Fusionskern gibt nicht genug Energie fuer alle drei her.
-## Der Aufbau, an dem die Traglast noch reisst: zwei schwere Arme UND der
-## Schulterpod. Zwei schwere Arme allein gehen inzwischen (32 von 33) -- der
-## dritte Anker ist die Grenze, nicht der zweite.
+## Ein Molok mit drei bestueckten Slots -- frueher der Grenzfall, an dem
+## Traglast und Energie zugleich rissen. Heute ein ganz normaler, baubarer
+## Aufbau.
 func _overloaded_molok() -> DromeBuild:
 	return DromeBuild.create("VOLLBESTUECKT", {
 		"body": &"jugg_body", "head": &"jugg_head",
@@ -381,37 +392,32 @@ func _overloaded_molok() -> DromeBuild:
 	})
 
 
-func test_playtest_switch_lifts_only_the_two_budgets() -> void:
+func test_no_build_budget_gates_a_full_loadout() -> void:
+	# Es gibt keine Traglast- und keine Energie-Grenze mehr. Ein vollbestueckter
+	# Molok ist baubar; was ihn bremst, ist Tempo und Mana im Kampf, kein Riegel
+	# in der Werkstatt.
 	var build := _overloaded_molok()
-	t.ok(not build.budget_problems().is_empty(),
-		"drei volle Slots sprengen Traglast oder Energie: %s"
+	t.ok(build.is_valid(), "drei volle Slots sind baubar: %s"
 		% ", ".join(build.validate()))
-	t.ok(not build.is_valid(), "und sind damit normal ungueltig")
 
-	DromeBuild.ignore_limits = true
-	t.ok(build.is_valid(), "im Playtest ist derselbe Aufbau baubar")
-	t.ok(not build.is_strictly_valid(),
-		"die strengen Regeln sagen weiterhin nein")
-	t.ok(not build.budget_problems().is_empty(),
-		"und die Ueberschreitung wird weiterhin genannt, nicht verschwiegen")
 
-	# Was ein DROME sein MUSS, bleibt auch im Playtest Pflicht.
+func test_the_structural_floor_still_holds() -> void:
+	# Was ein DROME sein MUSS, gilt weiter: ohne Sockel kein Kampf. Das ist die
+	# einzige verbliebene Grenze -- und die eigentliche Obergrenze der Masse,
+	# denn Zuladung zieht SPD, und unter spd 1 ist ein Aufbau ungueltig.
 	var crippled := DromeBuild.create("OHNE", {"body": &"jugg_body"})
 	t.ok(not crippled.is_valid(),
-		"fehlende Sockel bleiben auch im Playtest ein Fehler: %s"
-		% ", ".join(crippled.blocking_problems()))
-	DromeBuild.ignore_limits = false
-	t.ok(not build.is_valid(), "ausgeschaltet gilt wieder die Grenze")
+		"fehlende Sockel bleiben ein Fehler: %s"
+		% ", ".join(crippled.validate()))
 
 
-func test_enemies_stay_strict_while_the_player_playtests() -> void:
-	# Sonst verschoebe der Schalter still den Massstab: der Spieler testet
-	# einen ueberladenen Aufbau gegen ebenso ueberladene Gegner und lernt
-	# nichts ueber sein Balancing.
-	DromeBuild.ignore_limits = true
+func test_generated_enemies_are_valid() -> void:
+	# Gegner laufen jetzt durch dieselben Regeln wie der Spieler -- es gibt keine
+	# strengere Variante mehr, weil es keine abschaltbaren Budgets mehr gibt.
 	var squad := EnemyGenerator.new(4711).generate(3, 600.0)
 	for build in squad:
-		t.ok(build.is_strictly_valid(),
-			"Gegner %s haelt die vollen Regeln ein: %s"
+		t.ok(build.is_valid(),
+			"Gegner %s ist gueltig: %s"
 			% [build.display_name, ", ".join(build.validate())])
-	DromeBuild.ignore_limits = false
+		t.ok(not build.weapons().is_empty(),
+			"Gegner %s traegt eine Waffe" % build.display_name)

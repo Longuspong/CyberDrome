@@ -191,7 +191,10 @@ withSlotDefs({ body: "scout_body" }, () => {
   });
 }
 
-// Ueberladen: der Vireo traegt 18.
+// Schwer, aber baubar: die Bau-Deckel (Traglast, Energiebedarf) sind gestrichen.
+// Gewicht ist Tempo, Energie ist Mana -- kein Riegel in der Werkstatt. Diese
+// Gegenprobe haelt fest, dass die HTML-Werkstatt keine Traglast-Grenze mehr
+// nennt, waehrend die Engine sie laengst abgelegt hat (DromeBuild.validate()).
 withSlotDefs(
   { body: "scout_body", head: "jugg_head", feet: "jugg_feet", core: "jugg_core",
     equip_left: "eq_pulse_blaster" },
@@ -199,9 +202,9 @@ withSlotDefs(
     const problems = sandbox.validateLoadout(loadoutOf(
       { body: "scout_body", head: "jugg_head", feet: "jugg_feet",
         core: "jugg_core", equip_left: "eq_pulse_blaster" }));
-    if (!problems.some((p) => p.startsWith("Traglast ueberschritten"))) {
+    if (problems.some((p) => p.startsWith("Traglast"))) {
       failures += 1;
-      console.log("  [FEHLER] Traglast wird nicht beim Namen genannt: "
+      console.log("  [FEHLER] die Traglast-Grenze lebt in der Werkstatt weiter: "
         + problems.join(", "));
     }
   });
