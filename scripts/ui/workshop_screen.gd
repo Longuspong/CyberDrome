@@ -23,16 +23,43 @@ extends Control
 ## Kerne es gibt, musste man erst den Kern-Slot anwaehlen -- und wer nicht
 ## wusste, dass es einen zweiten Kern gibt, kam nie auf die Idee. Jetzt steht
 ## alles da, und der Klick raeumt selbst in den passenden Slot ein.
+##
+## ### Bilder, keine Zeilen
+##
+## Die Bibliothek war eine Liste aus Textzeilen mit einer 40px-Briefmarke
+## davor. Gewaehlt wurde damit der Name, und das Bild war zu klein, um zu
+## erkennen, was man baut. Jetzt stehen die Teile als Kacheln: das Bild ist
+## die Schaltflaeche, darueber nur der Name. Alles andere -- Werte, Klasse,
+## Wirkung, was sich am Aufbau aendert -- kommt beim Zeigen und nicht vorher.
+## Ein Bestand aus vier Bots passt so ins Blickfeld, statt gescrollt zu werden.
+##
+## ### Ausruestung waehlt ihren Halter selbst
+##
+## Sockelteile haben genau einen Platz -- ein Chassis kann nur ins Chassis.
+## Ein Klick genuegt. Ausruestung hat mehrere, und welcher gemeint ist, wusste
+## bisher nur ``slot_for()``: erster freier passender. Wer in den zweiten Arm
+## wollte, musste erst rechts den Slot anwaehlen und dann links klicken --
+## quer ueber den Bildschirm und wieder zurueck. Jetzt oeffnet der Klick auf
+## ein Ausruestungsteil die Halterliste DIREKT auf der Kachel: eine Zeile je
+## Halter, mit Klasse und Belegung, und der Zeiger bleibt, wo er ist.
 
 const PREVIEW_SCALE := 2.4
 const PREVIEW_SIZE := 520
+
+## Kantenlaenge des Bildes in der Bibliothek und Hoehe der Namenszeile
+## darueber. Die Spaltenzahl folgt daraus, nicht umgekehrt.
+const TILE_SIZE := 108
+const TILE_NAME_HEIGHT := 15
+const TILE_COLUMNS := 3
+const LIBRARY_WIDTH := 372
 
 ## Wo im Vorschaufeld der Bodenpunkt des DROME sitzt. Nicht 0.5 -- ein Bot
 ## ragt nach oben, nicht nach unten.
 const GROUND_FRACTION := 0.72
 
-## Kantenlaenge der Miniatur in der Bibliothek.
-const THUMB_SIZE := 40
+## Kantenlaenge der Miniatur in der Slotliste rechts. Dort ist sie ein
+## Merkzeichen neben dem Namen -- gewaehlt wird in der Bibliothek.
+const THUMB_SIZE := 28
 const DIRECTIONS := ["south", "west", "east", "north"]
 const DIR_LABEL := {"south": "Sued", "west": "West", "east": "Ost", "north": "Nord"}
 
@@ -40,6 +67,13 @@ const SLOT_LABEL := {
 	"body": "Chassis", "head": "Sensorik", "feet": "Antrieb", "core": "Kern",
 	"equip_left": "Ausruestung links", "equip_right": "Ausruestung rechts",
 	"equip_shoulder": "Schulterhalterung", "equip_center": "Zentralhalterung",
+}
+
+## Dieselben Halter kurz -- fuer die Halterliste, die neben dem Zeiger aufgeht
+## und deshalb schmal bleiben muss.
+const SLOT_SHORT := {
+	"equip_left": "links", "equip_right": "rechts",
+	"equip_shoulder": "Schulter", "equip_center": "Zentral",
 }
 
 ## Die Bibliothek in der Reihenfolge, in der ein DROME entsteht: erst das
@@ -91,8 +125,22 @@ var _hover_build: DromeBuild = null
 var _hover_part: PartData = null
 var _hover_slot: String = ""
 
+## Die offene Halterliste: auf welchem Teil sie steht. Solange sie offen ist,
+## bleibt die Vorschau bei diesem Teil -- der Zeiger hat die Kachel ja verlassen,
+## um in die Liste zu fahren, und ein Bild, das dabei zurueckspringt, zeigt
+## genau in dem Moment das Falsche.
+var _pending_part: PartData = null
+
 var _preview_root: Node2D
 var _library: VBoxContainer
+var _library_column: Control
+var _slot_popup: PanelContainer
+var _slot_popup_rows: VBoxContainer
+
+## Ausgeschnittene Bauteilbilder, nach Asset-Pfad. Der Zuschnitt kostet ein
+## get_image() je Teil und Richtung; die Bibliothek baut sich bei jedem Klick
+## neu auf, und ohne Gedaechtnis waere das jedes Mal derselbe Aufwand.
+var _cropped: Dictionary = {}
 var _slot_list: VBoxContainer
 var _stat_list: VBoxContainer
 var _action_list: VBoxContainer
@@ -170,12 +218,24 @@ func _build_ui() -> void:
 	_delta_panel.add_child(_delta_rows)
 	add_child(_delta_panel)
 
+	# Die Halterliste liegt aus demselben Grund frei: sie geht ueber der Kachel
+	# auf, die sie meint, und darf die Bibliothek dabei nicht verschieben.
+	# Anfassbar ist sie -- anders als das Deltafeld -- sehr wohl.
+	_slot_popup = PanelContainer.new()
+	_slot_popup.visible = false
+	_slot_popup.add_theme_stylebox_override("panel", _panel_style())
+	_slot_popup_rows = VBoxContainer.new()
+	_slot_popup_rows.add_theme_constant_override("separation", 2)
+	_slot_popup.add_child(_slot_popup_rows)
+	add_child(_slot_popup)
+
 	_refresh_direction_buttons()
 
 
 func _build_library_column() -> Control:
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(330, 0)
+	left.custom_minimum_size = Vector2(LIBRARY_WIDTH, 0)
+	_library_column = left
 	left.add_child(_heading("Bibliothek"))
 
 	_filter_field = LineEdit.new()
@@ -186,14 +246,16 @@ func _build_library_column() -> Control:
 	left.add_child(_filter_field)
 
 	var hint := Label.new()
-	hint.text = "Zeiger zeigt Wirkung und Aussehen · Klick baut ein"
+	hint.text = "Zeiger zeigt Werte und Aussehen · Klick baut ein\n"\
+		+ "Ausruestung: Klick fragt zuerst, in welchen Halter"
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.modulate = COLOR_MUTED
 	left.add_child(hint)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(330, 0)
+	scroll.custom_minimum_size = Vector2(LIBRARY_WIDTH, 0)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(scroll)
 	_library = VBoxContainer.new()
 	_library.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -415,7 +477,7 @@ func _refresh_slots() -> void:
 		button.button_pressed = slot == _selected_slot
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.custom_minimum_size = Vector2(0, 30)
+		button.custom_minimum_size = Vector2(0, THUMB_SIZE + 4)
 		button.add_theme_font_size_override("font_size", 12)
 		button.text = " %s: %s" % [SLOT_LABEL.get(slot, slot),
 			part.display_name if part != null else "— leer —"]
@@ -463,14 +525,14 @@ func _slot_tooltip(chassis: PartData, slot: String, part: PartData) -> String:
 	return "\n".join(lines)
 
 
-func _class_label(mount_class: String) -> String:
+static func _class_label(mount_class: String) -> String:
 	match mount_class:
 		"light": return "leicht"
 		"medium": return "mittel"
 		_: return "schwer"
 
 
-func _category_label(category: String) -> String:
+static func _category_label(category: String) -> String:
 	match category:
 		"weapon": return "Waffe"
 		"shield": return "Schild"
@@ -485,6 +547,9 @@ func _category_label(category: String) -> String:
 ## nur hier nicht hinein darf -- und die Frage "warum kann mein Strix die
 ## Belagerungskanone nicht" beantwortet nur die zweite Variante.
 func _refresh_library() -> void:
+	# Die Halterliste haengt an einer Kachel. Werden die Kacheln neu gebaut --
+	# Richtungswechsel, anderer DROME --, meint sie nichts mehr.
+	_close_slot_popup()
 	for child in _library.get_children():
 		child.queue_free()
 
@@ -496,8 +561,14 @@ func _refresh_library() -> void:
 		var header := _heading(group[1])
 		header.custom_minimum_size = Vector2(0, 22)
 		_library.add_child(header)
+
+		var grid := GridContainer.new()
+		grid.columns = TILE_COLUMNS
+		grid.add_theme_constant_override("h_separation", 6)
+		grid.add_theme_constant_override("v_separation", 6)
+		_library.add_child(grid)
 		for part in parts:
-			_library.add_child(_library_row(part))
+			grid.add_child(_library_tile(part))
 
 
 func _matches_filter(part: PartData) -> bool:
@@ -508,33 +579,82 @@ func _matches_filter(part: PartData) -> bool:
 	return _filter in haystack.to_lower()
 
 
-func _library_row(part: PartData) -> Button:
+## Eine Kachel: Name oben, darunter das Bauteil so gross, wie die Spalte es
+## zulaesst. Kein Code, keine Werte, kein Haken im Text -- das steht alles im
+## Feld, das beim Zeigen aufgeht.
+##
+## Der Knopf traegt seine Kinder selbst (Button ist kein Container, die Kinder
+## behalten also ihre Anker) und bekommt sie mit MOUSE_FILTER_IGNORE untergelegt:
+## sonst faenge das Label den Klick, der dem Bild gilt.
+func _library_tile(part: PartData) -> Button:
 	var button := Button.new()
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.custom_minimum_size = Vector2(0, THUMB_SIZE + 6)
-	button.toggle_mode = true
+	button.custom_minimum_size = Vector2(TILE_SIZE, TILE_SIZE + TILE_NAME_HEIGHT)
+	# SHRINK_CENTER und nicht EXPAND_FILL: der Rest, der bei drei Spalten in der
+	# Bibliotheksbreite uebrig bleibt, ginge sonst an eine einzelne Spalte, und
+	# ein Teil saehe groesser aus als das daneben, ohne es zu sein.
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 	var slot := _target_slot_for(part)
-	var equipped: bool = slot != "" and _build.slots.get(slot, &"") == part.id
 	# Ein Teil kann in mehreren Slots stecken (zwei Orbit-Fokusse). Angehakt
 	# wird es dann trotzdem -- gefragt ist "ist das verbaut", nicht "wo".
-	if not equipped:
-		equipped = part.id in _build.slots.values()
+	var equipped: bool = part.id in _build.slots.values()
+	var blocked: bool = slot == ""
 
-	button.button_pressed = equipped
-	button.text = "  %s  %s%s" % [part.code, part.display_name,
-		"  ✓" if equipped else ""]
-	button.tooltip_text = _part_tooltip(part)
-	_set_thumbnail(button, part)
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		button.add_theme_stylebox_override(state, _tile_style(state, equipped))
 
-	if slot == "":
-		# Kein Halter dieses Chassis nimmt das Teil. Anfassbar bleibt es
-		# trotzdem: der Zeiger zeigt weiterhin Wirkung und Aussehen.
+	var box := VBoxContainer.new()
+	box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	box.add_theme_constant_override("separation", 0)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(box)
+
+	var name_label := Label.new()
+	name_label.text = part.display_name
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Lange Namen werden beschnitten statt umgebrochen: die Kachel darf nicht
+	# je nach Namenslaenge eine andere Hoehe haben, und der ganze Name steht
+	# ohnehin im Feld nebenan.
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	name_label.add_theme_font_size_override("font_size", 10)
+	name_label.custom_minimum_size = Vector2(0, TILE_NAME_HEIGHT)
+	name_label.modulate = COLOR_MUTED if blocked else Color(0.82, 0.87, 0.94)
+	box.add_child(name_label)
+
+	var picture := TextureRect.new()
+	picture.texture = _part_texture(part)
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Was in keine Halterung passt, wird nicht weggelassen, sondern gedaempft:
+	# wegzulassen liesse den Spieler raten, ob es das Teil nicht gibt oder ob
+	# es nur hier nicht hinein darf.
+	if blocked:
+		picture.modulate = Color(0.5, 0.5, 0.56)
+	box.add_child(picture)
+
+	if equipped:
+		# Unten in der Ecke und nicht oben: oben steht der Name, und ein Haken
+		# daneben frisst genau die Zeichen, die einen langen Namen noch
+		# unterscheidbar machen.
+		var check := Label.new()
+		check.text = "✓"
+		check.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		check.position = Vector2(-17, -20)
+		check.add_theme_font_size_override("font_size", 12)
+		check.modulate = COLOR_GOOD
+		check.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(check)
+
+	if blocked:
+		# Anfassbar bleibt die Kachel trotzdem -- der Zeiger zeigt weiterhin
+		# Werte und Aussehen, und das Feld nennt den Grund.
 		button.disabled = true
-		button.modulate = Color(0.55, 0.55, 0.6)
-		button.tooltip_text = "%s\n\nPasst in keine Halterung von %s." % [
-			button.tooltip_text,
-			_build.body().display_name if _build.body() != null else "diesem Chassis"]
+		button.mouse_filter = Control.MOUSE_FILTER_STOP
+	elif part.type == PartData.Type.EQUIPMENT:
+		button.pressed.connect(func(): _open_slot_popup(part, button))
 	else:
 		button.pressed.connect(func():
 			_selected_slot = slot
@@ -546,14 +666,59 @@ func _library_row(part: PartData) -> Button:
 	return button
 
 
-func _set_thumbnail(button: Button, part: PartData) -> void:
-	# Die Miniatur ist dasselbe Asset, aus dem gleich der Bot entsteht --
-	# nicht ein zweites Vorschaubild, das irgendwann davon abweicht.
-	# ``expand_icon`` skaliert die Textur auf die Knopfhoehe.
+func _tile_style(state: String, equipped: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.14, 0.19)
+	style.border_color = Color(0.24, 0.28, 0.35)
+	match state:
+		"hover":
+			style.bg_color = Color(0.18, 0.22, 0.29)
+			style.border_color = Color(0.45, 0.65, 0.9)
+		"pressed":
+			style.bg_color = Color(0.22, 0.3, 0.4)
+			style.border_color = Color(0.55, 0.75, 0.95)
+		"disabled":
+			style.bg_color = Color(0.1, 0.11, 0.14)
+	if equipped:
+		style.border_color = COLOR_GOOD
+	style.set_border_width_all(2 if equipped else 1)
+	style.set_corner_radius_all(3)
+	return style
+
+
+## Das Bauteilbild, auf seinen sichtbaren Inhalt zugeschnitten.
+##
+## Dasselbe Asset, aus dem gleich der Bot entsteht -- nicht ein zweites
+## Vorschaubild, das irgendwann davon abweicht. Nur zeichnet ein Teil in einem
+## 128x128-Raum an genau der Stelle, an der es spaeter am Bot sitzt: ein
+## Blaster fuellt davon eine Ecke. Ungeschnitten waere die Kachel gross und das
+## Teil darin klein -- also wird der belegte Bereich gesucht und der gezeigt.
+func _part_texture(part: PartData) -> Texture2D:
 	var path: String = part.view(_facing).get("svg", "")
-	if path != "" and ResourceLoader.exists(path):
-		button.icon = load(path)
-		button.expand_icon = true
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	if _cropped.has(path):
+		return _cropped[path]
+
+	var texture: Texture2D = load(path)
+	var result: Texture2D = texture
+	var image: Image = texture.get_image()
+	if image != null:
+		if image.is_compressed():
+			image.decompress()
+		var used := image.get_used_rect()
+		if used.size.x > 0 and used.size.y > 0:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = texture
+			atlas.region = Rect2(used)
+			result = atlas
+	_cropped[path] = result
+	return result
+
+
+func _set_thumbnail(button: Button, part: PartData) -> void:
+	button.icon = _part_texture(part)
+	button.expand_icon = true
 
 
 ## In welchen Slot wuerde dieses Teil gehen? Die Regel steht in DromeBuild --
@@ -562,31 +727,183 @@ func _target_slot_for(part: PartData) -> String:
 	return _build.slot_for(part, _selected_slot)
 
 
-func _part_tooltip(part: PartData) -> String:
-	var lines: Array[String] = [part.display_name, ""]
+## Was das Teil selbst mitbringt -- seine eigenen Werte, nicht die des Aufbaus.
+##
+## Stand frueher im Tooltip der Zeile. Ein Tooltip kommt nach einer Wartezeit
+## und verdeckt dann das, worauf der Zeiger steht; seit das Bild die
+## Schaltflaeche ist, waere genau das die Kachel. Die Zeilen stehen deshalb im
+## Feld neben der Bibliothek, sofort und neben dem Bild statt darauf.
+static func _part_spec_lines(part: PartData) -> Array[String]:
+	var lines: Array[String] = []
+	var values: Array[String] = []
 	for key in ["hp", "en_max", "en_regen", "spd", "mov", "atk", "def"]:
 		var value: int = part.get(key)
 		if value != 0:
-			lines.append("%s %+d" % [key.to_upper(), value])
+			values.append("%s %+d" % [key.to_upper(), value])
+	if not values.is_empty():
+		lines.append("  ".join(values))
+
+	var budget: Array[String] = []
 	if part.weight != 0:
-		lines.append("Gewicht %d" % part.weight)
+		budget.append("Gewicht %d" % part.weight)
 	if part.power_draw != 0:
-		lines.append("Energiebedarf %d" % part.power_draw)
+		budget.append("Energiebedarf %d" % part.power_draw)
 	if part.weight_capacity != 0:
-		lines.append("Traglast %d" % part.weight_capacity)
+		budget.append("Traglast %d" % part.weight_capacity)
 	if part.power_output != 0:
-		lines.append("Ausstoss %d" % part.power_output)
+		budget.append("Ausstoss %d" % part.power_output)
+	if not budget.is_empty():
+		lines.append("  ".join(budget))
+
 	if part.type == PartData.Type.EQUIPMENT:
-		lines.append("Klasse: %s · %s" % [_class_label(part.mount_class),
+		lines.append("Klasse %s · %s" % [_class_label(part.mount_class),
 			_category_label(part.category)])
 	for flag in FLAG_LABEL:
 		if part.get(flag):
 			lines.append(FLAG_LABEL[flag])
 	if part.action != null:
-		lines.append("")
 		lines.append(part.action.display_name)
 		lines.append_array(part.action.description_lines())
-	return "\n".join(lines)
+	return lines
+
+
+# ---------------------------------------------------------------------------
+# Die Halterliste der Ausruestung
+# ---------------------------------------------------------------------------
+
+## Welche Halter dieses Chassis fuer dieses Teil hat -- alle, auch die, die es
+## nicht nehmen, mit dem Grund daneben.
+##
+## Statisch und ohne Oberflaeche: es ist eine Aussage ueber den Aufbau (welcher
+## Halter nimmt was, was steckt schon drin), nicht ueber die Bedienung. So
+## laesst sie sich ohne laufende Szene pruefen -- und die Reihenfolge, in der
+## der Spieler die Halter nummeriert sieht, ist dieselbe wie in
+## ``equip_slots()`` und damit dieselbe wie im Kampf.
+static func slot_choices(build: DromeBuild, part: PartData) -> Array:
+	var choices: Array = []
+	if build == null or part == null or part.type != PartData.Type.EQUIPMENT:
+		return choices
+	var chassis := build.body()
+	if chassis == null:
+		return choices
+
+	var number := 0
+	for slot in build.equip_slots():
+		number += 1
+		var rule: Dictionary = chassis.slot_rules.get(slot, {})
+		var limit: String = rule.get("max_class", PartData.MOUNT_CLASSES[-1])
+		var occupant := build.part_in(slot)
+		var allowed := chassis.accepts(part, slot)
+
+		var detail := ""
+		if not allowed:
+			detail = _rejection(part, rule, limit)
+		elif occupant == null:
+			detail = "frei"
+		elif occupant.id == part.id:
+			detail = "steckt schon drin"
+		else:
+			detail = "ersetzt %s" % occupant.display_name
+
+		choices.append({
+			"slot": slot,
+			"number": number,
+			"label": "Slot %d · %s (%s)" % [number, SLOT_SHORT.get(slot, slot),
+				_class_label(limit)],
+			"detail": detail,
+			"allowed": allowed,
+		})
+	return choices
+
+
+## Warum dieser Halter das Teil nicht nimmt -- aus derselben Regel, die
+## ``accepts()`` anwendet, nur in Worten.
+static func _rejection(part: PartData, rule: Dictionary, limit: String) -> String:
+	if PartData.MOUNT_CLASSES.find(part.mount_class) \
+			> PartData.MOUNT_CLASSES.find(limit):
+		return "nimmt nur bis %s" % _class_label(limit)
+	var allowed = rule.get("categories")
+	if allowed is Array and not allowed.is_empty() and part.category not in allowed:
+		var names: Array[String] = []
+		for entry in allowed:
+			names.append(_category_label(str(entry)))
+		return "nur %s" % ", ".join(names)
+	return "passt nicht"
+
+
+## Die Liste geht ueber der Kachel auf, die sie meint: der Zeiger steht schon
+## dort, und die naechste Zeile liegt wenige Pixel darunter. Das ist der ganze
+## Punkt -- der Weg nach rechts zur Slotliste und zurueck entfaellt.
+func _open_slot_popup(part: PartData, anchor: Control) -> void:
+	if _slot_popup.visible and _pending_part == part:
+		_close_slot_popup()
+		return
+
+	_pending_part = part
+	for child in _slot_popup_rows.get_children():
+		child.queue_free()
+
+	_slot_popup_rows.add_child(_delta_line(part.display_name, COLOR_HEADING, 12))
+
+	var choices := slot_choices(_build, part)
+	if choices.is_empty():
+		_slot_popup_rows.add_child(_delta_line("Dieses Chassis hat keine "
+			+ "Halterung.", COLOR_BAD))
+	for choice in choices:
+		var row := Button.new()
+		row.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		row.add_theme_font_size_override("font_size", 11)
+		row.text = "%s   %s" % [choice["label"], choice["detail"]]
+		row.disabled = not choice["allowed"]
+		if not choice["allowed"]:
+			row.modulate = COLOR_MUTED
+		else:
+			var slot: String = choice["slot"]
+			row.pressed.connect(func():
+				_selected_slot = slot
+				_build.slots[slot] = part.id
+				_close_slot_popup()
+				_after_change())
+		_slot_popup_rows.add_child(row)
+
+	_slot_popup.reset_size()
+	_slot_popup.visible = true
+	await get_tree().process_frame
+	if not _slot_popup.visible or _pending_part != part:
+		return
+	# Ueber der Kachel, leicht nach innen versetzt: die Zeilen liegen damit
+	# unter dem Zeiger, und das Bild bleibt am Rand noch sichtbar.
+	#
+	# Nach rechts endet die Liste an der Kante der Bibliothek. Dahinter steht
+	# das Werteblatt zum selben Teil -- beides uebereinander waere zweimal
+	# dieselbe Antwort, einmal verdeckt.
+	var origin := anchor.get_global_rect()
+	var column := _library_column.get_global_rect()
+	_slot_popup.position = Vector2(
+		clampf(origin.position.x + 12.0, 8.0,
+			maxf(8.0, column.end.x - _slot_popup.size.x)),
+		clampf(origin.position.y + 10.0, 8.0, size.y - _slot_popup.size.y - 8.0))
+
+
+func _close_slot_popup() -> void:
+	_slot_popup.visible = false
+	_pending_part = null
+
+
+## Ein Klick daneben und Escape schliessen die Liste. Ohne das bliebe sie
+## stehen, wenn der Spieler es sich anders ueberlegt -- und verdeckte dann die
+## Kacheln darunter.
+## Gefragt wird VOR der Oberflaeche (``_input``), aber nur nach Klicks
+## ausserhalb des Feldes: schloesse es bei jedem Klick, waere die Zeile darin
+## nicht mehr anklickbar -- sie bekaeme das Ereignis erst danach.
+func _input(event: InputEvent) -> void:
+	if not _slot_popup.visible:
+		return
+	if event is InputEventMouseButton and event.pressed:
+		if not _slot_popup.get_global_rect().has_point(event.global_position):
+			_close_slot_popup()
+	elif event.is_action_pressed("ui_cancel"):
+		_close_slot_popup()
 
 
 # ---------------------------------------------------------------------------
@@ -601,6 +918,10 @@ func _part_tooltip(part: PartData) -> String:
 ## "was aendert sich, wenn ich das nehme". Diese Antwort neben den Zeiger zu
 ## legen erspart den Kontrollblick nach rechts und zurueck.
 func _set_hover(part: PartData, anchor: Control) -> void:
+	# Eine offene Halterliste meint ein bestimmtes Teil. Wandert der Zeiger auf
+	# ein anderes, meint sie nichts mehr.
+	if _slot_popup.visible and _pending_part != part:
+		_close_slot_popup()
 	var slot := _target_slot_for(part)
 	var probe := _build.clone()
 	if slot != "":
@@ -620,6 +941,11 @@ func _set_hover(part: PartData, anchor: Control) -> void:
 func _clear_hover() -> void:
 	if _hover_build == null:
 		return
+	# Der Zeiger verlaesst die Kachel, um in die Halterliste zu fahren, die auf
+	# ihr liegt. Waehrenddessen bleibt zu sehen, worueber gerade entschieden
+	# wird -- Bild wie Werte.
+	if _slot_popup.visible:
+		return
 	_hover_build = null
 	_hover_part = null
 	_hover_slot = ""
@@ -634,15 +960,29 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 
 	_delta_rows.add_child(_delta_line("%s  %s" % [part.code, part.display_name],
 		COLOR_HEADING, 12))
+
+	# Erst, was das Teil IST -- die Kachel zeigt es nicht mehr an. Dann, was es
+	# am Aufbau aendert.
+	for line in _part_spec_lines(part):
+		_delta_rows.add_child(_delta_line(line, Color(0.78, 0.83, 0.9)))
+	_delta_rows.add_child(_delta_line("", COLOR_MUTED, 4))
+
 	if slot == "":
-		_delta_rows.add_child(_delta_line("passt in keine Halterung", COLOR_BAD))
+		_delta_rows.add_child(_delta_line("passt in keine Halterung von %s"
+			% [_build.body().display_name if _build.body() != null
+				else "diesem Chassis"], COLOR_BAD))
+	elif part.type == PartData.Type.EQUIPMENT:
+		# Bei Ausruestung entscheidet der Klick, nicht die Vorschau -- hier steht
+		# deshalb, was die Zahlen darunter annehmen, und nicht, wo es landet.
+		_delta_rows.add_child(_delta_line("Klick fragt nach dem Halter · "
+			+ "Werte fuer %s" % SLOT_SHORT.get(slot, slot), COLOR_MUTED))
 	else:
 		_delta_rows.add_child(_delta_line("kommt in: %s"
 			% SLOT_LABEL.get(slot, slot), COLOR_MUTED))
-		var replaced := _build.part_in(slot)
-		if replaced != null and replaced.id != part.id:
-			_delta_rows.add_child(_delta_line("ersetzt: %s" % replaced.display_name,
-				COLOR_MUTED))
+	var replaced := _build.part_in(slot) if slot != "" else null
+	if replaced != null and replaced.id != part.id:
+		_delta_rows.add_child(_delta_line("ersetzt: %s" % replaced.display_name,
+			COLOR_MUTED))
 
 	var before := _build.stats()
 	var after := _hover_build.stats()
@@ -685,8 +1025,13 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 	await get_tree().process_frame
 	if not _delta_panel.visible or _hover_part != part:
 		return
+	# Waagerecht an der KANTE DER BIBLIOTHEK, nicht an der Kachel: in einem
+	# Raster liegt die rechte Kachelkante mitten in der Spalte, und das Feld
+	# verdeckte dann die Nachbarn. Senkrecht folgt es der Kachel -- es soll
+	# neben dem stehen, worauf der Zeiger zeigt.
 	var origin := anchor.get_global_rect()
-	_delta_panel.position = Vector2(origin.end.x + 8,
+	var column := _library_column.get_global_rect()
+	_delta_panel.position = Vector2(column.end.x + 8,
 		clampf(origin.position.y, 8.0, size.y - _delta_panel.size.y - 8.0))
 
 
