@@ -932,18 +932,20 @@ sonst trifft es die langsame Klasse zweimal. Konkrete Zahlen sind Playtest; das
 Verhaeltnis ist die Designaussage und wird beim Festlegen der Huellenwerte im
 Reframe gesetzt.
 
-### 9h. Nebenentscheidung: die SVG-Werkstatt
+### 9h. Nebenentscheidung: die SVG-Werkstatt bleibt
 
-Du willst die eigenstaendige SVG-Werkstatt (`index.html` + `main.py`) aus dem
-Fluss nehmen, weil die Godot-Werkstatt Aufbau und Optik ohnehin zeigt. **Eine
-Praezisierung, damit die Entscheidung mit offenen Augen faellt:** die SVG-Seite
-ist nicht nur eine zweite Bau-Ansicht, sie ist das **Autoren-Werkzeug** --
-Bauteile zeichnen, Anker setzen, Paletten pflegen (`main_menu.gd` sagt das
-selbst). Die Godot-Werkstatt kann heute *bauen und ansehen*, aber nicht
-*Anker setzen*. Als Spielflaeche kann die SVG-Seite also sofort weg; als
-Zeichen-/Anker-Werkzeug braucht sie einen Nachfolger oder eine bewusste
-Entscheidung, dass neue Teile vorerst nicht mehr entstehen. Zu klaeren, bevor
-sie geloescht wird.
+Entschieden: die SVG-Werkstatt (`index.html` + `main.py`) **bleibt** -- nicht als
+zweite Bau-Ansicht, sondern als das, was sie wirklich ist: das **Autoren-
+Werkzeug**, mit dem neue DROMEs entstehen (Bauteile zeichnen, Anker setzen,
+Paletten pflegen). Jeder neue DROME wird darin designt. Die Godot-Werkstatt kann
+*bauen und ansehen*, aber nicht *Anker setzen* -- die beiden ueberschneiden sich
+also gar nicht, sie machen zwei verschiedene Jobs.
+
+Was sich aendert: die SVG-Werkstatt wird **an das neue Modell angepasst**. Wenn
+die Huelle gebacken wird (9c) und Kopf/Koerper/Fuesse als Set-Tripel gefuehrt
+werden, muss das Autorenwerkzeug genau das ausgeben -- ein Set als Huelle mit
+ihren Ankern fuer die Overlays, plus der Bake-Export. Kein Rueckbau, eine
+Anpassung.
 
 ### 9i. Entscheidungen
 
@@ -957,14 +959,119 @@ sie geloescht wird.
   einen Inspizieren-Knopf bzw. den Gegner-Tooltip. „Lanze bleibt Lanze." (9d)
 * **Tempo:** SPD/MOV-Spreizung der Klassen ruecken zusammen -- langsamer ja,
   geviertelt nein. (9g)
+* **SVG-Werkstatt bleibt** als Autorenwerkzeug, wird ans neue Modell angepasst.
+  (9h)
+* **Upgrade-Modell:** Varianten UND Mod-Slots -- zwei Rollen, ein System (§10c).
 
 **Noch offen:**
 
-1. **Upgrade-Form:** Varianten-Gegenstaende („Lanze Mk-Durchschlag") oder
-   Mod-Slots am Teil? (9d.1)
-2. **Roster/Progression:** jetzt (MVP) oder spaeter? Woher kommt der Nachschub
-   (naheliegend: Chaos-Virus-Beute)? (9e)
+1. **Fraktionen:** was sind sie ueberhaupt? Neuer Weltbaustein (§10d).
+2. **Roster/Progression als eigene Schicht:** der Reframe baut gegen den freien
+   Katalog, Besitz + Beute kommen darueber. Reihenfolge okay? (§10)
 3. **Klassen-Anzahl:** reichen die vier Huellen fuers Erste, oder brauchst du
    zum Ausprobieren mehr?
-4. **SVG-Werkstatt:** als Spielflaeche raus (bestaetigt) -- was wird aus dem
-   Anker-Autorenwerkzeug? (9h)
+
+## 10. Besitz, Beute, Upgrades (Vorschlag, in Abstimmung -- Stand 2026-08)
+
+> **Wieder in Abstimmung, nicht festgezurrt.** §9 (das Bau-Modell) ist entschieden
+> und baubar; dieser Abschnitt ist die Meta-Schicht darueber -- Besitz und
+> Progression --, und er hat noch echte Gabelungen. Vor allem gilt: **§9 haengt
+> nicht an §10.** Der Reframe baut gegen den freien Katalog (man „besitzt" alles);
+> die Besitz-Schicht wird spaeter darueber gelegt, ohne den Reframe anzufassen.
+
+### 10a. Die drei Quellen
+
+Die spontane Idee, geordnet -- und sie hat eine saubere innere Logik:
+
+| Was man findet | Woher | Charakter |
+|---|---|---|
+| **Ausruestung** (Waffen, Schilde, Module) | **Chaos-Virus** -- der bestehende RNG-Modus | Masse, Grind, Wiederholung. Das ist der Stoff, von dem man viel will |
+| **Kerne** | **Kopfgeld-Modus** -- fraktionsdifferenziert | seltener, gezielter. Ein Kern ist eine Identitaets-Entscheidung, keine Handvoll |
+| **Huellen** (neue Bots/Klassen) | **Meilenstein-Modus** -- handgebaut, mehrteilig | die groessten Brocken. Eine neue Klasse ist ein Meilenstein, kein Drop |
+
+Das Muster ist gut: **je identitaetsstiftender das Ding, desto kuratierter die
+Quelle.** Beliebiges Verschleissmaterial (Ausruestung, Module) faellt aus dem
+RNG-Grind; die seltenen Landmarken (Kerne, Huellen) kommen aus gebauten Modi. So
+grindet man nie eine ganze Klasse zusammen, und ein Kern fuehlt sich nie an wie
+Munition.
+
+### 10b. Roster und Squad-Auswahl
+
+Heute ist der „Squad" eine fluechtige Auswahl frisch gebauter DROMEs. Darueber
+soll eine **bleibende Sammlung** liegen: das Botmenue zeigt die *besessenen*
+Bots, und vor jedem Gefecht waehlt man daraus -- „ich darf vier mitnehmen, also
+Molok, Vireo, Strix-Sniper, und den Rest lasse ich zuhause". Ein Roster-Eintrag
+ist ein benannter, besessener Aufbau: **Huelle + verbauter Kern + Ausruestung +
+Upgrades**, gespeichert und wiederverwendbar.
+
+Das beantwortet zwei offene §8-Punkte zusammen: „wie viele DROMEs bildet der
+Spieler auf" wird zur Vorab-Wahl, und das Squad-Speicherformat (schon JSON,
+`GameState`) waechst vom Wegwerf-Squad zum Roster mit Auswahl.
+
+### 10c. Upgrades: Varianten UND Mod-Slots -- ein System, zwei Rollen
+
+Du hast beide genannt und beiden eine Rolle gegeben: „Mod-Slot passt zum
+modularen Teil, Varianten zum Loot-Teil". Das laesst sich zu **einem** System
+vereinen, statt zwei Inventare zu bauen:
+
+* **Ein Teil hat Mod-Slots.** Die Schienen-Lanze traegt N Steckplaetze; du fuellst
+  sie mit gefundenen **Modulen** (+Durchschlag, −`en_cost`, +Flaeche). Das ist
+  die modulare, umsteckbare Seite -- das Basteln.
+* **Eine „Variante" ist ein Teil mit einem fest verbauten, nicht entfernbaren
+  Modul.** Die „Lanze Mk-Durchschlag" faellt als ganzes, aufregendes Teil aus dem
+  Loot -- ein starkes Modul schon eingebaut und verriegelt, dazu vielleicht noch
+  ein offener Slot. Das ist die Loot-Seite -- der Fund.
+
+So ist es **eine** Mechanik (Teil + Modulslots), und „Variante" ist nur ihr
+Sonderfall (vorbelegter, gesperrter Slot). Der Loot-Kitzel (ich finde eine
+Variante mit einem tollen verbauten Modul) und das Basteln (ich stecke Module in
+meine Standardteile) leben beide davon, ohne zwei Systeme zu brauchen. Genau
+dieselbe Trennung greift bei **Kernen**: ein Basiskern mit Modulslots, dazu
+Varianten-Kerne aus dem Kopfgeld-Modus mit fest verbauter Eigenheit.
+
+Der Vorschlag zur Entscheidung: **Modulslots als Grundmechanik, Varianten als
+vorbelegter Sonderfall.** Passt das, oder willst du Varianten und Basisteile
+strikt getrennt halten?
+
+### 10d. Fraktionen -- neuer Weltbaustein, noch undefiniert
+
+Du hast „fraktionsdifferenziert" fuer die Kerne eingestreut -- aber **Fraktionen
+gibt es im Entwurf bisher nicht**, weder in der Fiktion noch im Code. Bevor der
+Kopfgeld-Modus daran haengt, muss geklaert sein, was eine Fraktion ueberhaupt
+ist. Moegliche Lesarten:
+
+* eine Zugehoerigkeit des *Spielers* (ich diene Fraktion X, ihre Kerne bekomme
+  ich guenstiger)?
+* eine Einteilung der *Gegner* (Fraktion X taucht im Chaos-Virus auf, ihr Kopf
+  bringt ihren Kern)?
+* nur eine *Geschmacks-Achse* fuer Kerne (drei Kern-Familien mit eigener
+  Aesthetik und eigenem Eigenheiten-Profil), ohne Weltpolitik dahinter?
+
+Das ist die groesste offene Frage in §10, weil daran eine ganze Fiktionsebene
+haengt. Sie blockiert den Reframe (§9) nicht -- aber den Kopfgeld-Modus schon.
+
+### 10e. Modi und Scope
+
+Drei Modi stehen damit im Raum: **Chaos-Virus** (existiert, RNG-Farm),
+**Kopfgeld** (neu, Fraktions-Kerne), **Meilenstein** (neu, handgebaute
+Kampagne fuer Huellen). Das ist bewusst als Nennung festgehalten, nicht als
+Bauauftrag -- **drei Modi plus eine Besitz-Schicht sind weit ueber dem MVP.**
+
+Die Reihenfolge, die daraus faellt und die den Reframe nicht ausbremst:
+
+1. **Reframe (§9)** gegen den freien Katalog -- Huelle, universeller Kern,
+   kompaktere SPD/MOV. Man „besitzt" vorlaeufig alles.
+2. **Roster + Besitz** -- die Sammlung und die Vorab-Auswahl, zunaechst mit einem
+   von Hand gesetzten Startbestand statt Beute.
+3. **Upgrades** -- Modulslots an Teilen und Kernen, Varianten als Sonderfall.
+4. **Beute-Quellen** -- Chaos-Virus dropt Ausruestung/Module; Kopfgeld und
+   Meilenstein danach, wenn Fraktionen und Kampagnenstruktur stehen.
+
+### 10f. Offene Entscheidungen (§10)
+
+1. **Fraktionen:** was sind sie? (10d) -- die eine, die eine Antwort braucht,
+   bevor der Kopfgeld-Modus Sinn ergibt.
+2. **Upgrade-Modell:** Modulslots als Grundmechanik, Varianten als vorbelegter
+   Sonderfall -- so vereinen oder strikt trennen? (10c)
+3. **Scope-Reihenfolge:** die vier Stufen in 10e in dieser Ordnung -- Reframe
+   zuerst, Besitz/Beute darueber? (Vorschlag: ja.)
