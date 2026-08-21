@@ -181,19 +181,48 @@ func test_the_vireo_can_carry_two_pulse_blasters() -> void:
 
 
 func test_weight_no_longer_vetoes_a_build_only_slows_it() -> void:
-	# Ein Aufbau aus fremden, schweren Sockeln riss frueher die Traglast. Jetzt
-	# ist Gewicht ein Tempo-Preis, kein Verbot: die Validierung nennt keine
-	# Traglast mehr.
+	# Eine schwere Huelle mit schwerer Waffe riss frueher die Traglast. Jetzt ist
+	# Gewicht ein Tempo-Preis, kein Verbot: die Validierung nennt keine Traglast
+	# mehr. (Der Molok ist die schwere Huelle -- fremde Sockel zu mischen geht
+	# seit der Huellen-Regel ohnehin nicht mehr.)
 	var build := DromeBuild.create("SCHWER", {
-		"body": &"scout_body", "head": &"jugg_head",
+		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_pulse_blaster",
+		"equip_left": &"eq_siege_cannon",
 	})
 	t.ok(build.is_valid(), "der schwere Aufbau ist baubar: %s"
 		% ", ".join(build.validate()))
 	for line in build.validate():
 		t.ok(not line.begins_with("Traglast"),
 			"keine Traglast-Grenze mehr in der Validierung: %s" % line)
+
+
+func test_the_frame_is_one_hull() -> void:
+	# Kopf, Koerper und Fuesse bilden gemeinsam die Huelle und muessen aus einem
+	# Set stammen (GAME_DESIGN §9). Kein Strix-Kopf auf Molok-Beinen. Der Kern
+	# bleibt frei -- er ist die Stil-Achse, kein Rahmen.
+	var mixed := DromeBuild.create("MISCHMASCH", {
+		"body": &"jugg_body", "head": &"scout_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon",
+	})
+	var named := false
+	for line in mixed.validate():
+		if line.begins_with("Rahmen ist keine Huelle"):
+			named = true
+	t.ok(named, "gemischter Rahmen wird beim Namen genannt: %s"
+		% ", ".join(mixed.validate()))
+	t.ok(not mixed.is_valid(), "und ist damit ungueltig")
+
+	# Fremder KERN in derselben Huelle ist dagegen voellig in Ordnung.
+	var foreign_core := DromeBuild.create("FREMDKERN", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"scout_core",
+		"equip_left": &"eq_siege_cannon",
+	})
+	t.ok(foreign_core.is_valid(),
+		"ein universeller Kern in einer stimmigen Huelle ist baubar: %s"
+		% ", ".join(foreign_core.validate()))
 
 
 func test_slot_rules_are_enforced() -> void:
@@ -421,3 +450,9 @@ func test_generated_enemies_are_valid() -> void:
 			% [build.display_name, ", ".join(build.validate())])
 		t.ok(not build.weapons().is_empty(),
 			"Gegner %s traegt eine Waffe" % build.display_name)
+		# Der Rahmen ist eine Huelle -- Kopf, Koerper, Fuesse aus einem Set.
+		var sets := {}
+		for slot in ["body", "head", "feet"]:
+			sets[build.part_in(slot).set_id] = true
+		t.equal(sets.size(), 1,
+			"Gegner %s hat einen stimmigen Rahmen" % build.display_name)

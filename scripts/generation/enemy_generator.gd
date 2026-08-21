@@ -71,11 +71,15 @@ func _random_build(display_name: String) -> DromeBuild:
 
 
 func _roll(display_name: String) -> DromeBuild:
+	# Der Rahmen ist eine Huelle: Kopf und Fuesse stammen aus DEMSELBEN Set wie
+	# das Chassis (GAME_DESIGN §9). Frei gewuerfelt entstuenden gemischte Rahmen,
+	# die der Aufbau ablehnt. Der Kern dagegen ist universal -- er wird weiter
+	# frei gewuerfelt.
 	var chassis: PartData = _pick(PartDB.of_type(PartData.Type.BODY))
 	var assignment := {
 		"body": chassis.id,
-		"head": _pick(PartDB.of_type(PartData.Type.HEAD)).id,
-		"feet": _pick(PartDB.of_type(PartData.Type.FEET)).id,
+		"head": _frame_mate(chassis.set_id, PartData.Type.HEAD).id,
+		"feet": _frame_mate(chassis.set_id, PartData.Type.FEET).id,
 		"core": _pick(PartDB.of_type(PartData.Type.CORE)).id,
 	}
 
@@ -140,3 +144,12 @@ func _draw_names(count: int) -> Array[String]:
 
 func _pick(pool: Array):
 	return pool[rng.randi() % pool.size()]
+
+
+## Das Rahmenteil eines Typs (Kopf/Fuesse) aus demselben Set wie das Chassis --
+## die drei bilden gemeinsam die Huelle (GAME_DESIGN §9).
+func _frame_mate(set_id: String, type: int) -> PartData:
+	for part in PartDB.of_type(type):
+		if part.set_id == set_id:
+			return part
+	return null

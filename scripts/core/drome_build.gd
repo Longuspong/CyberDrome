@@ -354,6 +354,19 @@ func structural_problems() -> Array[String]:
 		if part_in(slot) == null:
 			problems.append("%s fehlt" % _slot_label(slot))
 
+	# Der Rahmen ist eine HUELLE: Kopf, Koerper und Fuesse stammen aus einem Set
+	# und werden gemeinsam gewaehlt, nie einzeln getauscht (GAME_DESIGN §9). So
+	# gibt es keinen Strix-Kopf auf Molok-Beinen mehr. Der Kern bleibt frei --
+	# er ist die Stil-Achse, kein Rahmen (§9b, §9i).
+	var frame_sets := {}
+	for slot in ["body", "head", "feet"]:
+		var part := part_in(slot)
+		if part != null:
+			frame_sets[part.set_id] = true
+	if frame_sets.size() > 1:
+		problems.append("Rahmen ist keine Huelle: Kopf, Koerper und Fuesse "
+			+ "stammen aus verschiedenen Saetzen")
+
 	var chassis := body()
 	if chassis != null:
 		for slot in equip_slots():
