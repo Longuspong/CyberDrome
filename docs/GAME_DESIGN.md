@@ -629,11 +629,11 @@ einmal haengt. Im MVP reicht die Kette den Schaden dort unveraendert durch.
 ## 8. Offene Punkte
 
 * Kampfsystem: Aktionspunkte vs. feste Aktionen pro Zug
-* **Schadensordnung.** Siehe 7a: bis auf Weiteres ist jede Aktion `normal`.
-  Offen ist, ob es ueberhaupt mehrere Arten geben soll -- und wenn ja, ob sie
-  multiplikativ wirken (dann bricht die Nachrechenbarkeit im Kopf, die
-  `mitigate()` ausdruecklich schuetzt) oder als weiterer flacher, gedeckelter
-  Abzug.
+* ~~**Schadensordnung.**~~ **Richtung steht (§11).** Es gibt zwei Arten
+  (physisch/Energie) und zwei Verteidigungen (Panzerung/Schild) ueber eine kleine
+  Matrix flacher, gedeckelter Abzuege -- keine Multiplikatorketten, die
+  Nachrechenbarkeit bleibt. Im MVP aber weiter `normal`; die Matrix kommt mit den
+  Fraktionen (§12c).
 * ~~**Der dritte Slot des Molok ist selten bezahlbar.**~~ **Beantwortet, indem
   die Frage selbst weggefallen ist.** Die Zwischenstufe (Traglast 31 → 33,
   Chassis-SPD -2 → 0, Belagerungskanone ohne Strom) lockerte den Deckel, liess
@@ -1008,47 +1008,61 @@ Das beantwortet zwei offene §8-Punkte zusammen: „wie viele DROMEs bildet der
 Spieler auf" wird zur Vorab-Wahl, und das Squad-Speicherformat (schon JSON,
 `GameState`) waechst vom Wegwerf-Squad zum Roster mit Auswahl.
 
-### 10c. Upgrades: Varianten UND Mod-Slots -- ein System, zwei Rollen
+### 10c. Mods und Varianten -- zwei verschiedene Dinge
 
-Du hast beide genannt und beiden eine Rolle gegeben: „Mod-Slot passt zum
-modularen Teil, Varianten zum Loot-Teil". Das laesst sich zu **einem** System
-vereinen, statt zwei Inventare zu bauen:
+Praezisiert: es sind **zwei getrennte Mechaniken**, nicht eine.
 
-* **Ein Teil hat Mod-Slots.** Die Schienen-Lanze traegt N Steckplaetze; du fuellst
-  sie mit gefundenen **Modulen** (+Durchschlag, −`en_cost`, +Flaeche). Das ist
-  die modulare, umsteckbare Seite -- das Basteln.
-* **Eine „Variante" ist ein Teil mit einem fest verbauten, nicht entfernbaren
-  Modul.** Die „Lanze Mk-Durchschlag" faellt als ganzes, aufregendes Teil aus dem
-  Loot -- ein starkes Modul schon eingebaut und verriegelt, dazu vielleicht noch
-  ein offener Slot. Das ist die Loot-Seite -- der Fund.
+**Mod-Slot -- das Basteln.** Jede Ausruestung hat **einen freien Mod-Slot**. Man
+fuellt ihn mit einem **Mod** aus einer wachsenden Bibliothek, die von einfach bis
+charaktervoll reicht:
 
-So ist es **eine** Mechanik (Teil + Modulslots), und „Variante" ist nur ihr
-Sonderfall (vorbelegter, gesperrter Slot). Der Loot-Kitzel (ich finde eine
-Variante mit einem tollen verbauten Modul) und das Basteln (ich stecke Module in
-meine Standardteile) leben beide davon, ohne zwei Systeme zu brauchen. Genau
-dieselbe Trennung greift bei **Kernen**: ein Basiskern mit Modulslots, dazu
-Varianten-Kerne aus dem Kopfgeld-Modus mit fest verbauter Eigenheit.
+* **Stat-Boosts** -- +ATK, +Reichweite, −`en_cost`.
+* **Passive / bedingte Effekte** -- „trifft fuer jede Runde, in der nicht
+  geschossen wurde, 10 % haerter", ein Aufladeeffekt, ein Effekt beim Treffer.
 
-Der Vorschlag zur Entscheidung: **Modulslots als Grundmechanik, Varianten als
-vorbelegter Sonderfall.** Passt das, oder willst du Varianten und Basisteile
-strikt getrennt halten?
+Das ist die tauschbare Bastelseite. Die Mod-Bibliothek muss noch ausdetailliert
+werden -- die bedingten Passive sind der interessante Teil und der, der Balancing
+braucht.
 
-### 10d. Fraktionen -- neuer Weltbaustein, noch undefiniert
+**Variante -- die Fraktions-Form.** Eine Variante ist eine **leicht veraenderte
+Fassung des Originals**, mit eigener Faerbung und leicht anderen Werten, die zu
+einer **Fraktion** gehoert (§10d). Kein „verbauter Mod", sondern ein eigenes,
+umgefaerbtes und neu abgestimmtes Teil:
 
-Du hast „fraktionsdifferenziert" fuer die Kerne eingestreut -- aber **Fraktionen
-gibt es im Entwurf bisher nicht**, weder in der Fiktion noch im Code. Bevor der
-Kopfgeld-Modus daran haengt, muss geklaert sein, was eine Fraktion ueberhaupt
-ist. Moegliche Lesarten:
+* Optisch: statt der schwarzen Umrandung z.B. passives Licht oder Leuchtstreifen
+  an Waffe und Chassis (Neon).
+* Mechanisch: ein **Neon-Molok** ist weniger gepanzert als der normale, hat dafuer
+  ein Schild und etwas mehr Speed; der normale Molok glaenzt mit der meisten
+  Panzerung. Dieselbe Klasse, anderes Werteprofil im Thema der Fraktion.
 
-* eine Zugehoerigkeit des *Spielers* (ich diene Fraktion X, ihre Kerne bekomme
-  ich guenstiger)?
-* eine Einteilung der *Gegner* (Fraktion X taucht im Chaos-Virus auf, ihr Kopf
-  bringt ihren Kern)?
-* nur eine *Geschmacks-Achse* fuer Kerne (drei Kern-Familien mit eigener
-  Aesthetik und eigenem Eigenheiten-Profil), ohne Weltpolitik dahinter?
+Beide leben nebeneinander: eine **Variante** (Fraktions-Teil) hat genauso ihren
+**Mod-Slot** wie das Original. Loot bringt also beides -- neue Varianten UND lose
+Mods.
 
-Das ist die groesste offene Frage in §10, weil daran eine ganze Fiktionsebene
-haengt. Sie blockiert den Reframe (§9) nicht -- aber den Kopfgeld-Modus schon.
+### 10d. Fraktionen sind angepasste Gegnerarten
+
+Entschieden: eine **Fraktion ist eine eigene Gegnerart** mit durchgaengigem
+Profil. Sie nutzt Waffen und Ausruestung aus **derselben Variation** (die
+Varianten aus §10c), hat ein eigenes **Schadens-/Verteidigungsprofil** (§11) und
+ein eigenes **KI-Verhalten**.
+
+**Erste Fraktion: die Neons.** Aus Neon City, optisch leuchtende Waffen
+(Leuchtstreifen statt schwarzer Umrandung). Ihr Profil:
+
+* Angriff eher **Energieschaden** (§11).
+* Verteidigung eher **Schild** als Panzerung -- ihr Neon-Molok tauscht Panzerung
+  gegen Schild und etwas Speed.
+* **Strategisch mittelmaessig** -- sie rennen nicht dumm in einen Kill, sind aber
+  auch keine reinen Strategen.
+
+**Eigene KI -- als Profil, nicht als zweite Engine.** Die Nutzenbewertung des
+`AIController` (§ai) bleibt; eine Fraktion bekommt ein eigenes **Gewichtsprofil**
+darueber. „Mittelmaessig" heisst dann: ein Satz Gewichte zwischen „stur auf den
+Kill" und „voll optimiert" -- ein paar Zahlen je Fraktion, keine zweite
+KI-Codebasis. So bleibt das Verhalten pro Fraktion lesbar und tunebar.
+
+Das blockiert den Reframe (§9) nicht und ist Post-MVP (§12) -- aber die
+Fiktionsebene steht jetzt.
 
 ### 10e. Modi und Scope
 
@@ -1067,11 +1081,147 @@ Die Reihenfolge, die daraus faellt und die den Reframe nicht ausbremst:
 4. **Beute-Quellen** -- Chaos-Virus dropt Ausruestung/Module; Kopfgeld und
    Meilenstein danach, wenn Fraktionen und Kampagnenstruktur stehen.
 
-### 10f. Offene Entscheidungen (§10)
+### 10f. Stand der Entscheidungen (§10)
 
-1. **Fraktionen:** was sind sie? (10d) -- die eine, die eine Antwort braucht,
-   bevor der Kopfgeld-Modus Sinn ergibt.
-2. **Upgrade-Modell:** Modulslots als Grundmechanik, Varianten als vorbelegter
-   Sonderfall -- so vereinen oder strikt trennen? (10c)
-3. **Scope-Reihenfolge:** die vier Stufen in 10e in dieser Ordnung -- Reframe
-   zuerst, Besitz/Beute darueber? (Vorschlag: ja.)
+* **Fraktionen:** entschieden -- angepasste Gegnerarten mit eigenem Profil und
+  KI-Gewichten; Neons als erste. (10d)
+* **Mods und Varianten:** entschieden -- zwei getrennte Dinge. Ein Mod-Slot je
+  Teil, dazu Fraktions-Varianten. (10c)
+* **Scope-Reihenfolge:** Reframe zuerst gegen den freien Katalog, Besitz/Beute
+  darueber. (10e, §12)
+
+## 11. Schaden und Verteidigung (Vorschlag, in Abstimmung -- Stand 2026-08)
+
+Das beantwortet die lange offene **Schadensordnung** (§7a, §8): ja, es gibt
+mehrere Arten, und sie greifen ueber eine kleine Matrix statt ueber
+Multiplikator-Wildwuchs. Zwei Schadensarten, zwei Verteidigungsarten.
+
+**Zwei Verteidigungen -- sie verhalten sich grundverschieden:**
+
+| | Panzerung | Schild |
+|---|---|---|
+| Natur | flache Schadensreduktion, immer da, **solange HP da ist** (das heutige DEF) | eigene Leiste vor der HP |
+| Regeneration | **nein** | **ja** -- fuellt sich ueber die Zeit wieder auf |
+| schwach gegen | physischen Schaden | **Energieschaden** |
+
+**Zwei Schadensarten -- jede trifft beide Verteidigungen, nur unterschiedlich
+stark:**
+
+* **Physisch** trifft **Panzerung** voll, **Schild** weniger.
+* **Energie** trifft **Schild** voll, **Panzerung** weniger (aber sie durchdringt
+  Panzerung, sie prallt nicht ab).
+
+Daraus fallen echte Entscheidungen: ein Neon-Gegner (Schild) will mit Energie
+geknackt werden; ein schwer gepanzerter Molok mit physischem Schaden. Kein Ziel
+ist immun -- die falsche Schadensart ist langsamer, nicht wirkungslos. Das haelt
+die Nachrechenbarkeit, die `mitigate()` schuetzt (§8): flache, gedeckelte
+Abzuege, keine Multiplikatorketten.
+
+**Andockpunkte im Code stehen schon:** `ActionData.damage_type` existiert (heute
+durchgehend `normal`, §7a), und `ActionResolver._apply_armor()` ist der Haken,
+an dem die Matrix haengt. Das Schild ist eine neue, regenerierende Leiste vor der
+HP; die Panzerung ist das heutige DEF, nur benannt.
+
+**Scope:** Post-MVP. Der MVP bleibt bei einer Schadensart (`normal`), wie §7a es
+heute haelt. Die Matrix kommt zusammen mit den **Fraktionen**, weil die Neons ihr
+erster Anlass sind (§12).
+
+## 12. Progression, Leveling und der MVP-Schnitt (in Ideenfindung)
+
+> **Terminologie ab hier:** die „Huelle" aus §9 heisst **Chassis** -- der Begriff
+> passt am besten, weil das Chassis im Klassenmodell der ganze Rahmen IST. Wo §9
+> noch „Huelle" sagt, ist dasselbe gemeint.
+
+### 12a. Die Klassen und die Kerne
+
+Der Bestand deckt vier Klassen ab, und die reichen fuers Erste:
+
+| Chassis | Rolle |
+|---|---|
+| **Vireo** | flink, Nahdistanz-Skirmisher |
+| **Strix** | Fernkampf, physisch, wenig Leben |
+| **Molok** | Tank, „ist da und geht nicht" |
+| **Nimbus** | Magie/Energie, Caster |
+
+Wichtiger als eine fuenfte Klasse: **ein, zwei zusaetzliche Kerne**, weil der Kern
+die Stil-Achse ist (§9b) und universal in jedes Chassis passt. Vorschlag fuer
+zwei klare Gegensatzpaare:
+
+* **Effizienz-Kern** -- guenstigere Faehigkeiten (−`en_cost`), belohnt
+  Faehigkeits-lastige Aufbauten.
+* **Verstaerker-Kern** -- teurere, aber groessere Faehigkeiten (mehr Flaeche/
+  Reichweite). Der Tausch Effizienz gegen Wucht, den §9d schon beschreibt.
+
+(Ein spaeterer **Drain-Kern** -- der „Batterieentlader von hinten" aus deiner
+Vision -- braucht den Energieschaden aus §11 und wandert damit hinter den MVP.)
+
+### 12b. Leveling -- Waffen und Chassis, zwei Formen
+
+Deine Richtung, festgehalten (Detail folgt, wenn du dir Systeme angesehen hast):
+
+* **Waffen leveln wie in Botworld Adventures.** Ein Level-Up **modifiziert den
+  Angriff passiv** -- die Schienen-Lanze des Strix wird ueber die Zeit
+  spuerbar besser (mehr Durchschlag, schnellere Aufladung, ein Zusatzeffekt),
+  ohne dass der Spieler im Kampf etwas anders bedient. Passt genau zu „Upgrades
+  sind unsichtbar, Feinheiten im Inspizieren" (§9d).
+* **Chassis ueber einen Skilltree (Yggdrasil-Stil in Godot).** Ein Baum aus
+  **Passiv- UND Stat-Nodes**: ein Bruiser-Molok holt sich Zaehigkeit oder ATK
+  dran; ein Neon-Molok mehr Energieschild oder eine Passive „**Schild
+  aufbrauchen und in den Berserker-Modus gehen**". Das ist die Heimat der
+  Chassis-Progression und hat viel Potential.
+
+Zwei Abhaengigkeiten, die die Reihenfolge vorgeben:
+
+1. Die Berserker-Passive **setzt Schilde voraus** -- also §11 zuerst.
+2. „Upgrades = Stats oder Passive oder Faehigkeiten?" -- Antwort: **alle drei,
+   gestuft.** Stat-Nodes sind billig und sofort, Passive brauchen je einen
+   Effekt-Haken, echte neue Faehigkeiten sind die teuersten und die wenigsten.
+   Ein Baum, der mit Stat-Nodes anfaengt und nur an Schluesselstellen Passive/
+   Faehigkeiten setzt, bleibt bezahlbar.
+
+> **Warnung an den Umfang:** ein eigener Skilltree je Chassis × Fraktion
+> explodiert wie einst die Sprites (§2). Baeume gehoeren geteilt und
+> parametrisiert -- ein Grundbaum je Rolle, Fraktionen setzen nur einzelne Nodes
+> anders. Sonst ist die Progression das naechste, was am Umfang scheitert.
+
+### 12c. Der MVP-Schnitt
+
+Damit die Tiefe den MVP nicht auffrisst -- die Linie, klar gezogen:
+
+**Im MVP:**
+
+* Die vier Chassis als Klassen (Reframe §9), Kern universal (+1–2 Kerne, 12a).
+* Die Basis-Ausruestung, **noch ohne Mods** (Roster 12d).
+* Weiche Kosten (§8), Aggro/Kampf (§6), kohaerente Gegnergenerierung -- steht.
+* **Eine** Schadensart (`normal`), wie §7a heute.
+* Roster + Squad-Vorauswahl mit handgesetztem Startbestand.
+* Chaos-Virus als einziger Modus.
+
+**Nach dem MVP (die Tiefe, in dieser Reihenfolge sinnvoll):**
+
+1. Schadensordnung + Schild/Panzerung (§11).
+2. Fraktionen (Neons zuerst) + KI-Profile + Varianten (§10c/d).
+3. Mod-System -- ein Slot je Teil, Mod-Bibliothek inkl. bedingter Passive.
+4. Leveling: Waffen-Level, dann Chassis-Skilltree (12b).
+5. Kopfgeld- und Meilenstein-Modus (§10e).
+
+### 12d. Basis-Ausruestung fuer den MVP
+
+Du hast Schienen-Lanze, Blaster, Belagerungskanone genannt. **Vergessen hast du
+den Runenstab** (die Energiewaffe des Nimbus) -- und die Support-Teile, die keine
+Waffen sind, aber Aufbauten tragen:
+
+| Teil | Art | im MVP? |
+|---|---|---|
+| Puls-Blaster | Waffe, Standard | ja |
+| Schienen-Lanze | Waffe, Fernkampf schwer | ja |
+| Belagerungskanone | Waffe, schwer | ja |
+| Runenstab | Waffe, Energie/Nahbereich (Nimbus) | ja -- sonst hat der Nimbus keine Waffe |
+| Deflektor-Schild | Support, Verteidigung | ja -- der Tank-Baustein |
+| Drohnen-Pod | Support, Heilung | ja |
+| Orbit-Fokus | Support, Faehigkeit (Orbit-Sog) | ja -- die Nimbus-Faehigkeit |
+| Koedersender | Support, Aggro/Provokation | ja -- Aggro-System haengt dran (§6b) |
+
+Alle acht existieren bereits. **Mods kommen erst nach dem MVP** -- fuer den MVP
+sind es die Basisteile ohne Slot-Fuellung. Die „zwei Mods je Waffe" sind das
+erste Progressionsziel danach.
