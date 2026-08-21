@@ -752,3 +752,161 @@ einmal haengt. Im MVP reicht die Kette den Schaden dort unveraendert durch.
 * Progression: Teile-Loot vs. Crafting vs. beides
 * Wie viele DROMEs bildet der Spieler pro Gefecht auf
 * Mobile-Steuerung: direkte Tile-Beruehrung vs. Cursor + Bestaetigung
+
+## 9. Vom Baukasten zur Klasse (Vorschlag, in Abstimmung -- Stand 2026-08)
+
+> **Dieser Abschnitt ist noch nicht entschieden.** Er haelt eine Richtung fest,
+> die gegengelesen und korrigiert wird, bevor Code faellt. Wo er einer frueheren
+> Setzung widerspricht, ist das ausdruecklich vermerkt -- §3 (Zusammensetzung)
+> und §5 (Archetypen durch Kombination) werden erst umgeschrieben, wenn die
+> Richtung hier steht.
+
+### 9a. Die Diagnose: an der falschen Stelle modular
+
+Das heutige Modell (§3, §5) laesst **alles frei mischen** -- Kopf, Koerper,
+Fuesse, Kern und Ausruestung, quer durch alle Sets. Das war als Staerke gedacht
+(„Archetypen entstehen dadurch, dass der Spieler Teile kombiniert"), erzeugt in
+der Praxis aber zwei Probleme:
+
+1. **Optische Fremdkoerper.** Ein Strix-Kopf auf einem Molok-Torso mit
+   Vireo-Beinen ist kein Archetyp, sondern ein Flickwerk. Kopf, Koerper und
+   Fuesse gehoeren gestalterisch zusammen -- sie sollen *immer* zueinander
+   passen.
+2. **Der DROME liest sich nicht als Rolle.** Wer frei mischt, baut keine Klasse,
+   sondern einen Werteklumpen. Der Reiz einer Einheit -- „der Strix ist duenn,
+   trifft aber hart" -- verduennt sich, sobald man seine Beine gegen die eines
+   Tanks tauschen kann.
+
+Die Modularitaet ist also nicht falsch, sie sitzt an der falschen Stelle. Der
+Vorschlag verschiebt sie: **weg vom Mischen der Rahmenteile, hin zu Kern,
+Ausruestung und Upgrades.** Das ist genau die Achse, die im letzten Schritt
+schon aufgemacht wurde -- der 3-Blaster-Spieler, den wir *wollen* (§8: „moeglich,
+aber nicht optimal"), baut seinen Aufbau nicht aus fremden Beinen, sondern aus
+Waffenwahl innerhalb seiner Huelle.
+
+### 9b. Die vier Bausteine, neu geschnitten
+
+| Baustein | Was er ist | Traegt | Waehlbarkeit |
+|---|---|---|---|
+| **Huelle** | Kopf + Koerper + Fuesse als EIN Teil, aus demselben Set | Integritaet, ATK, DEF, MOV, SPD, Gewicht, Ausruestungsslots, Traversierung, Sensorik | **die Klasse.** Eine Huelle = ein Archetyp mit fester Silhouette |
+| **Kern** | die Energie-Identitaet | `en_max`, `en_regen`, plus kernspezifische Eigenheit (z.B. +Fernkampf, guenstigere Faehigkeiten, groessere Flaeche) | der Spielstil *innerhalb der Vernunft* -- was der Bot mit seinem Strom macht |
+| **Ausruestung** | die Bestueckung in den Slots der Huelle | Waffen, Schilde, Support | die eigentliche Aufbau-Entscheidung (zwei Schilde vs. zwei Nahkampf; Runenstab vs. Schuetze) |
+| **Upgrades** | Varianten von Kernen und Ausruestung | Modifikatoren (siehe 9d) | die *tiefe* Modularitaet, ueber Progression erworben |
+
+Ergebnis: **DROMEs sind Klassen, keine modularen Bots.** Man bekommt immer den
+optischen Strix und entscheidet dann *innerhalb* der Klasse -- Kern, Bestueckung,
+Upgrades. Die Themen bleiben an der Huelle haengen: Strix = wenig Integritaet,
+harte Treffer; Molok = ist da und geht nicht.
+
+### 9c. Warum die Huelle EIN Teil ist -- und die SVG-Technik das ueberlebt
+
+Das ist die Stelle, an der der Vorschlag an §2/§5 stossen koennte -- und es nicht
+tut. **Die Zusammenlegung ist eine Sache der Werkstatt und der Daten, nicht des
+Renderers.** Kopf, Koerper und Fuesse bleiben drei getrennte SVGs, die zur
+Laufzeit ueber Anker zusammengesetzt werden; an der Projektion, den vier
+Richtungen und dem Asset-Budget (§5: 24 SVGs je Set) aendert sich **nichts**.
+
+Was sich aendert, ist allein die Bindung: die drei Rahmenteile eines Sets werden
+als **Set-Tripel** gefuehrt und als eine „Huelle" gewaehlt. Der Spieler trifft
+eine Entscheidung statt dreier, und die drei koennen gar nicht mehr auseinander
+laufen. Die Werte der Huelle sind weiterhin die Summe ihrer drei Teile (wie
+heute). „Summe statt Produkt" (§2) bleibt vollstaendig erhalten -- wir nehmen nur
+die drei Frame-Faktoren aus der Kombinatorik heraus, die ohnehin nie frei sein
+sollten.
+
+> **Revidiert §5.** „Ausruestung ist set-uebergreifend nutzbar" bleibt wahr.
+> „Rahmenteile werden quer durch alle Sets kombiniert" wird zu: Rahmenteile
+> sind an ihr Set gebunden und bilden die Huelle. Der gemeinsame
+> Ausruestungs-Pool ueberlebt unveraendert.
+
+### 9d. Wohin die Modularitaet wandert: Upgrades
+
+Hier lebt das „bau dir deinen eigenen" jetzt. Beispiele aus der Vision:
+
+* **Ausruestung:** eine Schienen-Lanze, die eine Reihe Gegner durchschlaegt,
+  ODER eine, die zweimal schiesst.
+* **Kern:** einer, der weniger Energie je Faehigkeit zieht, ODER einer, der mehr
+  zieht und dafuer die Flaeche der Faehigkeit vergroessert.
+
+Das Muster ist jedes Mal ein **Tausch, keine reine Aufwertung** -- Durchschlag
+gegen Doppelschuss, Effizienz gegen Wucht. Genau so bleibt es eine
+Entscheidung und wird nicht zur Pflichtreihenfolge.
+
+Drei Dinge sind daran noch offen und gehoeren entschieden, bevor gebaut wird:
+
+1. **Form der Upgrades.** Varianten-Gegenstaende (man besitzt „Lanze
+   Mk-Durchschlag" als eigenes Teil) oder Mod-Slots am Teil (die Lanze hat N
+   Steckplaetze)? Ersteres ist einfacher und passt zum Loot-Gedanken; Letzteres
+   ist flexibler, aber ein zweites Inventarsystem.
+2. **Silhouette (§3d beisst hier).** Ein Upgrade, das die **Funktion** aendert --
+   die Lanze trifft jetzt eine Reihe --, ist nach §3d verpflichtet, sich an der
+   FORM zu zeigen; sonst trifft der Spieler seine Entscheidung ohne die
+   Information, die das deterministische Kampfsystem verspricht. Ein Upgrade, das
+   nur **Zahlen** dreht (−`en_cost`), braucht keinen Formhinweis. Vorschlag:
+   funktionsaendernde Upgrades bekommen einen kleinen, billigen Anbau-Tell
+   (ein Muendungsaufsatz, ein zweiter Emitter) ueber einen Zusatzanker -- teure
+   Vollvarianten nur fuer wenige Schluesselteile (§7).
+3. **Herkunft.** Kommen Upgrades aus Beute, Crafting oder beidem? Das haengt am
+   offenen Progressionspunkt in §8 („Teile-Loot vs. Crafting").
+
+### 9e. Das Botmenue / Roster
+
+Heute ist der „Squad" eine fluechtige Auswahl frisch gebauter DROMEs. Die Vision
+will darueber eine **bleibende Sammlung**: ein Menue, das die *erworbenen* Bots
+zeigt, aus dem der Squad fuers Gefecht gezogen wird. Ein Roster-Eintrag ist ein
+benannter, besessener Aufbau (Huelle + Kern + Ausruestung + Upgrades).
+
+Das setzt eine Besitz-Schicht voraus, die es noch nicht gibt: man *hat* Huellen,
+Kerne, Ausruestung und Upgrades, statt sie frei aus dem Katalog zu waehlen. Das
+verbindet sich mit den offenen §8-Punkten „Progression" und „Wie viele DROMEs
+bildet der Spieler pro Gefecht auf". Offen: MVP oder spaeter, und woher der
+Nachschub kommt (naheliegend: Beute aus dem Chaos-Virus).
+
+### 9f. Was bestehen bleibt -- und was sich sauber einfuegt
+
+* **Baut auf dem letzten Schritt auf.** Die weichen Kosten (Gewicht → Tempo,
+  Energie → Mana, §8) sind das Fundament. Die Huelle legt die Rahmenwerte fest,
+  die Ausruestung kostet weiter SPD ueber die Zuladung, Faehigkeiten kosten
+  Mana. Der 3-Blaster-Aufbau lebt vollstaendig innerhalb der Slots einer Huelle
+  -- und soll gewuerdigt, nicht verriegelt werden.
+* **§6b ueberlebt unbeschaedigt.** „Aggro entsteht aus Aktionen, nie aus
+  Identitaet" bleibt wahr, auch wenn die Huelle jetzt eine Klasse ist: Tanken
+  bleibt emergent, es gibt weiterhin keinen `Tank`-Grundwert. Die Klasse gibt
+  die Buehne, das Verhalten entsteht im Kampf.
+* **Kartiert fast eins zu eins auf den Bestand.** Die vier Sets `bot1`–`bot4`
+  SIND bereits die vier Klassen (Vireo/Scout, Molok/Juggernaut, Nimbus/
+  Technomant, Strix/Marksman). `scout_head` + `scout_body` + `scout_feet` werden
+  zur Vireo-Huelle; `scout_core` & Co. werden die waehlbaren Kern-Chips. Der
+  Umbau ist ueberwiegend eine **Umgruppierung plus Kern-Entkopplung**, kein
+  Neubau -- das senkt das Risiko erheblich.
+
+### 9g. Nebenentscheidung: die SVG-Werkstatt
+
+Du willst die eigenstaendige SVG-Werkstatt (`index.html` + `main.py`) aus dem
+Fluss nehmen, weil die Godot-Werkstatt Aufbau und Optik ohnehin zeigt. **Eine
+Praezisierung, damit die Entscheidung mit offenen Augen faellt:** die SVG-Seite
+ist nicht nur eine zweite Bau-Ansicht, sie ist das **Autoren-Werkzeug** --
+Bauteile zeichnen, Anker setzen, Paletten pflegen (`main_menu.gd` sagt das
+selbst). Die Godot-Werkstatt kann heute *bauen und ansehen*, aber nicht
+*Anker setzen*. Als Spielflaeche kann die SVG-Seite also sofort weg; als
+Zeichen-/Anker-Werkzeug braucht sie einen Nachfolger oder eine bewusste
+Entscheidung, dass neue Teile vorerst nicht mehr entstehen. Zu klaeren, bevor
+sie geloescht wird.
+
+### 9h. Offene Entscheidungen (bitte gegenlesen)
+
+1. **Kern-Bindung:** universal (jeder Kern in jede Huelle) oder thematische
+   Bindung? Vorschlag: universal -- der Kern ist die Stil-Achse, kein Rahmen,
+   und ein fremder Kern macht keinen „weirden" Bot, solange die Huelle stimmt.
+2. **Kern-Optik:** Der Kern sitzt sichtbar in der Brust-/Rueckenplatte. Bei
+   universellen Kernen: auf die Set-Palette der Huelle umfaerben (Farbe ist ein
+   Parameter, §2) oder eigener Look je Kern? Vorschlag: umfaerben, dann sieht
+   jeder Kern in jeder Huelle heimisch aus.
+3. **Upgrade-Form:** Varianten-Gegenstaende oder Mod-Slots? (9d.1)
+4. **Upgrade-Silhouette:** billiger Anbau-Tell fuer funktionsaendernde Upgrades
+   -- ja, und wie sparsam? (9d.2)
+5. **Roster/Progression:** jetzt (MVP) oder spaeter? Woher kommt der Nachschub?
+6. **Klassen-Anzahl:** reichen die vier Huellen fuers Erste, oder brauchst du
+   zum Ausprobieren mehr?
+7. **SVG-Werkstatt:** als Spielflaeche raus (bestaetigt) -- was wird aus dem
+   Anker-Autorenwerkzeug? (9g)
