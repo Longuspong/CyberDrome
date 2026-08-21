@@ -757,9 +757,9 @@ einmal haengt. Im MVP reicht die Kette den Schaden dort unveraendert durch.
 
 > **Dieser Abschnitt ist noch nicht entschieden.** Er haelt eine Richtung fest,
 > die gegengelesen und korrigiert wird, bevor Code faellt. Wo er einer frueheren
-> Setzung widerspricht, ist das ausdruecklich vermerkt -- §3 (Zusammensetzung)
-> und §5 (Archetypen durch Kombination) werden erst umgeschrieben, wenn die
-> Richtung hier steht.
+> Setzung widerspricht, ist das ausdruecklich vermerkt -- §2 (Regel 1: nie
+> backen), §3 (Zusammensetzung) und §5 (Archetypen durch Kombination) werden
+> erst umgeschrieben, wenn die Richtung hier steht.
 
 ### 9a. Die Diagnose: an der falschen Stelle modular
 
@@ -789,7 +789,7 @@ Waffenwahl innerhalb seiner Huelle.
 | Baustein | Was er ist | Traegt | Waehlbarkeit |
 |---|---|---|---|
 | **Huelle** | Kopf + Koerper + Fuesse als EIN Teil, aus demselben Set | Integritaet, ATK, DEF, MOV, SPD, Gewicht, Ausruestungsslots, Traversierung, Sensorik | **die Klasse.** Eine Huelle = ein Archetyp mit fester Silhouette |
-| **Kern** | die Energie-Identitaet | `en_max`, `en_regen`, plus kernspezifische Eigenheit (z.B. +Fernkampf, guenstigere Faehigkeiten, groessere Flaeche) | der Spielstil *innerhalb der Vernunft* -- was der Bot mit seinem Strom macht |
+| **Kern** | die Energie-Identitaet, **optisch erkennbar** | `en_max`, `en_regen`, plus kernspezifische Eigenheit (z.B. +Fernkampf, guenstigere Faehigkeiten, groessere Flaeche) | der Spielstil *innerhalb der Vernunft* -- was der Bot mit seinem Strom macht |
 | **Ausruestung** | die Bestueckung in den Slots der Huelle | Waffen, Schilde, Support | die eigentliche Aufbau-Entscheidung (zwei Schilde vs. zwei Nahkampf; Runenstab vs. Schuetze) |
 | **Upgrades** | Varianten von Kernen und Ausruestung | Modifikatoren (siehe 9d) | die *tiefe* Modularitaet, ueber Progression erworben |
 
@@ -798,26 +798,43 @@ optischen Strix und entscheidet dann *innerhalb* der Klasse -- Kern, Bestueckung
 Upgrades. Die Themen bleiben an der Huelle haengen: Strix = wenig Integritaet,
 harte Treffer; Molok = ist da und geht nicht.
 
-### 9c. Warum die Huelle EIN Teil ist -- und die SVG-Technik das ueberlebt
+**Der Spielstil ist auf einen Blick lesbar aus Huelle + Kern + Waffe.** Alle drei
+sind optisch erkennbar und sollen es bleiben -- wer eine DROME ansieht, sieht die
+Klasse (Huelle), was sie mit ihrer Energie macht (Kern) und womit sie zuschlaegt
+(Waffe). Nur die Upgrade-Feinheiten liegen darunter und werden inspiziert (9d).
 
-Das ist die Stelle, an der der Vorschlag an §2/§5 stossen koennte -- und es nicht
-tut. **Die Zusammenlegung ist eine Sache der Werkstatt und der Daten, nicht des
-Renderers.** Kopf, Koerper und Fuesse bleiben drei getrennte SVGs, die zur
-Laufzeit ueber Anker zusammengesetzt werden; an der Projektion, den vier
-Richtungen und dem Asset-Budget (§5: 24 SVGs je Set) aendert sich **nichts**.
+### 9c. Die Huelle wird gebacken -- und das ist jetzt richtig
 
-Was sich aendert, ist allein die Bindung: die drei Rahmenteile eines Sets werden
-als **Set-Tripel** gefuehrt und als eine „Huelle" gewaehlt. Der Spieler trifft
-eine Entscheidung statt dreier, und die drei koennen gar nicht mehr auseinander
-laufen. Die Werte der Huelle sind weiterhin die Summe ihrer drei Teile (wie
-heute). „Summe statt Produkt" (§2) bleibt vollstaendig erhalten -- wir nehmen nur
-die drei Frame-Faktoren aus der Kombinatorik heraus, die ohnehin nie frei sein
-sollten.
+Die Gruendungsregel (§2, Regel 1) lautete „nie zusammenbacken, zur Laufzeit
+ueber Anker zusammensetzen" -- weil das freie Kombinieren der Rahmenteile sonst
+in tausende Sprites explodiert (§2: 12.500). Diese Begruendung traegt **nur,
+solange die Rahmen frei kombiniert werden.** Im Klassenmodell ist der Rahmen je
+Klasse fest und wird nie getauscht, das Produkt kollabiert: 4 Klassen × 4
+Richtungen × wenige Animationsframes statt 5 × 5 × 5 × …
 
-> **Revidiert §5.** „Ausruestung ist set-uebergreifend nutzbar" bleibt wahr.
-> „Rahmenteile werden quer durch alle Sets kombiniert" wird zu: Rahmenteile
-> sind an ihr Set gebunden und bilden die Huelle. Der gemeinsame
-> Ausruestungs-Pool ueberlebt unveraendert.
+Damit ist das Baken nicht nur erlaubt, sondern **das Richtige**: die Huelle wird
+zu **Sprite-Bilddateien vorgerendert** -- am billigsten zu zeichnen (auf Android
+entscheidend, §1) und die Garantie, dass Kopf, Koerper und Fuesse *immer* stimmig
+sind, ohne Laufzeit-Naht. **Wie** die Datei entsteht, ist egal (in SVG autoren,
+als PNG exportieren); massgeblich ist, dass die Laufzeit gebackene Sprites nutzt.
+
+Laufzeit-zusammengesetzt bleibt genau das **Tauschbare**: Kern und Waffe. Sie
+lassen sich per Definition nicht in die Huelle backen und bleiben eigene Sprites
+ueber den Ankern der Huelle, jedes mit eigenem Rueckstoss/FX. Das Anker-System
+ueberlebt also dort, wo es noch gebraucht wird (Tauschbares montieren), und
+faellt weg, wo es das nicht wurde (einen festen Rahmen bei jedem Zeichnen neu
+zusammennaehen).
+
+Genau daraus faellt auch die Animation (§7): idle/Zucken/Regenerieren ueber
+Transform + FX auf der gebackenen Huelle, Schuss als Rueckstoss auf dem
+Waffen-Overlay, und der Laufzyklus entweder als kurze Frame-Folge je Huelle oder
+ueber separat gebackene Beine. Sprites + Transforms sind der billigste Pfad.
+
+> **Revidiert §2 (Regel 1) und §5 fuer die Huelle.** Die Huelle wird gebacken,
+> weil ihre Zusammensetzung fest ist; Ausruestung und Kern bleiben
+> Laufzeit-Overlays ueber Anker. „Ausruestung ist set-uebergreifend nutzbar"
+> bleibt wahr; „Rahmenteile quer durch alle Sets kombinieren" wird zu:
+> Rahmenteile sind an ihr Set gebunden und bilden die Huelle.
 
 ### 9d. Wohin die Modularitaet wandert: Upgrades
 
@@ -832,21 +849,31 @@ Das Muster ist jedes Mal ein **Tausch, keine reine Aufwertung** -- Durchschlag
 gegen Doppelschuss, Effizienz gegen Wucht. Genau so bleibt es eine
 Entscheidung und wird nicht zur Pflichtreihenfolge.
 
-Drei Dinge sind daran noch offen und gehoeren entschieden, bevor gebaut wird:
+**Upgrades zeigen sich NICHT in der Silhouette -- und das ist so gewollt.** Eine
+Lanze bleibt eine Lanze; ob sie eine Reihe durchschlaegt oder zweimal schiesst,
+liest man ueber einen **Inspizieren-Knopf**, nicht am Sprite. Das ueberschreibt
+§3d bewusst: die GROBE Funktion liest der Spieler weiter an der Form
+(Lanze = weitreichende Durchschlagwaffe), die FEINEN Modifikatoren per
+Inspektion. Fuer Gegner hat diese Inspektion bereits ein Zuhause -- den Tooltip
+aus §6h, der schon die Aggro-Tabelle zeigt und einfach auch Ausruestung und
+Upgrades auffuehrt; fuer eigene DROMEs ein Inspizieren-Feld in Werkstatt/Roster.
+
+Der Kompromiss, offen ausgesprochen, damit er bewusst faellt: zwei gleich
+aussehende Lanzen koennen sich anders verhalten, und ein Gegner muss den Tooltip
+LESEN, nicht nur hinsehen. In einem deterministischen Tactics ist das tragbar,
+**solange die Auskunft auf Abruf vollstaendig ist** -- was der Tooltip
+garantiert. Es wuerde erst zum Problem, wenn ein Upgrade etwas aenderte, worauf
+man sofort reagieren muss und nicht rechtzeitig inspizieren kann. Daraus die
+Leitplanke: Upgrade-Wirkungen bleiben bei dem, was ein Tooltip-Blick abdeckt --
+keine versteckten Ueberraschungen bei Zugreihenfolge oder Zielwahl.
+
+Zwei Dinge sind noch offen und gehoeren entschieden, bevor gebaut wird:
 
 1. **Form der Upgrades.** Varianten-Gegenstaende (man besitzt „Lanze
    Mk-Durchschlag" als eigenes Teil) oder Mod-Slots am Teil (die Lanze hat N
    Steckplaetze)? Ersteres ist einfacher und passt zum Loot-Gedanken; Letzteres
    ist flexibler, aber ein zweites Inventarsystem.
-2. **Silhouette (§3d beisst hier).** Ein Upgrade, das die **Funktion** aendert --
-   die Lanze trifft jetzt eine Reihe --, ist nach §3d verpflichtet, sich an der
-   FORM zu zeigen; sonst trifft der Spieler seine Entscheidung ohne die
-   Information, die das deterministische Kampfsystem verspricht. Ein Upgrade, das
-   nur **Zahlen** dreht (−`en_cost`), braucht keinen Formhinweis. Vorschlag:
-   funktionsaendernde Upgrades bekommen einen kleinen, billigen Anbau-Tell
-   (ein Muendungsaufsatz, ein zweiter Emitter) ueber einen Zusatzanker -- teure
-   Vollvarianten nur fuer wenige Schluesselteile (§7).
-3. **Herkunft.** Kommen Upgrades aus Beute, Crafting oder beidem? Das haengt am
+2. **Herkunft.** Kommen Upgrades aus Beute, Crafting oder beidem? Das haengt am
    offenen Progressionspunkt in §8 („Teile-Loot vs. Crafting").
 
 ### 9e. Das Botmenue / Roster
@@ -880,7 +907,32 @@ Nachschub kommt (naheliegend: Beute aus dem Chaos-Virus).
   Umbau ist ueberwiegend eine **Umgruppierung plus Kern-Entkopplung**, kein
   Neubau -- das senkt das Risiko erheblich.
 
-### 9g. Nebenentscheidung: die SVG-Werkstatt
+### 9g. Die Klassen duerfen sich im Tempo nicht vierteln
+
+Die heutige Spreizung ist kaputt. Grob aus dem Bestand:
+
+| Klasse | SPD (Zugtakt) | MOV (Felder/Zug) |
+|---|---|---|
+| Vireo | 13 | 4 |
+| Nimbus | 13 | 5 |
+| Strix | 8 | 4 |
+| **Molok** | **~6** | **2** |
+
+Der Molok kommt **halb so oft** dran UND geht **halb so weit** -- verrechnet ist
+das rund ein Viertel der Brettpraesenz eines Vireo je Zeit. Das ist kein
+„langsamer Tank", das ist „kaum im Spiel". Die Spreizung muss **zusammenrücken**:
+langsamer ja, geviertelt nein. Ein Tank soll sich bedaechtig anfuehlen -- etwa
+eine Aktivierung hinter dem Flinken --, nicht ueberrundet.
+
+Zwei Stellschrauben, und sie haengen zusammen: die Basiswerte SPD/MOV je Huelle
+**und** die Zuladung, die ueber `payload_slowdown()` (§8) zusaetzlich SPD zieht.
+Ein schwer bestueckter Molok wird dadurch doppelt gebremst -- Basiswert niedrig
+UND Zuladung hoch. Die Kompression muss den Zuladungs-Abzug also mit einplanen,
+sonst trifft es die langsame Klasse zweimal. Konkrete Zahlen sind Playtest; das
+Verhaeltnis ist die Designaussage und wird beim Festlegen der Huellenwerte im
+Reframe gesetzt.
+
+### 9h. Nebenentscheidung: die SVG-Werkstatt
 
 Du willst die eigenstaendige SVG-Werkstatt (`index.html` + `main.py`) aus dem
 Fluss nehmen, weil die Godot-Werkstatt Aufbau und Optik ohnehin zeigt. **Eine
@@ -893,20 +945,26 @@ Zeichen-/Anker-Werkzeug braucht sie einen Nachfolger oder eine bewusste
 Entscheidung, dass neue Teile vorerst nicht mehr entstehen. Zu klaeren, bevor
 sie geloescht wird.
 
-### 9h. Offene Entscheidungen (bitte gegenlesen)
+### 9i. Entscheidungen
 
-1. **Kern-Bindung:** universal (jeder Kern in jede Huelle) oder thematische
-   Bindung? Vorschlag: universal -- der Kern ist die Stil-Achse, kein Rahmen,
-   und ein fremder Kern macht keinen „weirden" Bot, solange die Huelle stimmt.
-2. **Kern-Optik:** Der Kern sitzt sichtbar in der Brust-/Rueckenplatte. Bei
-   universellen Kernen: auf die Set-Palette der Huelle umfaerben (Farbe ist ein
-   Parameter, §2) oder eigener Look je Kern? Vorschlag: umfaerben, dann sieht
-   jeder Kern in jeder Huelle heimisch aus.
-3. **Upgrade-Form:** Varianten-Gegenstaende oder Mod-Slots? (9d.1)
-4. **Upgrade-Silhouette:** billiger Anbau-Tell fuer funktionsaendernde Upgrades
-   -- ja, und wie sparsam? (9d.2)
-5. **Roster/Progression:** jetzt (MVP) oder spaeter? Woher kommt der Nachschub?
-6. **Klassen-Anzahl:** reichen die vier Huellen fuers Erste, oder brauchst du
+**Entschieden (Runde 2026-08):**
+
+* **Rendering:** die Huelle wird zu Sprite-Bilddateien gebacken; nur die
+  tauschbaren Overlays (Kern, Waffe) bleiben Laufzeit. (9c)
+* **Kern:** universal in jede Huelle und **optisch erkennbar** -- der Spielstil
+  liest sich aus Huelle + Kern + Waffe. (9b, 9d)
+* **Upgrades unsichtbar:** kein Silhouetten-Tell; die Feinheiten laufen ueber
+  einen Inspizieren-Knopf bzw. den Gegner-Tooltip. „Lanze bleibt Lanze." (9d)
+* **Tempo:** SPD/MOV-Spreizung der Klassen ruecken zusammen -- langsamer ja,
+  geviertelt nein. (9g)
+
+**Noch offen:**
+
+1. **Upgrade-Form:** Varianten-Gegenstaende („Lanze Mk-Durchschlag") oder
+   Mod-Slots am Teil? (9d.1)
+2. **Roster/Progression:** jetzt (MVP) oder spaeter? Woher kommt der Nachschub
+   (naheliegend: Chaos-Virus-Beute)? (9e)
+3. **Klassen-Anzahl:** reichen die vier Huellen fuers Erste, oder brauchst du
    zum Ausprobieren mehr?
-7. **SVG-Werkstatt:** als Spielflaeche raus (bestaetigt) -- was wird aus dem
-   Anker-Autorenwerkzeug? (9g)
+4. **SVG-Werkstatt:** als Spielflaeche raus (bestaetigt) -- was wird aus dem
+   Anker-Autorenwerkzeug? (9h)
