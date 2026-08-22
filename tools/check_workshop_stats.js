@@ -191,17 +191,37 @@ withSlotDefs({ body: "scout_body" }, () => {
   });
 }
 
-// Ueberladen: der Vireo traegt 18.
+// Schwer, aber baubar: die Bau-Deckel (Traglast, Energiebedarf) sind gestrichen.
+// Gewicht ist Tempo, Energie ist Mana -- kein Riegel in der Werkstatt. Der Molok
+// ist die schwere Huelle (Rahmen aus einem Set, §9), dazu die schwerste Waffe.
+// Gegenprobe: die HTML-Werkstatt nennt keine Traglast-Grenze mehr, waehrend die
+// Engine sie laengst abgelegt hat (DromeBuild.validate()).
 withSlotDefs(
-  { body: "scout_body", head: "jugg_head", feet: "jugg_feet", core: "jugg_core",
-    equip_left: "eq_pulse_blaster" },
+  { body: "jugg_body", head: "jugg_head", feet: "jugg_feet", core: "jugg_core",
+    equip_left: "eq_siege_cannon" },
   () => {
     const problems = sandbox.validateLoadout(loadoutOf(
-      { body: "scout_body", head: "jugg_head", feet: "jugg_feet",
-        core: "jugg_core", equip_left: "eq_pulse_blaster" }));
-    if (!problems.some((p) => p.startsWith("Traglast ueberschritten"))) {
+      { body: "jugg_body", head: "jugg_head", feet: "jugg_feet",
+        core: "jugg_core", equip_left: "eq_siege_cannon" }));
+    if (problems.some((p) => p.startsWith("Traglast"))) {
       failures += 1;
-      console.log("  [FEHLER] Traglast wird nicht beim Namen genannt: "
+      console.log("  [FEHLER] die Traglast-Grenze lebt in der Werkstatt weiter: "
+        + problems.join(", "));
+    }
+  });
+
+// Und die Gegenprobe zur Huellen-Regel: ein gemischter Rahmen wird genannt --
+// in beiden Werkstaetten dieselbe Regel wie DromeBuild.structural_problems().
+withSlotDefs(
+  { body: "jugg_body", head: "scout_head", feet: "jugg_feet", core: "jugg_core",
+    equip_left: "eq_siege_cannon" },
+  () => {
+    const problems = sandbox.validateLoadout(loadoutOf(
+      { body: "jugg_body", head: "scout_head", feet: "jugg_feet",
+        core: "jugg_core", equip_left: "eq_siege_cannon" }));
+    if (!problems.some((p) => p.startsWith("Rahmen ist keine Huelle"))) {
+      failures += 1;
+      console.log("  [FEHLER] gemischter Rahmen wird nicht genannt: "
         + problems.join(", "));
     }
   });

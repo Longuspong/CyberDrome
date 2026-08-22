@@ -11,7 +11,8 @@ extends RefCounted
 ##
 ##     body   Pflicht. Bestimmt ueber seine equip_*-Anker, wie viele
 ##            Ausruestungsslots dieser DROME ueberhaupt hat.
-##     core   Pflicht. Deckelt ueber power_output, was drumherum haengen darf.
+##     core   Pflicht. Traegt den Energietank (en_max/en_regen), aus dem
+##            Faehigkeiten im Kampf bezahlt werden.
 ##     feet   Pflicht. Ohne Antrieb ist mov 0.
 ##     head   Pflicht. Sensorik.
 ##     equip_* Variabel: zwei beim Vireo, drei beim Molok, genau einer beim
@@ -21,26 +22,25 @@ extends RefCounted
 ## Ein DROME hat keine Grundwerte. Jeder Stat ist die Summe seiner Teile.
 const SOCKET_SLOTS := ["body", "head", "feet", "core"]
 
-## Playtest-Schalter: Traglast und Energiebedarf zaehlen nicht mehr als Fehler.
+## ### Warum es keine Bau-Budgets mehr gibt
 ##
-## Beide Grenzen sind Balancing und bleiben es -- ein Molok, dessen dritter
-## Anker regelmaessig leer bleibt, weil der Kern die Energie nicht hergibt, ist
-## eine bewusste Entscheidung und keine Panne. Nur ist genau diese Grenze im
-## Playtest im Weg: um zu WISSEN, ob drei volle Slots zu stark waeren, muss man
-## sie einmal bauen und spielen koennen.
+## Frueher deckelten zwei Grenzen den Aufbau: die Traglast (Gewicht gegen
+## ``weight_capacity``) und der Energiebedarf (``power_draw`` gegen
+## ``power_output`` des Kerns). Beide blockierten das Bauen -- und beide
+## produzierten Unsinn: ein Vireo mit zwei Puls-Blastern riss die Traglast um
+## EINEN Punkt (19/18), der offensichtlichste Standard-Aufbau der Welt liess
+## sich nicht bauen. Aus Spielersicht war das kaputt.
 ##
-## Der Schalter hebt deshalb ausschliesslich die beiden Budgetgrenzen auf. Was
-## ein Aufbau ueberhaupt sein muss -- vier Sockel, eine Waffe, passende Teile in
-## passenden Haltern, mov und spd mindestens 1 --, gilt weiter: das sind keine
-## Stellschrauben, sondern die Bedingungen dafuer, dass ein DROME im Kampf
-## ueberhaupt handeln kann.
+## Die beiden Deckel sind darum gestrichen. Energie ist jetzt reines Mana
+## (``en_max`` / ``en_regen`` / ``en_cost`` einer Aktion), und Gewicht ist
+## reines Tempo (``payload_slowdown`` zieht SPD ab). Was frueher ein harter
+## Riegel war, ist jetzt ein weicher Preis: der teure Aufbau ist baubar, aber
+## langsam und energiehungrig -- moeglich, nur nicht optimal.
 ##
-## Statisch und nicht je Aufbau, weil er eine Eigenschaft der SITZUNG ist und
-## nicht des DROME. Gesetzt wird er an genau einer Stelle (GameState), damit
-## Werkstatt, Hauptmenue und Kampf nicht auseinanderlaufen koennen. Der
-## Gegnergenerator fragt bewusst ``is_strictly_valid()`` und bleibt streng --
-## sonst wuerde ein Playtest-Schalter unbemerkt auch die Gegner aufruesten.
-static var ignore_limits: bool = false
+## Die natuerliche Grenze ist damit ``spd >= 1`` / ``mov >= 1`` in
+## ``structural_problems()``: man kann Masse stapeln, bis der DROME festfaehrt,
+## dann bewegt er sich nicht mehr und ist ungueltig. Kein Zahlendeckel, sondern
+## eine Regel, die man fuehlt.
 
 var display_name: String = "DROME"
 
@@ -77,6 +77,21 @@ func part_in(slot: String) -> PartData:
 
 func body() -> PartData:
 	return part_in("body")
+
+
+## Setzt das ganze Chassis auf einmal: Koerper, Kopf und Fuesse aus dem Set des
+## uebergebenen Koerper-Teils. Kopf und Fuesse werden nie einzeln gewaehlt -- das
+## Chassis ist eine Huelle (GAME_DESIGN §9). Der Kern und die Ausruestung bleiben
+## unberuehrt: der Kern ist universal, die Ausruestung eine eigene Entscheidung.
+func apply_chassis(body_id: StringName) -> void:
+	var chassis := PartDB.get_part(body_id)
+	if chassis == null or chassis.type != PartData.Type.BODY:
+		return
+	slots["body"] = chassis.id
+	for type in [PartData.Type.HEAD, PartData.Type.FEET]:
+		var mate := PartDB.frame_mate(chassis.set_id, type)
+		if mate != null:
+			slots[mate.slot_name()] = mate.id
 
 
 ## Alle belegten Teile, Sockel und Ausruestung gemeinsam.
@@ -320,13 +335,14 @@ func clone() -> DromeBuild:
 # Validierung
 # ---------------------------------------------------------------------------
 
-## Alle verletzten Regeln im Klartext, Budgetgrenzen eingeschlossen. Leer =
-## gueltig. Die UI zeigt diese Liste unveraendert an: der Spieler soll nicht
-## raten, welche der Regeln bricht.
+## Alle verletzten Regeln im Klartext. Leer = gueltig. Die UI zeigt diese Liste
+## unveraendert an: der Spieler soll nicht raten, welche der Regeln bricht.
+##
+## Seit die beiden Bau-Budgets gestrichen sind (siehe Klassenkommentar), ist
+## Validierung reine Struktur: was ein DROME sein MUSS, um im Kampf zu handeln.
+## Gewicht und Energie sind keine Grenzen mehr, sondern Preise (Tempo, Mana).
 func validate() -> Array[String]:
-	var problems := structural_problems()
-	problems.append_array(budget_problems())
-	return problems
+	return structural_problems()
 
 
 ## Was ein DROME sein MUSS, damit er im Kampf handeln kann. Diese Liste haengt
@@ -353,6 +369,19 @@ func structural_problems() -> Array[String]:
 		if part_in(slot) == null:
 			problems.append("%s fehlt" % _slot_label(slot))
 
+	# Der Rahmen ist eine HUELLE: Kopf, Koerper und Fuesse stammen aus einem Set
+	# und werden gemeinsam gewaehlt, nie einzeln getauscht (GAME_DESIGN §9). So
+	# gibt es keinen Strix-Kopf auf Molok-Beinen mehr. Der Kern bleibt frei --
+	# er ist die Stil-Achse, kein Rahmen (§9b, §9i).
+	var frame_sets := {}
+	for slot in ["body", "head", "feet"]:
+		var part := part_in(slot)
+		if part != null:
+			frame_sets[part.set_id] = true
+	if frame_sets.size() > 1:
+		problems.append("Rahmen ist keine Huelle: Kopf, Koerper und Fuesse "
+			+ "stammen aus verschiedenen Saetzen")
+
 	var chassis := body()
 	if chassis != null:
 		for slot in equip_slots():
@@ -370,36 +399,7 @@ func structural_problems() -> Array[String]:
 	return problems
 
 
-## Die beiden Budgetgrenzen: Traglast und Energie. Genau die, die der
-## Playtest-Schalter aufhebt (siehe ``ignore_limits``).
-func budget_problems() -> Array[String]:
-	var problems: Array[String] = []
-	var total := stats()
-	if total["weight"] > total["weight_capacity"]:
-		problems.append("Traglast ueberschritten: %d / %d"
-			% [total["weight"], total["weight_capacity"]])
-	if total["power_draw"] > total["power_output"]:
-		problems.append("Energiebedarf zu hoch: %d / %d"
-			% [total["power_draw"], total["power_output"]])
-	return problems
-
-
-## Was diesen Aufbau JETZT davon abhaelt, in den Kampf zu gehen. Im Playtest
-## sind das nur noch die strukturellen Regeln.
-func blocking_problems() -> Array[String]:
-	if ignore_limits:
-		return structural_problems()
-	return validate()
-
-
 func is_valid() -> bool:
-	return blocking_problems().is_empty()
-
-
-## Gueltig nach den vollen Regeln, unabhaengig vom Playtest-Schalter. Der
-## Gegnergenerator fragt das -- Gegner sollen kanonisch baubar bleiben, auch
-## wenn der Spieler seine eigenen Grenzen gerade aushebelt.
-func is_strictly_valid() -> bool:
 	return validate().is_empty()
 
 

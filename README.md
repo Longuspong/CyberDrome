@@ -63,7 +63,7 @@ wird damit das Bild und nicht die Zeile.
 Der Zeiger auf einer Kachel zeigt dreierlei: **wie es aussieht** (die Vorschau
 in der Mitte baut es probeweise ein), **was es ist** (Werte, Klasse, Wirkung --
 in einem Feld an der Kante der Bibliothek) und **was es aendert** (jede
-Wertaenderung, Traglast und Energie vorher/nachher und die Regeln, die danach
+Wertaenderung, das Gewicht vorher/nachher und die Regeln, die danach
 brechen wuerden). Was in kein Halter dieses Chassis darf, wird nicht
 weggelassen, sondern gedaempft und begruendet.
 
@@ -79,20 +79,28 @@ ob es der leuchtende Ring oder der Stab ist), was der Aufbau **wert** ist -- in
 Gruppen statt als Zahlenliste -- und was er im Kampf **tun kann**: seine
 Aktionen, getrennt nach Angriff und Faehigkeit.
 
-#### Playtest: Grenzen abschaltbar
+#### Keine Bau-Budgets: die Werkstatt ist kein Tuersteher
 
-Ein Molok hat drei Anker, aber nach zwei bestueckten Slots gibt der Kern
-selten noch Energie fuer den dritten her. Das ist beabsichtigtes Balancing --
-und im Playtest im Weg: um zu *wissen*, ob drei volle Slots zu stark waeren,
-muss man sie einmal bauen und spielen koennen.
+Frueher deckelten zwei Grenzen den Aufbau -- die **Traglast** (Gewicht gegen
+die Kapazitaet des Chassis) und der **Energiebedarf** (der Strombedarf der
+Teile gegen den Ausstoss des Kerns). Beide blockierten das Bauen, und beide
+produzierten Unsinn: ein Vireo mit zwei Puls-Blastern riss die Traglast um
+*einen* Punkt (19/18), der offensichtlichste Standard-Aufbau der Welt liess
+sich nicht bauen.
 
-Der Schalter **„Playtest: Traglast und Energie nicht erzwingen"** hebt genau
-diese beiden Budgetgrenzen auf. Ueberschritten wird weiterhin angezeigt, nur
-nicht mehr als Fehler gewertet. Alles andere gilt unveraendert -- vier Sockel,
-passende Teile in passenden Haltern, `mov` und `spd` mindestens 1 --, und die
-**Gegner werden weiter streng gewuerfelt**: sonst verschoebe der
-Schalter still den Massstab, gegen den getestet wird. Voreinstellung in
-`data/config.json` unter `playtest.ignore_build_limits`.
+Die Deckel sind gestrichen. **Energie ist Mana** (`en_max` / `en_regen`, eine
+Faehigkeit kostet `en_cost` im Kampf), **Gewicht ist Tempo** (Zuladung zieht
+SPD, siehe `DromeBuild.payload_slowdown()`). Was frueher ein harter Riegel war,
+ist jetzt ein weicher Preis: der teure Aufbau ist baubar, aber langsam und
+energiehungrig -- *moeglich, nur nicht optimal*. Die einzige verbliebene Grenze
+ist strukturell: vier Sockel, passende Teile in passenden Haltern, `mov` und
+`spd` mindestens 1. Letzteres ist zugleich die natuerliche Obergrenze der
+Masse -- man kann Gewicht stapeln, bis der DROME festfaehrt.
+
+Damit entfaellt auch der fruehere Playtest-Schalter samt
+`playtest.ignore_build_limits`: es gibt keine Budgetgrenze mehr, die man
+abschalten muesste. Die Zahlen (Gewichte, `spd_weight_step`, Faehigkeitskosten)
+sind Balancing und werden weiter getunt -- aber nicht mehr als Verbot.
 
 #### Playtest: womit Faehigkeiten gebremst werden
 

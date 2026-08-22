@@ -104,6 +104,16 @@ func of_type(type: PartData.Type) -> Array:
 	return _by_type.get(type, [])
 
 
+## Das Rahmenteil eines Typs (Kopf/Fuesse) aus einem Set -- der Partner, mit dem
+## das Chassis gemeinsam die Huelle bildet (GAME_DESIGN §9). null, wenn das Set
+## keins hat.
+func frame_mate(set_id: String, type: PartData.Type) -> PartData:
+	for part in of_type(type):
+		if part.set_id == set_id:
+			return part
+	return null
+
+
 ## Alle Ausruestungsteile, die in diesen Slot dieses Chassis duerfen.
 func equipment_for(body: PartData, slot: String) -> Array:
 	var result: Array = []

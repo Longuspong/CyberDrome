@@ -59,28 +59,27 @@ func _random_build(display_name: String) -> DromeBuild:
 	var attempts := Config.get_int("build_attempts", 50)
 	for _i in attempts:
 		var build := _roll(display_name)
-		# Ausdruecklich die strengen Regeln: haengt der Spieler seine
-		# Budgetgrenzen im Playtest aus (DromeBuild.ignore_limits), sollen
-		# seine Gegner deswegen nicht mit aufruesten. Sonst verschoebe der
-		# Schalter still den Massstab, gegen den getestet wird.
-		#
 		# Die Waffe wird hier SEPARAT verlangt. Fuer den Spieler ist ein Aufbau
 		# ohne Waffe eine zulaessige Entscheidung (DromeBuild.structural_problems),
 		# fuer einen Gegner waere sie keine: ein Squad, das nichts anrichten kann,
 		# laeuft das Gefecht bis ans ``cycle_limit`` und endet unentschieden. Der
 		# Spieler haette dann einen Kampf verloren bekommen, den der Wuerfel
 		# entschieden hat.
-		if build.is_strictly_valid() and not build.weapons().is_empty():
+		if build.is_valid() and not build.weapons().is_empty():
 			return build
 	return _fallback(display_name)
 
 
 func _roll(display_name: String) -> DromeBuild:
+	# Der Rahmen ist eine Huelle: Kopf und Fuesse stammen aus DEMSELBEN Set wie
+	# das Chassis (GAME_DESIGN §9). Frei gewuerfelt entstuenden gemischte Rahmen,
+	# die der Aufbau ablehnt. Der Kern dagegen ist universal -- er wird weiter
+	# frei gewuerfelt.
 	var chassis: PartData = _pick(PartDB.of_type(PartData.Type.BODY))
 	var assignment := {
 		"body": chassis.id,
-		"head": _pick(PartDB.of_type(PartData.Type.HEAD)).id,
-		"feet": _pick(PartDB.of_type(PartData.Type.FEET)).id,
+		"head": PartDB.frame_mate(chassis.set_id, PartData.Type.HEAD).id,
+		"feet": PartDB.frame_mate(chassis.set_id, PartData.Type.FEET).id,
 		"core": _pick(PartDB.of_type(PartData.Type.CORE)).id,
 	}
 
@@ -117,7 +116,7 @@ func _fallback(display_name: String) -> DromeBuild:
 		"feet": &"scout_feet", "core": &"scout_core",
 		"equip_left": &"eq_pulse_blaster",
 	})
-	if not build.is_strictly_valid():
+	if not build.is_valid():
 		push_error("EnemyGenerator: selbst der Notfall-Aufbau ist ungueltig: %s"
 			% ", ".join(build.validate()))
 	return build
