@@ -1090,6 +1090,55 @@ Die Reihenfolge, die daraus faellt und die den Reframe nicht ausbremst:
 * **Scope-Reihenfolge:** Reframe zuerst gegen den freien Katalog, Besitz/Beute
   darueber. (10e, §12)
 
+### 10g. Inventar, Instanzen und die Auswahl vor der Werkstatt
+
+Die Anforderung: ein **endliches Inventar** (nicht mehr der freie Katalog), ein
+**Auswahlmenue vor der Werkstatt**, und ein Teil, das nicht zweimal gleichzeitig
+verbaut werden kann. Dafuer braucht es **Instanzen mit IDs**.
+
+**Instanzen statt Katalog.** Heute haelt `DromeBuild.slots` Bauteil-TYPEN
+(`eq_rail_lance`), und die Werkstatt ist ein freier Katalog. Neu: man besitzt
+einzelne **Instanzen**. Eine Instanz = eindeutige `uid` + Typ (spaeter + Mods +
+Level, §10c/§12b). Zwei Schienen-Lanzen sind zwei Instanzen mit zwei uids -- so
+ist immer klar, welche wo steckt, und spaeter traegt jede ihre eigenen Mods.
+
+**Drei Schichten:**
+
+* **Inventar** -- alle besessenen Instanzen. Quelle der Wahrheit fuer „was habe
+  ich".
+* **Roster** -- deine DROMEs. Ein DROME = eine **Chassis-Instanz** plus
+  zugewiesene Kern- und Ausruestungs-Instanzen (`assignments: {slot: uid}`). Das
+  **Auswahlmenue vor der Werkstatt IST die Roster-Liste**: waehle den DROME
+  (= das Chassis), den du gerade anpasst.
+* **DromeBuild bleibt typ-basiert und unberuehrt.** Fuer Stats, Render und Kampf
+  wird der Build zur Laufzeit aus den assignments abgeleitet (uid → Instanz →
+  Typ → slots). **Gegner haben kein Inventar** -- sie werden weiter typ-basiert
+  generiert, ganz ohne diese Schicht. So kostet die Besitz-Schicht den
+  Kampf-Code nichts (dieselbe Trennsauberkeit wie beim Reframe, §9c).
+
+**Eindeutigkeit faellt von selbst.** Eine uid steckt in **hoechstens einer**
+Zuweisung im ganzen Roster. Die Werkstatt bietet fuer einen Slot nur **freie**
+Instanzen an (uid nirgends zugewiesen) plus die gerade verbaute. „Schienen-Lanze
+nur waehlbar, wenn nicht woanders verbaut" ist damit kein Sonderfall, sondern die
+Grundregel.
+
+**Startbestand (handgesetzt, §12c):** die vier Standard-Chassis (= vier DROMEs),
+je eine Instanz jedes Standard-Kerns und jeder Standard-Ausruestung. Weil acht
+Ausruestungsteile nicht alle Slots von vier DROMEs fuellen, entsteht die knappe
+Entscheidung von selbst -- genau der Reiz. Nach jedem Chaos-Virus wandern
+erbeutete Teile als neue Instanzen ins Inventar; neue Chassis (Meilenstein) sind
+neue Roster-Plaetze.
+
+**Save-Format** waechst: Inventar (Instanzliste) + Roster (DROMEs als {Name,
+assignments}). Der heutige Wegwerf-Squad (`GameState`) wird zum Roster; ein
+DromeBuild wird beim Laden aus den assignments rekonstruiert. Die spaetere
+**Squad-Vorauswahl** (§10b: „vier mitnehmen, Rest zuhause") zieht dann aus dem
+Roster -- eigener, kleiner Schritt danach.
+
+**Offen:** Startmenge Kerne (vier = je DROME genau einer, also wenig Wahl bis zur
+ersten Beute -- mehr Startkerne, oder Kerne bewusst erst ueber Loot?); ob man
+Chassis-Duplikate besitzen kann (das Modell erlaubt es; der Start hat je eins).
+
 ## 11. Schaden und Verteidigung (Vorschlag, in Abstimmung -- Stand 2026-08)
 
 Das beantwortet die lange offene **Schadensordnung** (§7a, §8): ja, es gibt
