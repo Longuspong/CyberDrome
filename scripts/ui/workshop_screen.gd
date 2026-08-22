@@ -77,12 +77,14 @@ const SLOT_SHORT := {
 }
 
 ## Die Bibliothek in der Reihenfolge, in der ein DROME entsteht: erst das
-## Chassis (es bestimmt, wie viele Ausruestungsslots es ueberhaupt gibt), dann
-## die drei anderen Sockel, zuletzt die Ausruestung.
+## Chassis, dann der Kern, zuletzt die Ausruestung.
+##
+## Kopf und Fuesse stehen NICHT mehr als eigene Kategorien da: sie sind Teil des
+## Chassis (GAME_DESIGN §9). Ein Klick auf ein Chassis setzt Koerper, Kopf und
+## Fuesse gemeinsam (DromeBuild.apply_chassis) -- man waehlt eine Klasse, nicht
+## drei Rahmenteile.
 const LIBRARY_GROUPS := [
 	[PartData.Type.BODY, "Chassis"],
-	[PartData.Type.HEAD, "Sensorik"],
-	[PartData.Type.FEET, "Antrieb"],
 	[PartData.Type.CORE, "Kern"],
 	[PartData.Type.EQUIPMENT, "Ausruestung"],
 ]
@@ -432,7 +434,10 @@ func _refresh_direction_buttons() -> void:
 ## Welche Slots dieser Aufbau hat -- die vier Sockel plus die equip_*-Anker
 ## seines Chassis. Genau wie im Kampf: die Slotzahl haengt am Chassis.
 func _slots() -> Array[String]:
-	var slots: Array[String] = ["body", "head", "feet", "core"]
+	# Kopf und Fuesse stehen NICHT als eigene Zeilen: sie gehoeren zum Chassis
+	# und werden mit ihm gesetzt (GAME_DESIGN §9). Die Chassis-Zeile vertritt den
+	# ganzen Rahmen.
+	var slots: Array[String] = ["body", "core"]
 	slots.append_array(_build.equip_slots())
 	return slots
 
@@ -476,7 +481,13 @@ func _refresh_slots() -> void:
 			clear.text = "×"
 			clear.tooltip_text = "Slot leeren"
 			clear.pressed.connect(func():
-				_build.slots.erase(slot)
+				# Die Chassis-Zeile vertritt den ganzen Rahmen -- leeren raeumt
+				# Koerper, Kopf und Fuesse gemeinsam (§9).
+				if slot == "body":
+					for frame_slot in ["body", "head", "feet"]:
+						_build.slots.erase(frame_slot)
+				else:
+					_build.slots.erase(slot)
 				_after_change())
 			row.add_child(clear)
 		_slot_list.add_child(row)
@@ -637,7 +648,7 @@ func _library_tile(part: PartData) -> Button:
 	else:
 		button.pressed.connect(func():
 			_selected_slot = slot
-			_build.slots[slot] = part.id
+			_apply_part(_build, part)
 			_after_change())
 
 	button.mouse_entered.connect(func(): _set_hover(part, button))
@@ -704,6 +715,18 @@ func _set_thumbnail(button: Button, part: PartData) -> void:
 ## sie ist eine Aussage ueber den Aufbau, nicht ueber die Bedienung.
 func _target_slot_for(part: PartData) -> String:
 	return _build.slot_for(part, _selected_slot)
+
+
+## Baut ein Bibliotheks-Teil in einen Aufbau ein -- an genau einer Stelle, damit
+## Klick und Vorschau dasselbe tun. Ein Chassis setzt den GANZEN Rahmen (Koerper,
+## Kopf, Fuesse; §9), jedes andere Teil seinen Slot.
+func _apply_part(build: DromeBuild, part: PartData) -> void:
+	if part.type == PartData.Type.BODY:
+		build.apply_chassis(part.id)
+		return
+	var slot := build.slot_for(part, _selected_slot)
+	if slot != "":
+		build.slots[slot] = part.id
 
 
 ## Was das Teil selbst mitbringt -- seine eigenen Werte, nicht die des Aufbaus.
@@ -895,7 +918,7 @@ func _set_hover(part: PartData, anchor: Control) -> void:
 	var slot := _target_slot_for(part)
 	var probe := _build.clone()
 	if slot != "":
-		probe.slots[slot] = part.id
+		_apply_part(probe, part)
 		# Ein Chassiswechsel kann Ausruestungsslots wegnehmen. Was nicht mehr
 		# passt, faellt ab -- sonst versprechen die Zahlen einen Aufbau, den es
 		# so gar nicht geben kann.

@@ -79,6 +79,21 @@ func body() -> PartData:
 	return part_in("body")
 
 
+## Setzt das ganze Chassis auf einmal: Koerper, Kopf und Fuesse aus dem Set des
+## uebergebenen Koerper-Teils. Kopf und Fuesse werden nie einzeln gewaehlt -- das
+## Chassis ist eine Huelle (GAME_DESIGN §9). Der Kern und die Ausruestung bleiben
+## unberuehrt: der Kern ist universal, die Ausruestung eine eigene Entscheidung.
+func apply_chassis(body_id: StringName) -> void:
+	var chassis := PartDB.get_part(body_id)
+	if chassis == null or chassis.type != PartData.Type.BODY:
+		return
+	slots["body"] = chassis.id
+	for type in [PartData.Type.HEAD, PartData.Type.FEET]:
+		var mate := PartDB.frame_mate(chassis.set_id, type)
+		if mate != null:
+			slots[mate.slot_name()] = mate.id
+
+
 ## Alle belegten Teile, Sockel und Ausruestung gemeinsam.
 func all_parts() -> Array:
 	var result: Array = []

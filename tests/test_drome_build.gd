@@ -149,6 +149,28 @@ func test_the_molok_can_fill_all_three_slots() -> void:
 		"der volle Aufbau bezahlt in Tempo, nicht mit einem Verbot")
 
 
+func test_apply_chassis_sets_the_whole_frame() -> void:
+	# Ein Chassis-Pick setzt Koerper, Kopf und Fuesse gemeinsam aus einem Set
+	# (GAME_DESIGN §9). Kern und Ausruestung bleiben unberuehrt -- der Kern ist
+	# universal, die Ausruestung eine eigene Entscheidung.
+	var build := DromeBuild.create("WECHSEL", {
+		"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"mage_core",
+		"equip_left": &"eq_pulse_blaster",
+	})
+	build.apply_chassis(&"jugg_body")
+	t.equal(build.slots["body"], &"jugg_body", "Koerper gewechselt")
+	t.equal(build.slots["head"], &"jugg_head", "der Kopf zieht mit")
+	t.equal(build.slots["feet"], &"jugg_feet", "die Fuesse ziehen mit")
+	t.equal(build.slots["core"], &"mage_core", "der Kern bleibt -- er ist universal")
+	t.equal(build.slots["equip_left"], &"eq_pulse_blaster", "die Ausruestung bleibt")
+
+	var frame_sets := {}
+	for slot in ["body", "head", "feet"]:
+		frame_sets[PartDB.get_part(build.slots[slot]).set_id] = true
+	t.equal(frame_sets.size(), 1, "der Rahmen ist danach eine stimmige Huelle")
+
+
 func test_no_ability_costs_more_than_the_smallest_core_holds() -> void:
 	# Die Energiekosten der Faehigkeiten sind bewusst hoch -- drei bis vier
 	# Anwendungen je Gefecht. Waere eine davon teurer als der kleinste Tank im
