@@ -789,7 +789,7 @@ Waffenwahl innerhalb seiner Huelle.
 | Baustein | Was er ist | Traegt | Waehlbarkeit |
 |---|---|---|---|
 | **Huelle** | Kopf + Koerper + Fuesse als EIN Teil, aus demselben Set | Integritaet, ATK, DEF, MOV, SPD, Gewicht, Ausruestungsslots, Traversierung, Sensorik | **die Klasse.** Eine Huelle = ein Archetyp mit fester Silhouette |
-| **Kern** | die Energie-Identitaet, **optisch erkennbar** | `en_max`, `en_regen`, plus kernspezifische Eigenheit (z.B. +Fernkampf, guenstigere Faehigkeiten, groessere Flaeche) | der Spielstil *innerhalb der Vernunft* -- was der Bot mit seinem Strom macht |
+| **Kern** | die Energie-Identitaet, **optisch erkennbar** | `en_max`, `en_regen`, kernspezifische Eigenheit UND **je Variante eine aktive Faehigkeit** (§13) | der Spielstil -- was der Bot mit seinem Strom macht, inkl. seiner Signatur-Faehigkeit |
 | **Ausruestung** | die Bestueckung in den Slots der Huelle | Waffen, Schilde, Support | die eigentliche Aufbau-Entscheidung (zwei Schilde vs. zwei Nahkampf; Runenstab vs. Schuetze) |
 | **Upgrades** | Varianten von Kernen und Ausruestung | Modifikatoren (siehe 9d) | die *tiefe* Modularitaet, ueber Progression erworben |
 
@@ -1135,9 +1135,17 @@ DromeBuild wird beim Laden aus den assignments rekonstruiert. Die spaetere
 **Squad-Vorauswahl** (§10b: „vier mitnehmen, Rest zuhause") zieht dann aus dem
 Roster -- eigener, kleiner Schritt danach.
 
-**Offen:** Startmenge Kerne (vier = je DROME genau einer, also wenig Wahl bis zur
-ersten Beute -- mehr Startkerne, oder Kerne bewusst erst ueber Loot?); ob man
-Chassis-Duplikate besitzen kann (das Modell erlaubt es; der Start hat je eins).
+**Entschieden:**
+
+* **Start-Kerne:** nur die vier Standard-Kerne. Weitere Kerne kommen als **Drop
+  aus dem Chaos-Virus** -- Kerne sind Loot wie Ausruestung.
+* **Chassis-Duplikate:** ausdruecklich erlaubt. Hat man zwei Strix, baut man den
+  einen mit Blaster auf Mehrfachtreffer, den anderen mit Lanze auf
+  Sniper-Brecher -- zwei DROMEs derselben Klasse, verschiedene Rollen. Ein neues
+  Chassis (egal ob Duplikat oder neue Klasse) ist ein neuer Roster-Platz.
+* **Bad-Luck-Schutz beim Loot** (post-MVP): eine **Zerlegen-Aktion** (Teile in
+  Material aufloesen) und eine **Shop-Alternative** federn Pech im Drop ab.
+  Bewusst nicht im MVP -- erst notieren, wenn die Beute-Schleife steht.
 
 ## 11. Schaden und Verteidigung (Vorschlag, in Abstimmung -- Stand 2026-08)
 
@@ -1192,9 +1200,11 @@ Der Bestand deckt vier Klassen ab, und die reichen fuers Erste:
 | **Molok** | Tank, „ist da und geht nicht" |
 | **Nimbus** | Magie/Energie, Caster |
 
-Wichtiger als eine fuenfte Klasse: **ein, zwei zusaetzliche Kerne**, weil der Kern
-die Stil-Achse ist (§9b) und universal in jedes Chassis passt. Vorschlag fuer
-zwei klare Gegensatzpaare:
+Wichtiger als eine fuenfte Klasse sind **mehr Kerne**, weil der Kern die
+Stil-Achse ist (§9b), universal in jedes Chassis passt UND je Variante eine
+aktive Faehigkeit traegt (§13). Zum Start gibt es nur die vier Standard-Kerne;
+weitere kommen als **Drop aus dem Chaos-Virus** (§10g). Vorschlag fuer zwei
+klare Gegensatzpaare als Loot:
 
 * **Effizienz-Kern** -- guenstigere Faehigkeiten (−`en_cost`), belohnt
   Faehigkeits-lastige Aufbauten.
@@ -1224,11 +1234,11 @@ Zwei Abhaengigkeiten, die die Reihenfolge vorgeben:
 1. Die Berserker-Passive **setzt Schilde voraus** -- also §11 zuerst.
 2. „Upgrades = Stats oder Passive oder Faehigkeiten?" -- Antwort: **nur Stats und
    Passive, keine aktiven Faehigkeiten.** Stat-Nodes sind billig und sofort,
-   Passive brauchen je einen Effekt-Haken. **Aktive Faehigkeiten bleiben draussen
-   -- was ein DROME TUN kann, kommt allein aus seiner Ausruestung** (bleibt
-   lesbar, §9d/§7a), der Baum vertieft nur passiv. Das haelt ihn zugleich
-   bezahlbar: ein Baum, der mit Stat-Nodes anfaengt und nur an Schluesselstellen
-   Passive setzt.
+   Passive brauchen je einen Effekt-Haken. **Aktive Faehigkeiten bleiben aus dem
+   BAUM draussen** -- was ein DROME TUN kann, kommt aus seiner Ausruestung
+   (Waffen = Angriffe) und seinem **Kern** (die aktive Faehigkeit, §13), nicht
+   aus dem Skilltree. Der Baum vertieft nur passiv. Das haelt ihn zugleich
+   bezahlbar: mit Stat-Nodes anfangen, nur an Schluesselstellen Passive setzen.
 
 > **Warnung an den Umfang:** ein eigener Skilltree je Chassis × Fraktion
 > explodiert wie einst die Sprites (§2). Baeume gehoeren geteilt und
@@ -1276,3 +1286,46 @@ Waffen sind, aber Aufbauten tragen:
 Alle acht existieren bereits. **Mods kommen erst nach dem MVP** -- fuer den MVP
 sind es die Basisteile ohne Slot-Fuellung. Die „zwei Mods je Waffe" sind das
 erste Progressionsziel danach.
+
+## 13. Aktive Faehigkeiten kommen vom Kern (Vorschlag, in Abstimmung -- Stand 2026-08)
+
+Entscheidung: die **aktive Faehigkeit eines DROME kommt vom Kern** -- je
+Kern-Variante genau eine. Der Kern ist damit nicht nur Energie-Identitaet (§9b),
+sondern traegt die **Signatur-Faehigkeit**. Das verzahnt Kerne mit dem
+Varianten-/Fraktions-System (§10c/d): eine andere Kern-Variante bringt eine
+andere Faehigkeit -- kein neues System, nur eine weitere Achse an einem, das es
+schon gibt.
+
+**Beispiele (Strix-Kern, Name im Bestand: „Strix Zielrechner", COR-004):**
+
+* **Basis: Range Overclock** -- einen Zug lang doppelte Reichweite.
+* **Neon-Variante: Energy Overclock** -- der naechste Angriff bzw. die naechste
+  Faehigkeit macht +X % Energieschaden (§11).
+
+**Der X-Faktor ist der Balancing-Dial.** X koppelt **Energieverbrauch UND
+Wirkung** aneinander: dieselbe Faehigkeit kann als billige, spammbare Version
+existieren (eher **~+10 %**) oder als teure „alle 4–5 Runden"-Version (eher
+**+60–70 %**). Die Kopplung „teurer = staerker" ist die Setzung; welche der
+beiden Auspraegungen es wird und die konkreten Zahlen sind Playtest. (Noch
+unentschieden.)
+
+**Offene Reconciliation -- naechste Session.** Heute kommen Faehigkeiten aus der
+**Ausruestung** (Orbit-Fokus → Orbit-Sog, Drohnen-Pod → Reparaturdrohnen,
+Koedersender → Stoersignal; §7a). Wenn die aktive Faehigkeit an den Kern wandert,
+muss geklaert werden, was aus diesen wird:
+
+* werden sie zu Waffen/Passiven, oder
+* traegt ein DROME sowohl eine **Kern-Faehigkeit** als auch weiter
+  **Ausruestungs-Faehigkeiten**?
+
+Wichtig dabei: `TurnState` kennt heute **genau eine Faehigkeit pro Zug** (§7a).
+Zwei Quellen fuer Faehigkeiten wuerden dieses Budget beruehren -- das ist der
+Knoten, der zuerst geloest gehoert.
+
+**Hintergedanke, ausdruecklich NICHT MVP:** auch **Waffen** koennten je eine
+Faehigkeit tragen -- thematisch reizvoll, aber Ueberladungsgefahr. Als Idee
+notiert und bewusst zurueckgestellt.
+
+**Scope:** die Richtung steht (Faehigkeit am Kern, je Variante eine, X koppelt
+Kosten und Wirkung). Die Reconciliation mit den heutigen Ausruestungs-
+Faehigkeiten und die X-Werte sind der erste Punkt fuer die naechste Session.
