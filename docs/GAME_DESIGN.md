@@ -1173,11 +1173,13 @@ Deine Richtung, festgehalten (Detail folgt, wenn du dir Systeme angesehen hast):
 Zwei Abhaengigkeiten, die die Reihenfolge vorgeben:
 
 1. Die Berserker-Passive **setzt Schilde voraus** -- also §11 zuerst.
-2. „Upgrades = Stats oder Passive oder Faehigkeiten?" -- Antwort: **alle drei,
-   gestuft.** Stat-Nodes sind billig und sofort, Passive brauchen je einen
-   Effekt-Haken, echte neue Faehigkeiten sind die teuersten und die wenigsten.
-   Ein Baum, der mit Stat-Nodes anfaengt und nur an Schluesselstellen Passive/
-   Faehigkeiten setzt, bleibt bezahlbar.
+2. „Upgrades = Stats oder Passive oder Faehigkeiten?" -- Antwort: **nur Stats und
+   Passive, keine aktiven Faehigkeiten.** Stat-Nodes sind billig und sofort,
+   Passive brauchen je einen Effekt-Haken. **Aktive Faehigkeiten bleiben draussen
+   -- was ein DROME TUN kann, kommt allein aus seiner Ausruestung** (bleibt
+   lesbar, §9d/§7a), der Baum vertieft nur passiv. Das haelt ihn zugleich
+   bezahlbar: ein Baum, der mit Stat-Nodes anfaengt und nur an Schluesselstellen
+   Passive setzt.
 
 > **Warnung an den Umfang:** ein eigener Skilltree je Chassis × Fraktion
 > explodiert wie einst die Sprites (§2). Baeume gehoeren geteilt und
