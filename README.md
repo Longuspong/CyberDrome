@@ -314,23 +314,24 @@ Tabellenprogramm lesen (pandas, Vorschaubilder), sehen dort leere Zellen.
 python3 tools/build_balance_sheet.py            # -> docs/ausruestung_stats.xlsx
 ```
 
-Eine **schlanke Balancing-Sicht** auf das Klassenmodell (GAME_DESIGN §9/§12) --
-nicht zu verwechseln mit `cyberdrome_teile.xlsx`, die den vollen Engine-
-Wertesatz aus den Teil-JSONs zeigt. Hier ist die **Huelle ein Teil** und jede
-Kategorie fuehrt bewusst wenige Werte:
+Eine **Balancing-Sicht** auf das Klassenmodell (GAME_DESIGN §9/§12) -- nicht zu
+verwechseln mit `cyberdrome_teile.xlsx`, die den vollen Engine-Wertesatz aus den
+Teil-JSONs zeigt. Hier ist die **Huelle ein Teil** und jede Kategorie fuehrt ihre
+eigenen Werte:
 
 | Kategorie | Werte | Passive |
 |---|---|---|
-| **Huelle / Chassis** | Integritaet, Panzerung, Tempo | genau **eine** Signatur-Passive je Klasse |
-| **Waffe** | Schaden, Reichweite | -- |
-| **Kern** | Energie, Regeneration | -- |
-| **Gadget** | genau einer (je Teil ein anderer) | -- |
+| **Huelle / Chassis** | Integritaet, Energieschild, Panzerung, Tempo, Move, Traglast, Slots | genau **eine** Signatur-Passive je Klasse |
+| **Waffe** | Schaden, Reichweite (+ aoe, Angriffsdesign, Last) | -- |
+| **Kern** | Energie, Energie-Regeneration, Schildregeneration, Schildbonus (+ Bonus) | eine je Kern (Signatur-Faehigkeit, §13) |
+| **Gadget** | ein Wirk-Wert (+ Wirkungstext) | -- |
 
-Quelle ist `data/balancing/ausruestung_stats.json` -- von Hand gepflegt. Werte
-dort (oder in der Mappe) aendern und neu erzeugen. Die Zahlen sind **Vorschlaege**,
-aus dem heutigen Bestand abgeleitet, und zum Tunen gedacht. Ein Blatt
-**Uebersicht** erklaert Modell und Werte und haelt offene Fragen fest (z.B. ob
-neben `Tempo` auch `MOV` als eigener Huellen-Wert gefuehrt werden soll).
+Quelle ist `data/balancing/ausruestung_stats.json` -- von Hand gepflegt. Das
+Schema ist generisch: je Kategorie eine Liste `spalten` (Spaltendefinition) und
+`zeilen` (die Daten); eine neue Spalte ist ein Eintrag mehr, am Generator ist
+nichts zu aendern. Werte in der JSON (oder in der Mappe) aendern und neu erzeugen.
+Ein Blatt **Uebersicht** erklaert Modell und Werte und zaehlt die Werte je
+Kategorie automatisch aus den Spalten.
 
 ## Ein neues Teil hinzufuegen
 
