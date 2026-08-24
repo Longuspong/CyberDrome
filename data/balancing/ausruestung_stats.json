@@ -23,7 +23,8 @@
     "Energieschild/Schild kommt aus der Schadensordnung §11 (Panzerung vs. Schild).",
     "Schildbonus ist ein Anteil (0.05 = 5%).",
     "",
-    "Der Koedersender (EQP-008) ist auf Wunsch vorerst gestrichen.",
+    "Der Koedersender (EQP-008) behaelt seine normale Aggro (+25) -- nur der",
+    "Taunt/die Provokation (Stoersignal) ist gestrichen.",
     "",
     "Schema: je Kategorie eine Liste 'spalten' (key, label, kind, width) und eine",
     "Liste 'zeilen'. kind='stat' sind die getunten Zahlen (in der Mappe",
@@ -190,7 +191,7 @@
 
     "gadget": {
       "titel": "Gadgets -- ein Wirk-Wert",
-      "untertitel": "Support und Schild. Je Teil ein Wert (je Teil ein anderer) plus Wirkungstext. Koedersender vorerst gestrichen.",
+      "untertitel": "Support und Schild. Je Teil ein Wert (je Teil ein anderer) plus Wirkungstext. Koedersender: Aggro bleibt, Taunt gestrichen.",
       "spalten": [
         { "key": "code",      "label": "Code",      "kind": "id",   "width": 10 },
         { "key": "name",      "label": "Name",      "kind": "text", "width": 20 },
@@ -205,7 +206,9 @@
         { "code": "EQP-004", "name": "Drohnen-Pod", "typ": "Support", "wirk_wert": "Integrität", "wert": 20,
           "wirkung": "Lebensregeneration 5% pro Zug (triggert mit dem Beginn des eigenen Zuges)." },
         { "code": "EQP-006", "name": "Orbit-Fokus", "typ": "Support", "wirk_wert": "Energiepower", "wert": 5,
-          "wirkung": "Zieht das Ziel 2 Felder heran (Kontrolle statt Schaden)." }
+          "wirkung": "Zieht das Ziel 2 Felder heran (Kontrolle statt Schaden)." },
+        { "code": "EQP-008", "name": "Koedersender", "typ": "Support", "wirk_wert": "Aggro", "wert": 25,
+          "wirkung": "Erzeugt zusätzliche Aggro (+25) -- zieht Aufmerksamkeit auf sich. Ohne Taunt/Provokation (Stoersignal gestrichen)." }
       ]
     }
   }
