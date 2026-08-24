@@ -1,0 +1,114 @@
+{
+  "_kommentar": [
+    "Ausruestungs-Statistik-Liste -- schlankes Balancing-Modell fuer den Reframe",
+    "(GAME_DESIGN.md §9 / §12). Eine Zeile je Teil, wenige Werte je Zeile.",
+    "",
+    "Dies ist NICHT die Engine-Tabelle. Die Kampfwerte, die das Spiel wirklich",
+    "liest, stehen in tools/build_sample_parts.py (STATS). Diese Datei ist die",
+    "kuratierte BALANCING-Sicht auf das neue Klassenmodell: die Huelle als ein",
+    "Teil, wenige aussagekraeftige Werte je Kategorie -- zum Anfassen und Tunen.",
+    "",
+    "Umfang der Werte je Kategorie (so gewuenscht):",
+    "  Huelle  3 Stats + genau eine Signatur-Passive",
+    "  Waffe   2 Stats",
+    "  Kern    2 Stats",
+    "  Gadget  1 Stat (je Teil ein anderer -- das ist Absicht)",
+    "",
+    "Passive Faehigkeiten sind bewusst NUR an der Huelle -- alle anderen",
+    "Kategorien tragen keine. (Aktive Faehigkeiten kommen weiter vom Kern, §13,",
+    "und sind hier absichtlich kein 'Stat'.)",
+    "",
+    "Arbeitsweise: Werte hier (oder in der Excel-Mappe) aendern, dann",
+    "  python3 tools/build_balance_sheet.py",
+    "erzeugt docs/ausruestung_stats.xlsx neu. Zahlen sind VORSCHLAEGE, abgeleitet",
+    "aus dem heutigen Bestand -- als sinnvoller Startpunkt, nicht als Setzung.",
+    "",
+    "OFFENE FRAGE (Huelle): der Rahmen fuehrt heute Tempo (SPD, Zugtakt) UND MOV",
+    "(Bewegungsreichweite je Zug) getrennt. Fuer '3 Stats' habe ich Tempo=SPD",
+    "gewaehlt und MOV vorerst weggelassen. Sag Bescheid, ob MOV als vierter Wert",
+    "rein soll oder Panzerung/Tempo ersetzt -- dann ziehe ich es nach."
+  ],
+
+  "modell": {
+    "huelle": { "anzahl_stats": 3, "hat_passive": true },
+    "waffe":  { "anzahl_stats": 2, "hat_passive": false },
+    "kern":   { "anzahl_stats": 2, "hat_passive": false },
+    "gadget": { "anzahl_stats": 1, "hat_passive": false }
+  },
+
+  "stat_glossar": {
+    "integritaet":  { "label": "Integritaet",  "engine": "hp",          "beschreibung": "Trefferpunkte -- wieviel die Huelle einsteckt." },
+    "panzerung":    { "label": "Panzerung",    "engine": "def",         "beschreibung": "Flache Schadensreduktion (heutiges DEF)." },
+    "tempo":        { "label": "Tempo",        "engine": "spd",         "beschreibung": "Zugtakt -- wie oft die Huelle drankommt." },
+    "schaden":      { "label": "Schaden",      "engine": "power",       "beschreibung": "Grundschaden des Angriffs." },
+    "reichweite":   { "label": "Reichweite",   "engine": "range_tiles", "beschreibung": "Reichweite des Angriffs in Feldern." },
+    "energie":      { "label": "Energie",      "engine": "en_max",      "beschreibung": "Groesse des Energietanks (Mana)." },
+    "regeneration": { "label": "Regeneration", "engine": "en_regen",    "beschreibung": "Energie-Nachschub je Zug." }
+  },
+
+  "huellen": [
+    {
+      "code": "CHS-001", "name": "Vireo Chassis",
+      "rolle": "Scout -- flink, Nahdistanz-Skirmisher",
+      "integritaet": 60, "panzerung": 1, "tempo": 15,
+      "passive": {
+        "name": "Nachbrenner",
+        "wirkung": "Nach einem Angriff bewegt sich die Vireo bis zu 2 Felder, ohne Zug zu kosten (Hit-and-Run/Rueckzug)."
+      },
+      "notizen": "Startwerte = heutige Summe aus Body+Antrieb+Kopf (Tempo aus SPD)."
+    },
+    {
+      "code": "CHS-002", "name": "Molok Chassis",
+      "rolle": "Juggernaut -- Tank, 'ist da und geht nicht'",
+      "integritaet": 145, "panzerung": 9, "tempo": 8,
+      "passive": {
+        "name": "Bollwerk",
+        "wirkung": "Hat sich der Molok in diesem Zug nicht bewegt, +3 Panzerung bis zu seinem naechsten Zug."
+      },
+      "notizen": "Langsam ja, geviertelt nein (§9g) -- Tempo bewusst nicht unter das Vireo-Viertel."
+    },
+    {
+      "code": "CHS-003", "name": "Nimbus Chassis",
+      "rolle": "Technomant -- Magie/Energie-Caster",
+      "integritaet": 85, "panzerung": 2, "tempo": 14,
+      "passive": {
+        "name": "Manafluss",
+        "wirkung": "Setzt der Nimbus in einem Zug keine Faehigkeit ein, regeneriert er im naechsten Zug +5 Energie zusaetzlich."
+      },
+      "notizen": ""
+    },
+    {
+      "code": "CHS-004", "name": "Strix Chassis",
+      "rolle": "Marksman -- Fernkampf, physisch, wenig Leben",
+      "integritaet": 70, "panzerung": 2, "tempo": 10,
+      "passive": {
+        "name": "Fadenkreuz",
+        "wirkung": "Hat sich der Strix in diesem Zug nicht bewegt, +25% Schaden auf seinen Angriff (der stehende Schuetze trifft haerter)."
+      },
+      "notizen": ""
+    }
+  ],
+
+  "waffen": [
+    { "code": "EQP-001", "name": "Puls-Blaster",     "art": "Standard, Fernkampf",        "fuer": "Vireo", "schaden": 12, "reichweite": 4, "notizen": "" },
+    { "code": "EQP-003", "name": "Belagerungskanone", "art": "Schwer, Flaeche (AoE 1)",    "fuer": "Molok", "schaden": 18, "reichweite": 6, "notizen": "Rein mechanisch -- zieht keinen Strom, bezahlt in Gewicht/Tempo." },
+    { "code": "EQP-005", "name": "Runenstab",         "art": "Energie/Nahbereich",         "fuer": "Nimbus","schaden": 18, "reichweite": 1, "notizen": "Reichweite 1 = Nahkampf, keine Sichtlinie noetig." },
+    { "code": "EQP-007", "name": "Schienen-Lanze",    "art": "Schwer, Praezision/Fernkampf","fuer": "Strix", "schaden": 16, "reichweite": 7, "notizen": "Weiteste Reichweite, dafuer leise (niedrige Aggro)." }
+  ],
+
+  "kerne": [
+    { "code": "COR-001", "name": "Vireo Impulskern",  "typ": "Standard", "energie": 40, "regeneration": 8,  "notizen": "Kleinster Tank -- die natuerliche Obergrenze fuer teure Faehigkeiten." },
+    { "code": "COR-002", "name": "Molok Fusionskern",  "typ": "Standard", "energie": 70, "regeneration": 12, "notizen": "" },
+    { "code": "COR-003", "name": "Nimbus Arkankern",   "typ": "Standard", "energie": 85, "regeneration": 14, "notizen": "Groesster Tank + hoechste Regeneration -- der Caster-Kern." },
+    { "code": "COR-004", "name": "Strix Zielrechner",  "typ": "Standard", "energie": 50, "regeneration": 10, "notizen": "" },
+    { "code": "COR-005", "name": "Effizienz-Kern",     "typ": "Loot (Vorschlag §12a)", "energie": 55, "regeneration": 11, "notizen": "Signatur: guenstigere Faehigkeiten (-en_cost). Der Effekt selbst ist kein Stat -- hier nur Tank/Regeneration." },
+    { "code": "COR-006", "name": "Verstaerker-Kern",   "typ": "Loot (Vorschlag §12a)", "energie": 60, "regeneration": 9,  "notizen": "Signatur: teurere, aber groessere Faehigkeiten (mehr Flaeche/Reichweite)." }
+  ],
+
+  "gadgets": [
+    { "code": "EQP-002", "name": "Deflektor-Schild", "typ": "Schild",  "stat": "Panzerung", "engine": "def",         "wert": 5,  "notizen": "Passiv -- ein Schild ist eine Bauentscheidung, kein Knopf." },
+    { "code": "EQP-004", "name": "Drohnen-Pod",      "typ": "Support", "stat": "Heilung",   "engine": "heal",        "wert": 10, "notizen": "Heilung je Einsatz (Flaeche um das Ziel)." },
+    { "code": "EQP-006", "name": "Orbit-Fokus",      "typ": "Support", "stat": "Sog",       "engine": "push_tiles",  "wert": 2,  "notizen": "Zieht das Ziel 2 Felder heran (Kontrolle statt Schaden)." },
+    { "code": "EQP-008", "name": "Koedersender",     "typ": "Support", "stat": "Aggro",     "engine": "aggro_bonus", "wert": 25, "notizen": "Einziges Teil mit Aggro-Wert -- provoziert zusaetzlich (Stoersignal)." }
+  ]
+}
