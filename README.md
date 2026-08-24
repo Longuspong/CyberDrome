@@ -262,6 +262,7 @@ tools/
   bake_godot_assets.py       loest die CSS-Variablen auf -> assets/parts/
   set_import_scale.py        wie fein Godot rastert (Vierfach) + Mipmaps
   export_parts_table.py      Teile-Uebersicht als Excel-Mappe (erzeugt, nicht gepflegt)
+  build_balance_sheet.py     schlanke Balancing-Liste als Excel-Mappe (erzeugt aus JSON)
 tests/
   run_tests.gd               Testlauf ohne Editor
   screenshot.gd              Bild einer Szene -- Tiefensortierung, Verdeckung
@@ -273,6 +274,11 @@ docs/
   GAME_DESIGN.md             Setting, DROME-Aufbau, Teile-Codes, Aggro, Asset-Strategie
   GODOT_INTEGRATION.md       wie die Exporte spaeter in die Engine kommen
   cyberdrome_teile.xlsx      erzeugte Teileliste -- ein Blatt je Bauteiltyp
+  ausruestung_stats.xlsx     erzeugte Balancing-Liste (Huelle/Waffe/Kern/Gadget)
+data/
+  config.json                Balancing-Stellschrauben ausserhalb der Bauteile
+  balancing/
+    ausruestung_stats.json   Quelle der schlanken Balancing-Liste (von Hand gepflegt)
 ```
 
 ## Teileliste als Excel-Mappe
@@ -301,6 +307,30 @@ schon.
 Die Formeln haben nach dem Lauf noch keine gespeicherten Ergebnisse -- Excel
 und LibreOffice rechnen sie beim Oeffnen aus. Nur Werkzeuge, die die Datei ohne
 Tabellenprogramm lesen (pandas, Vorschaubilder), sehen dort leere Zellen.
+
+## Ausruestungs-Statistik-Liste (Balancing)
+
+```bash
+python3 tools/build_balance_sheet.py            # -> docs/ausruestung_stats.xlsx
+```
+
+Eine **schlanke Balancing-Sicht** auf das Klassenmodell (GAME_DESIGN §9/§12) --
+nicht zu verwechseln mit `cyberdrome_teile.xlsx`, die den vollen Engine-
+Wertesatz aus den Teil-JSONs zeigt. Hier ist die **Huelle ein Teil** und jede
+Kategorie fuehrt bewusst wenige Werte:
+
+| Kategorie | Werte | Passive |
+|---|---|---|
+| **Huelle / Chassis** | Integritaet, Panzerung, Tempo | genau **eine** Signatur-Passive je Klasse |
+| **Waffe** | Schaden, Reichweite | -- |
+| **Kern** | Energie, Regeneration | -- |
+| **Gadget** | genau einer (je Teil ein anderer) | -- |
+
+Quelle ist `data/balancing/ausruestung_stats.json` -- von Hand gepflegt. Werte
+dort (oder in der Mappe) aendern und neu erzeugen. Die Zahlen sind **Vorschlaege**,
+aus dem heutigen Bestand abgeleitet, und zum Tunen gedacht. Ein Blatt
+**Uebersicht** erklaert Modell und Werte und haelt offene Fragen fest (z.B. ob
+neben `Tempo` auch `MOV` als eigener Huellen-Wert gefuehrt werden soll).
 
 ## Ein neues Teil hinzufuegen
 
