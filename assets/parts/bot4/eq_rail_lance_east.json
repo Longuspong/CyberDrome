@@ -62,22 +62,41 @@
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
     "aggro_bonus": 0,
-    "action": {
-      "id": "act_raillance",
-      "display_name": "Schienenschuss",
-      "category": "attack",
-      "targeting": "single",
-      "range_tiles": 7,
-      "aoe_radius": 0,
-      "en_cost": 6,
-      "power": 16,
-      "requires_line_of_sight": true,
-      "push_tiles": 0,
-      "status_effect": null,
-      "aggro_coeff": 0.35,
-      "aggro_flat": 0,
-      "taunt_turns": 0,
-      "cooldown_turns": 0
-    }
+    "actions": [
+      {
+        "id": "act_raillance",
+        "display_name": "Schienenschuss",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 7,
+        "aoe_radius": 0,
+        "en_cost": 6,
+        "power": 16,
+        "requires_line_of_sight": true,
+        "push_tiles": 0,
+        "status_effect": null,
+        "aggro_coeff": 0.35,
+        "aggro_flat": 0,
+        "taunt_turns": 0,
+        "cooldown_turns": 0
+      },
+      {
+        "id": "act_rail_pierce",
+        "display_name": "Praezisionsschuss",
+        "category": "ability",
+        "targeting": "single",
+        "range_tiles": 8,
+        "aoe_radius": 0,
+        "en_cost": 35,
+        "power": 26,
+        "requires_line_of_sight": true,
+        "push_tiles": 0,
+        "status_effect": null,
+        "aggro_coeff": 0.35,
+        "aggro_flat": 0,
+        "taunt_turns": 0,
+        "cooldown_turns": 0
+      }
+    ]
   }
 }

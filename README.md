@@ -102,26 +102,31 @@ Damit entfaellt auch der fruehere Playtest-Schalter samt
 abschalten muesste. Die Zahlen (Gewichte, `spd_weight_step`, Faehigkeitskosten)
 sind Balancing und werden weiter getunt -- aber nicht mehr als Verbot.
 
-#### Playtest: womit Faehigkeiten gebremst werden
+#### Aktionen je Zug: Angriffe von den Waffen, Faehigkeiten ohne Deckel
 
-Eine Faehigkeit steht jeden Zug zur Verfuegung, und ein Angriffs-Aufbau
-braucht sein Faehigkeitsbudget ohnehin nicht -- ohne Bremse zieht er sie
-deshalb immer. Womit man sie knapp haelt, laesst sich nicht ausrechnen, nur
-spielen. Deshalb gibt es beide Wege, umschaltbar in `data/config.json` unter
-`abilities.brake`:
+Seit `docs/GAME_DESIGN.md` §13 kommen die **Faehigkeiten von den Waffen** (jede
+Waffe traegt ihren Angriff UND eine eigene Faehigkeit); der **Kern** ist reine
+Energie-Identitaet. Daraus folgt der Aktions-Haushalt je Zug:
 
-| Modus | was bremst | was zur Entscheidung wird |
-|---|---|---|
-| `energie` (Vorgabe) | `en_cost` gilt, die Abklingzeit ruht | der **Kern** -- ein Arkankern zieht oefter als ein Impulskern |
-| `abklingzeit` | `cooldown_turns` gilt, es wird **keine** Energie abgebucht | der **Zug** -- nicht „kann ich mir das leisten", sondern „jetzt oder gleich" |
-| `beides` | beide Bremsen | als Vergleichspunkt gedacht, nicht als Vorgabe |
+* **Angriff je Waffe** -- zwei Waffen sind zwei Angriffe (`TurnState.attack_actions`).
+* **Faehigkeit ohne Deckel** -- jede eigene Faehigkeit ist **einmal pro Zug**
+  ziehbar, so viele man bezahlen kann. Kein Zaehler; gebremst wird ueber Energie
+  und Abklingzeit.
 
-Umschalten, Spiel neu starten, spielen. Beide Werte stehen an den Bauteilen
-und werden aus **derselben** Stufe abgeleitet (`ability_cost` und
-`ability_cooldown` in `tools/build_sample_parts.py`) -- ein Moduswechsel
-aendert damit die Art der Knappheit, nicht die Rangfolge der Faehigkeiten.
-Gemessene Wirkung und die Designfrage dahinter stehen in `docs/GAME_DESIGN.md`
-§8.
+Die zwei Bremsen gehoeren zwei ARTEN von Faehigkeit, umschaltbar in
+`data/config.json` unter `abilities.brake` (Vorgabe: `beides`):
+
+| Modus | was bremst |
+|---|---|
+| `beides` (Vorgabe) | jede Faehigkeit von der Bremse, die zu ihr gehoert -- energetische ueber `en_cost`, mechanische ueber `cooldown_turns` |
+| `energie` | nur `en_cost` -- mechanische Faehigkeiten haetten dann keine Bremse |
+| `abklingzeit` | nur `cooldown_turns` -- energetische waeren dann gratis |
+
+Energetische Faehigkeiten (Streusalve, Arkanwelle, Orbit-Sog ...) bezahlen in
+Energie und haben Abklingzeit 0; die einzige mechanische (Sperrfeuer der Kanone)
+zieht keinen Strom und bremst ueber ihre Abklingzeit. Deshalb ist `beides` die
+entschiedene Vorgabe. Gemessene Wirkung und die Designfrage dahinter stehen in
+`docs/GAME_DESIGN.md` §8 und §13.
 
 Beide schreiben denselben Squad -- die Godot-Werkstatt nach
 `user://squad.json`, die SVG-Werkstatt nach `builds/squad.json`. Beim Start

@@ -13,9 +13,11 @@ extends RefCounted
 ## Das ist die Trennung, die der Spieler sieht und nach der er plant: ein
 ## ANGRIFF ist das, was eine Waffe von sich aus tut -- Blaster, Schienenschuss,
 ## Runenschlag --, eine FAEHIGKEIT alles, was darueber hinaus geht: ziehen,
-## reparieren, provozieren. Beide Budgets stehen je Zug einmal zur Verfuegung
-## und sind nicht gegeneinander tauschbar. Eine Waffe, die als Faehigkeit
-## gefuehrt wird, nimmt dem Aufbau deshalb still seine Faehigkeitsaktion weg.
+## reparieren, provozieren, ein Flaechenschlag. Die beiden Budgets sind getrennt
+## und nicht gegeneinander tauschbar (siehe TurnState): der Angriffsvorrat zaehlt
+## die Waffen, die Faehigkeiten sind je einmal pro Zug ziehbar. Eine WAFFE traegt
+## deshalb heute beides -- ihren Angriff UND eine eigene Faehigkeit
+## (GAME_DESIGN §13); sie nimmt sich damit nichts mehr selbst weg.
 enum Category { ATTACK, ABILITY }
 
 enum Targeting { SINGLE, SELF, TILE, AOE_AROUND_TARGET }

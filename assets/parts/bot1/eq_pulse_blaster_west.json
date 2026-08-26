@@ -61,22 +61,41 @@
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
     "aggro_bonus": 0,
-    "action": {
-      "id": "act_pulse",
-      "display_name": "Puls-Salve",
-      "category": "attack",
-      "targeting": "single",
-      "range_tiles": 4,
-      "aoe_radius": 0,
-      "en_cost": 0,
-      "power": 12,
-      "requires_line_of_sight": true,
-      "push_tiles": 0,
-      "status_effect": null,
-      "aggro_coeff": 1.0,
-      "aggro_flat": 0,
-      "taunt_turns": 0,
-      "cooldown_turns": 0
-    }
+    "actions": [
+      {
+        "id": "act_pulse",
+        "display_name": "Puls-Salve",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 4,
+        "aoe_radius": 0,
+        "en_cost": 0,
+        "power": 12,
+        "requires_line_of_sight": true,
+        "push_tiles": 0,
+        "status_effect": null,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "taunt_turns": 0,
+        "cooldown_turns": 0
+      },
+      {
+        "id": "act_pulse_scatter",
+        "display_name": "Streusalve",
+        "category": "ability",
+        "targeting": "aoe_around_target",
+        "range_tiles": 4,
+        "aoe_radius": 1,
+        "en_cost": 28,
+        "power": 9,
+        "requires_line_of_sight": true,
+        "push_tiles": 0,
+        "status_effect": null,
+        "aggro_coeff": 0.9,
+        "aggro_flat": 0,
+        "taunt_turns": 0,
+        "cooldown_turns": 0
+      }
+    ]
   }
 }

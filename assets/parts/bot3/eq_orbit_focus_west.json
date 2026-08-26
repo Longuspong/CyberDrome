@@ -62,22 +62,24 @@
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
     "aggro_bonus": 0,
-    "action": {
-      "id": "act_orbitpull",
-      "display_name": "Orbit-Sog",
-      "category": "ability",
-      "targeting": "single",
-      "range_tiles": 4,
-      "aoe_radius": 0,
-      "en_cost": 20,
-      "power": 0,
-      "requires_line_of_sight": true,
-      "push_tiles": -2,
-      "status_effect": null,
-      "aggro_coeff": 1.0,
-      "aggro_flat": 8,
-      "taunt_turns": 0,
-      "cooldown_turns": 2
-    }
+    "actions": [
+      {
+        "id": "act_orbitpull",
+        "display_name": "Orbit-Sog",
+        "category": "ability",
+        "targeting": "single",
+        "range_tiles": 4,
+        "aoe_radius": 0,
+        "en_cost": 20,
+        "power": 0,
+        "requires_line_of_sight": true,
+        "push_tiles": -2,
+        "status_effect": null,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 8,
+        "taunt_turns": 0,
+        "cooldown_turns": 0
+      }
+    ]
   }
 }

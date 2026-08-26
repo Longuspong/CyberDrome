@@ -62,22 +62,41 @@
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
     "aggro_bonus": 0,
-    "action": {
-      "id": "act_runestaff",
-      "display_name": "Runenschlag",
-      "category": "attack",
-      "targeting": "single",
-      "range_tiles": 1,
-      "aoe_radius": 0,
-      "en_cost": 0,
-      "power": 18,
-      "requires_line_of_sight": false,
-      "push_tiles": 0,
-      "status_effect": null,
-      "aggro_coeff": 1.0,
-      "aggro_flat": 0,
-      "taunt_turns": 0,
-      "cooldown_turns": 0
-    }
+    "actions": [
+      {
+        "id": "act_runestaff",
+        "display_name": "Runenschlag",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 1,
+        "aoe_radius": 0,
+        "en_cost": 0,
+        "power": 18,
+        "requires_line_of_sight": false,
+        "push_tiles": 0,
+        "status_effect": null,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "taunt_turns": 0,
+        "cooldown_turns": 0
+      },
+      {
+        "id": "act_rune_nova",
+        "display_name": "Arkanwelle",
+        "category": "ability",
+        "targeting": "aoe_around_target",
+        "range_tiles": 2,
+        "aoe_radius": 1,
+        "en_cost": 28,
+        "power": 13,
+        "requires_line_of_sight": true,
+        "push_tiles": 0,
+        "status_effect": null,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "taunt_turns": 0,
+        "cooldown_turns": 0
+      }
+    ]
   }
 }

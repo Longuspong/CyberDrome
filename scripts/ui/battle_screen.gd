@@ -148,7 +148,9 @@ func _run_ai_turn() -> void:
 	# Schritt fuer Schritt statt eines Plans fuer den ganzen Zug: nur so
 	# rechnet die KI mit der Lage, die nach dem letzten Schritt wirklich
 	# besteht -- inklusive der Felder, auf denen sie weggerutscht ist.
-	for _step_index in 6:
+	# Die Obergrenze ist grosszuegig: ein Aufbau kann jetzt mehrere Angriffe
+	# (einen je Waffe) und mehrere Faehigkeiten pro Zug ziehen (GAME_DESIGN §13).
+	for _step_index in AIController.MAX_STEPS:
 		if battle.outcome != BattleManager.Outcome.RUNNING:
 			break
 		await get_tree().create_timer(_ai_step_delay).timeout
@@ -539,7 +541,7 @@ func _refresh_status() -> void:
 	_status.text = "%s   Integritaet %d/%d   EN %d/%d   MP %d   Angriff %d   Faehigkeit %d   Zyklus %d" % [
 		unit.display_name, unit.hp, unit.stat("hp_max"), unit.en,
 		unit.stat("en_max"), state.move_points, state.attack_actions,
-		state.ability_actions, battle.tick_bus.cycle_count]
+		state.actions_left(ActionData.Category.ABILITY), battle.tick_bus.cycle_count]
 	# Der Zug endet nie automatisch -- aber wenn nichts mehr geht, faellt der
 	# Button ins Auge.
 	_end_turn.modulate = Color(1.0, 0.85, 0.3) if state.budgets_spent() else Color.WHITE

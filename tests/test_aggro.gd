@@ -426,9 +426,12 @@ func test_the_beacon_is_a_light_support_module_with_a_taunt() -> void:
 	t.equal(part.mount_class, "light", "leicht -- passt auch auf die Molok-Schulter")
 	t.equal(part.category, "support", "Support, keine Waffe")
 	t.ok(part.aggro_bonus > 0, "es fuehrt als einziges Teil aggro_bonus")
-	t.ok(part.action != null and part.action.is_taunt(),
-		"und als einziges eine Provokation")
-	t.ok(part.action.taunt_turns > 0 and part.action.en_cost > 0,
+	var taunt: ActionData = null
+	for action in part.actions:
+		if action.is_taunt():
+			taunt = action
+	t.ok(taunt != null, "und als einziges eine Provokation")
+	t.ok(taunt.taunt_turns > 0 and taunt.en_cost > 0,
 		"befristet und nicht umsonst -- harter Zwang muss beides sein")
 
 

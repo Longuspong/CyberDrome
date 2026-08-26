@@ -243,7 +243,15 @@ def stat(part: dict, key: str):
 
 
 def action(part: dict) -> dict | None:
-    return part.get("stats", {}).get("action")
+    # Ein Teil traegt jetzt eine LISTE von Aktionen (GAME_DESIGN 13). Fuer die
+    # einspaltige Uebersicht zaehlt die primaere: der Angriff, sonst die erste.
+    actions = part.get("stats", {}).get("actions", [])
+    if not actions:
+        return None
+    for entry in actions:
+        if entry.get("category") == "attack":
+            return entry
+    return actions[0]
 
 
 def flag(part: dict, key: str) -> str:
