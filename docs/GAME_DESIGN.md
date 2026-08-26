@@ -607,16 +607,29 @@ inzwischen getrennt anzeigt:
 
 **Angriff** ist, was eine Waffe von sich aus tut -- Puls-Salve, Schienenschuss,
 Runenschlag. **Faehigkeit** ist alles darueber hinaus: ziehen, reparieren,
-provozieren. Beide sind je Zug einmal verfuegbar und nicht gegeneinander
-tauschbar (`TurnState`). Daraus folgt eine Regel fuer neue Teile: **eine Waffe
-wird als `attack` gefuehrt, nicht als `ability`** -- sonst nimmt sie dem Aufbau
-still seine Faehigkeitsaktion weg, und der Spieler sieht nur, dass etwas fehlt.
-`tests/test_drome_build.gd` haelt das fest.
+provozieren, ein Flaechenschlag. Die beiden Budgets sind getrennt und nicht
+gegeneinander tauschbar (`TurnState`) -- aber ihre Zahl ist seit §13 nicht mehr
+je eins:
 
-**Zweimal dasselbe Teil ergibt EINE Aktion.** Zwei Orbit-Fokusse summieren ihre
-Stats weiter, aber die Aktionsliste zeigt den Orbit-Sog einmal: das Budget gibt
-ihn ohnehin nur einmal her, und ein zweiter Eintrag verspraeche eine Wahl, die
-es nicht gibt.
+* **Der Angriff skaliert mit den Waffen.** Jede Waffe bringt einen Angriffs-
+  Aktionspunkt mit; zwei Waffen sind zwei Angriffe pro Zug. `attack_actions` ist
+  also die Zahl der Waffen, ein gemeinsamer Vorrat -- zwei gleiche Blaster heissen
+  dieselbe Puls-Salve zweimal.
+* **Die Faehigkeit hat keinen festen Deckel.** Jede Faehigkeit im Loadout ist
+  **einmal pro Zug** ziehbar (`TurnState.used_abilities`); wie viele man in einem
+  Zug zieht, entscheidet allein, was man bezahlen kann. Gebremst wird nicht mehr
+  ueber einen Zaehler, sondern ueber Energie und Abklingzeit (§13).
+
+**Jede Waffe traegt beides** -- ihren Angriff UND eine eigene Faehigkeit (§13).
+Die alte Regel „eine Waffe wird als `attack` gefuehrt, nicht als `ability`" ist
+damit hinfaellig: es gibt keinen geteilten Ein-Faehigkeits-Slot mehr, den eine
+Waffe sich selbst wegnehmen koennte.
+
+**Zweimal dasselbe Teil ergibt EINE Faehigkeit.** Zwei Orbit-Fokusse summieren
+ihre Stats weiter, aber die Aktionsliste zeigt den Orbit-Sog einmal: eine
+Faehigkeit ist ohnehin nur einmal je Zug ziehbar, ein zweiter Eintrag verspraeche
+eine Wahl, die es nicht gibt. Beim **Angriff** ist es anders -- zwei Waffen
+zaehlen zwei Angriffspunkte, auch wenn es dieselbe Salve ist.
 
 **Schadensart ist vorerst durchgehend `normal`.** Eine Schadensordnung --
 Resistenzen, Anfaelligkeiten, Ruestungstypen -- ist nicht entschieden, und
@@ -1287,45 +1300,74 @@ Alle acht existieren bereits. **Mods kommen erst nach dem MVP** -- fuer den MVP
 sind es die Basisteile ohne Slot-Fuellung. Die „zwei Mods je Waffe" sind das
 erste Progressionsziel danach.
 
-## 13. Aktive Faehigkeiten kommen vom Kern (Vorschlag, in Abstimmung -- Stand 2026-08)
+## 13. Aktive Faehigkeiten kommen von den Waffen (entschieden und umgesetzt -- Stand 2026-08)
 
-Entscheidung: die **aktive Faehigkeit eines DROME kommt vom Kern** -- je
-Kern-Variante genau eine. Der Kern ist damit nicht nur Energie-Identitaet (§9b),
-sondern traegt die **Signatur-Faehigkeit**. Das verzahnt Kerne mit dem
-Varianten-/Fraktions-System (§10c/d): eine andere Kern-Variante bringt eine
-andere Faehigkeit -- kein neues System, nur eine weitere Achse an einem, das es
-schon gibt.
+Der fruehere Vorschlag „Faehigkeit kommt vom Kern" ist **verworfen**. Er
+verzahnte die Faehigkeit mit der falschen Achse und liess `TurnState` mit seinem
+Ein-Faehigkeits-Budget als ungeloesten Knoten zurueck. Die getroffene und
+implementierte Entscheidung dreht das um:
 
-**Beispiele (Strix-Kern, Name im Bestand: „Strix Zielrechner", COR-004):**
+**Faehigkeiten kommen von den WAFFEN. Jede Waffe traegt zwei Aktionen:** ihren
+Angriff **und** eine eigene Faehigkeit. Der **Kern** ist damit wieder reine
+Energie-/Mana-Identitaet (§9b) -- er traegt keine Aktion.
 
-* **Basis: Range Overclock** -- einen Zug lang doppelte Reichweite.
-* **Neon-Variante: Energy Overclock** -- der naechste Angriff bzw. die naechste
-  Faehigkeit macht +X % Energieschaden (§11).
+### 13a. Das Aktions-Modell
 
-**Der X-Faktor ist der Balancing-Dial.** X koppelt **Energieverbrauch UND
-Wirkung** aneinander: dieselbe Faehigkeit kann als billige, spammbare Version
-existieren (eher **~+10 %**) oder als teure „alle 4–5 Runden"-Version (eher
-**+60–70 %**). Die Kopplung „teurer = staerker" ist die Setzung; welche der
-beiden Auspraegungen es wird und die konkreten Zahlen sind Playtest. (Noch
-unentschieden.)
+* **Angriff je Waffe.** Jede Waffe bringt einen Angriffs-Aktionspunkt mit: zwei
+  Waffen sind zwei Angriffe pro Zug (`TurnState.attack_actions`, ein gemeinsamer
+  Vorrat = Zahl der Waffen). Zwei gleiche Blaster heissen dieselbe Salve zweimal.
+* **Kein Faehigkeits-Deckel.** Wenn schon die QUELLE begrenzt ist (Waffen plus
+  einzelne Gadgets), muss nicht zusaetzlich die ANZAHL pro Zug gedeckelt werden.
+  Jede Faehigkeit im Loadout ist **einmal pro Zug** ziehbar -- mehr Faehigkeiten
+  im Aufbau heisst mehr moegliche Faehigkeiten im Zug. Das schafft Diversitaet
+  statt eines starren Budgets.
+* **Zwei Bremsen, zwei Arten.** Statt eines Zaehlers bremsen:
+  - die **Energie** (`en_cost`) die *energetischen* Faehigkeiten -- alles
+    rausballern geht, dann ist der Tank leer und regeneriert ein paar Zuege
+    („Mana-Cap");
+  - die **Abklingzeit** (`cooldown_turns`) die *mechanischen* -- das **Sperrfeuer**
+    der Belagerungskanone zieht per Fiktion keinen Strom („Masse bremst, Strom
+    kostet", §8), dafuer geht es nur alle paar Zuege.
+  Jede Faehigkeit traegt genau eine der beiden; die Voreinstellung
+  `abilities.brake = "beides"` liest beide Felder. Das „einmal pro Zug" liegt
+  **darunter** und haengt an keiner der beiden Bremsen (`TurnState.used_abilities`),
+  damit es in jedem Modus gilt -- auch fuer eine stromlose Faehigkeit.
 
-**Offene Reconciliation -- naechste Session.** Heute kommen Faehigkeiten aus der
-**Ausruestung** (Orbit-Fokus → Orbit-Sog, Drohnen-Pod → Reparaturdrohnen,
-Koedersender → Stoersignal; §7a). Wenn die aktive Faehigkeit an den Kern wandert,
-muss geklaert werden, was aus diesen wird:
+### 13b. Die Faehigkeit je Waffe
 
-* werden sie zu Waffen/Passiven, oder
-* traegt ein DROME sowohl eine **Kern-Faehigkeit** als auch weiter
-  **Ausruestungs-Faehigkeiten**?
+Jede der vier Waffen hat jetzt neben ihrem Angriff eine eigene Faehigkeit, die
+ihre Klassenfantasie verstaerkt:
 
-Wichtig dabei: `TurnState` kennt heute **genau eine Faehigkeit pro Zug** (§7a).
-Zwei Quellen fuer Faehigkeiten wuerden dieses Budget beruehren -- das ist der
-Knoten, der zuerst geloest gehoert.
+| Waffe | Angriff | Faehigkeit | Bremse |
+|---|---|---|---|
+| Puls-Blaster (Vireo) | Puls-Salve | **Streusalve** -- leichter Flaechenschlag | Energie |
+| Schienen-Lanze (Strix) | Schienenschuss | **Praezisionsschuss** -- harter Fernschuss, leise | Energie |
+| Belagerungskanone (Molok) | Belagerungsschlag | **Sperrfeuer** -- grosse Flaeche, Verwehrung | Abklingzeit |
+| Runenstab (Nimbus) | Runenschlag | **Arkanwelle** -- Nahbereichs-Nova | Energie |
 
-**Hintergedanke, ausdruecklich NICHT MVP:** auch **Waffen** koennten je eine
-Faehigkeit tragen -- thematisch reizvoll, aber Ueberladungsgefahr. Als Idee
-notiert und bewusst zurueckgestellt.
+Die Zahlen (Staerke, Kosten, Reichweite) sind Setzungen fuer den naechsten
+Playtest, nicht Endstand.
 
-**Scope:** die Richtung steht (Faehigkeit am Kern, je Variante eine, X koppelt
-Kosten und Wirkung). Die Reconciliation mit den heutigen Ausruestungs-
-Faehigkeiten und die X-Werte sind der erste Punkt fuer die naechste Session.
+### 13c. Gadgets bleiben individuell
+
+Die Support-Teile (Ködersender, Orbit-Fokus, Drohnen-Pod, Deflektor) sind **nicht
+per Regel** mit einer Aktive versehen -- nur, was ins Thema passt. Der Deflektor
+ist passiv (der Beleg, dass ein Gadget keine Aktive tragen muss); Drohnen-Pod,
+Orbit-Fokus und Ködersender tragen je eine.
+
+**Notiert fuer spaeter:** thematisch klingt „Orbit-Fokus" eher nach **Aufklaerung**
+als nach dem Orbit-Sog. Diese Umdeutung braucht aber eine Sensor-/Haze-Mechanik,
+die es noch nicht gibt; bis dahin bleibt der Sog erhalten und funktioniert.
+
+### 13d. Wohin die Varianten-Achse wandert
+
+Weil die Faehigkeit nicht mehr am Kern haengt, wandert die Fraktions-/Varianten-
+Achse (§10c/d, „Neon-Variante bringt Energy Overclock") auf **Waffe/Gadget**:
+eine Neon-Variante einer Waffe traegt die energetische Auspraegung *ihrer*
+Faehigkeit. Kein neues System, nur eine andere Andockstelle.
+
+**Hintergedanke, weiter NICHT MVP:** dass *jede* Waffe eine Faehigkeit traegt,
+ist gesetzt; ob spaeter auch Mods zusaetzliche Faehigkeiten einbringen, bleibt
+Progressionsthema (§12c). Der X-Faktor-Dial aus dem alten Vorschlag (Kosten und
+Wirkung gekoppelt) ist als Tuning-Idee weiter gueltig, aber ihre Zahlen sind
+Playtest.

@@ -299,7 +299,7 @@ func test_abilities_are_scarce_but_never_dead() -> void:
 				if battle.outcome != BattleManager.Outcome.RUNNING:
 					break
 				continue
-			for _step in 6:
+			for _step in AIController.MAX_STEPS:
 				if battle.outcome != BattleManager.Outcome.RUNNING:
 					break
 				var step := controller.take_step()
@@ -314,18 +314,31 @@ func test_abilities_are_scarce_but_never_dead() -> void:
 				battle.end_turn()
 		battle.free()
 
-	for id in [&"act_provoke", &"act_dronepod", &"act_orbitpull"]:
+	# NICHT tot durch Preis: jede Faehigkeit im Squad muss der Kern, hinter dem
+	# sie sitzt, bezahlen koennen. Das ist die eigentliche "nicht tot"-Garantie
+	# und haengt nicht daran, ob die KI sie gerade gut findet (GAME_DESIGN §13:
+	# die Faehigkeiten kommen jetzt von den Waffen, es sind viel mehr, und die KI
+	# waehlt -- eine Provokation lohnt eben selten).
+	for build in _ability_squad():
+		var core = build.part_in("core")
+		var tank: int = core.en_max if core != null else 0
+		for action in build.actions_of(ActionData.Category.ABILITY):
+			t.ok(action.en_cost <= tank,
+				"%s ist an seinem Kern bezahlbar (%d EN, Tank %d)"
+				% [action.id, action.en_cost, tank])
+
+	# Und sie FLIESSEN auch: die Waffen-Faehigkeiten sind jetzt das Brot-und-
+	# Butter-Werkzeug und tauchen zuverlaessig auf. Das Stoersignal ist bewusst
+	# NICHT dabei -- ein harter Zwang lohnt sich selten, das ist Absicht.
+	for id in [&"act_siege_barrage", &"act_rune_nova", &"act_orbitpull"]:
 		t.ok(uses.get(id, 0) > 0,
 			"%s wird in %d Gefechten mindestens einmal gezogen (%d)"
 			% [id, battles, uses.get(id, 0)])
 
-	# Die Obergrenze ist ein GUARDRAIL gegen echtes Spammen (rund eine Faehigkeit
-	# je Zug waeren ~13), keine feine Balance-Marke. Seit die Gegner kohaerente
-	# Huellen tragen (GAME_DESIGN §9, Rahmen aus einem Set statt zufaellig
-	# gemischt) hat sich die Simulation verschoben: der Orbit-Sog liegt jetzt bei
-	# rund 8,3 statt darunter. Das ist die neu beobachtete Grundlinie, nicht ein
-	# Spam-Problem -- die Grenze folgt ihr auf 9,0. Feintuning der Kosten ist
-	# Balancing und ausdruecklich spaeter dran.
+	# Die Obergrenze ist ein GUARDRAIL gegen echtes Spammen: ohne festen
+	# Faehigkeits-Deckel (GAME_DESIGN §13) koennte eine zu billige Faehigkeit
+	# jeden Zug kommen (~13 je Gefecht). Bremsen sollen Energie und Abklingzeit,
+	# nicht ein Zaehler -- greift die Bremse, bleibt jede unter der Grenze.
 	for id in uses:
 		var per_battle := float(uses[id]) / float(battles)
 		t.ok(per_battle < 9.0,
@@ -350,7 +363,7 @@ func _measure_abilities(battles: int) -> Dictionary:
 				if battle.outcome != BattleManager.Outcome.RUNNING:
 					break
 				continue
-			for _step in 6:
+			for _step in AIController.MAX_STEPS:
 				if battle.outcome != BattleManager.Outcome.RUNNING:
 					break
 				var step := controller.take_step()
@@ -385,46 +398,53 @@ func _with_brake(mode: String, body: Callable):
 	return result
 
 
-func test_the_cooldown_is_a_real_second_brake() -> void:
-	# Die Abklingzeit ist als VERGLEICHSPUNKT gebaut, nicht als Ersatz: ob eine
-	# Wartezeit besser bremst als ein Preis, laesst sich nicht ausrechnen. Der
-	# Test haelt fest, dass beide Modi ueberhaupt verschieden wirken -- ein
-	# Schalter, der nichts aendert, waere als Playtest-Werkzeug wertlos.
-	var beacon: ActionData = null
-	for action in _ability_squad()[0].actions():
-		if action.id == &"act_provoke":
-			beacon = action
-	t.ok(beacon != null, "der Koedersender bringt das Stoersignal mit")
-	t.ok(beacon.cooldown_turns > 1,
-		"das Stoersignal hat eine Abklingzeit (%d Zuege)" % beacon.cooldown_turns)
+## Die erste Faehigkeit mit einer bestimmten ID im Faehigkeits-Squad.
+func _find_ability(wanted: StringName) -> ActionData:
+	for build in _ability_squad():
+		for action in build.actions():
+			if action.id == wanted:
+				return action
+	return null
 
-	_with_brake(ActionData.BRAKE_ENERGY, func():
-		t.equal(beacon.en_cost_now(), beacon.en_cost,
-			"im Preis-Modus kostet es Energie")
-		t.equal(beacon.cooldown_now(), 0,
-			"und die Abklingzeit ruht"))
 
-	_with_brake(ActionData.BRAKE_COOLDOWN, func():
-		t.equal(beacon.en_cost_now(), 0,
-			"im Wartezeit-Modus wird KEINE Energie abgebucht")
-		t.equal(beacon.cooldown_now(), beacon.cooldown_turns,
-			"dafuer greift die Abklingzeit"))
+func test_each_kind_of_ability_carries_its_own_brake() -> void:
+	# GAME_DESIGN §13: die zwei Bremsen gehoeren jetzt zwei ARTEN von Faehigkeit.
+	# Energetische bezahlen in Energie (Abklingzeit 0), mechanische -- das
+	# Sperrfeuer der Kanone, das per Fiktion keinen Strom zieht -- in Abklingzeit
+	# (en_cost 0). Die entschiedene Voreinstellung 'beides' liest beide Felder,
+	# damit jede Faehigkeit von der Bremse gehalten wird, die zu ihr passt.
+	var barrage := _find_ability(&"act_siege_barrage")
+	var nova := _find_ability(&"act_rune_nova")
+	t.ok(barrage != null and nova != null,
+		"Sperrfeuer (mechanisch) und Arkanwelle (energetisch) sind im Squad")
+
+	t.equal(barrage.en_cost, 0, "das Sperrfeuer zieht keinen Strom")
+	t.ok(barrage.cooldown_turns > 1,
+		"dafuer bremst es ueber eine Abklingzeit (%d Zuege)" % barrage.cooldown_turns)
+	t.ok(nova.en_cost > 0, "die Arkanwelle kostet Energie")
+	t.equal(nova.cooldown_turns, 0,
+		"und traegt keine Abklingzeit -- die Energie ist ihre Bremse")
 
 	_with_brake(ActionData.BRAKE_BOTH, func():
-		t.ok(beacon.en_cost_now() > 0 and beacon.cooldown_now() > 0,
-			"im Modus 'beides' bremsen beide"))
+		t.ok(barrage.cooldown_now() > 0 and barrage.en_cost_now() == 0,
+			"im entschiedenen Modus haelt die Wartezeit das Sperrfeuer")
+		t.ok(nova.en_cost_now() > 0 and nova.cooldown_now() == 0,
+			"und der Preis die Arkanwelle"))
 
 
 func test_a_cooldown_blocks_and_then_lets_go() -> void:
-	_with_brake(ActionData.BRAKE_COOLDOWN, func():
+	# Geprueft an der mechanischen Faehigkeit (Sperrfeuer) im entschiedenen Modus
+	# 'beides' -- dort ist die Abklingzeit die einzige Bremse der Kanone.
+	_with_brake(ActionData.BRAKE_BOTH, func():
 		var battle := BattleManager.new()
 		battle.setup(7001, _ability_squad())
-		var unit: Unit = battle.living(true)[0]
-		var ability: ActionData = null
-		for action in unit.actions():
-			if action.category == ActionData.Category.ABILITY:
-				ability = action
-		t.ok(ability != null and ability.cooldown_now() > 0,
+		var unit: Unit = null
+		for candidate in battle.living(true):
+			for action in candidate.actions():
+				if action.id == &"act_siege_barrage":
+					unit = candidate
+		var ability := _find_ability(&"act_siege_barrage")
+		t.ok(unit != null and ability != null and ability.cooldown_now() > 0,
 			"der Aufbau bringt eine Faehigkeit mit Abklingzeit mit")
 
 		var state := TurnState.begin(unit)

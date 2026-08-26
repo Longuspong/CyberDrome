@@ -754,9 +754,10 @@ static func _part_spec_lines(part: PartData) -> Array[String]:
 	for flag in FLAG_LABEL:
 		if part.get(flag):
 			lines.append(FLAG_LABEL[flag])
-	if part.action != null:
-		lines.append(part.action.display_name)
-		lines.append_array(part.action.description_lines())
+	# Eine Waffe listet beide Aktionen: ihren Angriff und ihre Faehigkeit.
+	for action in part.actions:
+		lines.append(action.display_name)
+		lines.append_array(action.description_lines())
 	return lines
 
 

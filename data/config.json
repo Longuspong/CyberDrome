@@ -65,9 +65,16 @@
       "Siehe ActionData.brake(). Die Werte selbst (en_cost, cooldown_turns)",
       "stehen an den Bauteilen und werden in tools/build_sample_parts.py aus",
       "einer Stufe abgeleitet -- beide aus DERSELBEN, damit ein Umschalten",
-      "die Rangfolge der Faehigkeiten nicht durcheinanderbringt."
+      "die Rangfolge der Faehigkeiten nicht durcheinanderbringt.",
+      "STAND GAME_DESIGN 13: 'beides' ist jetzt die ENTSCHIEDENE Voreinstellung,",
+      "nicht mehr nur ein Vergleichspunkt. Grund: die beiden Bremsen gehoeren",
+      "seither zwei verschiedenen ARTEN von Faehigkeit -- energetische bezahlen",
+      "in Energie (cooldown_turns 0), mechanische (Sperrfeuer) in Abklingzeit",
+      "(en_cost 0). Jede Faehigkeit traegt also nur EINE der beiden; 'beides'",
+      "sorgt dafuer, dass beide Felder gelesen werden. Das 'einmal pro Zug' je",
+      "Faehigkeit liegt darunter und haengt an keiner der beiden (TurnState)."
     ],
-    "brake": "energie"
+    "brake": "beides"
   },
 
   "power_tolerance": 0.12,

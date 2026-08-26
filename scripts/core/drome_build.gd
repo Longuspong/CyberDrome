@@ -162,31 +162,43 @@ func weapons() -> Array:
 	return result
 
 
-## Alle Aktionen, die dieser Aufbau gewaehrt -- jede genau einmal.
+## Alle Aktionen, die dieser Aufbau gewaehrt -- jede genau einmal. Eine Waffe
+## steuert zwei bei (Angriff und Faehigkeit), ein Gadget null oder eine.
 ##
 ## ### Warum zweimal dasselbe Teil nicht zwei Eintraege ergibt
 ##
 ## Zwei Orbit-Fokusse gaben frueher zweimal "Orbit-Sog" in Aktionsleiste und
-## Aktionsring. Das war keine zweite Moeglichkeit, sondern eine doppelte
-## Zeile fuer dieselbe: die Budgets des Zuges stehen EINMAL zur Verfuegung
-## (ein Angriff, eine Faehigkeit, siehe TurnState), also laesst sich die
-## Aktion so oder so nur einmal ausfuehren. Der zweite Eintrag versprach dem
-## Spieler eine Wahl, die es nicht gab.
+## Aktionsring. Das war keine zweite Moeglichkeit, sondern eine doppelte Zeile
+## fuer dieselbe Faehigkeit: eine Faehigkeit laesst sich ohnehin nur einmal pro
+## Zug ziehen (TurnState), der zweite Eintrag versprach eine Wahl, die es nicht
+## gab.
 ##
-## Der doppelte Anbau bleibt trotzdem sinnvoll -- Stats summieren sich weiter
-## (zwei Fokusse sind +2 ATK), nur die Aktionsliste tut es nicht.
+## Beim ANGRIFF ist das anders: zwei Waffen sind zwei Angriffe pro Zug
+## (GAME_DESIGN §13). Das trennt aber das BUDGET, nicht die Aktionsliste -- die
+## Zeile "Puls-Salve" steht auch bei zwei Blastern nur einmal da, das
+## Angriffsbudget (siehe TurnState.attack_actions) zaehlt dagegen beide.
 ##
-## Entdoppelt wird ueber die Aktions-ID, nicht ueber das Teil: zwei
-## verschiedene Teile mit derselben Aktion sind dieselbe Aktion.
+## Der doppelte Anbau bleibt sinnvoll -- Stats summieren sich weiter (zwei
+## Fokusse sind +2 ATK), nur die Aktionsliste entdoppelt ueber die Aktions-ID:
+## zwei verschiedene Teile mit derselben Aktion sind dieselbe Aktion.
 func actions() -> Array:
 	var result: Array = []
 	var seen := {}
 	for part in all_parts():
-		if part.action == null or seen.has(part.action.id):
-			continue
-		seen[part.action.id] = true
-		result.append(part.action)
+		for action in part.actions:
+			if seen.has(action.id):
+				continue
+			seen[action.id] = true
+			result.append(action)
 	return result
+
+
+## Die WAFFEN dieses Aufbaus tragen je einen Angriffs-Aktionspunkt bei: zwei
+## Waffen, zwei Angriffe (GAME_DESIGN §13). Gezaehlt werden die Waffen-TEILE,
+## nicht die verschiedenen Angriffe -- zwei gleiche Blaster sind zwei Schuss,
+## obwohl es dieselbe Puls-Salve ist.
+func attack_budget() -> int:
+	return weapons().size()
 
 
 ## Die Aktionen einer Kategorie. Angriff und Faehigkeit sind getrennte Budgets
@@ -433,8 +445,9 @@ func power_score() -> float:
 	var total := stats()
 	var best_weapon := 0
 	for part in equipment():
-		if part.action != null and part.action.power > best_weapon:
-			best_weapon = part.action.power
+		for action in part.actions:
+			if action.power > best_weapon:
+				best_weapon = action.power
 	return (
 		float(total["hp_max"]) * 1.0
 		+ float(total["atk"]) * 6.0

@@ -99,7 +99,11 @@ func test_the_payload_slows_you_down() -> void:
 
 	var cannon := PartDB.get_part(&"eq_siege_cannon")
 	t.equal(cannon.power_draw, 0, "die Kanone braucht keinen Bau-Strom")
-	t.equal(cannon.action.en_cost, 0, "und keine Energie im Kampf")
+	var cannon_attack: ActionData = null
+	for a in cannon.actions:
+		if a.is_attack():
+			cannon_attack = a
+	t.equal(cannon_attack.en_cost, 0, "ihr Angriff kostet keine Energie im Kampf")
 
 	t.equal(bare.payload_slowdown(), 0, "ohne Zuladung bremst nichts")
 	t.equal(armed.payload_slowdown(), cannon.weight / step,
@@ -181,11 +185,10 @@ func test_no_ability_costs_more_than_the_smallest_core_holds() -> void:
 			smallest = part.en_max
 
 	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-		if part.action == null:
-			continue
-		t.ok(part.action.en_cost <= smallest,
-			"%s kostet %d, kleinster Kern haelt %d"
-			% [part.action.display_name, part.action.en_cost, smallest])
+		for action in part.actions:
+			t.ok(action.en_cost <= smallest,
+				"%s kostet %d, kleinster Kern haelt %d"
+				% [action.display_name, action.en_cost, smallest])
 
 
 func test_the_vireo_can_carry_two_pulse_blasters() -> void:
@@ -304,12 +307,11 @@ func test_every_ranged_action_requires_line_of_sight() -> void:
 	# Ohne diese Regel waere das gesamte Terrainsystem Dekoration -- dann
 	# schoesse man quer durch Betonpfeiler.
 	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-		if part.action == null:
-			continue
-		if part.action.range_tiles > 1:
-			t.ok(part.action.requires_line_of_sight,
-				"%s hat Reichweite %d und braucht Sichtlinie"
-				% [part.id, part.action.range_tiles])
+		for action in part.actions:
+			if action.range_tiles > 1:
+				t.ok(action.requires_line_of_sight,
+					"%s (%s) hat Reichweite %d und braucht Sichtlinie"
+					% [part.id, action.id, action.range_tiles])
 
 
 # ---------------------------------------------------------------------------
@@ -343,34 +345,39 @@ func test_actions_are_split_by_budget() -> void:
 	})
 	var attacks := build.actions_of(ActionData.Category.ATTACK)
 	var abilities := build.actions_of(ActionData.Category.ABILITY)
-	t.equal(attacks.size(), 1, "der Runenstab ist ein Angriff")
-	t.equal(abilities.size(), 1, "der Orbit-Sog ist eine Faehigkeit")
+	# Der Runenstab traegt seit §13 zwei Aktionen: Runenschlag (Angriff) UND
+	# Arkanwelle (Faehigkeit). Dazu der Orbit-Sog aus dem Fokus. Also ein
+	# Angriff, zwei Faehigkeiten.
+	t.equal(attacks.size(), 1, "nur der Runenschlag ist ein Angriff")
+	t.equal(abilities.size(), 2, "Arkanwelle und Orbit-Sog sind Faehigkeiten")
+	t.equal(build.attack_budget(), 1, "eine Waffe -- ein Angriffs-Aktionspunkt")
 	t.equal(attacks.size() + abilities.size(), build.actions().size(),
 		"jede Aktion gehoert zu genau einem Budget")
 
 
-func test_weapons_are_plain_attacks() -> void:
-	# Eine Waffe schiesst; sie ist keine Faehigkeit. Waere der Blaster als
-	# Faehigkeit gefuehrt, naehme er dem Aufbau still seine Faehigkeitsaktion
-	# weg -- und der Spieler saehe nur, dass etwas fehlt.
+func test_every_weapon_has_exactly_one_attack() -> void:
+	# Eine Waffe schiesst -- und traegt seit GAME_DESIGN §13 zusaetzlich eine
+	# eigene Faehigkeit. Genau EIN Angriff muss es sein: das ist der Angriffs-
+	# Aktionspunkt, den die Waffe mitbringt (TurnState.attack_budget zaehlt die
+	# Waffen). Zwei Angriffe an einer Waffe waeren ein doppelter Punkt.
 	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-		if part.category != "weapon" or part.action == null:
+		if part.category != "weapon":
 			continue
-		t.ok(part.action.is_attack(),
-			"%s ist eine Waffe und damit ein normaler Angriff" % part.id)
-		t.equal(str(part.action.damage_type), "normal",
+		var attacks: Array = part.actions.filter(func(a): return a.is_attack())
+		t.equal(attacks.size(), 1,
+			"%s ist eine Waffe mit genau einem Angriff" % part.id)
+		t.equal(str(attacks[0].damage_type), "normal",
 			"%s richtet normalen Schaden an" % part.id)
 
 
 func test_every_action_names_its_source_part() -> void:
 	for part in PartDB.parts.values():
-		if part.action == null:
-			continue
-		t.equal(part.action.source_part_name, part.display_name,
-			"%s nennt sein Bauteil" % part.action.id)
-		var described := "\n".join(part.action.description_lines())
-		t.ok(described.contains("Reichweite"),
-			"%s beschreibt seine Reichweite" % part.action.id)
+		for action in part.actions:
+			t.equal(action.source_part_name, part.display_name,
+				"%s nennt sein Bauteil" % action.id)
+			var described := "\n".join(action.description_lines())
+			t.ok(described.contains("Reichweite"),
+				"%s beschreibt seine Reichweite" % action.id)
 
 
 # ---------------------------------------------------------------------------

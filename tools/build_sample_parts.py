@@ -397,8 +397,21 @@ STAT_DEFAULTS = {
     "aggro_bonus": 0,
 }
 
-# Ausruestung gewaehrt genau eine Aktion. ``power`` > 0 ist Schaden,
-# ``power`` < 0 ist Heilung. Ohne ``action`` ist ein Teil rein passiv.
+# Ausruestung gewaehrt eine LISTE von Aktionen (``actions``). ``power`` > 0 ist
+# Schaden, ``power`` < 0 ist Heilung. Ohne ``actions`` ist ein Teil rein passiv.
+#
+# ### Warum eine Liste und nicht mehr genau eine Aktion
+#
+# Frueher trug jedes Teil hoechstens eine Aktion, und eine Waffe war entweder
+# ihr Angriff ODER eine Faehigkeit. Seit GAME_DESIGN 13 traegt jede WAFFE beides:
+# ihren Angriff (Puls-Salve, Schienenschuss ...) UND eine eigene Faehigkeit
+# (Streusalve, Praezisionsschuss ...). Die Faehigkeiten kommen damit von den
+# Waffen, nicht mehr vom Kern -- der Kern ist reine Energie-Identitaet. Ein
+# Teil, das beides gibt, braucht zwei Eintraege; deshalb eine Liste.
+#
+# Gadgets (Support-Teile) bleiben INDIVIDUELL: nicht jedes traegt eine Aktive.
+# Der Deflektor ist passiv, Drohnen-Pod/Orbit-Fokus/Koedersender tragen je eine
+# Faehigkeit -- was gerade ins Thema passt, nicht per Regel.
 #
 #   category    attack | ability   -- welches Budget der Zug verbraucht
 #   targeting   single | self | tile | aoe_around_target
@@ -493,18 +506,21 @@ def ability_cooldown(tier: str) -> int:
 
         abklingzeit = zuege_je_gefecht / anwendungen
 
-    Beide Bremsen kommen damit aus DERSELBEN Stufe. Das ist der Punkt: schaltet
-    man in data/config.json von ``energie`` auf ``abklingzeit`` um, aendert sich
-    die ART der Knappheit, nicht die Rangfolge der Faehigkeiten. Waeren es zwei
-    unabhaengige Tabellen, verglichen zwei Playtests nicht mehr dieselbe Frage
-    -- und die Antwort waere wertlos.
+    Seit GAME_DESIGN 13 ist die Abklingzeit die Bremse der MECHANISCHEN
+    Faehigkeiten -- jener, die per Fiktion keinen Strom ziehen (das Sperrfeuer
+    der Belagerungskanone). Energetische Faehigkeiten bremst dagegen die Energie
+    (``en_cost``), ihre Abklingzeit ist 0. Beide Bremsen kommen weiter aus
+    DERSELBEN Stufe, damit eine Faehigkeit ihren Rang behaelt, egal welche der
+    beiden sie traegt.
 
     ### Warum die Untergrenze 2 ist und nicht 1
 
-    Eine Abklingzeit von 1 ist keine. Der Zug vergibt ohnehin nur EIN
-    Faehigkeitsbudget (``TurnState``), die Aktion ist also im selben Zug schon
-    verbraucht; bis zum naechsten eigenen Zug waere eine Sperre von 1 laengst
-    abgelaufen. Sie stuende in der Aktionsleiste und haette nie gegriffen.
+    Eine Abklingzeit von 1 ist keine sinnvolle Rhythmusbremse: die Aktion ist
+    ohnehin nur EINMAL PRO ZUG ziehbar (``TurnState`` fuehrt Buch, welche
+    Faehigkeiten in diesem Zug schon liefen), eine Sperre von 1 waere bis zum
+    naechsten eigenen Zug laengst abgelaufen und stuende wirkungslos in der
+    Leiste. Das "einmal pro Zug" ist strukturell und braucht die Abklingzeit
+    nicht; die Abklingzeit setzt erst DARUEBER einen Takt ueber mehrere Zuege.
 
     ### Und warum die Rangfolge hier grober ist als beim Preis
 
@@ -578,14 +594,26 @@ STATS = {
                     "grants_ignore_haze": True},
 
     # --- AUSRUESTUNG (equipment) -------------------------------------------
+    # Jede WAFFE traegt jetzt zwei Aktionen: ihren Angriff (Angriffsbudget) und
+    # eine eigene Faehigkeit (Faehigkeitsbudget). GAME_DESIGN 13.
     "eq_pulse_blaster": {
         "weight": 5, "power_draw": 3,
-        "action": {"id": "act_pulse", "display_name": "Puls-Salve",
-                   "category": "attack", "targeting": "single",
-                   "range_tiles": 4, "power": 12, "en_cost": 0,
-                   "requires_line_of_sight": True},
+        "actions": [
+            {"id": "act_pulse", "display_name": "Puls-Salve",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 4, "power": 12, "en_cost": 0,
+             "requires_line_of_sight": True},
+            # Streusalve: der leichte Flaechenschlag des Scouts. Weniger Wumms
+            # als ein gezielter Treffer, dafuer ein ganzes Nest auf einmal.
+            {"id": "act_pulse_scatter", "display_name": "Streusalve",
+             "category": "ability", "targeting": "aoe_around_target",
+             "range_tiles": 4, "aoe_radius": 1, "power": 9,
+             "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
+             "requires_line_of_sight": True, "aggro_coeff": 0.9},
+        ],
     },
-    # Passiv. Ein Schild ist kein Knopf, sondern eine Entscheidung beim Bauen.
+    # Passiv. Ein Schild ist kein Knopf, sondern eine Entscheidung beim Bauen --
+    # und der Beleg, dass ein Gadget keine Aktive tragen MUSS (GAME_DESIGN 13).
     "eq_deflector": {"def": 5, "weight": 4, "power_draw": 2},
 
     # Das einzige rein MECHANISCHE Geschuetz im Bestand: Pulver, Masse, Hebel.
@@ -597,19 +625,32 @@ STATS = {
     # "Energiebedarf" an einer Kanone und konnte sich nichts darunter denken.
     "eq_siege_cannon": {
         "weight": 8, "power_draw": 0,
-        "action": {"id": "act_siege", "display_name": "Belagerungsschlag",
-                   "category": "attack", "targeting": "aoe_around_target",
-                   "range_tiles": 6, "aoe_radius": 1, "power": 18, "en_cost": 0,
-                   "requires_line_of_sight": True},
+        "actions": [
+            {"id": "act_siege", "display_name": "Belagerungsschlag",
+             "category": "attack", "targeting": "aoe_around_target",
+             "range_tiles": 6, "aoe_radius": 1, "power": 18, "en_cost": 0,
+             "requires_line_of_sight": True},
+            # Sperrfeuer: die einzige MECHANISCHE Faehigkeit im Bestand -- Pulver
+            # und Masse, kein Strom. Deshalb en_cost 0 und stattdessen eine
+            # Abklingzeit als Bremse (GAME_DESIGN 13: "Masse bremst, Strom
+            # kostet"). Groesserer Radius als der Angriff, dafuer weniger Wumms je
+            # Feld -- Flaechenverwehrung, kein Einzeltreffer.
+            {"id": "act_siege_barrage", "display_name": "Sperrfeuer",
+             "category": "ability", "targeting": "aoe_around_target",
+             "range_tiles": 6, "aoe_radius": 2, "power": 14, "en_cost": 0,
+             "cooldown_turns": ability_cooldown("stark"),
+             "requires_line_of_sight": True, "aggro_coeff": 1.2},
+        ],
     },
     "eq_drone_pod": {
         "weight": 3, "power_draw": 4,
-        "action": {"id": "act_dronepod", "display_name": "Reparaturdrohnen",
-                   "category": "ability", "targeting": "aoe_around_target",
-                   "range_tiles": 3, "aoe_radius": 1, "power": -10,
-                   "en_cost": ability_cost("mittel"),
-                   "cooldown_turns": ability_cooldown("mittel"),
-                   "requires_line_of_sight": True, "aggro_coeff": 0.5},
+        "actions": [
+            {"id": "act_dronepod", "display_name": "Reparaturdrohnen",
+             "category": "ability", "targeting": "aoe_around_target",
+             "range_tiles": 3, "aoe_radius": 1, "power": -10,
+             "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
+             "requires_line_of_sight": True, "aggro_coeff": 0.5},
+        ],
     },
     # Reichweite 1 und damit ohne Sichtlinie: der Runenstab ist die einzige
     # Nahkampfwaffe im Bestand. Er ist der Grund, warum ein Haze-Feld ein
@@ -621,37 +662,63 @@ STATS = {
     # Die Provokation ist harter Zwang und deshalb teuer und befristet.
     "eq_bait_beacon": {
         "weight": 3, "power_draw": 3, "aggro_bonus": 25,
-        "action": {"id": "act_provoke", "display_name": "Stoersignal",
-                   "category": "ability", "targeting": "single",
-                   "range_tiles": 3, "power": 0,
-                   "en_cost": ability_cost("stark"),
-                   "cooldown_turns": ability_cooldown("stark"),
-                   "requires_line_of_sight": True, "taunt_turns": 3},
+        "actions": [
+            {"id": "act_provoke", "display_name": "Stoersignal",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 3, "power": 0,
+             "en_cost": ability_cost("stark"), "cooldown_turns": 0,
+             "requires_line_of_sight": True, "taunt_turns": 3},
+        ],
     },
 
     "eq_rune_staff": {
         "weight": 4, "power_draw": 2,
-        "action": {"id": "act_runestaff", "display_name": "Runenschlag",
-                   "category": "attack", "targeting": "single",
-                   "range_tiles": 1, "power": 18, "en_cost": 0,
-                   "requires_line_of_sight": False},
+        "actions": [
+            {"id": "act_runestaff", "display_name": "Runenschlag",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 1, "power": 18, "en_cost": 0,
+             "requires_line_of_sight": False},
+            # Arkanwelle: der Nahbereichs-Nova des Technomanten. Der Runenstab
+            # ist die einzige Nahkampfwaffe, seine Faehigkeit weitet den Schlag
+            # auf einen kleinen Ring aus.
+            {"id": "act_rune_nova", "display_name": "Arkanwelle",
+             "category": "ability", "targeting": "aoe_around_target",
+             "range_tiles": 2, "aoe_radius": 1, "power": 13,
+             "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
+             "requires_line_of_sight": True, "aggro_coeff": 1.0},
+        ],
     },
+    # Gadget mit Aktive: der Orbit-Fokus zerrt ein Ziel aus der Stellung.
+    # (Notiert fuer spaeter, GAME_DESIGN 13: thematisch klingt "Orbit" eher nach
+    # Aufklaerung als nach Sog -- eine Umdeutung, sobald es eine Sensor-/Haze-
+    # Mechanik dafuer gibt. Bis dahin bleibt der Sog erhalten und funktioniert.)
     "eq_orbit_focus": {
         "weight": 3, "power_draw": 3, "atk": 1,
-        "action": {"id": "act_orbitpull", "display_name": "Orbit-Sog",
-                   "category": "ability", "targeting": "single",
-                   "range_tiles": 4, "power": 0,
-                   "en_cost": ability_cost("schwach"),
-                   "cooldown_turns": ability_cooldown("schwach"),
-                   "push_tiles": -2, "requires_line_of_sight": True,
-                   "aggro_flat": 8},
+        "actions": [
+            {"id": "act_orbitpull", "display_name": "Orbit-Sog",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 4, "power": 0,
+             "en_cost": ability_cost("schwach"), "cooldown_turns": 0,
+             "push_tiles": -2, "requires_line_of_sight": True,
+             "aggro_flat": 8},
+        ],
     },
     "eq_rail_lance": {
         "weight": 8, "power_draw": 5,
-        "action": {"id": "act_raillance", "display_name": "Schienenschuss",
-                   "category": "attack", "targeting": "single",
-                   "range_tiles": 7, "power": 16, "en_cost": 6,
-                   "requires_line_of_sight": True, "aggro_coeff": 0.35},
+        "actions": [
+            {"id": "act_raillance", "display_name": "Schienenschuss",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 7, "power": 16, "en_cost": 6,
+             "requires_line_of_sight": True, "aggro_coeff": 0.35},
+            # Praezisionsschuss: der aufgeladene Fernschuss des Marksman. Grosse
+            # Reichweite, harter Einzeltreffer, und genauso leise wie sein
+            # Angriff -- ein Scharfschuss zieht keine Aufmerksamkeit.
+            {"id": "act_rail_pierce", "display_name": "Praezisionsschuss",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 8, "power": 26,
+             "en_cost": ability_cost("stark"), "cooldown_turns": 0,
+             "requires_line_of_sight": True, "aggro_coeff": 0.35},
+        ],
     },
 }
 
@@ -663,32 +730,35 @@ ACTION_DEFAULTS = {
 }
 
 
+def _merge_action(part_id: str, action: dict) -> dict:
+    """Eine rohe Aktion auf volle Defaults bringen und die Regeln pruefen."""
+    unknown = set(action) - set(ACTION_DEFAULTS)
+    if unknown:
+        raise SystemExit(f"[stats] {part_id}: unbekannte Aktionsfelder {sorted(unknown)}")
+    merged = dict(ACTION_DEFAULTS)
+    merged.update(action)
+    # Die Regel aus dem Entwurf, hier als Zusicherung statt als Kommentar.
+    if merged["range_tiles"] > 1 and not merged["requires_line_of_sight"]:
+        raise SystemExit(
+            f"[stats] {part_id}: Reichweite {merged['range_tiles']} ohne "
+            f"Sichtlinie -- ohne diese Regel ist das Terrain Dekoration"
+        )
+    return merged
+
+
 def part_stats(part_id: str) -> dict:
     """Vollstaendiger Statblock eines Teils: Defaults plus seine Abweichungen."""
     raw = STATS.get(part_id, {})
-    unknown = set(raw) - set(STAT_DEFAULTS) - {"action"}
+    unknown = set(raw) - set(STAT_DEFAULTS) - {"actions"}
     if unknown:
         raise SystemExit(f"[stats] {part_id}: unbekannte Felder {sorted(unknown)}")
 
     stats = dict(STAT_DEFAULTS)
-    stats.update({k: v for k, v in raw.items() if k != "action"})
+    stats.update({k: v for k, v in raw.items() if k != "actions"})
 
-    action = raw.get("action")
-    if action is not None:
-        unknown = set(action) - set(ACTION_DEFAULTS)
-        if unknown:
-            raise SystemExit(f"[stats] {part_id}: unbekannte Aktionsfelder {sorted(unknown)}")
-        merged = dict(ACTION_DEFAULTS)
-        merged.update(action)
-        # Die Regel aus dem Entwurf, hier als Zusicherung statt als Kommentar.
-        if merged["range_tiles"] > 1 and not merged["requires_line_of_sight"]:
-            raise SystemExit(
-                f"[stats] {part_id}: Reichweite {merged['range_tiles']} ohne "
-                f"Sichtlinie -- ohne diese Regel ist das Terrain Dekoration"
-            )
-        stats["action"] = merged
-    else:
-        stats["action"] = None
+    # Ein Teil gewaehrt eine LISTE von Aktionen (Angriff und/oder Faehigkeit).
+    # Ohne ``actions`` ist es passiv -- die Liste bleibt leer.
+    stats["actions"] = [_merge_action(part_id, a) for a in raw.get("actions", [])]
     return stats
 
 
@@ -2421,18 +2491,16 @@ def check_ability_costs() -> None:
         )
 
     for _spec, part in all_parts():
-        action = STATS.get(part["id"], {}).get("action")
-        if not action:
-            continue
-        cost = action.get("en_cost", 0)
-        if cost > smallest:
-            raise SystemExit(
-                f"{part['id']}: '{action['display_name']}' kostet {cost} "
-                f"Energie, der kleinste Kern im Bestand hat aber nur "
-                f"en_max {smallest}. Die Aktion waere dort nie ziehbar.\n"
-                f"Entweder eine guenstigere Stufe in ability_cost() waehlen "
-                f"oder den kleinsten Kern anheben."
-            )
+        for action in STATS.get(part["id"], {}).get("actions", []):
+            cost = action.get("en_cost", 0)
+            if cost > smallest:
+                raise SystemExit(
+                    f"{part['id']}: '{action['display_name']}' kostet {cost} "
+                    f"Energie, der kleinste Kern im Bestand hat aber nur "
+                    f"en_max {smallest}. Die Aktion waere dort nie ziehbar.\n"
+                    f"Entweder eine guenstigere Stufe in ability_cost() waehlen "
+                    f"oder den kleinsten Kern anheben."
+                )
 
 
 def check_stats() -> None:

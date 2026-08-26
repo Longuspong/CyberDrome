@@ -187,12 +187,19 @@ func test_an_action_without_damage_previews_no_damage() -> void:
 func test_budgets_are_reported_per_category() -> void:
 	# Die Aktionsleiste schreibt die Zahl ueber die Gruppe: "Angriff (0)" sagt
 	# in einem Blick, was "Angriff verbraucht" erst nach dem Hovern verraet.
+	# Seit GAME_DESIGN §13 skaliert der Angriff mit den Waffen und die Faehigkeit
+	# mit dem Loadout -- die Erwartung kommt deshalb aus dem Aufbau, nicht als
+	# feste 1.
 	var battle := BattleManager.new()
 	battle.setup(777, _squad())
 	var actor := battle.begin_next_turn()
 	var state := battle.turn_state
-	t.equal(state.actions_left(ActionData.Category.ATTACK), 1, "ein Angriff je Zug")
-	t.equal(state.actions_left(ActionData.Category.ABILITY), 1, "eine Faehigkeit je Zug")
+	var weapons: int = actor.build.attack_budget()
+	var abilities: int = actor.actions_of(ActionData.Category.ABILITY).size()
+	t.equal(state.actions_left(ActionData.Category.ATTACK), weapons,
+		"so viele Angriffe wie Waffen")
+	t.equal(state.actions_left(ActionData.Category.ABILITY), abilities,
+		"jede eigene Faehigkeit einmal je Zug")
 
 	var attack: ActionData = null
 	for action in actor.actions():
@@ -200,10 +207,19 @@ func test_budgets_are_reported_per_category() -> void:
 			attack = action
 	if attack != null:
 		state.consume(attack)
-		t.equal(state.actions_left(ActionData.Category.ATTACK), 0,
-			"nach dem Angriff ist das Angriffsbudget leer")
-		t.equal(state.actions_left(ActionData.Category.ABILITY), 1,
+		t.equal(state.actions_left(ActionData.Category.ATTACK), weapons - 1,
+			"nach dem Angriff ist ein Angriffspunkt weniger da")
+		t.equal(state.actions_left(ActionData.Category.ABILITY), abilities,
 			"das Faehigkeitsbudget ist davon unberuehrt")
+
+	var ability: ActionData = null
+	for action in actor.actions():
+		if not action.is_attack():
+			ability = action
+	if ability != null:
+		state.consume(ability)
+		t.equal(state.actions_left(ActionData.Category.ABILITY), maxi(0, abilities - 1),
+			"eine gezogene Faehigkeit ist fuer diesen Zug verbraucht")
 	battle.free()
 
 
@@ -213,15 +229,14 @@ func test_every_action_offers_a_readable_description() -> void:
 	# Aktion waeren drei Gelegenheiten, dass einer eine Reichweite nennt, die
 	# nicht mehr stimmt.
 	for part in PartDB.parts.values():
-		if part.action == null:
-			continue
-		var lines: Array[String] = part.action.description_lines()
-		t.ok(lines.size() >= 3, "%s wird in mehr als einer Zeile erklaert"
-			% part.action.id)
-		t.ok(part.action.headline().contains("Rw"),
-			"die Kurzform nennt die Reichweite: '%s'" % part.action.headline())
-		t.ok("\n".join(lines).contains(part.display_name),
-			"%s nennt das Bauteil, aus dem sie kommt" % part.action.id)
+		for action in part.actions:
+			var lines: Array[String] = action.description_lines()
+			t.ok(lines.size() >= 3, "%s wird in mehr als einer Zeile erklaert"
+				% action.id)
+			t.ok(action.headline().contains("Rw"),
+				"die Kurzform nennt die Reichweite: '%s'" % action.headline())
+			t.ok("\n".join(lines).contains(part.display_name),
+				"%s nennt das Bauteil, aus dem sie kommt" % action.id)
 
 
 # ---------------------------------------------------------------------------
@@ -238,14 +253,13 @@ func test_every_action_has_its_own_symbol() -> void:
 	# damit er es beim Bauen erfaehrt und nicht im Playtest, wo alle Knoepfe
 	# gleich aussehen.
 	for part in PartDB.parts.values():
-		if part.action == null:
-			continue
-		var key := ActionIcons.key_for(part.action)
-		t.ok(key != "generic",
-			"%s (%s) faellt auf das Platzhaltersymbol zurueck"
-			% [part.action.id, part.id])
-		t.ok(ActionIcons.texture(key) != null,
-			"das Symbol '%s' fuer %s existiert als Datei" % [key, part.action.id])
+		for action in part.actions:
+			var key := ActionIcons.key_for(action)
+			t.ok(key != "generic",
+				"%s (%s) faellt auf das Platzhaltersymbol zurueck"
+				% [action.id, part.id])
+			t.ok(ActionIcons.texture(key) != null,
+				"das Symbol '%s' fuer %s existiert als Datei" % [key, action.id])
 
 
 func test_symbols_separate_actions_that_do_different_things() -> void:

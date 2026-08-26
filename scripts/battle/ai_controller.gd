@@ -70,9 +70,15 @@ func take_step() -> Dictionary:
 	return {}
 
 
+## Sicherheitsdeckel fuer die Zahl der KI-Schritte je Zug. Grosszuegig, weil ein
+## Aufbau mehrere Angriffe (einen je Waffe) und mehrere Faehigkeiten in einem Zug
+## ziehen kann (GAME_DESIGN §13) -- plus die Lauf-Schritte dazwischen.
+const MAX_STEPS := 10
+
+
 ## Spielt den kompletten Zug. Die Szene ruft stattdessen take_step() einzeln
 ## auf, um zwischen den Schritten eine Pause einzulegen.
-func run_turn(max_steps: int = 6) -> Array:
+func run_turn(max_steps: int = MAX_STEPS) -> Array:
 	var done: Array = []
 	for _i in max_steps:
 		if battle.outcome != BattleManager.Outcome.RUNNING:

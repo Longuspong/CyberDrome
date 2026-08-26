@@ -79,8 +79,10 @@ var grants_ignore_haze: bool = false
 ## Wert im Bestand, der sich nicht wie die anderen summiert.
 var aggro_bonus: int = 0
 
-## Gewaehrte Aktion, oder null bei passiven Teilen
-var action: ActionData = null
+## Gewaehrte Aktionen. Leer bei passiven Teilen. Eine Waffe traegt zwei
+## Eintraege -- ihren Angriff und ihre eigene Faehigkeit (GAME_DESIGN §13); ein
+## Gadget null oder eine.
+var actions: Array = []
 
 ## direction -> { svg: String, anchors: {name: Vector2}, slot_z: {slot: float},
 ##                z_index: float }
@@ -126,9 +128,16 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.grants_ignore_haze = stats.get("grants_ignore_haze", false)
 	part.aggro_bonus = stats.get("aggro_bonus", 0)
 
-	var action_meta = stats.get("action")
-	if action_meta != null:
-		part.action = ActionData.from_meta(action_meta, part.display_name, part.code)
+	# Ein Teil gewaehrt eine LISTE von Aktionen. ``action`` (Einzahl) bleibt als
+	# Altformat lesbar, damit ein aelterer Datensatz nicht stumm seine Aktion
+	# verliert.
+	for action_meta in stats.get("actions", []):
+		part.actions.append(
+			ActionData.from_meta(action_meta, part.display_name, part.code))
+	var legacy = stats.get("action")
+	if legacy != null and part.actions.is_empty():
+		part.actions.append(
+			ActionData.from_meta(legacy, part.display_name, part.code))
 	return part
 
 

@@ -55,6 +55,6 @@
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
     "aggro_bonus": 0,
-    "action": null
+    "actions": []
   }
 }

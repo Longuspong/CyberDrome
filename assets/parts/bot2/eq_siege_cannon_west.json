@@ -61,22 +61,41 @@
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
     "aggro_bonus": 0,
-    "action": {
-      "id": "act_siege",
-      "display_name": "Belagerungsschlag",
-      "category": "attack",
-      "targeting": "aoe_around_target",
-      "range_tiles": 6,
-      "aoe_radius": 1,
-      "en_cost": 0,
-      "power": 18,
-      "requires_line_of_sight": true,
-      "push_tiles": 0,
-      "status_effect": null,
-      "aggro_coeff": 1.0,
-      "aggro_flat": 0,
-      "taunt_turns": 0,
-      "cooldown_turns": 0
-    }
+    "actions": [
+      {
+        "id": "act_siege",
+        "display_name": "Belagerungsschlag",
+        "category": "attack",
+        "targeting": "aoe_around_target",
+        "range_tiles": 6,
+        "aoe_radius": 1,
+        "en_cost": 0,
+        "power": 18,
+        "requires_line_of_sight": true,
+        "push_tiles": 0,
+        "status_effect": null,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "taunt_turns": 0,
+        "cooldown_turns": 0
+      },
+      {
+        "id": "act_siege_barrage",
+        "display_name": "Sperrfeuer",
+        "category": "ability",
+        "targeting": "aoe_around_target",
+        "range_tiles": 6,
+        "aoe_radius": 2,
+        "en_cost": 0,
+        "power": 14,
+        "requires_line_of_sight": true,
+        "push_tiles": 0,
+        "status_effect": null,
+        "aggro_coeff": 1.2,
+        "aggro_flat": 0,
+        "taunt_turns": 0,
+        "cooldown_turns": 3
+      }
+    ]
   }
 }
