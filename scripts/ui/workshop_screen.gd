@@ -53,6 +53,11 @@ const TILE_NAME_HEIGHT := 15
 const TILE_COLUMNS := 3
 const LIBRARY_WIDTH := 372
 
+## Massstab der Chassis-Miniatur (ganze Huelle) in ihrer Bibliothekskachel. Die
+## Huelle ist etwa 128px hoch; bei diesem Faktor passt sie in die Kachel, ohne
+## den Kopf abzuschneiden.
+const CHASSIS_TILE_SCALE := 0.66
+
 ## Wo im Vorschaufeld der Bodenpunkt des DROME sitzt. Nicht 0.5 -- ein Bot
 ## ragt nach oben, nicht nach unten.
 const GROUND_FRACTION := 0.72
@@ -612,18 +617,24 @@ func _library_tile(part: PartData) -> Button:
 	name_label.modulate = COLOR_MUTED if blocked else Color(0.82, 0.87, 0.94)
 	box.add_child(name_label)
 
-	var picture := TextureRect.new()
-	picture.texture = _part_texture(part)
-	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	picture.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Was in keine Halterung passt, wird nicht weggelassen, sondern gedaempft:
-	# wegzulassen liesse den Spieler raten, ob es das Teil nicht gibt oder ob
-	# es nur hier nicht hinein darf.
-	if blocked:
-		picture.modulate = Color(0.5, 0.5, 0.56)
-	box.add_child(picture)
+	# Das Chassis ist die ganze HUELLE (§9c) -- deshalb zeigt seine Kachel den
+	# ganzen Rahmen (Koerper + Kopf + Antrieb), nicht nur den Rumpf. Alles andere
+	# bleibt sein einzelnes, zugeschnittenes Bauteilbild.
+	if part.type == PartData.Type.BODY:
+		box.add_child(_chassis_tile_view(part))
+	else:
+		var picture := TextureRect.new()
+		picture.texture = _part_texture(part)
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		picture.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# Was in keine Halterung passt, wird nicht weggelassen, sondern gedaempft:
+		# wegzulassen liesse den Spieler raten, ob es das Teil nicht gibt oder ob
+		# es nur hier nicht hinein darf.
+		if blocked:
+			picture.modulate = Color(0.5, 0.5, 0.56)
+		box.add_child(picture)
 
 	if equipped:
 		# Unten in der Ecke und nicht oben: oben steht der Name, und ein Haken
@@ -674,6 +685,41 @@ func _tile_style(state: String, equipped: bool) -> StyleBoxFlat:
 	style.set_border_width_all(2 if equipped else 1)
 	style.set_corner_radius_all(3)
 	return style
+
+
+## Die Chassis-Kachel zeigt den ganzen Rahmen (§9c): Koerper, Kopf und Antrieb
+## aus dem Satz, live zusammengesetzt -- nicht nur den Rumpf. Gebaut wird ueber
+## dieselbe Funktion wie die grosse Vorschau (DromeSprites.assemble), damit die
+## Miniatur nicht irgendwann anders aussieht als der Bot, den sie meint.
+##
+## Ein eigener kleiner SubViewport je Chassis (es sind vier). Die Huelle ist ein
+## reiner Rahmen -- Kern und Ausruestung bleiben leer, die waehlt man danach.
+func _chassis_tile_view(part: PartData) -> Control:
+	var container := SubViewportContainer.new()
+	container.custom_minimum_size = Vector2(TILE_SIZE, TILE_SIZE)
+	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var sub := SubViewport.new()
+	sub.size = Vector2i(TILE_SIZE, TILE_SIZE)
+	sub.transparent_bg = true
+	sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	container.add_child(sub)
+
+	var root := Node2D.new()
+	# Waagerecht mittig, senkrecht auf GROUND_FRACTION -- dieselbe Ausrichtung
+	# ueber den Bodenpunkt wie die grosse Vorschau, nur kleiner skaliert.
+	root.position = Vector2(
+		TILE_SIZE * 0.5 - IsoView.SPRITE_ORIGIN.x * CHASSIS_TILE_SCALE,
+		TILE_SIZE * GROUND_FRACTION - IsoView.SPRITE_ORIGIN.y * CHASSIS_TILE_SCALE)
+	root.scale = Vector2(CHASSIS_TILE_SCALE, CHASSIS_TILE_SCALE)
+	sub.add_child(root)
+
+	var hull := DromeBuild.new()
+	hull.apply_chassis(part.id)
+	DromeSprites.assemble(root, hull, _facing)
+	return container
 
 
 ## Das Bauteilbild, auf seinen sichtbaren Inhalt zugeschnitten.
