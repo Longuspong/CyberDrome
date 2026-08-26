@@ -71,6 +71,10 @@ var step_cost_reduced: bool = false
 ## Sensorik
 var grants_ignore_haze: bool = false
 
+## Passive Selbstheilung je Zug, in Prozent der maximalen Integritaet (5 = 5 %).
+## Der Drohnen-Pod traegt sie -- eine Passive statt einer aktiven Heilung.
+var hp_regen_pct: int = 0
+
 ## Aggro-Generierung in Prozentpunkten. Der EINZIGE Weg, Aufmerksamkeit zu
 ## erzeugen, ohne dafuer zu handeln -- und er kostet einen Ausruestungsslot.
 ##
@@ -126,6 +130,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.drift_modifier = stats.get("drift_modifier", 0)
 	part.step_cost_reduced = stats.get("step_cost_reduced", false)
 	part.grants_ignore_haze = stats.get("grants_ignore_haze", false)
+	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
 	part.aggro_bonus = stats.get("aggro_bonus", 0)
 
 	# Ein Teil gewaehrt eine LISTE von Aktionen. ``action`` (Einzahl) bleibt als

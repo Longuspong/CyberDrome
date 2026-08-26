@@ -20,7 +20,10 @@ extends RefCounted
 ## (GAME_DESIGN §13); sie nimmt sich damit nichts mehr selbst weg.
 enum Category { ATTACK, ABILITY }
 
-enum Targeting { SINGLE, SELF, TILE, AOE_AROUND_TARGET }
+## AOE_AROUND_TARGET trifft den vollen Ring (Chebyshev-Radius, „8 angrenzende
+## Felder" bei Radius 1). AOE_CROSS trifft nur ORTHOGONAL (Ziel + die geraden
+## Nachbarn) -- die Kreuzform des Runenstabs („4 angrenzende Felder orthogonal").
+enum Targeting { SINGLE, SELF, TILE, AOE_AROUND_TARGET, AOE_CROSS }
 
 const CATEGORY_NAMES := {"attack": Category.ATTACK, "ability": Category.ABILITY}
 const CATEGORY_LABEL := {Category.ATTACK: "Angriff", Category.ABILITY: "Faehigkeit"}
@@ -29,6 +32,7 @@ const TARGETING_NAMES := {
 	"self": Targeting.SELF,
 	"tile": Targeting.TILE,
 	"aoe_around_target": Targeting.AOE_AROUND_TARGET,
+	"aoe_cross": Targeting.AOE_CROSS,
 }
 
 ## Schadensarten. Bis auf ``normal`` ist noch keine entschieden -- die

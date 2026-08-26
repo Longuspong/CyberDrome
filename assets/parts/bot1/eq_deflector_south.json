@@ -54,6 +54,7 @@
     "drift_modifier": 0,
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
+    "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "actions": []
   }

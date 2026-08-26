@@ -320,10 +320,16 @@ func is_meaningful_target(source: Unit, target: Unit, action: ActionData) -> boo
 func affected_tiles(tile: Vector2i, action: ActionData) -> Array[Vector2i]:
 	if action.aoe_radius <= 0:
 		return [tile] as Array[Vector2i]
+	var cross := action.targeting == ActionData.Targeting.AOE_CROSS
 	var tiles: Array[Vector2i] = []
 	for candidate in grid.all_tiles():
-		if Grid.distance(tile, candidate) <= action.aoe_radius:
-			tiles.append(candidate)
+		if Grid.distance(tile, candidate) > action.aoe_radius:
+			continue
+		# Das Kreuz trifft nur orthogonal: die Diagonalen (x UND y verschoben)
+		# fallen weg, das Ziel und die geraden Nachbarn bleiben.
+		if cross and candidate.x != tile.x and candidate.y != tile.y:
+			continue
+		tiles.append(candidate)
 	return tiles
 
 

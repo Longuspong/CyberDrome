@@ -386,6 +386,10 @@ STAT_DEFAULTS = {
     "step_cost_reduced": False,  # Stufe kostet 1 MP statt 2
     # Sensorik -- an jedem Slot moeglich, im Bestand an Koepfen
     "grants_ignore_haze": False,
+    # Passive Selbstheilung je Zug, in Prozent der maximalen Integritaet
+    # (Ganzzahl: 5 = 5 %). Der Drohnen-Pod traegt sie -- eine Passive, kein
+    # Knopf (Balancing-Konzept: Drohnen-Pod = Lebensregen 5 %/Zug).
+    "hp_regen_pct": 0,
     # Aggro-Generierung in Prozentpunkten. Genau EIN Bauteil im Bestand fuehrt
     # ihn -- der Koedersender EQP-008 mit +25, und der kostet dafuer einen
     # Ausruestungsslot. Kein Chassis und kein Kern hat einen Grundwert darauf:
@@ -601,7 +605,7 @@ STATS = {
         "actions": [
             {"id": "act_pulse", "display_name": "Puls-Salve",
              "category": "attack", "targeting": "single",
-             "range_tiles": 4, "power": 12, "en_cost": 0,
+             "range_tiles": 3, "power": 10, "en_cost": 0,
              "requires_line_of_sight": True},
             # Streusalve: der leichte Flaechenschlag des Scouts. Weniger Wumms
             # als ein gezielter Treffer, dafuer ein ganzes Nest auf einmal.
@@ -642,15 +646,11 @@ STATS = {
              "requires_line_of_sight": True, "aggro_coeff": 1.2},
         ],
     },
+    # Drohnen-Pod: PASSIVE Selbstheilung statt aktiver Faehigkeit (Balancing-
+    # Konzept). 5 % der maximalen Integritaet je eigenem Zug, ohne Knopf und
+    # ohne Energiekosten. Deshalb keine ``actions``.
     "eq_drone_pod": {
-        "weight": 3, "power_draw": 4,
-        "actions": [
-            {"id": "act_dronepod", "display_name": "Reparaturdrohnen",
-             "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 3, "aoe_radius": 1, "power": -10,
-             "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
-             "requires_line_of_sight": True, "aggro_coeff": 0.5},
-        ],
+        "weight": 3, "power_draw": 4, "hp_regen_pct": 5,
     },
     # Reichweite 1 und damit ohne Sichtlinie: der Runenstab ist die einzige
     # Nahkampfwaffe im Bestand. Er ist der Grund, warum ein Haze-Feld ein
@@ -660,23 +660,24 @@ STATS = {
     # provozieren kann. Beides gehoert zusammen: wer Aufmerksamkeit auf sich
     # ziehen will, bezahlt dafuer einen Ausruestungsslot (GAME_DESIGN 6b).
     # Die Provokation ist harter Zwang und deshalb teuer und befristet.
+    # Koedersender: nur noch AGGRO (+25), keine aktive Provokation mehr. Der
+    # Taunt/das Stoersignal ist gestrichen (Balancing-Konzept) -- das Teil zieht
+    # Aufmerksamkeit ueber seinen Aggro-Wert, nicht ueber einen Zwang. Deshalb
+    # passiv, ohne ``actions``.
     "eq_bait_beacon": {
         "weight": 3, "power_draw": 3, "aggro_bonus": 25,
-        "actions": [
-            {"id": "act_provoke", "display_name": "Stoersignal",
-             "category": "ability", "targeting": "single",
-             "range_tiles": 3, "power": 0,
-             "en_cost": ability_cost("stark"), "cooldown_turns": 0,
-             "requires_line_of_sight": True, "taunt_turns": 3},
-        ],
     },
 
     "eq_rune_staff": {
         "weight": 4, "power_draw": 2,
         "actions": [
+            # Der Runenschlag ist eine Energie-Clusterbombe: er trifft das Ziel
+            # UND die vier orthogonalen Nachbarn (aoe_cross). Reichweite 1 =
+            # Nahkampf, keine Sichtlinie noetig. Schaden je Feld entsprechend
+            # niedriger (10).
             {"id": "act_runestaff", "display_name": "Runenschlag",
-             "category": "attack", "targeting": "single",
-             "range_tiles": 1, "power": 18, "en_cost": 0,
+             "category": "attack", "targeting": "aoe_cross",
+             "range_tiles": 1, "aoe_radius": 1, "power": 10, "en_cost": 0,
              "requires_line_of_sight": False},
             # Arkanwelle: der Nahbereichs-Nova des Technomanten. Der Runenstab
             # ist die einzige Nahkampfwaffe, seine Faehigkeit weitet den Schlag
@@ -708,7 +709,7 @@ STATS = {
         "actions": [
             {"id": "act_raillance", "display_name": "Schienenschuss",
              "category": "attack", "targeting": "single",
-             "range_tiles": 7, "power": 16, "en_cost": 6,
+             "range_tiles": 8, "power": 22, "en_cost": 6,
              "requires_line_of_sight": True, "aggro_coeff": 0.35},
             # Praezisionsschuss: der aufgeladene Fernschuss des Marksman. Grosse
             # Reichweite, harter Einzeltreffer, und genauso leise wie sein

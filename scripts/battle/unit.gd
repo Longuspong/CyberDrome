@@ -365,6 +365,22 @@ func regenerate() -> void:
 	en = mini(stat("en_max"), en + stat("en_regen"))
 
 
+## Passive Selbstheilung zu Zugbeginn (Drohnen-Pod): ein Prozentsatz der
+## maximalen Integritaet. Gibt die tatsaechlich geheilte Menge zurueck -- 0,
+## wenn nichts zu heilen ist oder der DROME schon liegt.
+func regenerate_hp() -> int:
+	var pct := stat("hp_regen_pct")
+	if pct <= 0 or hp <= 0:
+		return 0
+	var maximum := stat("hp_max")
+	var amount := int(floor(float(maximum) * float(pct) / 100.0))
+	if amount <= 0:
+		return 0
+	var before := hp
+	hp = mini(maximum, hp + amount)
+	return hp - before
+
+
 # ---------------------------------------------------------------------------
 # Statuseffekte
 # ---------------------------------------------------------------------------

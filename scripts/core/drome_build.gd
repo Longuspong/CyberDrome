@@ -222,6 +222,7 @@ func stats() -> Dictionary:
 		"can_pass_blocks": false, "ignores_drift": false,
 		"drift_modifier": 0, "step_cost_reduced": false,
 		"grants_ignore_haze": false,
+		"hp_regen_pct": 0,
 		"aggro_bonus": 0,
 	}
 	for part in all_parts():
@@ -244,6 +245,7 @@ func stats() -> Dictionary:
 		total["step_cost_reduced"] = total["step_cost_reduced"] or part.step_cost_reduced
 		total["grants_ignore_haze"] = total["grants_ignore_haze"] or part.grants_ignore_haze
 		total["drift_modifier"] += part.drift_modifier
+		total["hp_regen_pct"] += part.hp_regen_pct
 		total["aggro_bonus"] += part.aggro_bonus
 
 	total["spd"] -= payload_slowdown()

@@ -60,6 +60,7 @@
     "drift_modifier": 0,
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
+    "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "actions": [
       {
@@ -67,10 +68,10 @@
         "display_name": "Puls-Salve",
         "category": "attack",
         "targeting": "single",
-        "range_tiles": 4,
+        "range_tiles": 3,
         "aoe_radius": 0,
         "en_cost": 0,
-        "power": 12,
+        "power": 10,
         "requires_line_of_sight": true,
         "push_tiles": 0,
         "status_effect": null,

@@ -115,6 +115,12 @@ func begin_next_turn() -> Unit:
 	# AggroTable.decay).
 	active_unit.tick_taunt()
 	active_unit.tick_cooldowns()
+	# Passive Selbstheilung (Drohnen-Pod) zu Zugbeginn -- vor dem Aderlass, damit
+	# beide sich am selben Punkt treffen und die Reihenfolge nachvollziehbar ist.
+	var healed := active_unit.regenerate_hp()
+	if healed > 0:
+		EventBus.log_line("%s regeneriert %d Integritaet (Drohnen-Pod)."
+			% [active_unit.display_name, healed])
 	var bleed := mutator.turn_damage()
 	if bleed > 0:
 		active_unit.hp = maxi(0, active_unit.hp - bleed)
