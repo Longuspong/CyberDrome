@@ -72,8 +72,10 @@ func test_empty_build_reports_every_missing_slot() -> void:
 func test_a_build_without_a_weapon_is_a_decision_not_an_error() -> void:
 	# Frueher war "Keine Waffe bestueckt" ein struktureller Fehler. Das nahm dem
 	# Slotmodell die Aussage, fuer die es da ist: welche Aktionen ein DROME hat,
-	# sagt seine Ausruestung. Wer Deflektor und Reparaturdrohnen traegt, hat
-	# eben keinen Angriff -- eine Entscheidung mit Folgen, keine Panne.
+	# sagt seine Ausruestung. Wer Deflektor und Drohnen-Pod traegt, hat eben
+	# keinen Angriff -- eine Entscheidung mit Folgen, keine Panne. Beide Gadgets
+	# sind rein passiv (Panzerung bzw. Selbstheilung), der Techniker also ganz
+	# ohne aktive Aktion -- und trotzdem gueltig.
 	var techniker := DromeBuild.create("TECHNIKER", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
@@ -83,8 +85,8 @@ func test_a_build_without_a_weapon_is_a_decision_not_an_error() -> void:
 		"und ist trotzdem baubar: %s" % ", ".join(techniker.validate()))
 	t.ok(techniker.actions_of(ActionData.Category.ATTACK).is_empty(),
 		"die Folge steht in der Aktionsliste: kein Angriff")
-	t.ok(not techniker.actions_of(ActionData.Category.ABILITY).is_empty(),
-		"seine Faehigkeit hat er")
+	t.ok(techniker.actions().is_empty(),
+		"beide Gadgets sind passiv -- gar keine Aktion, und das ist gueltig")
 
 
 func test_the_payload_slows_you_down() -> void:

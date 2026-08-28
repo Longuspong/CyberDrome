@@ -50,6 +50,9 @@
     "mov": 0,
     "atk": 0,
     "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
     "weight": 8,
     "power_draw": 5,
     "weight_capacity": 0,
@@ -61,6 +64,7 @@
     "drift_modifier": 0,
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
+    "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "actions": [
       {
@@ -68,17 +72,18 @@
         "display_name": "Schienenschuss",
         "category": "attack",
         "targeting": "single",
-        "range_tiles": 7,
+        "range_tiles": 8,
         "aoe_radius": 0,
         "en_cost": 6,
-        "power": 16,
+        "power": 22,
         "requires_line_of_sight": true,
         "push_tiles": 0,
         "status_effect": null,
         "aggro_coeff": 0.35,
         "aggro_flat": 0,
         "taunt_turns": 0,
-        "cooldown_turns": 0
+        "cooldown_turns": 0,
+        "energy_fraction": 0.0
       },
       {
         "id": "act_rail_pierce",
@@ -95,7 +100,8 @@
         "aggro_coeff": 0.35,
         "aggro_flat": 0,
         "taunt_turns": 0,
-        "cooldown_turns": 0
+        "cooldown_turns": 0,
+        "energy_fraction": 0.0
       }
     ]
   }

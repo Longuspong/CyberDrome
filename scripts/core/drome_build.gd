@@ -216,12 +216,14 @@ func stats() -> Dictionary:
 	var total := {
 		"hp_max": 0, "en_max": 0, "en_regen": 0,
 		"spd": 0, "mov": 0, "atk": 0, "def": 0,
+		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
 		"weight": 0, "power_draw": 0,
 		"weight_capacity": 0, "power_output": 0,
 		"can_pass_units": false, "can_enter_steps": false,
 		"can_pass_blocks": false, "ignores_drift": false,
 		"drift_modifier": 0, "step_cost_reduced": false,
 		"grants_ignore_haze": false,
+		"hp_regen_pct": 0,
 		"aggro_bonus": 0,
 	}
 	for part in all_parts():
@@ -232,6 +234,9 @@ func stats() -> Dictionary:
 		total["mov"] += part.mov
 		total["atk"] += part.atk
 		total["def"] += part.def
+		total["shield"] += part.shield
+		total["shield_regen"] += part.shield_regen
+		total["shield_bonus"] += part.shield_bonus
 		total["weight"] += part.weight
 		total["power_draw"] += part.power_draw
 		total["weight_capacity"] += part.weight_capacity
@@ -244,6 +249,7 @@ func stats() -> Dictionary:
 		total["step_cost_reduced"] = total["step_cost_reduced"] or part.step_cost_reduced
 		total["grants_ignore_haze"] = total["grants_ignore_haze"] or part.grants_ignore_haze
 		total["drift_modifier"] += part.drift_modifier
+		total["hp_regen_pct"] += part.hp_regen_pct
 		total["aggro_bonus"] += part.aggro_bonus
 
 	total["spd"] -= payload_slowdown()
@@ -254,6 +260,11 @@ func stats() -> Dictionary:
 	total["en_max"] = maxi(0, total["en_max"])
 	total["def"] = maxi(0, total["def"])
 	total["atk"] = maxi(0, total["atk"])
+	total["shield"] = maxi(0, total["shield"])
+	# Das Schild-Maximum ist der Grundwert mal der prozentualen Schild-Effizienz
+	# des Kerns (§11): shield_max = shield * (1 + shield_bonus). Der Bonus ist
+	# ein Anteil (0.1 = +10 %).
+	total["shield_max"] = int(round(float(total["shield"]) * (1.0 + total["shield_bonus"])))
 	return total
 
 

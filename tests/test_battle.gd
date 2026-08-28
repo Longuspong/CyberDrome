@@ -226,34 +226,31 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	second_foe.free()
 
 
-func test_area_repair_does_not_patch_up_the_enemy() -> void:
-	# Dieselbe Stelle von der anderen Seite: die Reparaturdrohnen haben Radius 1
-	# und heilten damit jeden im Umkreis -- auch den Gegner, der neben dem
-	# Verbuendeten stand.
-	var grid := Grid.new(12, 12)
-	grid.fill(Terrain.TClass.NORMAL)
-	var medic := Unit.create(_siege_and_drones("SANI"), &"E0", false)
-	var patient := Unit.create(_siege_and_drones("PATIENT"), &"E1", false)
-	var foe := Unit.create(_squad()[0], &"P0", true)
-	medic.tile = Vector2i(5, 5)
-	patient.tile = Vector2i(6, 5)
-	foe.tile = Vector2i(7, 5)          # neben dem Patienten, also im Radius
-	patient.hp = 40
-	foe.hp = 20
-	var resolver := ActionResolver.new(grid, [medic, patient, foe])
+func test_drone_pod_regenerates_its_carrier_passively() -> void:
+	# Der Drohnen-Pod ist keine aktive Heilung mehr, sondern eine PASSIVE: 5 %
+	# der maximalen Integritaet je eigenem Zug, ohne Knopf. Er heilt nur seinen
+	# Traeger und laeuft nicht ueber das Maximum.
+	var carrier := Unit.create(_siege_and_drones("SANI"), &"E0", false)
+	var maximum := carrier.stat("hp_max")
+	var pct := carrier.stat("hp_regen_pct")
+	t.ok(pct > 0, "der Drohnen-Pod bringt Selbstheilung mit (%d%%)" % pct)
 
-	var drones := _action_by_id(medic, &"act_dronepod")
-	t.ok(drones != null and drones.is_heal(), "die Reparaturdrohnen heilen")
-	t.ok(foe.tile in resolver.affected_tiles(patient.tile, drones),
-		"und der Gegner steht bei diesem Ziel in der Flaeche")
+	var expected := int(floor(float(maximum) * float(pct) / 100.0))
+	carrier.hp = maximum - 30
+	t.equal(carrier.regenerate_hp(), expected,
+		"geheilt werden %d (= %d%% von %d)" % [expected, pct, maximum])
+	t.equal(carrier.hp, maximum - 30 + expected, "die Integritaet steigt entsprechend")
 
-	t.ok(resolver.execute(medic, patient.tile, drones), "die Drohnen fliegen")
-	t.equal(patient.hp, 40 + drones.heal_amount(), "der Verbuendete wird repariert")
-	t.equal(foe.hp, 20, "der Gegner in derselben Flaeche bekommt nichts ab")
+	carrier.hp = maximum - 1
+	carrier.regenerate_hp()
+	t.equal(carrier.hp, maximum, "die Heilung laeuft nicht ueber das Maximum")
 
-	medic.free()
-	patient.free()
-	foe.free()
+	var plain := Unit.create(_squad()[0], &"P0", true)
+	plain.hp = 10
+	t.equal(plain.regenerate_hp(), 0, "wer keinen Drohnen-Pod traegt, regeneriert nicht")
+
+	carrier.free()
+	plain.free()
 
 
 ## Ein Squad, das ALLE drei Faehigkeiten des Bestands traegt -- sonst misst der

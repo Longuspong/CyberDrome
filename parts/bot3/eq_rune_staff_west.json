@@ -50,6 +50,9 @@
     "mov": 0,
     "atk": 0,
     "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
     "weight": 4,
     "power_draw": 2,
     "weight_capacity": 0,
@@ -61,24 +64,26 @@
     "drift_modifier": 0,
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
+    "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "actions": [
       {
         "id": "act_runestaff",
         "display_name": "Runenschlag",
         "category": "attack",
-        "targeting": "single",
+        "targeting": "aoe_cross",
         "range_tiles": 1,
-        "aoe_radius": 0,
+        "aoe_radius": 1,
         "en_cost": 0,
-        "power": 18,
+        "power": 10,
         "requires_line_of_sight": false,
         "push_tiles": 0,
         "status_effect": null,
         "aggro_coeff": 1.0,
         "aggro_flat": 0,
         "taunt_turns": 0,
-        "cooldown_turns": 0
+        "cooldown_turns": 0,
+        "energy_fraction": 1.0
       },
       {
         "id": "act_rune_nova",
@@ -95,7 +100,8 @@
         "aggro_coeff": 1.0,
         "aggro_flat": 0,
         "taunt_turns": 0,
-        "cooldown_turns": 0
+        "cooldown_turns": 0,
+        "energy_fraction": 1.0
       }
     ]
   }

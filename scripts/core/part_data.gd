@@ -55,6 +55,11 @@ var spd: int = 0
 var mov: int = 0
 var atk: int = 0
 var def: int = 0
+## Zwei-Verteidigungs-System (§11): Energieschild-Grundwert (Chassis), seine
+## Nachfuellung je Zug (Kern) und die prozentuale Schild-Effizienz (Kern).
+var shield: int = 0
+var shield_regen: int = 0
+var shield_bonus: float = 0.0
 var weight: int = 0
 var power_draw: int = 0
 var weight_capacity: int = 0        ## nur body
@@ -70,6 +75,10 @@ var step_cost_reduced: bool = false
 
 ## Sensorik
 var grants_ignore_haze: bool = false
+
+## Passive Selbstheilung je Zug, in Prozent der maximalen Integritaet (5 = 5 %).
+## Der Drohnen-Pod traegt sie -- eine Passive statt einer aktiven Heilung.
+var hp_regen_pct: int = 0
 
 ## Aggro-Generierung in Prozentpunkten. Der EINZIGE Weg, Aufmerksamkeit zu
 ## erzeugen, ohne dafuer zu handeln -- und er kostet einen Ausruestungsslot.
@@ -115,6 +124,9 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.mov = stats.get("mov", 0)
 	part.atk = stats.get("atk", 0)
 	part.def = stats.get("def", 0)
+	part.shield = stats.get("shield", 0)
+	part.shield_regen = stats.get("shield_regen", 0)
+	part.shield_bonus = float(stats.get("shield_bonus", 0.0))
 	part.weight = stats.get("weight", 0)
 	part.power_draw = stats.get("power_draw", 0)
 	part.weight_capacity = stats.get("weight_capacity", 0)
@@ -126,6 +138,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.drift_modifier = stats.get("drift_modifier", 0)
 	part.step_cost_reduced = stats.get("step_cost_reduced", false)
 	part.grants_ignore_haze = stats.get("grants_ignore_haze", false)
+	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
 	part.aggro_bonus = stats.get("aggro_bonus", 0)
 
 	# Ein Teil gewaehrt eine LISTE von Aktionen. ``action`` (Einzahl) bleibt als

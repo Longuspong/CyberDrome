@@ -49,6 +49,9 @@
     "mov": 0,
     "atk": 0,
     "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
     "weight": 5,
     "power_draw": 3,
     "weight_capacity": 0,
@@ -60,6 +63,7 @@
     "drift_modifier": 0,
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
+    "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "actions": [
       {
@@ -67,17 +71,18 @@
         "display_name": "Puls-Salve",
         "category": "attack",
         "targeting": "single",
-        "range_tiles": 4,
+        "range_tiles": 3,
         "aoe_radius": 0,
         "en_cost": 0,
-        "power": 12,
+        "power": 10,
         "requires_line_of_sight": true,
         "push_tiles": 0,
         "status_effect": null,
         "aggro_coeff": 1.0,
         "aggro_flat": 0,
         "taunt_turns": 0,
-        "cooldown_turns": 0
+        "cooldown_turns": 0,
+        "energy_fraction": 0.5
       },
       {
         "id": "act_pulse_scatter",
@@ -94,7 +99,8 @@
         "aggro_coeff": 0.9,
         "aggro_flat": 0,
         "taunt_turns": 0,
-        "cooldown_turns": 0
+        "cooldown_turns": 0,
+        "energy_fraction": 0.5
       }
     ]
   }

@@ -20,7 +20,10 @@ extends RefCounted
 ## (GAME_DESIGN §13); sie nimmt sich damit nichts mehr selbst weg.
 enum Category { ATTACK, ABILITY }
 
-enum Targeting { SINGLE, SELF, TILE, AOE_AROUND_TARGET }
+## AOE_AROUND_TARGET trifft den vollen Ring (Chebyshev-Radius, „8 angrenzende
+## Felder" bei Radius 1). AOE_CROSS trifft nur ORTHOGONAL (Ziel + die geraden
+## Nachbarn) -- die Kreuzform des Runenstabs („4 angrenzende Felder orthogonal").
+enum Targeting { SINGLE, SELF, TILE, AOE_AROUND_TARGET, AOE_CROSS }
 
 const CATEGORY_NAMES := {"attack": Category.ATTACK, "ability": Category.ABILITY}
 const CATEGORY_LABEL := {Category.ATTACK: "Angriff", Category.ABILITY: "Faehigkeit"}
@@ -29,6 +32,7 @@ const TARGETING_NAMES := {
 	"self": Targeting.SELF,
 	"tile": Targeting.TILE,
 	"aoe_around_target": Targeting.AOE_AROUND_TARGET,
+	"aoe_cross": Targeting.AOE_CROSS,
 }
 
 ## Schadensarten. Bis auf ``normal`` ist noch keine entschieden -- die
@@ -52,6 +56,11 @@ var source_part_code: String = ""
 
 ## Siehe DAMAGE_TYPE_LABEL. Im Bestand immer &"normal".
 var damage_type: StringName = &"normal"
+
+## Anteil des Schadens, der ENERGIESCHADEN ist (0.0 = ganz physisch, 1.0 = ganz
+## Energie, 0.5 = halb/halb wie der Puls-Blaster). Energie knackt Schilde,
+## Physisch prallt an ihnen ab -- siehe §11 und ActionResolver.resolve_damage().
+var energy_fraction: float = 0.0
 var targeting: Targeting = Targeting.SINGLE
 var range_tiles: int = 1
 var aoe_radius: int = 0
@@ -173,6 +182,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.aggro_flat = meta.get("aggro_flat", 0)
 	action.taunt_turns = meta.get("taunt_turns", 0)
 	action.cooldown_turns = meta.get("cooldown_turns", 0)
+	action.energy_fraction = float(meta.get("energy_fraction", 0.0))
 	return action
 
 

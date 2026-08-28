@@ -37,18 +37,23 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 ## Zeit -- bucht dann mit dem Grundkoeffizienten 1.0.
 func apply_damage(source: Unit, target: Unit, raw: int,
 		action: ActionData = null) -> int:
-	var amount := mitigate(source, target, raw)
+	var frac := action.energy_fraction if action != null else 0.0
+	var shield_before := target.shield
+	var res := resolve_damage(target, raw, frac)
+	target.shield = res["shield_after"]
+	var amount: int = res["hp"]
 
 	target.hp = maxi(0, target.hp - amount)
 	target.damage_taken += amount
 	if source != null:
 		source.damage_dealt += amount
 
-	# Gebucht wird die TATSAECHLICH angerichtete Menge, nach der ganzen Kette.
-	# Weil jeder Schaden hier durchlaeuft, braucht die Aggro keine eigene Liste
-	# von Sonderfaellen: Flaechenschaden bucht pro getroffenem DROME, weil er
-	# hier pro Feld ankommt, und was immer spaeter dazukommt, bucht mit.
-	_book_aggro(target, source, float(amount),
+	# Gebucht wird der GESAMTE angerichtete Schaden -- was ins Schild ging UND
+	# was auf die HP kam. Sonst zoege ein Energiewaffentraeger, der ein Schild
+	# knackt, keine Aufmerksamkeit, obwohl er dem Gegner spuerbar wehtut.
+	# Flaechenschaden bucht pro getroffenem DROME, weil er hier pro Feld ankommt.
+	var dealt := (shield_before - target.shield) + amount
+	_book_aggro(target, source, float(dealt),
 		action.aggro_coeff if action != null else 1.0)
 
 	EventBus.unit_damaged.emit(target, amount, source)
@@ -60,58 +65,85 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	return amount
 
 
-## Die Mitigationskette als reine Rechnung: was kommt von ``raw`` an?
+## Das Zwei-Verteidigungs-System (§11) als reine Rechnung -- was von ``raw`` auf
+## HP und Schild ankommt, OHNE etwas zu veraendern. Gibt
+## ``{"hp": int, "shield_after": int}`` zurueck.
 ##
-## Vorschau UND Ausfuehrung rufen exakt diese Funktion auf, aus demselben Grund
-## wie bei ``Grid.drift_result()``: eine zweite, "vereinfachte" Rechnung fuer
-## die Vorschau ist genau die Stelle, an der das Versprechen bricht, dass sich
-## jede Aktion vorher durchrechnen laesst.
+## Vorschau UND Ausfuehrung rufen exakt diese Funktion, aus demselben Grund wie
+## frueher: eine zweite, "vereinfachte" Rechnung ist die Stelle, an der das
+## Versprechen bricht, dass sich jeder Zug vorher durchrechnen laesst.
 ##
-## Die Kette ist geordnet und hat vier Glieder. Schritt 1 und 2 sind im MVP
-## leere Durchreichungen -- wichtig ist nur, dass es sie als Kettenglieder
-## GIBT, damit Energieschild und Ruestung spaeter ohne Umbau eingehaengt
-## werden koennen.
+## ### Das Modell
 ##
-## ### Warum DEF gedeckelt ist
+## Der Schaden teilt sich nach ``energy_fraction`` in einen physischen und einen
+## Energie-Anteil. Solange das SCHILD steht, wird jeder Anteil mit seinem
+## Schild-Faktor skaliert (physisch 0.8, Energie 1.2); der skalierte Schaden
+## zehrt das Schild, und was darueber hinausgeht, laeuft in diesem skalierten
+## Wert auf die HP durch. Daraus folgt genau das gewuenschte Verhalten:
 ##
-## Der flache Abzug allein macht Aufbauten unangreifbar. DEF 14 ist im Bestand
-## baubar (Molok-Chassis 5 + Bunkerkopf 2 + Standbeine 2 + Deflektor 5), und
-## gegen den Puls-Blaster mit Staerke 12 blieb davon die Mindestmenge 1 uebrig
-## -- 145 Treffer bis zum Ausfall, bei ``cycle_limit`` 30 also nie. 13,7 % aller
-## gueltigen Aufbauten erreichen DEF >= 10; das ist selten genug, dass es in
-## wenigen Playtests durchrutscht, und haeufig genug, dass es irgendwann als
-## Kampf auftritt, der nicht endet.
+##   * Man braucht MEHR als 50 physischen Schaden, um 50 Schild zu brechen
+##     (100 * 0.8 = 80; erst 62.5 physisch reissen 50 Schild).
+##   * Ein 100er-Treffer (physisch) auf 50 Schild + 50 HP laesst 20 HP: 80
+##     skaliert, 50 ins Schild, 30 Ueberlauf auf die HP.
+##   * Energie zerlegt Schilde (1.2) und stroemt darueber hinaus auf die HP.
 ##
-## ``maxi(1, ...)`` war als Bremse gegen die Null gedacht und wurde dabei zur
-## Spielregel. Der Deckel ersetzt sie nicht, er kommt davor: DEF nimmt hoechstens
-## ``def_max_reduction`` der ankommenden Menge weg. Ein flacher, gedeckelter
-## Abzug bleibt eine Subtraktion und damit im Kopf nachrechenbar -- anders als
-## eine multiplikative Mitigation, und Nachrechenbarkeit ist hier ausdrueckliche
-## Designabsicht.
-func mitigate(source: Unit, target: Unit, raw: int) -> int:
-	var amount := raw
-	amount = _absorb_shield(source, target, amount)      # 1. Post-MVP
-	amount = _apply_armor(source, target, amount)        # 2. Post-MVP
-	amount = maxi(_armor_floor(amount), amount - target.def())  # 3. DEF, gedeckelt
-	return maxi(1, amount)                               # 4. Mindestens 1
+## Trifft der Schaden direkt die HP (kein Schild mehr), gilt der HP-Faktor
+## (beide 1.0). Zuletzt wirkt die PANZERUNG als effektive-HP-Multiplikator mit
+## abnehmendem Ertrag, gedeckelt bei +50 % eHP -- so bringt selbst volle
+## Panzerdurchdringung den Schaden nie ueber 100 %, nie darueber.
+##
+## Erst das Schild vollstaendig, dann die HP: das Schild wird immer zuerst leer.
+func resolve_damage(target: Unit, raw: int, energy_fraction: float) -> Dictionary:
+	var section := Config.section("combat")
+	var e := int(round(float(raw) * clampf(energy_fraction, 0.0, 1.0)))
+	var p := raw - e
+	var shield := target.shield
+	var to_hp := 0.0
+	# Feste Reihenfolge physisch -> Energie, damit die Rechnung reproduzierbar
+	# bleibt (bei gemischtem Schaden wie dem Puls-Blaster).
+	var portions := [
+		{"amt": p, "sf": float(section.get("physical_vs_shield", 0.8)),
+			"hf": float(section.get("physical_vs_hp", 1.0))},
+		{"amt": e, "sf": float(section.get("energy_vs_shield", 1.2)),
+			"hf": float(section.get("energy_vs_hp", 1.0))},
+	]
+	for portion in portions:
+		var amt: int = portion["amt"]
+		if amt <= 0:
+			continue
+		if shield > 0:
+			var eff := int(round(float(amt) * float(portion["sf"])))
+			if eff <= shield:
+				shield -= eff
+			else:
+				to_hp += float(eff - shield)
+				shield = 0
+		else:
+			to_hp += float(amt) * float(portion["hf"])
+	return {"hp": _apply_armor_ehp(to_hp, target.def()), "shield_after": shield}
 
 
-## Was DEF stehen lassen MUSS. Aufgerundet, damit der Deckel bei ungeraden
-## Staerken nicht stillschweigend zugunsten der Panzerung ausfaellt.
-func _armor_floor(amount: int) -> int:
-	var share := float(Config.section("combat").get("def_max_reduction", 0.5))
-	return int(ceil(float(amount) * (1.0 - clampf(share, 0.0, 1.0))))
+## Die Panzerung als effektive-HP-Multiplikator mit abnehmendem Ertrag,
+## asymptotisch gedeckelt: ``m = 1 + cap * A/(A+K)`` erreicht ``1 + cap`` nie
+## ganz, bleibt also immer unter +50 % eHP. Der ankommende HP-Schaden wird durch
+## ``m`` geteilt. Ohne Panzerung (A=0) ist ``m = 1`` -- voller Schaden.
+##
+## ``pen`` (Panzerdurchdringung, 0..1, spaeter aus Loot/Faehigkeiten) senkt die
+## wirksame Panzerung; bei 1.0 ist ``m = 1`` und der Schaden voll -- nie mehr.
+func _apply_armor_ehp(raw_hp: float, armor: int, pen: float = 0.0) -> int:
+	if raw_hp <= 0.0:
+		return 0
+	var section := Config.section("combat")
+	var cap := float(section.get("armor_ehp_cap", 0.5))
+	var k := maxf(0.001, float(section.get("armor_ehp_k", 15.0)))
+	var a := float(maxi(0, armor)) * (1.0 - clampf(pen, 0.0, 1.0))
+	var m := 1.0 + cap * a / (a + k)
+	return maxi(1, int(round(raw_hp / m)))
 
 
-## Post-MVP: Energieschild absorbiert. Der Haken existiert, damit ein Schild
-## spaeter genau hier eingehaengt wird und nicht an fuenf Stellen im Code.
-func _absorb_shield(_source: Unit, _target: Unit, amount: int) -> int:
-	return amount
-
-
-## Post-MVP: Ruestung und Schadenstypen. Im MVP neutral.
-func _apply_armor(_source: Unit, _target: Unit, amount: int) -> int:
-	return amount
+## Duenner Vorschau-Zugang: nur der HP-Schaden. Fuer alte Aufrufer und Tests.
+func mitigate(source: Unit, target: Unit, raw: int, energy_fraction: float = 0.0) -> int:
+	return resolve_damage(target, raw, energy_fraction)["hp"]
 
 
 func heal(source: Unit, target: Unit, amount: int, action: ActionData = null) -> int:
@@ -227,7 +259,7 @@ func preview_damage(source: Unit, target: Unit, action: ActionData) -> int:
 		return -mini(action.heal_amount(), missing)
 	if action.power <= 0:
 		return 0
-	return mitigate(source, target, action.power + source.atk())
+	return mitigate(source, target, action.power + source.atk(), action.energy_fraction)
 
 
 # ---------------------------------------------------------------------------
@@ -320,10 +352,16 @@ func is_meaningful_target(source: Unit, target: Unit, action: ActionData) -> boo
 func affected_tiles(tile: Vector2i, action: ActionData) -> Array[Vector2i]:
 	if action.aoe_radius <= 0:
 		return [tile] as Array[Vector2i]
+	var cross := action.targeting == ActionData.Targeting.AOE_CROSS
 	var tiles: Array[Vector2i] = []
 	for candidate in grid.all_tiles():
-		if Grid.distance(tile, candidate) <= action.aoe_radius:
-			tiles.append(candidate)
+		if Grid.distance(tile, candidate) > action.aoe_radius:
+			continue
+		# Das Kreuz trifft nur orthogonal: die Diagonalen (x UND y verschoben)
+		# fallen weg, das Ziel und die geraden Nachbarn bleiben.
+		if cross and candidate.x != tile.x and candidate.y != tile.y:
+			continue
+		tiles.append(candidate)
 	return tiles
 
 

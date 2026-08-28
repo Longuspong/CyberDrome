@@ -131,6 +131,16 @@ func test_the_closer_attacker_holds_aggro_at_equal_damage() -> void:
 
 
 func test_healing_is_booked_against_every_foe_and_only_what_landed() -> void:
+	# Die Aggro-Buchung fuer Heilung steckt weiter in der Engine
+	# (ActionResolver.heal), auch wenn im Bestand gerade kein Teil aktiv heilt
+	# (der Drohnen-Pod heilt jetzt passiv). Getestet wird die Mechanik mit einer
+	# synthetischen Heil-Aktion.
+	var heal_action := ActionData.new()
+	heal_action.id = &"act_test_heal"
+	heal_action.category = ActionData.Category.ABILITY
+	heal_action.power = -10          # negatives Vorzeichen = Heilung
+	heal_action.aggro_coeff = 0.5
+
 	var techie := DromeBuild.create("TECHNIK", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
@@ -143,10 +153,6 @@ func test_healing_is_booked_against_every_foe_and_only_what_landed() -> void:
 	var healer: Unit = arena["units"][0]
 	var patient: Unit = arena["units"][1]
 	var foe: Unit = arena["foe"]
-	var heal_action: ActionData = null
-	for action in healer.actions():
-		if action.is_heal():
-			heal_action = action
 
 	# Auf Vollleben darf gar nichts gebucht werden.
 	resolver.heal(healer, patient, heal_action.heal_amount(), heal_action)
@@ -420,19 +426,17 @@ func test_control_without_damage_is_not_silent() -> void:
 # Der Koedersender -- das einzige Teil, das Aggro ohne Handeln erzeugt
 # ---------------------------------------------------------------------------
 
-func test_the_beacon_is_a_light_support_module_with_a_taunt() -> void:
+func test_the_beacon_is_a_passive_aggro_module() -> void:
+	# Der Koedersender zieht Aufmerksamkeit ueber seinen Aggro-Wert, nicht mehr
+	# ueber einen Zwang: der Taunt/das Stoersignal ist gestrichen (Balancing-
+	# Konzept). Er ist damit rein passiv.
 	var part := PartDB.get_part(&"eq_bait_beacon")
 	t.ok(part != null, "EQP-008 ist im Bestand")
 	t.equal(part.mount_class, "light", "leicht -- passt auch auf die Molok-Schulter")
 	t.equal(part.category, "support", "Support, keine Waffe")
 	t.ok(part.aggro_bonus > 0, "es fuehrt als einziges Teil aggro_bonus")
-	var taunt: ActionData = null
-	for action in part.actions:
-		if action.is_taunt():
-			taunt = action
-	t.ok(taunt != null, "und als einziges eine Provokation")
-	t.ok(taunt.taunt_turns > 0 and taunt.en_cost > 0,
-		"befristet und nicht umsonst -- harter Zwang muss beides sein")
+	t.ok(part.actions.is_empty(),
+		"aber keine aktive Aktion mehr -- die Provokation ist gestrichen")
 
 
 func test_the_beacon_raises_the_aggro_its_carrier_generates() -> void:

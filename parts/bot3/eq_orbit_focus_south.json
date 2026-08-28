@@ -50,6 +50,9 @@
     "mov": 0,
     "atk": 1,
     "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
     "weight": 3,
     "power_draw": 3,
     "weight_capacity": 0,
@@ -61,6 +64,7 @@
     "drift_modifier": 0,
     "step_cost_reduced": false,
     "grants_ignore_haze": false,
+    "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "actions": [
       {
@@ -78,7 +82,8 @@
         "aggro_coeff": 1.0,
         "aggro_flat": 8,
         "taunt_turns": 0,
-        "cooldown_turns": 0
+        "cooldown_turns": 0,
+        "energy_fraction": 0.0
       }
     ]
   }
