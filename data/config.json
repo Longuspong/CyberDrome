@@ -103,16 +103,25 @@
 
   "combat": {
     "_kommentar": [
-      "def_max_reduction deckelt, wieviel der flache DEF-Abzug von der",
-      "ankommenden Menge wegnehmen darf. 0.5 = hoechstens die Haelfte.",
-      "Ohne den Deckel griff nur noch die Mindestmenge 1, und ein Aufbau",
-      "mit DEF 14 war gegen eine Waffe mit Staerke 12 faktisch unangreifbar:",
-      "145 Integritaet bei 1 Schaden je Treffer sind mehr, als cycle_limit",
-      "hergibt. Auf 0.0 gesetzt ist der alte, ungedeckelte Abzug wieder da.",
-      "Siehe ActionResolver.mitigate() -- Vorschau und Ausfuehrung teilen",
-      "sich diese Rechnung."
+      "Das Zwei-Verteidigungs-System (§11). Siehe ActionResolver.resolve_damage.",
+      "SCHILD-FAKTOREN: wie stark eine Schadensart am Energieschild wirkt.",
+      "  physical_vs_shield 0.8  Physisch prallt am Schild ab (braucht mehr als",
+      "                          seinen Nennwert, um Schild zu brechen).",
+      "  energy_vs_shield   1.2  Energie zerlegt Schilde ueberproportional.",
+      "  physical_vs_hp / energy_vs_hp 1.0  direkter HP-Treffer ohne Schild.",
+      "PANZERUNG als effektive-HP-Multiplikator mit abnehmendem Ertrag:",
+      "  armor_ehp_cap 0.5  Obergrenze des eHP-Zuwachses -- nie mehr als +50 %.",
+      "                     Asymptotisch, also nie ganz erreicht.",
+      "  armor_ehp_k   15   wie schnell die Panzerung an den Deckel laeuft",
+      "                     (m = 1 + cap * A/(A+K)). Kleiner K = frueher satt.",
+      "Volle Panzerdurchdringung bringt den Schaden auf 100 %, nie darueber."
     ],
-    "def_max_reduction": 0.5
+    "physical_vs_shield": 0.8,
+    "energy_vs_shield": 1.2,
+    "physical_vs_hp": 1.0,
+    "energy_vs_hp": 1.0,
+    "armor_ehp_cap": 0.5,
+    "armor_ehp_k": 15
   },
 
   "aggro": {

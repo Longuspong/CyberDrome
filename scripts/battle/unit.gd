@@ -24,6 +24,10 @@ var facing: String = "south"
 ## Laufzeitwerte. Die Maxima stehen im Build, hier steht der aktuelle Stand.
 var hp: int = 0
 var en: int = 0
+## Energieschild: die regenerierende Leiste VOR der HP (§11). Getrennt von der
+## HP, weil Schadensarten sie unterschiedlich treffen und sie sich je Zug
+## wieder auffuellt.
+var shield: int = 0
 var stats: Dictionary = {}
 
 ## Aktive Statuseffekte: id -> { cycles_left, spd, def, ... }
@@ -78,6 +82,7 @@ static func create(from_build: DromeBuild, id: StringName, player: bool) -> Unit
 	unit.stats = from_build.stats()
 	unit.hp = unit.stats["hp_max"]
 	unit.en = unit.stats["en_max"]
+	unit.shield = unit.stats.get("shield_max", 0)
 	unit.name = "Unit_%s" % id
 	if not player:
 		unit.aggro = AggroTable.new()
@@ -328,6 +333,28 @@ func spd() -> int:
 
 func def() -> int:
 	return maxi(0, stat("def"))
+
+
+## Das Schild-Maximum, inklusive Statuseffekten.
+func shield_max() -> int:
+	return maxi(0, stat("shield_max"))
+
+
+func shield_fraction() -> float:
+	var maximum := shield_max()
+	return 0.0 if maximum <= 0 else float(shield) / float(maximum)
+
+
+## Schild-Nachfuellung zu Zugbeginn (§11): der Schildregen des Kerns, gedeckelt
+## am Maximum. Gibt die tatsaechlich aufgefuellte Menge zurueck.
+func regenerate_shield() -> int:
+	var maximum := shield_max()
+	var regen := stat("shield_regen")
+	if regen <= 0 or shield >= maximum:
+		return 0
+	var before := shield
+	shield = mini(maximum, shield + regen)
+	return shield - before
 
 
 func atk() -> int:

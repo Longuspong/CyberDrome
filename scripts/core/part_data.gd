@@ -55,6 +55,11 @@ var spd: int = 0
 var mov: int = 0
 var atk: int = 0
 var def: int = 0
+## Zwei-Verteidigungs-System (§11): Energieschild-Grundwert (Chassis), seine
+## Nachfuellung je Zug (Kern) und die prozentuale Schild-Effizienz (Kern).
+var shield: int = 0
+var shield_regen: int = 0
+var shield_bonus: float = 0.0
 var weight: int = 0
 var power_draw: int = 0
 var weight_capacity: int = 0        ## nur body
@@ -119,6 +124,9 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.mov = stats.get("mov", 0)
 	part.atk = stats.get("atk", 0)
 	part.def = stats.get("def", 0)
+	part.shield = stats.get("shield", 0)
+	part.shield_regen = stats.get("shield_regen", 0)
+	part.shield_bonus = float(stats.get("shield_bonus", 0.0))
 	part.weight = stats.get("weight", 0)
 	part.power_draw = stats.get("power_draw", 0)
 	part.weight_capacity = stats.get("weight_capacity", 0)

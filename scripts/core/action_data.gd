@@ -56,6 +56,11 @@ var source_part_code: String = ""
 
 ## Siehe DAMAGE_TYPE_LABEL. Im Bestand immer &"normal".
 var damage_type: StringName = &"normal"
+
+## Anteil des Schadens, der ENERGIESCHADEN ist (0.0 = ganz physisch, 1.0 = ganz
+## Energie, 0.5 = halb/halb wie der Puls-Blaster). Energie knackt Schilde,
+## Physisch prallt an ihnen ab -- siehe §11 und ActionResolver.resolve_damage().
+var energy_fraction: float = 0.0
 var targeting: Targeting = Targeting.SINGLE
 var range_tiles: int = 1
 var aoe_radius: int = 0
@@ -177,6 +182,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.aggro_flat = meta.get("aggro_flat", 0)
 	action.taunt_turns = meta.get("taunt_turns", 0)
 	action.cooldown_turns = meta.get("cooldown_turns", 0)
+	action.energy_fraction = float(meta.get("energy_fraction", 0.0))
 	return action
 
 

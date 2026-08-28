@@ -371,6 +371,11 @@ STAT_DEFAULTS = {
     # Grundwerte (additiv ueber alle Teile)
     "hp": 0, "en_max": 0, "en_regen": 0,
     "spd": 0, "mov": 0, "atk": 0, "def": 0,
+    # Zwei-Verteidigungs-System (§11, GAME_DESIGN). shield = Energieschild-
+    # Grundwert (Chassis); shield_regen = Nachfuellung je Zug (Kern);
+    # shield_bonus = prozentuale Schild-Effizienz (Kern, 0.1 = +10 %). Das
+    # Schild-Maximum ist shield * (1 + shield_bonus), siehe DromeBuild.stats().
+    "shield": 0, "shield_regen": 0, "shield_bonus": 0.0,
     # Baukosten
     "weight": 0, "power_draw": 0,
     # Nur body: was das Chassis traegt
@@ -542,7 +547,7 @@ def ability_cooldown(tier: str) -> int:
 STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
     # HP, DEF, Traglast. SPD/MOV sind Auf- und Abschlaege auf den Antrieb.
-    "scout_body":  {"hp":  60, "def": 1, "spd":  2, "mov":  0, "weight_capacity": 18},
+    "scout_body":  {"hp":  60, "def": 1, "spd":  2, "mov":  0, "weight_capacity": 18, "shield": 30},
     # Traglast 31 statt 28: der Molok hat DREI Anker (GDD 3b), konnte sie aber
     # mit eigenen Teilen nie alle belegen -- es gab bis zum Koedersender nur
     # zwei Ausruestungsteile im Satz, deshalb ist es nie aufgefallen. Ein
@@ -555,18 +560,21 @@ STATS = {
     # Der SPD-Abschlag faellt weg, weil die Masse jetzt selbst bremst
     # (DromeBuild.payload_slowdown); ein pauschales -2 obendrauf zaehlte
     # dieselbe Schwere ein zweites Mal. Mit Schulterpod bleibt es bei 35 > 33.
-    "jugg_body":   {"hp": 130, "def": 5, "spd":  0, "mov": -1, "weight_capacity": 33},
+    "jugg_body":   {"hp": 130, "def": 5, "spd":  0, "mov": -1, "weight_capacity": 33, "shield": 50},
     "mage_body":   {"hp":  85, "def": 2, "spd":  0, "mov":  0, "weight_capacity": 20,
-                    "en_max": 10},
-    "strix_body":  {"hp":  70, "def": 2, "spd":  1, "mov":  0, "weight_capacity": 22},
+                    "en_max": 10, "shield": 50},
+    "strix_body":  {"hp":  70, "def": 2, "spd":  1, "mov":  0, "weight_capacity": 22, "shield": 30},
 
     # --- KERN (core) -------------------------------------------------------
     # Energie und Ausstoss. Der Ausstoss deckelt, was drumherum haengen darf.
-    "scout_core":  {"en_max": 40, "en_regen":  8, "power_output": 12, "weight": 3},
-    "jugg_core":   {"en_max": 70, "en_regen": 12, "power_output": 16, "weight": 6},
-    "mage_core":   {"en_max": 85, "en_regen": 14, "power_output": 14, "weight": 5},
+    "scout_core":  {"en_max": 40, "en_regen":  8, "power_output": 12, "weight": 3,
+                    "shield_regen": 5, "shield_bonus": 0.05},
+    "jugg_core":   {"en_max": 70, "en_regen": 12, "power_output": 16, "weight": 6,
+                    "shield_regen": 5, "shield_bonus": 0.1},
+    "mage_core":   {"en_max": 85, "en_regen": 14, "power_output": 14, "weight": 5,
+                    "shield_regen": 10, "shield_bonus": 0.2},
     "strix_core":  {"en_max": 50, "en_regen": 10, "power_output": 13, "weight": 4,
-                    "atk": 2},
+                    "atk": 2, "shield_regen": 5, "shield_bonus": 0.1},
 
     # --- ANTRIEB (feet) ----------------------------------------------------
     # Vier Antriebe, vier klar getrennte Traversierungsprofile. Die Zahlen sind
@@ -603,17 +611,19 @@ STATS = {
     "eq_pulse_blaster": {
         "weight": 5, "power_draw": 3,
         "actions": [
+            # Der Puls-Blaster feuert halb physisch, halb Energie (50/50).
             {"id": "act_pulse", "display_name": "Puls-Salve",
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 10, "en_cost": 0,
-             "requires_line_of_sight": True},
+             "requires_line_of_sight": True, "energy_fraction": 0.5},
             # Streusalve: der leichte Flaechenschlag des Scouts. Weniger Wumms
             # als ein gezielter Treffer, dafuer ein ganzes Nest auf einmal.
             {"id": "act_pulse_scatter", "display_name": "Streusalve",
              "category": "ability", "targeting": "aoe_around_target",
              "range_tiles": 4, "aoe_radius": 1, "power": 9,
              "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
-             "requires_line_of_sight": True, "aggro_coeff": 0.9},
+             "requires_line_of_sight": True, "aggro_coeff": 0.9,
+             "energy_fraction": 0.5},
         ],
     },
     # Passiv. Ein Schild ist kein Knopf, sondern eine Entscheidung beim Bauen --
@@ -678,7 +688,7 @@ STATS = {
             {"id": "act_runestaff", "display_name": "Runenschlag",
              "category": "attack", "targeting": "aoe_cross",
              "range_tiles": 1, "aoe_radius": 1, "power": 10, "en_cost": 0,
-             "requires_line_of_sight": False},
+             "requires_line_of_sight": False, "energy_fraction": 1.0},
             # Arkanwelle: der Nahbereichs-Nova des Technomanten. Der Runenstab
             # ist die einzige Nahkampfwaffe, seine Faehigkeit weitet den Schlag
             # auf einen kleinen Ring aus.
@@ -686,7 +696,8 @@ STATS = {
              "category": "ability", "targeting": "aoe_around_target",
              "range_tiles": 2, "aoe_radius": 1, "power": 13,
              "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
-             "requires_line_of_sight": True, "aggro_coeff": 1.0},
+             "requires_line_of_sight": True, "aggro_coeff": 1.0,
+             "energy_fraction": 1.0},
         ],
     },
     # Gadget mit Aktive: der Orbit-Fokus zerrt ein Ziel aus der Stellung.
@@ -728,6 +739,10 @@ ACTION_DEFAULTS = {
     "range_tiles": 1, "aoe_radius": 0, "en_cost": 0, "power": 0,
     "requires_line_of_sight": False, "push_tiles": 0, "status_effect": None,
     "aggro_coeff": 1.0, "aggro_flat": 0, "taunt_turns": 0, "cooldown_turns": 0,
+    # Anteil des Schadens, der ENERGIESCHADEN ist (0.0 = ganz physisch, 1.0 =
+    # ganz Energie, 0.5 = halb/halb wie der Puls-Blaster). Energie knackt
+    # Schilde (120 %), Physisch prallt an ihnen ab (80 %) -- siehe §11.
+    "energy_fraction": 0.0,
 }
 
 

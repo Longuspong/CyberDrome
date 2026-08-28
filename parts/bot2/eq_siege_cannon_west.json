@@ -49,6 +49,9 @@
     "mov": 0,
     "atk": 0,
     "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
     "weight": 8,
     "power_draw": 0,
     "weight_capacity": 0,
@@ -78,7 +81,8 @@
         "aggro_coeff": 1.0,
         "aggro_flat": 0,
         "taunt_turns": 0,
-        "cooldown_turns": 0
+        "cooldown_turns": 0,
+        "energy_fraction": 0.0
       },
       {
         "id": "act_siege_barrage",
@@ -95,7 +99,8 @@
         "aggro_coeff": 1.2,
         "aggro_flat": 0,
         "taunt_turns": 0,
-        "cooldown_turns": 3
+        "cooldown_turns": 3,
+        "energy_fraction": 0.0
       }
     ]
   }

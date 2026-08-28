@@ -115,6 +115,8 @@ func begin_next_turn() -> Unit:
 	# AggroTable.decay).
 	active_unit.tick_taunt()
 	active_unit.tick_cooldowns()
+	# Energieschild fuellt sich zu Zugbeginn wieder auf (§11).
+	active_unit.regenerate_shield()
 	# Passive Selbstheilung (Drohnen-Pod) zu Zugbeginn -- vor dem Aderlass, damit
 	# beide sich am selben Punkt treffen und die Reihenfolge nachvollziehbar ist.
 	var healed := active_unit.regenerate_hp()
