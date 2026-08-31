@@ -1,47 +1,30 @@
 extends Control
 
-## Die Werkstatt in Godot.
+## Die Werkstatt in Godot -- der Loadout-Builder fuer GENAU EINEN DROME.
 ##
-## Der Spieler baut hier seinen Squad und schickt ihn in den Chaos-Virus.
-## Bewusst dieselben Regeln wie die SVG-Werkstatt -- aber sie sind nicht
-## nachgebaut: Validierung, Stats und Slotregeln kommen aus DromeBuild und
-## PartData, also aus derselben Quelle, die auch der Kampf benutzt. Was hier
-## angezeigt wird, gilt im Kampf.
+## Seit §10g ist die Werkstatt instanzbasiert: sie passt einen einzelnen
+## Roster-Eintrag an, den die Garage ausgewaehlt hat. Sie baut Kern und
+## Ausruestung aus dem eigenen INVENTAR ein -- nicht mehr aus einem freien
+## Katalog. Eine Instanz steckt in hoechstens einem DROME; die Bibliothek bietet
+## darum nur FREIE Exemplare an (plus das gerade verbaute).
+##
+## Das Chassis ist die Identitaet des DROME und wird hier NICHT getauscht: ein
+## anderes Chassis ist ein anderer DROME (§10g). Wer das Chassis wechseln will,
+## baut in der Garage einen neuen DROME aus freier Chassis-Beute.
+##
+## Validierung, Stats und Slotregeln kommen wie bisher aus DromeBuild und
+## PartData -- also aus derselben Quelle, die auch der Kampf benutzt. Der Build
+## selbst wird nach jeder Zuweisung aus dem Roster-Eintrag ABGELEITET
+## (Roster.build_for): uid -> Instanz -> Typ -> Slot.
 ##
 ## Die SVG-Werkstatt (python3 main.py) bleibt daneben bestehen. Sie ist das
-## Asset-Werkzeug -- Anker setzen, Teile importieren, Paletten pflegen --,
-## diese Szene ist der Loadout-Builder.
+## Asset-Werkzeug -- Anker setzen, Teile importieren, Paletten pflegen.
 ##
 ## ### Der Aufbau des Bildschirms
 ##
-##     links   die GANZE Bibliothek, nach Bauteiltyp gruppiert
+##     links   das eigene Inventar an Kern und Ausruestung, nach Typ gruppiert
 ##     Mitte   der DROME, wie er gerade aussieht
 ##     rechts  wo was steckt, was es bewirkt, was er kann
-##
-## Links stand frueher nur, was in den gerade angewaehlten Slot passt. Das
-## machte die Bibliothek zu einem Dropdown mit Umweg: um zu sehen, welche
-## Kerne es gibt, musste man erst den Kern-Slot anwaehlen -- und wer nicht
-## wusste, dass es einen zweiten Kern gibt, kam nie auf die Idee. Jetzt steht
-## alles da, und der Klick raeumt selbst in den passenden Slot ein.
-##
-## ### Bilder, keine Zeilen
-##
-## Die Bibliothek war eine Liste aus Textzeilen mit einer 40px-Briefmarke
-## davor. Gewaehlt wurde damit der Name, und das Bild war zu klein, um zu
-## erkennen, was man baut. Jetzt stehen die Teile als Kacheln: das Bild ist
-## die Schaltflaeche, darueber nur der Name. Alles andere -- Werte, Klasse,
-## Wirkung, was sich am Aufbau aendert -- kommt beim Zeigen und nicht vorher.
-## Ein Bestand aus vier Bots passt so ins Blickfeld, statt gescrollt zu werden.
-##
-## ### Ausruestung waehlt ihren Halter selbst
-##
-## Sockelteile haben genau einen Platz -- ein Chassis kann nur ins Chassis.
-## Ein Klick genuegt. Ausruestung hat mehrere, und welcher gemeint ist, wusste
-## bisher nur ``slot_for()``: erster freier passender. Wer in den zweiten Arm
-## wollte, musste erst rechts den Slot anwaehlen und dann links klicken --
-## quer ueber den Bildschirm und wieder zurueck. Jetzt oeffnet der Klick auf
-## ein Ausruestungsteil die Halterliste DIREKT auf der Kachel: eine Zeile je
-## Halter, mit Klasse und Belegung, und der Zeiger bleibt, wo er ist.
 
 const PREVIEW_SCALE := 2.4
 const PREVIEW_SIZE := 520
@@ -52,11 +35,6 @@ const TILE_SIZE := 108
 const TILE_NAME_HEIGHT := 15
 const TILE_COLUMNS := 3
 const LIBRARY_WIDTH := 372
-
-## Massstab der Chassis-Miniatur (ganze Huelle) in ihrer Bibliothekskachel. Die
-## Huelle ist etwa 128px hoch; bei diesem Faktor passt sie in die Kachel, ohne
-## den Kopf abzuschneiden.
-const CHASSIS_TILE_SCALE := 0.66
 
 ## Wo im Vorschaufeld der Bodenpunkt des DROME sitzt. Nicht 0.5 -- ein Bot
 ## ragt nach oben, nicht nach unten.
@@ -81,15 +59,10 @@ const SLOT_SHORT := {
 	"equip_shoulder": "Schulter", "equip_center": "Zentral",
 }
 
-## Die Bibliothek in der Reihenfolge, in der ein DROME entsteht: erst das
-## Chassis, dann der Kern, zuletzt die Ausruestung.
-##
-## Kopf und Fuesse stehen NICHT mehr als eigene Kategorien da: sie sind Teil des
-## Chassis (GAME_DESIGN §9). Ein Klick auf ein Chassis setzt Koerper, Kopf und
-## Fuesse gemeinsam (DromeBuild.apply_chassis) -- man waehlt eine Klasse, nicht
-## drei Rahmenteile.
+## Die Bibliothek zeigt nur, was sich AN diesem DROME tauschen laesst: Kern und
+## Ausruestung. Das Chassis steht nicht dabei -- es ist die feste Huelle dieses
+## DROME (§9/§10g), sichtbar in der Vorschau und als Zeile im Aufbau rechts.
 const LIBRARY_GROUPS := [
-	[PartData.Type.BODY, "Chassis"],
 	[PartData.Type.CORE, "Kern"],
 	[PartData.Type.EQUIPMENT, "Ausruestung"],
 ]
@@ -118,24 +91,24 @@ const COLOR_WARN := Color(1.0, 0.72, 0.3)
 const COLOR_HEADING := Color(0.6, 0.8, 0.95)
 const COLOR_MUTED := Color(0.62, 0.66, 0.72)
 
-var _squad: Array = []
-var _active_index: int = 0
+## Der Roster-Eintrag, den diese Werkstatt anpasst -- gewaehlt in der Garage. Er
+## ist eine Referenz in GameState.roster: was hier zugewiesen wird, steht damit
+## sofort im Roster; ``_persist`` schreibt nur noch auf die Platte.
+var _entry: RosterEntry
+## Der aus Eintrag + Inventar abgeleitete, typ-basierte Aufbau -- fuer Stats,
+## Vorschau und Validierung. Nach jeder Zuweisung neu abgeleitet (``_rebuild``).
 var _build: DromeBuild
-var _selected_slot: String = "body"
+var _selected_slot: String = "core"
 var _facing: String = "south"
 var _filter: String = ""
 
 ## Aufbau, der beim Hovern ueber ein Bibliotheks-Teil entstuende. Nur Anzeige --
-## er wird sowohl in den Zahlen als auch in der VORSCHAU gezeigt: die Frage
-## "wie sieht das aus" beantwortet kein Zahlenwert.
+## er wird sowohl in den Zahlen als auch in der VORSCHAU gezeigt.
 var _hover_build: DromeBuild = null
 var _hover_part: PartData = null
 var _hover_slot: String = ""
 
-## Die offene Halterliste: auf welchem Teil sie steht. Solange sie offen ist,
-## bleibt die Vorschau bei diesem Teil -- der Zeiger hat die Kachel ja verlassen,
-## um in die Liste zu fahren, und ein Bild, das dabei zurueckspringt, zeigt
-## genau in dem Moment das Falsche.
+## Die offene Halterliste: auf welchem Teil sie steht.
 var _pending_part: PartData = null
 
 var _preview_root: Node2D
@@ -144,16 +117,13 @@ var _library_column: Control
 var _slot_popup: PanelContainer
 var _slot_popup_rows: VBoxContainer
 
-## Ausgeschnittene Bauteilbilder, nach Asset-Pfad. Der Zuschnitt kostet ein
-## get_image() je Teil und Richtung; die Bibliothek baut sich bei jedem Klick
-## neu auf, und ohne Gedaechtnis waere das jedes Mal derselbe Aufwand.
+## Ausgeschnittene Bauteilbilder, nach Asset-Pfad.
 var _cropped: Dictionary = {}
 var _slot_list: VBoxContainer
 var _stat_list: VBoxContainer
 var _action_list: VBoxContainer
 var _problem_label: RichTextLabel
-var _squad_bar: HBoxContainer
-var _start_button: Button
+var _chassis_label: Label
 var _weight_label: Label
 var _power_label_total: Label
 var _name_field: LineEdit
@@ -164,27 +134,23 @@ var _direction_buttons: Array[Button] = []
 
 
 func _ready() -> void:
-	_load_squad()
+	_entry = GameState.editing_entry()
+	if _entry == null:
+		# Kein Eintrag gewaehlt (Direktstart der Szene) -- die Auswahl IST die
+		# Garage, also dorthin. Deferred, weil ein Szenenwechsel mitten im
+		# _ready den gerade betretenen Baum umbaut.
+		get_tree().change_scene_to_file.call_deferred("res://scenes/garage.tscn")
+		return
+	_facing = _entry.direction
+	_rebuild()
 	_build_ui()
 	_refresh_all()
 
 
-func _load_squad() -> void:
-	_squad = GameState.squad.duplicate()
-	var size := GameState.squad_size
-	while _squad.size() < size:
-		_squad.append(_starter_build(_squad.size()))
-	_squad.resize(size)
-	_build = _squad[0]
-
-
-## Ein baubarer Ausgangspunkt, damit der Spieler nicht vor leeren Slots sitzt.
-func _starter_build(index: int) -> DromeBuild:
-	return DromeBuild.create("DROME-%d" % (index + 1), {
-		"body": &"scout_body", "head": &"scout_head",
-		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_pulse_blaster",
-	})
+## Leitet den typ-basierten Aufbau aus Eintrag + Inventar neu ab. Nach jeder
+## Zuweisung noetig -- DromeBuild bleibt unberuehrt typ-basiert.
+func _rebuild() -> void:
+	_build = GameState.roster.build_for(_entry)
 
 
 # ---------------------------------------------------------------------------
@@ -208,10 +174,6 @@ func _build_ui() -> void:
 	columns.add_child(_build_preview_column())
 	columns.add_child(_build_stats_column())
 
-	# Das Deltafeld haengt NEBEN der Bibliothek und nicht in ihr: es soll ueber
-	# der Vorschau liegen duerfen, ohne die Liste zu verschieben. Deshalb kein
-	# Container-Kind, sondern ein freier Knoten mit eigener Position -- und als
-	# letztes Kind, damit es ueber allem zeichnet.
 	_delta_panel = PanelContainer.new()
 	_delta_panel.visible = false
 	_delta_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -221,9 +183,6 @@ func _build_ui() -> void:
 	_delta_panel.add_child(_delta_rows)
 	add_child(_delta_panel)
 
-	# Die Halterliste liegt aus demselben Grund frei: sie geht ueber der Kachel
-	# auf, die sie meint, und darf die Bibliothek dabei nicht verschieben.
-	# Anfassbar ist sie -- anders als das Deltafeld -- sehr wohl.
 	_slot_popup = PanelContainer.new()
 	_slot_popup.visible = false
 	_slot_popup.add_theme_stylebox_override("panel", _panel_style())
@@ -239,7 +198,7 @@ func _build_library_column() -> Control:
 	var left := VBoxContainer.new()
 	left.custom_minimum_size = Vector2(LIBRARY_WIDTH, 0)
 	_library_column = left
-	left.add_child(_heading("Bibliothek"))
+	left.add_child(_heading("Inventar"))
 
 	_filter_field = LineEdit.new()
 	_filter_field.placeholder_text = "Filter: Code, Name, Tag"
@@ -250,7 +209,7 @@ func _build_library_column() -> Control:
 
 	var hint := Label.new()
 	hint.text = "Zeiger zeigt Werte und Aussehen · Klick baut ein\n"\
-		+ "Ausruestung: Klick fragt zuerst, in welchen Halter"
+		+ "Nur FREIE Exemplare — was woanders steckt, ist gesperrt"
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.modulate = COLOR_MUTED
 	left.add_child(hint)
@@ -273,14 +232,14 @@ func _build_preview_column() -> Control:
 	var top_row := HBoxContainer.new()
 	center.add_child(top_row)
 	var back := Button.new()
-	back.text = "< Hauptmenue"
-	back.pressed.connect(func(): _save_and_go("res://scenes/main.tscn"))
+	back.text = "< Garage"
+	back.pressed.connect(func(): _save_and_go("res://scenes/garage.tscn"))
 	top_row.add_child(back)
 	_name_field = LineEdit.new()
 	_name_field.custom_minimum_size = Vector2(220, 0)
 	_name_field.text_changed.connect(func(text):
-		_build.display_name = text
-		_refresh_squad_bar())
+		_entry.name = text
+		_build.display_name = text)
 	top_row.add_child(_name_field)
 	for direction in DIRECTIONS:
 		var button := Button.new()
@@ -289,8 +248,6 @@ func _build_preview_column() -> Control:
 		button.pressed.connect(func():
 			_facing = direction
 			_refresh_preview()
-			# Die Miniaturen zeigen die Variante fuer diese Ansicht und
-			# muessen deshalb mitwechseln.
 			_refresh_library()
 			_refresh_slots()
 			_refresh_direction_buttons())
@@ -300,10 +257,6 @@ func _build_preview_column() -> Control:
 
 	var viewport := SubViewportContainer.new()
 	viewport.custom_minimum_size = Vector2(PREVIEW_SIZE, PREVIEW_SIZE)
-	# NUR SHRINK_CENTER, nicht zusammen mit EXPAND_FILL: mit FILL waere der
-	# Container so breit wie die Spalte, der SubViewport bliebe aber bei seiner
-	# festen Groesse und wuerde an dessen linker Kante gezeichnet. Genau daher
-	# stand der Bot links statt mittig.
 	viewport.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	viewport.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	center.add_child(viewport)
@@ -315,22 +268,19 @@ func _build_preview_column() -> Control:
 	viewport.add_child(sub)
 
 	_preview_root = Node2D.new()
-	# Die Bauteile zeichnen in einem 128x128-Raum mit der Bodenraute um
-	# (64, 96). Ausgerichtet wird ueber genau diesen Punkt -- so bleibt der Bot
-	# beim Richtungswechsel stehen, statt zu springen.
-	#
-	# Waagerecht mittig, senkrecht auf GROUND_FRACTION: ein DROME steht auf
-	# seinem Bodenfeld und ragt nach oben. Legte man den Bodenpunkt in die
-	# Mitte, waere die untere Haelfte leer und der Kopf am oberen Rand.
 	_preview_root.position = Vector2(
 		PREVIEW_SIZE * 0.5 - IsoView.SPRITE_ORIGIN.x * PREVIEW_SCALE,
 		PREVIEW_SIZE * GROUND_FRACTION - IsoView.SPRITE_ORIGIN.y * PREVIEW_SCALE)
 	_preview_root.scale = Vector2(PREVIEW_SCALE, PREVIEW_SCALE)
 	sub.add_child(_preview_root)
 
-	_squad_bar = HBoxContainer.new()
-	_squad_bar.add_theme_constant_override("separation", 8)
-	center.add_child(_squad_bar)
+	# Das feste Chassis dieses DROME -- keine Auswahl, eine Ansage. Wer es
+	# wechseln will, baut in der Garage einen neuen DROME (§10g).
+	_chassis_label = Label.new()
+	_chassis_label.add_theme_font_size_override("font_size", 12)
+	_chassis_label.modulate = COLOR_HEADING
+	_chassis_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	center.add_child(_chassis_label)
 	return center
 
 
@@ -353,9 +303,6 @@ func _build_stats_column() -> Control:
 	_slot_list.add_theme_constant_override("separation", 3)
 	column.add_child(_slot_list)
 
-	# Kampfwert steht in der Ueberschriftzeile und nicht als eigener Absatz
-	# weiter unten: die Spalte ist knapp, und die Zahl gehoert ohnehin zu den
-	# Werten darunter.
 	var stats_head := HBoxContainer.new()
 	var stats_title := _heading("Kampfwerte")
 	stats_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -369,9 +316,6 @@ func _build_stats_column() -> Control:
 	_stat_list = VBoxContainer.new()
 	column.add_child(_stat_list)
 
-	# Gewicht steht als schlichte Zahl da, ohne Balken und ohne Deckel: es ist
-	# keine Grenze mehr, sondern nur die Herkunft des Tempoverlusts, der als
-	# "Zuladung -> -SPD" direkt unter der SPD-Zeile erklaert wird.
 	_weight_label = Label.new()
 	_weight_label.add_theme_font_size_override("font_size", 11)
 	_weight_label.modulate = COLOR_MUTED
@@ -388,11 +332,11 @@ func _build_stats_column() -> Control:
 	_problem_label.custom_minimum_size = Vector2(0, 76)
 	column.add_child(_problem_label)
 
-	_start_button = Button.new()
-	_start_button.text = "Chaos-Virus starten"
-	_start_button.custom_minimum_size = Vector2(0, 44)
-	_start_button.pressed.connect(_start_battle)
-	right.add_child(_start_button)
+	var done := Button.new()
+	done.text = "Fertig — zur Garage"
+	done.custom_minimum_size = Vector2(0, 44)
+	done.pressed.connect(func(): _save_and_go("res://scenes/garage.tscn"))
+	right.add_child(done)
 	return right
 
 
@@ -422,13 +366,19 @@ func _panel_style() -> StyleBoxFlat:
 # ---------------------------------------------------------------------------
 
 func _refresh_all() -> void:
-	_name_field.text = _build.display_name
+	_name_field.text = _entry.name
+	_refresh_chassis_label()
 	_refresh_library()
 	_refresh_slots()
 	_refresh_stats()
 	_refresh_actions()
 	_refresh_preview()
-	_refresh_squad_bar()
+
+
+func _refresh_chassis_label() -> void:
+	var chassis := _build.body()
+	_chassis_label.text = "Chassis: %s" % (chassis.display_name if chassis != null
+		else "— kein Rahmen —")
 
 
 func _refresh_direction_buttons() -> void:
@@ -436,23 +386,16 @@ func _refresh_direction_buttons() -> void:
 		button.button_pressed = button.get_meta("direction") == _facing
 
 
-## Welche Slots dieser Aufbau hat -- die vier Sockel plus die equip_*-Anker
-## seines Chassis. Genau wie im Kampf: die Slotzahl haengt am Chassis.
+## Welche Slots dieser Aufbau hat -- Chassis (fest), Kern und die equip_*-Anker.
 func _slots() -> Array[String]:
-	# Kopf und Fuesse stehen NICHT als eigene Zeilen: sie gehoeren zum Chassis
-	# und werden mit ihm gesetzt (GAME_DESIGN §9). Die Chassis-Zeile vertritt den
-	# ganzen Rahmen.
 	var slots: Array[String] = ["body", "core"]
 	slots.append_array(_build.equip_slots())
 	return slots
 
 
 ## Die Slotliste: was steckt wo, was nimmt der Slot an, und welcher ist
-## angewaehlt.
-##
-## Mit Miniatur, weil "Ausruestung links: Orbit-Fokus" allein nicht sagt, ob
-## das der leuchtende Ring oder der Stab ist. Der Aufbau ist eine Zeichnung,
-## und eine Zeile Text ist die schlechtere Beschreibung davon.
+## angewaehlt. Die Chassis-Zeile ist fest -- sie laesst sich weder anwaehlen noch
+## leeren, denn das Chassis ist die Identitaet des DROME (§10g).
 func _refresh_slots() -> void:
 	for child in _slot_list.get_children():
 		child.queue_free()
@@ -460,6 +403,29 @@ func _refresh_slots() -> void:
 	for slot in _slots():
 		var part := _build.part_in(slot)
 		var row := HBoxContainer.new()
+
+		if slot == "body":
+			var fixed := HBoxContainer.new()
+			fixed.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			fixed.custom_minimum_size = Vector2(0, THUMB_SIZE + 4)
+			if part != null:
+				var thumb := TextureRect.new()
+				thumb.texture = _part_texture(part)
+				thumb.custom_minimum_size = Vector2(THUMB_SIZE, THUMB_SIZE)
+				thumb.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				thumb.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				fixed.add_child(thumb)
+			var label := Label.new()
+			label.text = " Chassis: %s (fest)" % (part.display_name if part != null
+				else "—")
+			label.add_theme_font_size_override("font_size", 12)
+			label.modulate = COLOR_MUTED
+			label.tooltip_text = "Das Chassis ist die Identitaet dieses DROME.\n"\
+				+ "Ein anderes Chassis ist ein neuer DROME — in der Garage."
+			fixed.add_child(label)
+			row.add_child(fixed)
+			_slot_list.add_child(row)
+			continue
 
 		var button := Button.new()
 		button.toggle_mode = true
@@ -484,22 +450,15 @@ func _refresh_slots() -> void:
 		if part != null:
 			var clear := Button.new()
 			clear.text = "×"
-			clear.tooltip_text = "Slot leeren"
+			clear.tooltip_text = "Slot leeren — das Teil kehrt ins Inventar zurueck"
 			clear.pressed.connect(func():
-				# Die Chassis-Zeile vertritt den ganzen Rahmen -- leeren raeumt
-				# Koerper, Kopf und Fuesse gemeinsam (§9).
-				if slot == "body":
-					for frame_slot in ["body", "head", "feet"]:
-						_build.slots.erase(frame_slot)
-				else:
-					_build.slots.erase(slot)
+				GameState.roster.clear_slot(_entry, slot)
 				_after_change())
 			row.add_child(clear)
 		_slot_list.add_child(row)
 
 
-## Was dieser Slot annimmt -- im Klartext und aus den Regeln des Chassis, nicht
-## aus einer zweiten Liste hier.
+## Was dieser Slot annimmt -- im Klartext und aus den Regeln des Chassis.
 func _slot_tooltip(chassis: PartData, slot: String, part: PartData) -> String:
 	var lines: Array[String] = [SLOT_LABEL.get(slot, slot)]
 	if part != null:
@@ -535,22 +494,24 @@ static func _category_label(category: String) -> String:
 		_: return category
 
 
-## Die Bibliothek: ALLE Teile, nach Bauteiltyp gruppiert.
+## Die Bibliothek: das eigene INVENTAR an Kern und Ausruestung, nach Typ
+## gruppiert -- nur Typen, von denen der Spieler mindestens ein Exemplar besitzt.
 ##
-## Was nicht passt, wird nicht weggelassen, sondern ausgegraut und begruendet.
-## Wegzulassen liesse den Spieler raten, ob es das Teil nicht gibt oder ob es
-## nur hier nicht hinein darf -- und die Frage "warum kann mein Strix die
-## Belagerungskanone nicht" beantwortet nur die zweite Variante.
+## Was fuer diesen DROME nicht verfuegbar ist, wird nicht weggelassen, sondern
+## ausgegraut und begruendet: kein freies Exemplar (steckt woanders) oder keine
+## passende Halterung an diesem Chassis. Wegzulassen liesse den Spieler raten.
 func _refresh_library() -> void:
-	# Die Halterliste haengt an einer Kachel. Werden die Kacheln neu gebaut --
-	# Richtungswechsel, anderer DROME --, meint sie nichts mehr.
 	_close_slot_popup()
 	for child in _library.get_children():
 		child.queue_free()
 
 	for group in LIBRARY_GROUPS:
 		var type: PartData.Type = group[0]
-		var parts: Array = PartDB.of_type(type).filter(_matches_filter)
+		var parts: Array = []
+		for part_id in GameState.roster.owned_part_ids(type):
+			var part := PartDB.get_part(part_id)
+			if part != null and _matches_filter(part):
+				parts.append(part)
 		if parts.is_empty():
 			continue
 		var header := _heading(group[1])
@@ -574,26 +535,22 @@ func _matches_filter(part: PartData) -> bool:
 	return _filter in haystack.to_lower()
 
 
-## Eine Kachel: Name oben, darunter das Bauteil so gross, wie die Spalte es
-## zulaesst. Kein Code, keine Werte, kein Haken im Text -- das steht alles im
-## Feld, das beim Zeigen aufgeht.
-##
-## Der Knopf traegt seine Kinder selbst (Button ist kein Container, die Kinder
-## behalten also ihre Anker) und bekommt sie mit MOUSE_FILTER_IGNORE untergelegt:
-## sonst faenge das Label den Klick, der dem Bild gilt.
+## Eine Kachel je besessenem Bauteiltyp: Name oben, darunter das Bauteil. Die
+## Verfuegbarkeit (frei/verbaut) faerbt sie und entscheidet, ob der Klick greift.
 func _library_tile(part: PartData) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(TILE_SIZE, TILE_SIZE + TILE_NAME_HEIGHT)
-	# SHRINK_CENTER und nicht EXPAND_FILL: der Rest, der bei drei Spalten in der
-	# Bibliotheksbreite uebrig bleibt, ginge sonst an eine einzelne Spalte, und
-	# ein Teil saehe groesser aus als das daneben, ohne es zu sein.
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 	var slot := _target_slot_for(part)
-	# Ein Teil kann in mehreren Slots stecken (zwei Orbit-Fokusse). Angehakt
-	# wird es dann trotzdem -- gefragt ist "ist das verbaut", nicht "wo".
-	var equipped: bool = part.id in _build.slots.values()
-	var blocked: bool = slot == ""
+	var free := GameState.roster.free_count(part.id)
+	var here := GameState.roster.count_in_entry(_entry, part.id)
+	var equipped := here > 0
+	# Eine Ausruestung braucht eine passende Halterung; jedes Teil braucht ein
+	# freies Exemplar zum Einbauen (es sei denn, es steckt schon hier).
+	var no_mount: bool = part.type == PartData.Type.EQUIPMENT and slot == ""
+	var sold_out: bool = free <= 0 and here <= 0
+	var blocked: bool = no_mount or sold_out
 
 	for state in ["normal", "hover", "pressed", "disabled"]:
 		button.add_theme_stylebox_override(state, _tile_style(state, equipped))
@@ -608,38 +565,23 @@ func _library_tile(part: PartData) -> Button:
 	name_label.text = part.display_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# Lange Namen werden beschnitten statt umgebrochen: die Kachel darf nicht
-	# je nach Namenslaenge eine andere Hoehe haben, und der ganze Name steht
-	# ohnehin im Feld nebenan.
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_label.add_theme_font_size_override("font_size", 10)
 	name_label.custom_minimum_size = Vector2(0, TILE_NAME_HEIGHT)
 	name_label.modulate = COLOR_MUTED if blocked else Color(0.82, 0.87, 0.94)
 	box.add_child(name_label)
 
-	# Das Chassis ist die ganze HUELLE (§9c) -- deshalb zeigt seine Kachel den
-	# ganzen Rahmen (Koerper + Kopf + Antrieb), nicht nur den Rumpf. Alles andere
-	# bleibt sein einzelnes, zugeschnittenes Bauteilbild.
-	if part.type == PartData.Type.BODY:
-		box.add_child(_chassis_tile_view(part))
-	else:
-		var picture := TextureRect.new()
-		picture.texture = _part_texture(part)
-		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		picture.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		# Was in keine Halterung passt, wird nicht weggelassen, sondern gedaempft:
-		# wegzulassen liesse den Spieler raten, ob es das Teil nicht gibt oder ob
-		# es nur hier nicht hinein darf.
-		if blocked:
-			picture.modulate = Color(0.5, 0.5, 0.56)
-		box.add_child(picture)
+	var picture := TextureRect.new()
+	picture.texture = _part_texture(part)
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if blocked:
+		picture.modulate = Color(0.5, 0.5, 0.56)
+	box.add_child(picture)
 
 	if equipped:
-		# Unten in der Ecke und nicht oben: oben steht der Name, und ein Haken
-		# daneben frisst genau die Zeichen, die einen langen Namen noch
-		# unterscheidbar machen.
 		var check := Label.new()
 		check.text = "✓"
 		check.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -649,17 +591,27 @@ func _library_tile(part: PartData) -> Button:
 		check.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(check)
 
+	# Wie viele Exemplare frei sind -- die Zahl, an der die Eindeutigkeit haengt.
+	# Nur zeigen, wenn der Spieler mehr als eins besitzt: bei Einzelstuecken
+	# sagen ✓ und die Sperre schon alles.
+	if GameState.roster.total_count(part.id) > 1:
+		var badge := Label.new()
+		badge.text = "%d frei" % free
+		badge.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+		badge.position = Vector2(4, -20)
+		badge.add_theme_font_size_override("font_size", 10)
+		badge.modulate = COLOR_GOOD if free > 0 else COLOR_MUTED
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(badge)
+
 	if blocked:
-		# Anfassbar bleibt die Kachel trotzdem -- der Zeiger zeigt weiterhin
-		# Werte und Aussehen, und das Feld nennt den Grund.
 		button.disabled = true
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
 	elif part.type == PartData.Type.EQUIPMENT:
 		button.pressed.connect(func(): _open_slot_popup(part, button))
 	else:
 		button.pressed.connect(func():
-			_selected_slot = slot
-			_apply_part(_build, part)
+			_assign_core(part)
 			_after_change())
 
 	button.mouse_entered.connect(func(): _set_hover(part, button))
@@ -687,48 +639,7 @@ func _tile_style(state: String, equipped: bool) -> StyleBoxFlat:
 	return style
 
 
-## Die Chassis-Kachel zeigt den ganzen Rahmen (§9c): Koerper, Kopf und Antrieb
-## aus dem Satz, live zusammengesetzt -- nicht nur den Rumpf. Gebaut wird ueber
-## dieselbe Funktion wie die grosse Vorschau (DromeSprites.assemble), damit die
-## Miniatur nicht irgendwann anders aussieht als der Bot, den sie meint.
-##
-## Ein eigener kleiner SubViewport je Chassis (es sind vier). Die Huelle ist ein
-## reiner Rahmen -- Kern und Ausruestung bleiben leer, die waehlt man danach.
-func _chassis_tile_view(part: PartData) -> Control:
-	var container := SubViewportContainer.new()
-	container.custom_minimum_size = Vector2(TILE_SIZE, TILE_SIZE)
-	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var sub := SubViewport.new()
-	sub.size = Vector2i(TILE_SIZE, TILE_SIZE)
-	sub.transparent_bg = true
-	sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	container.add_child(sub)
-
-	var root := Node2D.new()
-	# Waagerecht mittig, senkrecht auf GROUND_FRACTION -- dieselbe Ausrichtung
-	# ueber den Bodenpunkt wie die grosse Vorschau, nur kleiner skaliert.
-	root.position = Vector2(
-		TILE_SIZE * 0.5 - IsoView.SPRITE_ORIGIN.x * CHASSIS_TILE_SCALE,
-		TILE_SIZE * GROUND_FRACTION - IsoView.SPRITE_ORIGIN.y * CHASSIS_TILE_SCALE)
-	root.scale = Vector2(CHASSIS_TILE_SCALE, CHASSIS_TILE_SCALE)
-	sub.add_child(root)
-
-	var hull := DromeBuild.new()
-	hull.apply_chassis(part.id)
-	DromeSprites.assemble(root, hull, _facing)
-	return container
-
-
 ## Das Bauteilbild, auf seinen sichtbaren Inhalt zugeschnitten.
-##
-## Dasselbe Asset, aus dem gleich der Bot entsteht -- nicht ein zweites
-## Vorschaubild, das irgendwann davon abweicht. Nur zeichnet ein Teil in einem
-## 128x128-Raum an genau der Stelle, an der es spaeter am Bot sitzt: ein
-## Blaster fuellt davon eine Ecke. Ungeschnitten waere die Kachel gross und das
-## Teil darin klein -- also wird der belegte Bereich gesucht und der gezeigt.
 func _part_texture(part: PartData) -> Texture2D:
 	var path: String = part.view(_facing).get("svg", "")
 	if path == "" or not ResourceLoader.exists(path):
@@ -757,15 +668,13 @@ func _set_thumbnail(button: Button, part: PartData) -> void:
 	button.expand_icon = true
 
 
-## In welchen Slot wuerde dieses Teil gehen? Die Regel steht in DromeBuild --
-## sie ist eine Aussage ueber den Aufbau, nicht ueber die Bedienung.
+## In welchen Slot wuerde dieses Teil gehen? Die Regel steht in DromeBuild.
 func _target_slot_for(part: PartData) -> String:
 	return _build.slot_for(part, _selected_slot)
 
 
-## Baut ein Bibliotheks-Teil in einen Aufbau ein -- an genau einer Stelle, damit
-## Klick und Vorschau dasselbe tun. Ein Chassis setzt den GANZEN Rahmen (Koerper,
-## Kopf, Fuesse; §9), jedes andere Teil seinen Slot.
+## Baut ein Teil PROBEHALBER in einen Aufbau ein -- typ-basiert, nur fuer die
+## Hover-Vorschau. Die echte Zuweisung laeuft ueber den Roster (Instanzen).
 func _apply_part(build: DromeBuild, part: PartData) -> void:
 	if part.type == PartData.Type.BODY:
 		build.apply_chassis(part.id)
@@ -775,12 +684,18 @@ func _apply_part(build: DromeBuild, part: PartData) -> void:
 		build.slots[slot] = part.id
 
 
+## Weist dem Kern-Slot eine freie Instanz dieses Typs zu (§10g).
+func _assign_core(part: PartData) -> void:
+	GameState.roster.assign(_entry, "core", part.id)
+
+
+## Weist einem Halter eine freie Instanz dieser Ausruestung zu.
+func _assign_equipment(slot: String, part: PartData) -> void:
+	if GameState.roster.assign(_entry, slot, part.id):
+		_selected_slot = slot
+
+
 ## Was das Teil selbst mitbringt -- seine eigenen Werte, nicht die des Aufbaus.
-##
-## Stand frueher im Tooltip der Zeile. Ein Tooltip kommt nach einer Wartezeit
-## und verdeckt dann das, worauf der Zeiger steht; seit das Bild die
-## Schaltflaeche ist, waere genau das die Kachel. Die Zeilen stehen deshalb im
-## Feld neben der Bibliothek, sofort und neben dem Bild statt darauf.
 static func _part_spec_lines(part: PartData) -> Array[String]:
 	var lines: Array[String] = []
 	var values: Array[String] = []
@@ -800,7 +715,6 @@ static func _part_spec_lines(part: PartData) -> Array[String]:
 	for flag in FLAG_LABEL:
 		if part.get(flag):
 			lines.append(FLAG_LABEL[flag])
-	# Eine Waffe listet beide Aktionen: ihren Angriff und ihre Faehigkeit.
 	for action in part.actions:
 		lines.append(action.display_name)
 		lines.append_array(action.description_lines())
@@ -813,12 +727,6 @@ static func _part_spec_lines(part: PartData) -> Array[String]:
 
 ## Welche Halter dieses Chassis fuer dieses Teil hat -- alle, auch die, die es
 ## nicht nehmen, mit dem Grund daneben.
-##
-## Statisch und ohne Oberflaeche: es ist eine Aussage ueber den Aufbau (welcher
-## Halter nimmt was, was steckt schon drin), nicht ueber die Bedienung. So
-## laesst sie sich ohne laufende Szene pruefen -- und die Reihenfolge, in der
-## der Spieler die Halter nummeriert sieht, ist dieselbe wie in
-## ``equip_slots()`` und damit dieselbe wie im Kampf.
 static func slot_choices(build: DromeBuild, part: PartData) -> Array:
 	var choices: Array = []
 	if build == null or part == null or part.type != PartData.Type.EQUIPMENT:
@@ -856,8 +764,6 @@ static func slot_choices(build: DromeBuild, part: PartData) -> Array:
 	return choices
 
 
-## Warum dieser Halter das Teil nicht nimmt -- aus derselben Regel, die
-## ``accepts()`` anwendet, nur in Worten.
 static func _rejection(part: PartData, rule: Dictionary, limit: String) -> String:
 	if PartData.MOUNT_CLASSES.find(part.mount_class) \
 			> PartData.MOUNT_CLASSES.find(limit):
@@ -871,9 +777,9 @@ static func _rejection(part: PartData, rule: Dictionary, limit: String) -> Strin
 	return "passt nicht"
 
 
-## Die Liste geht ueber der Kachel auf, die sie meint: der Zeiger steht schon
-## dort, und die naechste Zeile liegt wenige Pixel darunter. Das ist der ganze
-## Punkt -- der Weg nach rechts zur Slotliste und zurueck entfaellt.
+## Die Liste geht ueber der Kachel auf, die sie meint. Ein Halter ist nur dann
+## klickbar, wenn er das Teil nimmt UND ein freies Exemplar da ist -- sonst nennt
+## die Zeile den Grund (Eindeutigkeit, §10g).
 func _open_slot_popup(part: PartData, anchor: Control) -> void:
 	if _slot_popup.visible and _pending_part == part:
 		_close_slot_popup()
@@ -885,23 +791,32 @@ func _open_slot_popup(part: PartData, anchor: Control) -> void:
 
 	_slot_popup_rows.add_child(_delta_line(part.display_name, COLOR_HEADING, 12))
 
+	var free := GameState.roster.free_count(part.id)
 	var choices := slot_choices(_build, part)
 	if choices.is_empty():
 		_slot_popup_rows.add_child(_delta_line("Dieses Chassis hat keine "
 			+ "Halterung.", COLOR_BAD))
 	for choice in choices:
+		var slot: String = choice["slot"]
+		var occupant := _build.part_in(slot)
+		var detail: String = choice["detail"]
+		# Klickbar nur, wenn das Teil hier NEU landen kann: es passt, steckt nicht
+		# schon hier, und es gibt ein freies Exemplar.
+		var already_here: bool = occupant != null and occupant.id == part.id
+		var can_place: bool = choice["allowed"] and not already_here and free > 0
+		if choice["allowed"] and not already_here and free <= 0:
+			detail = "kein freies Exemplar"
+
 		var row := Button.new()
 		row.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		row.add_theme_font_size_override("font_size", 11)
-		row.text = "%s   %s" % [choice["label"], choice["detail"]]
-		row.disabled = not choice["allowed"]
-		if not choice["allowed"]:
+		row.text = "%s   %s" % [choice["label"], detail]
+		row.disabled = not can_place
+		if not can_place:
 			row.modulate = COLOR_MUTED
 		else:
-			var slot: String = choice["slot"]
 			row.pressed.connect(func():
-				_selected_slot = slot
-				_build.slots[slot] = part.id
+				_assign_equipment(slot, part)
 				_close_slot_popup()
 				_after_change())
 		_slot_popup_rows.add_child(row)
@@ -911,12 +826,6 @@ func _open_slot_popup(part: PartData, anchor: Control) -> void:
 	await get_tree().process_frame
 	if not _slot_popup.visible or _pending_part != part:
 		return
-	# Ueber der Kachel, leicht nach innen versetzt: die Zeilen liegen damit
-	# unter dem Zeiger, und das Bild bleibt am Rand noch sichtbar.
-	#
-	# Nach rechts endet die Liste an der Kante der Bibliothek. Dahinter steht
-	# das Werteblatt zum selben Teil -- beides uebereinander waere zweimal
-	# dieselbe Antwort, einmal verdeckt.
 	var origin := anchor.get_global_rect()
 	var column := _library_column.get_global_rect()
 	_slot_popup.position = Vector2(
@@ -930,12 +839,6 @@ func _close_slot_popup() -> void:
 	_pending_part = null
 
 
-## Ein Klick daneben und Escape schliessen die Liste. Ohne das bliebe sie
-## stehen, wenn der Spieler es sich anders ueberlegt -- und verdeckte dann die
-## Kacheln darunter.
-## Gefragt wird VOR der Oberflaeche (``_input``), aber nur nach Klicks
-## ausserhalb des Feldes: schloesse es bei jedem Klick, waere die Zeile darin
-## nicht mehr anklickbar -- sie bekaeme das Ereignis erst danach.
 func _input(event: InputEvent) -> void:
 	if not _slot_popup.visible:
 		return
@@ -950,25 +853,13 @@ func _input(event: InputEvent) -> void:
 # Die Vorschau beim Hovern
 # ---------------------------------------------------------------------------
 
-## Zeiger auf einem Bibliotheks-Teil: der Aufbau wird MIT diesem Teil gezeigt --
-## in den Zahlen rechts, im Deltafeld direkt daneben und im Bild in der Mitte.
-##
-## Das Deltafeld ist der eigentliche Punkt: rechts stehen die Werte des
-## Aufbaus, aber die Frage beim Bauen lautet nicht "wie viel habe ich", sondern
-## "was aendert sich, wenn ich das nehme". Diese Antwort neben den Zeiger zu
-## legen erspart den Kontrollblick nach rechts und zurueck.
 func _set_hover(part: PartData, anchor: Control) -> void:
-	# Eine offene Halterliste meint ein bestimmtes Teil. Wandert der Zeiger auf
-	# ein anderes, meint sie nichts mehr.
 	if _slot_popup.visible and _pending_part != part:
 		_close_slot_popup()
 	var slot := _target_slot_for(part)
 	var probe := _build.clone()
 	if slot != "":
 		_apply_part(probe, part)
-		# Ein Chassiswechsel kann Ausruestungsslots wegnehmen. Was nicht mehr
-		# passt, faellt ab -- sonst versprechen die Zahlen einen Aufbau, den es
-		# so gar nicht geben kann.
 		probe._drop_invalid_equipment()
 	_hover_build = probe
 	_hover_part = part
@@ -981,9 +872,6 @@ func _set_hover(part: PartData, anchor: Control) -> void:
 func _clear_hover() -> void:
 	if _hover_build == null:
 		return
-	# Der Zeiger verlaesst die Kachel, um in die Halterliste zu fahren, die auf
-	# ihr liegt. Waehrenddessen bleibt zu sehen, worueber gerade entschieden
-	# wird -- Bild wie Werte.
 	if _slot_popup.visible:
 		return
 	_hover_build = null
@@ -1001,24 +889,27 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 	_delta_rows.add_child(_delta_line("%s  %s" % [part.code, part.display_name],
 		COLOR_HEADING, 12))
 
-	# Erst, was das Teil IST -- die Kachel zeigt es nicht mehr an. Dann, was es
-	# am Aufbau aendert.
 	for line in _part_spec_lines(part):
 		_delta_rows.add_child(_delta_line(line, Color(0.78, 0.83, 0.9)))
 	_delta_rows.add_child(_delta_line("", COLOR_MUTED, 4))
 
+	# Die Verfuegbarkeit gehoert hierher -- sie ist die Kaufentscheidung: kann ich
+	# das hier ueberhaupt einbauen, und wenn nein, warum nicht (§10g).
+	var free := GameState.roster.free_count(part.id)
+	var here := GameState.roster.count_in_entry(_entry, part.id)
 	if slot == "":
 		_delta_rows.add_child(_delta_line("passt in keine Halterung von %s"
 			% [_build.body().display_name if _build.body() != null
 				else "diesem Chassis"], COLOR_BAD))
+	elif free <= 0 and here <= 0:
+		_delta_rows.add_child(_delta_line("kein freies Exemplar — alle verbaut",
+			COLOR_BAD))
 	elif part.type == PartData.Type.EQUIPMENT:
-		# Bei Ausruestung entscheidet der Klick, nicht die Vorschau -- hier steht
-		# deshalb, was die Zahlen darunter annehmen, und nicht, wo es landet.
-		_delta_rows.add_child(_delta_line("Klick fragt nach dem Halter · "
-			+ "Werte fuer %s" % SLOT_SHORT.get(slot, slot), COLOR_MUTED))
+		_delta_rows.add_child(_delta_line("Klick fragt nach dem Halter · %d frei"
+			% free, COLOR_MUTED))
 	else:
-		_delta_rows.add_child(_delta_line("kommt in: %s"
-			% SLOT_LABEL.get(slot, slot), COLOR_MUTED))
+		_delta_rows.add_child(_delta_line("kommt in: %s · %d frei"
+			% [SLOT_LABEL.get(slot, slot), free], COLOR_MUTED))
 	var replaced := _build.part_in(slot) if slot != "" else null
 	if replaced != null and replaced.id != part.id:
 		_delta_rows.add_child(_delta_line("ersetzt: %s" % replaced.display_name,
@@ -1039,8 +930,6 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 	if not changed:
 		_delta_rows.add_child(_delta_line("keine Wertaenderung", COLOR_MUTED))
 
-	# Gewicht steht immer da, auch unveraendert -- es ist kein Deckel mehr, aber
-	# der Grund, warum das Tempo faellt, und das soll die Vorschau zeigen.
 	if after["weight"] != before["weight"]:
 		_delta_rows.add_child(_delta_line("Gewicht  %d → %d"
 			% [before["weight"], after["weight"]], COLOR_MUTED))
@@ -1053,14 +942,9 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 			_delta_rows.add_child(_delta_line("• %s" % line, COLOR_BAD))
 
 	_delta_panel.visible = true
-	# Erst nach dem Layout kennt das Feld seine Groesse.
 	await get_tree().process_frame
 	if not _delta_panel.visible or _hover_part != part:
 		return
-	# Waagerecht an der KANTE DER BIBLIOTHEK, nicht an der Kachel: in einem
-	# Raster liegt die rechte Kachelkante mitten in der Spalte, und das Feld
-	# verdeckte dann die Nachbarn. Senkrecht folgt es der Kachel -- es soll
-	# neben dem stehen, worauf der Zeiger zeigt.
 	var origin := anchor.get_global_rect()
 	var column := _library_column.get_global_rect()
 	_delta_panel.position = Vector2(column.end.x + 8,
@@ -1075,8 +959,6 @@ func _delta_line(text: String, color: Color, font_size: int = 11) -> Label:
 	return label
 
 
-## Alle Zahlenwerte, die im Deltafeld auftauchen duerfen -- die Kampfwerte aus
-## STAT_GROUPS, in ihrer Reihenfolge.
 func _numeric_rows() -> Array:
 	var rows: Array = []
 	for group in STAT_GROUPS:
@@ -1124,9 +1006,6 @@ func _refresh_stats() -> void:
 				line.add_child(delta)
 			_stat_list.add_child(line)
 
-			# Der SPD-Wert oben ist bereits der Endwert. Ohne diese Zeile sieht
-			# der Spieler ihn sinken, wenn er eine Kanone anbaut, und findet den
-			# Grund nirgends -- die Zuladung steht in keiner der sieben Zahlen.
 			if key == "spd":
 				_add_payload_note()
 
@@ -1152,18 +1031,8 @@ func _refresh_stats() -> void:
 			text += "[color=#ff6b6b]• %s[/color]\n" % line
 	_problem_label.text = text
 
-	_start_button.disabled = not _squad_is_ready()
-	_start_button.text = "Chaos-Virus starten" if _squad_is_ready() \
-		else "Squad unvollstaendig"
-
 
 ## Was dieser Aufbau im Kampf tun kann -- getrennt nach Angriff und Faehigkeit.
-##
-## Steht hier, weil es die Frage beantwortet, die die Werteliste nicht
-## beantwortet: zwei Aufbauten mit identischen Zahlen koennen voellig
-## verschiedene Dinge tun. Und weil hier sichtbar wird, dass zwei gleiche Teile
-## EINE Aktion ergeben und nicht zwei -- dieselbe Liste, die auch der Kampf
-## anzeigt (DromeBuild.actions()).
 func _refresh_actions() -> void:
 	for child in _action_list.get_children():
 		child.queue_free()
@@ -1171,10 +1040,6 @@ func _refresh_actions() -> void:
 	var any := false
 	for category in [ActionData.Category.ATTACK, ActionData.Category.ABILITY]:
 		for action in _build.actions_of(category):
-			# Dasselbe Symbol wie im Kampf, hier aber NEBEN dem Namen und nicht
-			# statt seiner: in der Werkstatt waehlt der Spieler Bauteile aus und
-			# braucht ihre Namen. Das Symbol steht daneben, damit er es hier
-			# lernt und im Kampf schon kennt.
 			var row := HBoxContainer.new()
 			row.add_theme_constant_override("separation", 6)
 			row.tooltip_text = "\n".join(action.description_lines())
@@ -1205,13 +1070,7 @@ func _refresh_actions() -> void:
 		_action_list.add_child(none)
 
 
-## Ein Balken mit Klartext -- der Spieler soll sehen, um WIE VIEL er drueber
-## ist, nicht nur dass er drueber ist.
 ## Woher der Tempoverlust kommt: "Zuladung 16  ->  -4 SPD".
-##
-## Steht direkt unter der SPD-Zeile und nur dann, wenn tatsaechlich etwas
-## abgezogen wird. Eine dauerhafte Zeile mit "-0" waere Rauschen; eine, die
-## fehlt, waere eine Zahl ohne Begruendung.
 func _add_payload_note() -> void:
 	var slowdown := _build.payload_slowdown()
 	if slowdown <= 0:
@@ -1232,58 +1091,11 @@ func _refresh_preview() -> void:
 		_hover_build if _hover_build != null else _build, _facing)
 
 
-func _refresh_squad_bar() -> void:
-	for child in _squad_bar.get_children():
-		child.queue_free()
-	for i in _squad.size():
-		var build: DromeBuild = _squad[i]
-		var button := Button.new()
-		button.toggle_mode = true
-		button.button_pressed = i == _active_index
-		var valid := build.is_valid()
-		button.text = "%s%s" % [build.display_name, "" if valid else "  (!)"]
-		button.modulate = Color.WHITE if valid else COLOR_BAD
-		button.pressed.connect(func():
-			_active_index = i
-			_build = _squad[i]
-			_clear_hover()
-			_refresh_all())
-		_squad_bar.add_child(button)
-
-	var size_row := HBoxContainer.new()
-	var minus := Button.new()
-	minus.text = "−"
-	minus.disabled = _squad.size() <= Config.get_int("squad_size_min", 1)
-	minus.pressed.connect(func():
-		_squad.resize(_squad.size() - 1)
-		_active_index = mini(_active_index, _squad.size() - 1)
-		_build = _squad[_active_index]
-		_refresh_all())
-	size_row.add_child(minus)
-	var plus := Button.new()
-	plus.text = "+"
-	plus.disabled = _squad.size() >= Config.get_int("squad_size_max", 4)
-	plus.pressed.connect(func():
-		_squad.append(_starter_build(_squad.size()))
-		_refresh_all())
-	size_row.add_child(plus)
-	_squad_bar.add_child(size_row)
-
-
-func _squad_is_ready() -> bool:
-	for build in _squad:
-		if not build.is_valid():
-			return false
-	return not _squad.is_empty()
-
-
 func _after_change() -> void:
 	_clear_hover()
-	# Slots koennen weggefallen sein (Chassiswechsel) -- und dann darf auch
-	# die Auswahl nicht auf einem Slot stehen bleiben, den es nicht gibt.
-	_build._drop_invalid_equipment()
+	_rebuild()
 	if _selected_slot not in _slots():
-		_selected_slot = "body"
+		_selected_slot = "core"
 	_refresh_all()
 
 
@@ -1291,21 +1103,13 @@ func _after_change() -> void:
 # Uebergabe
 # ---------------------------------------------------------------------------
 
+## Der Eintrag ist eine Referenz im Roster -- die Zuweisungen stehen also schon
+## drin. Zu sichern bleibt die Blickrichtung und der Gang auf die Platte.
 func _persist() -> void:
-	GameState.squad = _squad.duplicate()
-	GameState.squad_size = _squad.size()
-	GameState.save_squad()
+	_entry.direction = _facing
+	GameState.save_roster()
 
 
 func _save_and_go(scene: String) -> void:
 	_persist()
 	get_tree().change_scene_to_file(scene)
-
-
-func _start_battle() -> void:
-	if not _squad_is_ready():
-		return
-	_persist()
-	if GameState.battle_seed == 0:
-		GameState.new_seed()
-	get_tree().change_scene_to_file("res://scenes/battle.tscn")

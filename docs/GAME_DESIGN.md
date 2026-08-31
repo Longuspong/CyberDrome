@@ -1160,6 +1160,18 @@ Roster -- eigener, kleiner Schritt danach.
   Material aufloesen) und eine **Shop-Alternative** federn Pech im Drop ab.
   Bewusst nicht im MVP -- erst notieren, wenn die Beute-Schleife steht.
 
+**Umgesetzt (Stand 2026-08):** Die Besitz-Schicht steht in der Engine.
+`PartInstance` (uid + Typ), `RosterEntry` (Chassis-Instanz + `assignments`) und
+`Roster` (Inventar, Eindeutigkeit, Ableitung nach `DromeBuild`, Startbestand,
+Migration des alten Wegwerf-Squads, Save v2) bilden das Modell; `GameState`
+haelt den Roster und leitet den Kampf-Squad aus den `in_squad`-Eintraegen ab.
+Die **Garage** (`scenes/garage.tscn`) ist die Roster-Liste und die Auswahl vor
+der Werkstatt; die **Werkstatt** passt genau einen DROME an und baut Kern und
+Ausruestung nur aus **freien** Instanzen ein. Der handgesetzte Startbestand ist
+da (vier Chassis, vier Kerne, acht Ausruestungsteile). Noch offen bleiben die
+Beute-Quellen, Mods (§10c) und Fraktions-Varianten (§10c/d) -- die knappe
+Auswahl entsteht heute aus dem festen Startbestand.
+
 ## 11. Schaden und Verteidigung (Vorschlag, in Abstimmung -- Stand 2026-08)
 
 Das beantwortet die lange offene **Schadensordnung** (§7a, §8): ja, es gibt
