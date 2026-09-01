@@ -1,30 +1,40 @@
 extends Node
 
-## Was zwischen den Bildschirmen ueberlebt: der Squad, der Seed, das Ergebnis.
+## Was zwischen den Bildschirmen ueberlebt: der Roster, der Seed, das Ergebnis.
 ##
 ## Die Werkstatt kennt die Kampfszene nicht und umgekehrt. Beide reden nur
 ## hierueber -- sonst haengt der Rueckweg vom Ergebnisbildschirm an einem
 ## Szenenpfad, und ein zweiter Einstieg in den Kampf ist nicht mehr moeglich.
-
-## Wohin das Spiel schreibt.
-const SQUAD_PATH := "user://squad.json"
-
-## Woher die SVG-Werkstatt liefert. Sie ist ein eigenstaendiges Werkzeug
-## (python3 main.py) und kann nicht in Godots user://-Verzeichnis schreiben --
-## sie legt ihren Squad neben die Builds. Beim Start gewinnt der neuere der
-## beiden, damit ein frisch gebauter Squad nicht von einem alten Spielstand
-## verdeckt wird.
 ##
-## Dieser Weg ueberlebt einen Export NICHT: builds/ liegt im Repo und nicht im
-## Spielpaket. Das ist kein Mangel -- die SVG-Werkstatt laeuft ohnehin nur
-## neben dem Quellbaum. Im ausgelieferten Spiel baut man in der
-## Godot-Werkstatt, und die schreibt nach user://.
+## ### Vom Wegwerf-Squad zum Roster (§10g)
+##
+## Frueher hielt der GameState EINEN fluechtigen Squad frisch gebauter DROMEs.
+## Jetzt liegt darunter der ``roster`` -- der bleibende Besitz (Inventar +
+## DROMEs). Der ``squad`` ist nur noch die abgeleitete Auswahl derer, die ins
+## naechste Gefecht ziehen (``in_squad``). Der Kampf liest weiter ``squad`` und
+## merkt von der Besitz-Schicht nichts.
+
+## Wohin das Spiel schreibt (v2: Inventar + Roster).
+const ROSTER_PATH := "user://roster.json"
+
+## Altformate, aus denen migriert wird. ``SQUAD_PATH`` ist der fruehere
+## Wegwerf-Squad des Spiels; ``WORKSHOP_SQUAD_PATH`` liefert die SVG-Werkstatt
+## (python3 main.py) neben die Builds. Beide tragen das v1-Loadout-Format. Der
+## neuere der drei Dateien gewinnt beim Start, damit ein frisch gebauter Squad
+## nicht von einem alten Stand verdeckt wird -- und ein v1-Squad wird dabei
+## einmalig in den Roster ueberfuehrt.
+const SQUAD_PATH := "user://squad.json"
 const WORKSHOP_SQUAD_PATH := "res://builds/squad.json"
 
-## Wie viele DROMEs ein Squad hat. Konfigurierbar 1-4.
-var squad_size: int = 2
+## Der Besitz: Inventar (Instanzen) + Roster (DROMEs). Quelle der Wahrheit.
+var roster: Roster = Roster.new()
 
-## Array[DromeBuild] -- die Bots des Spielers
+## Welchen Roster-Eintrag die Werkstatt gerade anpasst. Die Garage setzt ihn vor
+## dem Szenenwechsel; -1 heisst "keiner gewaehlt".
+var editing_index: int = -1
+
+## Die DROMEs des naechsten Gefechts -- abgeleitet aus den ``in_squad``-Eintraegen
+## des Rosters. Array[DromeBuild]. Der Kampf liest genau das.
 var squad: Array = []
 
 ## Bestimmt Gegner, Mutator, Karte und Aufstellung. Wird im Ergebnis-
@@ -35,8 +45,9 @@ var battle_seed: int = 0
 ## Ergebnis des letzten Kampfes, fuer den Ergebnisbildschirm
 var last_result: Dictionary = {}
 
+
 func _ready() -> void:
-	load_squad()
+	load_roster()
 
 
 func new_seed() -> int:
@@ -44,63 +55,95 @@ func new_seed() -> int:
 	return battle_seed
 
 
-## Squad als JSON. Bewusst dasselbe Loadout-Format wie die SVG-Werkstatt es
-## exportiert -- ein Build aus builds/ laesst sich damit direkt spielen.
-func save_squad() -> void:
-	var payload := {
-		"squad_size": squad_size,
-		"squad": [],
-	}
-	for build in squad:
-		payload["squad"].append(build.to_loadout())
-	var file := FileAccess.open(SQUAD_PATH, FileAccess.WRITE)
+## Der Werkstatt-Eintrag, den die Garage ausgewaehlt hat. null bei ungueltigem
+## Index -- die Werkstatt schickt den Spieler dann in die Garage zurueck.
+func editing_entry() -> RosterEntry:
+	if editing_index < 0 or editing_index >= roster.entries.size():
+		return null
+	return roster.entries[editing_index]
+
+
+## Materialisiert den Kampf-Squad aus dem Roster. Nach jeder Aenderung an der
+## Auswahl noetig -- der Kampf liest eine feste Liste, keine Ableitung.
+func refresh_squad() -> void:
+	squad = roster.squad_builds()
+
+
+# ---------------------------------------------------------------------------
+# Persistenz
+# ---------------------------------------------------------------------------
+
+func save_roster() -> void:
+	refresh_squad()
+	var file := FileAccess.open(ROSTER_PATH, FileAccess.WRITE)
 	if file == null:
-		push_error("GameState: %s nicht schreibbar" % SQUAD_PATH)
+		push_error("GameState: %s nicht schreibbar" % ROSTER_PATH)
 		return
-	file.store_string(JSON.stringify(payload, "  "))
+	file.store_string(JSON.stringify(roster.to_dict(), "  "))
 
 
-func load_squad() -> void:
-	squad.clear()
-	var path := _newest_squad_file()
+func load_roster() -> void:
+	var path := _newest_save_file()
 	if path == "":
+		# Ein frischer Start: der handgesetzte Startbestand (§10g).
+		roster.seed_starter()
+		refresh_squad()
+		print("[GameState] Kein Spielstand -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
+			% [roster.entries.size(), roster.all_instances().size()])
 		return
 
+	var parsed = _read_json(path)
+	if parsed == null:
+		roster.seed_starter()
+		refresh_squad()
+		return
+
+	# v2 (Roster) direkt laden; ein v1-Stand (Wegwerf-Squad, auch der SVG-Export)
+	# wird migriert und beim naechsten Speichern als v2 abgelegt.
+	var loaded := false
+	if int(parsed.get("version", 0)) >= 2:
+		loaded = roster.load_dict(parsed)
+	else:
+		loaded = roster.migrate_v1(parsed)
+		if loaded:
+			print("[GameState] v1-Squad aus %s in den Roster ueberfuehrt" % path)
+	if not loaded:
+		roster.seed_starter()
+
+	refresh_squad()
+	print("[GameState] Roster aus %s: %d DROMEs, %d im Squad"
+		% [path, roster.entries.size(), roster.squad_count()])
+
+
+func _read_json(path: String):
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		return
+		return null
 	var parsed = JSON.parse_string(file.get_as_text())
 	if parsed == null or not parsed is Dictionary:
-		push_warning("GameState: %s ist unlesbar, Squad bleibt leer" % path)
-		return
-
-	squad_size = parsed.get("squad_size", squad_size)
-	# Aeltere Spielstaende koennen noch ein "ignore_build_limits" tragen -- das
-	# Feld ist bedeutungslos geworden (es gibt keine Bau-Budgets mehr) und wird
-	# beim Lesen einfach ignoriert.
-	for loadout in parsed.get("squad", []):
-		var build := DromeBuild.from_loadout(loadout)
-		if build != null:
-			squad.append(build)
-	print("[GameState] Squad aus %s: %d DROMEs" % [path, squad.size()])
+		push_warning("GameState: %s ist unlesbar" % path)
+		return null
+	return parsed
 
 
-## Der neuere von Spielstand und Werkstatt-Export. Ohne diesen Vergleich
-## muesste der Spieler wissen, welche der beiden Dateien gewinnt -- und ein in
-## der Werkstatt gebauter Squad taeuchte im Kampf einfach nicht auf.
-func _newest_squad_file() -> String:
-	var candidates: Array[String] = []
-	for path in [SQUAD_PATH, WORKSHOP_SQUAD_PATH]:
-		if FileAccess.file_exists(path):
-			candidates.append(path)
-	if candidates.is_empty():
-		return ""
-	if candidates.size() == 1:
-		return candidates[0]
-	var a := FileAccess.get_modified_time(ProjectSettings.globalize_path(candidates[0]))
-	var b := FileAccess.get_modified_time(ProjectSettings.globalize_path(candidates[1]))
-	return candidates[0] if a >= b else candidates[1]
+## Der neuere von Spielstand und Werkstatt-Export -- so muss der Spieler nicht
+## wissen, welche Datei gewinnt. "" wenn keine existiert.
+func _newest_save_file() -> String:
+	var newest := ""
+	var newest_time := -1
+	for path in [ROSTER_PATH, SQUAD_PATH, WORKSHOP_SQUAD_PATH]:
+		if not FileAccess.file_exists(path):
+			continue
+		var mtime := FileAccess.get_modified_time(ProjectSettings.globalize_path(path))
+		if mtime > newest_time:
+			newest_time = mtime
+			newest = path
+	return newest
 
+
+# ---------------------------------------------------------------------------
+# Gueltigkeit
+# ---------------------------------------------------------------------------
 
 func squad_is_valid() -> bool:
 	if squad.size() < 1:

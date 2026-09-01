@@ -39,12 +39,12 @@ func _ready() -> void:
 
 	box.add_child(_spacer(10))
 
-	var workshop := Button.new()
-	workshop.text = "Werkstatt"
-	workshop.custom_minimum_size = Vector2(300, 54)
-	workshop.pressed.connect(func():
-		get_tree().change_scene_to_file("res://scenes/workshop.tscn"))
-	box.add_child(workshop)
+	var garage := Button.new()
+	garage.text = "Garage & Werkstatt"
+	garage.custom_minimum_size = Vector2(300, 54)
+	garage.pressed.connect(func():
+		get_tree().change_scene_to_file("res://scenes/garage.tscn"))
+	box.add_child(garage)
 
 	# --- Chaos-Virus mit Seed-Feld ---
 	var seed_row := HBoxContainer.new()
@@ -97,7 +97,7 @@ func _spacer(height: int) -> Control:
 
 func _squad_summary() -> String:
 	if GameState.squad.is_empty():
-		return "Kein Squad gespeichert. In der Werkstatt einen bauen."
+		return "Kein Squad gewaehlt. In der Garage welche ins Gefecht schicken."
 	var names: Array[String] = []
 	for build in GameState.squad:
 		names.append(build.display_name)
