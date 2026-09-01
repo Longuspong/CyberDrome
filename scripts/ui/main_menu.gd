@@ -1,116 +1,198 @@
 extends Control
 
-## Hauptmenue: Werkstatt oder Chaos-Virus.
+## Das Hauptmenue -- der Einstieg in alle Bildschirme.
 ##
-## Der Einstiegspunkt kennt nur zwei Szenen und den Seed. Alles andere haengt
-## am GameState -- so kommt man aus dem Ergebnisbildschirm zurueck, ohne dass
-## der Kampf die Werkstatt kennen muss oder umgekehrt.
+## Das Layout folgt der Handskizze: MENU oben links, Inventar oben rechts, die
+## Drome-Garage rechts, unten die drei Modi (Gamemode 1/2 ausgegraut, Chaos-
+## Virus aktiv). In der Mitte laeuft eine reine Kulisse -- zufaellige Bots, die
+## einander bearbeiten (MenuArena) --, damit im Menue etwas los ist.
+##
+## Der Einstieg kennt nur Szenen und den GameState. Ob der Chaos-Virus startbar
+## ist, sagt der Squad im Roster; alles Weitere liegt hinter den jeweiligen
+## Bildschirmen.
+
+const COLOR_HEADING := Color(0.62, 0.82, 0.96)
+const COLOR_MUTED := Color(0.58, 0.63, 0.7)
+const COLOR_BAD := Color(1.0, 0.46, 0.46)
+const COLOR_GOOD := Color(0.46, 0.86, 0.52)
+
+var _status: Label
+var _chaos: Button
+
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	_build_backdrop()
+	_build_ui()
+	_refresh_status()
 
-	var box := VBoxContainer.new()
-	box.position = Vector2(140, 130)
-	box.add_theme_constant_override("separation", 14)
-	add_child(box)
 
-	var title := Label.new()
-	title.text = "DROME"
-	title.add_theme_font_size_override("font_size", 64)
-	box.add_child(title)
+# ---------------------------------------------------------------------------
+# Kulisse
+# ---------------------------------------------------------------------------
 
-	var subtitle := Label.new()
-	subtitle.text = "Death Robot Omni Machine Entity"
-	subtitle.modulate = Color(0.55, 0.75, 0.9)
-	box.add_child(subtitle)
+## Hintergrund, Arena und ein dunkler Schleier -- alle auf einer eigenen Ebene
+## HINTER der Bedienung (CanvasLayer -1). So kann die Arena nie ueber einen
+## Knopf geraten, egal welche Zeichentiefe ihre Bots gerade haben.
+func _build_backdrop() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = -1
+	add_child(layer)
 
-	box.add_child(_spacer(18))
+	var size := get_viewport().get_visible_rect().size
 
-	var squad_line := Label.new()
-	squad_line.text = _squad_summary()
-	box.add_child(squad_line)
+	var bg := ColorRect.new()
+	bg.color = Color(0.05, 0.06, 0.09)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(bg)
 
-	var problems := _squad_problems()
-	if not problems.is_empty():
-		var warn := Label.new()
-		warn.text = "\n".join(problems)
-		warn.modulate = Color(1.0, 0.42, 0.42)
-		box.add_child(warn)
+	var arena := MenuArena.new()
+	arena.position = Vector2(size.x * 0.5, size.y * 0.46)
+	layer.add_child(arena)
+	arena.start()
 
-	box.add_child(_spacer(10))
+	# Ein Schleier daempft die Kulisse, damit die Schrift darueber ruhig bleibt.
+	var scrim := ColorRect.new()
+	scrim.color = Color(0.05, 0.06, 0.09, 0.55)
+	scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(scrim)
 
-	var garage := Button.new()
-	garage.text = "Garage & Werkstatt"
-	garage.custom_minimum_size = Vector2(300, 54)
+
+# ---------------------------------------------------------------------------
+# Bedienung
+# ---------------------------------------------------------------------------
+
+func _build_ui() -> void:
+	# MENU -- oben links.
+	var title := _boxed_label("MENU", 44)
+	_place(title, Vector2(0, 0), Vector2(40, 32), Vector2(240, 84))
+	add_child(title)
+
+	# Inventar -- oben rechts.
+	var inventory := _boxed_button("Inventar", 22)
+	inventory.pressed.connect(func():
+		get_tree().change_scene_to_file("res://scenes/inventory.tscn"))
+	_place(inventory, Vector2(1, 0), Vector2(-280, 32), Vector2(240, 84))
+	add_child(inventory)
+
+	# Drome-Garage -- rechts, mittig.
+	var garage := _boxed_button("Drome\nGarage", 26)
 	garage.pressed.connect(func():
 		get_tree().change_scene_to_file("res://scenes/garage.tscn"))
-	box.add_child(garage)
+	_place(garage, Vector2(1, 0.5), Vector2(-280, -90), Vector2(240, 180))
+	add_child(garage)
 
-	# --- Chaos-Virus mit Seed-Feld ---
-	var seed_row := HBoxContainer.new()
-	var seed_label := Label.new()
-	seed_label.text = "Seed (leer = zufaellig): "
-	seed_row.add_child(seed_label)
-	var seed_field := LineEdit.new()
-	seed_field.custom_minimum_size = Vector2(200, 0)
-	seed_field.placeholder_text = "z.B. 20260806"
-	if GameState.battle_seed != 0:
-		seed_field.text = str(GameState.battle_seed)
-	seed_row.add_child(seed_field)
-	box.add_child(seed_row)
+	# Untere Leiste: die drei Modi.
+	var modes := HBoxContainer.new()
+	modes.add_theme_constant_override("separation", 18)
+	modes.alignment = BoxContainer.ALIGNMENT_CENTER
+	_place(modes, Vector2(0.5, 1), Vector2(-585, -128), Vector2(1170, 96))
+	add_child(modes)
 
-	var battle := Button.new()
-	battle.text = "Chaos-Virus"
-	battle.custom_minimum_size = Vector2(300, 54)
-	battle.disabled = not problems.is_empty()
-	battle.tooltip_text = "" if problems.is_empty() \
-		else "Der Squad enthaelt ungueltige Aufbauten."
-	battle.pressed.connect(func():
-		var text := seed_field.text.strip_edges()
-		GameState.battle_seed = int(text) if text.is_valid_int() else 0
-		if GameState.battle_seed == 0:
-			GameState.new_seed()
-		get_tree().change_scene_to_file("res://scenes/battle.tscn"))
-	box.add_child(battle)
+	modes.add_child(_mode_button("Gamemode 1",
+		"Noch nicht verfuegbar.", true, Callable()))
+	modes.add_child(_mode_button("Gamemode 2",
+		"Noch nicht verfuegbar.", true, Callable()))
+	_chaos = _mode_button("Chaos-Virus", "", false, _start_chaos)
+	modes.add_child(_chaos)
 
-	box.add_child(_spacer(10))
-
-	var quit := Button.new()
-	quit.text = "Beenden"
-	quit.custom_minimum_size = Vector2(300, 40)
-	quit.pressed.connect(func(): get_tree().quit())
-	box.add_child(quit)
-
-	var hint := Label.new()
-	hint.text = "Die SVG-Werkstatt (python3 main.py) bleibt daneben bestehen:\n"\
-		+ "dort werden Bauteile gezeichnet, Anker gesetzt und Paletten gepflegt."
-	hint.modulate = Color(0.55, 0.6, 0.68)
-	box.add_child(_spacer(16))
-	box.add_child(hint)
+	# Squad-Status -- eine Zeile ueber den Modi, sagt warum der Chaos-Virus
+	# gegebenenfalls gesperrt ist.
+	_status = Label.new()
+	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status.add_theme_font_size_override("font_size", 14)
+	_place(_status, Vector2(0.5, 1), Vector2(-400, -168), Vector2(800, 28))
+	add_child(_status)
 
 
-func _spacer(height: int) -> Control:
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, height)
-	return spacer
+func _start_chaos() -> void:
+	# Vorlaeufig: derselbe Weg wie bisher -- mit dem aktuellen Squad und einem
+	# frischen Seed ins Gefecht. Die Bit-Auswahl (weniger eigene DROMEs, mehr
+	# Beute) kommt im naechsten Schritt an genau diese Stelle.
+	if not GameState.squad_is_valid():
+		return
+	GameState.save_roster()
+	if GameState.battle_seed == 0:
+		GameState.new_seed()
+	get_tree().change_scene_to_file("res://scenes/battle.tscn")
 
 
-func _squad_summary() -> String:
-	if GameState.squad.is_empty():
-		return "Kein Squad gewaehlt. In der Garage welche ins Gefecht schicken."
-	var names: Array[String] = []
-	for build in GameState.squad:
-		names.append(build.display_name)
-	return "Squad (%d): %s" % [GameState.squad.size(), ", ".join(names)]
+func _refresh_status() -> void:
+	var count := GameState.roster.squad_count()
+	var ready := GameState.squad_is_valid()
+	if ready:
+		_status.text = "Squad bereit (%d) -- Chaos-Virus kann starten." % count
+		_status.modulate = COLOR_GOOD
+	else:
+		_status.text = "Kein gueltiger Squad. In der Garage DROMEs zusammenstellen."
+		_status.modulate = COLOR_BAD
+	_chaos.disabled = not ready
+	_chaos.tooltip_text = "" if ready else "Der Squad ist leer oder ungueltig."
 
 
-## Ungueltige Aufbauten koennen nicht in den Kampf. Die Meldung nennt die
-## verletzte Regel, statt den Knopf nur auszugrauen.
-func _squad_problems() -> Array[String]:
-	var problems: Array[String] = []
-	if GameState.squad.is_empty():
-		problems.append("Squad ist leer.")
-	for build in GameState.squad:
-		for line in build.validate():
-			problems.append("%s: %s" % [build.display_name, line])
-	return problems
+# ---------------------------------------------------------------------------
+# Bausteine
+# ---------------------------------------------------------------------------
+
+## Ein Modus-Knopf im Stil der Skizze. Ausgegraute Modi bleiben sichtbar, damit
+## man sieht, dass da noch mehr kommt -- ``disabled`` sperrt sie.
+func _mode_button(text: String, tip: String, disabled: bool, on_press: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.disabled = disabled
+	button.tooltip_text = tip
+	button.custom_minimum_size = Vector2(360, 78)
+	button.add_theme_font_size_override("font_size", 24)
+	if on_press.is_valid():
+		button.pressed.connect(on_press)
+	return button
+
+
+func _boxed_label(text: String, font_size: int) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _box_style())
+	var label := Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", font_size)
+	label.modulate = COLOR_HEADING
+	panel.add_child(label)
+	return panel
+
+
+func _boxed_button(text: String, font_size: int) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.add_theme_font_size_override("font_size", font_size)
+	button.add_theme_stylebox_override("normal", _box_style())
+	button.add_theme_stylebox_override("hover", _box_style(true))
+	button.add_theme_stylebox_override("pressed", _box_style(true))
+	return button
+
+
+func _box_style(highlight: bool = false) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.09, 0.11, 0.16, 0.9)
+	style.border_color = COLOR_HEADING if highlight else Color(0.85, 0.88, 0.93)
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(4)
+	for side in ["left", "right", "top", "bottom"]:
+		style.set("content_margin_" + side, 10)
+	return style
+
+
+## Verankert ein Control an einem Bezugspunkt (anchor in 0..1) mit einem Versatz
+## und einer festen Groesse. So haengen die Ecken-Elemente an den Ecken, auch
+## wenn das Fenster groesser wird als die 1600x900 der Vorlage.
+func _place(ctrl: Control, anchor: Vector2, offset: Vector2, size: Vector2) -> void:
+	ctrl.anchor_left = anchor.x
+	ctrl.anchor_right = anchor.x
+	ctrl.anchor_top = anchor.y
+	ctrl.anchor_bottom = anchor.y
+	ctrl.offset_left = offset.x
+	ctrl.offset_top = offset.y
+	ctrl.offset_right = offset.x + size.x
+	ctrl.offset_bottom = offset.y + size.y
