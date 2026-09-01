@@ -1,0 +1,89 @@
+{
+  "id": "eq_holo_boost",
+  "code": "EQP-009",
+  "set": "bot1",
+  "type": "equipment",
+  "name": "Hologramm-Boost",
+  "direction": "west",
+  "svg": "eq_holo_boost_west.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 30,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 46.36
+    },
+    {
+      "name": "emitter",
+      "x": 56.75,
+      "y": 46.0
+    }
+  ],
+  "color_scheme": {
+    "plate": "#28304a",
+    "plate_light": "#47547e",
+    "plate_dark": "#161b29",
+    "metal": "#5b6785",
+    "accent": "#2de2e6",
+    "glow": "#5affff",
+    "visor": "#5affff",
+    "outline": "#080b13"
+  },
+  "tags": [
+    "support",
+    "mobility"
+  ],
+  "mount_class": "light",
+  "category": "support",
+  "stats": {
+    "hp": 0,
+    "en_max": 0,
+    "en_regen": 0,
+    "spd": 0,
+    "mov": 0,
+    "atk": 0,
+    "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
+    "weight": 3,
+    "power_draw": 3,
+    "weight_capacity": 0,
+    "power_output": 0,
+    "can_pass_units": false,
+    "can_enter_steps": false,
+    "can_pass_blocks": false,
+    "ignores_drift": false,
+    "drift_modifier": 0,
+    "step_cost_reduced": false,
+    "grants_ignore_haze": false,
+    "hp_regen_pct": 0,
+    "aggro_bonus": 0,
+    "actions": [
+      {
+        "id": "act_holo_dash",
+        "display_name": "Hologramm-Boost",
+        "category": "ability",
+        "targeting": "dash",
+        "range_tiles": 3,
+        "aoe_radius": 0,
+        "en_cost": 20,
+        "power": 0,
+        "requires_line_of_sight": false,
+        "push_tiles": 0,
+        "status_effect": null,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "taunt_turns": 0,
+        "cooldown_turns": 0,
+        "energy_fraction": 0.0
+      }
+    ]
+  }
+}

@@ -35,21 +35,34 @@ var entries: Array = []
 ## wiederfindet. Wird beim Laden hinter das hoechste vorhandene gesetzt.
 var _next_uid: int = 1
 
-## Die vier Standard-Chassis, ihre themengleichen Kerne und alle acht Standard-
-## Ausruestungsteile -- der handgesetzte Startbestand (§10g/§12c). Reihenfolge =
-## Reihenfolge im frischen Roster.
+## Die vier Standard-DROMEs mit ihrer VOLLEN Standard-Ausstattung -- der
+## handgesetzte Startbestand (§10g/§12c). Reihenfolge = Reihenfolge im frischen
+## Roster. Die Ausruestung wird der Reihe nach in den ersten passenden freien
+## Slot gelegt (``_seed_equip``), damit ein support-only-Schulterpod nicht die
+## Waffe schluckt.
+##
+## Die Kits stehen so im Konzept:
+##   Vireo   Hologramm-Boost (Dash) + Puls-Blaster
+##   Molok   Belagerungskanone + Deflektor-Schild + Drohnen-Pod (Reparatur)
+##   Nimbus  Orbit-Fokus (Orbital) + Runenstab
+##   Strix   Schienen-Lanze (nur ein Slot)
 const STARTER_CHASSIS := [
-	[&"scout_body", &"scout_core", &"eq_pulse_blaster"],
-	[&"jugg_body", &"jugg_core", &"eq_siege_cannon"],
-	[&"mage_body", &"mage_core", &"eq_rune_staff"],
-	[&"strix_body", &"strix_core", &"eq_rail_lance"],
+	{"body": &"scout_body", "core": &"scout_core",
+	 "equipment": [&"eq_pulse_blaster", &"eq_holo_boost"]},
+	{"body": &"jugg_body", "core": &"jugg_core",
+	 "equipment": [&"eq_siege_cannon", &"eq_deflector", &"eq_drone_pod"]},
+	{"body": &"mage_body", "core": &"mage_core",
+	 "equipment": [&"eq_orbit_focus", &"eq_rune_staff"]},
+	{"body": &"strix_body", "core": &"strix_core",
+	 "equipment": [&"eq_rail_lance"]},
 ]
 
-## Die Standard-Ausruestung, die KEINEM Start-DROME fest zugeteilt ist -- sie
-## liegt frei im Inventar. Weil acht Teile nicht alle Slots von vier DROMEs
-## fuellen, entsteht die knappe Entscheidung von selbst (§10g): genau der Reiz.
+## Ausruestung, die KEINEM Start-DROME zugeteilt ist und frei im Inventar liegt.
+## Nur noch der Koedersender -- alle anderen Teile sind jetzt Teil eines
+## Standard-Kits. Der freie Rest haelt das Inventar nicht leer und laesst weiter
+## umbauen.
 const STARTER_LOOSE_EQUIPMENT := [
-	&"eq_deflector", &"eq_drone_pod", &"eq_bait_beacon", &"eq_orbit_focus",
+	&"eq_bait_beacon",
 ]
 
 
@@ -270,23 +283,38 @@ func seed_starter() -> void:
 
 	var index := 0
 	for row in STARTER_CHASSIS:
-		var chassis_uid := add_instance(row[0])
-		var core_uid := add_instance(row[1])
-		var weapon_uid := add_instance(row[2])
-		var entry := RosterEntry.create(_starter_name(row[0]), chassis_uid)
-		entry.assignments["core"] = core_uid
-		# In den ERSTEN Ausruestungsslot des Chassis -- welcher das ist, sagt die
-		# Huelle selbst (equip_slots), nicht eine Annahme hier.
-		var build := build_for(entry)
-		var equip_slots := build.equip_slots()
-		if not equip_slots.is_empty():
-			entry.assignments[equip_slots[0]] = weapon_uid
+		var chassis_uid := add_instance(row["body"])
+		var entry := RosterEntry.create(_starter_name(row["body"]), chassis_uid)
+		entry.assignments["core"] = add_instance(row["core"])
+		# Jedes Teil des Kits in den ERSTEN passenden freien Slot legen -- welche
+		# Slots die Huelle hat und was in sie darf, sagt die Huelle selbst
+		# (equip_slots/accepts), nicht eine Annahme hier.
+		for part_id in row["equipment"]:
+			_seed_equip(entry, part_id)
 		entry.in_squad = index < 2
 		entries.append(entry)
 		index += 1
 
 	for part_id in STARTER_LOOSE_EQUIPMENT:
 		add_instance(part_id)
+
+
+## Legt eine neue Instanz von ``part_id`` in den ersten Ausruestungsslot dieses
+## Eintrags, der noch frei ist UND das Teil annimmt. So landet der support-only
+## Drohnen-Pod im Schulterpod und nicht auf einem Waffenarm. Findet sich kein
+## Slot, bleibt das Teil aussen vor (der Aufbau ist trotzdem gueltig).
+func _seed_equip(entry: RosterEntry, part_id: StringName) -> void:
+	var build := build_for(entry)
+	var body := build.body()
+	var part := PartDB.get_part(part_id)
+	if body == null or part == null:
+		return
+	for slot in build.equip_slots():
+		if entry.assignments.has(slot):
+			continue
+		if body.accepts(part, slot):
+			entry.assignments[slot] = add_instance(part_id)
+			return
 
 
 ## Ein sprechender Startname aus dem Chassis-Namen ("Vireo Chassis" -> "Vireo").

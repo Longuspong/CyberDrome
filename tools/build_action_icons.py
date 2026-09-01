@@ -87,6 +87,15 @@ def arrow(x1: float, y1: float, x2: float, y2: float, head: float = 9.0) -> str:
 # ---------------------------------------------------------------------------
 
 ICONS = {
+    # Bewegung/Dash: der Doppel-Chevron. Ein Pfeilzeichen liest sich als
+    # Richtung und damit als Bewegung -- genau das, was der Hologramm-Boost tut
+    # (er versetzt den eigenen DROME, er trifft niemanden). Doppelt, damit es
+    # "schnell/Sprung" sagt und nicht mit einem einzelnen Stoss-Pfeil kollidiert.
+    "dash": (
+        "Bewegung -- Doppel-Chevron",
+        '    <path d="M18 18 L32 32 L18 46"/>\n'
+        '    <path d="M32 18 L46 32 L32 46"/>\n',
+    ),
     # Reparatur: das Kreuz. Die eine Form, die in diesem Genre niemand
     # missversteht.
     "heal": (

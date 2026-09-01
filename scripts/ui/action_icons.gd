@@ -47,6 +47,8 @@ static var _cache: Dictionary = {}
 static func key_for(action: ActionData) -> String:
 	if action == null:
 		return "generic"
+	if action.is_move():
+		return "dash"
 	if action.is_heal():
 		return "heal"
 	if action.is_taunt():

@@ -20,12 +20,13 @@ func test_starter_stock_matches_the_design() -> void:
 	var roster := _fresh()
 	# Vier Standard-Chassis = vier DROMEs.
 	t.equal(roster.entries.size(), 4, "vier Start-DROMEs")
-	# Vier Chassis + vier Kerne + acht Ausruestungsteile = 16 Instanzen.
-	t.equal(roster.all_instances().size(), 16, "16 Instanzen im Startbestand")
-	# Jede Standard-Ausruestung genau einmal.
-	for part_id in [&"eq_pulse_blaster", &"eq_siege_cannon", &"eq_rune_staff",
-			&"eq_rail_lance", &"eq_deflector", &"eq_drone_pod", &"eq_bait_beacon",
-			&"eq_orbit_focus"]:
+	# Vier Chassis + vier Kerne + neun Ausruestungsteile (acht in den Kits, der
+	# Koedersender frei) = 17 Instanzen.
+	t.equal(roster.all_instances().size(), 17, "17 Instanzen im Startbestand")
+	# Jede Standard-Ausruestung genau einmal -- inklusive des Hologramm-Boosts.
+	for part_id in [&"eq_pulse_blaster", &"eq_holo_boost", &"eq_siege_cannon",
+			&"eq_rune_staff", &"eq_rail_lance", &"eq_deflector", &"eq_drone_pod",
+			&"eq_bait_beacon", &"eq_orbit_focus"]:
 		t.equal(roster.total_count(part_id), 1,
 			"genau eine %s im Bestand" % part_id)
 	# Die ersten beiden ziehen ins Gefecht -- wie die alte Squad-Groesse 2.
@@ -51,21 +52,22 @@ func test_a_part_cannot_be_in_two_dromes_at_once() -> void:
 		t.ok(not seen.has(uid), "uid %s steckt in hoechstens einem DROME" % uid)
 		seen[uid] = true
 
-	# Eine freie Waffe an einen DROME haengen -> sie ist nicht mehr frei, und ein
-	# zweiter DROME bekommt kein zweites Exemplar desselben Teils.
-	t.equal(roster.free_count(&"eq_orbit_focus"), 1,
-		"der Orbit-Fokus liegt zunaechst frei")
+	# Das freie Teil an einen DROME haengen -> es ist nicht mehr frei, und ein
+	# zweiter DROME bekommt kein zweites Exemplar desselben Teils. Frei ist zum
+	# Start nur der Koedersender -- alle anderen Teile stecken in den Kits.
+	t.equal(roster.free_count(&"eq_bait_beacon"), 1,
+		"der Koedersender liegt zunaechst frei")
 	var molok: RosterEntry = roster.entries[1]
 	var molok_slot: String = roster.build_for(molok).equip_slots()[1]
-	t.ok(roster.assign(molok, molok_slot, &"eq_orbit_focus"), "erste Zuweisung greift")
-	t.equal(roster.free_count(&"eq_orbit_focus"), 0,
-		"danach ist kein Orbit-Fokus mehr frei")
+	t.ok(roster.assign(molok, molok_slot, &"eq_bait_beacon"), "erste Zuweisung greift")
+	t.equal(roster.free_count(&"eq_bait_beacon"), 0,
+		"danach ist kein Koedersender mehr frei")
 
 	var vireo: RosterEntry = roster.entries[0]
 	var vireo_slot: String = roster.build_for(vireo).equip_slots()[1]
-	t.ok(not roster.assign(vireo, vireo_slot, &"eq_orbit_focus"),
+	t.ok(not roster.assign(vireo, vireo_slot, &"eq_bait_beacon"),
 		"ein zweiter DROME bekommt kein zweites Exemplar")
-	t.ok(roster.instance_part_id(str(vireo.assignments.get(vireo_slot, ""))) != &"eq_orbit_focus",
+	t.ok(roster.instance_part_id(str(vireo.assignments.get(vireo_slot, ""))) != &"eq_bait_beacon",
 		"und der Slot bleibt leer statt still doppelt belegt")
 
 
@@ -119,10 +121,14 @@ func test_derived_build_equals_a_direct_build() -> void:
 	var vireo: RosterEntry = roster.entries[0]
 	var derived := roster.build_for(vireo)
 
+	# Vireos Standard-Kit: Puls-Blaster (erster freier Slot) und Hologramm-Boost
+	# (zweiter). Die Reihenfolge folgt aus _seed_equip -- erstes passendes freies
+	# Anker, alphabetisch equip_left vor equip_right.
 	var direct := DromeBuild.create(vireo.name, {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
 		"equip_left": &"eq_pulse_blaster",
+		"equip_right": &"eq_holo_boost",
 	})
 	t.equal(derived.slots, direct.slots, "dieselben Teile in denselben Slots")
 	t.equal(derived.stats(), direct.stats(), "und damit dieselben Werte")
