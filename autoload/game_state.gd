@@ -73,8 +73,22 @@ func refresh_squad() -> void:
 # Persistenz
 # ---------------------------------------------------------------------------
 
+## Ob ueberhaupt auf die Platte geschrieben und von dort geladen wird. In der
+## Dev-Phase steht ``save_enabled`` in data/config.json auf false: dann bleibt
+## der Roster ein reiner Laufzeit-Bestand, jeder Start beginnt frisch. Die
+## ganze Persistenz haengt an diesem einen Schalter -- umlegen genuegt, sobald
+## Spielstaende gewollt sind.
+func _persistence_enabled() -> bool:
+	return bool(Config.get_value("save_enabled", false))
+
+
 func save_roster() -> void:
+	# refresh_squad() IMMER: der Kampf liest die abgeleitete Squad-Liste, und die
+	# Garage ruft save_roster() nach jeder Aenderung genau dafuer -- unabhaengig
+	# davon, ob der Stand auch auf die Platte geht.
 	refresh_squad()
+	if not _persistence_enabled():
+		return
 	var file := FileAccess.open(ROSTER_PATH, FileAccess.WRITE)
 	if file == null:
 		push_error("GameState: %s nicht schreibbar" % ROSTER_PATH)
@@ -83,6 +97,17 @@ func save_roster() -> void:
 
 
 func load_roster() -> void:
+	# Persistenz aus (Dev-Phase): frisch starten und einen alten Stand wegraeumen,
+	# statt ihn zu laden. So kann ein kaputter Spielstand aus einer aelteren
+	# Version das Spiel nicht mehr in einen unbrauchbaren Zustand ziehen.
+	if not _persistence_enabled():
+		_wipe_saves()
+		roster.seed_starter()
+		refresh_squad()
+		print("[GameState] Persistenz aus -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
+			% [roster.entries.size(), roster.all_instances().size()])
+		return
+
 	var path := _newest_save_file()
 	if path == "":
 		# Ein frischer Start: der handgesetzte Startbestand (§10g).
@@ -124,6 +149,19 @@ func _read_json(path: String):
 		push_warning("GameState: %s ist unlesbar" % path)
 		return null
 	return parsed
+
+
+## Raeumt die beschreibbaren Spielstaende weg (der Reset). Nur die ``user://``-
+## Dateien: der Werkstatt-Export unter ``res://builds`` ist Entwickler-Material
+## und im Export ohnehin schreibgeschuetzt. Fehlt eine Datei, ist nichts zu tun.
+func _wipe_saves() -> void:
+	for path in [ROSTER_PATH, SQUAD_PATH]:
+		if FileAccess.file_exists(path):
+			var err := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+			if err == OK:
+				print("[GameState] alter Spielstand entfernt: %s" % path)
+			else:
+				push_warning("GameState: %s liess sich nicht entfernen (%d)" % [path, err])
 
 
 ## Der neuere von Spielstand und Werkstatt-Export -- so muss der Spieler nicht

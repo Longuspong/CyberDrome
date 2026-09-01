@@ -7,6 +7,19 @@
     "ihm erzeugt werden."
   ],
 
+  "_kommentar_save": [
+    "Ob Inventar + Roster ueber einen Programmlauf hinaus auf die Platte",
+    "geschrieben und beim Start wieder geladen werden. In dieser Dev-Phase",
+    "AUS: jeder Start beginnt mit dem handgesetzten Startbestand",
+    "(Roster.seed_starter), und ein alter Spielstand -- auch ein kaputter aus",
+    "einer aelteren Version -- wird beim Start weggeraeumt statt geladen. So",
+    "kommt jeder 'Run' in ein frisches Spiel. Auf true stellen, sobald die",
+    "Persistenz gewollt ist; die Lade-/Speicher-/Migrationslogik in",
+    "GameState liegt dafuer schon bereit.",
+    "Siehe GameState.load_roster()/save_roster()."
+  ],
+  "save_enabled": false,
+
   "squad_size": 2,
   "squad_size_min": 1,
   "squad_size_max": 4,
