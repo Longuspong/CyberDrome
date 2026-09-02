@@ -107,28 +107,24 @@ func _build_ui() -> void:
 
 
 func _start_chaos() -> void:
-	# Vorlaeufig: derselbe Weg wie bisher -- mit dem aktuellen Squad und einem
-	# frischen Seed ins Gefecht. Die Bit-Auswahl (weniger eigene DROMEs, mehr
-	# Beute) kommt im naechsten Schritt an genau diese Stelle.
-	if not GameState.squad_is_valid():
-		return
-	GameState.save_roster()
-	if GameState.battle_seed == 0:
-		GameState.new_seed()
-	get_tree().change_scene_to_file("res://scenes/battle.tscn")
+	# Der Chaos-Virus startet ueber die Bit-Auswahl -- NICHT mehr direkt aus der
+	# Garage. Dort waehlt man, wie viele eigene DROMEs mitkommen (weniger = mehr
+	# Beute), und von dort geht es ins Gefecht.
+	get_tree().change_scene_to_file("res://scenes/chaos_select.tscn")
 
 
 func _refresh_status() -> void:
-	var count := GameState.roster.squad_count()
-	var ready := GameState.squad_is_valid()
+	# Startbar ist der Chaos-Virus, sobald es ueberhaupt einen kampftauglichen
+	# DROME gibt -- WIE viele mitkommen, entscheidet die Bit-Auswahl.
+	var ready := not GameState.battle_ready_builds().is_empty()
 	if ready:
-		_status.text = "Squad bereit (%d) -- Chaos-Virus kann starten." % count
+		_status.text = "Bereit -- im Chaos-Virus waehlst du, wie viele DROMEs mitkommen."
 		_status.modulate = COLOR_GOOD
 	else:
-		_status.text = "Kein gueltiger Squad. In der Garage DROMEs zusammenstellen."
+		_status.text = "Keine kampftauglichen DROMEs. In der Garage welche zusammenstellen."
 		_status.modulate = COLOR_BAD
 	_chaos.disabled = not ready
-	_chaos.tooltip_text = "" if ready else "Der Squad ist leer oder ungueltig."
+	_chaos.tooltip_text = "" if ready else "Kein kampftauglicher DROME vorhanden."
 
 
 # ---------------------------------------------------------------------------

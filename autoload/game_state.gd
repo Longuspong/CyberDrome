@@ -45,6 +45,32 @@ var battle_seed: int = 0
 ## Ergebnis des letzten Kampfes, fuer den Ergebnisbildschirm
 var last_result: Dictionary = {}
 
+# --- Chaos-Virus: Risiko/Beute (§Chaos) ------------------------------------
+#
+# Die Bit-Auswahl setzt diese Werte vor dem Start; der Kampf und die Beute
+# lesen sie. Bei 0 laeuft der Kampf im alten Spiegel-Modus (Gegner = eigener
+# Squad) -- so bleibt ein Direktstart der Kampfszene (Tests, Werkzeuge) ohne
+# Chaos-Kontext gueltig und wirft keine Beute ab.
+
+## Wie viele Gegner der Chaos-Virus aufstellt (das volle Feld, unabhaengig von
+## der eigenen Auswahl). 0 = Spiegel-Modus.
+var chaos_enemy_count: int = 0
+
+## Der Referenz-Kampfwert: die Staerke ALLER kampftauglichen eigenen DROMEs.
+## Der Gegner wird darauf skaliert, nicht auf den reduzierten Squad -- sonst
+## waere ein kleinerer Squad keine Erschwernis, sondern nur ein schwaecherer
+## Gegner. 0 = Spiegel-Modus (kein Handicap, keine Beute).
+var chaos_reference_power: float = 0.0
+
+## Erfolglose Siege in Folge -- der Pity-Zaehler. Ab der Schwelle
+## (config chaos.loot_pity_threshold) ist der naechste Sieg ein garantierter
+## Drop. Ueberlebt den Programmlauf nur bei aktiver Persistenz.
+var chaos_pity: int = 0
+
+## Die Teile-Typen, die der letzte Sieg abgeworfen hat -- fuer den
+## Ergebnisbildschirm. Array[StringName].
+var last_loot: Array = []
+
 
 func _ready() -> void:
 	load_roster()
@@ -190,3 +216,63 @@ func squad_is_valid() -> bool:
 		if not build.is_valid():
 			return false
 	return true
+
+
+# ---------------------------------------------------------------------------
+# Chaos-Virus: Risiko/Beute
+# ---------------------------------------------------------------------------
+
+## Alle kampftauglichen DROMEs des Rosters -- die Grundgesamtheit, aus der die
+## Bit-Auswahl schoepft und an der sich die Referenz-Staerke bemisst.
+func battle_ready_builds() -> Array:
+	var builds: Array = []
+	for entry in roster.entries:
+		var build := roster.build_for(entry)
+		if build.is_valid():
+			builds.append(build)
+	return builds
+
+
+## Setzt die Parameter eines Chaos-Laufs: der Gegner tritt mit ``enemy_count``
+## DROMEs an, skaliert auf ``reference_power`` (die Staerke der VOLLEN eigenen
+## Mannschaft). Danach ist chaos_handicap() aussagekraeftig und die Beute knuepft
+## daran an.
+func configure_chaos_run(enemy_count: int, reference_power: float) -> void:
+	chaos_enemy_count = maxi(0, enemy_count)
+	chaos_reference_power = maxf(0.0, reference_power)
+
+
+## Zuruecksetzen auf den Spiegel-Modus -- nach einem Lauf, damit ein spaeterer
+## Direktstart der Kampfszene nicht die Chaos-Parameter erbt. Pity und die
+## letzte Beute bleiben (der Zaehler soll ja ueber Laeufe hinweg zaehlen).
+func clear_chaos_run() -> void:
+	chaos_enemy_count = 0
+	chaos_reference_power = 0.0
+
+
+## Das Handicap des aktuellen Squads gegen die Referenz: 0 = volle Mannschaft,
+## ~1 = fast allein. Daran haengt die Beute-Chance (ChaosLoot.drop_chance).
+func chaos_handicap() -> float:
+	if chaos_reference_power <= 0.0:
+		return 0.0
+	var mine := DromeBuild.squad_power(squad)
+	return clampf(1.0 - mine / chaos_reference_power, 0.0, 1.0)
+
+
+## Vergibt die Beute eines gewonnenen Chaos-Gefechts. ``enemy_pool`` sind die
+## Ausruestungs-Typen der besiegten Gegner -- was man erbeutet, kommt aus IHNEN.
+## Faellt nichts, waechst der Pity-Zaehler; faellt etwas, wandert es als neue
+## Instanz ins Inventar und der Zaehler geht zurueck. Gibt die gefallenen Typen
+## zurueck (auch fuer den Ergebnisbildschirm ueber ``last_loot``).
+func roll_chaos_loot(enemy_pool: Array, rng: RandomNumberGenerator) -> Array:
+	var count := ChaosLoot.roll_count(chaos_handicap(), chaos_pity, rng)
+	var dropped := ChaosLoot.pick(enemy_pool, count, rng)
+	if dropped.is_empty():
+		chaos_pity += 1
+	else:
+		chaos_pity = 0
+		for part_id in dropped:
+			roster.add_instance(part_id)
+	last_loot = dropped
+	save_roster()
+	return dropped

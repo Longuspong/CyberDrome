@@ -24,6 +24,11 @@ var active_unit: Unit = null
 var turn_state: TurnState = null
 var outcome: Outcome = Outcome.RUNNING
 
+## Die Ausruestungs-Typen der Gegner dieses Gefechts -- der Beute-Pool des
+## Chaos-Virus. Steht schon beim Aufbau fest und ueberlebt den Tod der Gegner,
+## damit die Beute-Rechnung nach dem Sieg noch weiss, WAS zu erbeuten war.
+var enemy_equipment: Array = []
+
 var _cycle_limit: int = 30
 
 
@@ -42,8 +47,18 @@ func setup(seed_value: int, player_builds: Array) -> void:
 	mutator = Mutator.draw(rng)
 	grid = MapGenerator.new(battle_seed).generate(region, mutator.map_scales())
 
-	var enemy_builds := EnemyGenerator.new(battle_seed).generate(
-		player_builds.size(), DromeBuild.squad_power(player_builds))
+	# Der Gegner spiegelt normalerweise den eigenen Squad (Anzahl und Staerke).
+	# Im Chaos-Virus entkoppeln GameState.chaos_* das: der Gegner tritt in voller
+	# Staerke an (chaos_reference_power), unabhaengig davon, wie wenige DROMEs man
+	# selbst mitnimmt -- genau das ist die Erschwernis, an der die Beute haengt.
+	var enemy_count := player_builds.size()
+	var target_power := DromeBuild.squad_power(player_builds)
+	if GameState.chaos_enemy_count > 0:
+		enemy_count = GameState.chaos_enemy_count
+	if GameState.chaos_reference_power > 0.0:
+		target_power = GameState.chaos_reference_power
+	var enemy_builds := EnemyGenerator.new(battle_seed).generate(enemy_count, target_power)
+	enemy_equipment = _distinct_equipment(enemy_builds)
 
 	units.clear()
 	_spawn(player_builds, true)
@@ -74,6 +89,19 @@ func _spawn(builds: Array, is_player: bool) -> void:
 		grid.set_occupant(tile, unit.unit_id)
 		units.append(unit)
 		index += 1
+
+
+## Die distinkten Ausruestungs-Typen einer Squad-Liste -- der Beute-Pool. Waffen
+## UND Gadgets: was ein Gegner traegt, kann man ihm abnehmen.
+func _distinct_equipment(builds: Array) -> Array:
+	var seen := {}
+	var ids: Array = []
+	for build in builds:
+		for part in build.equipment():
+			if not seen.has(part.id):
+				seen[part.id] = true
+				ids.append(part.id)
+	return ids
 
 
 func _free_deployment_tile(zone: Array[Vector2i], unit: Unit) -> Vector2i:
