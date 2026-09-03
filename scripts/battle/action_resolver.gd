@@ -289,10 +289,37 @@ func tiles_in_range(source: Unit, action: ActionData) -> Array[Vector2i]:
 	if action.targeting == ActionData.Targeting.SELF:
 		tiles.append(source.tile)
 		return tiles
+	if action.is_move():
+		return dash_landings(source, action)
 	for tile in grid.all_tiles():
 		if Grid.distance(source.tile, tile) <= action.range_tiles:
 			tiles.append(tile)
 	return tiles
+
+
+## Die Felder, auf die der Dash den Handelnden versetzen kann: gerade Linie in
+## eine der vier Richtungen, bis zu ``range_tiles`` weit, und -- anders als die
+## normale Bewegung -- ausdruecklich NICHT ueber BLOCK oder STEP und nicht durch
+## einen anderen DROME hindurch. Der Weg bricht am ersten Hindernis ab; jedes
+## freie Feld davor ist ein gueltiges Landefeld.
+##
+## Eine eigene, striktere Regel als can_stand_on: der Vireo-Antrieb DARF Stufen
+## betreten, der Hologramm-Boost gleitet aber ueber Boden, nicht ueber Kanten.
+func dash_landings(source: Unit, action: ActionData) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for dir in Grid.DIRS_4:
+		var tile := source.tile
+		for _step in action.range_tiles:
+			tile += dir
+			if not grid.in_bounds(tile):
+				break
+			var tc := grid.terrain_class(tile)
+			if tc == Terrain.TClass.BLOCK or tc == Terrain.TClass.STEP:
+				break
+			if grid.is_occupied(tile, source.unit_id):
+				break
+			out.append(tile)
+	return out
 
 
 ## Ist dieses Feld ein gueltiges Ziel? Leerer String = ja, sonst der Grund.
@@ -302,6 +329,20 @@ func tiles_in_range(source: Unit, action: ActionData) -> Array[Vector2i]:
 func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
 	if action.targeting == ActionData.Targeting.SELF:
 		return "" if tile == source.tile else "Nur auf sich selbst"
+
+	# Dash: gueltig ist genau, was dash_landings() anbietet. Der Grund fuer ein
+	# graues Feld steht im Tooltip, wie ueberall -- ein DROME-Spiel graut nie
+	# ohne Begruendung.
+	if action.is_move():
+		if tile == source.tile:
+			return "Schon hier"
+		if tile in dash_landings(source, action):
+			return ""
+		if source.tile.x != tile.x and source.tile.y != tile.y:
+			return "Nur in gerader Linie"
+		if Grid.distance(source.tile, tile) > action.range_tiles:
+			return "Zu weit fuer den Boost"
+		return "Weg blockiert"
 
 	# Provokation. Steht bewusst HIER und nicht in der KI: sie ist eine Regel
 	# ueber gueltige Ziele, keine Vorliebe. Damit gilt sie fuer beide Seiten --
@@ -383,6 +424,19 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		return false
 
 	source.spend_energy(action.en_cost_now())
+
+	# Dash: der Handelnde versetzt sich selbst. Ein eigener Zweig, weil hier kein
+	# Ziel getroffen, sondern eine Position gesetzt wird -- ueber dieselbe
+	# move_unit(), durch die auch Stossen laeuft, damit ein Boost auf eine
+	# Oelspur genauso weitergleitet wie jede andere erzwungene Bewegung.
+	if action.is_move():
+		var delta := tile - source.tile
+		var step := Vector2i(signi(delta.x), signi(delta.y))
+		EventBus.log_line("%s boostet %d Feld(er) nach %s."
+			% [source.display_name, Grid.distance(source.tile, tile), tile])
+		move_unit(source, tile, step)
+		EventBus.tick_bus_changed.emit()
+		return true
 
 	for affected in affected_tiles(tile, action):
 		var target := unit_at(affected)

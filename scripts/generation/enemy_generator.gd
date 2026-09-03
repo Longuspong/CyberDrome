@@ -89,7 +89,7 @@ func _roll(display_name: String) -> DromeBuild:
 	var slots: Array[String] = chassis.equip_slots()
 	var weapon_placed := false
 	for slot in slots:
-		var candidates := PartDB.equipment_for(chassis, slot)
+		var candidates := PartDB.equipment_for(chassis, slot).filter(_ai_can_use)
 		if candidates.is_empty():
 			continue
 		if not weapon_placed:
@@ -105,6 +105,20 @@ func _roll(display_name: String) -> DromeBuild:
 			assignment[slot] = _pick(candidates).id
 
 	return DromeBuild.create(display_name, assignment)
+
+
+## Kann die KI dieses Ausruestungsteil ueberhaupt einsetzen? Die Zielwahl der KI
+## (AIController) bewertet nur Aktionen mit einem ZIEL-DROME -- eine reine
+## BEWEGUNGS-Faehigkeit wie der Hologramm-Boost hat keins und bliebe an einem
+## Gegner ein toter Slot, der ihn nur schwaecht. Passive Teile (ohne Aktion) und
+## alles mit mindestens einer Nicht-Bewegungs-Aktion bleiben zulaessig.
+func _ai_can_use(part: PartData) -> bool:
+	if part.actions.is_empty():
+		return true
+	for action in part.actions:
+		if not action.is_move():
+			return true
+	return false
 
 
 ## Notfall-Aufbau, wenn 50 Wuerfe nichts Gueltiges ergeben haben. Fest

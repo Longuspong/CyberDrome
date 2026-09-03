@@ -24,6 +24,30 @@
   "squad_size_min": 1,
   "squad_size_max": 4,
 
+  "_kommentar_chaos": [
+    "Der Chaos-Virus als Risiko/Beute-Modus. Der Spieler waehlt vor dem Start,",
+    "wie viele der eigenen DROMEs er mitnimmt (die 'Bits'). Der Gegner tritt",
+    "immer in voller Staerke an -- gemessen an der REFERENZ (dem Kampfwert aller",
+    "kampftauglichen eigenen DROMEs, unabhaengig von der Auswahl). Wer mit",
+    "weniger antritt, macht es sich schwerer: das ist der HANDICAP-Anteil",
+    "  handicap = 1 - eigene_staerke / referenz    (0 = volle Mannschaft, ~1 = fast allein)",
+    "und genau daran haengt die Beute-Chance:",
+    "  chance = min(loot_cap, loot_base + handicap * loot_handicap_gain)",
+    "Ein zweites Item faellt mit chance * loot_second_factor. Hoechstens zwei.",
+    "Das PITY-System verhindert Duerre: nach loot_pity_threshold gewonnenen",
+    "Gefechten OHNE Beute ist das naechste ein garantierter Drop (Zaehler dann",
+    "zurueck). Beute faellt nur bei SIEG und kommt AUS der Ausruestung der",
+    "besiegten Gegner-DROMEs -- was man erbeutet, haengt also am Gegner.",
+    "Siehe GameState.roll_chaos_loot() und ChaosLoot."
+  ],
+  "chaos": {
+    "loot_base": 0.15,
+    "loot_handicap_gain": 0.7,
+    "loot_cap": 0.9,
+    "loot_second_factor": 0.4,
+    "loot_pity_threshold": 4
+  },
+
   "grid_width": 20,
   "grid_height": 20,
 

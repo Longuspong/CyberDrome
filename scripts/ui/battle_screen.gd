@@ -755,7 +755,23 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	_status.text = "%s nach %d Zyklen.  Seed: %d" % [
 		BattleManager.outcome_label(outcome), battle.tick_bus.cycle_count,
 		battle.battle_seed]
+	_grant_loot(outcome)
 	_show_result(outcome)
+
+
+## Beute: nur bei SIEG und nur in einem echten Chaos-Lauf (chaos_reference_power
+## gesetzt). Der Wuerfel haengt am Seed des Gefechts -- derselbe Kampf gibt
+## dieselbe Beute, wie ueberall in diesem Projekt. Laeuft genau einmal, weil
+## battle_over genau einmal feuert.
+func _grant_loot(outcome: BattleManager.Outcome) -> void:
+	GameState.last_loot = []
+	if outcome != BattleManager.Outcome.VICTORY:
+		return
+	if GameState.chaos_reference_power <= 0.0:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = battle.battle_seed ^ 0x10CE10C
+	GameState.roll_chaos_loot(battle.enemy_equipment, rng)
 
 
 # ---------------------------------------------------------------------------
@@ -865,6 +881,45 @@ func _toggle_pause() -> void:
 	_status.text = "Pausiert." if _paused else _status.text
 
 
+## Die Beute-Zeile im Ergebnis. Nur bei einem echten Chaos-Sieg; sonst
+## schweigt sie. Bei Beute nennt sie die Teile, bei Duerre den Pity-Fortschritt
+## -- damit man sieht, dass der garantierte Drop naeher rueckt.
+func _add_loot_section(box: VBoxContainer, outcome: BattleManager.Outcome) -> void:
+	if GameState.chaos_reference_power <= 0.0 and GameState.last_loot.is_empty():
+		return
+	if outcome != BattleManager.Outcome.VICTORY:
+		return
+
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 8)
+	box.add_child(spacer)
+
+	var heading := Label.new()
+	heading.add_theme_font_size_override("font_size", 18)
+	if GameState.last_loot.is_empty():
+		heading.text = "Keine Beute."
+		heading.modulate = Color(0.7, 0.72, 0.78)
+		box.add_child(heading)
+		var threshold := int(Config.section("chaos").get("loot_pity_threshold", 4))
+		var pity := Label.new()
+		pity.text = "Pity: %d / %d bis zum garantierten Drop." % [
+			GameState.chaos_pity, threshold]
+		pity.add_theme_font_size_override("font_size", 12)
+		pity.modulate = Color(0.6, 0.64, 0.7)
+		box.add_child(pity)
+		return
+
+	heading.text = "Beute!"
+	heading.modulate = Color(0.55, 0.9, 0.6)
+	box.add_child(heading)
+	for part_id in GameState.last_loot:
+		var part := PartDB.get_part(part_id)
+		var row := Label.new()
+		row.text = "  + %s" % (part.display_name if part != null else str(part_id))
+		row.modulate = Color(0.55, 0.9, 0.6)
+		box.add_child(row)
+
+
 func _show_result(outcome: BattleManager.Outcome) -> void:
 	var panel := PanelContainer.new()
 	panel.position = Vector2(520, 240)
@@ -891,10 +946,13 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		line.modulate = Color.WHITE if row["alive"] else Color(0.6, 0.6, 0.6)
 		box.add_child(line)
 
+	_add_loot_section(box, outcome)
+
 	var back := Button.new()
 	back.text = "Zurueck zur Werkstatt"
 	back.pressed.connect(func():
 		GameState.battle_seed = 0
+		GameState.clear_chaos_run()
 		get_tree().change_scene_to_file("res://scenes/workshop.tscn"))
 	box.add_child(back)
 
@@ -902,6 +960,7 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	menu.text = "Hauptmenue"
 	menu.pressed.connect(func():
 		GameState.battle_seed = 0
+		GameState.clear_chaos_run()
 		get_tree().change_scene_to_file("res://scenes/main.tscn"))
 	# Stand hier ``box.add_child(back)`` -- derselbe Knopf ein zweites Mal.
 	# Godot lehnt das ab ("already has a parent"), der Knopf ins Hauptmenue

@@ -29,9 +29,7 @@ const COLOR_MUTED := Color(0.62, 0.66, 0.72)
 var _cards: GridContainer
 var _inventory_list: VBoxContainer
 var _squad_label: Label
-var _start_button: Button
 var _new_button: Button
-var _seed_field: LineEdit
 var _chassis_menu: PopupMenu
 ## Die freien Chassis-Typen in der Reihenfolge des Menues -- damit die Auswahl
 ## den richtigen Typ trifft.
@@ -124,23 +122,16 @@ func _build_side_column() -> Control:
 	_inventory_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inv_scroll.add_child(_inventory_list)
 
-	var seed_row := HBoxContainer.new()
-	var seed_label := Label.new()
-	seed_label.text = "Seed: "
-	seed_row.add_child(seed_label)
-	_seed_field = LineEdit.new()
-	_seed_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_seed_field.placeholder_text = "leer = zufaellig"
-	if GameState.battle_seed != 0:
-		_seed_field.text = str(GameState.battle_seed)
-	seed_row.add_child(_seed_field)
-	right.add_child(seed_row)
-
-	_start_button = Button.new()
-	_start_button.text = "Chaos-Virus starten"
-	_start_button.custom_minimum_size = Vector2(0, 48)
-	_start_button.pressed.connect(_start_battle)
-	right.add_child(_start_button)
+	# Der Chaos-Virus startet NICHT mehr hier, sondern ueber das Menue (Bit-
+	# Auswahl). Die Garage baut und verwaltet nur noch DROMEs; welche mitkommen,
+	# entscheidet man erst kurz vor dem Gefecht.
+	var hint := Label.new()
+	hint.text = "Zum Kampf: zurueck ins Menue -> Chaos-Virus. Dort waehlst du, " \
+		+ "wie viele DROMEs mitkommen."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.modulate = COLOR_MUTED
+	hint.add_theme_font_size_override("font_size", 12)
+	right.add_child(hint)
 	return right
 
 
@@ -329,10 +320,6 @@ func _refresh_squad_state() -> void:
 	_new_button.tooltip_text = "" if not _new_button.disabled \
 		else "Kein freies Chassis. Loese einen DROME auf oder erbeute ein neues."
 
-	_start_button.disabled = not GameState.squad_is_valid()
-	_start_button.text = "Chaos-Virus starten" if GameState.squad_is_valid() \
-		else "Squad unvollstaendig"
-
 
 # ---------------------------------------------------------------------------
 # Aktionen
@@ -385,14 +372,3 @@ func _on_chassis_chosen(id: int) -> void:
 	GameState.editing_index = GameState.roster.entries.size() - 1
 	GameState.save_roster()
 	get_tree().change_scene_to_file("res://scenes/workshop.tscn")
-
-
-func _start_battle() -> void:
-	if not GameState.squad_is_valid():
-		return
-	GameState.save_roster()
-	var text := _seed_field.text.strip_edges()
-	GameState.battle_seed = int(text) if text.is_valid_int() else 0
-	if GameState.battle_seed == 0:
-		GameState.new_seed()
-	get_tree().change_scene_to_file("res://scenes/battle.tscn")

@@ -630,6 +630,24 @@ STATS = {
     # und der Beleg, dass ein Gadget keine Aktive tragen MUSS (GAME_DESIGN 13).
     "eq_deflector": {"def": 5, "weight": 4, "power_draw": 2},
 
+    # Hologramm-Boost: das Mobilitaets-Gadget des Vireo und die einzige
+    # BEWEGUNGS-Faehigkeit im Bestand. Der Boost versetzt den eigenen DROME bis
+    # zu drei Felder in gerader Linie -- nicht ueber Hindernisse und nicht ueber
+    # Stufen (eigene, striktere Regel als die normale Bewegung; sie sitzt im
+    # ActionResolver.dash_landings). Energetisch gebremst (schwach, ~20 EN), ohne
+    # Abklingzeit: eine Repositionierung, die man sich leisten koennen muss, aber
+    # keine, die einen Takt sperrt. Kein Schaden, keine Aggro -- reine Stellung.
+    "eq_holo_boost": {
+        "weight": 3, "power_draw": 3,
+        "actions": [
+            {"id": "act_holo_dash", "display_name": "Hologramm-Boost",
+             "category": "ability", "targeting": "dash",
+             "range_tiles": 3, "power": 0,
+             "en_cost": ability_cost("schwach"), "cooldown_turns": 0,
+             "requires_line_of_sight": False, "aggro_flat": 0},
+        ],
+    },
+
     # Das einzige rein MECHANISCHE Geschuetz im Bestand: Pulver, Masse, Hebel.
     # Deshalb power_draw 0 und en_cost 0 -- sie zieht keinen Strom, weder im
     # Stand noch beim Schuss. Bezahlt wird sie in Gewicht (8, der schwerste
@@ -754,7 +772,13 @@ def _merge_action(part_id: str, action: dict) -> dict:
     merged = dict(ACTION_DEFAULTS)
     merged.update(action)
     # Die Regel aus dem Entwurf, hier als Zusicherung statt als Kommentar.
-    if merged["range_tiles"] > 1 and not merged["requires_line_of_sight"]:
+    # Bewegungs- und Selbst-Aktionen sind ausgenommen: ein Dash SCHIESST nicht
+    # ueber die Karte, er versetzt den Handelnden -- eine Sichtlinie zu einem
+    # Feld, auf das man selbst laeuft, ergaebe keinen Sinn. Er hat stattdessen
+    # seine eigene, striktere Regel (nicht ueber Hindernisse/Stufen), die im
+    # Resolver sitzt.
+    if merged["targeting"] not in ("dash", "self") \
+            and merged["range_tiles"] > 1 and not merged["requires_line_of_sight"]:
         raise SystemExit(
             f"[stats] {part_id}: Reichweite {merged['range_tiles']} ohne "
             f"Sichtlinie -- ohne diese Regel ist das Terrain Dekoration"
@@ -1735,6 +1759,28 @@ EQ_ORBIT_FOCUS = [
 ]
 
 
+# Hologramm-Boost (EQP-009) -- das Signatur-Gadget des Vireo. Ein Unterarm-
+# Projektor, der einen schwebenden Hologramm-PFEIL nach vorn wirft: an ihm
+# entlang blinkt der Scout ein Stueck weit (die Dash-Aktion). Die Silhouette ist
+# bewusst ein DREIECK (nach vorn zeigender Kegel) -- unverkennbar anders als der
+# Ring des Orbit-Fokus, das Rohr des Blasters oder die Platte des Deflektors, und
+# genau das verlangt die Lesbarkeitsregel (check_silhouettes).
+EQ_HOLO_BOOST = [
+    # -- Unterarm-Projektor: kompaktes Gehaeuse auf dem Handruecken ----------
+    L((0, 0), [(3.2, 41), (3.6, 46), (3.0, 49)], "metal", segments=12),
+    L((1.0, 0), [(2.6, 33), (3.4, 40)], "plate", segments=12),
+    # Emitterlinse, leicht nach vorn geneigt
+    D(4.4, 0, 45, 1.6, "glow"),
+    # -- Schwebender Hologramm-Pfeil vor der Hand ---------------------------
+    # Ein nach VORN zeigender Kegel: breite Basis hinten (Radius 5.2 bei f=4.5),
+    # Spitze vorn (Radius 0 bei f=12.5). Seitlich projiziert ergibt das ein
+    # Dreieck -- der Boost-Pfeil.
+    L((0, 47), [(5.2, 4.5), (0.0, 12.5)], "accent", axis="f", segments=16, caps=False),
+    # Innerer, hellerer Kegel -- gibt dem Hologramm Tiefe.
+    L((0, 47), [(2.8, 5.6), (0.0, 11.6)], "glow", axis="f", segments=12, caps=False),
+]
+
+
 # ===========================================================================
 # LR-Strix // Marksman  (parts/bot4) -- EIN Ausruestungsanker
 #
@@ -1943,6 +1989,15 @@ SETS = [
                 # Standardarm einzuschraenken.
                 "mount_class": "medium", "category": "shield",
                 "anchors": {"mount": (0, 0, 52)},
+            },
+            {
+                "id": "eq_holo_boost", "code": "EQP-009", "type": "equipment",
+                "name": "Hologramm-Boost", "tags": ["support", "mobility"],
+                "shapes": EQ_HOLO_BOOST,
+                # Leicht -- ein Projektor, kein Geschuetz. Support, damit er an
+                # jeden Standardarm passt (auch den Schulterpod-Slot des Molok).
+                "mount_class": "light", "category": "support",
+                "anchors": {"mount": (0, 0, 52), "emitter": (7.6, 0, 47)},
             },
         ],
     },

@@ -34,7 +34,7 @@ func _stock(set_id: String) -> DromeBuild:
 
 
 func test_library_loaded() -> void:
-	t.equal(PartDB.parts.size(), 24, "24 Bauteile erwartet")
+	t.equal(PartDB.parts.size(), 25, "25 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausaetze erwartet")
 	for part in PartDB.parts.values():
 		t.equal(part.views.size(), 4, "%s braucht vier Ansichten" % part.id)
@@ -307,10 +307,14 @@ func test_loadout_survives_a_round_trip() -> void:
 
 func test_every_ranged_action_requires_line_of_sight() -> void:
 	# Ohne diese Regel waere das gesamte Terrainsystem Dekoration -- dann
-	# schoesse man quer durch Betonpfeiler.
+	# schoesse man quer durch Betonpfeiler. Bewegungs-Aktionen (Dash) sind
+	# ausgenommen: sie SCHIESSEN nicht ueber die Karte, sie versetzen den
+	# eigenen DROME -- eine Sichtlinie zum eigenen Zielfeld ergaebe keinen Sinn,
+	# und der Dash hat stattdessen seine eigene, striktere Regel (nicht ueber
+	# Hindernisse/Stufen).
 	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
 		for action in part.actions:
-			if action.range_tiles > 1:
+			if action.range_tiles > 1 and not action.is_move():
 				t.ok(action.requires_line_of_sight,
 					"%s (%s) hat Reichweite %d und braucht Sichtlinie"
 					% [part.id, action.id, action.range_tiles])

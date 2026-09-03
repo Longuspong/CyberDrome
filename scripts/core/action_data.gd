@@ -23,7 +23,12 @@ enum Category { ATTACK, ABILITY }
 ## AOE_AROUND_TARGET trifft den vollen Ring (Chebyshev-Radius, „8 angrenzende
 ## Felder" bei Radius 1). AOE_CROSS trifft nur ORTHOGONAL (Ziel + die geraden
 ## Nachbarn) -- die Kreuzform des Runenstabs („4 angrenzende Felder orthogonal").
-enum Targeting { SINGLE, SELF, TILE, AOE_AROUND_TARGET, AOE_CROSS }
+##
+## DASH ist die einzige BEWEGUNGS-Aktion: sie zielt auf ein LEERES Feld und
+## versetzt den Handelnden selbst dorthin -- gerade Linie, ``range_tiles`` weit,
+## und im Gegensatz zur normalen Bewegung ausdruecklich NICHT ueber Hindernisse
+## oder Stufen (der Hologramm-Boost des Vireo). Kein Ziel-DROME, kein Schaden.
+enum Targeting { SINGLE, SELF, TILE, AOE_AROUND_TARGET, AOE_CROSS, DASH }
 
 const CATEGORY_NAMES := {"attack": Category.ATTACK, "ability": Category.ABILITY}
 const CATEGORY_LABEL := {Category.ATTACK: "Angriff", Category.ABILITY: "Faehigkeit"}
@@ -33,6 +38,7 @@ const TARGETING_NAMES := {
 	"tile": Targeting.TILE,
 	"aoe_around_target": Targeting.AOE_AROUND_TARGET,
 	"aoe_cross": Targeting.AOE_CROSS,
+	"dash": Targeting.DASH,
 }
 
 ## Schadensarten. Bis auf ``normal`` ist noch keine entschieden -- die
@@ -194,6 +200,13 @@ func is_attack() -> bool:
 	return category == Category.ATTACK
 
 
+## Eine Bewegungs-Aktion (Dash): sie versetzt den Handelnden selbst, statt ein
+## Ziel zu treffen. Der Resolver behandelt sie deshalb in einem eigenen Zweig,
+## und die Schadensvorschau meldet fuer sie 0.
+func is_move() -> bool:
+	return targeting == Targeting.DASH
+
+
 func is_heal() -> bool:
 	return power < 0
 
@@ -215,6 +228,8 @@ func damage_type_label() -> String:
 ## richtig gerechnet und trotzdem eine Falschauskunft ueber die Aktion.
 func effect_summary() -> String:
 	var parts: Array[String] = []
+	if is_move():
+		parts.append("Boost %d gerade" % range_tiles)
 	if push_tiles > 0:
 		parts.append("stoesst %d" % push_tiles)
 	elif push_tiles < 0:
@@ -250,6 +265,9 @@ func headline() -> String:
 func description_lines() -> Array[String]:
 	var lines: Array[String] = []
 	lines.append("%s · Reichweite %d" % [category_label(), range_tiles])
+	if is_move():
+		lines.append("Boost: bis %d Felder gerade -- nicht ueber Hindernisse/Stufen"
+			% range_tiles)
 	if is_heal():
 		lines.append("Reparatur %d" % heal_amount())
 	elif power > 0:
