@@ -39,6 +39,18 @@ var _reachable: Dictionary = {}
 var _busy: bool = false
 var _paused: bool = false
 
+## Autokampf: die KI zieht fuer BEIDE Seiten, der Spieler sieht zu. Kommt aus
+## GameState (gesetzt in der Chaos-Auswahl) und wird beim Aufbau einmal
+## gelesen -- ein Kampf wechselt den Modus nicht mittendrin.
+var _auto: bool = false
+
+## Tempo des Autokampfs. Laeuft ueber Engine.time_scale, damit Pausen,
+## TICK-Balken und Tweens gemeinsam schneller werden und nichts aus dem Takt
+## geraet. Bewusst nur 1x und 2x: schneller ist der Kampf nicht mehr lesbar.
+const SPEEDS := [1.0, 2.0]
+var _speed_index: int = 0
+var _speed_button: Button
+
 ## Feld, ueber dem der Zeiger zuletzt stand. Fuer den Flaechenumriss: bei einer
 ## Flaechenaktion muss VOR dem Klick sichtbar sein, wen sie mittrifft.
 var _hover_tile: Vector2i = Vector2i(-1, -1)
@@ -57,6 +69,7 @@ var _action_ring: ActionRing
 
 
 func _ready() -> void:
+	_auto = GameState.auto_battle
 	battle = BattleManager.new()
 	add_child(battle)
 
@@ -87,6 +100,7 @@ func _start_battle() -> void:
 		GameState.new_seed()
 
 	battle.setup(GameState.battle_seed, builds)
+	battle.overtime_enabled = _auto
 	view.build_terrain(battle.grid)
 	for unit in battle.units:
 		view.attach_unit(unit)
@@ -138,7 +152,7 @@ func _next_turn() -> void:
 	_refresh_status()
 	_refresh_badges()
 
-	if not unit.is_player:
+	if _auto or not unit.is_player:
 		_run_ai_turn()
 
 
@@ -207,7 +221,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _busy or _paused or battle.outcome != BattleManager.Outcome.RUNNING:
 		return
 	var unit := battle.active_unit
-	if unit == null or not unit.is_player:
+	if _auto or unit == null or not unit.is_player:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -460,7 +474,8 @@ func _refresh_reachable() -> void:
 		else _hovered_action
 
 	if shown == null:
-		_reachable = battle.reachable_for_active() if unit.is_player else {}
+		_reachable = battle.reachable_for_active() \
+			if unit.is_player and not _auto else {}
 		var tiles: Array = _reachable.keys()
 		sets.append({"tiles": tiles, "color": BattleView.COLOR_REACHABLE})
 		view.clear_damage_preview()
@@ -542,6 +557,8 @@ func _refresh_status() -> void:
 		unit.display_name, unit.hp, unit.stat("hp_max"), unit.en,
 		unit.stat("en_max"), state.move_points, state.attack_actions,
 		state.actions_left(ActionData.Category.ABILITY), battle.tick_bus.cycle_count]
+	if battle.in_overtime():
+		_status.text += "   OVERTIME: -%d je Zug" % battle.overtime_damage(unit)
 	# Der Zug endet nie automatisch -- aber wenn nichts mehr geht, faellt der
 	# Button ins Auge.
 	_end_turn.modulate = Color(1.0, 0.85, 0.3) if state.budgets_spent() else Color.WHITE
@@ -580,7 +597,7 @@ func _refresh_action_bar() -> void:
 	for child in _action_bar.get_children():
 		child.queue_free()
 	var unit := battle.active_unit
-	if unit == null or not unit.is_player or battle.turn_state == null:
+	if _auto or unit == null or not unit.is_player or battle.turn_state == null:
 		return
 
 	for category in [ActionData.Category.ATTACK, ActionData.Category.ABILITY]:
@@ -856,6 +873,20 @@ func _build_ui() -> void:
 	pause.pressed.connect(_toggle_pause)
 	_ui.add_child(pause)
 
+	if _auto:
+		# Im Autokampf gibt es nichts zu bedienen: Leiste, Legende und
+		# Zug-Knopf entfallen, an ihre Stelle tritt das Tempo.
+		_action_bar.visible = false
+		legend.text = "AUTOKAMPF  ·  die KI steuert beide Seiten  ·  "\
+			+ "Pause und Tempo oben rechts"
+		_end_turn.visible = false
+		_speed_button = Button.new()
+		_speed_button.position = Vector2(1360, 16)
+		_speed_button.custom_minimum_size = Vector2(88, 0)
+		_speed_button.pressed.connect(_cycle_speed)
+		_ui.add_child(_speed_button)
+		_apply_speed()
+
 	_tick_bars = TickBarPanel.new()
 	_tick_bars.position = Vector2(24, 104)
 	_tick_bars.add_theme_constant_override("separation", 3)
@@ -874,6 +905,23 @@ func _build_ui() -> void:
 	_mutator_banner.add_child(banner_label)
 	_mutator_banner.visible = false
 	_ui.add_child(_mutator_banner)
+
+
+func _cycle_speed() -> void:
+	_speed_index = (_speed_index + 1) % SPEEDS.size()
+	_apply_speed()
+
+
+func _apply_speed() -> void:
+	Engine.time_scale = SPEEDS[_speed_index]
+	if _speed_button != null:
+		_speed_button.text = "Tempo %dx" % int(SPEEDS[_speed_index])
+
+
+## Das Tempo ist global (Engine.time_scale) und darf den Kampf nicht
+## ueberleben -- sonst laeuft die Werkstatt danach doppelt so schnell.
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 
 
 func _toggle_pause() -> void:

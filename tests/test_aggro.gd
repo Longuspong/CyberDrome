@@ -89,8 +89,10 @@ func test_a_fresh_table_is_empty() -> void:
 	t.ok(arena["foe"].aggro != null, "ein Gegner fuehrt eine Aggro-Tabelle")
 	t.ok(arena["foe"].aggro.is_empty(),
 		"zu Gefechtsbeginn steht niemand darin -- Aggro kommt aus Aktionen")
-	t.equal(arena["units"][0].aggro, null,
-		"ein Spieler-DROME fuehrt keine Tabelle: seine Ziele waehlt der Spieler")
+	# Seit dem Autokampf fuehrt auch die Spielerseite eine Tabelle: dort waehlt
+	# die KI die Ziele, und sie soll dieselben Werkzeuge haben wie der Gegner.
+	t.ok(arena["units"][0].aggro != null and arena["units"][0].aggro.is_empty(),
+		"auch ein Spieler-DROME fuehrt eine (leere) Tabelle -- fuer den Autokampf")
 	_free(arena)
 
 

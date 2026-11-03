@@ -226,10 +226,28 @@ func _action_score(unit: Unit, action: ActionData, target: Unit) -> float:
 
 	var damage := battle.resolver.preview_damage(unit, target, action)
 	score += float(damage) * _w("damage_weight", 1.0)
+	# Schildschaden zaehlt mit. Frueher ging nur der Integritaetsschaden ein --
+	# und ein voller Energieschild (32 Punkte beim Deflektor) schluckt jeden
+	# einzelnen Treffer. Die Bewertung war dann 0, die KI griff abgeschirmte
+	# Ziele NIE an, und Spiegelkaempfe liefen bis zum Zyklus-Limit, ohne dass
+	# ein Punkt Schaden fiel. Den Schild abzuraeumen ist aber genau das, was
+	# den naechsten Treffer (auch den des Verbuendeten) durchlaesst.
+	score += float(_shield_damage(unit, target, action)) \
+		* _w("shield_damage_weight", 0.7)
 	if damage >= target.hp:
 		score += _w("kill_bonus", 100.0)
 	score += _aggro_score(unit, target)
 	return score
+
+
+## Wie viel Schild diese Aktion abtraegt. Dieselbe Rechnung wie der echte
+## Treffer (ActionResolver.resolve_damage), nur ohne ihn auszufuehren.
+func _shield_damage(unit: Unit, target: Unit, action: ActionData) -> int:
+	if target.shield <= 0 or action.power <= 0:
+		return 0
+	var outcome := battle.resolver.resolve_damage(target,
+		action.power + unit.atk(), action.energy_fraction)
+	return maxi(0, target.shield - int(outcome["shield_after"]))
 
 
 ## Der Aggro-Anteil der Bewertung. Zwei Summanden mit verschiedenen Aufgaben:

@@ -31,12 +31,23 @@ var enemy_equipment: Array = []
 
 var _cycle_limit: int = 30
 
+## Overtime (Autokampf): ab ``overtime.start_cycle`` verliert jeder DROME zu
+## Beginn seines Zuges einen wachsenden ANTEIL seiner maximalen Integritaet.
+## Ohne das endeten Spiegelkaempfe KI gegen KI meist am Zyklus-Limit
+## unentschieden -- im Autobattler, in dem man nur zusieht, das schlechteste
+## denkbare Ende. Prozentual statt fest, damit ein dickes Chassis nicht ewig
+## steht und ein duennes nicht sofort faellt: die Uhr laeuft fuer alle gleich.
+## Aus, solange nicht eingeschaltet -- der manuelle Kampf bleibt, wie er war.
+var overtime_enabled: bool = false
+
 
 # ---------------------------------------------------------------------------
 # Aufbau
 # ---------------------------------------------------------------------------
 
-func setup(seed_value: int, player_builds: Array) -> void:
+## ``enemy_override``: feste Gegner statt gewuerfelter -- fuer Spiegel- und
+## Fairness-Tests (dasselbe Squad auf beiden Seiten).
+func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) -> void:
 	battle_seed = seed_value
 	_cycle_limit = Config.get_int("cycle_limit", 30)
 
@@ -57,7 +68,9 @@ func setup(seed_value: int, player_builds: Array) -> void:
 		enemy_count = GameState.chaos_enemy_count
 	if GameState.chaos_reference_power > 0.0:
 		target_power = GameState.chaos_reference_power
-	var enemy_builds := EnemyGenerator.new(battle_seed).generate(enemy_count, target_power)
+	var enemy_builds: Array = enemy_override
+	if enemy_builds.is_empty():
+		enemy_builds = EnemyGenerator.new(battle_seed).generate(enemy_count, target_power)
 	enemy_equipment = _distinct_equipment(enemy_builds)
 
 	units.clear()
@@ -159,11 +172,40 @@ func begin_next_turn() -> Unit:
 		if active_unit.hp <= 0:
 			_handle_death(active_unit)
 			return null
+	var collapse := overtime_damage(active_unit)
+	if collapse > 0:
+		active_unit.hp = maxi(0, active_unit.hp - collapse)
+		EventBus.log_line("%s verliert %d Integritaet (Overtime)."
+			% [active_unit.display_name, collapse])
+		if active_unit.hp <= 0:
+			_handle_death(active_unit)
+			return null
 
 	turn_state = TurnState.begin(active_unit)
 	EventBus.turn_started.emit(active_unit)
 	turn_ready.emit(active_unit)
 	return active_unit
+
+
+## Overtime-Schaden fuer diesen DROME im aktuellen Zyklus. 0 vor dem Start
+## oder wenn Overtime aus ist. Waechst je Zyklus um ``pct_per_cycle`` der
+## maximalen Integritaet, aufgerundet.
+func overtime_damage(unit: Unit) -> int:
+	if not overtime_enabled or unit == null or tick_bus == null:
+		return 0
+	var section := Config.section("overtime")
+	var start := int(section.get("start_cycle", 12))
+	var past := tick_bus.cycle_count - start + 1
+	if past <= 0:
+		return 0
+	var pct := float(section.get("pct_per_cycle", 0.05))
+	return int(ceil(float(unit.stat("hp_max")) * pct * float(past)))
+
+
+## Laeuft die Overtime schon? Fuer die Anzeige.
+func in_overtime() -> bool:
+	return overtime_enabled and tick_bus != null \
+		and tick_bus.cycle_count >= int(Config.section("overtime").get("start_cycle", 12))
 
 
 func end_turn() -> void:

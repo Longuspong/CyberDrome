@@ -12,10 +12,12 @@ __pycache__/
 .venv/
 venv/
 
-# Godot (kommt spaeter)
+# Godot
 .godot/
 .import/
-export_presets.cfg
+# export_presets.cfg ist versioniert: der Web-Export (PWA) baut in CI daraus.
+# Er enthaelt keine Geheimnisse -- ein Android-Keystore gehoerte NICHT hinein.
+build/
 
 # Editor / OS
 .vscode/

@@ -30,6 +30,26 @@ den Satz unter `assets/parts/`. Wie fein er gerastert wird, stellt
 `tools/set_import_scale.py` ein (Vierfach; die Engine rechnet ueber
 `IsoView.fit_sprite()` auf den 128er Entwurfsraum zurueck).
 
+### Autokampf und PWA
+
+In der Chaos-Auswahl schaltet **Autokampf (KI steuert beide Seiten)** den
+Kampf auf reines Zusehen: dieselbe KI zieht fuer beide Seiten, oben rechts
+stehen **Tempo 1x/2x** und **Pause**. Ab Zyklus 12 greift die **Overtime**
+(`data/config.json`, Abschnitt `overtime`): jeder DROME verliert zu Zugbeginn
+einen wachsenden Anteil seiner Integritaet, damit jeder Kampf entschieden wird.
+`tests/test_autobattle.gd` sichert ab, dass beide Seiten dieselben Werkzeuge
+haben und ein Spiegelkampf auf beiden Seiten gleich oft gewonnen wird.
+
+Als **PWA** baut `.github/workflows/web.yml` den Web-Export (ohne Threads) und
+veroeffentlicht ihn auf GitHub Pages (einmalig: *Settings -> Pages -> Source:
+GitHub Actions*). Lokal:
+
+```bash
+python3 tools/fetch_web_templates.py        # nur die Web-Templates, ~20 MB statt 1,3 GB
+godot --headless --path . --export-release "Web" build/web/index.html
+cd build/web && python3 -m http.server      # http://localhost:8000
+```
+
 ### Kampf bedienen
 
 | | |
