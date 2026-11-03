@@ -208,8 +208,17 @@ func _build_library_column() -> Control:
 	left.add_child(_filter_field)
 
 	var hint := Label.new()
-	hint.text = "Zeiger zeigt Werte und Aussehen · Klick baut ein\n"\
-		+ "Nur FREIE Exemplare — was woanders steckt, ist gesperrt"
+	if _touch():
+		hint.text = "Tippen zeigt Werte und Aussehen · nochmal tippen baut ein · "\
+			+ "lange druecken erklaert"
+	else:
+		hint.text = "Zeiger zeigt Werte und Aussehen · Klick baut ein"
+	hint.text += "\nNur FREIE Exemplare — was woanders steckt, ist gesperrt"
+	# Umbrechen statt die Spalte zu verbreitern: mit der Mindestschrift
+	# (Accessibility) schob diese Zeile die Bibliothek auf dem Handy so breit,
+	# dass rechts die Kampfwerte aus dem Bild fielen.
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size = Vector2(LIBRARY_WIDTH, 0)
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.modulate = COLOR_MUTED
 	left.add_child(hint)
@@ -236,11 +245,19 @@ func _build_preview_column() -> Control:
 	back.pressed.connect(func(): _save_and_go("res://scenes/garage.tscn"))
 	top_row.add_child(back)
 	_name_field = LineEdit.new()
-	_name_field.custom_minimum_size = Vector2(220, 0)
+	_name_field.custom_minimum_size = Vector2(120, 0)
+	_name_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name_field.text_changed.connect(func(text):
 		_entry.name = text
 		_build.display_name = text)
 	top_row.add_child(_name_field)
+
+	# Die Blickrichtungen in einer eigenen Reihe: in einer Zeile mit Name und
+	# Zurueck-Knopf erzwangen sie eine Mindestbreite der Mitte, die auf dem
+	# Handy die Kampfwerte rechts aus dem Bild schob.
+	var direction_row := HBoxContainer.new()
+	direction_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(direction_row)
 	for direction in DIRECTIONS:
 		var button := Button.new()
 		button.text = DIR_LABEL[direction]
@@ -253,19 +270,27 @@ func _build_preview_column() -> Control:
 			_refresh_direction_buttons())
 		button.set_meta("direction", direction)
 		_direction_buttons.append(button)
-		top_row.add_child(button)
+		direction_row.add_child(button)
 
-	var viewport := SubViewportContainer.new()
-	viewport.custom_minimum_size = Vector2(PREVIEW_SIZE, PREVIEW_SIZE)
-	viewport.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	viewport.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	center.add_child(viewport)
-
+	# Die Vorschau rendert weiter in 520x520, wird aber als Bild in den Platz
+	# eingepasst, den die Spalte hat. Vorher stand sie fest auf 520 Pixeln --
+	# auf der logischen Flaeche eines Handys (~1150 breit) schob sie die
+	# Kampfwerte rechts aus dem Bild.
 	var sub := SubViewport.new()
 	sub.size = Vector2i(PREVIEW_SIZE, PREVIEW_SIZE)
 	sub.transparent_bg = true
 	sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	viewport.add_child(sub)
+	add_child(sub)
+
+	var viewport := TextureRect.new()
+	viewport.texture = sub.get_texture()
+	viewport.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	viewport.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	viewport.custom_minimum_size = Vector2(180, 180)
+	viewport.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	viewport.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	viewport.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(viewport)
 
 	_preview_root = Node2D.new()
 	_preview_root.position = Vector2(
@@ -604,6 +629,18 @@ func _library_tile(part: PartData) -> Button:
 		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(badge)
 
+	if _touch():
+		# Auf Touch gibt es kein Hovern. Das erste Tippen waehlt die Kachel und
+		# zeigt, was der Zeiger zeigen wuerde (Aussehen, Werte, was bricht);
+		# das zweite Tippen auf DIESELBE Kachel baut ein. Gesperrte Kacheln
+		# bleiben antippbar, damit sie ihren Grund nennen koennen -- vorher war
+		# der nur per Zeiger zu erfahren.
+		if blocked:
+			button.add_theme_stylebox_override("normal", _tile_style("disabled", equipped))
+			button.add_theme_stylebox_override("hover", _tile_style("disabled", equipped))
+		button.pressed.connect(func(): _on_tile_tapped(part, button, blocked))
+		return button
+
 	if blocked:
 		button.disabled = true
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -617,6 +654,24 @@ func _library_tile(part: PartData) -> Button:
 	button.mouse_entered.connect(func(): _set_hover(part, button))
 	button.mouse_exited.connect(func(): _clear_hover())
 	return button
+
+
+func _touch() -> bool:
+	return DisplayServer.is_touchscreen_available()
+
+
+## Touch: erstes Tippen = ansehen, zweites Tippen = einbauen.
+func _on_tile_tapped(part: PartData, button: Control, blocked: bool) -> void:
+	if _hover_part != part:
+		_set_hover(part, button)
+		return
+	if blocked:
+		return
+	if part.type == PartData.Type.EQUIPMENT:
+		_open_slot_popup(part, button)
+	else:
+		_assign_core(part)
+		_after_change()
 
 
 func _tile_style(state: String, equipped: bool) -> StyleBoxFlat:
@@ -840,6 +895,12 @@ func _close_slot_popup() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Touch: ein Tippen ausserhalb der Bibliothek legt die Auswahl ab --
+	# das Gegenstueck zum Wegfahren mit dem Zeiger.
+	if _touch() and not _slot_popup.visible and _hover_part != null \
+			and event is InputEventMouseButton and event.pressed:
+		if not _library_column.get_global_rect().has_point(event.global_position):
+			_clear_hover()
 	if not _slot_popup.visible:
 		return
 	if event is InputEventMouseButton and event.pressed:
@@ -905,11 +966,14 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 		_delta_rows.add_child(_delta_line("kein freies Exemplar — alle verbaut",
 			COLOR_BAD))
 	elif part.type == PartData.Type.EQUIPMENT:
-		_delta_rows.add_child(_delta_line("Klick fragt nach dem Halter · %d frei"
-			% free, COLOR_MUTED))
+		_delta_rows.add_child(_delta_line("%s fragt nach dem Halter · %d frei"
+			% ["Nochmal tippen" if _touch() else "Klick", free],
+			COLOR_HEADING if _touch() else COLOR_MUTED))
 	else:
 		_delta_rows.add_child(_delta_line("kommt in: %s · %d frei"
 			% [SLOT_LABEL.get(slot, slot), free], COLOR_MUTED))
+		if _touch():
+			_delta_rows.add_child(_delta_line("Nochmal tippen baut ein", COLOR_HEADING))
 	var replaced := _build.part_in(slot) if slot != "" else null
 	if replaced != null and replaced.id != part.id:
 		_delta_rows.add_child(_delta_line("ersetzt: %s" % replaced.display_name,
@@ -924,14 +988,14 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 			continue
 		changed = true
 		var diff: int = after[key] - before[key]
-		_delta_rows.add_child(_delta_line("%s  %d → %d  (%+d)"
+		_delta_rows.add_child(_delta_line("%s  %d -> %d  (%+d)"
 			% [row[1], before[key], after[key], diff],
 			COLOR_GOOD if diff > 0 else COLOR_BAD))
 	if not changed:
 		_delta_rows.add_child(_delta_line("keine Wertaenderung", COLOR_MUTED))
 
 	if after["weight"] != before["weight"]:
-		_delta_rows.add_child(_delta_line("Gewicht  %d → %d"
+		_delta_rows.add_child(_delta_line("Gewicht  %d -> %d"
 			% [before["weight"], after["weight"]], COLOR_MUTED))
 
 	var problems := _hover_build.validate()
@@ -947,7 +1011,8 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 		return
 	var origin := anchor.get_global_rect()
 	var column := _library_column.get_global_rect()
-	_delta_panel.position = Vector2(column.end.x + 8,
+	_delta_panel.position = Vector2(
+		minf(column.end.x + 8, size.x - _delta_panel.size.x - 8.0),
 		clampf(origin.position.y, 8.0, size.y - _delta_panel.size.y - 8.0))
 
 

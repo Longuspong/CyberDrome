@@ -206,6 +206,125 @@ func _raise_font(control: Control, key: String) -> void:
 
 
 # ---------------------------------------------------------------------------
+# Lange druecken = Erklaerung
+# ---------------------------------------------------------------------------
+
+## Auf Touch gibt es kein Hovern und damit keine Tooltips: alles, was in
+## ``tooltip_text`` steht -- was ein Halter annimmt, was eine Aktion tut --,
+## war auf dem Handy unerreichbar. Langes Druecken zeigt es jetzt an, fuer
+## JEDES Control mit Tooltip, ohne dass ein Bildschirm davon wissen muss.
+##
+## Das Loslassen danach wird verschluckt: sonst loeste ein langes Druecken auf
+## "×" (Halter leeren) nach dem Lesen der Erklaerung genau das aus, was man
+## sich nur erklaeren lassen wollte.
+const LONG_PRESS_SECONDS := 0.5
+const LONG_PRESS_SLOP := 14.0
+
+var _press_serial := 0
+var _press_active := false
+var _press_position := Vector2.ZERO
+var _swallow_release := false
+var _swallow_until_msec := 0
+const SWALLOW_AFTER_MSEC := 400
+var _tip_layer: CanvasLayer
+var _tip_panel: PanelContainer
+var _tip_label: Label
+
+
+func _input(event: InputEvent) -> void:
+	if not DisplayServer.is_touchscreen_available():
+		return
+	# Nach einer angezeigten Erklaerung: alle Klicks bis kurz nach dem Loslassen
+	# verschlucken. EIN Loslassen reicht nicht -- der Browser schickt nach dem
+	# Touch-Ende eigene Maus-Ereignisse hinterher, und eines davon loeste im
+	# Test trotzdem "Halter leeren" aus.
+	if _swallow_release or Time.get_ticks_msec() < _swallow_until_msec:
+		if event is InputEventScreenTouch and not event.pressed:
+			_swallow_release = false
+			_swallow_until_msec = Time.get_ticks_msec() + SWALLOW_AFTER_MSEC
+			get_viewport().set_input_as_handled()
+			return
+		if event is InputEventMouseButton:
+			get_viewport().set_input_as_handled()
+			return
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_hide_tip()
+			_press_active = true
+			_press_position = event.position
+			_press_serial += 1
+			var serial := _press_serial
+			get_tree().create_timer(LONG_PRESS_SECONDS).timeout.connect(func():
+				if _press_active and serial == _press_serial:
+					_show_tip_at(_press_position))
+		else:
+			_press_active = false
+	elif event is InputEventScreenDrag:
+		if event.position.distance_to(_press_position) > LONG_PRESS_SLOP:
+			_press_active = false
+
+
+## Der Text des Controls unter dem Finger -- oder seines naechsten Elternteils
+## mit Tooltip (eine Aktionszeile traegt ihn am Container, nicht am Label).
+static func tooltip_for(control: Control) -> String:
+	var node: Node = control
+	while node is Control:
+		var text: String = (node as Control).tooltip_text
+		if text.strip_edges() != "":
+			return text
+		node = node.get_parent()
+	return ""
+
+
+func _show_tip_at(at: Vector2) -> void:
+	var control := get_viewport().gui_get_hovered_control()
+	if control == null:
+		return
+	var text := tooltip_for(control)
+	if text == "":
+		return
+	if _tip_layer == null:
+		_tip_layer = CanvasLayer.new()
+		_tip_layer.layer = 90
+		add_child(_tip_layer)
+		_tip_panel = PanelContainer.new()
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.06, 0.08, 0.12, 0.97)
+		style.border_color = Color(0.62, 0.82, 0.96)
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(6)
+		style.set_content_margin_all(14)
+		_tip_panel.add_theme_stylebox_override("panel", style)
+		_tip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_tip_label = Label.new()
+		_tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_tip_label.custom_minimum_size = Vector2(420, 0)
+		_tip_label.add_theme_font_size_override("font_size", 18)
+		_tip_panel.add_child(_tip_label)
+		_tip_layer.add_child(_tip_panel)
+	_tip_label.text = text
+	_tip_panel.reset_size()
+	_tip_panel.visible = true
+	_swallow_release = true
+	await get_tree().process_frame
+	var area := get_viewport().get_visible_rect().size
+	var panel_size := _tip_panel.size
+	# Ueber dem Finger, damit er den Text nicht verdeckt; wenn oben kein Platz
+	# ist, darunter.
+	var y := at.y - panel_size.y - 24.0
+	if y < 8.0:
+		y = at.y + 24.0
+	_tip_panel.position = Vector2(
+		clampf(at.x - panel_size.x * 0.5, 8.0, maxf(8.0, area.x - panel_size.x - 8.0)),
+		clampf(y, 8.0, maxf(8.0, area.y - panel_size.y - 8.0)))
+
+
+func _hide_tip() -> void:
+	if _tip_panel != null:
+		_tip_panel.visible = false
+
+
+# ---------------------------------------------------------------------------
 # Hochformat
 # ---------------------------------------------------------------------------
 

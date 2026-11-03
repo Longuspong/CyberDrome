@@ -89,6 +89,10 @@ von ~0,46 CSS-Pixel je Entwurfspixel (12er Schrift = 5,5 Punkt). Jetzt:
   `prefers-reduced-motion`), Vollbild. Gespeichert in `user://settings.json`.
 * **Hochformat**: ein Hinweis mit *Vollbild im Querformat* (sperrt die
   Ausrichtung, wo der Browser es erlaubt).
+* **Touch**: langes Druecken zeigt den Erklaertext (`tooltip_text`) jedes
+  Elements -- auf dem Handy gab es sonst keinen Weg dorthin. In der Werkstatt
+  waehlt das erste Tippen auf eine Kachel aus (Vorschau, Werte, was bricht),
+  das zweite baut ein; gesperrte Kacheln nennen beim Antippen ihren Grund.
 * Kampfbildschirm an Kanten verankert, Kamera passt sich der Flaeche an;
   Schildtreffer stehen als *Schild -8* im Log statt als *0 Schaden*.
 
