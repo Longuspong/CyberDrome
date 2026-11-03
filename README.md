@@ -59,6 +59,20 @@ cd build/web && python3 -m http.server      # http://localhost:8000
 Die SVG-Werkstatt liegt unter `werkstatt/` und wird NICHT mit gehostet: sie
 braucht die REST-API aus `main.py` und laeuft nur lokal.
 
+### Lauf (Roguelike)
+
+Im Hauptmenue startet **Lauf (Roguelike)** eine Folge von acht Autokaempfen
+mit drei Leben (`scripts/core/run_state.gd`, Werte in `data/config.json`
+unter `run`):
+
+* Start mit Vireo (Puls-Blaster) und Nimbus (Runenstab), je ein Halter frei.
+* Vor jedem Kampf: Region, Mutator, Gegnerzahl und -staerke -- aus demselben
+  Seed wie der Kampf selbst, also exakt.
+* Die Gegnerstaerke folgt einer festen Kurve, nicht dem eigenen Squad.
+* Sieg: eine von drei Belohnungen -- Teile aus der Gegnerausruestung (man
+  waehlt DROME und Halter), in Runde 2 und 5 ein neuer DROME mit Waffe,
+  gelegentlich *Notstrom* (+1 Leben). Niederlage: ein Leben weniger.
+
 ### Barrierefreiheit
 
 `autoload/accessibility.gd` sorgt dafuer, dass das Spiel auf dem Handy lesbar

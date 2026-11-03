@@ -69,7 +69,8 @@ var _action_ring: ActionRing
 
 
 func _ready() -> void:
-	_auto = GameState.auto_battle
+	# Ein Lauf ist der Autobattler: dort kaempft immer die KI.
+	_auto = GameState.auto_battle or GameState.in_run_battle
 	battle = BattleManager.new()
 	add_child(battle)
 
@@ -784,6 +785,8 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 ## battle_over genau einmal feuert.
 func _grant_loot(outcome: BattleManager.Outcome) -> void:
 	GameState.last_loot = []
+	if GameState.in_run_battle:
+		return              # im Lauf ist die Belohnung die Kartenwahl danach
 	if outcome != BattleManager.Outcome.VICTORY:
 		return
 	if GameState.chaos_reference_power <= 0.0:
@@ -1016,6 +1019,15 @@ func _add_loot_section(box: VBoxContainer, outcome: BattleManager.Outcome) -> vo
 func _show_result(outcome: BattleManager.Outcome) -> void:
 	var panel := PanelContainer.new()
 	_anchor(panel, Vector2(0.5, 0.5), Vector2.ZERO)
+	# Deckend: durch das halbdurchsichtige Standardpanel schien die Karte, und
+	# die Ergebniszeilen waren auf den Feldern kaum zu lesen.
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.07, 0.09, 0.13, 0.97)
+	style.border_color = Color(0.62, 0.82, 0.96)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(18)
+	panel.add_theme_stylebox_override("panel", style)
 	panel.custom_minimum_size = Vector2(560, 380)
 	var box := VBoxContainer.new()
 	panel.add_child(box)
@@ -1040,6 +1052,20 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		box.add_child(line)
 
 	_add_loot_section(box, outcome)
+
+	if GameState.in_run_battle:
+		var onward := Button.new()
+		onward.text = "Weiter im Lauf"
+		onward.custom_minimum_size = Vector2(0, 52)
+		onward.add_theme_font_size_override("font_size", 20)
+		var pool: Array = battle.enemy_equipment.duplicate()
+		onward.pressed.connect(func():
+			GameState.finish_run_battle(outcome, pool)
+			get_tree().change_scene_to_file("res://scenes/run.tscn"))
+		box.add_child(onward)
+		_ui.add_child(panel)
+		onward.grab_focus.call_deferred()
+		return
 
 	var back := Button.new()
 	back.text = "Zurueck zur Werkstatt"

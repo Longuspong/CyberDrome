@@ -112,8 +112,10 @@ func _build_ui() -> void:
 	modes.offset_bottom = -24
 	add_child(modes)
 
-	modes.add_child(_mode_button("Gamemode 1",
-		"Noch nicht verfuegbar.", true, Callable()))
+	# Der Lauf (Roguelike) braucht keinen Roster: er bringt seinen eigenen
+	# Start-Squad mit und ist deshalb immer startbar.
+	modes.add_child(_mode_button("Lauf (Roguelike)", "", false,
+		func(): get_tree().change_scene_to_file("res://scenes/run.tscn")))
 	modes.add_child(_mode_button("Gamemode 2",
 		"Noch nicht verfuegbar.", true, Callable()))
 	_chaos = _mode_button("Chaos-Virus", "", false, _start_chaos)

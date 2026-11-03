@@ -246,6 +246,40 @@ func configure_chaos_run(enemy_count: int, reference_power: float) -> void:
 	chaos_reference_power = maxf(0.0, reference_power)
 
 
+# --- Lauf (Roguelike) --------------------------------------------------------
+
+## Der laufende Lauf, oder null. Lebt nur im Speicher -- wie Roster und
+## Inventar in dieser Dev-Phase (save_enabled).
+var run: RunState = null
+
+## Ob der naechste/aktuelle Kampf ein Kampf dieses Laufs ist. Dann kaempft der
+## Lauf-Squad statt des Roster-Squads, es gibt keine Chaos-Beute, und das
+## Ergebnis geht an den Lauf zurueck.
+var in_run_battle: bool = false
+
+
+## Richtet den Kampf der aktuellen Runde ein. Der Lauf-Squad wird KOPIERT:
+## der Kampf soll den Lauf nicht veraendern, nur sein Ergebnis.
+func begin_run_battle() -> void:
+	if run == null:
+		return
+	in_run_battle = true
+	squad = run.squad.map(func(b): return b.clone())
+	battle_seed = run.battle_seed()
+	configure_chaos_run(run.enemy_count(), run.enemy_power())
+
+
+## Nimmt das Kampfergebnis zurueck in den Lauf und raeumt die Kampfparameter
+## weg -- sonst erbte ein spaeterer Chaos-Kampf Seed und Gegnerstaerke.
+func finish_run_battle(outcome: int, enemy_pool: Array) -> void:
+	if run != null:
+		run.record_result(outcome, enemy_pool)
+	in_run_battle = false
+	battle_seed = 0
+	clear_chaos_run()
+	refresh_squad()
+
+
 ## Zuruecksetzen auf den Spiegel-Modus -- nach einem Lauf, damit ein spaeterer
 ## Direktstart der Kampfszene nicht die Chaos-Parameter erbt. Pity und die
 ## letzte Beute bleiben (der Zaehler soll ja ueber Laeufe hinweg zaehlen).
