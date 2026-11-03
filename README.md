@@ -40,15 +40,24 @@ einen wachsenden Anteil seiner Integritaet, damit jeder Kampf entschieden wird.
 `tests/test_autobattle.gd` sichert ab, dass beide Seiten dieselben Werkzeuge
 haben und ein Spiegelkampf auf beiden Seiten gleich oft gewonnen wird.
 
-Als **PWA** baut `.github/workflows/web.yml` den Web-Export (ohne Threads) und
-veroeffentlicht ihn auf GitHub Pages (einmalig: *Settings -> Pages -> Source:
-GitHub Actions*). Lokal:
+Als **PWA** gebaut wird das Spiel von `tools/build_web.sh` (Godot und nur die
+zwei Web-Templates holen, Assets importieren, exportieren nach `build/web`).
+Dasselbe Skript benutzen:
+
+* **Vercel** -- `vercel.json` setzt Build-Befehl und Ausgabeordner. Die
+  Startseite des Deployments ist das Spiel, nicht die Werkstatt.
+* **GitHub Pages** -- `.github/workflows/web.yml` (einmalig: *Settings ->
+  Pages -> Source: GitHub Actions*).
+
+Lokal:
 
 ```bash
-python3 tools/fetch_web_templates.py        # nur die Web-Templates, ~20 MB statt 1,3 GB
-godot --headless --path . --export-release "Web" build/web/index.html
+bash tools/build_web.sh
 cd build/web && python3 -m http.server      # http://localhost:8000
 ```
+
+Die SVG-Werkstatt liegt unter `werkstatt/` und wird NICHT mit gehostet: sie
+braucht die REST-API aus `main.py` und laeuft nur lokal.
 
 ### Kampf bedienen
 
@@ -274,7 +283,8 @@ selbst davon.
 
 ```
 main.py                      Entwicklungsserver + REST-API (nur stdlib)
-index.html                   Frontend, JS + CSS eingebettet, laeuft offline
+werkstatt/index.html         Werkstatt-Frontend, JS + CSS eingebettet, laeuft offline
+vercel.json                  Hosting: baut und liefert das SPIEL (tools/build_web.sh)
 parts/                       Teile-Bibliothek
   README.md                  >> Format-Spezifikation: Anker, JSON, Farben <<
   bot1/                      RX-Vireo // Scout       (2 Anker, bis mittel)
@@ -446,7 +456,7 @@ zusaetzlich wird der aufgeloeste Pfad gegen das erlaubte Verzeichnis validiert.
 vorgesehen; die Manipulation beschraenkt sich am Ende aber auf `<g>`-Container
 plus `transform`-Attribut, dafuer waere eine Bibliothek reiner Ballast – und
 eine CDN-Einbindung wuerde das Tool offline unbrauchbar machen. Wer spaeter doch
-SVG.js will, muss nur `renderBot()` in `index.html` austauschen; alles andere
+SVG.js will, muss nur `renderBot()` in `werkstatt/index.html` austauschen; alles andere
 haengt an den Datenstrukturen, nicht am DOM.
 
 **Kein Flask.** `http.server` reicht fuer ein lokales Werkzeug vollstaendig und
