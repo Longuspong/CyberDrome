@@ -69,7 +69,8 @@ var _action_ring: ActionRing
 
 
 func _ready() -> void:
-	_auto = GameState.auto_battle
+	# Ein Lauf ist der Autobattler: dort kaempft immer die KI.
+	_auto = GameState.auto_battle or GameState.in_run_battle
 	battle = BattleManager.new()
 	add_child(battle)
 
@@ -106,8 +107,8 @@ func _start_battle() -> void:
 		view.attach_unit(unit)
 
 	camera.position = IsoView.grid_center(battle.grid.width, battle.grid.height)
-	camera.zoom = Vector2(0.62, 0.62)
-	view.set_pixel_scale(camera.zoom.x)
+	_fit_camera()
+	get_viewport().size_changed.connect(_fit_camera)
 
 	_tick_bars.rebuild(battle.units, battle.tick_bus)
 	_show_mutator()
@@ -716,6 +717,8 @@ func _on_unit_healed(unit: Unit, _amount: int, _source) -> void:
 ## Kurzer Kamerastoss, der von selbst zur Ruhe kommt. ``severity`` ist der
 ## Anteil der Maximalintegritaet, den der Treffer gekostet hat.
 func _shake_camera(severity: float) -> void:
+	if Accessibility.reduce_motion:
+		return
 	var strength := CAMERA_SHAKE_MAX * severity
 	if strength < 0.6:
 		return
@@ -782,6 +785,8 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 ## battle_over genau einmal feuert.
 func _grant_loot(outcome: BattleManager.Outcome) -> void:
 	GameState.last_loot = []
+	if GameState.in_run_battle:
+		return              # im Lauf ist die Belohnung die Kartenwahl danach
 	if outcome != BattleManager.Outcome.VICTORY:
 		return
 	if GameState.chaos_reference_power <= 0.0:
@@ -805,6 +810,42 @@ func _grant_loot(outcome: BattleManager.Outcome) -> void:
 ## -- also weit unter dem Bildrand, unsichtbar. Damit gab es im Kampf keine
 ## Aktionsleiste, und der einzige verbliebene Weg zu einer Aktion war der
 ## Aktionsring, der beim Hinfahren verschwand.
+## Die Karte so gross wie moeglich, ohne dass sie unter die Leisten links und
+## rechts rutscht. Frueher stand hier ein fester Zoom von 0,62 -- passend fuer
+## 1600x900 und auf der kleineren logischen Flaeche eines Handys (siehe
+## Accessibility) zu gross: die Karte lief unten aus dem Bild.
+func _fit_camera() -> void:
+	var visible := get_viewport().get_visible_rect().size
+	var map := Vector2(battle.grid.width + battle.grid.height,
+		battle.grid.width + battle.grid.height) * 0.5 \
+		* Vector2(IsoView.TILE_W, IsoView.TILE_H)
+	# Platz fuer die Seitenleisten (TICK-Balken links, Log rechts) und oben
+	# fuer Status und Warteliste.
+	var usable := Vector2(maxf(visible.x - 560.0, visible.x * 0.55),
+		maxf(visible.y - 150.0, visible.y * 0.7))
+	var zoom := clampf(minf(usable.x / map.x, usable.y / map.y), 0.3, 0.9)
+	camera.zoom = Vector2(zoom, zoom)
+	view.set_pixel_scale(zoom)
+
+
+## Haengt ein Control an eine Ecke oder Kante (anchor in 0..1) mit Versatz.
+## Rechts und unten verankert statt fest positioniert: auf der logischen
+## Flaeche eines Handys (~1150 breit) stuende ein Knopf bei x = 1460 im Aus.
+func _anchor(control: Control, anchor: Vector2, offset: Vector2) -> void:
+	control.anchor_left = anchor.x
+	control.anchor_right = anchor.x
+	control.anchor_top = anchor.y
+	control.anchor_bottom = anchor.y
+	control.offset_left = offset.x
+	control.offset_top = offset.y
+	control.offset_right = offset.x
+	control.offset_bottom = offset.y
+	control.grow_horizontal = Control.GROW_DIRECTION_BEGIN if anchor.x >= 1.0 \
+		else (Control.GROW_DIRECTION_BOTH if anchor.x > 0.0 else Control.GROW_DIRECTION_END)
+	control.grow_vertical = Control.GROW_DIRECTION_BEGIN if anchor.y >= 1.0 \
+		else (Control.GROW_DIRECTION_BOTH if anchor.y > 0.0 else Control.GROW_DIRECTION_END)
+
+
 func _place_bottom(control: Control, x: float, above_bottom: float) -> void:
 	control.anchor_left = 0.0
 	control.anchor_right = 0.0
@@ -857,19 +898,26 @@ func _build_ui() -> void:
 		if not _busy and not _paused:
 			_end_current_turn())
 	_ui.add_child(_end_turn)
-	_place_bottom(_end_turn, 1340, 70)
+	_anchor(_end_turn, Vector2(1, 1), Vector2(-24, -24))
 
 	_log = RichTextLabel.new()
-	_log.position = Vector2(1240, 120)
-	_log.custom_minimum_size = Vector2(340, 420)
-	_log.size = Vector2(340, 420)
+	# Rechts oben verankert, Hoehe bis knapp ueber den Zug-Knopf.
+	_log.anchor_left = 1.0
+	_log.anchor_right = 1.0
+	_log.anchor_top = 0.0
+	_log.anchor_bottom = 1.0
+	_log.offset_left = -364
+	_log.offset_right = -24
+	_log.offset_top = 80
+	_log.offset_bottom = -96
 	_log.scroll_following = true
 	_log.add_theme_font_size_override("normal_font_size", 12)
 	_ui.add_child(_log)
 
 	var pause := Button.new()
 	pause.text = "Pause"
-	pause.position = Vector2(1460, 16)
+	pause.custom_minimum_size = Vector2(110, 48)
+	_anchor(pause, Vector2(1, 0), Vector2(-24, 16))
 	pause.pressed.connect(_toggle_pause)
 	_ui.add_child(pause)
 
@@ -881,8 +929,8 @@ func _build_ui() -> void:
 			+ "Pause und Tempo oben rechts"
 		_end_turn.visible = false
 		_speed_button = Button.new()
-		_speed_button.position = Vector2(1360, 16)
-		_speed_button.custom_minimum_size = Vector2(88, 0)
+		_speed_button.custom_minimum_size = Vector2(130, 48)
+		_anchor(_speed_button, Vector2(1, 0), Vector2(-150, 16))
 		_speed_button.pressed.connect(_cycle_speed)
 		_ui.add_child(_speed_button)
 		_apply_speed()
@@ -898,7 +946,7 @@ func _build_ui() -> void:
 	_ui.add_child(_action_ring)
 
 	_mutator_banner = PanelContainer.new()
-	_mutator_banner.position = Vector2(560, 300)
+	_anchor(_mutator_banner, Vector2(0.5, 0.4), Vector2.ZERO)
 	var banner_label := Label.new()
 	banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	banner_label.add_theme_font_size_override("font_size", 26)
@@ -970,7 +1018,16 @@ func _add_loot_section(box: VBoxContainer, outcome: BattleManager.Outcome) -> vo
 
 func _show_result(outcome: BattleManager.Outcome) -> void:
 	var panel := PanelContainer.new()
-	panel.position = Vector2(520, 240)
+	_anchor(panel, Vector2(0.5, 0.5), Vector2.ZERO)
+	# Deckend: durch das halbdurchsichtige Standardpanel schien die Karte, und
+	# die Ergebniszeilen waren auf den Feldern kaum zu lesen.
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.07, 0.09, 0.13, 0.97)
+	style.border_color = Color(0.62, 0.82, 0.96)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(18)
+	panel.add_theme_stylebox_override("panel", style)
 	panel.custom_minimum_size = Vector2(560, 380)
 	var box := VBoxContainer.new()
 	panel.add_child(box)
@@ -995,6 +1052,20 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		box.add_child(line)
 
 	_add_loot_section(box, outcome)
+
+	if GameState.in_run_battle:
+		var onward := Button.new()
+		onward.text = "Weiter im Lauf"
+		onward.custom_minimum_size = Vector2(0, 52)
+		onward.add_theme_font_size_override("font_size", 20)
+		var pool: Array = battle.enemy_equipment.duplicate()
+		onward.pressed.connect(func():
+			GameState.finish_run_battle(outcome, pool)
+			get_tree().change_scene_to_file("res://scenes/run.tscn"))
+		box.add_child(onward)
+		_ui.add_child(panel)
+		onward.grab_focus.call_deferred()
+		return
 
 	var back := Button.new()
 	back.text = "Zurueck zur Werkstatt"

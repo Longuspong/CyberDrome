@@ -56,6 +56,26 @@
 
   "cycle_limit": 30,
 
+  "run": {
+    "_kommentar": [
+      "Der Lauf (Roguelike, scripts/core/run_state.gd): rounds Kaempfe, lives",
+      "Leben. Gegnerstaerke je Runde = Startstaerke des Squads *",
+      "(power_start + power_growth * (runde - 1)) -- eine FESTE Kurve, damit",
+      "Belohnungen zaehlen. enemy_counts je Runde. In new_drome_rounds bietet",
+      "die Belohnung einen neuen DROME an (bis squad_max), life_chance ist die",
+      "Chance auf 'Notstrom' (+1 Leben), wenn eines fehlt."
+    ],
+    "rounds": 8,
+    "lives": 3,
+    "power_start": 0.85,
+    "power_growth": 0.2,
+    "enemy_counts": [2, 2, 2, 3, 3, 3, 4, 4],
+    "reward_choices": 3,
+    "new_drome_rounds": [2, 5],
+    "squad_max": 4,
+    "life_chance": 0.35
+  },
+
   "overtime": {
     "_kommentar": [
       "Nur im Autokampf aktiv (BattleManager.overtime_enabled). Ab start_cycle",

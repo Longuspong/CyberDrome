@@ -90,6 +90,23 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 		% [region.display_name, mutator.display_name])
 
 
+## Region und Mutator, die setup() mit diesem Seed ziehen wuerde -- fuer die
+## Vorschau vor dem Kampf (Lauf). Dieselbe Reihenfolge der Zufallszuege wie
+## oben; wer setup() umstellt, stellt hier mit um, sonst zeigt die Vorschau
+## einen anderen Kampf als den, der dann kommt. tests/test_run.gd prueft das.
+static func preview_conditions(seed_value: int) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var preview_region := TerrainDB.pick_region(rng)
+	var preview_mutator := Mutator.draw(rng)
+	return {
+		"seed": seed_value,
+		"region": preview_region.display_name if preview_region else "",
+		"mutator": preview_mutator.display_name,
+		"mutator_text": preview_mutator.description,
+	}
+
+
 func _spawn(builds: Array, is_player: bool) -> void:
 	var zone := MapGenerator.deployment_zone(grid, is_player)
 	var prefix := "P" if is_player else "E"

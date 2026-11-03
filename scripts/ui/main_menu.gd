@@ -50,6 +50,11 @@ func _build_backdrop() -> void:
 	arena.position = Vector2(size.x * 0.5, size.y * 0.46)
 	layer.add_child(arena)
 	arena.start()
+	# Die logische Flaeche aendert sich mit Drehen, Fenstergroesse und der
+	# Anzeigegroesse (Accessibility) -- die Kulisse bleibt mittig.
+	get_viewport().size_changed.connect(func():
+		var now := get_viewport().get_visible_rect().size
+		arena.position = Vector2(now.x * 0.5, now.y * 0.46))
 
 	# Ein Schleier daempft die Kulisse, damit die Schrift darueber ruhig bleibt.
 	var scrim := ColorRect.new()
@@ -76,22 +81,41 @@ func _build_ui() -> void:
 	_place(inventory, Vector2(1, 0), Vector2(-280, 32), Vector2(240, 84))
 	add_child(inventory)
 
-	# Drome-Garage -- rechts, mittig.
+	# Einstellungen -- unter MENU. Barrierefreiheit gehoert nicht in ein
+	# Untermenue: wer die Schrift nicht lesen kann, findet es dort nicht.
+	var settings := _boxed_button("Einstellungen", 22)
+	settings.pressed.connect(func(): SettingsPanel.open(self))
+	_place(settings, Vector2(0, 0), Vector2(40, 132), Vector2(240, 64))
+	add_child(settings)
+
+	# Drome-Garage -- rechts, mittig. Etwas flacher als in der Skizze, damit
+	# sie auch auf der kleineren logischen Flaeche eines Handys (~520 hoch)
+	# nicht in die Statuszeile ragt.
 	var garage := _boxed_button("Drome\nGarage", 26)
 	garage.pressed.connect(func():
 		get_tree().change_scene_to_file("res://scenes/garage.tscn"))
-	_place(garage, Vector2(1, 0.5), Vector2(-280, -90), Vector2(240, 180))
+	_place(garage, Vector2(1, 0.5), Vector2(-280, -80), Vector2(240, 140))
 	add_child(garage)
 
-	# Untere Leiste: die drei Modi.
+	# Untere Leiste: die drei Modi. Ueber die ganze Breite verankert statt
+	# mit fester Breite -- 1170 Pixel passen auf einem Handy nicht.
 	var modes := HBoxContainer.new()
 	modes.add_theme_constant_override("separation", 18)
 	modes.alignment = BoxContainer.ALIGNMENT_CENTER
-	_place(modes, Vector2(0.5, 1), Vector2(-585, -128), Vector2(1170, 96))
+	modes.anchor_left = 0.0
+	modes.anchor_right = 1.0
+	modes.anchor_top = 1.0
+	modes.anchor_bottom = 1.0
+	modes.offset_left = 40
+	modes.offset_right = -40
+	modes.offset_top = -120
+	modes.offset_bottom = -24
 	add_child(modes)
 
-	modes.add_child(_mode_button("Gamemode 1",
-		"Noch nicht verfuegbar.", true, Callable()))
+	# Der Lauf (Roguelike) braucht keinen Roster: er bringt seinen eigenen
+	# Start-Squad mit und ist deshalb immer startbar.
+	modes.add_child(_mode_button("Lauf (Roguelike)", "", false,
+		func(): get_tree().change_scene_to_file("res://scenes/run.tscn")))
 	modes.add_child(_mode_button("Gamemode 2",
 		"Noch nicht verfuegbar.", true, Callable()))
 	_chaos = _mode_button("Chaos-Virus", "", false, _start_chaos)
@@ -102,7 +126,8 @@ func _build_ui() -> void:
 	_status = Label.new()
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status.add_theme_font_size_override("font_size", 14)
-	_place(_status, Vector2(0.5, 1), Vector2(-400, -168), Vector2(800, 28))
+	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_place(_status, Vector2(0.5, 1), Vector2(-400, -164), Vector2(800, 36))
 	add_child(_status)
 
 
@@ -138,7 +163,8 @@ func _mode_button(text: String, tip: String, disabled: bool, on_press: Callable)
 	button.text = text
 	button.disabled = disabled
 	button.tooltip_text = tip
-	button.custom_minimum_size = Vector2(360, 78)
+	button.custom_minimum_size = Vector2(220, 78)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", 24)
 	if on_press.is_valid():
 		button.pressed.connect(on_press)

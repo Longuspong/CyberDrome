@@ -104,11 +104,20 @@ func _build_ui() -> void:
 	_cards.add_theme_constant_override("separation", 8)
 	scroll.add_child(_cards)
 
-	# Rechte Spalte: Zusammenfassung + Start
+	# Rechte Spalte: Zusammenfassung + Start. Scrollbar und mit dem Start-Knopf
+	# VOR dem Seed-Feld: auf der logischen Flaeche eines Handys (~520 hoch)
+	# lief der Knopf sonst unten aus dem Bild -- der einzige Weg in den Kampf
+	# war nicht mehr erreichbar. Der Seed ist ein Werkzeug fuers Playtesting
+	# und darf als Erstes aus dem Blick rutschen.
+	var side_scroll := ScrollContainer.new()
+	side_scroll.custom_minimum_size = Vector2(340, 0)
+	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(side_scroll)
 	var side := VBoxContainer.new()
-	side.custom_minimum_size = Vector2(320, 0)
+	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	side.add_theme_constant_override("separation", 12)
-	body.add_child(side)
+	side_scroll.add_child(side)
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _panel_style())
@@ -116,8 +125,22 @@ func _build_ui() -> void:
 	_summary = RichTextLabel.new()
 	_summary.bbcode_enabled = true
 	_summary.fit_content = true
-	_summary.custom_minimum_size = Vector2(0, 180)
+	_summary.custom_minimum_size = Vector2(0, 120)
 	panel.add_child(_summary)
+
+	# Autokampf: die KI zieht fuer beide Seiten.
+	_auto_toggle = CheckButton.new()
+	_auto_toggle.text = "Autokampf (KI steuert beide Seiten)"
+	_auto_toggle.custom_minimum_size = Vector2(0, 48)
+	_auto_toggle.button_pressed = GameState.auto_battle
+	side.add_child(_auto_toggle)
+
+	_start = Button.new()
+	_start.text = "Chaos-Virus starten"
+	_start.custom_minimum_size = Vector2(0, 56)
+	_start.add_theme_font_size_override("font_size", 20)
+	_start.pressed.connect(_start_battle)
+	side.add_child(_start)
 
 	var seed_row := HBoxContainer.new()
 	var seed_label := Label.new()
@@ -130,19 +153,6 @@ func _build_ui() -> void:
 		_seed_field.text = str(GameState.battle_seed)
 	seed_row.add_child(_seed_field)
 	side.add_child(seed_row)
-
-	# Autokampf: die KI zieht fuer beide Seiten.
-	_auto_toggle = CheckButton.new()
-	_auto_toggle.text = "Autokampf (KI steuert beide Seiten)"
-	_auto_toggle.button_pressed = GameState.auto_battle
-	side.add_child(_auto_toggle)
-
-	_start = Button.new()
-	_start.text = "Chaos-Virus starten"
-	_start.custom_minimum_size = Vector2(0, 52)
-	_start.add_theme_font_size_override("font_size", 20)
-	_start.pressed.connect(_start_battle)
-	side.add_child(_start)
 
 
 func _refresh() -> void:
