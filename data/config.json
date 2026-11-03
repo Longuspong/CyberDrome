@@ -56,6 +56,19 @@
 
   "cycle_limit": 30,
 
+  "overtime": {
+    "_kommentar": [
+      "Nur im Autokampf aktiv (BattleManager.overtime_enabled). Ab start_cycle",
+      "verliert jeder DROME zu Beginn seines Zuges",
+      "  ceil(hp_max * pct_per_cycle * (zyklus - start_cycle + 1))",
+      "-- ein wachsender ANTEIL, damit Tank und Glaskanone dieselbe Uhr haben.",
+      "Ziel: KI-gegen-KI-Kaempfe enden mit einer Entscheidung statt am",
+      "cycle_limit. Abgesichert in tests/test_autobattle.gd."
+    ],
+    "start_cycle": 12,
+    "pct_per_cycle": 0.05
+  },
+
   "pacing": {
     "_kommentar": [
       "Tempo der Inszenierung. Rein visuell -- an der Mechanik aendert sich",
@@ -199,9 +212,15 @@
       "die Zielwahl wirkungslos, weil kein Herausforderer ihn je aufholen",
       "kann. Genau das war mit 12 gegen 10 der Fall: ein Fernkaempfer konnte",
       "sein Ziel ueber die Tabelle NIE wechseln. tests/test_aggro.gd prueft",
-      "auch das."
+      "auch das.",
+      "shield_damage_weight: was ein Punkt abgetragener Energieschild wert",
+      "ist, relativ zu einem Punkt Integritaet. Unter 1, weil der Schild sich",
+      "zu Zugbeginn des Ziels wieder auffuellt -- ueber 0, weil sonst ein",
+      "voller Schild jeden Einzeltreffer auf 0 bewertet und die KI",
+      "abgeschirmte Ziele nie angreift."
     ],
     "damage_weight": 1.0,
+    "shield_damage_weight": 0.7,
     "kill_bonus": 100.0,
     "aggro_weight": 10.0,
     "incumbent_bonus_melee": 3.0,

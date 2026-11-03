@@ -84,8 +84,10 @@ static func create(from_build: DromeBuild, id: StringName, player: bool) -> Unit
 	unit.en = unit.stats["en_max"]
 	unit.shield = unit.stats.get("shield_max", 0)
 	unit.name = "Unit_%s" % id
-	if not player:
-		unit.aggro = AggroTable.new()
+	# Jede Seite fuehrt eine Aggro-Tabelle: im Autokampf steuert die KI auch
+	# die Spielerseite, und ohne Tabelle fehlte ihr ein Bewertungsterm -- sie
+	# waere schlechter als der Gegner, nur weil sie auf der anderen Seite steht.
+	unit.aggro = AggroTable.new()
 	return unit
 
 

@@ -42,6 +42,10 @@ var squad: Array = []
 ## ergibt exakt denselben Kampf. Im Playtesting ist das Gold wert.
 var battle_seed: int = 0
 
+## Autokampf: die KI steuert im naechsten Kampf BEIDE Seiten, mit Overtime.
+## Gesetzt in der Chaos-Auswahl.
+var auto_battle: bool = false
+
 ## Ergebnis des letzten Kampfes, fuer den Ergebnisbildschirm
 var last_result: Dictionary = {}
 

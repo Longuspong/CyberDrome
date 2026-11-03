@@ -22,6 +22,7 @@ var _cards: VBoxContainer
 var _summary: RichTextLabel
 var _start: Button
 var _seed_field: LineEdit
+var _auto_toggle: CheckButton
 
 ## Die kampftauglichen Eintraege dieses Aufrufs: {entry, build, power}.
 var _eligible: Array = []
@@ -129,6 +130,12 @@ func _build_ui() -> void:
 		_seed_field.text = str(GameState.battle_seed)
 	seed_row.add_child(_seed_field)
 	side.add_child(seed_row)
+
+	# Autokampf: die KI zieht fuer beide Seiten.
+	_auto_toggle = CheckButton.new()
+	_auto_toggle.text = "Autokampf (KI steuert beide Seiten)"
+	_auto_toggle.button_pressed = GameState.auto_battle
+	side.add_child(_auto_toggle)
 
 	_start = Button.new()
 	_start.text = "Chaos-Virus starten"
@@ -249,6 +256,7 @@ func _start_battle() -> void:
 	# (alle kampftauglichen), skaliert auf deren volle Staerke -- unabhaengig
 	# davon, wie wenige man tatsaechlich mitnimmt.
 	GameState.configure_chaos_run(_eligible.size(), _reference_power)
+	GameState.auto_battle = _auto_toggle.button_pressed
 	GameState.save_roster()
 
 	var text := _seed_field.text.strip_edges()
