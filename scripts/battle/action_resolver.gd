@@ -57,8 +57,20 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		action.aggro_coeff if action != null else 1.0)
 
 	EventBus.unit_damaged.emit(target, amount, source)
-	EventBus.log_line("%s trifft %s fuer %d Schaden."
-		% [source.display_name if source else "?", target.display_name, amount])
+	# Was der Schild geschluckt hat, steht mit im Log. Vorher hiess ein
+	# Treffer auf den vollen Schild "fuer 0 Schaden" -- das las sich, als
+	# waere nichts passiert, obwohl der Schild gerade halbiert wurde.
+	var absorbed := shield_before - target.shield
+	var who := source.display_name if source else "?"
+	if absorbed > 0 and amount > 0:
+		EventBus.log_line("%s trifft %s: Schild -%d, Integritaet -%d."
+			% [who, target.display_name, absorbed, amount])
+	elif absorbed > 0:
+		EventBus.log_line("%s trifft %s: Schild -%d (Integritaet unversehrt)."
+			% [who, target.display_name, absorbed])
+	else:
+		EventBus.log_line("%s trifft %s fuer %d Schaden."
+			% [who, target.display_name, amount])
 
 	if target.hp <= 0:
 		_kill(target)

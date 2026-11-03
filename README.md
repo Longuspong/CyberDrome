@@ -59,6 +59,25 @@ cd build/web && python3 -m http.server      # http://localhost:8000
 Die SVG-Werkstatt liegt unter `werkstatt/` und wird NICHT mit gehostet: sie
 braucht die REST-API aus `main.py` und laeuft nur lokal.
 
+### Barrierefreiheit
+
+`autoload/accessibility.gd` sorgt dafuer, dass das Spiel auf dem Handy lesbar
+ist. Der Entwurfsraum ist 1600x900; auf einem Handy blieb davon ein Massstab
+von ~0,46 CSS-Pixel je Entwurfspixel (12er Schrift = 5,5 Punkt). Jetzt:
+
+* **Automatische Skalierung** ueber `content_scale_factor`: mindestens 0,8
+  CSS-Pixel je Entwurfspixel, ohne die logische Flaeche unter 960x520 zu
+  druecken. Am Desktop bleibt alles bei 1,0 (`tests/test_accessibility.gd`).
+* **Mindestgroessen**: jede Schrift mindestens 14, jeder Knopf auf
+  Touch-Geraeten mindestens 40 Entwurfspixel hoch.
+* **Einstellungen** im Hauptmenue: Anzeigegroesse (Automatisch / Klein / Gross
+  / Sehr gross), *Animationen reduzieren* (folgt beim ersten Start
+  `prefers-reduced-motion`), Vollbild. Gespeichert in `user://settings.json`.
+* **Hochformat**: ein Hinweis mit *Vollbild im Querformat* (sperrt die
+  Ausrichtung, wo der Browser es erlaubt).
+* Kampfbildschirm an Kanten verankert, Kamera passt sich der Flaeche an;
+  Schildtreffer stehen als *Schild -8* im Log statt als *0 Schaden*.
+
 ### Kampf bedienen
 
 | | |
