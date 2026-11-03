@@ -7,8 +7,8 @@
 #
 # Einmalig im Repo einstellen: Settings -> Pages -> Source: "GitHub Actions".
 #
-# Die Godot-Version ist an project.godot gebunden, wie in
-# .claude/hooks/session-start.sh -- dort steht auch, woher die Pruefsumme kommt.
+# Gebaut wird mit tools/build_web.sh -- demselben Skript, das Vercel benutzt
+# (vercel.json). Version und Pruefsumme stehen dort.
 
 name: Web-Build (PWA)
 
@@ -27,39 +27,14 @@ concurrency:
   group: pages-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  GODOT_VERSION: 4.7-stable
-  GODOT_SHA256: 0b1a6c54c2c619c12e169fe9241edda4b81080b519451cec2984bf0d2c6cb73c
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Godot holen
-        run: |
-          zip="Godot_v${GODOT_VERSION}_linux.x86_64.zip"
-          curl -fsSL --retry 3 -o "$zip" \
-            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/${zip}"
-          echo "${GODOT_SHA256}  ${zip}" | sha256sum -c -
-          unzip -q "$zip" -d "$HOME/godot"
-          sudo ln -sf "$HOME/godot/Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
-          godot --version
-
-      - name: Web-Templates holen (nur die zwei benoetigten Dateien)
-        run: python3 tools/fetch_web_templates.py
-
-      - name: Assets importieren
-        run: godot --headless --path . --import
-
-      - name: Exportieren
-        run: |
-          mkdir -p build/web
-          godot --headless --path . --export-release "Web" build/web/index.html
-          test -f build/web/index.pck
-          test -f build/web/index.manifest.json
-          touch build/web/.nojekyll
+      - name: Web-Export bauen (dasselbe Skript wie auf Vercel)
+        run: bash tools/build_web.sh
 
       - uses: actions/upload-pages-artifact@v3
         with:

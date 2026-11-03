@@ -18,6 +18,8 @@ venv/
 # export_presets.cfg ist versioniert: der Web-Export (PWA) baut in CI daraus.
 # Er enthaelt keine Geheimnisse -- ein Android-Keystore gehoerte NICHT hinein.
 build/
+.cache/
+.vercel/
 
 # Editor / OS
 .vscode/
