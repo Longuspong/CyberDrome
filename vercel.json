@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo 'keine Abhaengigkeiten'",
+  "buildCommand": "bash tools/build_web.sh",
+  "outputDirectory": "build/web",
+  "headers": [
+    {
+      "source": "/(index.html|index.service.worker.js|index.manifest.json)?",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/(.*)\\.wasm",
+      "headers": [{ "key": "Content-Type", "value": "application/wasm" }]
+    }
+  ]
+}

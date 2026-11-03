@@ -5,7 +5,7 @@ CyberDrome SVG-Werkstatt -- lokaler Entwicklungsserver
 
 Startet einen kleinen HTTP-Server auf http://127.0.0.1:8000, der
 
-  * das Frontend (index.html) ausliefert,
+  * das Frontend (werkstatt/index.html) ausliefert,
   * die Teile-Bibliothek aus PARTS_DIR einliest und als JSON bereitstellt
     (inklusive Pruefung auf doppelt vergebene Teile-Codes),
   * Aenderungen an Teil-Metadaten (Anker, Farben) zurueckschreibt,
@@ -742,7 +742,9 @@ class WorkshopHandler(BaseHTTPRequestHandler):
 
     # -- Statische Dateien -------------------------------------------------
     def serve_static(self, rel_path: str) -> bool:
-        rel = rel_path.lstrip("/") or "index.html"
+        # Die Werkstatt liegt unter werkstatt/: die Wurzel des Repos ist die
+        # Startseite des gehosteten Spiels (Vercel), nicht die des Werkzeugs.
+        rel = rel_path.lstrip("/") or "werkstatt/index.html"
         try:
             target = (ROOT / rel).resolve()
         except OSError:

@@ -11,7 +11,7 @@
  * frueher oder spaeter auseinander, und dann verspricht die Werkstatt Werte,
  * die im Kampf nicht gelten.
  *
- * Dieses Skript liest die ECHTEN Funktionen aus index.html -- nicht eine Kopie
+ * Dieses Skript liest die ECHTEN Funktionen aus werkstatt/index.html -- nicht eine Kopie
  * davon -- und prueft sie gegen dieselben Erwartungswerte, die auch
  * tests/test_drome_build.gd prueft. Weicht eine Seite ab, faellt es hier auf.
  *
@@ -48,13 +48,13 @@ for (const setDir of fs.readdirSync(path.join(ROOT, "parts"))) {
 }
 
 // ---------------------------------------------------------------------------
-// Den echten Block aus index.html holen
+// Den echten Block aus werkstatt/index.html holen
 // ---------------------------------------------------------------------------
-const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+const html = fs.readFileSync(path.join(ROOT, "werkstatt", "index.html"), "utf8");
 const start = html.indexOf("// >>> STATS-BLOCK ANFANG");
 const end = html.indexOf("// <<< STATS-BLOCK ENDE");
 if (start < 0 || end < 0) {
-  console.error("Die Marker STATS-BLOCK fehlen in index.html. Ohne sie kann "
+  console.error("Die Marker STATS-BLOCK fehlen in werkstatt/index.html. Ohne sie kann "
     + "diese Pruefung die echten Funktionen nicht lesen -- und eine Pruefung, "
     + "die still ausfaellt, ist schlimmer als keine.");
   process.exit(2);
