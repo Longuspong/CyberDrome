@@ -14,7 +14,7 @@ extends Control
 const COLOR_HEADING := Color(0.6, 0.8, 0.95)
 const COLOR_MUTED := Color(0.62, 0.66, 0.72)
 const COLOR_GOOD := Color(0.42, 0.85, 0.48)
-const TILE := Vector2(150, 168)
+const TILE := Vector2(120, 168)
 const PREVIEW := 96
 
 ## Die Filter: Beschriftung -> Praedikat auf ein PartData. "Alle" hat keins.
@@ -25,6 +25,8 @@ var _grid: GridContainer
 var _detail: VBoxContainer
 var _tabs: HBoxContainer
 var _empty_hint: Label
+var _scroller: ScrollContainer
+var _selected_panel: PanelContainer
 
 
 func _ready() -> void:
@@ -44,83 +46,47 @@ static func _is_equipment(part: PartData) -> bool:
 	return part.type == PartData.Type.EQUIPMENT
 
 
+## Mobile first: Filter als waagrecht scrollbare Reihe, darunter die Werte
+## des gewaehlten Teils (Karte), darunter das Raster mit drei Kacheln je Zeile.
+## Ein Tippen auf eine Kachel zeigt ihre Werte und scrollt nach oben -- auf dem
+## Handy gibt es kein Ueberfahren, und ein Panel daneben passt nicht.
 func _build_ui() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.06, 0.07, 0.1)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	var content := UiKit.page(self, "Inventar", "", 2)
+	_scroller = content.get_parent() as ScrollContainer
 
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 20)
-	add_child(margin)
-
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 12)
-	margin.add_child(root)
-
-	# --- Kopfzeile: Zurueck, Titel, Tabs ---
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 16)
-	root.add_child(header)
-
-	var back := Button.new()
-	back.text = "< Menue"
-	back.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/main.tscn"))
-	header.add_child(back)
-
-	var title := Label.new()
-	title.text = "INVENTAR"
-	title.add_theme_font_size_override("font_size", 26)
-	title.modulate = COLOR_HEADING
-	header.add_child(title)
-
+	var tab_scroll := ScrollContainer.new()
+	tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tab_scroll.custom_minimum_size = Vector2(0, 52)
+	content.add_child(tab_scroll)
 	_tabs = HBoxContainer.new()
 	_tabs.add_theme_constant_override("separation", 6)
-	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_tabs.alignment = BoxContainer.ALIGNMENT_END
-	header.add_child(_tabs)
+	tab_scroll.add_child(_tabs)
 	for i in _filters.size():
 		var tab := Button.new()
 		tab.text = _filters[i]["label"]
 		tab.toggle_mode = true
+		tab.custom_minimum_size = Vector2(0, 44)
+		tab.add_theme_font_size_override("font_size", UiKit.SMALL)
 		tab.pressed.connect(func(): _set_filter(i))
 		_tabs.add_child(tab)
 
-	# --- Hauptbereich: Kachelraster links, Werte rechts ---
-	var body := HBoxContainer.new()
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 16)
-	root.add_child(body)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	body.add_child(scroll)
-
-	_grid = GridContainer.new()
-	_grid.columns = 5
-	_grid.add_theme_constant_override("h_separation", 12)
-	_grid.add_theme_constant_override("v_separation", 12)
-	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_grid)
-
-	_empty_hint = Label.new()
-	_empty_hint.text = "Nichts in dieser Kategorie."
-	_empty_hint.modulate = COLOR_MUTED
-	_empty_hint.hide()
-	_grid.add_child(_empty_hint)
-
-	# Werte-Panel rechts
 	var detail_panel := PanelContainer.new()
-	detail_panel.custom_minimum_size = Vector2(280, 0)
-	detail_panel.add_theme_stylebox_override("panel", _panel_style(false))
-	body.add_child(detail_panel)
+	detail_panel.add_theme_stylebox_override("panel", UiKit.card_style(true))
+	content.add_child(detail_panel)
 	_detail = VBoxContainer.new()
 	_detail.add_theme_constant_override("separation", 4)
 	detail_panel.add_child(_detail)
+
+	_grid = GridContainer.new()
+	_grid.columns = 3
+	_grid.add_theme_constant_override("h_separation", 8)
+	_grid.add_theme_constant_override("v_separation", 8)
+	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_child(_grid)
+
+	_empty_hint = UiKit.label("Nichts in dieser Kategorie.", UiKit.BODY, UiKit.MUTED)
+	_empty_hint.hide()
+	_grid.add_child(_empty_hint)
 	_show_detail(null)
 
 
@@ -166,6 +132,7 @@ func _part_tile(part: PartData) -> Control:
 
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = TILE
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _panel_style(false))
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 
@@ -178,44 +145,69 @@ func _part_tile(part: PartData) -> Control:
 
 	var name_label := Label.new()
 	name_label.text = part.display_name
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_size_override("font_size", UiKit.SMALL)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(name_label)
 
 	var meta := Label.new()
 	meta.text = "×%d  ·  %d frei" % [count, free] if count > 1 else "%d frei" % free
-	meta.add_theme_font_size_override("font_size", 10)
+	meta.add_theme_font_size_override("font_size", UiKit.SMALL)
 	meta.modulate = COLOR_MUTED
 	meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(meta)
 
-	# Werte beim Ueberfahren -- und ein hervorgehobener Rahmen, damit klar ist,
-	# welche Kachel das Panel gerade zeigt.
-	panel.mouse_entered.connect(func():
-		panel.add_theme_stylebox_override("panel", _panel_style(true))
-		_show_detail(part))
-	panel.mouse_exited.connect(func():
-		panel.add_theme_stylebox_override("panel", _panel_style(false)))
+	# Tippen (oder Klicken) waehlt das Teil: Werte oben, Rahmen hervorgehoben.
+	panel.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed \
+				and event.button_index == MOUSE_BUTTON_LEFT:
+			_select(panel, part))
 	return panel
+
+
+func _select(panel: PanelContainer, part: PartData) -> void:
+	if _selected_panel != null and is_instance_valid(_selected_panel):
+		_selected_panel.add_theme_stylebox_override("panel", _panel_style(false))
+	_selected_panel = panel
+	panel.add_theme_stylebox_override("panel", _panel_style(true))
+	_show_detail(part)
+	if _scroller != null:
+		_scroller.scroll_vertical = 0
 
 
 ## Das Teilbild als Textur aus der Suedansicht -- dieselbe Grafik wie im Kampf.
 func _part_image(part: PartData) -> Control:
 	var holder := Control.new()
-	holder.custom_minimum_size = Vector2(TILE.x - 20, PREVIEW)
+	holder.custom_minimum_size = Vector2(0, PREVIEW)
 	var view := part.view("south")
 	var path := str(view.get("svg", ""))
 	if path != "" and ResourceLoader.exists(path):
 		var tex := load(path) as Texture2D
 		if tex != null:
 			var rect := TextureRect.new()
-			rect.texture = tex
+			rect.texture = _cropped(tex)
 			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 			holder.add_child(rect)
 	return holder
+
+
+## Auf den sichtbaren Inhalt zugeschnitten: ein Kern belegt nur einen kleinen
+## Teil seiner 128er Leinwand und war in der Kachel ein Punkt.
+static func _cropped(texture: Texture2D) -> Texture2D:
+	var image := texture.get_image()
+	if image == null:
+		return texture
+	if image.is_compressed():
+		image.decompress()
+	var used := image.get_used_rect()
+	if used.size.x <= 0 or used.size.y <= 0:
+		return texture
+	var atlas := AtlasTexture.new()
+	atlas.atlas = texture
+	atlas.region = Rect2(used)
+	return atlas
 
 
 func _show_detail(part: PartData) -> void:
@@ -224,21 +216,22 @@ func _show_detail(part: PartData) -> void:
 
 	if part == null:
 		var hint := Label.new()
-		hint.text = "Fahre ueber ein Teil,\num seine Werte zu sehen."
+		hint.text = "Tippe auf ein Teil, um seine Werte zu sehen."
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		hint.modulate = COLOR_MUTED
 		_detail.add_child(hint)
 		return
 
 	var name_label := Label.new()
 	name_label.text = part.display_name
-	name_label.add_theme_font_size_override("font_size", 18)
+	name_label.add_theme_font_size_override("font_size", UiKit.H2)
 	name_label.modulate = COLOR_HEADING
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail.add_child(name_label)
 
 	var kind := Label.new()
 	kind.text = "%s  ·  %s" % [_type_label(part.type), part.code]
-	kind.add_theme_font_size_override("font_size", 11)
+	kind.add_theme_font_size_override("font_size", UiKit.SMALL)
 	kind.modulate = COLOR_MUTED
 	_detail.add_child(kind)
 
@@ -249,7 +242,7 @@ func _show_detail(part: PartData) -> void:
 	for line in _stat_lines(part):
 		var row := Label.new()
 		row.text = line
-		row.add_theme_font_size_override("font_size", 13)
+		row.add_theme_font_size_override("font_size", UiKit.BODY)
 		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_detail.add_child(row)
 

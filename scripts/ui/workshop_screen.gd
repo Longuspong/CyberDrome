@@ -32,7 +32,7 @@ const PREVIEW_SIZE := 520
 ## Kantenlaenge des Bildes in der Bibliothek und Hoehe der Namenszeile
 ## darueber. Die Spaltenzahl folgt daraus, nicht umgekehrt.
 const TILE_SIZE := 108
-const TILE_NAME_HEIGHT := 15
+const TILE_NAME_HEIGHT := 22
 const TILE_COLUMNS := 3
 const LIBRARY_WIDTH := 372
 
@@ -131,6 +131,8 @@ var _filter_field: LineEdit
 var _delta_panel: PanelContainer
 var _delta_rows: VBoxContainer
 var _direction_buttons: Array[Button] = []
+## Hochformat-Layout (Hauptansicht) oder die drei Spalten des Querformats.
+var _portrait := true
 
 
 func _ready() -> void:
@@ -159,20 +161,35 @@ func _rebuild() -> void:
 
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	_portrait = Accessibility.is_portrait()
+
+	var bg := ColorRect.new()
+	bg.color = UiKit.BG
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(bg)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 18)
+		margin.add_theme_constant_override("margin_" + side, 12 if _portrait else 18)
 	add_child(margin)
 
-	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", 18)
-	margin.add_child(columns)
+	if _portrait:
+		_build_portrait(margin)
+	else:
+		var columns := HBoxContainer.new()
+		columns.add_theme_constant_override("separation", 18)
+		margin.add_child(columns)
+		columns.add_child(_build_library_column())
+		columns.add_child(_build_preview_column())
+		columns.add_child(_build_stats_column())
 
-	columns.add_child(_build_library_column())
-	columns.add_child(_build_preview_column())
-	columns.add_child(_build_stats_column())
+	# Dreht man das Geraet, baut die Werkstatt sich fuer die neue Ausrichtung
+	# neu auf -- die beiden Layouts sind zu verschieden fuer ein Umfliessen.
+	get_viewport().size_changed.connect(func():
+		if Accessibility.is_portrait() != _portrait:
+			_persist()
+			get_tree().reload_current_scene.call_deferred())
 
 	_delta_panel = PanelContainer.new()
 	_delta_panel.visible = false
@@ -194,9 +211,63 @@ func _build_ui() -> void:
 	_refresh_direction_buttons()
 
 
+## Hochformat (Hauptansicht): Vorschau oben, darunter ein Umschalter zwischen
+## "Teile" (die Bibliothek) und "Aufbau & Werte". Drei Spalten nebeneinander
+## passen auf ein Handy nicht -- eine nach der anderen in voller Breite schon.
+func _build_portrait(margin: MarginContainer) -> void:
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 8)
+	margin.add_child(stack)
+
+	var preview := _build_preview_column()
+	preview.size_flags_vertical = Control.SIZE_FILL
+	stack.add_child(preview)
+
+	var switch := HBoxContainer.new()
+	switch.add_theme_constant_override("separation", 6)
+	stack.add_child(switch)
+	var library := _build_library_column()
+	library.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stack.add_child(library)
+	var stats := _build_stats_column()
+	stats.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stats.visible = false
+	stack.add_child(stats)
+
+	var parts_tab := _section_button("Teile")
+	var build_tab := _section_button("Aufbau & Werte")
+	parts_tab.button_pressed = true
+	parts_tab.pressed.connect(func():
+		_close_slot_popup()
+		_clear_hover()
+		library.visible = true
+		stats.visible = false
+		parts_tab.button_pressed = true
+		build_tab.button_pressed = false)
+	build_tab.pressed.connect(func():
+		_close_slot_popup()
+		_clear_hover()
+		library.visible = false
+		stats.visible = true
+		parts_tab.button_pressed = false
+		build_tab.button_pressed = true)
+	switch.add_child(parts_tab)
+	switch.add_child(build_tab)
+
+
+func _section_button(text: String) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.toggle_mode = true
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.custom_minimum_size = Vector2(0, 48)
+	button.add_theme_font_size_override("font_size", UiKit.BODY)
+	return button
+
+
 func _build_library_column() -> Control:
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(LIBRARY_WIDTH, 0)
+	left.custom_minimum_size = Vector2(0 if _portrait else LIBRARY_WIDTH, 0)
 	_library_column = left
 	left.add_child(_heading("Inventar"))
 
@@ -208,15 +279,24 @@ func _build_library_column() -> Control:
 	left.add_child(_filter_field)
 
 	var hint := Label.new()
-	hint.text = "Zeiger zeigt Werte und Aussehen · Klick baut ein\n"\
-		+ "Nur FREIE Exemplare — was woanders steckt, ist gesperrt"
+	if _touch():
+		hint.text = "Tippen: ansehen · nochmal: einbauen · lange druecken: erklaeren"
+	else:
+		hint.text = "Zeiger zeigt Werte und Aussehen · Klick baut ein"
+	if not _portrait:
+		hint.text += "\nNur FREIE Exemplare — was woanders steckt, ist gesperrt"
+	# Umbrechen statt die Spalte zu verbreitern: mit der Mindestschrift
+	# (Accessibility) schob diese Zeile die Bibliothek auf dem Handy so breit,
+	# dass rechts die Kampfwerte aus dem Bild fielen.
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size = Vector2(0 if _portrait else LIBRARY_WIDTH, 0)
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.modulate = COLOR_MUTED
 	left.add_child(hint)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(LIBRARY_WIDTH, 0)
+	scroll.custom_minimum_size = Vector2(0 if _portrait else LIBRARY_WIDTH, 0)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(scroll)
 	_library = VBoxContainer.new()
@@ -236,11 +316,19 @@ func _build_preview_column() -> Control:
 	back.pressed.connect(func(): _save_and_go("res://scenes/garage.tscn"))
 	top_row.add_child(back)
 	_name_field = LineEdit.new()
-	_name_field.custom_minimum_size = Vector2(220, 0)
+	_name_field.custom_minimum_size = Vector2(120, 0)
+	_name_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name_field.text_changed.connect(func(text):
 		_entry.name = text
 		_build.display_name = text)
 	top_row.add_child(_name_field)
+
+	# Die Blickrichtungen in einer eigenen Reihe: in einer Zeile mit Name und
+	# Zurueck-Knopf erzwangen sie eine Mindestbreite der Mitte, die auf dem
+	# Handy die Kampfwerte rechts aus dem Bild schob.
+	var direction_row := HBoxContainer.new()
+	direction_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(direction_row)
 	for direction in DIRECTIONS:
 		var button := Button.new()
 		button.text = DIR_LABEL[direction]
@@ -253,19 +341,27 @@ func _build_preview_column() -> Control:
 			_refresh_direction_buttons())
 		button.set_meta("direction", direction)
 		_direction_buttons.append(button)
-		top_row.add_child(button)
+		direction_row.add_child(button)
 
-	var viewport := SubViewportContainer.new()
-	viewport.custom_minimum_size = Vector2(PREVIEW_SIZE, PREVIEW_SIZE)
-	viewport.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	viewport.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	center.add_child(viewport)
-
+	# Die Vorschau rendert weiter in 520x520, wird aber als Bild in den Platz
+	# eingepasst, den die Spalte hat. Vorher stand sie fest auf 520 Pixeln --
+	# auf der logischen Flaeche eines Handys (~1150 breit) schob sie die
+	# Kampfwerte rechts aus dem Bild.
 	var sub := SubViewport.new()
 	sub.size = Vector2i(PREVIEW_SIZE, PREVIEW_SIZE)
 	sub.transparent_bg = true
 	sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	viewport.add_child(sub)
+	add_child(sub)
+
+	var viewport := TextureRect.new()
+	viewport.texture = sub.get_texture()
+	viewport.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	viewport.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	viewport.custom_minimum_size = Vector2(180, 250 if _portrait else 180)
+	viewport.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	viewport.size_flags_vertical = Control.SIZE_FILL if _portrait else Control.SIZE_EXPAND_FILL
+	viewport.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(viewport)
 
 	_preview_root = Node2D.new()
 	_preview_root.position = Vector2(
@@ -286,16 +382,17 @@ func _build_preview_column() -> Control:
 
 func _build_stats_column() -> Control:
 	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(360, 0)
+	right.custom_minimum_size = Vector2(0 if _portrait else 360, 0)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(360, 0)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0 if _portrait else 360, 0)
 	right.add_child(scroll)
 
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.custom_minimum_size = Vector2(340, 0)
+	column.custom_minimum_size = Vector2(0 if _portrait else 340, 0)
 	scroll.add_child(column)
 
 	column.add_child(_heading("Aufbau"))
@@ -604,6 +701,18 @@ func _library_tile(part: PartData) -> Button:
 		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(badge)
 
+	if _touch():
+		# Auf Touch gibt es kein Hovern. Das erste Tippen waehlt die Kachel und
+		# zeigt, was der Zeiger zeigen wuerde (Aussehen, Werte, was bricht);
+		# das zweite Tippen auf DIESELBE Kachel baut ein. Gesperrte Kacheln
+		# bleiben antippbar, damit sie ihren Grund nennen koennen -- vorher war
+		# der nur per Zeiger zu erfahren.
+		if blocked:
+			button.add_theme_stylebox_override("normal", _tile_style("disabled", equipped))
+			button.add_theme_stylebox_override("hover", _tile_style("disabled", equipped))
+		button.pressed.connect(func(): _on_tile_tapped(part, button, blocked))
+		return button
+
 	if blocked:
 		button.disabled = true
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -617,6 +726,24 @@ func _library_tile(part: PartData) -> Button:
 	button.mouse_entered.connect(func(): _set_hover(part, button))
 	button.mouse_exited.connect(func(): _clear_hover())
 	return button
+
+
+func _touch() -> bool:
+	return DisplayServer.is_touchscreen_available()
+
+
+## Touch: erstes Tippen = ansehen, zweites Tippen = einbauen.
+func _on_tile_tapped(part: PartData, button: Control, blocked: bool) -> void:
+	if _hover_part != part:
+		_set_hover(part, button)
+		return
+	if blocked:
+		return
+	if part.type == PartData.Type.EQUIPMENT:
+		_open_slot_popup(part, button)
+	else:
+		_assign_core(part)
+		_after_change()
 
 
 func _tile_style(state: String, equipped: bool) -> StyleBoxFlat:
@@ -830,7 +957,7 @@ func _open_slot_popup(part: PartData, anchor: Control) -> void:
 	var column := _library_column.get_global_rect()
 	_slot_popup.position = Vector2(
 		clampf(origin.position.x + 12.0, 8.0,
-			maxf(8.0, column.end.x - _slot_popup.size.x)),
+			maxf(8.0, minf(column.end.x, size.x - 8.0) - _slot_popup.size.x)),
 		clampf(origin.position.y + 10.0, 8.0, size.y - _slot_popup.size.y - 8.0))
 
 
@@ -840,6 +967,12 @@ func _close_slot_popup() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Touch: ein Tippen ausserhalb der Bibliothek legt die Auswahl ab --
+	# das Gegenstueck zum Wegfahren mit dem Zeiger.
+	if _touch() and not _slot_popup.visible and _hover_part != null \
+			and event is InputEventMouseButton and event.pressed:
+		if not _library_column.get_global_rect().has_point(event.global_position):
+			_clear_hover()
 	if not _slot_popup.visible:
 		return
 	if event is InputEventMouseButton and event.pressed:
@@ -905,11 +1038,14 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 		_delta_rows.add_child(_delta_line("kein freies Exemplar — alle verbaut",
 			COLOR_BAD))
 	elif part.type == PartData.Type.EQUIPMENT:
-		_delta_rows.add_child(_delta_line("Klick fragt nach dem Halter · %d frei"
-			% free, COLOR_MUTED))
+		_delta_rows.add_child(_delta_line("%s fragt nach dem Halter · %d frei"
+			% ["Nochmal tippen" if _touch() else "Klick", free],
+			COLOR_HEADING if _touch() else COLOR_MUTED))
 	else:
 		_delta_rows.add_child(_delta_line("kommt in: %s · %d frei"
 			% [SLOT_LABEL.get(slot, slot), free], COLOR_MUTED))
+		if _touch():
+			_delta_rows.add_child(_delta_line("Nochmal tippen baut ein", COLOR_HEADING))
 	var replaced := _build.part_in(slot) if slot != "" else null
 	if replaced != null and replaced.id != part.id:
 		_delta_rows.add_child(_delta_line("ersetzt: %s" % replaced.display_name,
@@ -924,14 +1060,14 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 			continue
 		changed = true
 		var diff: int = after[key] - before[key]
-		_delta_rows.add_child(_delta_line("%s  %d → %d  (%+d)"
+		_delta_rows.add_child(_delta_line("%s  %d -> %d  (%+d)"
 			% [row[1], before[key], after[key], diff],
 			COLOR_GOOD if diff > 0 else COLOR_BAD))
 	if not changed:
 		_delta_rows.add_child(_delta_line("keine Wertaenderung", COLOR_MUTED))
 
 	if after["weight"] != before["weight"]:
-		_delta_rows.add_child(_delta_line("Gewicht  %d → %d"
+		_delta_rows.add_child(_delta_line("Gewicht  %d -> %d"
 			% [before["weight"], after["weight"]], COLOR_MUTED))
 
 	var problems := _hover_build.validate()
@@ -947,8 +1083,17 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 		return
 	var origin := anchor.get_global_rect()
 	var column := _library_column.get_global_rect()
-	_delta_panel.position = Vector2(column.end.x + 8,
-		clampf(origin.position.y, 8.0, size.y - _delta_panel.size.y - 8.0))
+	if _portrait:
+		# Ueber der Bibliothek (also ueber der Vorschau), damit die Kacheln
+		# frei bleiben -- man tippt ja gleich noch einmal darauf.
+		_delta_panel.position = Vector2(
+			clampf((size.x - _delta_panel.size.x) * 0.5, 8.0, maxf(8.0, size.x - _delta_panel.size.x - 8.0)),
+			clampf(column.position.y - _delta_panel.size.y - 8.0, 8.0,
+				maxf(8.0, size.y - _delta_panel.size.y - 8.0)))
+	else:
+		_delta_panel.position = Vector2(
+			minf(column.end.x + 8, size.x - _delta_panel.size.x - 8.0),
+			clampf(origin.position.y, 8.0, size.y - _delta_panel.size.y - 8.0))
 
 
 func _delta_line(text: String, color: Color, font_size: int = 11) -> Label:

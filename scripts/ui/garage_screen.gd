@@ -15,7 +15,7 @@ extends Control
 ## abgeleiteten DromeBuild (Roster.build_for) -- die Garage haelt nichts davon
 ## selbst, sie zeigt nur den Besitz.
 
-const PREVIEW_SIZE := 150
+const PREVIEW_SIZE := 120
 const PREVIEW_SCALE := 1.0
 const GROUND_FRACTION := 0.72
 const CARD_WIDTH := 250
@@ -30,7 +30,7 @@ var _cards: GridContainer
 var _inventory_list: VBoxContainer
 var _squad_label: Label
 var _new_button: Button
-var _chassis_menu: PopupMenu
+var _chassis_choices: VBoxContainer
 ## Die freien Chassis-Typen in der Reihenfolge des Menues -- damit die Auswahl
 ## den richtigen Typ trifft.
 var _menu_chassis: Array = []
@@ -44,95 +44,36 @@ func _ready() -> void:
 	_refresh_all()
 
 
+## Mobile first: eine Liste ueber die volle Breite. Oben Squad-Stand und
+## "Neuen DROME", darunter die DROMEs als Karten (Bild links, Text und
+## Aktionen rechts), unten was frei im Inventar liegt.
 func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 18)
-	add_child(margin)
+	var content := UiKit.page(self, "Garage", "", 1)
 
-	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", 18)
-	margin.add_child(columns)
+	content.add_child(UiKit.label("Deine DROMEs. Anpassen baut sie um; der Haken "
+		+ "entscheidet, wer im Chaos-Virus mitkommt.", UiKit.SMALL, UiKit.MUTED))
 
-	columns.add_child(_build_roster_column())
-	columns.add_child(_build_side_column())
+	_squad_label = UiKit.label("", UiKit.BODY)
+	content.add_child(_squad_label)
 
-	_chassis_menu = PopupMenu.new()
-	_chassis_menu.id_pressed.connect(_on_chassis_chosen)
-	add_child(_chassis_menu)
-
-
-func _build_roster_column() -> Control:
-	var left := VBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var title := Label.new()
-	title.text = "GARAGE"
-	title.add_theme_font_size_override("font_size", 26)
-	title.modulate = COLOR_HEADING
-	left.add_child(title)
-
-	var subtitle := Label.new()
-	subtitle.text = "Deine DROMEs. Waehle einen zum Anpassen, hake an, wer mitkommt."
-	subtitle.modulate = COLOR_MUTED
-	left.add_child(subtitle)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(scroll)
+	_new_button = UiKit.button("+ Neuen DROME aufbauen")
+	_new_button.pressed.connect(_open_chassis_menu)
+	content.add_child(_new_button)
+	_chassis_choices = VBoxContainer.new()
+	_chassis_choices.add_theme_constant_override("separation", 6)
+	_chassis_choices.visible = false
+	content.add_child(_chassis_choices)
 
 	_cards = GridContainer.new()
-	_cards.columns = CARD_COLUMNS
-	_cards.add_theme_constant_override("h_separation", 12)
-	_cards.add_theme_constant_override("v_separation", 12)
+	_cards.columns = 1
+	_cards.add_theme_constant_override("v_separation", 10)
 	_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_cards)
-	return left
+	content.add_child(_cards)
 
-
-func _build_side_column() -> Control:
-	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(300, 0)
-	right.add_theme_constant_override("separation", 8)
-
-	var back := Button.new()
-	back.text = "< Hauptmenue"
-	back.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/main.tscn"))
-	right.add_child(back)
-
-	_squad_label = Label.new()
-	_squad_label.add_theme_font_size_override("font_size", 14)
-	right.add_child(_squad_label)
-
-	_new_button = Button.new()
-	_new_button.text = "+ Neuen DROME aufbauen"
-	_new_button.custom_minimum_size = Vector2(0, 40)
-	_new_button.pressed.connect(_open_chassis_menu)
-	right.add_child(_new_button)
-
-	right.add_child(_section_heading("Inventar — frei"))
-	var inv_scroll := ScrollContainer.new()
-	inv_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	inv_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	inv_scroll.custom_minimum_size = Vector2(300, 0)
-	right.add_child(inv_scroll)
+	var free_card := UiKit.card(content)
+	free_card.add_child(UiKit.heading("Frei im Inventar"))
 	_inventory_list = VBoxContainer.new()
-	_inventory_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	inv_scroll.add_child(_inventory_list)
-
-	# Der Chaos-Virus startet NICHT mehr hier, sondern ueber das Menue (Bit-
-	# Auswahl). Die Garage baut und verwaltet nur noch DROMEs; welche mitkommen,
-	# entscheidet man erst kurz vor dem Gefecht.
-	var hint := Label.new()
-	hint.text = "Zum Kampf: zurueck ins Menue -> Chaos-Virus. Dort waehlst du, " \
-		+ "wie viele DROMEs mitkommen."
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.modulate = COLOR_MUTED
-	hint.add_theme_font_size_override("font_size", 12)
-	right.add_child(hint)
-	return right
+	free_card.add_child(_inventory_list)
 
 
 func _section_heading(text: String) -> Label:
@@ -160,7 +101,8 @@ func _refresh_cards() -> void:
 		_cards.add_child(_drome_card(i))
 
 
-## Eine Karte je DROME: Vorschau, Name, Squad-Haken und die zwei Aktionen.
+## Eine Karte je DROME: Bild links; rechts Name, Ausruestung, Squad-Haken und
+## die zwei Aktionen. Fuer den Daumen gebaut: grosse Knoepfe, die ganze Breite.
 func _drome_card(index: int) -> Control:
 	var entry: RosterEntry = GameState.roster.entries[index]
 	var build := GameState.roster.build_for(entry)
@@ -168,56 +110,39 @@ func _drome_card(index: int) -> Control:
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _card_style(entry.in_squad))
-	panel.custom_minimum_size = Vector2(CARD_WIDTH, 0)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+	row.add_child(_drome_preview(build))
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(box)
 
-	var name_label := Label.new()
-	name_label.text = entry.name
-	name_label.add_theme_font_size_override("font_size", 15)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	box.add_child(name_label)
-
-	box.add_child(_drome_preview(build))
-
-	# Was der DROME traegt -- eine knappe Zeile, damit man die Karten
-	# auseinanderhaelt, ohne jede in die Werkstatt zu oeffnen.
-	var loadout := Label.new()
-	loadout.text = _loadout_summary(build)
-	loadout.add_theme_font_size_override("font_size", 10)
-	loadout.modulate = COLOR_MUTED
-	loadout.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	loadout.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	loadout.custom_minimum_size = Vector2(0, 28)
-	box.add_child(loadout)
-
+	box.add_child(UiKit.label(entry.name, UiKit.H2))
+	box.add_child(UiKit.label(_loadout_summary(build), UiKit.SMALL, UiKit.MUTED))
 	if not valid:
-		var warn := Label.new()
-		warn.text = "⚠ " + build.validate()[0]
-		warn.add_theme_font_size_override("font_size", 10)
-		warn.modulate = COLOR_BAD
-		warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(warn)
+		box.add_child(UiKit.label("Achtung: " + build.validate()[0], UiKit.SMALL, UiKit.BAD))
 
 	var squad_check := CheckBox.new()
 	squad_check.text = "Im Squad"
+	squad_check.custom_minimum_size = Vector2(0, 44)
+	squad_check.add_theme_font_size_override("font_size", UiKit.BODY)
 	squad_check.button_pressed = entry.in_squad
 	squad_check.toggled.connect(func(pressed): _toggle_squad(entry, pressed))
 	box.add_child(squad_check)
 
 	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 6)
-	var edit := Button.new()
-	edit.text = "Anpassen"
-	edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_theme_constant_override("separation", 8)
+	var edit := UiKit.button("Anpassen", true)
+	edit.add_theme_font_size_override("font_size", UiKit.BODY)
 	edit.pressed.connect(func(): _edit_drome(index))
 	actions.add_child(edit)
-	var scrap := Button.new()
-	scrap.text = "Aufloesen"
-	scrap.tooltip_text = "DROME aufloesen — seine Teile kehren ins Inventar zurueck"
+	var scrap := UiKit.button("Aufloesen")
+	scrap.tooltip_text = "DROME aufloesen -- seine Teile kehren ins Inventar zurueck"
 	scrap.pressed.connect(func(): _disband(entry))
 	actions.add_child(scrap)
 	box.add_child(actions)
@@ -229,11 +154,8 @@ func _card_style(in_squad: bool) -> StyleBoxFlat:
 	style.bg_color = Color(0.1, 0.12, 0.17)
 	style.border_color = COLOR_GOOD if in_squad else Color(0.24, 0.28, 0.35)
 	style.set_border_width_all(2 if in_squad else 1)
-	style.set_corner_radius_all(4)
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
+	style.set_corner_radius_all(10)
+	style.set_content_margin_all(12)
 	return style
 
 
@@ -243,7 +165,7 @@ func _card_style(in_squad: bool) -> StyleBoxFlat:
 func _drome_preview(build: DromeBuild) -> Control:
 	var container := SubViewportContainer.new()
 	container.custom_minimum_size = Vector2(PREVIEW_SIZE, PREVIEW_SIZE)
-	container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var sub := SubViewport.new()
 	sub.size = Vector2i(PREVIEW_SIZE, PREVIEW_SIZE)
@@ -292,16 +214,9 @@ func _refresh_inventory() -> void:
 		if lines.is_empty():
 			continue
 		any = true
-		var head := Label.new()
-		head.text = group[1]
-		head.add_theme_font_size_override("font_size", 11)
-		head.modulate = COLOR_MUTED
-		_inventory_list.add_child(head)
+		_inventory_list.add_child(UiKit.label(group[1], UiKit.SMALL, UiKit.MUTED))
 		for line in lines:
-			var row := Label.new()
-			row.text = "  " + line
-			row.add_theme_font_size_override("font_size", 12)
-			_inventory_list.add_child(row)
+			_inventory_list.add_child(UiKit.label("  " + line, UiKit.BODY))
 
 	if not any:
 		var empty := Label.new()
@@ -348,19 +263,25 @@ func _disband(entry: RosterEntry) -> void:
 	_refresh_all()
 
 
+## Die freien Chassis als Knopfliste direkt unter "Neuen DROME" -- ein
+## Popup-Menue am Zeiger ist auf dem Handy winzig und landet unter dem Daumen.
 func _open_chassis_menu() -> void:
+	if _chassis_choices.visible:
+		_chassis_choices.visible = false
+		return
 	_menu_chassis = GameState.roster.free_chassis_types()
 	if _menu_chassis.is_empty():
 		return
-	_chassis_menu.clear()
+	for child in _chassis_choices.get_children():
+		child.queue_free()
+	_chassis_choices.add_child(UiKit.label("Welches Chassis?", UiKit.SMALL, UiKit.MUTED))
 	for i in _menu_chassis.size():
 		var part := PartDB.get_part(_menu_chassis[i])
-		_chassis_menu.add_item(part.display_name if part != null
-			else str(_menu_chassis[i]), i)
-	_chassis_menu.position = get_viewport().get_mouse_position() \
-		+ Vector2(get_window().position)
-	_chassis_menu.reset_size()
-	_chassis_menu.popup()
+		var choice := UiKit.button(part.display_name if part != null else str(_menu_chassis[i]))
+		var id := i
+		choice.pressed.connect(func(): _on_chassis_chosen(id))
+		_chassis_choices.add_child(choice)
+	_chassis_choices.visible = true
 
 
 func _on_chassis_chosen(id: int) -> void:
