@@ -252,10 +252,54 @@ func configure_chaos_run(enemy_count: int, reference_power: float) -> void:
 ## Inventar in dieser Dev-Phase (save_enabled).
 var run: RunState = null
 
+## Feste Gegner fuer den naechsten Kampf (Lauf: die vorher gezeigten). Leer =
+## der Kampf wuerfelt selbst.
+var enemy_override: Array = []
+
 ## Ob der naechste/aktuelle Kampf ein Kampf dieses Laufs ist. Dann kaempft der
 ## Lauf-Squad statt des Roster-Squads, es gibt keine Chaos-Beute, und das
 ## Ergebnis geht an den Lauf zurueck.
 var in_run_battle: bool = false
+
+
+## Startet einen Lauf mit den DROMEs, die gerade im Squad sind.
+func start_run(seed_value: int = 0) -> void:
+	refresh_squad()
+	run = RunState.start(seed_value if seed_value != 0 else randi(), squad)
+
+
+## Bringt die nach Hause geschickte Beute ins Inventar: Teile als neue
+## Instanzen, ein DROME als neuer Roster-Eintrag (nicht im Squad).
+func deliver_run_home() -> Array:
+	var delivered: Array = []
+	if run == null:
+		return delivered
+	for item in run.home_queue:
+		match item.get("kind", ""):
+			"part":
+				roster.add_instance(item["part_id"])
+				delivered.append(item)
+			"drome":
+				var build := RunState.drome_from_reward(item)
+				var body := build.body()
+				if body == null:
+					continue
+				roster.add_instance(body.id)
+				var entry := roster.new_drome(body.id, build.display_name)
+				if entry == null:
+					continue
+				var core := build.part_in("core")
+				if core != null:
+					entry.assignments["core"] = roster.add_instance(core.id)
+				for slot in build.equip_slots():
+					var part := build.part_in(slot)
+					if part != null:
+						entry.assignments[slot] = roster.add_instance(part.id)
+				delivered.append(item)
+	run.home_queue.clear()
+	if not delivered.is_empty():
+		save_roster()
+	return delivered
 
 
 ## Richtet den Kampf der aktuellen Runde ein. Der Lauf-Squad wird KOPIERT:
@@ -266,7 +310,8 @@ func begin_run_battle() -> void:
 	in_run_battle = true
 	squad = run.squad.map(func(b): return b.clone())
 	battle_seed = run.battle_seed()
-	configure_chaos_run(run.enemy_count(), run.enemy_power())
+	enemy_override = run.enemies().map(func(b): return b.clone())
+	configure_chaos_run(enemy_override.size(), run.enemy_power())
 
 
 ## Nimmt das Kampfergebnis zurueck in den Lauf und raeumt die Kampfparameter
@@ -275,6 +320,7 @@ func finish_run_battle(outcome: int, enemy_pool: Array) -> void:
 	if run != null:
 		run.record_result(outcome, enemy_pool)
 	in_run_battle = false
+	enemy_override = []
 	battle_seed = 0
 	clear_chaos_run()
 	refresh_squad()

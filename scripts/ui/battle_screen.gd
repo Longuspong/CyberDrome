@@ -119,7 +119,7 @@ func _start_battle() -> void:
 	if GameState.battle_seed == 0:
 		GameState.new_seed()
 
-	battle.setup(GameState.battle_seed, builds)
+	battle.setup(GameState.battle_seed, builds, GameState.enemy_override)
 	battle.overtime_enabled = _auto
 	view.build_terrain(battle.grid)
 	for unit in battle.units:

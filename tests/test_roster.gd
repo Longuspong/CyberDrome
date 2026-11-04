@@ -29,8 +29,8 @@ func test_starter_stock_matches_the_design() -> void:
 			&"eq_bait_beacon", &"eq_orbit_focus"]:
 		t.equal(roster.total_count(part_id), 1,
 			"genau eine %s im Bestand" % part_id)
-	# Die ersten beiden ziehen ins Gefecht -- wie die alte Squad-Groesse 2.
-	t.equal(roster.squad_count(), 2, "zwei DROMEs im Start-Squad")
+	# Ein neuer Spielstand zieht mit jedem Standard-DROME einmal ins Gefecht.
+	t.equal(roster.squad_count(), 4, "alle vier DROMEs im Start-Squad")
 
 
 func test_each_starter_drome_is_battle_ready() -> void:
@@ -138,7 +138,7 @@ func test_roster_survives_saving_and_loading() -> void:
 	var roster := _fresh()
 	# Eine Aenderung, damit nicht nur der Startbestand geprueft wird.
 	roster.entries[0].name = "Spaeher-Eins"
-	roster.entries[2].in_squad = true
+	roster.entries[2].in_squad = false
 
 	var restored := Roster.new()
 	t.ok(restored.load_dict(roster.to_dict()), "der v2-Stand laedt")

@@ -9,20 +9,25 @@ extends RefCounted
 ##
 ## ### Der Bogen
 ##
-##   * Start mit zwei schwach bestueckten DROMEs -- je eine Waffe, die
-##     uebrigen Halter frei. Die freien Halter sind der Platz fuer Beute.
-##   * Vor jedem Kampf steht fest, WO und UNTER WELCHER REGEL gekaempft wird
-##     (Region, Mutator) und wie stark der Gegner ist. Im Autokampf greift man
-##     nicht mehr ein; die Vorschau ist der Ort, an dem man plant.
-##   * Die Gegnerstaerke folgt einer FESTEN Kurve, nicht dem eigenen Aufbau.
-##     Wuchse sie mit, waere jede Belohnung wertlos -- der Gegner holte sie
-##     sofort wieder ein.
-##   * Sieg: eine von drei Belohnungen. Niederlage: ein Leben weniger, der
-##     Lauf geht weiter. Null Leben = vorbei, alle Runden geschafft = gewonnen.
+##   * Start mit dem Squad, den man mitnimmt (vorgeschlagen: der Hangar-
+##     Squad). Die DROMEs werden kopiert -- im Lauf baut man nur mit Beute um,
+##     nicht mit dem Inventar von zuhause.
+##   * Vor jedem Kampf waehlt man zwischen drei Gegnern: Leicht, Normal, Elite.
+##     Region, Mutator und die gegnerischen DROMEs sind vorher sichtbar.
+##   * Die Gegnerstaerke folgt einer FESTEN Kurve (Startstaerke des Squads),
+##     nicht dem eigenen Aufbau. Wuchse sie mit, waere jede Belohnung wertlos.
+##   * Sieg: Belohnung nach Stufe. Beute baut man ein oder schickt sie nach
+##     Hause ins Inventar. Niederlage: ein Leben weniger, der Lauf geht weiter.
 ##
 ## Die Stellschrauben stehen in data/config.json, Abschnitt "run".
 
 enum Phase { PREPARE, REWARD, WON, LOST }
+
+## Die drei Gegner, zwischen denen man vor jedem Kampf waehlt. Staerke und
+## Beute je Stufe stehen in data/config.json -> run.tiers.
+enum Tier { EASY, NORMAL, ELITE }
+const TIER_KEYS := ["easy", "normal", "elite"]
+const TIER_NAMES := ["Leicht", "Normal", "Elite"]
 
 var run_seed: int = 0
 var round: int = 1
@@ -30,11 +35,27 @@ var lives: int = 3
 var squad: Array = []
 var phase: Phase = Phase.PREPARE
 
+## Die gewaehlte Gegnerstufe der aktuellen Runde.
+var tier: int = Tier.NORMAL
+
+## Kampfwert und Groesse des Squads beim Start. Daran haengt die feste Kurve
+## der Gegner -- einmal festgehalten, damit Beute sie nicht mitzieht.
+var base_power: float = 0.0
+var start_size: int = 2
+
 ## Die Belohnungen, zwischen denen gerade gewaehlt wird (Phase REWARD).
 var reward_options: Array = []
 
+## Beute, die nach Hause geschickt wurde und noch ins Inventar muss.
+## GameState.deliver_run_home() leert die Liste. Eintraege wie reward_options.
+var home_queue: Array = []
+
 ## Ergebnisse der bisherigen Kaempfe, fuer die Abschlussanzeige.
 var history: Array = []
+
+## Gewuerfelte Gegner je Runde und Stufe -- einmal erzeugt, damit Vorschau und
+## Kampf dieselben DROMEs zeigen.
+var _enemy_cache: Dictionary = {}
 
 
 static func cfg() -> Dictionary:
@@ -49,27 +70,40 @@ static func max_lives() -> int:
 	return int(cfg().get("lives", 3))
 
 
-static func start(seed_value: int) -> RunState:
+static func squad_max() -> int:
+	return int(cfg().get("squad_max", 4))
+
+
+static func tier_cfg(which: int) -> Dictionary:
+	var tiers: Dictionary = cfg().get("tiers", {})
+	return tiers.get(TIER_KEYS[clampi(which, 0, 2)], {})
+
+
+## Startet einen Lauf mit dem mitgenommenen Squad. Die DROMEs werden KOPIERT:
+## was im Lauf eingebaut wird, bleibt im Lauf -- der Hangar zuhause aendert
+## sich nur durch Beute, die man ausdruecklich nach Hause schickt.
+## Ohne Squad (Tests, Werkzeuge) kommen die vier Standard-DROMEs.
+static func start(seed_value: int, chosen: Array = []) -> RunState:
 	var run := RunState.new()
 	run.run_seed = seed_value
 	run.lives = max_lives()
-	run.squad = starter_squad()
+	var source: Array = chosen if not chosen.is_empty() else standard_squad()
+	for build in source.slice(0, squad_max()):
+		run.squad.append(build.clone())
+	run.base_power = DromeBuild.squad_power(run.squad)
+	run.start_size = run.squad.size()
 	return run
 
 
-## Zwei DROMEs mit je einer Waffe und je einem freien Halter fuer Beute.
-##
-## Gemessen, nicht geschaetzt (14 Kaempfe je Paar gegen die Gegner der ersten
-## Runde): Vireo + Nimbus mit Runenstab gewinnt 11 von 14. Der erste Entwurf,
-## Vireo + Molok mit Belagerungskanone, gewann 0 von 14 -- trotz HOEHEREM
-## Kampfwert: die Kanone drueckt den Molok auf SPD 6, er kommt kaum zum Zug,
-## und der Vireo laeuft allein in zwei Gegner.
-static func starter_squad() -> Array:
-	var vireo := _frame("Vireo", &"scout_body", &"scout_core")
-	_equip(vireo, &"eq_pulse_blaster")
-	var nimbus := _frame("Nimbus", &"mage_body", &"mage_core")
-	_equip(nimbus, &"eq_rune_staff")
-	return [vireo, nimbus]
+## Die vier Standard-DROMEs in voller Standardausstattung -- derselbe
+## Startbestand wie in einem frischen Hangar (Roster.STARTER_CHASSIS).
+static func standard_squad() -> Array:
+	var roster := Roster.new()
+	roster.seed_starter()
+	var builds: Array = []
+	for entry in roster.entries:
+		builds.append(roster.build_for(entry))
+	return builds
 
 
 static func _frame(name: String, body_id: StringName, core_id: StringName) -> DromeBuild:
@@ -95,35 +129,69 @@ func is_over() -> bool:
 # Der naechste Kampf
 # ---------------------------------------------------------------------------
 
-## Der Seed des Kampfes dieser Runde. Aus Lauf-Seed und Runde, damit jede
-## Runde anders ist und derselbe Lauf trotzdem dieselben Kaempfe hat.
-func battle_seed() -> int:
-	return absi(hash([run_seed, round])) % 2000000000 + 1
+## Der Seed des Kampfes dieser Runde und Stufe. Aus Lauf-Seed, Runde und
+## Stufe, damit jede Wahl ein eigener Kampf ist und derselbe Lauf trotzdem
+## dieselben Kaempfe hat.
+func battle_seed(which: int = -1) -> int:
+	if which < 0:
+		which = tier
+	return absi(hash([run_seed, round, which])) % 2000000000 + 1
 
 
-func enemy_count() -> int:
-	var counts: Array = cfg().get("enemy_counts", [2, 2, 2, 3, 3, 3, 4, 4])
-	return int(counts[clampi(round - 1, 0, counts.size() - 1)])
+## Wie viele Gegner: so viele, wie man mitgebracht hat, plus/minus der
+## Verschiebung dieser Runde (run.enemy_offsets). Ein kleinerer Squad trifft
+## also auf weniger Gegner -- er bekommt aber auch weniger Kampfwert.
+func enemy_count(which: int = -1) -> int:
+	if which < 0:
+		which = tier
+	var offsets: Array = cfg().get("enemy_offsets", [0])
+	var offset := int(offsets[clampi(round - 1, 0, offsets.size() - 1)])
+	offset += int(tier_cfg(which).get("count_offset", 0))
+	return clampi(start_size + offset, 1, squad_max())
 
 
-## Die Gegnerstaerke dieser Runde: ein fester Anteil der Startstaerke, der je
-## Runde waechst. Bewusst unabhaengig vom aktuellen Squad (siehe oben).
-func enemy_power() -> float:
-	var base := DromeBuild.squad_power(starter_squad())
+## Die Gegnerstaerke: ein fester Anteil der Startstaerke, der je Runde waechst,
+## mal dem Faktor der Stufe. Bewusst unabhaengig vom aktuellen Squad.
+func enemy_power(which: int = -1) -> float:
+	if which < 0:
+		which = tier
 	var start_factor := float(cfg().get("power_start", 0.85))
 	var growth := float(cfg().get("power_growth", 0.2))
-	return base * (start_factor + growth * float(round - 1))
+	var factor := float(tier_cfg(which).get("power", 1.0))
+	return base_power * (start_factor + growth * float(round - 1)) * factor
+
+
+## Die Gegner dieser Runde und Stufe -- dieselben in Vorschau und Kampf.
+func enemies(which: int = -1) -> Array:
+	if which < 0:
+		which = tier
+	var key := round * 10 + which
+	if not _enemy_cache.has(key):
+		_enemy_cache[key] = EnemyGenerator.new(battle_seed(which)) \
+			.generate(enemy_count(which), enemy_power(which))
+	return _enemy_cache[key]
 
 
 ## Alles, was man vor dem Kampf wissen muss. Region und Mutator kommen aus
 ## demselben Seed und derselben Reihenfolge wie im echten Aufbau
 ## (BattleManager.preview_conditions), sind also keine Schaetzung.
-func preview() -> Dictionary:
-	var conditions := BattleManager.preview_conditions(battle_seed())
-	conditions["enemies"] = enemy_count()
-	conditions["enemy_power"] = enemy_power()
+func preview(which: int = -1) -> Dictionary:
+	if which < 0:
+		which = tier
+	var conditions := BattleManager.preview_conditions(battle_seed(which))
+	var foes := enemies(which)
+	conditions["tier"] = which
+	conditions["enemies"] = foes.size()
+	conditions["enemy_builds"] = foes
+	conditions["enemy_power"] = DromeBuild.squad_power(foes)
 	conditions["own_power"] = DromeBuild.squad_power(squad)
+	conditions["reward_text"] = str(tier_cfg(which).get("reward_text", ""))
 	return conditions
+
+
+func choose_tier(which: int) -> void:
+	if phase == Phase.PREPARE:
+		tier = clampi(which, 0, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -136,7 +204,7 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 	if phase != Phase.PREPARE:
 		return
 	var won := outcome == BattleManager.Outcome.VICTORY
-	history.append({"round": round, "won": won})
+	history.append({"round": round, "won": won, "tier": tier})
 	if not won:
 		lives -= 1
 		if lives <= 0:
@@ -153,27 +221,45 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 
 func _advance() -> void:
 	round += 1
+	tier = Tier.NORMAL
 	phase = Phase.PREPARE
 
 
-## Drei Belohnungen. Meist Teile aus der Gegnerausruestung; in bestimmten
-## Runden ein neuer DROME (solange Platz im Squad ist); selten ein Leben
-## zurueck, wenn eines fehlt.
+## Die Belohnungen haengen an der Stufe des besiegten Gegners:
+##
+##   Leicht  wenige Teile aus der Gegnerausruestung, dazu evtl. Notstrom
+##   Normal  eine von drei, meist Teile; in bestimmten Runden ein DROME
+##   Elite   garantiert etwas Seltenes: ein neuer DROME oder schwere/mittlere
+##           Teile, auch aus dem ganzen Katalog
 func roll_rewards(enemy_pool: Array) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = battle_seed() ^ 0x5EED
-	var count := int(cfg().get("reward_choices", 3))
+	var settings := tier_cfg(tier)
+	var count := int(settings.get("reward_choices", cfg().get("reward_choices", 3)))
 	var options: Array = []
 
-	var drome_rounds: Array = cfg().get("new_drome_rounds", [2, 5])
-	if round in drome_rounds and squad.size() < int(cfg().get("squad_max", 4)):
-		options.append(_drome_reward(rng))
-	if lives < max_lives() and rng.randf() < float(cfg().get("life_chance", 0.35)):
+	if tier == Tier.ELITE:
+		var drome := _drome_reward(rng)
+		drome["rare"] = true
+		options.append(drome)
+	elif tier == Tier.NORMAL:
+		var drome_rounds: Array = cfg().get("new_drome_rounds", [2, 5])
+		if round in drome_rounds:
+			options.append(_drome_reward(rng))
+	if tier != Tier.ELITE and lives < max_lives() \
+			and rng.randf() < float(settings.get("life_chance", cfg().get("life_chance", 0.35))):
 		options.append({"kind": "life", "title": "Notstrom",
 			"text": "Ein verlorenes Leben zurueck."})
 
 	var pool: Array = enemy_pool.duplicate()
-	if pool.size() < count:
+	if tier == Tier.ELITE:
+		# Selten = mittlere und schwere Teile. Erst aus der Gegnerausruestung,
+		# fehlt dort etwas, aus dem ganzen Katalog.
+		pool = pool.filter(func(id): return _is_rare(PartDB.get_part(id)))
+		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+			if _is_rare(part) and not pool.has(part.id):
+				pool.append(part.id)
+	elif pool.size() < count:
 		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
 			if not pool.has(part.id):
 				pool.append(part.id)
@@ -183,9 +269,13 @@ func roll_rewards(enemy_pool: Array) -> Array:
 		pool.remove_at(index)
 		if part == null:
 			continue
-		options.append({"kind": "part", "part_id": part.id,
+		options.append({"kind": "part", "part_id": part.id, "rare": tier == Tier.ELITE,
 			"title": part.display_name, "text": _part_text(part)})
 	return options
+
+
+static func _is_rare(part: PartData) -> bool:
+	return part != null and part.mount_class != "light"
 
 
 ## Ein neuer DROME kommt MIT einer passenden Waffe: ohne waere er im
@@ -218,6 +308,7 @@ static func _part_text(part: PartData) -> String:
 ## Wohin dieses Teil passt: je DROME die Halter, die es nehmen, mit der
 ## aktuellen Belegung. Fuer die Auswahl in der Oberflaeche.
 func placements_for(part_id: StringName) -> Array:
+	# Nach Hause schicken geht immer -- als letzter Eintrag, siehe unten.
 	var part := PartDB.get_part(part_id)
 	var out: Array = []
 	if part == null:
@@ -236,7 +327,20 @@ func placements_for(part_id: StringName) -> Array:
 			out.append({"drome": index, "slot": slot,
 				"current": current.display_name if current != null else "",
 				"valid": trial.is_valid()})
+	out.append(home_placement())
 	return out
+
+
+## Der Platz "nach Hause": die Beute wandert ins Inventar des Hangars statt
+## in den Lauf.
+static func home_placement() -> Dictionary:
+	return {"home": true, "valid": true}
+
+
+## Ob ein neuer DROME noch in den Lauf-Squad passt. Sonst bleibt nur "nach
+## Hause".
+func has_room() -> bool:
+	return squad.size() < squad_max()
 
 
 ## Waehlt eine Belohnung. ``placement`` ist fuer Teile ein Eintrag aus
@@ -246,6 +350,13 @@ func choose_reward(index: int, placement: Dictionary = {}) -> bool:
 	if phase != Phase.REWARD or index < 0 or index >= reward_options.size():
 		return false
 	var option: Dictionary = reward_options[index]
+	if bool(placement.get("home", false)):
+		if option["kind"] == "life":
+			return false
+		home_queue.append(option.duplicate())
+		reward_options = []
+		_advance()
+		return true
 	match option["kind"]:
 		"part":
 			if placement.is_empty():
@@ -257,18 +368,25 @@ func choose_reward(index: int, placement: Dictionary = {}) -> bool:
 				return false
 			build.slots[placement["slot"]] = option["part_id"]
 		"drome":
-			var body := PartDB.get_part(option["body_id"])
-			var core := PartDB.frame_mate(body.set_id, PartData.Type.CORE)
-			var fresh := _frame(body.display_name.replace(" Chassis", ""),
-				body.id, core.id if core != null else &"scout_core")
-			if StringName(option.get("weapon_id", &"")) != &"":
-				_equip(fresh, option["weapon_id"])
-			squad.append(fresh)
+			if not has_room():
+				return false
+			squad.append(drome_from_reward(option))
 		"life":
 			lives = mini(max_lives(), lives + 1)
 	reward_options = []
 	_advance()
 	return true
+
+
+## Baut aus einer DROME-Belohnung den Aufbau: Chassis, passender Kern, Waffe.
+static func drome_from_reward(option: Dictionary) -> DromeBuild:
+	var body := PartDB.get_part(option["body_id"])
+	var core := PartDB.frame_mate(body.set_id, PartData.Type.CORE)
+	var fresh := _frame(body.display_name.replace(" Chassis", ""),
+		body.id, core.id if core != null else &"scout_core")
+	if StringName(option.get("weapon_id", &"")) != &"":
+		_equip(fresh, option["weapon_id"])
+	return fresh
 
 
 ## Belohnung ausschlagen -- weiter ohne Aenderung.

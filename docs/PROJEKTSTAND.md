@@ -42,16 +42,35 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 
 ### Lauf (Roguelike) -- `scripts/core/run_state.gd`
 * 8 Kaempfe, 3 Leben, alles am Seed. Werte in `data/config.json` -> `run`.
-* Gegnerstaerke = Startstaerke * (0,85 + 0,20 * (Runde - 1)) -- **feste
-  Kurve**, nicht an den eigenen Squad gekoppelt (sonst waere Beute wertlos).
-* Gegnerzahl je Runde 2,2,2,3,3,3,4,4.
-* Sieg: 1 von 3 Belohnungen -- Teil aus der Gegnerausruestung (DROME und
-  Halter waehlbar), in Runde 2 und 5 ein neuer DROME **mit Waffe**,
-  gelegentlich "Notstrom" (+1 Leben). Niederlage: -1 Leben, weiter.
-* Vorschau vor dem Kampf (Region, Mutator) ueber
-  `BattleManager.preview_conditions()` -- dieselbe Zufallsfolge wie `setup()`,
-  ein Test prueft die Gleichheit.
-* Start-Squad: **Vireo (Puls-Blaster) + Nimbus (Runenstab)**.
+* **Aufstellung vor dem Lauf** (`SquadPicker`, `scripts/ui/squad_picker.gd`):
+  vorgeschlagen ist der Hangar-Squad, Plus/Minus nimmt mit oder laesst zuhause
+  (max. 4). Dieselbe Ansicht vor dem Chaos-Virus.
+* Der Lauf **kopiert** die mitgenommenen DROMEs. Im Lauf wird nur mit Beute
+  umgebaut, nicht mit dem Inventar zuhause. Beute kann eingebaut oder **nach
+  Hause geschickt** werden (`RunState.home_queue` ->
+  `GameState.deliver_run_home()`: Teil = Instanz, DROME = neuer Roster-Eintrag).
+  Was im Lauf eingebaut wurde, bleibt im Lauf.
+* (Frueher fester Start-Squad Vireo + Nimbus -- das war der Fehler "im Lauf
+  kommt ein ganz anderes Squad raus", behoben Nov. 2026.)
+* **Drei Gegner je Runde**: Leicht / Normal / Elite (`run.tiers`). Vorher
+  sichtbar: Region, Mutator und die gegnerischen DROMEs mit Ausruestung
+  (`RunState.enemies()`, dieselben im Kampf ueber `GameState.enemy_override`).
+* Gegnerstaerke = Startstaerke des mitgenommenen Squads * (0,85 + 0,20 *
+  (Runde - 1)) * Stufenfaktor (0,7 / 1,0 / 1,3) -- **feste Kurve**.
+  Gegnerzahl = Startgroesse + `enemy_offsets[runde]` (+1 bei Elite), 1..4.
+* Beute je Stufe: Leicht 1 aus 2 Teilen der Gegner (oft Notstrom); Normal 1
+  aus 3 (Runde 2 und 5 ein DROME); Elite garantiert selten = neuer DROME oder
+  mittleres/schweres Teil. Es gibt (noch) kein Geld und keine Seltenheitsstufe
+  -- "selten" ist vorlaeufig die Gewichtsklasse.
+
+### Chaos-Virus
+* Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
+  eigene Mannschaft (`chaos.enemy_power_factor` 0,9). Handicap und Beute
+  rechnen weiter gegen die volle Referenz.
+
+### Startbestand
+* Neuer Spielstand: jeder der vier Standard-DROMEs einmal in voller
+  Standardausstattung, **alle vier im Squad** (`Roster.seed_starter`).
 
 ### Hangar -- `scripts/ui/hangar_screen.gd`
 * Reiter **Squad**: Karussell (max. 4), darunter alle DROMEs (ausgegraut wer
@@ -122,6 +141,8 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
   ueberlappen.
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.
+* Spielstand-Auswahl vor dem Hauptmenue (Wunsch des Spielers, Nov. 2026)
+  ist noch nicht gebaut -- haengt an der Persistenz.
 * Spielstand-Persistenz ist in der Dev-Phase aus (`save_enabled: false`) --
   ein Lauf uebersteht kein Neuladen.
 * `docs/GAME_DESIGN.md` und Teile der `README.md` beschreiben noch die alte

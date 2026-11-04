@@ -67,7 +67,11 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	if GameState.chaos_enemy_count > 0:
 		enemy_count = GameState.chaos_enemy_count
 	if GameState.chaos_reference_power > 0.0:
-		target_power = GameState.chaos_reference_power
+		# Etwas schwaecher als die volle eigene Mannschaft: im Chaos-Virus sieht
+		# man den Gegner vorher nicht (chaos.enemy_power_factor). Das Handicap und
+		# damit die Beute rechnen weiter gegen die volle Referenz.
+		target_power = GameState.chaos_reference_power \
+			* float(Config.section("chaos").get("enemy_power_factor", 1.0))
 	var enemy_builds: Array = enemy_override
 	if enemy_builds.is_empty():
 		enemy_builds = EnemyGenerator.new(battle_seed).generate(enemy_count, target_power)

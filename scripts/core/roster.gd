@@ -274,14 +274,13 @@ func free_chassis_types() -> Array:
 
 ## Der handgesetzte Startbestand (§10g/§12c): vier Standard-Chassis als vier
 ## DROMEs mit ihrem themengleichen Kern und einer Startwaffe, dazu die uebrige
-## Standard-Ausruestung frei im Inventar. Die ersten beiden ziehen ins Gefecht --
-## dieselbe Squad-Groesse wie bisher.
+## Standard-Ausruestung frei im Inventar. Alle vier ziehen ins Gefecht: ein
+## neuer Spielstand beginnt mit jedem Standard-DROME einmal im Squad.
 func seed_starter() -> void:
 	_instances.clear()
 	entries.clear()
 	_next_uid = 1
 
-	var index := 0
 	for row in STARTER_CHASSIS:
 		var chassis_uid := add_instance(row["body"])
 		var entry := RosterEntry.create(_starter_name(row["body"]), chassis_uid)
@@ -291,9 +290,8 @@ func seed_starter() -> void:
 		# (equip_slots/accepts), nicht eine Annahme hier.
 		for part_id in row["equipment"]:
 			_seed_equip(entry, part_id)
-		entry.in_squad = index < 2
+		entry.in_squad = true
 		entries.append(entry)
-		index += 1
 
 	for part_id in STARTER_LOOSE_EQUIPMENT:
 		add_instance(part_id)

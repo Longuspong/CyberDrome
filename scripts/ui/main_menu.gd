@@ -72,8 +72,8 @@ func _place_arena() -> void:
 
 
 func _refresh_status() -> void:
-	# Der Chaos-Virus braucht kampftaugliche eigene DROMEs; der Lauf bringt
-	# seinen Start-Squad selbst mit und ist immer startbar.
+	# Chaos-Virus und Lauf brauchen kampftaugliche eigene DROMEs; die
+	# Aufstellung im Lauf sagt es selbst, hier steht es fuer den Chaos-Virus.
 	var ready := not GameState.battle_ready_builds().is_empty()
 	if ready:
 		_status.text = ""
