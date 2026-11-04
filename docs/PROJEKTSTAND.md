@@ -1,0 +1,179 @@
+# Projektstand und Entscheidungen
+
+Gesammelt aus der Arbeitssitzung vom 3./4. November 2026 (PR #26 bis #30),
+damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
+**entschieden oder gemessen**; was noch offen ist, steht ausdruecklich unter
+"Offen". Kurzfassung und Arbeitsregeln: `CLAUDE.md`.
+
+---
+
+## 1. Richtung des Spiels
+
+* **Autobattler.** Die KI (`scripts/battle/ai_controller.gd`) steuert beide
+  Seiten. Der Spieler entscheidet ueber Aufbau, Squad und Belohnungen -- nicht
+  ueber einzelne Zuege. Der manuelle Kampf existiert noch (Chaos-Virus ohne
+  Autokampf-Schalter), ist aber nicht mehr die Hauptrichtung.
+* **Mobile first, Hochformat ist die Hauptansicht** (Wunsch des Spielers,
+  ausdruecklich). Querformat wird angeboten, ist zweitrangig. Ziel-Plattform
+  ist das Handy, gehostet als PWA auf Vercel; Android-APK kommt spaeter.
+* **Roguelike-Lauf** als zentraler Modus (Hauptknopf "Lauf starten").
+
+## 2. Was gebaut ist (Chronologie)
+
+| PR | Inhalt |
+|---|---|
+| #26 | Autokampf (KI fuer beide Seiten), Aggro-Tabelle fuer alle, **Schild-Bug der KI behoben**, Overtime, Fairness-Test, PWA-Export + GitHub-Pages-Workflow |
+| #27 | Vercel liefert das Spiel statt der SVG-Werkstatt: `vercel.json`, `tools/build_web.sh`; SVG-Werkstatt nach `werkstatt/` |
+| #28 | Barrierefreiheit (erste Fassung), animierte DROMEs im Startbildschirm, **Roguelike-Lauf** (`RunState`, Lauf-Bildschirm) |
+| #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
+| #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
+
+### Kampf
+* Autokampf-Schalter in der Chaos-Auswahl; im Lauf immer Autokampf.
+* Tempo 1x/2x ueber `Engine.time_scale` (bewusst nicht schneller -- sonst
+  unlesbar). Ueberspringen gibt es nicht.
+* **Overtime** (nur Autokampf, `data/config.json` -> `overtime`): ab Zyklus 12
+  verliert jeder DROME zu Zugbeginn `ceil(hp_max * 5% * (zyklus - 11))`.
+* Hochformat-HUD: Kopfleiste (Zugreihenfolge, Status), Daumenleiste (Tempo,
+  Pause, Log, Reihe, Folgen). Log und Initiative als einklappbare Paneele.
+* Kamera folgt dem aktiven DROME (~9 Felder breit); ein Finger zieht, zwei
+  zoomen, Mausrad am Desktop. Eigenes Ziehen schaltet das Folgen ab.
+* Log: Schildtreffer als "Schild -8 (Integritaet unversehrt)".
+
+### Lauf (Roguelike) -- `scripts/core/run_state.gd`
+* 8 Kaempfe, 3 Leben, alles am Seed. Werte in `data/config.json` -> `run`.
+* Gegnerstaerke = Startstaerke * (0,85 + 0,20 * (Runde - 1)) -- **feste
+  Kurve**, nicht an den eigenen Squad gekoppelt (sonst waere Beute wertlos).
+* Gegnerzahl je Runde 2,2,2,3,3,3,4,4.
+* Sieg: 1 von 3 Belohnungen -- Teil aus der Gegnerausruestung (DROME und
+  Halter waehlbar), in Runde 2 und 5 ein neuer DROME **mit Waffe**,
+  gelegentlich "Notstrom" (+1 Leben). Niederlage: -1 Leben, weiter.
+* Vorschau vor dem Kampf (Region, Mutator) ueber
+  `BattleManager.preview_conditions()` -- dieselbe Zufallsfolge wie `setup()`,
+  ein Test prueft die Gleichheit.
+* Start-Squad: **Vireo (Puls-Blaster) + Nimbus (Runenstab)**.
+
+### Hangar -- `scripts/ui/hangar_screen.gd`
+* Reiter **Squad**: Karussell (max. 4), darunter alle DROMEs (ausgegraut wer
+  dabei ist), "Neuen DROME bauen" mit ganzer Chassis-Huelle.
+* Reiter **Umbau**: DROME-Auswahl, Bild + Werte, Halter als Formen, Teile
+  fuer den gewaehlten Halter (passend zuerst, sonst mit Grund), Vorschau mit
+  Wertaenderung, "ersetzt X", "Einbauen". "DROME aufloesen" unten.
+* **Halter-Formen** (`scripts/ui/slot_shape.gd`): Dreieck = leicht,
+  Viereck = mittel, Fuenfeck = schwer, Kreis = Kern. Ausruestung traegt
+  dieselbe Form wie ihre Klasse. Regel: leicht passt nach oben in groessere
+  Halter, schwer nur in schwer -- das stand schon in `PartData.accepts()`
+  (`max_class` je Halter), jetzt ist es sichtbar. Zusatzregel: die
+  Molok-Schulter nimmt nur leichte **Support**-Teile.
+* Halterliste und Absagegruende: `scripts/core/slot_rules.gd`.
+
+### Oberflaeche / Barrierefreiheit -- `autoload/accessibility.gd`, `scripts/ui/ui_kit.gd`
+* Entwurfsraum **450x800 hochkant**: 1 Entwurfspixel ~ 1 CSS-Pixel auf dem
+  Handy. Skalierung nur noch im Querformat (mind. 0,9 CSS-px je Entwurfspixel,
+  logische Flaeche mind. 360x600).
+* Mindestschrift 16, Mindest-Knopfhoehe 44 (Touch).
+* **Schriftgroesse** (Optionen: Normal/Gross/Sehr gross) skaliert NUR Text
+  (Theme + Overrides). Frueher skalierte sie die ganze Flaeche -> Layout
+  zerbrach. Gespeichert in `user://settings.json` (Schluessel `font_option`).
+* "Animationen reduzieren" (folgt `prefers-reduced-motion`).
+* **Wisch-Scrollen** fuer jeden ScrollContainer, mit Schwung; ein Wischer
+  loest den Knopf darunter nicht aus.
+* **Langes Druecken** zeigt `tooltip_text` jedes Elements (auch vom
+  Elternteil); danach werden Klicks kurz verschluckt.
+* `UiKit`: `page()` (Rahmen, Kopfzeile, Scroll, Tab-Leiste), `button()`,
+  `card()`, `label()`, `row()`, `drome_view()`, `chassis_view()`,
+  `part_texture()` (zugeschnitten). Tab-Leiste: Spielen · Hangar · Optionen.
+* Startseite: Titel, Kulisse mit animierten DROMEs (`MenuArena`: Leerlauf je
+  Bauteil, Einmarsch, Schuesse, Funken, Schildring, Auseinanderfallen).
+
+### Hosting
+* Vercel baut mit `tools/build_web.sh` (Godot 4.7 mit Pruefsumme, nur die
+  zwei Web-Templates per HTTP-Range ueber `tools/fetch_web_templates.py`).
+* GitHub-Workflow `.github/workflows/web.yml` baut bei PRs und deployt auf
+  Pages bei `main` (Pages muss im Repo aktiviert sein).
+* PWA: Ausrichtung beliebig, Service Worker; nach einem Deploy auf dem Handy
+  ggf. einmal neu laden.
+
+---
+
+## 3. Messungen und gefundene Fehler (lohnt sich zu wissen)
+
+* **KI griff abgeschirmte Ziele nie an.** Sie bewertete nur HP-Schaden; ein
+  voller Schild (32-33) schluckt jeden Einzeltreffer -> Bewertung 0. Behoben
+  mit `ai.shield_damage_weight` (0,7). Vorher endeten Spiegelkaempfe ohne
+  einen Punkt Schaden.
+* **Seitenfairness** nach dem Fix: 20:20 in 40 Spiegelkaempfen; 0/20
+  unentschieden, Schnitt 8,3 Zyklen (`tests/test_autobattle.gd`).
+* **KI-Rechenzeit**: ~4 ms je Schritt, max ~13 ms (Desktop). Kein Problem fuer
+  Normal/2x; im Browser grob 5-10x langsamer.
+* **Start-Squad-Messung** (Runde 1, 14 Kaempfe je Paar): Vireo+Nimbus(Runenstab)
+  11/14, Vireo+Nimbus(Puls) 7/14, Vireo+Vireo 1/14, Vireo+Molok(Kanone) 0/14
+  -- die Belagerungskanone drueckt den Molok auf SPD 6.
+* **Spaetere Runden** mit typischer Beute: 8-11 von 12 gewonnen (Kurve evtl.
+  noch zu leicht; Kampfwert `power_score` ist ein grobes Mass).
+* Der Gegnergenerator kommt fuer 2 Gegner nicht unter ~340 Kampfwert.
+* Bekannte Glyphen-Luecken der Standardschrift: kein Pfeil "→", kein "⟳"
+  (zeigt Kaestchen) -- "->" bzw. gezeichnete Formen benutzen.
+
+## 4. Bekannte Schwaechen / Altlasten
+
+* **9 Pruefungen scheitern auf `main`** (test_aggro, test_battle,
+  test_ui_pieces -- Balancing und Vorschau). Schon vor dieser Sitzung rot.
+* Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
+  ueberlappen.
+* Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.
+* Spielstand-Persistenz ist in der Dev-Phase aus (`save_enabled: false`) --
+  ein Lauf uebersteht kein Neuladen.
+* `docs/GAME_DESIGN.md` und Teile der `README.md` beschreiben noch die alte
+  Querformat-Werkstatt.
+
+## 5. Offen -- mit dem Spieler zu besprechen
+
+Designpunkte (bis zur Entscheidung keine groesseren Umbauten auf eigene Faust):
+
+1. **Faehigkeiten loesen automatisch aus** -- nach Zeit oder nach Treffern,
+   statt von der KI gezogen.
+2. **Skill-Tiefe ueber Synergien**, nicht ueber Timing ("womit", nicht "wann").
+3. **Eingreifen in kniffligen Situationen** -- noch keine Idee. Vorschlag aus
+   der Sitzung: eine einzige "Overdrive"-Ladung pro Kampf, die man in der
+   Pause einem DROME gibt.
+4. **Waffen-Slots und Gewichtsklassen** ueberarbeiten. Die Formen-Darstellung
+   (Dreieck/Viereck/Fuenfeck) ist gebaut; die eigentliche Neuverteilung der
+   Klassen und Halter steht aus.
+
+Angeboten und vom Spieler positiv aufgenommen, **noch nicht gebaut**:
+
+* **Neue Kampf-Balken**: ein Balken, Integritaet gruen (feste Farbe, kein
+  Umfaerben), Schild hellblau direkt dahinter; Teamfarbe nur am Rahmen und
+  Bodenring; Energie/Initiative raus aus dem Feld.
+* **DROME-Kacheln im Kampf**: waagrecht scrollbare Reihe unten ueber der
+  Daumenleiste, eine Kachel je DROME in Zugreihenfolge (Name, HP mit Zahl,
+  Schild, Energie, SPD, Initiative-Balken), aktive hervorgehoben, Antippen
+  faehrt die Kamera hin. Ersetzt dann Namensleiste oben und Paneel "Reihe".
+  (Frage an den Spieler war: unten oder oben -- Empfehlung unten.)
+
+Weitere Vorschlaege aus der Sitzung (unbewertet):
+
+* Kurze Einfuehrung beim ersten Start (drei Hinweise).
+* Teile per Ziehen auf Halter (Tippen bleibt).
+* Knopf "Bester Aufbau" fuer Einsteiger.
+* Werte als kleine Vergleichsbalken statt nackter Zahlen.
+* Spielstand speichern (Lauf uebersteht Neuladen).
+* Haptik (Vibration bei Treffern/Einbauen).
+
+## 6. Arbeitsweise (fuer die naechste Sitzung)
+
+* **Sprache**: der Spieler schreibt Deutsch; Antworten, Commits und PRs auf
+  Deutsch. Code-Kommentare im Repo auf Deutsch ohne Umlaute (ae/oe/ue).
+* **Ablauf**: auf dem vorgegebenen Branch arbeiten, Draft-PR oeffnen, der
+  Spieler merged selbst. Nach einem Merge den Branch von `main` neu aufsetzen.
+* **Pruefen im Browser**: `bash tools/build_web.sh`, dann
+  `cd build/web && python3 -m http.server 8766`, mit Playwright
+  (`devices['Pixel 7']`, 412x839 CSS, Pixeldichte 2,625) Screenshots machen.
+  Tipp-Koordinaten: CSS = Bildpixel / 2,625 (Bild ist 1082x2202).
+  Wischen und Pinch per CDP `Input.dispatchTouchEvent`.
+* **Headless-Szenentest**: kleines `extends SceneTree`-Skript, das die Szenen
+  nacheinander per `change_scene_to_file` laedt (`--fixed-fps 60`) und auf
+  `SCRIPT ERROR` prueft. Nach neuen `class_name` erst `--import`.
+* `vercel.app` ist aus der Cloud-Sitzung gesperrt (Proxy 403) -- Vorschauen
+  muss der Spieler selbst oeffnen.

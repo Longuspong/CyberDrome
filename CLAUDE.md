@@ -3,6 +3,19 @@
 Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 `docs/GAME_DESIGN.md`, Bedienung und Struktur in `README.md`.
 
+**Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
+entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
+als Handy testet.
+
+## Zusammenarbeit
+
+* Der Spieler schreibt Deutsch -- Antworten, Commits und PRs auf Deutsch.
+  Code-Kommentare auf Deutsch ohne Umlaute.
+* Auf dem vorgegebenen Branch arbeiten, Draft-PR oeffnen; der Spieler merged
+  selbst. Nach einem Merge den Branch von `main` neu aufsetzen.
+* Designfragen, die das Spiel selbst aendern (Regeln, Balancing, Layout-
+  Muster), vorher kurz mit Empfehlung vorlegen.
+
 ## Befehle
 
 ```bash
@@ -51,3 +64,12 @@ bash tools/build_web.sh                                       # Web-Export nach 
 
 Bis diese Punkte entschieden sind: keine groesseren Umbauten an
 Faehigkeiten, Slots oder Gewichten auf eigene Faust.
+
+## Naechste Schritte (Stand 4. November 2026)
+
+1. Kampf: neue Balken (Integritaet gruen, Schild hellblau, ein Balken) und
+   DROME-Kacheln unten ueber der Daumenleiste -- angeboten, noch nicht gebaut
+   (Details in `docs/PROJEKTSTAND.md`, Abschnitt 5).
+2. Die vier offenen Designpunkte oben mit dem Spieler klaeren.
+3. Weitere Vorschlaege (Einfuehrung, Ziehen auf Halter, Bester Aufbau,
+   Speichern, Haptik) -- unbewertet.
