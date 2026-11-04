@@ -173,16 +173,28 @@ Designpunkte (bis zur Entscheidung keine groesseren Umbauten auf eigene Faust):
    (Dreieck/Viereck/Fuenfeck) ist gebaut; die eigentliche Neuverteilung der
    Klassen und Halter steht aus.
 
-Angeboten und vom Spieler positiv aufgenommen, **noch nicht gebaut**:
+Gebaut (Nov. 2026, auf Wunsch des Spielers):
 
-* **Neue Kampf-Balken**: ein Balken, Integritaet gruen (feste Farbe, kein
-  Umfaerben), Schild hellblau direkt dahinter; Teamfarbe nur am Rahmen und
-  Bodenring; Energie/Initiative raus aus dem Feld.
-* **DROME-Kacheln im Kampf**: waagrecht scrollbare Reihe unten ueber der
-  Daumenleiste, eine Kachel je DROME in Zugreihenfolge (Name, HP mit Zahl,
-  Schild, Energie, SPD, Initiative-Balken), aktive hervorgehoben, Antippen
-  faehrt die Kamera hin. Ersetzt dann Namensleiste oben und Paneel "Reihe".
-  (Frage an den Spieler war: unten oder oben -- Empfehlung unten.)
+* **Ein Lebensbalken ueber der Figur**: Integritaet und Schild teilen sich
+  die Breite nach ihren Hoechstwerten (200/100 -> 2/3 zu 1/3). Eigene gruen
+  und blau, Gegner rot und violett (`Teams.hp_color/shield_color`). Kein
+  Name, keine Zahl, keine Energie mehr ueber der Figur.
+* **DROME-Kacheln** oben unter der Zugreihenfolge (`SquadTiles`): Kopf, Name,
+  SPD, HP und Schild mit Zahl. Aktive Kachel hervorgehoben, Antippen faehrt
+  die Kamera hin. Die Statuszeile sagt nur noch, wer am Zug ist.
+* **Kulissen** (`Ambience`, gezeichnet statt Bilddatei): Neon-Grossstadt
+  hinter Startseite, Lauf und Chaos-Auswahl; Sci-Fi-Hangar im Hangar; im Kampf
+  je Region (Sektor City Neon-Stadt, Gruenzone Ruinen mit Gluehwuermchen,
+  Anlage 7 Schlote und Smog), mit leichter Parallaxe.
+* **Teil-Info im Umbau** (`PartInfo`): "Wie funktioniert das?" am Halter und
+  in jeder Teil-Vorschau -- Rolle, Werte, Besonderheiten, jede Aktion mit
+  Reichweite, Wirkung, Schadensart und Einsatz.
+* **KI**: Fernkaempfer laufen nach dem Angriff nicht mehr in den Gegner,
+  sondern suchen ein sichereres Feld in Reichweite (`_settle_step`).
+
+**Playtest und Vorschlaege zu Bewegung und Faehigkeiten:**
+`docs/PLAYTEST_2026-11.md` (mit `tools/playtest/playtest.gd`). Dort stehen die
+offenen Fragen an den Spieler.
 
 Weitere Vorschlaege aus der Sitzung (unbewertet):
 

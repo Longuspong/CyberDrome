@@ -388,3 +388,17 @@ func test_socket_parts_ask_nothing() -> void:
 		"ein Chassis bekommt keine Halterliste")
 	t.ok(Workshop.slot_choices(_molok(), PartDB.get_part(&"jugg_core")).is_empty(),
 		"ein Kern auch nicht")
+
+
+## Der eine Lebensbalken: Integritaet und Schild teilen sich die Breite nach
+## ihren Hoechstwerten und leeren sich an Ort und Stelle.
+func test_the_life_bar_splits_by_maximum() -> void:
+	var full: Dictionary = BattleView.UnitBadgePainter.split(200, 200, 100, 100)
+	t.ok(absf(full["hp_slot"] - 2.0 / 3.0) < 0.001, "200/100: zwei Drittel Integritaet")
+	t.ok(absf(full["shield_slot"] - 1.0 / 3.0) < 0.001, "200/100: ein Drittel Schild")
+	var hurt: Dictionary = BattleView.UnitBadgePainter.split(100, 200, 0, 100)
+	t.ok(absf(hurt["hp_fill"] - 1.0 / 3.0) < 0.001, "halbe Integritaet fuellt ein Drittel")
+	t.equal(hurt["shield_fill"], 0.0, "leerer Schild ist leer")
+	t.ok(absf(hurt["shield_slot"] - 1.0 / 3.0) < 0.001, "sein Platz bleibt aber")
+	var bare: Dictionary = BattleView.UnitBadgePainter.split(50, 50, 0, 0)
+	t.equal(bare["hp_slot"], 1.0, "ohne Schild gehoert der Balken der Integritaet")

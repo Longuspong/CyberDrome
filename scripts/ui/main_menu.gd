@@ -18,7 +18,7 @@ var _arena: MenuArena
 
 
 func _ready() -> void:
-	var content := UiKit.page(self, "", "", 0, false)
+	var content := UiKit.page(self, "", "", 0, false, Ambience.Kind.MENU)
 
 	var title := UiKit.label("CYBERDROME", 40, UiKit.HEADING)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

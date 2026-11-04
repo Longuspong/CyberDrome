@@ -63,6 +63,16 @@ func take_step() -> Dictionary:
 			return best
 		return {"kind": "move", "move_to": battle.active_unit.tile}
 
+	# Schon geschossen (oder ein Ziel in Reichweite): nicht weiter auf den
+	# Gegner zulaufen, sondern die Stellung verbessern -- siehe _settle_step().
+	var settle := _settle_step()
+	if not settle.is_empty():
+		battle.move_active_to(settle["move_to"])
+		return settle
+	if battle.turn_state.committed \
+			and _has_target_in_reach(battle.active_unit, battle.active_unit.tile):
+		return {}
+
 	var approach := _approach_step()
 	if not approach.is_empty():
 		battle.move_active_to(approach["move_to"])
@@ -434,6 +444,51 @@ func _remember_target(unit: Unit, step: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 # Annaeherung
 # ---------------------------------------------------------------------------
+
+## Steht von ``tile`` aus irgendein Gegner in Reichweite einer eigenen Waffe?
+func _has_target_in_reach(unit: Unit, tile: Vector2i) -> bool:
+	var reach := _longest_attack_range(unit)
+	if reach <= 0:
+		return false
+	for foe in battle.enemies_of(unit):
+		if Grid.distance(tile, foe.tile) <= reach:
+			return true
+	return false
+
+
+## Nach dem Angriff: wohin mit den restlichen Bewegungspunkten?
+##
+## Frueher lief jeder DROME danach stur auf den naechsten Gegner zu (der
+## Annaeherungsschritt griff, sobald es nichts mehr zu tun gab). Fuer einen
+## Nahkaempfer harmlos, fuer einen Fernkaempfer fatal: ein Strix mit
+## Reichweite acht schoss und marschierte dann ins Handgemenge, wo ihn der
+## naechste Orbit-Sog oder Moerser erwischte.
+##
+## Jetzt sucht er unter den erreichbaren Feldern das mit dem besten
+## Stellungswert (_position_score: wenig Gegner, die das Feld erreichen) --
+## aber nur solche, von denen aus noch ein Gegner in Reichweite bleibt, damit
+## er naechsten Zug wieder schiessen kann. Gelaufen wird nur, wenn das Feld
+## spuerbar besser ist als das jetzige; sonst bleibt er stehen.
+func _settle_step() -> Dictionary:
+	var unit := battle.active_unit
+	var state := battle.turn_state
+	if unit == null or state == null or not state.can_move() or not state.committed:
+		return {}
+	if _longest_attack_range(unit) < int(_w("ranged_from_range", 3.0)):
+		return {}
+	var here := _position_score(unit, unit.tile)
+	var best_tile := unit.tile
+	var best_score := here
+	for landing in battle.reachable_for_active():
+		if not _has_target_in_reach(unit, landing):
+			continue
+		var score := _position_score(unit, landing)
+		if score > best_score:
+			best_score = score
+			best_tile = landing
+	if best_tile == unit.tile or best_score - here < _w("settle_margin", 4.0):
+		return {}
+	return {"kind": "move", "move_to": best_tile, "score": best_score}
 
 ## Nichts Sinnvolles in Reichweite: in Richtung des naechsten Gegners laufen,
 ## so weit die Bewegungspunkte reichen.

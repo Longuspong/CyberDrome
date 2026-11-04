@@ -63,3 +63,21 @@ static func tint(is_player: bool) -> Color:
 ## sich nicht gegenseitig ueberschreiben.
 static func blend(a: Color, b: Color) -> Color:
 	return Color(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a)
+
+
+## Der Lebensbalken ueber der Figur und in den Kacheln (Wunsch des Spielers,
+## Nov. 2026): eigene Integritaet gruen, eigener Schild blau; beim Gegner
+## Integritaet rot, Schild violett. Feste Farben, kein Umfaerben bei wenig
+## Leben -- die Laenge sagt das schon.
+const PLAYER_HP := Color(0.36, 0.86, 0.42)
+const PLAYER_SHIELD := Color(0.35, 0.62, 1.0)
+const ENEMY_HP := Color(0.92, 0.26, 0.26)
+const ENEMY_SHIELD := Color(0.70, 0.40, 0.98)
+
+
+static func hp_color(is_player: bool) -> Color:
+	return PLAYER_HP if is_player else ENEMY_HP
+
+
+static func shield_color(is_player: bool) -> Color:
+	return PLAYER_SHIELD if is_player else ENEMY_SHIELD

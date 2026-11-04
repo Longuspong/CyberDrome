@@ -70,9 +70,13 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
 ## Naechste Schritte (Stand 4. November 2026)
 
-1. Kampf: neue Balken (Integritaet gruen, Schild hellblau, ein Balken) und
-   DROME-Kacheln unten ueber der Daumenleiste -- angeboten, noch nicht gebaut
-   (Details in `docs/PROJEKTSTAND.md`, Abschnitt 5).
-2. Die vier offenen Designpunkte oben mit dem Spieler klaeren.
+1. Entscheidungen aus `docs/PLAYTEST_2026-11.md`, Abschnitt 6, mit dem
+   Spieler klaeren: Bewegung (Kampfdistanz, Bewegung als Rolle), Ausloeser der
+   Faehigkeiten (Waffen zaehlen Angriffe, Gadgets Zeit/Ereignis), Energie und
+   Kern als Synergie-Teil, Richtungsregel.
+2. Die offenen Designpunkte oben (Eingreifen ueber Aggro-Platz 1).
 3. Weitere Vorschlaege (Einfuehrung, Ziehen auf Halter, Bester Aufbau,
    Speichern, Haptik) -- unbewertet.
+
+Playtest ohne Bildschirm: `godot --headless --path . --script
+res://tools/playtest/playtest.gd -- 30 5003` (Kaempfe, Seed mit Zuglog).

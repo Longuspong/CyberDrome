@@ -84,6 +84,7 @@ var _end_turn: Button
 var _tooltip: Label
 var _mutator_banner: PanelContainer
 var _tick_bars: TickBarPanel
+var _squad_tiles: SquadTiles
 var _action_ring: ActionRing
 
 
@@ -126,12 +127,30 @@ func _start_battle() -> void:
 		view.attach_unit(unit)
 
 	camera.position = IsoView.grid_center(battle.grid.width, battle.grid.height)
+	_add_scenery()
 	_fit_camera()
 	get_viewport().size_changed.connect(_fit_camera)
 
 	_tick_bars.rebuild(battle.units, battle.tick_bus)
+	_squad_tiles.setup(battle.living(true))
+	_squad_tiles.tile_pressed.connect(_look_at_unit)
 	_show_mutator()
 	_next_turn()
+
+
+## Die Kulisse ausserhalb des Spielfelds, passend zur Region: Neon-Grossstadt
+## in Sektor City, ueberwucherte Ruinen in der Gruenzone, Schlote in Anlage 7.
+## Sie liegt in einer eigenen Ebene hinter der Karte und wandert mit der
+## Kamera ein wenig mit (Parallaxe).
+func _add_scenery() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = -10
+	add_child(layer)
+	var region_id := str(battle.region.id) if battle.region != null else ""
+	var scenery := Ambience.create(Ambience.kind_for_region(region_id))
+	scenery.camera = camera
+	scenery.camera_home = camera.position
+	layer.add_child(scenery)
 
 
 ## Nur fuer den Direktstart der Kampfszene ohne Werkstatt. Sobald ein Squad
@@ -577,9 +596,13 @@ func _refresh_status() -> void:
 		_status.text = ""
 		return
 	var state := battle.turn_state
-	_status.text = "%s  ·  HP %d/%d  ·  EN %d/%d  ·  Zyklus %d" % [
-		unit.display_name, unit.hp, unit.stat("hp_max"), unit.en,
-		unit.stat("en_max"), battle.tick_bus.cycle_count]
+	# Die Zahlen der eigenen DROMEs stehen in den Kacheln; hier nur, wer
+	# gerade zieht und in welchem Zyklus.
+	_status.text = "Am Zug: %s  ·  Zyklus %d" % [unit.display_name,
+		battle.tick_bus.cycle_count]
+	if not _auto:
+		_status.text += "  ·  HP %d/%d  ·  EN %d/%d" % [unit.hp,
+			unit.stat("hp_max"), unit.en, unit.stat("en_max")]
 	if not _auto:
 		_status.text += "\nMP %d  ·  Angriff %d  ·  Faehigkeit %d" % [state.move_points,
 			state.attack_actions, state.actions_left(ActionData.Category.ABILITY)]
@@ -785,6 +808,7 @@ func _refresh_badges() -> void:
 			"tile": unit.tile,
 			"name": unit.display_name,
 			"hp": unit.hp, "hp_max": unit.stat("hp_max"),
+			"shield": unit.shield, "shield_max": unit.shield_max(),
 			"en": unit.en, "en_max": unit.stat("en_max"),
 			"tick": tick,
 			"is_player": unit.is_player,
@@ -792,6 +816,8 @@ func _refresh_badges() -> void:
 		})
 		unit.set_active(unit == active)
 	view.show_unit_badges(entries)
+	if _squad_tiles != null:
+		_squad_tiles.refresh(battle.units, active)
 
 
 func _on_battle_over(outcome: BattleManager.Outcome) -> void:
@@ -875,6 +901,17 @@ func _follow_unit(unit: Unit) -> void:
 	_camera_tween.tween_property(camera, "position", target, 0.45) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_camera_tween.tween_method(_set_zoom, camera.zoom.x, zoom, 0.45)
+
+
+## Kachel angetippt: die Kamera faehrt zu diesem DROME. Das Folgen bleibt
+## wie es ist -- beim naechsten Zug geht es dann wieder zum Aktiven.
+func _look_at_unit(unit: Unit) -> void:
+	if unit == null or not unit.is_alive():
+		return
+	var was := _follow
+	_follow = true
+	_follow_unit(unit)
+	_follow = was
 
 
 func _set_follow(on: bool) -> void:
@@ -1004,6 +1041,8 @@ func _build_ui() -> void:
 	_tick_queue = HBoxContainer.new()
 	_tick_queue.add_theme_constant_override("separation", 12)
 	queue_scroll.add_child(_tick_queue)
+	_squad_tiles = SquadTiles.new()
+	top_box.add_child(_squad_tiles)
 	_status = UiKit.label("", UiKit.SMALL)
 	top_box.add_child(_status)
 

@@ -305,49 +305,29 @@ class PathPainter extends Node2D:
 			travelled += 12.0
 
 
-## Das Statusbadge ueber jedem DROME: Name, Integritaet, Energie, TICK.
+## Der Lebensbalken ueber jedem DROME: EIN schmaler Balken, sonst nichts.
 ##
-## ### Warum das ueber der Figur steht und nicht am Bildrand
+## Integritaet und Schild teilen sich die Breite im Verhaeltnis ihrer
+## Hoechstwerte: 200 Integritaet und 100 Schild heisst zwei Drittel
+## Integritaet, ein Drittel Schild. Beide Teile leeren sich an Ort und Stelle,
+## die Gesamtlaenge bleibt -- so sieht man auf einen Blick, wie viel vom
+## ganzen DROME noch steht.
 ##
-## Integritaet und Energie standen bisher nur in der Statuszeile der AKTIVEN
-## Einheit und im Tooltip beim Hovern. Beides beantwortet die Frage zu spaet:
-## wer entscheidet, welchen Gegner er angreift, vergleicht drei Einheiten
-## miteinander, und dafuer muss er sie nebeneinander sehen -- nicht
-## nacheinander unter dem Mauszeiger.
-##
-## Der TICK-Balken ist dieselbe Zahl wie in der Leiste links oben, nur am Ort
-## des Geschehens: die Leiste sagt, WER als naechstes zieht, der Balken hier
-## sagt es UEBER DER FIGUR, die man gerade anschaut. Massgeblich ist auch hier
-## die TICK-Queue; widersprechen sich Balken und Queue, hat der Balken den Bug.
+## Die Farbe traegt die Seite: eigene gruen (Integritaet) und blau (Schild),
+## Gegner rot und violett. Name, Zahlen, Energie und Initiative stehen in den
+## Kacheln oben -- ueber der Figur war es im Nahkampf nicht mehr lesbar, weil
+## sich drei Badges uebereinanderschoben.
 ##
 ## Alles in EINEM Knoten und nicht als Label je Einheit: die Werte aendern sich
 ## nach jeder Aktion, und Knoten, die dabei entstehen und vergehen, haengen
 ## zwangslaeufig irgendwann als Rest im Baum.
 class UnitBadgePainter extends Node2D:
-	const WIDTH := 88.0
-	const BASE_Y := -74.0            ## Unterkante des Badges ueber der Feldmitte
+	const WIDTH := 56.0
+	const HEIGHT := 6.0
+	const BASE_Y := -72.0            ## Unterkante des Balkens ueber der Feldmitte
 
-	const HP_HEIGHT := 7.0
-	const EN_HEIGHT := 4.0
-	const TICK_HEIGHT := 3.0
-	const GAP := 2.0
-	const NAME_SIZE := 12
-	const NAME_GAP := 4.0
-
-	const COLOR_HP := Color(0.42, 0.86, 0.45)
-	const COLOR_HP_LOW := Color(0.95, 0.72, 0.25)
-	const COLOR_HP_CRITICAL := Color(0.95, 0.32, 0.28)
-	const COLOR_EN := Color(0.45, 0.72, 1.0)
-	const COLOR_TICK := Color(0.85, 0.80, 0.55)
-	const COLOR_TRACK := Color(0.05, 0.06, 0.09, 0.85)
-	const COLOR_SHADOW := Color(0.0, 0.0, 0.0, 0.85)
-
-	## Ab hier faerbt sich der Integritaetsbalken um. Die Schwellen sind
-	## Anzeige, keine Regel -- mechanisch passiert bei 40% nichts. Sie stehen
-	## trotzdem hier, weil "fast tot" eine Information ist, die der Spieler
-	## sonst aus zwei Zahlen im Kopf ausrechnet, waehrend er zielt.
-	const HP_WARN := 0.40
-	const HP_CRITICAL := 0.20
+	const COLOR_TRACK := Color(0.04, 0.05, 0.08, 0.9)
+	const COLOR_OUTLINE := Color(0.0, 0.0, 0.0, 0.9)
 
 	var entries: Array = []
 
@@ -367,91 +347,66 @@ class UnitBadgePainter extends Node2D:
 				return
 
 	func _draw() -> void:
-		var font := ThemeDB.fallback_font
 		for entry in entries:
-			_badge(font, entry)
+			_badge(entry)
 
-	func _badge(font: Font, entry: Dictionary) -> void:
+	## Die Aufteilung des Balkens als Anteile 0..1 der Gesamtbreite:
+	## { hp_slot, hp_fill, shield_slot, shield_fill }. Statisch, damit der
+	## Test sie ohne Zeichnen pruefen kann.
+	static func split(hp: int, hp_max: int, shield: int, shield_max: int) -> Dictionary:
+		var total := float(maxi(0, hp_max) + maxi(0, shield_max))
+		if total <= 0.0:
+			return {"hp_slot": 0.0, "hp_fill": 0.0, "shield_slot": 0.0, "shield_fill": 0.0}
+		var hp_slot := float(maxi(0, hp_max)) / total
+		var shield_slot := 1.0 - hp_slot
+		return {
+			"hp_slot": hp_slot,
+			"hp_fill": hp_slot * clampf(float(hp) / maxf(1.0, float(hp_max)), 0.0, 1.0),
+			"shield_slot": shield_slot,
+			"shield_fill": shield_slot * (clampf(float(shield) / float(shield_max), 0.0, 1.0)
+				if shield_max > 0 else 0.0),
+		}
+
+	func _badge(entry: Dictionary) -> void:
 		var s := pixel_scale
 		var center: Vector2 = IsoView.map_to_local(entry["tile"])
-		var team: Color = Teams.color(entry.get("is_player", false))
+		var mine: bool = entry.get("is_player", false)
 		var active: bool = entry.get("active", false)
 
 		var width := WIDTH * s
+		var height := HEIGHT * s
 		var left := center.x - width * 0.5
-		var bottom := center.y + BASE_Y * s
+		var top := center.y + BASE_Y * s - height
 
-		# Von unten nach oben gestapelt: TICK, Energie, Integritaet, Name.
-		var y := bottom
-		y -= TICK_HEIGHT * s
-		_bar(Vector2(left, y), width, TICK_HEIGHT * s,
-			entry.get("tick", 0.0), COLOR_TICK)
-		y -= (GAP + EN_HEIGHT) * s
-		_bar(Vector2(left, y), width, EN_HEIGHT * s,
-			_fraction(entry, "en", "en_max"), COLOR_EN)
-		y -= (GAP + HP_HEIGHT) * s
-		var hp := _fraction(entry, "hp", "hp_max")
-		_bar(Vector2(left, y), width, HP_HEIGHT * s, hp, _hp_color(hp))
-
-		# Der Rahmen traegt die Fraktionsfarbe -- er umschliesst alle drei
-		# Balken, damit die Zugehoerigkeit an EINER Kante haengt und nicht an
-		# der Faerbung der Balken selbst. Die muessen ihre eigene Bedeutung
-		# behalten: gruen ist Integritaet, nicht "Spieler".
-		var pad := 2.0 * s
-		draw_rect(Rect2(Vector2(left - pad, y - pad),
-			Vector2(width + pad * 2.0, bottom - y + pad * 2.0)),
-			Color(team, 0.95 if active else 0.55), false, (2.0 if active else 1.0) * s)
-
-		var label := "%s   %d/%d" % [entry.get("name", ""), entry.get("hp", 0),
-			entry.get("hp_max", 0)]
-		var size := maxi(1, int(round(NAME_SIZE * s)))
-		var name_top := y - NAME_GAP * s - float(size)
-		_text(font, Vector2(center.x, y - NAME_GAP * s), label, size,
-			Color.WHITE if active else Color(0.86, 0.9, 0.96))
+		var parts := split(int(entry.get("hp", 0)), int(entry.get("hp_max", 0)),
+			int(entry.get("shield", 0)), int(entry.get("shield_max", 0)))
+		var pad := 1.0 * s
+		draw_rect(Rect2(Vector2(left - pad, top - pad),
+			Vector2(width + pad * 2.0, height + pad * 2.0)), COLOR_OUTLINE)
+		draw_rect(Rect2(Vector2(left, top), Vector2(width, height)), COLOR_TRACK)
+		draw_rect(Rect2(Vector2(left, top), Vector2(width * parts["hp_fill"], height)),
+			Teams.hp_color(mine))
+		var shield_left: float = left + width * float(parts["hp_slot"])
+		draw_rect(Rect2(Vector2(shield_left, top),
+			Vector2(width * parts["shield_fill"], height)), Teams.shield_color(mine))
+		# Die Fuge zwischen den beiden Teilen, damit ein leerer Schild nicht
+		# wie ein Stueck fehlender Integritaet aussieht.
+		if parts["hp_slot"] > 0.0 and parts["shield_slot"] > 0.0:
+			draw_rect(Rect2(Vector2(shield_left - 0.5 * s, top),
+				Vector2(1.0 * s, height)), COLOR_OUTLINE)
 
 		# Der Zeiger auf die aktive Einheit. Er wippt, weil ein stehendes
-		# Dreieck neben drei Balken und einem Rahmen untergeht -- Bewegung ist
-		# das einzige Signal auf diesem Bild, das noch niemand belegt hat.
+		# Dreieck neben dem Balken untergeht.
 		if active:
-			_marker(Vector2(center.x, name_top - 6.0 * s), team, s)
+			_marker(Vector2(center.x, top - 4.0 * s), Teams.color(mine), s)
 
 	## Ein nach unten zeigendes Dreieck, das ueber der Nulllage wippt.
 	func _marker(at: Vector2, color: Color, s: float) -> void:
-		var bob := sin(float(Time.get_ticks_msec()) / 260.0) * 3.5 * s
+		var bob := sin(float(Time.get_ticks_msec()) / 260.0) * 3.0 * s
 		var tip := at + Vector2(0.0, bob)
 		draw_colored_polygon(PackedVector2Array([
-			tip + Vector2(-9.0 * s, -13.0 * s), tip + Vector2(9.0 * s, -13.0 * s), tip,
+			tip + Vector2(-7.0 * s, -10.0 * s), tip + Vector2(7.0 * s, -10.0 * s), tip,
 		]), Color(color, 0.95))
-
-	func _fraction(entry: Dictionary, key: String, max_key: String) -> float:
-		var maximum: float = float(entry.get(max_key, 0))
-		if maximum <= 0.0:
-			return 0.0
-		return clampf(float(entry.get(key, 0)) / maximum, 0.0, 1.0)
-
-	func _hp_color(fraction: float) -> Color:
-		if fraction <= HP_CRITICAL:
-			return COLOR_HP_CRITICAL
-		return COLOR_HP_LOW if fraction <= HP_WARN else COLOR_HP
-
-	func _bar(at: Vector2, width: float, height: float, fraction: float,
-			color: Color) -> void:
-		draw_rect(Rect2(at, Vector2(width, height)), COLOR_TRACK)
-		if fraction > 0.0:
-			draw_rect(Rect2(at, Vector2(width * clampf(fraction, 0.0, 1.0),
-				height)), color)
-
-	func _text(font: Font, at: Vector2, text: String, size: int,
-			color: Color) -> void:
-		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1,
-			size).x
-		var origin := at - Vector2(width * 0.5, 0.0)
-		# Schatten zuerst: der Name steht ueber wechselndem Untergrund und waere
-		# auf hellem Terrain sonst nicht zu lesen.
-		font.draw_string(get_canvas_item(), origin + Vector2(1, 1), text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, size, COLOR_SHADOW)
-		font.draw_string(get_canvas_item(), origin, text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
 
 
 ## Schreibt die Schadensvorschau ueber die Ziele.
@@ -470,7 +425,7 @@ class DamagePainter extends Node2D:
 	const FONT_SIZE := 22
 
 	## Hoehe ueber der Feldmitte -- oberhalb des Statusbadges.
-	const ABOVE_BADGE := -126.0
+	const ABOVE_BADGE := -96.0
 
 	var entries: Array = []
 
