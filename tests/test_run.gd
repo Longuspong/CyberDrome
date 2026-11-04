@@ -5,15 +5,84 @@ extends RefCounted
 var t
 
 
-func test_a_run_starts_with_two_armed_dromes_and_free_holders() -> void:
+func test_a_run_without_a_squad_starts_with_the_four_standard_dromes() -> void:
 	var run := RunState.start(11)
-	t.equal(run.squad.size(), 2, "zwei Start-DROMEs")
+	t.equal(run.squad.size(), 4, "vier Standard-DROMEs")
 	t.equal(run.lives, RunState.max_lives(), "volle Leben")
 	for build in run.squad:
-		t.ok(not build.weapons().is_empty(), "%s traegt eine Waffe" % build.display_name)
-		var free: Array = build.equip_slots().filter(func(s): return build.part_in(s) == null)
-		t.ok(not free.is_empty(), "%s hat einen freien Halter fuer Beute" % build.display_name)
 		t.ok(build.is_valid(), "%s ist gueltig" % build.display_name)
+
+
+## Der Fehler aus dem Spiel: der Lauf nahm fest Vireo + Nimbus statt des
+## eigenen Squads.
+func test_a_run_starts_with_the_chosen_squad_as_a_copy() -> void:
+	var roster := Roster.new()
+	roster.seed_starter()
+	var molok := roster.build_for(roster.entries[1])
+	var strix := roster.build_for(roster.entries[3])
+	var run := RunState.start(15, [molok, strix])
+	t.equal(run.squad.size(), 2, "genau die mitgenommenen DROMEs")
+	t.equal(run.squad[0].display_name, molok.display_name, "der Molok ist dabei")
+	t.equal(run.squad[1].slots, strix.slots, "mit seiner Ausstattung")
+	run.squad[0].slots.erase("core")
+	t.ok(molok.slots.has("core"), "der Lauf arbeitet auf einer Kopie")
+
+
+func test_the_three_tiers_differ_in_strength() -> void:
+	var run := RunState.start(16)
+	var easy := run.enemy_power(RunState.Tier.EASY)
+	var normal := run.enemy_power(RunState.Tier.NORMAL)
+	var elite := run.enemy_power(RunState.Tier.ELITE)
+	t.ok(easy < normal and normal < elite, "Leicht < Normal < Elite (%d/%d/%d)"
+		% [int(easy), int(normal), int(elite)])
+	t.ok(run.battle_seed(0) != run.battle_seed(2), "jede Stufe ist ein eigener Kampf")
+
+
+## Was die Vorschau zeigt, ist genau das, wogegen gekaempft wird.
+func test_the_previewed_enemies_are_the_battle_enemies() -> void:
+	var run := RunState.start(17)
+	run.choose_tier(RunState.Tier.ELITE)
+	var shown: Array = run.preview()["enemy_builds"]
+	t.ok(not shown.is_empty(), "es werden Gegner gezeigt")
+	var battle := BattleManager.new()
+	battle.setup(run.battle_seed(), run.squad, run.enemies())
+	var foes := battle.units.filter(func(u): return not u.is_player)
+	t.equal(foes.size(), shown.size(), "gleich viele Gegner")
+	for i in shown.size():
+		t.equal(foes[i].build.slots, shown[i].slots, "Gegner %d wie gezeigt" % i)
+	battle.free()
+
+
+func test_an_elite_win_guarantees_something_rare() -> void:
+	var run := RunState.start(18)
+	run.choose_tier(RunState.Tier.ELITE)
+	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_pulse_blaster", &"eq_rune_staff"])
+	t.ok(not run.reward_options.is_empty(), "es gibt Belohnungen")
+	for option in run.reward_options:
+		t.ok(option.get("rare", false), "%s ist selten" % option["title"])
+		if option["kind"] == "part":
+			t.ok(PartDB.get_part(option["part_id"]).mount_class != "light",
+				"%s ist mittel oder schwer" % option["title"])
+
+
+func test_loot_can_be_sent_home() -> void:
+	var run := RunState.start(19)
+	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_deflector", &"eq_rune_staff"])
+	var index := -1
+	for i in run.reward_options.size():
+		if run.reward_options[i]["kind"] == "part":
+			index = i
+			break
+	t.ok(index >= 0, "es gibt ein Teil zur Wahl")
+	if index < 0:
+		return
+	var part_id: StringName = run.reward_options[index]["part_id"]
+	var before: Array = run.squad.map(func(b): return b.slots.duplicate())
+	t.ok(run.choose_reward(index, RunState.home_placement()), "nach Hause geht immer")
+	t.equal(run.home_queue.size(), 1, "die Beute wartet auf die Heimreise")
+	t.equal(run.home_queue[0]["part_id"], part_id, "das richtige Teil")
+	t.equal(run.squad.map(func(b): return b.slots), before, "der Lauf-Squad bleibt unveraendert")
+	t.equal(run.round, 2, "weiter zur naechsten Runde")
 
 
 func test_the_same_seed_gives_the_same_run() -> void:
@@ -31,7 +100,7 @@ func test_the_preview_matches_the_real_battle() -> void:
 	for seed_value in [101, 202, 303, 404, 505]:
 		var info := BattleManager.preview_conditions(seed_value)
 		var battle := BattleManager.new()
-		battle.setup(seed_value, RunState.starter_squad())
+		battle.setup(seed_value, RunState.standard_squad())
 		t.equal(info["region"], battle.region.display_name, "Region stimmt (Seed %d)" % seed_value)
 		t.equal(info["mutator"], battle.mutator.display_name, "Mutator stimmt (Seed %d)" % seed_value)
 		battle.free()
@@ -44,7 +113,7 @@ func test_enemy_power_follows_a_fixed_rising_curve() -> void:
 	var later := run.enemy_power()
 	t.ok(later > first, "die Gegner werden staerker (%d -> %d)" % [int(first), int(later)])
 	# Unabhaengig vom eigenen Squad: Beute darf den Gegner nicht mitziehen.
-	run.squad[0].slots["equip_right"] = &"eq_pulse_blaster"
+	run.squad[0].slots.erase("equip_right")
 	t.equal(run.enemy_power(), later, "eigene Beute aendert die Gegnerstaerke nicht")
 
 
@@ -88,8 +157,9 @@ func test_a_part_reward_goes_where_the_player_puts_it() -> void:
 	if index < 0:
 		return
 	var part_id: StringName = run.reward_options[index]["part_id"]
-	var spots: Array = run.placements_for(part_id).filter(func(p): return p["valid"] and p["current"] == "")
-	t.ok(not spots.is_empty(), "%s passt in einen freien Halter" % part_id)
+	var spots: Array = run.placements_for(part_id).filter(
+		func(p): return p["valid"] and not p.get("home", false))
+	t.ok(not spots.is_empty(), "%s passt in einen Halter" % part_id)
 	if spots.is_empty():
 		return
 	var spot: Dictionary = spots[0]
