@@ -56,8 +56,11 @@ bash tools/build_web.sh                                       # Web-Export nach 
    machen (das steuert der Spieler im Autokampf nicht), sondern das *Womit*:
    in Kombination mit welchen Aufbauten er wirkt. Synergien zwischen Teilen
    und DROMEs statt Timing.
-3. **Eingreifen in kniffligen Situationen.** Der Spieler soll im Kampf
-   trotzdem eine Chance haben, einzugreifen. Noch keine Idee, wie -- offen.
+3. **Eingreifen des Spielers -- offen, wird spaeter besprochen.** Fest steht:
+   grundsaetzlich Autobattler, der Spieler **steuert keine DROMEs**. Er soll
+   aber eingreifen koennen, vermutlich indem er festlegt, wer **Aggro-Platz 1**
+   hat (eine selbst waehlbare Aggro-Liste). Der Spieler denkt das noch durch --
+   nichts davon bauen, bevor es besprochen ist.
 4. **Waffen-Slots und Gewichtsklassen ueberarbeiten.** Die Halter der
    Chassis (welche Waffe passt wohin) und die Gewichtsklassen der
    Ausruestungsteile selbst muessen angepasst werden.
