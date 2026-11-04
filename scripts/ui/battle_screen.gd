@@ -1249,11 +1249,11 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		onward.grab_focus.call_deferred()
 		return
 
-	var back := UiKit.button("Zur Garage", true)
+	var back := UiKit.button("Zum Hangar", true)
 	back.pressed.connect(func():
 		GameState.battle_seed = 0
 		GameState.clear_chaos_run()
-		get_tree().change_scene_to_file("res://scenes/garage.tscn"))
+		get_tree().change_scene_to_file("res://scenes/hangar.tscn"))
 	box.add_child(back)
 
 	var menu := UiKit.button("Zur Startseite")

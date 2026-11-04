@@ -88,10 +88,18 @@ angeboten, ist aber zweitrangig (`CLAUDE.md`, Abschnitt Ausrichtung).
   Daumenleiste (Tempo, Pause, Log, Reihe, Folgen). Die Kamera folgt dem
   aktiven DROME; ein Finger zieht, zwei Finger zoomen (Mausrad und mittlere
   Taste am Desktop). Wer selbst zieht, schaltet das Folgen ab.
-* **Werkstatt**: Vorschau oben, darunter umschaltbar "Teile" und "Aufbau &
-  Werte". Erstes Tippen auf eine Kachel zeigt, zweites baut ein.
+* **Hangar** (`scripts/ui/hangar_screen.gd`, ersetzt Garage, Inventar und
+  Werkstatt): Reiter *Squad* -- Karussell mit hoechstens vier DROMEs, darunter
+  alle DROMEs, ausgegraut wer schon dabei ist; Reiter *Umbau* -- DROME-Auswahl,
+  die Halter als Formen (Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis
+  Kern), die passenden Teile in ihrer eigenen Form, Vorschau mit Wertaenderung
+  und "Einbauen". Leicht passt nach oben in groessere Halter, schwer nur in
+  schwer (`scripts/core/slot_rules.gd`, `scripts/ui/slot_shape.gd`).
+* **Wischen** scrollt jede Liste, auch wenn der Finger auf einer Karte
+  beginnt; ein Wischer loest den Knopf darunter nicht aus.
 * **Langes Druecken** zeigt den Erklaertext (`tooltip_text`) jedes Elements.
-* **Optionen**: Anzeigegroesse, *Animationen reduzieren* (folgt
+* **Optionen**: Schriftgroesse (nur der Text waechst, das Layout bleibt),
+  *Animationen reduzieren* (folgt
   `prefers-reduced-motion`), Vollbild. Gespeichert in `user://settings.json`.
 
 ### Kampf bedienen
@@ -117,7 +125,11 @@ dem Bildrand. Beides ist behoben; die Leiste ist jetzt nach Budget getrennt
 | **SVG-Werkstatt** (`python3 main.py`) | Bauteile zeichnen und importieren, Anker setzen, Paletten pflegen. Das Asset-Werkzeug. |
 | **Godot-Werkstatt** (im Spiel) | Loadout bauen, Stats sehen, Squad zusammenstellen und in den Kampf schicken. |
 
-### Godot-Werkstatt in Kurzform
+### Godot-Werkstatt in Kurzform (abgeloest durch den Hangar)
+
+Die folgenden Abschnitte beschreiben die fruehere Werkstatt im Querformat. Ihre
+Regeln (freie Exemplare, Halterliste, Vorschau vor dem Einbau) leben im Umbau-
+Reiter des Hangars weiter.
 
 Links steht die **ganze Bibliothek**, nach Bauteiltyp gruppiert -- nicht nur,
 was in den gerade angewaehlten Slot passt. Sie besteht aus **Kacheln**: das

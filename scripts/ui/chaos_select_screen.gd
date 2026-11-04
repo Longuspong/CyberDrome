@@ -103,7 +103,7 @@ func _refresh() -> void:
 
 	if _eligible.is_empty():
 		var empty := Label.new()
-		empty.text = "Keine kampftauglichen DROMEs. Bau in der Garage welche zusammen."
+		empty.text = "Keine kampftauglichen DROMEs. Bau im Hangar welche zusammen."
 		empty.modulate = COLOR_BAD
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_cards.add_child(empty)

@@ -4,22 +4,27 @@ extends Control
 ## Tab-Leiste. Die Werte haelt das Autoload ``Accessibility``.
 
 func _ready() -> void:
-	var content := UiKit.page(self, "Optionen", "", 3)
+	var content := UiKit.page(self, "Optionen", "", 2)
 
 	var display := UiKit.card(content)
-	display.add_child(UiKit.heading("Anzeigegroesse"))
-	display.add_child(UiKit.label("\"Automatisch\" passt die Groesse an den Bildschirm an. "
-		+ "Groesser heisst: mehr Scrollen, aber leichter zu lesen.", UiKit.SMALL, UiKit.MUTED))
-	var group := ButtonGroup.new()
+	display.add_child(UiKit.heading("Schriftgroesse"))
+	display.add_child(UiKit.label("Vergroessert nur den Text -- das Layout bleibt, wie es ist.",
+		UiKit.SMALL, UiKit.MUTED))
+	# Drei Knoepfe nebeneinander, der gewaehlte farbig. Radio-Punkte waren
+	# dunkel auf dunkel -- welcher nicht gewaehlt war, sah man kaum.
+	var sizes := HBoxContainer.new()
+	sizes.add_theme_constant_override("separation", 6)
+	display.add_child(sizes)
 	for index in Accessibility.SIZE_OPTIONS.size():
-		var option := CheckBox.new()
-		option.text = Accessibility.SIZE_OPTIONS[index]["label"]
-		option.button_group = group
-		option.custom_minimum_size = Vector2(0, 48)
+		var option := UiKit.button(Accessibility.SIZE_OPTIONS[index]["label"],
+			index == Accessibility.size_option)
 		option.add_theme_font_size_override("font_size", UiKit.BODY)
-		option.button_pressed = index == Accessibility.size_option
-		option.pressed.connect(func(): Accessibility.set_size_option(index))
-		display.add_child(option)
+		option.pressed.connect(func():
+			Accessibility.set_size_option(index)
+			# Bestehende Knoten tragen ihre Groesse schon; neu aufbauen,
+			# damit die Seite die neue Schrift sofort zeigt.
+			get_tree().reload_current_scene.call_deferred())
+		sizes.add_child(option)
 
 	var motion := UiKit.card(content)
 	motion.add_child(UiKit.heading("Bewegung"))
