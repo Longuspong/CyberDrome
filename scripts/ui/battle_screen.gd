@@ -51,6 +51,25 @@ const SPEEDS := [1.0, 2.0]
 var _speed_index: int = 0
 var _speed_button: Button
 
+## Kamera (mobile first). Auf dem Handy ist die 20x20-Karte nur als Ganzes
+## sichtbar, wenn alles daumennagelgross ist. Deshalb folgt die Kamera dem
+## aktiven DROME in einem lesbaren Zoom; mit einem Finger ziehen verschiebt,
+## mit zwei Fingern zoomt. Wer selbst schiebt, schaltet das Folgen ab -- der
+## Knopf "Folgen" holt es zurueck.
+const ZOOM_MIN := 0.2
+const ZOOM_MAX := 1.2
+const DRAG_THRESHOLD := 10.0
+var _follow := true
+var _touches: Dictionary = {}
+var _drag_distance := 0.0
+var _pinch_distance := 0.0
+var _pinch_zoom := 1.0
+var _camera_tween: Tween
+var _follow_button: Button
+var _pause_button: Button
+var _log_panel: PanelContainer
+var _order_panel: PanelContainer
+
 ## Feld, ueber dem der Zeiger zuletzt stand. Fuer den Flaechenumriss: bei einer
 ## Flaechenaktion muss VOR dem Klick sichtbar sein, wen sie mittrifft.
 var _hover_tile: Vector2i = Vector2i(-1, -1)
@@ -147,6 +166,7 @@ func _next_turn() -> void:
 	_selected_action = null
 	_hovered_action = null
 	_action_ring.hide_ring()
+	_follow_unit(unit)
 	_refresh_reachable()
 	_refresh_tick_queue()
 	_refresh_action_bar()
@@ -219,6 +239,9 @@ func _end_current_turn() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _camera_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if _busy or _paused or battle.outcome != BattleManager.Outcome.RUNNING:
 		return
 	var unit := battle.active_unit
@@ -554,12 +577,14 @@ func _refresh_status() -> void:
 		_status.text = ""
 		return
 	var state := battle.turn_state
-	_status.text = "%s   Integritaet %d/%d   EN %d/%d   MP %d   Angriff %d   Faehigkeit %d   Zyklus %d" % [
+	_status.text = "%s  ·  HP %d/%d  ·  EN %d/%d  ·  Zyklus %d" % [
 		unit.display_name, unit.hp, unit.stat("hp_max"), unit.en,
-		unit.stat("en_max"), state.move_points, state.attack_actions,
-		state.actions_left(ActionData.Category.ABILITY), battle.tick_bus.cycle_count]
+		unit.stat("en_max"), battle.tick_bus.cycle_count]
+	if not _auto:
+		_status.text += "\nMP %d  ·  Angriff %d  ·  Faehigkeit %d" % [state.move_points,
+			state.attack_actions, state.actions_left(ActionData.Category.ABILITY)]
 	if battle.in_overtime():
-		_status.text += "   OVERTIME: -%d je Zug" % battle.overtime_damage(unit)
+		_status.text += "\nOVERTIME: -%d je Zug" % battle.overtime_damage(unit)
 	# Der Zug endet nie automatisch -- aber wenn nichts mehr geht, faellt der
 	# Button ins Auge.
 	_end_turn.modulate = Color(1.0, 0.85, 0.3) if state.budgets_spent() else Color.WHITE
@@ -579,11 +604,11 @@ func _refresh_tick_queue() -> void:
 			continue
 		var label := Label.new()
 		label.text = unit.display_name
-		label.add_theme_font_size_override("font_size", 13)
+		label.add_theme_font_size_override("font_size", UiKit.SMALL)
 		var base := Color(0.55, 0.85, 1.0) if unit.is_player else Color(1.0, 0.55, 0.5)
 		label.modulate = base if i > 0 else Color.WHITE
 		if i == 0:
-			label.add_theme_font_size_override("font_size", 16)
+			label.add_theme_font_size_override("font_size", UiKit.BODY)
 		_tick_queue.add_child(label)
 
 
@@ -684,6 +709,8 @@ func _on_log(text: String) -> void:
 
 func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 	view.refresh_unit_depth(unit)
+	if unit == battle.active_unit:
+		_follow_unit(unit)
 	for other in battle.units:
 		other.set_in_haze(
 			battle.grid.terrain_class(other.tile) == Terrain.TClass.HAZE)
@@ -810,22 +837,104 @@ func _grant_loot(outcome: BattleManager.Outcome) -> void:
 ## -- also weit unter dem Bildrand, unsichtbar. Damit gab es im Kampf keine
 ## Aktionsleiste, und der einzige verbliebene Weg zu einer Aktion war der
 ## Aktionsring, der beim Hinfahren verschwand.
-## Die Karte so gross wie moeglich, ohne dass sie unter die Leisten links und
-## rechts rutscht. Frueher stand hier ein fester Zoom von 0,62 -- passend fuer
-## 1600x900 und auf der kleineren logischen Flaeche eines Handys (siehe
-## Accessibility) zu gross: die Karte lief unten aus dem Bild.
+## Startzoom: das ganze Feld in der Breite. Danach uebernimmt das Folgen.
 func _fit_camera() -> void:
 	var visible := get_viewport().get_visible_rect().size
 	var map := Vector2(battle.grid.width + battle.grid.height,
 		battle.grid.width + battle.grid.height) * 0.5 \
 		* Vector2(IsoView.TILE_W, IsoView.TILE_H)
-	# Platz fuer die Seitenleisten (TICK-Balken links, Log rechts) und oben
-	# fuer Status und Warteliste.
-	var usable := Vector2(maxf(visible.x - 560.0, visible.x * 0.55),
-		maxf(visible.y - 150.0, visible.y * 0.7))
-	var zoom := clampf(minf(usable.x / map.x, usable.y / map.y), 0.3, 0.9)
+	var zoom := clampf(minf(visible.x * 0.96 / map.x, visible.y * 0.6 / map.y),
+		ZOOM_MIN, ZOOM_MAX)
+	_set_zoom(zoom)
+
+
+## Lesbarer Zoom fuers Folgen: rund neun Felder ueber die Breite.
+func _follow_zoom() -> float:
+	var visible := get_viewport().get_visible_rect().size
+	return clampf(visible.x / (9.0 * IsoView.TILE_W), ZOOM_MIN, ZOOM_MAX)
+
+
+func _set_zoom(zoom: float) -> void:
+	zoom = clampf(zoom, ZOOM_MIN, ZOOM_MAX)
 	camera.zoom = Vector2(zoom, zoom)
 	view.set_pixel_scale(zoom)
+
+
+func _follow_unit(unit: Unit) -> void:
+	if not _follow or unit == null:
+		return
+	var target := IsoView.map_to_local(unit.tile) + Vector2(0, -40)
+	if _camera_tween != null and _camera_tween.is_valid():
+		_camera_tween.kill()
+	var zoom := maxf(camera.zoom.x, _follow_zoom())
+	if Accessibility.reduce_motion:
+		camera.position = target
+		_set_zoom(zoom)
+		return
+	_camera_tween = create_tween().set_parallel(true)
+	_camera_tween.tween_property(camera, "position", target, 0.45) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_camera_tween.tween_method(_set_zoom, camera.zoom.x, zoom, 0.45)
+
+
+func _set_follow(on: bool) -> void:
+	_follow = on
+	if _follow_button != null:
+		_follow_button.text = "Folgt" if on else "Folgen"
+		_follow_button.modulate = UiKit.ACCENT if on else Color.WHITE
+	if on:
+		_follow_unit(battle.active_unit)
+
+
+## Ziehen und Zoomen. Gibt true zurueck, wenn die Geste das Ereignis
+## verbraucht hat -- dann geht es nicht als Klick auf ein Feld weiter.
+func _camera_input(event: InputEvent) -> bool:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_touches[event.index] = event.position
+			_drag_distance = 0.0
+			if _touches.size() == 2:
+				var points: Array = _touches.values()
+				_pinch_distance = maxf(1.0, points[0].distance_to(points[1]))
+				_pinch_zoom = camera.zoom.x
+		else:
+			_touches.erase(event.index)
+		return false
+	if event is InputEventScreenDrag:
+		_touches[event.index] = event.position
+		if _touches.size() >= 2:
+			var points: Array = _touches.values()
+			var distance: float = points[0].distance_to(points[1])
+			_stop_follow()
+			_set_zoom(_pinch_zoom * distance / _pinch_distance)
+			return true
+		_drag_distance += event.relative.length()
+		if _drag_distance > DRAG_THRESHOLD:
+			_stop_follow()
+			camera.position -= event.relative / camera.zoom
+			return true
+		return false
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_stop_follow()
+			_set_zoom(camera.zoom.x * 1.1)
+			return true
+		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_stop_follow()
+			_set_zoom(camera.zoom.x / 1.1)
+			return true
+	if event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_MIDDLE:
+		_stop_follow()
+		camera.position -= event.relative / camera.zoom
+		return true
+	return false
+
+
+func _stop_follow() -> void:
+	if _camera_tween != null and _camera_tween.is_valid():
+		_camera_tween.kill()
+	if _follow:
+		_set_follow(false)
 
 
 ## Haengt ein Control an eine Ecke oder Kante (anchor in 0..1) mit Versatz.
@@ -857,102 +966,164 @@ func _place_bottom(control: Control, x: float, above_bottom: float) -> void:
 	control.offset_bottom = -above_bottom
 
 
+## Der Aufbau, mobile first:
+##
+##   oben    Kopfleiste: Zugreihenfolge (waagrecht scrollbar) und Status
+##   Mitte   die Karte -- Kamera folgt, Ziehen und Zoomen per Finger
+##   unten   Daumenleiste: Tempo, Pause, Log, Reihenfolge, Folgen
+##
+## Log und Initiative-Balken sind einklappbare Paneele ueber der Daumenleiste:
+## im Hochformat ist fuer feste Seitenleisten kein Platz, und die Karte ist
+## das, was man ansehen will.
 func _build_ui() -> void:
 	_ui = CanvasLayer.new()
 	add_child(_ui)
 
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui.add_child(root)
+
+	var frame := VBoxContainer.new()
+	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_theme_constant_override("separation", 0)
+	root.add_child(frame)
+
+	# --- Kopfleiste ------------------------------------------------------
+	var top := PanelContainer.new()
+	top.add_theme_stylebox_override("panel", _bar_style(false))
+	frame.add_child(top)
+	var top_box := VBoxContainer.new()
+	top_box.add_theme_constant_override("separation", 4)
+	top.add_child(top_box)
+	var queue_scroll := ScrollContainer.new()
+	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	queue_scroll.custom_minimum_size = Vector2(0, 28)
+	top_box.add_child(queue_scroll)
 	_tick_queue = HBoxContainer.new()
-	_tick_queue.add_theme_constant_override("separation", 14)
-	_tick_queue.position = Vector2(24, 16)
-	_ui.add_child(_tick_queue)
+	_tick_queue.add_theme_constant_override("separation", 12)
+	queue_scroll.add_child(_tick_queue)
+	_status = UiKit.label("", UiKit.SMALL)
+	top_box.add_child(_status)
 
-	_status = Label.new()
-	_status.position = Vector2(24, 46)
-	_ui.add_child(_status)
+	# --- Mitte: frei fuer die Karte --------------------------------------
+	var middle := Control.new()
+	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	middle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(middle)
 
-	_tooltip = Label.new()
-	_tooltip.position = Vector2(24, 240)
-	_tooltip.add_theme_color_override("font_color", Color(0.8, 0.86, 0.95))
-	_ui.add_child(_tooltip)
+	_tooltip = UiKit.label("", UiKit.SMALL, Color(0.8, 0.86, 0.95))
+	_tooltip.position = Vector2(UiKit.PAD, 8)
+	_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	middle.add_child(_tooltip)
 
-	# Die Leiste traegt jetzt zwei Gruppen mit Ueberschrift und braucht deshalb
-	# mehr Hoehe als frueher.
+	_mutator_banner = PanelContainer.new()
+	_mutator_banner.add_theme_stylebox_override("panel", UiKit.card_style(true))
+	_mutator_banner.anchor_left = 0.0
+	_mutator_banner.anchor_right = 1.0
+	_mutator_banner.anchor_top = 0.3
+	_mutator_banner.anchor_bottom = 0.3
+	_mutator_banner.offset_left = UiKit.PAD
+	_mutator_banner.offset_right = -UiKit.PAD
+	var banner_label := UiKit.label("", UiKit.H2)
+	banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_mutator_banner.add_child(banner_label)
+	_mutator_banner.visible = false
+	middle.add_child(_mutator_banner)
+
+	# --- Paneele ueber der Daumenleiste ----------------------------------
+	_order_panel = PanelContainer.new()
+	_order_panel.add_theme_stylebox_override("panel", _bar_style(true))
+	_order_panel.visible = false
+	frame.add_child(_order_panel)
+	_tick_bars = TickBarPanel.new()
+	_tick_bars.add_theme_constant_override("separation", 3)
+	_order_panel.add_child(_tick_bars)
+
+	_log_panel = PanelContainer.new()
+	_log_panel.add_theme_stylebox_override("panel", _bar_style(true))
+	_log_panel.custom_minimum_size = Vector2(0, 220)
+	_log_panel.visible = false
+	frame.add_child(_log_panel)
+	_log = RichTextLabel.new()
+	_log.scroll_following = true
+	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_log.add_theme_font_size_override("normal_font_size", UiKit.SMALL)
+	_log_panel.add_child(_log)
+
+	# Manueller Zug: Aktionsleiste und "Zug beenden" (nur ausserhalb des
+	# Autokampfs).
+	var manual := VBoxContainer.new()
+	manual.add_theme_constant_override("separation", 6)
+	manual.visible = not _auto
+	frame.add_child(manual)
+	var action_scroll := ScrollContainer.new()
+	action_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	action_scroll.custom_minimum_size = Vector2(0, 70)
+	manual.add_child(action_scroll)
 	_action_bar = HBoxContainer.new()
-	_action_bar.add_theme_constant_override("separation", 22)
-	_ui.add_child(_action_bar)
-	_place_bottom(_action_bar, 24, 100)
-
-	var legend := Label.new()
-	legend.add_theme_font_size_override("font_size", 11)
-	legend.modulate = Color(0.6, 0.66, 0.74)
-	legend.text = "Klick auf einen DROME heftet seinen Aktionsring an  ·  "\
-		+ "Zeiger auf eine Aktion zeigt ihre Reichweite  ·  "\
-		+ "Rechtsklick/ESC loest, Leertaste beendet den Zug"
-	_ui.add_child(legend)
-	_place_bottom(legend, 24, 128)
-
-	_end_turn = Button.new()
-	_end_turn.text = "Zug beenden  (Leertaste)"
-	_end_turn.custom_minimum_size = Vector2(230, 44)
+	_action_bar.add_theme_constant_override("separation", 14)
+	action_scroll.add_child(_action_bar)
+	_end_turn = UiKit.button("Zug beenden")
 	_end_turn.pressed.connect(func():
 		if not _busy and not _paused:
 			_end_current_turn())
-	_ui.add_child(_end_turn)
-	_anchor(_end_turn, Vector2(1, 1), Vector2(-24, -24))
+	manual.add_child(_end_turn)
 
-	_log = RichTextLabel.new()
-	# Rechts oben verankert, Hoehe bis knapp ueber den Zug-Knopf.
-	_log.anchor_left = 1.0
-	_log.anchor_right = 1.0
-	_log.anchor_top = 0.0
-	_log.anchor_bottom = 1.0
-	_log.offset_left = -364
-	_log.offset_right = -24
-	_log.offset_top = 80
-	_log.offset_bottom = -96
-	_log.scroll_following = true
-	_log.add_theme_font_size_override("normal_font_size", 12)
-	_ui.add_child(_log)
-
-	var pause := Button.new()
-	pause.text = "Pause"
-	pause.custom_minimum_size = Vector2(110, 48)
-	_anchor(pause, Vector2(1, 0), Vector2(-24, 16))
-	pause.pressed.connect(_toggle_pause)
-	_ui.add_child(pause)
-
+	# --- Daumenleiste ----------------------------------------------------
+	var bottom := PanelContainer.new()
+	bottom.add_theme_stylebox_override("panel", _bar_style(false))
+	frame.add_child(bottom)
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 6)
+	bottom.add_child(buttons)
 	if _auto:
-		# Im Autokampf gibt es nichts zu bedienen: Leiste, Legende und
-		# Zug-Knopf entfallen, an ihre Stelle tritt das Tempo.
-		_action_bar.visible = false
-		legend.text = "AUTOKAMPF  ·  die KI steuert beide Seiten  ·  "\
-			+ "Pause und Tempo oben rechts"
-		_end_turn.visible = false
-		_speed_button = Button.new()
-		_speed_button.custom_minimum_size = Vector2(130, 48)
-		_anchor(_speed_button, Vector2(1, 0), Vector2(-150, 16))
-		_speed_button.pressed.connect(_cycle_speed)
-		_ui.add_child(_speed_button)
+		_speed_button = _bar_button("Tempo 1x", _cycle_speed)
+		buttons.add_child(_speed_button)
 		_apply_speed()
-
-	_tick_bars = TickBarPanel.new()
-	_tick_bars.position = Vector2(24, 104)
-	_tick_bars.add_theme_constant_override("separation", 3)
-	_ui.add_child(_tick_bars)
+	_pause_button = _bar_button("Pause", _toggle_pause)
+	buttons.add_child(_pause_button)
+	buttons.add_child(_bar_button("Log", func(): _toggle_panel(_log_panel)))
+	buttons.add_child(_bar_button("Reihe", func(): _toggle_panel(_order_panel)))
+	_follow_button = _bar_button("Folgt", func(): _set_follow(not _follow))
+	_follow_button.modulate = UiKit.ACCENT
+	buttons.add_child(_follow_button)
 
 	_action_ring = ActionRing.new()
 	_action_ring.action_chosen.connect(_on_ring_action)
 	_action_ring.action_hovered.connect(_on_action_hovered)
 	_ui.add_child(_action_ring)
 
-	_mutator_banner = PanelContainer.new()
-	_anchor(_mutator_banner, Vector2(0.5, 0.4), Vector2.ZERO)
-	var banner_label := Label.new()
-	banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	banner_label.add_theme_font_size_override("font_size", 26)
-	_mutator_banner.add_child(banner_label)
-	_mutator_banner.visible = false
-	_ui.add_child(_mutator_banner)
+
+func _bar_button(text: String, on_press: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.custom_minimum_size = Vector2(0, 52)
+	button.add_theme_font_size_override("font_size", UiKit.SMALL)
+	button.pressed.connect(on_press)
+	return button
+
+
+func _toggle_panel(panel: Control) -> void:
+	var show := not panel.visible
+	_log_panel.visible = false
+	_order_panel.visible = false
+	panel.visible = show
+
+
+func _bar_style(sheet: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.08, 0.12, 0.96 if sheet else 0.92)
+	style.border_color = UiKit.CARD_LINE
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.content_margin_left = UiKit.PAD
+	style.content_margin_right = UiKit.PAD
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	return style
 
 
 func _cycle_speed() -> void:
@@ -974,6 +1145,8 @@ func _exit_tree() -> void:
 
 func _toggle_pause() -> void:
 	_paused = not _paused
+	if _pause_button != null:
+		_pause_button.text = "Weiter" if _paused else "Pause"
 	_status.text = "Pausiert." if _paused else _status.text
 
 
@@ -1017,66 +1190,73 @@ func _add_loot_section(box: VBoxContainer, outcome: BattleManager.Outcome) -> vo
 
 
 func _show_result(outcome: BattleManager.Outcome) -> void:
+	# Eine Karte ueber die volle Breite, mittig, scrollbar -- im Hochformat
+	# passt eine feste 560er Tafel nicht hinein.
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.55)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_ui.add_child(shade)
+	var holder := MarginContainer.new()
+	holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var side := int(maxf(UiKit.PAD, (get_viewport().get_visible_rect().size.x - UiKit.MAX_COLUMN) * 0.5))
+	holder.add_theme_constant_override("margin_left", side)
+	holder.add_theme_constant_override("margin_right", side)
+	holder.add_theme_constant_override("margin_top", 40)
+	holder.add_theme_constant_override("margin_bottom", 40)
+	shade.add_child(holder)
 	var panel := PanelContainer.new()
-	_anchor(panel, Vector2(0.5, 0.5), Vector2.ZERO)
-	# Deckend: durch das halbdurchsichtige Standardpanel schien die Karte, und
-	# die Ergebniszeilen waren auf den Feldern kaum zu lesen.
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.07, 0.09, 0.13, 0.97)
-	style.border_color = Color(0.62, 0.82, 0.96)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(6)
-	style.set_content_margin_all(18)
-	panel.add_theme_stylebox_override("panel", style)
-	panel.custom_minimum_size = Vector2(560, 380)
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	panel.add_theme_stylebox_override("panel", UiKit.card_style(true))
+	holder.add_child(panel)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, minf(560.0, get_viewport().get_visible_rect().size.y - 120.0))
+	panel.add_child(scroll)
 	var box := VBoxContainer.new()
-	panel.add_child(box)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 8)
+	scroll.add_child(box)
 
-	var title := Label.new()
-	title.text = BattleManager.outcome_label(outcome)
-	title.add_theme_font_size_override("font_size", 32)
-	box.add_child(title)
+	var won := outcome == BattleManager.Outcome.VICTORY
+	box.add_child(UiKit.label(BattleManager.outcome_label(outcome), UiKit.H1,
+		UiKit.GOOD if won else (UiKit.BAD if outcome == BattleManager.Outcome.DEFEAT else UiKit.WARN)))
 
 	var result := battle.build_result()
-	var summary := Label.new()
-	summary.text = "Zyklen: %d    Region: %s    Mutator: %s\nSeed: %d" % [
-		result["cycles"], result["region"], result["mutator"], result["seed"]]
-	box.add_child(summary)
+	box.add_child(UiKit.label("%d Zyklen  ·  %s  ·  %s" % [
+		result["cycles"], result["region"], result["mutator"]], UiKit.SMALL, UiKit.MUTED))
 
 	for row in result["units"]:
-		var line := Label.new()
-		line.text = "%-10s %s  Integritaet %d/%d   verursacht %d   erlitten %d" % [
-			row["name"], "Spieler" if row["is_player"] else "Gegner",
-			row["hp"], row["hp_max"], row["dealt"], row["taken"]]
-		line.modulate = Color.WHITE if row["alive"] else Color(0.6, 0.6, 0.6)
+		var line := VBoxContainer.new()
+		line.add_theme_constant_override("separation", 0)
+		var head := UiKit.row(row["name"], "%d / %d" % [row["hp"], row["hp_max"]],
+			Color.WHITE if row["alive"] else UiKit.MUTED)
+		(head.get_child(0) as Label).modulate = Teams.color(row["is_player"]) \
+			if row["alive"] else UiKit.MUTED
+		line.add_child(head)
+		line.add_child(UiKit.label("verursacht %d  ·  erlitten %d%s" % [row["dealt"], row["taken"],
+			"" if row["alive"] else "  ·  ausgefallen"], UiKit.SMALL, UiKit.MUTED))
 		box.add_child(line)
 
 	_add_loot_section(box, outcome)
 
 	if GameState.in_run_battle:
-		var onward := Button.new()
-		onward.text = "Weiter im Lauf"
-		onward.custom_minimum_size = Vector2(0, 52)
-		onward.add_theme_font_size_override("font_size", 20)
+		var onward := UiKit.button("Weiter im Lauf", true)
 		var pool: Array = battle.enemy_equipment.duplicate()
 		onward.pressed.connect(func():
 			GameState.finish_run_battle(outcome, pool)
 			get_tree().change_scene_to_file("res://scenes/run.tscn"))
 		box.add_child(onward)
-		_ui.add_child(panel)
 		onward.grab_focus.call_deferred()
 		return
 
-	var back := Button.new()
-	back.text = "Zurueck zur Werkstatt"
+	var back := UiKit.button("Zur Garage", true)
 	back.pressed.connect(func():
 		GameState.battle_seed = 0
 		GameState.clear_chaos_run()
-		get_tree().change_scene_to_file("res://scenes/workshop.tscn"))
+		get_tree().change_scene_to_file("res://scenes/garage.tscn"))
 	box.add_child(back)
 
-	var menu := Button.new()
-	menu.text = "Hauptmenue"
+	var menu := UiKit.button("Zur Startseite")
 	menu.pressed.connect(func():
 		GameState.battle_seed = 0
 		GameState.clear_chaos_run()
@@ -1085,5 +1265,3 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	# Godot lehnt das ab ("already has a parent"), der Knopf ins Hauptmenue
 	# tauchte nie auf, und vom Ergebnisbildschirm fuehrte nur ein Weg zurueck.
 	box.add_child(menu)
-
-	_ui.add_child(panel)

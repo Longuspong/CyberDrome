@@ -92,13 +92,15 @@ func rebuild(units: Array, bus: TickBus) -> void:
 
 		row.label = Label.new()
 		row.label.text = unit.display_name
-		row.label.custom_minimum_size = Vector2(90, 0)
-		row.label.add_theme_font_size_override("font_size", 11)
+		row.label.custom_minimum_size = Vector2(110, 0)
+		row.label.add_theme_font_size_override("font_size", 16)
 		row.label.modulate = COLOR_FILL if unit.is_player else COLOR_ENEMY
 		row.add_child(row.label)
 
 		row.bar = Meter.new()
 		row.bar.tint = COLOR_FILL if unit.is_player else COLOR_ENEMY
+		row.bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(row.bar)
 
 		add_child(row)

@@ -32,7 +32,7 @@ const PREVIEW_SIZE := 520
 ## Kantenlaenge des Bildes in der Bibliothek und Hoehe der Namenszeile
 ## darueber. Die Spaltenzahl folgt daraus, nicht umgekehrt.
 const TILE_SIZE := 108
-const TILE_NAME_HEIGHT := 15
+const TILE_NAME_HEIGHT := 22
 const TILE_COLUMNS := 3
 const LIBRARY_WIDTH := 372
 
@@ -131,6 +131,8 @@ var _filter_field: LineEdit
 var _delta_panel: PanelContainer
 var _delta_rows: VBoxContainer
 var _direction_buttons: Array[Button] = []
+## Hochformat-Layout (Hauptansicht) oder die drei Spalten des Querformats.
+var _portrait := true
 
 
 func _ready() -> void:
@@ -159,20 +161,35 @@ func _rebuild() -> void:
 
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	_portrait = Accessibility.is_portrait()
+
+	var bg := ColorRect.new()
+	bg.color = UiKit.BG
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(bg)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 18)
+		margin.add_theme_constant_override("margin_" + side, 12 if _portrait else 18)
 	add_child(margin)
 
-	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", 18)
-	margin.add_child(columns)
+	if _portrait:
+		_build_portrait(margin)
+	else:
+		var columns := HBoxContainer.new()
+		columns.add_theme_constant_override("separation", 18)
+		margin.add_child(columns)
+		columns.add_child(_build_library_column())
+		columns.add_child(_build_preview_column())
+		columns.add_child(_build_stats_column())
 
-	columns.add_child(_build_library_column())
-	columns.add_child(_build_preview_column())
-	columns.add_child(_build_stats_column())
+	# Dreht man das Geraet, baut die Werkstatt sich fuer die neue Ausrichtung
+	# neu auf -- die beiden Layouts sind zu verschieden fuer ein Umfliessen.
+	get_viewport().size_changed.connect(func():
+		if Accessibility.is_portrait() != _portrait:
+			_persist()
+			get_tree().reload_current_scene.call_deferred())
 
 	_delta_panel = PanelContainer.new()
 	_delta_panel.visible = false
@@ -194,9 +211,63 @@ func _build_ui() -> void:
 	_refresh_direction_buttons()
 
 
+## Hochformat (Hauptansicht): Vorschau oben, darunter ein Umschalter zwischen
+## "Teile" (die Bibliothek) und "Aufbau & Werte". Drei Spalten nebeneinander
+## passen auf ein Handy nicht -- eine nach der anderen in voller Breite schon.
+func _build_portrait(margin: MarginContainer) -> void:
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 8)
+	margin.add_child(stack)
+
+	var preview := _build_preview_column()
+	preview.size_flags_vertical = Control.SIZE_FILL
+	stack.add_child(preview)
+
+	var switch := HBoxContainer.new()
+	switch.add_theme_constant_override("separation", 6)
+	stack.add_child(switch)
+	var library := _build_library_column()
+	library.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stack.add_child(library)
+	var stats := _build_stats_column()
+	stats.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stats.visible = false
+	stack.add_child(stats)
+
+	var parts_tab := _section_button("Teile")
+	var build_tab := _section_button("Aufbau & Werte")
+	parts_tab.button_pressed = true
+	parts_tab.pressed.connect(func():
+		_close_slot_popup()
+		_clear_hover()
+		library.visible = true
+		stats.visible = false
+		parts_tab.button_pressed = true
+		build_tab.button_pressed = false)
+	build_tab.pressed.connect(func():
+		_close_slot_popup()
+		_clear_hover()
+		library.visible = false
+		stats.visible = true
+		parts_tab.button_pressed = false
+		build_tab.button_pressed = true)
+	switch.add_child(parts_tab)
+	switch.add_child(build_tab)
+
+
+func _section_button(text: String) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.toggle_mode = true
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.custom_minimum_size = Vector2(0, 48)
+	button.add_theme_font_size_override("font_size", UiKit.BODY)
+	return button
+
+
 func _build_library_column() -> Control:
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(LIBRARY_WIDTH, 0)
+	left.custom_minimum_size = Vector2(0 if _portrait else LIBRARY_WIDTH, 0)
 	_library_column = left
 	left.add_child(_heading("Inventar"))
 
@@ -209,23 +280,23 @@ func _build_library_column() -> Control:
 
 	var hint := Label.new()
 	if _touch():
-		hint.text = "Tippen zeigt Werte und Aussehen · nochmal tippen baut ein · "\
-			+ "lange druecken erklaert"
+		hint.text = "Tippen: ansehen · nochmal: einbauen · lange druecken: erklaeren"
 	else:
 		hint.text = "Zeiger zeigt Werte und Aussehen · Klick baut ein"
-	hint.text += "\nNur FREIE Exemplare — was woanders steckt, ist gesperrt"
+	if not _portrait:
+		hint.text += "\nNur FREIE Exemplare — was woanders steckt, ist gesperrt"
 	# Umbrechen statt die Spalte zu verbreitern: mit der Mindestschrift
 	# (Accessibility) schob diese Zeile die Bibliothek auf dem Handy so breit,
 	# dass rechts die Kampfwerte aus dem Bild fielen.
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.custom_minimum_size = Vector2(LIBRARY_WIDTH, 0)
+	hint.custom_minimum_size = Vector2(0 if _portrait else LIBRARY_WIDTH, 0)
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.modulate = COLOR_MUTED
 	left.add_child(hint)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(LIBRARY_WIDTH, 0)
+	scroll.custom_minimum_size = Vector2(0 if _portrait else LIBRARY_WIDTH, 0)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(scroll)
 	_library = VBoxContainer.new()
@@ -286,9 +357,9 @@ func _build_preview_column() -> Control:
 	viewport.texture = sub.get_texture()
 	viewport.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	viewport.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	viewport.custom_minimum_size = Vector2(180, 180)
+	viewport.custom_minimum_size = Vector2(180, 250 if _portrait else 180)
 	viewport.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	viewport.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	viewport.size_flags_vertical = Control.SIZE_FILL if _portrait else Control.SIZE_EXPAND_FILL
 	viewport.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(viewport)
 
@@ -311,16 +382,17 @@ func _build_preview_column() -> Control:
 
 func _build_stats_column() -> Control:
 	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(360, 0)
+	right.custom_minimum_size = Vector2(0 if _portrait else 360, 0)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(360, 0)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0 if _portrait else 360, 0)
 	right.add_child(scroll)
 
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.custom_minimum_size = Vector2(340, 0)
+	column.custom_minimum_size = Vector2(0 if _portrait else 340, 0)
 	scroll.add_child(column)
 
 	column.add_child(_heading("Aufbau"))
@@ -885,7 +957,7 @@ func _open_slot_popup(part: PartData, anchor: Control) -> void:
 	var column := _library_column.get_global_rect()
 	_slot_popup.position = Vector2(
 		clampf(origin.position.x + 12.0, 8.0,
-			maxf(8.0, column.end.x - _slot_popup.size.x)),
+			maxf(8.0, minf(column.end.x, size.x - 8.0) - _slot_popup.size.x)),
 		clampf(origin.position.y + 10.0, 8.0, size.y - _slot_popup.size.y - 8.0))
 
 
@@ -1011,9 +1083,17 @@ func _show_delta(part: PartData, slot: String, anchor: Control) -> void:
 		return
 	var origin := anchor.get_global_rect()
 	var column := _library_column.get_global_rect()
-	_delta_panel.position = Vector2(
-		minf(column.end.x + 8, size.x - _delta_panel.size.x - 8.0),
-		clampf(origin.position.y, 8.0, size.y - _delta_panel.size.y - 8.0))
+	if _portrait:
+		# Ueber der Bibliothek (also ueber der Vorschau), damit die Kacheln
+		# frei bleiben -- man tippt ja gleich noch einmal darauf.
+		_delta_panel.position = Vector2(
+			clampf((size.x - _delta_panel.size.x) * 0.5, 8.0, maxf(8.0, size.x - _delta_panel.size.x - 8.0)),
+			clampf(column.position.y - _delta_panel.size.y - 8.0, 8.0,
+				maxf(8.0, size.y - _delta_panel.size.y - 8.0)))
+	else:
+		_delta_panel.position = Vector2(
+			minf(column.end.x + 8, size.x - _delta_panel.size.x - 8.0),
+			clampf(origin.position.y, 8.0, size.y - _delta_panel.size.y - 8.0))
 
 
 func _delta_line(text: String, color: Color, font_size: int = 11) -> Label:

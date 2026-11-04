@@ -50,109 +50,51 @@ func _gather() -> void:
 	_reference_power = DromeBuild.squad_power(all)
 
 
+## Mobile first: Einleitung, die DROMEs zum Abhaken, die Zusammenfassung,
+## Autokampf und der grosse Start-Knopf -- untereinander. Der Seed (ein
+## Werkzeug fuers Playtesting) steht ganz unten.
 func _build_ui() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.06, 0.09)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	var content := UiKit.page(self, "Chaos-Virus", "res://scenes/main.tscn")
 
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 22)
-	add_child(margin)
+	content.add_child(UiKit.label("Hake ab, welche DROMEs mitkommen. Der Gegner tritt "
+		+ "in voller Staerke an -- je weniger du mitnimmst, desto haerter, aber desto "
+		+ "hoeher die Beute.", UiKit.SMALL, UiKit.MUTED))
 
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 12)
-	margin.add_child(root)
-
-	# Kopfzeile
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 16)
-	root.add_child(header)
-	var back := Button.new()
-	back.text = "< Menue"
-	back.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/main.tscn"))
-	header.add_child(back)
-	var title := Label.new()
-	title.text = "CHAOS-VIRUS"
-	title.add_theme_font_size_override("font_size", 26)
-	title.modulate = COLOR_HEADING
-	header.add_child(title)
-
-	var intro := Label.new()
-	intro.text = "Hake ab, welche DROMEs mitkommen. Der Gegner tritt in voller " \
-		+ "Staerke an -- je weniger du selbst mitnimmst, desto haerter, aber " \
-		+ "desto hoeher die Beute."
-	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	intro.modulate = COLOR_MUTED
-	root.add_child(intro)
-
-	# Hauptbereich: DROME-Liste links, Zusammenfassung rechts
-	var body := HBoxContainer.new()
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 18)
-	root.add_child(body)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	body.add_child(scroll)
 	_cards = VBoxContainer.new()
-	_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_cards.add_theme_constant_override("separation", 8)
-	scroll.add_child(_cards)
-
-	# Rechte Spalte: Zusammenfassung + Start. Scrollbar und mit dem Start-Knopf
-	# VOR dem Seed-Feld: auf der logischen Flaeche eines Handys (~520 hoch)
-	# lief der Knopf sonst unten aus dem Bild -- der einzige Weg in den Kampf
-	# war nicht mehr erreichbar. Der Seed ist ein Werkzeug fuers Playtesting
-	# und darf als Erstes aus dem Blick rutschen.
-	var side_scroll := ScrollContainer.new()
-	side_scroll.custom_minimum_size = Vector2(340, 0)
-	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(side_scroll)
-	var side := VBoxContainer.new()
-	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	side.add_theme_constant_override("separation", 12)
-	side_scroll.add_child(side)
+	content.add_child(_cards)
 
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style())
-	side.add_child(panel)
+	panel.add_theme_stylebox_override("panel", UiKit.card_style())
+	content.add_child(panel)
 	_summary = RichTextLabel.new()
 	_summary.bbcode_enabled = true
 	_summary.fit_content = true
-	_summary.custom_minimum_size = Vector2(0, 120)
+	_summary.add_theme_font_size_override("normal_font_size", UiKit.BODY)
+	_summary.add_theme_font_size_override("bold_font_size", UiKit.BODY)
 	panel.add_child(_summary)
 
-	# Autokampf: die KI zieht fuer beide Seiten.
 	_auto_toggle = CheckButton.new()
 	_auto_toggle.text = "Autokampf (KI steuert beide Seiten)"
 	_auto_toggle.custom_minimum_size = Vector2(0, 48)
+	_auto_toggle.add_theme_font_size_override("font_size", UiKit.BODY)
 	_auto_toggle.button_pressed = GameState.auto_battle
-	side.add_child(_auto_toggle)
+	content.add_child(_auto_toggle)
 
-	_start = Button.new()
-	_start.text = "Chaos-Virus starten"
-	_start.custom_minimum_size = Vector2(0, 56)
-	_start.add_theme_font_size_override("font_size", 20)
+	_start = UiKit.button("Chaos-Virus starten", true)
 	_start.pressed.connect(_start_battle)
-	side.add_child(_start)
+	content.add_child(_start)
 
 	var seed_row := HBoxContainer.new()
-	var seed_label := Label.new()
-	seed_label.text = "Seed: "
-	seed_row.add_child(seed_label)
+	seed_row.add_child(UiKit.label("Seed", UiKit.SMALL, UiKit.MUTED))
 	_seed_field = LineEdit.new()
 	_seed_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_seed_field.custom_minimum_size = Vector2(0, 44)
 	_seed_field.placeholder_text = "leer = zufaellig"
 	if GameState.battle_seed != 0:
 		_seed_field.text = str(GameState.battle_seed)
 	seed_row.add_child(_seed_field)
-	side.add_child(seed_row)
+	content.add_child(seed_row)
 
 
 func _refresh() -> void:
@@ -182,26 +124,34 @@ func _drome_row(item: Dictionary) -> Control:
 	panel.add_child(row)
 
 	var check := CheckBox.new()
+	check.custom_minimum_size = Vector2(44, 44)
 	check.button_pressed = entry.in_squad
 	check.toggled.connect(func(pressed): _toggle(entry, pressed))
 	row.add_child(check)
+	# Die ganze Karte ist der Schalter -- das Kaestchen allein ist fuer den
+	# Daumen zu klein.
+	panel.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed \
+				and event.button_index == MOUSE_BUTTON_LEFT:
+			check.button_pressed = not check.button_pressed)
 
 	var text := VBoxContainer.new()
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(text)
 	var name_label := Label.new()
 	name_label.text = entry.name
-	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_font_size_override("font_size", UiKit.BODY)
 	text.add_child(name_label)
 	var sub := Label.new()
 	sub.text = _loadout_summary(item["build"])
-	sub.add_theme_font_size_override("font_size", 11)
+	sub.add_theme_font_size_override("font_size", UiKit.SMALL)
+	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sub.modulate = COLOR_MUTED
 	text.add_child(sub)
 
 	var power := Label.new()
 	power.text = "Stärke %d" % int(round(item["power"]))
-	power.add_theme_font_size_override("font_size", 13)
+	power.add_theme_font_size_override("font_size", UiKit.SMALL)
 	power.modulate = COLOR_HEADING
 	row.add_child(power)
 	return panel

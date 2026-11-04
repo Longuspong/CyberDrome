@@ -41,10 +41,17 @@ Accessibility="*res://autoload/accessibility.gd"
 
 [display]
 
-window/size/viewport_width=1600
-window/size/viewport_height=900
+window/size/viewport_width=450
+window/size/viewport_height=800
+window/size/window_width_override=540
+window/size/window_height_override=960
+window/handheld/orientation=6
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[gui]
+
+theme/default_font_size=18
 
 [rendering]
 

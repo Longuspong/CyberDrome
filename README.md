@@ -73,28 +73,26 @@ unter `run`):
   waehlt DROME und Halter), in Runde 2 und 5 ein neuer DROME mit Waffe,
   gelegentlich *Notstrom* (+1 Leben). Niederlage: ein Leben weniger.
 
-### Barrierefreiheit
+### Mobile first (Hochformat)
 
-`autoload/accessibility.gd` sorgt dafuer, dass das Spiel auf dem Handy lesbar
-ist. Der Entwurfsraum ist 1600x900; auf einem Handy blieb davon ein Massstab
-von ~0,46 CSS-Pixel je Entwurfspixel (12er Schrift = 5,5 Punkt). Jetzt:
+Das Spiel ist fuer ein Handy im **Hochformat** entworfen; das Querformat wird
+angeboten, ist aber zweitrangig (`CLAUDE.md`, Abschnitt Ausrichtung).
 
-* **Automatische Skalierung** ueber `content_scale_factor`: mindestens 0,8
-  CSS-Pixel je Entwurfspixel, ohne die logische Flaeche unter 960x520 zu
-  druecken. Am Desktop bleibt alles bei 1,0 (`tests/test_accessibility.gd`).
-* **Mindestgroessen**: jede Schrift mindestens 14, jeder Knopf auf
-  Touch-Geraeten mindestens 40 Entwurfspixel hoch.
-* **Einstellungen** im Hauptmenue: Anzeigegroesse (Automatisch / Klein / Gross
-  / Sehr gross), *Animationen reduzieren* (folgt beim ersten Start
+* **Entwurfsraum 450x800** (`project.godot`): ein Entwurfspixel ist auf dem
+  Handy etwa ein CSS-Pixel. `autoload/accessibility.gd` vergroessert nur im
+  Querformat nach und haelt die logische Flaeche ueber 360x600.
+* **`scripts/ui/ui_kit.gd`**: Seitenrahmen, Kopfzeile, Karten, grosse Knoepfe
+  und die **Tab-Leiste unten** (Spielen, Garage, Inventar, Optionen). Im
+  Querformat bleibt die Inhaltsspalte zentriert und hoechstens 640 breit.
+* **Kampf**: Kopfleiste mit Zugreihenfolge und Status, unten die
+  Daumenleiste (Tempo, Pause, Log, Reihe, Folgen). Die Kamera folgt dem
+  aktiven DROME; ein Finger zieht, zwei Finger zoomen (Mausrad und mittlere
+  Taste am Desktop). Wer selbst zieht, schaltet das Folgen ab.
+* **Werkstatt**: Vorschau oben, darunter umschaltbar "Teile" und "Aufbau &
+  Werte". Erstes Tippen auf eine Kachel zeigt, zweites baut ein.
+* **Langes Druecken** zeigt den Erklaertext (`tooltip_text`) jedes Elements.
+* **Optionen**: Anzeigegroesse, *Animationen reduzieren* (folgt
   `prefers-reduced-motion`), Vollbild. Gespeichert in `user://settings.json`.
-* **Hochformat**: ein Hinweis mit *Vollbild im Querformat* (sperrt die
-  Ausrichtung, wo der Browser es erlaubt).
-* **Touch**: langes Druecken zeigt den Erklaertext (`tooltip_text`) jedes
-  Elements -- auf dem Handy gab es sonst keinen Weg dorthin. In der Werkstatt
-  waehlt das erste Tippen auf eine Kachel aus (Vorschau, Werte, was bricht),
-  das zweite baut ein; gesperrte Kacheln nennen beim Antippen ihren Grund.
-* Kampfbildschirm an Kanten verankert, Kamera passt sich der Flaeche an;
-  Schildtreffer stehen als *Schild -8* im Log statt als *0 Schaden*.
 
 ### Kampf bedienen
 

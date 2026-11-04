@@ -45,72 +45,35 @@ func _run() -> RunState:
 # Aufbau
 # ---------------------------------------------------------------------------
 
+## Mobile first: alles untereinander. Oben Runde und Leben, dann das, was
+## gerade zu entscheiden ist (Kampf starten, Belohnung waehlen), darunter der
+## Squad. Die Entscheidung steht oben, weil sie der Grund ist, hier zu sein.
 func _build_ui() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.06, 0.09)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	var content := UiKit.page(self, "Lauf", "res://scenes/main.tscn")
 
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 22)
-	add_child(margin)
-
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 14)
-	margin.add_child(root)
-
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 18)
-	root.add_child(header)
-	var back := Button.new()
-	back.text = "< Menue"
-	back.custom_minimum_size = Vector2(120, 48)
-	back.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/main.tscn"))
-	header.add_child(back)
-	var title := Label.new()
-	title.text = "LAUF"
-	title.add_theme_font_size_override("font_size", 28)
-	title.modulate = COLOR_HEADING
-	header.add_child(title)
-	_header_round = Label.new()
-	_header_round.add_theme_font_size_override("font_size", 22)
-	header.add_child(_header_round)
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(spacer)
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", UiKit.GAP)
+	content.add_child(top)
+	_header_round = UiKit.label("", UiKit.H2)
+	_header_round.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_header_round.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(_header_round)
 	_lives_box = HBoxContainer.new()
-	_lives_box.add_theme_constant_override("separation", 8)
-	header.add_child(_lives_box)
+	_lives_box.add_theme_constant_override("separation", 6)
+	top.add_child(_lives_box)
 
-	var body := HBoxContainer.new()
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 18)
-	root.add_child(body)
-
-	var left_scroll := ScrollContainer.new()
-	left_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	body.add_child(left_scroll)
-	_squad_list = VBoxContainer.new()
-	_squad_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_squad_list.add_theme_constant_override("separation", 10)
-	left_scroll.add_child(_squad_list)
-
-	var right_scroll := ScrollContainer.new()
-	right_scroll.custom_minimum_size = Vector2(420, 0)
-	right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	body.add_child(right_scroll)
 	_side = VBoxContainer.new()
-	_side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_side.add_theme_constant_override("separation", 12)
-	right_scroll.add_child(_side)
+	_side.add_theme_constant_override("separation", UiKit.GAP)
+	content.add_child(_side)
+
+	_squad_list = VBoxContainer.new()
+	_squad_list.add_theme_constant_override("separation", 10)
+	content.add_child(_squad_list)
 
 
 func _refresh() -> void:
 	var run := _run()
-	_header_round.text = "Runde %d / %d" % [mini(run.round, RunState.rounds_total()),
+	_header_round.text = "Runde %d von %d" % [mini(run.round, RunState.rounds_total()),
 		RunState.rounds_total()]
 	_refresh_lives(run)
 	_refresh_squad(run)
@@ -132,8 +95,9 @@ func _refresh_lives(run: RunState) -> void:
 	for child in _lives_box.get_children():
 		child.queue_free()
 	var label := Label.new()
-	label.text = "Leben %d / %d" % [run.lives, RunState.max_lives()]
+	label.text = "%d / %d" % [run.lives, RunState.max_lives()]
 	label.add_theme_font_size_override("font_size", 20)
+	label.tooltip_text = "Leben: so viele Niederlagen bleiben"
 	_lives_box.add_child(label)
 	for i in RunState.max_lives():
 		var pip := Panel.new()
@@ -341,18 +305,8 @@ func _label(text: String, size: int, color: Color = Color.WHITE) -> Label:
 
 
 func _big_button(text: String) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(0, 60)
-	button.add_theme_font_size_override("font_size", 22)
-	return button
+	return UiKit.button(text, true)
 
 
 func _panel_style(highlight: bool = false) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.12, 0.17)
-	style.border_color = COLOR_HEADING if highlight else Color(0.24, 0.28, 0.35)
-	style.set_border_width_all(2 if highlight else 1)
-	style.set_corner_radius_all(5)
-	style.set_content_margin_all(12)
-	return style
+	return UiKit.card_style(highlight)
