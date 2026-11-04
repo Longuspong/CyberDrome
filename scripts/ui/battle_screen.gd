@@ -39,9 +39,9 @@ var _reachable: Dictionary = {}
 var _busy: bool = false
 var _paused: bool = false
 
-## Autokampf: die KI zieht fuer BEIDE Seiten, der Spieler sieht zu. Kommt aus
-## GameState (gesetzt in der Chaos-Auswahl) und wird beim Aufbau einmal
-## gelesen -- ein Kampf wechselt den Modus nicht mittendrin.
+## Autokampf: die KI zieht fuer BEIDE Seiten, der Spieler sieht zu. Immer an
+## (GameState.auto_battle ist nur noch ein Entwickler-Schalter) und wird beim
+## Aufbau einmal gelesen -- ein Kampf wechselt den Modus nicht mittendrin.
 var _auto: bool = false
 
 ## Tempo des Autokampfs. Laeuft ueber Engine.time_scale, damit Pausen,
@@ -1015,6 +1015,8 @@ func _build_ui() -> void:
 
 	_tooltip = UiKit.label("", UiKit.SMALL, Color(0.8, 0.86, 0.95))
 	_tooltip.position = Vector2(UiKit.PAD, 8)
+	# Ohne Breite bricht ein Label mit Umbruch zeichenweise um (senkrechter Text).
+	_tooltip.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	middle.add_child(_tooltip)
 

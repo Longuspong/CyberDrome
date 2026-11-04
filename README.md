@@ -32,8 +32,7 @@ den Satz unter `assets/parts/`. Wie fein er gerastert wird, stellt
 
 ### Autokampf und PWA
 
-In der Chaos-Auswahl schaltet **Autokampf (KI steuert beide Seiten)** den
-Kampf auf reines Zusehen: dieselbe KI zieht fuer beide Seiten, oben rechts
+Jeder Kampf ist **Autokampf**: dieselbe KI zieht fuer beide Seiten, unten
 stehen **Tempo 1x/2x** und **Pause**. Ab Zyklus 12 greift die **Overtime**
 (`data/config.json`, Abschnitt `overtime`): jeder DROME verliert zu Zugbeginn
 einen wachsenden Anteil seiner Integritaet, damit jeder Kampf entschieden wird.

@@ -11,8 +11,10 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 
 * **Autobattler.** Die KI (`scripts/battle/ai_controller.gd`) steuert beide
   Seiten. Der Spieler entscheidet ueber Aufbau, Squad und Belohnungen -- nicht
-  ueber einzelne Zuege. Der manuelle Kampf existiert noch (Chaos-Virus ohne
-  Autokampf-Schalter), ist aber nicht mehr die Hauptrichtung.
+  ueber einzelne Zuege. Auch der Chaos-Virus ist immer Autokampf (der
+  Schalter ist weg, Nov. 2026 -- vorher stand er auf "aus" und der Spieler
+  musste ungewollt selbst steuern). Der manuelle Kampf steckt nur noch als
+  Entwickler-Schalter `GameState.auto_battle` im Code.
 * **Mobile first, Hochformat ist die Hauptansicht** (Wunsch des Spielers,
   ausdruecklich). Querformat wird angeboten, ist zweitrangig. Ziel-Plattform
   ist das Handy, gehostet als PWA auf Vercel; Android-APK kommt spaeter.
@@ -29,7 +31,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
 ### Kampf
-* Autokampf-Schalter in der Chaos-Auswahl; im Lauf immer Autokampf.
+* Immer Autokampf, im Lauf wie im Chaos-Virus (kein Schalter mehr).
 * Tempo 1x/2x ueber `Engine.time_scale` (bewusst nicht schneller -- sonst
   unlesbar). Ueberspringen gibt es nicht.
 * **Overtime** (nur Autokampf, `data/config.json` -> `overtime`): ab Zyklus 12
@@ -162,9 +164,11 @@ Designpunkte (bis zur Entscheidung keine groesseren Umbauten auf eigene Faust):
 1. **Faehigkeiten loesen automatisch aus** -- nach Zeit oder nach Treffern,
    statt von der KI gezogen.
 2. **Skill-Tiefe ueber Synergien**, nicht ueber Timing ("womit", nicht "wann").
-3. **Eingreifen in kniffligen Situationen** -- noch keine Idee. Vorschlag aus
-   der Sitzung: eine einzige "Overdrive"-Ladung pro Kampf, die man in der
-   Pause einem DROME gibt.
+3. **Eingreifen des Spielers** -- offen, spaeter besprechen. Entschieden ist
+   nur: **kein Steuern**, es bleibt ein Autobattler. Vermutung des Spielers:
+   eine selbst waehlbare Aggro-Liste, der Spieler legt fest, wer
+   **Aggro-Platz 1** hat. Er will das noch selbst durchdenken. (Aelterer
+   Vorschlag: eine "Overdrive"-Ladung pro Kampf.)
 4. **Waffen-Slots und Gewichtsklassen** ueberarbeiten. Die Formen-Darstellung
    (Dreieck/Viereck/Fuenfeck) ist gebaut; die eigentliche Neuverteilung der
    Klassen und Halter steht aus.

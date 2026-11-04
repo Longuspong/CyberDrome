@@ -17,7 +17,6 @@ var _picker: SquadPicker
 var _summary: RichTextLabel
 var _start: Button
 var _seed_field: LineEdit
-var _auto_toggle: CheckButton
 
 
 func _ready() -> void:
@@ -26,8 +25,8 @@ func _ready() -> void:
 	_refresh_summary()
 
 
-## Mobile first: Einleitung, die Squad-Auswahl, die Zusammenfassung,
-## Autokampf und der grosse Start-Knopf -- untereinander. Der Seed (ein
+## Mobile first: Einleitung, die Squad-Auswahl, die Zusammenfassung
+## und der grosse Start-Knopf -- untereinander. Der Seed (ein
 ## Werkzeug fuers Playtesting) steht ganz unten.
 func _build_ui() -> void:
 	var content := UiKit.page(self, "Chaos-Virus", "res://scenes/main.tscn")
@@ -51,12 +50,6 @@ func _build_ui() -> void:
 	_summary.add_theme_font_size_override("bold_font_size", UiKit.BODY)
 	panel.add_child(_summary)
 
-	_auto_toggle = CheckButton.new()
-	_auto_toggle.text = "Autokampf (KI steuert beide Seiten)"
-	_auto_toggle.custom_minimum_size = Vector2(0, 48)
-	_auto_toggle.add_theme_font_size_override("font_size", UiKit.BODY)
-	_auto_toggle.button_pressed = GameState.auto_battle
-	content.add_child(_auto_toggle)
 
 	_start = UiKit.button("Chaos-Virus starten", true)
 	_start.pressed.connect(_start_battle)
@@ -119,7 +112,6 @@ func _start_battle() -> void:
 	GameState.enemy_override = []
 	GameState.configure_chaos_run(_picker.all_builds().size(),
 		DromeBuild.squad_power(_picker.all_builds()))
-	GameState.auto_battle = _auto_toggle.button_pressed
 	GameState.save_roster()
 
 	var text := _seed_field.text.strip_edges()
