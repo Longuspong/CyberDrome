@@ -97,6 +97,8 @@
       "Ziel: KI-gegen-KI-Kaempfe enden mit einer Entscheidung statt am",
       "cycle_limit. Abgesichert in tests/test_autobattle.gd."
     ],
+    "_kommentar_echtzeit": "Echtzeit: ab start_seconds verliert jeder DROME je Puls ceil(hp_max * pct_per_cycle * (Pulse seit Start + 1)).",
+    "start_seconds": 60.0,
     "start_cycle": 12,
     "pct_per_cycle": 0.05
   },
@@ -156,7 +158,31 @@
       "sorgt dafuer, dass beide Felder gelesen werden. Das 'einmal pro Zug' je",
       "Faehigkeit liegt darunter und haengt an keiner der beiden (TurnState)."
     ],
-    "brake": "beides"
+    "_kommentar_echtzeit": "Seit dem Echtzeit-Kampf (Nov. 2026) gilt 'ausloeser': weder Preis noch Wartezeit, die Faehigkeiten loesen nach ihrem trigger aus (jeder N. Angriff, alle N Sekunden, Gegner daneben). Energie spielt keine Rolle mehr.",
+    "brake": "ausloeser"
+  },
+
+  "realtime": {
+    "_kommentar": [
+      "Echtzeit-Kampf (Nov. 2026). Alle DROMEs handeln gleichzeitig.",
+      "tick              Sekunden je Simulationsschritt (fester Takt, deterministisch)",
+      "move_base/per_spd Laufgeschwindigkeit in Feldern je Sekunde = base + spd * per_spd",
+      "move_min          Untergrenze der Laufgeschwindigkeit",
+      "pulse             Sekunden je Puls: Schild- und Integritaetsregeneration,",
+      "                  Aderlass, Statuseffekte, Provokation, Aggro-Verfall --",
+      "                  alles, was frueher zu Zugbeginn lief",
+      "time_limit        harte Grenze, danach unentschieden",
+      "think_interval    wie oft ein DROME sein Ziel neu waehlt",
+      "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist"
+    ],
+    "tick": 0.05,
+    "move_base": 1.0,
+    "move_per_spd": 0.12,
+    "move_min": 1.2,
+    "pulse": 3.0,
+    "time_limit": 180.0,
+    "think_interval": 0.5,
+    "kite_distance": 2
   },
 
   "power_tolerance": 0.12,
@@ -164,9 +190,10 @@
   "build_attempts": 50,
 
   "deployment": {
-    "_kommentar": "Spieler unten links, Gegner oben rechts.",
+    "_kommentar": "Spieler unten links, Gegner oben rechts. inset: Abstand der Zonen von den Ecken -- kuerzere Anlaufzeit im Autokampf.",
     "rows": 2,
-    "columns": 6
+    "columns": 6,
+    "inset": 5
   },
 
   "map": {

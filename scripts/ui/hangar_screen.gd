@@ -553,8 +553,7 @@ func _preview(entry: RosterEntry, build: DromeBuild, part: PartData, verdict: St
 	var after := trial.stats()
 	var any := false
 	for key in [["hp_max", "Integritaet"], ["shield_max", "Schild"], ["spd", "SPD"],
-			["mov", "MOV"], ["atk", "ATK"], ["def", "DEF"], ["en_max", "Energie"],
-			["en_regen", "EN-Regen"]]:
+			["atk", "ATK"], ["def", "DEF"]]:
 		var a: int = before.get(key[0], 0)
 		var b: int = after.get(key[0], 0)
 		if a == b:

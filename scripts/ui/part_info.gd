@@ -25,10 +25,11 @@ const ROLE := {
 	&"eq_holo_boost": "Ein schneller Sprung in gerader Linie -- fuer Stellungswechsel, nicht fuer Schaden.",
 }
 
+## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
+## SPD ist die Laufgeschwindigkeit, Faehigkeiten loesen nach ihrer Regel aus.
 const STAT_LABELS := [
-	["hp", "Integritaet"], ["shield", "Schild"], ["shield_regen", "Schild-Regeneration"],
-	["def", "Panzerung"], ["atk", "Angriff"], ["spd", "Tempo (SPD)"], ["mov", "Bewegung"],
-	["en_max", "Energie"], ["en_regen", "Energie-Regeneration"],
+	["hp", "Integritaet"], ["shield", "Schild"], ["shield_regen", "Schild je Puls"],
+	["def", "Panzerung"], ["atk", "Angriff"], ["spd", "Tempo (SPD, Laufgeschwindigkeit)"],
 	["weight_capacity", "Traglast"], ["power_output", "Leistung"],
 ]
 
@@ -134,18 +135,14 @@ static func action_lines(action: ActionData) -> Array[String]:
 	if action.requires_line_of_sight:
 		out.append("Braucht freie Sicht aufs Ziel.")
 
-	# Wann sie zum Zug kommt -- heute entscheidet das die KI.
-	var cost: Array[String] = []
-	if action.en_cost_now() > 0:
-		cost.append("kostet %d Energie" % action.en_cost_now())
-	if action.cooldown_now() > 0:
-		cost.append("danach %d Zuege Pause" % action.cooldown_now())
+	# Wann sie kommt: Waffen schiessen in ihrem Takt, Faehigkeiten nach ihrer
+	# Regel -- beides ohne Energie.
 	if action.is_attack():
-		out.append("Einsatz: ein Angriff pro Zug und Waffe%s." %
-			(", " + ", ".join(cost) if not cost.is_empty() else ""))
-	else:
-		out.append("Einsatz: hoechstens einmal pro Zug, wenn es sich lohnt%s." %
-			(" -- " + ", ".join(cost) if not cost.is_empty() else ""))
+		out.append("Schiesst alle %s s." % ActionData._seconds(action.interval))
+	elif action.trigger_kind != "":
+		out.append("Loest von selbst aus: %s." % action.trigger_text())
+		if action.trigger_kind == "attacks":
+			out.append("Dieser Angriff ersetzt den normalen Schuss.")
 	if action.aggro_coeff < 1.0:
 		out.append("Leise: erzeugt nur %d %% der ueblichen Aggro." % int(round(action.aggro_coeff * 100.0)))
 	elif action.aggro_coeff > 1.0:

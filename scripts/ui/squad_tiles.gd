@@ -8,9 +8,10 @@ extends HBoxContainer
 ## der eine Lebensbalken (BattleView.UnitBadgePainter); im Nahkampf schoben
 ## sich vorher drei Badges mit Namen und Zahlen uebereinander.
 ##
-## Die aktive Kachel bekommt einen hellen Rahmen, eine zerstoerte wird
-## abgedunkelt. Die Kacheln teilen sich die Breite: im Hochformat (ca. 400
-## Pixel) passen vier nebeneinander, mehr hat ein Squad nicht.
+## Darunter je Waffe der Zaehler bis zur Faehigkeit ("Streusalve 2/3") --
+## damit man sieht, wann sie kommt. Eine zerstoerte Kachel wird abgedunkelt.
+## Die Kacheln teilen sich die Breite: im Hochformat (ca. 400 Pixel) passen
+## vier nebeneinander, mehr hat ein Squad nicht.
 
 ## Antippen einer Kachel: die Kamera faehrt zu diesem DROME.
 signal tile_pressed(unit)
@@ -85,8 +86,12 @@ func _add_tile(unit: Unit) -> void:
 	var sh_label := _small("", 12, Color(0.80, 0.88, 1.0))
 	box.add_child(sh_label)
 
+	var skills := _small("", 11, Color(1.0, 0.86, 0.4))
+	box.add_child(skills)
+
 	_tiles[unit.unit_id] = {"root": panel, "style": style, "hp_bar": hp_bar,
-		"sh_bar": sh_bar, "hp_label": hp_label, "sh_label": sh_label, "spd": spd}
+		"sh_bar": sh_bar, "hp_label": hp_label, "sh_label": sh_label, "spd": spd,
+		"skills": skills}
 
 
 func _small(text: String, size: int, color: Color) -> Label:
@@ -114,8 +119,9 @@ func _bar(parent: Control, color: Color) -> ProgressBar:
 	return bar
 
 
-## Nach jeder Aenderung: Zahlen, Balken, aktive und zerstoerte Kacheln.
-func refresh(units: Array, active: Unit) -> void:
+## Nach jeder Aenderung: Zahlen, Balken, Faehigkeits-Zaehler, zerstoerte
+## Kacheln.
+func refresh(units: Array) -> void:
 	for unit in units:
 		if not _tiles.has(unit.unit_id):
 			continue
@@ -131,9 +137,24 @@ func refresh(units: Array, active: Unit) -> void:
 		(tile["hp_label"] as Label).text = "HP %d/%d" % [maxi(0, unit.hp), hp_max]
 		(tile["sh_label"] as Label).text = "Schild %d/%d" % [maxi(0, unit.shield), sh_max]
 		(tile["spd"] as Label).text = "SPD %d" % unit.spd()
-		var style: StyleBoxFlat = tile["style"]
-		var is_active: bool = unit == active and unit.is_alive()
-		style.border_color = UiKit.ACCENT if is_active else UiKit.CARD_LINE
-		style.set_border_width_all(2 if is_active else 1)
+		(tile["skills"] as Label).text = skill_line(unit)
 		(tile["root"] as Control).modulate = Color.WHITE if unit.is_alive() \
 			else Color(0.45, 0.45, 0.5, 0.8)
+
+
+## "Streusalve 2/3": je Waffe mit Faehigkeit, der wievielte Schuss als
+## naechstes kommt. Bei 3/3 ist der naechste Schuss die Faehigkeit. Kurz
+## gehalten -- die Kachel ist schmal.
+static func skill_line(unit: Unit) -> String:
+	var parts: Array[String] = []
+	for mount in unit.mounts:
+		var ability = mount.get("ability")
+		if ability == null:
+			continue
+		parts.append("%s %d/%d" % [_short((ability as ActionData).display_name),
+			int(mount["count"]) + 1, int((ability as ActionData).trigger_every)])
+	return "  ".join(parts)
+
+
+static func _short(name: String) -> String:
+	return name if name.length() <= 9 else name.substr(0, 8) + "."

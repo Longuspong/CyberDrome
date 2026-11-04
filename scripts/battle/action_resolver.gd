@@ -447,7 +447,6 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		EventBus.log_line("%s boostet %d Feld(er) nach %s."
 			% [source.display_name, Grid.distance(source.tile, tile), tile])
 		move_unit(source, tile, step)
-		EventBus.tick_bus_changed.emit()
 		return true
 
 	for affected in affected_tiles(tile, action):
@@ -481,7 +480,6 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		if action.is_taunt() and target != source:
 			_apply_taunt(source, target, action)
 
-	EventBus.tick_bus_changed.emit()
 	return true
 
 

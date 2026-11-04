@@ -115,7 +115,19 @@ oben ("Streusalve 2/3").
    Kampflaenge. Zusammen mit Bewegung A (kuerzere Anlaufzeit) wird das
    gleichmaessiger.
 
-## 6. Bitte entscheiden
+## 6. Entscheidungen (4. November 2026)
+
+Der Spieler hat entschieden: **Echtzeit statt Zuege** -- alle DROMEs
+bewegen sich und greifen gleichzeitig an, jede Waffe mit eigener
+Angriffsgeschwindigkeit; SPD ist die Laufgeschwindigkeit; Faehigkeiten wie in
+Abschnitt 5 (die Faehigkeit ersetzt den faelligen Angriff); Energie
+gestrichen; Startzonen naeher zusammen. Gebaut im selben PR. Messung danach
+(30 Kaempfe, Start-Squad gegen Chaos-Gegner): 20 Siege, 10 Niederlagen, im
+Schnitt 33 s, erster Treffer nach rund 3 s; Molok laeuft nur noch ein Viertel
+der Zeit. Nimbus (Nahkampf) faellt weiter fast immer -- naechste
+Balancing-Baustelle. Spiegelkaempfe: 61 zu 59 ueber 120 Seeds.
+
+Urspruengliche Fragen:
 
 1. Bewegung: A jetzt bauen? Und B als naechsten Schritt?
 2. Faehigkeiten: Regel "Waffen zaehlen Angriffe, Gadgets Zeit/Ereignis,

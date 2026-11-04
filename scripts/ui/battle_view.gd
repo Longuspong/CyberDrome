@@ -51,6 +51,7 @@ var _overlays: Node2D
 var _paths: Node2D
 var _numbers: DamagePainter
 var _badges: UnitBadgePainter
+var _effects: EffectPainter
 var _tile_sprites: Dictionary = {}
 var _overlay_pool: Array[Sprite2D] = []
 
@@ -79,6 +80,10 @@ func _ready() -> void:
 	_numbers = DamagePainter.new()
 	_numbers.name = "DamagePreview"
 	add_child(_numbers)
+
+	_effects = EffectPainter.new()
+	_effects.name = "Effects"
+	add_child(_effects)
 
 
 # ---------------------------------------------------------------------------
@@ -229,11 +234,23 @@ func set_pixel_scale(camera_zoom: float) -> void:
 	_badges.queue_redraw()
 	_numbers.pixel_scale = factor
 	_numbers.queue_redraw()
+	_effects.pixel_scale = factor
 
 
 ## Die Statusbadges ueber den Einheiten. ``entries`` ist eine Liste aus
 ## { tile, name, hp, hp_max, en, en_max, tick, is_player, active } -- gefuellt
 ## wird sie im Kampfbildschirm, hier wird sie nur gezeichnet.
+## Echtzeit: eine Schussspur von ``from`` nach ``to`` (Weltkoordinaten der
+## Feldmitten), kurz und in Teamfarbe.
+func show_shot(from: Vector2, to: Vector2, color: Color, heavy: bool = false) -> void:
+	_effects.add_shot(from, to, color, heavy)
+
+
+## Schwebender Text ueber einer Stelle: Schaden, Reparatur, Faehigkeit.
+func show_float(at: Vector2, text: String, color: Color, big: bool = false) -> void:
+	_effects.add_text(at, text, color, big)
+
+
 func show_unit_badges(entries: Array) -> void:
 	_badges.entries = entries
 	_badges.queue_redraw()
@@ -369,7 +386,8 @@ class UnitBadgePainter extends Node2D:
 
 	func _badge(entry: Dictionary) -> void:
 		var s := pixel_scale
-		var center: Vector2 = IsoView.map_to_local(entry["tile"])
+		var center: Vector2 = entry["at"] if entry.has("at") \
+			else IsoView.map_to_local(entry["tile"])
 		var mine: bool = entry.get("is_player", false)
 		var active: bool = entry.get("active", false)
 
@@ -461,3 +479,80 @@ class DamagePainter extends Node2D:
 				HORIZONTAL_ALIGNMENT_LEFT, -1, size, COLOR_SHADOW)
 			font.draw_string(get_canvas_item(), origin, text,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
+
+
+## Echtzeit-Effekte: Schussspuren und schwebende Zahlen.
+##
+## Im Echtzeit-Kampf passiert viel gleichzeitig. Ohne sichtbare Spur waere
+## nicht zu erkennen, WER auf WEN schiesst -- im Zugsystem sagte das die
+## Reihenfolge, hier muss es das Bild sagen. Alles in einem Knoten, aus
+## demselben Grund wie die Balken: Knoten, die dauernd entstehen und vergehen,
+## bleiben irgendwann als Rest im Baum haengen.
+class EffectPainter extends Node2D:
+	const SHOT_TIME := 0.22
+	const TEXT_TIME := 0.9
+	const TEXT_SIZE := 16
+	const BIG_SIZE := 18
+	const RISE := 34.0
+	const COLOR_SHADOW := Color(0.0, 0.0, 0.0, 0.85)
+
+	var pixel_scale: float = 1.0
+	var _shots: Array = []
+	var _texts: Array = []
+
+	func _ready() -> void:
+		z_index = 4020
+
+	func add_shot(from: Vector2, to: Vector2, color: Color, heavy: bool) -> void:
+		_shots.append({"from": from, "to": to, "color": color, "age": 0.0,
+			"heavy": heavy})
+
+	func add_text(at: Vector2, text: String, color: Color, big: bool) -> void:
+		# Mehrere Zahlen am selben Ort stapeln sich, statt sich zu ueberdecken.
+		var stack := 0
+		for entry in _texts:
+			if (entry["at"] as Vector2).distance_to(at) < 8.0 and float(entry["age"]) < 0.3:
+				stack += 1
+		_texts.append({"at": at, "text": text, "color": color, "age": 0.0,
+			"big": big, "stack": stack})
+
+	func _process(delta: float) -> void:
+		if _shots.is_empty() and _texts.is_empty():
+			return
+		for entry in _shots:
+			entry["age"] = float(entry["age"]) + delta
+		for entry in _texts:
+			entry["age"] = float(entry["age"]) + delta
+		_shots = _shots.filter(func(e): return float(e["age"]) < SHOT_TIME)
+		_texts = _texts.filter(func(e): return float(e["age"]) < TEXT_TIME)
+		queue_redraw()
+
+	func _draw() -> void:
+		var s := pixel_scale
+		for entry in _shots:
+			var t: float = float(entry["age"]) / SHOT_TIME
+			var color: Color = entry["color"]
+			var from: Vector2 = entry["from"] + Vector2(0, -34)
+			var to: Vector2 = entry["to"] + Vector2(0, -24)
+			# Die Spur waechst zum Ziel und verblasst dann von hinten.
+			var head := from.lerp(to, clampf(t * 2.5, 0.0, 1.0))
+			var tail := from.lerp(to, clampf(t * 2.5 - 0.6, 0.0, 1.0))
+			var width := (5.0 if entry["heavy"] else 3.0) * maxf(1.0, s * 0.8)
+			draw_line(tail, head, Color(color, 0.35 * (1.0 - t)), width * 2.2, true)
+			draw_line(tail, head, Color(color.lightened(0.5), 1.0 - t), width, true)
+			if t > 0.35:
+				draw_circle(to, (6.0 if entry["heavy"] else 4.0) * s * (1.0 - t) + 1.0,
+					Color(color.lightened(0.6), 1.0 - t))
+		var font := ThemeDB.fallback_font
+		for entry in _texts:
+			var t: float = float(entry["age"]) / TEXT_TIME
+			var size := maxi(1, int(round((BIG_SIZE if entry["big"] else TEXT_SIZE) * s)))
+			var at: Vector2 = entry["at"] + Vector2(0, (-84.0 - RISE * t - 18.0 * int(entry["stack"])) * s)
+			var text: String = entry["text"]
+			var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+			var origin := at - Vector2(width * 0.5, 0)
+			var alpha := 1.0 if t < 0.6 else 1.0 - (t - 0.6) / 0.4
+			font.draw_string(get_canvas_item(), origin + Vector2(1.5, 1.5) * s, text,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(COLOR_SHADOW, alpha))
+			font.draw_string(get_canvas_item(), origin, text,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(entry["color"], alpha))

@@ -44,18 +44,25 @@ bash tools/build_web.sh                                       # Web-Export nach 
   nach oben in groessere Halter, schwer nur in schwer).
 * Spielfeld bleibt 20x20; die Kamera folgt dem Geschehen, Zoomen und Ziehen
   per Finger.
-* Das Spiel ist ein **Autobattler**: die KI steuert beide Seiten
-  (`AIController`), der Spieler entscheidet ueber Aufbau und Auswahl.
+* Das Spiel ist ein **Autobattler in Echtzeit** (seit Nov. 2026): alle
+  DROMEs handeln gleichzeitig, keine Zuege. `BattleManager.tick()` rechnet in
+  festen Schritten (0,05 s, deterministisch je Seed), die KI (`AIController`)
+  steuert beide Seiten. Jede Waffe hat ein Schussintervall, SPD ist die
+  Laufgeschwindigkeit, MOV und Energie spielen keine Rolle mehr. Was frueher
+  zu Zugbeginn lief (Schild, Reparatur, Overtime ...), laeuft je Puls (3 s).
+  Der Spieler entscheidet ueber Aufbau und Auswahl.
 
 ## Offene Designpunkte (noch zu besprechen)
 
-1. **Faehigkeiten loesen automatisch aus.** Skills von Waffen und Kernen
-   sollen nach einer bestimmten Zeit oder nach einer Anzahl Treffer von selbst
-   ausloesen, statt von der KI "gezogen" zu werden.
-2. **Skill-Tiefe vereinfachen.** Nicht das *Wann* soll einen Skill taktisch
-   machen (das steuert der Spieler im Autokampf nicht), sondern das *Womit*:
-   in Kombination mit welchen Aufbauten er wirkt. Synergien zwischen Teilen
-   und DROMEs statt Timing.
+1. **Faehigkeiten loesen automatisch aus -- ENTSCHIEDEN und gebaut.** Nur
+   Ausruestung hat Faehigkeiten. Waffen zaehlen ihre Angriffe, der N-te
+   Angriff IST die Faehigkeit (Blaster, Runenstab, Kanone jeder 3., Lanze
+   jeder 4.); Gadgets nach Zeit (Orbit-Sog alle 6 s) oder Ereignis (Boost,
+   wenn ein Gegner danebensteht). Steht als `trigger` an der Aktion.
+2. **Skill-Tiefe ueber Synergien.** Nicht das *Wann*, sondern das *Womit*.
+   Offen: der Kern hat mit dem Wegfall der Energie seine Hauptaufgabe
+   verloren -- Vorschlag "Kern als Synergie-Teil" (z. B. Faehigkeit einen
+   Angriff frueher) ist noch nicht ausgearbeitet.
 3. **Eingreifen des Spielers -- offen, wird spaeter besprochen.** Fest steht:
    grundsaetzlich Autobattler, der Spieler **steuert keine DROMEs**. Er soll
    aber eingreifen koennen, vermutlich indem er festlegt, wer **Aggro-Platz 1**
@@ -70,13 +77,17 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
 ## Naechste Schritte (Stand 4. November 2026)
 
-1. Entscheidungen aus `docs/PLAYTEST_2026-11.md`, Abschnitt 6, mit dem
-   Spieler klaeren: Bewegung (Kampfdistanz, Bewegung als Rolle), Ausloeser der
-   Faehigkeiten (Waffen zaehlen Angriffe, Gadgets Zeit/Ereignis), Energie und
-   Kern als Synergie-Teil, Richtungsregel.
-2. Die offenen Designpunkte oben (Eingreifen ueber Aggro-Platz 1).
-3. Weitere Vorschlaege (Einfuehrung, Ziehen auf Halter, Bester Aufbau,
+1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den
+   Teildaten, Tempo und Puls in `data/config.json` -> `realtime`). Nimbus
+   (Nahkampf) faellt fast immer zuerst.
+2. Kern als Synergie-Teil ausarbeiten (Designpunkt 2).
+3. Eingreifen ueber Aggro-Platz 1 besprechen (Designpunkt 3) -- passt jetzt
+   gut: Gegner im laufenden Kampf antippen.
+4. Waffen-Slots und Gewichtsklassen (Designpunkt 4).
+5. Weitere Vorschlaege (Einfuehrung, Ziehen auf Halter, Bester Aufbau,
    Speichern, Haptik) -- unbewertet.
 
 Playtest ohne Bildschirm: `godot --headless --path . --script
-res://tools/playtest/playtest.gd -- 30 5003` (Kaempfe, Seed mit Zuglog).
+res://tools/playtest/playtest.gd -- 30 5003` (Kaempfe, Seed mit Aktionslog).
+Nach Aenderungen an `parts/` immer `python3 tools/bake_godot_assets.py` --
+das Spiel liest die Kopie unter `assets/parts/`.

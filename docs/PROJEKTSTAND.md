@@ -9,7 +9,8 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 
 ## 1. Richtung des Spiels
 
-* **Autobattler.** Die KI (`scripts/battle/ai_controller.gd`) steuert beide
+* **Autobattler in Echtzeit** (seit Nov. 2026, vorher Zuege mit
+  Initiative). Die KI (`scripts/battle/ai_controller.gd`) steuert beide
   Seiten. Der Spieler entscheidet ueber Aufbau, Squad und Belohnungen -- nicht
   ueber einzelne Zuege. Auch der Chaos-Virus ist immer Autokampf (der
   Schalter ist weg, Nov. 2026 -- vorher stand er auf "aus" und der Spieler
@@ -30,17 +31,33 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
-### Kampf
-* Immer Autokampf, im Lauf wie im Chaos-Virus (kein Schalter mehr).
-* Tempo 1x/2x ueber `Engine.time_scale` (bewusst nicht schneller -- sonst
-  unlesbar). Ueberspringen gibt es nicht.
-* **Overtime** (nur Autokampf, `data/config.json` -> `overtime`): ab Zyklus 12
-  verliert jeder DROME zu Zugbeginn `ceil(hp_max * 5% * (zyklus - 11))`.
-* Hochformat-HUD: Kopfleiste (Zugreihenfolge, Status), Daumenleiste (Tempo,
-  Pause, Log, Reihe, Folgen). Log und Initiative als einklappbare Paneele.
-* Kamera folgt dem aktiven DROME (~9 Felder breit); ein Finger zieht, zwei
-  zoomen, Mausrad am Desktop. Eigenes Ziehen schaltet das Folgen ab.
-* Log: Schildtreffer als "Schild -8 (Integritaet unversehrt)".
+### Kampf (Echtzeit, Nov. 2026)
+* Alle DROMEs handeln gleichzeitig. `BattleManager.tick()` rechnet in festen
+  Schritten (`realtime.tick` = 0,05 s); derselbe Seed ergibt denselben Kampf.
+  Tests und `tools/playtest/` rufen `run_to_end()`.
+* **Bewegung**: Feld fuer Feld, Geschwindigkeit = `move_base + SPD *
+  move_per_spd` Felder/s (Molok 1,6, Strix 2,0, Vireo 2,6). MOV zaehlt nicht
+  mehr. Das Feld gilt sofort, die Figur gleitet hinterher.
+* **Waffen**: jede Waffe (je Teil) laedt fuer sich, `interval` an der
+  Aktion (Blaster 1,4 s, Runenstab 1,2 s, Lanze 2,6 s, Kanone 3 s).
+* **Faehigkeiten** loesen selbst aus (`trigger` an der Aktion): jeder N-te
+  Angriff einer Waffe IST ihre Faehigkeit; Orbit-Sog alle 6 s; Boost, wenn ein
+  Gegner danebensteht (hoechstens alle 4 s). Energie ist gestrichen
+  (`abilities.brake = "ausloeser"`).
+* **KI nach Rolle**: Nahkaempfer ruecken bis zum Kontakt vor, Fernkaempfer
+  laufen nur bis in Reichweite und weichen aus, wenn jemand naeher als 2
+  Felder kommt. Zielwahl alle 0,5 s mit der alten Bewertung (Schaden,
+  Schild, Abschuss, Aggro, Amtsinhaber).
+* **Puls** (3 s je DROME, versetzt): Schild, Drohnen-Pod, Aderlass,
+  Statuseffekte, Overtime -- was frueher zu Zugbeginn lief.
+* **Overtime** ab 60 s, je Puls wachsend; Zeitgrenze 180 s.
+* **Startzonen** 5 Felder von den Ecken eingerueckt (`deployment.inset`):
+  erster Treffer nach rund 2 s statt nach zwei Zyklen.
+* Bildschirm: Kacheln oben (HP, Schild, Schuesse bis zur Faehigkeit "3/3"),
+  Zeit und Region, Kamera haelt das Geschehen im Bild, Schussspuren,
+  schwebende Zahlen, Faehigkeitsname ueber der Figur. Daumenleiste: Tempo
+  1x/2x, Pause, Log, Folgen. Zugleiste, Aktionsring und manueller Kampf sind
+  entfernt.
 
 ### Lauf (Roguelike) -- `scripts/core/run_state.gd`
 * 8 Kaempfe, 3 Leben, alles am Seed. Werte in `data/config.json` -> `run`.
