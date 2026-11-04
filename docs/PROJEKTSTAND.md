@@ -55,9 +55,16 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * **Drei Gegner je Runde**: Leicht / Normal / Elite (`run.tiers`). Vorher
   sichtbar: Region, Mutator und die gegnerischen DROMEs mit Ausruestung
   (`RunState.enemies()`, dieselben im Kampf ueber `GameState.enemy_override`).
-* Gegnerstaerke = Startstaerke des mitgenommenen Squads * (0,85 + 0,20 *
+* Gegnerstaerke = Startstaerke des mitgenommenen Squads * (0,85 + 0,06 *
   (Runde - 1)) * Stufenfaktor (0,7 / 1,0 / 1,3) -- **feste Kurve**.
-  Gegnerzahl = Startgroesse + `enemy_offsets[runde]` (+1 bei Elite), 1..4.
+  Gegnerzahl = Startgroesse + `enemy_offsets[runde]` (-1 bei Leicht, +1 bei
+  Elite), 1..4. Elite braucht den Extra-Gegner: zwei Gegner kommen im
+  Generator nicht ueber ~680 Kampfwert, bei vier ist bei ~1300 Schluss.
+* **Messung** (vier Standard-DROMEs OHNE Beute, 6 Kaempfe je Feld):
+  Runde 1 Leicht 6/6, Normal 6/6, Elite 2/6; Runde 4: 6/6, 2/6, 0/6;
+  Runde 8: 5/6, 3/6, 0/6. Mit der alten Steigung 0,20 war ab Runde 4 auch
+  Leicht nur 1/6 -- die volle Standardausstattung laesst kaum freie Halter,
+  der Squad waechst durch Beute weniger als frueher.
 * Beute je Stufe: Leicht 1 aus 2 Teilen der Gegner (oft Notstrom); Normal 1
   aus 3 (Runde 2 und 5 ein DROME); Elite garantiert selten = neuer DROME oder
   mittleres/schweres Teil. Es gibt (noch) kein Geld und keine Seltenheitsstufe
