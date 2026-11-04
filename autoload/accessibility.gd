@@ -42,13 +42,16 @@ const MIN_LONG_SIDE := 600.0
 const MIN_FONT := 16
 const MIN_TOUCH := 44
 
-## Anzeigegroesse: Faktor auf die automatische Skalierung.
+## Schriftgroesse: ein Faktor NUR auf die Schrift. Frueher skalierte die
+## Option die ganze Oberflaeche (content_scale_factor) -- dann wurde die
+## logische Flaeche schmaler, als die Bildschirme gebaut sind, und "Gross" sah
+## zerbrochen aus. Jetzt bleibt das Layout, und nur der Text waechst.
 const SIZE_OPTIONS := [
-	{"label": "Automatisch", "factor": 1.0},
-	{"label": "Klein", "factor": 0.85},
-	{"label": "Gross", "factor": 1.2},
-	{"label": "Sehr gross", "factor": 1.4},
+	{"label": "Normal", "factor": 1.0},
+	{"label": "Gross", "factor": 1.15},
+	{"label": "Sehr gross", "factor": 1.3},
 ]
+const BASE_FONT := 18
 
 var size_option: int = 0
 var reduce_motion: bool = false
@@ -61,6 +64,7 @@ func _ready() -> void:
 	_load()
 	get_tree().root.size_changed.connect(_on_resized)
 	get_tree().node_added.connect(_on_node_added)
+	_apply_font_theme()
 	_on_resized.call_deferred()
 
 
@@ -70,9 +74,26 @@ func _ready() -> void:
 
 func set_size_option(index: int) -> void:
 	size_option = clampi(index, 0, SIZE_OPTIONS.size() - 1)
-	_apply_scale()
+	_apply_font_theme()
 	_save()
 	settings_changed.emit()
+
+
+func font_scale() -> float:
+	return float(SIZE_OPTIONS[size_option]["factor"])
+
+
+## Eine Schriftgroesse aus dem Entwurf, mit dem Faktor der Option.
+func font(size: int) -> int:
+	return maxi(MIN_FONT, int(round(float(size) * font_scale())))
+
+
+## Grundschrift fuer alles ohne eigene Groesse: ueber das Theme der Wurzel,
+## das an jedes Control weitervererbt wird.
+func _apply_font_theme() -> void:
+	var theme := Theme.new()
+	theme.default_font_size = font(BASE_FONT)
+	get_tree().root.theme = theme
 
 
 func set_reduce_motion(value: bool) -> void:
@@ -95,7 +116,9 @@ func _load() -> void:
 	var data = JSON.parse_string(file.get_as_text())
 	if typeof(data) != TYPE_DICTIONARY:
 		return
-	size_option = clampi(int(data.get("size_option", 0)), 0, SIZE_OPTIONS.size() - 1)
+	# Die Optionen haben sich geaendert (vorher vier, mit "Klein" an Stelle 1):
+	# alte Werte landen sicher auf "Normal".
+	size_option = clampi(int(data.get("font_option", 0)), 0, SIZE_OPTIONS.size() - 1)
 	reduce_motion = bool(data.get("reduce_motion", reduce_motion))
 
 
@@ -107,7 +130,7 @@ func _save() -> void:
 	if file == null:
 		return
 	file.store_string(JSON.stringify({
-		"size_option": size_option,
+		"font_option": size_option,
 		"reduce_motion": reduce_motion,
 	}))
 
@@ -143,8 +166,7 @@ static func compute_scale(window: Vector2, pixel_ratio: float, user_factor: floa
 
 func _apply_scale() -> void:
 	var window := Vector2(DisplayServer.window_get_size())
-	var factor := compute_scale(window, _pixel_ratio(),
-		float(SIZE_OPTIONS[size_option]["factor"]))
+	var factor := compute_scale(window, _pixel_ratio(), 1.0)
 	get_tree().root.content_scale_factor = factor
 
 
@@ -196,10 +218,19 @@ func _enforce_minimums(node) -> void:
 			control.custom_minimum_size = Vector2(minimum.x, MIN_TOUCH)
 
 
+## Jede gesetzte Schriftgroesse bekommt den Faktor der Option und die
+## Untergrenze. Die Entwurfsgroesse merkt sich der Knoten (Meta), damit ein
+## zweiter Durchlauf nicht noch einmal multipliziert.
 func _raise_font(control: Control, key: String) -> void:
-	if control.has_theme_font_size_override(key):
-		if control.get_theme_font_size(key) < MIN_FONT:
-			control.add_theme_font_size_override(key, MIN_FONT)
+	if not control.has_theme_font_size_override(key):
+		return
+	var meta := "a11y_base_" + key
+	var base: int = control.get_meta(meta) if control.has_meta(meta) \
+		else control.get_theme_font_size(key)
+	control.set_meta(meta, base)
+	var wanted := font(base)
+	if control.get_theme_font_size(key) != wanted:
+		control.add_theme_font_size_override(key, wanted)
 
 
 # ---------------------------------------------------------------------------
@@ -223,6 +254,14 @@ var _press_position := Vector2.ZERO
 var _swallow_release := false
 var _swallow_until_msec := 0
 const SWALLOW_AFTER_MSEC := 400
+## Wischen zum Scrollen (siehe _scroll_input).
+const SCROLL_THRESHOLD := 12.0
+const SCROLL_FRICTION := 5.0
+var _scroll_target: ScrollContainer
+var _scroll_dragging := false
+var _scroll_distance := 0.0
+var _scroll_velocity := Vector2.ZERO
+var _scroll_coasting := false
 var _tip_layer: CanvasLayer
 var _tip_panel: PanelContainer
 var _tip_label: Label
@@ -244,6 +283,8 @@ func _input(event: InputEvent) -> void:
 		if event is InputEventMouseButton:
 			get_viewport().set_input_as_handled()
 			return
+	if _scroll_input(event):
+		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			_hide_tip()
@@ -259,6 +300,76 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag:
 		if event.position.distance_to(_press_position) > LONG_PRESS_SLOP:
 			_press_active = false
+
+
+## Wischen zum Scrollen -- fuer JEDE Liste, ohne dass ein Bildschirm davon
+## wissen muss.
+##
+## Godots ScrollContainer scrollt per Finger nur, wenn man auf seine freie
+## Flaeche tippt; liegt ein Knopf oder eine Karte darunter (also fast immer),
+## schluckt die das Ereignis, und es blieb nur die schmale Leiste rechts. Hier
+## wird deshalb der naechste ScrollContainer unter dem Finger selbst bewegt,
+## sobald der Finger weiter als SCROLL_THRESHOLD wandert. Ab dann wird das
+## Loslassen verschluckt -- sonst loeste das Ende eines Wischers den Knopf aus,
+## auf dem er angefangen hat. Beim Loslassen laeuft die Liste mit Schwung aus.
+func _scroll_input(event: InputEvent) -> bool:
+	if event is InputEventScreenTouch:
+		if event.pressed and event.index == 0:
+			_scroll_coasting = false
+			_scroll_velocity = Vector2.ZERO
+			_scroll_target = _scroll_container_under_finger()
+			_scroll_dragging = false
+			_scroll_distance = 0.0
+		elif not event.pressed and _scroll_dragging:
+			_scroll_dragging = false
+			_scroll_coasting = _scroll_velocity.length() > 60.0
+		return false
+	if event is InputEventScreenDrag and event.index == 0 and _scroll_target != null:
+		if not is_instance_valid(_scroll_target):
+			_scroll_target = null
+			return false
+		_scroll_distance += event.relative.length()
+		if not _scroll_dragging and _scroll_distance > SCROLL_THRESHOLD:
+			_scroll_dragging = true
+			_press_active = false        # kein langes Druecken mehr
+			_swallow_release = true      # und kein Klick am Ende
+		if _scroll_dragging:
+			_scroll_by(-event.relative)
+			var delta := maxf(get_process_delta_time(), 1.0 / 120.0)
+			_scroll_velocity = _scroll_velocity.lerp(-event.relative / delta, 0.5)
+			get_viewport().set_input_as_handled()
+			return true
+	return false
+
+
+func _scroll_container_under_finger() -> ScrollContainer:
+	var node: Node = get_viewport().gui_get_hovered_control()
+	while node != null:
+		if node is ScrollContainer:
+			return node
+		node = node.get_parent()
+	return null
+
+
+func _scroll_by(amount: Vector2) -> void:
+	if _scroll_target == null or not is_instance_valid(_scroll_target):
+		return
+	if _scroll_target.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
+		_scroll_target.scroll_vertical += int(round(amount.y))
+	if _scroll_target.horizontal_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
+		_scroll_target.scroll_horizontal += int(round(amount.x))
+
+
+func _process(delta: float) -> void:
+	if not _scroll_coasting:
+		return
+	if reduce_motion or _scroll_target == null or not is_instance_valid(_scroll_target):
+		_scroll_coasting = false
+		return
+	_scroll_by(_scroll_velocity * delta)
+	_scroll_velocity = _scroll_velocity.lerp(Vector2.ZERO, clampf(SCROLL_FRICTION * delta, 0.0, 1.0))
+	if _scroll_velocity.length() < 20.0:
+		_scroll_coasting = false
 
 
 ## Der Text des Controls unter dem Finger -- oder seines naechsten Elternteils

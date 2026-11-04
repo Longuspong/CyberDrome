@@ -25,7 +25,10 @@ bash tools/build_web.sh                                       # Web-Export nach 
 * **Mobile first, Hochformat ist die Hauptansicht.** Querformat wird
   angeboten, ist aber zweitrangig. Neue Bildschirme werden zuerst fuer
   ein Handy im Hochformat entworfen (ca. 400 CSS-Pixel breit).
-* Navigation: Tab-Leiste unten (Spielen, Garage, Inventar, Einstellungen).
+* Navigation: Tab-Leiste unten (Spielen, Hangar, Optionen). Der Hangar
+  vereint Squad (Karussell, max. 4) und Umbau (Halter als Formen:
+  Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
+  nach oben in groessere Halter, schwer nur in schwer).
 * Spielfeld bleibt 20x20; die Kamera folgt dem Geschehen, Zoomen und Ziehen
   per Finger.
 * Das Spiel ist ein **Autobattler**: die KI steuert beide Seiten

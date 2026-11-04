@@ -40,8 +40,7 @@ const WARN := Color(1.0, 0.78, 0.4)
 ## Die Hauptseiten der Tab-Leiste: Titel und Szene.
 const TABS := [
 	["Spielen", "res://scenes/main.tscn"],
-	["Garage", "res://scenes/garage.tscn"],
-	["Inventar", "res://scenes/inventory.tscn"],
+	["Hangar", "res://scenes/hangar.tscn"],
 	["Optionen", "res://scenes/settings.tscn"],
 ]
 
@@ -140,7 +139,7 @@ static func header(root: Control, title: String, back: String = "") -> Control:
 	return bar
 
 
-## Die Leiste unten: vier Hauptseiten, die aktive hervorgehoben.
+## Die Leiste unten: drei Hauptseiten, die aktive hervorgehoben.
 static func tab_bar(root: Control, active: int) -> Control:
 	var bar := PanelContainer.new()
 	var style := StyleBoxFlat.new()
@@ -263,3 +262,59 @@ static func row(name: String, value: String, color: Color = Color.WHITE) -> HBox
 	right.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	line.add_child(right)
 	return line
+
+
+# --- Bilder ----------------------------------------------------------------
+
+static var _crops: Dictionary = {}
+
+
+## Das Bild eines Teils, auf seinen sichtbaren Inhalt zugeschnitten -- ein Kern
+## belegt nur einen kleinen Teil seiner 128er Leinwand und waere sonst ein Punkt.
+static func part_texture(part: PartData, facing: String = "south") -> Texture2D:
+	if part == null:
+		return null
+	var path := str(part.view(facing).get("svg", ""))
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	if _crops.has(path):
+		return _crops[path]
+	var texture: Texture2D = load(path)
+	var result: Texture2D = texture
+	var image := texture.get_image()
+	if image != null:
+		if image.is_compressed():
+			image.decompress()
+		var used := image.get_used_rect()
+		if used.size.x > 0 and used.size.y > 0:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = texture
+			atlas.region = Rect2(used)
+			result = atlas
+	_crops[path] = result
+	return result
+
+
+## Ein DROME als Bild: der GANZE Bot (Koerper, Kopf, Fuesse, Kern, Ausruestung)
+## ueber DromeSprites -- derselbe Zusammenbau wie im Kampf. ``edge`` ist die
+## Kantenlaenge des Bildes.
+static func drome_view(build: DromeBuild, edge: float, facing: String = "south") -> Control:
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(edge, edge)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.clip_contents = true
+	var rig := Node2D.new()
+	var scale := edge / 112.0
+	rig.scale = Vector2(scale, scale)
+	rig.position = Vector2(edge * 0.5, edge * 0.92) - IsoView.SPRITE_ORIGIN * scale
+	DromeSprites.assemble(rig, build, facing)
+	holder.add_child(rig)
+	return holder
+
+
+## Ein Chassis als ganze Huelle (Koerper mit Kopf und Fuessen seines Sets) --
+## nicht nur der Rumpf.
+static func chassis_view(body: PartData, edge: float) -> Control:
+	var build := DromeBuild.create(body.display_name, {})
+	build.apply_chassis(body.id)
+	return drome_view(build, edge)

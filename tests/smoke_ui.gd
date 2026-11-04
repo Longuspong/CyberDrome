@@ -1,6 +1,6 @@
 extends SceneTree
 
-## Smoke-Test der neuen UI-Szenen (§10g): instanziiert Garage und Werkstatt
+## Smoke-Test der UI-Szenen: instanziiert den Hangar (Squad, dann Umbau)
 ## headless und prueft, dass ihr _ready ohne Laufzeitfehler durchlaeuft. Die
 ## regulaeren Tests pruefen das Datenmodell; hier geht es nur darum, dass die
 ## Bildschirme sich ueberhaupt aufbauen. Kein Teil der SUITES -- eigener Lauf:
@@ -23,21 +23,20 @@ func _process(_delta: float) -> bool:
 	var gs := _game_state()
 	match _frame:
 		2:
-			var garage = load("res://scenes/garage.tscn").instantiate()
-			root.add_child(garage)
-			print("SMOKE: Garage instanziiert (%d DROMEs, %d im Squad)"
+			var hangar = load("res://scenes/hangar.tscn").instantiate()
+			root.add_child(hangar)
+			print("SMOKE: Hangar (Squad) instanziiert (%d DROMEs, %d im Squad)"
 				% [gs.roster.entries.size(), gs.roster.squad_count()])
 		5:
 			for child in root.get_children():
-				if child.name == "Garage":
+				if child.name == "Hangar":
 					child.free()
 		7:
-			# Die Werkstatt braucht einen gewaehlten Eintrag -- ohne den schickt
-			# sie zur Garage zurueck. Hier den ersten Start-DROME anpassen.
+			# Mit gewaehltem Eintrag oeffnet der Hangar direkt den Umbau.
 			gs.editing_index = 0
-			var workshop = load("res://scenes/workshop.tscn").instantiate()
-			root.add_child(workshop)
-			print("SMOKE: Werkstatt instanziiert fuer '%s'"
+			var umbau = load("res://scenes/hangar.tscn").instantiate()
+			root.add_child(umbau)
+			print("SMOKE: Hangar (Umbau) instanziiert fuer '%s'"
 				% gs.roster.entries[0].name)
 		12:
 			print("SMOKE_OK")

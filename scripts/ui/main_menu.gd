@@ -6,7 +6,7 @@ extends Control
 ##   Mitte    die Kulisse: zufaellige DROMEs, die einander bearbeiten
 ##            (MenuArena). Sie fuellt den Platz, den die Knoepfe uebrig lassen.
 ##   unten    die Hauptaktion "Lauf starten", darunter der Chaos-Virus
-##   Leiste   Spielen · Garage · Inventar · Optionen (UiKit.tab_bar)
+##   Leiste   Spielen · Hangar · Optionen (UiKit.tab_bar)
 ##
 ## Der Daumen erreicht unten alles, was man hier tut; oben steht nur, was man
 ## ansieht.
@@ -79,6 +79,6 @@ func _refresh_status() -> void:
 		_status.text = ""
 		_status.visible = false
 	else:
-		_status.text = "Fuer den Chaos-Virus fehlen kampftaugliche DROMEs -- in der Garage welche bauen."
+		_status.text = "Fuer den Chaos-Virus fehlen kampftaugliche DROMEs -- im Hangar welche bauen."
 		_status.modulate = UiKit.BAD
 	_chaos.disabled = not ready

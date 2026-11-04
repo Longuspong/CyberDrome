@@ -308,7 +308,7 @@ func test_symbols_separate_actions_that_do_different_things() -> void:
 # einzige Regel, die der Umbau neu aufgeschrieben hat: welche Halterungen ein
 # Klick auf ein Ausruestungsteil anbietet und warum die uebrigen nicht.
 
-const Workshop := preload("res://scripts/ui/workshop_screen.gd")
+const Workshop := preload("res://scripts/core/slot_rules.gd")
 
 
 func _molok() -> DromeBuild:
