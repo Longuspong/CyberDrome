@@ -225,6 +225,25 @@ Regionsthemen (Vorschlag, die ersten beiden Regionen nur skizziert):
 * **Anlage 7 -- Panzerung:** hohe DEF, langsam, schwer. Konter: kinetischer
   Schaden, Durchschlag.
 
+**Markenzeichen Neon: es leuchtet** (Vorgabe des Spielers). Neon-Gegner,
+-Waffen und -Ausruestung erkennt man daran, dass ihre Akzente wie
+Neonroehren gluehen -- ein Neon-Vireo ist ein Vireo mit leuchtenden Roehren.
+Vorschlag zur Umsetzung:
+
+* **Gleiche Form, andere Palette:** die Teile haben schon eigene Farbrollen
+  fuer Neon-Streifen (`--c-accent`) und Leuchten (`--c-glow`). Eine
+  Neon-Variante bekommt dort grelle, gesaettigte Farben (Pink, Cyan,
+  Violett); die Panzerung wird dunkler, damit die Roehren sich abheben.
+* **Echtes Leuchten im Spiel:** die Akzent-Flaechen werden beim Backen
+  zusaetzlich als eigene Ebene herausgeschrieben und im Kampf weich
+  verwischt und additiv ueber die Figur gelegt (Lichthof), mit leichtem
+  Pulsieren und gelegentlichem Flackern wie bei einer Roehre. Ob das mit dem
+  GL-Compatibility-Renderer im Browser fluessig laeuft, muss ein kleiner
+  Prototyp zeigen; Rueckfall waere ein vorgerechneter Lichthof je Teil.
+* Gilt fuer alles Neon: DROMEs, Waffen, Ausruestung, auch Schussspuren und
+  Schildring der Neon-Gegner. "Animationen reduzieren" schaltet Pulsieren
+  und Flackern ab, das Leuchten bleibt.
+
 Varianten werden **freigeschaltet**, indem man die Region schlaegt -- dann
 kommen sie in den Beutetopf. Das ist das "pokern auf Items, die man kennt".
 
