@@ -4,7 +4,7 @@ extends RefCounted
 ## Wuerfelt das Gegnersquad fuer den Chaos-Virus.
 ##
 ## Keine Godot-Knoten, ohne Szene testbar. Derselbe Seed ergibt exakt
-## dieselben Gegner -- zusammen mit Karte und Mutator macht das einen Kampf
+## dieselben Gegner -- zusammen mit der Karte macht das einen Kampf
 ## reproduzierbar, und im Playtesting ist das Gold wert.
 ##
 ## Die Slots werden PRO CHASSIS gewuerfelt, nicht gegen eine feste Sechserliste:

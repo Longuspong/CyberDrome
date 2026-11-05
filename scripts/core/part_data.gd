@@ -49,21 +49,15 @@ var slot_rules: Dictionary = {}
 
 ## Spielwerte. Flach, additiv, ohne Grundwerte irgendwo sonst.
 var hp: int = 0
-var en_max: int = 0
-var en_regen: int = 0
 var spd: int = 0
-var mov: int = 0
 var atk: int = 0
 var def: int = 0
 ## Zwei-Verteidigungs-System (§11): Energieschild-Grundwert (Chassis), seine
-## Nachfuellung je Zug (Kern) und die prozentuale Schild-Effizienz (Kern).
+## Nachfuellung je Puls (Kern) und die prozentuale Schild-Effizienz (Kern).
 var shield: int = 0
 var shield_regen: int = 0
 var shield_bonus: float = 0.0
 var weight: int = 0
-var power_draw: int = 0
-var weight_capacity: int = 0        ## nur body
-var power_output: int = 0           ## nur core
 
 ## Traversierung -- die eigentliche Kaufentscheidung beim Antrieb
 var can_pass_units: bool = false
@@ -76,7 +70,7 @@ var step_cost_reduced: bool = false
 ## Sensorik
 var grants_ignore_haze: bool = false
 
-## Passive Selbstheilung je Zug, in Prozent der maximalen Integritaet (5 = 5 %).
+## Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet (5 = 5 %).
 ## Der Drohnen-Pod traegt sie -- eine Passive statt einer aktiven Heilung.
 var hp_regen_pct: int = 0
 
@@ -118,19 +112,13 @@ static func from_meta(meta: Dictionary) -> PartData:
 
 	var stats: Dictionary = meta.get("stats", {})
 	part.hp = stats.get("hp", 0)
-	part.en_max = stats.get("en_max", 0)
-	part.en_regen = stats.get("en_regen", 0)
 	part.spd = stats.get("spd", 0)
-	part.mov = stats.get("mov", 0)
 	part.atk = stats.get("atk", 0)
 	part.def = stats.get("def", 0)
 	part.shield = stats.get("shield", 0)
 	part.shield_regen = stats.get("shield_regen", 0)
 	part.shield_bonus = float(stats.get("shield_bonus", 0.0))
 	part.weight = stats.get("weight", 0)
-	part.power_draw = stats.get("power_draw", 0)
-	part.weight_capacity = stats.get("weight_capacity", 0)
-	part.power_output = stats.get("power_output", 0)
 	part.can_pass_units = stats.get("can_pass_units", false)
 	part.can_enter_steps = stats.get("can_enter_steps", false)
 	part.can_pass_blocks = stats.get("can_pass_blocks", false)

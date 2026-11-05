@@ -47,8 +47,8 @@ func test_stock_builds_are_valid() -> void:
 		t.ok(problems.is_empty(), "%s: %s" % [set_id, ", ".join(problems)])
 		if problems.is_empty():
 			var s := build.stats()
-			t.note("%s  hp %3d  en %3d  spd %2d  mov %d  atk %d  def %d  kampfwert %.0f"
-				% [set_id, s["hp_max"], s["en_max"], s["spd"], s["mov"],
+			t.note("%s  hp %3d  spd %2d  atk %d  def %d  kampfwert %.0f"
+				% [set_id, s["hp_max"], s["spd"],
 					s["atk"], s["def"], build.power_score()])
 
 
@@ -90,8 +90,7 @@ func test_a_build_without_a_weapon_is_a_decision_not_an_error() -> void:
 
 
 func test_the_payload_slows_you_down() -> void:
-	# Masse bremst, Strom kostet. Die Belagerungskanone zieht keinen Strom mehr
-	# (power_draw 0, en_cost 0) -- bezahlt wird sie in Gewicht und Tempo.
+	# Masse bremst: die Belagerungskanone zahlt in Gewicht und Tempo.
 	var step := Config.get_int("spd_weight_step", 4)
 	var bare := DromeBuild.create("NACKT", {
 		"body": &"jugg_body", "head": &"jugg_head",
@@ -100,12 +99,6 @@ func test_the_payload_slows_you_down() -> void:
 	armed.slots["equip_left"] = &"eq_siege_cannon"
 
 	var cannon := PartDB.get_part(&"eq_siege_cannon")
-	t.equal(cannon.power_draw, 0, "die Kanone braucht keinen Bau-Strom")
-	var cannon_attack: ActionData = null
-	for a in cannon.actions:
-		if a.is_attack():
-			cannon_attack = a
-	t.equal(cannon_attack.en_cost, 0, "ihr Angriff kostet keine Energie im Kampf")
 
 	t.equal(bare.payload_slowdown(), 0, "ohne Zuladung bremst nichts")
 	t.equal(armed.payload_slowdown(), cannon.weight / step,
@@ -175,22 +168,6 @@ func test_apply_chassis_sets_the_whole_frame() -> void:
 	for slot in ["body", "head", "feet"]:
 		frame_sets[PartDB.get_part(build.slots[slot]).set_id] = true
 	t.equal(frame_sets.size(), 1, "der Rahmen ist danach eine stimmige Huelle")
-
-
-func test_no_ability_costs_more_than_the_smallest_core_holds() -> void:
-	# Die Energiekosten der Faehigkeiten sind bewusst hoch -- drei bis vier
-	# Anwendungen je Gefecht. Waere eine davon teurer als der kleinste Tank im
-	# Bestand, stuende sie in der Aktionsleiste und liesse sich nie ziehen.
-	var smallest := 0
-	for part in PartDB.of_type(PartData.Type.CORE):
-		if smallest == 0 or part.en_max < smallest:
-			smallest = part.en_max
-
-	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-		for action in part.actions:
-			t.ok(action.en_cost <= smallest,
-				"%s kostet %d, kleinster Kern haelt %d"
-				% [action.display_name, action.en_cost, smallest])
 
 
 func test_the_vireo_can_carry_two_pulse_blasters() -> void:

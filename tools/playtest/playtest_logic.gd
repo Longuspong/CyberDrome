@@ -79,8 +79,7 @@ func _play(seed_value: int, builds: Array) -> Dictionary:
 	EventBus.action_used.connect(on_action)
 	EventBus.unit_moved.connect(on_move)
 	if _detail:
-		_lines.append("Region %s, Mutator %s" % [battle.region.display_name,
-			battle.mutator.display_name])
+		_lines.append("Region %s" % battle.region.display_name)
 		for u in battle.units:
 			_lines.append("  %s %s @%s HP %d SH %d SPD %d Tempo %.2f Felder/s Rw %d" % [
 				"P" if u.is_player else "E", u.display_name, u.tile, u.hp,

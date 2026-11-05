@@ -22,9 +22,9 @@ func _init(battle_seed: int = 0) -> void:
 	_config = Config.section("map")
 
 
-## Erzeugt ein Gitter. ``mutator`` skaliert die Mengen (Schrottfeld,
-## Oelhavarie, Planiert ...) und ist ansonsten fuer den Generator bedeutungslos.
-func generate(region: Terrain.Region, mutator: Dictionary = {}) -> Grid:
+## Erzeugt ein Gitter. ``scales`` skaliert die Mengen je Gelaendeart
+## (block_scale, step_scale, drift_scale, haze_scale) -- fuer Tests.
+func generate(region: Terrain.Region, scales: Dictionary = {}) -> Grid:
 	var width := Config.get_int("grid_width", Grid.DEFAULT_SIZE)
 	var height := Config.get_int("grid_height", Grid.DEFAULT_SIZE)
 	var max_attempts := int(_config.get("max_attempts", 20))
@@ -32,7 +32,7 @@ func generate(region: Terrain.Region, mutator: Dictionary = {}) -> Grid:
 	var fallback: Grid = null
 	for attempt in max_attempts:
 		attempts_used = attempt + 1
-		var grid := _build_once(width, height, region, mutator)
+		var grid := _build_once(width, height, region, scales)
 		if _is_playable(grid):
 			return grid
 		if fallback == null:
@@ -48,17 +48,17 @@ func generate(region: Terrain.Region, mutator: Dictionary = {}) -> Grid:
 
 
 func _build_once(width: int, height: int, region: Terrain.Region,
-		mutator: Dictionary) -> Grid:
+		scales: Dictionary) -> Grid:
 	var grid := Grid.new(width, height)
 	grid.region = region
 	grid.fill(Terrain.TClass.NORMAL)
 
 	var reserved := _deployment_tiles(grid)
 
-	_place_blocks(grid, reserved, float(mutator.get("block_scale", 1.0)))
-	_place_steps(grid, reserved, float(mutator.get("step_scale", 1.0)))
-	_place_drift(grid, reserved, region, float(mutator.get("drift_scale", 1.0)))
-	_place_haze(grid, reserved, float(mutator.get("haze_scale", 1.0)))
+	_place_blocks(grid, reserved, float(scales.get("block_scale", 1.0)))
+	_place_steps(grid, reserved, float(scales.get("step_scale", 1.0)))
+	_place_drift(grid, reserved, region, float(scales.get("drift_scale", 1.0)))
+	_place_haze(grid, reserved, float(scales.get("haze_scale", 1.0)))
 	return grid
 
 

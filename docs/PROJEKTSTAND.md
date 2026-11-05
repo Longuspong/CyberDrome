@@ -42,13 +42,20 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Aktion (Blaster 1,4 s, Runenstab 1,2 s, Lanze 2,6 s, Kanone 3 s).
 * **Faehigkeiten** loesen selbst aus (`trigger` an der Aktion): jeder N-te
   Angriff einer Waffe IST ihre Faehigkeit; Orbit-Sog alle 6 s; Boost, wenn ein
-  Gegner danebensteht (hoechstens alle 4 s). Energie ist gestrichen
-  (`abilities.brake = "ausloeser"`).
+  Gegner danebensteht (hoechstens alle 4 s).
+* **Aufgeraeumt (5. Nov. 2026, mit dem Spieler abgesprochen)**: Energie
+  (`en_max`, `en_regen`, `en_cost`), Abklingzeiten, MOV, Strombedarf,
+  Leistung, Traglast und die **Mutatoren** sind komplett raus -- aus Code,
+  Teildaten und Anzeige. Gewicht bleibt nur als Tempo-Preis und wird als
+  "bremst um X SPD" gezeigt. Provokation zaehlt Pulse, angezeigt in
+  Sekunden. Alte Balancing-Liste (`data/balancing/`, `build_balance_sheet.py`)
+  geloescht. Noch veraltet: `tools/export_parts_table.py` und die
+  SVG-Werkstatt kennen die alten Felder noch.
 * **KI nach Rolle**: Nahkaempfer ruecken bis zum Kontakt vor, Fernkaempfer
   laufen nur bis in Reichweite und weichen aus, wenn jemand naeher als 2
   Felder kommt. Zielwahl alle 0,5 s mit der alten Bewertung (Schaden,
   Schild, Abschuss, Aggro, Amtsinhaber).
-* **Puls** (3 s je DROME, versetzt): Schild, Drohnen-Pod, Aderlass,
+* **Puls** (3 s je DROME, versetzt): Schild, Drohnen-Pod,
   Statuseffekte, Overtime -- was frueher zu Zugbeginn lief.
 * **Overtime** ab 60 s, je Puls wachsend; Zeitgrenze 180 s.
 * **Startzonen** 5 Felder von den Ecken eingerueckt (`deployment.inset`):
@@ -72,7 +79,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * (Frueher fester Start-Squad Vireo + Nimbus -- das war der Fehler "im Lauf
   kommt ein ganz anderes Squad raus", behoben Nov. 2026.)
 * **Drei Gegner je Runde**: Leicht / Normal / Elite (`run.tiers`). Vorher
-  sichtbar: Region, Mutator und die gegnerischen DROMEs mit Ausruestung
+  sichtbar: Region und die gegnerischen DROMEs mit Ausruestung
   (`RunState.enemies()`, dieselben im Kampf ueber `GameState.enemy_override`).
 * Gegnerstaerke = Startstaerke des mitgenommenen Squads * (0,85 + 0,06 *
   (Runde - 1)) * Stufenfaktor (0,7 / 1,0 / 1,3) -- **feste Kurve**.
@@ -99,11 +106,21 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Standardausstattung, **alle vier im Squad** (`Roster.seed_starter`).
 
 ### Hangar -- `scripts/ui/hangar_screen.gd`
-* Reiter **Squad**: Karussell (max. 4), darunter alle DROMEs (ausgegraut wer
-  dabei ist), "Neuen DROME bauen" mit ganzer Chassis-Huelle.
-* Reiter **Umbau**: DROME-Auswahl, Bild + Werte, Halter als Formen, Teile
-  fuer den gewaehlten Halter (passend zuerst, sonst mit Grund), Vorschau mit
-  Wertaenderung, "ersetzt X", "Einbauen". "DROME aufloesen" unten.
+* Reiter **Squad** (umgebaut Nov. 2026 nach Skizze des Spielers): oben die
+  anderen Squad-Mitglieder als Kacheln (nur Bild, freie Plaetze "frei"),
+  darunter der Hauptgewaehlte als grosse Box mit Werten, Ausruestung und
+  "Aus dem Squad". Darunter alle DROMEs als Kacheln (3 je Reihe, gruen
+  umrandet = im Squad) -- ohne Ueberschrift. Antippen eines Squad-Mitglieds
+  macht es zum Hauptgewaehlten; Antippen eines anderen klappt unter seiner
+  Reihe Angaben und "In den Squad" auf. Der Knopf "Umbauen" in der Mitte ist
+  weg (der Reiter oben reicht). "Neuen DROME bauen" mit ganzer Chassis-Huelle.
+* Reiter **Umbau**: DROME-Auswahl, Bild + Werte, Halter als Formen mit
+  Klasse darunter (leicht gruen, mittel gelb, schwer rot); der gewaehlte
+  Halter steht im Kasten, die Halter-Karte nennt ihn gross ("Halter links",
+  "MITTEL · nimmt leichte und mittlere Teile"). Teile als Kacheln (nur Form
+  und Bild, passend zuerst, sonst gedaempft); angetippt erscheint DARUEBER
+  eine Karte mit allen Angaben, Grund, Wertaenderung, "ersetzt X",
+  "Einbauen" (Nov. 2026 nach Skizze). "DROME aufloesen" unten.
 * **Halter-Formen** (`scripts/ui/slot_shape.gd`): Dreieck = leicht,
   Viereck = mittel, Fuenfeck = schwer, Kreis = Kern. Ausruestung traegt
   dieselbe Form wie ihre Klasse. Regel: leicht passt nach oben in groessere

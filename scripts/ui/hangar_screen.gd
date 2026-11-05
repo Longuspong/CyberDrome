@@ -7,29 +7,34 @@ extends Control
 ## Blaster einbauen wollte, musste zwischen ihnen hin und her. Hier gibt es zwei
 ## Reiter:
 ##
-##   Squad   oben das Karussell mit dem Squad (hoechstens vier), darunter alle
-##           DROMEs -- ausgegraut, wer schon im Squad ist. Antippen holt einen
-##           DROME in den Squad.
+##   Squad   oben der Squad (hoechstens vier): der Hauptgewaehlte als grosse
+##           Box mit Angaben, die anderen als Kacheln (nur das Bild). Darunter
+##           alle DROMEs als Kacheln, gruen umrandet wer im Squad ist. Antippen
+##           zeigt die Angaben und "In den Squad".
 ##   Umbau   oben die DROME-Auswahl, darunter seine Halter als Formen
 ##           (Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern) mit
-##           dem, was drinsteckt, oder "frei". Ein Halter angetippt zeigt die
-##           Teile, die hineinpassen -- jedes in seiner eigenen Form. Ein Teil
-##           angetippt zeigt, was sich aendert, und "Einbauen".
+##           Klasse darunter; der gewaehlte steht im Kasten. Seine Teile als
+##           Kacheln (nur die Form), passende zuerst. Eine Kachel angetippt
+##           zeigt darueber alle Angaben, was sich aendert, und "Einbauen".
 ##
 ## Regeln, Werte und Validierung kommen wie ueberall aus Roster, DromeBuild und
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
 
 const PORTRAIT := 150.0
-const CAROUSEL_CARD := 190.0
-const ROW_PORTRAIT := 72.0
+const PRIMARY_EDGE := 140.0
+const TILE_EDGE := 104.0
+const TILE_COLUMNS := 3
+const TILE_GAP := 10
 const SLOT_EDGE := 64.0
-const PART_EDGE := 56.0
+const PART_EDGE := 72.0
 
 ## Welcher Reiter: "squad" oder "umbau". Ueberlebt einen Szenenwechsel ueber
 ## die Meta des GameState nicht -- muss es auch nicht: aus dem Kampf kommt man
 ## am besten im Squad an.
 var _tab := "squad"
 var _selected := -1
+## Wer im Squad-Reiter gross oben steht (Index, -1 = keiner).
+var _primary := -1
 var _selected_slot := "core"
 ## Ob die Info zum eingebauten Teil im gewaehlten Halter aufgeklappt ist.
 var _slot_details: bool = false
@@ -137,116 +142,168 @@ func _show_squad() -> void:
 	_content.add_child(UiKit.label("Squad  %d / %d" % [count, _squad_max()], UiKit.H2,
 		UiKit.GOOD if count > 0 else UiKit.BAD))
 
-	# Karussell: der Squad, waagrecht zum Wischen, freie Plaetze als Rahmen.
-	var carousel := ScrollContainer.new()
-	carousel.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	carousel.custom_minimum_size = Vector2(0, CAROUSEL_CARD + 70)
-	_content.add_child(carousel)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	carousel.add_child(row)
-	var shown := 0
+	# Der Hauptgewaehlte gross, die uebrigen Squad-Plaetze als Kacheln darunter.
+	var primary := _primary_index()
+	var others: Array = []
 	for i in _entries().size():
-		if _entries()[i].in_squad:
-			row.add_child(_carousel_card(i))
-			shown += 1
-	for _i in maxi(0, _squad_max() - shown):
-		row.add_child(_empty_card())
+		if _entries()[i].in_squad and i != primary:
+			others.append(_drome_tile(i))
+	while others.size() < _squad_max() - 1:
+		others.append(_empty_tile())
+	_add_tile_rows(_content, others)
+	_content.add_child(_primary_card(primary))
 
-	if _selected >= 0 and _selected < _entries().size() and _entries()[_selected].in_squad:
-		var actions := HBoxContainer.new()
-		actions.add_theme_constant_override("separation", 8)
-		var edit := UiKit.button("Umbauen", true)
-		edit.pressed.connect(func(): _switch("umbau"))
-		actions.add_child(edit)
-		var out := UiKit.button("Aus dem Squad")
-		var entry: RosterEntry = _entries()[_selected]
-		out.pressed.connect(func():
-			entry.in_squad = false
-			_changed())
-		actions.add_child(out)
-		_content.add_child(actions)
-
-	_content.add_child(UiKit.heading("Alle DROMEs"))
-	_content.add_child(UiKit.label("Antippen holt einen DROME in den Squad. Ausgegraut: "
-		+ "schon dabei.", UiKit.SMALL, UiKit.MUTED))
+	# Alle DROMEs als Kacheln -- nur das Bild. Die Angaben kommen erst beim
+	# Antippen, direkt unter der Reihe der Kachel.
+	var tiles: Array = []
 	for i in _entries().size():
-		_content.add_child(_roster_row(i))
+		tiles.append(_drome_tile(i))
+	var rows := _add_tile_rows(_content, tiles)
+	if _selected >= 0 and _selected < _entries().size() and not _entries()[_selected].in_squad:
+		var row: Control = rows[_selected / TILE_COLUMNS]
+		var details := _roster_details(_selected)
+		_content.add_child(details)
+		_content.move_child(details, row.get_index() + 1)
 
 	_new_drome_section()
 
 
-func _carousel_card(index: int) -> Control:
+## Wer gross oben steht: der gewaehlte DROME, wenn er im Squad ist, sonst der
+## zuletzt gross gezeigte, sonst der erste im Squad. -1 bei leerem Squad.
+func _primary_index() -> int:
+	for candidate in [_selected, _primary]:
+		if candidate >= 0 and candidate < _entries().size() and _entries()[candidate].in_squad:
+			_primary = candidate
+			return candidate
+	for i in _entries().size():
+		if _entries()[i].in_squad:
+			_primary = i
+			return i
+	_primary = -1
+	return -1
+
+
+## Kacheln in Reihen zu TILE_COLUMNS; die letzte Reihe wird mit Luecken
+## aufgefuellt, damit alle Kacheln gleich breit bleiben. Gibt die Reihen zurueck.
+func _add_tile_rows(parent: Control, tiles: Array) -> Array:
+	var rows: Array = []
+	for start in range(0, tiles.size(), TILE_COLUMNS):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", TILE_GAP)
+		for k in TILE_COLUMNS:
+			if start + k < tiles.size():
+				row.add_child(tiles[start + k])
+			else:
+				var gap := Control.new()
+				gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				row.add_child(gap)
+		parent.add_child(row)
+		rows.append(row)
+	return rows
+
+
+func _tile_style(highlight: bool, in_squad: bool) -> StyleBoxFlat:
+	var style := UiKit.card_style(highlight)
+	if in_squad and not highlight:
+		style.border_color = Color(UiKit.GOOD, 0.7)
+	style.set_content_margin_all(6)
+	return style
+
+
+## Eine Kachel: nur das Bild des DROME, so wie er gerade gebaut ist.
+## Gruener Rand: im Squad. Antippen waehlt ihn (nochmal: abwaehlen).
+func _drome_tile(index: int) -> Control:
 	var entry: RosterEntry = _entries()[index]
-	var build := GameState.roster.build_for(entry)
-	var panel := _tappable(UiKit.card_style(index == _selected), func():
-		_selected = index
+	var panel := _tappable(_tile_style(index == _selected, entry.in_squad), func():
+		_selected = -1 if index == _selected and not entry.in_squad else index
 		_refresh())
-	panel.custom_minimum_size = Vector2(CAROUSEL_CARD, 0)
-	var box := VBoxContainer.new()
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(box)
-	var picture := UiKit.drome_view(build, CAROUSEL_CARD - 30)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.tooltip_text = entry.name
+	var picture := UiKit.drome_view(GameState.roster.build_for(entry), TILE_EDGE)
 	picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	box.add_child(picture)
-	var name := UiKit.label(entry.name, UiKit.H2)
-	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(name)
-	var power := UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL, UiKit.MUTED)
-	power.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	power.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(power)
+	panel.add_child(picture)
 	return panel
 
 
-func _empty_card() -> Control:
+func _empty_tile() -> Control:
 	var panel := PanelContainer.new()
-	var style := UiKit.card_style()
-	style.bg_color = Color(0.07, 0.09, 0.13)
+	var style := _tile_style(false, false)
+	style.bg_color = Color(0.07, 0.09, 0.13, 0.9)
 	panel.add_theme_stylebox_override("panel", style)
-	panel.custom_minimum_size = Vector2(CAROUSEL_CARD, CAROUSEL_CARD + 50)
-	var label := UiKit.label("frei\n\nunten einen DROME antippen", UiKit.SMALL, UiKit.MUTED)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(0, TILE_EDGE + 12)
+	var label := UiKit.label("frei", UiKit.SMALL, UiKit.MUTED)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	panel.add_child(label)
 	return panel
 
 
-func _roster_row(index: int) -> Control:
+## Die grosse Box: Bild und Angaben des Hauptgewaehlten, dazu "Aus dem Squad".
+func _primary_card(index: int) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiKit.card_style(index >= 0))
+	if index < 0:
+		var empty := UiKit.label("Der Squad ist leer. Unten einen DROME antippen.",
+			UiKit.BODY, UiKit.MUTED)
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		panel.add_child(empty)
+		return panel
 	var entry: RosterEntry = _entries()[index]
 	var build := GameState.roster.build_for(entry)
-	var full := GameState.roster.squad_count() >= _squad_max()
-	var panel := _tappable(UiKit.card_style(), func():
-		if entry.in_squad:
-			_selected = index
-			_refresh()
-			return
-		if full:
-			return
-		entry.in_squad = true
-		_selected = index
-		_changed())
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 12)
 	panel.add_child(row)
-	row.add_child(UiKit.drome_view(build, ROW_PORTRAIT))
-	var text := VBoxContainer.new()
-	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(text)
-	text.add_child(_quiet(UiKit.label(entry.name, UiKit.BODY)))
-	text.add_child(_quiet(UiKit.label(_loadout(build), UiKit.SMALL, UiKit.MUTED)))
-	var state := "im Squad" if entry.in_squad else ("Squad voll" if full else "+ Squad")
-	var tag := _quiet(UiKit.label(state, UiKit.SMALL,
-		UiKit.MUTED if entry.in_squad or full else UiKit.ACCENT))
-	tag.autowrap_mode = TextServer.AUTOWRAP_OFF
-	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(tag)
-	if entry.in_squad:
-		panel.modulate = Color(1, 1, 1, 0.5)
+	row.add_child(UiKit.drome_view(build, PRIMARY_EDGE))
+	var info := _drome_info(entry, build)
+	row.add_child(info)
+	var out := UiKit.button("Aus dem Squad")
+	out.add_theme_font_size_override("font_size", UiKit.SMALL)
+	out.custom_minimum_size = Vector2(0, 44)
+	out.pressed.connect(func():
+		entry.in_squad = false
+		if _selected == index:
+			_selected = -1
+		_changed())
+	info.add_child(out)
 	return panel
+
+
+## Angaben zu einem DROME ausserhalb des Squads, mit "In den Squad".
+func _roster_details(index: int) -> Control:
+	var entry: RosterEntry = _entries()[index]
+	var build := GameState.roster.build_for(entry)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiKit.card_style(true))
+	var info := _drome_info(entry, build)
+	panel.add_child(info)
+	if GameState.roster.squad_count() >= _squad_max():
+		info.add_child(UiKit.label("Squad voll -- erst oben einen herausnehmen.",
+			UiKit.SMALL, UiKit.WARN))
+	else:
+		var join := UiKit.button("In den Squad", true)
+		join.pressed.connect(func():
+			entry.in_squad = true
+			_primary = index
+			_changed())
+		info.add_child(join)
+	return panel
+
+
+## Name, Kampfwert, Werte und Ausruestung -- fuer die grosse Box und die Angaben.
+func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 4)
+	info.add_child(UiKit.label(entry.name, UiKit.H2))
+	info.add_child(UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL,
+		UiKit.ACCENT))
+	var stats := build.stats()
+	info.add_child(UiKit.label("Integritaet %d · Schild %d · SPD %d" % [stats["hp_max"],
+		stats.get("shield_max", 0), stats["spd"]], UiKit.SMALL, UiKit.MUTED))
+	info.add_child(UiKit.label(_loadout(build), UiKit.SMALL, UiKit.MUTED))
+	return info
 
 
 func _new_drome_section() -> void:
@@ -376,10 +433,11 @@ func _picker() -> Control:
 
 
 ## Die Halter als Formen. Kern zuerst (Kreis), dann die Ausruestungshalter in
-## ihrer Klassenform; darin das Teil oder leer.
+## ihrer Klassenform; darin das Teil oder leer. Der gewaehlte Halter steht in
+## einem hervorgehobenen Kasten; unter jedem Halter seine Klasse.
 func _slots(build: DromeBuild) -> Control:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var chassis := build.body()
 	var slots: Array = ["core"]
@@ -387,34 +445,98 @@ func _slots(build: DromeBuild) -> Control:
 	for slot in slots:
 		var part := build.part_in(slot)
 		var kind := "core" if slot == "core" else SlotRules.slot_class(chassis, slot)
-		var holder := _tappable(null, func():
+		var chosen: bool = slot == _selected_slot
+		var style := UiKit.card_style(chosen)
+		style.set_content_margin_all(6)
+		if chosen:
+			style.bg_color = Color(UiKit.ACCENT, 0.18)
+			style.set_border_width_all(3)
+		else:
+			style.bg_color = Color(0, 0, 0, 0)
+			style.border_color = Color(0, 0, 0, 0)
+		var holder := _tappable(style, func():
 			_selected_slot = slot
 			_preview_part = null
 			_slot_details = false
 			_refresh())
 		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 0)
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		holder.add_child(box)
 		var shape := SlotShape.new(kind, UiKit.part_texture(part), SLOT_EDGE)
-		shape.highlight = slot == _selected_slot
+		shape.highlight = chosen
 		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		box.add_child(shape)
 		var label := _quiet(UiKit.label(SlotRules.slot_label(slot), UiKit.SMALL,
-			Color.WHITE if slot == _selected_slot else UiKit.MUTED))
+			Color.WHITE if chosen else UiKit.MUTED))
 		label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(label)
+		if kind == "core":
+			row.add_child(holder)
+			continue
+		var weight := _quiet(UiKit.label(_class_name(kind), UiKit.SMALL,
+			_class_color(kind) if chosen else Color(_class_color(kind), 0.6)))
+		weight.autowrap_mode = TextServer.AUTOWRAP_OFF
+		weight.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(weight)
 		row.add_child(holder)
 	return row
+
+
+## "Kern", "leicht", "mittel", "schwer".
+func _class_name(kind: String) -> String:
+	return "Kern" if kind == "core" else SlotRules.class_label(kind)
+
+
+## Eine Farbe je Klasse -- zusaetzlich zur Form, nie statt ihr.
+func _class_color(kind: String) -> Color:
+	match kind:
+		"light": return UiKit.GOOD
+		"medium": return UiKit.WARN
+		"heavy": return UiKit.BAD
+		_: return UiKit.ACCENT
 
 
 ## Was im gewaehlten Halter steckt, was er nimmt, und "Leeren".
 func _slot_info(entry: RosterEntry, build: DromeBuild) -> Control:
 	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel", UiKit.card_style())
+	card.add_theme_stylebox_override("panel", UiKit.card_style(true))
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 6)
 	card.add_child(outer)
+	var kind := "core" if _selected_slot == "core" \
+		else SlotRules.slot_class(build.body(), _selected_slot)
+	# Kopf: welcher Halter, gross -- und seine Klasse als Form und Wort.
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	outer.add_child(head)
+	var mark := SlotShape.new(kind, null, 36)
+	mark.highlight = true
+	mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(mark)
+	var titles := VBoxContainer.new()
+	titles.add_theme_constant_override("separation", 0)
+	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(titles)
+	titles.add_child(UiKit.label("Halter " + SlotRules.slot_label(_selected_slot)
+		if _selected_slot != "core" else "Kern-Halter", UiKit.H2))
+	var takes := ""
+	if _selected_slot == "core":
+		takes = "nimmt einen Kern"
+	else:
+		var fit: String = {"light": "nur leichte Teile", "medium": "leichte und mittlere Teile",
+			"heavy": "leichte, mittlere und schwere Teile"}.get(kind, "")
+		takes = "%s  ·  nimmt %s" % [_class_name(kind).to_upper(), fit]
+		var rule: Dictionary = build.body().slot_rules.get(_selected_slot, {})
+		var only = rule.get("categories")
+		if only is Array and not only.is_empty():
+			var names: Array[String] = []
+			for category in only:
+				names.append(SlotRules.category_label(str(category)))
+			takes += ", nur " + ", ".join(names)
+	titles.add_child(UiKit.label(takes, UiKit.SMALL, _class_color(kind)))
+
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	outer.add_child(row)
@@ -422,19 +544,7 @@ func _slot_info(entry: RosterEntry, build: DromeBuild) -> Control:
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(text)
 	var part := build.part_in(_selected_slot)
-	var title := SlotRules.slot_label(_selected_slot)
-	if _selected_slot != "core":
-		var limit := SlotRules.slot_class(build.body(), _selected_slot)
-		title += "  ·  nimmt bis %s" % SlotRules.class_label(limit)
-		var rule: Dictionary = build.body().slot_rules.get(_selected_slot, {})
-		var only = rule.get("categories")
-		if only is Array and not only.is_empty():
-			var names: Array[String] = []
-			for category in only:
-				names.append(SlotRules.category_label(str(category)))
-			title += ", nur " + ", ".join(names)
-	text.add_child(UiKit.label(title, UiKit.SMALL, UiKit.MUTED))
-	text.add_child(UiKit.label(part.display_name if part != null else "frei",
+	text.add_child(UiKit.label("Darin: " + (part.display_name if part != null else "frei"),
 		UiKit.BODY, Color.WHITE if part != null else UiKit.MUTED))
 	if part != null:
 		# Wie funktioniert das Teil? Aufklappbar, damit der Halter kurz bleibt.
@@ -465,8 +575,9 @@ func _slot_info(entry: RosterEntry, build: DromeBuild) -> Control:
 	return card
 
 
-## Die Teile fuer den gewaehlten Halter -- passende zuerst, dann die uebrigen
-## gedaempft mit Grund. Eins angetippt klappt seine Vorschau auf.
+## Die Teile fuer den gewaehlten Halter als Kacheln -- nur die Form mit Bild,
+## passende zuerst, die uebrigen gedaempft. Eine Kachel angetippt zeigt
+## daruber alle Angaben, die Wertaenderung und "Einbauen".
 func _parts_for_slot(entry: RosterEntry, build: DromeBuild) -> void:
 	var type := PartData.Type.CORE if _selected_slot == "core" else PartData.Type.EQUIPMENT
 	var fits: Array = []
@@ -477,13 +588,21 @@ func _parts_for_slot(entry: RosterEntry, build: DromeBuild) -> void:
 			continue
 		var verdict := _verdict(entry, build, part)
 		(fits if verdict == "" else rest).append([part, verdict])
-	_content.add_child(UiKit.heading("Passt hier" if not fits.is_empty() else "Nichts Passendes frei"))
-	for item in fits:
-		_part_row(entry, build, item[0], "")
-	if not rest.is_empty():
-		_content.add_child(UiKit.label("Nicht verfuegbar", UiKit.SMALL, UiKit.MUTED))
-		for item in rest:
-			_part_row(entry, build, item[0], item[1])
+	var items := fits + rest
+	if items.is_empty():
+		_content.add_child(UiKit.label("Keine Teile fuer diesen Halter.", UiKit.SMALL,
+			UiKit.MUTED))
+		return
+	if _preview_part != null:
+		for item in items:
+			if item[0] == _preview_part:
+				_content.add_child(_part_details(entry, build, item[0], item[1]))
+	if fits.is_empty():
+		_content.add_child(UiKit.label("Nichts Passendes frei.", UiKit.SMALL, UiKit.MUTED))
+	var tiles: Array = []
+	for item in items:
+		tiles.append(_part_tile(item[0], item[1]))
+	_add_tile_rows(_content, tiles)
 
 
 ## Leer = einbaubar; sonst der Grund.
@@ -499,28 +618,46 @@ func _verdict(entry: RosterEntry, build: DromeBuild, part: PartData) -> String:
 	return ""
 
 
-func _part_row(entry: RosterEntry, build: DromeBuild, part: PartData, verdict: String) -> void:
+## Eine Teil-Kachel: nur die Form mit dem Bild. Gedaempft, wenn es hier nicht
+## eingebaut werden kann. Nochmal antippen schliesst die Angaben.
+func _part_tile(part: PartData, verdict: String) -> Control:
 	var open := _preview_part == part
-	var panel := _tappable(UiKit.card_style(open), func():
+	var panel := _tappable(_tile_style(open, false), func():
 		_preview_part = null if open else part
 		_refresh())
-	var box := VBoxContainer.new()
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(box)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(row)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.tooltip_text = part.display_name
 	var kind := "core" if part.type == PartData.Type.CORE else part.mount_class
 	var shape := SlotShape.new(kind, UiKit.part_texture(part), PART_EDGE)
 	shape.dim = verdict != ""
-	row.add_child(shape)
+	shape.highlight = open
+	shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	shape.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	shape.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(shape)
+	if verdict != "":
+		panel.modulate = Color(1, 1, 1, 0.55)
+	return panel
+
+
+## Alle Angaben zum angetippten Teil: Name, Klasse, Bestand, Grund, die ganze
+## Erklaerung, die Wertaenderung und der Knopf.
+func _part_details(entry: RosterEntry, build: DromeBuild, part: PartData,
+		verdict: String) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiKit.card_style(true))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	panel.add_child(box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	box.add_child(row)
+	var kind := "core" if part.type == PartData.Type.CORE else part.mount_class
+	row.add_child(SlotShape.new(kind, UiKit.part_texture(part), PART_EDGE))
 	var text := VBoxContainer.new()
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(text)
-	text.add_child(_quiet(UiKit.label(part.display_name, UiKit.BODY,
-		UiKit.MUTED if verdict != "" else Color.WHITE)))
+	text.add_child(UiKit.label(part.display_name, UiKit.BODY))
 	var sub := ""
 	if part.type == PartData.Type.EQUIPMENT:
 		sub = "%s · %s" % [SlotRules.class_label(part.mount_class),
@@ -528,13 +665,11 @@ func _part_row(entry: RosterEntry, build: DromeBuild, part: PartData, verdict: S
 	else:
 		sub = "Kern"
 	sub += "  ·  %d frei" % GameState.roster.free_count(part.id)
-	text.add_child(_quiet(UiKit.label(sub, UiKit.SMALL, UiKit.MUTED)))
+	text.add_child(UiKit.label(sub, UiKit.SMALL, UiKit.MUTED))
 	if verdict != "":
-		text.add_child(_quiet(UiKit.label(verdict, UiKit.SMALL, UiKit.WARN)))
-	_content.add_child(panel)
-
-	if open:
-		_preview(entry, build, part, verdict, box)
+		text.add_child(UiKit.label(verdict, UiKit.SMALL, UiKit.WARN))
+	_preview(entry, build, part, verdict, box)
+	return panel
 
 
 ## Was sich aendern wuerde -- und der Knopf dazu.

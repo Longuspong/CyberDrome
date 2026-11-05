@@ -253,7 +253,7 @@ func _ability_squad() -> Array:
 
 ## Spielt ``battles`` Gefechte und schreibt je DROME die Folge seiner Aktionen
 ## mit (ueber EventBus.action_used). Gibt { uses: id -> Anzahl, seqs:
-## unit_name -> [action_id, ...], en: unit_name -> Energie am Ende } zurueck.
+## unit_name -> [action_id, ...] } zurueck.
 func _record(battles: int, builds: Array, first_seed: int) -> Dictionary:
 	var uses := {}
 	var seqs := {}
@@ -265,20 +265,14 @@ func _record(battles: int, builds: Array, first_seed: int) -> Dictionary:
 			seqs[key] = []
 		seqs[key].append(action.id)
 	EventBus.action_used.connect(record)
-	var energy := {}
 	for i in battles:
 		current["seed"] = first_seed + i
 		var battle := BattleManager.new()
 		battle.setup(first_seed + i, builds)
-		var start := {}
-		for unit in battle.units:
-			start[unit.unit_id] = unit.en
 		battle.run_to_end()
-		for unit in battle.units:
-			energy["%d:%s" % [first_seed + i, unit.unit_id]] = [start[unit.unit_id], unit.en]
 		battle.free()
 	EventBus.action_used.disconnect(record)
-	return {"uses": uses, "seqs": seqs, "energy": energy}
+	return {"uses": uses, "seqs": seqs}
 
 
 func test_every_ability_fires_by_itself() -> void:
@@ -311,6 +305,10 @@ func test_every_nth_attack_is_the_ability() -> void:
 		&"act_rail_pierce": [&"act_raillance", 4]}
 	var checked := 0
 	for key in measured["seqs"]:
+		# Nur die eigene Seite: generierte Gegner tragen auch zwei Blaster,
+		# deren Zaehler sich in der Folge mischen.
+		if not str(key).contains(":P"):
+			continue
 		var seq: Array = measured["seqs"][key]
 		for ability in rules:
 			var attack: StringName = rules[ability][0]
@@ -329,21 +327,12 @@ func test_every_nth_attack_is_the_ability() -> void:
 	t.ok(checked > 3, "die Regel wurde oft genug geprueft (%d)" % checked)
 
 
-func test_abilities_cost_no_energy() -> void:
-	# Mit festen Ausloesern ist Energie keine Bremse mehr.
-	var measured: Dictionary = _record(3, _ability_squad(), 7400)
-	for key in measured["energy"]:
-		var pair: Array = measured["energy"][key]
-		t.ok(int(pair[1]) >= int(pair[0]), "%s verbraucht keine Energie" % key)
-
-
 func test_same_seed_gives_the_same_battle() -> void:
 	# Akzeptanzkriterium: denselben Seed zweimal spielen und exakt dasselbe
-	# bekommen -- Karte, Region, Mutator, Gegner, Ausgang.
+	# bekommen -- Karte, Region, Gegner, Ausgang.
 	var a := _play(20260806)
 	var b := _play(20260806)
 	t.equal(a["region"], b["region"], "dieselbe Region")
-	t.equal(a["mutator"], b["mutator"], "derselbe Mutator")
 	t.equal(a["seconds"], b["seconds"], "dieselbe Dauer")
 	t.equal(BattleManager.outcome_label(a["outcome"]),
 		BattleManager.outcome_label(b["outcome"]), "derselbe Ausgang")
@@ -416,14 +405,12 @@ func test_generated_enemies_are_always_valid() -> void:
 				% [build.display_name, ", ".join(problems)])
 
 
-func test_every_mutator_produces_a_playable_battle() -> void:
-	# Planiert nimmt der Karte drei Klassen, Schrottfeld verdoppelt die
-	# Blocks. Beides darf keine Karte erzeugen, die niemand durchqueren kann.
-	var pool: Array = Config.get_value("mutators", [])
-	for meta in pool:
-		var mutator := Mutator.from_meta(meta)
+func test_dense_terrain_still_gives_a_playable_map() -> void:
+	# Ohne Gelaende oder mit doppelt so vielen Blocks: keine Karte, die
+	# niemand durchqueren kann.
+	for scales in [{}, {"block_scale": 2.0}, {"step_scale": 0.0, "drift_scale": 0.0, "haze_scale": 0.0}]:
 		var grid := MapGenerator.new(31337).generate(
-			TerrainDB.get_region(&"city"), mutator.map_scales())
+			TerrainDB.get_region(&"city"), scales)
 		var plain := MoveProfile.plain()
 		var start := Vector2i(-1, -1)
 		var goal := Vector2i(-1, -1)
@@ -436,20 +423,6 @@ func test_every_mutator_produces_a_playable_battle() -> void:
 				goal = tile
 				break
 		t.ok(start.x >= 0 and goal.x >= 0 and grid.has_plain_path(start, goal),
-			"Mutator %s erzeugt eine durchquerbare Karte" % mutator.display_name)
+			"Karte mit %s ist durchquerbar" % str(scales))
 
 
-func test_bloodletting_actually_bleeds() -> void:
-	var mutator := Mutator.from_meta({"id": "bloodletting", "name": "Aderlass",
-		"turn_damage": 3})
-	t.equal(mutator.turn_damage(), 3, "Aderlass zieht 3 Integritaet ab")
-
-	var overclock := Mutator.from_meta({"id": "overclock", "name": "Uebertaktung",
-		"spd_bonus": 6})
-	var unit := Unit.create(_squad()[0], &"T1", true)
-	var before := unit.spd()
-	overclock.apply_to(unit)
-	t.equal(unit.spd(), before + 6, "Uebertaktung wirkt ueber den Statuseffekt")
-	t.equal(unit.stats["spd"], before,
-		"der Build bleibt unangetastet -- der Mutator haengt daneben")
-	unit.free()

@@ -345,7 +345,6 @@ tools/
   bake_godot_assets.py       loest die CSS-Variablen auf -> assets/parts/
   set_import_scale.py        wie fein Godot rastert (Vierfach) + Mipmaps
   export_parts_table.py      Teile-Uebersicht als Excel-Mappe (erzeugt, nicht gepflegt)
-  build_balance_sheet.py     schlanke Balancing-Liste als Excel-Mappe (erzeugt aus JSON)
 tests/
   run_tests.gd               Testlauf ohne Editor
   screenshot.gd              Bild einer Szene -- Tiefensortierung, Verdeckung
@@ -357,11 +356,8 @@ docs/
   GAME_DESIGN.md             Setting, DROME-Aufbau, Teile-Codes, Aggro, Asset-Strategie
   GODOT_INTEGRATION.md       wie die Exporte spaeter in die Engine kommen
   cyberdrome_teile.xlsx      erzeugte Teileliste -- ein Blatt je Bauteiltyp
-  ausruestung_stats.xlsx     erzeugte Balancing-Liste (Huelle/Waffe/Kern/Gadget)
 data/
   config.json                Balancing-Stellschrauben ausserhalb der Bauteile
-  balancing/
-    ausruestung_stats.json   Quelle der schlanken Balancing-Liste (von Hand gepflegt)
 ```
 
 ## Teileliste als Excel-Mappe
@@ -390,31 +386,6 @@ schon.
 Die Formeln haben nach dem Lauf noch keine gespeicherten Ergebnisse -- Excel
 und LibreOffice rechnen sie beim Oeffnen aus. Nur Werkzeuge, die die Datei ohne
 Tabellenprogramm lesen (pandas, Vorschaubilder), sehen dort leere Zellen.
-
-## Ausruestungs-Statistik-Liste (Balancing)
-
-```bash
-python3 tools/build_balance_sheet.py            # -> docs/ausruestung_stats.xlsx
-```
-
-Eine **Balancing-Sicht** auf das Klassenmodell (GAME_DESIGN §9/§12) -- nicht zu
-verwechseln mit `cyberdrome_teile.xlsx`, die den vollen Engine-Wertesatz aus den
-Teil-JSONs zeigt. Hier ist die **Huelle ein Teil** und jede Kategorie fuehrt ihre
-eigenen Werte:
-
-| Kategorie | Werte | Passive |
-|---|---|---|
-| **Huelle / Chassis** | Integritaet, Energieschild, Panzerung, Tempo, Move, Traglast, Slots | genau **eine** Signatur-Passive je Klasse |
-| **Waffe** | Schaden, Reichweite (+ aoe, Angriffsdesign, Last) | -- |
-| **Kern** | Energie, Energie-Regeneration, Schildregeneration, Schildbonus (+ Bonus) | eine je Kern (Signatur-Faehigkeit, §13) |
-| **Gadget** | ein Wirk-Wert (+ Wirkungstext) | -- |
-
-Quelle ist `data/balancing/ausruestung_stats.json` -- von Hand gepflegt. Das
-Schema ist generisch: je Kategorie eine Liste `spalten` (Spaltendefinition) und
-`zeilen` (die Daten); eine neue Spalte ist ein Eintrag mehr, am Generator ist
-nichts zu aendern. Werte in der JSON (oder in der Mappe) aendern und neu erzeugen.
-Ein Blatt **Uebersicht** erklaert Modell und Werte und zaehlt die Werte je
-Kategorie automatisch aus den Spalten.
 
 ## Ein neues Teil hinzufuegen
 

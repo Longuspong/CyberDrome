@@ -8,16 +8,8 @@ extends RefCounted
 ## (Position, Reihenfolge, Ressourcen), nicht ueber das OB. Der Spieler soll
 ## jede Aktion vorher exakt durchrechnen koennen.
 
-## Welches Budget des Zuges die Aktion verbraucht.
-##
-## Das ist die Trennung, die der Spieler sieht und nach der er plant: ein
-## ANGRIFF ist das, was eine Waffe von sich aus tut -- Blaster, Schienenschuss,
-## Runenschlag --, eine FAEHIGKEIT alles, was darueber hinaus geht: ziehen,
-## reparieren, provozieren, ein Flaechenschlag. Die beiden Budgets sind getrennt
-## und nicht gegeneinander tauschbar (siehe TurnState): der Angriffsvorrat zaehlt
-## die Waffen, die Faehigkeiten sind je einmal pro Zug ziehbar. Eine WAFFE traegt
-## deshalb heute beides -- ihren Angriff UND eine eigene Faehigkeit
-## (GAME_DESIGN §13); sie nimmt sich damit nichts mehr selbst weg.
+## ANGRIFF ist das, was eine Waffe in ihrem Takt tut; FAEHIGKEIT alles, was
+## darueber hinausgeht und nach seinem Ausloeser kommt (trigger_*).
 enum Category { ATTACK, ABILITY }
 
 ## AOE_AROUND_TARGET trifft den vollen Ring (Chebyshev-Radius, „8 angrenzende
@@ -70,7 +62,6 @@ var energy_fraction: float = 0.0
 var targeting: Targeting = Targeting.SINGLE
 var range_tiles: int = 1
 var aoe_radius: int = 0
-var en_cost: int = 0
 
 ## > 0 Schaden, < 0 Heilung. Ein Vorzeichen statt zweier Felder, damit es nur
 ## eine Stelle gibt, an der ein Effekt seine Groesse hat.
@@ -108,11 +99,6 @@ var aggro_flat: int = 0
 ## EIGENE Zuege den Verursacher angreifen. Harter Zwang, deshalb befristet.
 var taunt_turns: int = 0
 
-## Wie viele EIGENE Zuege diese Aktion danach nicht zur Verfuegung steht.
-## 0 = keine Abklingzeit. Wirkt nur im Bremsmodus ``abklingzeit`` oder
-## ``beides`` -- siehe BRAKE unten.
-var cooldown_turns: int = 0
-
 ## Echtzeit (Nov. 2026): Sekunden zwischen zwei Angriffen dieser Waffe. Nur
 ## fuer Angriffe; jede Waffe laedt fuer sich nach.
 var interval: float = 2.0
@@ -130,59 +116,9 @@ var trigger_every: float = 0.0
 var trigger_weapon: StringName = &""
 
 
-# ---------------------------------------------------------------------------
-# Die Bremse: Preis oder Wartezeit
-# ---------------------------------------------------------------------------
-
-## Womit eine Faehigkeit knapp gehalten wird. Umschaltbar, weil sich die Frage
-## nicht ausrechnen laesst -- nur spielen.
-##
-##   energie      Der Preis bremst. ``en_cost`` gilt, ``cooldown_turns`` nicht.
-##                Eine Faehigkeit laesst sich zweimal hintereinander ziehen,
-##                wenn der Tank es hergibt -- dafuer ist er danach leer.
-##   abklingzeit  Die Wartezeit bremst. ``cooldown_turns`` gilt, ``en_cost``
-##                wird NICHT abgebucht. Der Rhythmus ist derselbe fuer jeden
-##                Aufbau, unabhaengig vom Kern.
-##   beides       Beide Bremsen. Ausdruecklich als Vergleichspunkt gedacht und
-##                nicht als Voreinstellung: zwei Bremsen auf derselben Groesse
-##                sind schwer auseinanderzuhalten, wenn eine davon zu hart ist.
-##
-## Der Unterschied ist nicht kosmetisch. Der Preis macht den KERN zur
-## Entscheidung -- ein Arkankern zieht oefter als ein Impulskern. Die Wartezeit
-## macht ihn bedeutungslos und dafuer den ZUG zur Entscheidung: nicht "kann ich
-## mir das leisten", sondern "will ich sie jetzt oder gleich".
-const BRAKE_ENERGY := "energie"
-const BRAKE_COOLDOWN := "abklingzeit"
-const BRAKE_BOTH := "beides"
-## Echtzeit: weder Preis noch Wartezeit -- die Ausloeser (trigger_*) bremsen.
-const BRAKE_TRIGGER := "ausloeser"
-
-
-static func brake() -> String:
-	return str(Config.section("abilities").get("brake", BRAKE_ENERGY))
-
-
-static func energy_brakes() -> bool:
-	return brake() == BRAKE_ENERGY or brake() == BRAKE_BOTH
-
-
-static func cooldown_brakes() -> bool:
-	return brake() == BRAKE_COOLDOWN or brake() == BRAKE_BOTH
-
-
-## Was diese Aktion im aktuellen Bremsmodus WIRKLICH kostet.
-##
-## Die EINZIGE Stelle, an der ``en_cost`` gelesen wird, sobald es ums Bezahlen
-## geht -- Vorschau, Sperrgrund, Abbuchung und Werkstatt-Text fragen alle hier.
-## Zwei Lesarten waeren zwei Gelegenheiten, dass die Aktionsleiste einen Preis
-## nennt, den die Ausfuehrung nicht abbucht.
-func en_cost_now() -> int:
-	return en_cost if ActionData.energy_brakes() else 0
-
-
-## Und dasselbe fuer die Wartezeit.
-func cooldown_now() -> int:
-	return cooldown_turns if ActionData.cooldown_brakes() else 0
+## Wie lange eine Provokation haelt: ``taunt_turns`` zaehlt Pulse.
+func taunt_seconds() -> int:
+	return int(round(float(taunt_turns) * float(Config.section("realtime").get("pulse", 3.0))))
 
 
 static func from_meta(meta: Dictionary, owner_name: String = "",
@@ -197,7 +133,6 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.targeting = TARGETING_NAMES.get(meta.get("targeting", "single"), Targeting.SINGLE)
 	action.range_tiles = meta.get("range_tiles", 1)
 	action.aoe_radius = meta.get("aoe_radius", 0)
-	action.en_cost = meta.get("en_cost", 0)
 	action.power = meta.get("power", 0)
 	action.requires_line_of_sight = meta.get("requires_line_of_sight", false)
 	action.push_tiles = meta.get("push_tiles", 0)
@@ -205,7 +140,6 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.aggro_coeff = float(meta.get("aggro_coeff", 1.0))
 	action.aggro_flat = meta.get("aggro_flat", 0)
 	action.taunt_turns = meta.get("taunt_turns", 0)
-	action.cooldown_turns = meta.get("cooldown_turns", 0)
 	action.energy_fraction = float(meta.get("energy_fraction", 0.0))
 	action.interval = float(meta.get("interval", 2.0))
 	var trigger = meta.get("trigger")
@@ -278,7 +212,7 @@ func effect_summary() -> String:
 	elif push_tiles < 0:
 		parts.append("zieht %d heran" % absi(push_tiles))
 	if is_taunt():
-		parts.append("provoziert %d Zuege" % taunt_turns)
+		parts.append("provoziert %d s" % taunt_seconds())
 	if status_effect != null:
 		parts.append("Effekt")
 	return " · ".join(parts) if not parts.is_empty() else "ohne Schaden"
@@ -291,10 +225,6 @@ func effect_summary() -> String:
 ## -- und zwar eine, nach der der Spieler seinen Kern aussucht.
 func headline() -> String:
 	var parts: Array[String] = [category_label(), "Rw %d" % range_tiles]
-	if en_cost_now() > 0:
-		parts.append("EN %d" % en_cost_now())
-	if cooldown_now() > 0:
-		parts.append("AZ %d" % cooldown_now())
 	return " · ".join(parts)
 
 
@@ -315,9 +245,6 @@ func description_lines() -> Array[String]:
 		lines.append("Reparatur %d" % heal_amount())
 	elif power > 0:
 		lines.append("Staerke %d · Schadensart %s" % [power, damage_type_label()])
-	lines.append("Energie %d" % en_cost_now())
-	if cooldown_now() > 0:
-		lines.append("Abklingzeit %d Zuege" % cooldown_now())
 	if aoe_radius > 0:
 		lines.append("Flaeche: Radius %d um das Ziel" % aoe_radius)
 	if requires_line_of_sight:
@@ -327,7 +254,7 @@ func description_lines() -> Array[String]:
 	elif push_tiles < 0:
 		lines.append("zieht %d Feld(er) heran" % absi(push_tiles))
 	if is_taunt():
-		lines.append("provoziert fuer %d Zuege" % taunt_turns)
+		lines.append("provoziert fuer %d s" % taunt_seconds())
 	if targeting == Targeting.SELF:
 		lines.append("wirkt nur auf den eigenen DROME")
 	if source_part_name != "":

@@ -53,7 +53,6 @@ var _status: Label
 var _squad_tiles: SquadTiles
 var _log: RichTextLabel
 var _log_panel: PanelContainer
-var _mutator_banner: PanelContainer
 var _speed_button: Button
 var _pause_button: Button
 var _follow_button: Button
@@ -96,7 +95,6 @@ func _start_battle() -> void:
 
 	_squad_tiles.setup(battle.living(true))
 	_squad_tiles.tile_pressed.connect(_look_at_unit)
-	_show_mutator()
 	_refresh_hud()
 
 
@@ -429,20 +427,6 @@ func _build_ui() -> void:
 	middle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(middle)
 
-	_mutator_banner = PanelContainer.new()
-	_mutator_banner.add_theme_stylebox_override("panel", UiKit.card_style(true))
-	_mutator_banner.anchor_left = 0.0
-	_mutator_banner.anchor_right = 1.0
-	_mutator_banner.anchor_top = 0.3
-	_mutator_banner.anchor_bottom = 0.3
-	_mutator_banner.offset_left = UiKit.PAD
-	_mutator_banner.offset_right = -UiKit.PAD
-	_mutator_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var banner_label := UiKit.label("", UiKit.H2)
-	banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_mutator_banner.add_child(banner_label)
-	_mutator_banner.visible = false
-	middle.add_child(_mutator_banner)
 
 	_log_panel = PanelContainer.new()
 	_log_panel.add_theme_stylebox_override("panel", _bar_style(true))
@@ -498,16 +482,6 @@ func _bar_style(raised: bool) -> StyleBoxFlat:
 	style.border_width_bottom = 1
 	style.set_content_margin_all(8)
 	return style
-
-
-func _show_mutator() -> void:
-	var label := _mutator_banner.get_child(0) as Label
-	label.text = "%s\n%s" % [battle.mutator.display_name, battle.mutator.description]
-	_mutator_banner.visible = true
-	var tween := create_tween()
-	tween.tween_interval(2.6)
-	tween.tween_property(_mutator_banner, "modulate:a", 0.0, 0.5)
-	tween.tween_callback(func(): _mutator_banner.visible = false)
 
 
 func _cycle_speed() -> void:
@@ -589,8 +563,8 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		UiKit.GOOD if won else (UiKit.BAD if outcome == BattleManager.Outcome.DEFEAT else UiKit.WARN)))
 
 	var result := battle.build_result()
-	box.add_child(UiKit.label("%d s  ·  %s  ·  %s" % [
-		result["seconds"], result["region"], result["mutator"]], UiKit.SMALL, UiKit.MUTED))
+	box.add_child(UiKit.label("%d s  ·  %s" % [
+		result["seconds"], result["region"]], UiKit.SMALL, UiKit.MUTED))
 
 	for row in result["units"]:
 		var line := VBoxContainer.new()

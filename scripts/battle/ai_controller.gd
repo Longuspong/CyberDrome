@@ -454,10 +454,12 @@ func _has_melee(unit: Unit) -> bool:
 ## Hat mit der Aggro-Tabelle nichts zu tun: hier geht es um die Gefahr eines
 ## FELDES, dort um die Aufmerksamkeit gegenueber einer EINHEIT.
 func _can_strike(foe: Unit, tile: Vector2i) -> bool:
-	var reach := foe.stat("mov")
+	# Wie weit der Gegner in einer Sekunde kommt, plus seine Waffenreichweite.
+	var walk := int(ceil(foe.move_speed()))
+	var reach := walk
 	for action in foe.actions():
 		if action.is_attack():
-			reach = maxi(reach, foe.stat("mov") + action.range_tiles)
+			reach = maxi(reach, walk + action.range_tiles)
 	return Grid.distance(foe.tile, tile) <= reach
 
 
