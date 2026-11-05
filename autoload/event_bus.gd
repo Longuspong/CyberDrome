@@ -8,13 +8,7 @@ extends Node
 
 # --- Kampfablauf ---
 signal battle_started(seed_value: int)
-signal battle_finished(outcome: int, cycles: int)
-signal cycle_ended(cycle_count: int)
-
-# --- Zug ---
-signal turn_started(unit)
-signal turn_ended(unit)
-signal budgets_changed(unit)
+signal battle_finished(outcome: int, seconds: int)
 
 # --- Einheiten ---
 signal unit_moved(unit, from_tile: Vector2i, to_tile: Vector2i)
@@ -22,9 +16,9 @@ signal unit_damaged(unit, amount: int, source)
 signal unit_healed(unit, amount: int, source)
 signal unit_died(unit)
 
-## Der TICK-Bus hat sich geaendert -- die Vorschau muss neu gerechnet werden.
-## Wird nach jeder Aktion ausgeloest, die SPD oder tick beruehrt.
-signal tick_bus_changed()
+## Ein DROME hat eine Aktion ausgefuehrt (Angriff oder Faehigkeit) -- fuer
+## Schussspuren und den Hinweis "Streusalve!" ueber der Figur.
+signal action_used(unit, tile: Vector2i, action)
 
 # --- Protokoll ---
 signal log_message(text: String)

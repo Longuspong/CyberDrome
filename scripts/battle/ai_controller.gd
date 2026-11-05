@@ -1,140 +1,420 @@
 class_name AIController
 extends RefCounted
 
-## Gegner-KI. Bewusst simpel, aber nicht dumm.
+## Die KI im Echtzeit-Kampf. Steuert jeden DROME, auf beiden Seiten.
 ##
-## Nutzenbasiert, ein Durchlauf pro Zug: jede Kombination aus (Zielfeld,
-## Aktion, Ziel) bekommt einen Score, die beste wird ausgefuehrt, dann von
-## vorn -- solange Budgets uebrig sind und der Score positiv ist.
+## Je Simulationsschritt fragt der BattleManager update() fuer jeden lebenden
+## DROME. Der tut dann eins von drei Dingen -- schiessen, eine Faehigkeit
+## ausloesen oder einen Schritt laufen:
 ##
-## Die Gewichte stehen in data/config.json und nicht hier. Eine KI, deren
-## Verhalten man nur durch Neukompilieren aendern kann, wird nicht getunt.
+##   * ZIEL: alle ``realtime.think_interval`` Sekunden neu gewaehlt, nach
+##     derselben Bewertung wie frueher (Schaden, Schild, Abschuss, Aggro,
+##     Amtsinhaber). Eine Provokation erzwingt das Ziel.
+##   * WAFFEN: jede laedt fuer sich (``interval``). Ist sie geladen und ein
+##     Gegner in Reichweite, schiesst sie -- auf das Ziel, sonst auf den besten
+##     erreichbaren. Jeder N-te Angriff ist die Faehigkeit der Waffe.
+##   * GADGETS: nach Zeit (Orbit-Sog) oder Ereignis (Boost, wenn ein Gegner
+##     danebensteht).
+##   * BEWEGUNG nach Rolle: Nahkaempfer ruecken bis zum Kontakt vor,
+##     Fernkaempfer laufen nur, bis sie schiessen koennen, und weichen aus,
+##     wenn ihnen jemand zu nahe kommt.
+##
+## Die Gewichte stehen in data/config.json ("ai", "realtime").
 ##
 ## ### Aggro ist ein Summand, kein Filter
 ##
 ## Die Aggro-Tabelle (scripts/battle/aggro_table.gd) ERSETZT die Zielwahl
-## nicht, sie geht als weiterer Term in dieselbe Bewertung ein. Der Unterschied
-## ist nicht kosmetisch: als Filter wuerde ein Gegner an einem sicheren Abschuss
-## vorbeilaufen, weil ein anderer DROME weiter oben in der Tabelle steht. Das
-## liest sich als Fehler, nicht als Aggro.
-##
-## Eingehaengt wird der ANTEIL am Tabellenmaximum (0..1), nicht der Rohwert.
-## Der Rohwert waechst ueber das Gefecht unbegrenzt und liefe sonst gegen
-## Schadenspunkte davon; der Anteil traegt dieselbe Rangfolge und skaliert mit
-## jeder Balancing-Aenderung von selbst mit.
-##
-## Der EINZIGE harte Zwang ist die Provokation -- und die steht nicht hier,
-## sondern in ActionResolver.target_blocker(), weil sie eine Regel ueber
-## gueltige Ziele ist und fuer beide Seiten gelten muss.
+## nicht, sie geht als weiterer Term in dieselbe Bewertung ein. Als Filter
+## wuerde ein DROME an einem sicheren Abschuss vorbeilaufen, weil ein anderer
+## weiter oben in der Tabelle steht.
 
 var battle: BattleManager
 var _weights: Dictionary = {}
+var _realtime: Dictionary = {}
 
 
 func _init(manager: BattleManager) -> void:
 	battle = manager
 	_weights = Config.section("ai")
+	_realtime = Config.section("realtime")
 
 
 func _w(key: String, fallback: float) -> float:
 	return float(_weights.get(key, fallback))
 
 
-## EINEN Schritt planen und sofort ausfuehren. Gibt den ausgefuehrten Schritt
-## zurueck, oder leer, wenn nichts mehr sinnvoll ist.
+# ---------------------------------------------------------------------------
+# Ein Schritt
+# ---------------------------------------------------------------------------
+
+## Ein Simulationsschritt fuer ``unit``.
+func update(unit: Unit, dt: float) -> void:
+	for mount in unit.mounts:
+		mount["ready"] = float(mount["ready"]) - dt
+	for gadget in unit.gadgets:
+		gadget["ready"] = float(gadget["ready"]) - dt
+	unit.think_left -= dt
+
+	if unit.step_left > 0.0:
+		unit.step_left -= dt
+		if unit.step_left > 0.0:
+			return
+
+	var target := _current_target(unit)
+	if unit.think_left <= 0.0 or target == null:
+		unit.think_left = float(_realtime.get("think_interval", 0.5))
+		target = choose_target(unit)
+		unit.target_id = target.unit_id if target != null else null
+	if target == null:
+		return
+
+	if _use_gadgets(unit, target):
+		return
+	var fired := false
+	for mount in unit.mounts:
+		if float(mount["ready"]) > 0.0:
+			continue
+		if _fire(unit, mount, target):
+			mount["ready"] = (mount["attack"] as ActionData).interval
+			fired = true
+			if battle.outcome != BattleManager.Outcome.RUNNING:
+				return
+	if fired:
+		return
+	var next := next_step(unit, target)
+	if next != unit.tile:
+		_walk(unit, next)
+
+
+func _current_target(unit: Unit) -> Unit:
+	if unit.is_taunted():
+		var forcer := battle.resolver.unit_by_id(unit.taunted_by())
+		if forcer != null and forcer.is_alive():
+			return forcer
+	var target := battle.resolver.unit_by_id(unit.target_id)
+	if target == null or not target.is_alive():
+		return null
+	return target
+
+
+# ---------------------------------------------------------------------------
+# Zielwahl
+# ---------------------------------------------------------------------------
+
+## Wen soll ``unit`` gerade angreifen? Der Gegner mit der besten Bewertung
+## fuer die staerkste eigene Waffe -- abzueglich des Weges, den es bis dahin
+## noch ist. Eine Provokation erzwingt das Ziel.
+func choose_target(unit: Unit) -> Unit:
+	if unit.is_taunted():
+		var forcer := battle.resolver.unit_by_id(unit.taunted_by())
+		if forcer != null and forcer.is_alive():
+			return forcer
+	var reach := unit.attack_range()
+	var best: Unit = null
+	var best_score := -INF
+	for foe in battle.enemies_of(unit):
+		var score := -INF
+		for mount in unit.mounts:
+			score = maxf(score, _action_score(unit, mount["attack"], foe))
+		if unit.mounts.is_empty():
+			score = 0.0
+		var gap := maxi(0, Grid.distance(unit.tile, foe.tile) - reach)
+		score -= float(gap) * _w("approach_penalty", 2.0)
+		if score > best_score:
+			best_score = score
+			best = foe
+	return best
+
+
+# ---------------------------------------------------------------------------
+# Schiessen
+# ---------------------------------------------------------------------------
+
+## Eine geladene Waffe abfeuern. Gibt true zurueck, wenn geschossen wurde.
 ##
-## Bewusst Schritt fuer Schritt und nicht ein Plan fuer den ganzen Zug: ein im
-## Voraus geplanter zweiter Schritt geht davon aus, dass der DROME noch am
-## Ausgangsfeld steht. Nach dem ersten Schritt stimmt das nicht mehr -- er
-## liefe dann auf ein Feld, das er aus einer Lage berechnet hat, die es nicht
-## mehr gibt. Und auf einer Drift-Zone landet er ohnehin woanders, als der
-## Plan annahm.
-func take_step() -> Dictionary:
-	var best := _best_move()
-	if not best.is_empty():
-		if best["move_to"] != battle.active_unit.tile:
-			battle.move_active_to(best["move_to"])
-		# Das Ziel wird nach dem Laufen erneut gefragt: die Bewegung kann
-		# durch Drift woanders geendet haben als geplant.
-		if battle.resolver.target_blocker(battle.active_unit,
-				best["target"].tile, best["action"]) == "":
-			battle.use_action(best["target"].tile, best["action"])
-			_remember_target(battle.active_unit, best)
-			return best
-		return {"kind": "move", "move_to": battle.active_unit.tile}
-
-	var approach := _approach_step()
-	if not approach.is_empty():
-		battle.move_active_to(approach["move_to"])
-		return approach
-	return {}
+## Ist ihr N-ter Angriff faellig, IST dieser Angriff die Faehigkeit der Waffe.
+## Findet die Faehigkeit kein Ziel (andere Reichweite), schiesst die Waffe
+## normal, und die Faehigkeit bleibt faellig -- sie kommt beim naechsten Mal.
+func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
+	var attack: ActionData = mount["attack"]
+	var ability = mount["ability"]
+	if ability != null and int(mount["count"]) + 1 >= int((ability as ActionData).trigger_every):
+		var aim := _aim(unit, ability, target)
+		if not aim.is_empty():
+			_execute(unit, aim["tile"], ability, aim["target"])
+			mount["count"] = 0
+			return true
+	var shot := _aim(unit, attack, target)
+	if shot.is_empty():
+		return false
+	_execute(unit, shot["tile"], attack, shot["target"])
+	if ability != null:
+		mount["count"] = mini(int(mount["count"]) + 1,
+			int((ability as ActionData).trigger_every) - 1)
+	return true
 
 
-## Sicherheitsdeckel fuer die Zahl der KI-Schritte je Zug. Grosszuegig, weil ein
-## Aufbau mehrere Angriffe (einen je Waffe) und mehrere Faehigkeiten in einem Zug
-## ziehen kann (GAME_DESIGN §13) -- plus die Lauf-Schritte dazwischen.
-const MAX_STEPS := 10
+## Worauf zielt ``action``? Das Ziel, wenn es geht; sonst der am besten
+## bewertete andere Gegner in Reichweite. Leer, wenn niemand erreichbar ist.
+func _aim(unit: Unit, action: ActionData, target: Unit) -> Dictionary:
+	if target != null and battle.resolver.target_blocker(unit, target.tile, action) == "" \
+			and _action_score(unit, action, target) > 0.0:
+		return {"tile": target.tile, "target": target}
+	if unit.is_taunted() and action.is_attack():
+		return {}
+	var best := {}
+	var best_score := 0.0
+	var pool := battle.allies_of(unit) if action.is_heal() else battle.enemies_of(unit)
+	for other in pool:
+		if battle.resolver.target_blocker(unit, other.tile, action) != "":
+			continue
+		var score := _action_score(unit, action, other)
+		if score > best_score:
+			best_score = score
+			best = {"tile": other.tile, "target": other}
+	return best
 
 
-## Spielt den kompletten Zug. Die Szene ruft stattdessen take_step() einzeln
-## auf, um zwischen den Schritten eine Pause einzulegen.
-func run_turn(max_steps: int = MAX_STEPS) -> Array:
-	var done: Array = []
-	for _i in max_steps:
-		if battle.outcome != BattleManager.Outcome.RUNNING:
+func _execute(unit: Unit, tile: Vector2i, action: ActionData, target: Unit) -> void:
+	if tile != unit.tile:
+		unit.set_facing(Unit.facing_for(tile - unit.tile))
+	if battle.resolver.execute(unit, tile, action):
+		EventBus.action_used.emit(unit, tile, action)
+		if action.is_attack() and target != null and unit.aggro != null:
+			unit.aggro.current_target = target.unit_id
+		battle._check_victory()
+
+
+# ---------------------------------------------------------------------------
+# Gadgets
+# ---------------------------------------------------------------------------
+
+## Zeit- und Ereignis-Faehigkeiten. Gibt true zurueck, wenn eine ausgeloest
+## hat -- dann ist der Augenblick verbraucht.
+func _use_gadgets(unit: Unit, target: Unit) -> bool:
+	for gadget in unit.gadgets:
+		if float(gadget["ready"]) > 0.0:
+			continue
+		var ability: ActionData = gadget["ability"]
+		match ability.trigger_kind:
+			"time":
+				var aim := _aim(unit, ability, target)
+				if aim.is_empty():
+					continue
+				_execute(unit, aim["tile"], ability, aim["target"])
+				gadget["ready"] = ability.trigger_every
+				return true
+			"adjacent":
+				if not _enemy_adjacent(unit):
+					continue
+				var landing := _escape_landing(unit, ability, target)
+				if landing == unit.tile:
+					continue
+				_execute(unit, landing, ability, null)
+				gadget["ready"] = ability.trigger_every
+				return true
+	return false
+
+
+func _enemy_adjacent(unit: Unit) -> bool:
+	for foe in battle.enemies_of(unit):
+		if Grid.distance(unit.tile, foe.tile) <= 1:
+			return true
+	return false
+
+
+## Wohin der Boost springt: weg vom naechsten Gegner, moeglichst so, dass das
+## Ziel in Reichweite bleibt.
+func _escape_landing(unit: Unit, ability: ActionData, target: Unit) -> Vector2i:
+	var best := unit.tile
+	var best_score := _safety(unit, unit.tile, target)
+	for landing in battle.resolver.dash_landings(unit, ability):
+		var score := _safety(unit, landing, target)
+		if score > best_score:
+			best_score = score
+			best = landing
+	return best
+
+
+## Wie sicher ist ein Feld? Abstand zum naechsten Gegner, plus ein Bonus, wenn
+## das Ziel von dort in Reichweite bleibt.
+func _safety(unit: Unit, tile: Vector2i, target: Unit) -> float:
+	var nearest := 99
+	for foe in battle.enemies_of(unit):
+		nearest = mini(nearest, Grid.distance(tile, foe.tile))
+	var score := float(nearest)
+	if target != null and Grid.distance(tile, target.tile) <= unit.attack_range():
+		score += 1.5
+	return score
+
+
+# ---------------------------------------------------------------------------
+# Bewegung nach Rolle
+# ---------------------------------------------------------------------------
+
+## Wohin geht der naechste Schritt? Das eigene Feld = stehen bleiben.
+func next_step(unit: Unit, target: Unit) -> Vector2i:
+	if target == null or unit.mounts.is_empty():
+		return unit.tile
+	var ranged := unit.attack_range() >= int(_w("ranged_from_range", 3.0))
+	var shooting := _can_shoot_anyone(unit, unit.tile)
+	if ranged and shooting:
+		return _kite_step(unit, target)
+	if _can_shoot(unit, unit.tile, target):
+		return unit.tile
+	if shooting and not ranged:
+		# Nahkaempfer mit einem anderen Gegner vor der Nase: der wird bedient,
+		# statt sich an ihm vorbei zum Ziel zu draengen.
+		return unit.tile
+	return _approach(unit, target)
+
+
+func _can_shoot(unit: Unit, from_tile: Vector2i, target: Unit) -> bool:
+	var saved := unit.tile
+	unit.tile = from_tile
+	var ok := false
+	for mount in unit.mounts:
+		if battle.resolver.target_blocker(unit, target.tile, mount["attack"]) == "":
+			ok = true
 			break
-		var step := take_step()
-		if step.is_empty():
-			break
-		done.append(step)
-	return done
+	unit.tile = saved
+	return ok
+
+
+func _can_shoot_anyone(unit: Unit, from_tile: Vector2i) -> bool:
+	for foe in battle.enemies_of(unit):
+		if _can_shoot(unit, from_tile, foe):
+			return true
+	return false
+
+
+## Fernkaempfer in Reichweite: stehen bleiben -- ausser ein Gegner kommt
+## naeher als ``realtime.kite_distance``. Dann ein Feld zurueck, sofern von
+## dort noch jemand zu treffen ist.
+func _kite_step(unit: Unit, target: Unit) -> Vector2i:
+	var limit := int(_realtime.get("kite_distance", 2))
+	var here := _nearest_foe(unit, unit.tile)
+	if here > limit:
+		return unit.tile
+	var profile := unit.move_profile()
+	var best: Array[Vector2i] = [unit.tile]
+	var best_gap := here
+	for dir in Grid.directions():
+		var tile: Vector2i = unit.tile + dir
+		if not battle.grid.can_stand_on(tile, profile):
+			continue
+		if battle.grid.terrain_class(tile) == Terrain.TClass.DRIFT \
+				and not unit.stats.get("ignores_drift", false):
+			continue
+		var gap := _nearest_foe(unit, tile)
+		if gap < best_gap or not _can_shoot_anyone(unit, tile):
+			continue
+		if gap > best_gap:
+			best_gap = gap
+			best = [tile]
+		elif gap > here:
+			best.append(tile)
+	return best[battle.rng.randi() % best.size()]
+
+
+func _nearest_foe(unit: Unit, tile: Vector2i) -> int:
+	var nearest := 99
+	for foe in battle.enemies_of(unit):
+		nearest = mini(nearest, Grid.distance(tile, foe.tile))
+	return nearest
+
+
+## Der erste Schritt auf dem kuerzesten Weg zu einem Feld, von dem aus das
+## Ziel zu treffen ist.
+##
+## Gerechnet wird vom ZIELBEREICH aus (alle Felder, von denen aus geschossen
+## werden kann), nicht vom DROME aus. Das ist kein Selbstzweck: vom DROME aus
+## gesucht, entschied bei gleich langen Wegen die feste Reihenfolge der
+## Richtungen, welcher Weg genommen wird -- und die bevorzugte die Seite, die
+## zufaellig in die erste Richtung lief (Spiegelkaempfe 38 zu 2). So hat jedes
+## Nachbarfeld eine Entfernung zum Ziel, und unter gleich guten entscheidet
+## der Zufall am Seed.
+func _approach(unit: Unit, target: Unit) -> Vector2i:
+	var grid := battle.grid
+	var profile := unit.move_profile()
+	var reach := unit.attack_range()
+	var frontier: Array[Vector2i] = []
+	var dist := {}
+	for x in range(target.tile.x - reach, target.tile.x + reach + 1):
+		for y in range(target.tile.y - reach, target.tile.y + reach + 1):
+			var tile := Vector2i(x, y)
+			if not grid.in_bounds(tile) or Grid.distance(tile, target.tile) > reach:
+				continue
+			if tile != unit.tile and not grid.can_stand_on(tile, profile):
+				continue
+			if _can_shoot(unit, tile, target):
+				dist[tile] = 0
+				frontier.append(tile)
+	if frontier.is_empty():
+		# Kein Feld, von dem aus es geht (alles verbaut): so nah wie moeglich.
+		for dir in Grid.directions():
+			var tile: Vector2i = target.tile + dir
+			if grid.in_bounds(tile) and (tile == unit.tile or grid.can_stand_on(tile, profile)):
+				dist[tile] = 0
+				frontier.append(tile)
+	if dist.has(unit.tile):
+		return unit.tile
+
+	# Rueckwaerts suchen: wer von ``tile`` nach ``nxt`` will, zahlt die Kosten
+	# von ``nxt``. Kosten sind klein (1 oder 2), eine einfache Warteschlange
+	# mit Nachbesserung genuegt.
+	while not frontier.is_empty():
+		var tile: Vector2i = frontier.pop_front()
+		var here: int = dist[tile]
+		for dir in Grid.directions():
+			var prev: Vector2i = tile + dir
+			if not grid.in_bounds(prev) or not grid.can_traverse(prev, profile):
+				if prev != unit.tile:
+					continue
+			var cost: int = here + grid.terrain_cost(tile, profile)
+			if dist.has(prev) and int(dist[prev]) <= cost:
+				continue
+			dist[prev] = cost
+			if prev != unit.tile:
+				frontier.append(prev)
+
+	var best: Array[Vector2i] = []
+	var best_cost := 1 << 30
+	for dir in Grid.directions():
+		var nxt: Vector2i = unit.tile + dir
+		if not dist.has(nxt) or not grid.can_stand_on(nxt, profile):
+			continue
+		var cost: int = int(dist[nxt]) + grid.terrain_cost(nxt, profile)
+		if cost < best_cost:
+			best_cost = cost
+			best = [nxt]
+		elif cost == best_cost:
+			best.append(nxt)
+	if best.is_empty():
+		return unit.tile
+	return best[battle.rng.randi() % best.size()]
+
+
+## Einen Schritt beginnen. Das Feld gilt sofort (es ist damit belegt), die
+## Figur gleitet in der Schrittzeit hinterher. Rutscht der DROME auf Oel weiter,
+## dauert es entsprechend laenger.
+func _walk(unit: Unit, next: Vector2i) -> void:
+	var dir := next - unit.tile
+	var profile := unit.move_profile()
+	var cost := battle.grid.terrain_cost(next, profile)
+	unit.set_facing(Unit.facing_for(dir))
+	var start := unit.tile
+	# Die Schrittzeit steht VOR dem Versetzen fest: move_unit meldet den Zug
+	# (unit_moved), und die Szene liest daran ab, wie lange die Figur gleitet.
+	var landing := battle.grid.simulate_drift(next, dir, profile)
+	var extra := maxi(0, Grid.distance(start, landing) - 1)
+	unit.step_left = (float(cost) + float(extra) * 0.5) / unit.move_speed()
+	battle.resolver.move_unit(unit, next, dir)
 
 
 # ---------------------------------------------------------------------------
 # Bewertung
 # ---------------------------------------------------------------------------
-
-func _best_move() -> Dictionary:
-	var unit := battle.active_unit
-	var state := battle.turn_state
-	if unit == null or state == null:
-		return {}
-
-	var best := {}
-	var best_score := -INF
-
-	# Kandidatenfelder: bleiben, wo man ist, plus alles Erreichbare.
-	var positions := {unit.tile: true}
-	if state.can_move():
-		for landing in battle.reachable_for_active():
-			positions[landing] = true
-
-	for tile in positions:
-		var position_score := _position_score(unit, tile)
-		for action in unit.actions():
-			if state.blocker_for(action) != "":
-				continue
-			for candidate in _targets_from(unit, tile, action):
-				var value := _action_score(unit, action, candidate)
-				# Der Stellungswert entscheidet, VON WO angegriffen wird --
-				# nicht OB. Zaehlte er in dieselbe Schwelle, veto'te ein
-				# bedrohtes Zielfeld jeden normalen Angriff: zwei Gegner in
-				# Reichweite sind schon -16, und ein Treffer macht 12. Die KI
-				# stuende dann bis zum Zyklus-Limit daneben und schoesse nie.
-				if value <= 0.0:
-					continue
-				var score := value + position_score
-				if score > best_score:
-					best_score = score
-					best = {
-						"kind": "action",
-						"move_to": tile,
-						"action": action,
-						"target": candidate,
-						"score": score,
-					}
-	return best
-
 
 ## Wie gut ist es, hier zu stehen? Unabhaengig davon, was man von hier tut.
 func _position_score(unit: Unit, tile: Vector2i) -> float:
@@ -179,21 +459,6 @@ func _can_strike(foe: Unit, tile: Vector2i) -> bool:
 		if action.is_attack():
 			reach = maxi(reach, foe.stat("mov") + action.range_tiles)
 	return Grid.distance(foe.tile, tile) <= reach
-
-
-func _targets_from(unit: Unit, from_tile: Vector2i, action: ActionData) -> Array:
-	# Die Reichweitenpruefung geht vom geplanten Feld aus, nicht vom
-	# aktuellen. Sonst plant die KI Angriffe, die nach dem Laufen nicht mehr
-	# gehen -- oder verwirft welche, die dann gerade gehen.
-	var saved := unit.tile
-	unit.tile = from_tile
-	var out: Array = []
-	var pool := battle.enemies_of(unit) if not action.is_heal() else battle.allies_of(unit)
-	for other in pool:
-		if battle.resolver.target_blocker(unit, other.tile, action) == "":
-			out.append(other)
-	unit.tile = saved
-	return out
 
 
 func _action_score(unit: Unit, action: ActionData, target: Unit) -> float:
@@ -421,48 +686,3 @@ func _incumbent_bonus(unit: Unit) -> float:
 	return _w("incumbent_bonus_melee", 6.0)
 
 
-## Wen dieser Gegner tatsaechlich angegriffen hat. Der Amtsinhaber ist damit
-## bekannt -- er bekommt den Bonus oben und ist vom Verfall ausgenommen.
-func _remember_target(unit: Unit, step: Dictionary) -> void:
-	if unit == null or unit.aggro == null:
-		return
-	var action: ActionData = step["action"]
-	if action.is_attack():
-		unit.aggro.current_target = step["target"].unit_id
-
-
-# ---------------------------------------------------------------------------
-# Annaeherung
-# ---------------------------------------------------------------------------
-
-## Nichts Sinnvolles in Reichweite: in Richtung des naechsten Gegners laufen,
-## so weit die Bewegungspunkte reichen.
-func _approach_step() -> Dictionary:
-	var unit := battle.active_unit
-	var state := battle.turn_state
-	if unit == null or state == null or not state.can_move():
-		return {}
-
-	var foes := battle.enemies_of(unit)
-	if foes.is_empty():
-		return {}
-	var nearest: Unit = foes[0]
-	for foe in foes:
-		if Grid.distance(unit.tile, foe.tile) < Grid.distance(unit.tile, nearest.tile):
-			nearest = foe
-
-	var entry := battle.grid.path_towards(unit.move_profile(), nearest.tile,
-		state.move_points)
-	if entry.is_empty():
-		return {}
-	return {"kind": "move", "move_to": entry["tile"], "score": 0.0}
-
-
-## Haelt den geplanten Zustand nach, damit der naechste Durchlauf nicht
-## dieselbe Aktion nochmal vorschlaegt.
-func _simulate(step: Dictionary) -> void:
-	var state := battle.turn_state
-	if state == null:
-		return
-	if step["kind"] == "action":
-		state.consume(step["action"])

@@ -9,7 +9,8 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 
 ## 1. Richtung des Spiels
 
-* **Autobattler.** Die KI (`scripts/battle/ai_controller.gd`) steuert beide
+* **Autobattler in Echtzeit** (seit Nov. 2026, vorher Zuege mit
+  Initiative). Die KI (`scripts/battle/ai_controller.gd`) steuert beide
   Seiten. Der Spieler entscheidet ueber Aufbau, Squad und Belohnungen -- nicht
   ueber einzelne Zuege. Auch der Chaos-Virus ist immer Autokampf (der
   Schalter ist weg, Nov. 2026 -- vorher stand er auf "aus" und der Spieler
@@ -30,17 +31,33 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
-### Kampf
-* Immer Autokampf, im Lauf wie im Chaos-Virus (kein Schalter mehr).
-* Tempo 1x/2x ueber `Engine.time_scale` (bewusst nicht schneller -- sonst
-  unlesbar). Ueberspringen gibt es nicht.
-* **Overtime** (nur Autokampf, `data/config.json` -> `overtime`): ab Zyklus 12
-  verliert jeder DROME zu Zugbeginn `ceil(hp_max * 5% * (zyklus - 11))`.
-* Hochformat-HUD: Kopfleiste (Zugreihenfolge, Status), Daumenleiste (Tempo,
-  Pause, Log, Reihe, Folgen). Log und Initiative als einklappbare Paneele.
-* Kamera folgt dem aktiven DROME (~9 Felder breit); ein Finger zieht, zwei
-  zoomen, Mausrad am Desktop. Eigenes Ziehen schaltet das Folgen ab.
-* Log: Schildtreffer als "Schild -8 (Integritaet unversehrt)".
+### Kampf (Echtzeit, Nov. 2026)
+* Alle DROMEs handeln gleichzeitig. `BattleManager.tick()` rechnet in festen
+  Schritten (`realtime.tick` = 0,05 s); derselbe Seed ergibt denselben Kampf.
+  Tests und `tools/playtest/` rufen `run_to_end()`.
+* **Bewegung**: Feld fuer Feld, Geschwindigkeit = `move_base + SPD *
+  move_per_spd` Felder/s (Molok 1,6, Strix 2,0, Vireo 2,6). MOV zaehlt nicht
+  mehr. Das Feld gilt sofort, die Figur gleitet hinterher.
+* **Waffen**: jede Waffe (je Teil) laedt fuer sich, `interval` an der
+  Aktion (Blaster 1,4 s, Runenstab 1,2 s, Lanze 2,6 s, Kanone 3 s).
+* **Faehigkeiten** loesen selbst aus (`trigger` an der Aktion): jeder N-te
+  Angriff einer Waffe IST ihre Faehigkeit; Orbit-Sog alle 6 s; Boost, wenn ein
+  Gegner danebensteht (hoechstens alle 4 s). Energie ist gestrichen
+  (`abilities.brake = "ausloeser"`).
+* **KI nach Rolle**: Nahkaempfer ruecken bis zum Kontakt vor, Fernkaempfer
+  laufen nur bis in Reichweite und weichen aus, wenn jemand naeher als 2
+  Felder kommt. Zielwahl alle 0,5 s mit der alten Bewertung (Schaden,
+  Schild, Abschuss, Aggro, Amtsinhaber).
+* **Puls** (3 s je DROME, versetzt): Schild, Drohnen-Pod, Aderlass,
+  Statuseffekte, Overtime -- was frueher zu Zugbeginn lief.
+* **Overtime** ab 60 s, je Puls wachsend; Zeitgrenze 180 s.
+* **Startzonen** 5 Felder von den Ecken eingerueckt (`deployment.inset`):
+  erster Treffer nach rund 2 s statt nach zwei Zyklen.
+* Bildschirm: Kacheln oben (HP, Schild, Schuesse bis zur Faehigkeit "3/3"),
+  Zeit und Region, Kamera haelt das Geschehen im Bild, Schussspuren,
+  schwebende Zahlen, Faehigkeitsname ueber der Figur. Daumenleiste: Tempo
+  1x/2x, Pause, Log, Folgen. Zugleiste, Aktionsring und manueller Kampf sind
+  entfernt.
 
 ### Lauf (Roguelike) -- `scripts/core/run_state.gd`
 * 8 Kaempfe, 3 Leben, alles am Seed. Werte in `data/config.json` -> `run`.
@@ -173,16 +190,28 @@ Designpunkte (bis zur Entscheidung keine groesseren Umbauten auf eigene Faust):
    (Dreieck/Viereck/Fuenfeck) ist gebaut; die eigentliche Neuverteilung der
    Klassen und Halter steht aus.
 
-Angeboten und vom Spieler positiv aufgenommen, **noch nicht gebaut**:
+Gebaut (Nov. 2026, auf Wunsch des Spielers):
 
-* **Neue Kampf-Balken**: ein Balken, Integritaet gruen (feste Farbe, kein
-  Umfaerben), Schild hellblau direkt dahinter; Teamfarbe nur am Rahmen und
-  Bodenring; Energie/Initiative raus aus dem Feld.
-* **DROME-Kacheln im Kampf**: waagrecht scrollbare Reihe unten ueber der
-  Daumenleiste, eine Kachel je DROME in Zugreihenfolge (Name, HP mit Zahl,
-  Schild, Energie, SPD, Initiative-Balken), aktive hervorgehoben, Antippen
-  faehrt die Kamera hin. Ersetzt dann Namensleiste oben und Paneel "Reihe".
-  (Frage an den Spieler war: unten oder oben -- Empfehlung unten.)
+* **Ein Lebensbalken ueber der Figur**: Integritaet und Schild teilen sich
+  die Breite nach ihren Hoechstwerten (200/100 -> 2/3 zu 1/3). Eigene gruen
+  und blau, Gegner rot und violett (`Teams.hp_color/shield_color`). Kein
+  Name, keine Zahl, keine Energie mehr ueber der Figur.
+* **DROME-Kacheln** oben unter der Zugreihenfolge (`SquadTiles`): Kopf, Name,
+  SPD, HP und Schild mit Zahl. Aktive Kachel hervorgehoben, Antippen faehrt
+  die Kamera hin. Die Statuszeile sagt nur noch, wer am Zug ist.
+* **Kulissen** (`Ambience`, gezeichnet statt Bilddatei): Neon-Grossstadt
+  hinter Startseite, Lauf und Chaos-Auswahl; Sci-Fi-Hangar im Hangar; im Kampf
+  je Region (Sektor City Neon-Stadt, Gruenzone Ruinen mit Gluehwuermchen,
+  Anlage 7 Schlote und Smog), mit leichter Parallaxe.
+* **Teil-Info im Umbau** (`PartInfo`): "Wie funktioniert das?" am Halter und
+  in jeder Teil-Vorschau -- Rolle, Werte, Besonderheiten, jede Aktion mit
+  Reichweite, Wirkung, Schadensart und Einsatz.
+* **KI**: Fernkaempfer laufen nach dem Angriff nicht mehr in den Gegner,
+  sondern suchen ein sichereres Feld in Reichweite (`_settle_step`).
+
+**Playtest und Vorschlaege zu Bewegung und Faehigkeiten:**
+`docs/PLAYTEST_2026-11.md` (mit `tools/playtest/playtest.gd`). Dort stehen die
+offenen Fragen an den Spieler.
 
 Weitere Vorschlaege aus der Sitzung (unbewertet):
 

@@ -83,7 +83,9 @@
         "aggro_flat": 0,
         "taunt_turns": 0,
         "cooldown_turns": 0,
-        "energy_fraction": 1.0
+        "energy_fraction": 1.0,
+        "interval": 1.2,
+        "trigger": null
       },
       {
         "id": "act_rune_nova",
@@ -101,7 +103,13 @@
         "aggro_flat": 0,
         "taunt_turns": 0,
         "cooldown_turns": 0,
-        "energy_fraction": 1.0
+        "energy_fraction": 1.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 3,
+          "weapon": "act_runestaff"
+        }
       }
     ]
   }

@@ -49,7 +49,8 @@ func _run() -> RunState:
 ## gerade zu entscheiden ist (Kampf starten, Belohnung waehlen), darunter der
 ## Squad. Die Entscheidung steht oben, weil sie der Grund ist, hier zu sein.
 func _build_ui() -> void:
-	var content := UiKit.page(self, "Lauf", "res://scenes/main.tscn")
+	var content := UiKit.page(self, "Lauf", "res://scenes/main.tscn", -1, true,
+		Ambience.Kind.CITY, 0.35)
 
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", UiKit.GAP)

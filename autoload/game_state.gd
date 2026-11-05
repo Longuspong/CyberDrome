@@ -42,12 +42,6 @@ var squad: Array = []
 ## ergibt exakt denselben Kampf. Im Playtesting ist das Gold wert.
 var battle_seed: int = 0
 
-## Autokampf: die KI steuert im Kampf BEIDE Seiten, mit Overtime. CyberDrome
-## ist ein Autobattler -- das ist immer an. Der manuelle Kampf bleibt nur als
-## Entwickler-Schalter im Code (kein Knopf mehr in der Oberflaeche). Wie der
-## Spieler eingreifen darf, ist offen (CLAUDE.md, Designpunkt 3) -- jedenfalls
-## nicht durch Steuern.
-var auto_battle: bool = true
 
 ## Ergebnis des letzten Kampfes, fuer den Ergebnisbildschirm
 var last_result: Dictionary = {}

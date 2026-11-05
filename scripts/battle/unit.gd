@@ -54,6 +54,32 @@ var taunt_lock: Dictionary = {}
 var damage_dealt: int = 0
 var damage_taken: int = 0
 
+# --- Echtzeit (Nov. 2026) ---------------------------------------------------
+
+## Je Waffen-TEIL ein Eintrag: zwei Blaster sind zwei Waffen, jede laedt fuer
+## sich. { slot, part, attack: ActionData, ability: ActionData|null,
+## ready: Sekunden bis zum naechsten Schuss, count: Angriffe seit der letzten
+## Faehigkeit }.
+var mounts: Array = []
+## Faehigkeiten, die nicht an einem Angriff haengen (Gadgets, nach Zeit oder
+## Ereignis): { part, ability: ActionData, ready: Sekunden }.
+var gadgets: Array = []
+## Restzeit des laufenden Schritts. Solange > 0, laeuft der DROME und schiesst
+## nicht; das Feld (``tile``) ist schon das Zielfeld.
+var step_left: float = 0.0
+## Bis zum naechsten Puls (Schild, Reparatur, Overtime ...).
+var pulse_left: float = 0.0
+## Bis zur naechsten Zielwahl, und das aktuelle Ziel.
+var think_left: float = 0.0
+var target_id = null
+
+## Darstellung: der DROME gleitet von Feld zu Feld statt zu springen.
+var _glide_from: Vector2 = Vector2.ZERO
+var _glide_to: Vector2 = Vector2.ZERO
+var _glide_time: float = 0.0
+var _glide_total: float = 0.0
+var _prev_position: Vector2 = Vector2.ZERO
+
 var _sprites: Dictionary = {}
 
 ## Die Bauteile haengen unter einem eigenen Knoten, nicht direkt unter der
@@ -148,7 +174,49 @@ func set_facing(direction: String) -> void:
 ## fuehrt der BattleManager, damit es nur eine Wahrheit gibt.
 func place_at(new_tile: Vector2i) -> void:
 	tile = new_tile
+	_prev_position = position
 	position = IsoView.sprite_position(new_tile)
+	_glide_total = 0.0
+
+
+## Die letzte Versetzung (place_at) sichtbar nachgleiten: vom Ort, an dem die
+## Figur vorher gezeichnet wurde, zum neuen Feld.
+func animate_last_move(seconds: float) -> void:
+	glide_to(tile, seconds, _prev_position)
+
+
+## Wie place_at, aber die Figur gleitet in ``seconds`` vom bisherigen Ort
+## dorthin. Das Feld gilt sofort -- nur das Bild laeuft hinterher.
+func glide_to(new_tile: Vector2i, seconds: float, from_position: Vector2) -> void:
+	tile = new_tile
+	_glide_from = from_position
+	_glide_to = IsoView.sprite_position(new_tile)
+	_glide_time = 0.0
+	_glide_total = maxf(0.01, seconds)
+	position = _glide_from
+
+
+func _process(delta: float) -> void:
+	if _glide_total <= 0.0:
+		return
+	_glide_time += delta
+	var t := clampf(_glide_time / _glide_total, 0.0, 1.0)
+	position = _glide_from.lerp(_glide_to, t)
+	if t >= 1.0:
+		_glide_total = 0.0
+
+
+## Die Feldmitte unter der Figur, so wie sie gerade gezeichnet wird -- fuer
+## den Lebensbalken, der mitgleiten soll.
+func visual_anchor() -> Vector2:
+	return position + IsoView.SPRITE_ORIGIN
+
+
+## Blickrichtung aus einem Schritt im Gitter.
+static func facing_for(step: Vector2i) -> String:
+	if absi(step.x) >= absi(step.y):
+		return "east" if step.x > 0 else "west"
+	return "south" if step.y > 0 else "north"
 
 
 ## Alles in einem Haze-Feld wird ausgegraut. Position bleibt sichtbar -- es
@@ -312,6 +380,59 @@ class UnitRing extends Node2D:
 
 func is_alive() -> bool:
 	return hp > 0
+
+
+## Echtzeit-Zustand zum Kampfbeginn: Waffen geladen bis auf einen kleinen
+## Versatz, Gadgets nach ihrem Takt, Puls versetzt um ``pulse_offset``.
+func init_realtime(pulse_offset: float) -> void:
+	mounts.clear()
+	gadgets.clear()
+	step_left = 0.0
+	pulse_left = maxf(0.05, pulse_offset)
+	think_left = 0.0
+	target_id = null
+	if build == null:
+		return
+	for slot in build.equip_slots():
+		var part := build.part_in(slot)
+		if part == null:
+			continue
+		var attack: ActionData = null
+		for action in part.actions:
+			if action.is_attack():
+				attack = action
+				break
+		for action in part.actions:
+			if action.is_attack():
+				continue
+			if action.trigger_kind == "attacks" and attack != null:
+				continue
+			gadgets.append({"part": part, "ability": action,
+				"ready": action.trigger_every if action.trigger_kind == "time" else 0.0})
+		if attack == null:
+			continue
+		var ability: ActionData = null
+		for action in part.actions:
+			if not action.is_attack() and action.trigger_kind == "attacks":
+				ability = action
+		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
+		mounts.append({"slot": slot, "part": part, "attack": attack,
+			"ability": ability, "ready": attack.interval * 0.5, "count": 0})
+
+
+## Felder je Sekunde. SPD ist seit dem Echtzeit-Kampf die Laufgeschwindigkeit.
+func move_speed() -> float:
+	var section := Config.section("realtime")
+	return maxf(float(section.get("move_min", 1.2)),
+		float(section.get("move_base", 1.0)) + float(spd()) * float(section.get("move_per_spd", 0.12)))
+
+
+## Die groesste Reichweite unter den Waffen dieses DROME.
+func attack_range() -> int:
+	var longest := 0
+	for mount in mounts:
+		longest = maxi(longest, (mount["attack"] as ActionData).range_tiles)
+	return longest
 
 
 func hp_fraction() -> float:

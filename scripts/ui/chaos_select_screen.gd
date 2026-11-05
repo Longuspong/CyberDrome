@@ -29,7 +29,8 @@ func _ready() -> void:
 ## und der grosse Start-Knopf -- untereinander. Der Seed (ein
 ## Werkzeug fuers Playtesting) steht ganz unten.
 func _build_ui() -> void:
-	var content := UiKit.page(self, "Chaos-Virus", "res://scenes/main.tscn")
+	var content := UiKit.page(self, "Chaos-Virus", "res://scenes/main.tscn", -1, true,
+		Ambience.Kind.CITY, 0.35)
 
 	content.add_child(UiKit.label("Wer kommt mit? Die Gegner siehst du erst im Kampf -- "
 		+ "sie sind etwas schwaecher als deine volle Mannschaft. Je weniger du "

@@ -30,14 +30,16 @@ den Satz unter `assets/parts/`. Wie fein er gerastert wird, stellt
 `tools/set_import_scale.py` ein (Vierfach; die Engine rechnet ueber
 `IsoView.fit_sprite()` auf den 128er Entwurfsraum zurueck).
 
-### Autokampf und PWA
+### Echtzeit-Autokampf und PWA
 
-Jeder Kampf ist **Autokampf**: dieselbe KI zieht fuer beide Seiten, unten
-stehen **Tempo 1x/2x** und **Pause**. Ab Zyklus 12 greift die **Overtime**
-(`data/config.json`, Abschnitt `overtime`): jeder DROME verliert zu Zugbeginn
-einen wachsenden Anteil seiner Integritaet, damit jeder Kampf entschieden wird.
-`tests/test_autobattle.gd` sichert ab, dass beide Seiten dieselben Werkzeuge
-haben und ein Spiegelkampf auf beiden Seiten gleich oft gewonnen wird.
+Jeder Kampf laeuft in **Echtzeit**: alle DROMEs bewegen sich und schiessen
+gleichzeitig, die KI steuert beide Seiten. Jede Waffe hat ihr eigenes
+Schussintervall, SPD ist die Laufgeschwindigkeit, Faehigkeiten loesen von
+selbst aus (jeder 3. Blasterschuss ist die Streusalve). Unten stehen **Tempo
+1x/2x**, **Pause**, **Log** und **Folgen**. Ab 60 Sekunden greift die
+**Overtime** (`data/config.json`, Abschnitte `realtime` und `overtime`).
+`tests/test_autobattle.gd` sichert ab, dass ein Spiegelkampf auf beiden Seiten
+gleich oft gewonnen wird.
 
 Als **PWA** gebaut wird das Spiel von `tools/build_web.sh` (Godot und nur die
 zwei Web-Templates holen, Assets importieren, exportieren nach `build/web`).

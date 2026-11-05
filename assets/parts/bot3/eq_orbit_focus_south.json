@@ -83,7 +83,13 @@
         "aggro_flat": 8,
         "taunt_turns": 0,
         "cooldown_turns": 0,
-        "energy_fraction": 0.0
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "time",
+          "every": 6,
+          "weapon": ""
+        }
       }
     ]
   }

@@ -9,10 +9,6 @@ extends RefCounted
 
 var t
 
-## Sicherheitsnetz. Ein Kampf, der so viele Zuege braucht, ist kein Kampf mehr.
-const MAX_TURNS := 400
-
-
 func _squad() -> Array:
 	return [
 		DromeBuild.create("ALPHA", {
@@ -26,42 +22,29 @@ func _squad() -> Array:
 	]
 
 
-## Spielt einen Kampf zu Ende. Gibt die Zusammenfassung zurueck.
+## Spielt einen Kampf zu Ende (Echtzeit, ohne Bildschirm). Gibt die
+## Zusammenfassung zurueck.
 func _play(seed_value: int) -> Dictionary:
 	var battle := BattleManager.new()
 	battle.setup(seed_value, _squad())
-	var controller := AIController.new(battle)
-
-	var turns := 0
-	while battle.outcome == BattleManager.Outcome.RUNNING and turns < MAX_TURNS:
-		turns += 1
-		var unit := battle.begin_next_turn()
-		if unit == null:
-			if battle.outcome != BattleManager.Outcome.RUNNING:
-				break
-			continue
-		controller.run_turn()
-		if battle.outcome == BattleManager.Outcome.RUNNING:
-			battle.end_turn()
-
+	battle.run_to_end()
 	var result := battle.build_result()
-	result["turns"] = turns
 	battle.free()
 	return result
 
 
 func test_a_battle_runs_to_a_conclusion() -> void:
 	var outcomes := {}
-	var total_turns := 0
+	var total := 0
 	for i in 25:
 		var result := _play(4000 + i)
-		total_turns += result["turns"]
+		total += int(result["seconds"])
 		t.ok(result["outcome"] != BattleManager.Outcome.RUNNING,
-			"Kampf %d endet (nach %d Zuegen)" % [4000 + i, result["turns"]])
+			"Kampf %d endet (nach %d s)" % [4000 + i, result["seconds"]])
 		var label := BattleManager.outcome_label(result["outcome"])
 		outcomes[label] = outcomes.get(label, 0) + 1
-	t.note("25 Kaempfe, im Schnitt %.0f Zuege: %s"
-		% [float(total_turns) / 25.0, str(outcomes)])
+	t.note("25 Kaempfe, im Schnitt %.0f s: %s"
+		% [float(total) / 25.0, str(outcomes)])
 
 
 func test_both_sides_can_win() -> void:
@@ -268,224 +251,90 @@ func _ability_squad() -> Array:
 	]
 
 
-func test_abilities_are_scarce_but_never_dead() -> void:
-	# Die Energiekosten der Faehigkeiten sind aus einer Regel abgeleitet
-	# (tools/build_sample_parts.py, ability_cost) und liegen rund zweieinhalb
-	# Mal ueber den alten Werten. Diese Rechnung kann auf zwei Arten kippen, und
-	# beide fallen erst im Spiel auf:
-	#
-	#   zu teuer    die Faehigkeit steht in der Aktionsleiste und wird nie
-	#               gezogen -- der Ausruestungsslot ist dann verschenkt
-	#   zu billig   sie wird jeden Zug gezogen, weil das Faehigkeitsbudget
-	#               eines Angriffs-Aufbaus ohnehin frei ist. Genau daran ist
-	#               der Orbit-Sog schon einmal gescheitert.
-	#
-	# Gemessen wird deshalb das BAND, nicht die Zahl: eine feste Erwartung waere
-	# bei einer nutzenbasierten KI ohnehin nur eine Momentaufnahme.
+## Spielt ``battles`` Gefechte und schreibt je DROME die Folge seiner Aktionen
+## mit (ueber EventBus.action_used). Gibt { uses: id -> Anzahl, seqs:
+## unit_name -> [action_id, ...], en: unit_name -> Energie am Ende } zurueck.
+func _record(battles: int, builds: Array, first_seed: int) -> Dictionary:
 	var uses := {}
-	var battles := 20
+	var seqs := {}
+	var current := {"seed": first_seed}
+	var record := func(unit, _tile, action):
+		uses[action.id] = int(uses.get(action.id, 0)) + 1
+		var key := "%d:%s" % [current["seed"], unit.unit_id]
+		if not seqs.has(key):
+			seqs[key] = []
+		seqs[key].append(action.id)
+	EventBus.action_used.connect(record)
+	var energy := {}
 	for i in battles:
+		current["seed"] = first_seed + i
 		var battle := BattleManager.new()
-		battle.setup(7000 + i, _ability_squad())
-		var controller := AIController.new(battle)
-		var guard := 0
-		while battle.outcome == BattleManager.Outcome.RUNNING and guard < MAX_TURNS:
-			guard += 1
-			var unit := battle.begin_next_turn()
-			if unit == null:
-				if battle.outcome != BattleManager.Outcome.RUNNING:
-					break
-				continue
-			for _step in AIController.MAX_STEPS:
-				if battle.outcome != BattleManager.Outcome.RUNNING:
-					break
-				var step := controller.take_step()
-				if step.is_empty():
-					break
-				if step.get("kind") != "action":
-					continue
-				var action: ActionData = step["action"]
-				if action.category == ActionData.Category.ABILITY:
-					uses[action.id] = uses.get(action.id, 0) + 1
-			if battle.outcome == BattleManager.Outcome.RUNNING:
-				battle.end_turn()
+		battle.setup(first_seed + i, builds)
+		var start := {}
+		for unit in battle.units:
+			start[unit.unit_id] = unit.en
+		battle.run_to_end()
+		for unit in battle.units:
+			energy["%d:%s" % [first_seed + i, unit.unit_id]] = [start[unit.unit_id], unit.en]
 		battle.free()
-
-	# NICHT tot durch Preis: jede Faehigkeit im Squad muss der Kern, hinter dem
-	# sie sitzt, bezahlen koennen. Das ist die eigentliche "nicht tot"-Garantie
-	# und haengt nicht daran, ob die KI sie gerade gut findet (GAME_DESIGN §13:
-	# die Faehigkeiten kommen jetzt von den Waffen, es sind viel mehr, und die KI
-	# waehlt -- eine Provokation lohnt eben selten).
-	for build in _ability_squad():
-		var core = build.part_in("core")
-		var tank: int = core.en_max if core != null else 0
-		for action in build.actions_of(ActionData.Category.ABILITY):
-			t.ok(action.en_cost <= tank,
-				"%s ist an seinem Kern bezahlbar (%d EN, Tank %d)"
-				% [action.id, action.en_cost, tank])
-
-	# Und sie FLIESSEN auch: die Waffen-Faehigkeiten sind jetzt das Brot-und-
-	# Butter-Werkzeug und tauchen zuverlaessig auf. Das Stoersignal ist bewusst
-	# NICHT dabei -- ein harter Zwang lohnt sich selten, das ist Absicht.
-	for id in [&"act_siege_barrage", &"act_rune_nova", &"act_orbitpull"]:
-		t.ok(uses.get(id, 0) > 0,
-			"%s wird in %d Gefechten mindestens einmal gezogen (%d)"
-			% [id, battles, uses.get(id, 0)])
-
-	# Die Obergrenze ist ein GUARDRAIL gegen echtes Spammen: ohne festen
-	# Faehigkeits-Deckel (GAME_DESIGN §13) koennte eine zu billige Faehigkeit
-	# jeden Zug kommen (~13 je Gefecht). Bremsen sollen Energie und Abklingzeit,
-	# nicht ein Zaehler -- greift die Bremse, bleibt jede unter der Grenze.
-	for id in uses:
-		var per_battle := float(uses[id]) / float(battles)
-		t.ok(per_battle < 9.0,
-			"%s bleibt knapp: %.1f Einsaetze je Gefecht" % [id, per_battle])
-	t.note("Faehigkeiten je Gefecht: %s" % str(uses))
+	EventBus.action_used.disconnect(record)
+	return {"uses": uses, "seqs": seqs, "energy": energy}
 
 
-## Spielt ``battles`` Gefechte mit dem Faehigkeits-Squad und zaehlt, welche
-## Faehigkeit wie oft gezogen wurde. Gibt zusaetzlich die Ausgaenge zurueck.
-func _measure_abilities(battles: int) -> Dictionary:
+func test_every_ability_fires_by_itself() -> void:
+	# Echtzeit (Nov. 2026): Faehigkeiten werden nicht mehr gezogen, sie loesen
+	# nach ihrer Regel aus. Jede Faehigkeit im Bestand muss im Kampf auch
+	# wirklich kommen -- sonst ist ihr Ausloeser kaputt.
+	var squads := [_ability_squad(), _squad(), [DromeBuild.create("BOOST", {
+		"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core",
+		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_holo_boost"})]]
 	var uses := {}
-	var outcomes := {}
-	for i in battles:
-		var battle := BattleManager.new()
-		battle.setup(7000 + i, _ability_squad())
-		var controller := AIController.new(battle)
-		var guard := 0
-		while battle.outcome == BattleManager.Outcome.RUNNING and guard < MAX_TURNS:
-			guard += 1
-			var unit := battle.begin_next_turn()
-			if unit == null:
-				if battle.outcome != BattleManager.Outcome.RUNNING:
-					break
+	for squad in squads:
+		var measured: Dictionary = _record(8, squad, 7000)
+		for id in measured["uses"]:
+			uses[id] = int(uses.get(id, 0)) + int(measured["uses"][id])
+	for id in [&"act_pulse_scatter", &"act_siege_barrage", &"act_rune_nova",
+			&"act_rail_pierce", &"act_orbitpull", &"act_holo_dash"]:
+		t.ok(int(uses.get(id, 0)) > 0, "%s loest im Kampf aus (%d)" % [id, uses.get(id, 0)])
+	t.note("Aktionen: %s" % str(uses))
+
+
+func test_every_nth_attack_is_the_ability() -> void:
+	# Die Regel "jeder 3. Schuss ist die Streusalve": zwischen zwei Faehigkeiten
+	# derselben Waffe fallen genau N-1 normale Angriffe. Gemessen am Squad mit
+	# je EINER Waffe, damit sich keine zwei Zaehler mischen. Streusalve und
+	# Praezisionsschuss reichen mindestens so weit wie ihr Angriff -- sie
+	# kommen also nie zu spaet.
+	var measured: Dictionary = _record(6, _squad(), 7300)
+	var rules := {&"act_pulse_scatter": [&"act_pulse", 3],
+		&"act_rail_pierce": [&"act_raillance", 4]}
+	var checked := 0
+	for key in measured["seqs"]:
+		var seq: Array = measured["seqs"][key]
+		for ability in rules:
+			var attack: StringName = rules[ability][0]
+			var every: int = rules[ability][1]
+			if not seq.has(attack):
 				continue
-			for _step in AIController.MAX_STEPS:
-				if battle.outcome != BattleManager.Outcome.RUNNING:
-					break
-				var step := controller.take_step()
-				if step.is_empty():
-					break
-				if step.get("kind") != "action":
-					continue
-				var action: ActionData = step["action"]
-				if action.category == ActionData.Category.ABILITY:
-					uses[action.id] = uses.get(action.id, 0) + 1
-			if battle.outcome == BattleManager.Outcome.RUNNING:
-				battle.end_turn()
-		var label := BattleManager.outcome_label(battle.outcome)
-		outcomes[label] = outcomes.get(label, 0) + 1
-		battle.free()
-	return {"uses": uses, "outcomes": outcomes}
+			var since := 0
+			for id in seq:
+				if id == attack:
+					since += 1
+				elif id == ability:
+					t.equal(since, every - 1,
+						"%s kommt nach %d Angriffen (%s)" % [ability, every - 1, key])
+					since = 0
+					checked += 1
+	t.ok(checked > 3, "die Regel wurde oft genug geprueft (%d)" % checked)
 
 
-## Der Schalter wird fuer die Dauer eines Blocks umgelegt und danach ZURUECK.
-## Ohne das Zuruecksetzen liefe der Rest der Suite im falschen Modus, und die
-## Reihenfolge der Tests entschiede ueber ihr Ergebnis.
-##
-## Gibt zurueck, was ``body`` zurueckgibt. Das ist keine Bequemlichkeit: eine
-## Lambda in GDScript faengt ihre Umgebung als KOPIE ein, eine Zuweisung darin
-## erreicht die aeussere Variable also nie. Wer das Ergebnis braucht, muss es
-## herausreichen.
-func _with_brake(mode: String, body: Callable):
-	var before = Config.section("abilities").get("brake", ActionData.BRAKE_ENERGY)
-	Config.data()["abilities"]["brake"] = mode
-	var result = body.call()
-	Config.data()["abilities"]["brake"] = before
-	return result
-
-
-## Die erste Faehigkeit mit einer bestimmten ID im Faehigkeits-Squad.
-func _find_ability(wanted: StringName) -> ActionData:
-	for build in _ability_squad():
-		for action in build.actions():
-			if action.id == wanted:
-				return action
-	return null
-
-
-func test_each_kind_of_ability_carries_its_own_brake() -> void:
-	# GAME_DESIGN §13: die zwei Bremsen gehoeren jetzt zwei ARTEN von Faehigkeit.
-	# Energetische bezahlen in Energie (Abklingzeit 0), mechanische -- das
-	# Sperrfeuer der Kanone, das per Fiktion keinen Strom zieht -- in Abklingzeit
-	# (en_cost 0). Die entschiedene Voreinstellung 'beides' liest beide Felder,
-	# damit jede Faehigkeit von der Bremse gehalten wird, die zu ihr passt.
-	var barrage := _find_ability(&"act_siege_barrage")
-	var nova := _find_ability(&"act_rune_nova")
-	t.ok(barrage != null and nova != null,
-		"Sperrfeuer (mechanisch) und Arkanwelle (energetisch) sind im Squad")
-
-	t.equal(barrage.en_cost, 0, "das Sperrfeuer zieht keinen Strom")
-	t.ok(barrage.cooldown_turns > 1,
-		"dafuer bremst es ueber eine Abklingzeit (%d Zuege)" % barrage.cooldown_turns)
-	t.ok(nova.en_cost > 0, "die Arkanwelle kostet Energie")
-	t.equal(nova.cooldown_turns, 0,
-		"und traegt keine Abklingzeit -- die Energie ist ihre Bremse")
-
-	_with_brake(ActionData.BRAKE_BOTH, func():
-		t.ok(barrage.cooldown_now() > 0 and barrage.en_cost_now() == 0,
-			"im entschiedenen Modus haelt die Wartezeit das Sperrfeuer")
-		t.ok(nova.en_cost_now() > 0 and nova.cooldown_now() == 0,
-			"und der Preis die Arkanwelle"))
-
-
-func test_a_cooldown_blocks_and_then_lets_go() -> void:
-	# Geprueft an der mechanischen Faehigkeit (Sperrfeuer) im entschiedenen Modus
-	# 'beides' -- dort ist die Abklingzeit die einzige Bremse der Kanone.
-	_with_brake(ActionData.BRAKE_BOTH, func():
-		var battle := BattleManager.new()
-		battle.setup(7001, _ability_squad())
-		var unit: Unit = null
-		for candidate in battle.living(true):
-			for action in candidate.actions():
-				if action.id == &"act_siege_barrage":
-					unit = candidate
-		var ability := _find_ability(&"act_siege_barrage")
-		t.ok(unit != null and ability != null and ability.cooldown_now() > 0,
-			"der Aufbau bringt eine Faehigkeit mit Abklingzeit mit")
-
-		var state := TurnState.begin(unit)
-		t.equal(state.blocker_for(ability), "",
-			"vor dem ersten Einsatz ist sie frei")
-
-		state.consume(ability)
-		t.equal(unit.cooldown_left(ability), ability.cooldown_now(),
-			"nach dem Einsatz laeuft die Abklingzeit")
-
-		# Ein frischer Zug bringt das Budget zurueck -- die Wartezeit nicht.
-		var next_turn := TurnState.begin(unit)
-		t.ok(next_turn.blocker_for(ability).begins_with("Abklingzeit"),
-			"und sie sperrt auch im naechsten Zug: '%s'"
-			% next_turn.blocker_for(ability))
-
-		for _i in ability.cooldown_now():
-			unit.tick_cooldowns()
-		t.equal(unit.cooldown_left(ability), 0, "danach ist sie abgelaufen")
-		t.equal(TurnState.begin(unit).blocker_for(ability), "",
-			"und die Aktion wieder frei")
-		battle.free())
-
-
-func test_the_two_brakes_produce_different_battles() -> void:
-	# Die eigentliche Frage des Playtests, als Messung: bremst die Wartezeit
-	# ueberhaupt anders als der Preis? Verglichen werden dieselben Seeds, damit
-	# der Unterschied nicht aus der Karte kommt.
-	var by_energy: Dictionary = _with_brake(ActionData.BRAKE_ENERGY,
-		func(): return _measure_abilities(12))
-	var by_cooldown: Dictionary = _with_brake(ActionData.BRAKE_COOLDOWN,
-		func(): return _measure_abilities(12))
-
-	t.note("Preis:     %s  %s" % [str(by_energy["uses"]), str(by_energy["outcomes"])])
-	t.note("Wartezeit: %s  %s" % [str(by_cooldown["uses"]), str(by_cooldown["outcomes"])])
-	t.ok(by_energy["uses"] != by_cooldown["uses"],
-		"die beiden Bremsen ergeben verschiedene Gefechte")
-
-	# Dieselbe Guardrail-Grenze wie oben (9,0, nicht 8,0): auch dieser Lauf misst
-	# gegen die kohaerenten Huellen-Gegner (§9).
-	for id in by_cooldown["uses"]:
-		var per_battle := float(by_cooldown["uses"][id]) / 12.0
-		t.ok(per_battle < 9.0,
-			"auch mit Wartezeit bleibt %s knapp: %.1f je Gefecht" % [id, per_battle])
+func test_abilities_cost_no_energy() -> void:
+	# Mit festen Ausloesern ist Energie keine Bremse mehr.
+	var measured: Dictionary = _record(3, _ability_squad(), 7400)
+	for key in measured["energy"]:
+		var pair: Array = measured["energy"][key]
+		t.ok(int(pair[1]) >= int(pair[0]), "%s verbraucht keine Energie" % key)
 
 
 func test_same_seed_gives_the_same_battle() -> void:
@@ -495,7 +344,7 @@ func test_same_seed_gives_the_same_battle() -> void:
 	var b := _play(20260806)
 	t.equal(a["region"], b["region"], "dieselbe Region")
 	t.equal(a["mutator"], b["mutator"], "derselbe Mutator")
-	t.equal(a["cycles"], b["cycles"], "dieselbe Zyklenzahl")
+	t.equal(a["seconds"], b["seconds"], "dieselbe Dauer")
 	t.equal(BattleManager.outcome_label(a["outcome"]),
 		BattleManager.outcome_label(b["outcome"]), "derselbe Ausgang")
 	for i in a["units"].size():

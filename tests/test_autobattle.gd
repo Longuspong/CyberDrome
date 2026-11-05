@@ -13,7 +13,6 @@ extends RefCounted
 
 var t
 
-const MAX_TURNS := 600
 
 ## Wie viele Seeds die Fairness-Messung spielt. Ein Kompromiss aus Laufzeit
 ## und Aussagekraft -- bei 40 Kaempfen ist eine Abweichung von 50/50 um mehr
@@ -34,22 +33,13 @@ func _squad() -> Array:
 	]
 
 
-## Spielt einen Kampf KI gegen KI zu Ende.
+## Spielt einen Kampf KI gegen KI zu Ende (Echtzeit).
 func _play(seed_value: int, player: Array, enemy: Array, overtime: bool) -> Dictionary:
 	var battle := BattleManager.new()
 	battle.setup(seed_value, player, enemy)
 	battle.overtime_enabled = overtime
-	var controller := AIController.new(battle)
-	var turns := 0
-	while battle.outcome == BattleManager.Outcome.RUNNING and turns < MAX_TURNS:
-		turns += 1
-		if battle.begin_next_turn() == null:
-			continue
-		controller.run_turn()
-		if battle.outcome == BattleManager.Outcome.RUNNING:
-			battle.end_turn()
+	battle.run_to_end()
 	var result := battle.build_result()
-	result["turns"] = turns
 	battle.free()
 	return result
 
@@ -66,7 +56,8 @@ func test_overtime_is_off_unless_enabled() -> void:
 	var battle := BattleManager.new()
 	battle.setup(4243, _squad(), _squad())
 	var unit: Unit = battle.units[0]
-	battle.tick_bus.cycle_count = 40
+	battle.overtime_enabled = false
+	battle.time = 400.0
 	t.equal(battle.overtime_damage(unit), 0, "ohne Schalter kein Overtime-Schaden")
 	battle.free()
 
@@ -76,13 +67,13 @@ func test_overtime_grows_with_each_cycle() -> void:
 	battle.setup(4244, _squad(), _squad())
 	battle.overtime_enabled = true
 	var unit: Unit = battle.units[0]
-	var start := int(Config.section("overtime").get("start_cycle", 12))
+	var start := float(Config.section("overtime").get("start_seconds", 60.0))
 
-	battle.tick_bus.cycle_count = start - 1
+	battle.time = start - 1.0
 	t.equal(battle.overtime_damage(unit), 0, "vor dem Start kein Schaden")
-	battle.tick_bus.cycle_count = start
+	battle.time = start
 	var first := battle.overtime_damage(unit)
-	battle.tick_bus.cycle_count = start + 3
+	battle.time = start + 3.0 * battle.pulse_seconds()
 	var later := battle.overtime_damage(unit)
 	t.ok(first > 0, "ab dem Start-Zyklus Schaden (%d)" % first)
 	t.ok(later > first, "der Schaden waechst (%d -> %d)" % [first, later])
@@ -94,16 +85,16 @@ func test_overtime_grows_with_each_cycle() -> void:
 ## bevor das harte Zyklus-Limit greift.
 func test_mirror_battles_end_decisively() -> void:
 	var draws := 0
-	var total_cycles := 0
+	var total := 0
 	var count := 20
 	for i in count:
 		var result := _play(7100 + i, _squad(), _squad(), true)
-		total_cycles += int(result["cycles"])
+		total += int(result["seconds"])
 		if result["outcome"] == BattleManager.Outcome.DRAW \
 				or result["outcome"] == BattleManager.Outcome.RUNNING:
 			draws += 1
-	t.note("Overtime: %d/%d unentschieden, im Schnitt %.1f Zyklen"
-		% [draws, count, float(total_cycles) / count])
+	t.note("Overtime: %d/%d unentschieden, im Schnitt %.1f s"
+		% [draws, count, float(total) / count])
 	t.ok(draws <= count / 10, "hoechstens 10%% Unentschieden (waren %d/%d)" % [draws, count])
 
 

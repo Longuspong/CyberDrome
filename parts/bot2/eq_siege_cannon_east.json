@@ -82,7 +82,9 @@
         "aggro_flat": 0,
         "taunt_turns": 0,
         "cooldown_turns": 0,
-        "energy_fraction": 0.0
+        "energy_fraction": 0.0,
+        "interval": 3.0,
+        "trigger": null
       },
       {
         "id": "act_siege_barrage",
@@ -100,7 +102,13 @@
         "aggro_flat": 0,
         "taunt_turns": 0,
         "cooldown_turns": 3,
-        "energy_fraction": 0.0
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 3,
+          "weapon": "act_siege"
+        }
       }
     ]
   }

@@ -615,7 +615,8 @@ STATS = {
             {"id": "act_pulse", "display_name": "Puls-Salve",
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 10, "en_cost": 0,
-             "requires_line_of_sight": True, "energy_fraction": 0.5},
+             "requires_line_of_sight": True, "energy_fraction": 0.5,
+             "interval": 1.4},
             # Streusalve: der leichte Flaechenschlag des Scouts. Weniger Wumms
             # als ein gezielter Treffer, dafuer ein ganzes Nest auf einmal.
             {"id": "act_pulse_scatter", "display_name": "Streusalve",
@@ -623,7 +624,8 @@ STATS = {
              "range_tiles": 4, "aoe_radius": 1, "power": 9,
              "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
              "requires_line_of_sight": True, "aggro_coeff": 0.9,
-             "energy_fraction": 0.5},
+             "energy_fraction": 0.5,
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_pulse"}},
         ],
     },
     # Passiv. Ein Schild ist kein Knopf, sondern eine Entscheidung beim Bauen --
@@ -644,7 +646,8 @@ STATS = {
              "category": "ability", "targeting": "dash",
              "range_tiles": 3, "power": 0,
              "en_cost": ability_cost("schwach"), "cooldown_turns": 0,
-             "requires_line_of_sight": False, "aggro_flat": 0},
+             "requires_line_of_sight": False, "aggro_flat": 0,
+             "trigger": {"kind": "adjacent", "every": 4, "weapon": ""}},
         ],
     },
 
@@ -661,7 +664,8 @@ STATS = {
             {"id": "act_siege", "display_name": "Belagerungsschlag",
              "category": "attack", "targeting": "aoe_around_target",
              "range_tiles": 6, "aoe_radius": 1, "power": 18, "en_cost": 0,
-             "requires_line_of_sight": True},
+             "requires_line_of_sight": True,
+             "interval": 3.0},
             # Sperrfeuer: die einzige MECHANISCHE Faehigkeit im Bestand -- Pulver
             # und Masse, kein Strom. Deshalb en_cost 0 und stattdessen eine
             # Abklingzeit als Bremse (GAME_DESIGN 13: "Masse bremst, Strom
@@ -671,7 +675,8 @@ STATS = {
              "category": "ability", "targeting": "aoe_around_target",
              "range_tiles": 6, "aoe_radius": 2, "power": 14, "en_cost": 0,
              "cooldown_turns": ability_cooldown("stark"),
-             "requires_line_of_sight": True, "aggro_coeff": 1.2},
+             "requires_line_of_sight": True, "aggro_coeff": 1.2,
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_siege"}},
         ],
     },
     # Drohnen-Pod: PASSIVE Selbstheilung statt aktiver Faehigkeit (Balancing-
@@ -706,7 +711,8 @@ STATS = {
             {"id": "act_runestaff", "display_name": "Runenschlag",
              "category": "attack", "targeting": "aoe_cross",
              "range_tiles": 1, "aoe_radius": 1, "power": 10, "en_cost": 0,
-             "requires_line_of_sight": False, "energy_fraction": 1.0},
+             "requires_line_of_sight": False, "energy_fraction": 1.0,
+             "interval": 1.2},
             # Arkanwelle: der Nahbereichs-Nova des Technomanten. Der Runenstab
             # ist die einzige Nahkampfwaffe, seine Faehigkeit weitet den Schlag
             # auf einen kleinen Ring aus.
@@ -715,7 +721,8 @@ STATS = {
              "range_tiles": 2, "aoe_radius": 1, "power": 13,
              "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
              "requires_line_of_sight": True, "aggro_coeff": 1.0,
-             "energy_fraction": 1.0},
+             "energy_fraction": 1.0,
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_runestaff"}},
         ],
     },
     # Gadget mit Aktive: der Orbit-Fokus zerrt ein Ziel aus der Stellung.
@@ -730,7 +737,8 @@ STATS = {
              "range_tiles": 4, "power": 0,
              "en_cost": ability_cost("schwach"), "cooldown_turns": 0,
              "push_tiles": -2, "requires_line_of_sight": True,
-             "aggro_flat": 8},
+             "aggro_flat": 8,
+             "trigger": {"kind": "time", "every": 6, "weapon": ""}},
         ],
     },
     "eq_rail_lance": {
@@ -739,7 +747,8 @@ STATS = {
             {"id": "act_raillance", "display_name": "Schienenschuss",
              "category": "attack", "targeting": "single",
              "range_tiles": 8, "power": 22, "en_cost": 6,
-             "requires_line_of_sight": True, "aggro_coeff": 0.35},
+             "requires_line_of_sight": True, "aggro_coeff": 0.35,
+             "interval": 2.6},
             # Praezisionsschuss: der aufgeladene Fernschuss des Marksman. Grosse
             # Reichweite, harter Einzeltreffer, und genauso leise wie sein
             # Angriff -- ein Scharfschuss zieht keine Aufmerksamkeit.
@@ -747,7 +756,8 @@ STATS = {
              "category": "ability", "targeting": "single",
              "range_tiles": 8, "power": 26,
              "en_cost": ability_cost("stark"), "cooldown_turns": 0,
-             "requires_line_of_sight": True, "aggro_coeff": 0.35},
+             "requires_line_of_sight": True, "aggro_coeff": 0.35,
+             "trigger": {"kind": "attacks", "every": 4, "weapon": "act_raillance"}},
         ],
     },
 }
@@ -761,6 +771,11 @@ ACTION_DEFAULTS = {
     # ganz Energie, 0.5 = halb/halb wie der Puls-Blaster). Energie knackt
     # Schilde (120 %), Physisch prallt an ihnen ab (80 %) -- siehe §11.
     "energy_fraction": 0.0,
+    # Echtzeit (Nov. 2026): Sekunden zwischen zwei Angriffen dieser Waffe.
+    "interval": 2.0,
+    # Wann eine Faehigkeit von selbst ausloest (ActionData.trigger_kind):
+    # {"kind": "attacks"|"time"|"adjacent", "every": n, "weapon": "act_..."}.
+    "trigger": None,
 }
 
 

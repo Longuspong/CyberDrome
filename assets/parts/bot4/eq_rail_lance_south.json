@@ -83,7 +83,9 @@
         "aggro_flat": 0,
         "taunt_turns": 0,
         "cooldown_turns": 0,
-        "energy_fraction": 0.0
+        "energy_fraction": 0.0,
+        "interval": 2.6,
+        "trigger": null
       },
       {
         "id": "act_rail_pierce",
@@ -101,7 +103,13 @@
         "aggro_flat": 0,
         "taunt_turns": 0,
         "cooldown_turns": 0,
-        "energy_fraction": 0.0
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 4,
+          "weapon": "act_raillance"
+        }
       }
     ]
   }

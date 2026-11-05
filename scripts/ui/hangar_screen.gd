@@ -31,6 +31,8 @@ const PART_EDGE := 56.0
 var _tab := "squad"
 var _selected := -1
 var _selected_slot := "core"
+## Ob die Info zum eingebauten Teil im gewaehlten Halter aufgeklappt ist.
+var _slot_details: bool = false
 var _preview_part: PartData = null
 
 var _content: VBoxContainer
@@ -45,7 +47,7 @@ func _ready() -> void:
 		GameState.editing_index = -1
 	elif GameState.roster.entries.size() > 0:
 		_selected = _first_in_squad()
-	_content = UiKit.page(self, "Hangar", "", 1)
+	_content = UiKit.page(self, "Hangar", "", 1, true, Ambience.Kind.HANGAR)
 	_build_tabs()
 	_refresh()
 
@@ -388,6 +390,7 @@ func _slots(build: DromeBuild) -> Control:
 		var holder := _tappable(null, func():
 			_selected_slot = slot
 			_preview_part = null
+			_slot_details = false
 			_refresh())
 		var box := VBoxContainer.new()
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -409,9 +412,12 @@ func _slots(build: DromeBuild) -> Control:
 func _slot_info(entry: RosterEntry, build: DromeBuild) -> Control:
 	var card := PanelContainer.new()
 	card.add_theme_stylebox_override("panel", UiKit.card_style())
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 6)
+	card.add_child(outer)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
-	card.add_child(row)
+	outer.add_child(row)
 	var text := VBoxContainer.new()
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(text)
@@ -431,8 +437,25 @@ func _slot_info(entry: RosterEntry, build: DromeBuild) -> Control:
 	text.add_child(UiKit.label(part.display_name if part != null else "frei",
 		UiKit.BODY, Color.WHITE if part != null else UiKit.MUTED))
 	if part != null:
+		# Wie funktioniert das Teil? Aufklappbar, damit der Halter kurz bleibt.
+		var more := UiKit.button("Weniger" if _slot_details else "Wie funktioniert das?")
+		more.custom_minimum_size = Vector2(0, 40)
+		more.add_theme_font_size_override("font_size", UiKit.SMALL)
+		more.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		# Ohne Breite bricht ein Knopf mit Umbruch zeichenweise um.
+		more.autowrap_mode = TextServer.AUTOWRAP_OFF
+		more.pressed.connect(func():
+			_slot_details = not _slot_details
+			_refresh())
+		text.add_child(more)
+		if _slot_details:
+			var details := VBoxContainer.new()
+			details.add_theme_constant_override("separation", 2)
+			outer.add_child(details)
+			PartInfo.build(part, details)
 		var clear := UiKit.button("Leeren")
 		clear.size_flags_horizontal = Control.SIZE_SHRINK_END
+		clear.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		clear.custom_minimum_size = Vector2(110, 48)
 		clear.pressed.connect(func():
 			GameState.roster.clear_slot(entry, _selected_slot)
@@ -521,19 +544,16 @@ func _preview(entry: RosterEntry, build: DromeBuild, part: PartData, verdict: St
 	if replaced != null and replaced.id != part.id:
 		box.add_child(_quiet(UiKit.label("ersetzt %s (kommt zurueck ins Inventar)"
 			% replaced.display_name, UiKit.SMALL, UiKit.WARN)))
-	if part.actions.is_empty() and part.type == PartData.Type.EQUIPMENT:
-		box.add_child(_quiet(UiKit.label("passiv -- keine eigene Aktion", UiKit.SMALL, UiKit.MUTED)))
-	for action in part.actions:
-		box.add_child(_quiet(UiKit.label("%s: %s" % [action.display_name, action.headline()],
-			UiKit.SMALL)))
+	# Die ganze Erklaerung des Teils -- Rolle, Werte, Aktionen.
+	PartInfo.build(part, box)
+	box.add_child(_quiet(UiKit.label("Im Aufbau:", UiKit.SMALL, UiKit.HEADING)))
 	var trial := build.clone()
 	trial.slots[_selected_slot] = part.id
 	var before := build.stats()
 	var after := trial.stats()
 	var any := false
 	for key in [["hp_max", "Integritaet"], ["shield_max", "Schild"], ["spd", "SPD"],
-			["mov", "MOV"], ["atk", "ATK"], ["def", "DEF"], ["en_max", "Energie"],
-			["en_regen", "EN-Regen"]]:
+			["atk", "ATK"], ["def", "DEF"]]:
 		var a: int = before.get(key[0], 0)
 		var b: int = after.get(key[0], 0)
 		if a == b:

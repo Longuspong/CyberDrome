@@ -52,15 +52,14 @@ const TABS := [
 ##   back       Szene fuer den Zurueck-Pfeil; leer = keiner
 ##   tab        Index der aktiven Tab-Leisten-Seite; -1 = keine Tab-Leiste
 ##   scroll     false fuer Seiten, die ihren Platz selbst einteilen
+##   scenery    die Kulisse dahinter (Ambience.Kind), darken dunkelt sie ab
 static func page(root: Control, title: String, back: String = "", tab: int = -1,
-		scroll: bool = true) -> VBoxContainer:
+		scroll: bool = true, scenery: int = Ambience.Kind.PLAIN,
+		darken: float = 0.0) -> VBoxContainer:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 
-	var bg := ColorRect.new()
-	bg.color = BG
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(bg)
+	# Die Kulisse statt einer schwarzen Flaeche (Ambience).
+	root.add_child(Ambience.create(scenery, darken))
 
 	var frame := VBoxContainer.new()
 	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -242,7 +241,9 @@ static func card(parent: Control, highlight: bool = false) -> VBoxContainer:
 
 static func card_style(highlight: bool = false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = CARD
+	# Leicht durchscheinend: die Kulisse soll hinter den Karten zu ahnen
+	# sein, ohne die Schrift zu stoeren.
+	style.bg_color = Color(CARD, 0.9)
 	style.border_color = ACCENT if highlight else CARD_LINE
 	style.set_border_width_all(2 if highlight else 1)
 	style.set_corner_radius_all(10)

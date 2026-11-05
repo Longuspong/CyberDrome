@@ -113,6 +113,22 @@ var taunt_turns: int = 0
 ## ``beides`` -- siehe BRAKE unten.
 var cooldown_turns: int = 0
 
+## Echtzeit (Nov. 2026): Sekunden zwischen zwei Angriffen dieser Waffe. Nur
+## fuer Angriffe; jede Waffe laedt fuer sich nach.
+var interval: float = 2.0
+
+## Wann eine Faehigkeit von selbst ausloest. Faehigkeiten werden nicht mehr
+## gezogen, sie kommen nach einer festen Regel:
+##
+##   attacks   jeder ``trigger_every``-te Angriff der Waffe ``trigger_weapon``
+##             IST die Faehigkeit (sie ersetzt diesen Angriff).
+##   time      alle ``trigger_every`` Sekunden, sobald ein Ziel in Reichweite ist.
+##   adjacent  wenn ein Gegner direkt danebensteht, hoechstens alle
+##             ``trigger_every`` Sekunden.
+var trigger_kind: String = ""
+var trigger_every: float = 0.0
+var trigger_weapon: StringName = &""
+
 
 # ---------------------------------------------------------------------------
 # Die Bremse: Preis oder Wartezeit
@@ -138,6 +154,8 @@ var cooldown_turns: int = 0
 const BRAKE_ENERGY := "energie"
 const BRAKE_COOLDOWN := "abklingzeit"
 const BRAKE_BOTH := "beides"
+## Echtzeit: weder Preis noch Wartezeit -- die Ausloeser (trigger_*) bremsen.
+const BRAKE_TRIGGER := "ausloeser"
 
 
 static func brake() -> String:
@@ -145,11 +163,11 @@ static func brake() -> String:
 
 
 static func energy_brakes() -> bool:
-	return brake() != BRAKE_COOLDOWN
+	return brake() == BRAKE_ENERGY or brake() == BRAKE_BOTH
 
 
 static func cooldown_brakes() -> bool:
-	return brake() != BRAKE_ENERGY
+	return brake() == BRAKE_COOLDOWN or brake() == BRAKE_BOTH
 
 
 ## Was diese Aktion im aktuellen Bremsmodus WIRKLICH kostet.
@@ -189,7 +207,32 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.taunt_turns = meta.get("taunt_turns", 0)
 	action.cooldown_turns = meta.get("cooldown_turns", 0)
 	action.energy_fraction = float(meta.get("energy_fraction", 0.0))
+	action.interval = float(meta.get("interval", 2.0))
+	var trigger = meta.get("trigger")
+	if trigger is Dictionary:
+		action.trigger_kind = str(trigger.get("kind", ""))
+		action.trigger_every = float(trigger.get("every", 0.0))
+		action.trigger_weapon = StringName(str(trigger.get("weapon", "")))
 	return action
+
+
+## Der Ausloeser in Klartext -- fuer Teil-Info und Kacheln.
+func trigger_text() -> String:
+	match trigger_kind:
+		"attacks":
+			return "jeder %d. Angriff" % int(trigger_every)
+		"time":
+			return "alle %s s" % _seconds(trigger_every)
+		"adjacent":
+			return "wenn ein Gegner direkt daneben steht (hoechstens alle %s s)" \
+				% _seconds(trigger_every)
+	return ""
+
+
+static func _seconds(value: float) -> String:
+	if is_equal_approx(value, round(value)):
+		return str(int(round(value)))
+	return ("%.1f" % value).replace(".", ",")
 
 
 func is_taunt() -> bool:
