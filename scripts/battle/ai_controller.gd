@@ -7,16 +7,23 @@ extends RefCounted
 ## DROME. Der tut dann eins von drei Dingen -- schiessen, eine Faehigkeit
 ## ausloesen oder einen Schritt laufen:
 ##
-##   * ZIEL: alle ``realtime.think_interval`` Sekunden neu gewaehlt (Schaden,
-##     Schild, Abschuss, Aggro, Amtsinhaber, Weg bis dahin).
+##   * ZIEL: wird GEHALTEN (Nov. 2026). Neu gewaehlt wird nur, wenn es faellt,
+##     laenger als ``realtime.retarget_after`` Sekunden nicht angreifbar ist
+##     oder ein sicherer Abschuss in Reichweite steht. Die Wahl selbst bewertet
+##     Schaden, Schild, Abschuss, Aggro, Weg -- und wie viele Verbuendete das
+##     Ziel schon angreifen (Fokus, ``ai.focus_bonus``).
 ##   * WAFFEN: jede laedt fuer sich (``interval``). Ist sie geladen und ein
 ##     Gegner in Reichweite, schiesst sie -- auf das Ziel, sonst auf den besten
 ##     erreichbaren. Jeder N-te Angriff ist die Faehigkeit der Waffe.
 ##   * GADGETS: nach Zeit (Orbit-Sog) oder Ereignis (Boost, wenn ein Gegner
 ##     danebensteht).
-##   * BEWEGUNG nach Rolle: Nahkaempfer ruecken bis zum Kontakt vor,
-##     Fernkaempfer laufen nur, bis sie schiessen koennen, und weichen aus,
-##     wenn ihnen jemand zu nahe kommt.
+##   * BEWEGUNG nach der Rolle des CHASSIS (``PartData.ai_role``), nicht nach
+##     der Waffe -- ein Molok mit Kanone bleibt Frontlinie:
+##       vanguard    rueckt vor, weicht nie aus
+##       skirmisher  mit Fernwaffe kiten, mit Nahkampfwaffe am Ziel bleiben
+##       sniper      haelt Abstand, weicht nur aus, wenn jemand danebensteht
+##       controller  wartet hinter der Frontlinie, bis die im Kampf ist
+##     Ohne Rolle wie frueher nach Waffenreichweite.
 ##
 ## Die Gewichte stehen in data/config.json ("ai", "realtime").
 ##
@@ -60,10 +67,19 @@ func update(unit: Unit, dt: float) -> void:
 			return
 
 	var target := _current_target(unit)
-	if unit.think_left <= 0.0 or target == null:
+	if target != null and not _can_shoot(unit, unit.tile, target):
+		unit.target_blocked += dt
+	elif target != null:
+		unit.target_blocked = 0.0
+	if target == null or unit.target_blocked > float(_realtime.get("retarget_after", 2.0)):
+		_retarget(unit, choose_target(unit))
+		target = _current_target(unit)
+	elif unit.think_left <= 0.0:
 		unit.think_left = float(_realtime.get("think_interval", 0.5))
-		target = choose_target(unit)
-		unit.target_id = target.unit_id if target != null else null
+		var kill := _sure_kill(unit)
+		if kill != null and kill != target:
+			_retarget(unit, kill)
+			target = kill
 	if target == null:
 		return
 
@@ -83,6 +99,31 @@ func update(unit: Unit, dt: float) -> void:
 	var next := next_step(unit, target)
 	if next != unit.tile:
 		_walk(unit, next)
+
+
+func _retarget(unit: Unit, target: Unit) -> void:
+	unit.target_id = target.unit_id if target != null else null
+	unit.target_blocked = 0.0
+	unit.think_left = float(_realtime.get("think_interval", 0.5))
+
+
+## Ein Gegner in Reichweite, den ein einziger Treffer umlegt -- der einzige
+## Grund, ein erreichbares Ziel vorzeitig aufzugeben.
+func _sure_kill(unit: Unit) -> Unit:
+	var best: Unit = null
+	var best_hp := 1 << 30
+	for foe in battle.enemies_of(unit):
+		if foe.shield > 0 or foe.hp >= best_hp:
+			continue
+		for mount in unit.mounts:
+			var attack: ActionData = mount["attack"]
+			if battle.resolver.target_blocker(unit, foe.tile, attack) != "":
+				continue
+			if battle.resolver.preview_damage(unit, foe, attack) >= foe.hp:
+				best = foe
+				best_hp = foe.hp
+				break
+	return best
 
 
 func _current_target(unit: Unit) -> Unit:
@@ -111,10 +152,22 @@ func choose_target(unit: Unit) -> Unit:
 			score = 0.0
 		var gap := maxi(0, Grid.distance(unit.tile, foe.tile) - reach)
 		score -= float(gap) * _w("approach_penalty", 2.0)
+		score += float(_focused_by(unit, foe)) * _w("focus_bonus", 4.0)
 		if score > best_score:
 			best_score = score
 			best = foe
 	return best
+
+
+## Wie viele Verbuendete greifen ``foe`` gerade an? Grundlage des Fokus:
+## ein Team, das sich auf ein Ziel einigt, statt sich in Zweikaempfe zu
+## verteilen.
+func _focused_by(unit: Unit, foe: Unit) -> int:
+	var count := 0
+	for ally in battle.allies_of(unit):
+		if ally != unit and ally.target_id == foe.unit_id:
+			count += 1
+	return count
 
 
 # ---------------------------------------------------------------------------
@@ -246,6 +299,26 @@ func next_step(unit: Unit, target: Unit) -> Vector2i:
 		return unit.tile
 	var ranged := unit.attack_range() >= int(_w("ranged_from_range", 3.0))
 	var shooting := _can_shoot_anyone(unit, unit.tile)
+	match unit.ai_role():
+		"vanguard":
+			# Frontlinie: nie zurueck. Wer schon trifft, bleibt stehen.
+			if _can_shoot(unit, unit.tile, target) or shooting:
+				return unit.tile
+			return _approach(unit, target)
+		"sniper":
+			# Haelt seine Stellung und weicht nur aus, wenn jemand direkt
+			# danebensteht -- kein Dauerweglaufen.
+			if shooting:
+				return _kite_step(unit, target, 1)
+			return _approach(unit, target)
+		"controller":
+			# Wartet hinter der Frontlinie, bis die im Kampf ist. Wer selbst
+			# bedraengt wird, wartet natuerlich nicht.
+			if not shooting and not _frontline_engaged(unit) \
+					and _nearest_foe(unit, unit.tile) > int(_realtime.get("kite_distance", 2)):
+				return unit.tile
+		"skirmisher":
+			pass
 	if ranged and shooting:
 		return _kite_step(unit, target)
 	if _can_shoot(unit, unit.tile, target):
@@ -279,8 +352,9 @@ func _can_shoot_anyone(unit: Unit, from_tile: Vector2i) -> bool:
 ## Fernkaempfer in Reichweite: stehen bleiben -- ausser ein Gegner kommt
 ## naeher als ``realtime.kite_distance``. Dann ein Feld zurueck, sofern von
 ## dort noch jemand zu treffen ist.
-func _kite_step(unit: Unit, target: Unit) -> Vector2i:
-	var limit := int(_realtime.get("kite_distance", 2))
+func _kite_step(unit: Unit, target: Unit, limit: int = -1) -> Vector2i:
+	if limit < 0:
+		limit = int(_realtime.get("kite_distance", 2))
 	var here := _nearest_foe(unit, unit.tile)
 	if here > limit:
 		return unit.tile
@@ -299,6 +373,20 @@ func _kite_step(unit: Unit, target: Unit) -> Vector2i:
 		elif gap > here:
 			best.append(tile)
 	return best[battle.rng.randi() % best.size()]
+
+
+## Ist die eigene Frontlinie im Kampf? Ja, sobald ein Verbuendeter mit Rolle
+## vanguard oder skirmisher jemanden trifft -- oder es keine solche Frontlinie
+## (mehr) gibt, dann wartet niemand.
+func _frontline_engaged(unit: Unit) -> bool:
+	var has_front := false
+	for ally in battle.allies_of(unit):
+		if ally == unit or not ally.ai_role() in ["vanguard", "skirmisher"]:
+			continue
+		has_front = true
+		if _can_shoot_anyone(ally, ally.tile):
+			return true
+	return not has_front
 
 
 func _nearest_foe(unit: Unit, tile: Vector2i) -> int:

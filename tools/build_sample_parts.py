@@ -374,6 +374,12 @@ STAT_DEFAULTS = {
     "hp_regen_pct": 0,
     # Aggro-Generierung in Prozentpunkten (Koedersender).
     "aggro_bonus": 0,
+    # Nur body: wie die KI diesen DROME fuehrt (scripts/battle/ai_controller.gd).
+    #   vanguard     Frontlinie: rueckt vor, weicht nie aus (Molok)
+    #   skirmisher   wendig: mit Fernwaffe kiten, mit Nahkampfwaffe dranbleiben (Vireo)
+    #   sniper       haelt Abstand, weicht nur aus, wenn jemand direkt danebensteht (Strix)
+    #   controller   bleibt hinter der Frontlinie, bis sie im Kampf ist (Nimbus)
+    "ai_role": "",
 }
 
 # Ausruestung gewaehrt eine LISTE von Aktionen (``actions``): eine Waffe ihren
@@ -398,10 +404,10 @@ SPD_WEIGHT_STEP = 4
 
 STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
-    "scout_body":  {"hp":  60, "def": 1, "spd": 2, "shield": 30},
-    "jugg_body":   {"hp": 130, "def": 5, "shield": 50},
-    "mage_body":   {"hp":  85, "def": 2, "shield": 50},
-    "strix_body":  {"hp":  70, "def": 2, "spd": 1, "shield": 30},
+    "scout_body":  {"hp":  60, "def": 1, "spd": 2, "shield": 30, "ai_role": "skirmisher"},
+    "jugg_body":   {"hp": 130, "def": 5, "shield": 50, "ai_role": "vanguard"},
+    "mage_body":   {"hp":  85, "def": 2, "shield": 50, "ai_role": "controller"},
+    "strix_body":  {"hp":  70, "def": 2, "spd": 1, "shield": 30, "ai_role": "sniper"},
 
     # --- KERN (core) -------------------------------------------------------
     "scout_core":  {"weight": 3, "shield_regen":  5, "shield_bonus": 0.05},

@@ -71,6 +71,10 @@ var hp_regen_pct: int = 0
 ## Wert im Bestand, der sich nicht wie die anderen summiert.
 var aggro_bonus: int = 0
 
+## Nur body: wie die KI diesen DROME fuehrt (vanguard, skirmisher, sniper,
+## controller -- siehe AIController). Leer = nach Waffenreichweite.
+var ai_role: String = ""
+
 ## Gewaehrte Aktionen. Leer bei passiven Teilen. Eine Waffe traegt zwei
 ## Eintraege -- ihren Angriff und ihre eigene Faehigkeit (GAME_DESIGN §13); ein
 ## Gadget null oder eine.
@@ -110,6 +114,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.weight = stats.get("weight", 0)
 	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
 	part.aggro_bonus = stats.get("aggro_bonus", 0)
+	part.ai_role = str(stats.get("ai_role", ""))
 
 	# Ein Teil gewaehrt eine LISTE von Aktionen. ``action`` (Einzahl) bleibt als
 	# Altformat lesbar, damit ein aelterer Datensatz nicht stumm seine Aktion

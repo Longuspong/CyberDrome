@@ -104,7 +104,8 @@
       "pulse             Sekunden je Puls: Schild- und Integritaetsregeneration,",
       "                  Overtime, Aggro-Verfall",
       "time_limit        harte Grenze, danach unentschieden",
-      "think_interval    wie oft ein DROME sein Ziel neu waehlt",
+      "think_interval    wie oft ein DROME prueft, ob ein sicherer Abschuss in Reichweite ist",
+      "retarget_after    so lange darf das Ziel unerreichbar sein, dann wird neu gewaehlt",
       "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist"
     ],
     "tick": 0.05,
@@ -114,6 +115,7 @@
     "pulse": 3.0,
     "time_limit": 180.0,
     "think_interval": 0.5,
+    "retarget_after": 2.0,
     "kite_distance": 2
   },
 
@@ -199,6 +201,7 @@
     "incumbent_bonus_ranged": 5.0,
     "ranged_from_range": 3,
     "approach_penalty": 2.0,
+    "focus_bonus": 4.0,
     "shove_weight": 4.0
   },
 

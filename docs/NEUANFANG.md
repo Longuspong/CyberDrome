@@ -1,6 +1,7 @@
 # Neuanfang: CyberDrome als Autobattler
 
-Stand 5. November 2026. **Zur Besprechung -- nichts davon ist gebaut.**
+Stand 5. November 2026. **Zur Besprechung.** Gebaut ist bisher nur die
+KI-Grundlage aus Abschnitt 5 (Ziel halten, Verhalten je DROME, Fokus).
 Hier steht, was der Spieler im Gespraech vorgegeben hat, was ich daraus
 vorschlage und welche Fragen offen sind. Entschiedenes wandert danach in
 `PROJEKTSTAND.md` und `CLAUDE.md`.
@@ -123,7 +124,12 @@ alle 5 Sekunden.
 | Molok neben Strix mit Deflektor faengt nichts ab | Der Deflektor gibt nur DEF auf den Molok selbst. Abfangen gibt es als Mechanik nicht. |
 | Nimbus verhaelt sich wie ein Assassine | Runenstab = Reichweite 1 = Nahkaempfer -> rueckt bis zum Kontakt vor. |
 
-**Vorschlag:**
+**Gebaut (5. Nov. 2026)** -- Punkte 1 bis 3. Messung ueber 200 Spiegelkaempfe
+mit dem Standard-Squad, vorher -> nachher: Zielwechsel je DROME und Minute
+11,3 -> 5,5; Molok-Schritte weg vom Gegner 21 % -> 4 %; Kampfdauer 41 -> 32 s.
+**Noch offen:** der Nimbus faellt weiter in rund 80 % der Kaempfe zuerst --
+mit dem Runenstab (Rw 1) bleibt er Nahkaempfer mit wenig Integritaet. Das ist
+eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
 
 1. **Ziel halten:** Ein gewaehltes Ziel bleibt, bis es faellt, laenger als
    ca. 2 s nicht erreichbar ist oder ein sicherer Abschuss in Reichweite
@@ -259,12 +265,14 @@ kommen sie in den Beutetopf. Das ist das "pokern auf Items, die man kennt".
   hinsammeln.
 * Fertige Module koennen auch direkt als Beute kommen, seltener.
 
-### 7f. Offen
+### 7f. Entschieden (5. Nov. 2026)
 
-1. Sind drei Module je DROME richtig, oder lieber zwei (haerter) bzw. vier?
-2. Laden und Waehrung im Lauf -- ja? (Vorschlag: Geld je Sieg, im Laden
-   kaufen, neu wuerfeln, verkaufen.)
-3. Soll Ausruestung im Lauf auch kaputtgehen bzw. verfallen, oder nur Module?
+1. **Drei Module je DROME.** Spaeter vielleicht ein Stufenaufstieg, durch den
+   ein DROME vier oder mehr tragen kann.
+2. **Laden und Waehrung: ja.** Die Waehrung heisst **Credits**. Beute bleibt
+   gleich oder aehnlich wichtig wie der Laden.
+3. **Ausruestung bleibt** und geht nach dem Lauf mit ins Lager/den Hangar;
+   nur die Module verfallen.
 
 ## 8. Vorgeschlagene Reihenfolge
 

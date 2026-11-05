@@ -55,9 +55,13 @@ var gadgets: Array = []
 var step_left: float = 0.0
 ## Bis zum naechsten Puls (Schild, Reparatur, Overtime ...).
 var pulse_left: float = 0.0
-## Bis zur naechsten Zielwahl, und das aktuelle Ziel.
+## Bis zur naechsten Pruefung des Ziels, und das aktuelle Ziel.
 var think_left: float = 0.0
 var target_id = null
+## Wie lange das aktuelle Ziel schon nicht angreifbar ist (Sekunden).
+## Ein Ziel wird gehalten -- erst wenn es zu lange ausser Reichweite bleibt,
+## wird neu gewaehlt (AIController).
+var target_blocked: float = 0.0
 
 ## Darstellung: der DROME gleitet von Feld zu Feld statt zu springen.
 var _glide_from: Vector2 = Vector2.ZERO
@@ -315,6 +319,7 @@ func init_realtime(pulse_offset: float) -> void:
 	pulse_left = maxf(0.05, pulse_offset)
 	think_left = 0.0
 	target_id = null
+	target_blocked = 0.0
 	if build == null:
 		return
 	for slot in build.equip_slots():
@@ -342,6 +347,13 @@ func init_realtime(pulse_offset: float) -> void:
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0})
+
+
+## Wie die KI diesen DROME fuehrt -- aus dem Chassis. Leer = nach Waffe.
+func ai_role() -> String:
+	if build == null or build.body() == null:
+		return ""
+	return build.body().ai_role
 
 
 ## Felder je Sekunde. SPD ist seit dem Echtzeit-Kampf die Laufgeschwindigkeit.

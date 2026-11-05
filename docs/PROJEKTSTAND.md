@@ -57,10 +57,11 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   (Boden + Kulisse). Statuseffekte laufen in Sekunden. Die Teilwerte stehen
   wieder in `tools/build_sample_parts.py` (war veraltet), die SVG-Werkstatt
   rechnet mit denselben Feldern. Der Neuentwurf steht in `docs/NEUANFANG.md`.
-* **KI nach Rolle**: Nahkaempfer ruecken bis zum Kontakt vor, Fernkaempfer
-  laufen nur bis in Reichweite und weichen aus, wenn jemand naeher als 2
-  Felder kommt. Zielwahl alle 0,5 s mit der alten Bewertung (Schaden,
-  Schild, Abschuss, Aggro, Amtsinhaber).
+* **KI nach Rolle des Chassis** (`ai_role` in `build_sample_parts.py`):
+  Molok rueckt vor und weicht nie aus, Vireo kitet mit Fernwaffe und bleibt
+  mit Nahkampfwaffe dran, Strix haelt Abstand und weicht nur bei Kontakt aus,
+  Nimbus wartet, bis die Frontlinie trifft. Ziel wird gehalten; Fokus-Bonus
+  (`ai.focus_bonus`), Neuwahl nach `realtime.retarget_after`.
 * **Puls** (3 s je DROME, versetzt): Schild, Drohnen-Pod, Overtime.
   Statuseffekte laufen in Sekunden ab.
 * **Overtime** ab 60 s, je Puls wachsend; Zeitgrenze 180 s.
@@ -188,9 +189,11 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * Alle Tests gruen seit dem Aufraeumen (5. Nov. 2026). Die frueheren roten
   Pruefungen waren Provokation (entfernt) und Tests aus der Zeit vor dem
   Energieschild (repariert).
-* KI: jeder DROME wechselt ~11-mal pro Minute sein Ziel; die Rolle haengt an
-  der Waffenreichweite (Molok mit Kanone weicht aus). Befund und Vorschlag in
-  `docs/NEUANFANG.md` Abschnitt 5.
+* KI (5. Nov. 2026 umgebaut): Ziel wird gehalten (neu gewaehlt nur bei Tod,
+  > 2 s unerreichbar oder sicherem Abschuss), Verhalten haengt an der Rolle
+  des Chassis (`ai_role`: vanguard/skirmisher/sniper/controller), Fokus-Bonus
+  fuer Ziele der Verbuendeten. Zielwechsel 11,3 -> 5,5 je Minute. Offen: der
+  Nimbus faellt in ~80 % der Kaempfe zuerst (Runenstab Rw 1).
 * Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
   ueberlappen.
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.
