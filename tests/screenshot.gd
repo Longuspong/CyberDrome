@@ -7,9 +7,7 @@ extends SceneTree
 ##         -- <szene> <zieldatei> [frames]
 ##
 ## Der Blicktest fuer alles, was kein Unit-Test sieht: ob die Tiefensortierung
-## stimmt, ob ein Betonpfeiler den DROME davor verdeckt und den dahinter
-## nicht, ob die Drift-Pfeile in die Richtung zeigen, in die geschoben wird.
-## tests/visual_check.gd macht dasselbe fuer die Projektion allein.
+## stimmt und die DROMEs auf ihren Feldern stehen.
 
 const SEED := 20260806
 

@@ -1,5 +1,11 @@
 # CyberDrome – Game Design (Arbeitsstand)
 
+> **Achtung, teils veraltet (Nov. 2026).** Dieses Dokument stammt aus der
+> Zeit als rundenbasiertes Taktikspiel. Gelaende, Sichtlinie, Zuege,
+> Energie, Provokation und Antriebsflags gibt es nicht mehr. Gueltig bleiben
+> Setting, SVG-Strategie, Teile-Codes, Perspektive und Silhouettenregel.
+> Das Spielprinzip wird neu entworfen: `docs/NEUANFANG.md`.
+
 Lebendes Dokument. Haelt fest, was schon entschieden ist, damit die
 Asset-Produktion nicht wieder an unbedachtem Umfang scheitert.
 

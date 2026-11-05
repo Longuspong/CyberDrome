@@ -5,7 +5,8 @@ Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
-als Handy testet.
+als Handy testet. **Dann `docs/NEUANFANG.md`** -- der Neuentwurf des
+Spielprinzips, der gerade mit dem Spieler besprochen wird.
 
 ## Zusammenarbeit
 
@@ -24,9 +25,8 @@ godot --headless --path . --import                            # nach neuer class
 bash tools/build_web.sh                                       # Web-Export nach build/web
 ```
 
-* Auf `main` scheitern seit laengerem 9 Pruefungen in `test_aggro`,
-  `test_battle` und `test_ui_pieces` (Balancing, Vorschau). Neue Arbeit
-  vergleicht gegen diesen Stand, nicht gegen "alles gruen".
+* Seit dem Aufraeumen vom 5. Nov. 2026 sind alle Tests gruen -- neue Arbeit
+  haelt das so.
 * Headless-Hilfsskripte (`extends SceneTree`) duerfen Projektklassen nicht
   direkt referenzieren -- sie kompilieren vor den Autoloads. Logik in ein
   `RefCounted`-Skript legen und zur Laufzeit per `load()` holen (wie
@@ -42,7 +42,8 @@ bash tools/build_web.sh                                       # Web-Export nach 
   vereint Squad (Karussell, max. 4) und Umbau (Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
   nach oben in groessere Halter, schwer nur in schwer).
-* Spielfeld bleibt 20x20; die Kamera folgt dem Geschehen, Zoomen und Ziehen
+* Spielfeld bleibt 20x20 und ist **frei** (kein Gelaende, keine Sichtlinie
+  -- seit 5. Nov. 2026); die Kamera folgt dem Geschehen, Zoomen und Ziehen
   per Finger.
 * Das Spiel ist ein **Autobattler in Echtzeit** (seit Nov. 2026): alle
   DROMEs handeln gleichzeitig, keine Zuege. `BattleManager.tick()` rechnet in
@@ -75,7 +76,10 @@ bash tools/build_web.sh                                       # Web-Export nach 
 Bis diese Punkte entschieden sind: keine groesseren Umbauten an
 Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
-## Naechste Schritte (Stand 4. November 2026)
+## Naechste Schritte (Stand 5. November 2026)
+
+0. **Neuentwurf besprechen** (`docs/NEUANFANG.md`, Abschnitt 6: offene
+   Fragen). Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den
    Teildaten, Tempo und Puls in `data/config.json` -> `realtime`). Nimbus
