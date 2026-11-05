@@ -7,9 +7,10 @@ extends Control
 ## Blaster einbauen wollte, musste zwischen ihnen hin und her. Hier gibt es zwei
 ## Reiter:
 ##
-##   Squad   oben das Karussell mit dem Squad (hoechstens vier), darunter alle
-##           DROMEs -- ausgegraut, wer schon im Squad ist. Antippen holt einen
-##           DROME in den Squad.
+##   Squad   oben der Squad (hoechstens vier): der Hauptgewaehlte als grosse
+##           Box mit Angaben, die anderen als Kacheln (nur das Bild). Darunter
+##           alle DROMEs als Kacheln, gruen umrandet wer im Squad ist. Antippen
+##           zeigt die Angaben und "In den Squad".
 ##   Umbau   oben die DROME-Auswahl, darunter seine Halter als Formen
 ##           (Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern) mit
 ##           dem, was drinsteckt, oder "frei". Ein Halter angetippt zeigt die
@@ -20,8 +21,10 @@ extends Control
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
 
 const PORTRAIT := 150.0
-const CAROUSEL_CARD := 190.0
-const ROW_PORTRAIT := 72.0
+const PRIMARY_EDGE := 140.0
+const TILE_EDGE := 104.0
+const TILE_COLUMNS := 3
+const TILE_GAP := 10
 const SLOT_EDGE := 64.0
 const PART_EDGE := 56.0
 
@@ -30,6 +33,8 @@ const PART_EDGE := 56.0
 ## am besten im Squad an.
 var _tab := "squad"
 var _selected := -1
+## Wer im Squad-Reiter gross oben steht (Index, -1 = keiner).
+var _primary := -1
 var _selected_slot := "core"
 ## Ob die Info zum eingebauten Teil im gewaehlten Halter aufgeklappt ist.
 var _slot_details: bool = false
@@ -137,116 +142,168 @@ func _show_squad() -> void:
 	_content.add_child(UiKit.label("Squad  %d / %d" % [count, _squad_max()], UiKit.H2,
 		UiKit.GOOD if count > 0 else UiKit.BAD))
 
-	# Karussell: der Squad, waagrecht zum Wischen, freie Plaetze als Rahmen.
-	var carousel := ScrollContainer.new()
-	carousel.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	carousel.custom_minimum_size = Vector2(0, CAROUSEL_CARD + 70)
-	_content.add_child(carousel)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	carousel.add_child(row)
-	var shown := 0
+	# Der Hauptgewaehlte gross, die uebrigen Squad-Plaetze als Kacheln darunter.
+	var primary := _primary_index()
+	var others: Array = []
 	for i in _entries().size():
-		if _entries()[i].in_squad:
-			row.add_child(_carousel_card(i))
-			shown += 1
-	for _i in maxi(0, _squad_max() - shown):
-		row.add_child(_empty_card())
+		if _entries()[i].in_squad and i != primary:
+			others.append(_drome_tile(i))
+	while others.size() < _squad_max() - 1:
+		others.append(_empty_tile())
+	_add_tile_rows(_content, others)
+	_content.add_child(_primary_card(primary))
 
-	if _selected >= 0 and _selected < _entries().size() and _entries()[_selected].in_squad:
-		var actions := HBoxContainer.new()
-		actions.add_theme_constant_override("separation", 8)
-		var edit := UiKit.button("Umbauen", true)
-		edit.pressed.connect(func(): _switch("umbau"))
-		actions.add_child(edit)
-		var out := UiKit.button("Aus dem Squad")
-		var entry: RosterEntry = _entries()[_selected]
-		out.pressed.connect(func():
-			entry.in_squad = false
-			_changed())
-		actions.add_child(out)
-		_content.add_child(actions)
-
-	_content.add_child(UiKit.heading("Alle DROMEs"))
-	_content.add_child(UiKit.label("Antippen holt einen DROME in den Squad. Ausgegraut: "
-		+ "schon dabei.", UiKit.SMALL, UiKit.MUTED))
+	# Alle DROMEs als Kacheln -- nur das Bild. Die Angaben kommen erst beim
+	# Antippen, direkt unter der Reihe der Kachel.
+	var tiles: Array = []
 	for i in _entries().size():
-		_content.add_child(_roster_row(i))
+		tiles.append(_drome_tile(i))
+	var rows := _add_tile_rows(_content, tiles)
+	if _selected >= 0 and _selected < _entries().size() and not _entries()[_selected].in_squad:
+		var row: Control = rows[_selected / TILE_COLUMNS]
+		var details := _roster_details(_selected)
+		_content.add_child(details)
+		_content.move_child(details, row.get_index() + 1)
 
 	_new_drome_section()
 
 
-func _carousel_card(index: int) -> Control:
+## Wer gross oben steht: der gewaehlte DROME, wenn er im Squad ist, sonst der
+## zuletzt gross gezeigte, sonst der erste im Squad. -1 bei leerem Squad.
+func _primary_index() -> int:
+	for candidate in [_selected, _primary]:
+		if candidate >= 0 and candidate < _entries().size() and _entries()[candidate].in_squad:
+			_primary = candidate
+			return candidate
+	for i in _entries().size():
+		if _entries()[i].in_squad:
+			_primary = i
+			return i
+	_primary = -1
+	return -1
+
+
+## Kacheln in Reihen zu TILE_COLUMNS; die letzte Reihe wird mit Luecken
+## aufgefuellt, damit alle Kacheln gleich breit bleiben. Gibt die Reihen zurueck.
+func _add_tile_rows(parent: Control, tiles: Array) -> Array:
+	var rows: Array = []
+	for start in range(0, tiles.size(), TILE_COLUMNS):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", TILE_GAP)
+		for k in TILE_COLUMNS:
+			if start + k < tiles.size():
+				row.add_child(tiles[start + k])
+			else:
+				var gap := Control.new()
+				gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				row.add_child(gap)
+		parent.add_child(row)
+		rows.append(row)
+	return rows
+
+
+func _tile_style(highlight: bool, in_squad: bool) -> StyleBoxFlat:
+	var style := UiKit.card_style(highlight)
+	if in_squad and not highlight:
+		style.border_color = Color(UiKit.GOOD, 0.7)
+	style.set_content_margin_all(6)
+	return style
+
+
+## Eine Kachel: nur das Bild des DROME, so wie er gerade gebaut ist.
+## Gruener Rand: im Squad. Antippen waehlt ihn (nochmal: abwaehlen).
+func _drome_tile(index: int) -> Control:
 	var entry: RosterEntry = _entries()[index]
-	var build := GameState.roster.build_for(entry)
-	var panel := _tappable(UiKit.card_style(index == _selected), func():
-		_selected = index
+	var panel := _tappable(_tile_style(index == _selected, entry.in_squad), func():
+		_selected = -1 if index == _selected and not entry.in_squad else index
 		_refresh())
-	panel.custom_minimum_size = Vector2(CAROUSEL_CARD, 0)
-	var box := VBoxContainer.new()
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(box)
-	var picture := UiKit.drome_view(build, CAROUSEL_CARD - 30)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.tooltip_text = entry.name
+	var picture := UiKit.drome_view(GameState.roster.build_for(entry), TILE_EDGE)
 	picture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	box.add_child(picture)
-	var name := UiKit.label(entry.name, UiKit.H2)
-	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(name)
-	var power := UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL, UiKit.MUTED)
-	power.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	power.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(power)
+	panel.add_child(picture)
 	return panel
 
 
-func _empty_card() -> Control:
+func _empty_tile() -> Control:
 	var panel := PanelContainer.new()
-	var style := UiKit.card_style()
-	style.bg_color = Color(0.07, 0.09, 0.13)
+	var style := _tile_style(false, false)
+	style.bg_color = Color(0.07, 0.09, 0.13, 0.9)
 	panel.add_theme_stylebox_override("panel", style)
-	panel.custom_minimum_size = Vector2(CAROUSEL_CARD, CAROUSEL_CARD + 50)
-	var label := UiKit.label("frei\n\nunten einen DROME antippen", UiKit.SMALL, UiKit.MUTED)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(0, TILE_EDGE + 12)
+	var label := UiKit.label("frei", UiKit.SMALL, UiKit.MUTED)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	panel.add_child(label)
 	return panel
 
 
-func _roster_row(index: int) -> Control:
+## Die grosse Box: Bild und Angaben des Hauptgewaehlten, dazu "Aus dem Squad".
+func _primary_card(index: int) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiKit.card_style(index >= 0))
+	if index < 0:
+		var empty := UiKit.label("Der Squad ist leer. Unten einen DROME antippen.",
+			UiKit.BODY, UiKit.MUTED)
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		panel.add_child(empty)
+		return panel
 	var entry: RosterEntry = _entries()[index]
 	var build := GameState.roster.build_for(entry)
-	var full := GameState.roster.squad_count() >= _squad_max()
-	var panel := _tappable(UiKit.card_style(), func():
-		if entry.in_squad:
-			_selected = index
-			_refresh()
-			return
-		if full:
-			return
-		entry.in_squad = true
-		_selected = index
-		_changed())
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 12)
 	panel.add_child(row)
-	row.add_child(UiKit.drome_view(build, ROW_PORTRAIT))
-	var text := VBoxContainer.new()
-	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(text)
-	text.add_child(_quiet(UiKit.label(entry.name, UiKit.BODY)))
-	text.add_child(_quiet(UiKit.label(_loadout(build), UiKit.SMALL, UiKit.MUTED)))
-	var state := "im Squad" if entry.in_squad else ("Squad voll" if full else "+ Squad")
-	var tag := _quiet(UiKit.label(state, UiKit.SMALL,
-		UiKit.MUTED if entry.in_squad or full else UiKit.ACCENT))
-	tag.autowrap_mode = TextServer.AUTOWRAP_OFF
-	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(tag)
-	if entry.in_squad:
-		panel.modulate = Color(1, 1, 1, 0.5)
+	row.add_child(UiKit.drome_view(build, PRIMARY_EDGE))
+	var info := _drome_info(entry, build)
+	row.add_child(info)
+	var out := UiKit.button("Aus dem Squad")
+	out.add_theme_font_size_override("font_size", UiKit.SMALL)
+	out.custom_minimum_size = Vector2(0, 44)
+	out.pressed.connect(func():
+		entry.in_squad = false
+		if _selected == index:
+			_selected = -1
+		_changed())
+	info.add_child(out)
 	return panel
+
+
+## Angaben zu einem DROME ausserhalb des Squads, mit "In den Squad".
+func _roster_details(index: int) -> Control:
+	var entry: RosterEntry = _entries()[index]
+	var build := GameState.roster.build_for(entry)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiKit.card_style(true))
+	var info := _drome_info(entry, build)
+	panel.add_child(info)
+	if GameState.roster.squad_count() >= _squad_max():
+		info.add_child(UiKit.label("Squad voll -- erst oben einen herausnehmen.",
+			UiKit.SMALL, UiKit.WARN))
+	else:
+		var join := UiKit.button("In den Squad", true)
+		join.pressed.connect(func():
+			entry.in_squad = true
+			_primary = index
+			_changed())
+		info.add_child(join)
+	return panel
+
+
+## Name, Kampfwert, Werte und Ausruestung -- fuer die grosse Box und die Angaben.
+func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 4)
+	info.add_child(UiKit.label(entry.name, UiKit.H2))
+	info.add_child(UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL,
+		UiKit.ACCENT))
+	var stats := build.stats()
+	info.add_child(UiKit.label("Integritaet %d · Schild %d · SPD %d" % [stats["hp_max"],
+		stats.get("shield_max", 0), stats["spd"]], UiKit.SMALL, UiKit.MUTED))
+	info.add_child(UiKit.label(_loadout(build), UiKit.SMALL, UiKit.MUTED))
+	return info
 
 
 func _new_drome_section() -> void:

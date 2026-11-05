@@ -99,8 +99,14 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Standardausstattung, **alle vier im Squad** (`Roster.seed_starter`).
 
 ### Hangar -- `scripts/ui/hangar_screen.gd`
-* Reiter **Squad**: Karussell (max. 4), darunter alle DROMEs (ausgegraut wer
-  dabei ist), "Neuen DROME bauen" mit ganzer Chassis-Huelle.
+* Reiter **Squad** (umgebaut Nov. 2026 nach Skizze des Spielers): oben die
+  anderen Squad-Mitglieder als Kacheln (nur Bild, freie Plaetze "frei"),
+  darunter der Hauptgewaehlte als grosse Box mit Werten, Ausruestung und
+  "Aus dem Squad". Darunter alle DROMEs als Kacheln (3 je Reihe, gruen
+  umrandet = im Squad) -- ohne Ueberschrift. Antippen eines Squad-Mitglieds
+  macht es zum Hauptgewaehlten; Antippen eines anderen klappt unter seiner
+  Reihe Angaben und "In den Squad" auf. Der Knopf "Umbauen" in der Mitte ist
+  weg (der Reiter oben reicht). "Neuen DROME bauen" mit ganzer Chassis-Huelle.
 * Reiter **Umbau**: DROME-Auswahl, Bild + Werte, Halter als Formen, Teile
   fuer den gewaehlten Halter (passend zuerst, sonst mit Grund), Vorschau mit
   Wertaenderung, "ersetzt X", "Einbauen". "DROME aufloesen" unten.
