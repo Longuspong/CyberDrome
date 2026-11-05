@@ -2,8 +2,7 @@ extends Node
 
 ## Laedt die Regionen aus data/regions.json.
 ##
-## Getrennt von PartDB, weil Terrain und Bauteile nichts miteinander zu tun
-## haben -- und weil eine neue Region genau hier dazukommt und sonst nirgends.
+## Eine Region ist reine Optik: Name, Boden und die Kulisse dahinter.
 
 const PATH := "res://data/regions.json"
 const TILE_DIR := "res://assets/terrain"
@@ -36,16 +35,9 @@ func load_regions() -> void:
 	for meta in parsed.get("regions", []):
 		var region_id: String = meta.get("id", "")
 		var region := Terrain.Region.from_meta(meta, TILE_DIR.path_join(region_id))
-		if not region.is_complete():
-			push_error("TerrainDB: Region %s belegt nicht alle fuenf Klassen"
-				% region_id)
-			continue
 		regions[region.id] = region
-		for terrain_class in region.types:
-			var type: Terrain.TerrainType = region.types[terrain_class]
-			if type.texture_path == "" or not ResourceLoader.exists(type.texture_path):
-				missing_tiles.append("%s/%s (%s)" % [region_id, type.id,
-					Terrain.class_label(terrain_class)])
+		if region.floor_texture == "" or not ResourceLoader.exists(region.floor_texture):
+			missing_tiles.append("%s (Boden)" % region_id)
 
 	print("[TerrainDB] %d Regionen geladen: %s"
 		% [regions.size(), ", ".join(region_names())])

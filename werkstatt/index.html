@@ -1479,24 +1479,16 @@ function renderPalette() {
 // >>> STATS-BLOCK ANFANG (tools/check_workshop_stats.js liest genau diesen
 // Bereich heraus und rechnet ihn gegen die Werte der Engine gegen. Marker
 // nicht entfernen -- ohne sie faellt die Absicherung still aus.)
-const SUM_KEYS = ["hp", "en_max", "en_regen", "spd", "mov", "atk", "def",
-                  "weight", "power_draw", "weight_capacity", "power_output",
-                  "drift_modifier"];
-const FLAG_KEYS = ["can_pass_units", "can_enter_steps", "can_pass_blocks",
-                   "ignores_drift", "step_cost_reduced", "grants_ignore_haze"];
+const SUM_KEYS = ["hp", "spd", "atk", "def", "shield", "shield_regen",
+                  "weight", "hp_regen_pct", "aggro_bonus"];
+const FLAG_KEYS = [];
 
 const STAT_ROWS = [
-  ["hp", "Integritaet"], ["en_max", "Energie"], ["en_regen", "EN-Regen"],
-  ["spd", "SPD"], ["mov", "MOV"], ["atk", "ATK"], ["def", "DEF"],
+  ["hp", "Integritaet"], ["shield", "Schild"], ["spd", "SPD"],
+  ["atk", "ATK"], ["def", "DEF"],
 ];
 
-const FLAG_LABEL = {
-  can_pass_units: "zieht durch Einheiten",
-  can_enter_steps: "betritt Stufen",
-  ignores_drift: "immun gegen Drift",
-  step_cost_reduced: "Stufen kosten 1 MP",
-  grants_ignore_haze: "sieht durch Haze",
-};
+const FLAG_LABEL = {};
 
 const SLOT_LABEL_DE = {
   body: "Chassis", head: "Sensorik", feet: "Antrieb", core: "Kern",
@@ -1514,7 +1506,7 @@ const statsOf = (part) => (part && part.stats) || {};
  */
 const SPD_WEIGHT_STEP = 4;
 
-/** Summiert die Werte eines Aufbaus. Flags sind ODER, alles andere additiv. */
+/** Summiert die Werte eines Aufbaus. Alles additiv. */
 function buildStats(loadout) {
   const total = {};
   for (const key of SUM_KEYS) total[key] = 0;
@@ -1530,11 +1522,13 @@ function buildStats(loadout) {
     for (const key of SUM_KEYS) total[key] += Number(s[key] || 0);
     for (const key of FLAG_KEYS) total[key] = total[key] || Boolean(s[key]);
     if (slot.startsWith("equip_")) payload += Number(s.weight || 0);
-    if (s.action && Number(s.action.power) > bestWeapon) bestWeapon = Number(s.action.power);
+    for (const action of s.actions || []) {
+      if (Number(action.power) > bestWeapon) bestWeapon = Number(action.power);
+    }
   }
   total.best_weapon = bestWeapon;
   total.spd -= Math.floor(payload / SPD_WEIGHT_STEP);
-  for (const key of ["hp", "en_max", "atk", "def"]) total[key] = Math.max(0, total[key]);
+  for (const key of ["hp", "atk", "def"]) total[key] = Math.max(0, total[key]);
   return total;
 }
 
@@ -1571,10 +1565,8 @@ function validateLoadout(loadout) {
     }
   }
 
-  // Die beiden Bau-Deckel (Traglast, Energiebedarf) sind gestrichen: Energie
-  // ist Mana, Gewicht ist Tempo. Was bleibt, ist die strukturelle Untergrenze
-  // -- ein DROME, der sich nicht mehr bewegt, kann nicht kaempfen. Spiegelt
-  // DromeBuild.structural_problems().
+  // Was bleibt, ist die strukturelle Untergrenze -- ein DROME, der sich nicht
+  // mehr bewegt, kann nicht kaempfen. Spiegelt DromeBuild.structural_problems().
   // Der Rahmen ist eine Huelle: Kopf, Koerper und Fuesse aus EINEM Set
   // (GAME_DESIGN §9). Spiegelt DromeBuild.structural_problems(). Der Kern bleibt
   // frei -- er ist die Stil-Achse, kein Rahmen.
@@ -1589,15 +1581,13 @@ function validateLoadout(loadout) {
   }
 
   const t = buildStats(loadout);
-  if (t.mov < 1) problems.push(`Bewegung zu gering: mov ${t.mov} (mindestens 1)`);
   if (t.spd < 1) problems.push(`Geschwindigkeit zu gering: spd ${t.spd} (mindestens 1)`);
   return problems;
 }
 
 function powerScore(loadout) {
   const t = buildStats(loadout);
-  return t.hp * 1 + t.atk * 6 + t.def * 8 + t.spd * 3 + t.mov * 4
-       + t.en_max * 0.5 + t.best_weapon * 2;
+  return t.hp * 1 + t.atk * 6 + t.def * 8 + t.spd * 3 + t.best_weapon * 2;
 }
 // <<< STATS-BLOCK ENDE
 

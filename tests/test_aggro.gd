@@ -54,7 +54,6 @@ func _unit(build: DromeBuild, id: StringName, player: bool, tile: Vector2i) -> U
 ## nicht in den Baum gehaengt -- fuer Aggro braucht es keine Sprites.
 func _arena(player_tiles: Array, enemy_tile: Vector2i) -> Dictionary:
 	var grid := Grid.new(20, 20)
-	grid.fill(Terrain.TClass.NORMAL)
 	var units: Array = []
 	var index := 0
 	for entry in player_tiles:
@@ -129,42 +128,6 @@ func test_the_closer_attacker_holds_aggro_at_equal_damage() -> void:
 		% [foe.aggro.value_of(near.unit_id), foe.aggro.value_of(far.unit_id)])
 	t.equal(int(round(foe.aggro.share(near.unit_id))), 1,
 		"der Spitzenreiter hat den Anteil 1.0")
-	_free(arena)
-
-
-func test_healing_is_booked_against_every_foe_and_only_what_landed() -> void:
-	# Die Aggro-Buchung fuer Heilung steckt weiter in der Engine
-	# (ActionResolver.heal), auch wenn im Bestand gerade kein Teil aktiv heilt
-	# (der Drohnen-Pod heilt jetzt passiv). Getestet wird die Mechanik mit einer
-	# synthetischen Heil-Aktion.
-	var heal_action := ActionData.new()
-	heal_action.id = &"act_test_heal"
-	heal_action.category = ActionData.Category.ABILITY
-	heal_action.power = -10          # negatives Vorzeichen = Heilung
-	heal_action.aggro_coeff = 0.5
-
-	var techie := DromeBuild.create("TECHNIK", {
-		"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_shoulder": &"eq_drone_pod"})
-	var arena := _arena([
-		{"build": techie, "tile": Vector2i(4, 4)},
-		{"build": _melee(), "tile": Vector2i(5, 4)},
-	], Vector2i(9, 9))
-	var resolver: ActionResolver = arena["resolver"]
-	var healer: Unit = arena["units"][0]
-	var patient: Unit = arena["units"][1]
-	var foe: Unit = arena["foe"]
-
-	# Auf Vollleben darf gar nichts gebucht werden.
-	resolver.heal(healer, patient, heal_action.heal_amount(), heal_action)
-	t.ok(foe.aggro.is_empty(),
-		"Heilen auf Vollleben erzeugt keine Aggro -- nur was ankommt, zaehlt")
-
-	patient.hp = 10
-	resolver.heal(healer, patient, heal_action.heal_amount(), heal_action)
-	t.ok(foe.aggro.value_of(healer.unit_id) > 0.0,
-		"echte Heilung bucht gegen den Gegner des Geheilten")
 	_free(arena)
 
 
@@ -302,80 +265,7 @@ func test_a_ranged_enemy_clings_harder_than_a_melee_one() -> void:
 
 
 # ---------------------------------------------------------------------------
-# 3. Provokation eskaliert nicht
-# ---------------------------------------------------------------------------
-
-func test_repeated_taunts_do_not_escalate() -> void:
-	var arena := _arena([
-		{"build": _melee(), "tile": Vector2i(9, 8)},
-		{"build": _melee(), "tile": Vector2i(8, 9)},
-	], Vector2i(9, 9))
-	var resolver: ActionResolver = arena["resolver"]
-	var provoker: Unit = arena["units"][0]
-	var foe: Unit = arena["foe"]
-	foe.aggro.add(arena["units"][1].unit_id, 200.0)
-
-	var taunt := ActionData.new()
-	taunt.id = &"act_test_taunt"
-	taunt.display_name = "Provokation"
-	taunt.category = ActionData.Category.ABILITY
-	taunt.taunt_turns = 3
-
-	resolver._apply_taunt(provoker, foe, taunt)
-	var after_first := foe.aggro.value_of(provoker.unit_id)
-	for _i in 2:
-		resolver._apply_taunt(provoker, foe, taunt)
-	var after_third := foe.aggro.value_of(provoker.unit_id)
-
-	t.equal(after_third, after_first,
-		"dreimal provozieren bringt nicht mehr als einmal (%.0f)" % after_third)
-	t.ok(after_first > 200.0 and after_first < 300.0,
-		"die Quelle steht danach knapp vorn, nicht uneinholbar (%.0f bei Maximum 200)"
-		% after_first)
-	_free(arena)
-
-
-func test_a_taunt_forbids_every_other_target() -> void:
-	var arena := _arena([
-		{"build": _melee(), "tile": Vector2i(9, 8)},
-		{"build": _melee(), "tile": Vector2i(8, 9)},
-	], Vector2i(9, 9))
-	var resolver: ActionResolver = arena["resolver"]
-	var forcer: Unit = arena["units"][0]
-	var other: Unit = arena["units"][1]
-	var foe: Unit = arena["foe"]
-	var attack := _attack_of(foe)
-
-	t.equal(resolver.target_blocker(foe, other.tile, attack), "",
-		"ohne Provokation ist jedes Ziel in Reichweite erlaubt")
-
-	foe.apply_taunt(forcer.unit_id, 3)
-	t.ok(resolver.target_blocker(foe, other.tile, attack) != "",
-		"provoziert ist jedes andere Ziel gesperrt")
-	t.equal(resolver.target_blocker(foe, forcer.tile, attack), "",
-		"die Quelle selbst bleibt angreifbar")
-
-	# Faellt die Quelle aus, loest sich der Zwang sofort -- sonst stuende der
-	# Provozierte untaetig herum.
-	forcer.hp = 0
-	resolver.forget_unit(forcer)
-	t.equal(resolver.target_blocker(foe, other.tile, attack), "",
-		"stirbt die Quelle, ist der Provozierte wieder frei")
-	_free(arena)
-
-
-func test_a_taunt_expires_on_the_victims_own_turns() -> void:
-	var unit := Unit.create(_melee(), &"E9", false)
-	unit.apply_taunt(&"P0", 3)
-	for i in 3:
-		t.ok(unit.is_taunted(), "Provokation gilt noch vor Zug %d" % (i + 1))
-		unit.tick_taunt()
-	t.ok(not unit.is_taunted(), "nach drei eigenen Zuegen laeuft sie ab")
-	unit.free()
-
-
-# ---------------------------------------------------------------------------
-# 4. Der leise Koeffizient schuetzt die Backline
+# 3. Der leise Koeffizient schuetzt die Backline
 # ---------------------------------------------------------------------------
 
 func test_a_quiet_sniper_does_not_take_aggro_from_the_frontline() -> void:
@@ -501,98 +391,6 @@ func test_the_beacon_costs_a_slot_and_the_strix_cannot_pay_it() -> void:
 	t.ok(molok.is_valid(),
 		"der Molok traegt ihn auf der Schulter und behaelt seine Waffe: %s"
 		% ", ".join(molok.validate()))
-
-
-# ---------------------------------------------------------------------------
-# Was eine Umlenkung wert ist
-# ---------------------------------------------------------------------------
-
-## Baut eine Lage, in der eine Provokation ueberhaupt etwas bewirken KANN:
-## zwei Gegner und ein Spieler-DROME, alle in Reichweite voneinander.
-func _redirect_case(seed_value: int, tough_hp: int, fragile_hp: int) -> Dictionary:
-	var battle := BattleManager.new()
-	battle.setup(seed_value, [_melee(), _sniper()])
-	var foes := battle.living(false)
-	var case := {
-		"battle": battle,
-		"controller": AIController.new(battle),
-		"tough": foes[0],
-		"fragile": foes[1],
-		"threat": battle.living(true)[0],
-	}
-	case["tough"].stats["hp_max"] = tough_hp
-	case["tough"].hp = tough_hp
-	case["fragile"].stats["hp_max"] = fragile_hp
-	case["fragile"].hp = fragile_hp
-	# Nebeneinander -- _can_strike() rechnet ueber die Distanz.
-	case["threat"].tile = Vector2i(5, 5)
-	case["tough"].tile = Vector2i(5, 6)
-	case["fragile"].tile = Vector2i(6, 5)
-	return case
-
-
-func _taunt_action() -> ActionData:
-	var taunt := ActionData.new()
-	taunt.id = &"act_test_taunt"
-	taunt.category = ActionData.Category.ABILITY
-	taunt.taunt_turns = 3
-	return taunt
-
-
-func test_a_tough_drome_redirects_and_a_fragile_one_does_not() -> void:
-	# Der Kern der Bewertung: gerechnet wird in Lebensleisten, nicht in
-	# Schadenspunkten. Wer selbst duenner ist als der, den er schuetzen
-	# will, gewinnt nichts -- er verheizt sich nur.
-	var case := _redirect_case(9114, 300, 30)
-	var controller: AIController = case["controller"]
-
-	var tough_score := controller._taunt_score(
-		case["tough"], _taunt_action(), case["threat"])
-	var fragile_score := controller._taunt_score(
-		case["fragile"], _taunt_action(), case["threat"])
-
-	t.ok(tough_score > 0.0,
-		"das robuste Chassis lenkt den Angriff auf sich (%.1f)" % tough_score)
-	t.equal(fragile_score, 0.0,
-		"der duenne Gegner laesst es bleiben -- er ist selbst das gefaehrdetste Ziel")
-	case["battle"].free()
-
-
-func test_a_redirect_is_worthless_when_there_is_nobody_to_protect() -> void:
-	var case := _redirect_case(9115, 300, 30)
-	var controller: AIController = case["controller"]
-	# Der Schuetzling ist ausser Reichweite: es gibt nichts umzulenken.
-	case["fragile"].tile = Vector2i(19, 19)
-	t.equal(controller._taunt_score(case["tough"], _taunt_action(), case["threat"]), 0.0,
-		"wen niemand bedroht, den muss man auch nicht wegprovozieren")
-	case["battle"].free()
-
-
-func test_the_ai_does_not_renew_a_taunt_it_already_holds() -> void:
-	# Sonst wird aus einer befristeten Zwangsmechanik eine dauerhafte.
-	var case := _redirect_case(9116, 300, 30)
-	var controller: AIController = case["controller"]
-	var taunt := _taunt_action()
-
-	t.ok(controller._action_score(case["tough"], taunt, case["threat"]) > 0.0,
-		"ein freies Ziel zu provozieren ist etwas wert")
-	case["threat"].apply_taunt(case["tough"].unit_id, 3)
-	t.equal(controller._action_score(case["tough"], taunt, case["threat"]), 0.0,
-		"ein bereits provoziertes Ziel erneut zu provozieren nicht")
-	case["battle"].free()
-
-
-func test_a_certain_kill_always_beats_the_best_possible_redirect() -> void:
-	# Eine Invariante der Gewichte, kein Spielzustand: die Umlenkung ist nach
-	# oben gedeckelt (hoechstens eine gerettete Lebensleiste plus der Bonus
-	# fuers verhinderte Ausscheiden). Waere die Summe groesser als kill_bonus,
-	# liefe die KI an sicheren Abschuessen vorbei, um jemanden umzulenken.
-	var ai := Config.section("ai")
-	var best_redirect: float = float(ai.get("taunt_weight", 50.0)) \
-		+ float(ai.get("rescue_bonus", 45.0))
-	t.ok(float(ai.get("kill_bonus", 100.0)) > best_redirect,
-		"kill_bonus (%.0f) liegt ueber der bestmoeglichen Umlenkung (%.0f)"
-		% [float(ai.get("kill_bonus", 100.0)), best_redirect])
 
 
 # ---------------------------------------------------------------------------

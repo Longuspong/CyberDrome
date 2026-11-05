@@ -7,10 +7,8 @@ extends RefCounted
 ##
 ##     schaden = max(1, waffe.power + angreifer.atk - ziel.def)
 ##
-## Kein Trefferwurf, kein Krit, keine Ausweichchance -- weder im MVP noch
-## spaeter. Das ist eine bewusste Designentscheidung: Balancing laeuft ueber
-## das WIE (Positionierung, Reihenfolge, Ressourceneinsatz), nicht ueber das
-## OB. Der Spieler soll jede Aktion vorher exakt durchrechnen koennen.
+## Kein Trefferwurf, kein Krit, keine Ausweichchance: derselbe Seed ergibt
+## denselben Kampf.
 
 var grid: Grid
 var units: Array = []
@@ -27,14 +25,8 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 
 ## Die EINZIGE Stelle, an der Schaden angewendet wird.
 ##
-## Die Kette ist geordnet und hat vier Glieder. Schritt 1 und 2 sind im MVP
-## leere Durchreichungen -- wichtig ist nur, dass es sie als Kettenglieder
-## GIBT, damit Energieschild und Ruestung spaeter ohne Umbau eingehaengt
-## werden koennen.
-##
-## ``action`` dient allein der Aggro-Buchung (dem Koeffizienten der Aktion).
-## Sie darf fehlen: Schaden ohne Aktion -- Aderlass, spaeter Schaden ueber
-## Zeit -- bucht dann mit dem Grundkoeffizienten 1.0.
+## ``action`` dient der Aggro-Buchung (dem Koeffizienten der Aktion) und der
+## Schadensart. Sie darf fehlen (Overtime).
 func apply_damage(source: Unit, target: Unit, raw: int,
 		action: ActionData = null) -> int:
 	var frac := action.energy_fraction if action != null else 0.0
@@ -81,9 +73,7 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 ## HP und Schild ankommt, OHNE etwas zu veraendern. Gibt
 ## ``{"hp": int, "shield_after": int}`` zurueck.
 ##
-## Vorschau UND Ausfuehrung rufen exakt diese Funktion, aus demselben Grund wie
-## frueher: eine zweite, "vereinfachte" Rechnung ist die Stelle, an der das
-## Versprechen bricht, dass sich jeder Zug vorher durchrechnen laesst.
+## Vorschau (KI-Bewertung) UND Ausfuehrung rufen exakt diese Funktion.
 ##
 ## ### Das Modell
 ##
@@ -158,28 +148,6 @@ func mitigate(source: Unit, target: Unit, raw: int, energy_fraction: float = 0.0
 	return resolve_damage(target, raw, energy_fraction)["hp"]
 
 
-func heal(source: Unit, target: Unit, amount: int, action: ActionData = null) -> int:
-	var before := target.hp
-	target.hp = mini(target.stat("hp_max"), target.hp + amount)
-	var healed := target.hp - before
-	if healed > 0:
-		# Gegen ALLE Gegner des Geheilten, nicht nur gegen den, der ihn
-		# angeschlagen hat. Sonst waere der Techniker genau in dem Moment
-		# unangreifbar, in dem er am wertvollsten ist.
-		#
-		# Und: die TATSAECHLICH geheilte Menge, nicht die nominelle. Deshalb
-		# steht die Buchung hier unten und nicht oben -- Heilen auf Vollleben
-		# waere sonst eine Gratis-Aggro-Maschine.
-		for observer in units:
-			if observer.is_player != target.is_player:
-				_book_aggro(observer, source, float(healed),
-					action.aggro_coeff if action != null else 1.0)
-		EventBus.unit_healed.emit(target, healed, source)
-		EventBus.log_line("%s repariert %s um %d Integritaet."
-			% [source.display_name if source else "?", target.display_name, healed])
-	return healed
-
-
 func _kill(unit: Unit) -> void:
 	grid.clear_occupant(unit.tile)
 	forget_unit(unit)
@@ -192,9 +160,7 @@ func _kill(unit: Unit) -> void:
 # Aggro
 # ---------------------------------------------------------------------------
 
-## Ein DROME faellt aus: sein Eintrag verschwindet aus jeder Tabelle, und wen
-## er provoziert hatte, ist wieder frei -- sonst stuende der Provozierte
-## untaetig herum und wartete auf ein Ziel, das es nicht mehr gibt.
+## Ein DROME faellt aus: sein Eintrag verschwindet aus jeder Tabelle.
 ##
 ## Aggro ist begegnungslokal. Sie ueberlebt weder ein Ziel noch das Gefecht.
 ## Oeffentlich, weil es zwei Wege in den Tod gibt: die Mitigationskette hier
@@ -203,8 +169,6 @@ func forget_unit(unit: Unit) -> void:
 	for other in units:
 		if other.aggro != null:
 			other.aggro.forget(unit.unit_id)
-		if other.taunted_by() == unit.unit_id:
-			other.clear_taunt()
 
 
 ## Die EINZIGE Stelle, an der Aggro gebucht wird.
@@ -221,54 +185,18 @@ func _book_aggro(observer: Unit, actor: Unit, base: float, coeff: float) -> void
 		return
 	if not observer.is_alive() or observer.is_player == actor.is_player:
 		return
-	# Gebucht wird auch gegen einen actor, den der observer gerade gar nicht
-	# anvisieren KANN -- etwa weil er in einem Haze-Feld steht. Gefiltert wird
-	# ausschliesslich bei der Zielwahl. Sonst waere Haze ein Aggro-Reset und
-	# aus der Deckung zu schiessen kostenlos.
 	observer.aggro.add(actor.unit_id, AggroTable.contribution(
 		base, coeff, Grid.distance(actor.tile, observer.tile),
 		actor.stat("aggro_bonus")))
 
 
-## Provokation: harter Zwang beim Ziel plus ein Eintrag in dessen Tabelle.
-##
-## Der neue Wert leitet sich vom Tabellenmaximum ab und wird NICHT addiert.
-## Zweimal hintereinander provozieren bringt dadurch praktisch nichts -- man
-## ist ja bereits das Maximum. Eine flache Addition wuerde durch Wiederholung
-## zur dauerhaften Aggro-Sperre und die Tabelle entwerten.
-##
-## Nach Ablauf steht die Quelle knapp vorn, aber nicht uneinholbar: das Gefecht
-## kippt zurueck ins normale Tabellenmodell, statt hart umzuschalten.
-func _apply_taunt(source: Unit, target: Unit, action: ActionData) -> void:
-	target.apply_taunt(source.unit_id, action.taunt_turns)
-	if target.aggro != null:
-		var factor := float(Config.section("aggro").get("taunt_factor", 1.1))
-		target.aggro.entries[source.unit_id] = maxf(
-			target.aggro.value_of(source.unit_id),
-			target.aggro.peak_excluding(source.unit_id) * factor)
-	EventBus.log_line("%s provoziert %s fuer %d s."
-		% [source.display_name, target.display_name, action.taunt_seconds()])
-
-
 # ---------------------------------------------------------------------------
-# Vorhersage -- damit der Spieler rechnen kann, bevor er klickt
+# Vorhersage -- fuer die Bewertung der KI
 # ---------------------------------------------------------------------------
 
-## Was wuerde diese Aktion anrichten? Benutzt exakt dieselbe Rechnung wie die
-## Ausfuehrung, nur ohne sie anzuwenden -- dieselbe Funktion, nicht dieselbe
-## Formel zweimal aufgeschrieben.
-##
-## Eine Aktion OHNE Wirkungsmenge liefert 0 und nicht die Mindestmenge 1. Das
-## ist dieselbe Bedingung, unter der execute() ueberhaupt Schaden anwendet
-## (``action.power > 0``) -- der Orbit-Sog zieht sein Ziel zwei Felder, richtet
-## aber nichts an. Ohne diese Zeile rechnete die Vorschau ``max(1, 0 + atk -
-## def)`` und schrieb "1 Schaden" ueber ein Ziel, dem nichts passiert. Die KI
-## hatte genau diese Falle schon umgangen, indem sie vorher abbog
-## (AIController._action_score); die Anzeige lief weiter hinein.
+## Was wuerde diese Aktion anrichten? Dieselbe Rechnung wie die Ausfuehrung,
+## nur ohne sie anzuwenden. Eine Aktion ohne Wirkungsmenge liefert 0.
 func preview_damage(source: Unit, target: Unit, action: ActionData) -> int:
-	if action.is_heal():
-		var missing := target.stat("hp_max") - target.hp
-		return -mini(action.heal_amount(), missing)
 	if action.power <= 0:
 		return 0
 	return mitigate(source, target, action.power + source.atk(), action.energy_fraction)
@@ -294,29 +222,9 @@ func unit_by_id(unit_id) -> Unit:
 	return null
 
 
-## Alle Felder in Reichweite der Aktion -- unabhaengig davon, ob dort etwas
-## Sinnvolles steht. Die Sichtlinie entscheidet erst danach.
-func tiles_in_range(source: Unit, action: ActionData) -> Array[Vector2i]:
-	var tiles: Array[Vector2i] = []
-	if action.targeting == ActionData.Targeting.SELF:
-		tiles.append(source.tile)
-		return tiles
-	if action.is_move():
-		return dash_landings(source, action)
-	for tile in grid.all_tiles():
-		if Grid.distance(source.tile, tile) <= action.range_tiles:
-			tiles.append(tile)
-	return tiles
-
-
 ## Die Felder, auf die der Dash den Handelnden versetzen kann: gerade Linie in
-## eine der vier Richtungen, bis zu ``range_tiles`` weit, und -- anders als die
-## normale Bewegung -- ausdruecklich NICHT ueber BLOCK oder STEP und nicht durch
-## einen anderen DROME hindurch. Der Weg bricht am ersten Hindernis ab; jedes
-## freie Feld davor ist ein gueltiges Landefeld.
-##
-## Eine eigene, striktere Regel als can_stand_on: der Vireo-Antrieb DARF Stufen
-## betreten, der Hologramm-Boost gleitet aber ueber Boden, nicht ueber Kanten.
+## eine der vier Richtungen, bis zu ``range_tiles`` weit, nicht durch einen
+## anderen DROME hindurch.
 func dash_landings(source: Unit, action: ActionData) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	for dir in Grid.DIRS_4:
@@ -325,9 +233,6 @@ func dash_landings(source: Unit, action: ActionData) -> Array[Vector2i]:
 			tile += dir
 			if not grid.in_bounds(tile):
 				break
-			var tc := grid.terrain_class(tile)
-			if tc == Terrain.TClass.BLOCK or tc == Terrain.TClass.STEP:
-				break
 			if grid.is_occupied(tile, source.unit_id):
 				break
 			out.append(tile)
@@ -335,16 +240,7 @@ func dash_landings(source: Unit, action: ActionData) -> Array[Vector2i]:
 
 
 ## Ist dieses Feld ein gueltiges Ziel? Leerer String = ja, sonst der Grund.
-##
-## Der Grund wandert unveraendert in den Tooltip: "Sicht durch Betonpfeiler
-## blockiert". Ein graues Feld ohne Begruendung ist im Taktikspiel wertlos.
 func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
-	if action.targeting == ActionData.Targeting.SELF:
-		return "" if tile == source.tile else "Nur auf sich selbst"
-
-	# Dash: gueltig ist genau, was dash_landings() anbietet. Der Grund fuer ein
-	# graues Feld steht im Tooltip, wie ueberall -- ein DROME-Spiel graut nie
-	# ohne Begruendung.
 	if action.is_move():
 		if tile == source.tile:
 			return "Schon hier"
@@ -355,50 +251,18 @@ func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
 		if Grid.distance(source.tile, tile) > action.range_tiles:
 			return "Zu weit fuer den Boost"
 		return "Weg blockiert"
-
-	# Provokation. Steht bewusst HIER und nicht in der KI: sie ist eine Regel
-	# ueber gueltige Ziele, keine Vorliebe. Damit gilt sie fuer beide Seiten --
-	# die KI fragt diese Funktion in _targets_from(), und beim Spieler faerbt
-	# sich das Feld grau und der Grund steht im Tooltip. Eine zweite
-	# Durchsetzung in der KI waere eine zweite Regel.
-	if action.is_attack() and source.is_taunted():
-		var forcer := unit_by_id(source.taunted_by())
-		if forcer != null and forcer.is_alive() and tile != forcer.tile:
-			return "Von %s provoziert" % forcer.display_name
-
 	if Grid.distance(source.tile, tile) > action.range_tiles:
 		return "Ausser Reichweite"
-	if action.requires_line_of_sight:
-		var blocker := grid.sight_blocker(source.tile, tile,
-			source.sees_through_haze())
-		if blocker != "":
-			return "Sicht durch %s blockiert" % blocker
-	if action.targeting == ActionData.Targeting.TILE:
-		return "" if grid.can_stand_on(tile, source.move_profile()) \
-			else "Feld nicht betretbar"
 	if unit_at(tile) == null:
 		return "Kein Ziel"
 	return ""
 
 
-## Ist dieses Ziel ueberhaupt gemeint?
-##
-## Regeltechnisch darf ein Angriff auf den eigenen DROME gehen und eine
-## Reparatur auf den Gegner -- die Mitigationskette fragt nicht nach Seiten.
-## Angeboten wird beides trotzdem nicht: es waere nie das, was der Spieler
-## meint, und in einer Schadensvorschau ueber dem eigenen Techniker steht sonst
-## eine Zahl, die wie eine Drohung aussieht.
-##
-## Steht hier und nicht in der UI, weil Aktionsring und Schadensvorschau
-## dieselbe Antwort brauchen. Zwei Kopien waeren zwei Gelegenheiten, dass der
-## Ring eine Aktion anbietet, deren Zahl daneben fehlt.
-func is_meaningful_target(source: Unit, target: Unit, action: ActionData) -> bool:
-	if source == null or target == null:
+## Ist dieses Ziel ueberhaupt gemeint? Angriffe treffen nur Gegner.
+func is_meaningful_target(source: Unit, target: Unit, _action: ActionData) -> bool:
+	if source == null or target == null or target == source:
 		return false
-	if target == source:
-		return action.is_heal() or action.targeting == ActionData.Targeting.SELF
-	var friendly := target.is_player == source.is_player
-	return action.is_heal() == friendly
+	return target.is_player != source.is_player
 
 
 ## Welche Felder trifft die Aktion, wenn sie auf ``tile`` gezielt wird?
@@ -423,19 +287,10 @@ func affected_tiles(tile: Vector2i, action: ActionData) -> Array[Vector2i]:
 # ---------------------------------------------------------------------------
 
 ## Fuehrt die Aktion aus. Gibt zurueck, ob sie ueberhaupt zulaessig war.
-##
-## EINE Schleife ueber die getroffenen Felder, auch fuer ``Targeting.SELF``:
-## ``affected_tiles()`` liefert dort das eigene Feld, darauf steht der Handelnde,
-## und ``is_meaningful_target()`` laesst ihn ausdruecklich durch. Ein zweiter
-## Zweig hinter der Schleife -- den es hier einmal gab -- wendete die Wirkung ein
-## zweites Mal an und haette die erste SELF-Aktion des Bestands still verdoppelt.
 func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 	if target_blocker(source, tile, action) != "":
 		return false
-	# Dash: der Handelnde versetzt sich selbst. Ein eigener Zweig, weil hier kein
-	# Ziel getroffen, sondern eine Position gesetzt wird -- ueber dieselbe
-	# move_unit(), durch die auch Stossen laeuft, damit ein Boost auf eine
-	# Oelspur genauso weitergleitet wie jede andere erzwungene Bewegung.
+	# Dash: der Handelnde versetzt sich selbst.
 	if action.is_move():
 		var delta := tile - source.tile
 		var step := Vector2i(signi(delta.x), signi(delta.y))
@@ -448,45 +303,25 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		var target := unit_at(affected)
 		if target == null:
 			continue
-		# Die Flaeche fragt dieselbe Frage wie das Fadenkreuz: ist dieser DROME
-		# ueberhaupt gemeint? Ohne diese Zeile traf der Belagerungsschlag jeden,
-		# der im Radius stand -- den eigenen Verbuendeten, und bei einem Ziel auf
-		# dem Nachbarfeld den Schuetzen selbst. Ein Molok, der auf Tuchfuehlung
-		# feuerte, schoss sich damit Zug um Zug die eigene Integritaet weg, ohne
-		# dass Vorschau oder KI davon etwas ahnten: beide bewerten das ANVISIERTE
-		# Ziel, und dort stand die Zahl richtig.
-		#
-		# Dieselbe Zeile richtet die Reparaturdrohnen mit: deren Radius heilte
-		# bisher auch Gegner, die neben dem Verbuendeten standen.
+		# Die Flaeche trifft nur Gegner -- weder Verbuendete noch den Schuetzen.
 		if not is_meaningful_target(source, target, action):
 			continue
-		if action.is_heal():
-			heal(source, target, action.heal_amount(), action)
-		elif action.power > 0:
+		if action.power > 0:
 			apply_damage(source, target, action.power + source.atk(), action)
 		elif action.aggro_flat > 0:
-			# Wirkung ohne Wirkungsmenge -- Stossen, Ziehen, reine Kontrolle.
-			# Ohne den Pauschalwert waere ein Kontroll-Aufbau lautlos.
+			# Wirkung ohne Schaden (Ziehen): ohne Pauschalwert waere sie lautlos.
 			_book_aggro(target, source, float(action.aggro_flat), action.aggro_coeff)
-		if action.push_tiles != 0 and target != source:
+		if action.push_tiles != 0:
 			_shove(source, target, action.push_tiles)
-		if action.status_effect != null:
-			_apply_status(target, action.status_effect)
-		if action.is_taunt() and target != source:
-			_apply_taunt(source, target, action)
 
 	return true
 
 
 ## Stossen und Ziehen. Positiv = weg, negativ = heran.
-##
-## Beides laeuft ueber move_unit() und damit durch simulate_drift(): wer per
-## Stossfeld auf eine Oelspur geschoben wird, gleitet weiter. Das ist keine
-## Sonderregel, sondern faellt automatisch heraus.
 func _shove(source: Unit, target: Unit, tiles: int) -> void:
 	var delta := target.tile - source.tile
 	var step := Vector2i(signi(delta.x), signi(delta.y))
-	if Grid.ALLOW_DIAGONALS == false and step.x != 0 and step.y != 0:
+	if step.x != 0 and step.y != 0:
 		# Ohne Diagonalen wird auf die dominante Achse gerundet.
 		if absi(delta.x) >= absi(delta.y):
 			step = Vector2i(signi(delta.x), 0)
@@ -497,14 +332,12 @@ func _shove(source: Unit, target: Unit, tiles: int) -> void:
 	if tiles < 0:
 		step = -step
 
-	var profile := target.move_profile()
 	var moved := 0
 	for _i in absi(tiles):
 		var nxt := target.tile + step
-		if not grid.can_stand_on(nxt, profile):
+		if not grid.can_stand_on(nxt, target.unit_id):
 			break
-		move_unit(target, nxt, step)
-		profile.tile = target.tile
+		move_unit(target, nxt)
 		moved += 1
 	if moved > 0:
 		EventBus.log_line("%s wird %d Feld(er) %s."
@@ -513,28 +346,10 @@ func _shove(source: Unit, target: Unit, tiles: int) -> void:
 
 
 ## Die EINZIGE Stelle, an der die Position eines DROME gesetzt wird.
-##
-## Jede Positionsaenderung laeuft hier durch und wertet am Ende das Gleiten
-## aus. Gaebe es eine zweite Stelle, waere Push-auf-Drift eine Sonderregel --
-## und irgendwann eine, die jemand vergisst.
-func move_unit(unit: Unit, to_tile: Vector2i, entry_dir: Vector2i) -> Vector2i:
+func move_unit(unit: Unit, to_tile: Vector2i, _entry_dir: Vector2i = Vector2i.ZERO) -> Vector2i:
 	var from := unit.tile
 	grid.clear_occupant(from)
-
-	var landing := grid.simulate_drift(to_tile, entry_dir, unit.move_profile())
-	unit.place_at(landing)
-	grid.set_occupant(landing, unit.unit_id)
-	unit.set_in_haze(grid.terrain_class(landing) == Terrain.TClass.HAZE)
-
-	if landing != to_tile:
-		EventBus.log_line("%s gleitet von %s nach %s."
-			% [unit.display_name, to_tile, landing])
-	EventBus.unit_moved.emit(unit, from, landing)
-	return landing
-
-
-func _apply_status(target: Unit, status) -> void:
-	if not status is Dictionary:
-		return
-	target.apply_status(StringName(status.get("id", "status")),
-		int(status.get("cycles", 1)), status)
+	unit.place_at(to_tile)
+	grid.set_occupant(to_tile, unit.unit_id)
+	EventBus.unit_moved.emit(unit, from, to_tile)
+	return to_tile

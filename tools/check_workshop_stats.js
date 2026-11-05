@@ -140,13 +140,11 @@ const STOCK = {
 // Erwartungswerte aus dem Testlauf der Engine (tests/test_drome_build.gd).
 const EXPECTED = {
   // SPD enthaelt den Abzug der Zuladung (DromeBuild.payload_slowdown): je vier
-  // Punkte Ausruestungsgewicht ein Punkt weniger. Der Molok bleibt bei 6, weil
-  // sein pauschales Chassis-SPD von -2 im selben Zug entfallen ist -- dieselbe
-  // Schwere, jetzt aus dem Gewicht statt aus einer Konstante.
-  bot1: { hp: 60, en_max: 40, spd: 13, mov: 4, atk: 0, def: 6, power: 207 },
-  bot2: { hp: 145, en_max: 70, spd: 6, mov: 2, atk: 0, def: 9, power: 314 },
-  bot3: { hp: 85, en_max: 110, spd: 13, mov: 5, atk: 1, def: 2, power: 257 },
-  bot4: { hp: 70, en_max: 50, spd: 8, mov: 4, atk: 6, def: 2, power: 219 },
+  // Punkte Ausruestungsgewicht ein Punkt weniger.
+  bot1: { hp: 60, spd: 13, atk: 0, def: 6, power: 167 },
+  bot2: { hp: 145, spd: 6, atk: 0, def: 9, power: 271 },
+  bot3: { hp: 85, spd: 13, atk: 1, def: 2, power: 172 },
+  bot4: { hp: 70, spd: 8, atk: 6, def: 2, power: 198 },
 };
 
 console.log("\n=== Werkstatt gegen Engine ===\n");
@@ -156,7 +154,7 @@ for (const [setId, assignment] of Object.entries(STOCK)) {
   withSlotDefs(assignment, () => {
     const stats = sandbox.buildStats(loadout);
     const want = EXPECTED[setId];
-    for (const key of ["hp", "en_max", "spd", "mov", "atk", "def"]) {
+    for (const key of ["hp", "spd", "atk", "def"]) {
       check(`${setId}.${key}`, stats[key], want[key]);
     }
     check(`${setId}.power`, Math.round(sandbox.powerScore(loadout)), want.power);

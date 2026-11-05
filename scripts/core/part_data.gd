@@ -59,17 +59,6 @@ var shield_regen: int = 0
 var shield_bonus: float = 0.0
 var weight: int = 0
 
-## Traversierung -- die eigentliche Kaufentscheidung beim Antrieb
-var can_pass_units: bool = false
-var can_enter_steps: bool = false
-var can_pass_blocks: bool = false   ## Post-MVP (Tunnelbauer). Immer false.
-var ignores_drift: bool = false
-var drift_modifier: int = 0
-var step_cost_reduced: bool = false
-
-## Sensorik
-var grants_ignore_haze: bool = false
-
 ## Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet (5 = 5 %).
 ## Der Drohnen-Pod traegt sie -- eine Passive statt einer aktiven Heilung.
 var hp_regen_pct: int = 0
@@ -119,13 +108,6 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.shield_regen = stats.get("shield_regen", 0)
 	part.shield_bonus = float(stats.get("shield_bonus", 0.0))
 	part.weight = stats.get("weight", 0)
-	part.can_pass_units = stats.get("can_pass_units", false)
-	part.can_enter_steps = stats.get("can_enter_steps", false)
-	part.can_pass_blocks = stats.get("can_pass_blocks", false)
-	part.ignores_drift = stats.get("ignores_drift", false)
-	part.drift_modifier = stats.get("drift_modifier", 0)
-	part.step_cost_reduced = stats.get("step_cost_reduced", false)
-	part.grants_ignore_haze = stats.get("grants_ignore_haze", false)
 	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
 	part.aggro_bonus = stats.get("aggro_bonus", 0)
 

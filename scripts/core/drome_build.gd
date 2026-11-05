@@ -196,10 +196,6 @@ func stats() -> Dictionary:
 		"spd": 0, "atk": 0, "def": 0,
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
 		"weight": 0,
-		"can_pass_units": false, "can_enter_steps": false,
-		"can_pass_blocks": false, "ignores_drift": false,
-		"drift_modifier": 0, "step_cost_reduced": false,
-		"grants_ignore_haze": false,
 		"hp_regen_pct": 0,
 		"aggro_bonus": 0,
 	}
@@ -212,14 +208,6 @@ func stats() -> Dictionary:
 		total["shield_regen"] += part.shield_regen
 		total["shield_bonus"] += part.shield_bonus
 		total["weight"] += part.weight
-		# Flags addieren sich als ODER: ein einziges Teil genuegt.
-		total["can_pass_units"] = total["can_pass_units"] or part.can_pass_units
-		total["can_enter_steps"] = total["can_enter_steps"] or part.can_enter_steps
-		total["can_pass_blocks"] = total["can_pass_blocks"] or part.can_pass_blocks
-		total["ignores_drift"] = total["ignores_drift"] or part.ignores_drift
-		total["step_cost_reduced"] = total["step_cost_reduced"] or part.step_cost_reduced
-		total["grants_ignore_haze"] = total["grants_ignore_haze"] or part.grants_ignore_haze
-		total["drift_modifier"] += part.drift_modifier
 		total["hp_regen_pct"] += part.hp_regen_pct
 		total["aggro_bonus"] += part.aggro_bonus
 

@@ -193,7 +193,6 @@ func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 	var seconds := unit.step_left if unit.step_left > 0.0 else 0.18
 	unit.animate_last_move(seconds)
 	view.refresh_unit_depth(unit)
-	unit.set_in_haze(battle.grid.terrain_class(unit.tile) == Terrain.TClass.HAZE)
 
 
 ## Schussspur vom Schuetzen zum Ziel, Rueckstoss, und bei einer Faehigkeit

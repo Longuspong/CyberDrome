@@ -1,19 +1,11 @@
 class_name AggroTable
 extends RefCounted
 
-## Die Aggro-Buchfuehrung EINES Gegner-DROME.
+## Die Aggro-Buchfuehrung EINES DROME (beide Seiten fuehren eine).
 ##
 ## Sie beantwortet genau eine Frage: wie sehr stoert mich jede feindliche
 ## Einheit? Nicht mehr. Positionierung, Faehigkeitswahl und Annaeherung bleiben
 ## Sache des AIController -- Aggro sagt WEN, nicht WIE.
-##
-## ### Nur Gegner fuehren eine Tabelle
-##
-## Spieler-DROMEs bekommen keine. Ihre Ziele waehlt der Spieler, und eine
-## Tabelle, die niemand liest, waere eine zweite Wahrheit ueber die Zielwahl.
-## Der einzige Weg, einen Spieler-DROME zu einem Ziel zu zwingen, ist die
-## Provokation -- und die laeuft nicht ueber diese Klasse, sondern ueber
-## ``Unit.taunt_lock`` und ``ActionResolver.target_blocker()``.
 ##
 ## ### Nicht zu verwechseln mit dem Kampfwert
 ##
@@ -91,19 +83,6 @@ func peak() -> float:
 	return highest
 
 
-## Das Maximum OHNE einen bestimmten Eintrag. Die Provokation rechnet damit,
-## und das ist kein Detail: rechnete sie gegen das volle Maximum, waere die
-## Quelle beim zweiten Mal ihr eigener Bezugswert und stiege mit jedem
-## weiteren Mal um denselben Faktor. Spam eskaliert dann eben doch -- nur
-## geometrisch statt linear.
-func peak_excluding(unit_id) -> float:
-	var highest := 0.0
-	for other_id in entries:
-		if other_id != unit_id:
-			highest = maxf(highest, float(entries[other_id]))
-	return highest
-
-
 ## Anteil am Tabellenmaximum, 0.0 .. 1.0. Die einzige Lesart, die nach aussen
 ## gehen darf -- siehe Klassenkopf.
 func share(unit_id) -> float:
@@ -135,14 +114,14 @@ func ranking() -> Array:
 # ---------------------------------------------------------------------------
 
 ## Alte Beitraege verblassen. Ohne Verfall zementiert ein einzelner grosser
-## Treffer in Zyklus 1 die Zielwahl fuer das ganze Gefecht; mit zu starkem
-## Verfall wird jeder Zug zur Neuwahl.
+## Treffer am Anfang die Zielwahl fuer das ganze Gefecht; mit zu starkem
+## Verfall wird jede Zielwahl zur Neuwahl.
 ##
 ## **JEDER Eintrag verfaellt, auch der des aktuellen Ziels** -- nur langsamer,
 ## um ``incumbent_scale``. Frueher war der Amtsinhaber ganz ausgenommen, und
 ## das hat genau den Zustand hergestellt, gegen den der Verfall antritt:
 ## ``add()`` ist eine unbegrenzte Summe, ein Herausforderer mit ``d`` Aggro je
-## Zyklus saettigt dagegen bei ``d * (1 - rate) / rate``. Bei rate 0.15 ist das
+## Puls saettigt dagegen bei ``d * (1 - rate) / rate``. Bei rate 0.15 ist das
 ## das 5,67-fache seines Beitrags. Wer in den ersten Zyklen genug aufgebaut
 ## hatte, war ab dann dauerhaft das Ziel -- kein anderer Aufbau konnte ihn
 ## abloesen, egal wie lange er wie hart zuschlug. Im Playtest sieht das nicht
@@ -155,12 +134,7 @@ func ranking() -> Array:
 ## Traegheitshebel, sondern die Zusicherung, dass ein Ziel nicht mitten im
 ## Anlauf wegrutscht.
 ##
-## **Der Takt ist der ZYKLUS, nicht der eigene Zug.** Ein Zug ist in diesem
-## Spiel keine gleichmaessige Zeiteinheit -- SPD entscheidet, wie oft jemand
-## drankommt. Verfiele die Tabelle pro eigenem Zug, wuerde ein schneller
-## Gegner die Beitraege aller Nicht-Ziele schneller abbauen und dadurch
-## STAERKER an seinem Ziel kleben als ein langsamer. Niemand wuerde das als
-## Absicht lesen. Der Zyklus ist die einzige gleichmaessige Uhr im Kampf.
+## Der Takt ist der Puls (``realtime.pulse``), fuer alle gleich.
 func decay(rate: float, drop_below: float, incumbent_scale: float = 0.5) -> void:
 	for unit_id in entries.keys():
 		var scale: float = incumbent_scale if unit_id == current_target else 1.0

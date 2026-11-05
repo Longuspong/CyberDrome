@@ -282,21 +282,6 @@ func test_loadout_survives_a_round_trip() -> void:
 	t.equal(restored.stats(), build.stats(), "Stats ueberstehen Speichern und Laden")
 
 
-func test_every_ranged_action_requires_line_of_sight() -> void:
-	# Ohne diese Regel waere das gesamte Terrainsystem Dekoration -- dann
-	# schoesse man quer durch Betonpfeiler. Bewegungs-Aktionen (Dash) sind
-	# ausgenommen: sie SCHIESSEN nicht ueber die Karte, sie versetzen den
-	# eigenen DROME -- eine Sichtlinie zum eigenen Zielfeld ergaebe keinen Sinn,
-	# und der Dash hat stattdessen seine eigene, striktere Regel (nicht ueber
-	# Hindernisse/Stufen).
-	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-		for action in part.actions:
-			if action.range_tiles > 1 and not action.is_move():
-				t.ok(action.requires_line_of_sight,
-					"%s (%s) hat Reichweite %d und braucht Sichtlinie"
-					% [part.id, action.id, action.range_tiles])
-
-
 # ---------------------------------------------------------------------------
 # Aktionen: einmal je Wirkung, getrennt nach Budget
 # ---------------------------------------------------------------------------
@@ -339,18 +324,15 @@ func test_actions_are_split_by_budget() -> void:
 
 
 func test_every_weapon_has_exactly_one_attack() -> void:
-	# Eine Waffe schiesst -- und traegt seit GAME_DESIGN §13 zusaetzlich eine
-	# eigene Faehigkeit. Genau EIN Angriff muss es sein: das ist der Angriffs-
-	# Aktionspunkt, den die Waffe mitbringt (TurnState.attack_budget zaehlt die
-	# Waffen). Zwei Angriffe an einer Waffe waeren ein doppelter Punkt.
+	# Eine Waffe schiesst in ihrem Takt und traegt dazu eine eigene
+	# Faehigkeit. Genau EIN Angriff: er ist der Takt, an dem die Faehigkeit
+	# zaehlt.
 	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
 		if part.category != "weapon":
 			continue
 		var attacks: Array = part.actions.filter(func(a): return a.is_attack())
 		t.equal(attacks.size(), 1,
 			"%s ist eine Waffe mit genau einem Angriff" % part.id)
-		t.equal(str(attacks[0].damage_type), "normal",
-			"%s richtet normalen Schaden an" % part.id)
 
 
 func test_every_action_names_its_source_part() -> void:

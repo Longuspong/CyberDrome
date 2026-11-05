@@ -84,17 +84,6 @@ static func traits(part: PartData) -> Array[String]:
 		out.append("Repariert jeden Puls (alle 3 s) %d %% der Integritaet." % part.hp_regen_pct)
 	if part.aggro_bonus > 0:
 		out.append("Zieht Aufmerksamkeit: +%d Aggro bei allen Gegnern." % part.aggro_bonus)
-	if part.can_pass_units:
-		out.append("Kann durch andere DROMEs hindurchlaufen.")
-	if part.can_enter_steps:
-		out.append("Kann auf Podeste und Stufen steigen%s." %
-			(" (zum halben Preis)" if part.step_cost_reduced else ""))
-	if part.ignores_drift:
-		out.append("Rutscht nicht auf Oel, Schlamm oder Eis.")
-	if part.drift_modifier > 0:
-		out.append("Gleitet auf rutschigem Boden %d Feld(er) weiter." % part.drift_modifier)
-	if part.grants_ignore_haze:
-		out.append("Sieht durch Dampf und hohes Gras.")
 	return out
 
 
@@ -106,9 +95,7 @@ static func action_lines(action: ActionData) -> Array[String]:
 		reach = "Nahkampf (Reichweite 1)"
 	var what := ""
 	if action.is_move():
-		what = "springt bis %d Felder geradeaus -- nicht ueber Hindernisse" % action.range_tiles
-	elif action.is_heal():
-		what = "repariert %d" % action.heal_amount()
+		what = "springt bis %d Felder geradeaus" % action.range_tiles
 	elif action.power > 0:
 		what = "Staerke %d" % action.power
 	else:
@@ -120,7 +107,7 @@ static func action_lines(action: ActionData) -> Array[String]:
 			out.append("Flaeche: trifft auch alle Felder im Umkreis %d um das Ziel." % action.aoe_radius)
 		ActionData.Targeting.AOE_CROSS:
 			out.append("Kreuz: trifft das Ziel und die vier geraden Nachbarfelder.")
-	if action.power > 0 and not action.is_heal():
+	if action.power > 0:
 		if action.energy_fraction >= 1.0:
 			out.append("Reiner Energieschaden -- stark gegen Schilde.")
 		elif action.energy_fraction > 0.0:
@@ -131,10 +118,6 @@ static func action_lines(action: ActionData) -> Array[String]:
 		out.append("Stoesst das Ziel %d Feld(er) weg." % action.push_tiles)
 	elif action.push_tiles < 0:
 		out.append("Zieht das Ziel %d Feld(er) heran." % absi(action.push_tiles))
-	if action.is_taunt():
-		out.append("Provoziert: das Ziel muss %d s lang diesen DROME angreifen." % action.taunt_seconds())
-	if action.requires_line_of_sight:
-		out.append("Braucht freie Sicht aufs Ziel.")
 
 	# Wann sie kommt: Waffen schiessen in ihrem Takt, Faehigkeiten nach ihrer
 	# Regel -- beides ohne Energie.

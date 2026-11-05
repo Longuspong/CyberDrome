@@ -74,7 +74,7 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	rng.seed = battle_seed
 
 	region = TerrainDB.pick_region(rng)
-	grid = MapGenerator.new(battle_seed).generate(region)
+	grid = MapGenerator.generate(region)
 
 	# Der Gegner spiegelt normalerweise den eigenen Squad (Anzahl und Staerke).
 	# Im Chaos-Virus entkoppeln GameState.chaos_* das: der Gegner tritt in voller
@@ -116,7 +116,7 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	outcome = Outcome.RUNNING
 
 	EventBus.battle_started.emit(battle_seed)
-	EventBus.log_line("Chaos-Virus startet. Region: %s." % region.display_name)
+	EventBus.log_line("Kampf startet. Region: %s." % region.display_name)
 
 
 ## Die Region, die setup() mit diesem Seed ziehen wuerde -- fuer die
@@ -161,13 +161,12 @@ func _distinct_equipment(builds: Array) -> Array:
 
 
 func _free_deployment_tile(zone: Array[Vector2i], unit: Unit) -> Vector2i:
-	var profile := unit.move_profile()
 	for tile in zone:
-		if grid.can_stand_on(tile, profile):
+		if grid.can_stand_on(tile, unit.unit_id):
 			return tile
-	# Sollte nicht vorkommen -- die Kartenvalidierung haelt die Zonen frei.
+	# Sollte nicht vorkommen -- die Zone hat Platz fuer zwoelf.
 	for tile in grid.all_tiles():
-		if grid.can_stand_on(tile, profile):
+		if grid.can_stand_on(tile, unit.unit_id):
 			push_warning("BattleManager: Aufstellungszone voll, weiche aus.")
 			return tile
 	return zone[0]
@@ -200,6 +199,7 @@ func tick() -> void:
 	for unit in order:
 		if not unit.is_alive():
 			continue
+		unit.tick_statuses(_dt)
 		brain.update(unit, _dt)
 		if outcome != Outcome.RUNNING:
 			return
@@ -237,11 +237,8 @@ func pulse_seconds() -> float:
 	return _pulse
 
 
-## Was je Puls laeuft:
-## Statuseffekte, Provokation, Schild, Reparatur, Overtime.
+## Was je Puls laeuft: Schild, Reparatur, Overtime.
 func _pulse_unit(unit: Unit) -> void:
-	unit.tick_statuses()
-	unit.tick_taunt()
 	unit.regenerate_shield()
 	var healed := unit.regenerate_hp()
 	if healed > 0:
@@ -353,8 +350,6 @@ func build_result() -> Dictionary:
 	return {
 		"outcome": outcome,
 		"seconds": int(round(time)),
-		# Frueher Zyklen; heute die Zahl der Pulse -- fuer alte Leser.
-		"cycles": int(floor(time / _pulse)),
 		"seed": battle_seed,
 		"region": region.display_name if region else "",
 		"units": rows,
