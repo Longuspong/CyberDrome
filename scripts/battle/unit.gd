@@ -440,7 +440,7 @@ func hp_fraction() -> float:
 	return 0.0 if maximum <= 0 else float(hp) / float(maximum)
 
 
-## Effektiver Wert inklusive Statuseffekten und Mutator. Die Basiswerte im
+## Effektiver Wert inklusive Statuseffekten. Die Basiswerte im
 ## Build bleiben unangetastet -- ein Effekt, der den Build veraendert, waere
 ## nach dem Kampf nicht mehr zurueckzunehmen.
 func stat(key: String) -> int:

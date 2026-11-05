@@ -13,7 +13,7 @@ extends RefCounted
 ##     Squad). Die DROMEs werden kopiert -- im Lauf baut man nur mit Beute um,
 ##     nicht mit dem Inventar von zuhause.
 ##   * Vor jedem Kampf waehlt man zwischen drei Gegnern: Leicht, Normal, Elite.
-##     Region, Mutator und die gegnerischen DROMEs sind vorher sichtbar.
+##     Region und die gegnerischen DROMEs sind vorher sichtbar.
 ##   * Die Gegnerstaerke folgt einer FESTEN Kurve (Startstaerke des Squads),
 ##     nicht dem eigenen Aufbau. Wuchse sie mit, waere jede Belohnung wertlos.
 ##   * Sieg: Belohnung nach Stufe. Beute baut man ein oder schickt sie nach
@@ -172,9 +172,9 @@ func enemies(which: int = -1) -> Array:
 	return _enemy_cache[key]
 
 
-## Alles, was man vor dem Kampf wissen muss. Region und Mutator kommen aus
+## Alles, was man vor dem Kampf wissen muss. Die Region kommt aus
 ## demselben Seed und derselben Reihenfolge wie im echten Aufbau
-## (BattleManager.preview_conditions), sind also keine Schaetzung.
+## (BattleManager.preview_conditions), ist also keine Schaetzung.
 func preview(which: int = -1) -> Dictionary:
 	if which < 0:
 		which = tier

@@ -37,7 +37,7 @@ var editing_index: int = -1
 ## des Rosters. Array[DromeBuild]. Der Kampf liest genau das.
 var squad: Array = []
 
-## Bestimmt Gegner, Mutator, Karte und Aufstellung. Wird im Ergebnis-
+## Bestimmt Gegner, Karte und Aufstellung. Wird im Ergebnis-
 ## bildschirm angezeigt und kann im Startdialog gesetzt werden: derselbe Seed
 ## ergibt exakt denselben Kampf. Im Playtesting ist das Gold wert.
 var battle_seed: int = 0

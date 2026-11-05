@@ -6,7 +6,7 @@ extends Control
 ## nach Phase des Laufs:
 ##
 ##   * kein Lauf: Aufstellung -- wer kommt mit (SquadPicker), "Lauf starten"
-##   * PREPARE: drei Gegner zur Wahl (Leicht/Normal/Elite) mit Region, Mutator
+##   * PREPARE: drei Gegner zur Wahl (Leicht/Normal/Elite) mit Region
 ##     und den gegnerischen DROMEs; "Kampf starten"
 ##   * REWARD:  Belohnungen; Beute wird eingebaut oder nach Hause geschickt
 ##   * WON/LOST: das Ende mit Verlauf, "Neuer Lauf" oder zurueck ins Menue
@@ -206,9 +206,6 @@ func _show_prepare(run: RunState) -> void:
 	_side.add_child(panel)
 
 	box.add_child(_label("Region: %s" % info["region"], 18))
-	box.add_child(_label("Mutator: %s" % info["mutator"], 18))
-	if str(info["mutator_text"]) != "":
-		box.add_child(_label(str(info["mutator_text"]), 16, COLOR_MUTED))
 
 	var own := float(info["own_power"])
 	var foe := float(info["enemy_power"])

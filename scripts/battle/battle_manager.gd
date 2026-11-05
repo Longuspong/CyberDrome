@@ -21,7 +21,6 @@ signal battle_over(outcome: Outcome)
 var battle_seed: int = 0
 var grid: Grid
 var region: Terrain.Region
-var mutator: Mutator
 var resolver: ActionResolver
 var brain: AIController
 
@@ -75,8 +74,7 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	rng.seed = battle_seed
 
 	region = TerrainDB.pick_region(rng)
-	mutator = Mutator.draw(rng)
-	grid = MapGenerator.new(battle_seed).generate(region, mutator.map_scales())
+	grid = MapGenerator.new(battle_seed).generate(region)
 
 	# Der Gegner spiegelt normalerweise den eigenen Squad (Anzahl und Staerke).
 	# Im Chaos-Virus entkoppeln GameState.chaos_* das: der Gegner tritt in voller
@@ -101,8 +99,6 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	_spawn(player_builds, true)
 	_spawn(enemy_builds, false)
 
-	for unit in units:
-		mutator.apply_to(unit)
 	# Die Pulse der DROMEs sind gegeneinander versetzt: liefen alle auf
 	# denselben Schritt, regenerierten alle Schilde im selben Augenblick. Der
 	# Versatz haengt an der Position INNERHALB der eigenen Seite -- der erste
@@ -120,11 +116,10 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	outcome = Outcome.RUNNING
 
 	EventBus.battle_started.emit(battle_seed)
-	EventBus.log_line("Chaos-Virus startet. Region: %s. Mutator: %s."
-		% [region.display_name, mutator.display_name])
+	EventBus.log_line("Chaos-Virus startet. Region: %s." % region.display_name)
 
 
-## Region und Mutator, die setup() mit diesem Seed ziehen wuerde -- fuer die
+## Die Region, die setup() mit diesem Seed ziehen wuerde -- fuer die
 ## Vorschau vor dem Kampf (Lauf). Dieselbe Reihenfolge der Zufallszuege wie
 ## oben; wer setup() umstellt, stellt hier mit um, sonst zeigt die Vorschau
 ## einen anderen Kampf als den, der dann kommt. tests/test_run.gd prueft das.
@@ -132,12 +127,9 @@ static func preview_conditions(seed_value: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var preview_region := TerrainDB.pick_region(rng)
-	var preview_mutator := Mutator.draw(rng)
 	return {
 		"seed": seed_value,
 		"region": preview_region.display_name if preview_region else "",
-		"mutator": preview_mutator.display_name,
-		"mutator_text": preview_mutator.description,
 	}
 
 
@@ -246,7 +238,7 @@ func pulse_seconds() -> float:
 
 
 ## Was frueher zu Beginn des eigenen Zuges lief, laeuft jetzt je Puls:
-## Statuseffekte, Provokation, Schild, Reparatur, Aderlass, Overtime.
+## Statuseffekte, Provokation, Schild, Reparatur, Overtime.
 func _pulse_unit(unit: Unit) -> void:
 	unit.tick_statuses()
 	unit.tick_taunt()
@@ -256,15 +248,6 @@ func _pulse_unit(unit: Unit) -> void:
 		EventBus.unit_healed.emit(unit, healed, unit)
 		EventBus.log_line("%s regeneriert %d Integritaet (Drohnen-Pod)."
 			% [unit.display_name, healed])
-	var bleed := mutator.turn_damage()
-	if bleed > 0:
-		unit.hp = maxi(0, unit.hp - bleed)
-		EventBus.log_line("%s verliert %d Integritaet (Aderlass)."
-			% [unit.display_name, bleed])
-		EventBus.unit_damaged.emit(unit, bleed, null)
-		if unit.hp <= 0:
-			_handle_death(unit)
-			return
 	var collapse := overtime_damage(unit)
 	if collapse > 0:
 		unit.hp = maxi(0, unit.hp - collapse)
@@ -374,7 +357,6 @@ func build_result() -> Dictionary:
 		"cycles": int(floor(time / _pulse)),
 		"seed": battle_seed,
 		"region": region.display_name if region else "",
-		"mutator": mutator.display_name if mutator else "",
 		"units": rows,
 	}
 

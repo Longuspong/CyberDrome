@@ -89,7 +89,7 @@ func test_the_same_seed_gives_the_same_run() -> void:
 	var a := RunState.start(4242)
 	var b := RunState.start(4242)
 	t.equal(a.battle_seed(), b.battle_seed(), "gleicher Kampf-Seed")
-	t.equal(a.preview()["mutator"], b.preview()["mutator"], "gleicher Mutator")
+	t.equal(a.preview()["region"], b.preview()["region"], "gleiche Region")
 	a.round = 2
 	t.ok(a.battle_seed() != b.battle_seed(), "jede Runde hat einen eigenen Kampf")
 
@@ -102,7 +102,6 @@ func test_the_preview_matches_the_real_battle() -> void:
 		var battle := BattleManager.new()
 		battle.setup(seed_value, RunState.standard_squad())
 		t.equal(info["region"], battle.region.display_name, "Region stimmt (Seed %d)" % seed_value)
-		t.equal(info["mutator"], battle.mutator.display_name, "Mutator stimmt (Seed %d)" % seed_value)
 		battle.free()
 
 

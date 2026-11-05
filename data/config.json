@@ -297,30 +297,5 @@
     "action_delay": 0.4
   },
 
-  "enemy_names": ["VEX", "NUL", "KRA", "ORB", "ZYN", "HEX"],
-
-  "mutators": [
-    {"id": "clean", "name": "Sauberer Lauf",
-     "description": "Kein Mutator. Die Karte, wie sie gewuerfelt wurde."},
-    {"id": "overclock", "name": "Uebertaktung",
-     "description": "Alle SPD +6", "spd_bonus": 6},
-    {"id": "brownout", "name": "Brownout",
-     "description": "Alle en_regen halbiert", "en_regen_scale": 0.5},
-    {"id": "armorbreak", "name": "Panzerbruch",
-     "description": "Alle DEF -3", "def_bonus": -3},
-    {"id": "scrapfield", "name": "Schrottfeld",
-     "description": "Doppelt so viele BLOCK-Felder", "block_scale": 2.0},
-    {"id": "oilspill", "name": "Oelhavarie",
-     "description": "Doppelt so viele DRIFT-Felder", "drift_scale": 2.0},
-    {"id": "sensorstorm", "name": "Sensorsturm",
-     "description": "Doppelt so viele HAZE-Felder", "haze_scale": 2.0},
-    {"id": "terracing", "name": "Terrassierung",
-     "description": "Doppelt so viele STEP-Ketten", "step_scale": 2.0},
-    {"id": "flattened", "name": "Planiert",
-     "description": "Karte ohne STEP, DRIFT und HAZE",
-     "step_scale": 0.0, "drift_scale": 0.0, "haze_scale": 0.0},
-    {"id": "bloodletting", "name": "Aderlass",
-     "description": "Alle verlieren zu Zugbeginn 3 Integritaet",
-     "turn_damage": 3}
-  ]
+  "enemy_names": ["VEX", "NUL", "KRA", "ORB", "ZYN", "HEX"]
 }

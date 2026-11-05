@@ -332,11 +332,11 @@ func test_plant7_uses_directed_drift() -> void:
 	t.ok(found_flow, "die Magnetschienen tragen eine Richtung")
 
 
-func test_flattened_mutator_removes_the_soft_terrain() -> void:
+func test_zero_scales_remove_the_soft_terrain() -> void:
 	var region := TerrainDB.get_region(&"city")
-	var mutator := {"step_scale": 0.0, "drift_scale": 0.0, "haze_scale": 0.0}
+	var scales := {"step_scale": 0.0, "drift_scale": 0.0, "haze_scale": 0.0}
 	for i in 10:
-		var grid := MapGenerator.new(600 + i).generate(region, mutator)
+		var grid := MapGenerator.new(600 + i).generate(region, scales)
 		t.equal(grid.count_class(Terrain.TClass.STEP), 0, "Planiert: keine Stufen")
 		t.equal(grid.count_class(Terrain.TClass.DRIFT), 0, "Planiert: keine Drift")
 		t.equal(grid.count_class(Terrain.TClass.HAZE), 0, "Planiert: kein Haze")
