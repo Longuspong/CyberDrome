@@ -246,8 +246,8 @@ func _apply_taunt(source: Unit, target: Unit, action: ActionData) -> void:
 		target.aggro.entries[source.unit_id] = maxf(
 			target.aggro.value_of(source.unit_id),
 			target.aggro.peak_excluding(source.unit_id) * factor)
-	EventBus.log_line("%s provoziert %s fuer %d Zuege."
-		% [source.display_name, target.display_name, action.taunt_turns])
+	EventBus.log_line("%s provoziert %s fuer %d s."
+		% [source.display_name, target.display_name, action.taunt_seconds()])
 
 
 # ---------------------------------------------------------------------------
@@ -432,11 +432,6 @@ func affected_tiles(tile: Vector2i, action: ActionData) -> Array[Vector2i]:
 func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 	if target_blocker(source, tile, action) != "":
 		return false
-	if not source.can_afford(action):
-		return false
-
-	source.spend_energy(action.en_cost_now())
-
 	# Dash: der Handelnde versetzt sich selbst. Ein eigener Zweig, weil hier kein
 	# Ziel getroffen, sondern eine Position gesetzt wird -- ueber dieselbe
 	# move_unit(), durch die auch Stossen laeuft, damit ein Boost auf eine

@@ -118,24 +118,19 @@ func test_another_drome_blocks_the_lane() -> void:
 	blocker.free()
 
 
-func test_executing_the_dash_moves_the_drome_without_energy() -> void:
+func test_executing_the_dash_moves_the_drome() -> void:
 	var grid := Grid.new(12, 12)
 	grid.fill(Terrain.TClass.NORMAL)
 	var unit := Unit.create(_vireo(), &"P0", true)
 	unit.tile = Vector2i(5, 5)
-	unit.en = unit.stat("en_max")
 	grid.set_occupant(unit.tile, unit.unit_id)
 	var resolver := ActionResolver.new(grid, [unit])
 	var dash := _dash_action(unit)
 
-	var before := unit.en
 	t.ok(resolver.execute(unit, Vector2i(8, 5), dash), "der Boost geht raus")
 	t.equal(unit.tile, Vector2i(8, 5), "der DROME steht jetzt drei Felder weiter")
 	t.equal(grid.occupant(Vector2i(8, 5)), unit.unit_id, "das Landefeld ist belegt")
 	t.equal(grid.occupant(Vector2i(5, 5)), null, "das Startfeld ist frei")
-	# Echtzeit (Nov. 2026): Faehigkeiten loesen nach ihrer Regel aus, Energie
-	# ist keine Bremse mehr.
-	t.equal(unit.en, before, "und der Boost kostet keine Energie")
 	unit.free()
 
 

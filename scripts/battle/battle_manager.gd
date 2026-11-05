@@ -237,7 +237,7 @@ func pulse_seconds() -> float:
 	return _pulse
 
 
-## Was frueher zu Beginn des eigenen Zuges lief, laeuft jetzt je Puls:
+## Was je Puls laeuft:
 ## Statuseffekte, Provokation, Schild, Reparatur, Overtime.
 func _pulse_unit(unit: Unit) -> void:
 	unit.tick_statuses()

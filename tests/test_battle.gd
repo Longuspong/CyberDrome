@@ -253,7 +253,7 @@ func _ability_squad() -> Array:
 
 ## Spielt ``battles`` Gefechte und schreibt je DROME die Folge seiner Aktionen
 ## mit (ueber EventBus.action_used). Gibt { uses: id -> Anzahl, seqs:
-## unit_name -> [action_id, ...], en: unit_name -> Energie am Ende } zurueck.
+## unit_name -> [action_id, ...] } zurueck.
 func _record(battles: int, builds: Array, first_seed: int) -> Dictionary:
 	var uses := {}
 	var seqs := {}
@@ -265,20 +265,14 @@ func _record(battles: int, builds: Array, first_seed: int) -> Dictionary:
 			seqs[key] = []
 		seqs[key].append(action.id)
 	EventBus.action_used.connect(record)
-	var energy := {}
 	for i in battles:
 		current["seed"] = first_seed + i
 		var battle := BattleManager.new()
 		battle.setup(first_seed + i, builds)
-		var start := {}
-		for unit in battle.units:
-			start[unit.unit_id] = unit.en
 		battle.run_to_end()
-		for unit in battle.units:
-			energy["%d:%s" % [first_seed + i, unit.unit_id]] = [start[unit.unit_id], unit.en]
 		battle.free()
 	EventBus.action_used.disconnect(record)
-	return {"uses": uses, "seqs": seqs, "energy": energy}
+	return {"uses": uses, "seqs": seqs}
 
 
 func test_every_ability_fires_by_itself() -> void:
@@ -311,6 +305,10 @@ func test_every_nth_attack_is_the_ability() -> void:
 		&"act_rail_pierce": [&"act_raillance", 4]}
 	var checked := 0
 	for key in measured["seqs"]:
+		# Nur die eigene Seite: generierte Gegner tragen auch zwei Blaster,
+		# deren Zaehler sich in der Folge mischen.
+		if not str(key).contains(":P"):
+			continue
 		var seq: Array = measured["seqs"][key]
 		for ability in rules:
 			var attack: StringName = rules[ability][0]
@@ -327,14 +325,6 @@ func test_every_nth_attack_is_the_ability() -> void:
 					since = 0
 					checked += 1
 	t.ok(checked > 3, "die Regel wurde oft genug geprueft (%d)" % checked)
-
-
-func test_abilities_cost_no_energy() -> void:
-	# Mit festen Ausloesern ist Energie keine Bremse mehr.
-	var measured: Dictionary = _record(3, _ability_squad(), 7400)
-	for key in measured["energy"]:
-		var pair: Array = measured["energy"][key]
-		t.ok(int(pair[1]) >= int(pair[0]), "%s verbraucht keine Energie" % key)
 
 
 func test_same_seed_gives_the_same_battle() -> void:

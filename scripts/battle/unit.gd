@@ -23,7 +23,6 @@ var facing: String = "south"
 
 ## Laufzeitwerte. Die Maxima stehen im Build, hier steht der aktuelle Stand.
 var hp: int = 0
-var en: int = 0
 ## Energieschild: die regenerierende Leiste VOR der HP (§11). Getrennt von der
 ## HP, weil Schadensarten sie unterschiedlich treffen und sie sich je Zug
 ## wieder auffuellt.
@@ -33,9 +32,6 @@ var stats: Dictionary = {}
 ## Aktive Statuseffekte: id -> { cycles_left, spd, def, ... }
 var statuses: Dictionary = {}
 
-## Laufende Abklingzeiten: action_id -> verbleibende EIGENE Zuege.
-## Nur belegt, wenn die Bremse ``abklingzeit`` oder ``beides`` aktiv ist.
-var cooldowns: Dictionary = {}
 
 ## Die Aggro-Buchfuehrung dieses DROME -- nur bei Gegnern belegt, bei
 ## Spieler-DROMEs immer null. Wer die Zielwahl des Spielers trifft, ist der
@@ -107,7 +103,6 @@ static func create(from_build: DromeBuild, id: StringName, player: bool) -> Unit
 	unit.is_player = player
 	unit.stats = from_build.stats()
 	unit.hp = unit.stats["hp_max"]
-	unit.en = unit.stats["en_max"]
 	unit.shield = unit.stats.get("shield_max", 0)
 	unit.name = "Unit_%s" % id
 	# Jede Seite fuehrt eine Aggro-Tabelle: im Autokampf steuert die KI auch
@@ -244,12 +239,6 @@ func _refresh_tint() -> void:
 	DromeSprites.tint(_sprites, color)
 
 
-## Der Ring markiert, wer am Zug ist -- er pulsiert dann statt still zu liegen.
-func set_active(value: bool) -> void:
-	_ensure_chrome()
-	_ring.active = value
-
-
 # ---------------------------------------------------------------------------
 # Trefferfeedback
 # ---------------------------------------------------------------------------
@@ -327,28 +316,11 @@ func play_heal() -> void:
 class UnitRing extends Node2D:
 	const RADIUS_X := 30.0
 	const RADIUS_Y := 30.0 * IsoView.TILE_H / IsoView.TILE_W
-	const PULSE_SPEED := 3.4
 
 	var tint: Color = Teams.PLAYER:
 		set(value):
 			tint = value
 			queue_redraw()
-
-	## Am Zug: der Ring pulsiert und bekommt einen zweiten, weiteren Reif.
-	var active: bool = false:
-		set(value):
-			active = value
-			set_process(value)
-			queue_redraw()
-
-	var _phase: float = 0.0
-
-	func _ready() -> void:
-		set_process(false)
-
-	func _process(delta: float) -> void:
-		_phase += delta * PULSE_SPEED
-		queue_redraw()
 
 	func _draw() -> void:
 		# Die Einheit sitzt mit ihrem Ursprung in der oberen linken Ecke des
@@ -356,14 +328,6 @@ class UnitRing extends Node2D:
 		var center := IsoView.SPRITE_ORIGIN
 		_ellipse(center, RADIUS_X, RADIUS_Y, Color(tint, 0.85), 3.0)
 		_ellipse(center, RADIUS_X * 0.62, RADIUS_Y * 0.62, Color(tint, 0.30), 2.0)
-		if not active:
-			return
-		# Der Puls laeuft nach aussen und verblasst dabei -- eine Welle, die den
-		# Blick von der Figur wegtraegt, statt sie zu ueberdecken.
-		var swell := fposmod(_phase, TAU) / TAU
-		var scale := 1.0 + swell * 0.75
-		_ellipse(center, RADIUS_X * scale, RADIUS_Y * scale,
-			Color(tint, 0.55 * (1.0 - swell)), 2.5)
 
 	func _ellipse(center: Vector2, rx: float, ry: float, color: Color,
 			width: float) -> void:
@@ -468,7 +432,7 @@ func shield_fraction() -> float:
 	return 0.0 if maximum <= 0 else float(shield) / float(maximum)
 
 
-## Schild-Nachfuellung zu Zugbeginn (§11): der Schildregen des Kerns, gedeckelt
+## Schild-Nachfuellung je Puls (§11): der Schildregen des Kerns, gedeckelt
 ## am Maximum. Gibt die tatsaechlich aufgefuellte Menge zurueck.
 func regenerate_shield() -> int:
 	var maximum := shield_max()
@@ -503,19 +467,7 @@ func actions_of(category: ActionData.Category) -> Array:
 	return build.actions_of(category) if build != null else []
 
 
-func can_afford(action: ActionData) -> bool:
-	return en >= action.en_cost_now()
-
-
-func spend_energy(amount: int) -> void:
-	en = maxi(0, en - amount)
-
-
-func regenerate() -> void:
-	en = mini(stat("en_max"), en + stat("en_regen"))
-
-
-## Passive Selbstheilung zu Zugbeginn (Drohnen-Pod): ein Prozentsatz der
+## Passive Selbstheilung je Puls (Drohnen-Pod): ein Prozentsatz der
 ## maximalen Integritaet. Gibt die tatsaechlich geheilte Menge zurueck -- 0,
 ## wenn nichts zu heilen ist oder der DROME schon liegt.
 func regenerate_hp() -> int:
@@ -542,8 +494,7 @@ func apply_status(id: StringName, cycles: int, modifiers: Dictionary) -> void:
 	statuses[id] = status
 
 
-## Zu Beginn des eigenen Zuges. Gibt true zurueck, wenn sich etwas geaendert
-## hat -- dann muss die TICK-Vorschau neu gerechnet werden.
+## Je Puls. Gibt true zurueck, wenn sich etwas geaendert hat.
 func tick_statuses() -> bool:
 	var changed := false
 	for id in statuses.keys():
@@ -574,9 +525,7 @@ func clear_taunt() -> void:
 	taunt_lock = {}
 
 
-## Zu Beginn des eigenen Zuges. Die Provokation laeuft in EIGENEN Zuegen ab,
-## nicht in Zyklen -- "drei Zuege lang" ist das, was der Spieler abzaehlt, und
-## Statuseffekte rechnen an derselben Stelle genauso.
+## Je Puls: die Provokation zaehlt ihre Pulse herunter (``taunt_turns``).
 func tick_taunt() -> void:
 	if taunt_lock.is_empty():
 		return
@@ -589,32 +538,6 @@ func tick_taunt() -> void:
 # Abklingzeit
 # ---------------------------------------------------------------------------
 
-## Gezaehlt wird in EIGENEN Zuegen, genau wie die Provokation und die
-## Statuseffekte -- "noch zwei Zuege" ist das, was der Spieler abzaehlt. Ein
-## Zug ist in diesem Spiel keine gleichmaessige Zeiteinheit (der TICK-Balken
-## entscheidet, wer wann drankommt), und in Zyklen gezaehlt haette derselbe
-## Eintrag fuer einen schnellen und einen traegen DROME verschieden lang
-## gehalten. Genau das soll die Wartezeit NICHT: sie ist der Rhythmus, der fuer
-## alle gleich ist -- das ist ihr ganzer Unterschied zum Preis.
-func start_cooldown(action: ActionData) -> void:
-	var turns := action.cooldown_now()
-	if turns > 0:
-		cooldowns[action.id] = turns
-
-
-## Wie viele eigene Zuege diese Aktion noch aussetzt. 0 = sie geht.
-func cooldown_left(action: ActionData) -> int:
-	return int(cooldowns.get(action.id, 0))
-
-
-## Zu Beginn des eigenen Zuges, zusammen mit Provokation und Statuseffekten.
-func tick_cooldowns() -> void:
-	for id in cooldowns.keys():
-		cooldowns[id] = int(cooldowns[id]) - 1
-		if int(cooldowns[id]) <= 0:
-			cooldowns.erase(id)
-
-
 func status_names() -> Array[String]:
 	var names: Array[String] = []
 	for id in statuses:
@@ -623,5 +546,5 @@ func status_names() -> Array[String]:
 
 
 func _to_string() -> String:
-	return "Unit(%s %s hp=%d/%d en=%d)" % [
-		unit_id, tile, hp, stats.get("hp_max", 0), en]
+	return "Unit(%s %s hp=%d/%d)" % [
+		unit_id, tile, hp, stats.get("hp_max", 0)]

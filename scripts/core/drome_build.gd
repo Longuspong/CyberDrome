@@ -11,9 +11,8 @@ extends RefCounted
 ##
 ##     body   Pflicht. Bestimmt ueber seine equip_*-Anker, wie viele
 ##            Ausruestungsslots dieser DROME ueberhaupt hat.
-##     core   Pflicht. Traegt den Energietank (en_max/en_regen), aus dem
-##            Faehigkeiten im Kampf bezahlt werden.
-##     feet   Pflicht. Ohne Antrieb ist mov 0.
+##     core   Pflicht. Schildnachfuellung und Schild-Effizienz.
+##     feet   Pflicht. Der Antrieb bringt das Tempo (SPD).
 ##     head   Pflicht. Sensorik.
 ##     equip_* Variabel: zwei beim Vireo, drei beim Molok, genau einer beim
 ##            Strix. Ein Chassis bekommt einen weiteren Slot, indem es einen
@@ -22,25 +21,12 @@ extends RefCounted
 ## Ein DROME hat keine Grundwerte. Jeder Stat ist die Summe seiner Teile.
 const SOCKET_SLOTS := ["body", "head", "feet", "core"]
 
-## ### Warum es keine Bau-Budgets mehr gibt
+## ### Keine Bau-Budgets
 ##
-## Frueher deckelten zwei Grenzen den Aufbau: die Traglast (Gewicht gegen
-## ``weight_capacity``) und der Energiebedarf (``power_draw`` gegen
-## ``power_output`` des Kerns). Beide blockierten das Bauen -- und beide
-## produzierten Unsinn: ein Vireo mit zwei Puls-Blastern riss die Traglast um
-## EINEN Punkt (19/18), der offensichtlichste Standard-Aufbau der Welt liess
-## sich nicht bauen. Aus Spielersicht war das kaputt.
-##
-## Die beiden Deckel sind darum gestrichen. Energie ist jetzt reines Mana
-## (``en_max`` / ``en_regen`` / ``en_cost`` einer Aktion), und Gewicht ist
-## reines Tempo (``payload_slowdown`` zieht SPD ab). Was frueher ein harter
-## Riegel war, ist jetzt ein weicher Preis: der teure Aufbau ist baubar, aber
-## langsam und energiehungrig -- moeglich, nur nicht optimal.
-##
-## Die natuerliche Grenze ist damit ``spd >= 1`` / ``mov >= 1`` in
-## ``structural_problems()``: man kann Masse stapeln, bis der DROME festfaehrt,
-## dann bewegt er sich nicht mehr und ist ungueltig. Kein Zahlendeckel, sondern
-## eine Regel, die man fuehlt.
+## Frueher deckelten Traglast und Strombedarf den Aufbau; beide sind gestrichen,
+## ebenso die Energie (Echtzeit-Kampf, Nov. 2026). Gewicht ist reines Tempo
+## (``payload_slowdown`` zieht SPD ab). Die natuerliche Grenze ist ``spd >= 1``
+## in ``structural_problems()``.
 
 var display_name: String = "DROME"
 
@@ -167,16 +153,8 @@ func weapons() -> Array:
 ##
 ## ### Warum zweimal dasselbe Teil nicht zwei Eintraege ergibt
 ##
-## Zwei Orbit-Fokusse gaben frueher zweimal "Orbit-Sog" in Aktionsleiste und
-## Aktionsring. Das war keine zweite Moeglichkeit, sondern eine doppelte Zeile
-## fuer dieselbe Faehigkeit: eine Faehigkeit laesst sich ohnehin nur einmal pro
-## Zug ziehen (TurnState), der zweite Eintrag versprach eine Wahl, die es nicht
-## gab.
-##
-## Beim ANGRIFF ist das anders: zwei Waffen sind zwei Angriffe pro Zug
-## (GAME_DESIGN §13). Das trennt aber das BUDGET, nicht die Aktionsliste -- die
-## Zeile "Puls-Salve" steht auch bei zwei Blastern nur einmal da, das
-## Angriffsbudget (siehe TurnState.attack_actions) zaehlt dagegen beide.
+## Die Aktionsliste entdoppelt ueber die Aktions-ID. Im Kampf laedt trotzdem
+## jede Waffe (je Teil) fuer sich nach -- zwei Blaster schiessen doppelt.
 ##
 ## Der doppelte Anbau bleibt sinnvoll -- Stats summieren sich weiter (zwei
 ## Fokusse sind +2 ATK), nur die Aktionsliste entdoppelt ueber die Aktions-ID:
@@ -214,11 +192,10 @@ func actions_of(category: ActionData.Category) -> Array:
 ## Summiert alles. Einzige Stelle, an der Stats entstehen.
 func stats() -> Dictionary:
 	var total := {
-		"hp_max": 0, "en_max": 0, "en_regen": 0,
-		"spd": 0, "mov": 0, "atk": 0, "def": 0,
+		"hp_max": 0,
+		"spd": 0, "atk": 0, "def": 0,
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
-		"weight": 0, "power_draw": 0,
-		"weight_capacity": 0, "power_output": 0,
+		"weight": 0,
 		"can_pass_units": false, "can_enter_steps": false,
 		"can_pass_blocks": false, "ignores_drift": false,
 		"drift_modifier": 0, "step_cost_reduced": false,
@@ -228,19 +205,13 @@ func stats() -> Dictionary:
 	}
 	for part in all_parts():
 		total["hp_max"] += part.hp
-		total["en_max"] += part.en_max
-		total["en_regen"] += part.en_regen
 		total["spd"] += part.spd
-		total["mov"] += part.mov
 		total["atk"] += part.atk
 		total["def"] += part.def
 		total["shield"] += part.shield
 		total["shield_regen"] += part.shield_regen
 		total["shield_bonus"] += part.shield_bonus
 		total["weight"] += part.weight
-		total["power_draw"] += part.power_draw
-		total["weight_capacity"] += part.weight_capacity
-		total["power_output"] += part.power_output
 		# Flags addieren sich als ODER: ein einziges Teil genuegt.
 		total["can_pass_units"] = total["can_pass_units"] or part.can_pass_units
 		total["can_enter_steps"] = total["can_enter_steps"] or part.can_enter_steps
@@ -257,7 +228,6 @@ func stats() -> Dictionary:
 	# Negative Summen sind sinnlos, aber ein DROME darf sie erreichen -- die
 	# Validierung faengt das ab und sagt dem Spieler, welche Regel bricht.
 	total["hp_max"] = maxi(0, total["hp_max"])
-	total["en_max"] = maxi(0, total["en_max"])
 	total["def"] = maxi(0, total["def"])
 	total["atk"] = maxi(0, total["atk"])
 	total["shield"] = maxi(0, total["shield"])
@@ -271,25 +241,8 @@ func stats() -> Dictionary:
 ## Wie sehr die ZULADUNG bremst: je ``spd_weight_step`` Gewicht an Ausruestung
 ## ein Punkt SPD weniger.
 ##
-## ### Warum die Masse und nicht die Energie
-##
-## Was ein Bauteil kostet, soll dem entsprechen, was es IST. Eine Pulverkanone
-## zieht keinen Strom -- sie wiegt. Frueher trug sie ``power_draw`` 5, und der
-## Energiebedarf war damit ein Universalhebel, der auf jedem Teil klebte, egal
-## ob es physikalisch Strom braucht. Das war Balancing im Kostuem der Fiktion:
-## der Spieler las "Energiebedarf" und konnte sich nichts darunter vorstellen.
-##
-## Jetzt gilt: **Masse bremst, Strom kostet.** Mechanische Teile (Kanone) zahlen
-## in Gewicht und Tempo, energetische (Blaster, Lanze, Fokus) in Energie. Der
-## schwere Slot bleibt die Erlaubnis, das Tempo ist der Preis.
-##
-## Gerechnet wird auf der AUSRUESTUNG, nicht auf dem Gesamtgewicht. Die Sockel
-## sind der Rahmen -- ihr Gewicht traegt das Chassis per ``weight_capacity``, und
-## der Antrieb sagt ueber sein eigenes ``spd`` schon, wie flink er ist. Zoege das
-## Gesamtgewicht mit, bestrafte die Rechnung denselben Rahmen zweimal, und jeder
-## voll ausgelastete Aufbau kaeme auf denselben Abzug -- die Formel wuerde
-## aufhoeren, zwischen Kanone und Runenstab zu unterscheiden. Genau das ist aber
-## ihr Zweck: dieselbe Waffe bremst an jedem Chassis gleich viel.
+## Gerechnet wird auf der AUSRUESTUNG, nicht auf dem Gesamtgewicht: dieselbe
+## Waffe bremst an jedem Chassis gleich viel.
 ##
 ## Abgerundet, damit leichte Module (Gewicht 3) gratis bleiben und der Abzug
 ## erst bei echter Zuladung einsetzt.
@@ -377,9 +330,7 @@ func validate() -> Array[String]:
 ## Ein Aufbau ohne Waffe war frueher ungueltig. Das nahm dem Slotmodell aber
 ## genau die Aussage, fuer die es da ist: welche Aktionen ein DROME hat, sagt
 ## seine Ausruestung -- und wer Schraubenschluessel und Reparaturdrohnen traegt,
-## hat eben keinen Angriff. Das ist eine Entscheidung mit Folgen, keine Panne,
-## und der Kampf traegt sie schon: ``TurnState`` vergibt das Angriffsbudget
-## ohnehin nur an Aktionen, die es gibt, und die Aktionsleiste bleibt dann leer.
+## hat eben keinen Angriff. Das ist eine Entscheidung mit Folgen, keine Panne.
 ##
 ## Wer sein ganzes Squad so baut, gewinnt kein Gefecht mehr -- das ist dann
 ## seine Rechnung. Der Gegnergenerator setzt weiter garantiert eine Waffe, damit
@@ -414,8 +365,6 @@ func structural_problems() -> Array[String]:
 					% [part.display_name, _slot_label(slot)])
 
 	var total := stats()
-	if total["mov"] < 1:
-		problems.append("Bewegung zu gering: mov %d (mindestens 1)" % total["mov"])
 	if total["spd"] < 1:
 		problems.append("Geschwindigkeit zu gering: spd %d (mindestens 1)" % total["spd"])
 
@@ -464,8 +413,6 @@ func power_score() -> float:
 		+ float(total["atk"]) * 6.0
 		+ float(total["def"]) * 8.0
 		+ float(total["spd"]) * 3.0
-		+ float(total["mov"]) * 4.0
-		+ float(total["en_max"]) * 0.5
 		+ float(best_weapon) * 2.0
 	)
 
@@ -524,5 +471,5 @@ static func from_loadout(loadout: Dictionary) -> DromeBuild:
 
 func _to_string() -> String:
 	var total := stats()
-	return "DromeBuild(%s hp=%d spd=%d mov=%d)" % [
-		display_name, total["hp_max"], total["spd"], total["mov"]]
+	return "DromeBuild(%s hp=%d spd=%d)" % [
+		display_name, total["hp_max"], total["spd"]]
