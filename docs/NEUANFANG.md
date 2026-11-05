@@ -163,7 +163,110 @@ alle 5 Sekunden.
    Reichweite, Verwundbar +50 % fuer 5 s, Betaeubung 1 s -- passt das als
    Startpunkt?
 
-## 7. Vorgeschlagene Reihenfolge
+## 7. Ausruestung, Module und Lager im Lauf (Vorschlag, Stand 5. Nov.)
+
+**Vorgabe des Spielers:** kein fester Gegenstand je DROME, sondern modular mit
+Grenzen (ein Vireo traegt keinen Deflektor). Varianten wie der **Neon-Blaster**.
+Die erste Region **Neon City** hat das Thema Energie/Schild -- Gegner mit viel
+Schild und wenig Integritaet, **Neon-Varianten** der DROMEs. Ein Inventar je
+Lauf, eine Bank wie bei TFT, Rezepte zum Zusammenfuegen, eine Grenze je DROME.
+
+### 7a. Zwei Arten von Gegenstaenden
+
+| | **Ausruestung** | **Module** |
+|---|---|---|
+| Was | Waffen, Schilde, Gadgets -- bestimmt, WAS der DROME tut | kleine Chips -- veraendern, WIE gut er es tut |
+| Plaetze | **1 je DROME, Molok 2** (wie besprochen) | **3 je DROME** |
+| Grenze | passt nur an bestimmte Chassis (Klasse + Art) | passt an jeden DROME |
+| Quelle | Startausstattung, Beute, Laden | nur im Lauf: Beute, Laden, Rezepte |
+| Nach dem Lauf | bleibt (Sammlung), Varianten werden freigeschaltet | verfaellt |
+
+Drei Module je DROME: genug fuer eine Richtung, zu wenig fuer alles -- bei
+vier DROMEs hoechstens zwoelf Module im Feld. Das ist die taktische Grenze.
+
+### 7b. Wer was tragen darf
+
+Die vorhandene Regel bleibt (Klasse leicht/mittel/schwer + Art Waffe/Schild/
+Gadget je Halter), nur auf die neuen Plaetze umgelegt:
+
+| DROME | darf tragen |
+|---|---|
+| Vireo | leichte und mittlere Waffen, Gadgets -- **keine Schilde** |
+| Molok | alles, auch schwere Nahkampfwaffen; zweiter Platz Schild oder Gadget |
+| Strix | Fernwaffen jeder Klasse, Gadgets |
+| Nimbus | leichte und mittlere Waffen, Gadgets |
+
+So kann ein Vireo Blaster, Neon-Blaster oder Plasmaklinge tragen, ein Nimbus
+ebenfalls den Blaster -- aber niemand traegt alles.
+
+### 7c. Varianten und Regionsthemen
+
+Jede Grundwaffe bekommt je Region eine Variante mit **anderer Faehigkeit**,
+gleiche Grundform:
+
+* **Puls-Blaster** -- jeder 3. Schuss: Doppelschuss auf bis zu 2 Ziele.
+* **Neon-Blaster** (Neon City) -- jeder 3. Schuss laedt den naechsten auf:
+  doppelter Schaden **am Schild**.
+
+Regionsthemen (Vorschlag, die ersten beiden Regionen nur skizziert):
+
+* **Neon City -- Energie:** Gegner mit viel Schild, hoher Schildregeneration,
+  wenig Integritaet. Neon-DROMEs **bezahlen ihre Faehigkeiten mit Schild** --
+  wer ihren Schild bricht, nimmt ihnen die Faehigkeiten. Konter: Energieschaden,
+  Neon-Blaster, Schild-Module.
+* **Gruenzone -- Wucherung:** Regeneration und Ueberzahl (viele kleine Gegner).
+  Konter: Flaeche, Verwundbar.
+* **Anlage 7 -- Panzerung:** hohe DEF, langsam, schwer. Konter: kinetischer
+  Schaden, Durchschlag.
+
+Varianten werden **freigeschaltet**, indem man die Region schlaegt -- dann
+kommen sie in den Beutetopf. Das ist das "pokern auf Items, die man kennt".
+
+### 7d. Das Lager (die "Bank")
+
+* Je Lauf ein **Lager mit 8 Plaetzen** fuer Ausruestung und Module, die gerade
+  niemand traegt. Ist es voll, muss man verkaufen oder verschrotten.
+* **Ausruesten zwischen den Kaempfen:** Teil im Lager antippen, dann den
+  DROME antippen (Ziehen kommt spaeter dazu). Unpassende DROMEs sind
+  ausgegraut, mit Grund ("Vireo traegt keine Schilde").
+* **Umbauen ist zwischen den Kaempfen frei.** Der Druck kommt aus den drei
+  Plaetzen, dem kleinen Lager und dem Zusammenfuegen -- nicht aus einer Strafe
+  fuers Umstecken. Auf dem Handy waere eine Strafe vor allem Frust.
+* Eine **DROME-Bank wie bei TFT** (DROMEs im Lauf kaufen und tauschen) waere
+  der naechste Schritt, aber nicht der erste: erst muessen die Gegenstaende
+  tragen.
+
+### 7e. Rezepte (Zusammenfuegen)
+
+* **Fuenf Bauteile** als Grundmodule, jedes fuer sich ein kleiner Wert:
+  **Energiezelle** (+Energieschaden), **Panzerplatte** (+DEF),
+  **Servomotor** (+Tempo), **Zielchip** (Faehigkeit frueher),
+  **Kondensator** (+Schild).
+* **Zwei Bauteile ergeben ein fertiges Modul** -- 5 Bauteile, 15 Rezepte
+  (auch zwei gleiche). Das fertige Modul ist deutlich staerker als die Summe
+  und hat einen Effekt statt nur Werte. Beispiele:
+  * Energiezelle + Energiezelle = **Ueberladung** -- Energietreffer springen
+    auf ein zweites Ziel ueber.
+  * Energiezelle + Kondensator = **Schildbrecher** -- +50 % Schaden an Schilden.
+  * Servomotor + Panzerplatte = **Rammbock** -- nach jedem Schritt auf einen
+    Gegner zu: naechster Nahkampftreffer +40 %.
+  * Zielchip + Servomotor = **Jagdinstinkt** -- Abschuss setzt die Faehigkeit
+    sofort auf bereit.
+  * Kondensator + Panzerplatte = **Bollwerk** -- 20 % des Schadens an
+    Verbuendeten daneben gehen auf den Schild des Traegers.
+* Zusammengefuegt wird **im Lager**, mit sichtbarem Rezeptbuch -- nicht
+  automatisch am DROME. So sieht man vorher, was entsteht, und kann darauf
+  hinsammeln.
+* Fertige Module koennen auch direkt als Beute kommen, seltener.
+
+### 7f. Offen
+
+1. Sind drei Module je DROME richtig, oder lieber zwei (haerter) bzw. vier?
+2. Laden und Waehrung im Lauf -- ja? (Vorschlag: Geld je Sieg, im Laden
+   kaufen, neu wuerfeln, verkaufen.)
+3. Soll Ausruestung im Lauf auch kaputtgehen bzw. verfallen, oder nur Module?
+
+## 8. Vorgeschlagene Reihenfolge
 
 1. KI-Grundlagen: Ziel halten, Rolle je DROME (behebt Molok/Nimbus sofort).
 2. Ein Ausruestungsplatz (Molok zwei), Kopf/Antrieb nach Entscheidung.
@@ -172,4 +275,5 @@ alle 5 Sekunden.
 4. Molok: Praesenz, Hammer, Betaeubung, abschirmende KI.
 5. Strix und Nimbus.
 6. Kerne als Synergie-Teile.
-7. Lauf-Verbesserungen (1 aus 3) statt Teile-Beute.
+7. Module, Lager und Rezepte (Abschnitt 7), dann Laden und Waehrung.
+8. Neon City als erste Region mit Neon-Gegnern und Neon-Varianten.
