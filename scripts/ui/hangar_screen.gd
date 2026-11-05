@@ -13,9 +13,9 @@ extends Control
 ##           zeigt die Angaben und "In den Squad".
 ##   Umbau   oben die DROME-Auswahl, darunter seine Halter als Formen
 ##           (Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern) mit
-##           dem, was drinsteckt, oder "frei". Ein Halter angetippt zeigt die
-##           Teile, die hineinpassen -- jedes in seiner eigenen Form. Ein Teil
-##           angetippt zeigt, was sich aendert, und "Einbauen".
+##           Klasse darunter; der gewaehlte steht im Kasten. Seine Teile als
+##           Kacheln (nur die Form), passende zuerst. Eine Kachel angetippt
+##           zeigt darueber alle Angaben, was sich aendert, und "Einbauen".
 ##
 ## Regeln, Werte und Validierung kommen wie ueberall aus Roster, DromeBuild und
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
@@ -26,7 +26,7 @@ const TILE_EDGE := 104.0
 const TILE_COLUMNS := 3
 const TILE_GAP := 10
 const SLOT_EDGE := 64.0
-const PART_EDGE := 56.0
+const PART_EDGE := 72.0
 
 ## Welcher Reiter: "squad" oder "umbau". Ueberlebt einen Szenenwechsel ueber
 ## die Meta des GameState nicht -- muss es auch nicht: aus dem Kampf kommt man
@@ -433,10 +433,11 @@ func _picker() -> Control:
 
 
 ## Die Halter als Formen. Kern zuerst (Kreis), dann die Ausruestungshalter in
-## ihrer Klassenform; darin das Teil oder leer.
+## ihrer Klassenform; darin das Teil oder leer. Der gewaehlte Halter steht in
+## einem hervorgehobenen Kasten; unter jedem Halter seine Klasse.
 func _slots(build: DromeBuild) -> Control:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var chassis := build.body()
 	var slots: Array = ["core"]
@@ -444,34 +445,98 @@ func _slots(build: DromeBuild) -> Control:
 	for slot in slots:
 		var part := build.part_in(slot)
 		var kind := "core" if slot == "core" else SlotRules.slot_class(chassis, slot)
-		var holder := _tappable(null, func():
+		var chosen: bool = slot == _selected_slot
+		var style := UiKit.card_style(chosen)
+		style.set_content_margin_all(6)
+		if chosen:
+			style.bg_color = Color(UiKit.ACCENT, 0.18)
+			style.set_border_width_all(3)
+		else:
+			style.bg_color = Color(0, 0, 0, 0)
+			style.border_color = Color(0, 0, 0, 0)
+		var holder := _tappable(style, func():
 			_selected_slot = slot
 			_preview_part = null
 			_slot_details = false
 			_refresh())
 		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 0)
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		holder.add_child(box)
 		var shape := SlotShape.new(kind, UiKit.part_texture(part), SLOT_EDGE)
-		shape.highlight = slot == _selected_slot
+		shape.highlight = chosen
 		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		box.add_child(shape)
 		var label := _quiet(UiKit.label(SlotRules.slot_label(slot), UiKit.SMALL,
-			Color.WHITE if slot == _selected_slot else UiKit.MUTED))
+			Color.WHITE if chosen else UiKit.MUTED))
 		label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(label)
+		if kind == "core":
+			row.add_child(holder)
+			continue
+		var weight := _quiet(UiKit.label(_class_name(kind), UiKit.SMALL,
+			_class_color(kind) if chosen else Color(_class_color(kind), 0.6)))
+		weight.autowrap_mode = TextServer.AUTOWRAP_OFF
+		weight.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(weight)
 		row.add_child(holder)
 	return row
+
+
+## "Kern", "leicht", "mittel", "schwer".
+func _class_name(kind: String) -> String:
+	return "Kern" if kind == "core" else SlotRules.class_label(kind)
+
+
+## Eine Farbe je Klasse -- zusaetzlich zur Form, nie statt ihr.
+func _class_color(kind: String) -> Color:
+	match kind:
+		"light": return UiKit.GOOD
+		"medium": return UiKit.WARN
+		"heavy": return UiKit.BAD
+		_: return UiKit.ACCENT
 
 
 ## Was im gewaehlten Halter steckt, was er nimmt, und "Leeren".
 func _slot_info(entry: RosterEntry, build: DromeBuild) -> Control:
 	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel", UiKit.card_style())
+	card.add_theme_stylebox_override("panel", UiKit.card_style(true))
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 6)
 	card.add_child(outer)
+	var kind := "core" if _selected_slot == "core" \
+		else SlotRules.slot_class(build.body(), _selected_slot)
+	# Kopf: welcher Halter, gross -- und seine Klasse als Form und Wort.
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	outer.add_child(head)
+	var mark := SlotShape.new(kind, null, 36)
+	mark.highlight = true
+	mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(mark)
+	var titles := VBoxContainer.new()
+	titles.add_theme_constant_override("separation", 0)
+	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(titles)
+	titles.add_child(UiKit.label("Halter " + SlotRules.slot_label(_selected_slot)
+		if _selected_slot != "core" else "Kern-Halter", UiKit.H2))
+	var takes := ""
+	if _selected_slot == "core":
+		takes = "nimmt einen Kern"
+	else:
+		var fit: String = {"light": "nur leichte Teile", "medium": "leichte und mittlere Teile",
+			"heavy": "leichte, mittlere und schwere Teile"}.get(kind, "")
+		takes = "%s  ·  nimmt %s" % [_class_name(kind).to_upper(), fit]
+		var rule: Dictionary = build.body().slot_rules.get(_selected_slot, {})
+		var only = rule.get("categories")
+		if only is Array and not only.is_empty():
+			var names: Array[String] = []
+			for category in only:
+				names.append(SlotRules.category_label(str(category)))
+			takes += ", nur " + ", ".join(names)
+	titles.add_child(UiKit.label(takes, UiKit.SMALL, _class_color(kind)))
+
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	outer.add_child(row)
@@ -479,19 +544,7 @@ func _slot_info(entry: RosterEntry, build: DromeBuild) -> Control:
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(text)
 	var part := build.part_in(_selected_slot)
-	var title := SlotRules.slot_label(_selected_slot)
-	if _selected_slot != "core":
-		var limit := SlotRules.slot_class(build.body(), _selected_slot)
-		title += "  ·  nimmt bis %s" % SlotRules.class_label(limit)
-		var rule: Dictionary = build.body().slot_rules.get(_selected_slot, {})
-		var only = rule.get("categories")
-		if only is Array and not only.is_empty():
-			var names: Array[String] = []
-			for category in only:
-				names.append(SlotRules.category_label(str(category)))
-			title += ", nur " + ", ".join(names)
-	text.add_child(UiKit.label(title, UiKit.SMALL, UiKit.MUTED))
-	text.add_child(UiKit.label(part.display_name if part != null else "frei",
+	text.add_child(UiKit.label("Darin: " + (part.display_name if part != null else "frei"),
 		UiKit.BODY, Color.WHITE if part != null else UiKit.MUTED))
 	if part != null:
 		# Wie funktioniert das Teil? Aufklappbar, damit der Halter kurz bleibt.
@@ -522,8 +575,9 @@ func _slot_info(entry: RosterEntry, build: DromeBuild) -> Control:
 	return card
 
 
-## Die Teile fuer den gewaehlten Halter -- passende zuerst, dann die uebrigen
-## gedaempft mit Grund. Eins angetippt klappt seine Vorschau auf.
+## Die Teile fuer den gewaehlten Halter als Kacheln -- nur die Form mit Bild,
+## passende zuerst, die uebrigen gedaempft. Eine Kachel angetippt zeigt
+## daruber alle Angaben, die Wertaenderung und "Einbauen".
 func _parts_for_slot(entry: RosterEntry, build: DromeBuild) -> void:
 	var type := PartData.Type.CORE if _selected_slot == "core" else PartData.Type.EQUIPMENT
 	var fits: Array = []
@@ -534,13 +588,21 @@ func _parts_for_slot(entry: RosterEntry, build: DromeBuild) -> void:
 			continue
 		var verdict := _verdict(entry, build, part)
 		(fits if verdict == "" else rest).append([part, verdict])
-	_content.add_child(UiKit.heading("Passt hier" if not fits.is_empty() else "Nichts Passendes frei"))
-	for item in fits:
-		_part_row(entry, build, item[0], "")
-	if not rest.is_empty():
-		_content.add_child(UiKit.label("Nicht verfuegbar", UiKit.SMALL, UiKit.MUTED))
-		for item in rest:
-			_part_row(entry, build, item[0], item[1])
+	var items := fits + rest
+	if items.is_empty():
+		_content.add_child(UiKit.label("Keine Teile fuer diesen Halter.", UiKit.SMALL,
+			UiKit.MUTED))
+		return
+	if _preview_part != null:
+		for item in items:
+			if item[0] == _preview_part:
+				_content.add_child(_part_details(entry, build, item[0], item[1]))
+	if fits.is_empty():
+		_content.add_child(UiKit.label("Nichts Passendes frei.", UiKit.SMALL, UiKit.MUTED))
+	var tiles: Array = []
+	for item in items:
+		tiles.append(_part_tile(item[0], item[1]))
+	_add_tile_rows(_content, tiles)
 
 
 ## Leer = einbaubar; sonst der Grund.
@@ -556,28 +618,46 @@ func _verdict(entry: RosterEntry, build: DromeBuild, part: PartData) -> String:
 	return ""
 
 
-func _part_row(entry: RosterEntry, build: DromeBuild, part: PartData, verdict: String) -> void:
+## Eine Teil-Kachel: nur die Form mit dem Bild. Gedaempft, wenn es hier nicht
+## eingebaut werden kann. Nochmal antippen schliesst die Angaben.
+func _part_tile(part: PartData, verdict: String) -> Control:
 	var open := _preview_part == part
-	var panel := _tappable(UiKit.card_style(open), func():
+	var panel := _tappable(_tile_style(open, false), func():
 		_preview_part = null if open else part
 		_refresh())
-	var box := VBoxContainer.new()
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(box)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(row)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.tooltip_text = part.display_name
 	var kind := "core" if part.type == PartData.Type.CORE else part.mount_class
 	var shape := SlotShape.new(kind, UiKit.part_texture(part), PART_EDGE)
 	shape.dim = verdict != ""
-	row.add_child(shape)
+	shape.highlight = open
+	shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	shape.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	shape.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(shape)
+	if verdict != "":
+		panel.modulate = Color(1, 1, 1, 0.55)
+	return panel
+
+
+## Alle Angaben zum angetippten Teil: Name, Klasse, Bestand, Grund, die ganze
+## Erklaerung, die Wertaenderung und der Knopf.
+func _part_details(entry: RosterEntry, build: DromeBuild, part: PartData,
+		verdict: String) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiKit.card_style(true))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	panel.add_child(box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	box.add_child(row)
+	var kind := "core" if part.type == PartData.Type.CORE else part.mount_class
+	row.add_child(SlotShape.new(kind, UiKit.part_texture(part), PART_EDGE))
 	var text := VBoxContainer.new()
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(text)
-	text.add_child(_quiet(UiKit.label(part.display_name, UiKit.BODY,
-		UiKit.MUTED if verdict != "" else Color.WHITE)))
+	text.add_child(UiKit.label(part.display_name, UiKit.BODY))
 	var sub := ""
 	if part.type == PartData.Type.EQUIPMENT:
 		sub = "%s · %s" % [SlotRules.class_label(part.mount_class),
@@ -585,13 +665,11 @@ func _part_row(entry: RosterEntry, build: DromeBuild, part: PartData, verdict: S
 	else:
 		sub = "Kern"
 	sub += "  ·  %d frei" % GameState.roster.free_count(part.id)
-	text.add_child(_quiet(UiKit.label(sub, UiKit.SMALL, UiKit.MUTED)))
+	text.add_child(UiKit.label(sub, UiKit.SMALL, UiKit.MUTED))
 	if verdict != "":
-		text.add_child(_quiet(UiKit.label(verdict, UiKit.SMALL, UiKit.WARN)))
-	_content.add_child(panel)
-
-	if open:
-		_preview(entry, build, part, verdict, box)
+		text.add_child(UiKit.label(verdict, UiKit.SMALL, UiKit.WARN))
+	_preview(entry, build, part, verdict, box)
+	return panel
 
 
 ## Was sich aendern wuerde -- und der Knopf dazu.

@@ -107,9 +107,13 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   macht es zum Hauptgewaehlten; Antippen eines anderen klappt unter seiner
   Reihe Angaben und "In den Squad" auf. Der Knopf "Umbauen" in der Mitte ist
   weg (der Reiter oben reicht). "Neuen DROME bauen" mit ganzer Chassis-Huelle.
-* Reiter **Umbau**: DROME-Auswahl, Bild + Werte, Halter als Formen, Teile
-  fuer den gewaehlten Halter (passend zuerst, sonst mit Grund), Vorschau mit
-  Wertaenderung, "ersetzt X", "Einbauen". "DROME aufloesen" unten.
+* Reiter **Umbau**: DROME-Auswahl, Bild + Werte, Halter als Formen mit
+  Klasse darunter (leicht gruen, mittel gelb, schwer rot); der gewaehlte
+  Halter steht im Kasten, die Halter-Karte nennt ihn gross ("Halter links",
+  "MITTEL · nimmt leichte und mittlere Teile"). Teile als Kacheln (nur Form
+  und Bild, passend zuerst, sonst gedaempft); angetippt erscheint DARUEBER
+  eine Karte mit allen Angaben, Grund, Wertaenderung, "ersetzt X",
+  "Einbauen" (Nov. 2026 nach Skizze). "DROME aufloesen" unten.
 * **Halter-Formen** (`scripts/ui/slot_shape.gd`): Dreieck = leicht,
   Viereck = mittel, Fuenfeck = schwer, Kreis = Kern. Ausruestung traegt
   dieselbe Form wie ihre Klasse. Regel: leicht passt nach oben in groessere
