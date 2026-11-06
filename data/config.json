@@ -123,10 +123,15 @@
     "_kommentar": [
       "Zahlen der Passiven am Chassis (PartData.passive).",
       "hit_rush (Vireo): jeder Treffer gibt seconds lang move_mult auf das Lauftempo.",
+      "presence (Molok): je Puls bucht jeder Gegner im aggro_radius aggro_per_pulse",
+      "Aggro auf ihn; guard_share des Schadens an Verbuendeten im guard_radius",
+      "geht stattdessen auf ihn.",
       "spellcaster (Nimbus): nach einer Faehigkeit gilt die Zahl der normalen",
       "Angriffe bis zur naechsten mal factor (abgerundet, mindestens 1)."
     ],
     "hit_rush": {"seconds": 2.0, "move_mult": 1.4},
+    "presence": {"aggro_radius": 2, "aggro_per_pulse": 15.0,
+                 "guard_radius": 3, "guard_share": 0.3},
     "spellcaster": {"factor": 0.5}
   },
 

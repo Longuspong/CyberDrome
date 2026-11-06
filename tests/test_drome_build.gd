@@ -34,7 +34,7 @@ func _stock(set_id: String) -> DromeBuild:
 
 
 func test_library_loaded() -> void:
-	t.equal(PartDB.parts.size(), 27, "27 Bauteile erwartet")
+	t.equal(PartDB.parts.size(), 28, "28 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausaetze erwartet")
 	for part in PartDB.parts.values():
 		t.equal(part.views.size(), 4, "%s braucht vier Ansichten" % part.id)

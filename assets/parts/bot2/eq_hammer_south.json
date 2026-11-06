@@ -1,0 +1,109 @@
+{
+  "id": "eq_hammer",
+  "code": "EQP-012",
+  "set": "bot2",
+  "type": "equipment",
+  "name": "Hammer",
+  "direction": "south",
+  "svg": "eq_hammer_south.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 30,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 49.22
+    },
+    {
+      "name": "head",
+      "x": 41.28,
+      "y": 74.84
+    }
+  ],
+  "color_scheme": {
+    "plate": "#3d2b35",
+    "plate_light": "#694c5c",
+    "plate_dark": "#22181e",
+    "metal": "#7d6b78",
+    "accent": "#ff8a3d",
+    "glow": "#ffb76a",
+    "visor": "#ffb76a",
+    "outline": "#100a0e"
+  },
+  "tags": [
+    "weapon",
+    "melee",
+    "heavy"
+  ],
+  "mount_class": "heavy",
+  "category": "weapon",
+  "stats": {
+    "hp": 0,
+    "spd": 0,
+    "atk": 0,
+    "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
+    "weight": 7,
+    "hp_regen_pct": 0,
+    "aggro_bonus": 0,
+    "ai_role": "",
+    "passive": "",
+    "actions": [
+      {
+        "id": "act_hammer",
+        "display_name": "Hammerschlag",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 1,
+        "aoe_radius": 0,
+        "power": 16,
+        "push_tiles": 0,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "energy_fraction": 0.0,
+        "interval": 1.8,
+        "trigger": null,
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null
+      },
+      {
+        "id": "act_hammer_stun",
+        "display_name": "Betaeubungsschlag",
+        "category": "ability",
+        "targeting": "single",
+        "range_tiles": 1,
+        "aoe_radius": 0,
+        "power": 16,
+        "push_tiles": 0,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 3,
+          "weapon": "act_hammer"
+        },
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": {
+          "id": "stun",
+          "seconds": 1.0,
+          "stunned": true
+        }
+      }
+    ]
+  }
+}

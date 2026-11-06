@@ -65,6 +65,9 @@ func update(unit: Unit, dt: float) -> void:
 		unit.step_left -= dt
 		if unit.step_left > 0.0:
 			return
+	# Betaeubt: weder laufen noch schiessen, die Waffen laden aber weiter.
+	if unit.is_stunned():
+		return
 
 	var target := _current_target(unit)
 	if target != null and not _can_shoot(unit, unit.tile, target):

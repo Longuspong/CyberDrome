@@ -363,6 +363,14 @@ func ai_role() -> String:
 	return build.body().ai_role
 
 
+## Betaeubt (Hammer): handelt nicht, solange der Status laeuft.
+func is_stunned() -> bool:
+	for status in statuses.values():
+		if status.get("stunned", false):
+			return true
+	return false
+
+
 ## Faktor auf jeden eingehenden Treffer (Statuseffekt "verwundbar").
 func damage_taken_mult() -> float:
 	var mult := 1.0

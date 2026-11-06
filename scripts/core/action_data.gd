@@ -162,6 +162,8 @@ func status_text() -> String:
 		"slow":
 			var cut := int(round((1.0 - float(status.get("move_mult", 1.0))) * 100.0))
 			return "verlangsamt um %d %% fuer %s s" % [cut, seconds]
+		"stun":
+			return "betaeubt fuer %s s" % seconds
 		"vulnerable":
 			var more := int(round((float(status.get("damage_taken_mult", 1.0)) - 1.0) * 100.0))
 			return "verwundbar: nimmt %d %% mehr Schaden fuer %s s" % [more, seconds]

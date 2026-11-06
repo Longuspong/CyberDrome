@@ -33,7 +33,18 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 ## ``action`` dient der Aggro-Buchung (dem Koeffizienten der Aktion) und der
 ## Schadensart. Sie darf fehlen (Overtime).
 func apply_damage(source: Unit, target: Unit, raw: int,
-		action: ActionData = null) -> int:
+		action: ActionData = null, guarded: bool = true) -> int:
+	# Praesenz (Molok): ein Teil des Treffers geht auf den Beschuetzer.
+	if guarded and raw > 0:
+		var guard := _guard_for(target)
+		if guard != null:
+			var share := float((Config.section("passives").get("presence", {}) as Dictionary).get("guard_share", 0.3))
+			var taken := int(round(float(raw) * share))
+			if taken > 0:
+				raw -= taken
+				EventBus.log_line("%s faengt %d Schaden fuer %s ab."
+					% [guard.display_name, taken, target.display_name])
+				apply_damage(source, guard, taken, action, false)
 	var frac := action.energy_fraction if action != null else 0.0
 	var shield_before := target.shield
 	var res := resolve_damage(target, raw, frac,
@@ -74,6 +85,38 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	if target.hp <= 0:
 		_kill(target)
 	return amount
+
+
+## Der naechste lebende Verbuendete mit Praesenz im Schutzradius -- nicht das
+## Ziel selbst.
+func _guard_for(target: Unit) -> Unit:
+	var radius := int((Config.section("passives").get("presence", {}) as Dictionary).get("guard_radius", 3))
+	var best: Unit = null
+	var best_gap := 1 << 30
+	for unit in units:
+		if unit == target or not unit.is_alive() or unit.is_player != target.is_player:
+			continue
+		if unit.passive() != "presence":
+			continue
+		var gap := Grid.distance(unit.tile, target.tile)
+		if gap <= radius and gap < best_gap:
+			best = unit
+			best_gap = gap
+	return best
+
+
+## Praesenz je Puls: jeder Gegner in der Naehe bucht Aggro auf den Traeger.
+func presence_pulse(unit: Unit) -> void:
+	if unit.passive() != "presence" or not unit.is_alive():
+		return
+	var section := Config.section("passives").get("presence", {}) as Dictionary
+	var radius := int(section.get("aggro_radius", 2))
+	var amount := float(section.get("aggro_per_pulse", 15.0))
+	for foe in units:
+		if not foe.is_alive() or foe.is_player == unit.is_player or foe.aggro == null:
+			continue
+		if Grid.distance(foe.tile, unit.tile) <= radius:
+			foe.aggro.add(unit.unit_id, amount)
 
 
 ## Passiven, die an einem Treffer haengen. Vireo (hit_rush): kurz schneller.

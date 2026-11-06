@@ -90,6 +90,11 @@ static func traits(part: PartData) -> Array[String]:
 			out.append("Sprint: jeder Treffer macht %s s lang %d %% schneller." % [
 				ActionData._seconds(float(rush.get("seconds", 2.0))),
 				int(round((float(rush.get("move_mult", 1.4)) - 1.0) * 100.0))])
+		"presence":
+			var p := Config.section("passives").get("presence", {}) as Dictionary
+			out.append("Praesenz: Gegner im Umkreis %d richten ihre Aufmerksamkeit auf ihn; %d %% des Schadens an Verbuendeten im Umkreis %d faengt er ab." % [
+				int(p.get("aggro_radius", 2)), int(round(float(p.get("guard_share", 0.3)) * 100.0)),
+				int(p.get("guard_radius", 3))])
 		"spellcaster":
 			out.append("Zauberwirker: nach jeder Faehigkeit braucht die Waffe nur halb so viele Angriffe bis zur naechsten.")
 	return out

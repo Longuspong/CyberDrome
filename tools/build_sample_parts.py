@@ -392,6 +392,7 @@ STAT_DEFAULTS = {
     #   spellcaster  nach jeder Faehigkeit braucht die Waffe nur noch halb so
     #                viele normale Angriffe bis zur naechsten (Nimbus)
     #   hit_rush     jeder Treffer gibt kurz mehr Lauftempo (Vireo)
+    #   presence     zieht Aggro und faengt Schaden fuer Verbuendete ab (Molok)
     # Die Zahlen der Passiven stehen in data/config.json unter "passives".
     "passive": "",
 }
@@ -420,7 +421,11 @@ STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
     "scout_body":  {"hp":  60, "def": 1, "spd": 2, "shield": 30, "ai_role": "skirmisher",
                     "passive": "hit_rush"},
-    "jugg_body":   {"hp": 130, "def": 5, "shield": 50, "ai_role": "vanguard"},
+    # Tank: viel Integritaet, kaum Schild (Entscheidung 6. Nov. 2026) -- mit
+    # Kopf 200 Integritaet, 10 Schild. Kinetische Waffen sind gegen ihn gut,
+    # Energie und Schildbrecher kaum.
+    "jugg_body":   {"hp": 185, "def": 5, "shield": 10, "ai_role": "vanguard",
+                    "passive": "presence"},
     "mage_body":   {"hp":  85, "def": 2, "shield": 50, "ai_role": "controller",
                     "passive": "spellcaster"},
     "strix_body":  {"hp":  70, "def": 2, "spd": 1, "shield": 30, "ai_role": "sniper"},
@@ -519,6 +524,21 @@ STATS = {
              "range_tiles": 6, "aoe_radius": 2, "power": 14,
              "aggro_coeff": 1.2,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_siege"}},
+        ],
+    },
+    # Hammer des Molok: schwer, langsam, kinetisch. Jeder 3. Schlag betaeubt
+    # das Ziel 1 s (Vorgabe des Spielers, Nov. 2026).
+    "eq_hammer": {
+        "weight": 7,
+        "actions": [
+            {"id": "act_hammer", "display_name": "Hammerschlag",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 1, "power": 16, "interval": 1.8},
+            {"id": "act_hammer_stun", "display_name": "Betaeubungsschlag",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 1, "power": 16,
+             "status": {"id": "stun", "seconds": 1.0, "stunned": True},
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_hammer"}},
         ],
     },
     # Passive Selbstheilung, 5 % je Puls.
@@ -1388,6 +1408,19 @@ EQ_CANNON = [
     B((-4, 6), (-4, 4), (23, 26.5), "dark"),
 ]
 
+# Hammer (EQP-012): Nahkampfwaffe des Molok. Kurzer Schaft nach vorn, davor
+# ein grosser, quer stehender Hammerkopf -- ein Block, kein Rohr (gegen die
+# Kanone mit Muendungsbremse und die duenne Plasmaklinge).
+EQ_HAMMER = [
+    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),          # Halterung am Anker
+    B((-4.5, 4.5), (-5, 5), (35, 46), "plate"),          # Unterarm
+    B((4, 15), (-1.4, 1.4), (38, 41), "metal"),          # Schaft
+    B((15, 23), (-7, 7), (30, 48), "plate"),             # Hammerkopf
+    B((23, 23.8), (-6, 6), (32, 46), "dark"),            # Schlagflaeche
+    B((15, 23), (-7.3, 7.3), (38, 40), "accent"),        # Leuchtband
+    D(24.0, 0, 39, 2.0, "glow"),
+]
+
 # Der Pod sitzt hinter dem Kopf auf der Schulterbruecke und zeigt vor allem
 # seine Oberseite -- das deutlichste Beispiel dafuer, wie stark die
 # 45-Grad-Kamera waagerechte Flaechen betont. In der Nordansicht schiebt ihn
@@ -1907,6 +1940,13 @@ SETS = [
                 "id": "jugg_core", "code": "COR-002", "type": "core", "name": "Molok Fusionskern",
                 "tags": ["core", "fusion"], "shapes": JUGG_CORE,
                 "anchors": {"mount": (11.0, 0, 51.4)},
+            },
+            {
+                "id": "eq_hammer", "code": "EQP-012", "type": "equipment",
+                "name": "Hammer", "tags": ["weapon", "melee", "heavy"],
+                "shapes": EQ_HAMMER,
+                "mount_class": "heavy", "category": "weapon",
+                "anchors": {"mount": (0, 0, 49), "head": (23.8, 0, 39)},
             },
             {
                 "id": "eq_siege_cannon", "code": "EQP-003", "type": "equipment",

@@ -50,7 +50,7 @@ const STARTER_CHASSIS := [
 	{"body": &"scout_body", "core": &"scout_core",
 	 "equipment": [&"eq_pulse_blaster"]},
 	{"body": &"jugg_body", "core": &"jugg_core",
-	 "equipment": [&"eq_siege_cannon", &"eq_deflector"]},
+	 "equipment": [&"eq_hammer", &"eq_deflector"]},
 	{"body": &"mage_body", "core": &"mage_core",
 	 "equipment": [&"eq_rune_staff"]},
 	{"body": &"strix_body", "core": &"strix_core",
@@ -62,6 +62,7 @@ const STARTER_CHASSIS := [
 ## Gadgets hier und laden zum Umbauen ein.
 const STARTER_LOOSE_EQUIPMENT := [
 	&"eq_holo_boost", &"eq_orbit_focus", &"eq_drone_pod", &"eq_bait_beacon",
+	&"eq_siege_cannon",
 ]
 
 

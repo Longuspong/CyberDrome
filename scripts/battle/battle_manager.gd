@@ -245,6 +245,7 @@ func pulse_seconds() -> float:
 ## Was je Puls laeuft: Schild, Reparatur, Overtime.
 func _pulse_unit(unit: Unit) -> void:
 	unit.regenerate_shield()
+	resolver.presence_pulse(unit)
 	var healed := unit.regenerate_hp()
 	if healed > 0:
 		EventBus.unit_healed.emit(unit, healed, unit)

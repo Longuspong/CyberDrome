@@ -355,7 +355,7 @@ func test_the_rend_makes_the_target_vulnerable() -> void:
 
 
 func test_the_neon_breaker_hits_shields_twice_as_hard() -> void:
-	var battle := _battle([_neon_vireo(), _vireo()], [_molok()],
+	var battle := _battle([_neon_vireo(), _vireo()], [_strix()],
 		[Vector2i(10, 13), Vector2i(11, 13), Vector2i(10, 10)])
 	var neon: Unit = battle.units[0]
 	var foe: Unit = battle.units[2]
@@ -368,4 +368,65 @@ func test_the_neon_breaker_hits_shields_twice_as_hard() -> void:
 		breaker.energy_fraction, breaker.shield_mult)["shield_after"])
 	t.ok(breaker_hit >= normal_hit * 2 - 1, "der Schildbrecher traegt doppelt so viel Schild ab (%d gegen %d)"
 		% [breaker_hit, normal_hit])
+	battle.free()
+
+
+
+# ---------------------------------------------------------------------------
+# Molok: Tankwerte, Praesenz, Hammer
+# ---------------------------------------------------------------------------
+
+func _hammer_molok() -> DromeBuild:
+	return DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_hammer",
+		"equip_right": &"eq_deflector"})
+
+
+func test_the_molok_is_a_tank_with_little_shield() -> void:
+	var stats := _hammer_molok().stats()
+	t.equal(stats["hp_max"], 200, "200 Integritaet")
+	t.ok(stats["shield_max"] <= 12, "kaum Schild (%d)" % stats["shield_max"])
+	t.ok(_hammer_molok().is_valid(), "Hammer und Deflektor sind baubar")
+
+
+func test_the_hammer_stuns_and_a_stunned_drome_does_nothing() -> void:
+	var battle := _battle([_hammer_molok()], [_vireo()], [Vector2i(10, 11), Vector2i(10, 10)])
+	var molok: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	battle.resolver.execute(molok, foe.tile, _action(molok, &"act_hammer_stun"))
+	t.ok(foe.is_stunned(), "der Betaeubungsschlag betaeubt")
+	var tile := foe.tile
+	for mount in foe.mounts:
+		mount["ready"] = 0.0
+	var shield_before := molok.shield
+	var hp_before := molok.hp
+	foe.target_id = molok.unit_id
+	battle.brain.update(foe, battle.step_seconds())
+	t.equal(foe.tile, tile, "betaeubt laeuft er nicht")
+	t.equal(molok.hp + molok.shield, hp_before + shield_before, "und schiesst nicht")
+	foe.tick_statuses(1.1)
+	t.ok(not foe.is_stunned(), "nach einer Sekunde ist es vorbei")
+	battle.free()
+
+
+func test_presence_takes_a_share_of_the_damage_aimed_at_allies() -> void:
+	var tiles := [Vector2i(10, 12), Vector2i(11, 12), Vector2i(10, 8)]
+	var battle := _battle([_hammer_molok(), _strix()], [_vireo()], tiles)
+	var molok: Unit = battle.units[0]
+	var strix: Unit = battle.units[1]
+	var foe: Unit = battle.units[2]
+	strix.shield = 0
+	molok.shield = 0
+	battle.resolver.apply_damage(foe, strix, 40, _action(foe, &"act_pulse"))
+	t.ok(molok.hp < molok.stat("hp_max"), "der Molok faengt einen Teil ab")
+	t.ok(strix.stat("hp_max") - strix.hp < 40, "der Strix nimmt weniger als den vollen Treffer")
+	battle.free()
+
+
+func test_presence_draws_the_attention_of_nearby_foes() -> void:
+	var battle := _battle([_hammer_molok()], [_vireo()], [Vector2i(10, 12), Vector2i(10, 10)])
+	var molok: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	battle.resolver.presence_pulse(molok)
+	t.ok(foe.aggro.value_of(molok.unit_id) > 0.0, "der Gegner daneben bucht Aggro auf den Molok")
 	battle.free()
