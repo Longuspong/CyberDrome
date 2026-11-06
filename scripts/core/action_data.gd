@@ -84,6 +84,10 @@ var interval: float = 2.0
 ##   time      alle ``trigger_every`` Sekunden, sobald ein Ziel in Reichweite ist.
 ##   adjacent  wenn ein Gegner direkt danebensteht, hoechstens alle
 ##             ``trigger_every`` Sekunden.
+## Schadensfaktor am SCHILD (Schildbrecher des Neon-Blasters: 2.0). Auf die
+## Integritaet wirkt er nicht.
+var shield_mult: float = 1.0
+
 ## Treffer je Ausloesen. Mehr als einer verteilt sich auf bis zu so viele
 ## Gegner in Reichweite, der Rest geht wieder aufs Ziel (Doppelschuss).
 var shots: int = 1
@@ -123,6 +127,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.interval = float(meta.get("interval", 2.0))
 	action.gather = bool(meta.get("gather", false))
 	action.shots = maxi(1, int(meta.get("shots", 1)))
+	action.shield_mult = float(meta.get("shield_mult", 1.0))
 	action.delay = float(meta.get("delay", 0.0))
 	var status_meta = meta.get("status")
 	if status_meta is Dictionary:
@@ -157,6 +162,9 @@ func status_text() -> String:
 		"slow":
 			var cut := int(round((1.0 - float(status.get("move_mult", 1.0))) * 100.0))
 			return "verlangsamt um %d %% fuer %s s" % [cut, seconds]
+		"vulnerable":
+			var more := int(round((float(status.get("damage_taken_mult", 1.0)) - 1.0) * 100.0))
+			return "verwundbar: nimmt %d %% mehr Schaden fuer %s s" % [more, seconds]
 	return "%s fuer %s s" % [str(status.get("id", "Effekt")), seconds]
 
 
@@ -214,6 +222,8 @@ func description_lines() -> Array[String]:
 		lines.append("Staerke %d" % power)
 	if shots > 1:
 		lines.append("%d Treffer auf bis zu %d Gegner" % [shots, shots])
+	if shield_mult > 1.0:
+		lines.append("%d %% Schaden am Schild" % int(round(shield_mult * 100.0)))
 	if aoe_radius > 0:
 		lines.append("Flaeche: Radius %d um das Ziel" % aoe_radius)
 	if gather:

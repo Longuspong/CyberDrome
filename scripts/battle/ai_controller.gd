@@ -511,7 +511,7 @@ func _shield_damage(unit: Unit, target: Unit, action: ActionData) -> int:
 	if target.shield <= 0 or action.power <= 0:
 		return 0
 	var outcome := battle.resolver.resolve_damage(target,
-		action.power + unit.atk(), action.energy_fraction)
+		action.power + unit.atk(), action.energy_fraction, action.shield_mult)
 	return maxi(0, target.shield - int(outcome["shield_after"]))
 
 

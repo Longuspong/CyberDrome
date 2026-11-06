@@ -280,6 +280,11 @@ STRIX_PALETTE = make_palette(
     ember="#6dff9f", rings="#2fbf8c", line="#060f0d",
 )
 
+# Neon City: dunkle Panzerung, grelle Roehren. Teile mit dieser Palette sind
+# Neon-Varianten (Tag "neon") und leuchten im Spiel (DromeSprites).
+NEON_EQUIPMENT = {"hull": "#140b24", "mech": "#3a2a5c", "neon": "#ff2bd6",
+                  "line": "#05020a"}
+
 C = {role: f"var(--c-{role.replace('_', '-')})" for role in PALETTE_ROLES}
 
 # Material = (Oberseite, linke Flanke, rechte Flanke, Kontur?)
@@ -457,6 +462,37 @@ STATS = {
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_pulse"}},
         ],
     },
+    # Neon-Variante: gleicher Angriff, aber die Faehigkeit ist ein aufgeladener
+    # Schuss mit doppeltem Schaden AM SCHILD (Vorgabe des Spielers, Nov. 2026).
+    "eq_neon_blaster": {
+        "weight": 5,
+        "actions": [
+            {"id": "act_neon_pulse", "display_name": "Neon-Salve",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 3, "power": 10, "energy_fraction": 0.5,
+             "interval": 1.4},
+            {"id": "act_neon_breaker", "display_name": "Schildbrecher",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 3, "power": 12, "energy_fraction": 1.0,
+             "shield_mult": 2.0,
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_neon_pulse"}},
+        ],
+    },
+    # Plasmaklinge: Nahkampf, nur kinetisch, etwas mehr Schaden, schneller als
+    # der Blaster. Jeder 3. Hieb macht das Ziel 5 s verwundbar (+50 % Schaden).
+    "eq_plasma_blade": {
+        "weight": 4,
+        "actions": [
+            {"id": "act_plasma_slash", "display_name": "Plasmahieb",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 1, "power": 12, "interval": 1.0},
+            {"id": "act_plasma_rend", "display_name": "Aufschlitzen",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 1, "power": 18,
+             "status": {"id": "vulnerable", "seconds": 5.0, "damage_taken_mult": 1.5},
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_plasma_slash"}},
+        ],
+    },
     # Passiv.
     "eq_deflector": {"def": 5, "weight": 4},
 
@@ -546,6 +582,9 @@ ACTION_DEFAULTS = {
     "energy_fraction": 0.0,
     "interval": 2.0,
     "trigger": None,
+    # Schadensfaktor am SCHILD (Schildbrecher 2.0); auf die Integritaet wirkt
+    # er nicht.
+    "shield_mult": 1.0,
     # Treffer je Ausloesen: verteilt auf bis zu so viele Gegner in Reichweite,
     # der Rest geht wieder aufs Ziel (Doppelschuss).
     "shots": 1,
@@ -1134,6 +1173,18 @@ EQ_BLASTER = [
     D(16.8, 0, 38.5, 2.0, "glow"),
     B((-4, 5), (5.5, 6.1), (42.5, 44), "accent"),
     B((-4, 5), (-6.1, -5.5), (42.5, 44), "accent"),
+]
+
+# Plasmaklinge (EQP-010): Nahkampfwaffe des Vireo. Kurzer Griff mit
+# Parierstange, davor eine LANGE, DUENNE leuchtende Klinge -- lang und duenn
+# gegen das kurze, dicke Rohr des Blasters (Lesbarkeitsregel).
+EQ_PLASMA_BLADE = [
+    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Oberarm am Anker
+    B((-3.5, 4), (-3.5, 3.5), (34, 46), "plate"),        # Unterarm
+    B((3, 5), (-4.5, 4.5), (33, 39), "dark"),            # Parierstange
+    B((5, 27), (-0.6, 0.6), (34.5, 37.5), "glow"),       # Klinge
+    B((5, 27.5), (-0.8, 0.8), (37.5, 38.3), "accent"),   # Schneide oben
+    B((5, 22), (-0.8, 0.8), (33.7, 34.5), "accent"),     # Schneide unten
 ]
 
 # Pruefstein, kein Teil.
@@ -1772,6 +1823,24 @@ SETS = [
                 "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
             },
             {
+                # Neon-Variante (Neon City): gleiche Form, eigene Faehigkeit,
+                # Neon-Farben -- leuchtende Roehren als Markenzeichen. Als
+                # Variante darf sie die Silhouette des Blasters teilen.
+                "id": "eq_neon_blaster", "code": "EQP-011", "type": "equipment",
+                "name": "Neon-Blaster", "tags": ["weapon", "ranged", "neon"],
+                "shapes": EQ_BLASTER, "variant_of": "eq_pulse_blaster",
+                "palette": NEON_EQUIPMENT,
+                "mount_class": "light", "category": "weapon",
+                "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
+            },
+            {
+                "id": "eq_plasma_blade", "code": "EQP-010", "type": "equipment",
+                "name": "Plasmaklinge", "tags": ["weapon", "melee"],
+                "shapes": EQ_PLASMA_BLADE,
+                "mount_class": "light", "category": "weapon",
+                "anchors": {"mount": (0, 0, 52), "tip": (27, 0, 36)},
+            },
+            {
                 "id": "eq_deflector", "code": "EQP-002", "type": "equipment", "name": "Deflektor-Schild",
                 "tags": ["defense"], "shapes": EQ_SHIELD,
                 # Ein Schild ist sperrig, nicht schwer -- "medium" haelt es von
@@ -2088,7 +2157,8 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
         # Referenzfarben: die acht CSS-Rollen, wie sie sich aus den vier
         # Kategorien DIESES Bauteiltyps ergeben. Rein dokumentierend --
         # gezeichnet wird immer mit der aktiven Palette der Werkstatt.
-        "color_scheme": resolve_roles(palette[palette_type(part["type"])],
+        "color_scheme": resolve_roles(part.get("palette",
+                                               palette[palette_type(part["type"])]),
                                       part["type"]),
         "tags": part.get("tags", []),
     }
@@ -2289,6 +2359,8 @@ def check_silhouettes() -> None:
 
     by_type: dict[str, list] = {}
     for spec, part in all_parts():
+        if part.get("variant_of"):
+            continue    # Varianten teilen die Form ihrer Grundwaffe mit Absicht
         key = "equipment" if part["type"].startswith("equipment") else part["type"]
         by_type.setdefault(key, []).append(
             (f"{spec['id']}/{part['id']}", silhouette(part["shapes"])))

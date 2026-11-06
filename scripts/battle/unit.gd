@@ -363,6 +363,14 @@ func ai_role() -> String:
 	return build.body().ai_role
 
 
+## Faktor auf jeden eingehenden Treffer (Statuseffekt "verwundbar").
+func damage_taken_mult() -> float:
+	var mult := 1.0
+	for status in statuses.values():
+		mult *= float(status.get("damage_taken_mult", 1.0))
+	return mult
+
+
 ## Felder je Sekunde. SPD ist seit dem Echtzeit-Kampf die Laufgeschwindigkeit.
 func move_speed() -> float:
 	var section := Config.section("realtime")

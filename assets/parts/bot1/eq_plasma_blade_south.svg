@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_plasma_blade" data-type="equipment" data-direction="south">
+  <title>Plasmaklinge (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M54.93 64.84 L63.52 70.91 L63.52 65.18 L54.93 59.11 Z" fill="#161b29"/>
+  <path d="M56.84 57.76 L54.93 59.11 L63.52 65.18 L65.43 63.83 Z" fill="#28304a"/>
+  <path d="M63.52 68.61 L70.68 63.54 L70.68 52.09 L63.52 57.15 Z" fill="#161b29"/>
+  <path d="M56.84 63.88 L63.52 68.61 L63.52 57.15 L56.84 52.43 Z" fill="#28304a"/>
+  <path d="M63.52 70.91 L65.43 69.56 L65.43 63.83 L63.52 65.18 Z" fill="#161b29"/>
+  <path d="M64.0 47.36 L56.84 52.43 L63.52 57.15 L70.68 52.09 Z" fill="#47547e"/>
+  <path d="M58.46 65.9 L42.24 77.38 L43.76 78.46 L59.99 66.98 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M43.76 79.22 L59.99 67.75 L59.99 66.98 L43.76 78.46 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M57.32 52.37 L64.95 57.77 L64.95 49.18 L57.32 43.78 Z" fill="#5b6785"/>
+  <path d="M38.8 81.7 L59.8 66.85 L59.8 63.98 L38.8 78.83 Z" fill="#5affff" stroke="none"/>
+  <path d="M64.95 57.77 L70.68 53.72 L70.68 45.13 L64.95 49.18 Z" fill="#161b29"/>
+  <path d="M58.65 63.17 L37.65 78.02 L38.8 78.83 L59.8 63.98 Z" fill="#5affff" stroke="none"/>
+  <path d="M63.05 39.73 L57.32 43.78 L64.95 49.18 L70.68 45.13 Z" fill="#5b6785"/>
+  <path d="M58.46 62.27 L36.98 77.46 L38.51 78.54 L59.99 63.35 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M38.51 79.31 L59.99 64.12 L59.99 63.35 L38.51 78.54 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M42.24 78.14 L43.76 79.22 L43.76 78.46 L42.24 77.38 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M37.65 80.89 L38.8 81.7 L38.8 78.83 L37.65 78.02 Z" fill="#5affff" stroke="none"/>
+  <path d="M36.98 78.23 L38.51 79.31 L38.51 78.54 L36.98 77.46 Z" fill="#2de2e6" stroke="none"/>
+</g>
+</svg>

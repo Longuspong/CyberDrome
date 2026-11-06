@@ -70,6 +70,7 @@
         "energy_fraction": 1.0,
         "interval": 1.2,
         "trigger": null,
+        "shield_mult": 1.0,
         "shots": 1,
         "gather": false,
         "delay": 0.0,
@@ -93,6 +94,7 @@
           "every": 5,
           "weapon": "act_runestaff"
         },
+        "shield_mult": 1.0,
         "shots": 1,
         "gather": true,
         "delay": 0.6,

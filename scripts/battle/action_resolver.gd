@@ -36,7 +36,8 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		action: ActionData = null) -> int:
 	var frac := action.energy_fraction if action != null else 0.0
 	var shield_before := target.shield
-	var res := resolve_damage(target, raw, frac)
+	var res := resolve_damage(target, raw, frac,
+		action.shield_mult if action != null else 1.0)
 	target.shield = res["shield_after"]
 	var amount: int = res["hp"]
 
@@ -111,8 +112,11 @@ func _on_hit(source: Unit, dealt: int) -> void:
 ## Panzerdurchdringung den Schaden nie ueber 100 %, nie darueber.
 ##
 ## Erst das Schild vollstaendig, dann die HP: das Schild wird immer zuerst leer.
-func resolve_damage(target: Unit, raw: int, energy_fraction: float) -> Dictionary:
+func resolve_damage(target: Unit, raw: int, energy_fraction: float,
+		shield_mult: float = 1.0) -> Dictionary:
 	var section := Config.section("combat")
+	# Verwundbar (Plasmaklinge): der Statuseffekt vergroessert jeden Treffer.
+	raw = int(round(float(raw) * target.damage_taken_mult()))
 	var e := int(round(float(raw) * clampf(energy_fraction, 0.0, 1.0)))
 	var p := raw - e
 	var shield := target.shield
@@ -130,7 +134,8 @@ func resolve_damage(target: Unit, raw: int, energy_fraction: float) -> Dictionar
 		if amt <= 0:
 			continue
 		if shield > 0:
-			var eff := int(round(float(amt) * float(portion["sf"])))
+			# shield_mult: Schildbrecher (Neon-Blaster) trifft den Schild doppelt.
+			var eff := int(round(float(amt) * float(portion["sf"]) * shield_mult))
 			if eff <= shield:
 				shield -= eff
 			else:
@@ -160,8 +165,9 @@ func _apply_armor_ehp(raw_hp: float, armor: int, pen: float = 0.0) -> int:
 
 
 ## Duenner Vorschau-Zugang: nur der HP-Schaden. Fuer alte Aufrufer und Tests.
-func mitigate(source: Unit, target: Unit, raw: int, energy_fraction: float = 0.0) -> int:
-	return resolve_damage(target, raw, energy_fraction)["hp"]
+func mitigate(source: Unit, target: Unit, raw: int, energy_fraction: float = 0.0,
+		shield_mult: float = 1.0) -> int:
+	return resolve_damage(target, raw, energy_fraction, shield_mult)["hp"]
 
 
 func _kill(unit: Unit) -> void:
@@ -215,7 +221,8 @@ func _book_aggro(observer: Unit, actor: Unit, base: float, coeff: float) -> void
 func preview_damage(source: Unit, target: Unit, action: ActionData) -> int:
 	if action.power <= 0:
 		return 0
-	return mitigate(source, target, action.power + source.atk(), action.energy_fraction)
+	return mitigate(source, target, action.power + source.atk(), action.energy_fraction,
+		action.shield_mult)
 
 
 # ---------------------------------------------------------------------------

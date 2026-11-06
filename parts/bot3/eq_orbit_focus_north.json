@@ -74,6 +74,7 @@
           "every": 6,
           "weapon": ""
         },
+        "shield_mult": 1.0,
         "shots": 1,
         "gather": false,
         "delay": 0.0,

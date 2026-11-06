@@ -69,6 +69,7 @@
         "energy_fraction": 0.5,
         "interval": 1.4,
         "trigger": null,
+        "shield_mult": 1.0,
         "shots": 1,
         "gather": false,
         "delay": 0.0,
@@ -92,6 +93,7 @@
           "every": 3,
           "weapon": "act_pulse"
         },
+        "shield_mult": 1.0,
         "shots": 2,
         "gather": false,
         "delay": 0.0,

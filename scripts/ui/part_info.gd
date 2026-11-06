@@ -122,6 +122,8 @@ static func action_lines(action: ActionData) -> Array[String]:
 			out.append("%d %% Energieschaden -- gut gegen Schilde." % int(round(action.energy_fraction * 100.0)))
 		else:
 			out.append("Kinetischer Schaden -- stark gegen Integritaet, schwach gegen Schilde.")
+	if action.shield_mult > 1.0:
+		out.append("Schildbrecher: macht %d %% Schaden an Schilden." % int(round(action.shield_mult * 100.0)))
 	if action.shots > 1:
 		out.append("%d schnelle Treffer auf bis zu %d Gegner in Reichweite; ist nur einer da, trifft er ihn mehrfach." % [action.shots, action.shots])
 	if action.gather:
