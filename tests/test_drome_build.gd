@@ -151,8 +151,8 @@ func test_the_molok_has_two_holders() -> void:
 
 func test_apply_chassis_sets_the_whole_frame() -> void:
 	# Ein Chassis-Pick setzt Koerper, Kopf und Fuesse gemeinsam aus einem Set
-	# (GAME_DESIGN §9). Kern und Ausruestung bleiben unberuehrt -- der Kern ist
-	# universal, die Ausruestung eine eigene Entscheidung.
+	# (GAME_DESIGN §9), seit 6g auch den Kern (nur noch Optik). Die Ausruestung
+	# bleibt unberuehrt -- sie ist eine eigene Entscheidung.
 	var build := DromeBuild.create("WECHSEL", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"mage_core",
@@ -162,7 +162,7 @@ func test_apply_chassis_sets_the_whole_frame() -> void:
 	t.equal(build.slots["body"], &"jugg_body", "Koerper gewechselt")
 	t.equal(build.slots["head"], &"jugg_head", "der Kopf zieht mit")
 	t.equal(build.slots["feet"], &"jugg_feet", "die Fuesse ziehen mit")
-	t.equal(build.slots["core"], &"mage_core", "der Kern bleibt -- er ist universal")
+	t.equal(build.slots["core"], &"jugg_core", "der Kern zieht mit -- er gehoert zum Rahmen")
 	t.equal(build.slots["equip_left"], &"eq_pulse_blaster", "die Ausruestung bleibt")
 
 	var frame_sets := {}

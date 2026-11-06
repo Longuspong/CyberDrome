@@ -28,7 +28,7 @@ const ROLE := {
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
 ## SPD ist die Laufgeschwindigkeit, Faehigkeiten loesen nach ihrer Regel aus.
 const STAT_LABELS := [
-	["hp", "Integritaet"], ["shield", "Schild"], ["shield_regen", "Schild je Puls"],
+	["hp", "Integritaet"], ["shield", "Schild"],
 	["def", "Panzerung"], ["atk", "Angriff"], ["spd", "Tempo (SPD, Laufgeschwindigkeit)"],
 ]
 

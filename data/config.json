@@ -158,8 +158,11 @@
       "                     Asymptotisch, also nie ganz erreicht.",
       "  armor_ehp_k   15   wie schnell die Panzerung an den Deckel laeuft",
       "                     (m = 1 + cap * A/(A+K)). Kleiner K = frueher satt.",
-      "Volle Panzerdurchdringung bringt den Schaden auf 100 %, nie darueber."
+      "Volle Panzerdurchdringung bringt den Schaden auf 100 %, nie darueber.",
+      "SCHILD-NACHLADEN (6g): keine Grundregeneration. Nach delay Sekunden ohne",
+      "  Schaden laedt der Schild per_second (Anteil am Maximum) je Sekunde."
     ],
+    "shield_recharge": {"delay": 4.0, "per_second": 0.1},
     "physical_vs_shield": 0.8,
     "energy_vs_shield": 1.2,
     "physical_vs_hp": 1.0,

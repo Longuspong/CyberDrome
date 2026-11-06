@@ -35,7 +35,7 @@ var _tab := "squad"
 var _selected := -1
 ## Wer im Squad-Reiter gross oben steht (Index, -1 = keiner).
 var _primary := -1
-var _selected_slot := "core"
+var _selected_slot := ""
 ## Ob die Info zum eingebauten Teil im gewaehlten Halter aufgeklappt ist.
 var _slot_details: bool = false
 var _preview_part: PartData = null
@@ -378,6 +378,10 @@ func _show_umbau() -> void:
 	info.add_child(UiKit.row("SPD", str(stats["spd"])))
 	info.add_child(UiKit.row("Kampfwert", str(int(build.power_score())), UiKit.ACCENT))
 
+	# Ohne Kern-Halter (6g) ist der erste Ausruestungshalter vorgewaehlt.
+	var equip := build.equip_slots()
+	if not equip.is_empty() and _selected_slot not in equip:
+		_selected_slot = equip[0]
 	_content.add_child(_slots(build))
 	_content.add_child(_slot_info(entry, build))
 	_parts_for_slot(entry, build)
@@ -416,7 +420,7 @@ func _picker() -> Control:
 		var entry: RosterEntry = _entries()[index]
 		var panel := _tappable(UiKit.card_style(index == _selected), func():
 			_selected = index
-			_selected_slot = "core"
+			_selected_slot = ""
 			_preview_part = null
 			_refresh())
 		var box := VBoxContainer.new()
@@ -432,17 +436,15 @@ func _picker() -> Control:
 	return scroll
 
 
-## Die Halter als Formen. Kern zuerst (Kreis), dann die Ausruestungshalter in
-## ihrer Klassenform; darin das Teil oder leer. Der gewaehlte Halter steht in
+## Die Halter als Formen: die Ausruestungshalter in ihrer Klassenform (den
+## Kern-Halter gibt es seit 6g nicht mehr); darin das Teil oder leer. Der gewaehlte Halter steht in
 ## einem hervorgehobenen Kasten; unter jedem Halter seine Klasse.
 func _slots(build: DromeBuild) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var chassis := build.body()
-	var slots: Array = ["core"]
-	slots.append_array(build.equip_slots())
-	for slot in slots:
+	for slot in build.equip_slots():
 		var part := build.part_in(slot)
 		var kind := "core" if slot == "core" else SlotRules.slot_class(chassis, slot)
 		var chosen: bool = slot == _selected_slot

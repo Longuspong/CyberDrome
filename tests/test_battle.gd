@@ -284,7 +284,10 @@ func test_every_ability_fires_by_itself() -> void:
 	var squads := [_ability_squad(), _squad(), [DromeBuild.create("BOOST", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_holo_boost"})]]
+		"equip_left": &"eq_holo_boost"})], [DromeBuild.create("ORBIT", {
+		"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core",
+		"equip_left": &"eq_orbit_focus"})]]
 	var uses := {}
 	for squad in squads:
 		var measured: Dictionary = _record(8, squad, 7000)
@@ -409,3 +412,45 @@ func test_generated_enemies_are_always_valid() -> void:
 			var problems: Array[String] = build.validate()
 			t.ok(problems.is_empty(), "%s ist baubar: %s"
 				% [build.display_name, ", ".join(problems)])
+
+
+func test_shield_overflow_is_not_multiplied_onto_integrity() -> void:
+	# Bricht ein Treffer den Schild, trifft nur der Rest die Integritaet --
+	# ohne Schildfaktor. Frueher ging der Schildbrecher (Energie x1,2, Schild
+	# x2) mit dem vollen Faktor auf die HP durch.
+	var grid := Grid.new(10, 10)
+	var target := Unit.create(_squad()[0], &"E0", false)
+	var resolver := ActionResolver.new(grid, [target])
+	target.shield = 0
+	var bare: int = resolver.resolve_damage(target, 12, 1.0, 2.0)["hp"]
+	target.shield = 5
+	var broken: Dictionary = resolver.resolve_damage(target, 12, 1.0, 2.0)
+	t.equal(int(broken["shield_after"]), 0, "der Schild ist weg")
+	t.ok(int(broken["hp"]) < bare,
+		"ein Rest Schild faengt etwas ab: %d < %d" % [broken["hp"], bare])
+	target.shield = 0
+	var rest: int = resolver.resolve_damage(target, 10, 1.0, 2.0)["hp"]
+	t.ok(int(broken["hp"]) <= rest,
+		"5 Schild kosten den Schildbrecher gut 2 Rohschaden: %d <= %d" % [broken["hp"], rest])
+	target.free()
+
+
+func test_shield_recharges_only_after_a_calm_spell() -> void:
+	# 6g: keine Grundregeneration. Erst nach der Ruhezeit laedt der Schild.
+	var unit := Unit.create(_squad()[0], &"P0", true)
+	var maximum := unit.shield_max()
+	unit.shield = 0
+	unit.note_damage()
+	var gained := 0
+	for i in 60:   # 3 s
+		gained += unit.recharge_shield(0.05)
+	t.equal(gained, 0, "in den ersten Sekunden nach einem Treffer laedt nichts")
+	for i in 60:   # weitere 3 s
+		gained += unit.recharge_shield(0.05)
+	t.ok(gained > 0 and unit.shield <= maximum,
+		"nach der Ruhezeit laedt er wieder (%d von %d)" % [unit.shield, maximum])
+	unit.note_damage()
+	var before := unit.shield
+	unit.recharge_shield(0.05)
+	t.equal(unit.shield, before, "ein neuer Treffer stoppt das Nachladen")
+	unit.free()

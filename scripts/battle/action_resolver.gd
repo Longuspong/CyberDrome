@@ -57,6 +57,8 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		source.damage_dealt += amount
 
 	var dealt := (shield_before - target.shield) + amount
+	if dealt > 0:
+		target.note_damage()
 
 	EventBus.unit_damaged.emit(target, amount, source)
 	# Was der Schild geschluckt hat, steht mit im Log. Vorher hiess ein
@@ -157,11 +159,16 @@ func resolve_damage(target: Unit, raw: int, energy_fraction: float,
 			continue
 		if shield > 0:
 			# shield_mult: Schildbrecher (Neon-Blaster) trifft den Schild doppelt.
-			var eff := int(round(float(amt) * float(portion["sf"]) * shield_mult))
+			var factor := float(portion["sf"]) * shield_mult
+			var eff := int(round(float(amt) * factor))
 			if eff <= shield:
 				shield -= eff
 			else:
-				to_hp += float(eff - shield)
+				# Ueberschuss: der Rest wird in Rohschaden zurueckgerechnet und
+				# trifft die Integritaet ohne Schildfaktor (frueher ging er mit
+				# Faktor durch -- der Schildbrecher traf dann x2,4 auf HP).
+				var used_raw := float(shield) / factor if factor > 0.0 else float(amt)
+				to_hp += maxf(0.0, float(amt) - used_raw) * float(portion["hf"])
 				shield = 0
 		else:
 			to_hp += float(amt) * float(portion["hf"])

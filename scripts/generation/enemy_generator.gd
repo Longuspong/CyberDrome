@@ -73,14 +73,13 @@ func _random_build(display_name: String) -> DromeBuild:
 func _roll(display_name: String) -> DromeBuild:
 	# Der Rahmen ist eine Huelle: Kopf und Fuesse stammen aus DEMSELBEN Set wie
 	# das Chassis (GAME_DESIGN §9). Frei gewuerfelt entstuenden gemischte Rahmen,
-	# die der Aufbau ablehnt. Der Kern dagegen ist universal -- er wird weiter
-	# frei gewuerfelt.
+	# die der Aufbau ablehnt. Der Kern gehoert seit 6g ebenso zum Rahmen.
 	var chassis: PartData = _pick(PartDB.of_type(PartData.Type.BODY))
 	var assignment := {
 		"body": chassis.id,
 		"head": PartDB.frame_mate(chassis.set_id, PartData.Type.HEAD).id,
 		"feet": PartDB.frame_mate(chassis.set_id, PartData.Type.FEET).id,
-		"core": _pick(PartDB.of_type(PartData.Type.CORE)).id,
+		"core": PartDB.frame_mate(chassis.set_id, PartData.Type.CORE).id,
 	}
 
 	# Der erste Ausruestungsslot bekommt garantiert eine Waffe -- ein Aufbau
