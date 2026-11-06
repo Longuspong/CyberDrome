@@ -229,6 +229,22 @@ Vom Spieler angestossen (6. Nov. 2026):
    Integritaet, und "Faehigkeitsschaden" ist eine Skalierung, keine dritte
    Art.
 
+4. **Tanks: viel Integritaet, kaum Schild** (Gedanke des Spielers, 6. Nov.).
+   Durchgerechnet (je 200 Kaempfe, Molok mit Kanone + Deflektor):
+
+   | Molok | Siege | Molok lebt |
+   |---|---|---|
+   | heute 145 HP / 55 Schild (Spiegel) | 101:99 | 20,6 s |
+   | 200 HP / 10 Schild gegen heute | 115:85 | 21,3 s |
+   | 185 HP / 15 Schild gegen heute | 104:96 | 20,6 s |
+   | heute gegen Neon-Blaster-Gegner | 84:116 | 19,9 s |
+   | 200 HP / 10 Schild gegen Neon-Blaster-Gegner | 97:103 | 20,4 s |
+
+   Lesart: die Summe bleibt fast gleich, aber die Rollen werden klar -- Energie
+   und Schildbrecher fuer Schild-DROMEs, kinetisch (Lanze, Klinge, Hammer) fuer
+   Tanks. Laenger leben tut der Molok erst mit der Praesenz, die Schaden auf
+   ihn zieht. Neon-Blaster bleibt wie er ist (Entscheidung 6. Nov.).
+
 ## 7. Ausruestung, Module und Lager im Lauf (Vorschlag, Stand 5. Nov.)
 
 **Vorgabe des Spielers:** kein fester Gegenstand je DROME, sondern modular mit
