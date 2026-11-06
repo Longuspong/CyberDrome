@@ -226,8 +226,14 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
 * **Gemessen** (200 Spiegelkaempfe): der Molok faellt jetzt in 93 % zuerst und
   nimmt ~209 Schaden je Kampf -- er tankt. Der Nimbus faellt kaum noch zuerst.
   **Aber:** Hammer-Molok gegen Kanonen-Molok 38:162 -- mit Hammer laeuft er
-  allein nach vorn und richtet wenig an (43 je Kampf). Offen: Hammer staerker,
-  oder der Molok wartet auf seine Hinterreihe.
+  allein nach vorn und richtet wenig an (43 je Kampf).
+* **Entscheidung (6. Nov.):** der Hammer bleibt wie er ist -- jeder 3. Schlag
+  betaeubt 1 s. Nachgemessen (je 200 Kaempfe, Hammer gegen Kanone, mit
+  Aufstellung): heute 31:169; Molok wartet auf sein Team 24:176; Hammer 22
+  statt 16 Schaden 53:147; beides 44:156. Das Warten hilft nicht, und mehr
+  Schaden nur wenig. Die eigentliche Ursache ist die Kanone (Reichweite 6,
+  Flaeche -- erst recht nach dem Vortex). Sie ist eher zu stark als der
+  Hammer zu schwach; Thema fuers Balancing nach dem Strix.
 
 ## 6e. Aufstellung vor dem Kampf (gebaut, 6. Nov. 2026)
 
@@ -242,8 +248,10 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
 * Die Zonen sitzen weiter 5 Felder von den Ecken eingerueckt
   (`deployment.inset`) -- direkt in der Ecke dauert der Anlauf rund doppelt
   so lange.
-* **Empfehlung zur Frage "Ausruesten vor dem Kampf oder im Beute-/Laden-
-  Menue":** Ausruesten, Kaufen und Rezepte gehoeren in einen eigenen
+* **Entschieden (6. Nov.): Zwischenstopp nach dem Kampf** fuer Beute, Laden,
+  Lager und Rezepte; die Aufstellung bekommt einen Knopf "Umruesten".
+* Begruendung der Empfehlung zur Frage "Ausruesten vor dem Kampf oder im
+  Beute-/Laden-Menue": Ausruesten, Kaufen und Rezepte gehoeren in einen eigenen
   Zwischenstopp nach dem Kampf (Beute, Laden, Lager). Die Aufstellung bleibt
   schlank: Feld, Gegnervorschau, ein Knopf "Umruesten", der ins Lager und
   zurueck fuehrt. Grund: auf dem Handy braucht das Feld den ganzen Platz, und
