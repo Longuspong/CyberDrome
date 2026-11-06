@@ -57,7 +57,7 @@
     "actions": [
       {
         "id": "act_plasma_slash",
-        "display_name": "Plasmahieb",
+        "display_name": "Angriff",
         "category": "attack",
         "targeting": "single",
         "range_tiles": 1,

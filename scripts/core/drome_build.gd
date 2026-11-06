@@ -178,7 +178,7 @@ func actions() -> Array:
 ## Die WAFFEN dieses Aufbaus tragen je einen Angriffs-Aktionspunkt bei: zwei
 ## Waffen, zwei Angriffe (GAME_DESIGN §13). Gezaehlt werden die Waffen-TEILE,
 ## nicht die verschiedenen Angriffe -- zwei gleiche Blaster sind zwei Schuss,
-## obwohl es dieselbe Puls-Salve ist.
+## obwohl es derselbe Angriff ist.
 func attack_budget() -> int:
 	return weapons().size()
 

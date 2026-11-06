@@ -58,7 +58,7 @@
     "actions": [
       {
         "id": "act_hammer",
-        "display_name": "Hammerschlag",
+        "display_name": "Angriff",
         "category": "attack",
         "targeting": "single",
         "range_tiles": 1,

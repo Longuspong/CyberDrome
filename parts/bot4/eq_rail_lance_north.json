@@ -58,7 +58,7 @@
     "actions": [
       {
         "id": "act_raillance",
-        "display_name": "Schienenschuss",
+        "display_name": "Angriff",
         "category": "attack",
         "targeting": "single",
         "range_tiles": 8,

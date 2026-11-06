@@ -58,7 +58,7 @@
     "actions": [
       {
         "id": "act_runestaff",
-        "display_name": "Runenschlag",
+        "display_name": "Angriff",
         "category": "attack",
         "targeting": "single",
         "range_tiles": 3,
