@@ -51,6 +51,7 @@
     "hp_regen_pct": 5,
     "aggro_bonus": 0,
     "ai_role": "",
+    "passive": "",
     "actions": []
   }
 }

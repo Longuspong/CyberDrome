@@ -380,6 +380,10 @@ STAT_DEFAULTS = {
     #   sniper       haelt Abstand, weicht nur aus, wenn jemand direkt danebensteht (Strix)
     #   controller   bleibt hinter der Frontlinie, bis sie im Kampf ist (Nimbus)
     "ai_role": "",
+    # Nur body: die Passive des DROME (Unit.passive()).
+    #   spellcaster  nach jeder Faehigkeit braucht die Waffe nur noch halb so
+    #                viele normale Angriffe bis zur naechsten (Nimbus)
+    "passive": "",
 }
 
 # Ausruestung gewaehrt eine LISTE von Aktionen (``actions``): eine Waffe ihren
@@ -406,7 +410,8 @@ STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
     "scout_body":  {"hp":  60, "def": 1, "spd": 2, "shield": 30, "ai_role": "skirmisher"},
     "jugg_body":   {"hp": 130, "def": 5, "shield": 50, "ai_role": "vanguard"},
-    "mage_body":   {"hp":  85, "def": 2, "shield": 50, "ai_role": "controller"},
+    "mage_body":   {"hp":  85, "def": 2, "shield": 50, "ai_role": "controller",
+                    "passive": "spellcaster"},
     "strix_body":  {"hp":  70, "def": 2, "spd": 1, "shield": 30, "ai_role": "sniper"},
 
     # --- KERN (core) -------------------------------------------------------
@@ -476,19 +481,23 @@ STATS = {
     # Zieht Aufmerksamkeit ueber seinen Aggro-Wert.
     "eq_bait_beacon": {"weight": 3, "aggro_bonus": 25},
 
-    # Die einzige Nahkampfwaffe: Energie-Kreuz um das Ziel.
+    # Kontrollwaffe des Nimbus: Einzelschuss auf Blaster-Reichweite, reine
+    # Energie. Die Faehigkeit (Vortex) zieht die Gegner um das Ziel zusammen,
+    # kurz danach schlaegt eine Schockwelle von innen nach aussen zu und
+    # verlangsamt (Vorgabe des Spielers, Nov. 2026).
     "eq_rune_staff": {
         "weight": 4,
         "actions": [
             {"id": "act_runestaff", "display_name": "Runenschlag",
-             "category": "attack", "targeting": "aoe_cross",
-             "range_tiles": 1, "aoe_radius": 1, "power": 10,
+             "category": "attack", "targeting": "single",
+             "range_tiles": 3, "power": 9,
              "energy_fraction": 1.0, "interval": 1.2},
-            {"id": "act_rune_nova", "display_name": "Arkanwelle",
+            {"id": "act_rune_vortex", "display_name": "Vortex",
              "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 2, "aoe_radius": 1, "power": 13,
-             "energy_fraction": 1.0,
-             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_runestaff"}},
+             "range_tiles": 3, "aoe_radius": 2, "power": 14,
+             "energy_fraction": 1.0, "gather": True, "delay": 0.6,
+             "status": {"id": "slow", "seconds": 2.5, "move_mult": 0.6},
+             "trigger": {"kind": "attacks", "every": 5, "weapon": "act_runestaff"}},
         ],
     },
     # Zieht alle 6 s ein Ziel zwei Felder heran.
@@ -528,6 +537,13 @@ ACTION_DEFAULTS = {
     "energy_fraction": 0.0,
     "interval": 2.0,
     "trigger": None,
+    # Flaeche: zieht die Gegner im Radius zuerst zum Zielfeld heran.
+    "gather": False,
+    # Sekunden zwischen Ausloesen und Schaden (Schockwelle nach dem Sog).
+    "delay": 0.0,
+    # Statuseffekt auf jeden Getroffenen: {"id", "seconds", ...Aufschlaege},
+    # z. B. {"id": "slow", "seconds": 2.5, "move_mult": 0.6}.
+    "status": None,
 }
 
 TARGETINGS = ("single", "aoe_around_target", "aoe_cross", "dash")

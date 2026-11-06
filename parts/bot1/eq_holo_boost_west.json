@@ -53,6 +53,7 @@
     "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "ai_role": "",
+    "passive": "",
     "actions": [
       {
         "id": "act_holo_dash",
@@ -71,7 +72,10 @@
           "kind": "adjacent",
           "every": 4,
           "weapon": ""
-        }
+        },
+        "gather": false,
+        "delay": 0.0,
+        "status": null
       }
     ]
   }

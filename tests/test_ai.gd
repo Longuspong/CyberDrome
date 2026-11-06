@@ -169,3 +169,97 @@ func test_allies_prefer_a_shared_target() -> void:
 	b.target_id = right.unit_id
 	t.equal(battle.brain.choose_target(a), right, "und umgekehrt")
 	battle.free()
+
+
+# ---------------------------------------------------------------------------
+# Nimbus: Runenstab, Vortex, Zauberwirker
+# ---------------------------------------------------------------------------
+
+func _action(unit: Unit, id: StringName) -> ActionData:
+	for action in unit.actions():
+		if action.id == id:
+			return action
+	return null
+
+
+func test_the_rune_staff_hits_one_target_at_blaster_range() -> void:
+	var unit := Unit.create(_nimbus(), &"N", true)
+	var vireo := Unit.create(_vireo(), &"V", true)
+	var staff := _action(unit, &"act_runestaff")
+	var blaster := _action(vireo, &"act_pulse")
+	t.equal(staff.range_tiles, blaster.range_tiles, "Runenstab reicht so weit wie der Blaster")
+	t.equal(staff.aoe_radius, 0, "und trifft immer nur ein Ziel")
+	var vortex := _action(unit, &"act_rune_vortex")
+	t.equal(int(vortex.trigger_every), 5, "nach vier normalen Angriffen kommt der Vortex")
+	unit.free()
+	vireo.free()
+
+
+func test_the_vortex_gathers_then_strikes_then_slows() -> void:
+	# Ziel in der Mitte, zwei Gegner im Umkreis 2. Der Sog zieht sie heran,
+	# der Schaden kommt erst nach der Verzoegerung, danach sind sie langsamer.
+	var tiles := [Vector2i(10, 16), Vector2i(10, 12), Vector2i(12, 12), Vector2i(10, 10)]
+	var battle := _battle([_nimbus()], [_vireo(), _vireo(), _vireo()], tiles)
+	var nimbus: Unit = battle.units[0]
+	var center: Unit = battle.units[1]
+	var side: Unit = battle.units[2]
+	var back: Unit = battle.units[3]
+	for u in [center, side, back]:
+		u.shield = 0
+	nimbus.place_at(Vector2i(10, 15))
+	battle.grid.clear_occupant(Vector2i(10, 16))
+	battle.grid.set_occupant(nimbus.tile, nimbus.unit_id)
+	var vortex := _action(nimbus, &"act_rune_vortex")
+	var hp_before := side.hp
+	var speed_before := side.move_speed()
+
+	t.ok(battle.resolver.execute(nimbus, center.tile, vortex), "der Vortex geht raus")
+	t.ok(Grid.distance(side.tile, center.tile) <= 1, "der seitliche Gegner wird herangezogen (%s)" % side.tile)
+	t.ok(Grid.distance(back.tile, center.tile) <= 1, "der hintere ebenso (%s)" % back.tile)
+	t.equal(side.hp, hp_before, "Schaden gibt es noch nicht -- erst die Schockwelle")
+
+	var steps := int(ceil(vortex.delay / battle.step_seconds())) + 1
+	for i in steps:
+		battle.resolver.advance(battle.step_seconds())
+	t.ok(side.hp < hp_before, "nach %.1f s schlaegt die Schockwelle zu" % vortex.delay)
+	t.ok(center.hp < center.stat("hp_max"), "auch das Ziel in der Mitte")
+	t.ok(side.move_speed() < speed_before, "und die Getroffenen sind verlangsamt")
+	t.equal(nimbus.hp, nimbus.stat("hp_max"), "der Nimbus selbst bleibt heil")
+	battle.free()
+
+
+func test_the_spellcaster_halves_the_wait_after_an_ability() -> void:
+	var battle := _battle([_nimbus(), _vireo()], [_vireo()],
+		[Vector2i(4, 16), Vector2i(6, 16), Vector2i(10, 4)])
+	var nimbus: Unit = battle.units[0]
+	var vireo: Unit = battle.units[1]
+	var vortex := _action(nimbus, &"act_rune_vortex")
+	var scatter := _action(vireo, &"act_pulse_scatter")
+	t.equal(nimbus.passive(), "spellcaster", "der Nimbus ist Zauberwirker")
+	# Vortex: vier normale Angriffe, danach nur noch zwei.
+	t.equal(int(vortex.trigger_every) - 1 - battle.brain._count_after_ability(nimbus, vortex), 2,
+		"nach dem Vortex braucht er zwei statt vier Angriffe")
+	# Blaster am Nimbus: zwei normale, danach einer (Streusalve, Schuss, Streusalve).
+	t.equal(int(scatter.trigger_every) - 1 - battle.brain._count_after_ability(nimbus, scatter), 1,
+		"mit dem Blaster: Streusalve, ein Schuss, Streusalve")
+	t.equal(battle.brain._count_after_ability(vireo, scatter), 0,
+		"ohne die Passive beginnt die Zaehlung von vorn")
+	battle.free()
+
+
+func test_a_nimbus_casts_more_often_than_its_staff_alone_would() -> void:
+	# Im Kampf: nach dem ersten Vortex kommt jeder weitere nach zwei Angriffen.
+	var seq := []
+	var record := func(unit, _tile, action):
+		if unit.display_name == "Nimbus" and unit.is_player:
+			seq.append(action.id)
+	EventBus.action_used.connect(record)
+	var battle := BattleManager.new()
+	battle.setup(6060, [_nimbus(), _molok()], [_molok(), _molok()])
+	battle.run_to_end(40.0)
+	battle.free()
+	EventBus.action_used.disconnect(record)
+	var first := seq.find(&"act_rune_vortex")
+	t.ok(first == 4, "der erste Vortex nach vier Angriffen (Folge %s)" % str(seq.slice(0, 8)))
+	if first >= 0 and seq.size() > first + 3:
+		t.equal(seq[first + 3], &"act_rune_vortex", "der naechste schon nach zwei Angriffen")

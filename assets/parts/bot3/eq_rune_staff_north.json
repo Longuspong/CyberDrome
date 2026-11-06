@@ -54,30 +54,34 @@
     "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "ai_role": "",
+    "passive": "",
     "actions": [
       {
         "id": "act_runestaff",
         "display_name": "Runenschlag",
         "category": "attack",
-        "targeting": "aoe_cross",
-        "range_tiles": 1,
-        "aoe_radius": 1,
-        "power": 10,
+        "targeting": "single",
+        "range_tiles": 3,
+        "aoe_radius": 0,
+        "power": 9,
         "push_tiles": 0,
         "aggro_coeff": 1.0,
         "aggro_flat": 0,
         "energy_fraction": 1.0,
         "interval": 1.2,
-        "trigger": null
+        "trigger": null,
+        "gather": false,
+        "delay": 0.0,
+        "status": null
       },
       {
-        "id": "act_rune_nova",
-        "display_name": "Arkanwelle",
+        "id": "act_rune_vortex",
+        "display_name": "Vortex",
         "category": "ability",
         "targeting": "aoe_around_target",
-        "range_tiles": 2,
-        "aoe_radius": 1,
-        "power": 13,
+        "range_tiles": 3,
+        "aoe_radius": 2,
+        "power": 14,
         "push_tiles": 0,
         "aggro_coeff": 1.0,
         "aggro_flat": 0,
@@ -85,8 +89,15 @@
         "interval": 2.0,
         "trigger": {
           "kind": "attacks",
-          "every": 3,
+          "every": 5,
           "weapon": "act_runestaff"
+        },
+        "gather": true,
+        "delay": 0.6,
+        "status": {
+          "id": "slow",
+          "seconds": 2.5,
+          "move_mult": 0.6
         }
       }
     ]

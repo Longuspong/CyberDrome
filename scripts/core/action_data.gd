@@ -84,6 +84,17 @@ var interval: float = 2.0
 ##   time      alle ``trigger_every`` Sekunden, sobald ein Ziel in Reichweite ist.
 ##   adjacent  wenn ein Gegner direkt danebensteht, hoechstens alle
 ##             ``trigger_every`` Sekunden.
+## Flaeche: zieht die Gegner im Radius zuerst zum Zielfeld heran (Vortex).
+var gather: bool = false
+
+## Sekunden zwischen Ausloesen und Schaden. Der Sog wirkt sofort, die
+## Schockwelle danach (ActionResolver.advance).
+var delay: float = 0.0
+
+## Statuseffekt auf jeden Getroffenen, z. B. {"id": "slow", "seconds": 2.5,
+## "move_mult": 0.6}. Leer = keiner.
+var status: Dictionary = {}
+
 var trigger_kind: String = ""
 var trigger_every: float = 0.0
 var trigger_weapon: StringName = &""
@@ -106,6 +117,11 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.aggro_flat = meta.get("aggro_flat", 0)
 	action.energy_fraction = float(meta.get("energy_fraction", 0.0))
 	action.interval = float(meta.get("interval", 2.0))
+	action.gather = bool(meta.get("gather", false))
+	action.delay = float(meta.get("delay", 0.0))
+	var status_meta = meta.get("status")
+	if status_meta is Dictionary:
+		action.status = status_meta
 	var trigger = meta.get("trigger")
 	if trigger is Dictionary:
 		action.trigger_kind = str(trigger.get("kind", ""))
@@ -125,6 +141,18 @@ func trigger_text() -> String:
 			return "wenn ein Gegner direkt daneben steht (hoechstens alle %s s)" \
 				% _seconds(trigger_every)
 	return ""
+
+
+## Der Statuseffekt in Klartext: "verlangsamt 40 % fuer 2,5 s".
+func status_text() -> String:
+	if status.is_empty():
+		return ""
+	var seconds := _seconds(float(status.get("seconds", 0.0)))
+	match str(status.get("id", "")):
+		"slow":
+			var cut := int(round((1.0 - float(status.get("move_mult", 1.0))) * 100.0))
+			return "verlangsamt um %d %% fuer %s s" % [cut, seconds]
+	return "%s fuer %s s" % [str(status.get("id", "Effekt")), seconds]
 
 
 static func _seconds(value: float) -> String:
@@ -154,6 +182,8 @@ func effect_summary() -> String:
 	var parts: Array[String] = []
 	if is_move():
 		parts.append("Boost %d gerade" % range_tiles)
+	if gather:
+		parts.append("zieht zusammen")
 	if push_tiles > 0:
 		parts.append("stoesst %d" % push_tiles)
 	elif push_tiles < 0:
@@ -179,6 +209,12 @@ func description_lines() -> Array[String]:
 		lines.append("Staerke %d" % power)
 	if aoe_radius > 0:
 		lines.append("Flaeche: Radius %d um das Ziel" % aoe_radius)
+	if gather:
+		lines.append("zieht die Gegner im Radius zum Ziel heran")
+	if delay > 0.0:
+		lines.append("Schaden nach %s s" % _seconds(delay))
+	if not status.is_empty():
+		lines.append(status_text())
 	if push_tiles > 0:
 		lines.append("stoesst %d Feld(er) zurueck" % push_tiles)
 	elif push_tiles < 0:

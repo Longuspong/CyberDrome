@@ -75,6 +75,9 @@ var aggro_bonus: int = 0
 ## controller -- siehe AIController). Leer = nach Waffenreichweite.
 var ai_role: String = ""
 
+## Nur body: die Passive des DROME (siehe Unit.passive()). Leer = keine.
+var passive: String = ""
+
 ## Gewaehrte Aktionen. Leer bei passiven Teilen. Eine Waffe traegt zwei
 ## Eintraege -- ihren Angriff und ihre eigene Faehigkeit (GAME_DESIGN §13); ein
 ## Gadget null oder eine.
@@ -115,6 +118,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
 	part.aggro_bonus = stats.get("aggro_bonus", 0)
 	part.ai_role = str(stats.get("ai_role", ""))
+	part.passive = str(stats.get("passive", ""))
 
 	# Ein Teil gewaehrt eine LISTE von Aktionen. ``action`` (Einzahl) bleibt als
 	# Altformat lesbar, damit ein aelterer Datensatz nicht stumm seine Aktion

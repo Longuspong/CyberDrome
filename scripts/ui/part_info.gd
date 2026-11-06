@@ -84,6 +84,9 @@ static func traits(part: PartData) -> Array[String]:
 		out.append("Repariert jeden Puls (alle 3 s) %d %% der Integritaet." % part.hp_regen_pct)
 	if part.aggro_bonus > 0:
 		out.append("Zieht Aufmerksamkeit: +%d Aggro bei allen Gegnern." % part.aggro_bonus)
+	match part.passive:
+		"spellcaster":
+			out.append("Zauberwirker: nach jeder Faehigkeit braucht die Waffe nur halb so viele Angriffe bis zur naechsten.")
 	return out
 
 
@@ -114,6 +117,12 @@ static func action_lines(action: ActionData) -> Array[String]:
 			out.append("%d %% Energieschaden -- gut gegen Schilde." % int(round(action.energy_fraction * 100.0)))
 		else:
 			out.append("Kinetischer Schaden -- stark gegen Integritaet, schwach gegen Schilde.")
+	if action.gather:
+		out.append("Zieht die Gegner im Umkreis %d zum Ziel heran." % action.aoe_radius)
+	if action.delay > 0.0:
+		out.append("Danach schlaegt nach %s s eine Schockwelle zu." % ActionData._seconds(action.delay))
+	if not action.status.is_empty():
+		out.append("Getroffene: %s." % action.status_text())
 	if action.push_tiles > 0:
 		out.append("Stoesst das Ziel %d Feld(er) weg." % action.push_tiles)
 	elif action.push_tiles < 0:

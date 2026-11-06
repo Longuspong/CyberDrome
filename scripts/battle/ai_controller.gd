@@ -186,7 +186,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		var aim := _aim(unit, ability, target)
 		if not aim.is_empty():
 			_execute(unit, aim["tile"], ability, aim["target"])
-			mount["count"] = 0
+			mount["count"] = _count_after_ability(unit, ability)
 			return true
 	var shot := _aim(unit, attack, target)
 	if shot.is_empty():
@@ -196,6 +196,20 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		mount["count"] = mini(int(mount["count"]) + 1,
 			int((ability as ActionData).trigger_every) - 1)
 	return true
+
+
+## Wie viele Angriffe nach einer Faehigkeit schon "abgezaehlt" sind.
+##
+## Normalerweise keiner. Die Passive ``spellcaster`` (Nimbus) halbiert die
+## Zahl der normalen Angriffe bis zur naechsten Faehigkeit, abgerundet und
+## mindestens einer: Vortex jeder 5. Angriff (4 normale) -> danach 2 normale;
+## Blaster jeder 3. (2 normale) -> danach 1.
+func _count_after_ability(unit: Unit, ability: ActionData) -> int:
+	if unit.passive() != "spellcaster":
+		return 0
+	var normals := int(ability.trigger_every) - 1
+	var halved := maxi(1, normals / 2)
+	return maxi(0, normals - halved)
 
 
 ## Worauf zielt ``action``? Das Ziel, wenn es geht; sonst der am besten

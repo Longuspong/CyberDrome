@@ -61,7 +61,7 @@ KI. Die Waffe entscheidet, WIE er sie ausspielt.
 | **Vireo** | wendig, Assassine oder Kiter | **Trifft er, laeuft er 2 s schneller** (Vorgabe; Hoehe offen, Vorschlag +40 %) | schnittig: mit Fernwaffe Abstand halten und kiten, mit Klinge am Ziel kleben |
 | **Molok** | Tank, Frontlinie | **Praesenz: zieht Aggro und faengt Schaden fuer Verbuendete ab** (Vorgabe). Vorschlag: Gegner in 2 Feldern Umkreis bekommen Aggro auf ihn gebucht, und 30 % des Schadens an Verbuendeten neben ihm gehen auf ihn | geht IN den Schadensbereich, stellt sich zwischen Gegner und die eigene Hinterreihe, weicht nie aus |
 | **Strix** | Scharfschuetze | **+30 % Schaden auf maximaler Reichweite** (Vorgabe, "koennte ich mir vorstellen") | sucht das Feld auf genau maximaler Reichweite und bleibt dort; weicht nur aus, wenn jemand direkt danebensteht |
-| **Nimbus** | Magier, Kontrolle | offen -- Vorschlag: seine Kontrolleffekte (Sog, Betaeubung, Verlangsamung) halten 50 % laenger | mittlerer Abstand, hinter dem Molok; nicht vorpreschen wie ein Assassine |
+| **Nimbus** | Magier, Kontrolle | **Zauberwirker** (Vorgabe, gebaut): nach jeder Faehigkeit braucht die Waffe nur halb so viele normale Angriffe bis zur naechsten (abgerundet, mind. 1). Vortex: 4 Angriffe, danach 2. Mit Blaster: Streusalve, Schuss, Streusalve | wartet hinter der Frontlinie, dann auf Blaster-Reichweite |
 
 **Ausruestung:** jeder DROME **1 Ausruestungsplatz, der Molok 2** (Vorgabe:
 "erstmal"). Folge: die Halterklassen (leicht/mittel/schwer) verlieren ihren
@@ -147,10 +147,8 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
 
 1. **Was bleibt zwischen Laeufen?** Nur freigeschaltete DROMEs/Waffen/Kerne,
    oder auch Erfahrung/Stufen? Gibt es Geld oder einen Laden im Lauf?
-2. **Kopf und Antrieb:** weiter als tauschbare Teile, oder fest am Chassis
-   (die Huelle ist der DROME)? Vorschlag: fest -- dann gibt es je DROME nur
-   noch Kern + Ausruestung zu waehlen, und das liest sich auf dem Handy viel
-   klarer.
+2. ~~Kopf und Antrieb~~ -- **entschieden:** fest am Chassis. Ein DROME ist
+   ein ganzes, immer gesamt gestaltetes Modell, nichts davon austauschbar.
 3. **Die uebrigen Teile** (Belagerungskanone, Schienen-Lanze, Runenstab,
    Deflektor, Hologramm-Boost, Orbit-Fokus, Drohnen-Pod, Koedersender): Welche
    behalten, umbauen oder streichen? Vorschlag: Strix behaelt die Lanze,
@@ -162,12 +160,46 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
    Waffen, damit Passive und Waffe immer zusammenpassen.
 5. **Halterklassen leicht/mittel/schwer:** Bei einem Platz pro DROME
    ueberfluessig. Vorschlag: streichen, stattdessen "passt zu Vireo/Molok/...".
-6. **Nimbus-Passive:** Vorschlag "Kontrolle haelt 50 % laenger" -- oder hast
-   du etwas anderes im Kopf?
+6. ~~Nimbus-Passive~~ -- **entschieden und gebaut:** Zauberwirker (siehe
+   Tabelle in Abschnitt 2).
 7. **Chaos-Virus** als zweiter Modus: behalten, oder alles auf den Lauf?
 8. **Zahlen:** Vireo-Tempo +40 % fuer 2 s, Strix +30 % auf maximaler
    Reichweite, Verwundbar +50 % fuer 5 s, Betaeubung 1 s -- passt das als
    Startpunkt?
+
+## 6a. Runenstab und Vortex (entschieden und gebaut, 6. Nov. 2026)
+
+* **Runenschlag:** Einzelziel, Reichweite 3 wie der Blaster (vorher Nahkampf
+  mit Kreuzflaeche -- "sonst sehr unausgeglichen"), reine Energie, 1,2 s.
+* **Vortex** (jeder 5. Angriff, also nach vier normalen): angezielt auf einen
+  Gegner, zieht die Gegner im Umkreis 2 zu ihm heran (Sog von aussen nach
+  innen), 0,6 s spaeter eine Schockwelle von innen nach aussen (14 Energie im
+  Umkreis 2), danach 2,5 s um 40 % verlangsamt.
+* Statuseffekte laufen in Sekunden; Verlangsamung wirkt als Faktor auf das
+  Lauftempo. Verzoegerte Wirkungen: `ActionResolver.delayed`/`advance()`.
+* Gemessen (200 Spiegelkaempfe, Standard-Squad): der Nimbus faellt in 58 %
+  statt 80 % der Kaempfe zuerst. Auffaellig: der Strix richtet mit Abstand
+  den meisten Integritaetsschaden an (187 je Kampf gegen 48-72 bei den
+  anderen).
+* Folge: es gibt bis zu Plasmaklinge und Hammer **keine Nahkampfwaffe** mehr;
+  der Hologramm-Boost (loest aus, wenn ein Gegner danebensteht) kommt im
+  Kampf deshalb gerade nicht vor.
+
+## 6b. Brainstorming -- als Naechstes zu besprechen
+
+Vom Spieler angestossen (6. Nov. 2026):
+
+1. **Die vier Identitaeten** im Ganzen: Passive, KI, passende Waffen.
+2. **Die Zusatzidentitaet der Neon-DROMEs** (Schild als Ressource fuer
+   Faehigkeiten, leuchtende Roehren).
+3. **Schadensarten:** kinetisch, Energie -- und "Faehigkeitsschaden"? Im
+   Cyber-Setting gibt es keine Magie. Vorschlag zur Diskussion: es bleibt bei
+   **zwei Schadensarten** (kinetisch, Energie), jede Aktion hat ihre Art.
+   Dazu ein neuer Wert **Leistung (LST)** am DROME, der nur
+   Faehigkeitsschaden verstaerkt (+X % je Punkt). Der Nimbus hat viel
+   Leistung, der Strix kaum. So bleibt eine kinetische Faehigkeit gut gegen
+   Integritaet, und "Faehigkeitsschaden" ist eine Skalierung, keine dritte
+   Art.
 
 ## 7. Ausruestung, Module und Lager im Lauf (Vorschlag, Stand 5. Nov.)
 

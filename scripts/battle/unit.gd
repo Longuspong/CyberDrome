@@ -349,6 +349,13 @@ func init_realtime(pulse_offset: float) -> void:
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0})
 
 
+## Die Passive des Chassis ("spellcaster" ...). Leer = keine.
+func passive() -> String:
+	if build == null or build.body() == null:
+		return ""
+	return build.body().passive
+
+
 ## Wie die KI diesen DROME fuehrt -- aus dem Chassis. Leer = nach Waffe.
 func ai_role() -> String:
 	if build == null or build.body() == null:
@@ -359,8 +366,12 @@ func ai_role() -> String:
 ## Felder je Sekunde. SPD ist seit dem Echtzeit-Kampf die Laufgeschwindigkeit.
 func move_speed() -> float:
 	var section := Config.section("realtime")
-	return maxf(float(section.get("move_min", 1.2)),
+	var speed := maxf(float(section.get("move_min", 1.2)),
 		float(section.get("move_base", 1.0)) + float(spd()) * float(section.get("move_per_spd", 0.12)))
+	# Verlangsamung und Beschleunigung wirken als Faktor (move_mult).
+	for status in statuses.values():
+		speed *= float(status.get("move_mult", 1.0))
+	return speed
 
 
 ## Die groesste Reichweite unter den Waffen dieses DROME.
@@ -382,8 +393,9 @@ func hp_fraction() -> float:
 func stat(key: String) -> int:
 	var value: int = stats.get(key, 0)
 	for status in statuses.values():
-		if key != "seconds_left":
-			value += int(status.get(key, 0))
+		var bonus = status.get(key, 0)
+		if bonus is int or bonus is float:
+			value += int(bonus)
 	return value
 
 

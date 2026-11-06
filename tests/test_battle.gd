@@ -290,8 +290,12 @@ func test_every_ability_fires_by_itself() -> void:
 		var measured: Dictionary = _record(8, squad, 7000)
 		for id in measured["uses"]:
 			uses[id] = int(uses.get(id, 0)) + int(measured["uses"][id])
-	for id in [&"act_pulse_scatter", &"act_siege_barrage", &"act_rune_nova",
-			&"act_rail_pierce", &"act_orbitpull", &"act_holo_dash"]:
+	# Der Hologramm-Boost fehlt hier mit Absicht: er loest aus, wenn ein Gegner
+	# direkt danebensteht, und solange es keine Nahkampfwaffe gibt (Plasmaklinge
+	# und Hammer kommen erst), kommt im Kampf niemand so nah. Sein Ausloeser
+	# wird in tests/test_dash.gd geprueft.
+	for id in [&"act_pulse_scatter", &"act_siege_barrage", &"act_rune_vortex",
+			&"act_rail_pierce", &"act_orbitpull"]:
 		t.ok(int(uses.get(id, 0)) > 0, "%s loest im Kampf aus (%d)" % [id, uses.get(id, 0)])
 	t.note("Aktionen: %s" % str(uses))
 

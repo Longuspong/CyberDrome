@@ -54,6 +54,7 @@
     "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "ai_role": "",
+    "passive": "",
     "actions": [
       {
         "id": "act_orbitpull",
@@ -72,7 +73,10 @@
           "kind": "time",
           "every": 6,
           "weapon": ""
-        }
+        },
+        "gather": false,
+        "delay": 0.0,
+        "status": null
       }
     ]
   }

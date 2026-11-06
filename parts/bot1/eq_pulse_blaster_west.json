@@ -53,6 +53,7 @@
     "hp_regen_pct": 0,
     "aggro_bonus": 0,
     "ai_role": "",
+    "passive": "",
     "actions": [
       {
         "id": "act_pulse",
@@ -67,7 +68,10 @@
         "aggro_flat": 0,
         "energy_fraction": 0.5,
         "interval": 1.4,
-        "trigger": null
+        "trigger": null,
+        "gather": false,
+        "delay": 0.0,
+        "status": null
       },
       {
         "id": "act_pulse_scatter",
@@ -86,7 +90,10 @@
           "kind": "attacks",
           "every": 3,
           "weapon": "act_pulse"
-        }
+        },
+        "gather": false,
+        "delay": 0.0,
+        "status": null
       }
     ]
   }

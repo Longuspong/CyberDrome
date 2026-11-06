@@ -253,7 +253,11 @@ func test_a_ranged_enemy_clings_harder_than_a_melee_one() -> void:
 	var foe: Unit = battle.living(false)[0]
 
 	# Derselbe Gegner, einmal mit kurzer, einmal mit langer Waffe bewertet.
-	var melee_unit := Unit.create(_melee(), &"X0", false)
+	# Bis Plasmaklinge und Hammer kommen, gibt es keine Nahkampfwaffe; ein
+	# Aufbau ohne Waffe hat Reichweite 0 und steht fuer "kurz".
+	var melee_unit := Unit.create(DromeBuild.create("OHNE", {
+		"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core"}), &"X0", false)
 	var ranged_unit := Unit.create(_sniper(), &"X1", false)
 	t.ok(controller._incumbent_bonus(ranged_unit) > controller._incumbent_bonus(melee_unit),
 		"wer aus sieben Feldern schiesst, laesst sich schwerer umlenken (%.0f vs %.0f)"

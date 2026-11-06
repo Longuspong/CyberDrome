@@ -210,6 +210,11 @@ func tick() -> void:
 			if outcome != Outcome.RUNNING:
 				return
 
+	if resolver.advance(_dt):
+		_check_victory()
+		if outcome != Outcome.RUNNING:
+			return
+
 	_aggro_left -= _dt
 	if _aggro_left <= 0.0:
 		_aggro_left += _pulse

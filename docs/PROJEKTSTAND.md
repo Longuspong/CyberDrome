@@ -193,7 +193,8 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   > 2 s unerreichbar oder sicherem Abschuss), Verhalten haengt an der Rolle
   des Chassis (`ai_role`: vanguard/skirmisher/sniper/controller), Fokus-Bonus
   fuer Ziele der Verbuendeten. Zielwechsel 11,3 -> 5,5 je Minute. Offen: der
-  Nimbus faellt in ~80 % der Kaempfe zuerst (Runenstab Rw 1).
+  Nimbus faellt in ~80 % der Kaempfe zuerst (Runenstab Rw 1) -- seit dem
+  Runenstab-Umbau (6. Nov., Rw 3, Vortex, Zauberwirker) noch in 58 %.
 * Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
   ueberlappen.
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.

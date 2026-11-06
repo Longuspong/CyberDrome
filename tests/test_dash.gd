@@ -104,3 +104,27 @@ func test_target_blocker_names_the_reason() -> void:
 	t.equal(resolver.target_blocker(unit, Vector2i(9, 5), dash), "Zu weit fuer den Boost",
 		"jenseits der Reichweite ebenso")
 	unit.free()
+
+
+func test_the_boost_fires_when_an_enemy_stands_next_to_it() -> void:
+	# Der Ausloeser "Gegner direkt daneben": im Kampf kommt er erst wieder vor,
+	# wenn es Nahkampfwaffen gibt, deshalb hier gestellt.
+	var battle := BattleManager.new()
+	battle.setup(4711, [_vireo()], [_vireo()])
+	var unit: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	for u in [unit, foe]:
+		battle.grid.clear_occupant(u.tile)
+	unit.place_at(Vector2i(10, 10))
+	foe.place_at(Vector2i(10, 9))
+	for u in [unit, foe]:
+		battle.grid.set_occupant(u.tile, u.unit_id)
+	var used := []
+	var record := func(who, _tile, action): if who == unit: used.append(action.id)
+	EventBus.action_used.connect(record)
+	unit.target_id = foe.unit_id
+	battle.brain.update(unit, battle.step_seconds())
+	EventBus.action_used.disconnect(record)
+	t.ok(&"act_holo_dash" in used, "der Boost springt weg (%s)" % str(used))
+	t.ok(Grid.distance(unit.tile, foe.tile) > 1, "und danach steht niemand mehr daneben")
+	battle.free()

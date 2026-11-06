@@ -13,6 +13,11 @@ extends RefCounted
 var grid: Grid
 var units: Array = []
 
+## Verzoegerte Wirkungen (Schockwelle nach dem Sog):
+## { left: Sekunden, source: Unit, tile: Vector2i, action: ActionData }.
+## Der BattleManager ruft advance() je Schritt.
+var delayed: Array = []
+
 
 func _init(battle_grid: Grid, all_units: Array) -> void:
 	grid = battle_grid
@@ -299,9 +304,41 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		move_unit(source, tile, step)
 		return true
 
+	if action.gather:
+		_gather(source, tile, action)
+	if action.delay > 0.0:
+		delayed.append({"left": action.delay, "source": source, "tile": tile,
+			"action": action})
+		return true
+	_apply_area(source, tile, action)
+	return true
+
+
+## Laesst verzoegerte Wirkungen ablaufen. Gibt zurueck, ob eine ausgeloest hat.
+func advance(dt: float) -> bool:
+	if delayed.is_empty():
+		return false
+	var fired := false
+	var keep: Array = []
+	for entry in delayed:
+		entry["left"] = float(entry["left"]) - dt
+		if float(entry["left"]) > 0.0:
+			keep.append(entry)
+			continue
+		var source: Unit = entry["source"]
+		var action: ActionData = entry["action"]
+		EventBus.log_line("%s: %s schlaegt ein." % [source.display_name, action.display_name])
+		_apply_area(source, entry["tile"], action)
+		fired = true
+	delayed = keep
+	return fired
+
+
+## Die Wirkung auf alle getroffenen Felder: Schaden, Stossen, Statuseffekt.
+func _apply_area(source: Unit, tile: Vector2i, action: ActionData) -> void:
 	for affected in affected_tiles(tile, action):
 		var target := unit_at(affected)
-		if target == null:
+		if target == null or not target.is_alive():
 			continue
 		# Die Flaeche trifft nur Gegner -- weder Verbuendete noch den Schuetzen.
 		if not is_meaningful_target(source, target, action):
@@ -311,10 +348,53 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		elif action.aggro_flat > 0:
 			# Wirkung ohne Schaden (Ziehen): ohne Pauschalwert waere sie lautlos.
 			_book_aggro(target, source, float(action.aggro_flat), action.aggro_coeff)
-		if action.push_tiles != 0:
+		if action.push_tiles != 0 and target.is_alive():
 			_shove(source, target, action.push_tiles)
+		if not action.status.is_empty() and target.is_alive():
+			target.apply_status(StringName(str(action.status.get("id", "status"))),
+				float(action.status.get("seconds", 1.0)), action.status)
 
-	return true
+
+## Sog: die Gegner im Radius ruecken Feld fuer Feld zum Zielfeld, die
+## naechsten zuerst, damit sie sich dicht an dicht packen. Wer blockiert ist,
+## bleibt stehen.
+func _gather(source: Unit, center: Vector2i, action: ActionData) -> void:
+	var pulled: Array = []
+	for unit in units:
+		if not unit.is_alive() or unit.is_player == source.is_player:
+			continue
+		var gap := Grid.distance(unit.tile, center)
+		if gap >= 2 and gap <= action.aoe_radius:
+			pulled.append(unit)
+	pulled.sort_custom(func(a, b):
+		return Grid.distance(a.tile, center) < Grid.distance(b.tile, center))
+	for unit in pulled:
+		for _i in action.aoe_radius:
+			if Grid.distance(unit.tile, center) <= 1:
+				break
+			var next := _step_toward(unit, center)
+			if next == unit.tile:
+				break
+			move_unit(unit, next)
+	if not pulled.is_empty():
+		EventBus.log_line("%s zieht %d Gegner zusammen." % [source.display_name, pulled.size()])
+
+
+## Ein Feld naeher an ``center``, wenn frei -- erst die laengere Achse.
+func _step_toward(unit: Unit, center: Vector2i) -> Vector2i:
+	var delta := center - unit.tile
+	var steps: Array[Vector2i] = []
+	if absi(delta.x) >= absi(delta.y):
+		steps = [Vector2i(signi(delta.x), 0), Vector2i(0, signi(delta.y))]
+	else:
+		steps = [Vector2i(0, signi(delta.y)), Vector2i(signi(delta.x), 0)]
+	for step in steps:
+		if step == Vector2i.ZERO:
+			continue
+		var tile := unit.tile + step
+		if grid.can_stand_on(tile, unit.unit_id):
+			return tile
+	return unit.tile
 
 
 ## Stossen und Ziehen. Positiv = weg, negativ = heran.

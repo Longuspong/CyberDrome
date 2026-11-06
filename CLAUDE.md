@@ -79,14 +79,16 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 ## Naechste Schritte (Stand 5. November 2026)
 
 0. **Neuentwurf umsetzen** (`docs/NEUANFANG.md`, Reihenfolge in Abschnitt 8).
-   Erledigt: KI-Grundlagen (Ziel halten, Rolle je Chassis, Fokus).
+   Erledigt: KI-Grundlagen (Ziel halten, Rolle je Chassis, Fokus); Nimbus
+   (Runenstab Rw 3, Vortex, Passive Zauberwirker). Kopf und Antrieb bleiben
+   fest am Chassis -- ein DROME wird immer als Ganzes gestaltet.
    Entschieden: 3 Module je DROME, Credits + Laden (Beute gleich wichtig),
    Ausruestung bleibt nach dem Lauf. Offen: Fragen in Abschnitt 6.
    Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den
    Teildaten, Tempo und Puls in `data/config.json` -> `realtime`). Nimbus
-   (Nahkampf) faellt fast immer zuerst.
+   faellt noch in 58 % der Kaempfe zuerst, der Strix macht den meisten Schaden.
 2. Kern als Synergie-Teil ausarbeiten (Designpunkt 2).
 3. Eingreifen ueber Aggro-Platz 1 besprechen (Designpunkt 3) -- passt jetzt
    gut: Gegner im laufenden Kampf antippen.
