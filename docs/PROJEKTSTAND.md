@@ -198,6 +198,9 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * Seit 6. Nov. 2026: ein Ausruestungsplatz je DROME (Molok zwei), Vireo mit
   Sprint, Doppelschuss, Plasmaklinge und Neon-Blaster, Neon-Leuchten als
   Prototyp. Details und Messung: `docs/NEUANFANG.md` Abschnitt 6c.
+* Ebenfalls 6. Nov.: Molok als Tank (200/10, Praesenz, Hammer mit
+  Betaeubung) und die Aufstellung vor dem Kampf per Ziehen (Zone 3 x 5).
+  Abschnitte 6d und 6e.
 * Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
   ueberlappen.
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.

@@ -83,7 +83,9 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    Erledigt: KI-Grundlagen (Ziel halten, Rolle je Chassis, Fokus); Nimbus
    (Runenstab Rw 3, Vortex, Passive Zauberwirker); ein Platz je DROME;
    Vireo (Sprint, Doppelschuss, Plasmaklinge, Neon-Blaster); Neon-Leuchten
-   als Prototyp. Naechstes laut Reihenfolge: Molok (Praesenz, Hammer). Kopf und Antrieb bleiben
+   als Prototyp; Molok (Tank 200/10, Praesenz, Hammer); Aufstellung vor
+   dem Kampf per Ziehen (Zone 3 x 5). Naechstes: Strix, dann Module/Lager/
+   Laden (`docs/NEUANFANG.md` Abschnitt 7). Kopf und Antrieb bleiben
    fest am Chassis -- ein DROME wird immer als Ganzes gestaltet.
    Entschieden: 3 Module je DROME, Credits + Laden (Beute gleich wichtig),
    Ausruestung bleibt nach dem Lauf. Offen: Fragen in Abschnitt 6.

@@ -3,7 +3,8 @@
 Stand 6. November 2026. **Zur Besprechung.** Gebaut sind bisher: die
 KI-Grundlage (Abschnitt 5), der Nimbus (6a), ein Ausruestungsplatz je DROME
 mit Molok zwei (6c), der Vireo mit Passive, Doppelschuss, Plasmaklinge und
-Neon-Blaster (6c) und der Leucht-Prototyp fuer Neon (7c).
+Neon-Blaster (6c), der Leucht-Prototyp fuer Neon (7c), der Molok (6d) und
+die Aufstellung vor dem Kampf (6e).
 Hier steht, was der Spieler im Gespraech vorgegeben hat, was ich daraus
 vorschlage und welche Fragen offen sind. Entschiedenes wandert danach in
 `PROJEKTSTAND.md` und `CLAUDE.md`.
@@ -212,6 +213,42 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
     Neon City ist er dadurch zu stark), Klinge gegen Neon 80:120.
 * Seit es eine Nahkampfwaffe gibt, kommt der Hologramm-Boost wieder vor --
   aber der Startbestand traegt keine Klinge.
+
+## 6d. Molok (gebaut, 6. Nov. 2026)
+
+* **Tank:** 200 Integritaet, 10 Schild (Tanks: viel Integritaet, kaum Schild).
+* **Praesenz:** je Puls buchen Gegner im Umkreis 2 Aggro auf ihn; 30 % des
+  Schadens an Verbuendeten im Umkreis 3 gehen auf ihn
+  (`data/config.json` -> `passives.presence`).
+* **Hammer** (EQP-012, neues Modell): schwer, Nahkampf, kinetisch, 16 alle
+  1,8 s; jeder 3. Schlag betaeubt 1 s. Startbestand: Hammer + Deflektor,
+  die Kanone liegt frei.
+* **Gemessen** (200 Spiegelkaempfe): der Molok faellt jetzt in 93 % zuerst und
+  nimmt ~209 Schaden je Kampf -- er tankt. Der Nimbus faellt kaum noch zuerst.
+  **Aber:** Hammer-Molok gegen Kanonen-Molok 38:162 -- mit Hammer laeuft er
+  allein nach vorn und richtet wenig an (43 je Kampf). Offen: Hammer staerker,
+  oder der Molok wartet auf seine Hinterreihe.
+
+## 6e. Aufstellung vor dem Kampf (gebaut, 6. Nov. 2026)
+
+* Vorgabe des Spielers: vor dem Kampf zieht der Spieler seine DROMEs per
+  Ziehen und Ablegen in einer Zone von 3 x 5 Feldern unten links; erst nach
+  dem Bestaetigen beginnt der Kampf.
+* Gebaut: Zone 3 x 5 (`deployment.rows/columns`), Gegner gespiegelt. Ohne
+  Zutun stellt die Aufstellung nach Rolle auf (Molok vorn, Strix hinten),
+  beim Gegner ebenso. Ziehen auf einen eigenen DROME tauscht beide, Ziehen
+  daneben schiebt die Kamera. Die bestaetigte Aufstellung wird fuer den
+  naechsten Kampf gemerkt.
+* Die Zonen sitzen weiter 5 Felder von den Ecken eingerueckt
+  (`deployment.inset`) -- direkt in der Ecke dauert der Anlauf rund doppelt
+  so lange.
+* **Empfehlung zur Frage "Ausruesten vor dem Kampf oder im Beute-/Laden-
+  Menue":** Ausruesten, Kaufen und Rezepte gehoeren in einen eigenen
+  Zwischenstopp nach dem Kampf (Beute, Laden, Lager). Die Aufstellung bleibt
+  schlank: Feld, Gegnervorschau, ein Knopf "Umruesten", der ins Lager und
+  zurueck fuehrt. Grund: auf dem Handy braucht das Feld den ganzen Platz, und
+  "womit" und "wo" sind zwei Entscheidungen -- aber weil die Aufstellung vom
+  Aufbau abhaengt, darf der Weg zurueck nur einen Tipp kosten.
 
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
