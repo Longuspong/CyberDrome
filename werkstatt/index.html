@@ -860,6 +860,7 @@ function equipBlockReason(part, def) {
   }
   const rule = def.rule;
   if (!rule) return null;
+  if (rule.off) return "kein Halter (nur Optik)";
   const limit = rule.max_class || MOUNT_CLASSES[MOUNT_CLASSES.length - 1];
   if (MOUNT_CLASSES.indexOf(mountClassOf(part)) > MOUNT_CLASSES.indexOf(limit)) {
     return `zu schwer (Slot traegt bis ${MOUNT_CLASS_LABEL[limit]})`;

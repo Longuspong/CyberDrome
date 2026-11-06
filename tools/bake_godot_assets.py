@@ -69,6 +69,30 @@ def bake_svg(svg_text: str, color_scheme: dict) -> tuple[str, set[str]]:
     return VAR_PATTERN.sub(replace, svg_text), missing
 
 
+PATH_PATTERN = re.compile(r'<path d="([^"]+)" fill="(#[0-9a-fA-F]{6})"')
+
+GLOW_STROKE = 2.6
+
+
+def glow_svg(baked: str, color_scheme: dict) -> str:
+    """
+    Die Leuchtebene eines Neon-Teils: nur die Roehren (Farbrollen accent und
+    glow), mit breitem Strich derselben Farbe als Lichthof. Die Engine legt sie
+    additiv ueber das Teil und laesst sie pulsieren (DromeSprites).
+    """
+    lit = {color_scheme.get("accent", "").lower(), color_scheme.get("glow", "").lower()}
+    lit.discard("")
+    paths = []
+    for d, fill in PATH_PATTERN.findall(baked):
+        if fill.lower() in lit:
+            paths.append(f'  <path d="{d}" fill="{fill}" stroke="{fill}" '
+                         f'stroke-width="{GLOW_STROKE}" stroke-linejoin="round"/>')
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" '
+            'width="128" height="128">\n'
+            '  <!-- Leuchtebene, erzeugt von tools/bake_godot_assets.py -->\n'
+            + "\n".join(paths) + "\n</svg>\n")
+
+
 def iter_parts():
     """Alle Teil-JSONs mit ihrem SVG, sortiert und ohne set.json."""
     for meta_path in sorted(PARTS_DIR.glob("*/*.json")):
@@ -122,6 +146,10 @@ def main() -> int:
         # schwarze Texturen daneben -- und beim Export waere dann offen,
         # welcher der beiden Baeume mitgeht.
         emit(OUT_DIR / meta["set"] / svg_path.name, baked)
+        # Neon-Teile leuchten: dazu eine eigene Ebene nur mit den Roehren.
+        if "neon" in meta.get("tags", []):
+            emit(OUT_DIR / meta["set"] / svg_path.name.replace(".svg", "_glow.svg"),
+                 glow_svg(baked, meta.get("color_scheme", {})))
         emit(OUT_DIR / meta["set"] / meta_path.name,
              json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
 

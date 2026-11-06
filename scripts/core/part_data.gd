@@ -139,8 +139,12 @@ func add_view(meta: Dictionary, dir_path: String) -> void:
 	var anchors := {}
 	for entry in meta.get("anchors", []):
 		anchors[entry.get("name", "")] = Vector2(entry.get("x", 0.0), entry.get("y", 0.0))
+	var svg := dir_path.path_join(meta.get("svg", ""))
+	# Neon-Teile haben eine eigene Leuchtebene (tools/bake_godot_assets.py).
+	var glow := svg.replace(".svg", "_glow.svg")
 	views[meta.get("direction", "south")] = {
-		"svg": dir_path.path_join(meta.get("svg", "")),
+		"svg": svg,
+		"glow": glow if ResourceLoader.exists(glow) else "",
 		"anchors": anchors,
 		"slot_z": meta.get("slot_z", {}),
 		"z_index": meta.get("z_index", 20.0),
