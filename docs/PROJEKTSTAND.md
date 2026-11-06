@@ -195,6 +195,9 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   fuer Ziele der Verbuendeten. Zielwechsel 11,3 -> 5,5 je Minute. Offen: der
   Nimbus faellt in ~80 % der Kaempfe zuerst (Runenstab Rw 1) -- seit dem
   Runenstab-Umbau (6. Nov., Rw 3, Vortex, Zauberwirker) noch in 58 %.
+* Seit 6. Nov. 2026: ein Ausruestungsplatz je DROME (Molok zwei), Vireo mit
+  Sprint, Doppelschuss, Plasmaklinge und Neon-Blaster, Neon-Leuchten als
+  Prototyp. Details und Messung: `docs/NEUANFANG.md` Abschnitt 6c.
 * Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
   ueberlappen.
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.

@@ -1,7 +1,9 @@
 # Neuanfang: CyberDrome als Autobattler
 
-Stand 5. November 2026. **Zur Besprechung.** Gebaut ist bisher nur die
-KI-Grundlage aus Abschnitt 5 (Ziel halten, Verhalten je DROME, Fokus).
+Stand 6. November 2026. **Zur Besprechung.** Gebaut sind bisher: die
+KI-Grundlage (Abschnitt 5), der Nimbus (6a), ein Ausruestungsplatz je DROME
+mit Molok zwei (6c), der Vireo mit Passive, Doppelschuss, Plasmaklinge und
+Neon-Blaster (6c) und der Leucht-Prototyp fuer Neon (7c).
 Hier steht, was der Spieler im Gespraech vorgegeben hat, was ich daraus
 vorschlage und welche Fragen offen sind. Entschiedenes wandert danach in
 `PROJEKTSTAND.md` und `CLAUDE.md`.
@@ -58,7 +60,7 @@ KI. Die Waffe entscheidet, WIE er sie ausspielt.
 
 | DROME | Rolle | Passive (Vorgabe/Vorschlag) | KI |
 |---|---|---|---|
-| **Vireo** | wendig, Assassine oder Kiter | **Trifft er, laeuft er 2 s schneller** (Vorgabe; Hoehe offen, Vorschlag +40 %) | schnittig: mit Fernwaffe Abstand halten und kiten, mit Klinge am Ziel kleben |
+| **Vireo** | wendig, Assassine oder Kiter | **Sprint** (Vorgabe, gebaut): jeder Treffer gibt 2 s lang +40 % Lauftempo (`data/config.json` -> `passives`) | schnittig: mit Fernwaffe Abstand halten und kiten, mit Klinge am Ziel kleben |
 | **Molok** | Tank, Frontlinie | **Praesenz: zieht Aggro und faengt Schaden fuer Verbuendete ab** (Vorgabe). Vorschlag: Gegner in 2 Feldern Umkreis bekommen Aggro auf ihn gebucht, und 30 % des Schadens an Verbuendeten neben ihm gehen auf ihn | geht IN den Schadensbereich, stellt sich zwischen Gegner und die eigene Hinterreihe, weicht nie aus |
 | **Strix** | Scharfschuetze | **+30 % Schaden auf maximaler Reichweite** (Vorgabe, "koennte ich mir vorstellen") | sucht das Feld auf genau maximaler Reichweite und bleibt dort; weicht nur aus, wenn jemand direkt danebensteht |
 | **Nimbus** | Magier, Kontrolle | **Zauberwirker** (Vorgabe, gebaut): nach jeder Faehigkeit braucht die Waffe nur halb so viele normale Angriffe bis zur naechsten (abgerundet, mind. 1). Vortex: 4 Angriffe, danach 2. Mit Blaster: Streusalve, Schuss, Streusalve | wartet hinter der Frontlinie, dann auf Blaster-Reichweite |
@@ -185,6 +187,32 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
   der Hologramm-Boost (loest aus, wenn ein Gegner danebensteht) kommt im
   Kampf deshalb gerade nicht vor.
 
+## 6c. Ein Platz je DROME und der Vireo (gebaut, 6. Nov. 2026)
+
+* **Halter:** Vireo und Nimbus links bis mittel (Waffe oder Gadget, kein
+  Schild), Strix zentral schwer (Waffe oder Gadget), Molok links alles bis
+  schwer, rechts Schild oder Gadget. Die uebrigen Anker sind reine Optik
+  (`slot_rules` -> `off`); die Molok-Schulter entfaellt. Startbestand:
+  Vireo Blaster, Molok Kanone + Deflektor, Nimbus Runenstab, Strix Lanze;
+  die Gadgets liegen frei im Inventar.
+* **Puls-Blaster:** jeder 3. Schuss ist der **Doppelschuss** (2 x 7, auf bis
+  zu zwei Gegner, sonst zweimal aufs Ziel).
+* **Plasmaklinge** (EQP-010): Nahkampf, kinetisch, 12 alle 1,0 s; jeder 3.
+  Hieb (Aufschlitzen, 18) macht 5 s **verwundbar** (+50 % Schaden).
+* **Neon-Blaster** (EQP-011): Form des Blasters, Neon-Farben, leuchtet; jeder
+  3. Schuss ist der **Schildbrecher** (12 Energie, doppelter Schaden am
+  Schild).
+* **Gemessen** (je 200 Spiegelkaempfe, Standard-Squad):
+  * Spiegel 101:99, Kampfdauer 27 s.
+  * Zuerst faellt der Nimbus in 58 %, der Vireo in 38 %.
+  * Integritaetsschaden je Kampf: Strix 169, Nimbus 63, Molok 51, Vireo 39
+    -- der Strix dominiert weiter.
+  * Vireo-Waffen gegeneinander: Klinge gegen Blaster 92:108, Neon-Blaster
+    gegen Blaster 117:83 (heute traegt jeder DROME Schild -- ausserhalb von
+    Neon City ist er dadurch zu stark), Klinge gegen Neon 80:120.
+* Seit es eine Nahkampfwaffe gibt, kommt der Hologramm-Boost wieder vor --
+  aber der Startbestand traegt keine Klinge.
+
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
 Vom Spieler angestossen (6. Nov. 2026):
@@ -275,6 +303,11 @@ Vorschlag zur Umsetzung:
 * Gilt fuer alles Neon: DROMEs, Waffen, Ausruestung, auch Schussspuren und
   Schildring der Neon-Gegner. "Animationen reduzieren" schaltet Pulsieren
   und Flackern ab, das Leuchten bleibt.
+* **Prototyp gebaut (6. Nov. 2026):** Teile mit Tag `neon` bekommen beim
+  Backen eine Leuchtebene (`_glow.svg`, nur die Roehren mit breitem Strich);
+  `NeonGlow` legt sie additiv darueber, pulsiert und flackert. Kein Shader
+  noetig, laeuft also auch im GL-Compatibility-Renderer. Erstes Teil: der
+  Neon-Blaster. Ein Neon-DROME (ganzes Chassis) waere der naechste Schritt.
 
 Varianten werden **freigeschaltet**, indem man die Region schlaegt -- dann
 kommen sie in den Beutetopf. Das ist das "pokern auf Items, die man kennt".

@@ -39,7 +39,8 @@ bash tools/build_web.sh                                       # Web-Export nach 
   angeboten, ist aber zweitrangig. Neue Bildschirme werden zuerst fuer
   ein Handy im Hochformat entworfen (ca. 400 CSS-Pixel breit).
 * Navigation: Tab-Leiste unten (Spielen, Hangar, Optionen). Der Hangar
-  vereint Squad (Karussell, max. 4) und Umbau (Halter als Formen:
+  vereint Squad (Karussell, max. 4) und Umbau (ein Ausruestungsplatz je
+  DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
   nach oben in groessere Halter, schwer nur in schwer).
 * Spielfeld bleibt 20x20 und ist **frei** (kein Gelaende, keine Sichtlinie
@@ -69,9 +70,9 @@ bash tools/build_web.sh                                       # Web-Export nach 
    aber eingreifen koennen, vermutlich indem er festlegt, wer **Aggro-Platz 1**
    hat (eine selbst waehlbare Aggro-Liste). Der Spieler denkt das noch durch --
    nichts davon bauen, bevor es besprochen ist.
-4. **Waffen-Slots und Gewichtsklassen ueberarbeiten.** Die Halter der
-   Chassis (welche Waffe passt wohin) und die Gewichtsklassen der
-   Ausruestungsteile selbst muessen angepasst werden.
+4. **Waffen-Slots und Gewichtsklassen ueberarbeiten.** Teilweise entschieden:
+   ein Platz je DROME, Molok zwei (gebaut 6. Nov. 2026, `docs/NEUANFANG.md`
+   7b/6c). Die Gewichtsklassen der Teile selbst sind noch offen.
 
 Bis diese Punkte entschieden sind: keine groesseren Umbauten an
 Faehigkeiten, Slots oder Gewichten auf eigene Faust.
@@ -80,7 +81,9 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
 0. **Neuentwurf umsetzen** (`docs/NEUANFANG.md`, Reihenfolge in Abschnitt 8).
    Erledigt: KI-Grundlagen (Ziel halten, Rolle je Chassis, Fokus); Nimbus
-   (Runenstab Rw 3, Vortex, Passive Zauberwirker). Kopf und Antrieb bleiben
+   (Runenstab Rw 3, Vortex, Passive Zauberwirker); ein Platz je DROME;
+   Vireo (Sprint, Doppelschuss, Plasmaklinge, Neon-Blaster); Neon-Leuchten
+   als Prototyp. Naechstes laut Reihenfolge: Molok (Praesenz, Hammer). Kopf und Antrieb bleiben
    fest am Chassis -- ein DROME wird immer als Ganzes gestaltet.
    Entschieden: 3 Module je DROME, Credits + Laden (Beute gleich wichtig),
    Ausruestung bleibt nach dem Lauf. Offen: Fragen in Abschnitt 6.
