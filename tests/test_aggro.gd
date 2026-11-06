@@ -298,9 +298,9 @@ func test_a_quiet_sniper_does_not_take_aggro_from_the_frontline() -> void:
 
 func test_control_without_damage_is_not_silent() -> void:
 	var puller := DromeBuild.create("SOG", {
-		"body": &"mage_body", "head": &"mage_head",
-		"feet": &"mage_drive", "core": &"mage_core",
-		"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus"})
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_orbit_focus"})
 	var arena := _arena([{"build": puller, "tile": Vector2i(6, 9)}], Vector2i(9, 9))
 	var resolver: ActionResolver = arena["resolver"]
 	var unit: Unit = arena["units"][0]
@@ -340,12 +340,12 @@ func test_the_beacon_raises_the_aggro_its_carrier_generates() -> void:
 	# gleichem Schaden muss der Traeger mehr Aggro erzeugen -- sonst ist der
 	# Stat irgendwo auf dem Weg von der Bauteil-JSON zur Formel verlorengegangen.
 	var plain := DromeBuild.create("OHNE", {
-		"body": &"scout_body", "head": &"scout_head",
-		"feet": &"scout_feet", "core": &"scout_core",
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": &"eq_pulse_blaster"})
 	var loud := DromeBuild.create("MIT", {
-		"body": &"scout_body", "head": &"scout_head",
-		"feet": &"scout_feet", "core": &"scout_core",
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_bait_beacon"})
 	t.ok(loud.stats()["aggro_bonus"] > 0, "der Aufbau summiert den Bonus")
 
@@ -391,9 +391,9 @@ func test_the_beacon_costs_a_slot_and_the_strix_cannot_pay_it() -> void:
 	var molok := DromeBuild.create("MOLOK", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_shoulder": &"eq_bait_beacon"})
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_bait_beacon"})
 	t.ok(molok.is_valid(),
-		"der Molok traegt ihn auf der Schulter und behaelt seine Waffe: %s"
+		"der Molok traegt ihn am zweiten Halter und behaelt seine Waffe: %s"
 		% ", ".join(molok.validate()))
 
 

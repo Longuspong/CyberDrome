@@ -36,9 +36,6 @@
   ],
   "mount_class": "light",
   "category": "support",
-  "slots": [
-    "equip_shoulder"
-  ],
   "stats": {
     "hp": 0,
     "spd": 0,

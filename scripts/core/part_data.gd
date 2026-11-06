@@ -151,16 +151,20 @@ func view(direction: String) -> Dictionary:
 	return views.get(direction, views.get("south", {}))
 
 
-## Die Ausruestungsslots eines Chassis sind exakt seine equip_*-Anker. Kein
-## Sonderfall im Code -- ein Chassis bekommt einen dritten Slot, indem es einen
-## dritten Anker in seine JSON schreibt.
+## Die Ausruestungsslots eines Chassis sind seine equip_*-Anker -- ausser
+## denen, die ``slot_rules`` mit ``off`` abschaltet. Seit Nov. 2026 hat jeder
+## DROME einen Platz, der Molok zwei; die uebrigen Anker sind reine Optik.
 func equip_slots() -> Array[String]:
 	var slots: Array[String] = []
 	if type != Type.BODY:
 		return slots
 	for name in view("south").get("anchors", {}):
-		if str(name).begins_with("equip_"):
-			slots.append(str(name))
+		if not str(name).begins_with("equip_"):
+			continue
+		var rule: Dictionary = slot_rules.get(str(name), {})
+		if rule.get("off", false):
+			continue
+		slots.append(str(name))
 	slots.sort()
 	return slots
 
@@ -173,6 +177,8 @@ func accepts(equipment: PartData, slot: String) -> bool:
 	if type != Type.BODY or equipment.type != Type.EQUIPMENT:
 		return false
 	var rule: Dictionary = slot_rules.get(slot, {})
+	if rule.get("off", false):
+		return false
 	if rule.is_empty():
 		return true
 	var limit: String = rule.get("max_class", MOUNT_CLASSES[-1])

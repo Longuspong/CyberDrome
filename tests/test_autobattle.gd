@@ -25,7 +25,7 @@ func _squad() -> Array:
 		DromeBuild.create("ALPHA", {
 			"body": &"scout_body", "head": &"scout_head",
 			"feet": &"scout_feet", "core": &"scout_core",
-			"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"}),
+			"equip_left": &"eq_pulse_blaster"}),
 		DromeBuild.create("BETA", {
 			"body": &"strix_body", "head": &"strix_head",
 			"feet": &"strix_feet", "core": &"strix_core",

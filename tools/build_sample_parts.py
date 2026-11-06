@@ -317,7 +317,8 @@ DEFAULT_Z = {
 #     }
 #
 # Fehlt eine Regel, nimmt der Slot alles an -- importierte Teile funktionieren
-# damit unveraendert weiter.
+# damit unveraendert weiter. ``{"off": True}`` macht einen Anker zur reinen
+# Optik: er ist kein Halter (seit Nov. 2026 ein Platz je DROME, Molok zwei).
 MOUNT_CLASSES = ("light", "medium", "heavy")
 EQUIP_CATEGORIES = ("weapon", "shield", "support")
 DEFAULT_MOUNT_CLASS = "light"
@@ -328,6 +329,8 @@ def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
     """Darf ein Ausruestungsteil in einen Slot mit dieser Regel?"""
     if not rule:
         return True
+    if rule.get("off"):
+        return False
     limit = rule.get("max_class", MOUNT_CLASSES[-1])
     if MOUNT_CLASSES.index(mount_class) > MOUNT_CLASSES.index(limit):
         return False
@@ -1730,9 +1733,12 @@ SETS = [
                 # und nicht in einer Balancing-Tabelle, weil sie sonst erst im
                 # Kampf auffaellt -- und weil ein Vireo mit Belagerungskanone
                 # eine Silhouette haette, die ueber seine Reichweite luegt.
+                # Ein Ausruestungsplatz (Nov. 2026). Der rechte Anker bleibt fuer
+                # die Optik, ist aber kein Halter mehr ("off").
                 "slot_rules": {
-                    "equip_left": {"max_class": "medium"},
-                    "equip_right": {"max_class": "medium"},
+                    "equip_left": {"max_class": "medium",
+                                   "categories": ["weapon", "support"]},
+                    "equip_right": {"off": True},
                 },
             },
             {
@@ -1801,11 +1807,12 @@ SETS = [
                 # woran sich ein Schild abstuetzen koennte -- dort gehoert
                 # Sensorik und Support hin, nichts Schweres und nichts, was
                 # gehalten werden muss.
+                # Zwei Plaetze: links alles bis schwer, rechts Schild oder Gadget.
                 "slot_rules": {
                     "equip_left": {"max_class": "heavy"},
-                    "equip_right": {"max_class": "heavy"},
-                    "equip_shoulder": {"max_class": "light",
-                                       "categories": ["support"]},
+                    "equip_right": {"max_class": "heavy",
+                                    "categories": ["shield", "support"]},
+                    "equip_shoulder": {"off": True},
                 },
             },
             {
@@ -1831,13 +1838,10 @@ SETS = [
                 "anchors": {"mount": (0, 0, 49), "muzzle": (24.9, 0, 40)},
             },
             {
-                # Einziges Beispielteil mit "slots": ein Schulterpod gehoert auf
-                # die Schulter, und zwar auf diesen einen Anker. "slots" ist die
-                # harte Ankerliste, "mount_class"/"category" die allgemeine
-                # Regel -- die meisten Teile brauchen nur letztere.
+                # Frueher fest auf der Molok-Schulter ("slots"); seit es die
+                # Schulter als Halter nicht mehr gibt, ein Gadget wie die anderen.
                 "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment", "name": "Drohnen-Pod",
                 "tags": ["support", "shoulder"], "shapes": EQ_DRONE_POD,
-                "slots": ["equip_shoulder"],
                 "mount_class": "light", "category": "support",
                 "anchors": {"mount": (0, 0, 61)},
             },
@@ -1879,8 +1883,9 @@ SETS = [
                     "equip_right": (0, -13.8, 47),
                 },
                 "slot_rules": {
-                    "equip_left": {"max_class": "medium"},
-                    "equip_right": {"max_class": "medium"},
+                    "equip_left": {"max_class": "medium",
+                                   "categories": ["weapon", "support"]},
+                    "equip_right": {"off": True},
                 },
             },
             {
@@ -1940,7 +1945,8 @@ SETS = [
                     "equip_center": (6, 0, 51),
                 },
                 # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin.
-                "slot_rules": {"equip_center": {"max_class": "heavy"}},
+                "slot_rules": {"equip_center": {"max_class": "heavy",
+                                                "categories": ["weapon", "support"]}},
             },
             {
                 "id": "strix_head", "code": "HED-004", "type": "head",

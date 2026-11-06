@@ -81,17 +81,21 @@ func apply_chassis(body_id: StringName) -> void:
 
 
 ## Alle belegten Teile, Sockel und Ausruestung gemeinsam.
+## Alle Teile, die WIRKEN: die vier Sockel und die Ausruestung in echten
+## Haltern. Ein Teil an einem abgeschalteten Anker (``off``) zaehlt nicht --
+## structural_problems() meldet es.
 func all_parts() -> Array:
 	var result: Array = []
-	for slot in slots:
+	for slot in SOCKET_SLOTS:
 		var part := part_in(slot)
 		if part != null:
 			result.append(part)
+	result.append_array(equipment())
 	return result
 
 
-## Die Ausruestungsslots dieses DROME -- exakt die equip_*-Anker seines
-## Chassis. Ohne Chassis gibt es keine.
+## Die Ausruestungsslots dieses DROME -- die equip_*-Anker seines Chassis,
+## ohne die abgeschalteten. Ohne Chassis gibt es keine.
 func equip_slots() -> Array[String]:
 	var chassis := body()
 	if chassis == null:
@@ -346,7 +350,15 @@ func structural_problems() -> Array[String]:
 
 	var chassis := body()
 	if chassis != null:
-		for slot in equip_slots():
+		var holders := equip_slots()
+		for slot in slots:
+			if str(slot) in SOCKET_SLOTS or str(slot) in holders:
+				continue
+			var stray := part_in(slot)
+			if stray != null:
+				problems.append("%s: %s hat keinen Halter mehr"
+					% [stray.display_name, _slot_label(slot)])
+		for slot in holders:
 			var part := part_in(slot)
 			if part != null and not chassis.accepts(part, slot):
 				problems.append("%s passt nicht in %s"

@@ -12,7 +12,7 @@ func _vireo() -> DromeBuild:
 	return DromeBuild.create("VIREO", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_holo_boost",
+		"equip_left": &"eq_holo_boost",
 	})
 
 

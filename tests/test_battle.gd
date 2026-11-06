@@ -14,7 +14,7 @@ func _squad() -> Array:
 		DromeBuild.create("ALPHA", {
 			"body": &"scout_body", "head": &"scout_head",
 			"feet": &"scout_feet", "core": &"scout_core",
-			"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"}),
+			"equip_left": &"eq_pulse_blaster"}),
 		DromeBuild.create("BETA", {
 			"body": &"strix_body", "head": &"strix_head",
 			"feet": &"strix_feet", "core": &"strix_core",
@@ -67,13 +67,13 @@ func test_damage_actually_happens() -> void:
 
 
 ## Zwei Molok-Aufbauten, die sich nur in der Waffe unterscheiden -- und beide
-## tragen den Orbit-Sog auf der Schulter. Damit haengt der Unterschied im
+## tragen den Orbit-Sog am rechten Halter. Damit haengt der Unterschied im
 ## Verhalten allein an der Reichweite, so wie die Bewertung es behauptet.
 func _with_orbit_pull(display_name: String, weapon: StringName) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": weapon, "equip_shoulder": &"eq_orbit_focus"})
+		"equip_left": weapon, "equip_right": &"eq_orbit_focus"})
 
 
 func _pull_action(unit: Unit) -> ActionData:
@@ -158,7 +158,7 @@ func _siege_and_drones(display_name: String) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_shoulder": &"eq_drone_pod"})
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_drone_pod"})
 
 
 func _action_by_id(unit: Unit, id: StringName) -> ActionData:
@@ -245,7 +245,7 @@ func _ability_squad() -> Array:
 		DromeBuild.create("KOEDER", {
 			"body": &"jugg_body", "head": &"jugg_head",
 			"feet": &"jugg_feet", "core": &"jugg_core",
-			"equip_left": &"eq_siege_cannon", "equip_shoulder": &"eq_bait_beacon"}),
+			"equip_left": &"eq_siege_cannon", "equip_right": &"eq_bait_beacon"}),
 		DromeBuild.create("SANI", {
 			"body": &"mage_body", "head": &"mage_head",
 			"feet": &"mage_drive", "core": &"mage_core",
@@ -284,7 +284,7 @@ func test_every_ability_fires_by_itself() -> void:
 	var squads := [_ability_squad(), _squad(), [DromeBuild.create("BOOST", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_holo_boost"})]]
+		"equip_left": &"eq_holo_boost"})]]
 	var uses := {}
 	for squad in squads:
 		var measured: Dictionary = _record(8, squad, 7000)

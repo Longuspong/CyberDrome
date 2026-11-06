@@ -76,13 +76,14 @@
       "max_class": "heavy"
     },
     "equip_right": {
-      "max_class": "heavy"
-    },
-    "equip_shoulder": {
-      "max_class": "light",
+      "max_class": "heavy",
       "categories": [
+        "shield",
         "support"
       ]
+    },
+    "equip_shoulder": {
+      "off": true
     }
   },
   "stats": {

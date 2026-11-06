@@ -6,7 +6,7 @@ var t
 
 
 ## Der Standardaufbau eines Bausatzes: eigener Kopf, Kern, Antrieb, und die
-## eigene Ausruestung in so vielen Slots, wie das Chassis Anker hat.
+## eigene Ausruestung in so vielen Slots, wie das Chassis Halter hat.
 func _stock(set_id: String) -> DromeBuild:
 	var chassis: PartData = null
 	for part in PartDB.of_type(PartData.Type.BODY):
@@ -79,7 +79,7 @@ func test_a_build_without_a_weapon_is_a_decision_not_an_error() -> void:
 	var techniker := DromeBuild.create("TECHNIKER", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_deflector", "equip_shoulder": &"eq_drone_pod"})
+		"equip_left": &"eq_deflector", "equip_right": &"eq_drone_pod"})
 	t.ok(techniker.weapons().is_empty(), "der Techniker traegt keine Waffe")
 	t.ok(techniker.is_valid(),
 		"und ist trotzdem baubar: %s" % ", ".join(techniker.validate()))
@@ -129,23 +129,24 @@ func test_the_same_weapon_slows_every_chassis_equally() -> void:
 		% [heavy.payload_slowdown(), molok.payload_slowdown()])
 
 
-func test_the_molok_can_fill_all_three_slots() -> void:
-	# Zwei schwere Arme scheiterten frueher an EINEM Punkt Traglast (32/31), der
-	# dritte Slot obendrauf erst recht. Ohne Bau-Deckel ist das kein Riegel mehr:
-	# die Masse kostet Tempo (SPD), verbietet aber nichts.
+func test_the_molok_has_two_holders() -> void:
+	# Seit Nov. 2026: ein Platz je DROME, der Molok zwei -- links alles bis
+	# schwer, rechts nur Schild oder Gadget.
 	var molok := DromeBuild.create("MOLOK", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_rail_lance"})
-	t.ok(molok.is_valid(), "zwei schwere Arme sind baubar: %s"
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_deflector"})
+	t.ok(molok.is_valid(), "Kanone und Deflektor sind baubar: %s"
 		% ", ".join(molok.validate()))
 
-	var full := molok.clone()
-	full.slots["equip_shoulder"] = &"eq_orbit_focus"
-	t.ok(full.is_valid(),
-		"und der dritte Slot obendrauf ebenso: %s" % ", ".join(full.validate()))
-	t.ok(full.payload_slowdown() >= molok.payload_slowdown(),
-		"der volle Aufbau bezahlt in Tempo, nicht mit einem Verbot")
+	var two_guns := molok.clone()
+	two_guns.slots["equip_right"] = &"eq_rail_lance"
+	t.ok(not two_guns.is_valid(), "eine zweite Waffe rechts nicht")
+
+	var shoulder := molok.clone()
+	shoulder.slots["equip_shoulder"] = &"eq_drone_pod"
+	t.ok(not shoulder.is_valid(), "die Schulter ist kein Halter mehr")
+	t.equal(shoulder.equipment().size(), 2, "und was dort steckt, zaehlt nicht")
 
 
 func test_apply_chassis_sets_the_whole_frame() -> void:
@@ -170,18 +171,16 @@ func test_apply_chassis_sets_the_whole_frame() -> void:
 	t.equal(frame_sets.size(), 1, "der Rahmen ist danach eine stimmige Huelle")
 
 
-func test_the_vireo_can_carry_two_pulse_blasters() -> void:
-	# Der Fall, der das Modell gekippt hat: das leichteste Chassis mit den zwei
-	# Einsteigerwaffen wog 19 bei Kapazitaet 18 und liess sich um EINEN Punkt
-	# nicht bauen. Aus Spielersicht der offensichtlichste Standard-Aufbau -- und
-	# er war verboten. Ohne Bau-Deckel geht er.
+func test_the_vireo_has_one_holder() -> void:
 	var vireo := DromeBuild.create("VIREO", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
 		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_pulse_blaster",
 	})
-	t.ok(vireo.is_valid(), "zwei Puls-Blaster am Vireo sind baubar: %s"
-		% ", ".join(vireo.validate()))
+	t.ok(not vireo.is_valid(), "ein zweiter Blaster am rechten Anker ist ungueltig")
+	t.equal(vireo.weapons().size(), 1, "und nur einer schiesst")
+	t.ok(", ".join(vireo.validate()).contains("Halter"),
+		"die Meldung sagt warum: %s" % ", ".join(vireo.validate()))
 
 
 func test_weight_no_longer_vetoes_a_build_only_slows_it() -> void:
@@ -233,22 +232,23 @@ func test_slot_rules_are_enforced() -> void:
 	var jugg := PartDB.get_part(&"jugg_body")
 	var cannon := PartDB.get_part(&"eq_siege_cannon")
 	var pod := PartDB.get_part(&"eq_drone_pod")
-	t.ok(jugg.accepts(cannon, "equip_left"),
-		"schwere Kanone passt an den schweren Arm")
-	t.ok(not jugg.accepts(cannon, "equip_shoulder"),
-		"schwere Kanone passt nicht auf die Schulter (nur light + support)")
-	t.ok(jugg.accepts(pod, "equip_shoulder"),
-		"leichter Support-Pod passt auf die Schulter")
+	t.ok(jugg.accepts(cannon, "equip_left"), "schwere Kanone passt an den linken Arm")
+	t.ok(not jugg.accepts(cannon, "equip_right"), "rechts nur Schild oder Gadget")
+	t.ok(jugg.accepts(pod, "equip_right"), "der Drohnen-Pod passt rechts")
+	t.ok(not jugg.accepts(pod, "equip_shoulder"), "die Schulter ist reine Optik")
 
 	var scout := PartDB.get_part(&"scout_body")
 	t.ok(not scout.accepts(cannon, "equip_left"),
 		"ein Sprinter traegt keine Belagerungskanone")
+	t.ok(not scout.accepts(PartDB.get_part(&"eq_deflector"), "equip_left"),
+		"und keinen Schild")
 
 
 func test_equip_slots_come_from_anchors() -> void:
-	t.equal(PartDB.get_part(&"scout_body").equip_slots().size(), 2, "Vireo: 2 Slots")
-	t.equal(PartDB.get_part(&"jugg_body").equip_slots().size(), 3, "Molok: 3 Slots")
-	t.equal(PartDB.get_part(&"strix_body").equip_slots().size(), 1, "Strix: 1 Slot")
+	t.equal(PartDB.get_part(&"scout_body").equip_slots().size(), 1, "Vireo: 1 Platz")
+	t.equal(PartDB.get_part(&"jugg_body").equip_slots().size(), 2, "Molok: 2 Plaetze")
+	t.equal(PartDB.get_part(&"mage_body").equip_slots().size(), 1, "Nimbus: 1 Platz")
+	t.equal(PartDB.get_part(&"strix_body").equip_slots().size(), 1, "Strix: 1 Platz")
 
 
 func test_chassis_swap_drops_equipment_that_no_longer_fits() -> void:
@@ -287,13 +287,12 @@ func test_loadout_survives_a_round_trip() -> void:
 # ---------------------------------------------------------------------------
 
 func test_the_same_part_twice_grants_one_action() -> void:
-	# Zwei Orbit-Fokusse am Nimbus. Die Stats summieren sich, die Aktionsliste
-	# nicht: das Budget des Zuges gibt den Orbit-Sog ohnehin nur einmal her,
-	# und ein zweiter Eintrag verspraeche eine Wahl, die es nicht gibt.
+	# Zwei Orbit-Fokusse am Molok. Die Stats summieren sich, die Aktionsliste
+	# nicht: ein zweiter Eintrag verspraeche eine Wahl, die es nicht gibt.
 	var build := DromeBuild.create("DOPPELT", {
-		"body": &"mage_body", "head": &"mage_head",
-		"feet": &"mage_drive", "core": &"mage_core",
-		"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus",
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_orbit_focus",
 	})
 	var single: int = build.stats()["atk"]
 	var actions_before := build.actions().size()
@@ -307,17 +306,17 @@ func test_the_same_part_twice_grants_one_action() -> void:
 
 func test_actions_are_split_by_budget() -> void:
 	var build := DromeBuild.create("GEMISCHT", {
-		"body": &"mage_body", "head": &"mage_head",
-		"feet": &"mage_drive", "core": &"mage_core",
-		"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus",
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_orbit_focus",
 	})
 	var attacks := build.actions_of(ActionData.Category.ATTACK)
 	var abilities := build.actions_of(ActionData.Category.ABILITY)
-	# Der Runenstab traegt seit §13 zwei Aktionen: Runenschlag (Angriff) UND
-	# Arkanwelle (Faehigkeit). Dazu der Orbit-Sog aus dem Fokus. Also ein
+	# Die Kanone traegt zwei Aktionen: Belagerungsschlag (Angriff) UND
+	# Sperrfeuer (Faehigkeit). Dazu der Orbit-Sog aus dem Fokus. Also ein
 	# Angriff, zwei Faehigkeiten.
-	t.equal(attacks.size(), 1, "nur der Runenschlag ist ein Angriff")
-	t.equal(abilities.size(), 2, "Arkanwelle und Orbit-Sog sind Faehigkeiten")
+	t.equal(attacks.size(), 1, "nur der Belagerungsschlag ist ein Angriff")
+	t.equal(abilities.size(), 2, "Sperrfeuer und Orbit-Sog sind Faehigkeiten")
 	t.equal(build.attack_budget(), 1, "eine Waffe -- ein Angriffs-Aktionspunkt")
 	t.equal(attacks.size() + abilities.size(), build.actions().size(),
 		"jede Aktion gehoert zu genau einem Budget")
@@ -360,18 +359,15 @@ func test_a_part_finds_its_own_slot() -> void:
 	t.equal(build.slot_for(chassis), "body", "ein Chassis in den Chassisslot")
 
 	# Ausruestung: angewaehlter Halter zuerst, wenn er sie nimmt.
-	var blaster := PartDB.get_part(&"eq_pulse_blaster")
-	t.equal(build.slot_for(blaster, "equip_right"), "equip_right",
+	var shield := PartDB.get_part(&"eq_deflector")
+	t.equal(build.slot_for(shield, "equip_right"), "equip_right",
 		"der angewaehlte Halter gewinnt")
 
-	# Die Schulter des Molok nimmt nur leichte Support-Module. Eine schwere
-	# Kanone landet deshalb NICHT dort, auch wenn die Schulter angewaehlt ist.
+	# Rechts nimmt der Molok nur Schild oder Gadget. Eine Kanone landet deshalb
+	# NICHT dort, auch wenn der rechte Halter angewaehlt ist.
 	var cannon := PartDB.get_part(&"eq_siege_cannon")
-	var target := build.slot_for(cannon, "equip_shoulder")
-	t.ok(target != "equip_shoulder",
-		"die Kanone landet nicht auf der Schulter, sondern in %s" % target)
-	t.ok(PartDB.get_part(build.slots["body"]).accepts(cannon, target),
-		"und der gewaehlte Halter nimmt sie wirklich")
+	var target := build.slot_for(cannon, "equip_right")
+	t.equal(target, "equip_left", "die Kanone landet links")
 
 
 func test_a_part_that_fits_nowhere_says_so() -> void:
@@ -387,9 +383,9 @@ func test_a_part_that_fits_nowhere_says_so() -> void:
 
 func test_the_first_free_holder_wins_before_an_occupied_one() -> void:
 	var build := DromeBuild.create("HALBVOLL", {
-		"body": &"scout_body", "head": &"scout_head",
-		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_pulse_blaster",
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon",
 	})
 	var shield := PartDB.get_part(&"eq_deflector")
 	t.equal(build.slot_for(shield), "equip_right",
@@ -403,15 +399,13 @@ func test_the_first_free_holder_wins_before_an_occupied_one() -> void:
 # Keine Bau-Budgets: nur die strukturelle Untergrenze gilt
 # ---------------------------------------------------------------------------
 
-## Ein Molok mit drei bestueckten Slots -- frueher der Grenzfall, an dem
-## Traglast und Energie zugleich rissen. Heute ein ganz normaler, baubarer
-## Aufbau.
+## Ein Molok mit beiden Plaetzen belegt -- frueher (mit drei) der Grenzfall,
+## an dem Traglast und Energie zugleich rissen.
 func _overloaded_molok() -> DromeBuild:
 	return DromeBuild.create("VOLLBESTUECKT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_rail_lance",
-		"equip_shoulder": &"eq_drone_pod",
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_drone_pod",
 	})
 
 
@@ -420,7 +414,7 @@ func test_no_build_budget_gates_a_full_loadout() -> void:
 	# Molok ist baubar; was ihn bremst, ist Tempo und Mana im Kampf, kein Riegel
 	# in der Werkstatt.
 	var build := _overloaded_molok()
-	t.ok(build.is_valid(), "drei volle Slots sind baubar: %s"
+	t.ok(build.is_valid(), "beide Plaetze voll ist baubar: %s"
 		% ", ".join(build.validate()))
 
 

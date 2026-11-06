@@ -63,7 +63,11 @@
   },
   "slot_rules": {
     "equip_center": {
-      "max_class": "heavy"
+      "max_class": "heavy",
+      "categories": [
+        "weapon",
+        "support"
+      ]
     }
   },
   "stats": {

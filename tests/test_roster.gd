@@ -53,8 +53,8 @@ func test_a_part_cannot_be_in_two_dromes_at_once() -> void:
 		seen[uid] = true
 
 	# Das freie Teil an einen DROME haengen -> es ist nicht mehr frei, und ein
-	# zweiter DROME bekommt kein zweites Exemplar desselben Teils. Frei ist zum
-	# Start nur der Koedersender -- alle anderen Teile stecken in den Kits.
+	# zweiter DROME bekommt kein zweites Exemplar desselben Teils. Frei liegen
+	# zum Start die Gadgets (ein Platz je DROME), darunter der Koedersender.
 	t.equal(roster.free_count(&"eq_bait_beacon"), 1,
 		"der Koedersender liegt zunaechst frei")
 	var molok: RosterEntry = roster.entries[1]
@@ -64,7 +64,7 @@ func test_a_part_cannot_be_in_two_dromes_at_once() -> void:
 		"danach ist kein Koedersender mehr frei")
 
 	var vireo: RosterEntry = roster.entries[0]
-	var vireo_slot: String = roster.build_for(vireo).equip_slots()[1]
+	var vireo_slot: String = roster.build_for(vireo).equip_slots()[0]
 	t.ok(not roster.assign(vireo, vireo_slot, &"eq_bait_beacon"),
 		"ein zweiter DROME bekommt kein zweites Exemplar")
 	t.ok(roster.instance_part_id(str(vireo.assignments.get(vireo_slot, ""))) != &"eq_bait_beacon",
@@ -121,14 +121,11 @@ func test_derived_build_equals_a_direct_build() -> void:
 	var vireo: RosterEntry = roster.entries[0]
 	var derived := roster.build_for(vireo)
 
-	# Vireos Standard-Kit: Puls-Blaster (erster freier Slot) und Hologramm-Boost
-	# (zweiter). Die Reihenfolge folgt aus _seed_equip -- erstes passendes freies
-	# Anker, alphabetisch equip_left vor equip_right.
+	# Vireos Standard-Kit: der Puls-Blaster in seinem einzigen Halter.
 	var direct := DromeBuild.create(vireo.name, {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
 		"equip_left": &"eq_pulse_blaster",
-		"equip_right": &"eq_holo_boost",
 	})
 	t.equal(derived.slots, direct.slots, "dieselben Teile in denselben Slots")
 	t.equal(derived.stats(), direct.stats(), "und damit dieselben Werte")

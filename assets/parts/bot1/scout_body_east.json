@@ -68,10 +68,14 @@
   },
   "slot_rules": {
     "equip_left": {
-      "max_class": "medium"
+      "max_class": "medium",
+      "categories": [
+        "weapon",
+        "support"
+      ]
     },
     "equip_right": {
-      "max_class": "medium"
+      "off": true
     }
   },
   "stats": {
