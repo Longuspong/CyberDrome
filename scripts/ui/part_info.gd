@@ -16,7 +16,6 @@ extends RefCounted
 const ROLE := {
 	&"eq_pulse_blaster": "Leichte Allzweckwaffe auf mittlere Distanz. Halb Energieschaden -- gut gegen Schilde.",
 	&"eq_deflector": "Ein Energieschild zum Umschnallen: mehr Schild, der sich jeden Puls (alle 3 s) wieder auflaedt. Keine eigene Aktion.",
-	&"eq_siege_cannon": "Schwerer Moerser mit grosser Reichweite. Trifft das Ziel und alle acht Felder darum herum.",
 	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integritaet zurueck.",
 	&"eq_rune_staff": "Nahkampfstab mit reinem Energieschaden. Trifft das Ziel und die vier geraden Nachbarfelder.",
 	&"eq_orbit_focus": "Kontrolle statt Schaden: zieht einen Gegner zu sich heran.",

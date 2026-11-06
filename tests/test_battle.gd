@@ -158,7 +158,7 @@ func _siege_and_drones(display_name: String) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_drone_pod"})
+		"equip_left": &"eq_hammer", "equip_right": &"eq_drone_pod"})
 
 
 func _action_by_id(unit: Unit, id: StringName) -> ActionData:
@@ -169,7 +169,7 @@ func _action_by_id(unit: Unit, id: StringName) -> ActionData:
 
 
 func test_an_area_hit_only_touches_who_it_means() -> void:
-	# Der Belagerungsschlag hat Radius 1. Zielte er auf ein Nachbarfeld, lag der
+	# Ein Flaechenschuss mit Radius 1 (frueher die Kanone). Zielte er auf ein Nachbarfeld, lag der
 	# Schuetze SELBST im Radius -- und execute() wendete die Wirkung auf jeden an,
 	# der auf einem getroffenen Feld stand, ohne nach der Seite zu fragen. Ein
 	# Molok im Handgemenge schoss sich so selbst zusammen, und weder
@@ -188,8 +188,12 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	second_foe.tile = Vector2i(6, 4)   # im Radius, gegnerische Seite
 	var resolver := ActionResolver.new(grid, [shooter, comrade, foe, second_foe])
 
-	var siege := _action_by_id(shooter, &"act_siege")
-	t.ok(siege != null and siege.aoe_radius > 0, "der Belagerungsschlag ist eine Flaeche")
+	# Seit die Kanone weg ist (6g), traegt kein Teil mehr einen reinen
+	# Flaechenschuss -- die Regel gilt trotzdem, also mit einer eigenen Aktion.
+	var siege := ActionData.from_meta({"id": "act_test_area", "category": "attack",
+		"targeting": "aoe_around_target", "range_tiles": 6, "aoe_radius": 1, "power": 20,
+		"interval": 2.0})
+	t.ok(siege != null and siege.aoe_radius > 0, "der Testschuss ist eine Flaeche")
 	t.ok(shooter.tile in resolver.affected_tiles(foe.tile, siege),
 		"und der Schuetze steht bei diesem Ziel wirklich in der eigenen Flaeche")
 
@@ -245,7 +249,7 @@ func _ability_squad() -> Array:
 		DromeBuild.create("KOEDER", {
 			"body": &"jugg_body", "head": &"jugg_head",
 			"feet": &"jugg_feet", "core": &"jugg_core",
-			"equip_left": &"eq_siege_cannon", "equip_right": &"eq_bait_beacon"}),
+			"equip_left": &"eq_hammer", "equip_right": &"eq_bait_beacon"}),
 		DromeBuild.create("SANI", {
 			"body": &"mage_body", "head": &"mage_head",
 			"feet": &"mage_drive", "core": &"mage_core",
@@ -297,7 +301,7 @@ func test_every_ability_fires_by_itself() -> void:
 	# direkt danebensteht, und solange es keine Nahkampfwaffe gibt (Plasmaklinge
 	# und Hammer kommen erst), kommt im Kampf niemand so nah. Sein Ausloeser
 	# wird in tests/test_dash.gd geprueft.
-	for id in [&"act_pulse_double", &"act_siege_barrage", &"act_rune_vortex",
+	for id in [&"act_pulse_double", &"act_rune_vortex",
 			&"act_rail_pierce", &"act_orbitpull"]:
 		t.ok(int(uses.get(id, 0)) > 0, "%s loest im Kampf aus (%d)" % [id, uses.get(id, 0)])
 	t.note("Aktionen: %s" % str(uses))

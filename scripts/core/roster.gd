@@ -62,7 +62,6 @@ const STARTER_CHASSIS := [
 ## Gadgets hier und laden zum Umbauen ein.
 const STARTER_LOOSE_EQUIPMENT := [
 	&"eq_holo_boost", &"eq_orbit_focus", &"eq_drone_pod", &"eq_bait_beacon",
-	&"eq_siege_cannon",
 ]
 
 

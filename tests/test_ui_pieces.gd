@@ -80,7 +80,7 @@ func test_an_action_without_damage_previews_no_damage() -> void:
 	var mage := DromeBuild.create("SOG", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_orbit_focus"})
+		"equip_left": &"eq_hammer", "equip_right": &"eq_orbit_focus"})
 	var caster := Unit.create(mage, &"P0", true)
 	var victim := Unit.create(mage, &"E0", false)
 	caster.tile = Vector2i(2, 2)
@@ -141,7 +141,7 @@ func test_every_mount_of_the_chassis_is_offered_with_its_verdict() -> void:
 	# Schild oder Gadget. Die Belagerungskanone ist eine Waffe -- also einmal
 	# ja, einmal nein, und das Nein mit Grund.
 	var choices := Workshop.slot_choices(_molok(),
-		PartDB.get_part(&"eq_siege_cannon"))
+		PartDB.get_part(&"eq_hammer"))
 	t.equal(choices.size(), 2, "beide Halter stehen zur Wahl")
 	t.equal(choices[0]["slot"], "equip_left", "Slot 1 ist der linke Arm")
 	t.equal(choices[0]["number"], 1, "und wird als 1 gezaehlt")

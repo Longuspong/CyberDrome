@@ -22,10 +22,10 @@ func test_starter_stock_matches_the_design() -> void:
 	t.equal(roster.entries.size(), 4, "vier Start-DROMEs")
 	# Vier Chassis + vier Kerne + zehn Ausruestungsteile (fuenf in den Kits:
 	# Blaster, Hammer + Deflektor, Runenstab, Lanze; fuenf frei: Boost,
-	# Orbit-Fokus, Drohnen-Pod, Koedersender, Kanone) = 18 Instanzen.
-	t.equal(roster.all_instances().size(), 18, "18 Instanzen im Startbestand")
+	# Orbit-Fokus, Drohnen-Pod, Koedersender) = 17 Instanzen.
+	t.equal(roster.all_instances().size(), 17, "17 Instanzen im Startbestand")
 	# Jede Standard-Ausruestung genau einmal -- inklusive des Hologramm-Boosts.
-	for part_id in [&"eq_pulse_blaster", &"eq_holo_boost", &"eq_siege_cannon",
+	for part_id in [&"eq_pulse_blaster", &"eq_holo_boost", &"eq_hammer",
 			&"eq_rune_staff", &"eq_rail_lance", &"eq_deflector", &"eq_drone_pod",
 			&"eq_bait_beacon", &"eq_orbit_focus"]:
 		t.equal(roster.total_count(part_id), 1,

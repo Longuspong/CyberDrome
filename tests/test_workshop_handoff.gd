@@ -133,7 +133,7 @@ func test_slot_rules_still_hold_after_loading() -> void:
 			"core": {"part_id": "scout_core"},
 			# Belagerungskanone auf dem Sprinter: mount_class heavy gegen
 			# einen Slot, der nur bis medium nimmt.
-			"equip_left": {"part_id": "eq_siege_cannon"},
+			"equip_left": {"part_id": "eq_hammer"},
 		},
 	}
 	var build := DromeBuild.from_loadout(loadout)

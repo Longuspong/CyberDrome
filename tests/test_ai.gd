@@ -16,7 +16,7 @@ func _vireo() -> DromeBuild:
 
 func _molok() -> DromeBuild:
 	return DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_siege_cannon"})
+		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_hammer"})
 
 
 func _nimbus() -> DromeBuild:
@@ -87,10 +87,10 @@ func test_a_controller_waits_until_the_frontline_fights() -> void:
 	t.equal(battle.brain.next_step(nimbus, foe), nimbus.tile,
 		"solange der Molok niemanden trifft, wartet der Nimbus")
 
-	# Molok in Reichweite seiner Kanone: jetzt ist die Frontlinie im Kampf.
+	# Molok am Gegner (Hammer, Reichweite 1): jetzt ist die Frontlinie im Kampf.
 	var molok: Unit = battle.units[1]
 	battle.grid.clear_occupant(molok.tile)
-	molok.place_at(Vector2i(12, 8))
+	molok.place_at(Vector2i(10, 5))
 	battle.grid.set_occupant(molok.tile, molok.unit_id)
 	t.ok(battle.brain.next_step(nimbus, foe) != nimbus.tile,
 		"sobald die Frontlinie trifft, rueckt der Nimbus nach")
