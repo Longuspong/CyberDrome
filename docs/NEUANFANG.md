@@ -343,7 +343,8 @@ Gunslinger wirken nur auf Angriffe.
 
 **Modulplaetze:** 3 je Waffe, Molok 2 je Waffe (sonst ist ein Squad aus vier
 Moloks nicht auszubalancieren). Auf DROME-Level 1, 3 und 5 je ein Platz
-mehr -- am Ende 6 (Molok: 4 je Waffe, Zusatzplatz noch zu klaeren).
+mehr -- am Ende 6. Der Molok startet mit 2 je Waffe und bekommt auf Level 2
+und 4 je Waffe einen dazu -- am Ende 4 je Waffe.
 
 **Level bleiben nach dem Lauf.** DROMEs bekommen EP je Sieg, Level 0-5.
 Waffen bekommen EP fuer Siege, in denen sie getragen wurden (Abschuesse
@@ -376,7 +377,7 @@ aus.
 Reichweite 5 -- der Nimbus muss nicht angreifen, um zu zaubern, und kann
 auf seine Stellung achten.
 
-**Vorschlaege, noch nicht bestaetigt:**
+**Ebenfalls entschieden (Vorschlaege angenommen):**
 
 * **Drohnen-Pod:** Angriff Reparaturstrahl (Rw 3, heilt den Verbuendeten
   mit dem geringsten Anteil Integritaet); ist niemand verletzt oder der
@@ -384,11 +385,12 @@ auf seine Stellung achten.
   Faehigkeit "Schutzdrohne": der am staerksten verletzte Verbuendete bekommt
   15 Schild. KI: mit dem Pod bleibt der Traeger hinten bei den Verletzten.
 * **Deflektor:** Faehigkeit jeder 4. Angriff: 15 Schild fuer den Traeger.
+* **Karte:** verzweigte Wege ueber mehrere Kaempfe (wie FTL / Slay the
+  Spire), man plant 2-3 Kaempfe voraus.
 * **Ueberschuss am Schild** (`ActionResolver.resolve_damage`): bricht ein
   Treffer den Schild, geht der Rest heute mit dem Schildfaktor auf die
   Integritaet (Schildbrecher: x1,2 x2). Richtig waere, den Rest in
-  Rohschaden zurueckzurechnen. Ohne Grundregeneration greift der Fehler
-  seltener, ist aber weiter falsch.
+  Rohschaden zurueckzurechnen -- wird behoben.
 
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
