@@ -128,8 +128,10 @@
       "presence (Molok): Gegner im lure_radius greifen ihn an statt ihres Ziels",
       "(Locken, sichtbar ueber den Gelockten); guard_share des Schadens an",
       "Verbuendeten im guard_radius geht stattdessen auf ihn.",
-      "spellcaster (Nimbus): nach einer Faehigkeit gilt die Zahl der normalen",
-      "Angriffe bis zur naechsten mal factor (abgerundet, mindestens 1)."
+      "spellcaster (Nimbus, 6g): nach einer Faehigkeit gilt fuer die naechste",
+      "EINMAL die Voraussetzung mal factor -- Zahl der normalen Angriffe",
+      "(abgerundet, mindestens 1) oder die Zeit. Eine Faehigkeit mit halbierter",
+      "Voraussetzung loest die Passive nicht aus; danach gilt wieder die volle."
     ],
     "hit_rush": {"seconds": 2.0, "move_mult": 1.4},
     "presence": {"lure_radius": 2, "guard_radius": 3, "guard_share": 0.3},

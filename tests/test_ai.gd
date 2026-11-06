@@ -191,7 +191,8 @@ func test_the_rune_staff_hits_one_target_at_blaster_range() -> void:
 	t.equal(staff.range_tiles, blaster.range_tiles, "Runenstab reicht so weit wie der Blaster")
 	t.equal(staff.aoe_radius, 0, "und trifft immer nur ein Ziel")
 	var vortex := _action(unit, &"act_rune_vortex")
-	t.equal(int(vortex.trigger_every), 5, "nach vier normalen Angriffen kommt der Vortex")
+	t.equal(vortex.trigger_kind, "time", "der Vortex kommt nach Zeit, nicht nach Angriffen")
+	t.equal(float(vortex.trigger_every), 3.0, "alle 3 s")
 	unit.free()
 	vireo.free()
 
@@ -230,6 +231,8 @@ func test_the_vortex_gathers_then_strikes_then_slows() -> void:
 
 
 func test_the_spellcaster_halves_the_wait_after_an_ability() -> void:
+	# 6g: nach einer Faehigkeit gilt fuer die naechste EINMAL die halbe
+	# Voraussetzung, danach wieder die volle.
 	var battle := _battle([_nimbus(), _vireo()], [_vireo()],
 		[Vector2i(4, 16), Vector2i(6, 16), Vector2i(10, 4)])
 	var nimbus: Unit = battle.units[0]
@@ -237,33 +240,47 @@ func test_the_spellcaster_halves_the_wait_after_an_ability() -> void:
 	var vortex := _action(nimbus, &"act_rune_vortex")
 	var scatter := _action(vireo, &"act_pulse_double")
 	t.equal(nimbus.passive(), "spellcaster", "der Nimbus ist Zauberwirker")
-	# Vortex: vier normale Angriffe, danach nur noch zwei.
-	t.equal(int(vortex.trigger_every) - 1 - battle.brain._count_after_ability(nimbus, vortex), 2,
-		"nach dem Vortex braucht er zwei statt vier Angriffe")
-	# Blaster am Nimbus: zwei normale, danach einer (Doppelschuss, Schuss, Doppelschuss).
-	t.equal(int(scatter.trigger_every) - 1 - battle.brain._count_after_ability(nimbus, scatter), 1,
-		"mit dem Blaster: Doppelschuss, ein Schuss, Doppelschuss")
-	t.equal(battle.brain._count_after_ability(vireo, scatter), 0,
+	# Runenstab: der Vortex kommt nach Zeit -- 3 s, dann 1,5 s, dann wieder 3 s.
+	t.equal(vortex.trigger_kind, "time", "der Vortex loest nach Zeit aus")
+	t.equal(vortex.range_tiles, 5, "mit Reichweite 5")
+	var gadget := {}
+	var waits: Array = []
+	for i in 4:
+		waits.append(battle.brain._time_after_ability(nimbus, vortex, gadget))
+	t.equal(waits, [1.5, 3.0, 1.5, 3.0], "halb, voll, halb, voll")
+	# Blaster am Nimbus: zwei normale, dann einer, dann wieder zwei.
+	var mount := {}
+	var normals := int(scatter.trigger_every) - 1
+	t.equal(normals - battle.brain._count_after_ability(nimbus, scatter, mount), 1,
+		"nach dem ersten Doppelschuss reicht ein Schuss")
+	t.equal(normals - battle.brain._count_after_ability(nimbus, scatter, mount), 2,
+		"nach dem verkuerzten wieder zwei")
+	t.equal(battle.brain._count_after_ability(vireo, scatter, {}), 0,
 		"ohne die Passive beginnt die Zaehlung von vorn")
 	battle.free()
 
 
 func test_a_nimbus_casts_more_often_than_its_staff_alone_would() -> void:
-	# Im Kampf: nach dem ersten Vortex kommt jeder weitere nach zwei Angriffen.
-	var seq := []
+	# Im Kampf: nach einem voll geladenen Vortex kommt der naechste nach der
+	# halben Zeit, danach wieder nach der vollen (6g).
+	var times := []
+	var clock := {"battle": null}
 	var record := func(unit, _tile, action):
-		if unit.display_name == "Nimbus" and unit.is_player:
-			seq.append(action.id)
+		if unit.display_name == "Nimbus" and unit.is_player and action.id == &"act_rune_vortex":
+			times.append(clock["battle"].time)
 	EventBus.action_used.connect(record)
 	var battle := BattleManager.new()
+	clock["battle"] = battle
 	battle.setup(6060, [_nimbus(), _molok()], [_molok(), _molok()])
 	battle.run_to_end(40.0)
 	battle.free()
 	EventBus.action_used.disconnect(record)
-	var first := seq.find(&"act_rune_vortex")
-	t.ok(first == 4, "der erste Vortex nach vier Angriffen (Folge %s)" % str(seq.slice(0, 8)))
-	if first >= 0 and seq.size() > first + 3:
-		t.equal(seq[first + 3], &"act_rune_vortex", "der naechste schon nach zwei Angriffen")
+	t.ok(times.size() >= 3, "der Nimbus zaubert mehrmals (%d)" % times.size())
+	if times.size() >= 3:
+		var short: float = times[1] - times[0]
+		var long: float = times[2] - times[1]
+		t.ok(short >= 1.45 and short < 2.9, "erst die halbe Zeit (%.2f s)" % short)
+		t.ok(long >= 2.95, "dann wieder die volle (%.2f s)" % long)
 
 
 # ---------------------------------------------------------------------------

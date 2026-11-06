@@ -79,16 +79,16 @@
         "display_name": "Vortex",
         "category": "ability",
         "targeting": "aoe_around_target",
-        "range_tiles": 3,
+        "range_tiles": 5,
         "aoe_radius": 2,
         "power": 14,
         "push_tiles": 0,
         "energy_fraction": 1.0,
         "interval": 2.0,
         "trigger": {
-          "kind": "attacks",
-          "every": 5,
-          "weapon": "act_runestaff"
+          "kind": "time",
+          "every": 3,
+          "weapon": ""
         },
         "shield_mult": 1.0,
         "shots": 1,

@@ -242,7 +242,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		var aim := _aim(unit, ability, target)
 		if not aim.is_empty():
 			_execute(unit, aim["tile"], ability, aim["target"])
-			mount["count"] = _count_after_ability(unit, ability)
+			mount["count"] = _count_after_ability(unit, ability, mount)
 			return true
 	var shot := _aim(unit, attack, target)
 	if shot.is_empty():
@@ -256,17 +256,39 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 
 ## Wie viele Angriffe nach einer Faehigkeit schon "abgezaehlt" sind.
 ##
-## Normalerweise keiner. Die Passive ``spellcaster`` (Nimbus) halbiert die
-## Zahl der normalen Angriffe bis zur naechsten Faehigkeit, abgerundet und
-## mindestens einer: Vortex jeder 5. Angriff (4 normale) -> danach 2 normale;
-## Blaster jeder 3. (2 normale) -> danach 1.
-func _count_after_ability(unit: Unit, ability: ActionData) -> int:
-	if unit.passive() != "spellcaster":
+## Normalerweise keiner. Die Passive ``spellcaster`` (Nimbus, 6g) halbiert
+## nach einer Faehigkeit die Voraussetzung der naechsten EINMAL (abgerundet,
+## mindestens ein Angriff): Blaster jeder 3. (2 normale) -> danach 1 normaler.
+## Eine Faehigkeit mit halbierter Voraussetzung loest die Passive nicht aus,
+## danach gilt wieder die volle. ``holder`` merkt sich das (Schluessel
+## ``halved``) -- Waffenplatz oder Gadget.
+func _count_after_ability(unit: Unit, ability: ActionData, holder: Dictionary) -> int:
+	if not _spellcaster_halves(unit, holder):
 		return 0
 	var normals := int(ability.trigger_every) - 1
-	var factor := float((Config.section("passives").get("spellcaster", {}) as Dictionary).get("factor", 0.5))
-	var halved := maxi(1, int(floor(float(normals) * factor)))
+	var halved := maxi(1, int(floor(float(normals) * _spellcaster_factor())))
 	return maxi(0, normals - halved)
+
+
+## Gilt fuer die naechste Faehigkeit die halbierte Voraussetzung? Schaltet
+## den Merker in ``holder`` um: halbiert, dann wieder voll, dann halbiert ...
+func _spellcaster_halves(unit: Unit, holder: Dictionary) -> bool:
+	if unit.passive() != "spellcaster":
+		return false
+	var was_halved := bool(holder.get("halved", false))
+	holder["halved"] = not was_halved
+	return not was_halved
+
+
+func _spellcaster_factor() -> float:
+	return float((Config.section("passives").get("spellcaster", {}) as Dictionary).get("factor", 0.5))
+
+
+## Wie lange ein Gadget nach seiner Faehigkeit wartet. Beim Nimbus nach einer
+## voll geladenen Faehigkeit einmal die halbe Zeit (Runenstab: 3 s, 1,5 s, 3 s).
+func _time_after_ability(unit: Unit, ability: ActionData, holder: Dictionary) -> float:
+	var full := float(ability.trigger_every)
+	return full * _spellcaster_factor() if _spellcaster_halves(unit, holder) else full
 
 
 ## Worauf zielt ``action``? Das Ziel, wenn es geht; sonst der am besten
@@ -312,7 +334,7 @@ func _use_gadgets(unit: Unit, target: Unit) -> bool:
 				if aim.is_empty():
 					continue
 				_execute(unit, aim["tile"], ability, aim["target"])
-				gadget["ready"] = ability.trigger_every
+				gadget["ready"] = _time_after_ability(unit, ability, gadget)
 				return true
 			"adjacent":
 				if not _enemy_adjacent(unit):
