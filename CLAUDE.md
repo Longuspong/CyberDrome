@@ -61,19 +61,21 @@ bash tools/build_web.sh                                       # Web-Export nach 
    Angriff IST die Faehigkeit (Blaster, Runenstab, Kanone jeder 3., Lanze
    jeder 4.); Gadgets nach Zeit (Orbit-Sog alle 6 s) oder Ereignis (Boost,
    wenn ein Gegner danebensteht). Steht als `trigger` an der Aktion.
-2. **Skill-Tiefe ueber Synergien.** Nicht das *Wann*, sondern das *Womit*.
-   Offen: der Kern hat mit dem Wegfall der Energie seine Hauptaufgabe
-   verloren -- Vorschlag "Kern als Synergie-Teil" (z. B. Faehigkeit einen
-   Angriff frueher) ist noch nicht ausgearbeitet.
+2. **Skill-Tiefe ueber Synergien -- ENTSCHIEDEN (6. Nov. 2026), nicht
+   gebaut.** Kerne entfallen als Gegenstand, die Synergie steckt in
+   **Waffen-Varianten** und **Modulen** (nur im Lauf, Rezepte, keine Stufen).
+   Alles im Halter heisst **Waffe** (Angriff + Faehigkeit), der Halter
+   regelt allein, was passt. Level von DROMEs (0-5) und Waffen (0-10)
+   bleiben nach dem Lauf. Alles in `docs/NEUANFANG.md` Abschnitt 6g.
 3. **Eingreifen des Spielers -- offen, wird spaeter besprochen.** Fest steht:
    grundsaetzlich Autobattler, der Spieler **steuert keine DROMEs**. Er soll
    aber eingreifen koennen, vermutlich indem er einen Gegner als Ziel Nummer 1
    markiert (frueher "Aggro-Platz 1"; die Aggro-Tabelle gibt es seit 6. Nov.
    2026 nicht mehr, Zielwahl nach Regel je Rolle). Der Spieler denkt das noch durch --
    nichts davon bauen, bevor es besprochen ist.
-4. **Waffen-Slots und Gewichtsklassen ueberarbeiten.** Teilweise entschieden:
-   ein Platz je DROME, Molok zwei (gebaut 6. Nov. 2026, `docs/NEUANFANG.md`
-   7b/6c). Die Gewichtsklassen der Teile selbst sind noch offen.
+4. **Waffen-Slots und Gewichtsklassen -- ENTSCHIEDEN.** Ein Platz je DROME,
+   Molok zwei (gebaut); leicht/mittel/schwer bleibt als Halterregel, keine
+   Liste "wer darf was" (6g).
 
 Bis diese Punkte entschieden sind: keine groesseren Umbauten an
 Faehigkeiten, Slots oder Gewichten auf eigene Faust.
@@ -90,18 +92,19 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    ueber eine Jaegerklasse. Naechstes: Zwischenstopp mit Modulen, Lager,
    Laden, Credits (`docs/NEUANFANG.md` Abschnitt 7). Kopf und Antrieb bleiben
    fest am Chassis -- ein DROME wird immer als Ganzes gestaltet.
-   Entschieden: 3 Module je DROME, Credits + Laden (Beute gleich wichtig),
-   Ausruestung bleibt nach dem Lauf. Offen: Fragen in Abschnitt 6.
+   Entschieden: 3 Modulplaetze je Waffe (Molok 2), Credits + Laden (Beute
+   gleich wichtig), Ausruestung bleibt nach dem Lauf; dazu Abschnitt 6g
+   (Begriffe, Module, Level, Gegnerstaerke nach Region, Karte wie bei FTL,
+   Chaos-Kampf statt Chaos-Modus, Nimbus-Passive neu). Reihenfolge: Abschnitt 8.
    Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den
    Teildaten, Tempo und Puls in `data/config.json` -> `realtime`). Nimbus
    faellt noch in 58 % der Kaempfe zuerst, der Strix macht den meisten Schaden.
-2. Kern als Synergie-Teil ausarbeiten (Designpunkt 2).
+2. ~~Kern als Synergie-Teil~~ -- entfaellt (6g). Skillbaeume spaeter.
 3. Eingreifen ueber Aggro-Platz 1 besprechen (Designpunkt 3) -- passt jetzt
    gut: Gegner im laufenden Kampf antippen.
-4. Waffen-Slots und Gewichtsklassen (Designpunkt 4).
-5. Weitere Vorschlaege (Einfuehrung, Ziehen auf Halter, Bester Aufbau,
+4. Weitere Vorschlaege (Einfuehrung, Ziehen auf Halter, Bester Aufbau,
    Speichern, Haptik) -- unbewertet.
 
 Playtest ohne Bildschirm: `godot --headless --path . --script
