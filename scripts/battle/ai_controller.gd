@@ -208,7 +208,8 @@ func _count_after_ability(unit: Unit, ability: ActionData) -> int:
 	if unit.passive() != "spellcaster":
 		return 0
 	var normals := int(ability.trigger_every) - 1
-	var halved := maxi(1, normals / 2)
+	var factor := float((Config.section("passives").get("spellcaster", {}) as Dictionary).get("factor", 0.5))
+	var halved := maxi(1, int(floor(float(normals) * factor)))
 	return maxi(0, normals - halved)
 
 

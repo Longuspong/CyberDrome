@@ -73,6 +73,7 @@
           "every": 4,
           "weapon": ""
         },
+        "shots": 1,
         "gather": false,
         "delay": 0.0,
         "status": null

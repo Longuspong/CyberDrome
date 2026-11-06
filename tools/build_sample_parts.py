@@ -386,6 +386,8 @@ STAT_DEFAULTS = {
     # Nur body: die Passive des DROME (Unit.passive()).
     #   spellcaster  nach jeder Faehigkeit braucht die Waffe nur noch halb so
     #                viele normale Angriffe bis zur naechsten (Nimbus)
+    #   hit_rush     jeder Treffer gibt kurz mehr Lauftempo (Vireo)
+    # Die Zahlen der Passiven stehen in data/config.json unter "passives".
     "passive": "",
 }
 
@@ -411,7 +413,8 @@ SPD_WEIGHT_STEP = 4
 
 STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
-    "scout_body":  {"hp":  60, "def": 1, "spd": 2, "shield": 30, "ai_role": "skirmisher"},
+    "scout_body":  {"hp":  60, "def": 1, "spd": 2, "shield": 30, "ai_role": "skirmisher",
+                    "passive": "hit_rush"},
     "jugg_body":   {"hp": 130, "def": 5, "shield": 50, "ai_role": "vanguard"},
     "mage_body":   {"hp":  85, "def": 2, "shield": 50, "ai_role": "controller",
                     "passive": "spellcaster"},
@@ -444,10 +447,13 @@ STATS = {
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 10, "energy_fraction": 0.5,
              "interval": 1.4},
-            {"id": "act_pulse_scatter", "display_name": "Streusalve",
-             "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 4, "aoe_radius": 1, "power": 9,
-             "aggro_coeff": 0.9, "energy_fraction": 0.5,
+            # Doppelschuss (Vorgabe des Spielers, Nov. 2026): ein schneller
+            # Schuss auf bis zu zwei Gegner in Reichweite; ist nur einer da,
+            # trifft er ihn zweimal.
+            {"id": "act_pulse_double", "display_name": "Doppelschuss",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 3, "power": 7, "shots": 2,
+             "energy_fraction": 0.5,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_pulse"}},
         ],
     },
@@ -540,6 +546,9 @@ ACTION_DEFAULTS = {
     "energy_fraction": 0.0,
     "interval": 2.0,
     "trigger": None,
+    # Treffer je Ausloesen: verteilt auf bis zu so viele Gegner in Reichweite,
+    # der Rest geht wieder aufs Ziel (Doppelschuss).
+    "shots": 1,
     # Flaeche: zieht die Gegner im Radius zuerst zum Zielfeld heran.
     "gather": False,
     # Sekunden zwischen Ausloesen und Schaden (Schockwelle nach dem Sog).

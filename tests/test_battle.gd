@@ -294,20 +294,20 @@ func test_every_ability_fires_by_itself() -> void:
 	# direkt danebensteht, und solange es keine Nahkampfwaffe gibt (Plasmaklinge
 	# und Hammer kommen erst), kommt im Kampf niemand so nah. Sein Ausloeser
 	# wird in tests/test_dash.gd geprueft.
-	for id in [&"act_pulse_scatter", &"act_siege_barrage", &"act_rune_vortex",
+	for id in [&"act_pulse_double", &"act_siege_barrage", &"act_rune_vortex",
 			&"act_rail_pierce", &"act_orbitpull"]:
 		t.ok(int(uses.get(id, 0)) > 0, "%s loest im Kampf aus (%d)" % [id, uses.get(id, 0)])
 	t.note("Aktionen: %s" % str(uses))
 
 
 func test_every_nth_attack_is_the_ability() -> void:
-	# Die Regel "jeder 3. Schuss ist die Streusalve": zwischen zwei Faehigkeiten
+	# Die Regel "jeder 3. Schuss ist die Doppelschuss": zwischen zwei Faehigkeiten
 	# derselben Waffe fallen genau N-1 normale Angriffe. Gemessen am Squad mit
-	# je EINER Waffe, damit sich keine zwei Zaehler mischen. Streusalve und
+	# je EINER Waffe, damit sich keine zwei Zaehler mischen. Doppelschuss und
 	# Praezisionsschuss reichen mindestens so weit wie ihr Angriff -- sie
 	# kommen also nie zu spaet.
 	var measured: Dictionary = _record(6, _squad(), 7300)
-	var rules := {&"act_pulse_scatter": [&"act_pulse", 3],
+	var rules := {&"act_pulse_double": [&"act_pulse", 3],
 		&"act_rail_pierce": [&"act_raillance", 4]}
 	var checked := 0
 	for key in measured["seqs"]:

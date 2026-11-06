@@ -234,14 +234,14 @@ func test_the_spellcaster_halves_the_wait_after_an_ability() -> void:
 	var nimbus: Unit = battle.units[0]
 	var vireo: Unit = battle.units[1]
 	var vortex := _action(nimbus, &"act_rune_vortex")
-	var scatter := _action(vireo, &"act_pulse_scatter")
+	var scatter := _action(vireo, &"act_pulse_double")
 	t.equal(nimbus.passive(), "spellcaster", "der Nimbus ist Zauberwirker")
 	# Vortex: vier normale Angriffe, danach nur noch zwei.
 	t.equal(int(vortex.trigger_every) - 1 - battle.brain._count_after_ability(nimbus, vortex), 2,
 		"nach dem Vortex braucht er zwei statt vier Angriffe")
-	# Blaster am Nimbus: zwei normale, danach einer (Streusalve, Schuss, Streusalve).
+	# Blaster am Nimbus: zwei normale, danach einer (Doppelschuss, Schuss, Doppelschuss).
 	t.equal(int(scatter.trigger_every) - 1 - battle.brain._count_after_ability(nimbus, scatter), 1,
-		"mit dem Blaster: Streusalve, ein Schuss, Streusalve")
+		"mit dem Blaster: Doppelschuss, ein Schuss, Doppelschuss")
 	t.equal(battle.brain._count_after_ability(vireo, scatter), 0,
 		"ohne die Passive beginnt die Zaehlung von vorn")
 	battle.free()
@@ -263,3 +263,53 @@ func test_a_nimbus_casts_more_often_than_its_staff_alone_would() -> void:
 	t.ok(first == 4, "der erste Vortex nach vier Angriffen (Folge %s)" % str(seq.slice(0, 8)))
 	if first >= 0 and seq.size() > first + 3:
 		t.equal(seq[first + 3], &"act_rune_vortex", "der naechste schon nach zwei Angriffen")
+
+
+# ---------------------------------------------------------------------------
+# Vireo: Doppelschuss und Sprint
+# ---------------------------------------------------------------------------
+
+func test_the_double_shot_splits_over_two_foes() -> void:
+	var tiles := [Vector2i(10, 12), Vector2i(10, 10), Vector2i(11, 10)]
+	var battle := _battle([_vireo()], [_molok(), _molok()], tiles)
+	var vireo: Unit = battle.units[0]
+	var first: Unit = battle.units[1]
+	var second: Unit = battle.units[2]
+	var double := _action(vireo, &"act_pulse_double")
+	var s1 := first.shield + first.hp
+	var s2 := second.shield + second.hp
+	t.ok(battle.resolver.execute(vireo, first.tile, double), "der Doppelschuss geht raus")
+	t.ok(first.shield + first.hp < s1, "das Ziel wird getroffen")
+	t.ok(second.shield + second.hp < s2, "und der zweite Gegner in Reichweite auch")
+	battle.free()
+
+
+func test_the_double_shot_hits_a_lone_foe_twice() -> void:
+	var tiles := [Vector2i(10, 12), Vector2i(10, 10)]
+	var battle := _battle([_vireo()], [_molok()], tiles)
+	var vireo: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	var double := _action(vireo, &"act_pulse_double")
+	var hits := []
+	var record := func(target, _amount, source): if source == vireo: hits.append(target)
+	EventBus.unit_damaged.connect(record)
+	battle.resolver.execute(vireo, foe.tile, double)
+	EventBus.unit_damaged.disconnect(record)
+	t.equal(hits.size(), 2, "allein in Reichweite: zwei Treffer")
+	battle.free()
+
+
+func test_a_hit_makes_the_vireo_sprint() -> void:
+	var tiles := [Vector2i(10, 12), Vector2i(10, 10)]
+	var battle := _battle([_vireo()], [_molok()], tiles)
+	var vireo: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	t.equal(vireo.passive(), "hit_rush", "der Vireo hat die Sprint-Passive")
+	var before := vireo.move_speed()
+	battle.resolver.execute(vireo, foe.tile, _action(vireo, &"act_pulse"))
+	t.ok(vireo.move_speed() > before * 1.3, "nach dem Treffer laeuft er schneller (%.2f -> %.2f)"
+		% [before, vireo.move_speed()])
+	var seconds := float((Config.section("passives").get("hit_rush", {}) as Dictionary).get("seconds", 2.0))
+	vireo.tick_statuses(seconds + 0.1)
+	t.ok(is_equal_approx(vireo.move_speed(), before), "nach %.0f s ist es vorbei" % seconds)
+	battle.free()

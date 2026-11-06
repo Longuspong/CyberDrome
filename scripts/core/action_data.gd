@@ -84,6 +84,10 @@ var interval: float = 2.0
 ##   time      alle ``trigger_every`` Sekunden, sobald ein Ziel in Reichweite ist.
 ##   adjacent  wenn ein Gegner direkt danebensteht, hoechstens alle
 ##             ``trigger_every`` Sekunden.
+## Treffer je Ausloesen. Mehr als einer verteilt sich auf bis zu so viele
+## Gegner in Reichweite, der Rest geht wieder aufs Ziel (Doppelschuss).
+var shots: int = 1
+
 ## Flaeche: zieht die Gegner im Radius zuerst zum Zielfeld heran (Vortex).
 var gather: bool = false
 
@@ -118,6 +122,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.energy_fraction = float(meta.get("energy_fraction", 0.0))
 	action.interval = float(meta.get("interval", 2.0))
 	action.gather = bool(meta.get("gather", false))
+	action.shots = maxi(1, int(meta.get("shots", 1)))
 	action.delay = float(meta.get("delay", 0.0))
 	var status_meta = meta.get("status")
 	if status_meta is Dictionary:
@@ -207,6 +212,8 @@ func description_lines() -> Array[String]:
 		lines.append("Boost: bis %d Felder gerade" % range_tiles)
 	if power > 0:
 		lines.append("Staerke %d" % power)
+	if shots > 1:
+		lines.append("%d Treffer auf bis zu %d Gegner" % [shots, shots])
 	if aoe_radius > 0:
 		lines.append("Flaeche: Radius %d um das Ziel" % aoe_radius)
 	if gather:

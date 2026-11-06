@@ -85,6 +85,11 @@ static func traits(part: PartData) -> Array[String]:
 	if part.aggro_bonus > 0:
 		out.append("Zieht Aufmerksamkeit: +%d Aggro bei allen Gegnern." % part.aggro_bonus)
 	match part.passive:
+		"hit_rush":
+			var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
+			out.append("Sprint: jeder Treffer macht %s s lang %d %% schneller." % [
+				ActionData._seconds(float(rush.get("seconds", 2.0))),
+				int(round((float(rush.get("move_mult", 1.4)) - 1.0) * 100.0))])
 		"spellcaster":
 			out.append("Zauberwirker: nach jeder Faehigkeit braucht die Waffe nur halb so viele Angriffe bis zur naechsten.")
 	return out
@@ -117,6 +122,8 @@ static func action_lines(action: ActionData) -> Array[String]:
 			out.append("%d %% Energieschaden -- gut gegen Schilde." % int(round(action.energy_fraction * 100.0)))
 		else:
 			out.append("Kinetischer Schaden -- stark gegen Integritaet, schwach gegen Schilde.")
+	if action.shots > 1:
+		out.append("%d schnelle Treffer auf bis zu %d Gegner in Reichweite; ist nur einer da, trifft er ihn mehrfach." % [action.shots, action.shots])
 	if action.gather:
 		out.append("Zieht die Gegner im Umkreis %d zum Ziel heran." % action.aoe_radius)
 	if action.delay > 0.0:

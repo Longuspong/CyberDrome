@@ -70,6 +70,7 @@
         "energy_fraction": 0.0,
         "interval": 2.6,
         "trigger": null,
+        "shots": 1,
         "gather": false,
         "delay": 0.0,
         "status": null
@@ -92,6 +93,7 @@
           "every": 4,
           "weapon": "act_raillance"
         },
+        "shots": 1,
         "gather": false,
         "delay": 0.0,
         "status": null

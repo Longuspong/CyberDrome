@@ -69,9 +69,20 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		EventBus.log_line("%s trifft %s fuer %d Schaden."
 			% [who, target.display_name, amount])
 
+	_on_hit(source, dealt)
 	if target.hp <= 0:
 		_kill(target)
 	return amount
+
+
+## Passiven, die an einem Treffer haengen. Vireo (hit_rush): kurz schneller.
+func _on_hit(source: Unit, dealt: int) -> void:
+	if source == null or dealt <= 0 or not source.is_alive():
+		return
+	if source.passive() == "hit_rush":
+		var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
+		source.apply_status(&"rush", float(rush.get("seconds", 2.0)),
+			{"move_mult": float(rush.get("move_mult", 1.4))})
 
 
 ## Das Zwei-Verteidigungs-System (§11) als reine Rechnung -- was von ``raw`` auf
@@ -310,8 +321,37 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		delayed.append({"left": action.delay, "source": source, "tile": tile,
 			"action": action})
 		return true
+	if action.shots > 1 and action.aoe_radius <= 0:
+		_multi_shot(source, tile, action)
+		return true
 	_apply_area(source, tile, action)
 	return true
+
+
+## Mehrere schnelle Treffer: das Ziel zuerst, dann die naechsten Gegner in
+## Reichweite; reichen die Gegner nicht, geht der Rest wieder aufs Ziel.
+func _multi_shot(source: Unit, tile: Vector2i, action: ActionData) -> void:
+	var primary := unit_at(tile)
+	if primary == null:
+		return
+	var others: Array = []
+	for unit in units:
+		if unit == primary or not unit.is_alive() or unit.is_player == source.is_player:
+			continue
+		if Grid.distance(source.tile, unit.tile) <= action.range_tiles:
+			others.append(unit)
+	others.sort_custom(func(a, b):
+		return Grid.distance(source.tile, a.tile) < Grid.distance(source.tile, b.tile))
+	var targets: Array = [primary]
+	for unit in others:
+		if targets.size() >= action.shots:
+			break
+		targets.append(unit)
+	while targets.size() < action.shots:
+		targets.append(primary)
+	for target in targets:
+		if target.is_alive():
+			apply_damage(source, target, action.power + source.atk(), action)
 
 
 ## Laesst verzoegerte Wirkungen ablaufen. Gibt zurueck, ob eine ausgeloest hat.

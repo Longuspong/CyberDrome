@@ -69,6 +69,7 @@
         "energy_fraction": 0.0,
         "interval": 3.0,
         "trigger": null,
+        "shots": 1,
         "gather": false,
         "delay": 0.0,
         "status": null
@@ -91,6 +92,7 @@
           "every": 3,
           "weapon": "act_siege"
         },
+        "shots": 1,
         "gather": false,
         "delay": 0.0,
         "status": null

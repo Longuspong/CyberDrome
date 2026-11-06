@@ -197,7 +197,7 @@ func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 
 ## Schussspur vom Schuetzen zum Ziel, Rueckstoss, und bei einer Faehigkeit
 ## ihr Name ueber der Figur -- damit man sieht, dass gerade der dritte Schuss
-## die Streusalve war.
+## die Doppelschuss war.
 func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 	if tile != unit.tile:
 		unit.play_attack(tile)

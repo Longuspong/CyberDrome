@@ -119,6 +119,17 @@
     "kite_distance": 2
   },
 
+  "passives": {
+    "_kommentar": [
+      "Zahlen der Passiven am Chassis (PartData.passive).",
+      "hit_rush (Vireo): jeder Treffer gibt seconds lang move_mult auf das Lauftempo.",
+      "spellcaster (Nimbus): nach einer Faehigkeit gilt die Zahl der normalen",
+      "Angriffe bis zur naechsten mal factor (abgerundet, mindestens 1)."
+    ],
+    "hit_rush": {"seconds": 2.0, "move_mult": 1.4},
+    "spellcaster": {"factor": 0.5}
+  },
+
   "power_tolerance": 0.12,
   "power_attempts": 200,
   "build_attempts": 50,
