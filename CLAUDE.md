@@ -96,11 +96,14 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    gleich wichtig), Ausruestung bleibt nach dem Lauf; dazu Abschnitt 6g
    (Begriffe, Module, Level, Gegnerstaerke nach Region, Karte wie bei FTL,
    Chaos-Kampf statt Chaos-Modus, Nimbus-Passive neu). Reihenfolge: Abschnitt 8.
+   Gebaut (6. Nov.): das Aufraeumen nach 6g (Schild nur nach Ruhe, Kerne
+   ohne Werte, Kanone raus, Gegnerstaerke fest, Nimbus/Vortex neu). Als
+   Naechstes: Deflektor und Drohnen-Pod als Waffen, dann Zwischenstopp.
    Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den
-   Teildaten, Tempo und Puls in `data/config.json` -> `realtime`). Nimbus
-   faellt noch in 58 % der Kaempfe zuerst, der Strix macht den meisten Schaden.
+   Teildaten, Tempo und Puls in `data/config.json` -> `realtime`). Seit dem
+   Vortex nach Zeit macht der Nimbus den meisten Schaden (11/s, 6g).
 2. ~~Kern als Synergie-Teil~~ -- entfaellt (6g). Skillbaeume spaeter.
 3. Eingreifen ueber Aggro-Platz 1 besprechen (Designpunkt 3) -- passt jetzt
    gut: Gegner im laufenden Kampf antippen.

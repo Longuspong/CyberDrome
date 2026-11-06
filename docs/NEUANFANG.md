@@ -288,7 +288,7 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
   **Jaegerklasse**, die verwundbare Ziele jagt (Zielregel "hunter" steht
   schon bereit).
 
-## 6g. Begriffe, Module, Level, Karte (entschieden 6. Nov. 2026, nicht gebaut)
+## 6g. Begriffe, Module, Level, Karte (entschieden 6. Nov. 2026, teils gebaut)
 
 Ersetzt in Teilen Abschnitt 1 (Lauf-Verbesserungen), 4 (Kerne) und 7a/7e
 (Module, Rezepte).
@@ -377,6 +377,27 @@ aus.
 Reichweite 5 -- der Nimbus muss nicht angreifen, um zu zaubern, und kann
 auf seine Stellung achten.
 
+**Gebaut (Aufraeumen, 6. Nov. 2026):** Ueberschuss am Schild, Schild nur nach
+Ruhe (`combat.shield_recharge`), Kerne ohne Werte und ohne Halter, Kanone
+entfernt, Gegnerstaerke nach `RunState.reference_power`, Nimbus-Passive neu,
+Vortex nach Zeit (Rw 5), Angriffe ohne Namen. Noch offen: Deflektor und
+Drohnen-Pod als Waffen, Module, Level, Karte.
+
+Gemessen (je 200 Kaempfe, Standard-Squad):
+
+| | vorher | nachher |
+|---|---|---|
+| gegen gewuerfelte Gegner | 107:93, 27 s | 155:45, 17 s |
+| Spiegel | 101:99 | 95:105, 20 s |
+| Schaden je s: Molok / Nimbus / Strix / Vireo | 4,6 / 5,5 / 6,7 / 3,7 | 5,6 / 11,0 / 8,0 / 4,9 (Spiegel) |
+| Vortex je Minute | 12 | 23 |
+
+Lesart: der Nimbus ist jetzt der staerkste Schadensmacher -- der Vortex
+(14 Energie im Umkreis 2, Sog, Verlangsamung) kommt im Schnitt alle 2,25 s.
+Gewuerfelte Gegner tragen selten Runenstab am Nimbus, deshalb das deutliche
+155:45; der Kampfwert (`power_score`) bildet den Vortex nach Zeit noch nicht
+ab. Balancing-Thema: Vortex-Schaden oder Takt.
+
 **Ebenfalls entschieden (Vorschlaege angenommen):**
 
 * **Drohnen-Pod:** Angriff Reparaturstrahl (Rw 3, heilt den Verbuendeten
@@ -387,10 +408,8 @@ auf seine Stellung achten.
 * **Deflektor:** Faehigkeit jeder 4. Angriff: 15 Schild fuer den Traeger.
 * **Karte:** verzweigte Wege ueber mehrere Kaempfe (wie FTL / Slay the
   Spire), man plant 2-3 Kaempfe voraus.
-* **Ueberschuss am Schild** (`ActionResolver.resolve_damage`): bricht ein
-  Treffer den Schild, geht der Rest heute mit dem Schildfaktor auf die
-  Integritaet (Schildbrecher: x1,2 x2). Richtig waere, den Rest in
-  Rohschaden zurueckzurechnen -- wird behoben.
+* **Ueberschuss am Schild** (`ActionResolver.resolve_damage`): der Rest nach
+  dem Schildbruch wird in Rohschaden zurueckgerechnet (gebaut).
 
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
@@ -558,9 +577,8 @@ kommen sie in den Beutetopf. Das ist das "pokern auf Items, die man kennt".
 Erledigt: 1-5 (KI, ein Platz, Vireo, Molok, Strix/Nimbus). Die Kerne (alt 6)
 entfallen (6g). Weiter:
 
-1. Aufraeumen nach 6g: Kerne und Kanone raus, Schild ohne Grundregeneration,
-   Ueberschuss am Schild, Gegnerstaerke nach Region/Runde, Nimbus-Passive neu,
-   Runenstab nach Zeit. Danach neu messen.
+1. ~~Aufraeumen nach 6g~~ (gebaut 6. Nov.). Noch dazu: Deflektor und
+   Drohnen-Pod als Waffen mit Angriff und Faehigkeit, Vortex-Balancing.
 2. Zwischenstopp nach dem Kampf: Lager, Credits, Ausruesten.
 3. Module und Rezepte (6g), dann der Laden.
 4. Level fuer DROMEs und Waffen, die nach dem Lauf bleiben.

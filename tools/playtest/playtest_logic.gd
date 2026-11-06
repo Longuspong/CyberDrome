@@ -10,6 +10,10 @@ var _detail := false
 var _battle: BattleManager
 
 
+## Spiegelkampf: der Squad gegen eine Kopie von sich selbst.
+var mirror := false
+
+
 func run(count: int, detail_seed: int) -> void:
 	if GameState.roster.entries.is_empty():
 		GameState.load_roster()
@@ -50,7 +54,10 @@ func _entry(unit: Unit) -> Dictionary:
 func _play(seed_value: int, builds: Array) -> Dictionary:
 	var battle := BattleManager.new()
 	_battle = battle
-	battle.setup(seed_value, builds)
+	if mirror:
+		battle.setup(seed_value, builds, builds.map(func(b): return b.clone()))
+	else:
+		battle.setup(seed_value, builds)
 	for unit in battle.units:
 		_entry(unit)["units"] += 1
 	var acted := {}
