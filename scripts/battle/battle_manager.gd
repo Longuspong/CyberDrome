@@ -133,18 +133,35 @@ static func preview_conditions(seed_value: int) -> Dictionary:
 	}
 
 
+## Wie weit vorn eine Rolle in der Aufstellung steht: Frontlinie zuerst,
+## Scharfschuetze zuletzt. Ohne eigenes Zutun des Spielers steht damit der
+## Molok vorn und der Strix hinten -- auf beiden Seiten.
+const FRONT_ORDER := {"vanguard": 0, "skirmisher": 1, "": 2, "controller": 3, "sniper": 4}
+
+
 func _spawn(builds: Array, is_player: bool) -> void:
-	var zone := MapGenerator.deployment_zone(grid, is_player)
+	var zone := deployment_tiles(is_player)
 	var prefix := "P" if is_player else "E"
+	var created: Array = []
 	var index := 0
 	for build in builds:
-		var unit := Unit.create(build, StringName("%s%d" % [prefix, index]), is_player)
+		created.append(Unit.create(build, StringName("%s%d" % [prefix, index]), is_player))
+		index += 1
+	# Die Reihenfolge der Aufstellung nach Rolle, stabil innerhalb einer Rolle.
+	var ordered := created.duplicate()
+	ordered.sort_custom(func(a, b):
+		var ra: int = FRONT_ORDER.get(a.ai_role(), 2)
+		var rb: int = FRONT_ORDER.get(b.ai_role(), 2)
+		if ra != rb:
+			return ra < rb
+		return created.find(a) < created.find(b))
+	for unit in ordered:
 		var tile := _free_deployment_tile(zone, unit)
 		unit.place_at(tile)
 		unit.set_facing("north" if is_player else "south")
 		grid.set_occupant(tile, unit.unit_id)
-		units.append(unit)
-		index += 1
+	# In der Einheitenliste bleibt die Reihenfolge des Squads.
+	units.append_array(created)
 
 
 ## Die distinkten Ausruestungs-Typen einer Squad-Liste -- der Beute-Pool. Waffen
@@ -158,6 +175,69 @@ func _distinct_equipment(builds: Array) -> Array:
 				seen[part.id] = true
 				ids.append(part.id)
 	return ids
+
+
+## Die Aufstellungszone einer Seite, vorderstes Feld zuerst (dem Gegner am
+## naechsten).
+func deployment_tiles(is_player: bool) -> Array[Vector2i]:
+	var zone := MapGenerator.deployment_zone(grid, is_player)
+	var foe_zone := MapGenerator.deployment_zone(grid, not is_player)
+	var center := Vector2.ZERO
+	for tile in foe_zone:
+		center += Vector2(tile)
+	center /= maxf(1.0, float(foe_zone.size()))
+	var ranked := zone.duplicate()
+	ranked.sort_custom(func(a: Vector2i, b: Vector2i):
+		var da := Vector2(a).distance_to(center)
+		var db := Vector2(b).distance_to(center)
+		if not is_equal_approx(da, db):
+			return da < db
+		return zone.find(a) < zone.find(b))
+	return ranked
+
+
+## Aufstellung vor dem Kampf: einen eigenen DROME auf ein Feld der eigenen
+## Zone setzen. Steht dort schon ein eigener, tauschen beide. Nur solange der
+## Kampf noch nicht laeuft (time == 0). Gibt true zurueck, wenn sich etwas
+## bewegt hat.
+func place_unit(unit: Unit, tile: Vector2i) -> bool:
+	if unit == null or time > 0.0 or tile == unit.tile:
+		return false
+	if not tile in deployment_tiles(unit.is_player):
+		return false
+	var other_id = grid.occupant(tile)
+	var other: Unit = _unit_by_id(other_id) if other_id != null else null
+	if other != null and other.is_player != unit.is_player:
+		return false
+	var from := unit.tile
+	grid.clear_occupant(from)
+	if other != null:
+		grid.clear_occupant(tile)
+		other.place_at(from)
+		grid.set_occupant(from, other.unit_id)
+	unit.place_at(tile)
+	grid.set_occupant(tile, unit.unit_id)
+	return true
+
+
+## Die aktuelle Aufstellung einer Seite als Liste von Feldern in Squad-
+## Reihenfolge -- zum Merken fuer den naechsten Kampf.
+func formation(is_player: bool) -> Array:
+	var out: Array = []
+	for unit in units:
+		if unit.is_player == is_player:
+			out.append(unit.tile)
+	return out
+
+
+## Eine gemerkte Aufstellung wiederherstellen. Felder ausserhalb der Zone oder
+## doppelte werden uebersprungen.
+func apply_formation(tiles: Array) -> void:
+	var own: Array = units.filter(func(u): return u.is_player)
+	for i in mini(own.size(), tiles.size()):
+		var tile = tiles[i]
+		if tile is Vector2i:
+			place_unit(own[i], tile)
 
 
 func _free_deployment_tile(zone: Array[Vector2i], unit: Unit) -> Vector2i:

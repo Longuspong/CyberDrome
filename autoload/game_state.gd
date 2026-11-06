@@ -42,6 +42,10 @@ var squad: Array = []
 ## ergibt exakt denselben Kampf. Im Playtesting ist das Gold wert.
 var battle_seed: int = 0
 
+## Die zuletzt bestaetigte Aufstellung (Felder in Squad-Reihenfolge). Der
+## naechste Kampf stellt sie wieder her, soweit sie in die Zone passt.
+var formation: Array = []
+
 
 ## Ergebnis des letzten Kampfes, fuer den Ergebnisbildschirm
 var last_result: Dictionary = {}

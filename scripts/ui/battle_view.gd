@@ -27,6 +27,7 @@ var _world: Node2D
 var _badges: UnitBadgePainter
 var _effects: EffectPainter
 var _tile_sprites: Dictionary = {}
+var _zone_sprites: Array = []
 
 
 func _ready() -> void:
@@ -69,6 +70,27 @@ func build_terrain(battle_grid: Grid) -> void:
 		IsoView.fit_sprite(sprite)
 		_world.add_child(sprite)
 		_tile_sprites[tile] = sprite
+
+
+## Felder einfaerben -- die Aufstellungszone vor dem Kampf.
+func show_zone(tiles: Array, color: Color) -> void:
+	clear_zone()
+	for tile in tiles:
+		var sprite := Sprite2D.new()
+		sprite.texture = load(OVERLAY_TILE)
+		sprite.centered = false
+		sprite.position = IsoView.sprite_position(tile)
+		sprite.z_index = IsoView.depth(tile) * DEPTH_STRIDE + 2
+		sprite.modulate = color
+		IsoView.fit_sprite(sprite)
+		_world.add_child(sprite)
+		_zone_sprites.append(sprite)
+
+
+func clear_zone() -> void:
+	for sprite in _zone_sprites:
+		sprite.queue_free()
+	_zone_sprites.clear()
 
 
 # ---------------------------------------------------------------------------

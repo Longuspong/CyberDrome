@@ -140,9 +140,9 @@
   "build_attempts": 50,
 
   "deployment": {
-    "_kommentar": "Spieler unten links, Gegner oben rechts. inset: Abstand der Zonen von den Ecken -- kuerzere Anlaufzeit im Autokampf.",
-    "rows": 2,
-    "columns": 6,
+    "_kommentar": "Spieler unten links, Gegner oben rechts, je 3 Reihen x 5 Felder (Aufstellung per Ziehen vor dem Kampf). inset: Abstand der Zonen von den Ecken -- kuerzere Anlaufzeit im Autokampf.",
+    "rows": 3,
+    "columns": 5,
     "inset": 5
   },
 
