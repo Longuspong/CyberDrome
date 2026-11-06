@@ -4,7 +4,7 @@ extends RefCounted
 ##
 ## Drei Zusagen, die ein Autobattler braucht und die hier abgesichert werden:
 ##
-##   1. Gleichwertig: beide Seiten haben dieselben Werkzeuge (Aggro-Tabelle).
+##   1. Gleichwertig: beide Seiten waehlen ihre Ziele nach derselben Regel.
 ##   2. Fair: dasselbe Squad gewinnt auf beiden Seiten etwa gleich oft. Wer
 ##      unten links aufstellt oder "P" statt "E" heisst, darf keinen Vorteil
 ##      haben.
@@ -44,11 +44,11 @@ func _play(seed_value: int, player: Array, enemy: Array, overtime: bool) -> Dict
 	return result
 
 
-func test_both_sides_keep_an_aggro_table() -> void:
+func test_both_sides_pick_targets_by_the_same_rule() -> void:
 	var battle := BattleManager.new()
 	battle.setup(4242, _squad(), _squad())
 	for unit in battle.units:
-		t.ok(unit.aggro != null, "%s hat eine Aggro-Tabelle" % unit.unit_id)
+		t.ok(battle.brain.choose_target(unit) != null, "%s findet ein Ziel" % unit.unit_id)
 	battle.free()
 
 

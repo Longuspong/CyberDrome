@@ -67,8 +67,9 @@ bash tools/build_web.sh                                       # Web-Export nach 
    Angriff frueher) ist noch nicht ausgearbeitet.
 3. **Eingreifen des Spielers -- offen, wird spaeter besprochen.** Fest steht:
    grundsaetzlich Autobattler, der Spieler **steuert keine DROMEs**. Er soll
-   aber eingreifen koennen, vermutlich indem er festlegt, wer **Aggro-Platz 1**
-   hat (eine selbst waehlbare Aggro-Liste). Der Spieler denkt das noch durch --
+   aber eingreifen koennen, vermutlich indem er einen Gegner als Ziel Nummer 1
+   markiert (frueher "Aggro-Platz 1"; die Aggro-Tabelle gibt es seit 6. Nov.
+   2026 nicht mehr, Zielwahl nach Regel je Rolle). Der Spieler denkt das noch durch --
    nichts davon bauen, bevor es besprochen ist.
 4. **Waffen-Slots und Gewichtsklassen ueberarbeiten.** Teilweise entschieden:
    ein Platz je DROME, Molok zwei (gebaut 6. Nov. 2026, `docs/NEUANFANG.md`
@@ -84,8 +85,10 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    (Runenstab Rw 3, Vortex, Passive Zauberwirker); ein Platz je DROME;
    Vireo (Sprint, Doppelschuss, Plasmaklinge, Neon-Blaster); Neon-Leuchten
    als Prototyp; Molok (Tank 200/10, Praesenz, Hammer); Aufstellung vor
-   dem Kampf per Ziehen (Zone 3 x 5). Naechstes: Strix, dann Module/Lager/
-   Laden (`docs/NEUANFANG.md` Abschnitt 7). Kopf und Antrieb bleiben
+   dem Kampf per Ziehen (Zone 3 x 5); Zielregel je Rolle statt Aggro-Tabelle,
+   Locken (Molok, Koedersender). Strix bleibt wie er ist, Ausgleich spaeter
+   ueber eine Jaegerklasse. Naechstes: Zwischenstopp mit Modulen, Lager,
+   Laden, Credits (`docs/NEUANFANG.md` Abschnitt 7). Kopf und Antrieb bleiben
    fest am Chassis -- ein DROME wird immer als Ganzes gestaltet.
    Entschieden: 3 Module je DROME, Credits + Laden (Beute gleich wichtig),
    Ausruestung bleibt nach dem Lauf. Offen: Fragen in Abschnitt 6.

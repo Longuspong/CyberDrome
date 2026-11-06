@@ -201,6 +201,8 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * Ebenfalls 6. Nov.: Molok als Tank (200/10, Praesenz, Hammer mit
   Betaeubung) und die Aufstellung vor dem Kampf per Ziehen (Zone 3 x 5).
   Abschnitte 6d und 6e.
+* Ebenfalls 6. Nov.: Aggro-Tabelle raus, sichtbare Zielregel je Rolle und
+  Locken (Molok-Praesenz, Koedersender). Abschnitt 6f.
 * Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
   ueberlappen.
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.

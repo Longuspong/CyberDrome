@@ -172,6 +172,7 @@ class UnitBadgePainter extends Node2D:
 
 	const COLOR_TRACK := Color(0.04, 0.05, 0.08, 0.9)
 	const COLOR_OUTLINE := Color(0.0, 0.0, 0.0, 0.9)
+	const COLOR_LURED := Color(1.0, 0.62, 0.15)
 
 	var entries: Array = []
 
@@ -230,6 +231,15 @@ class UnitBadgePainter extends Node2D:
 		if parts["hp_slot"] > 0.0 and parts["shield_slot"] > 0.0:
 			draw_rect(Rect2(Vector2(shield_left - 0.5 * s, top),
 				Vector2(1.0 * s, height)), COLOR_OUTLINE)
+
+		# Gelockt (Molok-Praesenz, Koedersender): ein kleines Ausrufezeichen
+		# in Orange links neben dem Balken -- "der greift gerade den Locker an".
+		if entry.get("lured", false):
+			var at := Vector2(left - 7.0 * s, top + height * 0.5)
+			draw_circle(at, 5.0 * s, COLOR_OUTLINE)
+			draw_circle(at, 4.0 * s, COLOR_LURED)
+			draw_rect(Rect2(at + Vector2(-0.8, -2.8) * s, Vector2(1.6, 3.4) * s), COLOR_OUTLINE)
+			draw_rect(Rect2(at + Vector2(-0.8, 1.2) * s, Vector2(1.6, 1.4) * s), COLOR_OUTLINE)
 
 
 

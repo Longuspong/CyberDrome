@@ -102,7 +102,7 @@
       "move_base/per_spd Laufgeschwindigkeit in Feldern je Sekunde = base + spd * per_spd",
       "move_min          Untergrenze der Laufgeschwindigkeit",
       "pulse             Sekunden je Puls: Schild- und Integritaetsregeneration,",
-      "                  Overtime, Aggro-Verfall",
+      "                  Overtime",
       "time_limit        harte Grenze, danach unentschieden",
       "think_interval    wie oft ein DROME prueft, ob ein sicherer Abschuss in Reichweite ist",
       "retarget_after    so lange darf das Ziel unerreichbar sein, dann wird neu gewaehlt",
@@ -123,15 +123,14 @@
     "_kommentar": [
       "Zahlen der Passiven am Chassis (PartData.passive).",
       "hit_rush (Vireo): jeder Treffer gibt seconds lang move_mult auf das Lauftempo.",
-      "presence (Molok): je Puls bucht jeder Gegner im aggro_radius aggro_per_pulse",
-      "Aggro auf ihn; guard_share des Schadens an Verbuendeten im guard_radius",
-      "geht stattdessen auf ihn.",
+      "presence (Molok): Gegner im lure_radius greifen ihn an statt ihres Ziels",
+      "(Locken, sichtbar ueber den Gelockten); guard_share des Schadens an",
+      "Verbuendeten im guard_radius geht stattdessen auf ihn.",
       "spellcaster (Nimbus): nach einer Faehigkeit gilt die Zahl der normalen",
       "Angriffe bis zur naechsten mal factor (abgerundet, mindestens 1)."
     ],
     "hit_rush": {"seconds": 2.0, "move_mult": 1.4},
-    "presence": {"aggro_radius": 2, "aggro_per_pulse": 15.0,
-                 "guard_radius": 3, "guard_share": 0.3},
+    "presence": {"lure_radius": 2, "guard_radius": 3, "guard_share": 0.3},
     "spellcaster": {"factor": 0.5}
   },
 
@@ -169,40 +168,11 @@
     "armor_ehp_k": 15
   },
 
-  "aggro": {
-    "_kommentar": [
-      "Das Zielwahl-Modell der Gegner. Siehe scripts/battle/aggro_table.gd.",
-      "Hier stehen die Stellschrauben des MODELLS. Wie stark die KI die",
-      "Tabelle gewichtet, steht dagegen unten unter 'ai' -- das ist eine",
-      "Frage der Nutzenbewertung, nicht des Modells.",
-      "decay_rate und die incumbent_bonus-Werte steuern beide dieselbe",
-      "Groesse: die Traegheit der Zielwahl. Wer beide gleichzeitig anzieht,",
-      "macht die Aggro unbeweglich. Immer nur eins von beiden anfassen.",
-      "decay_scale_incumbent ist die Ausnahme von dieser Regel und gehoert",
-      "zu decay_rate: es verlangsamt den Verfall des aktuellen Ziels, statt",
-      "ihn wie frueher ganz auszusetzen. Ausgesetzt war er die eigentliche",
-      "Ursache der Unbeweglichkeit -- gegen eine eingefrorene Summe kommt",
-      "ein Herausforderer nicht an, weil er selbst bei d*(1-rate)/rate",
-      "saettigt. Auf 0.0 gesetzt ist das alte Verhalten wieder da."
-    ],
-    "near_distance": 1,
-    "proximity_near": 1.5,
-    "proximity_far": 1.0,
-    "decay_rate": 0.15,
-    "decay_scale_incumbent": 0.5,
-    "decay_drop_below": 1.0
-  },
-
   "ai": {
     "_kommentar": [
-      "Gewichte der Nutzenbewertung. Siehe scripts/battle/ai_controller.gd.",
-      "Eine Invariante: beide incumbent_bonus-Werte muessen UNTER",
-      "aggro_weight bleiben. Der Aggro-Term ist ein Anteil und damit auf",
-      "aggro_weight gedeckelt -- ein groesserer Bonus macht die Tabelle fuer",
-      "die Zielwahl wirkungslos, weil kein Herausforderer ihn je aufholen",
-      "kann. Genau das war mit 12 gegen 10 der Fall: ein Fernkaempfer konnte",
-      "sein Ziel ueber die Tabelle NIE wechseln. tests/test_aggro.gd prueft",
-      "auch das.",
+      "Siehe scripts/battle/ai_controller.gd. Die Zielwahl folgt einer",
+      "sichtbaren Regel je Rolle (choose_target); diese Gewichte bewerten nur,",
+      "worauf eine geladene Waffe schiesst, wenn das Ziel nicht erreichbar ist.",
       "shield_damage_weight: was ein Punkt abgetragener Energieschild wert",
       "ist, relativ zu einem Punkt Integritaet. Unter 1, weil der Schild sich",
       "je Puls wieder auffuellt -- ueber 0, weil sonst ein",
@@ -212,12 +182,7 @@
     "damage_weight": 1.0,
     "shield_damage_weight": 0.7,
     "kill_bonus": 100.0,
-    "aggro_weight": 10.0,
-    "incumbent_bonus_melee": 3.0,
-    "incumbent_bonus_ranged": 5.0,
     "ranged_from_range": 3,
-    "approach_penalty": 2.0,
-    "focus_bonus": 4.0,
     "shove_weight": 4.0
   },
 

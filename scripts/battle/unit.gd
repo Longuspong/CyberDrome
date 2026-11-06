@@ -33,8 +33,6 @@ var stats: Dictionary = {}
 ## Sekunden ab (Echtzeit), nicht mehr in Zuegen.
 var statuses: Dictionary = {}
 
-## Die Aggro-Buchfuehrung dieses DROME (beide Seiten -- die KI steuert beide).
-var aggro: AggroTable = null
 
 ## Kampfbilanz fuer den Ergebnisbildschirm
 var damage_dealt: int = 0
@@ -94,10 +92,6 @@ static func create(from_build: DromeBuild, id: StringName, player: bool) -> Unit
 	unit.hp = unit.stats["hp_max"]
 	unit.shield = unit.stats.get("shield_max", 0)
 	unit.name = "Unit_%s" % id
-	# Jede Seite fuehrt eine Aggro-Tabelle: im Autokampf steuert die KI auch
-	# die Spielerseite, und ohne Tabelle fehlte ihr ein Bewertungsterm -- sie
-	# waere schlechter als der Gegner, nur weil sie auf der anderen Seite steht.
-	unit.aggro = AggroTable.new()
 	return unit
 
 
@@ -354,6 +348,16 @@ func passive() -> String:
 	if build == null or build.body() == null:
 		return ""
 	return build.body().passive
+
+
+## Lockradius: Gegner so nah greifen diesen DROME an statt ihres Ziels.
+## Koedersender (lure_radius) oder Molok-Praesenz (passives.presence).
+func lure_radius() -> int:
+	var radius := int(stats.get("lure_radius", 0))
+	if passive() == "presence":
+		var p := Config.section("passives").get("presence", {}) as Dictionary
+		radius = maxi(radius, int(p.get("lure_radius", 2)))
+	return radius
 
 
 ## Wie die KI diesen DROME fuehrt -- aus dem Chassis. Leer = nach Waffe.

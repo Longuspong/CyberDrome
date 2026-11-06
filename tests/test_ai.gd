@@ -118,8 +118,9 @@ func test_a_chosen_target_is_kept() -> void:
 
 
 func test_a_sure_kill_in_range_takes_over() -> void:
+	# Zwei Strix, damit kein Locken (Molok-Praesenz) dazwischenfunkt.
 	var tiles := [Vector2i(10, 10), Vector2i(10, 8), Vector2i(12, 10)]
-	var battle := _battle([_vireo()], [_molok(), _strix()], tiles)
+	var battle := _battle([_vireo()], [_strix(), _strix()], tiles)
 	var vireo: Unit = battle.units[0]
 	var held: Unit = battle.units[1]
 	var weak: Unit = battle.units[2]
@@ -423,10 +424,42 @@ func test_presence_takes_a_share_of_the_damage_aimed_at_allies() -> void:
 	battle.free()
 
 
-func test_presence_draws_the_attention_of_nearby_foes() -> void:
-	var battle := _battle([_hammer_molok()], [_vireo()], [Vector2i(10, 12), Vector2i(10, 10)])
+func test_presence_lures_nearby_foes() -> void:
+	# Der Vireo hat einen Strix als Ziel; kommt er dem Molok zu nahe, greift
+	# er den Molok an.
+	var tiles := [Vector2i(10, 12), Vector2i(4, 4), Vector2i(10, 10)]
+	var battle := _battle([_hammer_molok(), _strix()], [_vireo()], tiles)
 	var molok: Unit = battle.units[0]
-	var foe: Unit = battle.units[1]
-	battle.resolver.presence_pulse(molok)
-	t.ok(foe.aggro.value_of(molok.unit_id) > 0.0, "der Gegner daneben bucht Aggro auf den Molok")
+	var foe: Unit = battle.units[2]
+	t.equal(battle.brain.lured_by(foe), molok, "zwei Felder vom Molok: gelockt")
+	t.equal(battle.brain.choose_target(foe), molok, "und waehlt ihn als Ziel")
+	foe.target_id = battle.units[1].unit_id
+	foe.think_left = 0.0
+	for mount in foe.mounts:
+		mount["ready"] = 99.0
+	battle.brain.update(foe, battle.step_seconds())
+	t.equal(foe.target_id, molok.unit_id, "ein laufendes Ziel wird fuer den Locker aufgegeben")
+	battle.free()
+
+
+func test_the_beacon_lures_too() -> void:
+	var beacon := DromeBuild.create("Koeder", {"body": &"strix_body", "head": &"strix_head",
+		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_bait_beacon"})
+	var battle := _battle([beacon, _vireo()], [_vireo()],
+		[Vector2i(10, 11), Vector2i(4, 14), Vector2i(10, 10)])
+	t.equal(battle.brain.lured_by(battle.units[2]), battle.units[0], "der Koedersender lockt")
+	battle.free()
+
+
+func test_each_role_picks_by_its_own_rule() -> void:
+	# Ein naher, voller Vireo und ein ferner, angeschlagener Vireo.
+	var tiles := [Vector2i(10, 14), Vector2i(12, 14), Vector2i(10, 12), Vector2i(13, 9)]
+	var battle := _battle([_vireo(), _strix()], [_vireo(), _vireo()], tiles)
+	var skirmisher: Unit = battle.units[0]
+	var sniper: Unit = battle.units[1]
+	var near: Unit = battle.units[2]
+	var far: Unit = battle.units[3]
+	t.equal(battle.brain.choose_target(skirmisher), near, "der Vireo nimmt den naechsten")
+	far.damage_dealt = 80
+	t.equal(battle.brain.choose_target(sniper), far, "der Strix den mit dem meisten Schaden in Reichweite")
 	battle.free()

@@ -30,8 +30,7 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 
 ## Die EINZIGE Stelle, an der Schaden angewendet wird.
 ##
-## ``action`` dient der Aggro-Buchung (dem Koeffizienten der Aktion) und der
-## Schadensart. Sie darf fehlen (Overtime).
+## ``action`` traegt die Schadensart. Sie darf fehlen (Overtime).
 func apply_damage(source: Unit, target: Unit, raw: int,
 		action: ActionData = null, guarded: bool = true) -> int:
 	# Praesenz (Molok): ein Teil des Treffers geht auf den Beschuetzer.
@@ -57,13 +56,7 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	if source != null:
 		source.damage_dealt += amount
 
-	# Gebucht wird der GESAMTE angerichtete Schaden -- was ins Schild ging UND
-	# was auf die HP kam. Sonst zoege ein Energiewaffentraeger, der ein Schild
-	# knackt, keine Aufmerksamkeit, obwohl er dem Gegner spuerbar wehtut.
-	# Flaechenschaden bucht pro getroffenem DROME, weil er hier pro Feld ankommt.
 	var dealt := (shield_before - target.shield) + amount
-	_book_aggro(target, source, float(dealt),
-		action.aggro_coeff if action != null else 1.0)
 
 	EventBus.unit_damaged.emit(target, amount, source)
 	# Was der Schild geschluckt hat, steht mit im Log. Vorher hiess ein
@@ -103,20 +96,6 @@ func _guard_for(target: Unit) -> Unit:
 			best = unit
 			best_gap = gap
 	return best
-
-
-## Praesenz je Puls: jeder Gegner in der Naehe bucht Aggro auf den Traeger.
-func presence_pulse(unit: Unit) -> void:
-	if unit.passive() != "presence" or not unit.is_alive():
-		return
-	var section := Config.section("passives").get("presence", {}) as Dictionary
-	var radius := int(section.get("aggro_radius", 2))
-	var amount := float(section.get("aggro_per_pulse", 15.0))
-	for foe in units:
-		if not foe.is_alive() or foe.is_player == unit.is_player or foe.aggro == null:
-			continue
-		if Grid.distance(foe.tile, unit.tile) <= radius:
-			foe.aggro.add(unit.unit_id, amount)
 
 
 ## Passiven, die an einem Treffer haengen. Vireo (hit_rush): kurz schneller.
@@ -222,37 +201,14 @@ func _kill(unit: Unit) -> void:
 
 
 # ---------------------------------------------------------------------------
-# Aggro
+# Ausfall
 # ---------------------------------------------------------------------------
 
-## Ein DROME faellt aus: sein Eintrag verschwindet aus jeder Tabelle.
-##
-## Aggro ist begegnungslokal. Sie ueberlebt weder ein Ziel noch das Gefecht.
-## Oeffentlich, weil es zwei Wege in den Tod gibt: die Mitigationskette hier
-## und den Aderlass im BattleManager. Beide muessen hier durch.
+## Ein DROME faellt aus: wer ihn als Ziel hatte, waehlt neu.
 func forget_unit(unit: Unit) -> void:
 	for other in units:
-		if other.aggro != null:
-			other.aggro.forget(unit.unit_id)
-
-
-## Die EINZIGE Stelle, an der Aggro gebucht wird.
-##
-## Dieselbe Regel wie bei apply_damage() und move_unit(): gaebe es eine zweite,
-## waere jede kuenftige Schadensquelle eine Gelegenheit, die Buchung zu
-## vergessen -- und der Fehler faellt erst auf, wenn ein Gegner sich
-## unerklaerlich verhaelt.
-##
-## ``observer`` ist der DROME, dessen Tabelle waechst; ``actor`` der, der die
-## Aufmerksamkeit auf sich zieht.
-func _book_aggro(observer: Unit, actor: Unit, base: float, coeff: float) -> void:
-	if observer == null or actor == null or observer.aggro == null:
-		return
-	if not observer.is_alive() or observer.is_player == actor.is_player:
-		return
-	observer.aggro.add(actor.unit_id, AggroTable.contribution(
-		base, coeff, Grid.distance(actor.tile, observer.tile),
-		actor.stat("aggro_bonus")))
+		if other.target_id == unit.unit_id:
+			other.target_id = null
 
 
 # ---------------------------------------------------------------------------
@@ -435,9 +391,6 @@ func _apply_area(source: Unit, tile: Vector2i, action: ActionData) -> void:
 			continue
 		if action.power > 0:
 			apply_damage(source, target, action.power + source.atk(), action)
-		elif action.aggro_flat > 0:
-			# Wirkung ohne Schaden (Ziehen): ohne Pauschalwert waere sie lautlos.
-			_book_aggro(target, source, float(action.aggro_flat), action.aggro_coeff)
 		if action.push_tiles != 0 and target.is_alive():
 			_shove(source, target, action.push_tiles)
 		if not action.status.is_empty() and target.is_alive():

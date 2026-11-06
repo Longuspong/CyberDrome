@@ -20,8 +20,8 @@ const ROLE := {
 	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integritaet zurueck.",
 	&"eq_rune_staff": "Nahkampfstab mit reinem Energieschaden. Trifft das Ziel und die vier geraden Nachbarfelder.",
 	&"eq_orbit_focus": "Kontrolle statt Schaden: zieht einen Gegner zu sich heran.",
-	&"eq_rail_lance": "Scharfschuetzenwaffe mit der groessten Reichweite. Leise -- zieht wenig Aggro auf sich.",
-	&"eq_bait_beacon": "Lockt Gegner an: wer ihn traegt, steht in jeder gegnerischen Aggro-Liste weiter oben.",
+	&"eq_rail_lance": "Scharfschuetzenwaffe mit der groessten Reichweite.",
+	&"eq_bait_beacon": "Lockt Gegner an: wer ihm zu nahe kommt, greift den Traeger an.",
 	&"eq_holo_boost": "Ein schneller Sprung in gerader Linie -- fuer Stellungswechsel, nicht fuer Schaden.",
 }
 
@@ -82,8 +82,8 @@ static func traits(part: PartData) -> Array[String]:
 	var out: Array[String] = []
 	if part.hp_regen_pct > 0:
 		out.append("Repariert jeden Puls (alle 3 s) %d %% der Integritaet." % part.hp_regen_pct)
-	if part.aggro_bonus > 0:
-		out.append("Zieht Aufmerksamkeit: +%d Aggro bei allen Gegnern." % part.aggro_bonus)
+	if part.lure_radius > 0:
+		out.append("Lockt: Gegner im Umkreis %d greifen den Traeger an." % part.lure_radius)
 	match part.passive:
 		"hit_rush":
 			var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
@@ -92,8 +92,8 @@ static func traits(part: PartData) -> Array[String]:
 				int(round((float(rush.get("move_mult", 1.4)) - 1.0) * 100.0))])
 		"presence":
 			var p := Config.section("passives").get("presence", {}) as Dictionary
-			out.append("Praesenz: Gegner im Umkreis %d richten ihre Aufmerksamkeit auf ihn; %d %% des Schadens an Verbuendeten im Umkreis %d faengt er ab." % [
-				int(p.get("aggro_radius", 2)), int(round(float(p.get("guard_share", 0.3)) * 100.0)),
+			out.append("Praesenz: Gegner im Umkreis %d greifen ihn an; %d %% des Schadens an Verbuendeten im Umkreis %d faengt er ab." % [
+				int(p.get("lure_radius", 2)), int(round(float(p.get("guard_share", 0.3)) * 100.0)),
 				int(p.get("guard_radius", 3))])
 		"spellcaster":
 			out.append("Zauberwirker: nach jeder Faehigkeit braucht die Waffe nur halb so viele Angriffe bis zur naechsten.")
@@ -150,10 +150,6 @@ static func action_lines(action: ActionData) -> Array[String]:
 		out.append("Loest von selbst aus: %s." % action.trigger_text())
 		if action.trigger_kind == "attacks":
 			out.append("Dieser Angriff ersetzt den normalen Schuss.")
-	if action.aggro_coeff < 1.0:
-		out.append("Leise: erzeugt nur %d %% der ueblichen Aggro." % int(round(action.aggro_coeff * 100.0)))
-	elif action.aggro_coeff > 1.0:
-		out.append("Laut: erzeugt %d %% der ueblichen Aggro." % int(round(action.aggro_coeff * 100.0)))
 	return out
 
 

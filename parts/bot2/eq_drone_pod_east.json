@@ -46,7 +46,7 @@
     "shield_bonus": 0.0,
     "weight": 3,
     "hp_regen_pct": 5,
-    "aggro_bonus": 0,
+    "lure_radius": 0,
     "ai_role": "",
     "passive": "",
     "actions": []

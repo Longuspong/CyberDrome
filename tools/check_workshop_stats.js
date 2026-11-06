@@ -140,7 +140,7 @@ const EXPECTED = {
   // SPD enthaelt den Abzug der Zuladung (DromeBuild.payload_slowdown): je vier
   // Punkte Ausruestungsgewicht ein Punkt weniger.
   bot1: { hp: 60, spd: 14, atk: 0, def: 1, power: 130 },
-  bot2: { hp: 145, spd: 6, atk: 0, def: 9, power: 271 },
+  bot2: { hp: 200, spd: 6, atk: 0, def: 9, power: 326 },
   bot3: { hp: 85, spd: 13, atk: 0, def: 2, power: 168 },
   bot4: { hp: 70, spd: 8, atk: 6, def: 2, power: 198 },
 };

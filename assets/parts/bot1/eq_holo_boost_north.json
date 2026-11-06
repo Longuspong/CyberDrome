@@ -51,7 +51,7 @@
     "shield_bonus": 0.0,
     "weight": 3,
     "hp_regen_pct": 0,
-    "aggro_bonus": 0,
+    "lure_radius": 0,
     "ai_role": "",
     "passive": "",
     "actions": [
@@ -64,8 +64,6 @@
         "aoe_radius": 0,
         "power": 0,
         "push_tiles": 0,
-        "aggro_coeff": 1.0,
-        "aggro_flat": 0,
         "energy_fraction": 0.0,
         "interval": 2.0,
         "trigger": {

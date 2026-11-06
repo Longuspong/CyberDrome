@@ -201,7 +201,7 @@ func stats() -> Dictionary:
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
 		"weight": 0,
 		"hp_regen_pct": 0,
-		"aggro_bonus": 0,
+		"lure_radius": 0,
 	}
 	for part in all_parts():
 		total["hp_max"] += part.hp
@@ -213,7 +213,7 @@ func stats() -> Dictionary:
 		total["shield_bonus"] += part.shield_bonus
 		total["weight"] += part.weight
 		total["hp_regen_pct"] += part.hp_regen_pct
-		total["aggro_bonus"] += part.aggro_bonus
+		total["lure_radius"] = maxi(int(total["lure_radius"]), part.lure_radius)
 
 	total["spd"] -= payload_slowdown()
 
@@ -395,12 +395,6 @@ func _slot_label(slot: String) -> String:
 ## Errechnete Staerke eines Aufbaus. Basis fuers Gegner-Matching im
 ## Chaos-Virus: das Gegnersquad wird so lange neu gewuerfelt, bis sein Wert
 ## nahe genug am Spielersquad liegt.
-##
-## NICHT zu verwechseln mit der Aggro (scripts/battle/aggro_table.gd). Der
-## Kampfwert beschreibt, wie stark ein Aufbau IST, und existiert vor dem
-## Gefecht; Aggro beschreibt, wie sehr eine Einheit einen bestimmten Gegner
-## stoert, und entsteht erst im Gefecht aus Aktionen. Beide hiessen einmal
-## "Threat" -- daher die ausdrueckliche Notiz.
 func power_score() -> float:
 	var total := stats()
 	var best_weapon := 0

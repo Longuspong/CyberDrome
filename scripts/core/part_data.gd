@@ -63,13 +63,9 @@ var weight: int = 0
 ## Der Drohnen-Pod traegt sie -- eine Passive statt einer aktiven Heilung.
 var hp_regen_pct: int = 0
 
-## Aggro-Generierung in Prozentpunkten. Der EINZIGE Weg, Aufmerksamkeit zu
-## erzeugen, ohne dafuer zu handeln -- und er kostet einen Ausruestungsslot.
-##
-## Additiv wie jeder andere Stat (+20 und +20 ergeben +40); die Formel in
-## AggroTable macht daraus den Faktor 1.4. Multiplikativ waere er der einzige
-## Wert im Bestand, der sich nicht wie die anderen summiert.
-var aggro_bonus: int = 0
+## Lockradius in Feldern: Gegner so nah greifen den Traeger an statt ihres
+## eigenen Ziels (Koedersender). Sichtbar ueber den Gelockten.
+var lure_radius: int = 0
 
 ## Nur body: wie die KI diesen DROME fuehrt (vanguard, skirmisher, sniper,
 ## controller -- siehe AIController). Leer = nach Waffenreichweite.
@@ -116,7 +112,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.shield_bonus = float(stats.get("shield_bonus", 0.0))
 	part.weight = stats.get("weight", 0)
 	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
-	part.aggro_bonus = stats.get("aggro_bonus", 0)
+	part.lure_radius = int(stats.get("lure_radius", 0))
 	part.ai_role = str(stats.get("ai_role", ""))
 	part.passive = str(stats.get("passive", ""))
 
