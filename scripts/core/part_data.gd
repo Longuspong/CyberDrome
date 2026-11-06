@@ -59,17 +59,6 @@ var shield_regen: int = 0
 var shield_bonus: float = 0.0
 var weight: int = 0
 
-## Traversierung -- die eigentliche Kaufentscheidung beim Antrieb
-var can_pass_units: bool = false
-var can_enter_steps: bool = false
-var can_pass_blocks: bool = false   ## Post-MVP (Tunnelbauer). Immer false.
-var ignores_drift: bool = false
-var drift_modifier: int = 0
-var step_cost_reduced: bool = false
-
-## Sensorik
-var grants_ignore_haze: bool = false
-
 ## Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet (5 = 5 %).
 ## Der Drohnen-Pod traegt sie -- eine Passive statt einer aktiven Heilung.
 var hp_regen_pct: int = 0
@@ -81,6 +70,13 @@ var hp_regen_pct: int = 0
 ## AggroTable macht daraus den Faktor 1.4. Multiplikativ waere er der einzige
 ## Wert im Bestand, der sich nicht wie die anderen summiert.
 var aggro_bonus: int = 0
+
+## Nur body: wie die KI diesen DROME fuehrt (vanguard, skirmisher, sniper,
+## controller -- siehe AIController). Leer = nach Waffenreichweite.
+var ai_role: String = ""
+
+## Nur body: die Passive des DROME (siehe Unit.passive()). Leer = keine.
+var passive: String = ""
 
 ## Gewaehrte Aktionen. Leer bei passiven Teilen. Eine Waffe traegt zwei
 ## Eintraege -- ihren Angriff und ihre eigene Faehigkeit (GAME_DESIGN §13); ein
@@ -119,15 +115,10 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.shield_regen = stats.get("shield_regen", 0)
 	part.shield_bonus = float(stats.get("shield_bonus", 0.0))
 	part.weight = stats.get("weight", 0)
-	part.can_pass_units = stats.get("can_pass_units", false)
-	part.can_enter_steps = stats.get("can_enter_steps", false)
-	part.can_pass_blocks = stats.get("can_pass_blocks", false)
-	part.ignores_drift = stats.get("ignores_drift", false)
-	part.drift_modifier = stats.get("drift_modifier", 0)
-	part.step_cost_reduced = stats.get("step_cost_reduced", false)
-	part.grants_ignore_haze = stats.get("grants_ignore_haze", false)
 	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
 	part.aggro_bonus = stats.get("aggro_bonus", 0)
+	part.ai_role = str(stats.get("ai_role", ""))
+	part.passive = str(stats.get("passive", ""))
 
 	# Ein Teil gewaehrt eine LISTE von Aktionen. ``action`` (Einzahl) bleibt als
 	# Altformat lesbar, damit ein aelterer Datensatz nicht stumm seine Aktion
@@ -148,8 +139,12 @@ func add_view(meta: Dictionary, dir_path: String) -> void:
 	var anchors := {}
 	for entry in meta.get("anchors", []):
 		anchors[entry.get("name", "")] = Vector2(entry.get("x", 0.0), entry.get("y", 0.0))
+	var svg := dir_path.path_join(meta.get("svg", ""))
+	# Neon-Teile haben eine eigene Leuchtebene (tools/bake_godot_assets.py).
+	var glow := svg.replace(".svg", "_glow.svg")
 	views[meta.get("direction", "south")] = {
-		"svg": dir_path.path_join(meta.get("svg", "")),
+		"svg": svg,
+		"glow": glow if ResourceLoader.exists(glow) else "",
 		"anchors": anchors,
 		"slot_z": meta.get("slot_z", {}),
 		"z_index": meta.get("z_index", 20.0),
@@ -160,16 +155,20 @@ func view(direction: String) -> Dictionary:
 	return views.get(direction, views.get("south", {}))
 
 
-## Die Ausruestungsslots eines Chassis sind exakt seine equip_*-Anker. Kein
-## Sonderfall im Code -- ein Chassis bekommt einen dritten Slot, indem es einen
-## dritten Anker in seine JSON schreibt.
+## Die Ausruestungsslots eines Chassis sind seine equip_*-Anker -- ausser
+## denen, die ``slot_rules`` mit ``off`` abschaltet. Seit Nov. 2026 hat jeder
+## DROME einen Platz, der Molok zwei; die uebrigen Anker sind reine Optik.
 func equip_slots() -> Array[String]:
 	var slots: Array[String] = []
 	if type != Type.BODY:
 		return slots
 	for name in view("south").get("anchors", {}):
-		if str(name).begins_with("equip_"):
-			slots.append(str(name))
+		if not str(name).begins_with("equip_"):
+			continue
+		var rule: Dictionary = slot_rules.get(str(name), {})
+		if rule.get("off", false):
+			continue
+		slots.append(str(name))
 	slots.sort()
 	return slots
 
@@ -182,6 +181,8 @@ func accepts(equipment: PartData, slot: String) -> bool:
 	if type != Type.BODY or equipment.type != Type.EQUIPMENT:
 		return false
 	var rule: Dictionary = slot_rules.get(slot, {})
+	if rule.get("off", false):
+		return false
 	if rule.is_empty():
 		return true
 	var limit: String = rule.get("max_class", MOUNT_CLASSES[-1])

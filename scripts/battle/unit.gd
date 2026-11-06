@@ -24,27 +24,17 @@ var facing: String = "south"
 ## Laufzeitwerte. Die Maxima stehen im Build, hier steht der aktuelle Stand.
 var hp: int = 0
 ## Energieschild: die regenerierende Leiste VOR der HP (§11). Getrennt von der
-## HP, weil Schadensarten sie unterschiedlich treffen und sie sich je Zug
+## HP, weil Schadensarten sie unterschiedlich treffen und sie sich je Puls
 ## wieder auffuellt.
 var shield: int = 0
 var stats: Dictionary = {}
 
-## Aktive Statuseffekte: id -> { cycles_left, spd, def, ... }
+## Aktive Statuseffekte: id -> { seconds_left, spd, def, ... }. Laufen in
+## Sekunden ab (Echtzeit), nicht mehr in Zuegen.
 var statuses: Dictionary = {}
 
-
-## Die Aggro-Buchfuehrung dieses DROME -- nur bei Gegnern belegt, bei
-## Spieler-DROMEs immer null. Wer die Zielwahl des Spielers trifft, ist der
-## Spieler; eine Tabelle, die niemand liest, waere eine zweite Wahrheit.
+## Die Aggro-Buchfuehrung dieses DROME (beide Seiten -- die KI steuert beide).
 var aggro: AggroTable = null
-
-## Provokation: solange gesetzt, darf dieser DROME nur die Quelle angreifen.
-## { "source": unit_id, "turns_left": int } oder leer.
-##
-## Sitzt beim PROVOZIERTEN, nicht beim Provozierenden -- deshalb funktioniert
-## der Zwang in beide Richtungen, obwohl nur Gegner eine Aggro-Tabelle haben.
-## Durchgesetzt wird er an genau einer Stelle: ActionResolver.target_blocker().
-var taunt_lock: Dictionary = {}
 
 ## Kampfbilanz fuer den Ergebnisbildschirm
 var damage_dealt: int = 0
@@ -65,9 +55,13 @@ var gadgets: Array = []
 var step_left: float = 0.0
 ## Bis zum naechsten Puls (Schild, Reparatur, Overtime ...).
 var pulse_left: float = 0.0
-## Bis zur naechsten Zielwahl, und das aktuelle Ziel.
+## Bis zur naechsten Pruefung des Ziels, und das aktuelle Ziel.
 var think_left: float = 0.0
 var target_id = null
+## Wie lange das aktuelle Ziel schon nicht angreifbar ist (Sekunden).
+## Ein Ziel wird gehalten -- erst wenn es zu lange ausser Reichweite bleibt,
+## wird neu gewaehlt (AIController).
+var target_blocked: float = 0.0
 
 ## Darstellung: der DROME gleitet von Feld zu Feld statt zu springen.
 var _glide_from: Vector2 = Vector2.ZERO
@@ -80,18 +74,13 @@ var _sprites: Dictionary = {}
 
 ## Die Bauteile haengen unter einem eigenen Knoten, nicht direkt unter der
 ## Einheit. Der Grund ist das Trefferfeedback: Rueckstoss und Erschuetterung
-## verschieben die FIGUR, und ``position`` der Einheit gehoert dem Feld -- wer
-## dort waehrend eines Zuges hineinschreibt, verliert bei jedem Zusammentreffen
-## von Bewegung und Treffer die Feldposition.
+## verschieben die FIGUR, und ``position`` der Einheit gehoert dem Feld.
 var _rig: Node2D
 
-## Der Bodenring in Fraktionsfarbe. Liegt UNTER den Bauteilen (z_index -1) und
-## damit in derselben Tiefenstufe wie die Einheit -- ein Ring, der aus seinem
-## Tiefenband ausbricht, leuchtet durch den Betonpfeiler davor.
+## Der Bodenring in Fraktionsfarbe, UNTER den Bauteilen (z_index -1).
 var _ring: UnitRing
 
-## Laeuft gerade eine Trefferblende? Dann darf der Haze-Farbstich sie nicht
-## ueberschreiben -- sonst blinkt ein Treffer im Haze nicht.
+## Laeuft gerade eine Trefferblende? Dann wartet der Farbstich.
 var _flashing: bool = false
 
 
@@ -132,9 +121,6 @@ func _ensure_chrome() -> void:
 	_ring = UnitRing.new()
 	_ring.name = "Bodenring"
 	_ring.tint = Teams.color(is_player)
-	# Unter den Bauteilen, aber in derselben Tiefenstufe wie die Einheit --
-	# ein Ring, der aus seinem Tiefenband ausbricht, leuchtet durch den
-	# Betonpfeiler davor.
 	_ring.z_index = -1
 	add_child(_ring)
 
@@ -214,29 +200,11 @@ static func facing_for(step: Vector2i) -> String:
 	return "south" if step.y > 0 else "north"
 
 
-## Alles in einem Haze-Feld wird ausgegraut. Position bleibt sichtbar -- es
-## gibt keinen Fog of War --, aber der Zustand "von hier aus nicht
-## beschiessbar" muss sofort lesbar sein.
-var _in_haze: bool = false
-
-func set_in_haze(value: bool) -> void:
-	if value == _in_haze:
-		return
-	_in_haze = value
-	_refresh_tint()
-
-
-## Fraktionsfarbstich, Haze-Schleier und Trefferblende treffen sich hier -- und
-## nur hier. Drei Stellen, die ``modulate`` setzen, waeren drei Stellen, an
-## denen eine die andere still ueberschreibt: die Trefferblende einer Einheit
-## im Haze verschwand genau so.
+## Fraktionsfarbstich und Trefferblende treffen sich hier -- und nur hier.
 func _refresh_tint() -> void:
 	if _flashing:
 		return
-	var color := Teams.tint(is_player)
-	if _in_haze:
-		color = Teams.blend(color, Teams.HAZE)
-	DromeSprites.tint(_sprites, color)
+	DromeSprites.tint(_sprites, Teams.tint(is_player))
 
 
 # ---------------------------------------------------------------------------
@@ -309,10 +277,6 @@ func play_heal() -> void:
 
 
 ## Der Bodenring: eine flache Ellipse in Fraktionsfarbe unter den Fuessen.
-##
-## Als gezeichneter Ring und nicht als Raute wie die Feldmarkierungen -- die
-## Raute heisst auf dieser Karte bereits "erreichbar", "Ziel" oder "gesperrt".
-## Eine sechste Bedeutung fuer dieselbe Form waere keine Auskunft mehr.
 class UnitRing extends Node2D:
 	const RADIUS_X := 30.0
 	const RADIUS_Y := 30.0 * IsoView.TILE_H / IsoView.TILE_W
@@ -355,6 +319,7 @@ func init_realtime(pulse_offset: float) -> void:
 	pulse_left = maxf(0.05, pulse_offset)
 	think_left = 0.0
 	target_id = null
+	target_blocked = 0.0
 	if build == null:
 		return
 	for slot in build.equip_slots():
@@ -384,11 +349,45 @@ func init_realtime(pulse_offset: float) -> void:
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0})
 
 
+## Die Passive des Chassis ("spellcaster" ...). Leer = keine.
+func passive() -> String:
+	if build == null or build.body() == null:
+		return ""
+	return build.body().passive
+
+
+## Wie die KI diesen DROME fuehrt -- aus dem Chassis. Leer = nach Waffe.
+func ai_role() -> String:
+	if build == null or build.body() == null:
+		return ""
+	return build.body().ai_role
+
+
+## Betaeubt (Hammer): handelt nicht, solange der Status laeuft.
+func is_stunned() -> bool:
+	for status in statuses.values():
+		if status.get("stunned", false):
+			return true
+	return false
+
+
+## Faktor auf jeden eingehenden Treffer (Statuseffekt "verwundbar").
+func damage_taken_mult() -> float:
+	var mult := 1.0
+	for status in statuses.values():
+		mult *= float(status.get("damage_taken_mult", 1.0))
+	return mult
+
+
 ## Felder je Sekunde. SPD ist seit dem Echtzeit-Kampf die Laufgeschwindigkeit.
 func move_speed() -> float:
 	var section := Config.section("realtime")
-	return maxf(float(section.get("move_min", 1.2)),
+	var speed := maxf(float(section.get("move_min", 1.2)),
 		float(section.get("move_base", 1.0)) + float(spd()) * float(section.get("move_per_spd", 0.12)))
+	# Verlangsamung und Beschleunigung wirken als Faktor (move_mult).
+	for status in statuses.values():
+		speed *= float(status.get("move_mult", 1.0))
+	return speed
 
 
 ## Die groesste Reichweite unter den Waffen dieses DROME.
@@ -410,7 +409,9 @@ func hp_fraction() -> float:
 func stat(key: String) -> int:
 	var value: int = stats.get(key, 0)
 	for status in statuses.values():
-		value += int(status.get(key, 0))
+		var bonus = status.get(key, 0)
+		if bonus is int or bonus is float:
+			value += int(bonus)
 	return value
 
 
@@ -448,21 +449,12 @@ func atk() -> int:
 	return stat("atk")
 
 
-func sees_through_haze() -> bool:
-	return stats.get("grants_ignore_haze", false)
-
-
-func move_profile() -> MoveProfile:
-	return MoveProfile.from_stats(stats, unit_id, tile)
-
-
 ## Alle Aktionen dieses DROME -- die seiner Teile, jede genau einmal.
 func actions() -> Array:
 	return build.actions() if build != null else []
 
 
-## Die Aktionen eines Budgets. Angriff und Faehigkeit sind getrennt zu planen
-## und werden deshalb auch getrennt angezeigt.
+## Die Aktionen einer Art (Angriff oder Faehigkeit).
 func actions_of(category: ActionData.Category) -> Array:
 	return build.actions_of(category) if build != null else []
 
@@ -487,56 +479,24 @@ func regenerate_hp() -> int:
 # Statuseffekte
 # ---------------------------------------------------------------------------
 
-## Wirkt bis zum Ablauf der Zyklen. ``modifiers`` sind Stat-Aufschlaege.
-func apply_status(id: StringName, cycles: int, modifiers: Dictionary) -> void:
+## Wirkt ``seconds`` lang. ``modifiers`` sind Stat-Aufschlaege (spd, def ...).
+## Derselbe Effekt noch einmal frischt die Dauer auf, statt zu stapeln.
+func apply_status(id: StringName, seconds: float, modifiers: Dictionary) -> void:
 	var status := modifiers.duplicate()
-	status["cycles_left"] = cycles
+	status["seconds_left"] = seconds
 	statuses[id] = status
 
 
-## Je Puls. Gibt true zurueck, wenn sich etwas geaendert hat.
-func tick_statuses() -> bool:
+## Je Simulationsschritt. Gibt true zurueck, wenn ein Effekt abgelaufen ist.
+func tick_statuses(dt: float) -> bool:
 	var changed := false
 	for id in statuses.keys():
-		statuses[id]["cycles_left"] -= 1
-		if statuses[id]["cycles_left"] <= 0:
+		statuses[id]["seconds_left"] = float(statuses[id]["seconds_left"]) - dt
+		if float(statuses[id]["seconds_left"]) <= 0.0:
 			statuses.erase(id)
 			changed = true
 	return changed
 
-
-# ---------------------------------------------------------------------------
-# Provokation
-# ---------------------------------------------------------------------------
-
-func is_taunted() -> bool:
-	return not taunt_lock.is_empty() and int(taunt_lock.get("turns_left", 0)) > 0
-
-
-func taunted_by():
-	return taunt_lock.get("source") if is_taunted() else null
-
-
-func apply_taunt(source_id, turns: int) -> void:
-	taunt_lock = {"source": source_id, "turns_left": maxi(1, turns)}
-
-
-func clear_taunt() -> void:
-	taunt_lock = {}
-
-
-## Je Puls: die Provokation zaehlt ihre Pulse herunter (``taunt_turns``).
-func tick_taunt() -> void:
-	if taunt_lock.is_empty():
-		return
-	taunt_lock["turns_left"] = int(taunt_lock.get("turns_left", 0)) - 1
-	if int(taunt_lock["turns_left"]) <= 0:
-		taunt_lock = {}
-
-
-# ---------------------------------------------------------------------------
-# Abklingzeit
-# ---------------------------------------------------------------------------
 
 func status_names() -> Array[String]:
 	var names: Array[String] = []

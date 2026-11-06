@@ -14,7 +14,7 @@ func _squad() -> Array:
 		DromeBuild.create("ALPHA", {
 			"body": &"scout_body", "head": &"scout_head",
 			"feet": &"scout_feet", "core": &"scout_core",
-			"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"}),
+			"equip_left": &"eq_pulse_blaster"}),
 		DromeBuild.create("BETA", {
 			"body": &"strix_body", "head": &"strix_head",
 			"feet": &"strix_feet", "core": &"strix_core",
@@ -67,13 +67,13 @@ func test_damage_actually_happens() -> void:
 
 
 ## Zwei Molok-Aufbauten, die sich nur in der Waffe unterscheiden -- und beide
-## tragen den Orbit-Sog auf der Schulter. Damit haengt der Unterschied im
+## tragen den Orbit-Sog am rechten Halter. Damit haengt der Unterschied im
 ## Verhalten allein an der Reichweite, so wie die Bewertung es behauptet.
 func _with_orbit_pull(display_name: String, weapon: StringName) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": weapon, "equip_shoulder": &"eq_orbit_focus"})
+		"equip_left": weapon, "equip_right": &"eq_orbit_focus"})
 
 
 func _pull_action(unit: Unit) -> ActionData:
@@ -116,9 +116,8 @@ func test_the_ai_does_not_drag_its_target_into_its_own_face() -> void:
 func test_armour_can_never_swallow_a_whole_hit() -> void:
 	# Der schwerste im Bestand baubare Aufbau gegen die schwaechste Waffe:
 	# DEF 14 (Chassis 5 + Bunkerkopf 2 + Standbeine 2 + Deflektor 5) gegen den
-	# Puls-Blaster mit Staerke 12. Ueber den flachen Abzug blieb davon die
-	# Mindestmenge 1 -- 145 Integritaet bei 1 Schaden je Treffer sind 145
-	# Treffer, und cycle_limit steht auf 30. Der Kampf konnte nicht enden.
+	# Puls-Blaster. Ueber den flachen Abzug blieb davon die Mindestmenge 1 --
+	# 145 Integritaet bei 1 Schaden je Treffer sind 145 Treffer.
 	var bunker := DromeBuild.create("BUNKER", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
@@ -127,11 +126,12 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	t.equal(bunker.stats()["def"], 14, "und kommt auf DEF 14")
 
 	var grid := Grid.new(10, 10)
-	grid.fill(Terrain.TClass.NORMAL)
 	var shooter := Unit.create(_squad()[0], &"P0", true)
 	var wall := Unit.create(bunker, &"E0", false)
 	shooter.tile = Vector2i(2, 2)
 	wall.tile = Vector2i(4, 2)
+	# Geprueft wird die Panzerung, nicht der Energieschild davor.
+	wall.shield = 0
 	var resolver := ActionResolver.new(grid, [shooter, wall])
 
 	var blaster: ActionData = null
@@ -143,8 +143,8 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	t.ok(dealt >= int(ceil(blaster.power * 0.5)),
 		"DEF nimmt hoechstens die Haelfte weg: %d von %d" % [dealt, blaster.power])
 	var hits := int(ceil(float(wall.stat("hp_max")) / float(dealt)))
-	t.ok(hits <= Config.get_int("cycle_limit", 30),
-		"und der Bunker faellt innerhalb des Zyklus-Limits (%d Treffer)" % hits)
+	t.ok(hits <= 30,
+		"und der Bunker faellt in absehbarer Zeit (%d Treffer)" % hits)
 	t.equal(resolver.apply_damage(shooter, wall, blaster.power + shooter.atk(), blaster), dealt,
 		"die Vorschau sagt genau das, was die Ausfuehrung tut")
 
@@ -158,7 +158,7 @@ func _siege_and_drones(display_name: String) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_shoulder": &"eq_drone_pod"})
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_drone_pod"})
 
 
 func _action_by_id(unit: Unit, id: StringName) -> ActionData:
@@ -172,13 +172,12 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	# Der Belagerungsschlag hat Radius 1. Zielte er auf ein Nachbarfeld, lag der
 	# Schuetze SELBST im Radius -- und execute() wendete die Wirkung auf jeden an,
 	# der auf einem getroffenen Feld stand, ohne nach der Seite zu fragen. Ein
-	# Molok im Handgemenge schoss sich so Zug um Zug selbst zusammen, und weder
+	# Molok im Handgemenge schoss sich so selbst zusammen, und weder
 	# Vorschau noch KI zeigten es an: beide bewerten das anvisierte Ziel.
 	var build := _siege_and_drones("BELAGERER")
 	t.ok(build.is_valid(), "der Belagerer ist baubar: %s" % ", ".join(build.validate()))
 
 	var grid := Grid.new(12, 12)
-	grid.fill(Terrain.TClass.NORMAL)
 	var shooter := Unit.create(build, &"E0", false)
 	var comrade := Unit.create(build, &"E1", false)
 	var foe := Unit.create(_squad()[0], &"P0", true)
@@ -194,6 +193,9 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	t.ok(shooter.tile in resolver.affected_tiles(foe.tile, siege),
 		"und der Schuetze steht bei diesem Ziel wirklich in der eigenen Flaeche")
 
+	# Geprueft wird die Flaeche, nicht der Energieschild davor.
+	foe.shield = 0
+	second_foe.shield = 0
 	var expected := resolver.preview_damage(shooter, foe, siege)
 	t.ok(resolver.execute(shooter, foe.tile, siege), "der Schuss geht raus")
 
@@ -243,7 +245,7 @@ func _ability_squad() -> Array:
 		DromeBuild.create("KOEDER", {
 			"body": &"jugg_body", "head": &"jugg_head",
 			"feet": &"jugg_feet", "core": &"jugg_core",
-			"equip_left": &"eq_siege_cannon", "equip_shoulder": &"eq_bait_beacon"}),
+			"equip_left": &"eq_siege_cannon", "equip_right": &"eq_bait_beacon"}),
 		DromeBuild.create("SANI", {
 			"body": &"mage_body", "head": &"mage_head",
 			"feet": &"mage_drive", "core": &"mage_core",
@@ -282,26 +284,30 @@ func test_every_ability_fires_by_itself() -> void:
 	var squads := [_ability_squad(), _squad(), [DromeBuild.create("BOOST", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_holo_boost"})]]
+		"equip_left": &"eq_holo_boost"})]]
 	var uses := {}
 	for squad in squads:
 		var measured: Dictionary = _record(8, squad, 7000)
 		for id in measured["uses"]:
 			uses[id] = int(uses.get(id, 0)) + int(measured["uses"][id])
-	for id in [&"act_pulse_scatter", &"act_siege_barrage", &"act_rune_nova",
-			&"act_rail_pierce", &"act_orbitpull", &"act_holo_dash"]:
+	# Der Hologramm-Boost fehlt hier mit Absicht: er loest aus, wenn ein Gegner
+	# direkt danebensteht, und solange es keine Nahkampfwaffe gibt (Plasmaklinge
+	# und Hammer kommen erst), kommt im Kampf niemand so nah. Sein Ausloeser
+	# wird in tests/test_dash.gd geprueft.
+	for id in [&"act_pulse_double", &"act_siege_barrage", &"act_rune_vortex",
+			&"act_rail_pierce", &"act_orbitpull"]:
 		t.ok(int(uses.get(id, 0)) > 0, "%s loest im Kampf aus (%d)" % [id, uses.get(id, 0)])
 	t.note("Aktionen: %s" % str(uses))
 
 
 func test_every_nth_attack_is_the_ability() -> void:
-	# Die Regel "jeder 3. Schuss ist die Streusalve": zwischen zwei Faehigkeiten
+	# Die Regel "jeder 3. Schuss ist die Doppelschuss": zwischen zwei Faehigkeiten
 	# derselben Waffe fallen genau N-1 normale Angriffe. Gemessen am Squad mit
-	# je EINER Waffe, damit sich keine zwei Zaehler mischen. Streusalve und
+	# je EINER Waffe, damit sich keine zwei Zaehler mischen. Doppelschuss und
 	# Praezisionsschuss reichen mindestens so weit wie ihr Angriff -- sie
 	# kommen also nie zu spaet.
 	var measured: Dictionary = _record(6, _squad(), 7300)
-	var rules := {&"act_pulse_scatter": [&"act_pulse", 3],
+	var rules := {&"act_pulse_double": [&"act_pulse", 3],
 		&"act_rail_pierce": [&"act_raillance", 4]}
 	var checked := 0
 	for key in measured["seqs"]:
@@ -403,26 +409,3 @@ func test_generated_enemies_are_always_valid() -> void:
 			var problems: Array[String] = build.validate()
 			t.ok(problems.is_empty(), "%s ist baubar: %s"
 				% [build.display_name, ", ".join(problems)])
-
-
-func test_dense_terrain_still_gives_a_playable_map() -> void:
-	# Ohne Gelaende oder mit doppelt so vielen Blocks: keine Karte, die
-	# niemand durchqueren kann.
-	for scales in [{}, {"block_scale": 2.0}, {"step_scale": 0.0, "drift_scale": 0.0, "haze_scale": 0.0}]:
-		var grid := MapGenerator.new(31337).generate(
-			TerrainDB.get_region(&"city"), scales)
-		var plain := MoveProfile.plain()
-		var start := Vector2i(-1, -1)
-		var goal := Vector2i(-1, -1)
-		for tile in MapGenerator.deployment_zone(grid, true):
-			if grid.can_stand_on(tile, plain):
-				start = tile
-				break
-		for tile in MapGenerator.deployment_zone(grid, false):
-			if grid.can_stand_on(tile, plain):
-				goal = tile
-				break
-		t.ok(start.x >= 0 and goal.x >= 0 and grid.has_plain_path(start, goal),
-			"Karte mit %s ist durchquerbar" % str(scales))
-
-

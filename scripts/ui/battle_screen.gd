@@ -36,6 +36,12 @@ const MAX_STEPS_PER_FRAME := 8
 @onready var camera: Camera2D = $Camera2D
 
 var battle: BattleManager
+## Aufstellung vor dem Kampf (Nov. 2026): solange true, laeuft die Zeit nicht,
+## und der Spieler zieht seine DROMEs in der markierten Zone zurecht.
+var _deploying: bool = true
+var _dragged: Unit = null
+var _deploy_bar: Control
+var _play_bar: Control
 var _paused: bool = false
 var _over: bool = false
 var _accumulator: float = 0.0
@@ -85,6 +91,8 @@ func _start_battle() -> void:
 	battle.setup(GameState.battle_seed, builds, GameState.enemy_override)
 	battle.overtime_enabled = true
 	view.build_terrain(battle.grid)
+	# Die gemerkte Aufstellung des letzten Kampfs, wenn sie noch passt.
+	battle.apply_formation(GameState.formation)
 	for unit in battle.units:
 		view.attach_unit(unit)
 
@@ -92,6 +100,7 @@ func _start_battle() -> void:
 	_add_scenery()
 	_set_zoom(_follow_zoom())
 	_follow_fight(1.0)
+	_begin_deployment()
 
 	_squad_tiles.setup(battle.living(true))
 	_squad_tiles.tile_pressed.connect(_look_at_unit)
@@ -104,7 +113,7 @@ func _demo_squad() -> Array:
 		DromeBuild.create("ALPHA", {
 			"body": &"scout_body", "head": &"scout_head",
 			"feet": &"scout_feet", "core": &"scout_core",
-			"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"}),
+			"equip_left": &"eq_pulse_blaster"}),
 		DromeBuild.create("BETA", {
 			"body": &"strix_body", "head": &"strix_head",
 			"feet": &"strix_feet", "core": &"strix_core",
@@ -132,7 +141,7 @@ func _add_scenery() -> void:
 func _process(delta: float) -> void:
 	if battle == null or battle.grid == null:
 		return
-	if not _paused and not _over:
+	if not _paused and not _over and not _deploying:
 		_accumulator += delta
 		var dt := battle.step_seconds()
 		var steps := 0
@@ -145,7 +154,7 @@ func _process(delta: float) -> void:
 		if steps >= MAX_STEPS_PER_FRAME:
 			_accumulator = 0.0
 	_refresh_badges()
-	if _follow and not _over:
+	if _follow and not _over and not _deploying:
 		_follow_fight(delta)
 
 
@@ -155,6 +164,10 @@ func _refresh_hud() -> void:
 	if _squad_tiles != null:
 		_squad_tiles.refresh(battle.units)
 	if _over:
+		return
+	if _deploying:
+		_status.text = "Aufstellung  ·  %s" % (battle.region.display_name
+			if battle.region != null else "")
 		return
 	var seconds := int(battle.time)
 	_status.text = "%d:%02d  ·  %s" % [seconds / 60, seconds % 60,
@@ -193,12 +206,11 @@ func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 	var seconds := unit.step_left if unit.step_left > 0.0 else 0.18
 	unit.animate_last_move(seconds)
 	view.refresh_unit_depth(unit)
-	unit.set_in_haze(battle.grid.terrain_class(unit.tile) == Terrain.TClass.HAZE)
 
 
 ## Schussspur vom Schuetzen zum Ziel, Rueckstoss, und bei einer Faehigkeit
 ## ihr Name ueber der Figur -- damit man sieht, dass gerade der dritte Schuss
-## die Streusalve war.
+## die Doppelschuss war.
 func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 	if tile != unit.tile:
 		unit.play_attack(tile)
@@ -339,12 +351,117 @@ func _set_follow(on: bool) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _deploying and _deploy_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if _camera_input(event):
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo \
 			and event.keycode == KEY_SPACE:
 		_toggle_pause()
+
+
+# ---------------------------------------------------------------------------
+# Aufstellung
+# ---------------------------------------------------------------------------
+
+const ZONE_COLOR := Color(0.25, 0.85, 0.55, 0.32)
+const ZONE_FOE_COLOR := Color(1.0, 0.35, 0.35, 0.18)
+
+
+## Vor dem Kampf: Zonen zeigen, Kamera auf beide Seiten, Startknopf.
+func _begin_deployment() -> void:
+	_deploying = true
+	view.show_zone(battle.deployment_tiles(true), ZONE_COLOR)
+	_frame_deployment()
+	_deploy_bar.visible = true
+	_play_bar.visible = false
+	_refresh_hud()
+
+
+func _start_fight() -> void:
+	if not _deploying:
+		return
+	_deploying = false
+	_dragged = null
+	GameState.formation = battle.formation(true)
+	view.clear_zone()
+	_deploy_bar.visible = false
+	_play_bar.visible = true
+	_set_follow(true)
+	_refresh_hud()
+
+
+## Beide Aufstellungen im Bild.
+func _frame_deployment() -> void:
+	var box := Rect2(IsoView.map_to_local(battle.deployment_tiles(true)[0]), Vector2.ZERO)
+	for side in [true, false]:
+		for tile in battle.deployment_tiles(side):
+			box = box.expand(IsoView.map_to_local(tile))
+	box = box.grow(IsoView.TILE_W)
+	var visible := get_viewport().get_visible_rect().size
+	var usable := Vector2(visible.x, visible.y * 0.6)
+	camera.position = box.get_center()
+	_set_zoom(minf(usable.x / box.size.x, usable.y / box.size.y))
+
+
+func _pointer_tile(screen_position: Vector2) -> Vector2i:
+	var world := get_canvas_transform().affine_inverse() * screen_position
+	return IsoView.local_to_map(view.to_local(world))
+
+
+func _pointer_world(screen_position: Vector2) -> Vector2:
+	return view.to_local(get_canvas_transform().affine_inverse() * screen_position)
+
+
+## Ziehen und Ablegen der eigenen DROMEs. Tippt der Finger auf einen eigenen
+## DROME, wird er gezogen; sonst bleibt die Geste bei der Kamera. Touch kommt
+## auf dem Handy zusaetzlich als Maus an -- beides fuehrt zum selben Ergebnis.
+func _deploy_input(event: InputEvent) -> bool:
+	var pressed := false
+	var released := false
+	var moved := false
+	var at := Vector2.ZERO
+	if event is InputEventScreenTouch and event.index == 0:
+		pressed = event.pressed
+		released = not event.pressed
+		at = event.position
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		pressed = event.pressed
+		released = not event.pressed
+		at = event.position
+	elif event is InputEventScreenDrag and event.index == 0:
+		moved = true
+		at = event.position
+	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
+		moved = true
+		at = event.position
+	else:
+		return false
+
+	if pressed and _dragged == null:
+		var unit := battle.resolver.unit_at(_pointer_tile(at))
+		if unit != null and unit.is_player:
+			_dragged = unit
+			unit.z_index = 5000
+			return true
+		return false
+	if moved and _dragged != null:
+		_dragged.position = _pointer_world(at) - IsoView.SPRITE_ORIGIN
+		return true
+	if released and _dragged != null:
+		var unit := _dragged
+		_dragged = null
+		var target := _pointer_tile(at)
+		var other := battle.resolver.unit_at(target)
+		if not battle.place_unit(unit, target):
+			unit.place_at(unit.tile)
+		if other != null and other != unit:
+			view.refresh_unit_depth(other)
+		view.refresh_unit_depth(unit)
+		return true
+	return false
 
 
 ## Ziehen und Zoomen. Gibt true zurueck, wenn die Geste das Ereignis
@@ -442,9 +559,26 @@ func _build_ui() -> void:
 	var bottom := PanelContainer.new()
 	bottom.add_theme_stylebox_override("panel", _bar_style(false))
 	frame.add_child(bottom)
+	var bars := VBoxContainer.new()
+	bottom.add_child(bars)
+
+	# Vor dem Kampf: Hinweis und Startknopf.
+	var deploy := VBoxContainer.new()
+	deploy.add_theme_constant_override("separation", 6)
+	_deploy_bar = deploy
+	bars.add_child(deploy)
+	var hint := UiKit.label("Zieh deine DROMEs in der gruenen Zone zurecht -- "
+		+ "Molok nach vorn, Strix nach hinten.", UiKit.SMALL, UiKit.MUTED)
+	deploy.add_child(hint)
+	var start := UiKit.button("Kampf starten", true)
+	start.pressed.connect(_start_fight)
+	deploy.add_child(start)
+
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 6)
-	bottom.add_child(buttons)
+	_play_bar = buttons
+	buttons.visible = false
+	bars.add_child(buttons)
 	_speed_button = _bar_button("Tempo 1x", _cycle_speed)
 	buttons.add_child(_speed_button)
 	_apply_speed()

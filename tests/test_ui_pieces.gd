@@ -62,12 +62,12 @@ func test_the_ring_never_offers_a_pointless_target() -> void:
 
 	for action in actor.actions():
 		var hits_foe := battle.resolver.is_meaningful_target(actor, foe, action)
-		t.equal(hits_foe, not action.is_heal(),
-			"%s zielt auf Gegner, wenn sie Schaden macht" % action.id)
+		t.ok(hits_foe, "%s zielt auf Gegner" % action.id)
 		if ally != null:
-			var hits_ally := battle.resolver.is_meaningful_target(actor, ally, action)
-			t.equal(hits_ally, action.is_heal(),
-				"%s zielt auf Verbuendete nur, wenn sie repariert" % action.id)
+			t.ok(not battle.resolver.is_meaningful_target(actor, ally, action),
+				"%s trifft keine Verbuendeten" % action.id)
+		t.ok(not battle.resolver.is_meaningful_target(actor, actor, action),
+			"%s trifft nicht den Schuetzen selbst" % action.id)
 	battle.free()
 
 
@@ -75,17 +75,17 @@ func test_an_action_without_damage_previews_no_damage() -> void:
 	# Der Orbit-Sog zieht sein Ziel zwei Felder und richtet nichts an --
 	# execute() wendet Schaden nur bei power > 0 an. Die Vorschau rechnete
 	# trotzdem max(1, 0 + atk - def) und schrieb "1 Schaden" ueber ein Ziel,
-	# dem nichts passiert. Genau die Zahl stand im Aktionsring.
+	# dem nichts passiert -- und die KI zog die Aktion deshalb.
 	var grid := Grid.new(8, 8)
-	grid.fill(Terrain.TClass.NORMAL)
-	var mage := DromeBuild.create("MAGIER", {
-		"body": &"mage_body", "head": &"mage_head",
-		"feet": &"mage_drive", "core": &"mage_core",
-		"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus"})
+	var mage := DromeBuild.create("SOG", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_orbit_focus"})
 	var caster := Unit.create(mage, &"P0", true)
 	var victim := Unit.create(mage, &"E0", false)
 	caster.tile = Vector2i(2, 2)
 	victim.tile = Vector2i(4, 2)
+	victim.shield = 0               # die Vorschau zaehlt Integritaetsschaden
 	var resolver := ActionResolver.new(grid, [caster, victim])
 
 	for action in caster.actions():
@@ -120,66 +120,6 @@ func test_every_action_offers_a_readable_description() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Aktionssymbole
-# ---------------------------------------------------------------------------
-
-func test_every_action_has_its_own_symbol() -> void:
-	# Die Symbole ersetzen im Kampf den Namen der Aktion. Damit haengt an
-	# ihnen, ob der Spieler seinen Knopf wiederfindet -- und "generic" heisst
-	# genau, dass keine Regel gegriffen hat: die Aktion macht weder Schaden
-	# noch repariert, zieht, stoesst oder provoziert sie.
-	#
-	# Wer dieses Bauteil baut, muss ein Symbol dazu bauen. Der Test steht hier,
-	# damit er es beim Bauen erfaehrt und nicht im Playtest, wo alle Knoepfe
-	# gleich aussehen.
-	for part in PartDB.parts.values():
-		for action in part.actions:
-			var key := ActionIcons.key_for(action)
-			t.ok(key != "generic",
-				"%s (%s) faellt auf das Platzhaltersymbol zurueck"
-				% [action.id, part.id])
-			t.ok(ActionIcons.texture(key) != null,
-				"das Symbol '%s' fuer %s existiert als Datei" % [key, action.id])
-
-
-func test_symbols_separate_actions_that_do_different_things() -> void:
-	# Zwei Aktionen mit derselben Wirkung duerfen -- und sollen -- dasselbe
-	# Symbol haben; zwei mit verschiedener Wirkung nicht. Ohne diese Zusicherung
-	# waere das Symbol eine Verzierung und keine Auskunft.
-	var pull := ActionData.from_meta({"id": "t_pull", "push_tiles": -2,
-		"range_tiles": 4})
-	var push := ActionData.from_meta({"id": "t_push", "push_tiles": 2,
-		"range_tiles": 4})
-	var blade := ActionData.from_meta({"id": "t_blade", "range_tiles": 1,
-		"power": 18})
-	var shot := ActionData.from_meta({"id": "t_shot", "range_tiles": 6,
-		"power": 12})
-	var mend := ActionData.from_meta({"id": "t_mend", "range_tiles": 3,
-		"power": -12})
-	var quiet := ActionData.from_meta({"id": "t_quiet", "range_tiles": 2})
-
-	t.ok(ActionIcons.key_for(pull) != ActionIcons.key_for(push),
-		"Sog und Stoss sind Gegenstuecke und sehen verschieden aus")
-	t.ok(ActionIcons.key_for(blade) != ActionIcons.key_for(shot),
-		"Nahkampf sieht anders aus als ein Schuss")
-	t.equal(ActionIcons.key_for(mend), "heal",
-		"negative Wirkung ist eine Reparatur, egal auf welche Entfernung")
-
-	# Die Rangfolge: eine Flaechenreparatur ist eine REPARATUR. Was das Ziel
-	# davon hat, steht ueber der Frage, wie viele Felder mitgenommen werden.
-	var area_mend := ActionData.from_meta({"id": "t_area_mend", "power": -8,
-		"aoe_radius": 2, "range_tiles": 3})
-	t.equal(ActionIcons.key_for(area_mend), "heal",
-		"Flaechenreparatur bleibt eine Reparatur")
-
-	# Und der Gegenbeweis: der Platzhalter ist erreichbar. Gaebe es diesen Fall
-	# nicht, waere die Pruefung oben eine Zusicherung, die nie fehlschlagen
-	# kann -- und damit schlimmer als keine.
-	t.equal(ActionIcons.key_for(quiet), "generic",
-		"eine Aktion ohne erkennbare Wirkung bekommt den leeren Rahmen")
-
-
-# ---------------------------------------------------------------------------
 # Die Werkstatt: welche Halter die Ausruestung angeboten bekommt
 # ---------------------------------------------------------------------------
 #
@@ -197,19 +137,18 @@ func _molok() -> DromeBuild:
 
 
 func test_every_mount_of_the_chassis_is_offered_with_its_verdict() -> void:
-	# Der Molok hat drei Halter: zwei schwere Arme und eine leichte Schulter,
-	# die nur Support nimmt. Die Belagerungskanone ist schwer und eine Waffe --
-	# also zweimal ja, einmal nein, und das Nein mit Grund.
+	# Der Molok hat zwei Halter (Nov. 2026): links alles bis schwer, rechts nur
+	# Schild oder Gadget. Die Belagerungskanone ist eine Waffe -- also einmal
+	# ja, einmal nein, und das Nein mit Grund.
 	var choices := Workshop.slot_choices(_molok(),
 		PartDB.get_part(&"eq_siege_cannon"))
-	t.equal(choices.size(), 3, "alle drei Halter stehen zur Wahl")
+	t.equal(choices.size(), 2, "beide Halter stehen zur Wahl")
 	t.equal(choices[0]["slot"], "equip_left", "Slot 1 ist der linke Arm")
 	t.equal(choices[0]["number"], 1, "und wird als 1 gezaehlt")
-	t.ok(choices[0]["allowed"] and choices[1]["allowed"],
-		"beide Arme nehmen die Kanone")
-	t.ok(not choices[2]["allowed"], "die leichte Schulter nicht")
-	t.ok(choices[2]["detail"].contains("leicht"),
-		"und sagt, woran es liegt: %s" % choices[2]["detail"])
+	t.ok(choices[0]["allowed"], "der linke Arm nimmt die Kanone")
+	t.ok(not choices[1]["allowed"], "der rechte nicht")
+	t.ok(choices[1]["detail"].contains("Schild"),
+		"und sagt, woran es liegt: %s" % choices[1]["detail"])
 
 
 func test_the_offer_says_what_a_mount_currently_holds() -> void:
@@ -217,31 +156,25 @@ func test_the_offer_says_what_a_mount_currently_holds() -> void:
 	# Liste ueberhaupt zu zeigen: sonst raeumte der Klick blind um.
 	var build := _molok()
 	build.slots["equip_left"] = &"eq_pulse_blaster"
-	var choices := Workshop.slot_choices(build, PartDB.get_part(&"eq_rail_lance"))
-	t.ok(choices[0]["detail"].contains("Puls-Blaster"),
-		"der belegte Halter nennt, was weichen wuerde: %s" % choices[0]["detail"])
-	t.equal(choices[1]["detail"], "frei", "der leere Halter heisst frei")
+	var shield := Workshop.slot_choices(build, PartDB.get_part(&"eq_deflector"))
+	t.ok(shield[0]["detail"].contains("Puls-Blaster"),
+		"der belegte Halter nennt, was weichen wuerde: %s" % shield[0]["detail"])
+	t.equal(shield[1]["detail"], "frei", "der leere Halter heisst frei")
 
 	var same := Workshop.slot_choices(build, PartDB.get_part(&"eq_pulse_blaster"))
 	t.equal(same[0]["detail"], "steckt schon drin",
 		"und wo dasselbe Teil schon sitzt, wird nichts ersetzt")
 
 
-func test_a_light_support_part_reaches_the_shoulder() -> void:
-	# Der Gegenbeweis zur Absage oben: die Schulter ist kein toter Halter,
-	# sie ist ein waehlerischer.
-	var choices := Workshop.slot_choices(_molok(), PartDB.get_part(&"eq_drone_pod"))
-	t.ok(choices[2]["allowed"], "leichter Support darf auf die Schulter")
-	t.equal(choices[2]["number"], 3, "als dritter Halter")
-
-
-func test_a_rejected_mount_names_its_rule_not_just_a_no() -> void:
-	# Der Koedersender ist leicht -- an der Schulter scheitert er nicht an der
-	# Klasse. Die Absage muss dann die Kategorie nennen und nicht die Groesse.
-	var focus := Workshop.slot_choices(_molok(), PartDB.get_part(&"eq_rune_staff"))
-	t.ok(not focus[2]["allowed"], "eine leichte WAFFE darf trotzdem nicht")
-	t.ok(focus[2]["detail"].contains("Support"),
-		"weil die Schulter nur Support nimmt: %s" % focus[2]["detail"])
+func test_a_vireo_takes_no_shield() -> void:
+	# Ein Platz, Waffe oder Gadget -- ein Deflektor am Vireo ergibt keinen Sinn.
+	var vireo := _build("VIREO", {"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core"})
+	var choices := Workshop.slot_choices(vireo, PartDB.get_part(&"eq_deflector"))
+	t.equal(choices.size(), 1, "der Vireo hat genau einen Halter")
+	t.ok(not choices[0]["allowed"], "und der nimmt keinen Schild")
+	t.ok(choices[0]["detail"].contains("Waffe"),
+		"die Absage nennt, was er nimmt: %s" % choices[0]["detail"])
 
 
 func test_the_offer_never_disagrees_with_the_build_rule() -> void:

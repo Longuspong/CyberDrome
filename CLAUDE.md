@@ -5,7 +5,8 @@ Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
-als Handy testet.
+als Handy testet. **Dann `docs/NEUANFANG.md`** -- der Neuentwurf des
+Spielprinzips, der gerade mit dem Spieler besprochen wird.
 
 ## Zusammenarbeit
 
@@ -24,9 +25,8 @@ godot --headless --path . --import                            # nach neuer class
 bash tools/build_web.sh                                       # Web-Export nach build/web
 ```
 
-* Auf `main` scheitern seit laengerem 9 Pruefungen in `test_aggro`,
-  `test_battle` und `test_ui_pieces` (Balancing, Vorschau). Neue Arbeit
-  vergleicht gegen diesen Stand, nicht gegen "alles gruen".
+* Seit dem Aufraeumen vom 5. Nov. 2026 sind alle Tests gruen -- neue Arbeit
+  haelt das so.
 * Headless-Hilfsskripte (`extends SceneTree`) duerfen Projektklassen nicht
   direkt referenzieren -- sie kompilieren vor den Autoloads. Logik in ein
   `RefCounted`-Skript legen und zur Laufzeit per `load()` holen (wie
@@ -39,10 +39,12 @@ bash tools/build_web.sh                                       # Web-Export nach 
   angeboten, ist aber zweitrangig. Neue Bildschirme werden zuerst fuer
   ein Handy im Hochformat entworfen (ca. 400 CSS-Pixel breit).
 * Navigation: Tab-Leiste unten (Spielen, Hangar, Optionen). Der Hangar
-  vereint Squad (Karussell, max. 4) und Umbau (Halter als Formen:
+  vereint Squad (Karussell, max. 4) und Umbau (ein Ausruestungsplatz je
+  DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
   nach oben in groessere Halter, schwer nur in schwer).
-* Spielfeld bleibt 20x20; die Kamera folgt dem Geschehen, Zoomen und Ziehen
+* Spielfeld bleibt 20x20 und ist **frei** (kein Gelaende, keine Sichtlinie
+  -- seit 5. Nov. 2026); die Kamera folgt dem Geschehen, Zoomen und Ziehen
   per Finger.
 * Das Spiel ist ein **Autobattler in Echtzeit** (seit Nov. 2026): alle
   DROMEs handeln gleichzeitig, keine Zuege. `BattleManager.tick()` rechnet in
@@ -68,18 +70,30 @@ bash tools/build_web.sh                                       # Web-Export nach 
    aber eingreifen koennen, vermutlich indem er festlegt, wer **Aggro-Platz 1**
    hat (eine selbst waehlbare Aggro-Liste). Der Spieler denkt das noch durch --
    nichts davon bauen, bevor es besprochen ist.
-4. **Waffen-Slots und Gewichtsklassen ueberarbeiten.** Die Halter der
-   Chassis (welche Waffe passt wohin) und die Gewichtsklassen der
-   Ausruestungsteile selbst muessen angepasst werden.
+4. **Waffen-Slots und Gewichtsklassen ueberarbeiten.** Teilweise entschieden:
+   ein Platz je DROME, Molok zwei (gebaut 6. Nov. 2026, `docs/NEUANFANG.md`
+   7b/6c). Die Gewichtsklassen der Teile selbst sind noch offen.
 
 Bis diese Punkte entschieden sind: keine groesseren Umbauten an
 Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
-## Naechste Schritte (Stand 4. November 2026)
+## Naechste Schritte (Stand 5. November 2026)
+
+0. **Neuentwurf umsetzen** (`docs/NEUANFANG.md`, Reihenfolge in Abschnitt 8).
+   Erledigt: KI-Grundlagen (Ziel halten, Rolle je Chassis, Fokus); Nimbus
+   (Runenstab Rw 3, Vortex, Passive Zauberwirker); ein Platz je DROME;
+   Vireo (Sprint, Doppelschuss, Plasmaklinge, Neon-Blaster); Neon-Leuchten
+   als Prototyp; Molok (Tank 200/10, Praesenz, Hammer); Aufstellung vor
+   dem Kampf per Ziehen (Zone 3 x 5). Naechstes: Strix, dann Module/Lager/
+   Laden (`docs/NEUANFANG.md` Abschnitt 7). Kopf und Antrieb bleiben
+   fest am Chassis -- ein DROME wird immer als Ganzes gestaltet.
+   Entschieden: 3 Module je DROME, Credits + Laden (Beute gleich wichtig),
+   Ausruestung bleibt nach dem Lauf. Offen: Fragen in Abschnitt 6.
+   Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den
    Teildaten, Tempo und Puls in `data/config.json` -> `realtime`). Nimbus
-   (Nahkampf) faellt fast immer zuerst.
+   faellt noch in 58 % der Kaempfe zuerst, der Strix macht den meisten Schaden.
 2. Kern als Synergie-Teil ausarbeiten (Designpunkt 2).
 3. Eingreifen ueber Aggro-Platz 1 besprechen (Designpunkt 3) -- passt jetzt
    gut: Gegner im laufenden Kampf antippen.

@@ -62,7 +62,7 @@ func _random_build(display_name: String) -> DromeBuild:
 		# Die Waffe wird hier SEPARAT verlangt. Fuer den Spieler ist ein Aufbau
 		# ohne Waffe eine zulaessige Entscheidung (DromeBuild.structural_problems),
 		# fuer einen Gegner waere sie keine: ein Squad, das nichts anrichten kann,
-		# laeuft das Gefecht bis ans ``cycle_limit`` und endet unentschieden. Der
+		# laeuft das Gefecht bis an die Zeitgrenze und endet unentschieden. Der
 		# Spieler haette dann einen Kampf verloren bekommen, den der Wuerfel
 		# entschieden hat.
 		if build.is_valid() and not build.weapons().is_empty():

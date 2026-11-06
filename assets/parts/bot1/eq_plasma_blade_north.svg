@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_plasma_blade" data-type="equipment" data-direction="north">
+  <title>Plasmaklinge (north)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M69.35 60.1 L90.35 45.25 L90.35 42.38 L69.35 57.23 Z" fill="#5affff" stroke="none"/>
+  <path d="M69.54 60.23 L85.76 48.76 L84.24 47.68 L68.01 59.15 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M69.54 61.0 L85.76 49.52 L85.76 48.76 L69.54 60.23 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M69.35 57.23 L90.35 42.38 L89.2 41.57 L68.2 56.42 Z" fill="#5affff" stroke="none"/>
+  <path d="M69.54 56.6 L91.02 41.42 L89.49 40.34 L68.01 55.52 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M69.54 57.37 L91.02 42.18 L91.02 41.42 L69.54 56.6 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M68.01 59.92 L69.54 61.0 L69.54 60.23 L68.01 59.15 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M68.2 59.29 L69.35 60.1 L69.35 57.23 L68.2 56.42 Z" fill="#5affff" stroke="none"/>
+  <path d="M68.01 56.29 L69.54 57.37 L69.54 56.6 L68.01 55.52 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M62.57 59.44 L71.16 65.51 L71.16 59.78 L62.57 53.71 Z" fill="#161b29"/>
+  <path d="M71.16 59.78 L73.07 58.43 L64.48 52.36 L62.57 53.71 Z" fill="#28304a"/>
+  <path d="M71.16 65.51 L73.07 64.16 L73.07 58.43 L71.16 59.78 Z" fill="#161b29"/>
+  <path d="M64.0 68.27 L71.16 63.21 L71.16 51.75 L64.0 56.81 Z" fill="#161b29"/>
+  <path d="M57.32 63.54 L64.0 68.27 L64.0 56.81 L57.32 52.09 Z" fill="#28304a"/>
+  <path d="M64.0 56.81 L71.16 51.75 L64.48 47.03 L57.32 52.09 Z" fill="#47547e"/>
+  <path d="M57.32 52.37 L64.95 57.77 L64.95 49.18 L57.32 43.78 Z" fill="#5b6785"/>
+  <path d="M64.95 57.77 L70.68 53.72 L70.68 45.13 L64.95 49.18 Z" fill="#161b29"/>
+  <path d="M64.95 49.18 L70.68 45.13 L63.05 39.73 L57.32 43.78 Z" fill="#5b6785"/>
+</g>
+</svg>

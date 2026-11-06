@@ -8,7 +8,7 @@ extends HBoxContainer
 ## der eine Lebensbalken (BattleView.UnitBadgePainter); im Nahkampf schoben
 ## sich vorher drei Badges mit Namen und Zahlen uebereinander.
 ##
-## Darunter je Waffe der Zaehler bis zur Faehigkeit ("Streusalve 2/3") --
+## Darunter je Waffe der Zaehler bis zur Faehigkeit ("Doppelschuss 2/3") --
 ## damit man sieht, wann sie kommt. Eine zerstoerte Kachel wird abgedunkelt.
 ## Die Kacheln teilen sich die Breite: im Hochformat (ca. 400 Pixel) passen
 ## vier nebeneinander, mehr hat ein Squad nicht.
@@ -142,7 +142,7 @@ func refresh(units: Array) -> void:
 			else Color(0.45, 0.45, 0.5, 0.8)
 
 
-## "Streusalve 2/3": je Waffe mit Faehigkeit, der wievielte Schuss als
+## "Doppelschuss 2/3": je Waffe mit Faehigkeit, der wievielte Schuss als
 ## naechstes kommt. Bei 3/3 ist der naechste Schuss die Faehigkeit. Kurz
 ## gehalten -- die Kachel ist schmal.
 static func skill_line(unit: Unit) -> String:

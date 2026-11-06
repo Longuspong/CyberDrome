@@ -74,7 +74,7 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	rng.seed = battle_seed
 
 	region = TerrainDB.pick_region(rng)
-	grid = MapGenerator.new(battle_seed).generate(region)
+	grid = MapGenerator.generate(region)
 
 	# Der Gegner spiegelt normalerweise den eigenen Squad (Anzahl und Staerke).
 	# Im Chaos-Virus entkoppeln GameState.chaos_* das: der Gegner tritt in voller
@@ -116,7 +116,7 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	outcome = Outcome.RUNNING
 
 	EventBus.battle_started.emit(battle_seed)
-	EventBus.log_line("Chaos-Virus startet. Region: %s." % region.display_name)
+	EventBus.log_line("Kampf startet. Region: %s." % region.display_name)
 
 
 ## Die Region, die setup() mit diesem Seed ziehen wuerde -- fuer die
@@ -133,18 +133,35 @@ static func preview_conditions(seed_value: int) -> Dictionary:
 	}
 
 
+## Wie weit vorn eine Rolle in der Aufstellung steht: Frontlinie zuerst,
+## Scharfschuetze zuletzt. Ohne eigenes Zutun des Spielers steht damit der
+## Molok vorn und der Strix hinten -- auf beiden Seiten.
+const FRONT_ORDER := {"vanguard": 0, "skirmisher": 1, "": 2, "controller": 3, "sniper": 4}
+
+
 func _spawn(builds: Array, is_player: bool) -> void:
-	var zone := MapGenerator.deployment_zone(grid, is_player)
+	var zone := deployment_tiles(is_player)
 	var prefix := "P" if is_player else "E"
+	var created: Array = []
 	var index := 0
 	for build in builds:
-		var unit := Unit.create(build, StringName("%s%d" % [prefix, index]), is_player)
+		created.append(Unit.create(build, StringName("%s%d" % [prefix, index]), is_player))
+		index += 1
+	# Die Reihenfolge der Aufstellung nach Rolle, stabil innerhalb einer Rolle.
+	var ordered := created.duplicate()
+	ordered.sort_custom(func(a, b):
+		var ra: int = FRONT_ORDER.get(a.ai_role(), 2)
+		var rb: int = FRONT_ORDER.get(b.ai_role(), 2)
+		if ra != rb:
+			return ra < rb
+		return created.find(a) < created.find(b))
+	for unit in ordered:
 		var tile := _free_deployment_tile(zone, unit)
 		unit.place_at(tile)
 		unit.set_facing("north" if is_player else "south")
 		grid.set_occupant(tile, unit.unit_id)
-		units.append(unit)
-		index += 1
+	# In der Einheitenliste bleibt die Reihenfolge des Squads.
+	units.append_array(created)
 
 
 ## Die distinkten Ausruestungs-Typen einer Squad-Liste -- der Beute-Pool. Waffen
@@ -160,14 +177,76 @@ func _distinct_equipment(builds: Array) -> Array:
 	return ids
 
 
+## Die Aufstellungszone einer Seite, vorderstes Feld zuerst (dem Gegner am
+## naechsten).
+func deployment_tiles(is_player: bool) -> Array[Vector2i]:
+	var zone := MapGenerator.deployment_zone(grid, is_player)
+	var foe_zone := MapGenerator.deployment_zone(grid, not is_player)
+	var center := Vector2.ZERO
+	for tile in foe_zone:
+		center += Vector2(tile)
+	center /= maxf(1.0, float(foe_zone.size()))
+	var ranked := zone.duplicate()
+	ranked.sort_custom(func(a: Vector2i, b: Vector2i):
+		var da := Vector2(a).distance_to(center)
+		var db := Vector2(b).distance_to(center)
+		if not is_equal_approx(da, db):
+			return da < db
+		return zone.find(a) < zone.find(b))
+	return ranked
+
+
+## Aufstellung vor dem Kampf: einen eigenen DROME auf ein Feld der eigenen
+## Zone setzen. Steht dort schon ein eigener, tauschen beide. Nur solange der
+## Kampf noch nicht laeuft (time == 0). Gibt true zurueck, wenn sich etwas
+## bewegt hat.
+func place_unit(unit: Unit, tile: Vector2i) -> bool:
+	if unit == null or time > 0.0 or tile == unit.tile:
+		return false
+	if not tile in deployment_tiles(unit.is_player):
+		return false
+	var other_id = grid.occupant(tile)
+	var other: Unit = _unit_by_id(other_id) if other_id != null else null
+	if other != null and other.is_player != unit.is_player:
+		return false
+	var from := unit.tile
+	grid.clear_occupant(from)
+	if other != null:
+		grid.clear_occupant(tile)
+		other.place_at(from)
+		grid.set_occupant(from, other.unit_id)
+	unit.place_at(tile)
+	grid.set_occupant(tile, unit.unit_id)
+	return true
+
+
+## Die aktuelle Aufstellung einer Seite als Liste von Feldern in Squad-
+## Reihenfolge -- zum Merken fuer den naechsten Kampf.
+func formation(is_player: bool) -> Array:
+	var out: Array = []
+	for unit in units:
+		if unit.is_player == is_player:
+			out.append(unit.tile)
+	return out
+
+
+## Eine gemerkte Aufstellung wiederherstellen. Felder ausserhalb der Zone oder
+## doppelte werden uebersprungen.
+func apply_formation(tiles: Array) -> void:
+	var own: Array = units.filter(func(u): return u.is_player)
+	for i in mini(own.size(), tiles.size()):
+		var tile = tiles[i]
+		if tile is Vector2i:
+			place_unit(own[i], tile)
+
+
 func _free_deployment_tile(zone: Array[Vector2i], unit: Unit) -> Vector2i:
-	var profile := unit.move_profile()
 	for tile in zone:
-		if grid.can_stand_on(tile, profile):
+		if grid.can_stand_on(tile, unit.unit_id):
 			return tile
-	# Sollte nicht vorkommen -- die Kartenvalidierung haelt die Zonen frei.
+	# Sollte nicht vorkommen -- die Zone hat Platz fuer zwoelf.
 	for tile in grid.all_tiles():
-		if grid.can_stand_on(tile, profile):
+		if grid.can_stand_on(tile, unit.unit_id):
 			push_warning("BattleManager: Aufstellungszone voll, weiche aus.")
 			return tile
 	return zone[0]
@@ -200,6 +279,7 @@ func tick() -> void:
 	for unit in order:
 		if not unit.is_alive():
 			continue
+		unit.tick_statuses(_dt)
 		brain.update(unit, _dt)
 		if outcome != Outcome.RUNNING:
 			return
@@ -209,6 +289,11 @@ func tick() -> void:
 			_pulse_unit(unit)
 			if outcome != Outcome.RUNNING:
 				return
+
+	if resolver.advance(_dt):
+		_check_victory()
+		if outcome != Outcome.RUNNING:
+			return
 
 	_aggro_left -= _dt
 	if _aggro_left <= 0.0:
@@ -237,12 +322,10 @@ func pulse_seconds() -> float:
 	return _pulse
 
 
-## Was je Puls laeuft:
-## Statuseffekte, Provokation, Schild, Reparatur, Overtime.
+## Was je Puls laeuft: Schild, Reparatur, Overtime.
 func _pulse_unit(unit: Unit) -> void:
-	unit.tick_statuses()
-	unit.tick_taunt()
 	unit.regenerate_shield()
+	resolver.presence_pulse(unit)
 	var healed := unit.regenerate_hp()
 	if healed > 0:
 		EventBus.unit_healed.emit(unit, healed, unit)
@@ -353,8 +436,6 @@ func build_result() -> Dictionary:
 	return {
 		"outcome": outcome,
 		"seconds": int(round(time)),
-		# Frueher Zyklen; heute die Zahl der Pulse -- fuer alte Leser.
-		"cycles": int(floor(time / _pulse)),
 		"seed": battle_seed,
 		"region": region.display_name if region else "",
 		"units": rows,

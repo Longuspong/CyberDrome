@@ -14,8 +14,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Seiten. Der Spieler entscheidet ueber Aufbau, Squad und Belohnungen -- nicht
   ueber einzelne Zuege. Auch der Chaos-Virus ist immer Autokampf (der
   Schalter ist weg, Nov. 2026 -- vorher stand er auf "aus" und der Spieler
-  musste ungewollt selbst steuern). Der manuelle Kampf steckt nur noch als
-  Entwickler-Schalter `GameState.auto_battle` im Code.
+  musste ungewollt selbst steuern). Den manuellen Kampf gibt es nicht mehr.
 * **Mobile first, Hochformat ist die Hauptansicht** (Wunsch des Spielers,
   ausdruecklich). Querformat wird angeboten, ist zweitrangig. Ziel-Plattform
   ist das Handy, gehostet als PWA auf Vercel; Android-APK kommt spaeter.
@@ -49,14 +48,22 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Teildaten und Anzeige. Gewicht bleibt nur als Tempo-Preis und wird als
   "bremst um X SPD" gezeigt. Provokation zaehlt Pulse, angezeigt in
   Sekunden. Alte Balancing-Liste (`data/balancing/`, `build_balance_sheet.py`)
-  geloescht. Noch veraltet: `tools/export_parts_table.py` und die
-  SVG-Werkstatt kennen die alten Felder noch.
-* **KI nach Rolle**: Nahkaempfer ruecken bis zum Kontakt vor, Fernkaempfer
-  laufen nur bis in Reichweite und weichen aus, wenn jemand naeher als 2
-  Felder kommt. Zielwahl alle 0,5 s mit der alten Bewertung (Schaden,
-  Schild, Abschuss, Aggro, Amtsinhaber).
-* **Puls** (3 s je DROME, versetzt): Schild, Drohnen-Pod,
-  Statuseffekte, Overtime -- was frueher zu Zugbeginn lief.
+  geloescht.
+* **Taktik-Reste entfernt (5. Nov. 2026, Wunsch des Spielers)**: das Feld
+  ist ein freies Gitter -- kein Gelaende (Stufen, Pfeiler, Drift, Nebel),
+  keine Sichtlinie, keine Antriebsflags, keine Provokation, keine aktiven
+  Reparatur-Aktionen; Feldmarkierungen, Weg-/Schadensvorschau und
+  Aktionssymbole des manuellen Kampfs geloescht. Regionen sind reine Optik
+  (Boden + Kulisse). Statuseffekte laufen in Sekunden. Die Teilwerte stehen
+  wieder in `tools/build_sample_parts.py` (war veraltet), die SVG-Werkstatt
+  rechnet mit denselben Feldern. Der Neuentwurf steht in `docs/NEUANFANG.md`.
+* **KI nach Rolle des Chassis** (`ai_role` in `build_sample_parts.py`):
+  Molok rueckt vor und weicht nie aus, Vireo kitet mit Fernwaffe und bleibt
+  mit Nahkampfwaffe dran, Strix haelt Abstand und weicht nur bei Kontakt aus,
+  Nimbus wartet, bis die Frontlinie trifft. Ziel wird gehalten; Fokus-Bonus
+  (`ai.focus_bonus`), Neuwahl nach `realtime.retarget_after`.
+* **Puls** (3 s je DROME, versetzt): Schild, Drohnen-Pod, Overtime.
+  Statuseffekte laufen in Sekunden ab.
 * **Overtime** ab 60 s, je Puls wachsend; Zeitgrenze 180 s.
 * **Startzonen** 5 Felder von den Ecken eingerueckt (`deployment.inset`):
   erster Treffer nach rund 2 s statt nach zwei Zyklen.
@@ -179,8 +186,21 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 
 ## 4. Bekannte Schwaechen / Altlasten
 
-* **9 Pruefungen scheitern auf `main`** (test_aggro, test_battle,
-  test_ui_pieces -- Balancing und Vorschau). Schon vor dieser Sitzung rot.
+* Alle Tests gruen seit dem Aufraeumen (5. Nov. 2026). Die frueheren roten
+  Pruefungen waren Provokation (entfernt) und Tests aus der Zeit vor dem
+  Energieschild (repariert).
+* KI (5. Nov. 2026 umgebaut): Ziel wird gehalten (neu gewaehlt nur bei Tod,
+  > 2 s unerreichbar oder sicherem Abschuss), Verhalten haengt an der Rolle
+  des Chassis (`ai_role`: vanguard/skirmisher/sniper/controller), Fokus-Bonus
+  fuer Ziele der Verbuendeten. Zielwechsel 11,3 -> 5,5 je Minute. Offen: der
+  Nimbus faellt in ~80 % der Kaempfe zuerst (Runenstab Rw 1) -- seit dem
+  Runenstab-Umbau (6. Nov., Rw 3, Vortex, Zauberwirker) noch in 58 %.
+* Seit 6. Nov. 2026: ein Ausruestungsplatz je DROME (Molok zwei), Vireo mit
+  Sprint, Doppelschuss, Plasmaklinge und Neon-Blaster, Neon-Leuchten als
+  Prototyp. Details und Messung: `docs/NEUANFANG.md` Abschnitt 6c.
+* Ebenfalls 6. Nov.: Molok als Tank (200/10, Praesenz, Hammer mit
+  Betaeubung) und die Aufstellung vor dem Kampf per Ziehen (Zone 3 x 5).
+  Abschnitte 6d und 6e.
 * Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
   ueberlappen.
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.
@@ -192,6 +212,11 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Querformat-Werkstatt.
 
 ## 5. Offen -- mit dem Spieler zu besprechen
+
+**Neuentwurf (Nov. 2026): `docs/NEUANFANG.md`** -- Lauf mit verfallenden
+Verbesserungen, DROMEs mit Passive und eigener KI, ein Ausruestungsplatz
+(Molok zwei), neue Waffen (Plasmaklinge, Hammer), Kerne als Synergie-Teil.
+Die Punkte unten gehen darin auf.
 
 Designpunkte (bis zur Entscheidung keine groesseren Umbauten auf eigene Faust):
 

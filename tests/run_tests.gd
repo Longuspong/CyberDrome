@@ -16,7 +16,6 @@ const SUITES := [
 	"res://tests/test_drome_build.gd",
 	"res://tests/test_drome_sprites.gd",
 	"res://tests/test_grid.gd",
-	"res://tests/test_reachability.gd",
 	"res://tests/test_aggro.gd",
 	"res://tests/test_battle.gd",
 	"res://tests/test_workshop_handoff.gd",
@@ -25,6 +24,8 @@ const SUITES := [
 	"res://tests/test_dash.gd",
 	"res://tests/test_chaos_loot.gd",
 	"res://tests/test_autobattle.gd",
+	"res://tests/test_ai.gd",
+	"res://tests/test_deployment.gd",
 	"res://tests/test_accessibility.gd",
 	"res://tests/test_run.gd",
 ]

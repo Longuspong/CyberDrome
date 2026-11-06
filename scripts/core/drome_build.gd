@@ -81,17 +81,21 @@ func apply_chassis(body_id: StringName) -> void:
 
 
 ## Alle belegten Teile, Sockel und Ausruestung gemeinsam.
+## Alle Teile, die WIRKEN: die vier Sockel und die Ausruestung in echten
+## Haltern. Ein Teil an einem abgeschalteten Anker (``off``) zaehlt nicht --
+## structural_problems() meldet es.
 func all_parts() -> Array:
 	var result: Array = []
-	for slot in slots:
+	for slot in SOCKET_SLOTS:
 		var part := part_in(slot)
 		if part != null:
 			result.append(part)
+	result.append_array(equipment())
 	return result
 
 
-## Die Ausruestungsslots dieses DROME -- exakt die equip_*-Anker seines
-## Chassis. Ohne Chassis gibt es keine.
+## Die Ausruestungsslots dieses DROME -- die equip_*-Anker seines Chassis,
+## ohne die abgeschalteten. Ohne Chassis gibt es keine.
 func equip_slots() -> Array[String]:
 	var chassis := body()
 	if chassis == null:
@@ -196,10 +200,6 @@ func stats() -> Dictionary:
 		"spd": 0, "atk": 0, "def": 0,
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
 		"weight": 0,
-		"can_pass_units": false, "can_enter_steps": false,
-		"can_pass_blocks": false, "ignores_drift": false,
-		"drift_modifier": 0, "step_cost_reduced": false,
-		"grants_ignore_haze": false,
 		"hp_regen_pct": 0,
 		"aggro_bonus": 0,
 	}
@@ -212,14 +212,6 @@ func stats() -> Dictionary:
 		total["shield_regen"] += part.shield_regen
 		total["shield_bonus"] += part.shield_bonus
 		total["weight"] += part.weight
-		# Flags addieren sich als ODER: ein einziges Teil genuegt.
-		total["can_pass_units"] = total["can_pass_units"] or part.can_pass_units
-		total["can_enter_steps"] = total["can_enter_steps"] or part.can_enter_steps
-		total["can_pass_blocks"] = total["can_pass_blocks"] or part.can_pass_blocks
-		total["ignores_drift"] = total["ignores_drift"] or part.ignores_drift
-		total["step_cost_reduced"] = total["step_cost_reduced"] or part.step_cost_reduced
-		total["grants_ignore_haze"] = total["grants_ignore_haze"] or part.grants_ignore_haze
-		total["drift_modifier"] += part.drift_modifier
 		total["hp_regen_pct"] += part.hp_regen_pct
 		total["aggro_bonus"] += part.aggro_bonus
 
@@ -358,7 +350,15 @@ func structural_problems() -> Array[String]:
 
 	var chassis := body()
 	if chassis != null:
-		for slot in equip_slots():
+		var holders := equip_slots()
+		for slot in slots:
+			if str(slot) in SOCKET_SLOTS or str(slot) in holders:
+				continue
+			var stray := part_in(slot)
+			if stray != null:
+				problems.append("%s: %s hat keinen Halter mehr"
+					% [stray.display_name, _slot_label(slot)])
+		for slot in holders:
 			var part := part_in(slot)
 			if part != null and not chassis.accepts(part, slot):
 				problems.append("%s passt nicht in %s"

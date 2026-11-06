@@ -48,21 +48,21 @@ var _next_uid: int = 1
 ##   Strix   Schienen-Lanze (nur ein Slot)
 const STARTER_CHASSIS := [
 	{"body": &"scout_body", "core": &"scout_core",
-	 "equipment": [&"eq_pulse_blaster", &"eq_holo_boost"]},
+	 "equipment": [&"eq_pulse_blaster"]},
 	{"body": &"jugg_body", "core": &"jugg_core",
-	 "equipment": [&"eq_siege_cannon", &"eq_deflector", &"eq_drone_pod"]},
+	 "equipment": [&"eq_hammer", &"eq_deflector"]},
 	{"body": &"mage_body", "core": &"mage_core",
-	 "equipment": [&"eq_orbit_focus", &"eq_rune_staff"]},
+	 "equipment": [&"eq_rune_staff"]},
 	{"body": &"strix_body", "core": &"strix_core",
 	 "equipment": [&"eq_rail_lance"]},
 ]
 
 ## Ausruestung, die KEINEM Start-DROME zugeteilt ist und frei im Inventar liegt.
-## Nur noch der Koedersender -- alle anderen Teile sind jetzt Teil eines
-## Standard-Kits. Der freie Rest haelt das Inventar nicht leer und laesst weiter
-## umbauen.
+## Seit es nur noch einen Platz je DROME gibt (Molok zwei), liegen die
+## Gadgets hier und laden zum Umbauen ein.
 const STARTER_LOOSE_EQUIPMENT := [
-	&"eq_bait_beacon",
+	&"eq_holo_boost", &"eq_orbit_focus", &"eq_drone_pod", &"eq_bait_beacon",
+	&"eq_siege_cannon",
 ]
 
 

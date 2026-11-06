@@ -280,6 +280,11 @@ STRIX_PALETTE = make_palette(
     ember="#6dff9f", rings="#2fbf8c", line="#060f0d",
 )
 
+# Neon City: dunkle Panzerung, grelle Roehren. Teile mit dieser Palette sind
+# Neon-Varianten (Tag "neon") und leuchten im Spiel (DromeSprites).
+NEON_EQUIPMENT = {"hull": "#140b24", "mech": "#3a2a5c", "neon": "#ff2bd6",
+                  "line": "#05020a"}
+
 C = {role: f"var(--c-{role.replace('_', '-')})" for role in PALETTE_ROLES}
 
 # Material = (Oberseite, linke Flanke, rechte Flanke, Kontur?)
@@ -317,7 +322,8 @@ DEFAULT_Z = {
 #     }
 #
 # Fehlt eine Regel, nimmt der Slot alles an -- importierte Teile funktionieren
-# damit unveraendert weiter.
+# damit unveraendert weiter. ``{"off": True}`` macht einen Anker zur reinen
+# Optik: er ist kein Halter (seit Nov. 2026 ein Platz je DROME, Molok zwei).
 MOUNT_CLASSES = ("light", "medium", "heavy")
 EQUIP_CATEGORIES = ("weapon", "shield", "support")
 DEFAULT_MOUNT_CLASS = "light"
@@ -328,6 +334,8 @@ def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
     """Darf ein Ausruestungsteil in einen Slot mit dieser Regel?"""
     if not rule:
         return True
+    if rule.get("off"):
+        return False
     limit = rule.get("max_class", MOUNT_CLASSES[-1])
     if MOUNT_CLASSES.index(mount_class) > MOUNT_CLASSES.index(limit):
         return False
@@ -340,423 +348,244 @@ def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
 # ---------------------------------------------------------------------------
 # Bis hierher beschreibt eine Teil-Definition nur, wie ein Teil AUSSIEHT und wo
 # es sitzt. Ab hier steht, was es im Kampf TUT. Beides gehoert in dieselbe
-# Datei, weil ein zweites Bauteil-Datenmodell daneben der teuerste Fehler
-# waere, den dieses Projekt machen kann: die Anker liefen von den Werten weg,
-# und niemand koennte sagen, welche Seite recht hat.
+# Datei: ein zweites Bauteil-Datenmodell daneben liefe von den Ankern weg.
 #
 # Die Werte landen ueber ``write_part`` als Block ``stats`` in jeder der vier
-# Richtungs-JSONs eines Teils. Sie sind richtungsunabhaengig -- deshalb stehen
-# sie hier einmal und nicht viermal.
+# Richtungs-JSONs eines Teils. Sie sind richtungsunabhaengig.
 #
-# Ein DROME hat KEINE Grundwerte. Jeder Stat ist ausschliesslich die Summe
-# seiner Teile; ein Rumpf ohne Antrieb hat mov 0 und kommt nicht in den Kampf.
+# Ein DROME hat KEINE Grundwerte. Jeder Stat ist die Summe seiner Teile.
 #
-# Slots des Repos (nicht die sechs des Entwurfsdokuments):
-#
-#     body   Chassis   traegt HP, DEF, Traglast -- und bestimmt ueber seine
-#                      equip_*-Anker, wie viele Ausruestungsslots es gibt
-#     core   Kern      Energie, Regeneration, Energie-Ausstoss
-#     feet   Antrieb   MOV, SPD und -- die eigentliche Kaufentscheidung --
-#                      die Traversierungsflags
-#     head   Sensorik  kleine Boni; hier sitzt der Blick durch Haze-Felder
+#     body   Chassis   HP, DEF, Schild -- und ueber seine equip_*-Anker die
+#                      Zahl der Ausruestungsslots
+#     core   Kern      Schildregeneration und -effizienz
+#     feet   Antrieb   SPD (= Laufgeschwindigkeit im Echtzeit-Kampf)
+#     head   Kopf      kleine Boni
 #     equipment        Waffen, Schilde, Support -- gewaehren die Aktionen
 #
-# Reine Zahlen, keine Logik: der Kampfcode liest ``stats`` aus der JSON und
-# hat keinen einzigen Balancing-Wert in sich.
+# Reine Zahlen, keine Logik: der Kampfcode liest ``stats`` aus der JSON.
+#
+# Aufgeraeumt Nov. 2026 (Autobattler): Energie, MOV, Strom, Traglast, die
+# Antriebsflags (Stufen, Drift, Durchlaufen), der Blick durch Haze und die
+# Sichtlinie sind raus -- das Spielfeld hat kein Gelaende mehr.
 
 # Vollstaendiger Satz mit Nullwerten. Jedes Teil ueberschreibt nur, was es
-# tatsaechlich beitraegt -- so ist an der Tabelle unten auf einen Blick
-# erkennbar, wofuer ein Teil da ist.
+# tatsaechlich beitraegt.
 STAT_DEFAULTS = {
-    # Grundwerte (additiv ueber alle Teile)
-    "hp": 0, "en_max": 0, "en_regen": 0,
-    "spd": 0, "mov": 0, "atk": 0, "def": 0,
-    # Zwei-Verteidigungs-System (§11, GAME_DESIGN). shield = Energieschild-
-    # Grundwert (Chassis); shield_regen = Nachfuellung je Zug (Kern);
-    # shield_bonus = prozentuale Schild-Effizienz (Kern, 0.1 = +10 %). Das
-    # Schild-Maximum ist shield * (1 + shield_bonus), siehe DromeBuild.stats().
+    "hp": 0, "spd": 0, "atk": 0, "def": 0,
+    # Zwei-Verteidigungs-System: shield = Energieschild-Grundwert (Chassis);
+    # shield_regen = Nachfuellung je Puls (Kern); shield_bonus = Schild-
+    # Effizienz (Kern, 0.1 = +10 %).
     "shield": 0, "shield_regen": 0, "shield_bonus": 0.0,
-    # Baukosten
-    "weight": 0, "power_draw": 0,
-    # Nur body: was das Chassis traegt
-    "weight_capacity": 0,
-    # Nur core: was der Kern liefert
-    "power_output": 0,
-    # Traversierung -- im Regelfall am Antrieb, technisch an jedem Teil moeglich
-    "can_pass_units": False,     # durch besetzte Felder ziehen (nie darauf enden)
-    "can_enter_steps": False,    # Stufen betreten
-    "can_pass_blocks": False,    # Post-MVP (Tunnelbauer). Bleibt ueberall False.
-    "ignores_drift": False,      # immun gegen Drift-Zonen
-    "drift_modifier": 0,         # addiert auf die Gleitdistanz
-    "step_cost_reduced": False,  # Stufe kostet 1 MP statt 2
-    # Sensorik -- an jedem Slot moeglich, im Bestand an Koepfen
-    "grants_ignore_haze": False,
-    # Passive Selbstheilung je Zug, in Prozent der maximalen Integritaet
-    # (Ganzzahl: 5 = 5 %). Der Drohnen-Pod traegt sie -- eine Passive, kein
-    # Knopf (Balancing-Konzept: Drohnen-Pod = Lebensregen 5 %/Zug).
+    # Gewicht der Ausruestung bremst (spd_weight_step in data/config.json).
+    "weight": 0,
+    # Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet.
     "hp_regen_pct": 0,
-    # Aggro-Generierung in Prozentpunkten. Genau EIN Bauteil im Bestand fuehrt
-    # ihn -- der Koedersender EQP-008 mit +25, und der kostet dafuer einen
-    # Ausruestungsslot. Kein Chassis und kein Kern hat einen Grundwert darauf:
-    # Aufmerksamkeit entsteht aus Aktionen, nicht aus Identitaet. Ein Chassis
-    # mit aggro_bonus waere genau die Abkuerzung, die das System entwertet --
-    # dann tankt, wer das richtige Teil traegt, statt wer das Richtige tut.
-    # Der Wert bleibt deshalb Support-Modulen vorbehalten (Koeder,
-    # Provokationssender), die dafuer einen Ausruestungsslot bezahlen.
+    # Aggro-Generierung in Prozentpunkten (Koedersender).
     "aggro_bonus": 0,
+    # Nur body: wie die KI diesen DROME fuehrt (scripts/battle/ai_controller.gd).
+    #   vanguard     Frontlinie: rueckt vor, weicht nie aus (Molok)
+    #   skirmisher   wendig: mit Fernwaffe kiten, mit Nahkampfwaffe dranbleiben (Vireo)
+    #   sniper       haelt Abstand, weicht nur aus, wenn jemand direkt danebensteht (Strix)
+    #   controller   bleibt hinter der Frontlinie, bis sie im Kampf ist (Nimbus)
+    "ai_role": "",
+    # Nur body: die Passive des DROME (Unit.passive()).
+    #   spellcaster  nach jeder Faehigkeit braucht die Waffe nur noch halb so
+    #                viele normale Angriffe bis zur naechsten (Nimbus)
+    #   hit_rush     jeder Treffer gibt kurz mehr Lauftempo (Vireo)
+    #   presence     zieht Aggro und faengt Schaden fuer Verbuendete ab (Molok)
+    # Die Zahlen der Passiven stehen in data/config.json unter "passives".
+    "passive": "",
 }
 
-# Ausruestung gewaehrt eine LISTE von Aktionen (``actions``). ``power`` > 0 ist
-# Schaden, ``power`` < 0 ist Heilung. Ohne ``actions`` ist ein Teil rein passiv.
+# Ausruestung gewaehrt eine LISTE von Aktionen (``actions``): eine Waffe ihren
+# Angriff und ihre Faehigkeit, ein Gadget null oder eine Faehigkeit.
 #
-# ### Warum eine Liste und nicht mehr genau eine Aktion
+#   category    attack | ability
+#   targeting   single | aoe_around_target | aoe_cross | dash
+#   interval    Sekunden zwischen zwei Angriffen (nur Angriffe)
+#   trigger     wann eine Faehigkeit selbst ausloest:
+#               {"kind": "attacks", "every": n, "weapon": "act_..."}  jeder n-te Angriff
+#               {"kind": "time", "every": s}                          alle s Sekunden
+#               {"kind": "adjacent", "every": s}                      Gegner daneben
 #
-# Frueher trug jedes Teil hoechstens eine Aktion, und eine Waffe war entweder
-# ihr Angriff ODER eine Faehigkeit. Seit GAME_DESIGN 13 traegt jede WAFFE beides:
-# ihren Angriff (Puls-Salve, Schienenschuss ...) UND eine eigene Faehigkeit
-# (Streusalve, Praezisionsschuss ...). Die Faehigkeiten kommen damit von den
-# Waffen, nicht mehr vom Kern -- der Kern ist reine Energie-Identitaet. Ein
-# Teil, das beides gibt, braucht zwei Eintraege; deshalb eine Liste.
-#
-# Gadgets (Support-Teile) bleiben INDIVIDUELL: nicht jedes traegt eine Aktive.
-# Der Deflektor ist passiv, Drohnen-Pod/Orbit-Fokus/Koedersender tragen je eine
-# Faehigkeit -- was gerade ins Thema passt, nicht per Regel.
-#
-#   category    attack | ability   -- welches Budget der Zug verbraucht
-#   targeting   single | self | tile | aoe_around_target
-#
-# Regel aus dem Entwurf, hier hart eingehalten: jede Aktion mit Reichweite > 1
-# braucht Sichtlinie. Ohne sie waere das ganze Terrainsystem Dekoration.
-#
-# ``aggro_coeff`` sagt, wie LAUT eine Aktion ist -- wie stark ihre Wirkung in
-# die Aggro-Tabelle der Gegner eingeht (scripts/battle/aggro_table.gd). Das
-# Raster, an dem sich neue Aktionen ausrichten:
-#
-#   1.0    normaler Angriff, die Grundlinie -- steht deshalb nirgends dabei
-#   0.5    Heilung: der Techniker ist angreifbar, aber kein Aggro-Magnet
-#   0.35   Praezisionswaffen: viel Schaden, wenig Krach
-#
-# Der Koeffizient haengt ausdruecklich NICHT an der Reichweite. Er ist der
-# Hebel, mit dem sich "wie viel richtet die Waffe an" von "wie sehr provoziert
-# sie" trennen laesst -- eine Ableitung aus range_tiles waere untunebar und
-# eine zweite, stillschweigende Wahrheit ueber die Auffaelligkeit einer Waffe.
-#
-# ``aggro_flat`` ist der Pauschalwert fuer Aktionen ohne Wirkungsmenge, und
-# ``taunt_turns`` macht eine Aktion zur Provokation (harter Zwang, befristet).
-# Genau eine Aktion im Bestand provoziert: das Stoersignal des Koedersenders
-# EQP-008, drei Zuege lang.
+# ``aggro_coeff`` sagt, wie LAUT eine Aktion ist (1.0 Grundlinie, 0.35
+# Praezisionswaffen); ``aggro_flat`` ist der Pauschalwert fuer Aktionen ohne
+# Schaden (Orbit-Sog).
 
-# --- Was eine Faehigkeit kostet ---------------------------------------------
-#
-# Nach Regel statt nach Gefuehl. Der Bezug ist nicht der Tank, sondern das
-# ENERGIEBUDGET, das ein mittlerer Aufbau in der ERSTEN HAELFTE eines Gefechts
-# zur Verfuegung hat.
-#
-#     budget = en_max + 5 * en_regen        (Molok-Kern: 70 + 5*12 = 130)
-#
-# Die erste Haelfte und nicht das ganze Gefecht -- das ist der eigentliche
-# Kunstgriff. Gemessen ist ein DROME zehn bis vierzehn Mal am Zug (nicht sieben,
-# wie die 28 Zuege aus tests/test_battle.gd auf den ersten Blick nahelegen: wer
-# schneller ist, zieht oefter). Ueber ein GANZES Gefecht regeneriert selbst ein
-# Molok rund 190 Punkte und ein Nimbus fast 280. Bemisst man die Kosten daran,
-# ist die Faehigkeit in der Eroeffnung -- also dann, wenn sie entscheidet --
-# praktisch gratis und erst am Ende knapp. Genau andersherum ist es richtig.
-#
-# Daraus faellt die Kostenstufe aus der einzigen Frage, die man an eine
-# Faehigkeit stellen muss: wie oft soll sie vorkommen, solange es zaehlt?
-#
-#     kosten = budget / anwendungen
-#
-# Die Stufen sind bewusst grob. Eine feinere Skala waere Genauigkeit ohne
-# Aussage: welche Faehigkeit "stark" ist, entscheidet ihre WIRKUNG, und die
-# laesst sich nicht auf zwei Stellen hinter dem Komma begruenden.
-#
-#   stark    harter Zwang oder Flaechenwirkung, die ein Gefecht kippt
-#   mittel   spuerbare Wirkung auf ein Ziel oder eine kleine Flaeche
-#   schwach  Kontrolle ohne Wirkungsmenge -- schieben, ziehen, stellen
-#
-# Gemessen ueber 40 Gefechte kommt dabei heraus: Stoersignal 0.5, Reparatur-
-# drohnen 1.9, Orbit-Sog 5.3 Einsaetze je Gefecht. Die Kosten sind die
-# OBERGRENZE, nicht der Fahrplan -- was davon tatsaechlich gezogen wird,
-# entscheidet die Lage, und eine Provokation lohnt sich eben selten.
-# tests/test_battle.gd haelt dieses Band fest.
-#
-# Die Untergrenze ist der KLEINSTE Tank im Bestand (Vireo-Kern, en_max 40):
-# eine Faehigkeit, die teurer waere als er, koennte an einem Vireo nie gezogen
-# werden. Ein Teil, das an einem Chassis grundsaetzlich tot ist, waere ein
-# Datenfehler und kein Balancing -- deshalb prueft check_ability_costs() das.
-# Der Vireo-Kern ist damit die eigentliche Decke fuer "stark": 130/4 waere 33,
-# aber auch 45 waere noch vertretbar -- 40 waere es nicht mehr.
-ABILITY_BUDGET = 140
-ABILITY_USES_IN_THE_FIRST_HALF = {"stark": 4, "mittel": 5, "schwach": 7}
-SMALLEST_TANK = 40
-
-# Gemessen, nicht geschaetzt: ein DROME ist zehn bis vierzehn Mal am Zug, im
-# Mittel elf. Bezugsgroesse der Abklingzeit -- siehe ability_cooldown().
-TURNS_PER_BATTLE = 11
-
-# Spiegelt spd_weight_step aus data/config.json. Steht hier nur, damit die
-# Baubarkeitspruefung unten dasselbe Tempo ausrechnet wie das Spiel; die
-# Stellschraube selbst gehoert in die Konfiguration und nicht hierher.
+# Spiegelt spd_weight_step aus data/config.json -- nur fuer die
+# Baubarkeitspruefung unten.
 SPD_WEIGHT_STEP = 4
-
-
-def ability_cost(tier: str) -> int:
-    """Energiekosten einer Faehigkeit aus ihrer Stufe. Die EINZIGE Stelle."""
-    return round(ABILITY_BUDGET / ABILITY_USES_IN_THE_FIRST_HALF[tier])
-
-
-def ability_cooldown(tier: str) -> int:
-    """
-    Die Abklingzeit derselben Stufe -- die zweite Bremse.
-
-    Gerechnet auf den GEMESSENEN Zuegen je Gefecht (zehn bis vierzehn, im
-    Mittel elf) statt auf dem Energiebudget:
-
-        abklingzeit = zuege_je_gefecht / anwendungen
-
-    Seit GAME_DESIGN 13 ist die Abklingzeit die Bremse der MECHANISCHEN
-    Faehigkeiten -- jener, die per Fiktion keinen Strom ziehen (das Sperrfeuer
-    der Belagerungskanone). Energetische Faehigkeiten bremst dagegen die Energie
-    (``en_cost``), ihre Abklingzeit ist 0. Beide Bremsen kommen weiter aus
-    DERSELBEN Stufe, damit eine Faehigkeit ihren Rang behaelt, egal welche der
-    beiden sie traegt.
-
-    ### Warum die Untergrenze 2 ist und nicht 1
-
-    Eine Abklingzeit von 1 ist keine sinnvolle Rhythmusbremse: die Aktion ist
-    ohnehin nur EINMAL PRO ZUG ziehbar (``TurnState`` fuehrt Buch, welche
-    Faehigkeiten in diesem Zug schon liefen), eine Sperre von 1 waere bis zum
-    naechsten eigenen Zug laengst abgelaufen und stuende wirkungslos in der
-    Leiste. Das "einmal pro Zug" ist strukturell und braucht die Abklingzeit
-    nicht; die Abklingzeit setzt erst DARUEBER einen Takt ueber mehrere Zuege.
-
-    ### Und warum die Rangfolge hier grober ist als beim Preis
-
-    In ganzen Zuegen laesst sich 11/5 = 2.2 nicht von 11/7 = 1.6 unterscheiden
-    -- beide runden auf 2, beide stossen an dieselbe Untergrenze. Die
-    Abklingzeit trennt deshalb nur ``stark`` von den anderen beiden, waehrend
-    der Preis alle drei trennt. Das ist keine Ungenauigkeit der Rechnung,
-    sondern eine Eigenschaft der Bremse, und sie gehoert zum Vergleich dazu:
-    eine Wartezeit ist ein grobes Werkzeug. Wer sie feiner haben will, braucht
-    mehr Zuege je Gefecht -- oder den Preis.
-    """
-    return max(2, round(TURNS_PER_BATTLE / ABILITY_USES_IN_THE_FIRST_HALF[tier]))
 
 
 STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
-    # HP, DEF, Traglast. SPD/MOV sind Auf- und Abschlaege auf den Antrieb.
-    "scout_body":  {"hp":  60, "def": 1, "spd":  2, "mov":  0, "weight_capacity": 18, "shield": 30},
-    # Traglast 31 statt 28: der Molok hat DREI Anker (GDD 3b), konnte sie aber
-    # mit eigenen Teilen nie alle belegen -- es gab bis zum Koedersender nur
-    # zwei Ausruestungsteile im Satz, deshalb ist es nie aufgefallen. Ein
-    # Chassis, das seine eigenen Anker nicht bestuecken kann, ist ein
-    # Datenfehler und kein Balancing (siehe check_stock_builds).
-    #
-    # 31 -> 33, und SPD -2 -> 0. Zwei schwere Waffen an zwei schweren Armen
-    # (2x8 = 16 auf 17 freie Punkte) waren vorher um EINEN Punkt unmoeglich --
-    # der schwere Slot war eine Erlaubnis, die das Budget wieder einkassierte.
-    # Der SPD-Abschlag faellt weg, weil die Masse jetzt selbst bremst
-    # (DromeBuild.payload_slowdown); ein pauschales -2 obendrauf zaehlte
-    # dieselbe Schwere ein zweites Mal. Mit Schulterpod bleibt es bei 35 > 33.
-    "jugg_body":   {"hp": 130, "def": 5, "spd":  0, "mov": -1, "weight_capacity": 33, "shield": 50},
-    "mage_body":   {"hp":  85, "def": 2, "spd":  0, "mov":  0, "weight_capacity": 20,
-                    "en_max": 10, "shield": 50},
-    "strix_body":  {"hp":  70, "def": 2, "spd":  1, "mov":  0, "weight_capacity": 22, "shield": 30},
+    "scout_body":  {"hp":  60, "def": 1, "spd": 2, "shield": 30, "ai_role": "skirmisher",
+                    "passive": "hit_rush"},
+    # Tank: viel Integritaet, kaum Schild (Entscheidung 6. Nov. 2026) -- mit
+    # Kopf 200 Integritaet, 10 Schild. Kinetische Waffen sind gegen ihn gut,
+    # Energie und Schildbrecher kaum.
+    "jugg_body":   {"hp": 185, "def": 5, "shield": 10, "ai_role": "vanguard",
+                    "passive": "presence"},
+    "mage_body":   {"hp":  85, "def": 2, "shield": 50, "ai_role": "controller",
+                    "passive": "spellcaster"},
+    "strix_body":  {"hp":  70, "def": 2, "spd": 1, "shield": 30, "ai_role": "sniper"},
 
     # --- KERN (core) -------------------------------------------------------
-    # Energie und Ausstoss. Der Ausstoss deckelt, was drumherum haengen darf.
-    "scout_core":  {"en_max": 40, "en_regen":  8, "power_output": 12, "weight": 3,
-                    "shield_regen": 5, "shield_bonus": 0.05},
-    "jugg_core":   {"en_max": 70, "en_regen": 12, "power_output": 16, "weight": 6,
-                    "shield_regen": 5, "shield_bonus": 0.1},
-    "mage_core":   {"en_max": 85, "en_regen": 14, "power_output": 14, "weight": 5,
-                    "shield_regen": 10, "shield_bonus": 0.2},
-    "strix_core":  {"en_max": 50, "en_regen": 10, "power_output": 13, "weight": 4,
-                    "atk": 2, "shield_regen": 5, "shield_bonus": 0.1},
+    "scout_core":  {"weight": 3, "shield_regen":  5, "shield_bonus": 0.05},
+    "jugg_core":   {"weight": 6, "shield_regen":  5, "shield_bonus": 0.1},
+    "mage_core":   {"weight": 5, "shield_regen": 10, "shield_bonus": 0.2},
+    "strix_core":  {"weight": 4, "atk": 2, "shield_regen": 5, "shield_bonus": 0.1},
 
     # --- ANTRIEB (feet) ----------------------------------------------------
-    # Vier Antriebe, vier klar getrennte Traversierungsprofile. Die Zahlen sind
-    # der Preis, die Flags sind der Grund. Lesart der Extreme:
-    #
-    #   Standbeine  langsam und stumpf, aber die schweren Fuesse greifen -- der
-    #               einzige Antrieb im Bestand, der eine Oelspur als Deckungs-
-    #               linie nutzen kann, statt darueber hinwegzuschlittern.
-    #   Fahrwerk    der schnellste Antrieb, kommt aber weder ueber Stufen noch
-    #               auf Drift zum Stehen: es hat nichts, womit es greifen kann.
-    "scout_feet":  {"mov": 4, "spd": 11, "weight": 3, "power_draw": 4,
-                    "can_pass_units": True, "can_enter_steps": True},
-    "jugg_feet":   {"mov": 3, "spd":  8, "weight": 6, "power_draw": 2, "def": 2,
-                    "ignores_drift": True},
-    "mage_drive":  {"mov": 5, "spd": 14, "weight": 4, "power_draw": 4,
-                    "drift_modifier": 1},
-    "strix_feet":  {"mov": 4, "spd":  9, "weight": 5, "power_draw": 4,
-                    "can_enter_steps": True, "step_cost_reduced": True},
+    "scout_feet":  {"spd": 11, "weight": 3},
+    "jugg_feet":   {"spd":  8, "weight": 6, "def": 2},
+    "mage_drive":  {"spd": 14, "weight": 4},
+    "strix_feet":  {"spd":  9, "weight": 5},
 
-    # --- SENSORIK (head) ---------------------------------------------------
-    # Der Kopf ist der guenstige Slot fuer kleine Boni -- und der Ort, an dem
-    # der Blick durch Haze-Felder sitzt. Haze ist damit kein absoluter Konter
-    # gegen Fernkampf, sondern kostet einen Kopf mit schlechteren Werten.
-    "scout_head":  {"spd": 2, "weight": 2, "power_draw": 2,
-                    "grants_ignore_haze": True},
-    "jugg_head":   {"hp": 15, "def": 2, "weight": 4, "power_draw": 1},
-    "mage_head":   {"en_max": 15, "en_regen": 3, "weight": 2, "power_draw": 2},
-    "strix_head":  {"atk": 4, "weight": 3, "power_draw": 3,
-                    "grants_ignore_haze": True},
+    # --- KOPF (head) -------------------------------------------------------
+    "scout_head":  {"spd": 2, "weight": 2},
+    "jugg_head":   {"hp": 15, "def": 2, "weight": 4},
+    "mage_head":   {"weight": 2},
+    "strix_head":  {"atk": 4, "weight": 3},
 
     # --- AUSRUESTUNG (equipment) -------------------------------------------
-    # Jede WAFFE traegt jetzt zwei Aktionen: ihren Angriff (Angriffsbudget) und
-    # eine eigene Faehigkeit (Faehigkeitsbudget). GAME_DESIGN 13.
     "eq_pulse_blaster": {
-        "weight": 5, "power_draw": 3,
+        "weight": 5,
         "actions": [
-            # Der Puls-Blaster feuert halb physisch, halb Energie (50/50).
+            # Halb physisch, halb Energie.
             {"id": "act_pulse", "display_name": "Puls-Salve",
              "category": "attack", "targeting": "single",
-             "range_tiles": 3, "power": 10, "en_cost": 0,
-             "requires_line_of_sight": True, "energy_fraction": 0.5,
+             "range_tiles": 3, "power": 10, "energy_fraction": 0.5,
              "interval": 1.4},
-            # Streusalve: der leichte Flaechenschlag des Scouts. Weniger Wumms
-            # als ein gezielter Treffer, dafuer ein ganzes Nest auf einmal.
-            {"id": "act_pulse_scatter", "display_name": "Streusalve",
-             "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 4, "aoe_radius": 1, "power": 9,
-             "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
-             "requires_line_of_sight": True, "aggro_coeff": 0.9,
+            # Doppelschuss (Vorgabe des Spielers, Nov. 2026): ein schneller
+            # Schuss auf bis zu zwei Gegner in Reichweite; ist nur einer da,
+            # trifft er ihn zweimal.
+            {"id": "act_pulse_double", "display_name": "Doppelschuss",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 3, "power": 7, "shots": 2,
              "energy_fraction": 0.5,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_pulse"}},
         ],
     },
-    # Passiv. Ein Schild ist kein Knopf, sondern eine Entscheidung beim Bauen --
-    # und der Beleg, dass ein Gadget keine Aktive tragen MUSS (GAME_DESIGN 13).
-    "eq_deflector": {"def": 5, "weight": 4, "power_draw": 2},
+    # Neon-Variante: gleicher Angriff, aber die Faehigkeit ist ein aufgeladener
+    # Schuss mit doppeltem Schaden AM SCHILD (Vorgabe des Spielers, Nov. 2026).
+    "eq_neon_blaster": {
+        "weight": 5,
+        "actions": [
+            {"id": "act_neon_pulse", "display_name": "Neon-Salve",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 3, "power": 10, "energy_fraction": 0.5,
+             "interval": 1.4},
+            {"id": "act_neon_breaker", "display_name": "Schildbrecher",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 3, "power": 12, "energy_fraction": 1.0,
+             "shield_mult": 2.0,
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_neon_pulse"}},
+        ],
+    },
+    # Plasmaklinge: Nahkampf, nur kinetisch, etwas mehr Schaden, schneller als
+    # der Blaster. Jeder 3. Hieb macht das Ziel 5 s verwundbar (+50 % Schaden).
+    "eq_plasma_blade": {
+        "weight": 4,
+        "actions": [
+            {"id": "act_plasma_slash", "display_name": "Plasmahieb",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 1, "power": 12, "interval": 1.0},
+            {"id": "act_plasma_rend", "display_name": "Aufschlitzen",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 1, "power": 18,
+             "status": {"id": "vulnerable", "seconds": 5.0, "damage_taken_mult": 1.5},
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_plasma_slash"}},
+        ],
+    },
+    # Passiv.
+    "eq_deflector": {"def": 5, "weight": 4},
 
-    # Hologramm-Boost: das Mobilitaets-Gadget des Vireo und die einzige
-    # BEWEGUNGS-Faehigkeit im Bestand. Der Boost versetzt den eigenen DROME bis
-    # zu drei Felder in gerader Linie -- nicht ueber Hindernisse und nicht ueber
-    # Stufen (eigene, striktere Regel als die normale Bewegung; sie sitzt im
-    # ActionResolver.dash_landings). Energetisch gebremst (schwach, ~20 EN), ohne
-    # Abklingzeit: eine Repositionierung, die man sich leisten koennen muss, aber
-    # keine, die einen Takt sperrt. Kein Schaden, keine Aggro -- reine Stellung.
+    # Springt weg, wenn ein Gegner danebensteht.
     "eq_holo_boost": {
-        "weight": 3, "power_draw": 3,
+        "weight": 3,
         "actions": [
             {"id": "act_holo_dash", "display_name": "Hologramm-Boost",
              "category": "ability", "targeting": "dash",
-             "range_tiles": 3, "power": 0,
-             "en_cost": ability_cost("schwach"), "cooldown_turns": 0,
-             "requires_line_of_sight": False, "aggro_flat": 0,
+             "range_tiles": 3, "power": 0, "aggro_flat": 0,
              "trigger": {"kind": "adjacent", "every": 4, "weapon": ""}},
         ],
     },
 
-    # Das einzige rein MECHANISCHE Geschuetz im Bestand: Pulver, Masse, Hebel.
-    # Deshalb power_draw 0 und en_cost 0 -- sie zieht keinen Strom, weder im
-    # Stand noch beim Schuss. Bezahlt wird sie in Gewicht (8, der schwerste
-    # Wert im Bestand) und in Tempo: ueber DromeBuild.payload_slowdown kostet
-    # sie an JEDEM Chassis zwei Punkte SPD. Frueher trug sie power_draw 5, und
-    # das war Balancing im Kostuem der Fiktion -- der Spieler las
-    # "Energiebedarf" an einer Kanone und konnte sich nichts darunter denken.
     "eq_siege_cannon": {
-        "weight": 8, "power_draw": 0,
+        "weight": 8,
         "actions": [
             {"id": "act_siege", "display_name": "Belagerungsschlag",
              "category": "attack", "targeting": "aoe_around_target",
-             "range_tiles": 6, "aoe_radius": 1, "power": 18, "en_cost": 0,
-             "requires_line_of_sight": True,
+             "range_tiles": 6, "aoe_radius": 1, "power": 18,
              "interval": 3.0},
-            # Sperrfeuer: die einzige MECHANISCHE Faehigkeit im Bestand -- Pulver
-            # und Masse, kein Strom. Deshalb en_cost 0 und stattdessen eine
-            # Abklingzeit als Bremse (GAME_DESIGN 13: "Masse bremst, Strom
-            # kostet"). Groesserer Radius als der Angriff, dafuer weniger Wumms je
-            # Feld -- Flaechenverwehrung, kein Einzeltreffer.
             {"id": "act_siege_barrage", "display_name": "Sperrfeuer",
              "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 6, "aoe_radius": 2, "power": 14, "en_cost": 0,
-             "cooldown_turns": ability_cooldown("stark"),
-             "requires_line_of_sight": True, "aggro_coeff": 1.2,
+             "range_tiles": 6, "aoe_radius": 2, "power": 14,
+             "aggro_coeff": 1.2,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_siege"}},
         ],
     },
-    # Drohnen-Pod: PASSIVE Selbstheilung statt aktiver Faehigkeit (Balancing-
-    # Konzept). 5 % der maximalen Integritaet je eigenem Zug, ohne Knopf und
-    # ohne Energiekosten. Deshalb keine ``actions``.
-    "eq_drone_pod": {
-        "weight": 3, "power_draw": 4, "hp_regen_pct": 5,
-    },
-    # Reichweite 1 und damit ohne Sichtlinie: der Runenstab ist die einzige
-    # Nahkampfwaffe im Bestand. Er ist der Grund, warum ein Haze-Feld ein
-    # Korridor ist und keine Sackgasse -- wer darin steht, kann immer noch
-    # zuschlagen, nur nicht mehr schiessen.
-    # Das einzige Teil im Bestand mit aggro_bonus -- und das einzige, das
-    # provozieren kann. Beides gehoert zusammen: wer Aufmerksamkeit auf sich
-    # ziehen will, bezahlt dafuer einen Ausruestungsslot (GAME_DESIGN 6b).
-    # Die Provokation ist harter Zwang und deshalb teuer und befristet.
-    # Koedersender: nur noch AGGRO (+25), keine aktive Provokation mehr. Der
-    # Taunt/das Stoersignal ist gestrichen (Balancing-Konzept) -- das Teil zieht
-    # Aufmerksamkeit ueber seinen Aggro-Wert, nicht ueber einen Zwang. Deshalb
-    # passiv, ohne ``actions``.
-    "eq_bait_beacon": {
-        "weight": 3, "power_draw": 3, "aggro_bonus": 25,
-    },
-
-    "eq_rune_staff": {
-        "weight": 4, "power_draw": 2,
+    # Hammer des Molok: schwer, langsam, kinetisch. Jeder 3. Schlag betaeubt
+    # das Ziel 1 s (Vorgabe des Spielers, Nov. 2026).
+    "eq_hammer": {
+        "weight": 7,
         "actions": [
-            # Der Runenschlag ist eine Energie-Clusterbombe: er trifft das Ziel
-            # UND die vier orthogonalen Nachbarn (aoe_cross). Reichweite 1 =
-            # Nahkampf, keine Sichtlinie noetig. Schaden je Feld entsprechend
-            # niedriger (10).
-            {"id": "act_runestaff", "display_name": "Runenschlag",
-             "category": "attack", "targeting": "aoe_cross",
-             "range_tiles": 1, "aoe_radius": 1, "power": 10, "en_cost": 0,
-             "requires_line_of_sight": False, "energy_fraction": 1.0,
-             "interval": 1.2},
-            # Arkanwelle: der Nahbereichs-Nova des Technomanten. Der Runenstab
-            # ist die einzige Nahkampfwaffe, seine Faehigkeit weitet den Schlag
-            # auf einen kleinen Ring aus.
-            {"id": "act_rune_nova", "display_name": "Arkanwelle",
-             "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 2, "aoe_radius": 1, "power": 13,
-             "en_cost": ability_cost("mittel"), "cooldown_turns": 0,
-             "requires_line_of_sight": True, "aggro_coeff": 1.0,
-             "energy_fraction": 1.0,
-             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_runestaff"}},
+            {"id": "act_hammer", "display_name": "Hammerschlag",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 1, "power": 16, "interval": 1.8},
+            {"id": "act_hammer_stun", "display_name": "Betaeubungsschlag",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 1, "power": 16,
+             "status": {"id": "stun", "seconds": 1.0, "stunned": True},
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_hammer"}},
         ],
     },
-    # Gadget mit Aktive: der Orbit-Fokus zerrt ein Ziel aus der Stellung.
-    # (Notiert fuer spaeter, GAME_DESIGN 13: thematisch klingt "Orbit" eher nach
-    # Aufklaerung als nach Sog -- eine Umdeutung, sobald es eine Sensor-/Haze-
-    # Mechanik dafuer gibt. Bis dahin bleibt der Sog erhalten und funktioniert.)
+    # Passive Selbstheilung, 5 % je Puls.
+    "eq_drone_pod": {"weight": 3, "hp_regen_pct": 5},
+    # Zieht Aufmerksamkeit ueber seinen Aggro-Wert.
+    "eq_bait_beacon": {"weight": 3, "aggro_bonus": 25},
+
+    # Kontrollwaffe des Nimbus: Einzelschuss auf Blaster-Reichweite, reine
+    # Energie. Die Faehigkeit (Vortex) zieht die Gegner um das Ziel zusammen,
+    # kurz danach schlaegt eine Schockwelle von innen nach aussen zu und
+    # verlangsamt (Vorgabe des Spielers, Nov. 2026).
+    "eq_rune_staff": {
+        "weight": 4,
+        "actions": [
+            {"id": "act_runestaff", "display_name": "Runenschlag",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 3, "power": 9,
+             "energy_fraction": 1.0, "interval": 1.2},
+            {"id": "act_rune_vortex", "display_name": "Vortex",
+             "category": "ability", "targeting": "aoe_around_target",
+             "range_tiles": 3, "aoe_radius": 2, "power": 14,
+             "energy_fraction": 1.0, "gather": True, "delay": 0.6,
+             "status": {"id": "slow", "seconds": 2.5, "move_mult": 0.6},
+             "trigger": {"kind": "attacks", "every": 5, "weapon": "act_runestaff"}},
+        ],
+    },
+    # Zieht alle 6 s ein Ziel zwei Felder heran.
     "eq_orbit_focus": {
-        "weight": 3, "power_draw": 3, "atk": 1,
+        "weight": 3, "atk": 1,
         "actions": [
             {"id": "act_orbitpull", "display_name": "Orbit-Sog",
              "category": "ability", "targeting": "single",
-             "range_tiles": 4, "power": 0,
-             "en_cost": ability_cost("schwach"), "cooldown_turns": 0,
-             "push_tiles": -2, "requires_line_of_sight": True,
+             "range_tiles": 4, "power": 0, "push_tiles": -2,
              "aggro_flat": 8,
              "trigger": {"kind": "time", "every": 6, "weapon": ""}},
         ],
     },
     "eq_rail_lance": {
-        "weight": 8, "power_draw": 5,
+        "weight": 8,
         "actions": [
             {"id": "act_raillance", "display_name": "Schienenschuss",
              "category": "attack", "targeting": "single",
-             "range_tiles": 8, "power": 22, "en_cost": 6,
-             "requires_line_of_sight": True, "aggro_coeff": 0.35,
+             "range_tiles": 8, "power": 22, "aggro_coeff": 0.35,
              "interval": 2.6},
-            # Praezisionsschuss: der aufgeladene Fernschuss des Marksman. Grosse
-            # Reichweite, harter Einzeltreffer, und genauso leise wie sein
-            # Angriff -- ein Scharfschuss zieht keine Aufmerksamkeit.
             {"id": "act_rail_pierce", "display_name": "Praezisionsschuss",
              "category": "ability", "targeting": "single",
-             "range_tiles": 8, "power": 26,
-             "en_cost": ability_cost("stark"), "cooldown_turns": 0,
-             "requires_line_of_sight": True, "aggro_coeff": 0.35,
+             "range_tiles": 8, "power": 26, "aggro_coeff": 0.35,
              "trigger": {"kind": "attacks", "every": 4, "weapon": "act_raillance"}},
         ],
     },
@@ -764,19 +593,31 @@ STATS = {
 
 ACTION_DEFAULTS = {
     "id": "", "display_name": "", "category": "attack", "targeting": "single",
-    "range_tiles": 1, "aoe_radius": 0, "en_cost": 0, "power": 0,
-    "requires_line_of_sight": False, "push_tiles": 0, "status_effect": None,
-    "aggro_coeff": 1.0, "aggro_flat": 0, "taunt_turns": 0, "cooldown_turns": 0,
-    # Anteil des Schadens, der ENERGIESCHADEN ist (0.0 = ganz physisch, 1.0 =
-    # ganz Energie, 0.5 = halb/halb wie der Puls-Blaster). Energie knackt
-    # Schilde (120 %), Physisch prallt an ihnen ab (80 %) -- siehe §11.
+    "range_tiles": 1, "aoe_radius": 0, "power": 0,
+    # positiv = wegstossen, negativ = heranziehen
+    "push_tiles": 0,
+    "aggro_coeff": 1.0, "aggro_flat": 0,
+    # Anteil Energieschaden (0.0 physisch, 1.0 Energie). Energie knackt
+    # Schilde (120 %), Physisch prallt ab (80 %).
     "energy_fraction": 0.0,
-    # Echtzeit (Nov. 2026): Sekunden zwischen zwei Angriffen dieser Waffe.
     "interval": 2.0,
-    # Wann eine Faehigkeit von selbst ausloest (ActionData.trigger_kind):
-    # {"kind": "attacks"|"time"|"adjacent", "every": n, "weapon": "act_..."}.
     "trigger": None,
+    # Schadensfaktor am SCHILD (Schildbrecher 2.0); auf die Integritaet wirkt
+    # er nicht.
+    "shield_mult": 1.0,
+    # Treffer je Ausloesen: verteilt auf bis zu so viele Gegner in Reichweite,
+    # der Rest geht wieder aufs Ziel (Doppelschuss).
+    "shots": 1,
+    # Flaeche: zieht die Gegner im Radius zuerst zum Zielfeld heran.
+    "gather": False,
+    # Sekunden zwischen Ausloesen und Schaden (Schockwelle nach dem Sog).
+    "delay": 0.0,
+    # Statuseffekt auf jeden Getroffenen: {"id", "seconds", ...Aufschlaege},
+    # z. B. {"id": "slow", "seconds": 2.5, "move_mult": 0.6}.
+    "status": None,
 }
+
+TARGETINGS = ("single", "aoe_around_target", "aoe_cross", "dash")
 
 
 def _merge_action(part_id: str, action: dict) -> dict:
@@ -786,18 +627,8 @@ def _merge_action(part_id: str, action: dict) -> dict:
         raise SystemExit(f"[stats] {part_id}: unbekannte Aktionsfelder {sorted(unknown)}")
     merged = dict(ACTION_DEFAULTS)
     merged.update(action)
-    # Die Regel aus dem Entwurf, hier als Zusicherung statt als Kommentar.
-    # Bewegungs- und Selbst-Aktionen sind ausgenommen: ein Dash SCHIESST nicht
-    # ueber die Karte, er versetzt den Handelnden -- eine Sichtlinie zu einem
-    # Feld, auf das man selbst laeuft, ergaebe keinen Sinn. Er hat stattdessen
-    # seine eigene, striktere Regel (nicht ueber Hindernisse/Stufen), die im
-    # Resolver sitzt.
-    if merged["targeting"] not in ("dash", "self") \
-            and merged["range_tiles"] > 1 and not merged["requires_line_of_sight"]:
-        raise SystemExit(
-            f"[stats] {part_id}: Reichweite {merged['range_tiles']} ohne "
-            f"Sichtlinie -- ohne diese Regel ist das Terrain Dekoration"
-        )
+    if merged["targeting"] not in TARGETINGS:
+        raise SystemExit(f"[stats] {part_id}: unbekanntes Targeting {merged['targeting']!r}")
     return merged
 
 
@@ -1364,6 +1195,18 @@ EQ_BLASTER = [
     B((-4, 5), (-6.1, -5.5), (42.5, 44), "accent"),
 ]
 
+# Plasmaklinge (EQP-010): Nahkampfwaffe des Vireo. Kurzer Griff mit
+# Parierstange, davor eine LANGE, DUENNE leuchtende Klinge -- lang und duenn
+# gegen das kurze, dicke Rohr des Blasters (Lesbarkeitsregel).
+EQ_PLASMA_BLADE = [
+    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Oberarm am Anker
+    B((-3.5, 4), (-3.5, 3.5), (34, 46), "plate"),        # Unterarm
+    B((3, 5), (-4.5, 4.5), (33, 39), "dark"),            # Parierstange
+    B((5, 27), (-0.6, 0.6), (34.5, 37.5), "glow"),       # Klinge
+    B((5, 27.5), (-0.8, 0.8), (37.5, 38.3), "accent"),   # Schneide oben
+    B((5, 22), (-0.8, 0.8), (33.7, 34.5), "accent"),     # Schneide unten
+]
+
 # Pruefstein, kein Teil.
 #
 # So sah die Belagerungskanone aus, bevor es die Lesbarkeitsregel gab: exakt
@@ -1563,6 +1406,19 @@ EQ_CANNON = [
     # Abstuetzstrebe nach unten
     B((-1, 3), (-2.6, 2.6), (26, 34), "metal"),
     B((-4, 6), (-4, 4), (23, 26.5), "dark"),
+]
+
+# Hammer (EQP-012): Nahkampfwaffe des Molok. Kurzer Schaft nach vorn, davor
+# ein grosser, quer stehender Hammerkopf -- ein Block, kein Rohr (gegen die
+# Kanone mit Muendungsbremse und die duenne Plasmaklinge).
+EQ_HAMMER = [
+    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),          # Halterung am Anker
+    B((-4.5, 4.5), (-5, 5), (35, 46), "plate"),          # Unterarm
+    B((4, 15), (-1.4, 1.4), (38, 41), "metal"),          # Schaft
+    B((15, 23), (-7, 7), (30, 48), "plate"),             # Hammerkopf
+    B((23, 23.8), (-6, 6), (32, 46), "dark"),            # Schlagflaeche
+    B((15, 23), (-7.3, 7.3), (38, 40), "accent"),        # Leuchtband
+    D(24.0, 0, 39, 2.0, "glow"),
 ]
 
 # Der Pod sitzt hinter dem Kopf auf der Schulterbruecke und zeigt vor allem
@@ -1970,9 +1826,12 @@ SETS = [
                 # und nicht in einer Balancing-Tabelle, weil sie sonst erst im
                 # Kampf auffaellt -- und weil ein Vireo mit Belagerungskanone
                 # eine Silhouette haette, die ueber seine Reichweite luegt.
+                # Ein Ausruestungsplatz (Nov. 2026). Der rechte Anker bleibt fuer
+                # die Optik, ist aber kein Halter mehr ("off").
                 "slot_rules": {
-                    "equip_left": {"max_class": "medium"},
-                    "equip_right": {"max_class": "medium"},
+                    "equip_left": {"max_class": "medium",
+                                   "categories": ["weapon", "support"]},
+                    "equip_right": {"off": True},
                 },
             },
             {
@@ -1995,6 +1854,24 @@ SETS = [
                 "tags": ["weapon", "ranged"], "shapes": EQ_BLASTER,
                 "mount_class": "light", "category": "weapon",
                 "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
+            },
+            {
+                # Neon-Variante (Neon City): gleiche Form, eigene Faehigkeit,
+                # Neon-Farben -- leuchtende Roehren als Markenzeichen. Als
+                # Variante darf sie die Silhouette des Blasters teilen.
+                "id": "eq_neon_blaster", "code": "EQP-011", "type": "equipment",
+                "name": "Neon-Blaster", "tags": ["weapon", "ranged", "neon"],
+                "shapes": EQ_BLASTER, "variant_of": "eq_pulse_blaster",
+                "palette": NEON_EQUIPMENT,
+                "mount_class": "light", "category": "weapon",
+                "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
+            },
+            {
+                "id": "eq_plasma_blade", "code": "EQP-010", "type": "equipment",
+                "name": "Plasmaklinge", "tags": ["weapon", "melee"],
+                "shapes": EQ_PLASMA_BLADE,
+                "mount_class": "light", "category": "weapon",
+                "anchors": {"mount": (0, 0, 52), "tip": (27, 0, 36)},
             },
             {
                 "id": "eq_deflector", "code": "EQP-002", "type": "equipment", "name": "Deflektor-Schild",
@@ -2041,11 +1918,12 @@ SETS = [
                 # woran sich ein Schild abstuetzen koennte -- dort gehoert
                 # Sensorik und Support hin, nichts Schweres und nichts, was
                 # gehalten werden muss.
+                # Zwei Plaetze: links alles bis schwer, rechts Schild oder Gadget.
                 "slot_rules": {
                     "equip_left": {"max_class": "heavy"},
-                    "equip_right": {"max_class": "heavy"},
-                    "equip_shoulder": {"max_class": "light",
-                                       "categories": ["support"]},
+                    "equip_right": {"max_class": "heavy",
+                                    "categories": ["shield", "support"]},
+                    "equip_shoulder": {"off": True},
                 },
             },
             {
@@ -2064,6 +1942,13 @@ SETS = [
                 "anchors": {"mount": (11.0, 0, 51.4)},
             },
             {
+                "id": "eq_hammer", "code": "EQP-012", "type": "equipment",
+                "name": "Hammer", "tags": ["weapon", "melee", "heavy"],
+                "shapes": EQ_HAMMER,
+                "mount_class": "heavy", "category": "weapon",
+                "anchors": {"mount": (0, 0, 49), "head": (23.8, 0, 39)},
+            },
+            {
                 "id": "eq_siege_cannon", "code": "EQP-003", "type": "equipment",
                 "name": "Belagerungskanone", "tags": ["weapon", "heavy"],
                 "shapes": EQ_CANNON,
@@ -2071,13 +1956,10 @@ SETS = [
                 "anchors": {"mount": (0, 0, 49), "muzzle": (24.9, 0, 40)},
             },
             {
-                # Einziges Beispielteil mit "slots": ein Schulterpod gehoert auf
-                # die Schulter, und zwar auf diesen einen Anker. "slots" ist die
-                # harte Ankerliste, "mount_class"/"category" die allgemeine
-                # Regel -- die meisten Teile brauchen nur letztere.
+                # Frueher fest auf der Molok-Schulter ("slots"); seit es die
+                # Schulter als Halter nicht mehr gibt, ein Gadget wie die anderen.
                 "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment", "name": "Drohnen-Pod",
                 "tags": ["support", "shoulder"], "shapes": EQ_DRONE_POD,
-                "slots": ["equip_shoulder"],
                 "mount_class": "light", "category": "support",
                 "anchors": {"mount": (0, 0, 61)},
             },
@@ -2119,8 +2001,9 @@ SETS = [
                     "equip_right": (0, -13.8, 47),
                 },
                 "slot_rules": {
-                    "equip_left": {"max_class": "medium"},
-                    "equip_right": {"max_class": "medium"},
+                    "equip_left": {"max_class": "medium",
+                                   "categories": ["weapon", "support"]},
+                    "equip_right": {"off": True},
                 },
             },
             {
@@ -2180,7 +2063,8 @@ SETS = [
                     "equip_center": (6, 0, 51),
                 },
                 # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin.
-                "slot_rules": {"equip_center": {"max_class": "heavy"}},
+                "slot_rules": {"equip_center": {"max_class": "heavy",
+                                                "categories": ["weapon", "support"]}},
             },
             {
                 "id": "strix_head", "code": "HED-004", "type": "head",
@@ -2313,7 +2197,8 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
         # Referenzfarben: die acht CSS-Rollen, wie sie sich aus den vier
         # Kategorien DIESES Bauteiltyps ergeben. Rein dokumentierend --
         # gezeichnet wird immer mit der aktiven Palette der Werkstatt.
-        "color_scheme": resolve_roles(palette[palette_type(part["type"])],
+        "color_scheme": resolve_roles(part.get("palette",
+                                               palette[palette_type(part["type"])]),
                                       part["type"]),
         "tags": part.get("tags", []),
     }
@@ -2370,7 +2255,6 @@ def main() -> None:
     check_mounts()
     check_core_seat()
     check_silhouettes()
-    check_ability_costs()
     check_stats()
     print_slot_matrix()
 
@@ -2515,6 +2399,8 @@ def check_silhouettes() -> None:
 
     by_type: dict[str, list] = {}
     for spec, part in all_parts():
+        if part.get("variant_of"):
+            continue    # Varianten teilen die Form ihrer Grundwaffe mit Absicht
         key = "equipment" if part["type"].startswith("equipment") else part["type"]
         by_type.setdefault(key, []).append(
             (f"{spec['id']}/{part['id']}", silhouette(part["shapes"])))
@@ -2552,59 +2438,11 @@ def check_silhouettes() -> None:
         )
 
 
-def check_ability_costs() -> None:
-    """
-    Keine Aktion darf teurer sein als der kleinste Tank im Bestand.
-
-    Die Energiekosten sind mit ability_cost() bewusst hoch angesetzt -- eine
-    Faehigkeit soll in einem Gefecht ein paar Mal vorkommen und nicht jeden Zug.
-    Genau daran laesst sich aber vorbeirechnen: waere eine Faehigkeit teurer als
-    ``en_max`` des kleinsten Kerns, koennte der Aufbau sie nie ziehen. Das Teil
-    passte dann an den Slot, stuende in der Aktionsleiste und waere trotzdem tot
-    -- ein Datenfehler, der sich als Balancing tarnt.
-
-    Geprueft wird gegen den KLEINSTEN Kern und nicht gegen den gerade gebauten
-    Aufbau: welchen Kern jemand einbaut, ist seine Entscheidung, und eine
-    Faehigkeit soll an keiner davon grundsaetzlich unbenutzbar sein.
-    """
-    smallest = min(part_stats(pid)["en_max"] for pid in STATS
-                   if pid.endswith("_core"))
-    if smallest != SMALLEST_TANK:
-        raise SystemExit(
-            f"SMALLEST_TANK steht auf {SMALLEST_TANK}, der kleinste Kern im "
-            f"Bestand hat aber en_max {smallest}. Die Konstante wird zur Luege, "
-            f"sobald sich ein Kern aendert -- bitte nachziehen."
-        )
-
-    for _spec, part in all_parts():
-        for action in STATS.get(part["id"], {}).get("actions", []):
-            cost = action.get("en_cost", 0)
-            if cost > smallest:
-                raise SystemExit(
-                    f"{part['id']}: '{action['display_name']}' kostet {cost} "
-                    f"Energie, der kleinste Kern im Bestand hat aber nur "
-                    f"en_max {smallest}. Die Aktion waere dort nie ziehbar.\n"
-                    f"Entweder eine guenstigere Stufe in ability_cost() waehlen "
-                    f"oder den kleinsten Kern anheben."
-                )
-
-
 def check_stats() -> None:
     """
-    Die Baubarkeitsregel als Test: jeder Bausatz muss sich selbst bauen koennen.
-
-    Ein Chassis, das seine eigenen Anker nicht bestuecken kann, ist kein
-    Balancing-Problem, sondern ein Datenfehler -- es faellt nur erst in der
-    Werkstatt auf, wenn der Spieler schon klickt. Deshalb wird hier fuer jeden
-    Satz der naheliegendste Aufbau durchgerechnet: eigener Kopf, eigener Kern,
-    eigener Antrieb und die eigene Ausruestung in so vielen Slots, wie das
-    Chassis Anker hat.
-
-    Geprueft werden die vier Regeln, die auch die Werkstatt spaeter prueft:
-    Pflichtteile, Traglast, Energie, und mov/spd mindestens 1. Die Waffe steht
-    zusaetzlich in der Liste -- fuer einen SPIELER ist ein waffenloser Aufbau
-    eine zulaessige Entscheidung, fuer einen Bausatz waere sein Standardaufbau
-    ohne Waffe aber als Vorlage wertlos.
+    Jeder Bausatz muss sich selbst bauen koennen: eigener Kopf, Kern, Antrieb
+    und die eigene Ausruestung in seinen Ankern -- mit mindestens einer Waffe
+    und SPD >= 1 nach Abzug des Gewichts.
     """
     for spec, part in all_parts():
         if part["id"] not in STATS:
@@ -2619,45 +2457,21 @@ def check_stats() -> None:
             continue
         slots = sorted(a for a in body["anchors"] if a.startswith("equip_"))
         rules = body.get("slot_rules", {})
-
-        sockets = [body] + [parts[t] for t in ("head", "feet", "core")
-                            if t in parts]
-        capacity = sum(part_stats(p["id"])["weight_capacity"] for p in sockets)
-        output = sum(part_stats(p["id"])["power_output"] for p in sockets)
+        sockets = [body] + [parts[t] for t in ("head", "feet", "core") if t in parts]
 
         equipment = [p for p in spec["parts"] if p["type"].startswith("equipment")]
-        # Waffen zuerst -- ein Bausatz, dessen Standardaufbau nichts anrichtet,
-        # ist als Vorlage wertlos, auch wenn die Regeln ihn inzwischen zulassen.
         equipment.sort(key=lambda p: p.get("category", DEFAULT_CATEGORY) != "weapon")
-
-        # Bestueckt wird BUDGETBEWUSST: das erste Teil, das an den Slot passt
-        # UND in Traglast und Energie noch hineingeht. Vorher nahm die Auswahl
-        # blind das erstbeste passende und lief damit in ihre eigene
-        # Fehlermeldung -- der Molok traegt zwei schwere Waffen, aber nicht
-        # zusaetzlich den Schulterpod, und das ist Absicht und kein Datenfehler.
         chosen = list(sockets)
-        used_weight = sum(part_stats(p["id"])["weight"] for p in sockets)
-        used_power = sum(part_stats(p["id"])["power_draw"] for p in sockets)
         for slot in slots:
             for p in equipment:
                 if p in chosen:
                     continue
-                if not fits_rule(p.get("mount_class", DEFAULT_MOUNT_CLASS),
-                                 p.get("category", DEFAULT_CATEGORY),
-                                 rules.get(slot)):
-                    continue
-                s = part_stats(p["id"])
-                if used_weight + s["weight"] > capacity:
-                    continue
-                if used_power + s["power_draw"] > output:
-                    continue
-                chosen.append(p)
-                used_weight += s["weight"]
-                used_power += s["power_draw"]
-                break
+                if fits_rule(p.get("mount_class", DEFAULT_MOUNT_CLASS),
+                             p.get("category", DEFAULT_CATEGORY), rules.get(slot)):
+                    chosen.append(p)
+                    break
 
-        stats = {k: 0 for k in ("hp", "en_max", "spd", "mov", "atk", "def",
-                                "weight", "power_draw")}
+        stats = {k: 0 for k in ("hp", "spd", "atk", "def", "weight")}
         has_weapon = False
         payload = 0
         for p in chosen:
@@ -2668,41 +2482,23 @@ def check_stats() -> None:
                 payload += s["weight"]
             if p.get("category") == "weapon":
                 has_weapon = True
-
-        # Dieselbe Kopplung wie DromeBuild.payload_slowdown(): die Zuladung
-        # bremst. Ohne sie zeigte die Tabelle hier ein Tempo an, das es im Spiel
-        # nicht gibt -- und die spd-Pruefung unten liefe ins Leere.
         stats["spd"] -= payload // SPD_WEIGHT_STEP
 
-        where = spec["id"]
         problems = []
         if not has_weapon:
             problems.append("keine Waffe")
-        if stats["weight"] > capacity:
-            problems.append(f"Traglast {stats['weight']}/{capacity}")
-        if stats["power_draw"] > output:
-            problems.append(f"Energie {stats['power_draw']}/{output}")
-        if stats["mov"] < 1:
-            problems.append(f"mov {stats['mov']}")
         if stats["spd"] < 1:
             problems.append(f"spd {stats['spd']}")
         if problems:
-            raise SystemExit(
-                f"{where}: der eigene Standardaufbau ist ungueltig -- "
-                f"{', '.join(problems)}.\n"
-                f"Ein Bausatz, der sich selbst nicht bauen kann, ist ein "
-                f"Datenfehler. Traglast des Chassis, Ausstoss des Kerns oder "
-                f"die Gewichte der Teile in STATS anpassen."
-            )
-        rows.append((where, stats, capacity, output))
+            raise SystemExit(f"{spec['id']}: der eigene Standardaufbau ist "
+                             f"ungueltig -- {', '.join(problems)}.")
+        rows.append((spec["id"], stats))
 
     print("\nStandardaufbau je Bausatz (eigene Teile, alle Anker belegt):")
-    print(f"  {'':<7}{'HP':>5}{'EN':>5}{'SPD':>5}{'MOV':>5}{'ATK':>5}{'DEF':>5}"
-          f"{'  Last':>10}{'  Energie':>11}")
-    for where, s, capacity, output in rows:
-        print(f"  {where:<7}{s['hp']:>5}{s['en_max']:>5}{s['spd']:>5}"
-              f"{s['mov']:>5}{s['atk']:>5}{s['def']:>5}"
-              f"{s['weight']:>7}/{capacity:<3}{s['power_draw']:>8}/{output:<3}")
+    print(f"  {'':<7}{'HP':>5}{'SPD':>5}{'ATK':>5}{'DEF':>5}{'Gewicht':>9}")
+    for where, s in rows:
+        print(f"  {where:<7}{s['hp']:>5}{s['spd']:>5}{s['atk']:>5}{s['def']:>5}"
+              f"{s['weight']:>9}")
 
 
 def print_slot_matrix() -> None:

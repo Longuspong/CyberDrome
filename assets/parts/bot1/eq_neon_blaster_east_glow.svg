@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Leuchtebene, erzeugt von tools/bake_godot_assets.py -->
+  <path d="M65.43 49.02 L74.02 55.09 L74.02 53.66 L65.43 47.59 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M65.43 47.59 L74.02 53.66 L74.6 53.26 L66.0 47.18 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M74.02 55.09 L74.6 54.69 L74.6 53.26 L74.02 53.66 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M54.36 56.85 L62.95 62.92 L62.95 61.49 L54.36 55.42 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M54.36 55.42 L62.95 61.49 L63.52 61.09 L54.93 55.01 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M62.95 62.92 L63.52 62.52 L63.52 61.09 L62.95 61.49 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M81.95 69.24 L81.8 68.61 L81.39 68.28 L80.77 68.31 L80.04 68.68 L79.31 69.34 L78.69 70.19 L78.27 71.1 L78.13 71.94 L78.27 72.57 L78.69 72.89 L79.31 72.87 L80.04 72.5 L80.77 71.84 L81.39 70.98 L81.8 70.07 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+</svg>

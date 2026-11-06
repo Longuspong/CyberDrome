@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_hammer" data-type="equipment" data-direction="north">
+  <title>Hammer (north)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M80.23 45.88 L91.68 53.98 L91.68 40.61 L80.23 32.51 Z" fill="var(--c-plate-dark)"/>
+  <path d="M85.29 52.62 L92.92 47.22 L78.99 37.36 L71.35 42.76 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M91.68 53.98 L92.45 53.44 L92.45 40.07 L91.68 40.61 Z" fill="var(--c-plate-dark)"/>
+  <path d="M91.68 40.61 L92.45 40.07 L80.99 31.97 L80.23 32.51 Z" fill="var(--c-plate)"/>
+  <path d="M71.64 52.51 L85.0 61.96 L85.0 44.78 L71.64 35.33 Z" fill="var(--c-plate)"/>
+  <path d="M71.35 44.67 L85.29 54.53 L85.29 52.62 L71.35 42.76 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M85.0 61.96 L92.64 56.56 L92.64 39.38 L85.0 44.78 Z" fill="var(--c-plate-dark)"/>
+  <path d="M85.29 54.53 L92.92 49.13 L92.92 47.22 L85.29 52.62 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M85.0 44.78 L92.64 39.38 L79.27 29.93 L71.64 35.33 Z" fill="var(--c-plate-light)"/>
+  <path d="M69.15 57.97 L79.66 50.55 L79.66 47.68 L69.15 55.11 Z" fill="var(--c-plate-dark)"/>
+  <path d="M69.15 55.11 L79.66 47.68 L76.98 45.79 L66.48 53.22 Z" fill="var(--c-metal)"/>
+  <path d="M66.48 56.08 L69.15 57.97 L69.15 55.11 L66.48 53.22 Z" fill="var(--c-metal)"/>
+  <path d="M54.93 62.25 L64.48 69.0 L64.48 58.5 L54.93 51.75 Z" fill="var(--c-plate)"/>
+  <path d="M64.48 69.0 L73.07 62.93 L73.07 52.43 L64.48 58.5 Z" fill="var(--c-plate-dark)"/>
+  <path d="M64.48 58.5 L73.07 52.43 L63.52 45.68 L54.93 51.75 Z" fill="var(--c-plate-light)"/>
+  <path d="M55.89 52.03 L65.43 58.78 L65.43 51.14 L55.89 44.39 Z" fill="var(--c-metal)"/>
+  <path d="M65.43 51.14 L72.11 46.42 L62.57 39.67 L55.89 44.39 Z" fill="var(--c-metal)"/>
+  <path d="M65.43 58.78 L72.11 54.06 L72.11 46.42 L65.43 51.14 Z" fill="var(--c-plate-dark)"/>
+</g>
+</svg>

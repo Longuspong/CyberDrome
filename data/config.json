@@ -21,7 +21,6 @@
   "save_enabled": false,
 
   "squad_size": 2,
-  "squad_size_min": 1,
   "squad_size_max": 4,
 
   "_kommentar_chaos": [
@@ -53,11 +52,6 @@
 
   "grid_width": 20,
   "grid_height": 20,
-
-  "tick_threshold": 100,
-  "tick_queue_length": 8,
-
-  "cycle_limit": 30,
 
   "run": {
     "_kommentar": [
@@ -108,10 +102,10 @@
       "move_base/per_spd Laufgeschwindigkeit in Feldern je Sekunde = base + spd * per_spd",
       "move_min          Untergrenze der Laufgeschwindigkeit",
       "pulse             Sekunden je Puls: Schild- und Integritaetsregeneration,",
-      "                  Statuseffekte, Provokation, Aggro-Verfall --",
-      "                  alles, was frueher zu Zugbeginn lief",
+      "                  Overtime, Aggro-Verfall",
       "time_limit        harte Grenze, danach unentschieden",
-      "think_interval    wie oft ein DROME sein Ziel neu waehlt",
+      "think_interval    wie oft ein DROME prueft, ob ein sicherer Abschuss in Reichweite ist",
+      "retarget_after    so lange darf das Ziel unerreichbar sein, dann wird neu gewaehlt",
       "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist"
     ],
     "tick": 0.05,
@@ -121,7 +115,24 @@
     "pulse": 3.0,
     "time_limit": 180.0,
     "think_interval": 0.5,
+    "retarget_after": 2.0,
     "kite_distance": 2
+  },
+
+  "passives": {
+    "_kommentar": [
+      "Zahlen der Passiven am Chassis (PartData.passive).",
+      "hit_rush (Vireo): jeder Treffer gibt seconds lang move_mult auf das Lauftempo.",
+      "presence (Molok): je Puls bucht jeder Gegner im aggro_radius aggro_per_pulse",
+      "Aggro auf ihn; guard_share des Schadens an Verbuendeten im guard_radius",
+      "geht stattdessen auf ihn.",
+      "spellcaster (Nimbus): nach einer Faehigkeit gilt die Zahl der normalen",
+      "Angriffe bis zur naechsten mal factor (abgerundet, mindestens 1)."
+    ],
+    "hit_rush": {"seconds": 2.0, "move_mult": 1.4},
+    "presence": {"aggro_radius": 2, "aggro_per_pulse": 15.0,
+                 "guard_radius": 3, "guard_share": 0.3},
+    "spellcaster": {"factor": 0.5}
   },
 
   "power_tolerance": 0.12,
@@ -129,29 +140,15 @@
   "build_attempts": 50,
 
   "deployment": {
-    "_kommentar": "Spieler unten links, Gegner oben rechts. inset: Abstand der Zonen von den Ecken -- kuerzere Anlaufzeit im Autokampf.",
-    "rows": 2,
-    "columns": 6,
+    "_kommentar": "Spieler unten links, Gegner oben rechts, je 3 Reihen x 5 Felder (Aufstellung per Ziehen vor dem Kampf). inset: Abstand der Zonen von den Ecken -- kuerzere Anlaufzeit im Autokampf.",
+    "rows": 3,
+    "columns": 5,
     "inset": 5
-  },
-
-  "map": {
-    "block_tiles": [8, 14],
-    "block_clump": [1, 3],
-    "step_chains": [2, 4],
-    "step_chain_length": [3, 6],
-    "drift_patches": [1, 3],
-    "drift_patch_size": [4, 9],
-    "drift_rails": [1, 2],
-    "drift_rail_length": [5, 8],
-    "haze_patches": [2, 3],
-    "haze_patch_size": [4, 8],
-    "max_attempts": 20
   },
 
   "combat": {
     "_kommentar": [
-      "Das Zwei-Verteidigungs-System (§11). Siehe ActionResolver.resolve_damage.",
+      "Das Zwei-Verteidigungs-System. Siehe ActionResolver.resolve_damage.",
       "SCHILD-FAKTOREN: wie stark eine Schadensart am Energieschild wirkt.",
       "  physical_vs_shield 0.8  Physisch prallt am Schild ab (braucht mehr als",
       "                          seinen Nennwert, um Schild zu brechen).",
@@ -193,18 +190,13 @@
     "proximity_far": 1.0,
     "decay_rate": 0.15,
     "decay_scale_incumbent": 0.5,
-    "decay_drop_below": 1.0,
-    "taunt_factor": 1.1
+    "decay_drop_below": 1.0
   },
 
   "ai": {
     "_kommentar": [
       "Gewichte der Nutzenbewertung. Siehe scripts/battle/ai_controller.gd.",
-      "Eine Invariante zwischen dreien davon: taunt_weight + rescue_bonus",
-      "muss UNTER kill_bonus bleiben. Sonst laeuft die KI an sicheren",
-      "Abschuessen vorbei, um jemanden umzulenken -- und das liest sich als",
-      "Fehler, nicht als Taktik. tests/test_aggro.gd prueft es.",
-      "Und eine zweite: beide incumbent_bonus-Werte muessen UNTER",
+      "Eine Invariante: beide incumbent_bonus-Werte muessen UNTER",
       "aggro_weight bleiben. Der Aggro-Term ist ein Anteil und damit auf",
       "aggro_weight gedeckelt -- ein groesserer Bonus macht die Tabelle fuer",
       "die Zielwahl wirkungslos, weil kein Herausforderer ihn je aufholen",
@@ -224,15 +216,9 @@
     "incumbent_bonus_melee": 3.0,
     "incumbent_bonus_ranged": 5.0,
     "ranged_from_range": 3,
-    "taunt_weight": 50.0,
-    "rescue_bonus": 45.0,
-    "shove_weight": 4.0,
-    "exposed_penalty": 8.0,
-    "drift_penalty": 15.0,
-    "haze_bonus": 12.0,
-    "haze_hp_threshold": 0.5,
-    "heal_multiplier": 1.5,
-    "heal_hp_threshold": 0.4
+    "approach_penalty": 2.0,
+    "focus_bonus": 4.0,
+    "shove_weight": 4.0
   },
 
   "enemy_names": ["VEX", "NUL", "KRA", "ORB", "ZYN", "HEX"]

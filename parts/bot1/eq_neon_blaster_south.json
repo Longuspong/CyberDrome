@@ -1,0 +1,105 @@
+{
+  "id": "eq_neon_blaster",
+  "code": "EQP-011",
+  "set": "bot1",
+  "type": "equipment",
+  "name": "Neon-Blaster",
+  "direction": "south",
+  "svg": "eq_neon_blaster_south.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 30,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 46.36
+    },
+    {
+      "name": "muzzle",
+      "x": 47.96,
+      "y": 70.59
+    }
+  ],
+  "color_scheme": {
+    "plate": "#140b24",
+    "plate_light": "#261840",
+    "plate_dark": "#0b0614",
+    "metal": "#3a2a5c",
+    "accent": "#ff2bd6",
+    "glow": "#ff58ff",
+    "visor": "#ff58ff",
+    "outline": "#05020a"
+  },
+  "tags": [
+    "weapon",
+    "ranged",
+    "neon"
+  ],
+  "mount_class": "light",
+  "category": "weapon",
+  "stats": {
+    "hp": 0,
+    "spd": 0,
+    "atk": 0,
+    "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
+    "weight": 5,
+    "hp_regen_pct": 0,
+    "aggro_bonus": 0,
+    "ai_role": "",
+    "passive": "",
+    "actions": [
+      {
+        "id": "act_neon_pulse",
+        "display_name": "Neon-Salve",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 3,
+        "aoe_radius": 0,
+        "power": 10,
+        "push_tiles": 0,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "energy_fraction": 0.5,
+        "interval": 1.4,
+        "trigger": null,
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null
+      },
+      {
+        "id": "act_neon_breaker",
+        "display_name": "Schildbrecher",
+        "category": "ability",
+        "targeting": "single",
+        "range_tiles": 3,
+        "aoe_radius": 0,
+        "power": 12,
+        "push_tiles": 0,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "energy_fraction": 1.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 3,
+          "weapon": "act_neon_pulse"
+        },
+        "shield_mult": 2.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null
+      }
+    ]
+  }
+}

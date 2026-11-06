@@ -125,14 +125,12 @@ function withSlotDefs(assignment, fn) {
 // test_drome_build.gd durchrechnen.
 const STOCK = {
   bot1: { body: "scout_body", head: "scout_head", feet: "scout_feet",
-          core: "scout_core", equip_left: "eq_pulse_blaster",
-          equip_right: "eq_deflector" },
+          core: "scout_core", equip_left: "eq_pulse_blaster" },
   bot2: { body: "jugg_body", head: "jugg_head", feet: "jugg_feet",
           core: "jugg_core", equip_left: "eq_siege_cannon",
-          equip_shoulder: "eq_drone_pod" },
+          equip_right: "eq_drone_pod" },
   bot3: { body: "mage_body", head: "mage_head", feet: "mage_drive",
-          core: "mage_core", equip_left: "eq_rune_staff",
-          equip_right: "eq_orbit_focus" },
+          core: "mage_core", equip_left: "eq_rune_staff" },
   bot4: { body: "strix_body", head: "strix_head", feet: "strix_feet",
           core: "strix_core", equip_center: "eq_rail_lance" },
 };
@@ -140,13 +138,11 @@ const STOCK = {
 // Erwartungswerte aus dem Testlauf der Engine (tests/test_drome_build.gd).
 const EXPECTED = {
   // SPD enthaelt den Abzug der Zuladung (DromeBuild.payload_slowdown): je vier
-  // Punkte Ausruestungsgewicht ein Punkt weniger. Der Molok bleibt bei 6, weil
-  // sein pauschales Chassis-SPD von -2 im selben Zug entfallen ist -- dieselbe
-  // Schwere, jetzt aus dem Gewicht statt aus einer Konstante.
-  bot1: { hp: 60, en_max: 40, spd: 13, mov: 4, atk: 0, def: 6, power: 207 },
-  bot2: { hp: 145, en_max: 70, spd: 6, mov: 2, atk: 0, def: 9, power: 314 },
-  bot3: { hp: 85, en_max: 110, spd: 13, mov: 5, atk: 1, def: 2, power: 257 },
-  bot4: { hp: 70, en_max: 50, spd: 8, mov: 4, atk: 6, def: 2, power: 219 },
+  // Punkte Ausruestungsgewicht ein Punkt weniger.
+  bot1: { hp: 60, spd: 14, atk: 0, def: 1, power: 130 },
+  bot2: { hp: 145, spd: 6, atk: 0, def: 9, power: 271 },
+  bot3: { hp: 85, spd: 13, atk: 0, def: 2, power: 168 },
+  bot4: { hp: 70, spd: 8, atk: 6, def: 2, power: 198 },
 };
 
 console.log("\n=== Werkstatt gegen Engine ===\n");
@@ -156,7 +152,7 @@ for (const [setId, assignment] of Object.entries(STOCK)) {
   withSlotDefs(assignment, () => {
     const stats = sandbox.buildStats(loadout);
     const want = EXPECTED[setId];
-    for (const key of ["hp", "en_max", "spd", "mov", "atk", "def"]) {
+    for (const key of ["hp", "spd", "atk", "def"]) {
       check(`${setId}.${key}`, stats[key], want[key]);
     }
     check(`${setId}.power`, Math.round(sandbox.powerScore(loadout)), want.power);
@@ -184,7 +180,7 @@ withSlotDefs({ body: "scout_body" }, () => {
 {
   const technician = { body: "jugg_body", head: "jugg_head", feet: "jugg_feet",
                        core: "jugg_core", equip_left: "eq_deflector",
-                       equip_shoulder: "eq_drone_pod" };
+                       equip_right: "eq_drone_pod" };
   withSlotDefs(technician, () => {
     check("waffenloser Techniker ist baubar",
       sandbox.validateLoadout(loadoutOf(technician)), []);

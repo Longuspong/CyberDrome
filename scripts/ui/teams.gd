@@ -41,10 +41,6 @@ const ENEMY_TINT := Color(1.16, 0.86, 0.82)
 ## Treffer, egal wen er erwischt.
 const HIT_FLASH := Color(2.4, 1.5, 1.4)
 
-## Der Haze-Grauschleier. Multipliziert sich auf den Farbstich, statt ihn zu
-## ersetzen: eine Einheit im Haze bleibt erkennbar meine.
-const HAZE := Color(0.62, 0.66, 0.76, 0.75)
-
 
 static func color(is_player: bool) -> Color:
 	return PLAYER if is_player else ENEMY
@@ -56,13 +52,6 @@ static func dark(is_player: bool) -> Color:
 
 static func tint(is_player: bool) -> Color:
 	return PLAYER_TINT if is_player else ENEMY_TINT
-
-
-## Zwei Toenungen uebereinander. ``modulate`` multipliziert komponentenweise;
-## das hier ist dieselbe Rechnung, nur explizit, damit Haze und Fraktionsfarbe
-## sich nicht gegenseitig ueberschreiben.
-static func blend(a: Color, b: Color) -> Color:
-	return Color(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a)
 
 
 ## Der Lebensbalken ueber der Figur und in den Kacheln (Wunsch des Spielers,

@@ -1,0 +1,108 @@
+{
+  "id": "eq_plasma_blade",
+  "code": "EQP-010",
+  "set": "bot1",
+  "type": "equipment",
+  "name": "Plasmaklinge",
+  "direction": "south",
+  "svg": "eq_plasma_blade_south.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 30,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 46.36
+    },
+    {
+      "name": "tip",
+      "x": 38.23,
+      "y": 79.86
+    }
+  ],
+  "color_scheme": {
+    "plate": "#28304a",
+    "plate_light": "#47547e",
+    "plate_dark": "#161b29",
+    "metal": "#5b6785",
+    "accent": "#2de2e6",
+    "glow": "#5affff",
+    "visor": "#5affff",
+    "outline": "#080b13"
+  },
+  "tags": [
+    "weapon",
+    "melee"
+  ],
+  "mount_class": "light",
+  "category": "weapon",
+  "stats": {
+    "hp": 0,
+    "spd": 0,
+    "atk": 0,
+    "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
+    "weight": 4,
+    "hp_regen_pct": 0,
+    "aggro_bonus": 0,
+    "ai_role": "",
+    "passive": "",
+    "actions": [
+      {
+        "id": "act_plasma_slash",
+        "display_name": "Plasmahieb",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 1,
+        "aoe_radius": 0,
+        "power": 12,
+        "push_tiles": 0,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "energy_fraction": 0.0,
+        "interval": 1.0,
+        "trigger": null,
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null
+      },
+      {
+        "id": "act_plasma_rend",
+        "display_name": "Aufschlitzen",
+        "category": "ability",
+        "targeting": "single",
+        "range_tiles": 1,
+        "aoe_radius": 0,
+        "power": 18,
+        "push_tiles": 0,
+        "aggro_coeff": 1.0,
+        "aggro_flat": 0,
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 3,
+          "weapon": "act_plasma_slash"
+        },
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": {
+          "id": "vulnerable",
+          "seconds": 5.0,
+          "damage_taken_mult": 1.5
+        }
+      }
+    ]
+  }
+}

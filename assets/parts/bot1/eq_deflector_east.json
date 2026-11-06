@@ -44,15 +44,10 @@
     "shield_regen": 0,
     "shield_bonus": 0.0,
     "weight": 4,
-    "can_pass_units": false,
-    "can_enter_steps": false,
-    "can_pass_blocks": false,
-    "ignores_drift": false,
-    "drift_modifier": 0,
-    "step_cost_reduced": false,
-    "grants_ignore_haze": false,
     "hp_regen_pct": 0,
     "aggro_bonus": 0,
+    "ai_role": "",
+    "passive": "",
     "actions": []
   }
 }

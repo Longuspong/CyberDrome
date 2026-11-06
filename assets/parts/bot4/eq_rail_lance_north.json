@@ -51,15 +51,10 @@
     "shield_regen": 0,
     "shield_bonus": 0.0,
     "weight": 8,
-    "can_pass_units": false,
-    "can_enter_steps": false,
-    "can_pass_blocks": false,
-    "ignores_drift": false,
-    "drift_modifier": 0,
-    "step_cost_reduced": false,
-    "grants_ignore_haze": false,
     "hp_regen_pct": 0,
     "aggro_bonus": 0,
+    "ai_role": "",
+    "passive": "",
     "actions": [
       {
         "id": "act_raillance",
@@ -69,15 +64,17 @@
         "range_tiles": 8,
         "aoe_radius": 0,
         "power": 22,
-        "requires_line_of_sight": true,
         "push_tiles": 0,
-        "status_effect": null,
         "aggro_coeff": 0.35,
         "aggro_flat": 0,
-        "taunt_turns": 0,
         "energy_fraction": 0.0,
         "interval": 2.6,
-        "trigger": null
+        "trigger": null,
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null
       },
       {
         "id": "act_rail_pierce",
@@ -87,19 +84,21 @@
         "range_tiles": 8,
         "aoe_radius": 0,
         "power": 26,
-        "requires_line_of_sight": true,
         "push_tiles": 0,
-        "status_effect": null,
         "aggro_coeff": 0.35,
         "aggro_flat": 0,
-        "taunt_turns": 0,
         "energy_fraction": 0.0,
         "interval": 2.0,
         "trigger": {
           "kind": "attacks",
           "every": 4,
           "weapon": "act_raillance"
-        }
+        },
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null
       }
     ]
   }

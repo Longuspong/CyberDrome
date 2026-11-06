@@ -1,215 +1,67 @@
 # CyberDrome
 
-Rundenbasiertes 2D-Tactics-RPG im Cyberpunk-/Neon-Setting, **isometrisch**
-(Kamera 45 Grad von oben auf ein gedrehtes Gitter).
-Ziel-Engine: **Godot**, Ziel-Plattformen: **Android** und **Desktop**.
+**Autobattler in Echtzeit** im Cyberpunk-/Neon-Setting, **isometrisch**
+(Kamera 45 Grad von oben auf ein gedrehtes 20x20-Gitter). Engine: **Godot
+4.7**, Ziel: Handy im Hochformat (PWA auf Vercel), Android spaeter.
 
-Gespielt wird mit **DROMEs** – *Death Robot Omni Machine Executor* –, modularen
-Kampfmaschinen aus einem **Kern**, drei Hauptteilen (**Kopf**, **Koerper**,
-**Fuesse**) und den **Ausruestungs­gegenstaenden**, die der Koerper ueber seine
-Anker zulaesst (meist zwei, gelegentlich einer oder drei).
+Gespielt wird mit **DROMEs** -- *Death Robot Omni Machine Executor* --,
+Kampfmaschinen aus Chassis, Kopf, Antrieb, Kern und der Ausruestung, die das
+Chassis ueber seine Halter zulaesst. Der Spieler entscheidet ueber Aufbau,
+Squad und Belohnungen; im Kampf steuert die KI beide Seiten.
 
-Die komplette Optik laeuft ueber **SVG** statt Pixelart. Der Grund ist bewusst
-gewaehlt: modulare Teile lassen sich kombinieren, umfaerben und aufloesungs­frei
-skalieren, ohne dass fuer jede Kombination ein eigener Sprite gezeichnet werden
-muss. Siehe [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
-
-Aktueller Stand: **SVG-Werkstatt** plus **spielbarer Kampf-MVP** in Godot 4.7.
+Die Optik laeuft ueber **SVG** statt Pixelart (kombinierbar, umfaerbbar,
+aufloesungsfrei). Arbeitsstand und Entscheidungen: `docs/PROJEKTSTAND.md`,
+der laufende Neuentwurf des Spielprinzips: `docs/NEUANFANG.md`.
 
 ```bash
-python3 main.py                  # SVG-Werkstatt im Browser
-godot --path .                   # Spiel (Werkstatt-Squad -> Chaos-Virus)
-godot --headless --script res://tests/run_tests.gd    # Tests
-node tools/check_workshop_stats.js                    # Werkstatt gegen Engine
+godot --path .                                         # Spiel
+godot --headless --path . --script res://tests/run_tests.gd   # Tests
+bash tools/build_web.sh                                # Web-Export nach build/web
+python3 main.py                                        # SVG-Werkstatt im Browser
+node tools/check_workshop_stats.js                     # Werkstatt gegen Engine
 ```
 
-Das Spiel hat ein Hauptmenue mit zwei Wegen: **Werkstatt** (Loadout bauen)
-und **Chaos-Virus** (Kampf). Godot rastert die Quell-SVGs nicht direkt -- es
-kennt keine CSS-Variablen --, deshalb erzeugt `tools/bake_godot_assets.py`
-den Satz unter `assets/parts/`. Wie fein er gerastert wird, stellt
-`tools/set_import_scale.py` ein (Vierfach; die Engine rechnet ueber
-`IsoView.fit_sprite()` auf den 128er Entwurfsraum zurueck).
+Godot rastert die Quell-SVGs nicht direkt -- es kennt keine CSS-Variablen --,
+deshalb erzeugt `tools/bake_godot_assets.py` den Satz unter `assets/parts/`.
+Die Teilwerte stehen in `tools/build_sample_parts.py` (Tabelle `STATS`) und
+landen von dort in den Teil-JSONs unter `parts/`.
 
-### Echtzeit-Autokampf und PWA
+### Kampf
 
-Jeder Kampf laeuft in **Echtzeit**: alle DROMEs bewegen sich und schiessen
-gleichzeitig, die KI steuert beide Seiten. Jede Waffe hat ihr eigenes
-Schussintervall, SPD ist die Laufgeschwindigkeit, Faehigkeiten loesen von
-selbst aus (jeder 3. Blasterschuss ist die Streusalve). Unten stehen **Tempo
-1x/2x**, **Pause**, **Log** und **Folgen**. Ab 60 Sekunden greift die
-**Overtime** (`data/config.json`, Abschnitte `realtime` und `overtime`).
-`tests/test_autobattle.gd` sichert ab, dass ein Spiegelkampf auf beiden Seiten
-gleich oft gewonnen wird.
-
-Als **PWA** gebaut wird das Spiel von `tools/build_web.sh` (Godot und nur die
-zwei Web-Templates holen, Assets importieren, exportieren nach `build/web`).
-Dasselbe Skript benutzen:
-
-* **Vercel** -- `vercel.json` setzt Build-Befehl und Ausgabeordner. Die
-  Startseite des Deployments ist das Spiel, nicht die Werkstatt.
-* **GitHub Pages** -- `.github/workflows/web.yml` (einmalig: *Settings ->
-  Pages -> Source: GitHub Actions*).
-
-Lokal:
-
-```bash
-bash tools/build_web.sh
-cd build/web && python3 -m http.server      # http://localhost:8000
-```
-
-Die SVG-Werkstatt liegt unter `werkstatt/` und wird NICHT mit gehostet: sie
-braucht die REST-API aus `main.py` und laeuft nur lokal.
+* Alle DROMEs handeln **gleichzeitig**. `BattleManager.tick()` rechnet in
+  festen Schritten (0,05 s), derselbe Seed ergibt denselben Kampf.
+* Das Feld ist **frei**: kein Gelaende, keine Sichtlinie. Das Gitter traegt
+  Reichweite, Bewegung, Aufstellung und die Iso-Optik; zwei DROMEs teilen
+  sich nie ein Feld.
+* Jede Waffe hat ihr **Schussintervall**, SPD ist die Laufgeschwindigkeit,
+  Faehigkeiten loesen **von selbst** aus (jeder N-te Angriff, nach Zeit oder
+  wenn ein Gegner danebensteht).
+* Je **Puls** (3 s): Schildregeneration, Drohnen-Pod, Overtime (ab 60 s).
+* Unten: Tempo 1x/2x, Pause, Log, Folgen. Kamera folgt dem Geschehen,
+  Ziehen und Zoomen per Finger.
 
 ### Lauf (Roguelike)
 
-Im Hauptmenue startet **Lauf (Roguelike)** eine Folge von acht Autokaempfen
-mit drei Leben (`scripts/core/run_state.gd`, Werte in `data/config.json`
-unter `run`):
-
-* Start mit Vireo (Puls-Blaster) und Nimbus (Runenstab), je ein Halter frei.
-* Vor jedem Kampf: Region, Mutator, Gegnerzahl und -staerke -- aus demselben
-  Seed wie der Kampf selbst, also exakt.
-* Die Gegnerstaerke folgt einer festen Kurve, nicht dem eigenen Squad.
-* Sieg: eine von drei Belohnungen -- Teile aus der Gegnerausruestung (man
-  waehlt DROME und Halter), in Runde 2 und 5 ein neuer DROME mit Waffe,
-  gelegentlich *Notstrom* (+1 Leben). Niederlage: ein Leben weniger.
+Acht Kaempfe, drei Leben, alles am Seed (`scripts/core/run_state.gd`, Werte
+unter `run` in `data/config.json`). Vor jedem Kampf drei Gegner zur Wahl
+(Leicht / Normal / Elite), nach dem Sieg Beute aus der Gegnerausruestung.
 
 ### Mobile first (Hochformat)
 
-Das Spiel ist fuer ein Handy im **Hochformat** entworfen; das Querformat wird
-angeboten, ist aber zweitrangig (`CLAUDE.md`, Abschnitt Ausrichtung).
+* **Entwurfsraum 450x800**: ein Entwurfspixel ist etwa ein CSS-Pixel.
+* **`scripts/ui/ui_kit.gd`**: Seitenrahmen, Karten, grosse Knoepfe, Tab-Leiste
+  unten (Spielen, Hangar, Optionen).
+* **Hangar**: Reiter *Squad* (max. 4) und *Umbau* (Halter als Formen:
+  Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern).
+* Wischen scrollt jede Liste, langes Druecken zeigt den Erklaertext.
+* Optionen: Schriftgroesse (nur Text), Animationen reduzieren, Vollbild.
 
-* **Entwurfsraum 450x800** (`project.godot`): ein Entwurfspixel ist auf dem
-  Handy etwa ein CSS-Pixel. `autoload/accessibility.gd` vergroessert nur im
-  Querformat nach und haelt die logische Flaeche ueber 360x600.
-* **`scripts/ui/ui_kit.gd`**: Seitenrahmen, Kopfzeile, Karten, grosse Knoepfe
-  und die **Tab-Leiste unten** (Spielen, Garage, Inventar, Optionen). Im
-  Querformat bleibt die Inhaltsspalte zentriert und hoechstens 640 breit.
-* **Kampf**: Kopfleiste mit Zugreihenfolge und Status, unten die
-  Daumenleiste (Tempo, Pause, Log, Reihe, Folgen). Die Kamera folgt dem
-  aktiven DROME; ein Finger zieht, zwei Finger zoomen (Mausrad und mittlere
-  Taste am Desktop). Wer selbst zieht, schaltet das Folgen ab.
-* **Hangar** (`scripts/ui/hangar_screen.gd`, ersetzt Garage, Inventar und
-  Werkstatt): Reiter *Squad* -- Karussell mit hoechstens vier DROMEs, darunter
-  alle DROMEs, ausgegraut wer schon dabei ist; Reiter *Umbau* -- DROME-Auswahl,
-  die Halter als Formen (Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis
-  Kern), die passenden Teile in ihrer eigenen Form, Vorschau mit Wertaenderung
-  und "Einbauen". Leicht passt nach oben in groessere Halter, schwer nur in
-  schwer (`scripts/core/slot_rules.gd`, `scripts/ui/slot_shape.gd`).
-* **Wischen** scrollt jede Liste, auch wenn der Finger auf einer Karte
-  beginnt; ein Wischer loest den Knopf darunter nicht aus.
-* **Langes Druecken** zeigt den Erklaertext (`tooltip_text`) jedes Elements.
-* **Optionen**: Schriftgroesse (nur der Text waechst, das Layout bleibt),
-  *Animationen reduzieren* (folgt
-  `prefers-reduced-motion`), Vollbild. Gespeichert in `user://settings.json`.
+### PWA
 
-### Kampf bedienen
-
-| | |
-|---|---|
-| **Klick auf einen DROME** | heftet seinen **Aktionsring** an -- er bleibt stehen, bis er geloest wird |
-| **Zeiger auf eine Aktion** | faerbt ihre **Reichweite** ein und schreibt die **Schadenszahl** ueber jedes Ziel, ohne dass sie gewaehlt sein muss |
-| **Klick auf ein freies Feld** | laeuft dorthin (Pfad und Gleitweg werden vorher gezeigt) |
-| **Rechtsklick / ESC** | loest der Reihe nach: gewaehlte Aktion, angehefteter Ring, Bewegung |
-| **Leertaste** | Zug beenden |
-
-Der Ring liess sich vorher nicht bedienen: er hing am Hovern und verschwand,
-sobald der Zeiger die Einheit verliess -- zwischen DROME und Knoepfen liegt
-leere Flaeche. Die Aktionsleiste wiederum stand rechnerisch 790 Pixel unter
-dem Bildrand. Beides ist behoben; die Leiste ist jetzt nach Budget getrennt
-(**Angriff** / **Faehigkeit**, mit der Zahl der verbliebenen Aktionen).
-
-### Zwei Werkstaetten, zwei Aufgaben
-
-| | |
-|---|---|
-| **SVG-Werkstatt** (`python3 main.py`) | Bauteile zeichnen und importieren, Anker setzen, Paletten pflegen. Das Asset-Werkzeug. |
-| **Godot-Werkstatt** (im Spiel) | Loadout bauen, Stats sehen, Squad zusammenstellen und in den Kampf schicken. |
-
-### Godot-Werkstatt in Kurzform (abgeloest durch den Hangar)
-
-Die folgenden Abschnitte beschreiben die fruehere Werkstatt im Querformat. Ihre
-Regeln (freie Exemplare, Halterliste, Vorschau vor dem Einbau) leben im Umbau-
-Reiter des Hangars weiter.
-
-Links steht die **ganze Bibliothek**, nach Bauteiltyp gruppiert -- nicht nur,
-was in den gerade angewaehlten Slot passt. Sie besteht aus **Kacheln**: das
-Bauteil so gross, wie die Spalte es zulaesst, darueber nur sein Name. Gewaehlt
-wird damit das Bild und nicht die Zeile.
-
-Der Zeiger auf einer Kachel zeigt dreierlei: **wie es aussieht** (die Vorschau
-in der Mitte baut es probeweise ein), **was es ist** (Werte, Klasse, Wirkung --
-in einem Feld an der Kante der Bibliothek) und **was es aendert** (jede
-Wertaenderung, das Gewicht vorher/nachher und die Regeln, die danach
-brechen wuerden). Was in kein Halter dieses Chassis darf, wird nicht
-weggelassen, sondern gedaempft und begruendet.
-
-Sockelteile baut ein **Klick** ein -- ein Chassis kann ohnehin nur ins
-Chassis. Ausruestung hat mehrere Halter, und welcher gemeint ist, entscheidet
-der Spieler: der Klick oeffnet die **Halterliste direkt auf der Kachel**, eine
-Zeile je Halter mit Klasse und Belegung (`Slot 2 · rechts (schwer)  frei`).
-Halter, die das Teil nicht nehmen, stehen mit ihrem Grund dabei. Der Weg
-rechts zur Slotliste und zurueck entfaellt damit.
-
-Rechts steht, **wo was steckt** (mit Miniatur, weil ein Teilename nicht sagt,
-ob es der leuchtende Ring oder der Stab ist), was der Aufbau **wert** ist -- in
-Gruppen statt als Zahlenliste -- und was er im Kampf **tun kann**: seine
-Aktionen, getrennt nach Angriff und Faehigkeit.
-
-#### Keine Bau-Budgets: die Werkstatt ist kein Tuersteher
-
-Frueher deckelten zwei Grenzen den Aufbau -- die **Traglast** (Gewicht gegen
-die Kapazitaet des Chassis) und der **Energiebedarf** (der Strombedarf der
-Teile gegen den Ausstoss des Kerns). Beide blockierten das Bauen, und beide
-produzierten Unsinn: ein Vireo mit zwei Puls-Blastern riss die Traglast um
-*einen* Punkt (19/18), der offensichtlichste Standard-Aufbau der Welt liess
-sich nicht bauen.
-
-Die Deckel sind gestrichen. **Energie ist Mana** (`en_max` / `en_regen`, eine
-Faehigkeit kostet `en_cost` im Kampf), **Gewicht ist Tempo** (Zuladung zieht
-SPD, siehe `DromeBuild.payload_slowdown()`). Was frueher ein harter Riegel war,
-ist jetzt ein weicher Preis: der teure Aufbau ist baubar, aber langsam und
-energiehungrig -- *moeglich, nur nicht optimal*. Die einzige verbliebene Grenze
-ist strukturell: vier Sockel, passende Teile in passenden Haltern, `mov` und
-`spd` mindestens 1. Letzteres ist zugleich die natuerliche Obergrenze der
-Masse -- man kann Gewicht stapeln, bis der DROME festfaehrt.
-
-Damit entfaellt auch der fruehere Playtest-Schalter samt
-`playtest.ignore_build_limits`: es gibt keine Budgetgrenze mehr, die man
-abschalten muesste. Die Zahlen (Gewichte, `spd_weight_step`, Faehigkeitskosten)
-sind Balancing und werden weiter getunt -- aber nicht mehr als Verbot.
-
-#### Aktionen je Zug: Angriffe von den Waffen, Faehigkeiten ohne Deckel
-
-Seit `docs/GAME_DESIGN.md` §13 kommen die **Faehigkeiten von den Waffen** (jede
-Waffe traegt ihren Angriff UND eine eigene Faehigkeit); der **Kern** ist reine
-Energie-Identitaet. Daraus folgt der Aktions-Haushalt je Zug:
-
-* **Angriff je Waffe** -- zwei Waffen sind zwei Angriffe (`TurnState.attack_actions`).
-* **Faehigkeit ohne Deckel** -- jede eigene Faehigkeit ist **einmal pro Zug**
-  ziehbar, so viele man bezahlen kann. Kein Zaehler; gebremst wird ueber Energie
-  und Abklingzeit.
-
-Die zwei Bremsen gehoeren zwei ARTEN von Faehigkeit, umschaltbar in
-`data/config.json` unter `abilities.brake` (Vorgabe: `beides`):
-
-| Modus | was bremst |
-|---|---|
-| `beides` (Vorgabe) | jede Faehigkeit von der Bremse, die zu ihr gehoert -- energetische ueber `en_cost`, mechanische ueber `cooldown_turns` |
-| `energie` | nur `en_cost` -- mechanische Faehigkeiten haetten dann keine Bremse |
-| `abklingzeit` | nur `cooldown_turns` -- energetische waeren dann gratis |
-
-Energetische Faehigkeiten (Streusalve, Arkanwelle, Orbit-Sog ...) bezahlen in
-Energie und haben Abklingzeit 0; die einzige mechanische (Sperrfeuer der Kanone)
-zieht keinen Strom und bremst ueber ihre Abklingzeit. Deshalb ist `beides` die
-entschiedene Vorgabe. Gemessene Wirkung und die Designfrage dahinter stehen in
-`docs/GAME_DESIGN.md` §8 und §13.
-
-Beide schreiben denselben Squad -- die Godot-Werkstatt nach
-`user://squad.json`, die SVG-Werkstatt nach `builds/squad.json`. Beim Start
-gewinnt die neuere. Nur der erste Weg ueberlebt einen Export: `builds/` liegt
-im Repo und nicht im Spielpaket, die SVG-Werkstatt ist ein Entwicklerwerkzeug
-und laeuft ohnehin nur neben dem Quellbaum.
+`tools/build_web.sh` holt Godot und die zwei Web-Templates und exportiert
+nach `build/web`. Vercel (`vercel.json`) und GitHub Pages
+(`.github/workflows/web.yml`) benutzen dasselbe Skript. Die SVG-Werkstatt
+unter `werkstatt/` wird nicht mit gehostet (braucht `main.py`).
 
 ---
 
@@ -344,48 +196,22 @@ tools/
   build_sample_parts.py      Iso-Renderer + Beispielsatz; ausfuehrbare Format-Spec
   bake_godot_assets.py       loest die CSS-Variablen auf -> assets/parts/
   set_import_scale.py        wie fein Godot rastert (Vierfach) + Mipmaps
-  export_parts_table.py      Teile-Uebersicht als Excel-Mappe (erzeugt, nicht gepflegt)
+  build_terrain_tiles.py     Bodenkacheln der Regionen (derselbe Renderer)
+  playtest/                  Kaempfe ohne Bildschirm, mit Aktionslog
 tests/
   run_tests.gd               Testlauf ohne Editor
   screenshot.gd              Bild einer Szene -- Tiefensortierung, Verdeckung
-  screenshot_combat_ui.gd    Bild der Kampf-BEDIENUNG: Ring angeheftet, Reichweite,
-                             Schadensvorschau. Kein Unit-Test sieht, ob ein Ring
-                             verschwindet, sobald man den Zeiger zu ihm bewegt.
-  visual_check.gd            Blicktest fuer die Projektion allein
+  smoke_ui.gd                baut den Hangar headless auf
 docs/
-  GAME_DESIGN.md             Setting, DROME-Aufbau, Teile-Codes, Aggro, Asset-Strategie
-  GODOT_INTEGRATION.md       wie die Exporte spaeter in die Engine kommen
-  cyberdrome_teile.xlsx      erzeugte Teileliste -- ein Blatt je Bauteiltyp
+  PROJEKTSTAND.md            was gebaut, gemessen und entschieden ist
+  NEUANFANG.md               Neuentwurf des Spielprinzips (zur Besprechung)
+  GAME_DESIGN.md             Setting, DROME-Aufbau, Teile-Codes, Asset-Strategie
+                             (Spielregeln darin teils veraltet, siehe Kopf)
+  GODOT_INTEGRATION.md       Engine-Version, Import, Export
+  PLAYTEST_2026-11.md        Playtest des Echtzeit-Kampfs
 data/
   config.json                Balancing-Stellschrauben ausserhalb der Bauteile
 ```
-
-## Teileliste als Excel-Mappe
-
-```bash
-python3 tools/export_parts_table.py            # -> docs/cyberdrome_teile.xlsx
-```
-
-Ein Blatt je Bauteiltyp -- **Koerperteile**, **Kopfteile**, **Fussteile**,
-**Kerne** -- und zwei fuer die Ausruestung, getrennt nach **Waffe** und
-**Sonstigem** (Schild, Support). Jedes Blatt zeigt nur die Werte, die sein Typ
-ueberhaupt fuehrt; ein Kopf hat keine Traglast, ein Kern keine Bewegung.
-Darueber liegt das Blatt **Alle Teile** mit dem vollen Wertesatz zum Filtern,
-darunter **Chassis & Slots** und die **Kompatibilitaets**-Matrix.
-
-Alle Zahlen kommen aus den Teil-JSONs. Wer einen Wert aendern will, aendert ihn
-dort und laesst die Mappe neu erzeugen -- eine von Hand gefuehrte Teileliste
-laeuft nach dem dritten Set auseinander.
-
-Das Skript prueft sich beim Erzeugen selbst: es rechnet die Formeln der Mappe
-nach und vergleicht sie gegen die Regeln im Code -- die Slot-Matrix gegen
-`fits_rule()`, die Kampfwert-Spalten gegen `DromeBuild.power_score()`. Ein
-verrutschter Zellbezug faellt beim Ansehen nicht auf, eine falsche Antwort
-schon.
-
-Die Formeln haben nach dem Lauf noch keine gespeicherten Ergebnisse -- Excel
-und LibreOffice rechnen sie beim Oeffnen aus. Nur Werkzeuge, die die Datei ohne
-Tabellenprogramm lesen (pandas, Vorschaubilder), sehen dort leere Zellen.
 
 ## Ein neues Teil hinzufuegen
 

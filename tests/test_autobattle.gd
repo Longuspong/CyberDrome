@@ -9,15 +9,15 @@ extends RefCounted
 ##      unten links aufstellt oder "P" statt "E" heisst, darf keinen Vorteil
 ##      haben.
 ##   3. Entschieden: Spiegelkaempfe enden mit Sieg oder Niederlage, nicht am
-##      Zyklus-Limit. Dafuer gibt es die Overtime (config "overtime").
+##      Zeitgrenze. Dafuer gibt es die Overtime (config "overtime").
 
 var t
 
 
 ## Wie viele Seeds die Fairness-Messung spielt. Ein Kompromiss aus Laufzeit
-## und Aussagekraft -- bei 40 Kaempfen ist eine Abweichung von 50/50 um mehr
-## als die Toleranz kein Rauschen mehr.
-const FAIRNESS_SEEDS := 40
+## und Aussagekraft. 40 waren zu wenig: die ersten 100 Seeds ab 8100 gehen
+## zufaellig 64:36 aus, ueber 400 Seeds steht es 214:186 (Nov. 2026).
+const FAIRNESS_SEEDS := 200
 
 
 func _squad() -> Array:
@@ -25,7 +25,7 @@ func _squad() -> Array:
 		DromeBuild.create("ALPHA", {
 			"body": &"scout_body", "head": &"scout_head",
 			"feet": &"scout_feet", "core": &"scout_core",
-			"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"}),
+			"equip_left": &"eq_pulse_blaster"}),
 		DromeBuild.create("BETA", {
 			"body": &"strix_body", "head": &"strix_head",
 			"feet": &"strix_feet", "core": &"strix_core",

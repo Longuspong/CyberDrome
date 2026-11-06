@@ -85,6 +85,9 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String) -> Dicti
 		sprite.z_index = rank
 		parent.add_child(sprite)
 		sprites[entry["slot"]] = sprite
+		var glow_path: String = entry["view"].get("glow", "")
+		if glow_path != "" and ResourceLoader.exists(glow_path):
+			sprite.add_child(NeonGlow.create(load(glow_path), sprite.texture))
 
 	return sprites
 

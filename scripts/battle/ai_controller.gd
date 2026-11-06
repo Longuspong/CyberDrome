@@ -7,17 +7,23 @@ extends RefCounted
 ## DROME. Der tut dann eins von drei Dingen -- schiessen, eine Faehigkeit
 ## ausloesen oder einen Schritt laufen:
 ##
-##   * ZIEL: alle ``realtime.think_interval`` Sekunden neu gewaehlt, nach
-##     derselben Bewertung wie frueher (Schaden, Schild, Abschuss, Aggro,
-##     Amtsinhaber). Eine Provokation erzwingt das Ziel.
+##   * ZIEL: wird GEHALTEN (Nov. 2026). Neu gewaehlt wird nur, wenn es faellt,
+##     laenger als ``realtime.retarget_after`` Sekunden nicht angreifbar ist
+##     oder ein sicherer Abschuss in Reichweite steht. Die Wahl selbst bewertet
+##     Schaden, Schild, Abschuss, Aggro, Weg -- und wie viele Verbuendete das
+##     Ziel schon angreifen (Fokus, ``ai.focus_bonus``).
 ##   * WAFFEN: jede laedt fuer sich (``interval``). Ist sie geladen und ein
 ##     Gegner in Reichweite, schiesst sie -- auf das Ziel, sonst auf den besten
 ##     erreichbaren. Jeder N-te Angriff ist die Faehigkeit der Waffe.
 ##   * GADGETS: nach Zeit (Orbit-Sog) oder Ereignis (Boost, wenn ein Gegner
 ##     danebensteht).
-##   * BEWEGUNG nach Rolle: Nahkaempfer ruecken bis zum Kontakt vor,
-##     Fernkaempfer laufen nur, bis sie schiessen koennen, und weichen aus,
-##     wenn ihnen jemand zu nahe kommt.
+##   * BEWEGUNG nach der Rolle des CHASSIS (``PartData.ai_role``), nicht nach
+##     der Waffe -- ein Molok mit Kanone bleibt Frontlinie:
+##       vanguard    rueckt vor, weicht nie aus
+##       skirmisher  mit Fernwaffe kiten, mit Nahkampfwaffe am Ziel bleiben
+##       sniper      haelt Abstand, weicht nur aus, wenn jemand danebensteht
+##       controller  wartet hinter der Frontlinie, bis die im Kampf ist
+##     Ohne Rolle wie frueher nach Waffenreichweite.
 ##
 ## Die Gewichte stehen in data/config.json ("ai", "realtime").
 ##
@@ -59,12 +65,24 @@ func update(unit: Unit, dt: float) -> void:
 		unit.step_left -= dt
 		if unit.step_left > 0.0:
 			return
+	# Betaeubt: weder laufen noch schiessen, die Waffen laden aber weiter.
+	if unit.is_stunned():
+		return
 
 	var target := _current_target(unit)
-	if unit.think_left <= 0.0 or target == null:
+	if target != null and not _can_shoot(unit, unit.tile, target):
+		unit.target_blocked += dt
+	elif target != null:
+		unit.target_blocked = 0.0
+	if target == null or unit.target_blocked > float(_realtime.get("retarget_after", 2.0)):
+		_retarget(unit, choose_target(unit))
+		target = _current_target(unit)
+	elif unit.think_left <= 0.0:
 		unit.think_left = float(_realtime.get("think_interval", 0.5))
-		target = choose_target(unit)
-		unit.target_id = target.unit_id if target != null else null
+		var kill := _sure_kill(unit)
+		if kill != null and kill != target:
+			_retarget(unit, kill)
+			target = kill
 	if target == null:
 		return
 
@@ -86,11 +104,32 @@ func update(unit: Unit, dt: float) -> void:
 		_walk(unit, next)
 
 
+func _retarget(unit: Unit, target: Unit) -> void:
+	unit.target_id = target.unit_id if target != null else null
+	unit.target_blocked = 0.0
+	unit.think_left = float(_realtime.get("think_interval", 0.5))
+
+
+## Ein Gegner in Reichweite, den ein einziger Treffer umlegt -- der einzige
+## Grund, ein erreichbares Ziel vorzeitig aufzugeben.
+func _sure_kill(unit: Unit) -> Unit:
+	var best: Unit = null
+	var best_hp := 1 << 30
+	for foe in battle.enemies_of(unit):
+		if foe.shield > 0 or foe.hp >= best_hp:
+			continue
+		for mount in unit.mounts:
+			var attack: ActionData = mount["attack"]
+			if battle.resolver.target_blocker(unit, foe.tile, attack) != "":
+				continue
+			if battle.resolver.preview_damage(unit, foe, attack) >= foe.hp:
+				best = foe
+				best_hp = foe.hp
+				break
+	return best
+
+
 func _current_target(unit: Unit) -> Unit:
-	if unit.is_taunted():
-		var forcer := battle.resolver.unit_by_id(unit.taunted_by())
-		if forcer != null and forcer.is_alive():
-			return forcer
 	var target := battle.resolver.unit_by_id(unit.target_id)
 	if target == null or not target.is_alive():
 		return null
@@ -103,12 +142,8 @@ func _current_target(unit: Unit) -> Unit:
 
 ## Wen soll ``unit`` gerade angreifen? Der Gegner mit der besten Bewertung
 ## fuer die staerkste eigene Waffe -- abzueglich des Weges, den es bis dahin
-## noch ist. Eine Provokation erzwingt das Ziel.
+## noch ist.
 func choose_target(unit: Unit) -> Unit:
-	if unit.is_taunted():
-		var forcer := battle.resolver.unit_by_id(unit.taunted_by())
-		if forcer != null and forcer.is_alive():
-			return forcer
 	var reach := unit.attack_range()
 	var best: Unit = null
 	var best_score := -INF
@@ -120,10 +155,22 @@ func choose_target(unit: Unit) -> Unit:
 			score = 0.0
 		var gap := maxi(0, Grid.distance(unit.tile, foe.tile) - reach)
 		score -= float(gap) * _w("approach_penalty", 2.0)
+		score += float(_focused_by(unit, foe)) * _w("focus_bonus", 4.0)
 		if score > best_score:
 			best_score = score
 			best = foe
 	return best
+
+
+## Wie viele Verbuendete greifen ``foe`` gerade an? Grundlage des Fokus:
+## ein Team, das sich auf ein Ziel einigt, statt sich in Zweikaempfe zu
+## verteilen.
+func _focused_by(unit: Unit, foe: Unit) -> int:
+	var count := 0
+	for ally in battle.allies_of(unit):
+		if ally != unit and ally.target_id == foe.unit_id:
+			count += 1
+	return count
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +189,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		var aim := _aim(unit, ability, target)
 		if not aim.is_empty():
 			_execute(unit, aim["tile"], ability, aim["target"])
-			mount["count"] = 0
+			mount["count"] = _count_after_ability(unit, ability)
 			return true
 	var shot := _aim(unit, attack, target)
 	if shot.is_empty():
@@ -154,18 +201,30 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	return true
 
 
+## Wie viele Angriffe nach einer Faehigkeit schon "abgezaehlt" sind.
+##
+## Normalerweise keiner. Die Passive ``spellcaster`` (Nimbus) halbiert die
+## Zahl der normalen Angriffe bis zur naechsten Faehigkeit, abgerundet und
+## mindestens einer: Vortex jeder 5. Angriff (4 normale) -> danach 2 normale;
+## Blaster jeder 3. (2 normale) -> danach 1.
+func _count_after_ability(unit: Unit, ability: ActionData) -> int:
+	if unit.passive() != "spellcaster":
+		return 0
+	var normals := int(ability.trigger_every) - 1
+	var factor := float((Config.section("passives").get("spellcaster", {}) as Dictionary).get("factor", 0.5))
+	var halved := maxi(1, int(floor(float(normals) * factor)))
+	return maxi(0, normals - halved)
+
+
 ## Worauf zielt ``action``? Das Ziel, wenn es geht; sonst der am besten
 ## bewertete andere Gegner in Reichweite. Leer, wenn niemand erreichbar ist.
 func _aim(unit: Unit, action: ActionData, target: Unit) -> Dictionary:
 	if target != null and battle.resolver.target_blocker(unit, target.tile, action) == "" \
 			and _action_score(unit, action, target) > 0.0:
 		return {"tile": target.tile, "target": target}
-	if unit.is_taunted() and action.is_attack():
-		return {}
 	var best := {}
 	var best_score := 0.0
-	var pool := battle.allies_of(unit) if action.is_heal() else battle.enemies_of(unit)
-	for other in pool:
+	for other in battle.enemies_of(unit):
 		if battle.resolver.target_blocker(unit, other.tile, action) != "":
 			continue
 		var score := _action_score(unit, action, other)
@@ -258,6 +317,26 @@ func next_step(unit: Unit, target: Unit) -> Vector2i:
 		return unit.tile
 	var ranged := unit.attack_range() >= int(_w("ranged_from_range", 3.0))
 	var shooting := _can_shoot_anyone(unit, unit.tile)
+	match unit.ai_role():
+		"vanguard":
+			# Frontlinie: nie zurueck. Wer schon trifft, bleibt stehen.
+			if _can_shoot(unit, unit.tile, target) or shooting:
+				return unit.tile
+			return _approach(unit, target)
+		"sniper":
+			# Haelt seine Stellung und weicht nur aus, wenn jemand direkt
+			# danebensteht -- kein Dauerweglaufen.
+			if shooting:
+				return _kite_step(unit, target, 1)
+			return _approach(unit, target)
+		"controller":
+			# Wartet hinter der Frontlinie, bis die im Kampf ist. Wer selbst
+			# bedraengt wird, wartet natuerlich nicht.
+			if not shooting and not _frontline_engaged(unit) \
+					and _nearest_foe(unit, unit.tile) > int(_realtime.get("kite_distance", 2)):
+				return unit.tile
+		"skirmisher":
+			pass
 	if ranged and shooting:
 		return _kite_step(unit, target)
 	if _can_shoot(unit, unit.tile, target):
@@ -291,20 +370,17 @@ func _can_shoot_anyone(unit: Unit, from_tile: Vector2i) -> bool:
 ## Fernkaempfer in Reichweite: stehen bleiben -- ausser ein Gegner kommt
 ## naeher als ``realtime.kite_distance``. Dann ein Feld zurueck, sofern von
 ## dort noch jemand zu treffen ist.
-func _kite_step(unit: Unit, target: Unit) -> Vector2i:
-	var limit := int(_realtime.get("kite_distance", 2))
+func _kite_step(unit: Unit, target: Unit, limit: int = -1) -> Vector2i:
+	if limit < 0:
+		limit = int(_realtime.get("kite_distance", 2))
 	var here := _nearest_foe(unit, unit.tile)
 	if here > limit:
 		return unit.tile
-	var profile := unit.move_profile()
 	var best: Array[Vector2i] = [unit.tile]
 	var best_gap := here
 	for dir in Grid.directions():
 		var tile: Vector2i = unit.tile + dir
-		if not battle.grid.can_stand_on(tile, profile):
-			continue
-		if battle.grid.terrain_class(tile) == Terrain.TClass.DRIFT \
-				and not unit.stats.get("ignores_drift", false):
+		if not battle.grid.can_stand_on(tile, unit.unit_id):
 			continue
 		var gap := _nearest_foe(unit, tile)
 		if gap < best_gap or not _can_shoot_anyone(unit, tile):
@@ -315,6 +391,20 @@ func _kite_step(unit: Unit, target: Unit) -> Vector2i:
 		elif gap > here:
 			best.append(tile)
 	return best[battle.rng.randi() % best.size()]
+
+
+## Ist die eigene Frontlinie im Kampf? Ja, sobald ein Verbuendeter mit Rolle
+## vanguard oder skirmisher jemanden trifft -- oder es keine solche Frontlinie
+## (mehr) gibt, dann wartet niemand.
+func _frontline_engaged(unit: Unit) -> bool:
+	var has_front := false
+	for ally in battle.allies_of(unit):
+		if ally == unit or not ally.ai_role() in ["vanguard", "skirmisher"]:
+			continue
+		has_front = true
+		if _can_shoot_anyone(ally, ally.tile):
+			return true
+	return not has_front
 
 
 func _nearest_foe(unit: Unit, tile: Vector2i) -> int:
@@ -336,7 +426,6 @@ func _nearest_foe(unit: Unit, tile: Vector2i) -> int:
 ## der Zufall am Seed.
 func _approach(unit: Unit, target: Unit) -> Vector2i:
 	var grid := battle.grid
-	var profile := unit.move_profile()
 	var reach := unit.attack_range()
 	var frontier: Array[Vector2i] = []
 	var dist := {}
@@ -345,36 +434,26 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 			var tile := Vector2i(x, y)
 			if not grid.in_bounds(tile) or Grid.distance(tile, target.tile) > reach:
 				continue
-			if tile != unit.tile and not grid.can_stand_on(tile, profile):
+			if not grid.can_stand_on(tile, unit.unit_id):
 				continue
 			if _can_shoot(unit, tile, target):
-				dist[tile] = 0
-				frontier.append(tile)
-	if frontier.is_empty():
-		# Kein Feld, von dem aus es geht (alles verbaut): so nah wie moeglich.
-		for dir in Grid.directions():
-			var tile: Vector2i = target.tile + dir
-			if grid.in_bounds(tile) and (tile == unit.tile or grid.can_stand_on(tile, profile)):
 				dist[tile] = 0
 				frontier.append(tile)
 	if dist.has(unit.tile):
 		return unit.tile
 
-	# Rueckwaerts suchen: wer von ``tile`` nach ``nxt`` will, zahlt die Kosten
-	# von ``nxt``. Kosten sind klein (1 oder 2), eine einfache Warteschlange
-	# mit Nachbesserung genuegt.
+	# Rueckwaerts suchen (Breitensuche, jeder Schritt kostet 1). Besetzte
+	# Felder sperren; das eigene Feld ist der Startpunkt.
 	while not frontier.is_empty():
 		var tile: Vector2i = frontier.pop_front()
 		var here: int = dist[tile]
 		for dir in Grid.directions():
 			var prev: Vector2i = tile + dir
-			if not grid.in_bounds(prev) or not grid.can_traverse(prev, profile):
-				if prev != unit.tile:
-					continue
-			var cost: int = here + grid.terrain_cost(tile, profile)
-			if dist.has(prev) and int(dist[prev]) <= cost:
+			if dist.has(prev):
 				continue
-			dist[prev] = cost
+			if prev != unit.tile and not grid.can_stand_on(prev, unit.unit_id):
+				continue
+			dist[prev] = here + 1
 			if prev != unit.tile:
 				frontier.append(prev)
 
@@ -382,9 +461,9 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 	var best_cost := 1 << 30
 	for dir in Grid.directions():
 		var nxt: Vector2i = unit.tile + dir
-		if not dist.has(nxt) or not grid.can_stand_on(nxt, profile):
+		if not dist.has(nxt) or not grid.can_stand_on(nxt, unit.unit_id):
 			continue
-		var cost: int = int(dist[nxt]) + grid.terrain_cost(nxt, profile)
+		var cost: int = int(dist[nxt])
 		if cost < best_cost:
 			best_cost = cost
 			best = [nxt]
@@ -396,109 +475,31 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 
 
 ## Einen Schritt beginnen. Das Feld gilt sofort (es ist damit belegt), die
-## Figur gleitet in der Schrittzeit hinterher. Rutscht der DROME auf Oel weiter,
-## dauert es entsprechend laenger.
+## Figur gleitet in der Schrittzeit hinterher.
 func _walk(unit: Unit, next: Vector2i) -> void:
-	var dir := next - unit.tile
-	var profile := unit.move_profile()
-	var cost := battle.grid.terrain_cost(next, profile)
-	unit.set_facing(Unit.facing_for(dir))
-	var start := unit.tile
-	# Die Schrittzeit steht VOR dem Versetzen fest: move_unit meldet den Zug
-	# (unit_moved), und die Szene liest daran ab, wie lange die Figur gleitet.
-	var landing := battle.grid.simulate_drift(next, dir, profile)
-	var extra := maxi(0, Grid.distance(start, landing) - 1)
-	unit.step_left = (float(cost) + float(extra) * 0.5) / unit.move_speed()
-	battle.resolver.move_unit(unit, next, dir)
+	unit.set_facing(Unit.facing_for(next - unit.tile))
+	# Die Schrittzeit steht VOR dem Versetzen fest: move_unit meldet den
+	# Schritt (unit_moved), und die Szene liest daran ab, wie lange die Figur
+	# gleitet.
+	unit.step_left = 1.0 / unit.move_speed()
+	battle.resolver.move_unit(unit, next)
 
 
 # ---------------------------------------------------------------------------
 # Bewertung
 # ---------------------------------------------------------------------------
 
-## Wie gut ist es, hier zu stehen? Unabhaengig davon, was man von hier tut.
-func _position_score(unit: Unit, tile: Vector2i) -> float:
-	var score := 0.0
-	var grid := battle.grid
-
-	# Wer das Zielfeld beschiessen kann, macht es unattraktiv.
-	for foe in battle.enemies_of(unit):
-		if _can_strike(foe, tile):
-			score -= _w("exposed_penalty", 8.0)
-
-	# Nicht freiwillig auf Eis parken.
-	if grid.terrain_class(tile) == Terrain.TClass.DRIFT \
-			and not unit.stats.get("ignores_drift", false):
-		score -= _w("drift_penalty", 15.0)
-
-	# Angeschlagene Fernkaempfer ziehen sich in den Nebel zurueck: dort sind
-	# sie auf Distanz weder angreifbar noch angriffsfaehig, und genau das ist
-	# der Zyklus, den sie zum Durchatmen brauchen.
-	if grid.terrain_class(tile) == Terrain.TClass.HAZE:
-		if unit.hp_fraction() < _w("haze_hp_threshold", 0.5) and not _has_melee(unit):
-			score += _w("haze_bonus", 12.0)
-	return score
-
-
-func _has_melee(unit: Unit) -> bool:
-	for action in unit.actions():
-		if action.is_attack() and action.range_tiles <= 1:
-			return true
-	return false
-
-
-## Koennte dieser Gegner das Feld unter Beschuss nehmen? Grobe Abschaetzung
-## ueber die Distanz -- eine vollstaendige Reichweitenrechnung fuer jeden
-## Gegner auf jedem Feld waere fuer den Gewinn zu teuer.
-##
-## Hat mit der Aggro-Tabelle nichts zu tun: hier geht es um die Gefahr eines
-## FELDES, dort um die Aufmerksamkeit gegenueber einer EINHEIT.
-func _can_strike(foe: Unit, tile: Vector2i) -> bool:
-	# Wie weit der Gegner in einer Sekunde kommt, plus seine Waffenreichweite.
-	var walk := int(ceil(foe.move_speed()))
-	var reach := walk
-	for action in foe.actions():
-		if action.is_attack():
-			reach = maxi(reach, walk + action.range_tiles)
-	return Grid.distance(foe.tile, tile) <= reach
-
-
 func _action_score(unit: Unit, action: ActionData, target: Unit) -> float:
 	var score := 0.0
-	if action.is_heal():
-		if unit.hp_fraction() >= _w("heal_hp_threshold", 0.4) and target == unit:
-			return 0.0
-		var missing := target.stat("hp_max") - target.hp
-		if missing <= 0:
-			return 0.0
-		score = float(mini(action.heal_amount(), missing))
-		if target.hp_fraction() < _w("heal_hp_threshold", 0.4):
-			score *= _w("heal_multiplier", 1.5)
-		return score
-
-	# Der Wert einer Provokation steckt nicht im Schaden -- meistens richtet
-	# sie gar keinen an --, sondern in dem Angriff, den sie verhindert.
-	if action.is_taunt():
-		score += _taunt_score(unit, action, target)
-		if action.power <= 0:
-			return score
-
-	# Dieselbe Falle an einer anderen Aktion: eine Aktion OHNE Wirkungsmenge
-	# darf nicht ueber preview_damage() bewertet werden. Die liefert die
-	# Mindestmenge 1 und macht aus "richtet nichts an" ein "richtet ein
-	# bisschen was an" -- genug, damit die KI sie zieht, weil das
-	# Faehigkeitsbudget eines Angriffs-Aufbaus ohnehin frei ist.
+	# Eine Aktion OHNE Wirkungsmenge (Ziehen) wird ueber ihre Wirkung auf den
+	# Abstand bewertet, nicht ueber Schaden.
 	if action.power <= 0:
 		return score + _shove_score(unit, action, target)
 
 	var damage := battle.resolver.preview_damage(unit, target, action)
 	score += float(damage) * _w("damage_weight", 1.0)
-	# Schildschaden zaehlt mit. Frueher ging nur der Integritaetsschaden ein --
-	# und ein voller Energieschild (32 Punkte beim Deflektor) schluckt jeden
-	# einzelnen Treffer. Die Bewertung war dann 0, die KI griff abgeschirmte
-	# Ziele NIE an, und Spiegelkaempfe liefen bis zum Zyklus-Limit, ohne dass
-	# ein Punkt Schaden fiel. Den Schild abzuraeumen ist aber genau das, was
-	# den naechsten Treffer (auch den des Verbuendeten) durchlaesst.
+	# Schildschaden zaehlt mit -- sonst bewertet ein voller Schild jeden
+	# Einzeltreffer mit 0, und die KI greift abgeschirmte Ziele nie an.
 	score += float(_shield_damage(unit, target, action)) \
 		* _w("shield_damage_weight", 0.7)
 	if damage >= target.hp:
@@ -513,14 +514,14 @@ func _shield_damage(unit: Unit, target: Unit, action: ActionData) -> int:
 	if target.shield <= 0 or action.power <= 0:
 		return 0
 	var outcome := battle.resolver.resolve_damage(target,
-		action.power + unit.atk(), action.energy_fraction)
+		action.power + unit.atk(), action.energy_fraction, action.shield_mult)
 	return maxi(0, target.shield - int(outcome["shield_after"]))
 
 
 ## Der Aggro-Anteil der Bewertung. Zwei Summanden mit verschiedenen Aufgaben:
 ## der Anteil an der Tabelle sagt WEN dieser Gegner am liebsten haette, der
 ## Amtsinhaber-Bonus verhindert, dass die Zielwahl bei fast gleichauf liegenden
-## Werten von Zug zu Zug flackert. Ohne den zweiten wirkt die Aggro fuer den
+## Werten flackert. Ohne den zweiten wirkt die Aggro fuer den
 ## Spieler wie Zufall und laesst sich nicht steuern.
 func _aggro_score(unit: Unit, target: Unit) -> float:
 	if unit.aggro == null or unit.aggro.is_empty():
@@ -531,91 +532,11 @@ func _aggro_score(unit: Unit, target: Unit) -> float:
 	return score
 
 
-## Was ist es wert, ein feindliches Ziel auf sich selbst umzulenken?
+## Was ist es wert, ein Ziel zu verschieben (Orbit-Sog)?
 ##
-## Der Schaden taugt dafuer nicht als Mass: eine Provokation richtet keinen an,
-## und `preview_damage` liefert dann die Mindestmenge 1. Damit waere die
-## staerkste Aktion im Spiel die billigste der Bewertung -- die KI besaesse
-## sie und benutzte sie nie.
-##
-## Gerechnet wird deshalb in LEBENSLEISTEN statt in Schadenspunkten. Nicht wie
-## viel Schaden umgelenkt wird, entscheidet, sondern wie viel er dort und hier
-## jeweils AUSMACHT: zwoelf Schaden auf einen angeschlagenen Techniker sind
-## etwas anderes als zwoelf Schaden auf ein volles Molok-Chassis.
-##
-##     gewinn = anteil_beim_opfer - anteil_bei_mir     (je Zug, in Leisten)
-##
-## Daraus faellt das gewuenschte Verhalten heraus, ohne dass irgendwo "Tank"
-## steht -- dieselbe Emergenz, auf der auch die Aggro selbst beruht:
-##
-##   * Ein dickes Chassis provoziert, weil sein eigener Anteil klein ist.
-##   * Ein duenner Gegner laesst es bleiben: sein Anteil ist groesser als der
-##     des Opfers, der Gewinn negativ. Er wuerde sich nur selbst verheizen.
-##   * Wer ohnehin schon das Ziel ist, gewinnt nichts -- das Opfer ist dann er
-##     selbst, und der Gewinn ist exakt null. Kein Sonderfall noetig.
-##
-## Die Obergrenze ist bewusst gesetzt: mehr als eine ganze Lebensleiste laesst
-## sich nicht retten, egal wie lange die Sperre haelt. Zusammen mit
-## ``rescue_bonus`` bleibt der beste denkbare Wert damit unter ``kill_bonus``
-## -- ein sicherer Abschuss geht der Umlenkung vor, und das soll er auch.
-func _taunt_score(unit: Unit, action: ActionData, target: Unit) -> float:
-	# Eine Sperre, die schon steht, noch einmal zu setzen bringt nichts --
-	# dieselbe Ueberlegung wie eine Heilung auf Vollleben. Ohne das erneuert
-	# die KI sie jeden Zug und macht aus einer befristeten Zwangsmechanik eine
-	# dauerhafte.
-	if target.taunted_by() == unit.unit_id:
-		return 0.0
-
-	var victim := _most_endangered_by(target, unit)
-	if victim.is_empty():
-		return 0.0                      # das Ziel bedroht gerade niemanden
-
-	var incoming := _best_damage(target, unit)
-	var to_me := float(incoming) / maxf(1.0, float(unit.hp))
-	var gain: float = float(victim["share"]) - to_me
-	if gain <= 0.0:
-		return 0.0
-
-	var saved := minf(gain * float(action.taunt_turns), 1.0)
-	var score := saved * _w("taunt_weight", 50.0)
-
-	# Einen Abschuss zu verhindern ist mehr wert als Schaden zu verteilen --
-	# aber nur, wenn der Treffer mich nicht seinerseits umlegt. Sonst tauscht
-	# die KI einen Verlust gegen einen anderen.
-	var doomed: Unit = victim["unit"]
-	if doomed != unit and int(victim["damage"]) >= doomed.hp and incoming < unit.hp:
-		score += _w("rescue_bonus", 45.0)
-	return score
-
-
-## Was ist es wert, ein Ziel zu verschieben?
-##
-## Der Orbit-Sog hat Staerke 0 und ``push_tiles`` -2. Ueber den Schaden bewertet
-## kam er auf die Mindestmenge 1 und wurde damit JEDEN Zug gezogen -- das
-## Faehigkeitsbudget ist bei einem Angriffs-Aufbau ohnehin frei. Ein Strix mit
-## Reichweite sieben hat sich so Zug um Zug seinen eigenen Vorteil weggezogen
-## und den Gegner ins Handgemenge geholt.
-##
-## Gerechnet wird deshalb in REICHWEITEN statt in Feldern -- dieselbe
-## Ueberlegung wie bei der Provokation (GAME_DESIGN 6g), nur auf eine andere
-## Groesse angewandt. Nicht wie weit jemand geschoben wird, entscheidet,
-## sondern auf welche Seite des Reichweitenvergleichs er dabei geraet:
-##
-##   * Wer weiter schiesst als sein Ziel, will Abstand. Heranziehen ist fuer
-##     ihn negativ, und eine negative Bewertung faellt in _best_move() heraus.
-##   * Wer kuerzer schiesst, will den Abstand schliessen. Fuer ihn ist
-##     derselbe Zug positiv.
-##   * Bei gleicher Reichweite gewinnt keiner etwas: 0, die Aktion bleibt
-##     ungenutzt.
-##
-## Kein Sonderfall fuer "Nahkaempfer" noetig -- das faellt aus dem Vergleich
-## heraus, so wie das Tanken aus den Lebensleisten faellt.
-##
-## Der Landepunkt ist geschaetzt (``before + push_tiles``, an der Kartenkante
-## abgeschnitten) und beruecksichtigt weder Hindernisse noch Drift. Das ist
-## dieselbe Groessenordnung von Naeherung wie in _can_strike() und
-## _best_damage(): die Zahl geht nur als Vorzeichen und grobes Mass ein, und
-## die genaue Rechnung waere fuer den Gewinn zu teuer.
+## Gerechnet in REICHWEITEN: wer weiter schiesst als sein Ziel, will Abstand
+## (Heranziehen negativ), wer kuerzer schiesst, will ihn schliessen (positiv),
+## bei gleicher Reichweite gewinnt keiner etwas.
 func _shove_score(unit: Unit, action: ActionData, target: Unit) -> float:
 	if action.push_tiles == 0:
 		return 0.0
@@ -639,42 +560,6 @@ func _longest_attack_range(unit: Unit) -> int:
 		if action.is_attack():
 			longest = maxi(longest, action.range_tiles)
 	return longest
-
-
-## Der staerkste Angriff, den ``attacker`` gegen ``victim`` fuehren koennte.
-##
-## Ohne Ruecksicht auf Reichweite, Budget und Energie -- eine Abschaetzung wie
-## _can_strike() eine ist. Die genaue Rechnung fuer jede Einheit gegen jede
-## andere waere fuer den Gewinn zu teuer, und die Zahl geht ohnehin nur als
-## Verhaeltnis in die Bewertung ein.
-func _best_damage(attacker: Unit, victim: Unit) -> int:
-	var best := 0
-	for action in attacker.actions():
-		if action.is_attack():
-			best = maxi(best, battle.resolver.preview_damage(attacker, victim, action))
-	return best
-
-
-## Wen auf der eigenen Seite bedroht ``threat`` am staerksten?
-##
-## Gemessen am ANTEIL der Lebensleiste, nicht am Schaden. Sonst waere immer der
-## Dickste das vermeintliche Opfer, und die KI wuerde ausgerechnet den
-## schuetzen, der es am wenigsten braucht.
-##
-## ``mover`` steht in seiner eigenen Liste mit drin. Das ist Absicht: ist er
-## selbst das gefaehrdetste Ziel, hebt sich der Gewinn oben auf null auf.
-func _most_endangered_by(threat: Unit, mover: Unit) -> Dictionary:
-	var worst := {}
-	for ally in battle.allies_of(mover):
-		if not _can_strike(threat, ally.tile):
-			continue
-		var damage := _best_damage(threat, ally)
-		if damage <= 0:
-			continue
-		var share := float(damage) / maxf(1.0, float(ally.hp))
-		if worst.is_empty() or share > float(worst["share"]):
-			worst = {"unit": ally, "damage": damage, "share": share}
-	return worst
 
 
 ## Wie zaeh haelt dieser Gegner an seinem Ziel fest? Ein Wert pro Bauart reicht,
