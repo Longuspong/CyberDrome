@@ -56,7 +56,9 @@
   "run": {
     "_kommentar": [
       "Der Lauf (Roguelike, scripts/core/run_state.gd): rounds Kaempfe, lives",
-      "Leben. Gegnerstaerke = Startstaerke des mitgenommenen Squads *",
+      "Leben. Gegnerstaerke = Bezugsstaerke (Durchschnitt der Standard-DROMEs",
+      "mal Zahl der mitgenommenen, RunState.reference_power -- nicht die Staerke",
+      "des eigenen Aufbaus) *",
       "(power_start + power_growth * (runde - 1)) * tiers.<stufe>.power -- eine",
       "FESTE Kurve, damit Belohnungen zaehlen. Gegnerzahl = Startgroesse des",
       "Squads + enemy_offsets[runde] + tiers.<stufe>.count_offset (1..squad_max).",
