@@ -258,6 +258,35 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
   "womit" und "wo" sind zwei Entscheidungen -- aber weil die Aufstellung vom
   Aufbau abhaengt, darf der Weg zurueck nur einen Tipp kosten.
 
+## 6f. Zielregel je Rolle statt Aggro-Tabelle (gebaut, 6. Nov. 2026)
+
+* Entscheidung: die versteckte Aggro-Tabelle ist raus. Im Autobattler muss
+  man beim Zuschauen verstehen, warum wer auf wen schiesst.
+* Zielregel (`AIController.choose_target`):
+
+  | Rolle | greift an |
+  |---|---|
+  | vanguard (Molok), skirmisher (Vireo) | den naechsten Gegner |
+  | controller (Nimbus) | den, um den die meisten Gegner stehen |
+  | sniper (Strix) | in Reichweite den, der am meisten Schaden macht |
+  | hunter (geplante Jaegerklasse) | den verwundbarsten: wenig Integritaet, verwundbar oder betaeubt |
+
+  Gleichstand: wen Verbuendete schon angreifen, dann wer weniger aushaelt.
+* **Locken** vor allem anderen: wer im Lockradius eines Gegners steht
+  (Molok-Praesenz 2 Felder, Koedersender 2 Felder), greift ihn an -- sichtbar
+  als oranges Ausrufezeichen am Balken. Der Koedersender lockt jetzt statt
+  einen Aggro-Bonus zu geben.
+* Entfernt: AggroTable, Aggro-Buchung und -Verfall, `aggro_coeff`/
+  `aggro_flat` (leise/laute Waffen), `aggro_bonus`, Konfigurationsteil
+  `aggro`, die Aggro-Gewichte der KI.
+* Gemessen (200 Spiegelkaempfe): Zielwechsel 6,2 -> 2,5 je DROME und Minute;
+  sonst kaum Unterschied (Molok faellt zuerst, nimmt ~205). Auffaellig im
+  Bild: der Molok zieht jetzt alle auf sich und ist nach 5 s fast leer --
+  Balancing-Thema (Schutz-Anteil, Integritaet).
+* Strix bleibt wie er ist (Entscheidung 6. Nov.); Ausgleich spaeter ueber eine
+  **Jaegerklasse**, die verwundbare Ziele jagt (Zielregel "hunter" steht
+  schon bereit).
+
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
 Vom Spieler angestossen (6. Nov. 2026):

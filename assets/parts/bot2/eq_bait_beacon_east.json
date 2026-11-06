@@ -33,7 +33,7 @@
   "tags": [
     "support",
     "beacon",
-    "aggro"
+    "lure"
   ],
   "mount_class": "light",
   "category": "support",
@@ -47,7 +47,7 @@
     "shield_bonus": 0.0,
     "weight": 3,
     "hp_regen_pct": 0,
-    "aggro_bonus": 25,
+    "lure_radius": 2,
     "ai_role": "",
     "passive": "",
     "actions": []

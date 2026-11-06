@@ -52,7 +52,6 @@ var overtime_enabled: bool = true
 var _dt: float = 0.05
 var _pulse: float = 3.0
 var _time_limit: float = 180.0
-var _aggro_left: float = 3.0
 
 # ---------------------------------------------------------------------------
 # Aufbau
@@ -66,7 +65,6 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	_dt = float(realtime.get("tick", 0.05))
 	_pulse = maxf(0.5, float(realtime.get("pulse", 3.0)))
 	_time_limit = float(realtime.get("time_limit", 180.0))
-	_aggro_left = _pulse
 	time = 0.0
 	ticks = 0
 
@@ -257,7 +255,7 @@ func _free_deployment_tile(zone: Array[Vector2i], unit: Unit) -> Vector2i:
 # ---------------------------------------------------------------------------
 
 ## Ein Simulationsschritt. Jeder lebende DROME handelt einmal (laufen,
-## nachladen, schiessen), dann laufen Pulse, Aggro-Verfall und Zeitgrenze.
+## nachladen, schiessen), dann laufen Pulse und Zeitgrenze.
 ##
 ## Die Reihenfolge, in der die DROMEs innerhalb eines Schritts drankommen,
 ## wird jeden Schritt neu gemischt (Zufall am Seed). Sie ist nicht egal: wer
@@ -295,10 +293,6 @@ func tick() -> void:
 		if outcome != Outcome.RUNNING:
 			return
 
-	_aggro_left -= _dt
-	if _aggro_left <= 0.0:
-		_aggro_left += _pulse
-		_decay_aggro()
 
 	if time >= _time_limit:
 		_finish(Outcome.DRAW)
@@ -325,7 +319,6 @@ func pulse_seconds() -> float:
 ## Was je Puls laeuft: Schild, Reparatur, Overtime.
 func _pulse_unit(unit: Unit) -> void:
 	unit.regenerate_shield()
-	resolver.presence_pulse(unit)
 	var healed := unit.regenerate_hp()
 	if healed > 0:
 		EventBus.unit_healed.emit(unit, healed, unit)
@@ -360,18 +353,6 @@ func overtime_damage(unit: Unit) -> int:
 func in_overtime() -> bool:
 	return overtime_enabled \
 		and time >= float(Config.section("overtime").get("start_seconds", 60.0))
-
-
-## Einmal je Puls verblassen alle Aggro-Eintraege -- die des jeweils
-## aktuellen Ziels langsamer, aber sie verblassen.
-func _decay_aggro() -> void:
-	var section := Config.section("aggro")
-	var rate := float(section.get("decay_rate", 0.15))
-	var drop := float(section.get("decay_drop_below", 1.0))
-	var incumbent := float(section.get("decay_scale_incumbent", 0.5))
-	for unit in units:
-		if unit.aggro != null:
-			unit.aggro.decay(rate, drop, incumbent)
 
 
 # ---------------------------------------------------------------------------

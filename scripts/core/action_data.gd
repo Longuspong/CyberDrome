@@ -52,26 +52,6 @@ var power: int = 0
 ## positiv = wegstossen, negativ = heranziehen
 var push_tiles: int = 0
 
-## Wie laut ist diese Aktion? Multiplikator auf die Aggro, die ihre Wirkung
-## erzeugt (scripts/battle/aggro_table.gd). 1.0 ist die Grundlinie, alles
-## andere ist relativ dazu zu lesen:
-##
-##     1.0   normaler Angriff -- die Baseline
-##     0.35  Praezisionswaffen: viel Schaden, wenig Krach
-##
-## Steht ausdruecklich pro Aktion in den Bauteil-Daten und wird NICHT aus
-## ``range_tiles`` abgeleitet. Eine Ableitung waere eine zweite, stillschweigende
-## Wahrheit darueber, wie auffaellig eine Waffe ist -- und untunebar dazu.
-var aggro_coeff: float = 1.0
-
-## Pauschale Aggro fuer Aktionen ohne Wirkungsmenge. Der Orbit-Sog richtet
-## keinen Schaden an, zerrt sein Ziel aber zwei Felder aus der Stellung; ohne
-## diesen Wert waere ein reiner Kontroll-Aufbau vollkommen lautlos.
-##
-## Der einzige Teil der Formel, der NICHT mit der Schadenskurve mitskaliert --
-## bei groesseren Balancing-Aenderungen also von Hand nachzuziehen.
-var aggro_flat: int = 0
-
 ## Echtzeit (Nov. 2026): Sekunden zwischen zwei Angriffen dieser Waffe. Nur
 ## fuer Angriffe; jede Waffe laedt fuer sich nach.
 var interval: float = 2.0
@@ -121,8 +101,6 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.aoe_radius = meta.get("aoe_radius", 0)
 	action.power = meta.get("power", 0)
 	action.push_tiles = meta.get("push_tiles", 0)
-	action.aggro_coeff = float(meta.get("aggro_coeff", 1.0))
-	action.aggro_flat = meta.get("aggro_flat", 0)
 	action.energy_fraction = float(meta.get("energy_fraction", 0.0))
 	action.interval = float(meta.get("interval", 2.0))
 	action.gather = bool(meta.get("gather", false))

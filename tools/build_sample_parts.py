@@ -380,8 +380,9 @@ STAT_DEFAULTS = {
     "weight": 0,
     # Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet.
     "hp_regen_pct": 0,
-    # Aggro-Generierung in Prozentpunkten (Koedersender).
-    "aggro_bonus": 0,
+    # Lockradius in Feldern: Gegner so nah greifen den Traeger an statt ihres
+    # Ziels (Koedersender). Die Molok-Praesenz lockt ebenso (passives.presence).
+    "lure_radius": 0,
     # Nur body: wie die KI diesen DROME fuehrt (scripts/battle/ai_controller.gd).
     #   vanguard     Frontlinie: rueckt vor, weicht nie aus (Molok)
     #   skirmisher   wendig: mit Fernwaffe kiten, mit Nahkampfwaffe dranbleiben (Vireo)
@@ -392,7 +393,8 @@ STAT_DEFAULTS = {
     #   spellcaster  nach jeder Faehigkeit braucht die Waffe nur noch halb so
     #                viele normale Angriffe bis zur naechsten (Nimbus)
     #   hit_rush     jeder Treffer gibt kurz mehr Lauftempo (Vireo)
-    #   presence     zieht Aggro und faengt Schaden fuer Verbuendete ab (Molok)
+    #   presence     lockt Gegner in der Naehe an und faengt Schaden fuer
+    #                Verbuendete ab (Molok)
     # Die Zahlen der Passiven stehen in data/config.json unter "passives".
     "passive": "",
 }
@@ -407,10 +409,7 @@ STAT_DEFAULTS = {
 #               {"kind": "attacks", "every": n, "weapon": "act_..."}  jeder n-te Angriff
 #               {"kind": "time", "every": s}                          alle s Sekunden
 #               {"kind": "adjacent", "every": s}                      Gegner daneben
-#
-# ``aggro_coeff`` sagt, wie LAUT eine Aktion ist (1.0 Grundlinie, 0.35
-# Praezisionswaffen); ``aggro_flat`` ist der Pauschalwert fuer Aktionen ohne
-# Schaden (Orbit-Sog).
+
 
 # Spiegelt spd_weight_step aus data/config.json -- nur fuer die
 # Baubarkeitspruefung unten.
@@ -507,7 +506,7 @@ STATS = {
         "actions": [
             {"id": "act_holo_dash", "display_name": "Hologramm-Boost",
              "category": "ability", "targeting": "dash",
-             "range_tiles": 3, "power": 0, "aggro_flat": 0,
+             "range_tiles": 3, "power": 0,
              "trigger": {"kind": "adjacent", "every": 4, "weapon": ""}},
         ],
     },
@@ -522,7 +521,6 @@ STATS = {
             {"id": "act_siege_barrage", "display_name": "Sperrfeuer",
              "category": "ability", "targeting": "aoe_around_target",
              "range_tiles": 6, "aoe_radius": 2, "power": 14,
-             "aggro_coeff": 1.2,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_siege"}},
         ],
     },
@@ -543,8 +541,8 @@ STATS = {
     },
     # Passive Selbstheilung, 5 % je Puls.
     "eq_drone_pod": {"weight": 3, "hp_regen_pct": 5},
-    # Zieht Aufmerksamkeit ueber seinen Aggro-Wert.
-    "eq_bait_beacon": {"weight": 3, "aggro_bonus": 25},
+    # Lockt: Gegner im Umkreis 2 greifen den Traeger an.
+    "eq_bait_beacon": {"weight": 3, "lure_radius": 2},
 
     # Kontrollwaffe des Nimbus: Einzelschuss auf Blaster-Reichweite, reine
     # Energie. Die Faehigkeit (Vortex) zieht die Gegner um das Ziel zusammen,
@@ -572,7 +570,6 @@ STATS = {
             {"id": "act_orbitpull", "display_name": "Orbit-Sog",
              "category": "ability", "targeting": "single",
              "range_tiles": 4, "power": 0, "push_tiles": -2,
-             "aggro_flat": 8,
              "trigger": {"kind": "time", "every": 6, "weapon": ""}},
         ],
     },
@@ -581,11 +578,11 @@ STATS = {
         "actions": [
             {"id": "act_raillance", "display_name": "Schienenschuss",
              "category": "attack", "targeting": "single",
-             "range_tiles": 8, "power": 22, "aggro_coeff": 0.35,
+             "range_tiles": 8, "power": 22,
              "interval": 2.6},
             {"id": "act_rail_pierce", "display_name": "Praezisionsschuss",
              "category": "ability", "targeting": "single",
-             "range_tiles": 8, "power": 26, "aggro_coeff": 0.35,
+             "range_tiles": 8, "power": 26,
              "trigger": {"kind": "attacks", "every": 4, "weapon": "act_raillance"}},
         ],
     },
@@ -596,7 +593,6 @@ ACTION_DEFAULTS = {
     "range_tiles": 1, "aoe_radius": 0, "power": 0,
     # positiv = wegstossen, negativ = heranziehen
     "push_tiles": 0,
-    "aggro_coeff": 1.0, "aggro_flat": 0,
     # Anteil Energieschaden (0.0 physisch, 1.0 Energie). Energie knackt
     # Schilde (120 %), Physisch prallt ab (80 %).
     "energy_fraction": 0.0,
@@ -1971,9 +1967,9 @@ SETS = [
                 # Am Strix mit seinem einzigen Anker ist er dagegen gar nicht
                 # tragbar, ohne dass der Aufbau seine Waffe verliert und damit
                 # ungueltig wird. Das ist die Slot-Achse aus Abschnitt 3c, auf
-                # die Aggro angewandt: eine Kaufentscheidung ohne eine Zahl.
+                # das Locken angewandt: eine Kaufentscheidung ohne eine Zahl.
                 "id": "eq_bait_beacon", "code": "EQP-008", "type": "equipment",
-                "name": "Koedersender", "tags": ["support", "beacon", "aggro"],
+                "name": "Koedersender", "tags": ["support", "beacon", "lure"],
                 "shapes": EQ_BAIT_BEACON,
                 "mount_class": "light", "category": "support",
                 "anchors": {"mount": (0, 0, 52)},

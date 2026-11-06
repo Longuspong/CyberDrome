@@ -7,11 +7,12 @@ extends RefCounted
 ## DROME. Der tut dann eins von drei Dingen -- schiessen, eine Faehigkeit
 ## ausloesen oder einen Schritt laufen:
 ##
-##   * ZIEL: wird GEHALTEN (Nov. 2026). Neu gewaehlt wird nur, wenn es faellt,
-##     laenger als ``realtime.retarget_after`` Sekunden nicht angreifbar ist
-##     oder ein sicherer Abschuss in Reichweite steht. Die Wahl selbst bewertet
-##     Schaden, Schild, Abschuss, Aggro, Weg -- und wie viele Verbuendete das
-##     Ziel schon angreifen (Fokus, ``ai.focus_bonus``).
+##   * ZIEL: nach einer SICHTBAREN Regel je Rolle (choose_target, Nov. 2026 --
+##     die versteckte Aggro-Tabelle ist raus). Wer in den Lockradius eines
+##     Gegners geraet (Molok-Praesenz, Koedersender), greift den an. Das Ziel
+##     wird GEHALTEN: neu gewaehlt nur, wenn es faellt, laenger als
+##     ``realtime.retarget_after`` Sekunden nicht angreifbar ist, ein sicherer
+##     Abschuss in Reichweite steht oder ein Locken einsetzt.
 ##   * WAFFEN: jede laedt fuer sich (``interval``). Ist sie geladen und ein
 ##     Gegner in Reichweite, schiesst sie -- auf das Ziel, sonst auf den besten
 ##     erreichbaren. Jeder N-te Angriff ist die Faehigkeit der Waffe.
@@ -27,13 +28,6 @@ extends RefCounted
 ##
 ## Die Gewichte stehen in data/config.json ("ai", "realtime").
 ##
-## ### Aggro ist ein Summand, kein Filter
-##
-## Die Aggro-Tabelle (scripts/battle/aggro_table.gd) ERSETZT die Zielwahl
-## nicht, sie geht als weiterer Term in dieselbe Bewertung ein. Als Filter
-## wuerde ein DROME an einem sicheren Abschuss vorbeilaufen, weil ein anderer
-## weiter oben in der Tabelle steht.
-
 var battle: BattleManager
 var _weights: Dictionary = {}
 var _realtime: Dictionary = {}
@@ -79,8 +73,12 @@ func update(unit: Unit, dt: float) -> void:
 		target = _current_target(unit)
 	elif unit.think_left <= 0.0:
 		unit.think_left = float(_realtime.get("think_interval", 0.5))
-		var kill := _sure_kill(unit)
-		if kill != null and kill != target:
+		var lure := lured_by(unit)
+		var kill := _sure_kill(unit) if lure == null else null
+		if lure != null and lure != target:
+			_retarget(unit, lure)
+			target = lure
+		elif kill != null and kill != target:
 			_retarget(unit, kill)
 			target = kill
 	if target == null:
@@ -140,25 +138,80 @@ func _current_target(unit: Unit) -> Unit:
 # Zielwahl
 # ---------------------------------------------------------------------------
 
-## Wen soll ``unit`` gerade angreifen? Der Gegner mit der besten Bewertung
-## fuer die staerkste eigene Waffe -- abzueglich des Weges, den es bis dahin
-## noch ist.
+## Wen soll ``unit`` gerade angreifen? Eine Regel je Rolle, die man beim
+## Zuschauen versteht:
+##
+##   vanguard, skirmisher   den naechsten Gegner
+##   controller             den, um den die meisten Gegner stehen (Vortex)
+##   sniper                 in Reichweite den, der am meisten Schaden macht
+##   hunter                 den verwundbarsten (wenig Integritaet, verwundbar
+##                          oder betaeubt) -- fuer die geplante Jaegerklasse
+##
+## Gleichstand: wen Verbuendete schon angreifen (Fokus), dann wer weniger
+## aushaelt, dann die Reihenfolge der Einheiten -- deterministisch.
+## Vor allem anderen gilt das Locken: steht ``unit`` im Lockradius eines
+## Gegners, greift es ihn an.
 func choose_target(unit: Unit) -> Unit:
-	var reach := unit.attack_range()
+	var lure := lured_by(unit)
+	if lure != null:
+		return lure
+	var foes := battle.enemies_of(unit)
+	if foes.is_empty():
+		return null
+	var role := unit.ai_role()
 	var best: Unit = null
-	var best_score := -INF
-	for foe in battle.enemies_of(unit):
-		var score := -INF
-		for mount in unit.mounts:
-			score = maxf(score, _action_score(unit, mount["attack"], foe))
-		if unit.mounts.is_empty():
-			score = 0.0
-		var gap := maxi(0, Grid.distance(unit.tile, foe.tile) - reach)
-		score -= float(gap) * _w("approach_penalty", 2.0)
-		score += float(_focused_by(unit, foe)) * _w("focus_bonus", 4.0)
-		if score > best_score:
-			best_score = score
+	var best_key: Array = []
+	for foe in foes:
+		var key := _target_key(unit, foe, role, foes)
+		if best == null or _key_less(key, best_key):
 			best = foe
+			best_key = key
+	return best
+
+
+## Sortierschluessel der Zielwahl: kleiner ist besser.
+func _target_key(unit: Unit, foe: Unit, role: String, foes: Array) -> Array:
+	var gap := Grid.distance(unit.tile, foe.tile)
+	var toughness := foe.hp + foe.shield
+	var focus := -_focused_by(unit, foe)
+	match role:
+		"controller":
+			var crowd := 0
+			for other in foes:
+				if Grid.distance(other.tile, foe.tile) <= 2:
+					crowd += 1
+			return [-crowd, gap, focus, toughness]
+		"sniper":
+			var in_reach := 0 if _can_shoot(unit, unit.tile, foe) else 1
+			return [in_reach, -foe.damage_dealt if in_reach == 0 else gap, focus, toughness]
+		"hunter":
+			var exposed := 0 if (foe.statuses.has(&"vulnerable") or foe.is_stunned()) else 1
+			var share := int(round(100.0 * float(toughness)
+				/ maxf(1.0, float(foe.stat("hp_max") + foe.shield_max()))))
+			return [exposed, share, gap, focus]
+	return [gap, focus, toughness]
+
+
+func _key_less(a: Array, b: Array) -> bool:
+	for i in mini(a.size(), b.size()):
+		if a[i] != b[i]:
+			return a[i] < b[i]
+	return false
+
+
+## Wer lockt ``unit`` gerade? Der naechste lebende Gegner, in dessen Lockradius
+## (Molok-Praesenz, Koedersender) ``unit`` steht -- sonst null.
+func lured_by(unit: Unit) -> Unit:
+	var best: Unit = null
+	var best_gap := 1 << 30
+	for foe in battle.enemies_of(unit):
+		var radius: int = foe.lure_radius()
+		if radius <= 0:
+			continue
+		var gap := Grid.distance(unit.tile, foe.tile)
+		if gap <= radius and gap < best_gap:
+			best = foe
+			best_gap = gap
 	return best
 
 
@@ -239,8 +292,6 @@ func _execute(unit: Unit, tile: Vector2i, action: ActionData, target: Unit) -> v
 		unit.set_facing(Unit.facing_for(tile - unit.tile))
 	if battle.resolver.execute(unit, tile, action):
 		EventBus.action_used.emit(unit, tile, action)
-		if action.is_attack() and target != null and unit.aggro != null:
-			unit.aggro.current_target = target.unit_id
 		battle._check_victory()
 
 
@@ -504,7 +555,6 @@ func _action_score(unit: Unit, action: ActionData, target: Unit) -> float:
 		* _w("shield_damage_weight", 0.7)
 	if damage >= target.hp:
 		score += _w("kill_bonus", 100.0)
-	score += _aggro_score(unit, target)
 	return score
 
 
@@ -516,20 +566,6 @@ func _shield_damage(unit: Unit, target: Unit, action: ActionData) -> int:
 	var outcome := battle.resolver.resolve_damage(target,
 		action.power + unit.atk(), action.energy_fraction, action.shield_mult)
 	return maxi(0, target.shield - int(outcome["shield_after"]))
-
-
-## Der Aggro-Anteil der Bewertung. Zwei Summanden mit verschiedenen Aufgaben:
-## der Anteil an der Tabelle sagt WEN dieser Gegner am liebsten haette, der
-## Amtsinhaber-Bonus verhindert, dass die Zielwahl bei fast gleichauf liegenden
-## Werten flackert. Ohne den zweiten wirkt die Aggro fuer den
-## Spieler wie Zufall und laesst sich nicht steuern.
-func _aggro_score(unit: Unit, target: Unit) -> float:
-	if unit.aggro == null or unit.aggro.is_empty():
-		return 0.0
-	var score := unit.aggro.share(target.unit_id) * _w("aggro_weight", 10.0)
-	if unit.aggro.current_target == target.unit_id:
-		score += _incumbent_bonus(unit)
-	return score
 
 
 ## Was ist es wert, ein Ziel zu verschieben (Orbit-Sog)?
@@ -560,16 +596,3 @@ func _longest_attack_range(unit: Unit) -> int:
 		if action.is_attack():
 			longest = maxi(longest, action.range_tiles)
 	return longest
-
-
-## Wie zaeh haelt dieser Gegner an seinem Ziel fest? Ein Wert pro Bauart reicht,
-## um spuerbar unterschiedliches Verhalten zu erzeugen -- ohne eine Zeile
-## KI-Code. Der Aufhaenger ist die Reichweite der eigenen Waffe: wer aus sieben
-## Feldern schiesst, hat sich auf sein Ziel eingerichtet und laesst sich nicht
-## von jedem Kratzer umlenken. Wer im Nahkampf steht, schon.
-func _incumbent_bonus(unit: Unit) -> float:
-	if _longest_attack_range(unit) >= int(_w("ranged_from_range", 3.0)):
-		return _w("incumbent_bonus_ranged", 12.0)
-	return _w("incumbent_bonus_melee", 6.0)
-
-
