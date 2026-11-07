@@ -426,6 +426,39 @@ ab. Balancing-Thema: Vortex-Schaden oder Takt.
 * **Ueberschuss am Schild** (`ActionResolver.resolve_damage`): der Rest nach
   dem Schildbruch wird in Rohschaden zurueckgerechnet (gebaut).
 
+## 6h. Zwei Modi, Lager, Gegnerstaerke (Vorgabe des Spielers, 7. Nov. 2026)
+
+Noch nicht gebaut. Ersetzt in Teilen den heutigen Lauf (8 Kaempfe, feste
+Gegnerkurve) und die Karte aus 6g.
+
+**Story-Modus** (der "normale" Lauf):
+
+* Je Gebiet eine feste Zahl Level. **Neon City hat 10 Level**, jedes Level ist
+  eine eigene Reihe von Kaempfen mit unterschiedlicher Laenge.
+* **3 Leben.** Nach 3 verlorenen Kaempfen geht es zurueck ins Hauptmenue --
+  die Beute **nimmt man mit**.
+* Wer Neon City beendet, schaltet den Endlos-Modus frei.
+
+**Endlos-Modus:**
+
+* Technisch unendlich lang. Nach **jeder Runde** kann man aufhoeren und
+  behaelt die Beute. **Verliert man eine Runde, ist die Beute weg.**
+* Die Beute wird mit steigender Runde immer besser, kommt aber nur aus dem
+  **Beutetopf der bisher freigeschalteten Gebiete** (nach Neon City nur
+  Neon-Sachen).
+
+**Lager:** die 8 Plaetze sind **nur fuer Module**. Bauteile (Waffen), die
+droppen, kommen immer separat dazu und belegen keinen Lagerplatz.
+
+**Gegnerstaerke:** die Gegner werden staerker, aber **nicht kuenstlich**
+(kein blosser Faktor auf die Werte). Stattdessen wie beim Spieler: ein
+DROME-Level hoeher, bessere Waffen, bestimmte Module. Wie schnell, zeigt der
+Playtest.
+
+**Module** gehen in eine Brainstorming-Runde des Spielers. Vorgabe dazu:
+bei Rezept-Modulen muessen **alle** Werte sichtbar sein, auch die aus den
+Zutaten (Gunslinger zeigt auch das Angriffstempo).
+
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
 Vom Spieler angestossen (6. Nov. 2026):

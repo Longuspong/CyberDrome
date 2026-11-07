@@ -106,7 +106,10 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    Waffen-Karte mit Symbolen und der entschlackte Hangar, dann Module und
    Rezepte (`ModuleData`, `data/modules.json`; Module im Waffenhalter,
    bleiben beim Waffentausch, verfallen nach dem Lauf). Als Naechstes: der
-   Laden (Credits ausgeben).
+   Laden (Credits ausgeben). Neu entschieden (7. Nov.): Story- und
+   Endlos-Modus, Lager nur fuer Module, Gegner staerker ueber Level/Waffen/
+   Module statt Faktor -- `docs/NEUANFANG.md` Abschnitt 6h. Module sind
+   beim Spieler im Brainstorming.
    Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den
