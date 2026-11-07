@@ -447,6 +447,24 @@ Gegnerkurve) und die Karte aus 6g.
   **Beutetopf der bisher freigeschalteten Gebiete** (nach Neon City nur
   Neon-Sachen).
 
+**Antworten des Spielers (7. Nov. 2026):**
+
+* **Endlos:** verliert man, bekommt man aus diesem Lauf keine Beute. Was
+  zuhause ist, ist sicher. **Die erste Niederlage beendet den Lauf** -- das
+  ist der Reiz daran.
+* **Story, Leben je Level:** jedes Level hat 3 Leben. Scheitert man an einem
+  Kampf, kann man ihn wiederholen und verliert dafuer ein Leben. Im naechsten
+  Level sind wieder alle 3 Leben da.
+* **Story, Fortschritt bleibt:** wer Neon City Level 3 nach dem zweiten Kampf
+  schliesst, landet beim naechsten Oeffnen ("Story-Modus" -> Neon City)
+  wieder bei diesem Kampf. Spielt man schon in der naechsten Region, kann
+  man dort auch andere Level weiterspielen (braucht Speichern).
+* **Level wiederholen:** jedes Level kann mehrmals gespielt werden, EP gibt
+  es nur fuer den ersten Abschluss. Wiederholt wird fuer einen bestimmten
+  Gegnertyp, einen besonderen Drop, "Aufstiegswaffen" oder sonstige Quests.
+* **Bauteil-Beute:** kommt erst separat in die **Tasche** und wird beim
+  Abschluss des Levels in den Hangar uebertragen.
+
 **Lager:** die 8 Plaetze sind **nur fuer Module**. Bauteile (Waffen), die
 droppen, kommen immer separat dazu und belegen keinen Lagerplatz.
 
