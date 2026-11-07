@@ -430,9 +430,11 @@ func _storage_card(run: RunState, index: int) -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
-	box.add_child(_label(part.display_name, 20))
-	box.add_child(_label("%s  ·  %s" % [SlotRules.class_label(part.mount_class),
-		RunState._part_text(part)], 16, COLOR_MUTED))
+	# Dieselbe Darstellung wie die Waffen-Karte im Hangar: Symbole, Takt,
+	# Faehigkeit; ein Symbol antippen schreibt den Klartext darunter.
+	var hint := UiKit.label("Symbol antippen: Erklaerung", UiKit.SMALL, UiKit.MUTED)
+	WeaponCard.fill(box, part, hint)
+	box.add_child(hint)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	box.add_child(row)

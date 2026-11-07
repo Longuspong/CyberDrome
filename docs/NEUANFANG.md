@@ -595,7 +595,10 @@ entfallen (6g). Weiter:
 1. ~~Aufraeumen nach 6g~~ (gebaut 6. Nov.), dazu Nimbus-Passive Echo und
    Deflektor/Drohnen-Pod als Waffen (gebaut 7. Nov.); der Nimbus bleibt
    vorerst so stark.
-2. Zwischenstopp nach dem Kampf: Lager, Credits, Ausruesten.
+2. ~~Zwischenstopp nach dem Kampf: Lager, Credits, Ausruesten~~ (gebaut
+   7. Nov.: Phase STOP in `RunState`, Lager 8 Plaetze, Credits je Kampf und
+   fuer Verkaeufe, Beute geht am Ende nach Hause). Credits werden erst mit
+   dem Laden (Punkt 3) ausgegeben.
 3. Module und Rezepte (6g), dann der Laden.
 4. Level fuer DROMEs und Waffen, die nach dem Lauf bleiben.
 5. Karte wie bei FTL mit Chaos-Kaempfen.

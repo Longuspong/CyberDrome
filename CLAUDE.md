@@ -98,8 +98,10 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    Chaos-Kampf statt Chaos-Modus, Nimbus-Passive neu). Reihenfolge: Abschnitt 8.
    Gebaut (6. Nov.): das Aufraeumen nach 6g (Schild nur nach Ruhe, Kerne
    ohne Werte, Kanone raus, Gegnerstaerke fest, Nimbus/Vortex neu), am
-   7. Nov. Echo sowie Deflektor und Drohnen-Pod als Waffen. Als Naechstes:
-   Zwischenstopp (Lager, Credits, Ausruesten).
+   7. Nov. Echo sowie Deflektor und Drohnen-Pod als Waffen, dann der
+   Zwischenstopp (Lager, Credits, Ausruesten), Takt-Leiste im Kampf,
+   Waffen-Karte mit Symbolen und der entschlackte Hangar. Als Naechstes:
+   Module und Rezepte, dann der Laden (Credits ausgeben).
    Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den

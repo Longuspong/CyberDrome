@@ -67,7 +67,12 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * **Overtime** ab 60 s, je Puls wachsend; Zeitgrenze 180 s.
 * **Startzonen** 5 Felder von den Ecken eingerueckt (`deployment.inset`):
   erster Treffer nach rund 2 s statt nach zwei Zyklen.
-* Bildschirm: Kacheln oben (HP, Schild, Schuesse bis zur Faehigkeit "3/3"),
+* **Takt-Leiste** (7. Nov. 2026) unter dem Lebensbalken je Faehigkeit:
+  Treffer-Takt in Abschnitten (jeder 4. Angriff = vier Viertel), Zeit-Takt
+  fuellt sich in halben Sekunden; voll = hell, als Naechstes kommt die
+  Faehigkeit (`Unit.takt_bars()`).
+* Bildschirm: Kacheln oben (HP, Schild, Zaehler bis zur Faehigkeit "1/3 Doppel.";
+  Texte kuerzen statt die Leiste zu verbreitern),
   Zeit und Region, Kamera haelt das Geschehen im Bild, Schussspuren,
   schwebende Zahlen, Faehigkeitsname ueber der Figur. Daumenleiste: Tempo
   1x/2x, Pause, Log, Folgen. Zugleiste, Aktionsring und manueller Kampf sind
@@ -103,6 +108,21 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   mittleres/schweres Teil. Es gibt (noch) kein Geld und keine Seltenheitsstufe
   -- "selten" ist vorlaeufig die Gewichtsklasse.
 
+### Zwischenstopp (7. Nov. 2026) -- `RunState` Phase STOP, `run_screen.gd`
+* Nach JEDEM Kampf (auch nach einer Niederlage), nach der Belohnung.
+* **Credits**: Sieg Leicht 6 / Normal 10 / Elite 16, Niederlage 4; Verkauf
+  einer Waffe leicht 3 / mittel 5 / schwer 8 (`run.tiers.*.credits`,
+  `run.loss_credits`, `run.sell_value`). Ausgeben erst mit dem Laden.
+* **Lager** mit 8 Plaetzen (`run.storage_size`): Beute-Waffen landen dort
+  (Lager voll: nach Hause). Bedienung: Waffe im Lager antippen, dann den
+  Halter -- tauscht, die alte Waffe kommt ins Lager. Ohne Auswahl baut ein
+  Halter aus. Unpassende Halter sagen warum (SlotRules).
+* **Ende des Laufs** (gewonnen, verloren, aufgegeben): alles, was mehr im
+  Lauf ist als beim Start (Lager oder eingebaut), geht nach Hause.
+  Mitgenommene Ausruestung wird nicht verdoppelt, auch nicht beim
+  vorzeitigen "Nach Hause".
+* Ein neuer DROME aus der Belohnung kommt weiter in den Squad oder nach Hause.
+
 ### Chaos-Virus
 * Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
   eigene Mannschaft (`chaos.enemy_power_factor` 0,9). Handicap und Beute
@@ -113,21 +133,21 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Standardausstattung, **alle vier im Squad** (`Roster.seed_starter`).
 
 ### Hangar -- `scripts/ui/hangar_screen.gd`
-* Reiter **Squad** (umgebaut Nov. 2026 nach Skizze des Spielers): oben die
-  anderen Squad-Mitglieder als Kacheln (nur Bild, freie Plaetze "frei"),
-  darunter der Hauptgewaehlte als grosse Box mit Werten, Ausruestung und
-  "Aus dem Squad". Darunter alle DROMEs als Kacheln (3 je Reihe, gruen
-  umrandet = im Squad) -- ohne Ueberschrift. Antippen eines Squad-Mitglieds
-  macht es zum Hauptgewaehlten; Antippen eines anderen klappt unter seiner
-  Reihe Angaben und "In den Squad" auf. Der Knopf "Umbauen" in der Mitte ist
-  weg (der Reiter oben reicht). "Neuen DROME bauen" mit ganzer Chassis-Huelle.
-* Reiter **Umbau**: DROME-Auswahl, Bild + Werte, Halter als Formen mit
-  Klasse darunter (leicht gruen, mittel gelb, schwer rot); der gewaehlte
-  Halter steht im Kasten, die Halter-Karte nennt ihn gross ("Halter links",
-  "MITTEL · nimmt leichte und mittlere Teile"). Teile als Kacheln (nur Form
-  und Bild, passend zuerst, sonst gedaempft); angetippt erscheint DARUEBER
-  eine Karte mit allen Angaben, Grund, Wertaenderung, "ersetzt X",
-  "Einbauen" (Nov. 2026 nach Skizze). "DROME aufloesen" unten.
+* Reiter **Squad** (7. Nov. 2026 nach Wunsch des Spielers): oben der
+  gewaehlte DROME als grosse Box, darunter ALLE DROMEs genau einmal als
+  Kacheln (Squad zuerst, gruen umrandet, ">>" oben links). Plus/Minus oben
+  rechts in der Kachel nimmt in den Squad auf oder heraus. Vorher stand der
+  Squad doppelt da (eigene Reihe oben). "Neuen DROME bauen" darunter.
+* Reiter **Umbau** (7. Nov. 2026 entschlackt): DROME-Auswahl (Squad zuerst,
+  ">>"), Bild + Werte, Halter als Formen mit Klasse darunter. Die lange
+  Halter-Karte ist weg. Ein Waffenbild antippen -- im Halter oder als
+  Kachel -- oeffnet die **Waffen-Karte** (`WeaponCard`): oben links das
+  Bild, rechts die Werte als Symbole (`StatIcon`: Schwert kinetisch, Kugel
+  Energie, Doppelpfeil Tempo, Pfeil Reichweite, Fadenkreuz Angriff, Blitz
+  Faehigkeit, Uhr/Zahnrad Takt nach Zeit/Angriffen, Gewicht), darunter
+  Faehigkeitsname und Kurzbeschreibung. Ein Symbol antippen zeigt seinen
+  Klartext in der Hinweiszeile. Dazu "Einbauen" (mit Wertaenderung) bzw.
+  "Ausbauen". Dieselbe Darstellung im Zwischenstopp. "DROME aufloesen" unten.
 * **Halter-Formen** (`scripts/ui/slot_shape.gd`): Dreieck = leicht,
   Viereck = mittel, Fuenfeck = schwer, Kreis = Kern. Ausruestung traegt
   dieselbe Form wie ihre Klasse. Regel: leicht passt nach oben in groessere
