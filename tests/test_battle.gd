@@ -158,7 +158,7 @@ func _siege_and_drones(display_name: String) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_drone_pod"})
+		"equip_left": &"eq_hammer", "equip_right": &"eq_drone_pod"})
 
 
 func _action_by_id(unit: Unit, id: StringName) -> ActionData:
@@ -169,7 +169,7 @@ func _action_by_id(unit: Unit, id: StringName) -> ActionData:
 
 
 func test_an_area_hit_only_touches_who_it_means() -> void:
-	# Der Belagerungsschlag hat Radius 1. Zielte er auf ein Nachbarfeld, lag der
+	# Ein Flaechenschuss mit Radius 1 (frueher die Kanone). Zielte er auf ein Nachbarfeld, lag der
 	# Schuetze SELBST im Radius -- und execute() wendete die Wirkung auf jeden an,
 	# der auf einem getroffenen Feld stand, ohne nach der Seite zu fragen. Ein
 	# Molok im Handgemenge schoss sich so selbst zusammen, und weder
@@ -188,8 +188,12 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	second_foe.tile = Vector2i(6, 4)   # im Radius, gegnerische Seite
 	var resolver := ActionResolver.new(grid, [shooter, comrade, foe, second_foe])
 
-	var siege := _action_by_id(shooter, &"act_siege")
-	t.ok(siege != null and siege.aoe_radius > 0, "der Belagerungsschlag ist eine Flaeche")
+	# Seit die Kanone weg ist (6g), traegt kein Teil mehr einen reinen
+	# Flaechenschuss -- die Regel gilt trotzdem, also mit einer eigenen Aktion.
+	var siege := ActionData.from_meta({"id": "act_test_area", "category": "attack",
+		"targeting": "aoe_around_target", "range_tiles": 6, "aoe_radius": 1, "power": 20,
+		"interval": 2.0})
+	t.ok(siege != null and siege.aoe_radius > 0, "der Testschuss ist eine Flaeche")
 	t.ok(shooter.tile in resolver.affected_tiles(foe.tile, siege),
 		"und der Schuetze steht bei diesem Ziel wirklich in der eigenen Flaeche")
 
@@ -211,31 +215,65 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	second_foe.free()
 
 
-func test_drone_pod_regenerates_its_carrier_passively() -> void:
-	# Der Drohnen-Pod ist keine aktive Heilung mehr, sondern eine PASSIVE: 5 %
-	# der maximalen Integritaet je eigenem Zug, ohne Knopf. Er heilt nur seinen
-	# Traeger und laeuft nicht ueber das Maximum.
-	var carrier := Unit.create(_siege_and_drones("SANI"), &"E0", false)
-	var maximum := carrier.stat("hp_max")
-	var pct := carrier.stat("hp_regen_pct")
-	t.ok(pct > 0, "der Drohnen-Pod bringt Selbstheilung mit (%d%%)" % pct)
+func test_the_drone_pod_repairs_the_most_hurt_ally() -> void:
+	# 7. Nov. 2026: der Drohnen-Pod ist eine Heil-Waffe. Sein Angriff repariert
+	# den Verbuendeten mit dem geringsten Anteil Integritaet in Reichweite;
+	# ist niemand verletzt, schiesst er auf Gegner.
+	var medic := DromeBuild.create("SANI", {
+		"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core",
+		"equip_left": &"eq_drone_pod"})
+	var tiles := [Vector2i(10, 15), Vector2i(11, 15), Vector2i(12, 15), Vector2i(10, 12)]
+	var battle := BattleManager.new()
+	battle.setup(4242, [medic, _squad()[0], _squad()[1]], [_squad()[0]])
+	for i in tiles.size():
+		var unit: Unit = battle.units[i]
+		battle.grid.clear_occupant(unit.tile)
+	for i in tiles.size():
+		var unit: Unit = battle.units[i]
+		unit.place_at(tiles[i])
+		battle.grid.set_occupant(unit.tile, unit.unit_id)
+	var sani: Unit = battle.units[0]
+	var light: Unit = battle.units[1]
+	var heavy: Unit = battle.units[2]
+	var foe: Unit = battle.units[3]
+	var repair := _action_by_id(sani, &"act_drone_repair")
+	t.ok(repair != null and repair.heal > 0, "der Pod hat einen Heil-Angriff")
 
-	var expected := int(floor(float(maximum) * float(pct) / 100.0))
-	carrier.hp = maximum - 30
-	t.equal(carrier.regenerate_hp(), expected,
-		"geheilt werden %d (= %d%% von %d)" % [expected, pct, maximum])
-	t.equal(carrier.hp, maximum - 30 + expected, "die Integritaet steigt entsprechend")
+	var aim: Dictionary = battle.brain._support_aim(sani, repair)
+	t.ok(aim.is_empty(), "niemand verletzt: keine Heilung")
+	light.hp -= 10
+	heavy.hp = heavy.stat("hp_max") / 2
+	aim = battle.brain._support_aim(sani, repair)
+	t.equal(aim.get("target"), heavy, "geheilt wird, wer den geringsten Anteil hat")
+	var before := heavy.hp
+	t.ok(battle.resolver.execute(sani, heavy.tile, repair), "die Heilung geht raus")
+	t.equal(heavy.hp, before + repair.heal, "und repariert %d" % repair.heal)
 
-	carrier.hp = maximum - 1
-	carrier.regenerate_hp()
-	t.equal(carrier.hp, maximum, "die Heilung laeuft nicht ueber das Maximum")
+	heavy.hp = heavy.stat("hp_max")
+	light.hp = light.stat("hp_max")
+	var foe_before := foe.shield + foe.hp
+	t.ok(battle.brain._fire(sani, sani.mounts[0], foe), "niemand verletzt: er schiesst")
+	t.ok(foe.shield + foe.hp < foe_before, "und trifft den Gegner")
+	battle.free()
 
-	var plain := Unit.create(_squad()[0], &"P0", true)
-	plain.hp = 10
-	t.equal(plain.regenerate_hp(), 0, "wer keinen Drohnen-Pod traegt, regeneriert nicht")
 
-	carrier.free()
-	plain.free()
+func test_the_deflector_charges_its_own_shield() -> void:
+	var tank := DromeBuild.create("WALL", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"})
+	var unit := Unit.create(tank, &"P0", true)
+	var resolver := ActionResolver.new(Grid.new(10, 10), [unit])
+	unit.tile = Vector2i(3, 3)
+	var charge := _action_by_id(unit, &"act_deflector_charge")
+	t.ok(charge != null and charge.shield_gain > 0, "der Deflektor hat die Schildladung")
+	unit.shield = unit.shield_max()
+	t.ok(resolver.execute(unit, unit.tile, charge), "sie wirkt auf den Traeger")
+	t.equal(unit.shield, unit.shield_max() + charge.shield_gain, "auch ueber das Maximum")
+	resolver.execute(unit, unit.tile, charge)
+	t.equal(unit.shield, unit.shield_max() + charge.shield_gain, "aber nicht beliebig weit")
+	unit.free()
 
 
 ## Ein Squad, das ALLE drei Faehigkeiten des Bestands traegt -- sonst misst der
@@ -245,7 +283,7 @@ func _ability_squad() -> Array:
 		DromeBuild.create("KOEDER", {
 			"body": &"jugg_body", "head": &"jugg_head",
 			"feet": &"jugg_feet", "core": &"jugg_core",
-			"equip_left": &"eq_siege_cannon", "equip_right": &"eq_bait_beacon"}),
+			"equip_left": &"eq_hammer", "equip_right": &"eq_bait_beacon"}),
 		DromeBuild.create("SANI", {
 			"body": &"mage_body", "head": &"mage_head",
 			"feet": &"mage_drive", "core": &"mage_core",
@@ -284,7 +322,10 @@ func test_every_ability_fires_by_itself() -> void:
 	var squads := [_ability_squad(), _squad(), [DromeBuild.create("BOOST", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_holo_boost"})]]
+		"equip_left": &"eq_holo_boost"})], [DromeBuild.create("ORBIT", {
+		"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core",
+		"equip_left": &"eq_orbit_focus"})]]
 	var uses := {}
 	for squad in squads:
 		var measured: Dictionary = _record(8, squad, 7000)
@@ -294,7 +335,7 @@ func test_every_ability_fires_by_itself() -> void:
 	# direkt danebensteht, und solange es keine Nahkampfwaffe gibt (Plasmaklinge
 	# und Hammer kommen erst), kommt im Kampf niemand so nah. Sein Ausloeser
 	# wird in tests/test_dash.gd geprueft.
-	for id in [&"act_pulse_double", &"act_siege_barrage", &"act_rune_vortex",
+	for id in [&"act_pulse_double", &"act_rune_vortex",
 			&"act_rail_pierce", &"act_orbitpull"]:
 		t.ok(int(uses.get(id, 0)) > 0, "%s loest im Kampf aus (%d)" % [id, uses.get(id, 0)])
 	t.note("Aktionen: %s" % str(uses))
@@ -409,3 +450,45 @@ func test_generated_enemies_are_always_valid() -> void:
 			var problems: Array[String] = build.validate()
 			t.ok(problems.is_empty(), "%s ist baubar: %s"
 				% [build.display_name, ", ".join(problems)])
+
+
+func test_shield_overflow_is_not_multiplied_onto_integrity() -> void:
+	# Bricht ein Treffer den Schild, trifft nur der Rest die Integritaet --
+	# ohne Schildfaktor. Frueher ging der Schildbrecher (Energie x1,2, Schild
+	# x2) mit dem vollen Faktor auf die HP durch.
+	var grid := Grid.new(10, 10)
+	var target := Unit.create(_squad()[0], &"E0", false)
+	var resolver := ActionResolver.new(grid, [target])
+	target.shield = 0
+	var bare: int = resolver.resolve_damage(target, 12, 1.0, 2.0)["hp"]
+	target.shield = 5
+	var broken: Dictionary = resolver.resolve_damage(target, 12, 1.0, 2.0)
+	t.equal(int(broken["shield_after"]), 0, "der Schild ist weg")
+	t.ok(int(broken["hp"]) < bare,
+		"ein Rest Schild faengt etwas ab: %d < %d" % [broken["hp"], bare])
+	target.shield = 0
+	var rest: int = resolver.resolve_damage(target, 10, 1.0, 2.0)["hp"]
+	t.ok(int(broken["hp"]) <= rest,
+		"5 Schild kosten den Schildbrecher gut 2 Rohschaden: %d <= %d" % [broken["hp"], rest])
+	target.free()
+
+
+func test_shield_recharges_only_after_a_calm_spell() -> void:
+	# 6g: keine Grundregeneration. Erst nach der Ruhezeit laedt der Schild.
+	var unit := Unit.create(_squad()[0], &"P0", true)
+	var maximum := unit.shield_max()
+	unit.shield = 0
+	unit.note_damage()
+	var gained := 0
+	for i in 60:   # 3 s
+		gained += unit.recharge_shield(0.05)
+	t.equal(gained, 0, "in den ersten Sekunden nach einem Treffer laedt nichts")
+	for i in 60:   # weitere 3 s
+		gained += unit.recharge_shield(0.05)
+	t.ok(gained > 0 and unit.shield <= maximum,
+		"nach der Ruhezeit laedt er wieder (%d von %d)" % [unit.shield, maximum])
+	unit.note_damage()
+	var before := unit.shield
+	unit.recharge_shield(0.05)
+	t.equal(unit.shield, before, "ein neuer Treffer stoppt das Nachladen")
+	unit.free()

@@ -58,7 +58,7 @@
     "actions": [
       {
         "id": "act_runestaff",
-        "display_name": "Runenschlag",
+        "display_name": "Angriff",
         "category": "attack",
         "targeting": "single",
         "range_tiles": 3,
@@ -72,23 +72,26 @@
         "shots": 1,
         "gather": false,
         "delay": 0.0,
-        "status": null
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": ""
       },
       {
         "id": "act_rune_vortex",
         "display_name": "Vortex",
         "category": "ability",
         "targeting": "aoe_around_target",
-        "range_tiles": 3,
+        "range_tiles": 5,
         "aoe_radius": 2,
         "power": 14,
         "push_tiles": 0,
         "energy_fraction": 1.0,
         "interval": 2.0,
         "trigger": {
-          "kind": "attacks",
-          "every": 5,
-          "weapon": "act_runestaff"
+          "kind": "time",
+          "every": 3,
+          "weapon": ""
         },
         "shield_mult": 1.0,
         "shots": 1,
@@ -98,7 +101,10 @@
           "id": "slow",
           "seconds": 2.5,
           "move_mult": 0.6
-        }
+        },
+        "heal": 0,
+        "shield_gain": 0,
+        "support": ""
       }
     ]
   }

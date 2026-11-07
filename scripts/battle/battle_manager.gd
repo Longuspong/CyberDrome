@@ -278,6 +278,7 @@ func tick() -> void:
 		if not unit.is_alive():
 			continue
 		unit.tick_statuses(_dt)
+		unit.recharge_shield(_dt)
 		brain.update(unit, _dt)
 		if outcome != Outcome.RUNNING:
 			return
@@ -316,9 +317,9 @@ func pulse_seconds() -> float:
 	return _pulse
 
 
-## Was je Puls laeuft: Schild, Reparatur, Overtime.
+## Was je Puls laeuft: Reparatur, Overtime. Der Schild laedt nicht mehr je
+## Puls, sondern nach Ruhe (Unit.recharge_shield, jeden Schritt).
 func _pulse_unit(unit: Unit) -> void:
-	unit.regenerate_shield()
 	var healed := unit.regenerate_hp()
 	if healed > 0:
 		EventBus.unit_healed.emit(unit, healed, unit)

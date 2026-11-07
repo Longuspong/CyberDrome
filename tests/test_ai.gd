@@ -16,7 +16,7 @@ func _vireo() -> DromeBuild:
 
 func _molok() -> DromeBuild:
 	return DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_siege_cannon"})
+		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_hammer"})
 
 
 func _nimbus() -> DromeBuild:
@@ -87,10 +87,10 @@ func test_a_controller_waits_until_the_frontline_fights() -> void:
 	t.equal(battle.brain.next_step(nimbus, foe), nimbus.tile,
 		"solange der Molok niemanden trifft, wartet der Nimbus")
 
-	# Molok in Reichweite seiner Kanone: jetzt ist die Frontlinie im Kampf.
+	# Molok am Gegner (Hammer, Reichweite 1): jetzt ist die Frontlinie im Kampf.
 	var molok: Unit = battle.units[1]
 	battle.grid.clear_occupant(molok.tile)
-	molok.place_at(Vector2i(12, 8))
+	molok.place_at(Vector2i(10, 5))
 	battle.grid.set_occupant(molok.tile, molok.unit_id)
 	t.ok(battle.brain.next_step(nimbus, foe) != nimbus.tile,
 		"sobald die Frontlinie trifft, rueckt der Nimbus nach")
@@ -173,7 +173,7 @@ func test_allies_prefer_a_shared_target() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Nimbus: Runenstab, Vortex, Zauberwirker
+# Nimbus: Runenstab, Vortex, Echo
 # ---------------------------------------------------------------------------
 
 func _action(unit: Unit, id: StringName) -> ActionData:
@@ -191,7 +191,8 @@ func test_the_rune_staff_hits_one_target_at_blaster_range() -> void:
 	t.equal(staff.range_tiles, blaster.range_tiles, "Runenstab reicht so weit wie der Blaster")
 	t.equal(staff.aoe_radius, 0, "und trifft immer nur ein Ziel")
 	var vortex := _action(unit, &"act_rune_vortex")
-	t.equal(int(vortex.trigger_every), 5, "nach vier normalen Angriffen kommt der Vortex")
+	t.equal(vortex.trigger_kind, "time", "der Vortex kommt nach Zeit, nicht nach Angriffen")
+	t.equal(float(vortex.trigger_every), 3.0, "alle 3 s")
 	unit.free()
 	vireo.free()
 
@@ -229,41 +230,42 @@ func test_the_vortex_gathers_then_strikes_then_slows() -> void:
 	battle.free()
 
 
-func test_the_spellcaster_halves_the_wait_after_an_ability() -> void:
+func test_echo_lengthens_the_takt_and_casts_twice() -> void:
+	# Echo (Nimbus, 7. Nov. 2026): Takt 50 % laenger, Faehigkeit wirkt zweimal.
 	var battle := _battle([_nimbus(), _vireo()], [_vireo()],
 		[Vector2i(4, 16), Vector2i(6, 16), Vector2i(10, 4)])
 	var nimbus: Unit = battle.units[0]
 	var vireo: Unit = battle.units[1]
 	var vortex := _action(nimbus, &"act_rune_vortex")
 	var scatter := _action(vireo, &"act_pulse_double")
-	t.equal(nimbus.passive(), "spellcaster", "der Nimbus ist Zauberwirker")
-	# Vortex: vier normale Angriffe, danach nur noch zwei.
-	t.equal(int(vortex.trigger_every) - 1 - battle.brain._count_after_ability(nimbus, vortex), 2,
-		"nach dem Vortex braucht er zwei statt vier Angriffe")
-	# Blaster am Nimbus: zwei normale, danach einer (Doppelschuss, Schuss, Doppelschuss).
-	t.equal(int(scatter.trigger_every) - 1 - battle.brain._count_after_ability(nimbus, scatter), 1,
-		"mit dem Blaster: Doppelschuss, ein Schuss, Doppelschuss")
-	t.equal(battle.brain._count_after_ability(vireo, scatter), 0,
-		"ohne die Passive beginnt die Zaehlung von vorn")
+	t.equal(nimbus.passive(), "echo", "der Nimbus hat Echo")
+	t.equal(vortex.trigger_kind, "time", "der Vortex loest nach Zeit aus")
+	t.equal(vortex.range_tiles, 5, "mit Reichweite 5")
+	t.equal(battle.brain._time_after_ability(nimbus, vortex), 4.5, "Takt 3 s -> 4,5 s")
+	t.equal(battle.brain.trigger_every(nimbus, scatter), 4,
+		"Blaster am Nimbus: jeder 4. statt jeder 3. Angriff")
+	t.equal(battle.brain.trigger_every(vireo, scatter), 3, "ohne Echo bleibt es beim 3.")
 	battle.free()
 
 
-func test_a_nimbus_casts_more_often_than_its_staff_alone_would() -> void:
-	# Im Kampf: nach dem ersten Vortex kommt jeder weitere nach zwei Angriffen.
-	var seq := []
+func test_echo_casts_the_vortex_twice_in_a_row() -> void:
+	# Im Kampf: der Vortex kommt paarweise, zwischen den Paaren 4,5 s.
+	var times := []
+	var clock := {"battle": null}
 	var record := func(unit, _tile, action):
-		if unit.display_name == "Nimbus" and unit.is_player:
-			seq.append(action.id)
+		if unit.display_name == "Nimbus" and unit.is_player and action.id == &"act_rune_vortex":
+			times.append(clock["battle"].time)
 	EventBus.action_used.connect(record)
 	var battle := BattleManager.new()
+	clock["battle"] = battle
 	battle.setup(6060, [_nimbus(), _molok()], [_molok(), _molok()])
 	battle.run_to_end(40.0)
 	battle.free()
 	EventBus.action_used.disconnect(record)
-	var first := seq.find(&"act_rune_vortex")
-	t.ok(first == 4, "der erste Vortex nach vier Angriffen (Folge %s)" % str(seq.slice(0, 8)))
-	if first >= 0 and seq.size() > first + 3:
-		t.equal(seq[first + 3], &"act_rune_vortex", "der naechste schon nach zwei Angriffen")
+	t.ok(times.size() >= 4, "der Nimbus zaubert mehrmals (%d)" % times.size())
+	if times.size() >= 4:
+		t.ok(is_equal_approx(times[0], times[1]), "Echo: zweimal im selben Augenblick")
+		t.ok(times[2] - times[1] >= 4.45, "dann der volle Takt (%.2f s)" % (times[2] - times[1]))
 
 
 # ---------------------------------------------------------------------------

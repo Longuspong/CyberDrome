@@ -57,7 +57,7 @@
     "actions": [
       {
         "id": "act_pulse",
-        "display_name": "Puls-Salve",
+        "display_name": "Angriff",
         "category": "attack",
         "targeting": "single",
         "range_tiles": 3,
@@ -71,7 +71,10 @@
         "shots": 1,
         "gather": false,
         "delay": 0.0,
-        "status": null
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": ""
       },
       {
         "id": "act_pulse_double",
@@ -93,7 +96,10 @@
         "shots": 2,
         "gather": false,
         "delay": 0.0,
-        "status": null
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": ""
       }
     ]
   }

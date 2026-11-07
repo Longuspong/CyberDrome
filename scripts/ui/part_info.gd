@@ -16,7 +16,6 @@ extends RefCounted
 const ROLE := {
 	&"eq_pulse_blaster": "Leichte Allzweckwaffe auf mittlere Distanz. Halb Energieschaden -- gut gegen Schilde.",
 	&"eq_deflector": "Ein Energieschild zum Umschnallen: mehr Schild, der sich jeden Puls (alle 3 s) wieder auflaedt. Keine eigene Aktion.",
-	&"eq_siege_cannon": "Schwerer Moerser mit grosser Reichweite. Trifft das Ziel und alle acht Felder darum herum.",
 	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integritaet zurueck.",
 	&"eq_rune_staff": "Nahkampfstab mit reinem Energieschaden. Trifft das Ziel und die vier geraden Nachbarfelder.",
 	&"eq_orbit_focus": "Kontrolle statt Schaden: zieht einen Gegner zu sich heran.",
@@ -28,7 +27,7 @@ const ROLE := {
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
 ## SPD ist die Laufgeschwindigkeit, Faehigkeiten loesen nach ihrer Regel aus.
 const STAT_LABELS := [
-	["hp", "Integritaet"], ["shield", "Schild"], ["shield_regen", "Schild je Puls"],
+	["hp", "Integritaet"], ["shield", "Schild"],
 	["def", "Panzerung"], ["atk", "Angriff"], ["spd", "Tempo (SPD, Laufgeschwindigkeit)"],
 ]
 
@@ -71,7 +70,10 @@ static func lines(part: PartData) -> Array:
 		if part.actions.is_empty():
 			out.append(["Passiv: wirkt immer, ohne eigene Aktion.", "note"])
 		for action in part.actions:
-			out.append(["%s (%s)" % [action.display_name, action.category_label()], "action"])
+			# Angriffe haben keinen eigenen Namen (6g) -- nur die Faehigkeit.
+			var title := action.category_label() if action.is_attack() \
+				else "%s (%s)" % [action.display_name, action.category_label()]
+			out.append([title, "action"])
 			for line in action_lines(action):
 				out.append([line, "detail"])
 	return out
@@ -95,8 +97,8 @@ static func traits(part: PartData) -> Array[String]:
 			out.append("Praesenz: Gegner im Umkreis %d greifen ihn an; %d %% des Schadens an Verbuendeten im Umkreis %d faengt er ab." % [
 				int(p.get("lure_radius", 2)), int(round(float(p.get("guard_share", 0.3)) * 100.0)),
 				int(p.get("guard_radius", 3))])
-		"spellcaster":
-			out.append("Zauberwirker: nach jeder Faehigkeit braucht die Waffe nur halb so viele Angriffe bis zur naechsten.")
+		"echo":
+			out.append("Echo: jede Faehigkeit wirkt zweimal, ihr Takt ist dafuer 50 % laenger.")
 	return out
 
 
@@ -104,13 +106,17 @@ static func traits(part: PartData) -> Array[String]:
 static func action_lines(action: ActionData) -> Array[String]:
 	var out: Array[String] = []
 	var reach := "Reichweite %d" % action.range_tiles
-	if action.range_tiles <= 1:
+	if action.support == "self":
+		reach = "auf sich selbst"
+	elif action.range_tiles <= 1:
 		reach = "Nahkampf (Reichweite 1)"
 	var what := ""
 	if action.is_move():
 		what = "springt bis %d Felder geradeaus" % action.range_tiles
 	elif action.power > 0:
 		what = "Staerke %d" % action.power
+	elif action.heal > 0 or action.shield_gain > 0:
+		what = "Unterstuetzung"
 	else:
 		what = action.effect_summary()
 	out.append("%s · %s" % [reach, what])
@@ -137,17 +143,23 @@ static func action_lines(action: ActionData) -> Array[String]:
 		out.append("Danach schlaegt nach %s s eine Schockwelle zu." % ActionData._seconds(action.delay))
 	if not action.status.is_empty():
 		out.append("Getroffene: %s." % action.status_text())
+	if action.heal > 0:
+		out.append("Repariert %d Integritaet beim Verbuendeten mit dem geringsten Anteil; ist niemand verletzt, schiesst er auf Gegner." % action.heal)
+	if action.shield_gain > 0:
+		var who := "dem Traeger" if action.support == "self" \
+			else "dem am staerksten verletzten Verbuendeten"
+		out.append("Gibt %s %d Schild (auch ueber das Maximum)." % [who, action.shield_gain])
 	if action.push_tiles > 0:
 		out.append("Stoesst das Ziel %d Feld(er) weg." % action.push_tiles)
 	elif action.push_tiles < 0:
 		out.append("Zieht das Ziel %d Feld(er) heran." % absi(action.push_tiles))
 
-	# Wann sie kommt: Waffen schiessen in ihrem Takt, Faehigkeiten nach ihrer
-	# Regel -- beides ohne Energie.
+	# Wann sie kommt: Angriffe nach ihrem Intervall, Faehigkeiten nach ihrem
+	# Takt (so heisst die Ausloesevoraussetzung seit 7. Nov. 2026).
 	if action.is_attack():
 		out.append("Schiesst alle %s s." % ActionData._seconds(action.interval))
 	elif action.trigger_kind != "":
-		out.append("Loest von selbst aus: %s." % action.trigger_text())
+		out.append("Takt: %s." % action.trigger_text())
 		if action.trigger_kind == "attacks":
 			out.append("Dieser Angriff ersetzt den normalen Schuss.")
 	return out

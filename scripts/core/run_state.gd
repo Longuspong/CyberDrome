@@ -90,9 +90,21 @@ static func start(seed_value: int, chosen: Array = []) -> RunState:
 	var source: Array = chosen if not chosen.is_empty() else standard_squad()
 	for build in source.slice(0, squad_max()):
 		run.squad.append(build.clone())
-	run.base_power = DromeBuild.squad_power(run.squad)
 	run.start_size = run.squad.size()
+	run.base_power = reference_power(run.start_size)
 	return run
+
+
+## Die Bezugsstaerke der Gegner (6g): NICHT die Staerke des mitgenommenen
+## Squads, sondern der Durchschnitt der Standard-DROMEs mal der Zahl der
+## mitgenommenen DROMEs. So bringen staerkere Aufbauten (und spaeter Level)
+## wirklich weiter, statt dass die Gegner mitwachsen. Region und Runde
+## stecken in der Kurve von enemy_power().
+static func reference_power(size: int) -> float:
+	var standard := standard_squad()
+	if standard.is_empty():
+		return 0.0
+	return DromeBuild.squad_power(standard) / float(standard.size()) * float(maxi(1, size))
 
 
 ## Die vier Standard-DROMEs in voller Standardausstattung -- derselbe
@@ -150,8 +162,9 @@ func enemy_count(which: int = -1) -> int:
 	return clampi(start_size + offset, 1, squad_max())
 
 
-## Die Gegnerstaerke: ein fester Anteil der Startstaerke, der je Runde waechst,
-## mal dem Faktor der Stufe. Bewusst unabhaengig vom aktuellen Squad.
+## Die Gegnerstaerke: ein fester Anteil der Bezugsstaerke (reference_power),
+## der je Runde waechst, mal dem Faktor der Stufe. Bewusst unabhaengig davon,
+## wie stark der mitgenommene Squad ist.
 func enemy_power(which: int = -1) -> float:
 	if which < 0:
 		which = tier

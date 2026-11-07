@@ -34,7 +34,7 @@ func _stock(set_id: String) -> DromeBuild:
 
 
 func test_library_loaded() -> void:
-	t.equal(PartDB.parts.size(), 28, "28 Bauteile erwartet")
+	t.equal(PartDB.parts.size(), 27, "27 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausaetze erwartet")
 	for part in PartDB.parts.values():
 		t.equal(part.views.size(), 4, "%s braucht vier Ansichten" % part.id)
@@ -73,20 +73,21 @@ func test_a_build_without_a_weapon_is_a_decision_not_an_error() -> void:
 	# Frueher war "Keine Waffe bestueckt" ein struktureller Fehler. Das nahm dem
 	# Slotmodell die Aussage, fuer die es da ist: welche Aktionen ein DROME hat,
 	# sagt seine Ausruestung. Wer Deflektor und Drohnen-Pod traegt, hat eben
-	# keinen Angriff -- eine Entscheidung mit Folgen, keine Panne. Beide Gadgets
-	# sind rein passiv (Panzerung bzw. Selbstheilung), der Techniker also ganz
-	# ohne aktive Aktion -- und trotzdem gueltig.
+	# keinen Angriff -- eine Entscheidung mit Folgen, keine Panne. Seit 7. Nov.
+	# haben Deflektor und Drohnen-Pod einen Angriff; der Koedersender ist
+	# weiter rein passiv, der Techniker also ganz ohne aktive Aktion -- und
+	# trotzdem gueltig.
 	var techniker := DromeBuild.create("TECHNIKER", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_deflector", "equip_right": &"eq_drone_pod"})
+		"equip_left": &"eq_bait_beacon"})
 	t.ok(techniker.weapons().is_empty(), "der Techniker traegt keine Waffe")
 	t.ok(techniker.is_valid(),
 		"und ist trotzdem baubar: %s" % ", ".join(techniker.validate()))
 	t.ok(techniker.actions_of(ActionData.Category.ATTACK).is_empty(),
 		"die Folge steht in der Aktionsliste: kein Angriff")
 	t.ok(techniker.actions().is_empty(),
-		"beide Gadgets sind passiv -- gar keine Aktion, und das ist gueltig")
+		"der Sender ist passiv -- gar keine Aktion, und das ist gueltig")
 
 
 func test_the_payload_slows_you_down() -> void:
@@ -96,9 +97,9 @@ func test_the_payload_slows_you_down() -> void:
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core"})
 	var armed := bare.clone()
-	armed.slots["equip_left"] = &"eq_siege_cannon"
+	armed.slots["equip_left"] = &"eq_hammer"
 
-	var cannon := PartDB.get_part(&"eq_siege_cannon")
+	var cannon := PartDB.get_part(&"eq_hammer")
 
 	t.equal(bare.payload_slowdown(), 0, "ohne Zuladung bremst nichts")
 	t.equal(armed.payload_slowdown(), cannon.weight / step,
@@ -123,7 +124,7 @@ func test_the_same_weapon_slows_every_chassis_equally() -> void:
 		"derselbe Runenstab, derselbe Abzug")
 
 	var heavy := molok.clone()
-	heavy.slots["equip_left"] = &"eq_siege_cannon"
+	heavy.slots["equip_left"] = &"eq_rail_lance"
 	t.ok(heavy.payload_slowdown() > molok.payload_slowdown(),
 		"die schwerere Waffe bremst staerker (%d gegen %d)"
 		% [heavy.payload_slowdown(), molok.payload_slowdown()])
@@ -135,7 +136,7 @@ func test_the_molok_has_two_holders() -> void:
 	var molok := DromeBuild.create("MOLOK", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_deflector"})
+		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"})
 	t.ok(molok.is_valid(), "Kanone und Deflektor sind baubar: %s"
 		% ", ".join(molok.validate()))
 
@@ -151,8 +152,8 @@ func test_the_molok_has_two_holders() -> void:
 
 func test_apply_chassis_sets_the_whole_frame() -> void:
 	# Ein Chassis-Pick setzt Koerper, Kopf und Fuesse gemeinsam aus einem Set
-	# (GAME_DESIGN §9). Kern und Ausruestung bleiben unberuehrt -- der Kern ist
-	# universal, die Ausruestung eine eigene Entscheidung.
+	# (GAME_DESIGN §9), seit 6g auch den Kern (nur noch Optik). Die Ausruestung
+	# bleibt unberuehrt -- sie ist eine eigene Entscheidung.
 	var build := DromeBuild.create("WECHSEL", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"mage_core",
@@ -162,7 +163,7 @@ func test_apply_chassis_sets_the_whole_frame() -> void:
 	t.equal(build.slots["body"], &"jugg_body", "Koerper gewechselt")
 	t.equal(build.slots["head"], &"jugg_head", "der Kopf zieht mit")
 	t.equal(build.slots["feet"], &"jugg_feet", "die Fuesse ziehen mit")
-	t.equal(build.slots["core"], &"mage_core", "der Kern bleibt -- er ist universal")
+	t.equal(build.slots["core"], &"jugg_core", "der Kern zieht mit -- er gehoert zum Rahmen")
 	t.equal(build.slots["equip_left"], &"eq_pulse_blaster", "die Ausruestung bleibt")
 
 	var frame_sets := {}
@@ -191,7 +192,7 @@ func test_weight_no_longer_vetoes_a_build_only_slows_it() -> void:
 	var build := DromeBuild.create("SCHWER", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon",
+		"equip_left": &"eq_hammer",
 	})
 	t.ok(build.is_valid(), "der schwere Aufbau ist baubar: %s"
 		% ", ".join(build.validate()))
@@ -207,7 +208,7 @@ func test_the_frame_is_one_hull() -> void:
 	var mixed := DromeBuild.create("MISCHMASCH", {
 		"body": &"jugg_body", "head": &"scout_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon",
+		"equip_left": &"eq_hammer",
 	})
 	var named := false
 	for line in mixed.validate():
@@ -221,7 +222,7 @@ func test_the_frame_is_one_hull() -> void:
 	var foreign_core := DromeBuild.create("FREMDKERN", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"scout_core",
-		"equip_left": &"eq_siege_cannon",
+		"equip_left": &"eq_hammer",
 	})
 	t.ok(foreign_core.is_valid(),
 		"ein universeller Kern in einer stimmigen Huelle ist baubar: %s"
@@ -230,7 +231,7 @@ func test_the_frame_is_one_hull() -> void:
 
 func test_slot_rules_are_enforced() -> void:
 	var jugg := PartDB.get_part(&"jugg_body")
-	var cannon := PartDB.get_part(&"eq_siege_cannon")
+	var cannon := PartDB.get_part(&"eq_hammer")
 	var pod := PartDB.get_part(&"eq_drone_pod")
 	t.ok(jugg.accepts(cannon, "equip_left"), "schwere Kanone passt an den linken Arm")
 	t.ok(not jugg.accepts(cannon, "equip_right"), "rechts nur Schild oder Gadget")
@@ -258,7 +259,7 @@ func test_chassis_swap_drops_equipment_that_no_longer_fits() -> void:
 	var build := DromeBuild.create("WECHSEL", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon",
+		"equip_left": &"eq_hammer",
 	})
 	var before: int = build.stats()["weight"]
 	var delta := build.preview_delta("body", &"scout_body")
@@ -292,7 +293,7 @@ func test_the_same_part_twice_grants_one_action() -> void:
 	var build := DromeBuild.create("DOPPELT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_orbit_focus",
+		"equip_left": &"eq_hammer", "equip_right": &"eq_orbit_focus",
 	})
 	var single: int = build.stats()["atk"]
 	var actions_before := build.actions().size()
@@ -308,7 +309,7 @@ func test_actions_are_split_by_budget() -> void:
 	var build := DromeBuild.create("GEMISCHT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_orbit_focus",
+		"equip_left": &"eq_hammer", "equip_right": &"eq_orbit_focus",
 	})
 	var attacks := build.actions_of(ActionData.Category.ATTACK)
 	var abilities := build.actions_of(ActionData.Category.ABILITY)
@@ -365,7 +366,7 @@ func test_a_part_finds_its_own_slot() -> void:
 
 	# Rechts nimmt der Molok nur Schild oder Gadget. Eine Kanone landet deshalb
 	# NICHT dort, auch wenn der rechte Halter angewaehlt ist.
-	var cannon := PartDB.get_part(&"eq_siege_cannon")
+	var cannon := PartDB.get_part(&"eq_hammer")
 	var target := build.slot_for(cannon, "equip_right")
 	t.equal(target, "equip_left", "die Kanone landet links")
 
@@ -376,7 +377,7 @@ func test_a_part_that_fits_nowhere_says_so() -> void:
 	# trotzdem, ausgegraut und mit Grund; dafuer muss "nirgendwo" eine Antwort
 	# sein und kein Zufallsslot.
 	var build := _stock("bot1")
-	var cannon := PartDB.get_part(&"eq_siege_cannon")
+	var cannon := PartDB.get_part(&"eq_hammer")
 	t.equal(build.slot_for(cannon), "",
 		"was in keinen Halter darf, bekommt keinen zugewiesen")
 
@@ -385,7 +386,7 @@ func test_the_first_free_holder_wins_before_an_occupied_one() -> void:
 	var build := DromeBuild.create("HALBVOLL", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon",
+		"equip_left": &"eq_hammer",
 	})
 	var shield := PartDB.get_part(&"eq_deflector")
 	t.equal(build.slot_for(shield), "equip_right",
@@ -405,7 +406,7 @@ func _overloaded_molok() -> DromeBuild:
 	return DromeBuild.create("VOLLBESTUECKT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_siege_cannon", "equip_right": &"eq_drone_pod",
+		"equip_left": &"eq_hammer", "equip_right": &"eq_drone_pod",
 	})
 
 

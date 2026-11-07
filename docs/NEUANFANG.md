@@ -4,7 +4,8 @@ Stand 6. November 2026. **Zur Besprechung.** Gebaut sind bisher: die
 KI-Grundlage (Abschnitt 5), der Nimbus (6a), ein Ausruestungsplatz je DROME
 mit Molok zwei (6c), der Vireo mit Passive, Doppelschuss, Plasmaklinge und
 Neon-Blaster (6c), der Leucht-Prototyp fuer Neon (7c), der Molok (6d) und
-die Aufstellung vor dem Kampf (6e).
+die Aufstellung vor dem Kampf (6e) und die Zielregel je Rolle (6f).
+Entschieden, aber noch nicht gebaut: Begriffe, Module, Level, Karte (6g).
 Hier steht, was der Spieler im Gespraech vorgegeben hat, was ich daraus
 vorschlage und welche Fragen offen sind. Entschiedenes wandert danach in
 `PROJEKTSTAND.md` und `CLAUDE.md`.
@@ -64,7 +65,7 @@ KI. Die Waffe entscheidet, WIE er sie ausspielt.
 | **Vireo** | wendig, Assassine oder Kiter | **Sprint** (Vorgabe, gebaut): jeder Treffer gibt 2 s lang +40 % Lauftempo (`data/config.json` -> `passives`) | schnittig: mit Fernwaffe Abstand halten und kiten, mit Klinge am Ziel kleben |
 | **Molok** | Tank, Frontlinie | **Praesenz: zieht Aggro und faengt Schaden fuer Verbuendete ab** (Vorgabe). Vorschlag: Gegner in 2 Feldern Umkreis bekommen Aggro auf ihn gebucht, und 30 % des Schadens an Verbuendeten neben ihm gehen auf ihn | geht IN den Schadensbereich, stellt sich zwischen Gegner und die eigene Hinterreihe, weicht nie aus |
 | **Strix** | Scharfschuetze | **+30 % Schaden auf maximaler Reichweite** (Vorgabe, "koennte ich mir vorstellen") | sucht das Feld auf genau maximaler Reichweite und bleibt dort; weicht nur aus, wenn jemand direkt danebensteht |
-| **Nimbus** | Magier, Kontrolle | **Zauberwirker** (Vorgabe, gebaut): nach jeder Faehigkeit braucht die Waffe nur halb so viele normale Angriffe bis zur naechsten (abgerundet, mind. 1). Vortex: 4 Angriffe, danach 2. Mit Blaster: Streusalve, Schuss, Streusalve | wartet hinter der Frontlinie, dann auf Blaster-Reichweite |
+| **Nimbus** | Magier, Kontrolle | **Echo** (gebaut 7. Nov., ersetzt den Zauberwirker): Takt 50 % laenger, jede Faehigkeit wirkt zweimal (6g) | wartet hinter der Frontlinie, dann auf Blaster-Reichweite |
 
 **Ausruestung:** jeder DROME **1 Ausruestungsplatz, der Molok 2** (Vorgabe:
 "erstmal"). Folge: die Halterklassen (leicht/mittel/schwer) verlieren ihren
@@ -287,6 +288,144 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
   **Jaegerklasse**, die verwundbare Ziele jagt (Zielregel "hunter" steht
   schon bereit).
 
+## 6g. Begriffe, Module, Level, Karte (entschieden 6. Nov. 2026, teils gebaut)
+
+Ersetzt in Teilen Abschnitt 1 (Lauf-Verbesserungen), 4 (Kerne) und 7a/7e
+(Module, Rezepte).
+
+**Begriffe**
+
+* Alles, was in einen Halter passt, heisst **Waffe** (auch Deflektor und
+  Drohnen-Pod) -- ein DROME ohne Angriff ist sinnlos. Jede Waffe hat einen
+  **Angriff** (ohne eigenen Namen, heisst einfach "Angriff") und eine
+  **Faehigkeit** (mit Namen, z. B. Doppelschuss, Vortex).
+* Welche Waffe passt, regelt allein der **Halter** (leicht/mittel/schwer,
+  leicht passt nach oben). Keine Liste "wer darf was" -- ein Strix darf einen
+  Blaster tragen, auch wenn es wenig Sinn ergibt.
+* **Module** gibt es nur im Lauf; sie veraendern, wie eine Waffe
+  funktioniert. Drei Klassen: **Angriff** (Modifikatoren), **Abwehr/Konter**,
+  **Taktik** (Spezialeffekte, Dauer von Faehigkeiten und Effekten). Module
+  koennen Bedingungen haben (z. B. nur an Fernwaffen).
+
+**Waffen, die bleiben:** Blaster, Neon-Blaster, Plasmaklinge, Hammer, Lanze,
+Runenstab, Deflektor, Drohnen-Pod (als Heilwaffe, Vorschlag unten).
+**Faellt weg:** Belagerungskanone. **Werden Module:** Koedersender (Taktik:
+loest die Faehigkeit des Traegers aus, muss ihr Ziel 3 s lang den Traeger
+angreifen), Hologramm-Boost und Orbit-Fokus (Vorschlag).
+
+**Kerne entfallen als Gegenstand.** Die Kern-Idee (Synergie) lebt in den
+**Varianten** weiter: man waehlt, welcher Blaster zum DROME passt (Puls oder
+Neon). Nicht jede Waffe hat jede Variante; Neon-Gegner tragen gemischte
+Ausruestung. Die Kernwerte (Schildnachfuellung 5-10 je Puls, Schild +5-20 %,
+Strix ATK +2) fallen ersatzlos weg; der Kern-Halter (Kreis) ebenso.
+
+**Schild:** keine Grundregeneration mehr. Der Schild laedt erst wieder, wenn
+der DROME eine Weile keinen Schaden genommen hat (Vorschlag: 4 s, dann 10 %
+des Maximums je Sekunde, Wert in `config.json`).
+
+**Module ohne Stufen.** Feste Werte; staerker werden sie nur durch
+**Rezepte**: mehrere Module ergeben einen neuen Gegenstand mit den
+**aufaddierten Werten plus einem eigenen Effekt**. Die Zutaten sind danach
+weg, das Ergebnis belegt einen Platz. Zusammengefuegt wird im Lager (Ziehen
+oder Verbindungsmodus). Beispiel (Werte vorlaeufig):
+
+| Modul | Klasse | Bedingung | Wert |
+|---|---|---|---|
+| Schnellfeuer | Angriff | Fernwaffe | +8 % Angriffstempo |
+| Langer Lauf | Angriff | Fernwaffe | +1 Reichweite |
+| Doppellauf | Angriff | Fernwaffe | 20 % Chance: Querschlaeger aufs selbe Ziel, 15 % Schaden |
+| **Gunslinger** = alle drei | Angriff | Fernwaffe | Summe + jeder 5. Angriff trifft zusaetzlich einen Gegner irgendwo auf dem Feld |
+
+**Angriff oder Faehigkeit:** jede Faehigkeit traegt eine Markierung "zaehlt
+als Angriff" (ja beim Doppelschuss -- ein kuenstlicher Autoangriff; nein bei
+Vortex, Schutzdrohne). Zaehler und Modifikatoren wie Schnellfeuer und
+Gunslinger wirken nur auf Angriffe.
+
+**Modulplaetze:** 3 je Waffe, Molok 2 je Waffe (sonst ist ein Squad aus vier
+Moloks nicht auszubalancieren). Auf DROME-Level 1, 3 und 5 je ein Platz
+mehr -- am Ende 6. Der Molok startet mit 2 je Waffe und bekommt auf Level 2
+und 4 je Waffe einen dazu -- am Ende 4 je Waffe.
+
+**Level bleiben nach dem Lauf.** DROMEs bekommen EP je Sieg, Level 0-5.
+Waffen bekommen EP fuer Siege, in denen sie getragen wurden (Abschuesse
+etwas dazu), Level 0-10. Jede Waffe ist ein eigenes Stueck mit eigenem
+Level. Spaeter: kleiner Skillbaum fuer DROMEs und Waffen, ein Punkt je
+Levelaufstieg (TODO, nach Zwischenstopp und Modulen).
+
+**Gegnerstaerke** haengt an Region und Runde, **nicht** an der Staerke des
+eigenen Squads (heute `RunState.enemy_power` aus `base_power`). So bringt ein
+neuer Lauf mit gelevelten DROMEs weiter und an mehr Beute.
+
+**Nur Module als Verstaerkung** im normalen Lauf -- keine "1 aus 3"-Buffs fuer
+den Squad (Abschnitt 1 ist damit ueberholt).
+
+**Karte wie bei FTL:** der Lauf zeigt eine Karte mit Symbolen fuer die
+naechsten Kaempfe (leicht, mittel, schwer). Ein Tipp zeigt die Details (die
+Gegner mit sichtbarer Ausruestung), "Kaempfen" startet. Ab und zu ersetzt
+ein **Chaos-Kampf** die Wahl: Gegner vorher unsichtbar, bessere Beute. Der
+Chaos-Virus als eigener Modus entfaellt.
+
+**Takt** heisst die Ausloesevoraussetzung einer Faehigkeit (Entscheidung
+7. Nov.): "Takt: jeder 3. Angriff" oder "Takt: alle 3 s".
+
+**Nimbus-Passive Echo** (entschieden und gebaut 7. Nov., ersetzt den
+Zauberwirker): der Takt ist 50 % laenger, dafuer wirkt jede Faehigkeit
+**zweimal hintereinander**. Runenstab: alle 4,5 s zwei Vortex; Blaster: jeder
+4. statt jeder 3. Angriff, dann zwei Doppelschuesse. Im Schnitt genauso
+stark wie das Halbieren (2 Faehigkeiten je 4,5 s), aber als ein grosser,
+sichtbarer Moment. Gemessen (je 200 Kaempfe): Spiegel 100:100, gegen
+gewuerfelte Gegner 136:64, Nimbus 11,2 Schaden/s. Der Nimbus bleibt so stark
+(Entscheidung des Spielers -- der Strix ist auch noch nicht ausgeglichen).
+(Vorher gebaut, verworfen: einmal halbieren, 3 s / 1,5 s im Wechsel.)
+
+**Runenstab:** die Faehigkeit (Vortex) loest nach Zeit aus (alle 3 s),
+Reichweite 5 -- der Nimbus muss nicht angreifen, um zu zaubern, und kann
+auf seine Stellung achten.
+
+**Gebaut (Aufraeumen, 6. Nov. 2026):** Ueberschuss am Schild, Schild nur nach
+Ruhe (`combat.shield_recharge`), Kerne ohne Werte und ohne Halter, Kanone
+entfernt, Gegnerstaerke nach `RunState.reference_power`, Nimbus-Passive neu
+(seit 7. Nov. Echo),
+Vortex nach Zeit (Rw 5), Angriffe ohne Namen. Noch offen: Deflektor und
+Drohnen-Pod als Waffen, Module, Level, Karte.
+
+Gemessen (je 200 Kaempfe, Standard-Squad):
+
+| | vorher | nachher |
+|---|---|---|
+| gegen gewuerfelte Gegner | 107:93, 27 s | 155:45, 17 s |
+| Spiegel | 101:99 | 95:105, 20 s |
+| Schaden je s: Molok / Nimbus / Strix / Vireo | 4,6 / 5,5 / 6,7 / 3,7 | 5,6 / 11,0 / 8,0 / 4,9 (Spiegel) |
+| Vortex je Minute | 12 | 23 |
+
+Lesart: der Nimbus ist jetzt der staerkste Schadensmacher -- der Vortex
+(14 Energie im Umkreis 2, Sog, Verlangsamung) kommt im Schnitt alle 2,25 s.
+Entscheidung (7. Nov.): so lassen, erst den Strix mit ausgleichen.
+Gewuerfelte Gegner tragen selten Runenstab am Nimbus, deshalb das deutliche
+155:45; der Kampfwert (`power_score`) bildet den Vortex nach Zeit noch nicht
+ab. Balancing-Thema: Vortex-Schaden oder Takt.
+
+**Ebenfalls entschieden (Vorschlaege angenommen):**
+
+* **Gebaut 7. Nov.:** Deflektor und Drohnen-Pod als Waffen (Werte unten;
+  Aktionsfelder `heal`, `shield_gain`, `support`). Gemessen (je 200 Kaempfe,
+  Standard-Squad, Molok mit Hammer + Deflektor): Spiegel 108:92, gegen
+  gewuerfelte Gegner 145:55; der Molok macht 6,7 statt 5,6 Schaden/s.
+* **Drohnen-Pod:** Angriff Reparaturstrahl (Rw 3, heilt den Verbuendeten
+  mit dem geringsten Anteil Integritaet); ist niemand verletzt oder der
+  Traeger allein, schiessen die Drohnen schwach auf den naechsten Gegner.
+  Faehigkeit "Schutzdrohne" (Takt: jeder 4. Angriff): der am staerksten
+  verletzte Verbuendete bekommt 15 Schild. Gebaut: Heilung 6, Schuss 4
+  Energie, alle 1,5 s. KI: steht ein Verletzter ausser Reichweite, geht der
+  Traeger zu ihm. Die passive Selbstheilung (5 % je Puls) ist weg.
+* **Deflektor:** Angriff 6 kinetisch, Rw 1, alle 1,5 s; Faehigkeit
+  "Schildladung" (Takt: jeder 4. Angriff): 15 Schild fuer den Traeger, auch
+  ueber das Maximum (hoechstens Maximum + 15). DEF +5 bleibt.
+* **Karte:** verzweigte Wege ueber mehrere Kaempfe (wie FTL / Slay the
+  Spire), man plant 2-3 Kaempfe voraus.
+* **Ueberschuss am Schild** (`ActionResolver.resolve_damage`): der Rest nach
+  dem Schildbruch wird in Rohschaden zurueckgerechnet (gebaut).
+
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
 Vom Spieler angestossen (6. Nov. 2026):
@@ -450,12 +589,15 @@ kommen sie in den Beutetopf. Das ist das "pokern auf Items, die man kennt".
 
 ## 8. Vorgeschlagene Reihenfolge
 
-1. KI-Grundlagen: Ziel halten, Rolle je DROME (behebt Molok/Nimbus sofort).
-2. Ein Ausruestungsplatz (Molok zwei), Kopf/Antrieb nach Entscheidung.
-3. Vireo komplett: Passive, Blaster-Faehigkeit neu, Plasmaklinge, Status
-   "verwundbar" (Statuseffekte laufen schon in Sekunden).
-4. Molok: Praesenz, Hammer, Betaeubung, abschirmende KI.
-5. Strix und Nimbus.
-6. Kerne als Synergie-Teile.
-7. Module, Lager und Rezepte (Abschnitt 7), dann Laden und Waehrung.
-8. Neon City als erste Region mit Neon-Gegnern und Neon-Varianten.
+Erledigt: 1-5 (KI, ein Platz, Vireo, Molok, Strix/Nimbus). Die Kerne (alt 6)
+entfallen (6g). Weiter:
+
+1. ~~Aufraeumen nach 6g~~ (gebaut 6. Nov.), dazu Nimbus-Passive Echo und
+   Deflektor/Drohnen-Pod als Waffen (gebaut 7. Nov.); der Nimbus bleibt
+   vorerst so stark.
+2. Zwischenstopp nach dem Kampf: Lager, Credits, Ausruesten.
+3. Module und Rezepte (6g), dann der Laden.
+4. Level fuer DROMEs und Waffen, die nach dem Lauf bleiben.
+5. Karte wie bei FTL mit Chaos-Kaempfen.
+6. Neon City als erste Region mit Neon-Gegnern und Neon-Varianten.
+7. Spaeter: Skillbaeume.

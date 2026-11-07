@@ -11,7 +11,7 @@ extends RefCounted
 ##
 ##     body   Pflicht. Bestimmt ueber seine equip_*-Anker, wie viele
 ##            Ausruestungsslots dieser DROME ueberhaupt hat.
-##     core   Pflicht. Schildnachfuellung und Schild-Effizienz.
+##     core   Pflicht, fest am Chassis wie Kopf und Fuesse. Seit 6g nur Optik.
 ##     feet   Pflicht. Der Antrieb bringt das Tempo (SPD).
 ##     head   Pflicht. Sensorik.
 ##     equip_* Variabel: zwei beim Vireo, drei beim Molok, genau einer beim
@@ -66,15 +66,15 @@ func body() -> PartData:
 
 
 ## Setzt das ganze Chassis auf einmal: Koerper, Kopf und Fuesse aus dem Set des
-## uebergebenen Koerper-Teils. Kopf und Fuesse werden nie einzeln gewaehlt -- das
-## Chassis ist eine Huelle (GAME_DESIGN §9). Der Kern und die Ausruestung bleiben
-## unberuehrt: der Kern ist universal, die Ausruestung eine eigene Entscheidung.
+## uebergebenen Koerper-Teils. Kopf, Fuesse und Kern werden nie einzeln
+## gewaehlt -- das Chassis ist eine Huelle (GAME_DESIGN §9). Der Kern ist seit
+## 6g nur noch Optik ohne Werte. Die Ausruestung bleibt unberuehrt.
 func apply_chassis(body_id: StringName) -> void:
 	var chassis := PartDB.get_part(body_id)
 	if chassis == null or chassis.type != PartData.Type.BODY:
 		return
 	slots["body"] = chassis.id
-	for type in [PartData.Type.HEAD, PartData.Type.FEET]:
+	for type in [PartData.Type.HEAD, PartData.Type.FEET, PartData.Type.CORE]:
 		var mate := PartDB.frame_mate(chassis.set_id, type)
 		if mate != null:
 			slots[mate.slot_name()] = mate.id
@@ -178,7 +178,7 @@ func actions() -> Array:
 ## Die WAFFEN dieses Aufbaus tragen je einen Angriffs-Aktionspunkt bei: zwei
 ## Waffen, zwei Angriffe (GAME_DESIGN §13). Gezaehlt werden die Waffen-TEILE,
 ## nicht die verschiedenen Angriffe -- zwei gleiche Blaster sind zwei Schuss,
-## obwohl es dieselbe Puls-Salve ist.
+## obwohl es derselbe Angriff ist.
 func attack_budget() -> int:
 	return weapons().size()
 

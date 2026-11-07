@@ -56,7 +56,9 @@
   "run": {
     "_kommentar": [
       "Der Lauf (Roguelike, scripts/core/run_state.gd): rounds Kaempfe, lives",
-      "Leben. Gegnerstaerke = Startstaerke des mitgenommenen Squads *",
+      "Leben. Gegnerstaerke = Bezugsstaerke (Durchschnitt der Standard-DROMEs",
+      "mal Zahl der mitgenommenen, RunState.reference_power -- nicht die Staerke",
+      "des eigenen Aufbaus) *",
       "(power_start + power_growth * (runde - 1)) * tiers.<stufe>.power -- eine",
       "FESTE Kurve, damit Belohnungen zaehlen. Gegnerzahl = Startgroesse des",
       "Squads + enemy_offsets[runde] + tiers.<stufe>.count_offset (1..squad_max).",
@@ -126,12 +128,13 @@
       "presence (Molok): Gegner im lure_radius greifen ihn an statt ihres Ziels",
       "(Locken, sichtbar ueber den Gelockten); guard_share des Schadens an",
       "Verbuendeten im guard_radius geht stattdessen auf ihn.",
-      "spellcaster (Nimbus): nach einer Faehigkeit gilt die Zahl der normalen",
-      "Angriffe bis zur naechsten mal factor (abgerundet, mindestens 1)."
+      "echo (Nimbus, 7. Nov. 2026): der Takt der Faehigkeiten ist slower-mal so",
+      "lang (normale Angriffe dazwischen gerundet, oder die Zeit), dafuer wirkt",
+      "jede Faehigkeit gleich zweimal."
     ],
     "hit_rush": {"seconds": 2.0, "move_mult": 1.4},
     "presence": {"lure_radius": 2, "guard_radius": 3, "guard_share": 0.3},
-    "spellcaster": {"factor": 0.5}
+    "echo": {"slower": 1.5}
   },
 
   "power_tolerance": 0.12,
@@ -158,8 +161,11 @@
       "                     Asymptotisch, also nie ganz erreicht.",
       "  armor_ehp_k   15   wie schnell die Panzerung an den Deckel laeuft",
       "                     (m = 1 + cap * A/(A+K)). Kleiner K = frueher satt.",
-      "Volle Panzerdurchdringung bringt den Schaden auf 100 %, nie darueber."
+      "Volle Panzerdurchdringung bringt den Schaden auf 100 %, nie darueber.",
+      "SCHILD-NACHLADEN (6g): keine Grundregeneration. Nach delay Sekunden ohne",
+      "  Schaden laedt der Schild per_second (Anteil am Maximum) je Sekunde."
     ],
+    "shield_recharge": {"delay": 4.0, "per_second": 0.1},
     "physical_vs_shield": 0.8,
     "energy_vs_shield": 1.2,
     "physical_vs_hp": 1.0,

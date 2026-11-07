@@ -182,3 +182,16 @@ func test_a_new_drome_reward_comes_armed() -> void:
 	for _i in 8:
 		var option := run._drome_reward(rng)
 		t.ok(StringName(option["weapon_id"]) != &"", "%s kommt mit Waffe" % option["title"])
+
+
+func test_enemy_power_ignores_how_strong_the_chosen_squad_is() -> void:
+	# 6g: die Gegner richten sich nach Region und Runde, nicht nach dem Aufbau.
+	# Ein schwach bestueckter Squad trifft auf dieselben Gegner wie der volle.
+	var full := RunState.start(11)
+	var bare: Array = []
+	for build in RunState.standard_squad():
+		var copy: DromeBuild = build.clone()
+		copy.slots.erase("equip_right")
+		bare.append(copy)
+	var weak := RunState.start(11, bare)
+	t.equal(weak.enemy_power(), full.enemy_power(), "gleiche Gegnerstaerke")

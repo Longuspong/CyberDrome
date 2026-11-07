@@ -82,6 +82,15 @@ var delay: float = 0.0
 ## Statuseffekt auf jeden Getroffenen, z. B. {"id": "slow", "seconds": 2.5,
 ## "move_mult": 0.6}. Leer = keiner.
 var status: Dictionary = {}
+## Unterstuetzung (7. Nov. 2026, Deflektor und Drohnen-Pod): ``heal`` repariert
+## Integritaet, ``shield_gain`` gibt Schild (bis Maximum + shield_gain). Wen:
+## ``support`` = "self" (der Traeger) oder "ally" (der Verbuendete mit dem
+## geringsten Anteil Integritaet in Reichweite, auch der Traeger). Ein Angriff
+## mit ``heal`` heilt einen verletzten Verbuendeten und schiesst sonst mit
+## ``power`` auf Gegner.
+var heal: int = 0
+var shield_gain: int = 0
+var support: String = ""
 
 var trigger_kind: String = ""
 var trigger_every: float = 0.0
@@ -107,6 +116,9 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.shots = maxi(1, int(meta.get("shots", 1)))
 	action.shield_mult = float(meta.get("shield_mult", 1.0))
 	action.delay = float(meta.get("delay", 0.0))
+	action.heal = int(meta.get("heal", 0))
+	action.shield_gain = int(meta.get("shield_gain", 0))
+	action.support = str(meta.get("support", ""))
 	var status_meta = meta.get("status")
 	if status_meta is Dictionary:
 		action.status = status_meta
@@ -118,7 +130,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	return action
 
 
-## Der Ausloeser in Klartext -- fuer Teil-Info und Kacheln.
+## Der Takt (die Ausloesevoraussetzung) in Klartext -- fuer Teil-Info und Kacheln.
 func trigger_text() -> String:
 	match trigger_kind:
 		"attacks":
@@ -181,6 +193,10 @@ func effect_summary() -> String:
 		parts.append("stoesst %d" % push_tiles)
 	elif push_tiles < 0:
 		parts.append("zieht %d heran" % absi(push_tiles))
+	if heal > 0:
+		parts.append("repariert %d" % heal)
+	if shield_gain > 0:
+		parts.append("+%d Schild" % shield_gain)
 	return " · ".join(parts) if not parts.is_empty() else "ohne Schaden"
 
 
@@ -216,6 +232,11 @@ func description_lines() -> Array[String]:
 		lines.append("stoesst %d Feld(er) zurueck" % push_tiles)
 	elif push_tiles < 0:
 		lines.append("zieht %d Feld(er) heran" % absi(push_tiles))
+	if heal > 0:
+		lines.append("repariert %d beim Verletztesten" % heal)
+	if shield_gain > 0:
+		lines.append("+%d Schild %s" % [shield_gain,
+			"fuer sich" if support == "self" else "fuer den Verletztesten"])
 	if source_part_name != "":
 		lines.append("aus: %s%s" % [source_part_name,
 			" (%s)" % source_part_code if source_part_code != "" else ""])

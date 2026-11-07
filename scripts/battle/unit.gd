@@ -53,6 +53,10 @@ var gadgets: Array = []
 var step_left: float = 0.0
 ## Bis zum naechsten Puls (Schild, Reparatur, Overtime ...).
 var pulse_left: float = 0.0
+## Sekunden seit dem letzten Schaden, und der Bruchteil Schild, der beim
+## Nachladen noch nicht ganz voll ist.
+var calm_time: float = 0.0
+var _recharge_carry: float = 0.0
 ## Bis zur naechsten Pruefung des Ziels, und das aktuelle Ziel.
 var think_left: float = 0.0
 var target_id = null
@@ -314,6 +318,8 @@ func init_realtime(pulse_offset: float) -> void:
 	think_left = 0.0
 	target_id = null
 	target_blocked = 0.0
+	calm_time = 0.0
+	_recharge_carry = 0.0
 	if build == null:
 		return
 	for slot in build.equip_slots():
@@ -330,8 +336,9 @@ func init_realtime(pulse_offset: float) -> void:
 				continue
 			if action.trigger_kind == "attacks" and attack != null:
 				continue
-			gadgets.append({"part": part, "ability": action,
-				"ready": action.trigger_every if action.trigger_kind == "time" else 0.0})
+			var first := float(action.trigger_every) * echo_slower() \
+				if action.trigger_kind == "time" else 0.0
+			gadgets.append({"part": part, "ability": action, "ready": first})
 		if attack == null:
 			continue
 		var ability: ActionData = null
@@ -343,7 +350,15 @@ func init_realtime(pulse_offset: float) -> void:
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0})
 
 
-## Die Passive des Chassis ("spellcaster" ...). Leer = keine.
+## Wie viel laenger der Takt der Faehigkeiten ist: mit der Passive Echo
+## ``passives.echo.slower`` (1,5), sonst 1.
+func echo_slower() -> float:
+	if passive() != "echo":
+		return 1.0
+	return float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
+
+
+## Die Passive des Chassis ("echo" ...). Leer = keine.
 func passive() -> String:
 	if build == null or build.body() == null:
 		return ""
@@ -437,16 +452,30 @@ func shield_fraction() -> float:
 	return 0.0 if maximum <= 0 else float(shield) / float(maximum)
 
 
-## Schild-Nachfuellung je Puls (§11): der Schildregen des Kerns, gedeckelt
-## am Maximum. Gibt die tatsaechlich aufgefuellte Menge zurueck.
-func regenerate_shield() -> int:
+## Schild-Nachfuellung (6g): keine Grundregeneration mehr. Der Schild laedt
+## erst, wenn der DROME ``combat.shield_recharge.delay`` Sekunden keinen
+## Schaden genommen hat, dann ``per_second`` (Anteil am Maximum) je Sekunde.
+## Wird jeden Schritt aufgerufen; gibt die aufgefuellte Menge zurueck.
+func recharge_shield(dt: float) -> int:
+	calm_time += dt
 	var maximum := shield_max()
-	var regen := stat("shield_regen")
-	if regen <= 0 or shield >= maximum:
+	if maximum <= 0 or shield >= maximum:
+		_recharge_carry = 0.0
 		return 0
-	var before := shield
-	shield = mini(maximum, shield + regen)
-	return shield - before
+	var rule: Dictionary = Config.section("combat").get("shield_recharge", {})
+	if calm_time < float(rule.get("delay", 4.0)):
+		return 0
+	_recharge_carry += float(maximum) * float(rule.get("per_second", 0.1)) * dt
+	var gain := mini(int(_recharge_carry), maximum - shield)
+	_recharge_carry -= float(gain)
+	shield += gain
+	return gain
+
+
+## Schaden genommen: die Ruhezeit faengt von vorn an.
+func note_damage() -> void:
+	calm_time = 0.0
+	_recharge_carry = 0.0
 
 
 func atk() -> int:

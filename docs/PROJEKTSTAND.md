@@ -38,9 +38,9 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   move_per_spd` Felder/s (Molok 1,6, Strix 2,0, Vireo 2,6). MOV zaehlt nicht
   mehr. Das Feld gilt sofort, die Figur gleitet hinterher.
 * **Waffen**: jede Waffe (je Teil) laedt fuer sich, `interval` an der
-  Aktion (Blaster 1,4 s, Runenstab 1,2 s, Lanze 2,6 s, Kanone 3 s).
+  Aktion (Blaster 1,4 s, Runenstab 1,2 s, Lanze 2,6 s, Hammer 1,8 s).
 * **Faehigkeiten** loesen selbst aus (`trigger` an der Aktion): jeder N-te
-  Angriff einer Waffe IST ihre Faehigkeit; Orbit-Sog alle 6 s; Boost, wenn ein
+  Angriff einer Waffe IST ihre Faehigkeit; Vortex alle 3 s; Orbit-Sog alle 6 s; Boost, wenn ein
   Gegner danebensteht (hoechstens alle 4 s).
 * **Aufgeraeumt (5. Nov. 2026, mit dem Spieler abgesprochen)**: Energie
   (`en_max`, `en_regen`, `en_cost`), Abklingzeiten, MOV, Strombedarf,
@@ -203,6 +203,14 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Abschnitte 6d und 6e.
 * Ebenfalls 6. Nov.: Aggro-Tabelle raus, sichtbare Zielregel je Rolle und
   Locken (Molok-Praesenz, Koedersender). Abschnitt 6f.
+* Ebenfalls 6. Nov., Aufraeumen nach `docs/NEUANFANG.md` 6g: Schild laedt
+  nur nach 4 s ohne Schaden (10 % je Sekunde), Ueberschuss am Schild richtig
+  gerechnet, Kerne ohne Werte (fest am Chassis, kein Kern-Halter), Kanone
+  entfernt, Gegnerstaerke nach fester Bezugsstaerke, Nimbus-Passive Echo
+  (seit 7. Nov.: Takt +50 %, Faehigkeit wirkt zweimal), Vortex alle 3 s mit Rw 5, Angriffe heissen "Angriff". Messung in 6g.
+  Am 7. Nov.: Deflektor (Stoss + Schildladung) und Drohnen-Pod (Heil-Angriff
+  + Schutzdrohne) sind Waffen mit Angriff und Faehigkeit.
+  Playtest kann jetzt auch Spiegelkaempfe (`... playtest.gd -- 200 0 spiegel`).
 * Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
   ueberlappen.
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.

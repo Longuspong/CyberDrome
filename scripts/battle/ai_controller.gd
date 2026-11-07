@@ -238,35 +238,105 @@ func _focused_by(unit: Unit, foe: Unit) -> int:
 func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	var attack: ActionData = mount["attack"]
 	var ability = mount["ability"]
-	if ability != null and int(mount["count"]) + 1 >= int((ability as ActionData).trigger_every):
-		var aim := _aim(unit, ability, target)
+	if ability != null and int(mount["count"]) + 1 >= trigger_every(unit, ability):
+		var aim := _support_aim(unit, ability) if (ability as ActionData).support != "" \
+			else _aim(unit, ability, target)
 		if not aim.is_empty():
 			_execute(unit, aim["tile"], ability, aim["target"])
-			mount["count"] = _count_after_ability(unit, ability)
+			_echo(unit, ability, aim)
+			mount["count"] = 0
 			return true
-	var shot := _aim(unit, attack, target)
+	var shot := {}
+	if attack.heal > 0:
+		shot = _support_aim(unit, attack)
+	if shot.is_empty():
+		shot = _aim(unit, attack, target)
 	if shot.is_empty():
 		return false
 	_execute(unit, shot["tile"], attack, shot["target"])
 	if ability != null:
 		mount["count"] = mini(int(mount["count"]) + 1,
-			int((ability as ActionData).trigger_every) - 1)
+			trigger_every(unit, ability) - 1)
 	return true
 
 
-## Wie viele Angriffe nach einer Faehigkeit schon "abgezaehlt" sind.
-##
-## Normalerweise keiner. Die Passive ``spellcaster`` (Nimbus) halbiert die
-## Zahl der normalen Angriffe bis zur naechsten Faehigkeit, abgerundet und
-## mindestens einer: Vortex jeder 5. Angriff (4 normale) -> danach 2 normale;
-## Blaster jeder 3. (2 normale) -> danach 1.
-func _count_after_ability(unit: Unit, ability: ActionData) -> int:
-	if unit.passive() != "spellcaster":
-		return 0
-	var normals := int(ability.trigger_every) - 1
-	var factor := float((Config.section("passives").get("spellcaster", {}) as Dictionary).get("factor", 0.5))
-	var halved := maxi(1, int(floor(float(normals) * factor)))
-	return maxi(0, normals - halved)
+## Wen unterstuetzt ``action``? "self": den Traeger. "ally" (und Angriffe mit
+## ``heal``): den Verbuendeten mit dem geringsten Anteil Integritaet in
+## Reichweite -- nur wenn er verletzt ist (heal) bzw. Schild brauchen kann
+## (shield_gain). Leer, wenn niemand Hilfe braucht.
+func _support_aim(unit: Unit, action: ActionData) -> Dictionary:
+	if action.support == "self":
+		return {"tile": unit.tile, "target": unit}
+	var best: Unit = null
+	var best_share := 2.0
+	for ally in battle.allies_of(unit):
+		if not ally.is_alive() or Grid.distance(unit.tile, ally.tile) > action.range_tiles:
+			continue
+		var hp_max := maxi(1, ally.stat("hp_max"))
+		var share := float(ally.hp) / float(hp_max)
+		var needs: bool = (action.heal > 0 and ally.hp < hp_max) \
+			or (action.shield_gain > 0 and ally.shield < ally.shield_max() + action.shield_gain)
+		if not needs:
+			continue
+		if share < best_share:
+			best_share = share
+			best = ally
+	if best == null:
+		return {}
+	return {"tile": best.tile, "target": best}
+
+
+## Der verletzte Verbuendete, zu dem ein Heiler hin muss: der mit dem
+## geringsten Anteil Integritaet, der ausser Reichweite der Heilung steht.
+## Null, wenn der DROME nicht heilt oder alle Verletzten erreichbar sind.
+func _patient_out_of_reach(unit: Unit) -> Unit:
+	var reach := 0
+	for mount in unit.mounts:
+		if (mount["attack"] as ActionData).heal > 0:
+			reach = maxi(reach, (mount["attack"] as ActionData).range_tiles)
+	if reach <= 0:
+		return null
+	var best: Unit = null
+	var best_share := 1.0
+	for ally in battle.allies_of(unit):
+		if ally == unit or not ally.is_alive():
+			continue
+		var share := float(ally.hp) / float(maxi(1, ally.stat("hp_max")))
+		if share < best_share:
+			best_share = share
+			best = ally
+	if best != null and Grid.distance(unit.tile, best.tile) <= reach:
+		return null
+	return best
+
+
+## Der Takt einer Faehigkeit (wie viele Angriffe bis zu ihr) an diesem DROME.
+## Mit der Passive Echo (Nimbus) laenger: die normalen Angriffe dazwischen
+## mal ``passives.echo.slower`` (gerundet) -- Blaster jeder 3. -> jeder 4.
+func trigger_every(unit: Unit, ability: ActionData) -> int:
+	var every := int(ability.trigger_every)
+	if ability.trigger_kind != "attacks" or unit.passive() != "echo":
+		return every
+	return int(round(float(every - 1) * unit.echo_slower())) + 1
+
+
+## Der Takt einer Zeit-Faehigkeit in Sekunden -- mit Echo ebenso laenger
+## (Runenstab: 3 s -> 4,5 s).
+func _time_after_ability(unit: Unit, ability: ActionData) -> float:
+	return float(ability.trigger_every) * unit.echo_slower()
+
+
+## Passive Echo (Nimbus, 7. Nov. 2026): die Faehigkeit wirkt gleich noch
+## einmal -- aufs selbe Ziel, ist es gefallen, aufs naechstbeste.
+func _echo(unit: Unit, ability: ActionData, aim: Dictionary) -> void:
+	if unit.passive() != "echo" or battle.outcome != BattleManager.Outcome.RUNNING:
+		return
+	var again := aim
+	var target: Unit = aim.get("target")
+	if target == null or not target.is_alive():
+		again = _aim(unit, ability, null)
+	if not again.is_empty():
+		_execute(unit, again["tile"], ability, again["target"])
 
 
 ## Worauf zielt ``action``? Das Ziel, wenn es geht; sonst der am besten
@@ -312,7 +382,8 @@ func _use_gadgets(unit: Unit, target: Unit) -> bool:
 				if aim.is_empty():
 					continue
 				_execute(unit, aim["tile"], ability, aim["target"])
-				gadget["ready"] = ability.trigger_every
+				_echo(unit, ability, aim)
+				gadget["ready"] = _time_after_ability(unit, ability)
 				return true
 			"adjacent":
 				if not _enemy_adjacent(unit):
@@ -366,6 +437,10 @@ func _safety(unit: Unit, tile: Vector2i, target: Unit) -> float:
 func next_step(unit: Unit, target: Unit) -> Vector2i:
 	if target == null or unit.mounts.is_empty():
 		return unit.tile
+	# Heiler (Drohnen-Pod): erst zum Verletzten, der ausser Reichweite steht.
+	var patient := _patient_out_of_reach(unit)
+	if patient != null:
+		return _approach(unit, patient)
 	var ranged := unit.attack_range() >= int(_w("ranged_from_range", 3.0))
 	var shooting := _can_shoot_anyone(unit, unit.tile)
 	match unit.ai_role():
