@@ -215,31 +215,65 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	second_foe.free()
 
 
-func test_drone_pod_regenerates_its_carrier_passively() -> void:
-	# Der Drohnen-Pod ist keine aktive Heilung mehr, sondern eine PASSIVE: 5 %
-	# der maximalen Integritaet je eigenem Zug, ohne Knopf. Er heilt nur seinen
-	# Traeger und laeuft nicht ueber das Maximum.
-	var carrier := Unit.create(_siege_and_drones("SANI"), &"E0", false)
-	var maximum := carrier.stat("hp_max")
-	var pct := carrier.stat("hp_regen_pct")
-	t.ok(pct > 0, "der Drohnen-Pod bringt Selbstheilung mit (%d%%)" % pct)
+func test_the_drone_pod_repairs_the_most_hurt_ally() -> void:
+	# 7. Nov. 2026: der Drohnen-Pod ist eine Heil-Waffe. Sein Angriff repariert
+	# den Verbuendeten mit dem geringsten Anteil Integritaet in Reichweite;
+	# ist niemand verletzt, schiesst er auf Gegner.
+	var medic := DromeBuild.create("SANI", {
+		"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core",
+		"equip_left": &"eq_drone_pod"})
+	var tiles := [Vector2i(10, 15), Vector2i(11, 15), Vector2i(12, 15), Vector2i(10, 12)]
+	var battle := BattleManager.new()
+	battle.setup(4242, [medic, _squad()[0], _squad()[1]], [_squad()[0]])
+	for i in tiles.size():
+		var unit: Unit = battle.units[i]
+		battle.grid.clear_occupant(unit.tile)
+	for i in tiles.size():
+		var unit: Unit = battle.units[i]
+		unit.place_at(tiles[i])
+		battle.grid.set_occupant(unit.tile, unit.unit_id)
+	var sani: Unit = battle.units[0]
+	var light: Unit = battle.units[1]
+	var heavy: Unit = battle.units[2]
+	var foe: Unit = battle.units[3]
+	var repair := _action_by_id(sani, &"act_drone_repair")
+	t.ok(repair != null and repair.heal > 0, "der Pod hat einen Heil-Angriff")
 
-	var expected := int(floor(float(maximum) * float(pct) / 100.0))
-	carrier.hp = maximum - 30
-	t.equal(carrier.regenerate_hp(), expected,
-		"geheilt werden %d (= %d%% von %d)" % [expected, pct, maximum])
-	t.equal(carrier.hp, maximum - 30 + expected, "die Integritaet steigt entsprechend")
+	var aim: Dictionary = battle.brain._support_aim(sani, repair)
+	t.ok(aim.is_empty(), "niemand verletzt: keine Heilung")
+	light.hp -= 10
+	heavy.hp = heavy.stat("hp_max") / 2
+	aim = battle.brain._support_aim(sani, repair)
+	t.equal(aim.get("target"), heavy, "geheilt wird, wer den geringsten Anteil hat")
+	var before := heavy.hp
+	t.ok(battle.resolver.execute(sani, heavy.tile, repair), "die Heilung geht raus")
+	t.equal(heavy.hp, before + repair.heal, "und repariert %d" % repair.heal)
 
-	carrier.hp = maximum - 1
-	carrier.regenerate_hp()
-	t.equal(carrier.hp, maximum, "die Heilung laeuft nicht ueber das Maximum")
+	heavy.hp = heavy.stat("hp_max")
+	light.hp = light.stat("hp_max")
+	var foe_before := foe.shield + foe.hp
+	t.ok(battle.brain._fire(sani, sani.mounts[0], foe), "niemand verletzt: er schiesst")
+	t.ok(foe.shield + foe.hp < foe_before, "und trifft den Gegner")
+	battle.free()
 
-	var plain := Unit.create(_squad()[0], &"P0", true)
-	plain.hp = 10
-	t.equal(plain.regenerate_hp(), 0, "wer keinen Drohnen-Pod traegt, regeneriert nicht")
 
-	carrier.free()
-	plain.free()
+func test_the_deflector_charges_its_own_shield() -> void:
+	var tank := DromeBuild.create("WALL", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"})
+	var unit := Unit.create(tank, &"P0", true)
+	var resolver := ActionResolver.new(Grid.new(10, 10), [unit])
+	unit.tile = Vector2i(3, 3)
+	var charge := _action_by_id(unit, &"act_deflector_charge")
+	t.ok(charge != null and charge.shield_gain > 0, "der Deflektor hat die Schildladung")
+	unit.shield = unit.shield_max()
+	t.ok(resolver.execute(unit, unit.tile, charge), "sie wirkt auf den Traeger")
+	t.equal(unit.shield, unit.shield_max() + charge.shield_gain, "auch ueber das Maximum")
+	resolver.execute(unit, unit.tile, charge)
+	t.equal(unit.shield, unit.shield_max() + charge.shield_gain, "aber nicht beliebig weit")
+	unit.free()
 
 
 ## Ein Squad, das ALLE drei Faehigkeiten des Bestands traegt -- sonst misst der

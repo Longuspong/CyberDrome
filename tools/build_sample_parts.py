@@ -499,7 +499,20 @@ STATS = {
         ],
     },
     # Passiv.
-    "eq_deflector": {"def": 5, "weight": 4},
+    # Schutz-Waffe (7. Nov. 2026): schwacher Stoss, jeder 4. Angriff laedt
+    # den eigenen Schild um 15 (auch ueber das Maximum).
+    "eq_deflector": {
+        "def": 5, "weight": 4,
+        "actions": [
+            {"id": "act_deflector_bash", "display_name": "Angriff",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 1, "power": 6, "interval": 1.5},
+            {"id": "act_deflector_charge", "display_name": "Schildladung",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 0, "power": 0, "shield_gain": 15, "support": "self",
+             "trigger": {"kind": "attacks", "every": 4, "weapon": "act_deflector_bash"}},
+        ],
+    },
 
     # Springt weg, wenn ein Gegner danebensteht.
     "eq_holo_boost": {
@@ -527,8 +540,23 @@ STATS = {
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_hammer"}},
         ],
     },
-    # Passive Selbstheilung, 5 % je Puls.
-    "eq_drone_pod": {"weight": 3, "hp_regen_pct": 5},
+    # Heil-Waffe (7. Nov. 2026): der Angriff repariert den Verbuendeten mit
+    # dem geringsten Anteil Integritaet in Reichweite; ist niemand verletzt,
+    # schiessen die Drohnen schwach auf Gegner. Jeder 4. Angriff setzt eine
+    # Schutzdrohne: 15 Schild fuer den am staerksten Verletzten.
+    "eq_drone_pod": {
+        "weight": 3,
+        "actions": [
+            {"id": "act_drone_repair", "display_name": "Angriff",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 3, "power": 4, "heal": 6, "support": "ally",
+             "energy_fraction": 1.0, "interval": 1.5},
+            {"id": "act_drone_guard", "display_name": "Schutzdrohne",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 3, "power": 0, "shield_gain": 15, "support": "ally",
+             "trigger": {"kind": "attacks", "every": 4, "weapon": "act_drone_repair"}},
+        ],
+    },
     # Lockt: Gegner im Umkreis 2 greifen den Traeger an.
     "eq_bait_beacon": {"weight": 3, "lure_radius": 2},
 
@@ -599,6 +627,13 @@ ACTION_DEFAULTS = {
     # Statuseffekt auf jeden Getroffenen: {"id", "seconds", ...Aufschlaege},
     # z. B. {"id": "slow", "seconds": 2.5, "move_mult": 0.6}.
     "status": None,
+    # Unterstuetzung (7. Nov. 2026): heal repariert Integritaet, shield_gain
+    # gibt Schild; support = "self" (Traeger) oder "ally" (Verbuendeter mit dem
+    # geringsten Anteil Integritaet). Ein Angriff mit heal schiesst auf
+    # Gegner, wenn niemand verletzt ist.
+    "heal": 0,
+    "shield_gain": 0,
+    "support": "",
 }
 
 TARGETINGS = ("single", "aoe_around_target", "aoe_cross", "dash")

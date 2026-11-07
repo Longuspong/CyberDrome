@@ -208,6 +208,8 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   gerechnet, Kerne ohne Werte (fest am Chassis, kein Kern-Halter), Kanone
   entfernt, Gegnerstaerke nach fester Bezugsstaerke, Nimbus-Passive Echo
   (seit 7. Nov.: Takt +50 %, Faehigkeit wirkt zweimal), Vortex alle 3 s mit Rw 5, Angriffe heissen "Angriff". Messung in 6g.
+  Am 7. Nov.: Deflektor (Stoss + Schildladung) und Drohnen-Pod (Heil-Angriff
+  + Schutzdrohne) sind Waffen mit Angriff und Faehigkeit.
   Playtest kann jetzt auch Spiegelkaempfe (`... playtest.gd -- 200 0 spiegel`).
 * Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
   ueberlappen.

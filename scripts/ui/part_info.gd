@@ -106,13 +106,17 @@ static func traits(part: PartData) -> Array[String]:
 static func action_lines(action: ActionData) -> Array[String]:
 	var out: Array[String] = []
 	var reach := "Reichweite %d" % action.range_tiles
-	if action.range_tiles <= 1:
+	if action.support == "self":
+		reach = "auf sich selbst"
+	elif action.range_tiles <= 1:
 		reach = "Nahkampf (Reichweite 1)"
 	var what := ""
 	if action.is_move():
 		what = "springt bis %d Felder geradeaus" % action.range_tiles
 	elif action.power > 0:
 		what = "Staerke %d" % action.power
+	elif action.heal > 0 or action.shield_gain > 0:
+		what = "Unterstuetzung"
 	else:
 		what = action.effect_summary()
 	out.append("%s · %s" % [reach, what])
@@ -139,6 +143,12 @@ static func action_lines(action: ActionData) -> Array[String]:
 		out.append("Danach schlaegt nach %s s eine Schockwelle zu." % ActionData._seconds(action.delay))
 	if not action.status.is_empty():
 		out.append("Getroffene: %s." % action.status_text())
+	if action.heal > 0:
+		out.append("Repariert %d Integritaet beim Verbuendeten mit dem geringsten Anteil; ist niemand verletzt, schiesst er auf Gegner." % action.heal)
+	if action.shield_gain > 0:
+		var who := "dem Traeger" if action.support == "self" \
+			else "dem am staerksten verletzten Verbuendeten"
+		out.append("Gibt %s %d Schild (auch ueber das Maximum)." % [who, action.shield_gain])
 	if action.push_tiles > 0:
 		out.append("Stoesst das Ziel %d Feld(er) weg." % action.push_tiles)
 	elif action.push_tiles < 0:

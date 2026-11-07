@@ -48,6 +48,53 @@
     "lure_radius": 0,
     "ai_role": "",
     "passive": "",
-    "actions": []
+    "actions": [
+      {
+        "id": "act_deflector_bash",
+        "display_name": "Angriff",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 1,
+        "aoe_radius": 0,
+        "power": 6,
+        "push_tiles": 0,
+        "energy_fraction": 0.0,
+        "interval": 1.5,
+        "trigger": null,
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": ""
+      },
+      {
+        "id": "act_deflector_charge",
+        "display_name": "Schildladung",
+        "category": "ability",
+        "targeting": "single",
+        "range_tiles": 0,
+        "aoe_radius": 0,
+        "power": 0,
+        "push_tiles": 0,
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 4,
+          "weapon": "act_deflector_bash"
+        },
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null,
+        "heal": 0,
+        "shield_gain": 15,
+        "support": "self"
+      }
+    ]
   }
 }

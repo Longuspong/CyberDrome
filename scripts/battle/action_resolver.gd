@@ -328,6 +328,15 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		move_unit(source, tile, step)
 		return true
 
+	# Unterstuetzung: auf einen Verbuendeten (oder sich selbst) gezielt heilt
+	# bzw. laedt sie, statt Schaden zu machen.
+	var aimed := unit_at(tile)
+	if aimed != null and aimed.is_player == source.is_player:
+		if action.heal <= 0 and action.shield_gain <= 0:
+			return false
+		support(source, aimed, action)
+		return true
+
 	if action.gather:
 		_gather(source, tile, action)
 	if action.delay > 0.0:
@@ -339,6 +348,28 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		return true
 	_apply_area(source, tile, action)
 	return true
+
+
+## Heilen und Schild geben (Deflektor, Drohnen-Pod). Gibt zurueck, wie viel
+## Integritaet und Schild zusammen dazukamen.
+func support(source: Unit, target: Unit, action: ActionData) -> int:
+	var healed := 0
+	if action.heal > 0:
+		var before := target.hp
+		target.hp = mini(target.stat("hp_max"), target.hp + action.heal)
+		healed = target.hp - before
+		if healed > 0:
+			EventBus.unit_healed.emit(target, healed, source)
+	var charged := 0
+	if action.shield_gain > 0:
+		var before_shield := target.shield
+		target.shield = mini(target.shield_max() + action.shield_gain,
+			target.shield + action.shield_gain)
+		charged = target.shield - before_shield
+	if healed > 0 or charged > 0:
+		EventBus.log_line("%s: %s +%d Integritaet, +%d Schild."
+			% [source.display_name, target.display_name, healed, charged])
+	return healed + charged
 
 
 ## Mehrere schnelle Treffer: das Ziel zuerst, dann die naechsten Gegner in

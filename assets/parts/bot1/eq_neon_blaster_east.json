@@ -72,7 +72,10 @@
         "shots": 1,
         "gather": false,
         "delay": 0.0,
-        "status": null
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": ""
       },
       {
         "id": "act_neon_breaker",
@@ -94,7 +97,10 @@
         "shots": 1,
         "gather": false,
         "delay": 0.0,
-        "status": null
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": ""
       }
     ]
   }

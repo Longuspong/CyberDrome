@@ -45,10 +45,57 @@
     "shield_regen": 0,
     "shield_bonus": 0.0,
     "weight": 3,
-    "hp_regen_pct": 5,
+    "hp_regen_pct": 0,
     "lure_radius": 0,
     "ai_role": "",
     "passive": "",
-    "actions": []
+    "actions": [
+      {
+        "id": "act_drone_repair",
+        "display_name": "Angriff",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 3,
+        "aoe_radius": 0,
+        "power": 4,
+        "push_tiles": 0,
+        "energy_fraction": 1.0,
+        "interval": 1.5,
+        "trigger": null,
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null,
+        "heal": 6,
+        "shield_gain": 0,
+        "support": "ally"
+      },
+      {
+        "id": "act_drone_guard",
+        "display_name": "Schutzdrohne",
+        "category": "ability",
+        "targeting": "single",
+        "range_tiles": 3,
+        "aoe_radius": 0,
+        "power": 0,
+        "push_tiles": 0,
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 4,
+          "weapon": "act_drone_repair"
+        },
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null,
+        "heal": 0,
+        "shield_gain": 15,
+        "support": "ally"
+      }
+    ]
   }
 }

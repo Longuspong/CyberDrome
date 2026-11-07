@@ -239,13 +239,18 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	var attack: ActionData = mount["attack"]
 	var ability = mount["ability"]
 	if ability != null and int(mount["count"]) + 1 >= trigger_every(unit, ability):
-		var aim := _aim(unit, ability, target)
+		var aim := _support_aim(unit, ability) if (ability as ActionData).support != "" \
+			else _aim(unit, ability, target)
 		if not aim.is_empty():
 			_execute(unit, aim["tile"], ability, aim["target"])
 			_echo(unit, ability, aim)
 			mount["count"] = 0
 			return true
-	var shot := _aim(unit, attack, target)
+	var shot := {}
+	if attack.heal > 0:
+		shot = _support_aim(unit, attack)
+	if shot.is_empty():
+		shot = _aim(unit, attack, target)
 	if shot.is_empty():
 		return false
 	_execute(unit, shot["tile"], attack, shot["target"])
@@ -253,6 +258,56 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		mount["count"] = mini(int(mount["count"]) + 1,
 			trigger_every(unit, ability) - 1)
 	return true
+
+
+## Wen unterstuetzt ``action``? "self": den Traeger. "ally" (und Angriffe mit
+## ``heal``): den Verbuendeten mit dem geringsten Anteil Integritaet in
+## Reichweite -- nur wenn er verletzt ist (heal) bzw. Schild brauchen kann
+## (shield_gain). Leer, wenn niemand Hilfe braucht.
+func _support_aim(unit: Unit, action: ActionData) -> Dictionary:
+	if action.support == "self":
+		return {"tile": unit.tile, "target": unit}
+	var best: Unit = null
+	var best_share := 2.0
+	for ally in battle.allies_of(unit):
+		if not ally.is_alive() or Grid.distance(unit.tile, ally.tile) > action.range_tiles:
+			continue
+		var hp_max := maxi(1, ally.stat("hp_max"))
+		var share := float(ally.hp) / float(hp_max)
+		var needs: bool = (action.heal > 0 and ally.hp < hp_max) \
+			or (action.shield_gain > 0 and ally.shield < ally.shield_max() + action.shield_gain)
+		if not needs:
+			continue
+		if share < best_share:
+			best_share = share
+			best = ally
+	if best == null:
+		return {}
+	return {"tile": best.tile, "target": best}
+
+
+## Der verletzte Verbuendete, zu dem ein Heiler hin muss: der mit dem
+## geringsten Anteil Integritaet, der ausser Reichweite der Heilung steht.
+## Null, wenn der DROME nicht heilt oder alle Verletzten erreichbar sind.
+func _patient_out_of_reach(unit: Unit) -> Unit:
+	var reach := 0
+	for mount in unit.mounts:
+		if (mount["attack"] as ActionData).heal > 0:
+			reach = maxi(reach, (mount["attack"] as ActionData).range_tiles)
+	if reach <= 0:
+		return null
+	var best: Unit = null
+	var best_share := 1.0
+	for ally in battle.allies_of(unit):
+		if ally == unit or not ally.is_alive():
+			continue
+		var share := float(ally.hp) / float(maxi(1, ally.stat("hp_max")))
+		if share < best_share:
+			best_share = share
+			best = ally
+	if best != null and Grid.distance(unit.tile, best.tile) <= reach:
+		return null
+	return best
 
 
 ## Der Takt einer Faehigkeit (wie viele Angriffe bis zu ihr) an diesem DROME.
@@ -382,6 +437,10 @@ func _safety(unit: Unit, tile: Vector2i, target: Unit) -> float:
 func next_step(unit: Unit, target: Unit) -> Vector2i:
 	if target == null or unit.mounts.is_empty():
 		return unit.tile
+	# Heiler (Drohnen-Pod): erst zum Verletzten, der ausser Reichweite steht.
+	var patient := _patient_out_of_reach(unit)
+	if patient != null:
+		return _approach(unit, patient)
 	var ranged := unit.attack_range() >= int(_w("ranged_from_range", 3.0))
 	var shooting := _can_shoot_anyone(unit, unit.tile)
 	match unit.ai_role():

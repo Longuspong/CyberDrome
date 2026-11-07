@@ -71,7 +71,10 @@
         "shots": 1,
         "gather": false,
         "delay": 0.0,
-        "status": null
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": ""
       },
       {
         "id": "act_plasma_rend",
@@ -97,7 +100,10 @@
           "id": "vulnerable",
           "seconds": 5.0,
           "damage_taken_mult": 1.5
-        }
+        },
+        "heal": 0,
+        "shield_gain": 0,
+        "support": ""
       }
     ]
   }

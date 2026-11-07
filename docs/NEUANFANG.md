@@ -407,12 +407,20 @@ ab. Balancing-Thema: Vortex-Schaden oder Takt.
 
 **Ebenfalls entschieden (Vorschlaege angenommen):**
 
+* **Gebaut 7. Nov.:** Deflektor und Drohnen-Pod als Waffen (Werte unten;
+  Aktionsfelder `heal`, `shield_gain`, `support`). Gemessen (je 200 Kaempfe,
+  Standard-Squad, Molok mit Hammer + Deflektor): Spiegel 108:92, gegen
+  gewuerfelte Gegner 145:55; der Molok macht 6,7 statt 5,6 Schaden/s.
 * **Drohnen-Pod:** Angriff Reparaturstrahl (Rw 3, heilt den Verbuendeten
   mit dem geringsten Anteil Integritaet); ist niemand verletzt oder der
   Traeger allein, schiessen die Drohnen schwach auf den naechsten Gegner.
-  Faehigkeit "Schutzdrohne": der am staerksten verletzte Verbuendete bekommt
-  15 Schild. KI: mit dem Pod bleibt der Traeger hinten bei den Verletzten.
-* **Deflektor:** Faehigkeit jeder 4. Angriff: 15 Schild fuer den Traeger.
+  Faehigkeit "Schutzdrohne" (Takt: jeder 4. Angriff): der am staerksten
+  verletzte Verbuendete bekommt 15 Schild. Gebaut: Heilung 6, Schuss 4
+  Energie, alle 1,5 s. KI: steht ein Verletzter ausser Reichweite, geht der
+  Traeger zu ihm. Die passive Selbstheilung (5 % je Puls) ist weg.
+* **Deflektor:** Angriff 6 kinetisch, Rw 1, alle 1,5 s; Faehigkeit
+  "Schildladung" (Takt: jeder 4. Angriff): 15 Schild fuer den Traeger, auch
+  ueber das Maximum (hoechstens Maximum + 15). DEF +5 bleibt.
 * **Karte:** verzweigte Wege ueber mehrere Kaempfe (wie FTL / Slay the
   Spire), man plant 2-3 Kaempfe voraus.
 * **Ueberschuss am Schild** (`ActionResolver.resolve_damage`): der Rest nach
@@ -584,9 +592,9 @@ kommen sie in den Beutetopf. Das ist das "pokern auf Items, die man kennt".
 Erledigt: 1-5 (KI, ein Platz, Vireo, Molok, Strix/Nimbus). Die Kerne (alt 6)
 entfallen (6g). Weiter:
 
-1. ~~Aufraeumen nach 6g~~ (gebaut 6. Nov.). Noch dazu: Deflektor und
-   Drohnen-Pod als Waffen mit Angriff und Faehigkeit. Nimbus-Passive Echo
-   (gebaut 7. Nov.); der Nimbus bleibt vorerst so stark.
+1. ~~Aufraeumen nach 6g~~ (gebaut 6. Nov.), dazu Nimbus-Passive Echo und
+   Deflektor/Drohnen-Pod als Waffen (gebaut 7. Nov.); der Nimbus bleibt
+   vorerst so stark.
 2. Zwischenstopp nach dem Kampf: Lager, Credits, Ausruesten.
 3. Module und Rezepte (6g), dann der Laden.
 4. Level fuer DROMEs und Waffen, die nach dem Lauf bleiben.
