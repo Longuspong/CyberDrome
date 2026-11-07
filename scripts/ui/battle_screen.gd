@@ -189,6 +189,7 @@ func _refresh_badges() -> void:
 			"shield": unit.shield, "shield_max": unit.shield_max(),
 			"is_player": unit.is_player,
 			"lured": battle.brain != null and battle.brain.lured_by(unit) != null,
+			"takt": unit.takt_bars(),
 		})
 	view.show_unit_badges(entries)
 
@@ -538,6 +539,7 @@ func _build_ui() -> void:
 	top_box.add_child(_squad_tiles)
 	_status = UiKit.label("", UiKit.SMALL)
 	_status.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_status.clip_text = true
 	top_box.add_child(_status)
 
 	var middle := Control.new()
@@ -650,6 +652,13 @@ func _toggle_pause() -> void:
 ## Die Beute-Zeile im Ergebnis. Nur bei einem echten Chaos-Sieg; sonst
 ## schweigt sie. Bei Beute nennt sie die Teile, bei Duerre den Pity-Fortschritt.
 func _add_loot_section(box: VBoxContainer, outcome: BattleManager.Outcome) -> void:
+	if GameState.in_run_battle:
+		# Im Lauf kommen Credits und danach die Belohnung -- kein Chaos-Wuerfel.
+		if GameState.run != null:
+			var won := outcome == BattleManager.Outcome.VICTORY
+			box.add_child(UiKit.label("+%d Credits%s" % [GameState.run.battle_credits(won),
+				"  ·  Belohnung im Lauf" if won else ""], UiKit.BODY, UiKit.WARN))
+		return
 	if GameState.chaos_reference_power <= 0.0 and GameState.last_loot.is_empty():
 		return
 	if outcome != BattleManager.Outcome.VICTORY:
@@ -684,10 +693,20 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	panel.add_theme_stylebox_override("panel", UiKit.card_style(true))
 	holder.add_child(panel)
+	# Oben die Zahlen zum Scrollen, darunter die Knoepfe fest -- sonst lag
+	# "Weiter im Lauf" bei vier gegen drei unter dem Rand der Liste.
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	panel.add_child(column)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.custom_minimum_size = Vector2(0, minf(560.0, get_viewport().get_visible_rect().size.y - 120.0))
-	panel.add_child(scroll)
+	var buttons := VBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 8)
+	var button_room := float(UiKit.BUTTON_HEIGHT) * (1.0 if GameState.in_run_battle else 2.0) + 24.0
+	scroll.custom_minimum_size = Vector2(0, minf(560.0,
+		get_viewport().get_visible_rect().size.y - 120.0) - button_room)
+	column.add_child(scroll)
+	column.add_child(buttons)
 	var box := VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 8)
@@ -721,7 +740,7 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		onward.pressed.connect(func():
 			GameState.finish_run_battle(outcome, pool)
 			get_tree().change_scene_to_file("res://scenes/run.tscn"))
-		box.add_child(onward)
+		buttons.add_child(onward)
 		onward.grab_focus.call_deferred()
 		return
 
@@ -730,11 +749,11 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		GameState.battle_seed = 0
 		GameState.clear_chaos_run()
 		get_tree().change_scene_to_file("res://scenes/hangar.tscn"))
-	box.add_child(back)
+	buttons.add_child(back)
 
 	var menu := UiKit.button("Zur Startseite")
 	menu.pressed.connect(func():
 		GameState.battle_seed = 0
 		GameState.clear_chaos_run()
 		get_tree().change_scene_to_file("res://scenes/main.tscn"))
-	box.add_child(menu)
+	buttons.add_child(menu)

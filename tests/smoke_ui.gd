@@ -1,6 +1,7 @@
 extends SceneTree
 
 ## Smoke-Test der UI-Szenen: instanziiert den Hangar (Squad, dann Umbau)
+## und den Lauf im Zwischenstopp
 ## headless und prueft, dass ihr _ready ohne Laufzeitfehler durchlaeuft. Die
 ## regulaeren Tests pruefen das Datenmodell; hier geht es nur darum, dass die
 ## Bildschirme sich ueberhaupt aufbauen. Kein Teil der SUITES -- eigener Lauf:
@@ -39,6 +40,18 @@ func _process(_delta: float) -> bool:
 			print("SMOKE: Hangar (Umbau) instanziiert fuer '%s'"
 				% gs.roster.entries[0].name)
 		12:
+			# Lauf im Zwischenstopp: Lager mit Waffe, eine davon angetippt.
+			gs.start_run(4242)
+			gs.run.record_result(1, [&"eq_plasma_blade"])
+			gs.run.skip_reward()
+			gs.run.storage.append(&"eq_hammer")
+			var stop = load("res://scenes/run.tscn").instantiate()
+			stop.name = "RunStop"
+			root.add_child(stop)
+			stop._selected_storage = 0
+			stop._refresh()
+			print("SMOKE: Lauf (Zwischenstopp) instanziiert, Lager %d" % gs.run.storage.size())
+		16:
 			print("SMOKE_OK")
 			quit(0)
 	return false

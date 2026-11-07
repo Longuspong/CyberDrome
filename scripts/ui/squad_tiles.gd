@@ -11,12 +11,15 @@ extends HBoxContainer
 ## Darunter je Waffe der Zaehler bis zur Faehigkeit ("Doppelschuss 2/3") --
 ## damit man sieht, wann sie kommt. Eine zerstoerte Kachel wird abgedunkelt.
 ## Die Kacheln teilen sich die Breite: im Hochformat (ca. 400 Pixel) passen
-## vier nebeneinander, mehr hat ein Squad nicht.
+## vier nebeneinander, mehr hat ein Squad nicht. Alle Texte schneiden ab statt
+## die Kachel zu verbreitern -- sonst schob eine lange Zeile (Molok mit zwei
+## Faehigkeiten) die ganze Leiste ueber den Bildschirmrand hinaus. Jede
+## Faehigkeit steht deshalb in einer eigenen Zeile.
 
 ## Antippen einer Kachel: die Kamera faehrt zu diesem DROME.
 signal tile_pressed(unit)
 
-const HEAD_EDGE := 34.0
+const HEAD_EDGE := 28.0
 const BAR_HEIGHT := 5.0
 
 var _tiles: Dictionary = {}       # unit_id -> { root, style, hp_bar, sh_bar, hp_label, sh_label, spd }
@@ -35,6 +38,7 @@ func setup(units: Array) -> void:
 func _add_tile(unit: Unit) -> void:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.clip_contents = true
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(UiKit.CARD, 0.92)
 	style.border_color = UiKit.CARD_LINE
@@ -100,6 +104,9 @@ func _small(text: String, size: int, color: Color) -> Label:
 	label.add_theme_font_size_override("font_size", size)
 	label.modulate = color
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	# Mindestbreite 0: die Kachel bestimmt die Breite, nicht der Text.
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
@@ -142,18 +149,21 @@ func refresh(units: Array) -> void:
 			else Color(0.45, 0.45, 0.5, 0.8)
 
 
-## "Doppelschuss 2/3": je Waffe mit Faehigkeit, der wievielte Schuss als
+## "2/3 Doppelsc.": je Waffe mit Faehigkeit, der wievielte Schuss als
 ## naechstes kommt. Bei 3/3 ist der naechste Schuss die Faehigkeit. Kurz
-## gehalten -- die Kachel ist schmal.
+## gehalten -- die Kachel ist schmal; je Waffe eine Zeile.
 static func skill_line(unit: Unit) -> String:
 	var parts: Array[String] = []
 	for mount in unit.mounts:
 		var ability = mount.get("ability")
 		if ability == null:
 			continue
-		parts.append("%s %d/%d" % [_short((ability as ActionData).display_name),
-			int(mount["count"]) + 1, int((ability as ActionData).trigger_every)])
-	return "  ".join(parts)
+		# Zaehler vorn: wird die Zeile zu lang, kuerzt die Kachel den Namen,
+		# nicht die Zahl.
+		parts.append("%d/%d %s" % [int(mount["count"]) + 1,
+			unit.takt_every(ability),
+			_short((ability as ActionData).display_name)])
+	return "\n".join(parts)
 
 
 static func _short(name: String) -> String:

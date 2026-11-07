@@ -215,3 +215,57 @@ func test_the_life_bar_splits_by_maximum() -> void:
 	t.ok(absf(hurt["shield_slot"] - 1.0 / 3.0) < 0.001, "sein Platz bleibt aber")
 	var bare: Dictionary = BattleView.UnitBadgePainter.split(50, 50, 0, 0)
 	t.equal(bare["hp_slot"], 1.0, "ohne Schild gehoert der Balken der Integritaet")
+
+
+func test_takt_bars_follow_the_ability_counter() -> void:
+	# Die Leiste unter dem Lebensbalken: jeder N-te Angriff = N Abschnitte,
+	# gefuellt je Angriff; beim letzten ist sie "bereit".
+	var battle := BattleManager.new()
+	battle.setup(4711, _squad(), _squad())
+	var unit: Unit = battle.living(true)[0]
+	var bars := unit.takt_bars()
+	t.ok(not bars.is_empty(), "der Blaster hat eine Takt-Leiste")
+	if bars.is_empty():
+		return
+	var every: int = bars[0]["segments"]
+	t.equal(every, unit.takt_every(unit.mounts[0]["ability"]), "so viele Abschnitte wie der Takt")
+	t.equal(bars[0]["filled"], 0, "zu Beginn leer")
+	unit.mounts[0]["count"] = every - 1
+	bars = unit.takt_bars()
+	t.ok(bars[0]["ready"], "naechster Angriff ist die Faehigkeit")
+	t.equal(bars[0]["filled"], every, "dann ganz gefuellt")
+	battle.free()
+
+
+func test_time_takt_fills_in_half_seconds() -> void:
+	var nimbus: DromeBuild = RunState.standard_squad().filter(func(b):
+		return b.equipment().any(func(p): return p.id == &"eq_rune_staff"))[0]
+	var battle := BattleManager.new()
+	battle.setup(4712, [nimbus], _squad())
+	var unit: Unit = battle.living(true)[0]
+	var bars: Array = unit.takt_bars().filter(func(b): return b["kind"] == "time")
+	t.ok(not bars.is_empty(), "der Runenstab hat eine Zeit-Leiste")
+	if not bars.is_empty():
+		var total: float = unit.takt_seconds(unit.gadgets[0]["ability"])
+		unit.gadgets[0]["ready"] = total - 0.7
+		var fill: float = unit.takt_bars().filter(func(b): return b["kind"] == "time")[0]["fill"]
+		t.ok(is_equal_approx(fill, 0.5 / total), "0,7 s vergangen zeigt 0,5 s")
+	battle.free()
+
+
+func test_weapon_card_shows_type_tempo_and_takt_as_symbols() -> void:
+	var staff := PartDB.get_part(&"eq_rune_staff")
+	var attack: ActionData = staff.actions.filter(func(a): return a.is_attack())[0]
+	var kinds: Array = WeaponCard.attack_chips(attack).map(func(c): return c[0])
+	t.ok("energy" in kinds, "Runenstab: Energieschaden als Kugel")
+	t.ok("speed" in kinds and "range" in kinds, "Tempo und Reichweite")
+	var lance := PartDB.get_part(&"eq_rail_lance")
+	var hit: ActionData = lance.actions.filter(func(a): return a.is_attack())[0]
+	t.ok("kinetic" in WeaponCard.attack_chips(hit).map(func(c): return c[0]),
+		"Lanze: kinetisch als Schwert")
+	for part in [staff, lance]:
+		for action in part.actions:
+			if not action.is_attack():
+				var takt := WeaponCard.takt_chip(action)
+				t.ok(not takt.is_empty(), "%s hat ein Takt-Symbol" % action.display_name)
+				t.ok(StatIcon.EXPLAIN.has(takt[0]), "mit Klartext")

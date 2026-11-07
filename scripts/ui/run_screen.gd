@@ -8,7 +8,9 @@ extends Control
 ##   * kein Lauf: Aufstellung -- wer kommt mit (SquadPicker), "Lauf starten"
 ##   * PREPARE: drei Gegner zur Wahl (Leicht/Normal/Elite) mit Region
 ##     und den gegnerischen DROMEs; "Kampf starten"
-##   * REWARD:  Belohnungen; Beute wird eingebaut oder nach Hause geschickt
+##   * REWARD:  Belohnungen; Waffen kommen ins Lager, ein DROME in den Squad
+##     oder nach Hause
+##   * STOP:    Zwischenstopp -- Lager, Credits, Ausruesten (NEUANFANG 7d)
 ##   * WON/LOST: das Ende mit Verlauf, "Neuer Lauf" oder zurueck ins Menue
 ##
 ## Die Regeln stehen in RunState, nicht hier. Dieser Bildschirm zeigt nur an
@@ -27,6 +29,12 @@ var _side: VBoxContainer
 
 ## Gewaehlte Belohnung, deren Platz noch aussteht (-1 = keine).
 var _pending_reward: int = -1
+
+## Zwischenstopp: der angetippte Lagerplatz (-1 = keiner).
+var _selected_storage: int = -1
+
+## Was am Ende des Laufs nach Hause ging -- fuer die Abschlussanzeige.
+var _delivered: Array = []
 
 
 func _ready() -> void:
@@ -77,7 +85,9 @@ func _refresh() -> void:
 	for child in _side.get_children():
 		child.queue_free()
 	_lives_box.visible = run != null
-	_squad_list.visible = run != null
+	# Im Zwischenstopp steht der Squad mit seinen Haltern oben -- dort wird
+	# eingebaut. Die Liste unten waere doppelt.
+	_squad_list.visible = run != null and run.phase != RunState.Phase.STOP
 	if run == null:
 		_header_round.text = "Aufstellung"
 		_show_setup()
@@ -93,6 +103,7 @@ func _refresh() -> void:
 				_show_placements(run, _pending_reward)
 			else:
 				_show_rewards(run)
+		RunState.Phase.STOP: _show_stop(run)
 		_: _show_end(run)
 
 
@@ -233,6 +244,7 @@ func _show_prepare(run: RunState) -> void:
 	abandon.flat = true
 	abandon.custom_minimum_size = Vector2(0, 44)
 	abandon.pressed.connect(func():
+		run.abandon()
 		GameState.deliver_run_home()
 		GameState.run = null
 		_refresh())
@@ -241,6 +253,9 @@ func _show_prepare(run: RunState) -> void:
 
 func _show_rewards(run: RunState) -> void:
 	_side.add_child(_label("Sieg! Waehle eine Belohnung.", 22, COLOR_GOOD))
+	_side.add_child(_label(_credit_line(run), 16, COLOR_WARN))
+	_side.add_child(_label("Waffen kommen ins Lager -- einbauen kannst du gleich danach.",
+		16, COLOR_MUTED))
 	for index in run.reward_options.size():
 		var option: Dictionary = run.reward_options[index]
 		var card := Button.new()
@@ -267,40 +282,29 @@ func _show_rewards(run: RunState) -> void:
 func _pick_reward(index: int) -> void:
 	var run := _run()
 	var option: Dictionary = run.reward_options[index]
-	if option["kind"] == "part" or option["kind"] == "drome":
+	if option["kind"] == "drome":
 		_pending_reward = index
 	else:
+		# Waffen kommen ins Lager, eingebaut wird im Zwischenstopp.
 		run.choose_reward(index)
+		GameState.deliver_run_home()
 	_refresh()
 
 
-## Wohin mit der Beute? Eine Zeile je passendem Halter, mit Belegung. Was
-## nicht geht, bleibt sichtbar und sagt warum -- wie im Hangar. Zuletzt immer
-## "Nach Hause schicken": dann landet die Beute im Inventar zuhause.
+## Wohin mit dem neuen DROME? In den Lauf-Squad, wenn Platz ist, oder nach
+## Hause in den Hangar.
 func _show_placements(run: RunState, index: int) -> void:
 	var option: Dictionary = run.reward_options[index]
 	_side.add_child(_label("Wohin mit %s?" % option["title"], 22, COLOR_HEADING))
-	var placements: Array = []
-	if option["kind"] == "part":
-		placements = run.placements_for(option["part_id"])
-		if placements.size() <= 1:
-			_side.add_child(_label("Kein Halter in deinem Lauf-Squad nimmt dieses Teil.",
-				18, COLOR_BAD))
-	else:
-		placements = [{"squad": true, "valid": run.has_room()}, RunState.home_placement()]
+	var placements: Array = [{"squad": true, "valid": run.has_room()},
+		RunState.home_placement()]
 	for placement in placements:
 		var button := Button.new()
 		if placement.get("home", false):
-			button.text = "Nach Hause schicken\nLandet im Inventar, nicht in diesem Lauf"
-		elif placement.get("squad", false):
+			button.text = "Nach Hause schicken\nLandet im Hangar, nicht in diesem Lauf"
+		else:
 			button.text = "In den Lauf-Squad\n%s" % ("kaempft ab dem naechsten Kampf mit"
 				if placement["valid"] else "geht nicht: Squad ist voll (%d)" % RunState.squad_max())
-		else:
-			var build: DromeBuild = run.squad[int(placement["drome"])]
-			var where := "%s  ·  %s" % [build.display_name, build._slot_label(placement["slot"])]
-			var what := "frei" if placement["current"] == "" else "ersetzt %s" % placement["current"]
-			button.text = "%s\n%s" % [where, what if placement["valid"]
-				else "geht nicht: Aufbau waere ungueltig"]
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.custom_minimum_size = Vector2(0, 72)
 		button.add_theme_font_size_override("font_size", 18)
@@ -321,7 +325,202 @@ func _show_placements(run: RunState, index: int) -> void:
 	_side.add_child(back)
 
 
+## "+10 Credits fuer den Sieg  ·  jetzt 24"
+func _credit_line(run: RunState) -> String:
+	if run.history.is_empty():
+		return "Credits: %d" % run.credits
+	var last: Dictionary = run.history[-1]
+	return "+%d Credits %s  ·  jetzt %d" % [int(last.get("credits", 0)),
+		"fuer den Sieg" if last["won"] else "Trostgeld", run.credits]
+
+
+# ---------------------------------------------------------------------------
+# Zwischenstopp (NEUANFANG 7d)
+# ---------------------------------------------------------------------------
+
+## Nach jedem Kampf: oben Credits, dann das Lager als Kacheln, darunter der
+## Squad mit seinen Haltern. Bedienung wie besprochen: Waffe im Lager
+## antippen, dann den Halter antippen. Ohne Auswahl baut ein Halter seine
+## Waffe aus ins Lager. Umbauen kostet nichts.
+func _show_stop(run: RunState) -> void:
+	if _selected_storage >= run.storage.size():
+		_selected_storage = -1
+	var last: Dictionary = run.history[-1] if not run.history.is_empty() else {}
+	_side.add_child(_label("Zwischenstopp", 22, COLOR_HEADING))
+	if not last.is_empty() and not last["won"]:
+		_side.add_child(_label("Niederlage -- ein Leben weniger.", 18, COLOR_BAD))
+	_side.add_child(_label(_credit_line(run), 18, COLOR_WARN))
+
+	# --- Lager ---
+	_side.add_child(_label("Lager  %d / %d" % [run.storage.size(), RunState.storage_size()],
+		18, COLOR_HEADING))
+	if run.storage.is_empty():
+		_side.add_child(_label("Leer. Beute landet hier; ausgebaute Waffen auch.",
+			16, COLOR_MUTED))
+	else:
+		var grid := GridContainer.new()
+		grid.columns = 4
+		grid.add_theme_constant_override("h_separation", 8)
+		grid.add_theme_constant_override("v_separation", 8)
+		_side.add_child(grid)
+		for index in run.storage.size():
+			grid.add_child(_storage_tile(run, index))
+	if _selected_storage >= 0:
+		_side.add_child(_storage_card(run, _selected_storage))
+
+	# --- Squad mit Haltern ---
+	_side.add_child(_label("Dein Lauf-Squad  ·  Staerke %d"
+		% int(DromeBuild.squad_power(run.squad)), 18, COLOR_HEADING))
+	if _selected_storage >= 0:
+		_side.add_child(_label("Tippe einen Halter an, um die Waffe einzubauen.",
+			16, COLOR_MUTED))
+	var options: Array = run.equip_options(_selected_storage) if _selected_storage >= 0 else []
+	for drome in run.squad.size():
+		_side.add_child(_stop_drome_card(run, drome, options))
+
+	var go := _big_button("Weiter zum naechsten Kampf")
+	go.pressed.connect(func():
+		_selected_storage = -1
+		run.continue_run()
+		_refresh())
+	_side.add_child(go)
+
+
+## Eine Lager-Kachel: Bild in der Form ihrer Klasse, Name darunter.
+func _storage_tile(run: RunState, index: int) -> Control:
+	var part := PartDB.get_part(run.storage[index])
+	var button := Button.new()
+	button.toggle_mode = true
+	button.button_pressed = index == _selected_storage
+	button.custom_minimum_size = Vector2(0, 96)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.tooltip_text = part.display_name if part != null else ""
+	if index == _selected_storage:
+		button.add_theme_stylebox_override("normal", UiKit.card_style(true))
+		button.add_theme_stylebox_override("pressed", UiKit.card_style(true))
+	var box := VBoxContainer.new()
+	box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(box)
+	if part != null:
+		var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), 56.0)
+		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		shape.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(shape)
+		var name := Label.new()
+		name.text = part.display_name
+		name.add_theme_font_size_override("font_size", 12)
+		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name.clip_text = true
+		name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(name)
+	button.pressed.connect(func():
+		_selected_storage = -1 if _selected_storage == index else index
+		_refresh())
+	return button
+
+
+## Die Karte zur angetippten Lager-Waffe: was sie kann, Verkaufen, nach Hause.
+func _storage_card(run: RunState, index: int) -> Control:
+	var part := PartDB.get_part(run.storage[index])
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style(true))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	panel.add_child(box)
+	# Dieselbe Darstellung wie die Waffen-Karte im Hangar: Symbole, Takt,
+	# Faehigkeit; ein Symbol antippen schreibt den Klartext darunter.
+	var hint := UiKit.label("Symbol antippen: Erklaerung", UiKit.SMALL, UiKit.MUTED)
+	WeaponCard.fill(box, part, hint)
+	box.add_child(hint)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	box.add_child(row)
+	var sell := UiKit.button("Verkaufen  +%d" % RunState.sell_value(part))
+	sell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sell.pressed.connect(func():
+		run.sell(index)
+		_selected_storage = -1
+		_refresh())
+	row.add_child(sell)
+	var home := UiKit.button("Nach Hause")
+	home.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	home.tooltip_text = "Sofort in den Hangar -- frei im Lager, fehlt aber im Lauf"
+	home.pressed.connect(func():
+		run.send_home(index)
+		GameState.deliver_run_home()
+		_selected_storage = -1
+		_refresh())
+	row.add_child(home)
+	return panel
+
+
+## Ein DROME im Zwischenstopp: Bild, Name, und je Halter ein Knopf. Mit
+## ausgewaehlter Lager-Waffe heisst er "hier einbauen" (oder sagt, warum
+## nicht); ohne Auswahl baut er die Waffe aus.
+func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
+	var build: DromeBuild = run.squad[drome]
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style(false))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	panel.add_child(box)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	box.add_child(head)
+	head.add_child(UiKit.drome_view(build, 56))
+	var title := VBoxContainer.new()
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	title.add_child(_label("%s  ·  %d" % [build.display_name, int(build.power_score())], 18))
+	if build.equipment().is_empty():
+		title.add_child(_label("ohne Waffe -- kaempft nicht mit", 16, COLOR_BAD))
+
+	for slot in build.equip_slots():
+		var part := build.part_in(slot)
+		var limit := SlotRules.slot_class(build.body(), slot)
+		var what := part.display_name if part != null else "leer"
+		var button := Button.new()
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		button.custom_minimum_size = Vector2(0, 56)
+		button.add_theme_font_size_override("font_size", 16)
+		var line := "Halter %s (%s): %s" % [SlotRules.slot_label(slot),
+			SlotRules.class_label(limit), what]
+		if _selected_storage >= 0:
+			var choice: Dictionary = {}
+			for entry in options:
+				if int(entry["drome"]) == drome and entry["slot"] == slot:
+					choice = entry
+			var allowed := bool(choice.get("allowed", false))
+			button.text = "%s\n%s" % [line, ("Hier einbauen -- %s" % choice.get("detail", ""))
+				if allowed else "geht nicht: %s" % choice.get("detail", "passt nicht")]
+			button.disabled = not allowed
+			if allowed:
+				button.add_theme_stylebox_override("normal", UiKit.card_style(true))
+			button.pressed.connect(func():
+				if run.equip_from_storage(_selected_storage, drome, slot):
+					_selected_storage = -1
+				_refresh())
+		elif part != null:
+			button.text = "%s\n%s" % [line, "Ins Lager" if not run.storage_full()
+				else "Lager voll -- erst verkaufen"]
+			button.disabled = run.storage_full()
+			button.pressed.connect(func():
+				run.unequip(drome, slot)
+				_refresh())
+		else:
+			button.text = "%s\nWaffe im Lager antippen, dann hier" % line
+			button.disabled = true
+		box.add_child(button)
+	return panel
+
+
 func _show_end(run: RunState) -> void:
+	# Die Beute, die noch im Lauf war, geht jetzt nach Hause (7f).
+	_delivered.append_array(GameState.deliver_run_home())
 	var won := run.phase == RunState.Phase.WON
 	_side.add_child(_label("Lauf gewonnen!" if won else "Lauf verloren.", 30,
 		COLOR_GOOD if won else COLOR_BAD))
@@ -332,9 +531,16 @@ func _show_end(run: RunState) -> void:
 		line += "%s(%s) " % ["S" if entry["won"] else "N", "LNE"[int(entry.get("tier", 1))]]
 	_side.add_child(_label("Verlauf: %s (S = Sieg, N = Niederlage; in Klammern die Stufe)" % line.strip_edges(), 16, COLOR_MUTED))
 
+	var parts: Array = _delivered.filter(func(item): return item.get("kind", "") == "part") \
+		.map(func(item): return str(item["title"]))
+	if not parts.is_empty():
+		_side.add_child(_label("Nach Hause in den Hangar: %s" % ", ".join(parts),
+			16, COLOR_GOOD))
+
 	var again := _big_button("Neuer Lauf")
 	again.pressed.connect(func():
 		GameState.deliver_run_home()
+		_delivered.clear()
 		GameState.run = null
 		_refresh())
 	_side.add_child(again)

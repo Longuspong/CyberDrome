@@ -314,16 +314,13 @@ func _patient_out_of_reach(unit: Unit) -> Unit:
 ## Mit der Passive Echo (Nimbus) laenger: die normalen Angriffe dazwischen
 ## mal ``passives.echo.slower`` (gerundet) -- Blaster jeder 3. -> jeder 4.
 func trigger_every(unit: Unit, ability: ActionData) -> int:
-	var every := int(ability.trigger_every)
-	if ability.trigger_kind != "attacks" or unit.passive() != "echo":
-		return every
-	return int(round(float(every - 1) * unit.echo_slower())) + 1
+	return unit.takt_every(ability)
 
 
 ## Der Takt einer Zeit-Faehigkeit in Sekunden -- mit Echo ebenso laenger
 ## (Runenstab: 3 s -> 4,5 s).
 func _time_after_ability(unit: Unit, ability: ActionData) -> float:
-	return float(ability.trigger_every) * unit.echo_slower()
+	return unit.takt_seconds(ability)
 
 
 ## Passive Echo (Nimbus, 7. Nov. 2026): die Faehigkeit wirkt gleich noch
