@@ -350,6 +350,53 @@ func init_realtime(pulse_offset: float) -> void:
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0})
 
 
+## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
+## sie ist. Mit der Passive Echo (Nimbus) laenger: die normalen Angriffe
+## dazwischen mal ``passives.echo.slower`` (gerundet) -- Blaster jeder 3. ->
+## jeder 4.
+func takt_every(ability: ActionData) -> int:
+	var every := int(ability.trigger_every)
+	if ability.trigger_kind != "attacks" or passive() != "echo":
+		return every
+	return int(round(float(every - 1) * echo_slower())) + 1
+
+
+## Der Takt einer Zeit-Faehigkeit in Sekunden -- mit Echo ebenso laenger.
+func takt_seconds(ability: ActionData) -> float:
+	return float(ability.trigger_every) * echo_slower()
+
+
+## Wann kommen die Faehigkeiten? Je Faehigkeit ein Eintrag fuer die Leiste
+## unter dem Lebensbalken:
+##   {"kind": "hits", "segments": N, "filled": k, "ready": bool}
+##       Treffer-Takt: N Abschnitte, k gefuellt; ready = der naechste
+##       Angriff ist die Faehigkeit (dann sind alle gefuellt).
+##   {"kind": "time", "fill": 0..1, "ready": bool}
+##       Zeit-Takt: fuellt sich in Schritten von ``step`` Sekunden.
+func takt_bars(step: float = 0.5) -> Array:
+	var out: Array = []
+	for mount in mounts:
+		var ability = mount.get("ability")
+		if ability == null:
+			continue
+		var every := takt_every(ability)
+		var count := int(mount["count"])
+		var ready := count + 1 >= every
+		out.append({"kind": "hits", "segments": every,
+			"filled": every if ready else count, "ready": ready})
+	for gadget in gadgets:
+		var ability: ActionData = gadget["ability"]
+		if ability.trigger_kind != "time":
+			continue
+		var total := takt_seconds(ability)
+		var passed := clampf(total - float(gadget["ready"]), 0.0, total)
+		if step > 0.0:
+			passed = floorf(passed / step) * step
+		out.append({"kind": "time", "fill": passed / maxf(0.01, total),
+			"ready": float(gadget["ready"]) <= 0.0})
+	return out
+
+
 ## Wie viel laenger der Takt der Faehigkeiten ist: mit der Passive Echo
 ## ``passives.echo.slower`` (1,5), sonst 1.
 func echo_slower() -> float:

@@ -173,6 +173,11 @@ class UnitBadgePainter extends Node2D:
 	const COLOR_TRACK := Color(0.04, 0.05, 0.08, 0.9)
 	const COLOR_OUTLINE := Color(0.0, 0.0, 0.0, 0.9)
 	const COLOR_LURED := Color(1.0, 0.62, 0.15)
+	## Takt-Leiste unter dem Lebensbalken: wann kommt die Faehigkeit?
+	const TAKT_HEIGHT := 3.0
+	const TAKT_GAP := 2.0
+	const COLOR_TAKT := Color(1.0, 0.82, 0.35)
+	const COLOR_TAKT_READY := Color(1.0, 1.0, 0.85)
 
 	var entries: Array = []
 
@@ -232,6 +237,8 @@ class UnitBadgePainter extends Node2D:
 			draw_rect(Rect2(Vector2(shield_left - 0.5 * s, top),
 				Vector2(1.0 * s, height)), COLOR_OUTLINE)
 
+		_takt(entry.get("takt", []), left, top + height + pad, width)
+
 		# Gelockt (Molok-Praesenz, Koedersender): ein kleines Ausrufezeichen
 		# in Orange links neben dem Balken -- "der greift gerade den Locker an".
 		if entry.get("lured", false):
@@ -241,6 +248,35 @@ class UnitBadgePainter extends Node2D:
 			draw_rect(Rect2(at + Vector2(-0.8, -2.8) * s, Vector2(1.6, 3.4) * s), COLOR_OUTLINE)
 			draw_rect(Rect2(at + Vector2(-0.8, 1.2) * s, Vector2(1.6, 1.4) * s), COLOR_OUTLINE)
 
+
+	## Je Faehigkeit eine duenne Leiste unter dem Lebensbalken, gleich breit.
+	## Treffer-Takt: ein Abschnitt je Angriff (jeder 4. Angriff = vier
+	## Abschnitte zu je einem Viertel), gefuellt je Treffer. Zeit-Takt: eine
+	## Leiste, die sich in halben Sekunden fuellt. Volle Leiste leuchtet hell:
+	## als Naechstes kommt die Faehigkeit.
+	func _takt(bars: Array, left: float, top: float, width: float) -> void:
+		var s := pixel_scale
+		var h := TAKT_HEIGHT * s
+		var y := top + TAKT_GAP * s * 0.5
+		for bar in bars:
+			var color := COLOR_TAKT_READY if bar.get("ready", false) else COLOR_TAKT
+			draw_rect(Rect2(Vector2(left - s, y - s), Vector2(width + 2.0 * s, h + 2.0 * s)),
+				COLOR_OUTLINE)
+			draw_rect(Rect2(Vector2(left, y), Vector2(width, h)), COLOR_TRACK)
+			if bar["kind"] == "hits":
+				var n: int = maxi(1, int(bar["segments"]))
+				var piece := width / float(n)
+				for i in n:
+					var x := left + piece * float(i)
+					if i < int(bar["filled"]):
+						draw_rect(Rect2(Vector2(x, y), Vector2(piece, h)), color)
+					if i > 0:
+						draw_rect(Rect2(Vector2(x - 0.5 * s, y), Vector2(1.0 * s, h)),
+							COLOR_OUTLINE)
+			else:
+				draw_rect(Rect2(Vector2(left, y), Vector2(width * float(bar["fill"]), h)),
+					color)
+			y += h + TAKT_GAP * s
 
 
 ## Echtzeit-Effekte: Schussspuren und schwebende Zahlen.

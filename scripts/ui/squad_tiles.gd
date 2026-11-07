@@ -161,7 +161,7 @@ static func skill_line(unit: Unit) -> String:
 		# Zaehler vorn: wird die Zeile zu lang, kuerzt die Kachel den Namen,
 		# nicht die Zahl.
 		parts.append("%d/%d %s" % [int(mount["count"]) + 1,
-			int((ability as ActionData).trigger_every),
+			unit.takt_every(ability),
 			_short((ability as ActionData).display_name)])
 	return "\n".join(parts)
 

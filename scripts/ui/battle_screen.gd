@@ -189,6 +189,7 @@ func _refresh_badges() -> void:
 			"shield": unit.shield, "shield_max": unit.shield_max(),
 			"is_player": unit.is_player,
 			"lured": battle.brain != null and battle.brain.lured_by(unit) != null,
+			"takt": unit.takt_bars(),
 		})
 	view.show_unit_badges(entries)
 
