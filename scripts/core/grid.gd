@@ -4,9 +4,11 @@ extends RefCounted
 ## Das Kampfgitter. Reine Logik -- keine Godot-Knoten, keine Bildschirm-
 ## koordinaten. Isometrisch ist ausschliesslich die DARSTELLUNG.
 ##
-## Seit dem Umbau zum Autobattler (Nov. 2026) ist das Feld frei: kein
-## Gelaende, keine Sichtlinie. Das Gitter fuehrt nur noch, wer wo steht --
-## zwei DROMEs teilen sich nie ein Feld.
+## Seit dem Umbau zum Autobattler (Nov. 2026) gibt es kein Gelaende mit
+## Regeln mehr (keine Stufen, keine Sichtlinie). Seit 7. Nov. 2026 wieder:
+## **Hindernisse**, die nur Laufwege sperren -- Schuesse gehen darueber
+## (Entscheidung des Spielers). Das Gitter fuehrt, wer wo steht (zwei DROMEs
+## teilen sich nie ein Feld) und welche Felder gesperrt sind.
 
 const DEFAULT_SIZE := 20
 
@@ -22,6 +24,10 @@ var height: int = DEFAULT_SIZE
 var region: Terrain.Region = null
 
 var _occupants: Dictionary = {}     ## Vector2i -> unit_id (Variant)
+
+## Gesperrte Felder: Vector2i -> Art des Hindernisses (String, nur Optik).
+## Wer hier steht, ist niemand; betreten kann es keiner.
+var obstacles: Dictionary = {}
 
 
 func _init(w: int = DEFAULT_SIZE, h: int = DEFAULT_SIZE) -> void:
@@ -83,13 +89,19 @@ func tile_of(unit_id) -> Vector2i:
 	return Vector2i(-1, -1)
 
 
-## Darf ``unit_id`` hier stehen? Im Feld und nicht von jemand anderem belegt.
+## Darf ``unit_id`` hier stehen? Im Feld, kein Hindernis und nicht von
+## jemand anderem belegt.
 func can_stand_on(tile: Vector2i, unit_id = null) -> bool:
-	return in_bounds(tile) and not is_occupied(tile, unit_id)
+	return in_bounds(tile) and not obstacles.has(tile) and not is_occupied(tile, unit_id)
+
+
+func is_blocked(tile: Vector2i) -> bool:
+	return obstacles.has(tile)
 
 
 func duplicate_grid() -> Grid:
 	var copy := Grid.new(width, height)
 	copy._occupants = _occupants.duplicate()
+	copy.obstacles = obstacles.duplicate()
 	copy.region = region
 	return copy
