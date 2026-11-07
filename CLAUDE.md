@@ -84,7 +84,7 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
 0. **Neuentwurf umsetzen** (`docs/NEUANFANG.md`, Reihenfolge in Abschnitt 8).
    Erledigt: KI-Grundlagen (Ziel halten, Rolle je Chassis, Fokus); Nimbus
-   (Runenstab Rw 3, Vortex, Passive Zauberwirker); ein Platz je DROME;
+   (Runenstab Rw 3, Vortex nach Zeit, Passive Echo); ein Platz je DROME;
    Vireo (Sprint, Doppelschuss, Plasmaklinge, Neon-Blaster); Neon-Leuchten
    als Prototyp; Molok (Tank 200/10, Praesenz, Hammer); Aufstellung vor
    dem Kampf per Ziehen (Zone 3 x 5); Zielregel je Rolle statt Aggro-Tabelle,
@@ -103,7 +103,9 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den
    Teildaten, Tempo und Puls in `data/config.json` -> `realtime`). Seit dem
-   Vortex nach Zeit macht der Nimbus den meisten Schaden (11/s, 6g).
+   Vortex nach Zeit macht der Nimbus den meisten Schaden (11/s, 6g) -- bleibt
+   so, bis auch der Strix ausgeglichen wird. Die Ausloesevoraussetzung einer
+   Faehigkeit heisst **Takt**.
 2. ~~Kern als Synergie-Teil~~ -- entfaellt (6g). Skillbaeume spaeter.
 3. Eingreifen ueber Aggro-Platz 1 besprechen (Designpunkt 3) -- passt jetzt
    gut: Gegner im laufenden Kampf antippen.

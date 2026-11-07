@@ -85,7 +85,11 @@
         "push_tiles": 0,
         "energy_fraction": 1.0,
         "interval": 2.0,
-        "trigger": {"kind": "time", "every": 3, "weapon": ""},
+        "trigger": {
+          "kind": "time",
+          "every": 3,
+          "weapon": ""
+        },
         "shield_mult": 1.0,
         "shots": 1,
         "gather": true,

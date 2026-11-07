@@ -173,7 +173,7 @@ func test_allies_prefer_a_shared_target() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Nimbus: Runenstab, Vortex, Zauberwirker
+# Nimbus: Runenstab, Vortex, Echo
 # ---------------------------------------------------------------------------
 
 func _action(unit: Unit, id: StringName) -> ActionData:
@@ -230,39 +230,26 @@ func test_the_vortex_gathers_then_strikes_then_slows() -> void:
 	battle.free()
 
 
-func test_the_spellcaster_halves_the_wait_after_an_ability() -> void:
-	# 6g: nach einer Faehigkeit gilt fuer die naechste EINMAL die halbe
-	# Voraussetzung, danach wieder die volle.
+func test_echo_lengthens_the_takt_and_casts_twice() -> void:
+	# Echo (Nimbus, 7. Nov. 2026): Takt 50 % laenger, Faehigkeit wirkt zweimal.
 	var battle := _battle([_nimbus(), _vireo()], [_vireo()],
 		[Vector2i(4, 16), Vector2i(6, 16), Vector2i(10, 4)])
 	var nimbus: Unit = battle.units[0]
 	var vireo: Unit = battle.units[1]
 	var vortex := _action(nimbus, &"act_rune_vortex")
 	var scatter := _action(vireo, &"act_pulse_double")
-	t.equal(nimbus.passive(), "spellcaster", "der Nimbus ist Zauberwirker")
-	# Runenstab: der Vortex kommt nach Zeit -- 3 s, dann 1,5 s, dann wieder 3 s.
+	t.equal(nimbus.passive(), "echo", "der Nimbus hat Echo")
 	t.equal(vortex.trigger_kind, "time", "der Vortex loest nach Zeit aus")
 	t.equal(vortex.range_tiles, 5, "mit Reichweite 5")
-	var gadget := {}
-	var waits: Array = []
-	for i in 4:
-		waits.append(battle.brain._time_after_ability(nimbus, vortex, gadget))
-	t.equal(waits, [1.5, 3.0, 1.5, 3.0], "halb, voll, halb, voll")
-	# Blaster am Nimbus: zwei normale, dann einer, dann wieder zwei.
-	var mount := {}
-	var normals := int(scatter.trigger_every) - 1
-	t.equal(normals - battle.brain._count_after_ability(nimbus, scatter, mount), 1,
-		"nach dem ersten Doppelschuss reicht ein Schuss")
-	t.equal(normals - battle.brain._count_after_ability(nimbus, scatter, mount), 2,
-		"nach dem verkuerzten wieder zwei")
-	t.equal(battle.brain._count_after_ability(vireo, scatter, {}), 0,
-		"ohne die Passive beginnt die Zaehlung von vorn")
+	t.equal(battle.brain._time_after_ability(nimbus, vortex), 4.5, "Takt 3 s -> 4,5 s")
+	t.equal(battle.brain.trigger_every(nimbus, scatter), 4,
+		"Blaster am Nimbus: jeder 4. statt jeder 3. Angriff")
+	t.equal(battle.brain.trigger_every(vireo, scatter), 3, "ohne Echo bleibt es beim 3.")
 	battle.free()
 
 
-func test_a_nimbus_casts_more_often_than_its_staff_alone_would() -> void:
-	# Im Kampf: nach einem voll geladenen Vortex kommt der naechste nach der
-	# halben Zeit, danach wieder nach der vollen (6g).
+func test_echo_casts_the_vortex_twice_in_a_row() -> void:
+	# Im Kampf: der Vortex kommt paarweise, zwischen den Paaren 4,5 s.
 	var times := []
 	var clock := {"battle": null}
 	var record := func(unit, _tile, action):
@@ -275,12 +262,10 @@ func test_a_nimbus_casts_more_often_than_its_staff_alone_would() -> void:
 	battle.run_to_end(40.0)
 	battle.free()
 	EventBus.action_used.disconnect(record)
-	t.ok(times.size() >= 3, "der Nimbus zaubert mehrmals (%d)" % times.size())
-	if times.size() >= 3:
-		var short: float = times[1] - times[0]
-		var long: float = times[2] - times[1]
-		t.ok(short >= 1.45 and short < 2.9, "erst die halbe Zeit (%.2f s)" % short)
-		t.ok(long >= 2.95, "dann wieder die volle (%.2f s)" % long)
+	t.ok(times.size() >= 4, "der Nimbus zaubert mehrmals (%d)" % times.size())
+	if times.size() >= 4:
+		t.ok(is_equal_approx(times[0], times[1]), "Echo: zweimal im selben Augenblick")
+		t.ok(times[2] - times[1] >= 4.45, "dann der volle Takt (%.2f s)" % (times[2] - times[1]))
 
 
 # ---------------------------------------------------------------------------

@@ -390,8 +390,8 @@ STAT_DEFAULTS = {
     #   controller   bleibt hinter der Frontlinie, bis sie im Kampf ist (Nimbus)
     "ai_role": "",
     # Nur body: die Passive des DROME (Unit.passive()).
-    #   spellcaster  nach jeder Faehigkeit braucht die Waffe nur noch halb so
-    #                viele normale Angriffe bis zur naechsten (Nimbus)
+    #   echo         jede Faehigkeit wirkt zweimal, ihr Takt ist 50 % laenger
+    #                (Nimbus)
     #   hit_rush     jeder Treffer gibt kurz mehr Lauftempo (Vireo)
     #   presence     lockt Gegner in der Naehe an und faengt Schaden fuer
     #                Verbuendete ab (Molok)
@@ -426,14 +426,15 @@ STATS = {
     "jugg_body":   {"hp": 185, "def": 5, "shield": 10, "ai_role": "vanguard",
                     "passive": "presence"},
     "mage_body":   {"hp":  85, "def": 2, "shield": 50, "ai_role": "controller",
-                    "passive": "spellcaster"},
+                    "passive": "echo"},
     "strix_body":  {"hp":  70, "def": 2, "spd": 1, "shield": 30, "ai_role": "sniper"},
 
     # --- KERN (core) -------------------------------------------------------
-    "scout_core":  {"weight": 3, "shield_regen":  5, "shield_bonus": 0.05},
-    "jugg_core":   {"weight": 6, "shield_regen":  5, "shield_bonus": 0.1},
-    "mage_core":   {"weight": 5, "shield_regen": 10, "shield_bonus": 0.2},
-    "strix_core":  {"weight": 4, "atk": 2, "shield_regen": 5, "shield_bonus": 0.1},
+    # Kerne sind seit 6g nur noch Optik am Chassis -- keine Werte.
+    "scout_core":  {"weight": 3},
+    "jugg_core":   {"weight": 6},
+    "mage_core":   {"weight": 5},
+    "strix_core":  {"weight": 4},
 
     # --- ANTRIEB (feet) ----------------------------------------------------
     "scout_feet":  {"spd": 11, "weight": 3},
@@ -452,7 +453,7 @@ STATS = {
         "weight": 5,
         "actions": [
             # Halb physisch, halb Energie.
-            {"id": "act_pulse", "display_name": "Puls-Salve",
+            {"id": "act_pulse", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 10, "energy_fraction": 0.5,
              "interval": 1.4},
@@ -471,7 +472,7 @@ STATS = {
     "eq_neon_blaster": {
         "weight": 5,
         "actions": [
-            {"id": "act_neon_pulse", "display_name": "Neon-Salve",
+            {"id": "act_neon_pulse", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 10, "energy_fraction": 0.5,
              "interval": 1.4},
@@ -487,7 +488,7 @@ STATS = {
     "eq_plasma_blade": {
         "weight": 4,
         "actions": [
-            {"id": "act_plasma_slash", "display_name": "Plasmahieb",
+            {"id": "act_plasma_slash", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 12, "interval": 1.0},
             {"id": "act_plasma_rend", "display_name": "Aufschlitzen",
@@ -511,25 +512,12 @@ STATS = {
         ],
     },
 
-    "eq_siege_cannon": {
-        "weight": 8,
-        "actions": [
-            {"id": "act_siege", "display_name": "Belagerungsschlag",
-             "category": "attack", "targeting": "aoe_around_target",
-             "range_tiles": 6, "aoe_radius": 1, "power": 18,
-             "interval": 3.0},
-            {"id": "act_siege_barrage", "display_name": "Sperrfeuer",
-             "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 6, "aoe_radius": 2, "power": 14,
-             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_siege"}},
-        ],
-    },
     # Hammer des Molok: schwer, langsam, kinetisch. Jeder 3. Schlag betaeubt
     # das Ziel 1 s (Vorgabe des Spielers, Nov. 2026).
     "eq_hammer": {
         "weight": 7,
         "actions": [
-            {"id": "act_hammer", "display_name": "Hammerschlag",
+            {"id": "act_hammer", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 16, "interval": 1.8},
             {"id": "act_hammer_stun", "display_name": "Betaeubungsschlag",
@@ -551,16 +539,16 @@ STATS = {
     "eq_rune_staff": {
         "weight": 4,
         "actions": [
-            {"id": "act_runestaff", "display_name": "Runenschlag",
+            {"id": "act_runestaff", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 9,
              "energy_fraction": 1.0, "interval": 1.2},
             {"id": "act_rune_vortex", "display_name": "Vortex",
              "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 3, "aoe_radius": 2, "power": 14,
+             "range_tiles": 5, "aoe_radius": 2, "power": 14,
              "energy_fraction": 1.0, "gather": True, "delay": 0.6,
              "status": {"id": "slow", "seconds": 2.5, "move_mult": 0.6},
-             "trigger": {"kind": "attacks", "every": 5, "weapon": "act_runestaff"}},
+             "trigger": {"kind": "time", "every": 3, "weapon": ""}},
         ],
     },
     # Zieht alle 6 s ein Ziel zwei Felder heran.
@@ -576,7 +564,7 @@ STATS = {
     "eq_rail_lance": {
         "weight": 8,
         "actions": [
-            {"id": "act_raillance", "display_name": "Schienenschuss",
+            {"id": "act_raillance", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 8, "power": 22,
              "interval": 2.6},
@@ -1943,13 +1931,6 @@ SETS = [
                 "shapes": EQ_HAMMER,
                 "mount_class": "heavy", "category": "weapon",
                 "anchors": {"mount": (0, 0, 49), "head": (23.8, 0, 39)},
-            },
-            {
-                "id": "eq_siege_cannon", "code": "EQP-003", "type": "equipment",
-                "name": "Belagerungskanone", "tags": ["weapon", "heavy"],
-                "shapes": EQ_CANNON,
-                "mount_class": "heavy", "category": "weapon",
-                "anchors": {"mount": (0, 0, 49), "muzzle": (24.9, 0, 40)},
             },
             {
                 # Frueher fest auf der Molok-Schulter ("slots"); seit es die

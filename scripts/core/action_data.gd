@@ -118,7 +118,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	return action
 
 
-## Der Ausloeser in Klartext -- fuer Teil-Info und Kacheln.
+## Der Takt (die Ausloesevoraussetzung) in Klartext -- fuer Teil-Info und Kacheln.
 func trigger_text() -> String:
 	match trigger_kind:
 		"attacks":

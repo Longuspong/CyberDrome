@@ -238,11 +238,12 @@ func _focused_by(unit: Unit, foe: Unit) -> int:
 func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	var attack: ActionData = mount["attack"]
 	var ability = mount["ability"]
-	if ability != null and int(mount["count"]) + 1 >= int((ability as ActionData).trigger_every):
+	if ability != null and int(mount["count"]) + 1 >= trigger_every(unit, ability):
 		var aim := _aim(unit, ability, target)
 		if not aim.is_empty():
 			_execute(unit, aim["tile"], ability, aim["target"])
-			mount["count"] = _count_after_ability(unit, ability, mount)
+			_echo(unit, ability, aim)
+			mount["count"] = 0
 			return true
 	var shot := _aim(unit, attack, target)
 	if shot.is_empty():
@@ -250,45 +251,37 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	_execute(unit, shot["tile"], attack, shot["target"])
 	if ability != null:
 		mount["count"] = mini(int(mount["count"]) + 1,
-			int((ability as ActionData).trigger_every) - 1)
+			trigger_every(unit, ability) - 1)
 	return true
 
 
-## Wie viele Angriffe nach einer Faehigkeit schon "abgezaehlt" sind.
-##
-## Normalerweise keiner. Die Passive ``spellcaster`` (Nimbus, 6g) halbiert
-## nach einer Faehigkeit die Voraussetzung der naechsten EINMAL (abgerundet,
-## mindestens ein Angriff): Blaster jeder 3. (2 normale) -> danach 1 normaler.
-## Eine Faehigkeit mit halbierter Voraussetzung loest die Passive nicht aus,
-## danach gilt wieder die volle. ``holder`` merkt sich das (Schluessel
-## ``halved``) -- Waffenplatz oder Gadget.
-func _count_after_ability(unit: Unit, ability: ActionData, holder: Dictionary) -> int:
-	if not _spellcaster_halves(unit, holder):
-		return 0
-	var normals := int(ability.trigger_every) - 1
-	var halved := maxi(1, int(floor(float(normals) * _spellcaster_factor())))
-	return maxi(0, normals - halved)
+## Der Takt einer Faehigkeit (wie viele Angriffe bis zu ihr) an diesem DROME.
+## Mit der Passive Echo (Nimbus) laenger: die normalen Angriffe dazwischen
+## mal ``passives.echo.slower`` (gerundet) -- Blaster jeder 3. -> jeder 4.
+func trigger_every(unit: Unit, ability: ActionData) -> int:
+	var every := int(ability.trigger_every)
+	if ability.trigger_kind != "attacks" or unit.passive() != "echo":
+		return every
+	return int(round(float(every - 1) * unit.echo_slower())) + 1
 
 
-## Gilt fuer die naechste Faehigkeit die halbierte Voraussetzung? Schaltet
-## den Merker in ``holder`` um: halbiert, dann wieder voll, dann halbiert ...
-func _spellcaster_halves(unit: Unit, holder: Dictionary) -> bool:
-	if unit.passive() != "spellcaster":
-		return false
-	var was_halved := bool(holder.get("halved", false))
-	holder["halved"] = not was_halved
-	return not was_halved
+## Der Takt einer Zeit-Faehigkeit in Sekunden -- mit Echo ebenso laenger
+## (Runenstab: 3 s -> 4,5 s).
+func _time_after_ability(unit: Unit, ability: ActionData) -> float:
+	return float(ability.trigger_every) * unit.echo_slower()
 
 
-func _spellcaster_factor() -> float:
-	return float((Config.section("passives").get("spellcaster", {}) as Dictionary).get("factor", 0.5))
-
-
-## Wie lange ein Gadget nach seiner Faehigkeit wartet. Beim Nimbus nach einer
-## voll geladenen Faehigkeit einmal die halbe Zeit (Runenstab: 3 s, 1,5 s, 3 s).
-func _time_after_ability(unit: Unit, ability: ActionData, holder: Dictionary) -> float:
-	var full := float(ability.trigger_every)
-	return full * _spellcaster_factor() if _spellcaster_halves(unit, holder) else full
+## Passive Echo (Nimbus, 7. Nov. 2026): die Faehigkeit wirkt gleich noch
+## einmal -- aufs selbe Ziel, ist es gefallen, aufs naechstbeste.
+func _echo(unit: Unit, ability: ActionData, aim: Dictionary) -> void:
+	if unit.passive() != "echo" or battle.outcome != BattleManager.Outcome.RUNNING:
+		return
+	var again := aim
+	var target: Unit = aim.get("target")
+	if target == null or not target.is_alive():
+		again = _aim(unit, ability, null)
+	if not again.is_empty():
+		_execute(unit, again["tile"], ability, again["target"])
 
 
 ## Worauf zielt ``action``? Das Ziel, wenn es geht; sonst der am besten
@@ -334,7 +327,8 @@ func _use_gadgets(unit: Unit, target: Unit) -> bool:
 				if aim.is_empty():
 					continue
 				_execute(unit, aim["tile"], ability, aim["target"])
-				gadget["ready"] = _time_after_ability(unit, ability, gadget)
+				_echo(unit, ability, aim)
+				gadget["ready"] = _time_after_ability(unit, ability)
 				return true
 			"adjacent":
 				if not _enemy_adjacent(unit):

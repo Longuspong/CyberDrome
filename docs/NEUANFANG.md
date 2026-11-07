@@ -65,7 +65,7 @@ KI. Die Waffe entscheidet, WIE er sie ausspielt.
 | **Vireo** | wendig, Assassine oder Kiter | **Sprint** (Vorgabe, gebaut): jeder Treffer gibt 2 s lang +40 % Lauftempo (`data/config.json` -> `passives`) | schnittig: mit Fernwaffe Abstand halten und kiten, mit Klinge am Ziel kleben |
 | **Molok** | Tank, Frontlinie | **Praesenz: zieht Aggro und faengt Schaden fuer Verbuendete ab** (Vorgabe). Vorschlag: Gegner in 2 Feldern Umkreis bekommen Aggro auf ihn gebucht, und 30 % des Schadens an Verbuendeten neben ihm gehen auf ihn | geht IN den Schadensbereich, stellt sich zwischen Gegner und die eigene Hinterreihe, weicht nie aus |
 | **Strix** | Scharfschuetze | **+30 % Schaden auf maximaler Reichweite** (Vorgabe, "koennte ich mir vorstellen") | sucht das Feld auf genau maximaler Reichweite und bleibt dort; weicht nur aus, wenn jemand direkt danebensteht |
-| **Nimbus** | Magier, Kontrolle | **Zauberwirker** (Vorgabe, gebaut): nach jeder Faehigkeit braucht die Waffe nur halb so viele normale Angriffe bis zur naechsten (abgerundet, mind. 1). Vortex: 4 Angriffe, danach 2. Mit Blaster: Streusalve, Schuss, Streusalve | wartet hinter der Frontlinie, dann auf Blaster-Reichweite |
+| **Nimbus** | Magier, Kontrolle | **Echo** (gebaut 7. Nov., ersetzt den Zauberwirker): Takt 50 % laenger, jede Faehigkeit wirkt zweimal (6g) | wartet hinter der Frontlinie, dann auf Blaster-Reichweite |
 
 **Ausruestung:** jeder DROME **1 Ausruestungsplatz, der Molok 2** (Vorgabe:
 "erstmal"). Folge: die Halterklassen (leicht/mittel/schwer) verlieren ihren
@@ -365,13 +365,18 @@ Gegner mit sichtbarer Ausruestung), "Kaempfen" startet. Ab und zu ersetzt
 ein **Chaos-Kampf** die Wahl: Gegner vorher unsichtbar, bessere Beute. Der
 Chaos-Virus als eigener Modus entfaellt.
 
-**Nimbus-Passive (Zauberwirker, neu):** nach einer Faehigkeit wird die
-Voraussetzung der naechsten **einmal halbiert** -- beim Blaster die Zahl der
-Angriffe, beim Runenstab die Zeit. Eine Faehigkeit mit halbierter
-Voraussetzung loest die Passive nicht aus; danach gilt wieder die volle.
-Ablauf Runenstab: 3 s, Vortex, 1,5 s, Vortex, 3 s, ... Rueckfall, falls das
-schwer zu bauen ist: Voraussetzung +50 %, dafuer loest die Faehigkeit doppelt
-aus.
+**Takt** heisst die Ausloesevoraussetzung einer Faehigkeit (Entscheidung
+7. Nov.): "Takt: jeder 3. Angriff" oder "Takt: alle 3 s".
+
+**Nimbus-Passive Echo** (entschieden und gebaut 7. Nov., ersetzt den
+Zauberwirker): der Takt ist 50 % laenger, dafuer wirkt jede Faehigkeit
+**zweimal hintereinander**. Runenstab: alle 4,5 s zwei Vortex; Blaster: jeder
+4. statt jeder 3. Angriff, dann zwei Doppelschuesse. Im Schnitt genauso
+stark wie das Halbieren (2 Faehigkeiten je 4,5 s), aber als ein grosser,
+sichtbarer Moment. Gemessen (je 200 Kaempfe): Spiegel 100:100, gegen
+gewuerfelte Gegner 136:64, Nimbus 11,2 Schaden/s. Der Nimbus bleibt so stark
+(Entscheidung des Spielers -- der Strix ist auch noch nicht ausgeglichen).
+(Vorher gebaut, verworfen: einmal halbieren, 3 s / 1,5 s im Wechsel.)
 
 **Runenstab:** die Faehigkeit (Vortex) loest nach Zeit aus (alle 3 s),
 Reichweite 5 -- der Nimbus muss nicht angreifen, um zu zaubern, und kann
@@ -379,7 +384,8 @@ auf seine Stellung achten.
 
 **Gebaut (Aufraeumen, 6. Nov. 2026):** Ueberschuss am Schild, Schild nur nach
 Ruhe (`combat.shield_recharge`), Kerne ohne Werte und ohne Halter, Kanone
-entfernt, Gegnerstaerke nach `RunState.reference_power`, Nimbus-Passive neu,
+entfernt, Gegnerstaerke nach `RunState.reference_power`, Nimbus-Passive neu
+(seit 7. Nov. Echo),
 Vortex nach Zeit (Rw 5), Angriffe ohne Namen. Noch offen: Deflektor und
 Drohnen-Pod als Waffen, Module, Level, Karte.
 
@@ -394,6 +400,7 @@ Gemessen (je 200 Kaempfe, Standard-Squad):
 
 Lesart: der Nimbus ist jetzt der staerkste Schadensmacher -- der Vortex
 (14 Energie im Umkreis 2, Sog, Verlangsamung) kommt im Schnitt alle 2,25 s.
+Entscheidung (7. Nov.): so lassen, erst den Strix mit ausgleichen.
 Gewuerfelte Gegner tragen selten Runenstab am Nimbus, deshalb das deutliche
 155:45; der Kampfwert (`power_score`) bildet den Vortex nach Zeit noch nicht
 ab. Balancing-Thema: Vortex-Schaden oder Takt.
@@ -578,7 +585,8 @@ Erledigt: 1-5 (KI, ein Platz, Vireo, Molok, Strix/Nimbus). Die Kerne (alt 6)
 entfallen (6g). Weiter:
 
 1. ~~Aufraeumen nach 6g~~ (gebaut 6. Nov.). Noch dazu: Deflektor und
-   Drohnen-Pod als Waffen mit Angriff und Faehigkeit, Vortex-Balancing.
+   Drohnen-Pod als Waffen mit Angriff und Faehigkeit. Nimbus-Passive Echo
+   (gebaut 7. Nov.); der Nimbus bleibt vorerst so stark.
 2. Zwischenstopp nach dem Kampf: Lager, Credits, Ausruesten.
 3. Module und Rezepte (6g), dann der Laden.
 4. Level fuer DROMEs und Waffen, die nach dem Lauf bleiben.

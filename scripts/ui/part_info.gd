@@ -97,8 +97,8 @@ static func traits(part: PartData) -> Array[String]:
 			out.append("Praesenz: Gegner im Umkreis %d greifen ihn an; %d %% des Schadens an Verbuendeten im Umkreis %d faengt er ab." % [
 				int(p.get("lure_radius", 2)), int(round(float(p.get("guard_share", 0.3)) * 100.0)),
 				int(p.get("guard_radius", 3))])
-		"spellcaster":
-			out.append("Zauberwirker: nach jeder Faehigkeit braucht die Waffe nur halb so viele Angriffe bis zur naechsten.")
+		"echo":
+			out.append("Echo: jede Faehigkeit wirkt zweimal, ihr Takt ist dafuer 50 % laenger.")
 	return out
 
 
@@ -144,12 +144,12 @@ static func action_lines(action: ActionData) -> Array[String]:
 	elif action.push_tiles < 0:
 		out.append("Zieht das Ziel %d Feld(er) heran." % absi(action.push_tiles))
 
-	# Wann sie kommt: Waffen schiessen in ihrem Takt, Faehigkeiten nach ihrer
-	# Regel -- beides ohne Energie.
+	# Wann sie kommt: Angriffe nach ihrem Intervall, Faehigkeiten nach ihrem
+	# Takt (so heisst die Ausloesevoraussetzung seit 7. Nov. 2026).
 	if action.is_attack():
 		out.append("Schiesst alle %s s." % ActionData._seconds(action.interval))
 	elif action.trigger_kind != "":
-		out.append("Loest von selbst aus: %s." % action.trigger_text())
+		out.append("Takt: %s." % action.trigger_text())
 		if action.trigger_kind == "attacks":
 			out.append("Dieser Angriff ersetzt den normalen Schuss.")
 	return out

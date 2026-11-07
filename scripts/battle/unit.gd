@@ -336,8 +336,9 @@ func init_realtime(pulse_offset: float) -> void:
 				continue
 			if action.trigger_kind == "attacks" and attack != null:
 				continue
-			gadgets.append({"part": part, "ability": action,
-				"ready": action.trigger_every if action.trigger_kind == "time" else 0.0})
+			var first := float(action.trigger_every) * echo_slower() \
+				if action.trigger_kind == "time" else 0.0
+			gadgets.append({"part": part, "ability": action, "ready": first})
 		if attack == null:
 			continue
 		var ability: ActionData = null
@@ -349,7 +350,15 @@ func init_realtime(pulse_offset: float) -> void:
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0})
 
 
-## Die Passive des Chassis ("spellcaster" ...). Leer = keine.
+## Wie viel laenger der Takt der Faehigkeiten ist: mit der Passive Echo
+## ``passives.echo.slower`` (1,5), sonst 1.
+func echo_slower() -> float:
+	if passive() != "echo":
+		return 1.0
+	return float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
+
+
+## Die Passive des Chassis ("echo" ...). Leer = keine.
 func passive() -> String:
 	if build == null or build.body() == null:
 		return ""
