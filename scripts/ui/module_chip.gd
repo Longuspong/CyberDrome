@@ -1,7 +1,8 @@
 class_name ModuleChip
 extends Control
 
-## Ein Modul als kleiner Chip: Gehaeuse mit Beinchen, zwei Buchstaben in der
+## Ein Modul als kleiner Chip: Gehaeuse mit Beinchen, darin das Symbol aus
+## assets/modules/<id>.svg. Ohne Symbol: zwei Buchstaben in der
 ## Mitte (Schnellfeuer = SF), Rand in der Farbe der Klasse (rot Angriff, blau
 ## Abwehr, gelb Taktik). Die Klasse steht zusaetzlich als Zeichen oben im
 ## Chip -- Spitze (Angriff), Bogen (Abwehr), Punkt (Taktik) --, damit man sie
@@ -44,6 +45,13 @@ func _draw() -> void:
 	draw_rect(body, color, false, 2.0)
 	if module.is_recipe():
 		draw_rect(body.grow(-4.0), color, false, 1.5)
+	# Eigenes Symbol (assets/modules/<id>.svg) statt Zeichen und Buchstaben.
+	var picture := module.icon()
+	if picture != null:
+		var pad := body.size.x * 0.1
+		draw_texture_rect(picture, body.grow(-pad), false,
+			Color(1, 1, 1, 0.4) if dim else Color.WHITE)
+		return
 	# Klassenzeichen oben
 	var mark := Vector2(body.get_center().x, body.position.y + body.size.y * 0.22)
 	var m := body.size.x * 0.12

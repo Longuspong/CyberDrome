@@ -25,7 +25,8 @@
     "  field_shot_every   jeder N-te Angriff trifft dazu einen Gegner irgendwo auf dem Feld",
     "  shield_delay       Schild laedt schon nach so vielen Sekunden Ruhe",
     "  ready_after_ability  nach der Faehigkeit ist die Waffe sofort wieder geladen",
-    "short: zwei Buchstaben fuer den Chip (eindeutig).",
+    "short: zwei Buchstaben fuer den Chip (eindeutig), falls kein Symbol da ist.",
+    "Symbol: assets/modules/<id>.svg (64x64, transparent); anderer Pfad mit icon.",
     "sell_value: Credits beim Verkauf (Grundmodul / Rezept-Modul).",
     "reward: Grundmodule als Beute je Stufe (choices), Elite bietet mit",
     "recipe_chance ein fertiges Rezept-Modul statt eines Grundmoduls."

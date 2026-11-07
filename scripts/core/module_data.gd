@@ -18,6 +18,10 @@ extends RefCounted
 
 const PATH := "res://data/modules.json"
 
+## Symbole: assets/modules/<modul-id>.svg (oder data/modules.json -> icon).
+## Fehlt die Datei, zeigt der Chip zwei Buchstaben (short).
+const ICON_DIR := "res://assets/modules/"
+
 const CLASS_LABEL := {"attack": "Angriff", "defense": "Abwehr", "tactic": "Taktik"}
 const CONDITION_LABEL := {"ranged": "nur Fernwaffen", "melee": "nur Nahkampfwaffen"}
 
@@ -33,6 +37,10 @@ var id: StringName = &""
 var display_name: String = ""
 ## Zwei Buchstaben fuer den Chip (data/modules.json -> short).
 var short: String = ""
+## Pfad zum eigenen Symbol, leer = assets/modules/<id>.svg.
+var icon_path: String = ""
+var _icon: Texture2D
+var _icon_checked: bool = false
 var klass: String = "attack"
 var condition: String = ""
 ## Alle Wirkungen zusammen -- beim Rezept-Modul Summe der Zutaten plus bonus.
@@ -85,6 +93,7 @@ static func _from_meta(key: StringName, meta: Dictionary) -> ModuleData:
 	module.id = key
 	module.display_name = str(meta.get("name", key))
 	module.short = str(meta.get("short", ""))
+	module.icon_path = str(meta.get("icon", ""))
 	module.klass = str(meta.get("class", "attack"))
 	module.condition = str(meta.get("condition", ""))
 	module.effects = meta.get("effects", {}).duplicate()
@@ -135,6 +144,16 @@ static func recipes() -> Array:
 	for key in data().get("recipes", {}):
 		out.append(_modules[StringName(key)])
 	return out
+
+
+## Das Symbol des Moduls, null wenn es keins gibt (dann Buchstaben).
+func icon() -> Texture2D:
+	if not _icon_checked:
+		_icon_checked = true
+		var path := icon_path if icon_path != "" else ICON_DIR + str(id) + ".svg"
+		if ResourceLoader.exists(path):
+			_icon = load(path) as Texture2D
+	return _icon
 
 
 func is_recipe() -> bool:

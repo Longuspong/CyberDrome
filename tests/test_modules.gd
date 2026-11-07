@@ -55,6 +55,17 @@ func test_the_catalog_has_three_classes_and_recipes() -> void:
 				"%s: Zutat %s existiert" % [recipe.display_name, ingredient])
 
 
+func test_every_module_has_its_own_symbol() -> void:
+	var seen := {}
+	for module in ModuleData.base_modules() + ModuleData.recipes():
+		var icon: Texture2D = module.icon()
+		t.ok(icon != null, "%s hat ein Symbol (assets/modules/%s.svg)" % [module.display_name, module.id])
+		if icon != null:
+			t.ok(icon.get_width() >= 128, "%s ist fein gerastert (%d px)" % [module.display_name, icon.get_width()])
+		t.ok(not seen.has(module.short_name()), "%s: Kuerzel %s ist eindeutig" % [module.display_name, module.short_name()])
+		seen[module.short_name()] = true
+
+
 func test_a_recipe_sums_its_ingredients_and_adds_its_own_effect() -> void:
 	var gun := ModuleData.get_module(&"mod_gunslinger")
 	t.ok(gun != null and gun.is_recipe(), "Gunslinger ist ein Rezept")

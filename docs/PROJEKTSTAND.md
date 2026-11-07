@@ -186,6 +186,11 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   ein Modul-Chip am Halter antippen nimmt es zurueck ins Lager. Chips
   (`ModuleChip`): Farbe UND Zeichen je Klasse (Spitze Angriff, Bogen Abwehr,
   Punkt Taktik), zwei Buchstaben, Rezepte mit doppeltem Rand.
+* **Eigene Symbole** (Wunsch des Spielers, 7. Nov.): `assets/modules/<id>.svg`
+  (64x64, transparent) ersetzt im Chip Zeichen und Buchstaben. Platzhalter
+  fuer alle 14 Module liegen dort, Uebersicht `docs/modul_symbole.png`,
+  Anleitung `assets/modules/README.md`. Fehlt eine Datei, bleiben die
+  Buchstaben.
 * Gemessen (je 100 Kaempfe, Standard-Squad gegen sich selbst ohne Module):
   ohne 56:44; Vireo mit Gunslinger 84:16, mit den drei Zutaten einzeln
   75:25; Strix Gunslinger 81:19; Molok Bollwerk + Raufbold 81:19; Nimbus
