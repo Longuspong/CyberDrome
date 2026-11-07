@@ -73,6 +73,7 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 
 	region = TerrainDB.pick_region(rng)
 	grid = MapGenerator.generate(region)
+	MapGenerator.place_obstacles(grid, battle_seed)
 
 	# Der Gegner spiegelt normalerweise den eigenen Squad (Anzahl und Staerke).
 	# Im Chaos-Virus entkoppeln GameState.chaos_* das: der Gegner tritt in voller

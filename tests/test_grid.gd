@@ -65,3 +65,31 @@ func test_deployment_runs_bottom_left_against_top_right() -> void:
 	var enemy_pos := IsoView.map_to_local(enemy_first)
 	t.ok(player_pos.x < enemy_pos.x, "Spieler links, Gegner rechts")
 	t.ok(player_pos.y > enemy_pos.y, "Spieler unten, Gegner oben")
+
+
+func _obstacle_grid(seed_value: int) -> Grid:
+	var region: Terrain.Region = TerrainDB.regions.values()[seed_value % TerrainDB.regions.size()]
+	var grid := MapGenerator.generate(region)
+	MapGenerator.place_obstacles(grid, seed_value)
+	return grid
+
+
+func test_obstacles_are_mirrored_and_keep_the_zones_free() -> void:
+	for seed_value in [1, 7, 42, 2026, 99999]:
+		var grid := _obstacle_grid(seed_value)
+		t.ok(not grid.obstacles.is_empty(), "Seed %d: es gibt Hindernisse" % seed_value)
+		for tile in grid.obstacles:
+			t.ok(grid.obstacles.has(MapGenerator.mirror(grid, tile)),
+				"Seed %d: %s hat sein Gegenstueck" % [seed_value, tile])
+		for is_player in [true, false]:
+			for tile in MapGenerator.deployment_zone(grid, is_player):
+				t.ok(not grid.is_blocked(tile), "Seed %d: Zone frei bei %s" % [seed_value, tile])
+
+
+func test_obstacles_block_walking_and_keep_the_field_connected() -> void:
+	var grid := _obstacle_grid(42)
+	var tile: Vector2i = grid.obstacles.keys()[0]
+	t.ok(not grid.can_stand_on(tile), "auf einem Hindernis steht niemand")
+	t.ok(MapGenerator._connected(grid), "alle freien Felder haengen zusammen")
+	var again := _obstacle_grid(42)
+	t.equal(again.obstacles, grid.obstacles, "derselbe Seed, dieselben Hindernisse")

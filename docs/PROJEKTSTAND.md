@@ -78,6 +78,39 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   1x/2x, Pause, Log, Folgen. Zugleiste, Aktionsring und manueller Kampf sind
   entfernt.
 
+### Arena und Hindernisse (7. Nov. 2026, Wunsch des Spielers)
+* **Hindernisse** sperren nur Laufwege, Schuesse gehen darueber
+  (`Grid.obstacles`, `can_stand_on`). 3-5 Gruppen (einzeln, kurze Mauer,
+  Ecke), punktsymmetrisch zur Feldmitte, nie in oder direkt an den Zonen,
+  Feld bleibt zusammenhaengend; eigener Zufall aus dem Kampf-Seed.
+  Gemessen (je 200): Spiegel 97:103, gegen gewuerfelte Gegner 143:57 --
+  praktisch wie ohne.
+* **Optik** (`scripts/ui/arena_painter.gd`, gezeichnet statt SVG-Kachel):
+  Bodennuancen je Feld, feine helle Fugen statt schwarzer Umrisse,
+  Verzierungen je Region (City: Mittelstreifen, Risse, Pfuetzen, Gullis;
+  Gruenzone: Gras, Steine, Blueten; Anlage 7: Gitterrost, Rost, Oel,
+  Warnstreifen), dunklerer Randstreifen (3 Felder) mit Zierlinie und
+  Sockel, Deko darauf (Laternen mit Lichtkegel, Container, Ruinen, Tanks),
+  additive Lichtflecken, Vignette. Hindernisse als Iso-Bloecke je Region
+  (Container, Kisten, Absperrung / Ruine, Fels / Tank, Rohre, Kisten).
+  Die Boden-SVGs unter `assets/terrain/` werden im Kampf nicht mehr gezeichnet.
+
+### Lesbarkeit im Kampf (7. Nov. 2026, mit dem Spieler abgesprochen)
+* **Lebensbalken** (`BattleView.UnitBadgePainter`): Abstand zur Figur in
+  Welt-Einheiten, Groesse in Bildschirm-Pixeln (vorher schwebte der Balken
+  beim Herauszoomen weit ueber der Figur). Detailstufen nach Zoom: nah
+  Balken + Takt + Zustands-Symbole (betaeubt, verlangsamt, verwundbar,
+  Sprint), mittel Balken + Takt, fern nur ein schmaler Balken. Treffer
+  lassen den verlorenen Teil kurz hell stehen und nachlaufen. Unter 25 %
+  pulsiert der Rand rot. Ueberlappende Balken weichen nach oben aus (fern:
+  verdeckte entfallen, der Ring reicht). Angetippte Kachel: Balken 3 s
+  groesser. Gegnerbalken mit abgeschraegten Enden (Form statt nur Farbe).
+* **Kampf-Kacheln** (`SquadTiles`): nur Kopf, Herz + Zahl, Schild + Zahl
+  (Schrift 16) und je Faehigkeit eine kleine Takt-Leiste; Name und SPD per
+  langem Druck. Querformat: Kacheln als Spalte links.
+* `UiKit.safe_insets()`: Raender fuer Notch/Gestenleiste, wo das System sie
+  meldet (im Browser 0 -- die Seite haelt dort selbst Abstand).
+
 ### Lauf (Roguelike) -- `scripts/core/run_state.gd`
 * 8 Kaempfe, 3 Leben, alles am Seed. Werte in `data/config.json` -> `run`.
 * **Aufstellung vor dem Lauf** (`SquadPicker`, `scripts/ui/squad_picker.gd`):
@@ -231,8 +264,8 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Am 7. Nov.: Deflektor (Stoss + Schildladung) und Drohnen-Pod (Heil-Angriff
   + Schutzdrohne) sind Waffen mit Angriff und Faehigkeit.
   Playtest kann jetzt auch Spiegelkaempfe (`... playtest.gd -- 200 0 spiegel`).
-* Namensschilder ueber den DROMEs bleiben beim Herauszoomen gleich gross und
-  ueberlappen.
+* ~~Namensschilder/Balken schweben beim Herauszoomen und ueberlappen~~ --
+  behoben 7. Nov. 2026 (siehe "Lesbarkeit im Kampf").
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.
 * Spielstand-Auswahl vor dem Hauptmenue (Wunsch des Spielers, Nov. 2026)
   ist noch nicht gebaut -- haengt an der Persistenz.

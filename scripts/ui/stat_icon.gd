@@ -22,6 +22,7 @@ extends Control
 ##   area     Ringe           Flaechenwirkung
 ##   def      Platte          Panzerung (DEF)
 ##   weight   Gewichtsklotz   Gewicht, bremst den Traeger
+##   hp       Herz            Integritaet
 
 const EXPLAIN := {
 	"kinetic": "Kinetischer Schaden (Schwert): stark gegen Integritaet, schwach gegen Schilde.",
@@ -38,6 +39,7 @@ const EXPLAIN := {
 	"area": "Flaeche: trifft auch alles im Umkreis um das Ziel.",
 	"def": "Panzerung (DEF): zieht von jedem Treffer etwas ab.",
 	"weight": "Gewicht: schwere Waffen bremsen den Traeger (weniger SPD).",
+	"hp": "Integritaet: faellt sie auf 0, ist der DROME zerstoert.",
 }
 
 const COLORS := {
@@ -48,6 +50,7 @@ const COLORS := {
 	"adjacent": Color(1.0, 0.62, 0.15), "heal": Color(0.46, 0.86, 0.52),
 	"shield": Color(0.45, 0.65, 1.0), "area": Color(0.95, 0.6, 1.0),
 	"def": Color(0.75, 0.78, 0.85), "weight": Color(1.0, 0.5, 0.46),
+	"hp": Color(0.46, 0.86, 0.52),
 }
 
 var kind := "attack"
@@ -128,6 +131,11 @@ func _draw() -> void:
 				draw_colored_polygon(pts, col)
 			pts.append(pts[0])
 			draw_polyline(pts, col, line)
+		"hp":
+			draw_circle(c + Vector2(-r * 0.38, -r * 0.2), r * 0.45, col)
+			draw_circle(c + Vector2(r * 0.38, -r * 0.2), r * 0.45, col)
+			draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.82, -r * 0.05),
+				c + Vector2(r * 0.82, -r * 0.05), c + Vector2(0, r * 0.85)]), col)
 		"weight":
 			draw_arc(c + Vector2(0, -r * 0.55), r * 0.25, 0, TAU, 16, col, line)
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.45, -r * 0.3),

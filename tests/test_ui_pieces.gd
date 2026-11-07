@@ -269,3 +269,15 @@ func test_weapon_card_shows_type_tempo_and_takt_as_symbols() -> void:
 				var takt := WeaponCard.takt_chip(action)
 				t.ok(not takt.is_empty(), "%s hat ein Takt-Symbol" % action.display_name)
 				t.ok(StatIcon.EXPLAIN.has(takt[0]), "mit Klartext")
+
+
+func test_overlapping_bars_move_up_or_hide_when_far() -> void:
+	var a := Rect2(0, 100, 56, 6)
+	var b := Rect2(10, 98, 56, 6)        # ueberlappt a, liegt etwas hoeher
+	var c := Rect2(200, 100, 56, 6)      # frei
+	var lifts: Array = BattleView.UnitBadgePainter.layout([a, b, c], 3)
+	t.equal(lifts[0], 0.0, "der untere bleibt")
+	t.ok(lifts[1] > 0.0, "der obere weicht nach oben aus")
+	t.equal(lifts[2], 0.0, "der freie bleibt")
+	var far: Array = BattleView.UnitBadgePainter.layout([a, b, c], 0)
+	t.equal(far[1], -1.0, "fern: verdeckter Balken entfaellt, der Ring reicht")

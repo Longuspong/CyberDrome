@@ -26,7 +26,7 @@ var grid: Grid
 var _world: Node2D
 var _badges: UnitBadgePainter
 var _effects: EffectPainter
-var _tile_sprites: Dictionary = {}
+var _arena: Array = []
 var _zone_sprites: Array = []
 
 
@@ -48,28 +48,16 @@ func _ready() -> void:
 # Boden
 # ---------------------------------------------------------------------------
 
+## Boden, Rand, Hindernisse, Deko und Licht -- gezeichnet von ArenaPainter
+## (7. Nov. 2026; vorher eine SVG-Kachel je Feld mit schwarzem Umriss).
+## Hindernisse und Deko sortieren sich wie Einheiten nach der Tiefe ihres
+## Feldes.
 func build_terrain(battle_grid: Grid) -> void:
 	grid = battle_grid
-	for sprite in _tile_sprites.values():
-		sprite.queue_free()
-	_tile_sprites.clear()
-
-	for tile in grid.all_tiles():
-		var sprite := Sprite2D.new()
-		sprite.centered = false
-		sprite.position = IsoView.sprite_position(tile)
-		sprite.z_index = IsoView.depth(tile) * DEPTH_STRIDE
-
-		var path: String = grid.region.floor_texture if grid.region != null else ""
-		if path != "" and ResourceLoader.exists(path):
-			sprite.texture = load(path)
-		else:
-			# Fehlendes Tile wird als Fehlmarkierung sichtbar, nicht ersetzt.
-			sprite.texture = load(OVERLAY_TILE)
-			sprite.modulate = Color.MAGENTA
-		IsoView.fit_sprite(sprite)
-		_world.add_child(sprite)
-		_tile_sprites[tile] = sprite
+	for node in _arena:
+		node.queue_free()
+	_arena = ArenaPainter.build(_world, grid, func(tile: Vector2i) -> int:
+		return IsoView.depth(tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET)
 
 
 ## Felder einfaerben -- die Aufstellungszone vor dem Kampf.
@@ -129,6 +117,7 @@ func refresh_all_depths(units: Array) -> void:
 func set_pixel_scale(camera_zoom: float) -> void:
 	var factor := 1.0 / maxf(0.01, camera_zoom)
 	_badges.pixel_scale = factor
+	_badges.zoom = camera_zoom
 	_badges.queue_redraw()
 	_effects.pixel_scale = factor
 
@@ -149,18 +138,30 @@ func show_unit_badges(entries: Array) -> void:
 	_badges.queue_redraw()
 
 
-## Der Lebensbalken ueber jedem DROME: EIN schmaler Balken, sonst nichts.
+## Der Lebensbalken ueber jedem DROME.
 ##
 ## Integritaet und Schild teilen sich die Breite im Verhaeltnis ihrer
 ## Hoechstwerte: 200 Integritaet und 100 Schild heisst zwei Drittel
 ## Integritaet, ein Drittel Schild. Beide Teile leeren sich an Ort und Stelle,
 ## die Gesamtlaenge bleibt -- so sieht man auf einen Blick, wie viel vom
-## ganzen DROME noch steht.
+## ganzen DROME noch steht. Die Farbe traegt die Seite (eigene gruen/blau,
+## Gegner rot/violett), dazu die FORM: Gegnerbalken haben abgeschraegte
+## Enden -- lesbar auch ohne Farbsehen.
 ##
-## Die Farbe traegt die Seite: eigene gruen (Integritaet) und blau (Schild),
-## Gegner rot und violett. Name, Zahlen, Energie und Initiative stehen in den
-## Kacheln oben -- ueber der Figur war es im Nahkampf nicht mehr lesbar, weil
-## sich drei Badges uebereinanderschoben.
+## Lesbarkeit (7. Nov. 2026, mit dem Spieler abgesprochen):
+##   * Der Abstand zur Figur rechnet in Welt-Einheiten (er gehoert zur
+##     Figur), die Groesse des Balkens in Bildschirm-Pixeln. Vorher wuchs
+##     auch der Abstand beim Herauszoomen mit, und der Balken schwebte
+##     mehrere Figurenhoehen ueber dem DROME.
+##   * Detailstufen nach Zoom: nah Balken, Takt und Zustands-Symbole; mittel
+##     Balken und Takt; fern nur ein schmaler Balken, und wo es eng wird,
+##     bleibt nur der Ring am Boden.
+##   * Ein Treffer laesst den verlorenen Teil kurz hell stehen, dann laeuft
+##     er nach -- man sieht, wie gross der Treffer war.
+##   * Unter 25 % Integritaet pulsiert der Rand rot.
+##   * Ueberlappende Balken weichen nach oben aus (duenne Linie zur Figur).
+##   * Ein angetippter DROME (Kachel oben) hat ein paar Sekunden lang einen
+##     groesseren Balken.
 ##
 ## Alles in EINEM Knoten und nicht als Label je Einheit: die Werte aendern sich
 ## nach jeder Aktion, und Knoten, die dabei entstehen und vergehen, haengen
@@ -168,29 +169,118 @@ func show_unit_badges(entries: Array) -> void:
 class UnitBadgePainter extends Node2D:
 	const WIDTH := 56.0
 	const HEIGHT := 6.0
-	const BASE_Y := -72.0            ## Unterkante des Balkens ueber der Feldmitte
+	## Unterkante des Balkens ueber der Feldmitte -- in WELT-Einheiten.
+	const BASE_Y := -72.0
 
 	const COLOR_TRACK := Color(0.04, 0.05, 0.08, 0.9)
 	const COLOR_OUTLINE := Color(0.0, 0.0, 0.0, 0.9)
 	const COLOR_LURED := Color(1.0, 0.62, 0.15)
+	const COLOR_GHOST := Color(1.0, 0.95, 0.85)
+	const COLOR_DANGER := Color(1.0, 0.25, 0.2)
 	## Takt-Leiste unter dem Lebensbalken: wann kommt die Faehigkeit?
 	const TAKT_HEIGHT := 3.0
 	const TAKT_GAP := 2.0
 	const COLOR_TAKT := Color(1.0, 0.82, 0.35)
 	const COLOR_TAKT_READY := Color(1.0, 1.0, 0.85)
 
+	## Zoomstufen fuer die Details.
+	const ZOOM_NEAR := 0.75
+	const ZOOM_FAR := 0.45
+	const LOW_HP := 0.25
+	const FOCUS_SCALE := 1.35
+	## Nachlauf nach einem Treffer: so lange steht der verlorene Teil, dann
+	## laeuft er mit dieser Rate (Anteil der Breite je Sekunde) nach.
+	const GHOST_HOLD := 0.35
+	const GHOST_RATE := 0.8
+
 	var entries: Array = []
 
 	## Umrechnung Welt -> Bildschirm. Siehe BattleView.set_pixel_scale().
 	var pixel_scale: float = 1.0
+	## Der Kamera-Zoom selbst -- fuer die Detailstufe.
+	var zoom: float = 1.0
+
+	## Nachlauf je Einheit: id -> {hp, shield, hold_until}
+	var _ghosts: Dictionary = {}
 
 	func _ready() -> void:
 		# Ueber den Einheiten, unter den Schadenszahlen.
 		z_index = 4005
 
+	func detail() -> String:
+		if zoom >= ZOOM_NEAR:
+			return "near"
+		return "mid" if zoom >= ZOOM_FAR else "far"
+
 	func _draw() -> void:
+		var now := Time.get_ticks_msec() / 1000.0
+		var level := detail()
+		var boxes := []
 		for entry in entries:
-			_badge(entry)
+			boxes.append(_box(entry, level))
+		var lifts := UnitBadgePainter.layout(boxes.map(func(b): return b["rect"]),
+			3 if level != "far" else 0)
+		for i in entries.size():
+			var lift: float = lifts[i]
+			if lift < 0.0:
+				continue      # fern und verdeckt: nur der Ring am Boden
+			_badge(entries[i], boxes[i], lift, level, now)
+
+	## Wo der Balken samt Takt-Leisten liegt (ohne Ausweichen).
+	func _box(entry: Dictionary, level: String) -> Dictionary:
+		var s := pixel_scale * _size_factor(level)
+		if entry.get("focus", false):
+			s *= FOCUS_SCALE
+		var center: Vector2 = entry["at"] if entry.has("at") \
+			else IsoView.map_to_local(entry["tile"])
+		var width := WIDTH * s
+		var height := HEIGHT * s * (0.7 if level == "far" else 1.0)
+		var takt_rows: int = 0 if level == "far" else (entry.get("takt", []) as Array).size()
+		var total := height + float(takt_rows) * (TAKT_HEIGHT + TAKT_GAP) * s
+		var top := center.y + BASE_Y - height
+		return {"s": s, "width": width, "height": height, "center": center,
+			"rect": Rect2(center.x - width * 0.5, top, width, total)}
+
+	## Fern werden die Balken etwas kleiner, damit mehr Feld frei bleibt.
+	func _size_factor(level: String) -> float:
+		match level:
+			"far": return 0.7
+			"mid": return 0.85
+		return 1.0
+
+	## Ausweichen: von unten nach oben, jeder Balken, der einen schon
+	## gesetzten ueberlappt, rueckt um seine Hoehe nach oben -- hoechstens
+	## ``max_lifts`` Mal. Gibt je Rechteck den Versatz nach oben zurueck,
+	## -1 heisst "nicht zeichnen" (bei max_lifts 0: verdeckt). Statisch, damit
+	## der Test es ohne Zeichnen pruefen kann.
+	static func layout(rects: Array, max_lifts: int) -> Array:
+		var order := range(rects.size())
+		order.sort_custom(func(a, b): return rects[a].position.y > rects[b].position.y)
+		var placed: Array = []
+		var lifts := []
+		lifts.resize(rects.size())
+		for index in order:
+			var rect: Rect2 = rects[index]
+			var lift := 0.0
+			var tries := 0
+			while _hits(rect, placed):
+				if tries >= max_lifts:
+					lift = -1.0
+					break
+				var step := rect.size.y + 3.0
+				rect.position.y -= step
+				lift += step
+				tries += 1
+			lifts[index] = lift
+			if lift >= 0.0:
+				placed.append(rect.grow(1.0))
+		return lifts
+
+	static func _hits(rect: Rect2, placed: Array) -> bool:
+		for other in placed:
+			if rect.intersects(other):
+				return true
+		return false
 
 	## Die Aufteilung des Balkens als Anteile 0..1 der Gesamtbreite:
 	## { hp_slot, hp_fill, shield_slot, shield_fill }. Statisch, damit der
@@ -209,26 +299,65 @@ class UnitBadgePainter extends Node2D:
 				if shield_max > 0 else 0.0),
 		}
 
-	func _badge(entry: Dictionary) -> void:
-		var s := pixel_scale
-		var center: Vector2 = entry["at"] if entry.has("at") \
-			else IsoView.map_to_local(entry["tile"])
-		var mine: bool = entry.get("is_player", false)
+	## Der nachlaufende Anteil: steht nach einem Treffer kurz, dann laeuft er
+	## dem echten Wert nach. Heilung springt sofort.
+	func _ghost(id, key: String, value: float, now: float) -> float:
+		if id == null:
+			return value
+		var state: Dictionary = _ghosts.get(id, {})
+		var last: float = state.get(key, value)
+		var last_time: float = state.get("t_" + key, now)
+		var hold: float = state.get("hold_" + key, 0.0)
+		if value > last:
+			last = value
+		elif value < last - 0.0001 and hold <= 0.0:
+			hold = now + GHOST_HOLD
+		if hold > 0.0 and now >= hold:
+			last = maxf(value, last - GHOST_RATE * (now - last_time))
+			if last <= value + 0.0001:
+				hold = 0.0
+		state[key] = last
+		state["t_" + key] = now
+		state["hold_" + key] = hold
+		_ghosts[id] = state
+		return last
 
-		var width := WIDTH * s
-		var height := HEIGHT * s
+	func _badge(entry: Dictionary, box: Dictionary, lift: float, level: String, now: float) -> void:
+		var s: float = box["s"]
+		var center: Vector2 = box["center"]
+		var mine: bool = entry.get("is_player", false)
+		var width: float = box["width"]
+		var height: float = box["height"]
 		var left := center.x - width * 0.5
-		var top := center.y + BASE_Y * s - height
+		var top := center.y + BASE_Y - height - lift
 
 		var parts := split(int(entry.get("hp", 0)), int(entry.get("hp_max", 0)),
 			int(entry.get("shield", 0)), int(entry.get("shield_max", 0)))
+		var id = entry.get("id")
+		var hp_ghost := _ghost(id, "hp", parts["hp_fill"], now)
+		var sh_ghost := _ghost(id, "shield", parts["shield_fill"], now)
 		var pad := 1.0 * s
+
+		# Ausgewichen: duenne Linie zur Figur, damit klar bleibt, wem er gehoert.
+		if lift > 0.0:
+			draw_line(Vector2(center.x, top + height), Vector2(center.x, center.y + BASE_Y),
+				Color(1, 1, 1, 0.35), 1.0 * s)
+
+		var hp_ratio := float(entry.get("hp", 0)) / maxf(1.0, float(entry.get("hp_max", 1)))
+		var outline := COLOR_OUTLINE
+		if hp_ratio < LOW_HP and hp_ratio > 0.0:
+			var pulse := 0.5 + 0.5 * sin(now * TAU * 1.5)
+			outline = COLOR_DANGER.lerp(COLOR_OUTLINE, 0.6 * (1.0 - pulse))
+			pad = 1.6 * s
 		draw_rect(Rect2(Vector2(left - pad, top - pad),
-			Vector2(width + pad * 2.0, height + pad * 2.0)), COLOR_OUTLINE)
+			Vector2(width + pad * 2.0, height + pad * 2.0)), outline)
 		draw_rect(Rect2(Vector2(left, top), Vector2(width, height)), COLOR_TRACK)
+		# Nachlauf zuerst, darueber der echte Wert.
+		draw_rect(Rect2(Vector2(left, top), Vector2(width * hp_ghost, height)), COLOR_GHOST)
 		draw_rect(Rect2(Vector2(left, top), Vector2(width * parts["hp_fill"], height)),
 			Teams.hp_color(mine))
 		var shield_left: float = left + width * float(parts["hp_slot"])
+		draw_rect(Rect2(Vector2(shield_left, top), Vector2(width * sh_ghost, height)), COLOR_GHOST)
 		draw_rect(Rect2(Vector2(shield_left, top),
 			Vector2(width * parts["shield_fill"], height)), Teams.shield_color(mine))
 		# Die Fuge zwischen den beiden Teilen, damit ein leerer Schild nicht
@@ -236,26 +365,62 @@ class UnitBadgePainter extends Node2D:
 		if parts["hp_slot"] > 0.0 and parts["shield_slot"] > 0.0:
 			draw_rect(Rect2(Vector2(shield_left - 0.5 * s, top),
 				Vector2(1.0 * s, height)), COLOR_OUTLINE)
+		# Gegner: abgeschraegte Enden (Form statt nur Farbe).
+		if not mine:
+			var cut := height + pad
+			var bottom := top + height + pad
+			draw_colored_polygon(PackedVector2Array([Vector2(left - pad, bottom),
+				Vector2(left - pad, bottom - cut), Vector2(left - pad + cut, bottom)]), outline)
+			draw_colored_polygon(PackedVector2Array([Vector2(left + width + pad, top - pad),
+				Vector2(left + width + pad - cut, top - pad),
+				Vector2(left + width + pad, top - pad + cut)]), outline)
 
-		_takt(entry.get("takt", []), left, top + height + pad, width)
+		if level != "far":
+			_takt(entry.get("takt", []), left, top + height + pad, width, s)
+		if level == "near":
+			_statuses(entry.get("statuses", []), left + width + 5.0 * s, top + height * 0.5, s)
 
 		# Gelockt (Molok-Praesenz, Koedersender): ein kleines Ausrufezeichen
 		# in Orange links neben dem Balken -- "der greift gerade den Locker an".
-		if entry.get("lured", false):
+		if entry.get("lured", false) and level != "far":
 			var at := Vector2(left - 7.0 * s, top + height * 0.5)
 			draw_circle(at, 5.0 * s, COLOR_OUTLINE)
 			draw_circle(at, 4.0 * s, COLOR_LURED)
 			draw_rect(Rect2(at + Vector2(-0.8, -2.8) * s, Vector2(1.6, 3.4) * s), COLOR_OUTLINE)
 			draw_rect(Rect2(at + Vector2(-0.8, 1.2) * s, Vector2(1.6, 1.4) * s), COLOR_OUTLINE)
 
+	## Kleine Zustands-Symbole rechts neben dem Balken (nur nah):
+	## betaeubt = gelber Stern, verlangsamt = blauer Pfeil nach unten,
+	## verwundbar = roter Riss, Sprint = gruener Pfeil nach vorn.
+	func _statuses(ids: Array, x: float, y: float, s: float) -> void:
+		for id in ids:
+			var c := Vector2(x + 4.0 * s, y)
+			draw_circle(c, 5.0 * s, COLOR_OUTLINE)
+			match str(id):
+				"stun":
+					for k in 4:
+						var a := TAU * float(k) / 8.0
+						var d := Vector2.from_angle(a) * 3.5 * s
+						draw_line(c - d, c + d, Color(1.0, 0.9, 0.3), 1.4 * s)
+				"slow":
+					draw_colored_polygon(PackedVector2Array([c + Vector2(-3, -2) * s,
+						c + Vector2(3, -2) * s, c + Vector2(0, 3) * s]), Color(0.45, 0.7, 1.0))
+				"vulnerable":
+					draw_polyline(PackedVector2Array([c + Vector2(-1, -4) * s, c + Vector2(1, -1) * s,
+						c + Vector2(-1, 1) * s, c + Vector2(1, 4) * s]), Color(1.0, 0.4, 0.35), 1.5 * s)
+				"rush":
+					draw_colored_polygon(PackedVector2Array([c + Vector2(-2, -3) * s,
+						c + Vector2(3, 0) * s, c + Vector2(-2, 3) * s]), Color(0.5, 0.95, 0.55))
+				_:
+					draw_circle(c, 2.0 * s, Color.WHITE)
+			x += 11.0 * s
 
 	## Je Faehigkeit eine duenne Leiste unter dem Lebensbalken, gleich breit.
 	## Treffer-Takt: ein Abschnitt je Angriff (jeder 4. Angriff = vier
 	## Abschnitte zu je einem Viertel), gefuellt je Treffer. Zeit-Takt: eine
 	## Leiste, die sich in halben Sekunden fuellt. Volle Leiste leuchtet hell:
 	## als Naechstes kommt die Faehigkeit.
-	func _takt(bars: Array, left: float, top: float, width: float) -> void:
-		var s := pixel_scale
+	func _takt(bars: Array, left: float, top: float, width: float, s: float) -> void:
 		var h := TAKT_HEIGHT * s
 		var y := top + TAKT_GAP * s * 0.5
 		for bar in bars:

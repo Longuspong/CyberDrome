@@ -154,6 +154,24 @@
     "inset": 5
   },
 
+  "obstacles": {
+    "_kommentar": [
+      "Hindernisse (7. Nov. 2026, scripts/generation/map_generator.gd): sperren nur",
+      "Laufwege, Schuesse gehen darueber. groups_min..groups_max Gruppen, jede",
+      "punktsymmetrisch gespiegelt (also doppelt so viele auf dem Feld), nie in",
+      "den Aufstellungszonen oder zone_margin Felder daneben. kinds: Optik je Region."
+    ],
+    "enabled": true,
+    "groups_min": 3,
+    "groups_max": 5,
+    "zone_margin": 1,
+    "kinds": {
+      "city": ["container", "crate", "barrier"],
+      "green": ["ruin", "rock", "ruin"],
+      "plant7": ["tank", "pipes", "crate"]
+    }
+  },
+
   "combat": {
     "_kommentar": [
       "Das Zwei-Verteidigungs-System. Siehe ActionResolver.resolve_damage.",
