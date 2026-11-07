@@ -143,8 +143,11 @@ func test_a_win_offers_rewards_from_the_enemy_pool() -> void:
 	var pool := [&"eq_deflector", &"eq_rune_staff", &"eq_drone_pod", &"eq_holo_boost"]
 	run.record_result(BattleManager.Outcome.VICTORY, pool)
 	t.equal(run.phase, RunState.Phase.REWARD, "nach dem Sieg wird gewaehlt")
-	t.equal(run.reward_options.size(), int(RunState.cfg().get("reward_choices", 3)),
-		"drei Belohnungen")
+	var modules: int = int((ModuleData.data()["reward"]["choices"] as Dictionary)["normal"])
+	t.equal(run.reward_options.size(), int(RunState.cfg().get("reward_choices", 3)) + modules,
+		"drei Teile und ein Modul")
+	t.equal(run.reward_options.filter(func(o): return o["kind"] == "module").size(), modules,
+		"das Modul ist dabei")
 	for option in run.reward_options:
 		if option["kind"] == "part":
 			t.ok(pool.has(option["part_id"]), "%s kommt aus der Gegnerausruestung" % option["title"])

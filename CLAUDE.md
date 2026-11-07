@@ -103,8 +103,10 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    ohne Werte, Kanone raus, Gegnerstaerke fest, Nimbus/Vortex neu), am
    7. Nov. Echo sowie Deflektor und Drohnen-Pod als Waffen, dann der
    Zwischenstopp (Lager, Credits, Ausruesten), Takt-Leiste im Kampf,
-   Waffen-Karte mit Symbolen und der entschlackte Hangar. Als Naechstes:
-   Module und Rezepte, dann der Laden (Credits ausgeben).
+   Waffen-Karte mit Symbolen und der entschlackte Hangar, dann Module und
+   Rezepte (`ModuleData`, `data/modules.json`; Module im Waffenhalter,
+   bleiben beim Waffentausch, verfallen nach dem Lauf). Als Naechstes: der
+   Laden (Credits ausgeben).
    Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den

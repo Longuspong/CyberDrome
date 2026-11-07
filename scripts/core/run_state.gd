@@ -22,6 +22,9 @@ extends RefCounted
 ##   * Nach jedem Kampf der Zwischenstopp (Phase STOP, NEUANFANG 7d): Waffen
 ##     aus dem Lager einbauen, ausbauen, verkaufen oder nach Hause schicken.
 ##     Umbauen ist frei -- der Druck kommt aus den wenigen Plaetzen.
+##   * Module (NEUANFANG 6g) gibt es nur im Lauf: als Beute, im Lager, in den
+##     Waffenhaltern (DromeBuild.modules). Im Lager lassen sich Rezepte
+##     zusammenfuegen. Am Ende verfallen sie.
 ##   * Ende des Laufs: Beute, die noch im Lauf ist (im Lager oder eingebaut),
 ##     geht nach Hause ins Inventar (NEUANFANG 7f: Ausruestung bleibt).
 ##
@@ -61,8 +64,9 @@ var home_queue: Array = []
 ## ausgegeben werden sie spaeter im Laden.
 var credits: int = 0
 
-## Das Lager des Laufs: Waffen, die gerade niemand traegt (Teil-IDs).
-## Hoechstens storage_size() Plaetze.
+## Das Lager des Laufs: Waffen (Teil-IDs) und Module (Modul-IDs, siehe
+## ModuleData.is_module), die gerade niemand traegt. Beides teilt sich die
+## storage_size() Plaetze.
 var storage: Array = []
 
 ## Wie oft jede Waffe beim Start im Squad steckte. Was am Ende darueber
@@ -364,7 +368,34 @@ func roll_rewards(enemy_pool: Array) -> Array:
 			continue
 		options.append({"kind": "part", "part_id": part.id, "rare": tier == Tier.ELITE,
 			"title": part.display_name, "text": _part_text(part)})
+	options.append_array(_module_rewards(rng))
 	return options
+
+
+## Module als Beute (6g): je Stufe so viele Grundmodule wie
+## modules.json -> reward.choices. Elite bietet mit recipe_chance gleich ein
+## fertiges Rezept-Modul (selten).
+func _module_rewards(rng: RandomNumberGenerator) -> Array:
+	var settings: Dictionary = ModuleData.data().get("reward", {})
+	var count := int((settings.get("choices", {}) as Dictionary).get(TIER_KEYS[tier], 0))
+	var base: Array = ModuleData.base_modules()
+	var out: Array = []
+	for _i in count:
+		var module: ModuleData = null
+		if tier == Tier.ELITE and not ModuleData.recipes().is_empty() \
+				and rng.randf() < float(settings.get("recipe_chance", 0.5)):
+			var recipes := ModuleData.recipes()
+			module = recipes[rng.randi() % recipes.size()]
+		elif not base.is_empty():
+			module = base[rng.randi() % base.size()]
+			base.erase(module)
+		if module == null:
+			continue
+		out.append({"kind": "module", "module_id": module.id,
+			"rare": tier == Tier.ELITE or module.is_recipe(),
+			"title": "Modul: %s" % module.display_name,
+			"text": "%s -- %s" % [module.headline(), ", ".join(module.effect_lines())]})
+	return out
 
 
 static func _is_rare(part: PartData) -> bool:
@@ -420,7 +451,7 @@ func choose_reward(index: int, placement: Dictionary = {}) -> bool:
 		return false
 	var option: Dictionary = reward_options[index]
 	if bool(placement.get("home", false)):
-		if option["kind"] == "life":
+		if option["kind"] == "life" or option["kind"] == "module":
 			return false
 		home_queue.append(option.duplicate())
 		reward_options = []
@@ -432,6 +463,11 @@ func choose_reward(index: int, placement: Dictionary = {}) -> bool:
 				home_queue.append(option.duplicate())
 			else:
 				storage.append(StringName(option["part_id"]))
+		"module":
+			# Module koennen nicht nach Hause: ohne Platz im Lager geht es nicht.
+			if storage_full():
+				return false
+			storage.append(StringName(option["module_id"]))
 		"drome":
 			if not has_room():
 				return false
@@ -544,7 +580,8 @@ func unequip(drome: int, slot: String) -> bool:
 func sell(index: int) -> int:
 	if phase != Phase.STOP or index < 0 or index >= storage.size():
 		return 0
-	var value := sell_value(PartDB.get_part(storage[index]))
+	var value := ModuleData.sell_value(ModuleData.get_module(storage[index])) \
+		if ModuleData.is_module(storage[index]) else sell_value(PartDB.get_part(storage[index]))
 	storage.remove_at(index)
 	credits += value
 	return value
@@ -553,6 +590,9 @@ func sell(index: int) -> int:
 ## Schickt die Waffe aus Lagerplatz ``index`` jetzt schon nach Hause.
 func send_home(index: int) -> bool:
 	if phase != Phase.STOP or index < 0 or index >= storage.size():
+		return false
+	# Module gibt es nur im Lauf -- sie koennen nicht nach Hause.
+	if ModuleData.is_module(storage[index]):
 		return false
 	var part := PartDB.get_part(storage[index])
 	storage.remove_at(index)
@@ -576,3 +616,108 @@ func _count_in_run(id: StringName) -> int:
 			if part.id == id:
 				count += 1
 	return count
+
+
+# ---------------------------------------------------------------------------
+# Module und Rezepte (NEUANFANG 6g)
+# ---------------------------------------------------------------------------
+
+## Liegt auf Lagerplatz ``index`` ein Modul?
+func is_module_at(index: int) -> bool:
+	return index >= 0 and index < storage.size() and ModuleData.is_module(storage[index])
+
+
+## Wohin das Modul aus Lagerplatz ``index`` passt: je DROME und Waffenhalter
+## ein Eintrag {drome, slot, allowed, active, detail}. ``allowed``: es ist
+## Platz; ``active``: es wirkt an der Waffe, die gerade drinsteckt (sonst
+## ruht es, ``detail`` sagt warum).
+func module_options(index: int) -> Array:
+	var out: Array = []
+	if not is_module_at(index):
+		return out
+	var module := ModuleData.get_module(storage[index])
+	for drome in squad.size():
+		var build: DromeBuild = squad[drome]
+		var room := ModuleData.slots_for(build)
+		for slot in build.equip_slots():
+			var used := build.module_count(slot)
+			var weapon := build.part_in(slot)
+			var entry := {"drome": drome, "slot": slot, "allowed": used < room,
+				"active": module.fits(weapon), "detail": ""}
+			if used >= room:
+				entry["detail"] = "Modulplaetze voll (%d/%d)" % [used, room]
+			elif weapon == null:
+				entry["detail"] = "Halter leer -- ruht, bis eine Waffe drin ist"
+			elif not entry["active"]:
+				entry["detail"] = "ruht: %s" % module.blocker(weapon)
+			else:
+				entry["detail"] = "wirkt an %s (%d/%d)" % [weapon.display_name, used + 1, room]
+			out.append(entry)
+	return out
+
+
+## Setzt das Modul aus Lagerplatz ``index`` in den Waffenhalter ``slot`` von
+## DROME ``drome``.
+func install_module(index: int, drome: int, slot: String) -> bool:
+	if phase != Phase.STOP or not is_module_at(index) or drome < 0 or drome >= squad.size():
+		return false
+	var build: DromeBuild = squad[drome]
+	if slot not in build.equip_slots() or build.module_count(slot) >= ModuleData.slots_for(build):
+		return false
+	var list: Array = build.modules.get(slot, [])
+	list.append(storage[index])
+	build.modules[slot] = list
+	storage.remove_at(index)
+	return true
+
+
+## Nimmt das ``position``-te Modul aus dem Halter zurueck ins Lager.
+func remove_module(drome: int, slot: String, position: int) -> bool:
+	if phase != Phase.STOP or storage_full() or drome < 0 or drome >= squad.size():
+		return false
+	var build: DromeBuild = squad[drome]
+	var list: Array = build.modules.get(slot, [])
+	if position < 0 or position >= list.size():
+		return false
+	storage.append(list[position])
+	list.remove_at(position)
+	if list.is_empty():
+		build.modules.erase(slot)
+	else:
+		build.modules[slot] = list
+	return true
+
+
+## Das Rezeptbuch: je Rezept {module, have: [bool je Zutat], ready}. Gezaehlt
+## wird nur, was im LAGER liegt -- zusammengefuegt wird dort.
+func recipe_book() -> Array:
+	var out: Array = []
+	for recipe in ModuleData.recipes():
+		var pool := storage.duplicate()
+		var have: Array = []
+		for ingredient in recipe.from:
+			var found := pool.find(ingredient)
+			have.append(found >= 0)
+			if found >= 0:
+				pool.remove_at(found)
+		out.append({"module": recipe, "have": have, "ready": not have.has(false)})
+	return out
+
+
+## Fuegt ein Rezept zusammen: die Zutaten verschwinden aus dem Lager, das
+## Ergebnis nimmt einen Platz ein.
+func craft(recipe_id: StringName) -> bool:
+	if phase != Phase.STOP:
+		return false
+	var recipe := ModuleData.get_module(recipe_id)
+	if recipe == null or not recipe.is_recipe():
+		return false
+	var pool := storage.duplicate()
+	for ingredient in recipe.from:
+		var found := pool.find(ingredient)
+		if found < 0:
+			return false
+		pool.remove_at(found)
+	pool.append(recipe.id)
+	storage = pool
+	return true

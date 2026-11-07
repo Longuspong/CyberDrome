@@ -10,7 +10,8 @@ extends Control
 ##     und den gegnerischen DROMEs; "Kampf starten"
 ##   * REWARD:  Belohnungen; Waffen kommen ins Lager, ein DROME in den Squad
 ##     oder nach Hause
-##   * STOP:    Zwischenstopp -- Lager, Credits, Ausruesten (NEUANFANG 7d)
+##   * STOP:    Zwischenstopp -- Lager, Credits, Ausruesten (NEUANFANG 7d),
+##     Module in die Waffenhalter, Rezepte zusammenfuegen (6g)
 ##   * WON/LOST: das Ende mit Verlauf, "Neuer Lauf" oder zurueck ins Menue
 ##
 ## Die Regeln stehen in RunState, nicht hier. Dieser Bildschirm zeigt nur an
@@ -32,6 +33,9 @@ var _pending_reward: int = -1
 
 ## Zwischenstopp: der angetippte Lagerplatz (-1 = keiner).
 var _selected_storage: int = -1
+
+## Zwischenstopp: Rezeptbuch aufgeklappt?
+var _recipes_open: bool = false
 
 ## Was am Ende des Laufs nach Hause ging -- fuer die Abschlussanzeige.
 var _delivered: Array = []
@@ -254,7 +258,7 @@ func _show_prepare(run: RunState) -> void:
 func _show_rewards(run: RunState) -> void:
 	_side.add_child(_label("Sieg! Waehle eine Belohnung.", 22, COLOR_GOOD))
 	_side.add_child(_label(_credit_line(run), 16, COLOR_WARN))
-	_side.add_child(_label("Waffen kommen ins Lager -- einbauen kannst du gleich danach.",
+	_side.add_child(_label("Waffen und Module kommen ins Lager -- einbauen kannst du gleich danach.",
 		16, COLOR_MUTED))
 	for index in run.reward_options.size():
 		var option: Dictionary = run.reward_options[index]
@@ -265,6 +269,9 @@ func _show_rewards(run: RunState) -> void:
 		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.custom_minimum_size = Vector2(0, 84)
 		card.add_theme_font_size_override("font_size", 18)
+		if option["kind"] == "module" and run.storage_full():
+			card.disabled = true
+			card.text += "\nLager voll -- Module koennen nicht nach Hause"
 		card.pressed.connect(func(): _pick_reward(index))
 		_side.add_child(card)
 		if index == 0:
@@ -366,15 +373,25 @@ func _show_stop(run: RunState) -> void:
 		for index in run.storage.size():
 			grid.add_child(_storage_tile(run, index))
 	if _selected_storage >= 0:
-		_side.add_child(_storage_card(run, _selected_storage))
+		_side.add_child(_module_card(run, _selected_storage) if run.is_module_at(_selected_storage)
+			else _storage_card(run, _selected_storage))
+	_side.add_child(_recipe_section(run))
 
 	# --- Squad mit Haltern ---
 	_side.add_child(_label("Dein Lauf-Squad  ·  Staerke %d"
 		% int(DromeBuild.squad_power(run.squad)), 18, COLOR_HEADING))
+	var module_mode := run.is_module_at(_selected_storage)
 	if _selected_storage >= 0:
-		_side.add_child(_label("Tippe einen Halter an, um die Waffe einzubauen.",
+		_side.add_child(_label("Tippe einen Halter an, um das Modul einzusetzen." if module_mode
+			else "Tippe einen Halter an, um die Waffe einzubauen.", 16, COLOR_MUTED))
+	else:
+		_side.add_child(_label("Modul im Halter antippen: zurueck ins Lager. Module bleiben im Halter, wenn du die Waffe tauschst.",
 			16, COLOR_MUTED))
-	var options: Array = run.equip_options(_selected_storage) if _selected_storage >= 0 else []
+	var options: Array = []
+	if module_mode:
+		options = run.module_options(_selected_storage)
+	elif _selected_storage >= 0:
+		options = run.equip_options(_selected_storage)
 	for drome in run.squad.size():
 		_side.add_child(_stop_drome_card(run, drome, options))
 
@@ -403,7 +420,14 @@ func _storage_tile(run: RunState, index: int) -> Control:
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(box)
-	if part != null:
+	var module := ModuleData.get_module(run.storage[index])
+	if module != null:
+		button.tooltip_text = "%s (%s)" % [module.display_name, module.headline()]
+		var chip := ModuleChip.new(module, 56.0)
+		chip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		box.add_child(chip)
+		box.add_child(_tile_name(module.display_name))
+	elif part != null:
 		var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), 56.0)
 		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		shape.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -420,6 +444,128 @@ func _storage_tile(run: RunState, index: int) -> Control:
 		_selected_storage = -1 if _selected_storage == index else index
 		_refresh())
 	return button
+
+
+func _tile_name(text: String) -> Label:
+	var name := Label.new()
+	name.text = text
+	name.add_theme_font_size_override("font_size", 12)
+	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name.clip_text = true
+	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return name
+
+
+## Die Karte zum angetippten Lager-Modul: Klasse, Bedingung, Wirkung,
+## Verkaufen. Nach Hause gibt es nicht -- Module verfallen am Ende.
+func _module_card(run: RunState, index: int) -> Control:
+	var module := ModuleData.get_module(run.storage[index])
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style(true))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	panel.add_child(box)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	box.add_child(head)
+	head.add_child(ModuleChip.new(module, 56.0))
+	var title := VBoxContainer.new()
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	title.add_child(_label(module.display_name, 20))
+	title.add_child(_label(module.headline(), 16, module.color()))
+	_add_module_lines(box, module)
+	box.add_child(_label("Module gibt es nur in diesem Lauf.", 16, COLOR_MUTED))
+	var sell := UiKit.button("Verkaufen  +%d" % ModuleData.sell_value(module))
+	sell.pressed.connect(func():
+		run.sell(index)
+		_selected_storage = -1
+		_refresh())
+	box.add_child(sell)
+	return panel
+
+
+## Wirkung eines Moduls; beim Rezept die Summe und darunter der eigene Effekt.
+func _add_module_lines(box: Control, module: ModuleData) -> void:
+	if module.is_recipe():
+		var own := module.bonus_lines()
+		var summed := module.effect_lines(_without(module.effects, module.bonus))
+		if not summed.is_empty():
+			box.add_child(_label("Summe: %s" % ", ".join(summed), 16))
+		if not own.is_empty():
+			box.add_child(_label("Dazu: %s" % ", ".join(own), 16, COLOR_GOOD))
+	else:
+		box.add_child(_label(", ".join(module.effect_lines()), 16))
+
+
+## Die Wirkungen ohne den eigenen Effekt eines Rezepts (Zahlen abgezogen).
+func _without(effects: Dictionary, bonus: Dictionary) -> Dictionary:
+	var out := {}
+	for key in effects:
+		var value = effects[key]
+		if bonus.has(key):
+			if value is bool:
+				continue
+			value = float(value) - float(bonus[key])
+			if is_zero_approx(float(value)):
+				continue
+		out[key] = value
+	return out
+
+
+## Das Rezeptbuch (6g, 7e): aufklappbar, je Rezept die Zutaten -- gruen, was
+## im Lager liegt -- und "Zusammenfuegen", sobald alle da sind.
+func _recipe_section(run: RunState) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	var book := run.recipe_book()
+	var ready := book.filter(func(entry): return entry["ready"]).size()
+	var toggle := UiKit.button("Rezeptbuch  %s%s" % ["(%d bereit)  " % ready if ready > 0 else "",
+		"zuklappen" if _recipes_open else "aufklappen"])
+	toggle.pressed.connect(func():
+		_recipes_open = not _recipes_open
+		_refresh())
+	box.add_child(toggle)
+	if not _recipes_open:
+		return box
+	box.add_child(_label("Zutaten aus dem Lager ergeben ein neues Modul: die Summe ihrer Werte und ein eigener Effekt.",
+		16, COLOR_MUTED))
+	for entry in book:
+		var module: ModuleData = entry["module"]
+		var panel := PanelContainer.new()
+		panel.add_theme_stylebox_override("panel", _panel_style(entry["ready"]))
+		var inner := VBoxContainer.new()
+		inner.add_theme_constant_override("separation", 4)
+		panel.add_child(inner)
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 10)
+		inner.add_child(head)
+		head.add_child(ModuleChip.new(module, 44.0))
+		var title := VBoxContainer.new()
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		head.add_child(title)
+		title.add_child(_label(module.display_name, 18))
+		title.add_child(_label(module.headline(), 16, module.color()))
+		var parts := HFlowContainer.new()
+		parts.add_theme_constant_override("h_separation", 6)
+		inner.add_child(parts)
+		for i in module.from.size():
+			var ingredient := ModuleData.get_module(module.from[i])
+			var have: bool = entry["have"][i]
+			parts.add_child(_flow_label("%s%s" % ["+ " if i > 0 else "",
+				ingredient.display_name if ingredient != null else str(module.from[i])],
+				16, COLOR_GOOD if have else COLOR_MUTED))
+		_add_module_lines(inner, module)
+		var make := UiKit.button("Zusammenfuegen" if entry["ready"] else "Zutaten fehlen")
+		make.disabled = not entry["ready"]
+		make.pressed.connect(func():
+			if run.craft(module.id):
+				_selected_storage = -1
+			_refresh())
+		inner.add_child(make)
+		box.add_child(panel)
+	return box
 
 
 ## Die Karte zur angetippten Lager-Waffe: was sie kann, Verkaufen, nach Hause.
@@ -489,7 +635,23 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 		button.add_theme_font_size_override("font_size", 16)
 		var line := "Halter %s (%s): %s" % [SlotRules.slot_label(slot),
 			SlotRules.class_label(limit), what]
-		if _selected_storage >= 0:
+		var module_mode := run.is_module_at(_selected_storage)
+		if module_mode:
+			var choice: Dictionary = {}
+			for entry in options:
+				if int(entry["drome"]) == drome and entry["slot"] == slot:
+					choice = entry
+			var allowed := bool(choice.get("allowed", false))
+			button.text = "%s\n%s" % [line, ("Modul hier einsetzen -- %s" % choice.get("detail", ""))
+				if allowed else "geht nicht: %s" % choice.get("detail", "kein Platz")]
+			button.disabled = not allowed
+			if allowed:
+				button.add_theme_stylebox_override("normal", UiKit.card_style(true))
+			button.pressed.connect(func():
+				if run.install_module(_selected_storage, drome, slot):
+					_selected_storage = -1
+				_refresh())
+		elif _selected_storage >= 0:
 			var choice: Dictionary = {}
 			for entry in options:
 				if int(entry["drome"]) == drome and entry["slot"] == slot:
@@ -515,7 +677,52 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 			button.text = "%s\nWaffe im Lager antippen, dann hier" % line
 			button.disabled = true
 		box.add_child(button)
+		box.add_child(_module_row(run, drome, slot))
 	return panel
+
+
+## Die Module eines Halters als Chips mit Namen. Antippen nimmt eines zurueck
+## ins Lager; ruhende (Bedingung passt nicht zur Waffe) sind abgeblendet.
+func _module_row(run: RunState, drome: int, slot: String) -> Control:
+	var build: DromeBuild = run.squad[drome]
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 6)
+	row.add_theme_constant_override("v_separation", 6)
+	var installed := build.modules_in(slot)
+	var room := ModuleData.slots_for(build)
+	row.add_child(_flow_label("Module %d/%d" % [installed.size(), room], 16, COLOR_MUTED))
+	var weapon := build.part_in(slot)
+	for position in installed.size():
+		var module: ModuleData = installed[position]
+		var resting := module.blocker(weapon)
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(0, 48)
+		button.text = module.display_name
+		button.icon = null
+		button.add_theme_font_size_override("font_size", 14)
+		button.tooltip_text = "%s\n%s%s\nAntippen: zurueck ins Lager" % [module.display_name,
+			", ".join(module.effect_lines()), ("\nruht: " + resting) if resting != "" else ""]
+		if resting != "":
+			button.modulate = Color(1, 1, 1, 0.55)
+		var chip := ModuleChip.new(module, 36.0)
+		chip.dim = resting != ""
+		var holder := HBoxContainer.new()
+		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+		button.text = ""
+		var name := _label(module.display_name + (" (ruht)" if resting != "" else ""), 14)
+		name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		name.autowrap_mode = TextServer.AUTOWRAP_OFF
+		holder.add_child(chip)
+		holder.add_child(name)
+		button.add_child(holder)
+		button.custom_minimum_size = Vector2(44.0 + name.get_minimum_size().x + 12.0, 48)
+		button.disabled = run.storage_full()
+		button.pressed.connect(func():
+			run.remove_module(drome, slot, position)
+			_refresh())
+		row.add_child(button)
+	return row
 
 
 func _show_end(run: RunState) -> void:
@@ -557,6 +764,14 @@ func _label(text: String, size: int, color: Color = Color.WHITE) -> Label:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", size)
 	label.modulate = color
+	return label
+
+
+## Fuer Fliessreihen (HFlowContainer): ohne Umbruch, sonst bekommt das Label
+## keine Breite und bricht nach jedem Buchstaben um.
+func _flow_label(text: String, size: int, color: Color = Color.WHITE) -> Label:
+	var label := _label(text, size, color)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	return label
 
 

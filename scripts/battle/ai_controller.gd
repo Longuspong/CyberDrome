@@ -91,7 +91,10 @@ func update(unit: Unit, dt: float) -> void:
 		if float(mount["ready"]) > 0.0:
 			continue
 		if _fire(unit, mount, target):
-			mount["ready"] = (mount["attack"] as ActionData).interval
+			# Modul Taktgeber: nach der Faehigkeit sofort wieder geladen.
+			mount["ready"] = 0.0 if mount.get("instant", false) \
+				else (mount["attack"] as ActionData).interval
+			mount["instant"] = false
 			fired = true
 			if battle.outcome != BattleManager.Outcome.RUNNING:
 				return
@@ -202,6 +205,12 @@ func _key_less(a: Array, b: Array) -> bool:
 ## Wer lockt ``unit`` gerade? Der naechste lebende Gegner, in dessen Lockradius
 ## (Molok-Praesenz, Koedersender) ``unit`` steht -- sonst null.
 func lured_by(unit: Unit) -> Unit:
+	# Modul Koedersender: wer angelockt wurde, greift den Traeger an.
+	var taunt = unit.statuses.get(&"taunt")
+	if taunt is Dictionary:
+		var lurer := battle.resolver.unit_by_id(taunt.get("taunt_by"))
+		if lurer != null and lurer.is_alive():
+			return lurer
 	var best: Unit = null
 	var best_gap := 1 << 30
 	for foe in battle.enemies_of(unit):
@@ -244,7 +253,9 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		if not aim.is_empty():
 			_execute(unit, aim["tile"], ability, aim["target"])
 			_echo(unit, ability, aim)
+			_after_ability(unit, ability, aim)
 			mount["count"] = 0
+			mount["instant"] = bool((mount.get("fx", {}) as Dictionary).get("ready_after_ability", false))
 			return true
 	var shot := {}
 	if attack.heal > 0:
@@ -254,10 +265,68 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	if shot.is_empty():
 		return false
 	_execute(unit, shot["tile"], attack, shot["target"])
+	_attack_modules(unit, mount, attack, shot.get("target"))
 	if ability != null:
 		mount["count"] = mini(int(mount["count"]) + 1,
 			trigger_every(unit, ability) - 1)
 	return true
+
+
+## Module, die an einem Angriff haengen (NEUANFANG 6g): Doppellauf (Chance
+## auf einen Querschlaeger aufs selbe Ziel) und Gunslinger (jeder N-te
+## Angriff trifft dazu einen Gegner irgendwo auf dem Feld). Nur auf Angriffe
+## gegen Gegner, nicht auf Heilstrahlen.
+func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) -> void:
+	var fx: Dictionary = mount.get("fx", {})
+	if fx.is_empty() or attack.power <= 0 or battle.outcome != BattleManager.Outcome.RUNNING:
+		return
+	if target == null or not (target is Unit) or target.is_player == unit.is_player:
+		return
+	mount["shots"] = int(mount.get("shots", 0)) + 1
+	var raw := attack.power + unit.atk()
+	var chance := float(fx.get("ricochet_chance", 0.0))
+	if chance > 0.0 and target.is_alive() and battle.rng.randf() < chance:
+		var bounce := maxi(1, int(round(float(raw) * float(fx.get("ricochet_share", 0.15)))))
+		EventBus.log_line("%s: Querschlaeger." % unit.display_name)
+		battle.resolver.apply_damage(unit, target, bounce, attack)
+	var every := int(fx.get("field_shot_every", 0))
+	if every > 0 and int(mount["shots"]) % every == 0:
+		var extra := _field_shot_target(unit, target)
+		if extra != null:
+			EventBus.log_line("%s trifft quer uebers Feld %s." % [unit.display_name, extra.display_name])
+			battle.resolver.apply_damage(unit, extra, raw, attack)
+			EventBus.action_used.emit(unit, extra.tile, attack)
+	battle._check_victory()
+
+
+## Gunslinger: ein ANDERER Gegner irgendwo auf dem Feld -- der mit dem
+## geringsten Anteil Integritaet. Ist nur das Ziel uebrig, dieses.
+func _field_shot_target(unit: Unit, target: Unit) -> Unit:
+	var best: Unit = null
+	var best_share := 2.0
+	for foe in battle.enemies_of(unit):
+		if not foe.is_alive() or foe == target:
+			continue
+		var share: float = foe.hp_fraction()
+		if share < best_share:
+			best_share = share
+			best = foe
+	if best == null and target != null and target.is_alive():
+		return target
+	return best
+
+
+## Nach einer Faehigkeit: Modul Koedersender -- das Ziel muss eine Weile den
+## Traeger angreifen (Status "taunt", lured_by liest ihn).
+func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary) -> void:
+	if ability.taunt_seconds <= 0.0:
+		return
+	var target = aim.get("target")
+	if target == null or not (target is Unit) or not target.is_alive() \
+			or target.is_player == unit.is_player:
+		return
+	target.apply_status(&"taunt", ability.taunt_seconds, {"taunt_by": unit.unit_id})
+	EventBus.log_line("%s lockt %s an." % [unit.display_name, target.display_name])
 
 
 ## Wen unterstuetzt ``action``? "self": den Traeger. "ally" (und Angriffe mit
@@ -380,6 +449,7 @@ func _use_gadgets(unit: Unit, target: Unit) -> bool:
 					continue
 				_execute(unit, aim["tile"], ability, aim["target"])
 				_echo(unit, ability, aim)
+				_after_ability(unit, ability, aim)
 				gadget["ready"] = _time_after_ability(unit, ability)
 				return true
 			"adjacent":
