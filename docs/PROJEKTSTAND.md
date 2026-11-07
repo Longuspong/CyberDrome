@@ -78,6 +78,23 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   1x/2x, Pause, Log, Folgen. Zugleiste, Aktionsring und manueller Kampf sind
   entfernt.
 
+### Arena und Hindernisse (7. Nov. 2026, Wunsch des Spielers)
+* **Hindernisse** sperren nur Laufwege, Schuesse gehen darueber
+  (`Grid.obstacles`, `can_stand_on`). 3-5 Gruppen (einzeln, kurze Mauer,
+  Ecke), punktsymmetrisch zur Feldmitte, nie in oder direkt an den Zonen,
+  Feld bleibt zusammenhaengend; eigener Zufall aus dem Kampf-Seed.
+  Gemessen (je 200): Spiegel 97:103, gegen gewuerfelte Gegner 143:57 --
+  praktisch wie ohne.
+* **Optik** (`scripts/ui/arena_painter.gd`, gezeichnet statt SVG-Kachel):
+  Bodennuancen je Feld, feine helle Fugen statt schwarzer Umrisse,
+  Verzierungen je Region (City: Mittelstreifen, Risse, Pfuetzen, Gullis;
+  Gruenzone: Gras, Steine, Blueten; Anlage 7: Gitterrost, Rost, Oel,
+  Warnstreifen), dunklerer Randstreifen (3 Felder) mit Zierlinie und
+  Sockel, Deko darauf (Laternen mit Lichtkegel, Container, Ruinen, Tanks),
+  additive Lichtflecken, Vignette. Hindernisse als Iso-Bloecke je Region
+  (Container, Kisten, Absperrung / Ruine, Fels / Tank, Rohre, Kisten).
+  Die Boden-SVGs unter `assets/terrain/` werden im Kampf nicht mehr gezeichnet.
+
 ### Lauf (Roguelike) -- `scripts/core/run_state.gd`
 * 8 Kaempfe, 3 Leben, alles am Seed. Werte in `data/config.json` -> `run`.
 * **Aufstellung vor dem Lauf** (`SquadPicker`, `scripts/ui/squad_picker.gd`):

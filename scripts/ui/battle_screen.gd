@@ -520,7 +520,30 @@ func _camera_input(event: InputEvent) -> bool:
 ##   Mitte   die Karte -- Kamera folgt, Ziehen und Zoomen per Finger
 ##   unten   Daumenleiste: Tempo, Pause, Log, Folgen
 func _build_ui() -> void:
+	# Vignette ueber dem Spielfeld, unter der Bedienung: die Raender dunkler,
+	# das Geschehen in der Mitte tritt hervor.
+	var shade_layer := CanvasLayer.new()
+	shade_layer.layer = 1
+	add_child(shade_layer)
+	var vignette := TextureRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vignette.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	vignette.stretch_mode = TextureRect.STRETCH_SCALE
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0, 0, 0, 0.0))
+	gradient.set_color(1, Color(0, 0, 0, 0.55))
+	gradient.add_point(0.55, Color(0, 0, 0, 0.0))
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(1.05, 1.05)
+	vignette.texture = texture
+	shade_layer.add_child(vignette)
+
 	_ui = CanvasLayer.new()
+	_ui.layer = 2
 	add_child(_ui)
 
 	var frame := VBoxContainer.new()

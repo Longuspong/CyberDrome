@@ -43,9 +43,12 @@ bash tools/build_web.sh                                       # Web-Export nach 
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
   nach oben in groessere Halter, schwer nur in schwer).
-* Spielfeld bleibt 20x20 und ist **frei** (kein Gelaende, keine Sichtlinie
-  -- seit 5. Nov. 2026); die Kamera folgt dem Geschehen, Zoomen und Ziehen
-  per Finger.
+* Spielfeld bleibt 20x20, ohne Gelaende-Regeln und ohne Sichtlinie (seit
+  5. Nov. 2026). Seit 7. Nov. 2026 gibt es **Hindernisse**, die nur Laufwege
+  sperren (Schuesse gehen darueber), punktsymmetrisch je Seed, nie an den
+  Zonen (`MapGenerator.place_obstacles`, `config.json` -> `obstacles`). Die
+  Arena zeichnet `ArenaPainter` (Boden, Rand, Deko, Licht je Region). Die
+  Kamera folgt dem Geschehen, Zoomen und Ziehen per Finger.
 * Das Spiel ist ein **Autobattler in Echtzeit** (seit Nov. 2026): alle
   DROMEs handeln gleichzeitig, keine Zuege. `BattleManager.tick()` rechnet in
   festen Schritten (0,05 s, deterministisch je Seed), die KI (`AIController`)

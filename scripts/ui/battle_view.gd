@@ -26,7 +26,7 @@ var grid: Grid
 var _world: Node2D
 var _badges: UnitBadgePainter
 var _effects: EffectPainter
-var _tile_sprites: Dictionary = {}
+var _arena: Array = []
 var _zone_sprites: Array = []
 
 
@@ -48,28 +48,16 @@ func _ready() -> void:
 # Boden
 # ---------------------------------------------------------------------------
 
+## Boden, Rand, Hindernisse, Deko und Licht -- gezeichnet von ArenaPainter
+## (7. Nov. 2026; vorher eine SVG-Kachel je Feld mit schwarzem Umriss).
+## Hindernisse und Deko sortieren sich wie Einheiten nach der Tiefe ihres
+## Feldes.
 func build_terrain(battle_grid: Grid) -> void:
 	grid = battle_grid
-	for sprite in _tile_sprites.values():
-		sprite.queue_free()
-	_tile_sprites.clear()
-
-	for tile in grid.all_tiles():
-		var sprite := Sprite2D.new()
-		sprite.centered = false
-		sprite.position = IsoView.sprite_position(tile)
-		sprite.z_index = IsoView.depth(tile) * DEPTH_STRIDE
-
-		var path: String = grid.region.floor_texture if grid.region != null else ""
-		if path != "" and ResourceLoader.exists(path):
-			sprite.texture = load(path)
-		else:
-			# Fehlendes Tile wird als Fehlmarkierung sichtbar, nicht ersetzt.
-			sprite.texture = load(OVERLAY_TILE)
-			sprite.modulate = Color.MAGENTA
-		IsoView.fit_sprite(sprite)
-		_world.add_child(sprite)
-		_tile_sprites[tile] = sprite
+	for node in _arena:
+		node.queue_free()
+	_arena = ArenaPainter.build(_world, grid, func(tile: Vector2i) -> int:
+		return IsoView.depth(tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET)
 
 
 ## Felder einfaerben -- die Aufstellungszone vor dem Kampf.
