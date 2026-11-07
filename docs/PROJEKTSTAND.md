@@ -156,6 +156,43 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   vorzeitigen "Nach Hause".
 * Ein neuer DROME aus der Belohnung kommt weiter in den Squad oder nach Hause.
 
+### Module und Rezepte (7. Nov. 2026) -- `ModuleData`, `data/modules.json`
+* Module gibt es **nur im Lauf**. Sie stecken im **Waffenhalter**
+  (`DromeBuild.modules`: Halter -> Modul-IDs), 3 je Halter, Molok 2
+  (`slots_by_body`). Sie gehoeren zum Halter, nicht zur Waffe: wer die Waffe
+  tauscht, behaelt sie. Passt die Bedingung nicht (z. B. "nur Fernwaffen" =
+  Angriff ab Rw 2), **ruht** das Modul (abgeblendet, mit Grund).
+* Im Kampf werden die Aktionen der Waffe als **Kopie** angepasst
+  (`ActionData.with_modules`), die PartDB bleibt unberuehrt. Angriffstempo,
+  Schaden und Reichweite nur auf Angriffe; Takt, Statusdauer, Locken auf
+  Faehigkeiten. Werte des Traegers (DEF, Schild, Stacheln, frueheres
+  Schildladen) stehen in `DromeBuild.stats()`.
+* Zehn Grundmodule (vorlaeufig): Angriff -- Schnellfeuer, Langer Lauf,
+  Doppellauf (je Fernwaffe), Wuchtkante (Nahkampf); Abwehr -- Panzerplatte,
+  Kondensator, Stachelgitter; Taktik -- Taktchip, Verstaerker, Koedersender
+  (die Faehigkeit lockt ihr Ziel 3 s auf den Traeger, Status `taunt`).
+* Vier Rezepte (Summe der Zutaten + eigener Effekt): **Gunslinger**
+  (Schnellfeuer + Langer Lauf + Doppellauf; jeder 5. Angriff trifft dazu den
+  schwaechsten anderen Gegner irgendwo), **Bollwerk** (Panzerplatte +
+  Kondensator; Schild laedt nach 2 s Ruhe), **Taktgeber** (Taktchip +
+  Verstaerker; nach der Faehigkeit sofort geladen), **Raufbold** (Wuchtkante
+  + Stachelgitter; +15 % Angriffstempo). Zusammengefuegt wird im Lager
+  (Rezeptbuch im Zwischenstopp, aufklappbar).
+* Beute: je Sieg ein Grundmodul zusaetzlich zur Auswahl, Elite mit 50 %
+  gleich ein Rezept-Modul. Module teilen sich die 8 Lagerplaetze, lassen
+  sich verkaufen (2 / 6 Credits), aber **nicht nach Hause** schicken; am
+  Ende des Laufs verfallen sie.
+* Bedienung im Zwischenstopp: Modul im Lager antippen, dann den Halter;
+  ein Modul-Chip am Halter antippen nimmt es zurueck ins Lager. Chips
+  (`ModuleChip`): Farbe UND Zeichen je Klasse (Spitze Angriff, Bogen Abwehr,
+  Punkt Taktik), zwei Buchstaben, Rezepte mit doppeltem Rand.
+* Gemessen (je 100 Kaempfe, Standard-Squad gegen sich selbst ohne Module):
+  ohne 56:44; Vireo mit Gunslinger 84:16, mit den drei Zutaten einzeln
+  75:25; Strix Gunslinger 81:19; Molok Bollwerk + Raufbold 81:19; Nimbus
+  Taktgeber 85:15; je DROME ein Grundmodul 80:20. Module machen also einen
+  deutlichen Unterschied -- die Gegnerkurve ist noch nicht darauf
+  eingestellt (Gegner tragen keine Module).
+
 ### Chaos-Virus
 * Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
   eigene Mannschaft (`chaos.enemy_power_factor` 0,9). Handicap und Beute
@@ -267,6 +304,10 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * ~~Namensschilder/Balken schweben beim Herauszoomen und ueberlappen~~ --
   behoben 7. Nov. 2026 (siehe "Lesbarkeit im Kampf").
 * Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.
+* Module: Gegner tragen keine, die Gegnerkurve kennt sie nicht; der
+  Kampfwert (`power_score`) sieht nur DEF und Schild. Die alten Teile
+  Koedersender (`eq_bait_beacon`), Hologramm-Boost und Orbit-Fokus sind
+  noch Ausruestung, obwohl sie laut 6g Module werden sollen.
 * Spielstand-Auswahl vor dem Hauptmenue (Wunsch des Spielers, Nov. 2026)
   ist noch nicht gebaut -- haengt an der Persistenz.
 * Spielstand-Persistenz ist in der Dev-Phase aus (`save_enabled: false`) --

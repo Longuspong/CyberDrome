@@ -96,6 +96,10 @@ var trigger_kind: String = ""
 var trigger_every: float = 0.0
 var trigger_weapon: StringName = &""
 
+## Modul Koedersender: die Faehigkeit lockt ihr Ziel so viele Sekunden auf
+## den Traeger. 0 = nicht.
+var taunt_seconds: float = 0.0
+
 
 static func from_meta(meta: Dictionary, owner_name: String = "",
 		owner_code: String = "") -> ActionData:
@@ -128,6 +132,49 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 		action.trigger_every = float(trigger.get("every", 0.0))
 		action.trigger_weapon = StringName(str(trigger.get("weapon", "")))
 	return action
+
+
+## Eine eigene Kopie -- die Aktionen der PartDB teilen sich alle DROMEs mit
+## diesem Teil, Module duerfen sie deshalb nie direkt aendern.
+func copy() -> ActionData:
+	var out := ActionData.new()
+	for property in get_property_list():
+		if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			var value = get(property["name"])
+			out.set(property["name"], value.duplicate(true) if value is Dictionary else value)
+	return out
+
+
+## Die Aktion mit den Wirkungen der Module eines Halters (ModuleData).
+## Ohne Wirkung die Aktion selbst, sonst eine Kopie.
+##
+## Angriffstempo, Schaden und Reichweite wirken nur auf Angriffe (6g:
+## Modifikatoren wirken nur auf Angriffe); Takt, Statusdauer und Locken nur
+## auf Faehigkeiten.
+func with_modules(fx: Dictionary) -> ActionData:
+	if fx.is_empty():
+		return self
+	var out := copy()
+	if is_attack():
+		var speed := float(fx.get("attack_speed", 0.0))
+		if speed > 0.0:
+			out.interval = interval / (1.0 + speed)
+		var more := float(fx.get("attack_power", 0.0))
+		if more > 0.0 and power > 0:
+			out.power = int(round(float(power) * (1.0 + more)))
+		out.range_tiles += int(fx.get("range", 0))
+	else:
+		var cut := int(fx.get("takt_cut", 0))
+		if trigger_kind == "attacks" and cut > 0:
+			out.trigger_every = maxf(2.0, trigger_every - float(cut))
+		var faster := float(fx.get("takt_time", 0.0))
+		if trigger_kind == "time" and faster > 0.0:
+			out.trigger_every = trigger_every * maxf(0.2, 1.0 - faster)
+		out.taunt_seconds = float(fx.get("taunt", 0.0))
+	var longer := float(fx.get("status_time", 0.0))
+	if longer > 0.0 and status.has("seconds"):
+		out.status["seconds"] = float(status["seconds"]) * (1.0 + longer)
+	return out
 
 
 ## Der Takt (die Ausloesevoraussetzung) in Klartext -- fuer Teil-Info und Kacheln.

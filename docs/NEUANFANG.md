@@ -599,7 +599,9 @@ entfallen (6g). Weiter:
    7. Nov.: Phase STOP in `RunState`, Lager 8 Plaetze, Credits je Kampf und
    fuer Verkaeufe, Beute geht am Ende nach Hause). Credits werden erst mit
    dem Laden (Punkt 3) ausgegeben.
-3. Module und Rezepte (6g), dann der Laden.
+3. ~~Module und Rezepte (6g)~~ (gebaut 7. Nov.: zehn Grundmodule, vier
+   Rezepte, Plaetze im Waffenhalter, Rezeptbuch im Lager -- Werte
+   vorlaeufig, Stand in `PROJEKTSTAND.md`), dann der Laden.
 4. Level fuer DROMEs und Waffen, die nach dem Lauf bleiben.
 5. Karte wie bei FTL mit Chaos-Kaempfen.
 6. Neon City als erste Region mit Neon-Gegnern und Neon-Varianten.

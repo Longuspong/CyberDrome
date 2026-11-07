@@ -39,6 +39,12 @@ var palette: Dictionary = {}
 ## Blickrichtung fuer die Darstellung
 var direction: String = "south"
 
+## Module im Lauf (NEUANFANG 6g): Waffenhalter -> Modul-IDs. Sie gehoeren zum
+## Halter, nicht zur Waffe: wer die Waffe tauscht, behaelt die Module. Passt
+## die Waffe nicht zur Bedingung eines Moduls, ruht es. Nur Lauf-Kopien
+## tragen Module; der Hangar zuhause kennt keine (sie verfallen nach dem Lauf).
+var modules: Dictionary = {}
+
 
 static func create(name: String, assignment: Dictionary) -> DromeBuild:
 	var build := DromeBuild.new()
@@ -217,6 +223,14 @@ func stats() -> Dictionary:
 
 	total["spd"] -= payload_slowdown()
 
+	# Module (nur im Lauf): Panzerung, Schild und Konter des Traegers.
+	if not modules.is_empty():
+		var fx := all_module_effects()
+		total["def"] += int(fx.get("def", 0))
+		total["shield"] += int(fx.get("shield", 0))
+		total["thorns"] = int(fx.get("thorns", 0))
+		total["shield_delay"] = float(fx.get("shield_delay", 0.0))
+
 	# Negative Summen sind sinnlos, aber ein DROME darf sie erreichen -- die
 	# Validierung faengt das ab und sagt dem Spieler, welche Regel bricht.
 	total["hp_max"] = maxi(0, total["hp_max"])
@@ -296,7 +310,48 @@ func clone() -> DromeBuild:
 	copy.slots = slots.duplicate()
 	copy.palette = palette.duplicate(true)
 	copy.direction = direction
+	copy.modules = modules.duplicate(true)
 	return copy
+
+
+# ---------------------------------------------------------------------------
+# Module (nur im Lauf)
+# ---------------------------------------------------------------------------
+
+## Die Module in diesem Halter, als ModuleData (unbekannte fallen weg).
+func modules_in(slot: String) -> Array:
+	var out: Array = []
+	for module_id in modules.get(slot, []):
+		var module := ModuleData.get_module(module_id)
+		if module != null:
+			out.append(module)
+	return out
+
+
+## Die Module, die gerade WIRKEN: ihre Bedingung passt zur Waffe im Halter.
+func active_modules(slot: String) -> Array:
+	var weapon := part_in(slot)
+	return modules_in(slot).filter(func(m): return m.fits(weapon))
+
+
+## Summe der Wirkungen aller wirkenden Module eines Halters.
+func module_effects(slot: String) -> Dictionary:
+	var total := {}
+	for module in active_modules(slot):
+		total = ModuleData.add_effects(total, module.effects)
+	return total
+
+
+## Die Wirkungen aller Halter zusammen -- fuer Werte des Traegers.
+func all_module_effects() -> Dictionary:
+	var total := {}
+	for slot in equip_slots():
+		total = ModuleData.add_effects(total, module_effects(slot))
+	return total
+
+
+func module_count(slot: String) -> int:
+	return (modules.get(slot, []) as Array).size()
 
 
 # ---------------------------------------------------------------------------
