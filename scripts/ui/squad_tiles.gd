@@ -1,33 +1,34 @@
 class_name SquadTiles
-extends HBoxContainer
+extends GridContainer
 
-## Die DROME-Kacheln unter der Zugreihenfolge: eine Kachel je eigenem DROME.
+## Die DROME-Kacheln oben im Kampf: eine Kachel je eigenem DROME.
 ##
-## Kopf, Name, Tempo und die genauen Zahlen fuer Integritaet und Schild -- das,
-## was ueber der Figur keinen Platz mehr hat. Ueber der Figur steht nur noch
-## der eine Lebensbalken (BattleView.UnitBadgePainter); im Nahkampf schoben
-## sich vorher drei Badges mit Namen und Zahlen uebereinander.
+## Seit 7. Nov. 2026 (mit dem Spieler abgesprochen) nur Symbol und Zahl, in
+## Mindestschrift 16: Kopf, Herz mit Integritaet, Schild mit Schild, darunter
+## je Faehigkeit eine kleine Takt-Leiste -- dieselbe wie ueber der Figur.
+## Name und Tempo per langem Druck (tooltip_text). Vorher standen Name, SPD
+## und "1/3 Doppelsc." in 11-13 px da und mussten gekuerzt werden.
 ##
-## Darunter je Waffe der Zaehler bis zur Faehigkeit ("Doppelschuss 2/3") --
-## damit man sieht, wann sie kommt. Eine zerstoerte Kachel wird abgedunkelt.
-## Die Kacheln teilen sich die Breite: im Hochformat (ca. 400 Pixel) passen
-## vier nebeneinander, mehr hat ein Squad nicht. Alle Texte schneiden ab statt
-## die Kachel zu verbreitern -- sonst schob eine lange Zeile (Molok mit zwei
-## Faehigkeiten) die ganze Leiste ueber den Bildschirmrand hinaus. Jede
-## Faehigkeit steht deshalb in einer eigenen Zeile.
+## Hochformat: vier Kacheln nebeneinander. Querformat: eine Spalte am linken
+## Rand (``set_vertical``), damit oben mehr Spielfeld frei bleibt.
+## Eine zerstoerte Kachel wird abgedunkelt.
 
 ## Antippen einer Kachel: die Kamera faehrt zu diesem DROME.
 signal tile_pressed(unit)
 
-const HEAD_EDGE := 28.0
+const HEAD_EDGE := 26.0
+const ICON_EDGE := 16.0
 const BAR_HEIGHT := 5.0
+const FONT := 16
 
-var _tiles: Dictionary = {}       # unit_id -> { root, style, hp_bar, sh_bar, hp_label, sh_label, spd }
+var _tiles: Dictionary = {}       # unit_id -> { root, hp_bar, sh_bar, hp_label, sh_label, takt }
 
 
 ## Einmal beim Aufbau: legt die Kacheln fuer ``units`` an.
 func setup(units: Array) -> void:
-	add_theme_constant_override("separation", 4)
+	add_theme_constant_override("h_separation", 4)
+	add_theme_constant_override("v_separation", 4)
+	columns = maxi(1, units.size())
 	for child in get_children():
 		child.queue_free()
 	_tiles.clear()
@@ -35,10 +36,16 @@ func setup(units: Array) -> void:
 		_add_tile(unit)
 
 
+## Querformat: eine Spalte. Hochformat: alle nebeneinander.
+func set_vertical(vertical: bool) -> void:
+	columns = 1 if vertical else maxi(1, _tiles.size())
+
+
 func _add_tile(unit: Unit) -> void:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.clip_contents = true
+	panel.tooltip_text = "%s  ·  SPD %d" % [unit.display_name, unit.spd()]
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(UiKit.CARD, 0.92)
 	style.border_color = UiKit.CARD_LINE
@@ -71,43 +78,35 @@ func _add_tile(unit: Unit) -> void:
 	head.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head_row.add_child(head)
-
-	var name_box := VBoxContainer.new()
-	name_box.add_theme_constant_override("separation", -2)
-	name_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	head_row.add_child(name_box)
-	var name_label := _small(unit.display_name, 13, Color.WHITE)
-	name_label.clip_text = true
-	name_box.add_child(name_label)
-	var spd := _small("", 12, UiKit.WARN)
-	name_box.add_child(spd)
+	var hp_label := _value(head_row, "hp")
 
 	var hp_bar := _bar(box, Teams.hp_color(true))
-	var hp_label := _small("", 12, Color(0.86, 0.95, 0.88))
-	box.add_child(hp_label)
+	var sh_row := HBoxContainer.new()
+	sh_row.add_theme_constant_override("separation", 3)
+	sh_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(sh_row)
+	var sh_label := _value(sh_row, "shield")
 	var sh_bar := _bar(box, Teams.shield_color(true))
-	var sh_label := _small("", 12, Color(0.80, 0.88, 1.0))
-	box.add_child(sh_label)
 
-	var skills := _small("", 11, Color(1.0, 0.86, 0.4))
-	box.add_child(skills)
+	var takt := TaktBars.new()
+	box.add_child(takt)
 
-	_tiles[unit.unit_id] = {"root": panel, "style": style, "hp_bar": hp_bar,
-		"sh_bar": sh_bar, "hp_label": hp_label, "sh_label": sh_label, "spd": spd,
-		"skills": skills}
+	_tiles[unit.unit_id] = {"root": panel, "hp_bar": hp_bar, "sh_bar": sh_bar,
+		"hp_label": hp_label, "sh_label": sh_label, "takt": takt}
 
 
-func _small(text: String, size: int, color: Color) -> Label:
+## Symbol + Zahl, die Zahl schneidet ab statt die Kachel zu verbreitern.
+func _value(row: HBoxContainer, kind: String) -> Label:
+	var icon := StatIcon.new(kind, ICON_EDGE)
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(icon)
 	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", size)
-	label.modulate = color
+	label.add_theme_font_size_override("font_size", FONT)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	# Mindestbreite 0: die Kachel bestimmt die Breite, nicht der Text.
 	label.clip_text = true
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(label)
 	return label
 
 
@@ -126,8 +125,7 @@ func _bar(parent: Control, color: Color) -> ProgressBar:
 	return bar
 
 
-## Nach jeder Aenderung: Zahlen, Balken, Faehigkeits-Zaehler, zerstoerte
-## Kacheln.
+## Nach jeder Aenderung: Zahlen, Balken, Takt, zerstoerte Kacheln.
 func refresh(units: Array) -> void:
 	for unit in units:
 		if not _tiles.has(unit.unit_id):
@@ -141,30 +139,39 @@ func refresh(units: Array) -> void:
 		var sh_bar: ProgressBar = tile["sh_bar"]
 		sh_bar.max_value = maxi(1, sh_max)
 		sh_bar.value = maxi(0, unit.shield)
-		(tile["hp_label"] as Label).text = "HP %d/%d" % [maxi(0, unit.hp), hp_max]
-		(tile["sh_label"] as Label).text = "Schild %d/%d" % [maxi(0, unit.shield), sh_max]
-		(tile["spd"] as Label).text = "SPD %d" % unit.spd()
-		(tile["skills"] as Label).text = skill_line(unit)
+		(tile["hp_label"] as Label).text = str(maxi(0, unit.hp))
+		(tile["sh_label"] as Label).text = str(maxi(0, unit.shield))
+		(tile["takt"] as TaktBars).set_bars(unit.takt_bars() if unit.is_alive() else [])
 		(tile["root"] as Control).modulate = Color.WHITE if unit.is_alive() \
 			else Color(0.45, 0.45, 0.5, 0.8)
 
 
-## "2/3 Doppelsc.": je Waffe mit Faehigkeit, der wievielte Schuss als
-## naechstes kommt. Bei 3/3 ist der naechste Schuss die Faehigkeit. Kurz
-## gehalten -- die Kachel ist schmal; je Waffe eine Zeile.
-static func skill_line(unit: Unit) -> String:
-	var parts: Array[String] = []
-	for mount in unit.mounts:
-		var ability = mount.get("ability")
-		if ability == null:
-			continue
-		# Zaehler vorn: wird die Zeile zu lang, kuerzt die Kachel den Namen,
-		# nicht die Zahl.
-		parts.append("%d/%d %s" % [int(mount["count"]) + 1,
-			unit.takt_every(ability),
-			_short((ability as ActionData).display_name)])
-	return "\n".join(parts)
+## Die kleinen Takt-Leisten in der Kachel -- dieselbe Darstellung wie unter
+## dem Lebensbalken (Abschnitte je Angriff, Zeit in halben Sekunden).
+class TaktBars extends Control:
+	const ROW := 4.0
+	const GAP := 2.0
+	var bars: Array = []
 
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-static func _short(name: String) -> String:
-	return name if name.length() <= 9 else name.substr(0, 8) + "."
+	func set_bars(value: Array) -> void:
+		bars = value
+		custom_minimum_size = Vector2(0, maxf(0.0, float(bars.size()) * (ROW + GAP) - GAP))
+		queue_redraw()
+
+	func _draw() -> void:
+		var y := 0.0
+		for bar in bars:
+			var color := Color(1.0, 1.0, 0.85) if bar.get("ready", false) else Color(1.0, 0.82, 0.35)
+			draw_rect(Rect2(0, y, size.x, ROW), Color(0.03, 0.04, 0.06))
+			if bar["kind"] == "hits":
+				var n: int = maxi(1, int(bar["segments"]))
+				var piece := size.x / float(n)
+				for i in n:
+					if i < int(bar["filled"]):
+						draw_rect(Rect2(piece * float(i), y, piece - 1.0, ROW), color)
+			else:
+				draw_rect(Rect2(0, y, size.x * float(bar["fill"]), ROW), color)
+			y += ROW + GAP

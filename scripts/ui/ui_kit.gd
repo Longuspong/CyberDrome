@@ -92,6 +92,25 @@ static func page(root: Control, title: String, back: String = "", tab: int = -1,
 	return content
 
 
+## Die sicheren Raender (Notch, Gestenleiste) in Viewport-Einheiten -- so
+## weit das System sie meldet. Im Browser haelt die Seite selbst Abstand
+## (ohne viewport-fit=cover), dort ist alles 0; fuer die spaetere App zaehlt es.
+static func safe_insets(node: Node) -> Dictionary:
+	var none := {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
+	if DisplayServer.get_name() == "headless" or OS.has_feature("web"):
+		return none
+	var window := Vector2(DisplayServer.window_get_size())
+	var safe := Rect2(DisplayServer.get_display_safe_area())
+	var screen := Vector2(DisplayServer.screen_get_size())
+	if window.x <= 0.0 or safe.size.x <= 0.0 or window != screen:
+		return none
+	var scale := node.get_viewport().get_visible_rect().size / window
+	return {"top": safe.position.y * scale.y,
+		"bottom": (screen.y - safe.end.y) * scale.y,
+		"left": safe.position.x * scale.x,
+		"right": (screen.x - safe.end.x) * scale.x}
+
+
 ## Seitenraender, die im Querformat die Spalte zentrieren.
 static func _keep_column(root: Control, margin: MarginContainer) -> void:
 	var apply := func():
@@ -101,6 +120,11 @@ static func _keep_column(root: Control, margin: MarginContainer) -> void:
 		margin.add_theme_constant_override("margin_right", int(side))
 		margin.add_theme_constant_override("margin_top", PAD)
 		margin.add_theme_constant_override("margin_bottom", PAD)
+		var insets := safe_insets(root)
+		var frame := margin.get_parent() as Control
+		if frame != null:
+			frame.offset_top = insets["top"]
+			frame.offset_bottom = -insets["bottom"]
 	apply.call()
 	root.get_viewport().size_changed.connect(apply)
 

@@ -57,6 +57,15 @@ var _pinch_zoom := 1.0
 var _ui: CanvasLayer
 var _status: Label
 var _squad_tiles: SquadTiles
+var _top_box: VBoxContainer
+var _side_panel: PanelContainer
+var _frame: Control
+const SIDE_WIDTH := 132.0
+
+## Fokus nach Antippen einer Kachel: groesserer Balken bis _focus_until (ms).
+const FOCUS_MS := 3000
+var _focus_id = null
+var _focus_until: int = 0
 var _log: RichTextLabel
 var _log_panel: PanelContainer
 var _speed_button: Button
@@ -105,6 +114,27 @@ func _start_battle() -> void:
 	_squad_tiles.setup(battle.living(true))
 	_squad_tiles.tile_pressed.connect(_look_at_unit)
 	_refresh_hud()
+
+
+## Hochformat: Kacheln oben nebeneinander. Querformat: als Spalte links.
+## Dazu die sicheren Raender (Notch, Gestenleiste), wo das System sie meldet.
+func _apply_orientation() -> void:
+	if _squad_tiles == null:
+		return
+	var portrait := Accessibility.is_portrait()
+	var wanted: Node = _top_box if portrait else _side_panel
+	if _squad_tiles.get_parent() != wanted:
+		_squad_tiles.get_parent().remove_child(_squad_tiles)
+		wanted.add_child(_squad_tiles)
+		if portrait:
+			_top_box.move_child(_squad_tiles, 0)
+	_squad_tiles.set_vertical(not portrait)
+	_side_panel.visible = not portrait
+	var insets := UiKit.safe_insets(self)
+	_frame.offset_top = insets["top"]
+	_frame.offset_bottom = -insets["bottom"]
+	_frame.offset_left = insets["left"]
+	_frame.offset_right = -insets["right"]
 
 
 ## Nur fuer den Direktstart der Kampfszene ohne Hangar.
@@ -190,6 +220,9 @@ func _refresh_badges() -> void:
 			"is_player": unit.is_player,
 			"lured": battle.brain != null and battle.brain.lured_by(unit) != null,
 			"takt": unit.takt_bars(),
+			"id": unit.unit_id,
+			"statuses": unit.statuses.keys(),
+			"focus": unit.unit_id == _focus_id and Time.get_ticks_msec() < _focus_until,
 		})
 	view.show_unit_badges(entries)
 
@@ -336,6 +369,9 @@ func _set_zoom(zoom: float) -> void:
 func _look_at_unit(unit: Unit) -> void:
 	if unit == null or not unit.is_alive():
 		return
+	# Der angetippte DROME bekommt ein paar Sekunden einen groesseren Balken.
+	_focus_id = unit.unit_id
+	_focus_until = Time.get_ticks_msec() + FOCUS_MS
 	_set_follow(false)
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(camera, "position", unit.visual_anchor() + Vector2(0, -40), 0.4) \
@@ -560,6 +596,7 @@ func _build_ui() -> void:
 	top.add_child(top_box)
 	_squad_tiles = SquadTiles.new()
 	top_box.add_child(_squad_tiles)
+	_top_box = top_box
 	_status = UiKit.label("", UiKit.SMALL)
 	_status.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_status.clip_text = true
@@ -569,6 +606,18 @@ func _build_ui() -> void:
 	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	middle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(middle)
+
+	# Querformat: die Kacheln als Spalte am linken Rand, damit oben mehr
+	# Spielfeld bleibt (_apply_orientation).
+	_side_panel = PanelContainer.new()
+	_side_panel.add_theme_stylebox_override("panel", _bar_style(true))
+	_side_panel.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	_side_panel.custom_minimum_size = Vector2(SIDE_WIDTH, 0)
+	_side_panel.visible = false
+	middle.add_child(_side_panel)
+	_frame = frame
+	get_viewport().size_changed.connect(_apply_orientation)
+	_apply_orientation.call_deferred()
 
 
 	_log_panel = PanelContainer.new()
