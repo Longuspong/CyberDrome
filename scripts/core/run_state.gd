@@ -16,12 +16,19 @@ extends RefCounted
 ##     Region und die gegnerischen DROMEs sind vorher sichtbar.
 ##   * Die Gegnerstaerke folgt einer FESTEN Kurve (Startstaerke des Squads),
 ##     nicht dem eigenen Aufbau. Wuchse sie mit, waere jede Belohnung wertlos.
-##   * Sieg: Belohnung nach Stufe. Beute baut man ein oder schickt sie nach
-##     Hause ins Inventar. Niederlage: ein Leben weniger, der Lauf geht weiter.
+##   * Sieg: Belohnung nach Stufe, dazu Credits. Beute (Waffen) kommt ins
+##     Lager. Niederlage: ein Leben weniger, weniger Credits, der Lauf geht
+##     weiter.
+##   * Nach jedem Kampf der Zwischenstopp (Phase STOP, NEUANFANG 7d): Waffen
+##     aus dem Lager einbauen, ausbauen, verkaufen oder nach Hause schicken.
+##     Umbauen ist frei -- der Druck kommt aus den wenigen Plaetzen.
+##   * Ende des Laufs: Beute, die noch im Lauf ist (im Lager oder eingebaut),
+##     geht nach Hause ins Inventar (NEUANFANG 7f: Ausruestung bleibt).
 ##
 ## Die Stellschrauben stehen in data/config.json, Abschnitt "run".
 
-enum Phase { PREPARE, REWARD, WON, LOST }
+## STOP steht hinten, damit die alten Werte gleich bleiben.
+enum Phase { PREPARE, REWARD, WON, LOST, STOP }
 
 ## Die drei Gegner, zwischen denen man vor jedem Kampf waehlt. Staerke und
 ## Beute je Stufe stehen in data/config.json -> run.tiers.
@@ -50,6 +57,18 @@ var reward_options: Array = []
 ## GameState.deliver_run_home() leert die Liste. Eintraege wie reward_options.
 var home_queue: Array = []
 
+## Credits: die Waehrung des Laufs (7f). Je Kampf und fuer verkaufte Waffen;
+## ausgegeben werden sie spaeter im Laden.
+var credits: int = 0
+
+## Das Lager des Laufs: Waffen, die gerade niemand traegt (Teil-IDs).
+## Hoechstens storage_size() Plaetze.
+var storage: Array = []
+
+## Wie oft jede Waffe beim Start im Squad steckte. Was am Ende darueber
+## hinaus im Lauf ist, ist Beute und geht nach Hause.
+var _start_counts: Dictionary = {}
+
 ## Ergebnisse der bisherigen Kaempfe, fuer die Abschlussanzeige.
 var history: Array = []
 
@@ -74,6 +93,18 @@ static func squad_max() -> int:
 	return int(cfg().get("squad_max", 4))
 
 
+static func storage_size() -> int:
+	return int(cfg().get("storage_size", 8))
+
+
+## Was eine Waffe beim Verkauf bringt -- nach Gewichtsklasse.
+static func sell_value(part: PartData) -> int:
+	if part == null:
+		return 0
+	var values: Dictionary = cfg().get("sell_value", {})
+	return int(values.get(part.mount_class, 3))
+
+
 static func tier_cfg(which: int) -> Dictionary:
 	var tiers: Dictionary = cfg().get("tiers", {})
 	return tiers.get(TIER_KEYS[clampi(which, 0, 2)], {})
@@ -91,6 +122,8 @@ static func start(seed_value: int, chosen: Array = []) -> RunState:
 	for build in source.slice(0, squad_max()):
 		run.squad.append(build.clone())
 	run.start_size = run.squad.size()
+	for build in run.squad:
+		run._count_start(build)
 	run.base_power = reference_power(run.start_size)
 	return run
 
@@ -116,6 +149,11 @@ static func standard_squad() -> Array:
 	for entry in roster.entries:
 		builds.append(roster.build_for(entry))
 	return builds
+
+
+func _count_start(build: DromeBuild) -> void:
+	for part in build.equipment():
+		_start_counts[part.id] = int(_start_counts.get(part.id, 0)) + 1
 
 
 static func _frame(name: String, body_id: StringName, core_id: StringName) -> DromeBuild:
@@ -217,19 +255,61 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 	if phase != Phase.PREPARE:
 		return
 	var won := outcome == BattleManager.Outcome.VICTORY
-	history.append({"round": round, "won": won, "tier": tier})
+	var gain := battle_credits(won)
+	credits += gain
+	history.append({"round": round, "won": won, "tier": tier, "credits": gain})
 	if not won:
 		lives -= 1
 		if lives <= 0:
-			phase = Phase.LOST
+			_finish(Phase.LOST)
 			return
-		_advance()
+		phase = Phase.STOP
 		return
 	if round >= rounds_total():
-		phase = Phase.WON
+		_finish(Phase.WON)
 		return
 	reward_options = roll_rewards(enemy_pool)
 	phase = Phase.REWARD
+
+
+## Credits fuer den Kampf dieser Runde: nach Stufe bei einem Sieg, ein
+## Trostgeld bei einer Niederlage.
+func battle_credits(won: bool) -> int:
+	if not won:
+		return int(cfg().get("loss_credits", 4))
+	return int(tier_cfg(tier).get("credits", 10))
+
+
+## Lauf aufgeben: wie verloren, die Beute geht trotzdem nach Hause.
+func abandon() -> void:
+	if not is_over():
+		_finish(Phase.LOST)
+
+
+func _finish(final: Phase) -> void:
+	phase = final
+	reward_options = []
+	_send_loot_home()
+
+
+## Alles, was am Ende mehr im Lauf ist als beim Start -- im Lager oder
+## eingebaut --, kommt in die home_queue. So wandert Beute auch dann nach
+## Hause, wenn sie getragen wurde, und die mitgenommene Ausruestung wird
+## nicht verdoppelt (sie liegt ja schon zuhause).
+func _send_loot_home() -> void:
+	var counts: Dictionary = {}
+	for build in squad:
+		for part in build.equipment():
+			counts[part.id] = int(counts.get(part.id, 0)) + 1
+	for id in storage:
+		counts[id] = int(counts.get(id, 0)) + 1
+	storage.clear()
+	for id in counts:
+		for _i in maxi(0, int(counts[id]) - int(_start_counts.get(id, 0))):
+			var part := PartDB.get_part(id)
+			if part != null:
+				home_queue.append({"kind": "part", "part_id": part.id,
+					"title": part.display_name, "text": _part_text(part)})
 
 
 func _advance() -> void:
@@ -318,32 +398,6 @@ static func _part_text(part: PartData) -> String:
 	return "%s%s" % [kind, (": " + ", ".join(lines)) if not lines.is_empty() else ""]
 
 
-## Wohin dieses Teil passt: je DROME die Halter, die es nehmen, mit der
-## aktuellen Belegung. Fuer die Auswahl in der Oberflaeche.
-func placements_for(part_id: StringName) -> Array:
-	# Nach Hause schicken geht immer -- als letzter Eintrag, siehe unten.
-	var part := PartDB.get_part(part_id)
-	var out: Array = []
-	if part == null:
-		return out
-	for index in squad.size():
-		var build: DromeBuild = squad[index]
-		var chassis := build.body()
-		if chassis == null:
-			continue
-		for slot in build.equip_slots():
-			if not chassis.accepts(part, slot):
-				continue
-			var current := build.part_in(slot)
-			var trial := build.clone()
-			trial.slots[slot] = part.id
-			out.append({"drome": index, "slot": slot,
-				"current": current.display_name if current != null else "",
-				"valid": trial.is_valid()})
-	out.append(home_placement())
-	return out
-
-
 ## Der Platz "nach Hause": die Beute wandert ins Inventar des Hangars statt
 ## in den Lauf.
 static func home_placement() -> Dictionary:
@@ -356,9 +410,11 @@ func has_room() -> bool:
 	return squad.size() < squad_max()
 
 
-## Waehlt eine Belohnung. ``placement`` ist fuer Teile ein Eintrag aus
-## placements_for(); fuer andere Arten leer. Gibt false zurueck, wenn die Wahl
-## nicht geht -- der Lauf bleibt dann in der Belohnungsphase.
+## Waehlt eine Belohnung. Waffen kommen ins Lager (ist es voll, gehen sie
+## nach Hause); eingebaut wird danach im Zwischenstopp. Ein DROME kommt in
+## den Lauf-Squad, mit ``placement`` = home_placement() nach Hause. Gibt
+## false zurueck, wenn die Wahl nicht geht -- der Lauf bleibt dann in der
+## Belohnungsphase.
 func choose_reward(index: int, placement: Dictionary = {}) -> bool:
 	if phase != Phase.REWARD or index < 0 or index >= reward_options.size():
 		return false
@@ -368,26 +424,25 @@ func choose_reward(index: int, placement: Dictionary = {}) -> bool:
 			return false
 		home_queue.append(option.duplicate())
 		reward_options = []
-		_advance()
+		phase = Phase.STOP
 		return true
 	match option["kind"]:
 		"part":
-			if placement.is_empty():
-				return false
-			var build: DromeBuild = squad[int(placement["drome"])]
-			var trial := build.clone()
-			trial.slots[placement["slot"]] = option["part_id"]
-			if not trial.is_valid():
-				return false
-			build.slots[placement["slot"]] = option["part_id"]
+			if storage_full():
+				home_queue.append(option.duplicate())
+			else:
+				storage.append(StringName(option["part_id"]))
 		"drome":
 			if not has_room():
 				return false
-			squad.append(drome_from_reward(option))
+			var fresh := drome_from_reward(option)
+			squad.append(fresh)
+			# Seine Waffe gehoert zu ihm wie die Startausstattung.
+			_count_start(fresh)
 		"life":
 			lives = mini(max_lives(), lives + 1)
 	reward_options = []
-	_advance()
+	phase = Phase.STOP
 	return true
 
 
@@ -402,9 +457,122 @@ static func drome_from_reward(option: Dictionary) -> DromeBuild:
 	return fresh
 
 
-## Belohnung ausschlagen -- weiter ohne Aenderung.
+## Belohnung ausschlagen -- weiter zum Zwischenstopp ohne Aenderung.
 func skip_reward() -> void:
 	if phase != Phase.REWARD:
 		return
 	reward_options = []
-	_advance()
+	phase = Phase.STOP
+
+
+# ---------------------------------------------------------------------------
+# Zwischenstopp: Lager, Credits, Ausruesten (NEUANFANG 7d)
+# ---------------------------------------------------------------------------
+
+func storage_full() -> bool:
+	return storage.size() >= storage_size()
+
+
+## Weiter zum naechsten Kampf.
+func continue_run() -> void:
+	if phase == Phase.STOP:
+		_advance()
+
+
+## Wohin die Waffe aus Lagerplatz ``index`` passt: je DROME alle Halter, auch
+## die, die sie nicht nehmen -- mit Grund (SlotRules). Eintraege:
+## {drome, slot, label, detail, allowed}.
+func equip_options(index: int) -> Array:
+	var out: Array = []
+	if index < 0 or index >= storage.size():
+		return out
+	var part := PartDB.get_part(storage[index])
+	for drome in squad.size():
+		for choice in SlotRules.slot_choices(squad[drome], part):
+			var entry: Dictionary = choice.duplicate()
+			entry["drome"] = drome
+			if entry["allowed"]:
+				var trial: DromeBuild = squad[drome].clone()
+				trial.slots[entry["slot"]] = part.id
+				if not trial.is_valid():
+					entry["allowed"] = false
+					entry["detail"] = "Aufbau waere ungueltig"
+			out.append(entry)
+	return out
+
+
+## Baut die Waffe aus Lagerplatz ``index`` in ``slot`` von DROME ``drome``.
+## Was dort steckte, kommt auf ihren Platz im Lager -- ein Tausch, geht also
+## auch bei vollem Lager.
+func equip_from_storage(index: int, drome: int, slot: String) -> bool:
+	if phase != Phase.STOP or index < 0 or index >= storage.size() \
+			or drome < 0 or drome >= squad.size():
+		return false
+	var build: DromeBuild = squad[drome]
+	var part := PartDB.get_part(storage[index])
+	var chassis := build.body()
+	if part == null or chassis == null or slot not in build.equip_slots() \
+			or not chassis.accepts(part, slot):
+		return false
+	var trial := build.clone()
+	trial.slots[slot] = part.id
+	if not trial.is_valid():
+		return false
+	var old := build.part_in(slot)
+	build.slots[slot] = part.id
+	if old != null:
+		storage[index] = old.id
+	else:
+		storage.remove_at(index)
+	return true
+
+
+## Baut die Waffe aus ``slot`` aus und legt sie ins Lager.
+func unequip(drome: int, slot: String) -> bool:
+	if phase != Phase.STOP or storage_full() or drome < 0 or drome >= squad.size():
+		return false
+	var build: DromeBuild = squad[drome]
+	var part := build.part_in(slot)
+	if part == null or slot not in build.equip_slots():
+		return false
+	build.slots.erase(slot)
+	storage.append(part.id)
+	return true
+
+
+## Verkauft die Waffe aus Lagerplatz ``index``. Gibt die Credits zurueck.
+func sell(index: int) -> int:
+	if phase != Phase.STOP or index < 0 or index >= storage.size():
+		return 0
+	var value := sell_value(PartDB.get_part(storage[index]))
+	storage.remove_at(index)
+	credits += value
+	return value
+
+
+## Schickt die Waffe aus Lagerplatz ``index`` jetzt schon nach Hause.
+func send_home(index: int) -> bool:
+	if phase != Phase.STOP or index < 0 or index >= storage.size():
+		return false
+	var part := PartDB.get_part(storage[index])
+	storage.remove_at(index)
+	if part == null:
+		return false
+	# Liegt danach weniger davon im Lauf als beim Start, war es mitgenommene
+	# Ausruestung -- die ist zuhause schon da und wird nicht verdoppelt.
+	var start := int(_start_counts.get(part.id, 0))
+	if _count_in_run(part.id) < start:
+		_start_counts[part.id] = start - 1
+		return true
+	home_queue.append({"kind": "part", "part_id": part.id,
+		"title": part.display_name, "text": _part_text(part)})
+	return true
+
+
+func _count_in_run(id: StringName) -> int:
+	var count := storage.count(id)
+	for build in squad:
+		for part in build.equipment():
+			if part.id == id:
+				count += 1
+	return count

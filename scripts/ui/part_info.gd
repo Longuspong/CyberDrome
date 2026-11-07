@@ -71,7 +71,7 @@ static func lines(part: PartData) -> Array:
 			out.append(["Passiv: wirkt immer, ohne eigene Aktion.", "note"])
 		for action in part.actions:
 			# Angriffe haben keinen eigenen Namen (6g) -- nur die Faehigkeit.
-			var title := action.category_label() if action.is_attack() \
+			var title: String = action.category_label() if action.is_attack() \
 				else "%s (%s)" % [action.display_name, action.category_label()]
 			out.append([title, "action"])
 			for line in action_lines(action):
