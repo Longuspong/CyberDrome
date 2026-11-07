@@ -538,6 +538,7 @@ func _build_ui() -> void:
 	top_box.add_child(_squad_tiles)
 	_status = UiKit.label("", UiKit.SMALL)
 	_status.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_status.clip_text = true
 	top_box.add_child(_status)
 
 	var middle := Control.new()
