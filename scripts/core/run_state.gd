@@ -642,9 +642,12 @@ func module_options(index: int) -> Array:
 		for slot in build.equip_slots():
 			var used := build.module_count(slot)
 			var weapon := build.part_in(slot)
-			var entry := {"drome": drome, "slot": slot, "allowed": used < room,
+			var twice := _recipe_twice(build, slot, module)
+			var entry := {"drome": drome, "slot": slot, "allowed": used < room and not twice,
 				"active": module.fits(weapon), "detail": ""}
-			if used >= room:
+			if twice:
+				entry["detail"] = "%s steckt schon hier (Rezepte einmal je Halter)" % module.display_name
+			elif used >= room:
 				entry["detail"] = "Modulplaetze voll (%d/%d)" % [used, room]
 			elif weapon == null:
 				entry["detail"] = "Halter leer -- ruht, bis eine Waffe drin ist"
@@ -664,11 +667,21 @@ func install_module(index: int, drome: int, slot: String) -> bool:
 	var build: DromeBuild = squad[drome]
 	if slot not in build.equip_slots() or build.module_count(slot) >= ModuleData.slots_for(build):
 		return false
+	if _recipe_twice(build, slot, ModuleData.get_module(storage[index])):
+		return false
 	var list: Array = build.modules.get(slot, [])
 	list.append(storage[index])
 	build.modules[slot] = list
 	storage.remove_at(index)
 	return true
+
+
+## Dasselbe Rezept-Modul steckt schon in diesem Halter? Rezepte gibt es nur
+## einmal je Halter (Gutachten Nov. 2026: sonst drei Taktgeber an einer Waffe).
+## Grundmodule duerfen sich stapeln.
+func _recipe_twice(build: DromeBuild, slot: String, module: ModuleData) -> bool:
+	return module != null and module.is_recipe() \
+		and (build.modules.get(slot, []) as Array).has(module.id)
 
 
 ## Nimmt das ``position``-te Modul aus dem Halter zurueck ins Lager.

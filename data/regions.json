@@ -1,13 +1,13 @@
 {
   "_kommentar": [
-    "Drei Regionen, reine Optik: Name, Bodenkachel (assets/terrain/<id>/)",
+    "Drei Regionen (Stage 1-3; Stage 4 Dachterrassen folgt), reine Optik: Name, Bodenkachel (assets/terrain/<id>/)",
     "und die passende Kulisse (scripts/ui/ambience.gd). Gelaende gibt es",
     "seit dem Umbau zum Autobattler (Nov. 2026) nicht mehr."
   ],
 
   "regions": [
-    {"id": "city",   "name": "Sektor City", "floor": {"name": "Asphalt",    "svg": "asphalt.svg"}},
-    {"id": "green",  "name": "Gruenzone",   "floor": {"name": "Wiese",      "svg": "meadow.svg"}},
-    {"id": "plant7", "name": "Anlage 7",    "floor": {"name": "Gitterrost", "svg": "grating.svg"}}
+    {"id": "city",   "name": "Neon City",   "floor": {"name": "Asphalt",    "svg": "asphalt.svg"}},
+    {"id": "green",  "name": "Parkanlage",  "floor": {"name": "Wiese",      "svg": "meadow.svg"}},
+    {"id": "plant7", "name": "Factory 5",   "floor": {"name": "Gitterrost", "svg": "grating.svg"}}
   ]
 }

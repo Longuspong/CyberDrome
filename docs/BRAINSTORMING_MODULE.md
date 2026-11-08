@@ -1,6 +1,7 @@
 # Brainstorming: Module
 
 Stand 7. November 2026. Grundlage für die Brainstorming-Runde des Spielers.
+Die Entscheidungen danach (8. Nov.) stehen in `NEUANFANG.md` Abschnitt 6i.
 Was gebaut ist, steht in `PROJEKTSTAND.md` (Abschnitt „Module und Rezepte“),
 die Daten in `data/modules.json`. Alle Werte sind vorläufig.
 
@@ -124,7 +125,7 @@ Module machen also einen deutlichen Unterschied. Gegner tragen bisher keine.
 
 ### Angriff
 
-* **Durchschlag:** ignoriert X % Panzerung (gut gegen die Tanks von Anlage 7)
+* **Durchschlag:** ignoriert X % Panzerung (gut gegen die Tanks von Factory 5)
 * **Überladung:** Energietreffer springen auf einen zweiten Gegner über
 * **Hinrichter:** +X % Schaden gegen Ziele unter 30 % Integrität
 * **Erstschlag:** der erste Angriff im Kampf macht doppelten Schaden

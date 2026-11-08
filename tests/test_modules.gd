@@ -202,6 +202,20 @@ func test_a_holder_takes_only_as_many_modules_as_it_has_slots() -> void:
 	t.equal(run.storage.size(), 1, "es bleibt im Lager")
 
 
+func test_a_recipe_fits_only_once_per_holder() -> void:
+	var run := _stop_run()
+	var drome := 0
+	var slot: String = run.squad[drome].equip_slots()[0]
+	run.storage.append_array([&"mod_metronome", &"mod_metronome", &"mod_bulwark"])
+	t.ok(run.install_module(0, drome, slot), "erster Taktgeber")
+	var spot: Dictionary = run.module_options(0).filter(
+		func(e): return e["drome"] == drome and e["slot"] == slot)[0]
+	t.ok(not spot["allowed"], "zweiter Taktgeber wird angeboten, aber gesperrt")
+	t.ok(String(spot["detail"]).contains("einmal je Halter"), "mit Grund")
+	t.ok(not run.install_module(0, drome, slot), "zweiter Taktgeber passt nicht")
+	t.ok(run.install_module(1, drome, slot), "ein anderes Rezept schon")
+
+
 func test_recipes_combine_in_the_storage() -> void:
 	var run := _stop_run()
 	run.storage.append_array([&"mod_rapid_fire", &"eq_hammer", &"mod_long_barrel"])

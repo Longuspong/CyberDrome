@@ -477,6 +477,56 @@ Playtest.
 bei Rezept-Modulen muessen **alle** Werte sichtbar sein, auch die aus den
 Zutaten (Gunslinger zeigt auch das Angriffstempo).
 
+## 6i. Module nach den Gutachten (Vorgabe des Spielers, 8. Nov. 2026)
+
+Grundlage: drei Gutachten zum Modulsystem (Zusammenfassung vom 7. Nov.), gegen
+den Code geprueft. Entschieden:
+
+**Welt -- offizielle Namen** (ersetzen Sektor City / Gruenzone / Anlage 7):
+
+| Stage | Gebiet | Fraktion |
+|---|---|---|
+| 1 | Neon City | Neon Ninja's |
+| 2 | Parkanlage | Solar Sentients |
+| 3 | Factory 5 | Mega Mechas |
+| 4 | Dachterrassen | Hipstar Hookers |
+
+In `data/regions.json` umbenannt (Ids `city`, `green`, `plant7` bleiben).
+Stage 4 hat noch keine Region (Boden, Kulisse).
+
+**Module kommen aus dem Laden, Beute ist Zufall:**
+
+* Module gibt es nur noch im **Laden** (Zwischenstopp, Credits). Der Laden
+  bietet wenig an (Start: 2 Angebote) und **gewichtet** Module, die ein
+  angefangenes Rezept ergaenzen, hoeher (unsichtbares Mitleid). Spaeter, wenn
+  es mehr und komplexere Module gibt: Laden neu wuerfeln oder erweitern.
+* **Beute nach dem Kampf** wird gewuerfelt, ohne Auswahl: entweder
+  **Credits** oder **Ausruestungsteile**. Teile nimmt man mit nach Hause,
+  Credits verfallen am Ende des Laufs.
+* Spaeter (noch nicht ausgearbeitet): eine **bleibende Waehrung**, mit der man
+  Beute freischaltet, bei der man Pech hatte -- Ausgleich gegen Frust.
+
+**Gegner tragen Module** -- dieselben wie der Spieler, aber tendenziell
+weniger und handverlesen (passend zur Waffe, nicht zu wild). Wirklich
+zufaellige Module hoechstens im Endlos-Modus in den Chaos-Kaempfen. Gegner-
+Module sind in der Vorschau sichtbar.
+
+**Gestaltungsregel:** Grundmodule sind Zahlen, Rezept-Module aendern eine
+Regel. Raufbold braucht deshalb einen neuen eigenen Effekt (offen).
+
+**Rezepte nur einmal je Halter** (gebaut): dasselbe Rezept-Modul passt kein
+zweites Mal in denselben Halter. Verschiedene Rezepte und gestapelte
+Grundmodule bleiben erlaubt.
+
+**Messen:** Spiegelkampf mit getauschten Seiten, 400 Seeds (= 800 Kaempfe)
+je Aufbau -- `tools/playtest/module_bench.gd`. Der Seitenbias aus der ersten
+Messung (56:44 bei 100 Kaempfen) war Zufall: 1000 Spiegelkaempfe ergaben
+483:517.
+
+**Offen:** Stapeln gleicher Grundmodule (bleibt vorerst erlaubt), Taktchip
+(Stapelgrenze), Raufbold-Effekt, Erstschlag -> "Faehigkeit zum Kampfbeginn
+geladen" (wenn neue Module kommen).
+
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
 Vom Spieler angestossen (6. Nov. 2026):
@@ -560,9 +610,9 @@ Regionsthemen (Vorschlag, die ersten beiden Regionen nur skizziert):
   wenig Integritaet. Neon-DROMEs **bezahlen ihre Faehigkeiten mit Schild** --
   wer ihren Schild bricht, nimmt ihnen die Faehigkeiten. Konter: Energieschaden,
   Neon-Blaster, Schild-Module.
-* **Gruenzone -- Wucherung:** Regeneration und Ueberzahl (viele kleine Gegner).
+* **Parkanlage -- Wucherung:** Regeneration und Ueberzahl (viele kleine Gegner).
   Konter: Flaeche, Verwundbar.
-* **Anlage 7 -- Panzerung:** hohe DEF, langsam, schwer. Konter: kinetischer
+* **Factory 5 -- Panzerung:** hohe DEF, langsam, schwer. Konter: kinetischer
   Schaden, Durchschlag.
 
 **Markenzeichen Neon: es leuchtet** (Vorgabe des Spielers). Neon-Gegner,
