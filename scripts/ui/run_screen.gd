@@ -258,7 +258,7 @@ func _show_prepare(run: RunState) -> void:
 func _show_rewards(run: RunState) -> void:
 	_side.add_child(_label("Sieg! Waehle eine Belohnung.", 22, COLOR_GOOD))
 	_side.add_child(_label(_credit_line(run), 16, COLOR_WARN))
-	_side.add_child(_label("Waffen und Module kommen ins Lager -- einbauen kannst du gleich danach.",
+	_side.add_child(_label("Waffen kommen ins Lager -- einbauen kannst du gleich danach. Module gibt es im Laden.",
 		16, COLOR_MUTED))
 	for index in run.reward_options.size():
 		var option: Dictionary = run.reward_options[index]
@@ -269,9 +269,6 @@ func _show_rewards(run: RunState) -> void:
 		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.custom_minimum_size = Vector2(0, 84)
 		card.add_theme_font_size_override("font_size", 18)
-		if option["kind"] == "module" and run.storage_full():
-			card.disabled = true
-			card.text += "\nLager voll -- Module koennen nicht nach Hause"
 		card.pressed.connect(func(): _pick_reward(index))
 		_side.add_child(card)
 		if index == 0:
@@ -357,6 +354,7 @@ func _show_stop(run: RunState) -> void:
 	if not last.is_empty() and not last["won"]:
 		_side.add_child(_label("Niederlage -- ein Leben weniger.", 18, COLOR_BAD))
 	_side.add_child(_label(_credit_line(run), 18, COLOR_WARN))
+	_side.add_child(_shop_section(run))
 
 	# --- Lager ---
 	_side.add_child(_label("Lager  %d / %d" % [run.storage.size(), RunState.storage_size()],
@@ -401,6 +399,63 @@ func _show_stop(run: RunState) -> void:
 		run.continue_run()
 		_refresh())
 	_side.add_child(go)
+
+
+## Der Laden (6i): wenige Grundmodule fuer Credits, gekauft wird ins Lager.
+## Je Angebot Chip, Name, Wirkung, wofuer es Zutat ist, und der Kaufknopf --
+## gesperrt mit Grund (zu wenig Credits, Lager voll, verkauft).
+func _shop_section(run: RunState) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.add_child(_label("Laden", 18, COLOR_HEADING))
+	if run.shop_offers.is_empty():
+		box.add_child(_label("Heute nichts im Angebot.", 16, COLOR_MUTED))
+		return box
+	for index in run.shop_offers.size():
+		var offer: Dictionary = run.shop_offers[index]
+		var module := ModuleData.get_module(offer["module_id"])
+		if module == null:
+			continue
+		var panel := PanelContainer.new()
+		panel.add_theme_stylebox_override("panel", _panel_style(false))
+		var inner := VBoxContainer.new()
+		inner.add_theme_constant_override("separation", 4)
+		panel.add_child(inner)
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 10)
+		inner.add_child(head)
+		head.add_child(ModuleChip.new(module, 44.0))
+		var title := VBoxContainer.new()
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		head.add_child(title)
+		title.add_child(_label(module.display_name, 18))
+		title.add_child(_label(module.headline(), 16, module.color()))
+		_add_module_lines(inner, module)
+		var uses := _recipes_using(module)
+		if not uses.is_empty():
+			inner.add_child(_label("Zutat fuer: %s" % ", ".join(uses), 16, COLOR_MUTED))
+		var blocker := run.shop_blocker(index)
+		var price := RunState.shop_price(module)
+		var buy := UiKit.button("Verkauft" if offer["sold"]
+			else ("Kaufen  %d Credits" % price if blocker == ""
+			else "%d Credits -- %s" % [price, blocker]))
+		buy.disabled = blocker != ""
+		buy.pressed.connect(func():
+			if run.buy(index):
+				_selected_storage = -1
+			_refresh())
+		inner.add_child(buy)
+		box.add_child(panel)
+	return box
+
+
+## Die Namen der Rezepte, in die dieses Modul als Zutat geht.
+func _recipes_using(module: ModuleData) -> Array:
+	var out: Array = []
+	for recipe in ModuleData.recipes():
+		if recipe.from.has(module.id):
+			out.append(recipe.display_name)
+	return out
 
 
 ## Eine Lager-Kachel: Bild in der Form ihrer Klasse, Name darunter.

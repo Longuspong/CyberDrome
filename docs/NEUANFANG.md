@@ -765,7 +765,10 @@ entfallen (6g). Weiter:
    dem Laden (Punkt 3) ausgegeben.
 3. ~~Module und Rezepte (6g)~~ (gebaut 7. Nov.: zehn Grundmodule, vier
    Rezepte, Plaetze im Waffenhalter, Rezeptbuch im Lager -- Werte
-   vorlaeufig, Stand in `PROJEKTSTAND.md`), dann der Laden.
+   vorlaeufig, Stand in `PROJEKTSTAND.md`), ~~dann der Laden~~ (gebaut
+   8. Nov.: 2 Grundmodule je Stopp, 6 Credits, Mitleid fuer angefangene
+   Rezepte). Offen aus 6i: Beute gewuerfelt ohne Auswahl (Credits oder
+   Teile), Gegner tragen Module.
 4. Level fuer DROMEs und Waffen, die nach dem Lauf bleiben.
 5. Karte wie bei FTL mit Chaos-Kaempfen.
 6. Neon City als erste Region mit Neon-Gegnern und Neon-Varianten.

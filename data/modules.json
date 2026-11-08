@@ -38,15 +38,17 @@
     "short: zwei Buchstaben fuer den Chip (eindeutig), falls kein Symbol da ist.",
     "Symbol: assets/modules/<id>.svg (64x64, transparent); anderer Pfad mit icon.",
     "sell_value: Credits beim Verkauf (Grundmodul / Rezept-Modul).",
-    "reward: Grundmodule als Beute je Stufe (choices), Elite bietet mit",
-    "recipe_chance ein fertiges Rezept-Modul statt eines Grundmoduls."
+    "shop: der Laden im Zwischenstopp (6i) -- offers Grundmodule je Stopp,",
+    "price in Credits (Grundmodul / Rezept-Modul), recipe_weight: so viel",
+    "wahrscheinlicher ist ein Modul, das einem angefangenen Rezept fehlt."
   ],
   "slots": 3,
   "slots_by_body": {"jugg_body": 2},
   "sell_value": {"base": 2, "recipe": 6},
-  "reward": {
-    "choices": {"easy": 1, "normal": 1, "elite": 1},
-    "recipe_chance": 0.5
+  "shop": {
+    "offers": 2,
+    "price": {"base": 6, "recipe": 16},
+    "recipe_weight": 3.0
   },
   "modules": {
     "mod_rapid_fire": {

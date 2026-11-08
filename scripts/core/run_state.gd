@@ -22,9 +22,10 @@ extends RefCounted
 ##   * Nach jedem Kampf der Zwischenstopp (Phase STOP, NEUANFANG 7d): Waffen
 ##     aus dem Lager einbauen, ausbauen, verkaufen oder nach Hause schicken.
 ##     Umbauen ist frei -- der Druck kommt aus den wenigen Plaetzen.
-##   * Module (NEUANFANG 6g) gibt es nur im Lauf: als Beute, im Lager, in den
-##     Waffenhaltern (DromeBuild.modules). Im Lager lassen sich Rezepte
-##     zusammenfuegen. Am Ende verfallen sie.
+##   * Module (NEUANFANG 6g) gibt es nur im Lauf: aus dem Laden im
+##     Zwischenstopp (6i, fuer Credits), im Lager, in den Waffenhaltern
+##     (DromeBuild.modules). Im Lager lassen sich Rezepte zusammenfuegen. Am
+##     Ende verfallen sie.
 ##   * Ende des Laufs: Beute, die noch im Lauf ist (im Lager oder eingebaut),
 ##     geht nach Hause ins Inventar (NEUANFANG 7f: Ausruestung bleibt).
 ##
@@ -60,9 +61,13 @@ var reward_options: Array = []
 ## GameState.deliver_run_home() leert die Liste. Eintraege wie reward_options.
 var home_queue: Array = []
 
-## Credits: die Waehrung des Laufs (7f). Je Kampf und fuer verkaufte Waffen;
-## ausgegeben werden sie spaeter im Laden.
+## Credits: die Waehrung des Laufs (7f). Je Kampf und fuer Verkaeufe;
+## ausgegeben im Laden.
 var credits: int = 0
+
+## Der Laden des aktuellen Zwischenstopps (6i): je Angebot {module_id, sold}.
+## Gewuerfelt beim Betreten des Zwischenstopps, geleert beim Weitergehen.
+var shop_offers: Array = []
 
 ## Das Lager des Laufs: Waffen (Teil-IDs) und Module (Modul-IDs, siehe
 ## ModuleData.is_module), die gerade niemand traegt. Beides teilt sich die
@@ -267,7 +272,7 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 		if lives <= 0:
 			_finish(Phase.LOST)
 			return
-		phase = Phase.STOP
+		_enter_stop()
 		return
 	if round >= rounds_total():
 		_finish(Phase.WON)
@@ -319,7 +324,14 @@ func _send_loot_home() -> void:
 func _advance() -> void:
 	round += 1
 	tier = Tier.NORMAL
+	shop_offers = []
 	phase = Phase.PREPARE
+
+
+## Weiter in den Zwischenstopp -- dabei wird der Laden gewuerfelt.
+func _enter_stop() -> void:
+	phase = Phase.STOP
+	shop_offers = roll_shop()
 
 
 ## Die Belohnungen haengen an der Stufe des besiegten Gegners:
@@ -368,34 +380,7 @@ func roll_rewards(enemy_pool: Array) -> Array:
 			continue
 		options.append({"kind": "part", "part_id": part.id, "rare": tier == Tier.ELITE,
 			"title": part.display_name, "text": _part_text(part)})
-	options.append_array(_module_rewards(rng))
 	return options
-
-
-## Module als Beute (6g): je Stufe so viele Grundmodule wie
-## modules.json -> reward.choices. Elite bietet mit recipe_chance gleich ein
-## fertiges Rezept-Modul (selten).
-func _module_rewards(rng: RandomNumberGenerator) -> Array:
-	var settings: Dictionary = ModuleData.data().get("reward", {})
-	var count := int((settings.get("choices", {}) as Dictionary).get(TIER_KEYS[tier], 0))
-	var base: Array = ModuleData.base_modules()
-	var out: Array = []
-	for _i in count:
-		var module: ModuleData = null
-		if tier == Tier.ELITE and not ModuleData.recipes().is_empty() \
-				and rng.randf() < float(settings.get("recipe_chance", 0.5)):
-			var recipes := ModuleData.recipes()
-			module = recipes[rng.randi() % recipes.size()]
-		elif not base.is_empty():
-			module = base[rng.randi() % base.size()]
-			base.erase(module)
-		if module == null:
-			continue
-		out.append({"kind": "module", "module_id": module.id,
-			"rare": tier == Tier.ELITE or module.is_recipe(),
-			"title": "Modul: %s" % module.display_name,
-			"text": "%s -- %s" % [module.headline(), ", ".join(module.effect_lines())]})
-	return out
 
 
 static func _is_rare(part: PartData) -> bool:
@@ -451,11 +436,11 @@ func choose_reward(index: int, placement: Dictionary = {}) -> bool:
 		return false
 	var option: Dictionary = reward_options[index]
 	if bool(placement.get("home", false)):
-		if option["kind"] == "life" or option["kind"] == "module":
+		if option["kind"] == "life":
 			return false
 		home_queue.append(option.duplicate())
 		reward_options = []
-		phase = Phase.STOP
+		_enter_stop()
 		return true
 	match option["kind"]:
 		"part":
@@ -463,11 +448,6 @@ func choose_reward(index: int, placement: Dictionary = {}) -> bool:
 				home_queue.append(option.duplicate())
 			else:
 				storage.append(StringName(option["part_id"]))
-		"module":
-			# Module koennen nicht nach Hause: ohne Platz im Lager geht es nicht.
-			if storage_full():
-				return false
-			storage.append(StringName(option["module_id"]))
 		"drome":
 			if not has_room():
 				return false
@@ -478,7 +458,7 @@ func choose_reward(index: int, placement: Dictionary = {}) -> bool:
 		"life":
 			lives = mini(max_lives(), lives + 1)
 	reward_options = []
-	phase = Phase.STOP
+	_enter_stop()
 	return true
 
 
@@ -498,7 +478,7 @@ func skip_reward() -> void:
 	if phase != Phase.REWARD:
 		return
 	reward_options = []
-	phase = Phase.STOP
+	_enter_stop()
 
 
 # ---------------------------------------------------------------------------
@@ -741,4 +721,102 @@ func craft(recipe_id: StringName) -> bool:
 		pool.remove_at(found)
 	pool.append(recipe.id)
 	storage = pool
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Der Laden (NEUANFANG 6i)
+# ---------------------------------------------------------------------------
+
+## Was ein Modul im Laden kostet (modules.json -> shop.price).
+static func shop_price(module: ModuleData) -> int:
+	if module == null:
+		return 0
+	var prices: Dictionary = (ModuleData.data().get("shop", {}) as Dictionary).get("price", {})
+	return int(prices.get("recipe" if module.is_recipe() else "base", 6))
+
+
+## Wuerfelt die Angebote dieses Zwischenstopps: shop.offers Grundmodule,
+## keines doppelt. Unsichtbares Mitleid (6i): ein Modul, das ein
+## angefangenes Rezept ergaenzt, zaehlt shop.recipe_weight-mal so viel.
+## Am Seed von Lauf und Runde -- derselbe Lauf hat denselben Laden.
+func roll_shop() -> Array:
+	var settings: Dictionary = ModuleData.data().get("shop", {})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = absi(hash([run_seed, round, "laden"]))
+	var pool: Array = ModuleData.base_modules().duplicate()
+	var wanted := recipe_missing()
+	var boost := float(settings.get("recipe_weight", 3.0))
+	var out: Array = []
+	for _i in int(settings.get("offers", 2)):
+		if pool.is_empty():
+			break
+		var weights: Array = []
+		var total := 0.0
+		for module in pool:
+			var weight := boost if wanted.has(module.id) else 1.0
+			weights.append(weight)
+			total += weight
+		var roll := rng.randf() * total
+		var pick := pool.size() - 1
+		for i in pool.size():
+			roll -= float(weights[i])
+			if roll < 0.0:
+				pick = i
+				break
+		out.append({"module_id": pool[pick].id, "sold": false})
+		pool.remove_at(pick)
+	return out
+
+
+## Grundmodule, die einem angefangenen Rezept fehlen: von dem Rezept liegt
+## mindestens eine Zutat im Lauf (Lager oder Halter), diese aber nicht.
+func recipe_missing() -> Array:
+	var owned: Array = storage.filter(func(id): return ModuleData.is_module(id))
+	for build in squad:
+		for slot in build.modules:
+			owned.append_array(build.modules[slot])
+	var out: Array = []
+	for recipe in ModuleData.recipes():
+		var pool := owned.duplicate()
+		var have := 0
+		var missing: Array = []
+		for ingredient in recipe.from:
+			var found := pool.find(ingredient)
+			if found >= 0:
+				have += 1
+				pool.remove_at(found)
+			else:
+				missing.append(ingredient)
+		if have == 0:
+			continue
+		for id in missing:
+			var module := ModuleData.get_module(id)
+			if module != null and not module.is_recipe() and not out.has(module.id):
+				out.append(module.id)
+	return out
+
+
+## Warum Angebot ``index`` gerade nicht zu kaufen ist -- leer, wenn es geht.
+func shop_blocker(index: int) -> String:
+	if phase != Phase.STOP or index < 0 or index >= shop_offers.size():
+		return "kein Angebot"
+	var offer: Dictionary = shop_offers[index]
+	if offer["sold"]:
+		return "verkauft"
+	if credits < shop_price(ModuleData.get_module(offer["module_id"])):
+		return "zu wenig Credits"
+	if storage_full():
+		return "Lager voll"
+	return ""
+
+
+## Kauft Angebot ``index``: Credits weg, Modul ins Lager.
+func buy(index: int) -> bool:
+	if shop_blocker(index) != "":
+		return false
+	var offer: Dictionary = shop_offers[index]
+	credits -= shop_price(ModuleData.get_module(offer["module_id"]))
+	storage.append(StringName(offer["module_id"]))
+	offer["sold"] = true
 	return true

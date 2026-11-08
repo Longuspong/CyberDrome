@@ -105,8 +105,10 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    Zwischenstopp (Lager, Credits, Ausruesten), Takt-Leiste im Kampf,
    Waffen-Karte mit Symbolen und der entschlackte Hangar, dann Module und
    Rezepte (`ModuleData`, `data/modules.json`; Module im Waffenhalter,
-   bleiben beim Waffentausch, verfallen nach dem Lauf). Als Naechstes: der
-   Laden (Credits ausgeben). Neu entschieden (7. Nov.): Story- und
+   bleiben beim Waffentausch, verfallen nach dem Lauf), am 8. Nov. der
+   Laden (2 Grundmodule je Zwischenstopp fuer Credits, Mitleid fuer
+   angefangene Rezepte; Module nicht mehr als Beute). Als Naechstes aus 6i:
+   Beute gewuerfelt ohne Auswahl (Credits oder Teile), Gegner mit Modulen. Neu entschieden (7. Nov.): Story- und
    Endlos-Modus, Lager nur fuer Module, Gegner staerker ueber Level/Waffen/
    Module statt Faktor -- `docs/NEUANFANG.md` Abschnitt 6h. Module nach den
    Gutachten entschieden (8. Nov.): Module nur im Laden, Beute zufaellig
