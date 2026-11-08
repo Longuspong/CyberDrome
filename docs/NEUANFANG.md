@@ -561,6 +561,23 @@ Taktgeber 78 %, zweimal 89 % (jetzt gesperrt).
   Der Koedersender holt die Gegner heran, der Schlag trifft sie alle.
 * Erstschlag wird, wenn er kommt, "Faehigkeit zum Kampfbeginn geladen".
 
+Gemessen nach dem Umbau (je 800 Kaempfe; gleiche Zahl Modulplaetze verglichen):
+
+| Rezept | Wert | Gestapelt / Zutaten |
+|---|---|---|
+| Vireo Gunslinger + 2x Schnellfeuer | 80 % | 3x Schnellfeuer 69 % |
+| Molok Raufbold + Stachelgitter | 87 % | 2x Stachelgitter 80 % |
+| Molok Raufbold allein | 81 % | Wuchtkante + Stachelgitter 67 % |
+| Molok Bollwerk | 63 % | 2x Panzerplatte 58 % |
+| Nimbus Taktchip / Taktgeber | 83 % / 85 % | 2x Zeiger 59 % |
+| Strix Taktchip / Gunslinger | 62 % / 78 % | -- |
+| Molok Rundumschlag | 51 % | Wuchtkante allein 51 % |
+
+Rundumschlag wirkt im Spiegel nicht: neben dem Molok steht ausser seinem Ziel
+fast nie ein zweiter Gegner (der Squad kaempft auf Abstand, der
+Koedersender lockt Fernkaempfer nicht heran). Offen, siehe Vorschlag an den
+Spieler.
+
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
 Vom Spieler angestossen (6. Nov. 2026):
