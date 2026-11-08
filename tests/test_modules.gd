@@ -313,8 +313,8 @@ func test_modules_sell_but_never_go_home() -> void:
 func test_the_shop_sells_modules_into_the_storage() -> void:
 	var run := RunState.start(12)
 	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_deflector", &"eq_rune_staff"])
-	run.skip_reward()
 	t.equal(run.phase, RunState.Phase.STOP, "Zwischenstopp")
+	run.storage.clear()
 	t.equal(run.shop_offers.size(), int(ModuleData.data()["shop"]["offers"]), "der Laden bietet an")
 	var first: StringName = run.shop_offers[0]["module_id"]
 	t.ok(not ModuleData.get_module(first).is_recipe(), "nur Grundmodule")

@@ -16,9 +16,10 @@ extends RefCounted
 ##     Region und die gegnerischen DROMEs sind vorher sichtbar.
 ##   * Die Gegnerstaerke folgt einer FESTEN Kurve (Startstaerke des Squads),
 ##     nicht dem eigenen Aufbau. Wuchse sie mit, waere jede Belohnung wertlos.
-##   * Sieg: Belohnung nach Stufe, dazu Credits. Beute (Waffen) kommt ins
-##     Lager. Niederlage: ein Leben weniger, weniger Credits, der Lauf geht
-##     weiter.
+##   * Sieg: Credits nach Stufe, dazu gewuerfelte Beute OHNE Auswahl (6i):
+##     Credits oder ein Teil, in bestimmten Runden ein DROME, mit Glueck
+##     Notstrom. Teile kommen ins Lager. Niederlage: ein Leben weniger,
+##     weniger Credits, der Lauf geht weiter.
 ##   * Nach jedem Kampf der Zwischenstopp (Phase STOP, NEUANFANG 7d): Waffen
 ##     aus dem Lager einbauen, ausbauen, verkaufen oder nach Hause schicken.
 ##     Umbauen ist frei -- der Druck kommt aus den wenigen Plaetzen.
@@ -31,7 +32,8 @@ extends RefCounted
 ##
 ## Die Stellschrauben stehen in data/config.json, Abschnitt "run".
 
-## STOP steht hinten, damit die alten Werte gleich bleiben.
+## STOP steht hinten, damit die alten Werte gleich bleiben. REWARD wird seit
+## der gewuerfelten Beute (6i) nicht mehr betreten.
 enum Phase { PREPARE, REWARD, WON, LOST, STOP }
 
 ## Die drei Gegner, zwischen denen man vor jedem Kampf waehlt. Staerke und
@@ -54,11 +56,13 @@ var tier: int = Tier.NORMAL
 var base_power: float = 0.0
 var start_size: int = 2
 
-## Die Belohnungen, zwischen denen gerade gewaehlt wird (Phase REWARD).
-var reward_options: Array = []
+## Die Beute des letzten Kampfes, schon verteilt -- fuer die Anzeige im
+## Zwischenstopp. Eintraege {kind, title, text, rare, where}; where sagt, wo
+## sie gelandet ist ("lager", "squad", "home", "" fuer Credits/Leben).
+var last_loot: Array = []
 
 ## Beute, die nach Hause geschickt wurde und noch ins Inventar muss.
-## GameState.deliver_run_home() leert die Liste. Eintraege wie reward_options.
+## GameState.deliver_run_home() leert die Liste. Eintraege wie last_loot.
 var home_queue: Array = []
 
 ## Credits: die Waehrung des Laufs (7f). Je Kampf und fuer Verkaeufe;
@@ -267,6 +271,7 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 	var gain := battle_credits(won)
 	credits += gain
 	history.append({"round": round, "won": won, "tier": tier, "credits": gain})
+	last_loot = []
 	if not won:
 		lives -= 1
 		if lives <= 0:
@@ -274,11 +279,13 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 			return
 		_enter_stop()
 		return
+	last_loot = roll_loot(enemy_pool)
+	for item in last_loot:
+		_apply_loot(item)
 	if round >= rounds_total():
 		_finish(Phase.WON)
 		return
-	reward_options = roll_rewards(enemy_pool)
-	phase = Phase.REWARD
+	_enter_stop()
 
 
 ## Credits fuer den Kampf dieser Runde: nach Stufe bei einem Sieg, ein
@@ -297,7 +304,6 @@ func abandon() -> void:
 
 func _finish(final: Phase) -> void:
 	phase = final
-	reward_options = []
 	_send_loot_home()
 
 
@@ -334,53 +340,93 @@ func _enter_stop() -> void:
 	shop_offers = roll_shop()
 
 
-## Die Belohnungen haengen an der Stufe des besiegten Gegners:
+## Die Beute haengt an der Stufe des besiegten Gegners und wird gewuerfelt
+## (6i, keine Auswahl). Ein Hauptwurf:
 ##
-##   Leicht  wenige Teile aus der Gegnerausruestung, dazu evtl. Notstrom
-##   Normal  eine von drei, meist Teile; in bestimmten Runden ein DROME
-##   Elite   garantiert etwas Seltenes: ein neuer DROME oder schwere/mittlere
-##           Teile, auch aus dem ganzen Katalog
-func roll_rewards(enemy_pool: Array) -> Array:
+##   DROME   Normal in run.new_drome_rounds, Elite mit tiers.elite.drome_chance
+##   Teil    mit tiers.<stufe>.part_chance -- aus der Gegnerausruestung, bei
+##           Elite mittel/schwer (fehlt dort etwas, aus dem ganzen Katalog)
+##   sonst   Credits (tiers.<stufe>.loot_credits)
+##
+## Dazu, wenn ein Leben fehlt, mit life_chance Notstrom (nicht bei Elite).
+## Am Seed des Kampfes: derselbe Lauf, dieselbe Beute.
+func roll_loot(enemy_pool: Array) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = battle_seed() ^ 0x5EED
 	var settings := tier_cfg(tier)
-	var count := int(settings.get("reward_choices", cfg().get("reward_choices", 3)))
-	var options: Array = []
-
-	if tier == Tier.ELITE:
-		var drome := _drome_reward(rng)
-		drome["rare"] = true
-		options.append(drome)
-	elif tier == Tier.NORMAL:
-		var drome_rounds: Array = cfg().get("new_drome_rounds", [2, 5])
-		if round in drome_rounds:
-			options.append(_drome_reward(rng))
+	var out: Array = []
+	# JSON liefert Gleitkommazahlen -- 2.0 ist fuer "in" nicht 2.
+	var drome_rounds: Array = (cfg().get("new_drome_rounds", [2, 5]) as Array).map(func(r): return int(r))
+	var drome := (tier == Tier.NORMAL and round in drome_rounds) \
+		or (tier == Tier.ELITE and rng.randf() < float(settings.get("drome_chance", 0.0)))
+	if drome:
+		var entry := _drome_reward(rng)
+		entry["rare"] = tier == Tier.ELITE
+		out.append(entry)
+	elif rng.randf() < float(settings.get("part_chance", 0.5)):
+		var part := _loot_part(rng, enemy_pool)
+		if part != null:
+			out.append({"kind": "part", "part_id": part.id, "rare": tier == Tier.ELITE,
+				"title": part.display_name, "text": _part_text(part)})
+	if out.is_empty():
+		var amount := int(settings.get("loot_credits", 5))
+		out.append({"kind": "credits", "amount": amount,
+			"title": "%d Credits" % amount, "text": "Gefundene Credits"})
 	if tier != Tier.ELITE and lives < max_lives() \
 			and rng.randf() < float(settings.get("life_chance", cfg().get("life_chance", 0.35))):
-		options.append({"kind": "life", "title": "Notstrom",
+		out.append({"kind": "life", "title": "Notstrom",
 			"text": "Ein verlorenes Leben zurueck."})
+	return out
 
+
+## Ein Teil als Beute: aus der Gegnerausruestung; Elite nur mittel/schwer,
+## ergaenzt aus dem ganzen Katalog. Leerer Gegnerpool: der ganze Katalog.
+func _loot_part(rng: RandomNumberGenerator, enemy_pool: Array) -> PartData:
 	var pool: Array = enemy_pool.duplicate()
 	if tier == Tier.ELITE:
-		# Selten = mittlere und schwere Teile. Erst aus der Gegnerausruestung,
-		# fehlt dort etwas, aus dem ganzen Katalog.
 		pool = pool.filter(func(id): return _is_rare(PartDB.get_part(id)))
 		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
 			if _is_rare(part) and not pool.has(part.id):
 				pool.append(part.id)
-	elif pool.size() < count:
+	elif pool.is_empty():
 		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-			if not pool.has(part.id):
-				pool.append(part.id)
-	while options.size() < count and not pool.is_empty():
+			pool.append(part.id)
+	while not pool.is_empty():
 		var index := rng.randi() % pool.size()
 		var part := PartDB.get_part(pool[index])
+		if part != null:
+			return part
 		pool.remove_at(index)
-		if part == null:
-			continue
-		options.append({"kind": "part", "part_id": part.id, "rare": tier == Tier.ELITE,
-			"title": part.display_name, "text": _part_text(part)})
-	return options
+	return null
+
+
+## Verteilt einen Beute-Eintrag und schreibt hinein, wo er gelandet ist:
+## Teile ins Lager (voll: nach Hause), ein DROME in den Squad (voll: nach
+## Hause), Credits und Notstrom sofort.
+func _apply_loot(item: Dictionary) -> void:
+	item["where"] = ""
+	match item["kind"]:
+		"part":
+			if storage_full():
+				item["where"] = "home"
+				home_queue.append(item.duplicate())
+			else:
+				item["where"] = "lager"
+				storage.append(StringName(item["part_id"]))
+		"drome":
+			if has_room():
+				item["where"] = "squad"
+				var fresh := drome_from_reward(item)
+				squad.append(fresh)
+				# Seine Waffe gehoert zu ihm wie die Startausstattung.
+				_count_start(fresh)
+			else:
+				item["where"] = "home"
+				home_queue.append(item.duplicate())
+		"credits":
+			credits += int(item.get("amount", 0))
+		"life":
+			lives = mini(max_lives(), lives + 1)
 
 
 static func _is_rare(part: PartData) -> bool:
@@ -414,52 +460,10 @@ static func _part_text(part: PartData) -> String:
 	return "%s%s" % [kind, (": " + ", ".join(lines)) if not lines.is_empty() else ""]
 
 
-## Der Platz "nach Hause": die Beute wandert ins Inventar des Hangars statt
-## in den Lauf.
-static func home_placement() -> Dictionary:
-	return {"home": true, "valid": true}
-
-
 ## Ob ein neuer DROME noch in den Lauf-Squad passt. Sonst bleibt nur "nach
 ## Hause".
 func has_room() -> bool:
 	return squad.size() < squad_max()
-
-
-## Waehlt eine Belohnung. Waffen kommen ins Lager (ist es voll, gehen sie
-## nach Hause); eingebaut wird danach im Zwischenstopp. Ein DROME kommt in
-## den Lauf-Squad, mit ``placement`` = home_placement() nach Hause. Gibt
-## false zurueck, wenn die Wahl nicht geht -- der Lauf bleibt dann in der
-## Belohnungsphase.
-func choose_reward(index: int, placement: Dictionary = {}) -> bool:
-	if phase != Phase.REWARD or index < 0 or index >= reward_options.size():
-		return false
-	var option: Dictionary = reward_options[index]
-	if bool(placement.get("home", false)):
-		if option["kind"] == "life":
-			return false
-		home_queue.append(option.duplicate())
-		reward_options = []
-		_enter_stop()
-		return true
-	match option["kind"]:
-		"part":
-			if storage_full():
-				home_queue.append(option.duplicate())
-			else:
-				storage.append(StringName(option["part_id"]))
-		"drome":
-			if not has_room():
-				return false
-			var fresh := drome_from_reward(option)
-			squad.append(fresh)
-			# Seine Waffe gehoert zu ihm wie die Startausstattung.
-			_count_start(fresh)
-		"life":
-			lives = mini(max_lives(), lives + 1)
-	reward_options = []
-	_enter_stop()
-	return true
 
 
 ## Baut aus einer DROME-Belohnung den Aufbau: Chassis, passender Kern, Waffe.
@@ -471,14 +475,6 @@ static func drome_from_reward(option: Dictionary) -> DromeBuild:
 	if StringName(option.get("weapon_id", &"")) != &"":
 		_equip(fresh, option["weapon_id"])
 	return fresh
-
-
-## Belohnung ausschlagen -- weiter zum Zwischenstopp ohne Aenderung.
-func skip_reward() -> void:
-	if phase != Phase.REWARD:
-		return
-	reward_options = []
-	_enter_stop()
 
 
 # ---------------------------------------------------------------------------

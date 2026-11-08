@@ -54,37 +54,71 @@ func test_the_previewed_enemies_are_the_battle_enemies() -> void:
 
 
 func test_an_elite_win_guarantees_something_rare() -> void:
-	var run := RunState.start(18)
-	run.choose_tier(RunState.Tier.ELITE)
-	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_pulse_blaster", &"eq_rune_staff"])
-	t.ok(not run.reward_options.is_empty(), "es gibt Belohnungen")
-	for option in run.reward_options:
-		t.ok(option.get("rare", false), "%s ist selten" % option["title"])
-		if option["kind"] == "part":
-			t.ok(PartDB.get_part(option["part_id"]).mount_class != "light",
-				"%s ist mittel oder schwer" % option["title"])
+	for seed_value in 20:
+		var run := RunState.start(1800 + seed_value)
+		run.choose_tier(RunState.Tier.ELITE)
+		run.record_result(BattleManager.Outcome.VICTORY, [&"eq_pulse_blaster", &"eq_rune_staff"])
+		t.equal(run.last_loot.size(), 1, "eine Beute, kein Notstrom bei Elite")
+		var item: Dictionary = run.last_loot[0]
+		t.ok(item.get("rare", false), "%s ist selten" % item["title"])
+		t.ok(item["kind"] in ["part", "drome"], "Teil oder DROME, keine Credits")
+		if item["kind"] == "part":
+			t.ok(PartDB.get_part(item["part_id"]).mount_class != "light",
+				"%s ist mittel oder schwer" % item["title"])
 
 
-func test_loot_can_be_sent_home() -> void:
-	var run := RunState.start(19)
-	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_deflector", &"eq_rune_staff"])
-	var index := -1
-	for i in run.reward_options.size():
-		if run.reward_options[i]["kind"] == "part":
-			index = i
-			break
-	t.ok(index >= 0, "es gibt ein Teil zur Wahl")
-	if index < 0:
-		return
-	var part_id: StringName = run.reward_options[index]["part_id"]
-	var before: Array = run.squad.map(func(b): return b.slots.duplicate())
-	t.ok(run.choose_reward(index, RunState.home_placement()), "nach Hause geht immer")
-	t.equal(run.home_queue.size(), 1, "die Beute wartet auf die Heimreise")
-	t.equal(run.home_queue[0]["part_id"], part_id, "das richtige Teil")
-	t.equal(run.squad.map(func(b): return b.slots), before, "der Lauf-Squad bleibt unveraendert")
-	t.equal(run.phase, RunState.Phase.STOP, "danach der Zwischenstopp")
-	run.continue_run()
-	t.equal(run.round, 2, "weiter zur naechsten Runde")
+func test_loot_is_rolled_without_a_choice() -> void:
+	# 6i: nach dem Sieg wird gewuerfelt -- Credits oder ein Teil, sofort verteilt.
+	var kinds := {}
+	for seed_value in 40:
+		var run := RunState.start(3000 + seed_value)
+		run.record_result(BattleManager.Outcome.VICTORY, [&"eq_deflector"])
+		t.equal(run.phase, RunState.Phase.STOP, "gleich der Zwischenstopp")
+		t.ok(not run.last_loot.is_empty(), "es gibt Beute")
+		var item: Dictionary = run.last_loot[0]
+		kinds[item["kind"]] = true
+		var win := int(RunState.tier_cfg(RunState.Tier.NORMAL).get("credits", 0))
+		if item["kind"] == "part":
+			t.equal(item["part_id"], &"eq_deflector", "das Teil kommt aus der Gegnerausruestung")
+			t.equal(run.storage, [&"eq_deflector"], "und liegt im Lager")
+			t.equal(item["where"], "lager", "mit Ort")
+			t.equal(run.credits, win, "nur die Credits fuer den Sieg")
+		elif item["kind"] == "credits":
+			t.ok(run.storage.is_empty(), "kein Teil")
+			t.equal(run.credits, win + int(item["amount"]), "Beute-Credits obendrauf")
+	t.ok(kinds.has("part") and kinds.has("credits"), "beides kommt vor")
+
+
+func test_a_new_drome_comes_in_the_drome_rounds() -> void:
+	var run := RunState.start(31, RunState.standard_squad().slice(0, 2))
+	run.round = int((RunState.cfg().get("new_drome_rounds", [2]) as Array)[0])
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	t.equal(run.last_loot[0]["kind"], "drome", "ein DROME")
+	t.equal(run.squad.size(), 3, "kommt in den Lauf-Squad")
+	t.equal(run.last_loot[0]["where"], "squad", "mit Ort")
+	var full := RunState.start(32)
+	full.round = run.round
+	full.record_result(BattleManager.Outcome.VICTORY, [])
+	t.equal(full.squad.size(), 4, "voller Squad bleibt voll")
+	t.equal(full.home_queue.size(), 1, "der DROME geht nach Hause")
+	t.equal(full.last_loot[0]["where"], "home", "mit Ort")
+
+
+func test_loot_goes_home_when_the_storage_is_full() -> void:
+	var run := RunState.start(33)
+	for _i in RunState.storage_size():
+		run.storage.append(&"eq_hammer")
+	var id := _win_a_part(run, [&"eq_deflector"])
+	t.equal(id, &"eq_deflector", "ein Teil gewuerfelt")
+	t.equal(run.storage.size(), RunState.storage_size(), "das Lager bleibt voll")
+	t.equal(run.home_queue.map(func(item): return item["part_id"]), [id], "es geht nach Hause")
+
+
+func test_the_same_run_rolls_the_same_loot() -> void:
+	var a := RunState.start(4243)
+	var b := RunState.start(4243)
+	t.equal(a.roll_loot([&"eq_deflector", &"eq_hammer"]), b.roll_loot([&"eq_deflector", &"eq_hammer"]),
+		"gleicher Seed, gleiche Beute")
 
 
 func test_the_same_seed_gives_the_same_run() -> void:
@@ -138,37 +172,25 @@ func test_losing_all_lives_ends_the_run() -> void:
 	t.ok(run.is_over(), "der Lauf ist vorbei")
 
 
-func test_a_win_offers_rewards_from_the_enemy_pool() -> void:
-	var run := RunState.start(10)
-	var pool := [&"eq_deflector", &"eq_rune_staff", &"eq_drone_pod", &"eq_holo_boost"]
-	run.record_result(BattleManager.Outcome.VICTORY, pool)
-	t.equal(run.phase, RunState.Phase.REWARD, "nach dem Sieg wird gewaehlt")
-	t.equal(run.reward_options.size(), int(RunState.cfg().get("reward_choices", 3)),
-		"drei Teile")
-	t.equal(run.reward_options.filter(func(o): return o["kind"] == "module").size(), 0,
-		"Module gibt es nur im Laden (6i)")
-	for option in run.reward_options:
-		if option["kind"] == "part":
-			t.ok(pool.has(option["part_id"]), "%s kommt aus der Gegnerausruestung" % option["title"])
-
-
-## Gewinnt einen Kampf und nimmt das erste Teil als Belohnung -- danach ist
-## der Lauf im Zwischenstopp, das Teil im Lager.
+## Gewinnt einen Kampf, dessen Beute ein Teil ist -- sucht dafuer einen
+## Lauf-Seed, bei dem ein Teil gewuerfelt wird. Danach ist der Lauf im
+## Zwischenstopp.
 func _win_a_part(run: RunState, pool: Array) -> StringName:
-	run.record_result(BattleManager.Outcome.VICTORY, pool)
-	for i in run.reward_options.size():
-		if run.reward_options[i]["kind"] == "part":
-			var id: StringName = run.reward_options[i]["part_id"]
-			run.choose_reward(i)
-			return id
+	var base := run.run_seed
+	for offset in 200:
+		run.run_seed = base + offset
+		var loot := run.roll_loot(pool)
+		if loot[0]["kind"] == "part":
+			run.record_result(BattleManager.Outcome.VICTORY, pool)
+			return run.last_loot[0]["part_id"]
 	return &""
 
 
 func test_a_part_reward_lands_in_the_storage() -> void:
 	var run := RunState.start(12)
 	var id := _win_a_part(run, [&"eq_deflector", &"eq_rune_staff", &"eq_holo_boost"])
-	t.ok(id != &"", "es gab ein Teil zur Wahl")
-	t.equal(run.phase, RunState.Phase.STOP, "Zwischenstopp nach der Belohnung")
+	t.ok(id != &"", "es gab ein Teil")
+	t.equal(run.phase, RunState.Phase.STOP, "Zwischenstopp nach dem Sieg")
 	t.equal(run.storage, [id], "das Teil liegt im Lager")
 	t.equal(run.credits, int(RunState.tier_cfg(RunState.Tier.NORMAL).get("credits", 0)),
 		"Credits fuer den Sieg")

@@ -62,8 +62,10 @@
       "(power_start + power_growth * (runde - 1)) * tiers.<stufe>.power -- eine",
       "FESTE Kurve, damit Belohnungen zaehlen. Gegnerzahl = Startgroesse des",
       "Squads + enemy_offsets[runde] + tiers.<stufe>.count_offset (1..squad_max).",
-      "In new_drome_rounds bietet 'normal' einen neuen DROME an, 'elite' immer.",
-      "life_chance: Chance auf 'Notstrom' (+1 Leben), wenn eines fehlt.",
+      "Beute (6i, gewuerfelt, keine Auswahl, RunState.roll_loot): 'normal' gibt",
+      "in new_drome_rounds einen neuen DROME, 'elite' mit drome_chance; sonst mit",
+      "part_chance ein Teil (Elite: mittel/schwer), sonst loot_credits Credits.",
+      "life_chance: Chance auf 'Notstrom' (+1 Leben) obendrauf, wenn eines fehlt.",
       "Zwischenstopp (NEUANFANG 7d): storage_size Plaetze im Lager; Credits je",
       "Sieg nach tiers.<stufe>.credits, loss_credits bei einer Niederlage;",
       "sell_value: Verkaufspreis einer Waffe nach Gewichtsklasse."
@@ -73,7 +75,6 @@
     "power_start": 0.85,
     "power_growth": 0.06,
     "enemy_offsets": [-1, -1, 0, 0, 0, 0, 0, 0],
-    "reward_choices": 3,
     "new_drome_rounds": [2, 5],
     "squad_max": 4,
     "life_chance": 0.35,
@@ -81,12 +82,15 @@
     "loss_credits": 4,
     "sell_value": {"light": 3, "medium": 5, "heavy": 8},
     "tiers": {
-      "easy": {"power": 0.7, "count_offset": -1, "reward_choices": 2, "life_chance": 0.6, "credits": 6,
-        "reward_text": "Ersatzteile: 1 aus 2 Teilen der Gegner, oft Notstrom"},
-      "normal": {"power": 1.0, "count_offset": 0, "reward_choices": 3, "credits": 10,
-        "reward_text": "1 aus 3 Teilen der Gegner"},
-      "elite": {"power": 1.3, "count_offset": 1, "reward_choices": 3, "credits": 16,
-        "reward_text": "Garantiert selten: neuer DROME oder mittleres/schweres Teil"}
+      "easy": {"power": 0.7, "count_offset": -1, "life_chance": 0.6, "credits": 6,
+        "part_chance": 0.4, "loot_credits": 4,
+        "reward_text": "Gewuerfelt: Teil der Gegner oder Credits, oft Notstrom"},
+      "normal": {"power": 1.0, "count_offset": 0, "credits": 10,
+        "part_chance": 0.6, "loot_credits": 6,
+        "reward_text": "Gewuerfelt: meist ein Teil der Gegner, sonst Credits"},
+      "elite": {"power": 1.3, "count_offset": 1, "credits": 16,
+        "part_chance": 1.0, "drome_chance": 0.35,
+        "reward_text": "Garantiert selten: mittleres/schweres Teil oder neuer DROME"}
     }
   },
 

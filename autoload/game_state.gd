@@ -320,6 +320,9 @@ func begin_run_battle() -> void:
 func finish_run_battle(outcome: int, enemy_pool: Array) -> void:
 	if run != null:
 		run.record_result(outcome, enemy_pool)
+		# Beute, die nicht mehr in Lager oder Squad passte, gleich nach Hause.
+		if not run.is_over():
+			deliver_run_home()
 	in_run_battle = false
 	enemy_override = []
 	battle_seed = 0
