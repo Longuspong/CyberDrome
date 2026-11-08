@@ -43,9 +43,12 @@ func run(count: int, setups: Array) -> void:
 			100.0 * wins / fights, fights, seconds / fights])
 
 
-## Waffe und Takt je DROME -- zum Nachrechnen.
+## Waffe, Takt und Lauftempo je DROME -- zum Nachrechnen.
 func _describe(builds: Array) -> void:
 	for b in builds:
+		var unit := Unit.create(b, &"X", true)
+		print("%s: SPD %d, Lauftempo %.2f Felder/s" % [b.display_name, int(b.stats()["spd"]), unit.move_speed()])
+		unit.free()
 		for slot in b.equip_slots():
 			var part: PartData = b.part_in(slot)
 			if part == null:

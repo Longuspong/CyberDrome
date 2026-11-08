@@ -254,6 +254,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 			_execute(unit, aim["tile"], ability, aim["target"])
 			_echo(unit, ability, aim)
 			_after_ability(unit, ability, aim)
+			_shackle(unit, mount)
 			mount["count"] = 0
 			mount["instant"] = bool((mount.get("fx", {}) as Dictionary).get("ready_after_ability", false))
 			return true
@@ -330,6 +331,39 @@ func _field_shot_target(unit: Unit, target: Unit) -> Unit:
 	if best == null and target != null and target.is_alive():
 		return target
 	return best
+
+
+## Fesselkette: Reichweite und Betaeubung (die Zahl der Gegner steht am Modul).
+const SHACKLE_RANGE := 3
+const SHACKLE_STUN := 1.0
+
+
+## Nach einer Faehigkeit: Modul Fesselkette -- die naechsten Gegner in
+## Reichweite 3 ruecken neben den Traeger und sind kurz betaeubt. Wer schon
+## daneben steht, zaehlt mit. Blockierte bleiben stehen, werden aber betaeubt.
+func _shackle(unit: Unit, mount: Dictionary) -> void:
+	var count := int((mount.get("fx", {}) as Dictionary).get("shackle", 0))
+	if count <= 0 or not unit.is_alive():
+		return
+	var caught: Array = []
+	for foe in battle.enemies_of(unit):
+		if foe.is_alive() and Grid.distance(unit.tile, foe.tile) <= SHACKLE_RANGE:
+			caught.append(foe)
+	if caught.is_empty():
+		return
+	caught.sort_custom(func(a, b):
+		return Grid.distance(a.tile, unit.tile) < Grid.distance(b.tile, unit.tile))
+	caught = caught.slice(0, count)
+	for foe in caught:
+		for _i in SHACKLE_RANGE:
+			if Grid.distance(foe.tile, unit.tile) <= 1:
+				break
+			var next: Vector2i = battle.resolver._step_toward(foe, unit.tile)
+			if next == foe.tile:
+				break
+			battle.resolver.move_unit(foe, next)
+		foe.apply_status(&"stun", SHACKLE_STUN, {"id": "stun", "stunned": true})
+	EventBus.log_line("%s legt %d Gegner in Ketten." % [unit.display_name, caught.size()])
 
 
 ## Nach einer Faehigkeit: Modul Koedersender -- das Ziel muss eine Weile den

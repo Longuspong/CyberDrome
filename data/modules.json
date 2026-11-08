@@ -29,6 +29,8 @@
     "  ready_after_ability  nach der Faehigkeit ist die Waffe sofort wieder geladen",
     "  retaliation        Vergeltung: jeder Nahkampftreffer, den der Traeger einsteckt,",
     "                     laedt seinen naechsten Angriff um diesen Anteil auf (max. 3x)",
+    "  shackle            Fesselkette: die Faehigkeit zieht bis zu so viele Gegner",
+    "                     in Reichweite 3 neben den Traeger und betaeubt sie 1 s",
     "  cleave             Rundumschlag: jeder Angriff trifft dazu alle anderen Gegner",
     "                     direkt neben dem Traeger mit diesem Anteil des Schadens",
     "Gestaltungsregel (6i): Grundmodule sind Zahlen, Rezepte aendern eine Regel.",
@@ -70,6 +72,10 @@
     "mod_capacitor": {
       "name": "Kondensator", "short": "KD", "class": "defense", "condition": "",
       "effects": {"shield": 10}
+    },
+    "mod_chain": {
+      "name": "Kette", "short": "KT", "class": "defense", "condition": "",
+      "effects": {"def": 2}
     },
     "mod_spike_grid": {
       "name": "Stachelgitter", "short": "SG", "class": "defense", "condition": "",
@@ -117,6 +123,11 @@
       "name": "Raufbold", "short": "RB", "class": "attack", "condition": "melee",
       "from": ["mod_heavy_edge", "mod_spike_grid"],
       "bonus": {"retaliation": 0.25}
+    },
+    "mod_shackle": {
+      "name": "Fesselkette", "short": "FK", "class": "tactic", "condition": "",
+      "from": ["mod_chain", "mod_chain", "mod_twin_barrel"],
+      "bonus": {"shackle": 3}
     },
     "mod_whirlwind": {
       "name": "Rundumschlag", "short": "RS", "class": "attack", "condition": "melee",

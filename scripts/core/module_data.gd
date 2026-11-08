@@ -286,6 +286,8 @@ static func effect_text(key: String, value) -> String:
 			return "nach der Faehigkeit sofort wieder geladen" if value else ""
 		"retaliation":
 			return "Vergeltung: jeder Nahkampftreffer am Traeger laedt den naechsten Angriff um %d %% auf (bis 3x)" % _pct(v)
+		"shackle":
+			return "Fesselkette: Faehigkeit zieht bis zu %d Gegner (Rw 3) heran und betaeubt sie 1 s" % int(v)
 		"cleave":
 			return "Rundumschlag: trifft dazu alle Gegner direkt neben dem Traeger mit %d %% Schaden" % _pct(v)
 	return ""

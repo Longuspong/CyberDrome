@@ -171,6 +171,24 @@ func test_whirlwind_hits_every_foe_next_to_the_bearer() -> void:
 	battle.free()
 
 
+func test_the_shackle_pulls_three_foes_next_to_the_bearer_and_stuns_them() -> void:
+	var chained := _with(_molok(), "equip_left", [&"mod_shackle"])
+	t.equal(ModuleData.get_module(&"mod_shackle").from,
+		[&"mod_chain", &"mod_chain", &"mod_twin_barrel"], "zwei Ketten und ein Doppellauf")
+	var battle := _battle([chained], [_vireo(), _vireo(), _vireo(), _vireo()],
+		[Vector2i(10, 10), Vector2i(10, 13), Vector2i(13, 10), Vector2i(7, 10), Vector2i(16, 16)])
+	var molok: Unit = battle.units[0]
+	battle.brain._shackle(molok, molok.mounts[0])
+	for i in [1, 2, 3]:
+		var foe: Unit = battle.units[i]
+		t.ok(Grid.distance(foe.tile, molok.tile) <= 1, "Gegner %d steht jetzt daneben (%s)" % [i, foe.tile])
+		t.ok(foe.is_stunned(), "und ist betaeubt")
+	var far: Unit = battle.units[4]
+	t.equal(far.tile, Vector2i(16, 16), "wer weiter weg steht, bleibt")
+	t.ok(not far.is_stunned(), "und ist nicht betaeubt")
+	battle.free()
+
+
 func test_defense_modules_raise_the_bearers_stats() -> void:
 	var plain := _vireo().stats()
 	var armored := _with(_vireo(), "equip_left", [&"mod_armor_plate", &"mod_capacitor"]).stats()
@@ -209,7 +227,7 @@ func test_the_bait_module_makes_the_target_attack_the_bearer() -> void:
 func test_a_battle_with_every_module_runs_to_the_end() -> void:
 	var gun := _with(_vireo(), "equip_left", [&"mod_gunslinger", &"mod_metronome", &"mod_bait"])
 	var tank := _with(_molok(), "equip_left", [&"mod_bulwark", &"mod_brawler"])
-	tank.modules["equip_right"] = [&"mod_whirlwind"]
+	tank.modules["equip_right"] = [&"mod_whirlwind", &"mod_shackle"]
 	var battle := BattleManager.new()
 	battle.setup(919, [gun, tank], [_vireo(), _molok()])
 	var outcome := battle.run_to_end()
