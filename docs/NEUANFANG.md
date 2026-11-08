@@ -573,10 +573,21 @@ Gemessen nach dem Umbau (je 800 Kaempfe; gleiche Zahl Modulplaetze verglichen):
 | Strix Taktchip / Gunslinger | 62 % / 78 % | -- |
 | Molok Rundumschlag | 51 % | Wuchtkante allein 51 % |
 
-Rundumschlag wirkt im Spiegel nicht: neben dem Molok steht ausser seinem Ziel
-fast nie ein zweiter Gegner (der Squad kaempft auf Abstand, der
-Koedersender lockt Fernkaempfer nicht heran). Offen, siehe Vorschlag an den
-Spieler.
+Rundumschlag wirkt im Spiegel allein nicht: neben dem Molok steht ausser
+seinem Ziel fast nie ein zweiter Gegner (der Squad kaempft auf Abstand).
+Deshalb (Vorgabe des Spielers, 8. Nov., gebaut):
+
+* **Kette** (Grundmodul, Abwehr): +2 Panzerung.
+* **Fesselkette** = 2x Kette + Doppellauf (Taktik, jede Waffe): die
+  Faehigkeit zieht bis zu 3 Gegner in Reichweite 3 neben den Traeger und
+  betaeubt sie 1 s. Der Molok ist dafuer gemacht (Nahkampf, steht vorn).
+* Gemessen: Molok Fesselkette 57 %, Fesselkette + Rundumschlag 61 %,
+  Rundumschlag allein 51 %, Raufbold + Stachelgitter 83 %.
+
+**Lauftempo -30 %** (Vorgabe des Spielers, 8. Nov.): `realtime.move_base`
+0,7, `move_per_spd` 0,084, `move_min` 0,84. Felder je Sekunde vorher ->
+nachher: Vireo 2,68 -> 1,88; Nimbus 2,56 -> 1,79; Strix 1,96 -> 1,37; Molok
+1,72 -> 1,20. Kampfdauer im Spiegel fast gleich (20,3 -> 20,5 s).
 
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
