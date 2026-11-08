@@ -8,9 +8,8 @@ extends Control
 ##   * kein Lauf: Aufstellung -- wer kommt mit (SquadPicker), "Lauf starten"
 ##   * PREPARE: drei Gegner zur Wahl (Leicht/Normal/Elite) mit Region
 ##     und den gegnerischen DROMEs; "Kampf starten"
-##   * REWARD:  Belohnungen; Waffen kommen ins Lager, ein DROME in den Squad
-##     oder nach Hause
-##   * STOP:    Zwischenstopp -- Lager, Credits, Ausruesten (NEUANFANG 7d),
+##   * STOP:    Zwischenstopp -- gewuerfelte Beute (6i), Laden, Lager,
+##     Credits, Ausruesten (NEUANFANG 7d),
 ##     Module in die Waffenhalter, Rezepte zusammenfuegen (6g)
 ##   * WON/LOST: das Ende mit Verlauf, "Neuer Lauf" oder zurueck ins Menue
 ##
@@ -27,9 +26,6 @@ var _header_round: Label
 var _lives_box: HBoxContainer
 var _squad_list: VBoxContainer
 var _side: VBoxContainer
-
-## Gewaehlte Belohnung, deren Platz noch aussteht (-1 = keine).
-var _pending_reward: int = -1
 
 ## Zwischenstopp: der angetippte Lagerplatz (-1 = keiner).
 var _selected_storage: int = -1
@@ -102,11 +98,6 @@ func _refresh() -> void:
 	_refresh_squad(run)
 	match run.phase:
 		RunState.Phase.PREPARE: _show_prepare(run)
-		RunState.Phase.REWARD:
-			if _pending_reward >= 0:
-				_show_placements(run, _pending_reward)
-			else:
-				_show_rewards(run)
 		RunState.Phase.STOP: _show_stop(run)
 		_: _show_end(run)
 
@@ -255,80 +246,6 @@ func _show_prepare(run: RunState) -> void:
 	_side.add_child(abandon)
 
 
-func _show_rewards(run: RunState) -> void:
-	_side.add_child(_label("Sieg! Waehle eine Belohnung.", 22, COLOR_GOOD))
-	_side.add_child(_label(_credit_line(run), 16, COLOR_WARN))
-	_side.add_child(_label("Waffen kommen ins Lager -- einbauen kannst du gleich danach. Module gibt es im Laden.",
-		16, COLOR_MUTED))
-	for index in run.reward_options.size():
-		var option: Dictionary = run.reward_options[index]
-		var card := Button.new()
-		card.text = "%s%s\n%s" % ["[Selten] " if option.get("rare", false) else "",
-			option["title"], option["text"]]
-		card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		card.custom_minimum_size = Vector2(0, 84)
-		card.add_theme_font_size_override("font_size", 18)
-		card.pressed.connect(func(): _pick_reward(index))
-		_side.add_child(card)
-		if index == 0:
-			card.grab_focus.call_deferred()
-	var skip := Button.new()
-	skip.text = "Keine nehmen"
-	skip.flat = true
-	skip.custom_minimum_size = Vector2(0, 44)
-	skip.pressed.connect(func():
-		run.skip_reward()
-		_refresh())
-	_side.add_child(skip)
-
-
-func _pick_reward(index: int) -> void:
-	var run := _run()
-	var option: Dictionary = run.reward_options[index]
-	if option["kind"] == "drome":
-		_pending_reward = index
-	else:
-		# Waffen kommen ins Lager, eingebaut wird im Zwischenstopp.
-		run.choose_reward(index)
-		GameState.deliver_run_home()
-	_refresh()
-
-
-## Wohin mit dem neuen DROME? In den Lauf-Squad, wenn Platz ist, oder nach
-## Hause in den Hangar.
-func _show_placements(run: RunState, index: int) -> void:
-	var option: Dictionary = run.reward_options[index]
-	_side.add_child(_label("Wohin mit %s?" % option["title"], 22, COLOR_HEADING))
-	var placements: Array = [{"squad": true, "valid": run.has_room()},
-		RunState.home_placement()]
-	for placement in placements:
-		var button := Button.new()
-		if placement.get("home", false):
-			button.text = "Nach Hause schicken\nLandet im Hangar, nicht in diesem Lauf"
-		else:
-			button.text = "In den Lauf-Squad\n%s" % ("kaempft ab dem naechsten Kampf mit"
-				if placement["valid"] else "geht nicht: Squad ist voll (%d)" % RunState.squad_max())
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.custom_minimum_size = Vector2(0, 72)
-		button.add_theme_font_size_override("font_size", 18)
-		button.disabled = not placement["valid"]
-		var chosen: Dictionary = {} if placement.get("squad", false) else placement
-		button.pressed.connect(func():
-			if run.choose_reward(index, chosen):
-				_pending_reward = -1
-				GameState.deliver_run_home()
-				_refresh())
-		_side.add_child(button)
-	var back := Button.new()
-	back.text = "< Andere Belohnung"
-	back.custom_minimum_size = Vector2(0, 48)
-	back.pressed.connect(func():
-		_pending_reward = -1
-		_refresh())
-	_side.add_child(back)
-
-
 ## "+10 Credits fuer den Sieg  ·  jetzt 24"
 func _credit_line(run: RunState) -> String:
 	if run.history.is_empty():
@@ -354,6 +271,8 @@ func _show_stop(run: RunState) -> void:
 	if not last.is_empty() and not last["won"]:
 		_side.add_child(_label("Niederlage -- ein Leben weniger.", 18, COLOR_BAD))
 	_side.add_child(_label(_credit_line(run), 18, COLOR_WARN))
+	if not run.last_loot.is_empty():
+		_side.add_child(_loot_section(run))
 	_side.add_child(_shop_section(run))
 
 	# --- Lager ---
@@ -399,6 +318,24 @@ func _show_stop(run: RunState) -> void:
 		run.continue_run()
 		_refresh())
 	_side.add_child(go)
+
+
+## Die gewuerfelte Beute des letzten Siegs (6i): was es gab und wo es
+## gelandet ist. Gewaehlt wird nichts -- es ist schon verteilt.
+func _loot_section(run: RunState) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style(true))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	panel.add_child(box)
+	box.add_child(_label("Beute", 18, COLOR_GOOD))
+	for item in run.last_loot:
+		var where: String = {"lager": "  ->  Lager", "squad": "  ->  Lauf-Squad",
+			"home": "  ->  nach Hause (kein Platz)"}.get(str(item.get("where", "")), "")
+		box.add_child(_label("%s%s%s" % ["[Selten] " if item.get("rare", false) else "",
+			item["title"], where], 18, COLOR_WARN if item.get("rare", false) else Color.WHITE))
+		box.add_child(_label(str(item.get("text", "")), 16, COLOR_MUTED))
+	return panel
 
 
 ## Der Laden (6i): wenige Grundmodule fuer Credits, gekauft wird ins Lager.

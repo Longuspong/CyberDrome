@@ -1,0 +1,13 @@
+extends SceneTree
+
+## Lauf-Messung ohne Bildschirm: der Standard-Squad (ohne Beute, ohne Module)
+## gegen die Lauf-Gegner je Runde und Stufe -- einmal mit ihren Modulen, einmal
+## ohne. Zeigt, wie stark die Gegner-Module (6i) die Kurve verschieben.
+##
+##     godot --headless --path . --script res://tools/playtest/run_bench.gd -- [laeufe]
+
+func _initialize() -> void:
+	var args := OS.get_cmdline_user_args()
+	var count := int(args[0]) if args.size() > 0 else 40
+	load("res://tools/playtest/run_bench_logic.gd").new().run(count)
+	quit(0)

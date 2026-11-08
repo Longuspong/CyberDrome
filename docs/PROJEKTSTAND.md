@@ -136,10 +136,16 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Runde 8: 5/6, 3/6, 0/6. Mit der alten Steigung 0,20 war ab Runde 4 auch
   Leicht nur 1/6 -- die volle Standardausstattung laesst kaum freie Halter,
   der Squad waechst durch Beute weniger als frueher.
-* Beute je Stufe: Leicht 1 aus 2 Teilen der Gegner (oft Notstrom); Normal 1
-  aus 3 (Runde 2 und 5 ein DROME); Elite garantiert selten = neuer DROME oder
-  mittleres/schweres Teil. Es gibt (noch) kein Geld und keine Seltenheitsstufe
-  -- "selten" ist vorlaeufig die Gewichtsklasse.
+* **Beute gewuerfelt, ohne Auswahl** (8. Nov. 2026, 6i; `RunState.roll_loot`):
+  ein Hauptwurf je Sieg -- Leicht 40 % ein Teil der Gegner, sonst 4 Credits;
+  Normal 60 % Teil, sonst 6 Credits, in Runde 2 und 5 ein DROME; Elite immer
+  selten: 35 % neuer DROME, sonst mittleres/schweres Teil. Dazu, wenn ein
+  Leben fehlt, Notstrom (Leicht 60 %, Normal 35 %). Sofort verteilt: Teil ins
+  Lager (voll: nach Hause), DROME in den Squad (voll: nach Hause). Der
+  Zwischenstopp zeigt oben "Beute" mit Ort. Der Belohnungsbildschirm ist weg
+  (`Phase.REWARD` wird nicht mehr betreten). "Selten" ist vorlaeufig die
+  Gewichtsklasse. Nebenbei behoben: die DROME-Runden griffen nie (JSON-Zahlen
+  sind Gleitkomma, `2 in [2.0]` ist falsch).
 
 ### Zwischenstopp (7. Nov. 2026) -- `RunState` Phase STOP, `run_screen.gd`
 * Nach JEDEM Kampf (auch nach einer Niederlage), nach der Belohnung.
@@ -227,6 +233,29 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   geleert beim Weitergehen. Module gibt es nicht mehr als Beute.
 * Preise vorlaeufig: ein normaler Sieg (10) kauft ein Modul, ein Elite-Sieg
   (16) zwei; Verkauf bringt 2.
+
+### Gegner mit Modulen (8. Nov. 2026, 6i) -- `RunState._arm_enemies`
+* Zahl je Gegner nach Runde (`run.enemy_modules.by_round` 0,0,1,1,1,2,2,2)
+  plus Stufe (Leicht -1, Elite +1), hoechstens so viele, wie der Halter
+  fasst. Handverlesen: nur Module, die zur Waffe passen (keine ruhenden),
+  keines doppelt; ab Runde 5 mit mindestens zwei Plaetzen ist eines ein
+  passendes Rezept. Alles im Halter der ersten Waffe, am Kampf-Seed --
+  Vorschau und Kampf sind dieselben. Die Vorschau zeigt "Module: ...".
+* Messwerkzeug `tools/playtest/run_bench.gd -- 30`: Standard-Squad (ohne
+  Beute, ohne Module) gegen die Lauf-Gegner, mit und ohne deren Module.
+  Gemessen (30 Laeufe je Feld, Siege mit / ohne Gegner-Module):
+
+  | Runde | Leicht | Normal | Elite |
+  |---|---|---|---|
+  | 1 | 30 / 30 | 29 / 29 | 13 / 16 |
+  | 3 | 30 / 30 | 21 / 22 | 13 / 20 |
+  | 5 | 30 / 30 | 17 / 20 | 2 / 10 |
+  | 8 | 29 / 29 | 7 / 18 | 6 / 12 |
+
+  Lesart: Leicht bleibt leicht, Normal wird spaet deutlich haerter -- der
+  Spieler hat dann aber selbst Module (Laden) und Beute. Die feste Kurve
+  (`power_growth`) gilt weiter; laut 6h soll sie spaeter durch Level/
+  Waffen/Module ersetzt werden.
 
 ### Chaos-Virus
 * Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
@@ -338,7 +367,6 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Playtest kann jetzt auch Spiegelkaempfe (`... playtest.gd -- 200 0 spiegel`).
 * ~~Namensschilder/Balken schweben beim Herauszoomen und ueberlappen~~ --
   behoben 7. Nov. 2026 (siehe "Lesbarkeit im Kampf").
-* Im Lauf: Belohnungsbildschirm nur per Test geprueft, nie im Browser gesehen.
 * Module: Gegner tragen keine, die Gegnerkurve kennt sie nicht; der
   Kampfwert (`power_score`) sieht nur DEF und Schild. Die alten Teile
   Koedersender (`eq_bait_beacon`), Hologramm-Boost und Orbit-Fokus sind

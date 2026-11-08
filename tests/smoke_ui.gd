@@ -43,7 +43,6 @@ func _process(_delta: float) -> bool:
 			# Lauf im Zwischenstopp: Lager mit Waffe, eine davon angetippt.
 			gs.start_run(4242)
 			gs.run.record_result(1, [&"eq_plasma_blade"])
-			gs.run.skip_reward()
 			gs.run.storage.append(&"eq_hammer")
 			var stop = load("res://scenes/run.tscn").instantiate()
 			stop.name = "RunStop"
