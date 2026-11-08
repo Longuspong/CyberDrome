@@ -132,7 +132,7 @@
     "mod_whirlwind": {
       "name": "Rundumschlag", "short": "RS", "class": "attack", "condition": "melee",
       "from": ["mod_heavy_edge", "mod_bait"],
-      "bonus": {"cleave": 0.5}
+      "bonus": {"cleave": 1.0}
     }
   }
 }

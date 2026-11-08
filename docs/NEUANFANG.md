@@ -557,7 +557,8 @@ Taktgeber 78 %, zweimal 89 % (jetzt gesperrt).
 * **Raufbold** (Wuchtkante + Stachelgitter): **Vergeltung** -- jeder
   Nahkampftreffer am Traeger laedt den naechsten Angriff um 25 % auf (bis 3x).
 * **Rundumschlag** (neu, Wuchtkante + Koedersender, nur Nahkampf): jeder
-  Angriff trifft dazu alle anderen Gegner direkt neben dem Traeger mit 50 %.
+  Angriff trifft dazu alle anderen Gegner direkt neben dem Traeger mit 100 %
+  (8. Nov.: von 50 % auf 100 % gebufft, Wunsch des Spielers).
   Der Koedersender holt die Gegner heran, der Schlag trifft sie alle.
 * Erstschlag wird, wenn er kommt, "Faehigkeit zum Kampfbeginn geladen".
 
