@@ -310,17 +310,56 @@ func test_modules_sell_but_never_go_home() -> void:
 		t.ok(not ModuleData.is_module(item.get("part_id", "")), "kein Modul geht nach Hause")
 
 
-func test_a_module_reward_lands_in_the_storage() -> void:
+func test_the_shop_sells_modules_into_the_storage() -> void:
 	var run := RunState.start(12)
 	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_deflector", &"eq_rune_staff"])
-	var index := -1
-	for i in run.reward_options.size():
-		if run.reward_options[i]["kind"] == "module":
-			index = i
-	t.ok(index >= 0, "ein Modul steht zur Wahl")
-	if index < 0:
-		return
-	var module_id: StringName = run.reward_options[index]["module_id"]
-	t.ok(not run.choose_reward(index, RunState.home_placement()), "nicht nach Hause")
-	t.ok(run.choose_reward(index), "genommen")
-	t.equal(run.storage, [module_id], "liegt im Lager")
+	run.skip_reward()
+	t.equal(run.phase, RunState.Phase.STOP, "Zwischenstopp")
+	t.equal(run.shop_offers.size(), int(ModuleData.data()["shop"]["offers"]), "der Laden bietet an")
+	var first: StringName = run.shop_offers[0]["module_id"]
+	t.ok(not ModuleData.get_module(first).is_recipe(), "nur Grundmodule")
+	t.ok(run.shop_offers[0]["module_id"] != run.shop_offers[1]["module_id"], "keines doppelt")
+	var price := RunState.shop_price(ModuleData.get_module(first))
+	run.credits = price - 1
+	t.equal(run.shop_blocker(0), "zu wenig Credits", "zu teuer")
+	t.ok(not run.buy(0), "nicht kaufbar")
+	run.credits = price
+	t.ok(run.buy(0), "gekauft")
+	t.equal(run.credits, 0, "Credits abgezogen")
+	t.equal(run.storage, [first], "liegt im Lager")
+	t.ok(not run.buy(0), "nur einmal")
+	run.continue_run()
+	t.equal(run.shop_offers.size(), 0, "der Laden schliesst mit dem Stopp")
+
+
+func test_the_shop_is_full_storage_aware_and_seeded() -> void:
+	var run := _stop_run()
+	run.shop_offers = run.roll_shop()
+	t.equal(run.roll_shop(), run.shop_offers, "derselbe Seed, derselbe Laden")
+	run.credits = 99
+	for _i in RunState.storage_size():
+		run.storage.append(&"eq_hammer")
+	t.equal(run.shop_blocker(0), "Lager voll", "voll")
+	t.ok(not run.buy(0), "kein Kauf bei vollem Lager")
+
+
+func test_the_shop_favours_missing_recipe_parts() -> void:
+	# Mitleid: Schnellfeuer liegt im Lager -> Langer Lauf und Doppellauf
+	# (Gunslinger) kommen oefter als ohne.
+	var run := _stop_run()
+	run.storage.append(&"mod_rapid_fire")
+	t.ok(run.recipe_missing().has(&"mod_long_barrel"), "Langer Lauf fehlt dem Gunslinger")
+	t.ok(not run.recipe_missing().has(&"mod_rapid_fire"), "was da ist, fehlt nicht")
+	var with_hits := 0
+	var without_hits := 0
+	var bare := _stop_run()
+	for seed_value in 300:
+		run.run_seed = seed_value
+		bare.run_seed = seed_value
+		for offer in run.roll_shop():
+			if offer["module_id"] in [&"mod_long_barrel", &"mod_twin_barrel"]:
+				with_hits += 1
+		for offer in bare.roll_shop():
+			if offer["module_id"] in [&"mod_long_barrel", &"mod_twin_barrel"]:
+				without_hits += 1
+	t.ok(with_hits > without_hits * 1.5, "angefangenes Rezept zieht (%d gegen %d)" % [with_hits, without_hits])

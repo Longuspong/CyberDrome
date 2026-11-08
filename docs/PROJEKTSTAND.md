@@ -178,8 +178,8 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Verstaerker; nach der Faehigkeit sofort geladen), **Raufbold** (Wuchtkante
   + Stachelgitter; +15 % Angriffstempo). Zusammengefuegt wird im Lager
   (Rezeptbuch im Zwischenstopp, aufklappbar).
-* Beute: je Sieg ein Grundmodul zusaetzlich zur Auswahl, Elite mit 50 %
-  gleich ein Rezept-Modul. Module teilen sich die 8 Lagerplaetze, lassen
+* ~~Beute: je Sieg ein Grundmodul~~ -- seit 8. Nov. nur noch im **Laden**
+  (unten). Module teilen sich die 8 Lagerplaetze, lassen
   sich verkaufen (2 / 6 Credits), aber **nicht nach Hause** schicken; am
   Ende des Laufs verfallen sie.
 * Bedienung im Zwischenstopp: Modul im Lager antippen, dann den Halter;
@@ -213,6 +213,20 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   die 56:44 oben waren Zufall bei nur 100 Kaempfen.
 * Entscheidungen nach den Gutachten (Laden statt Modul-Beute, Gegner-Module,
   Gebietsnamen): `NEUANFANG.md` Abschnitt 6i.
+
+### Laden (8. Nov. 2026) -- `RunState.roll_shop/buy`, `modules.json` -> `shop`
+* Im Zwischenstopp oben, unter den Credits: **2 Grundmodule** je Stopp
+  (`shop.offers`), keines doppelt, Preis **6 Credits** (`shop.price.base`;
+  `recipe` 16 steht fuer spaeter bereit, angeboten werden nur Grundmodule).
+  Gekauft wird ins Lager; gesperrt mit Grund (zu wenig Credits, Lager voll,
+  verkauft). Jedes Angebot zeigt, fuer welche Rezepte es Zutat ist.
+* **Unsichtbares Mitleid**: ein Grundmodul, das einem angefangenen Rezept
+  fehlt (eine Zutat liegt im Lager oder steckt im Halter), kommt dreimal so
+  oft (`shop.recipe_weight`, `RunState.recipe_missing`).
+* Gewuerfelt beim Betreten des Zwischenstopps aus Lauf-Seed und Runde,
+  geleert beim Weitergehen. Module gibt es nicht mehr als Beute.
+* Preise vorlaeufig: ein normaler Sieg (10) kauft ein Modul, ein Elite-Sieg
+  (16) zwei; Verkauf bringt 2.
 
 ### Chaos-Virus
 * Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
