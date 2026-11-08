@@ -523,6 +523,23 @@ je Aufbau -- `tools/playtest/module_bench.gd`. Der Seitenbias aus der ersten
 Messung (56:44 bei 100 Kaempfen) war Zufall: 1000 Spiegelkaempfe ergaben
 483:517.
 
+**Gemessen (8. Nov., je 800 Kaempfe, Squad mit Modulen gegen sich ohne):**
+
+| Aufbau | 1x | 2x | 3x |
+|---|---|---|---|
+| Nimbus Taktchip (Vortex nach Zeit) | 76 % | 87 % | **99,5 %** |
+| Strix Schnellfeuer | 69 % | 82 % | 85 % |
+| Vireo Schnellfeuer | 61 % | 63 % | 69 % |
+| Strix Taktchip (jeder 4.) | 53 % | 62 % | 62 % (wirkungslos) |
+| Vireo Taktchip (jeder 3.) | 56 % | 56 % (wirkungslos) | -- |
+| Molok Stachelgitter | 59 % | **80 %** | -- |
+| Molok Wuchtkante | 51 % | 57 % | -- |
+
+Vergleich: Vireo Schnellfeuer + Langer Lauf + Doppellauf 62 % (dreimal
+Schnellfeuer 69 %); Molok Wuchtkante + Stachelgitter 67 %, Raufbold 69 %
+(der Eigeneffekt bringt ~2 Punkte), zweimal Stachelgitter 80 %; Nimbus
+Taktgeber 78 %, zweimal 89 % (jetzt gesperrt).
+
 **Offen:** Stapeln gleicher Grundmodule (bleibt vorerst erlaubt), Taktchip
 (Stapelgrenze), Raufbold-Effekt, Erstschlag -> "Faehigkeit zum Kampfbeginn
 geladen" (wenn neue Module kommen).
