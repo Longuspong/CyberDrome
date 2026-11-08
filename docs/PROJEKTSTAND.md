@@ -88,7 +88,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * **Optik** (`scripts/ui/arena_painter.gd`, gezeichnet statt SVG-Kachel):
   Bodennuancen je Feld, feine helle Fugen statt schwarzer Umrisse,
   Verzierungen je Region (City: Mittelstreifen, Risse, Pfuetzen, Gullis;
-  Gruenzone: Gras, Steine, Blueten; Anlage 7: Gitterrost, Rost, Oel,
+  Parkanlage: Gras, Steine, Blueten; Factory 5: Gitterrost, Rost, Oel,
   Warnstreifen), dunklerer Randstreifen (3 Felder) mit Zierlinie und
   Sockel, Deko darauf (Laternen mit Lichtkegel, Container, Ruinen, Tanks),
   additive Lichtflecken, Vignette. Hindernisse als Iso-Bloecke je Region
@@ -167,7 +167,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Schaden und Reichweite nur auf Angriffe; Takt, Statusdauer, Locken auf
   Faehigkeiten. Werte des Traegers (DEF, Schild, Stacheln, frueheres
   Schildladen) stehen in `DromeBuild.stats()`.
-* Zehn Grundmodule (vorlaeufig): Angriff -- Schnellfeuer, Langer Lauf,
+* Grundmodule (vorlaeufig; Stand 7. Nov., Umbau 8. Nov. unten): Angriff -- Schnellfeuer, Langer Lauf,
   Doppellauf (je Fernwaffe), Wuchtkante (Nahkampf); Abwehr -- Panzerplatte,
   Kondensator, Stachelgitter; Taktik -- Taktchip, Verstaerker, Koedersender
   (die Faehigkeit lockt ihr Ziel 3 s auf den Traeger, Status `taunt`).
@@ -197,6 +197,22 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Taktgeber 85:15; je DROME ein Grundmodul 80:20. Module machen also einen
   deutlichen Unterschied -- die Gegnerkurve ist noch nicht darauf
   eingestellt (Gegner tragen keine Module).
+* **Rezepte nur einmal je Halter** (8. Nov. 2026, Gutachten): dasselbe
+  Rezept-Modul passt kein zweites Mal in denselben Halter, auch nicht als
+  Teil eines anderen (`RunState._recipe_twice`, `ModuleData.parts()`);
+  Grundmodule stapeln weiter.
+* **Umbau 8. Nov. (6i):** Taktchip ist ein Rezept (Zeiger + Schaltkreis, neue
+  Grundmodule; Zeit-Takt 20 %), Taktgeber = Taktchip + Verstaerker (Rezept
+  als Zutat). Raufbold: Vergeltung (`retaliation`, `Unit.retaliation_stacks`,
+  aufgeladen in `ActionResolver._thorns`, entladen in
+  `AIController._attack_modules`). Neues Rezept Rundumschlag (Wuchtkante +
+  Koedersender, `cleave`). Symbole fuer Zeiger, Schaltkreis, Rundumschlag.
+* **Messwerkzeug** `tools/playtest/module_bench.gd -- 400 "Vireo=mod_a+mod_b"`:
+  Squad mit Modulen gegen sich selbst ohne, je Seed beide Seiten (400 Seeds =
+  800 Kaempfe). 1000 Spiegelkaempfe ohne Module: 483:517 -- kein Seitenbias,
+  die 56:44 oben waren Zufall bei nur 100 Kaempfen.
+* Entscheidungen nach den Gutachten (Laden statt Modul-Beute, Gegner-Module,
+  Gebietsnamen): `NEUANFANG.md` Abschnitt 6i.
 
 ### Chaos-Virus
 * Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
@@ -352,8 +368,8 @@ Gebaut (Nov. 2026, auf Wunsch des Spielers):
   die Kamera hin. Die Statuszeile sagt nur noch, wer am Zug ist.
 * **Kulissen** (`Ambience`, gezeichnet statt Bilddatei): Neon-Grossstadt
   hinter Startseite, Lauf und Chaos-Auswahl; Sci-Fi-Hangar im Hangar; im Kampf
-  je Region (Sektor City Neon-Stadt, Gruenzone Ruinen mit Gluehwuermchen,
-  Anlage 7 Schlote und Smog), mit leichter Parallaxe.
+  je Region (Neon City Neon-Stadt, Parkanlage Ruinen mit Gluehwuermchen,
+  Factory 5 Schlote und Smog), mit leichter Parallaxe.
 * **Teil-Info im Umbau** (`PartInfo`): "Wie funktioniert das?" am Halter und
   in jeder Teil-Vorschau -- Rolle, Werte, Besonderheiten, jede Aktion mit
   Reichweite, Wirkung, Schadensart und Einsatz.

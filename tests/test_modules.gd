@@ -122,6 +122,73 @@ func test_the_takt_chip_brings_the_ability_one_attack_earlier() -> void:
 	t.equal(unit.takt_bars()[0]["segments"], 2, "die Takt-Leiste zeigt es")
 
 
+func test_the_takt_chip_is_a_recipe_of_pointer_and_circuit() -> void:
+	var chip := ModuleData.get_module(&"mod_takt_chip")
+	t.ok(chip.is_recipe(), "Taktchip ist ein Rezept")
+	t.equal(chip.from, [&"mod_pointer", &"mod_circuit"], "aus Zeiger und Schaltkreis")
+	t.ok(is_equal_approx(float(chip.effects.get("takt_time", 0.0)), 0.2), "Zeit-Takt 20 % kuerzer")
+	var metronome := ModuleData.get_module(&"mod_metronome")
+	t.ok(metronome.parts().has(&"mod_takt_chip"), "der Taktgeber baut auf dem Taktchip auf")
+	t.ok(metronome.effects.has("takt_cut"), "und uebernimmt seinen Takt")
+
+
+func test_a_recipe_does_not_fit_next_to_a_recipe_containing_it() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.storage.append_array([&"mod_metronome", &"mod_takt_chip"])
+	t.ok(run.install_module(0, 0, slot), "Taktgeber eingesetzt")
+	t.ok(not run.install_module(0, 0, slot), "Taktchip passt nicht daneben")
+
+
+func test_retaliation_charges_the_next_strike() -> void:
+	var brawler := _with(_molok(), "equip_left", [&"mod_brawler"])
+	var battle := _battle([brawler], [_vireo(&"eq_plasma_blade")], [Vector2i(10, 10), Vector2i(10, 9)])
+	var molok: Unit = battle.units[0]
+	var blade: Unit = battle.units[1]
+	battle.resolver.execute(blade, molok.tile, blade.mounts[0]["attack"])
+	t.equal(molok.retaliation_stacks, 1, "ein Nahkampftreffer laedt auf")
+	var before := blade.hp + blade.shield
+	var hammer: ActionData = molok.mounts[0]["attack"]
+	battle.brain._attack_modules(molok, molok.mounts[0], hammer, blade)
+	t.ok(blade.hp + blade.shield < before, "der naechste Angriff entlaedt die Vergeltung")
+	t.equal(molok.retaliation_stacks, 0, "danach leer")
+	battle.free()
+
+
+func test_whirlwind_hits_every_foe_next_to_the_bearer() -> void:
+	var whirl := _with(_molok(), "equip_left", [&"mod_whirlwind"])
+	var battle := _battle([whirl], [_vireo(), _vireo(), _vireo()],
+		[Vector2i(10, 10), Vector2i(10, 9), Vector2i(11, 10), Vector2i(15, 15)])
+	var molok: Unit = battle.units[0]
+	var target: Unit = battle.units[1]
+	var side: Unit = battle.units[2]
+	var far: Unit = battle.units[3]
+	var side_before := side.hp + side.shield
+	var far_before := far.hp + far.shield
+	battle.brain._attack_modules(molok, molok.mounts[0], molok.mounts[0]["attack"], target)
+	t.ok(side.hp + side.shield < side_before, "der Nachbar wird mitgetroffen")
+	t.equal(far.hp + far.shield, far_before, "wer weiter weg steht, nicht")
+	battle.free()
+
+
+func test_the_shackle_pulls_three_foes_next_to_the_bearer_and_stuns_them() -> void:
+	var chained := _with(_molok(), "equip_left", [&"mod_shackle"])
+	t.equal(ModuleData.get_module(&"mod_shackle").from,
+		[&"mod_chain", &"mod_chain", &"mod_twin_barrel"], "zwei Ketten und ein Doppellauf")
+	var battle := _battle([chained], [_vireo(), _vireo(), _vireo(), _vireo()],
+		[Vector2i(10, 10), Vector2i(10, 13), Vector2i(13, 10), Vector2i(7, 10), Vector2i(16, 16)])
+	var molok: Unit = battle.units[0]
+	battle.brain._shackle(molok, molok.mounts[0])
+	for i in [1, 2, 3]:
+		var foe: Unit = battle.units[i]
+		t.ok(Grid.distance(foe.tile, molok.tile) <= 1, "Gegner %d steht jetzt daneben (%s)" % [i, foe.tile])
+		t.ok(foe.is_stunned(), "und ist betaeubt")
+	var far: Unit = battle.units[4]
+	t.equal(far.tile, Vector2i(16, 16), "wer weiter weg steht, bleibt")
+	t.ok(not far.is_stunned(), "und ist nicht betaeubt")
+	battle.free()
+
+
 func test_defense_modules_raise_the_bearers_stats() -> void:
 	var plain := _vireo().stats()
 	var armored := _with(_vireo(), "equip_left", [&"mod_armor_plate", &"mod_capacitor"]).stats()
@@ -160,6 +227,7 @@ func test_the_bait_module_makes_the_target_attack_the_bearer() -> void:
 func test_a_battle_with_every_module_runs_to_the_end() -> void:
 	var gun := _with(_vireo(), "equip_left", [&"mod_gunslinger", &"mod_metronome", &"mod_bait"])
 	var tank := _with(_molok(), "equip_left", [&"mod_bulwark", &"mod_brawler"])
+	tank.modules["equip_right"] = [&"mod_whirlwind", &"mod_shackle"]
 	var battle := BattleManager.new()
 	battle.setup(919, [gun, tank], [_vireo(), _molok()])
 	var outcome := battle.run_to_end()
@@ -200,6 +268,20 @@ func test_a_holder_takes_only_as_many_modules_as_it_has_slots() -> void:
 	t.ok(run.install_module(0, drome, slot), "zweites Modul")
 	t.ok(not run.install_module(0, drome, slot), "drittes passt beim Molok nicht")
 	t.equal(run.storage.size(), 1, "es bleibt im Lager")
+
+
+func test_a_recipe_fits_only_once_per_holder() -> void:
+	var run := _stop_run()
+	var drome := 0
+	var slot: String = run.squad[drome].equip_slots()[0]
+	run.storage.append_array([&"mod_metronome", &"mod_metronome", &"mod_bulwark"])
+	t.ok(run.install_module(0, drome, slot), "erster Taktgeber")
+	var spot: Dictionary = run.module_options(0).filter(
+		func(e): return e["drome"] == drome and e["slot"] == slot)[0]
+	t.ok(not spot["allowed"], "zweiter Taktgeber wird angeboten, aber gesperrt")
+	t.ok(String(spot["detail"]).contains("einmal je Halter"), "mit Grund")
+	t.ok(not run.install_module(0, drome, slot), "zweiter Taktgeber passt nicht")
+	t.ok(run.install_module(1, drome, slot), "ein anderes Rezept schon")
 
 
 func test_recipes_combine_in_the_storage() -> void:

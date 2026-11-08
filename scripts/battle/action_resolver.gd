@@ -85,12 +85,17 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 
 
 ## Modul Stachelgitter: wer den Traeger im Nahkampf ANGREIFT, nimmt selbst
-## Schaden. Nicht auf Faehigkeiten, nicht auf den Konter selbst (ohne Aktion).
+## Schaden. Dazu zaehlt hier die Vergeltung (Raufbold) mit. Nicht auf Faehigkeiten, nicht auf den Konter selbst (ohne Aktion).
 func _thorns(source: Unit, target: Unit, action: ActionData) -> void:
 	if source == null or action == null or not action.is_attack() or not source.is_alive():
 		return
+	if Grid.distance(source.tile, target.tile) > 1:
+		return
+	# Modul Raufbold: der Treffer laedt den naechsten eigenen Angriff auf.
+	if float(target.stats.get("retaliation", 0.0)) > 0.0:
+		target.retaliation_stacks = mini(3, target.retaliation_stacks + 1)
 	var spikes := int(target.stats.get("thorns", 0))
-	if spikes <= 0 or Grid.distance(source.tile, target.tile) > 1:
+	if spikes <= 0:
 		return
 	apply_damage(target, source, spikes, null, false)
 

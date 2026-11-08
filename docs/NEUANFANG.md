@@ -477,6 +477,118 @@ Playtest.
 bei Rezept-Modulen muessen **alle** Werte sichtbar sein, auch die aus den
 Zutaten (Gunslinger zeigt auch das Angriffstempo).
 
+## 6i. Module nach den Gutachten (Vorgabe des Spielers, 8. Nov. 2026)
+
+Grundlage: drei Gutachten zum Modulsystem (Zusammenfassung vom 7. Nov.), gegen
+den Code geprueft. Entschieden:
+
+**Welt -- offizielle Namen** (ersetzen Sektor City / Gruenzone / Anlage 7):
+
+| Stage | Gebiet | Fraktion |
+|---|---|---|
+| 1 | Neon City | Neon Ninja's |
+| 2 | Parkanlage | Solar Sentients |
+| 3 | Factory 5 | Mega Mechas |
+| 4 | Dachterrassen | Hipstar Hookers |
+
+In `data/regions.json` umbenannt (Ids `city`, `green`, `plant7` bleiben).
+Stage 4 hat noch keine Region (Boden, Kulisse).
+
+**Module kommen aus dem Laden, Beute ist Zufall:**
+
+* Module gibt es nur noch im **Laden** (Zwischenstopp, Credits). Der Laden
+  bietet wenig an (Start: 2 Angebote) und **gewichtet** Module, die ein
+  angefangenes Rezept ergaenzen, hoeher (unsichtbares Mitleid). Spaeter, wenn
+  es mehr und komplexere Module gibt: Laden neu wuerfeln oder erweitern.
+* **Beute nach dem Kampf** wird gewuerfelt, ohne Auswahl: entweder
+  **Credits** oder **Ausruestungsteile**. Teile nimmt man mit nach Hause,
+  Credits verfallen am Ende des Laufs.
+* Spaeter (noch nicht ausgearbeitet): eine **bleibende Waehrung**, mit der man
+  Beute freischaltet, bei der man Pech hatte -- Ausgleich gegen Frust.
+
+**Gegner tragen Module** -- dieselben wie der Spieler, aber tendenziell
+weniger und handverlesen (passend zur Waffe, nicht zu wild). Wirklich
+zufaellige Module hoechstens im Endlos-Modus in den Chaos-Kaempfen. Gegner-
+Module sind in der Vorschau sichtbar.
+
+**Gestaltungsregel:** Grundmodule sind Zahlen, Rezept-Module aendern eine
+Regel. Raufbold braucht deshalb einen neuen eigenen Effekt (offen).
+
+**Rezepte nur einmal je Halter** (gebaut): dasselbe Rezept-Modul passt kein
+zweites Mal in denselben Halter. Verschiedene Rezepte und gestapelte
+Grundmodule bleiben erlaubt.
+
+**Messen:** Spiegelkampf mit getauschten Seiten, 400 Seeds (= 800 Kaempfe)
+je Aufbau -- `tools/playtest/module_bench.gd`. Der Seitenbias aus der ersten
+Messung (56:44 bei 100 Kaempfen) war Zufall: 1000 Spiegelkaempfe ergaben
+483:517.
+
+**Gemessen (8. Nov., je 800 Kaempfe, Squad mit Modulen gegen sich ohne):**
+
+| Aufbau | 1x | 2x | 3x |
+|---|---|---|---|
+| Nimbus Taktchip (Vortex nach Zeit) | 76 % | 87 % | **99,5 %** |
+| Strix Schnellfeuer | 69 % | 82 % | 85 % |
+| Vireo Schnellfeuer | 61 % | 63 % | 69 % |
+| Strix Taktchip (jeder 4.) | 53 % | 62 % | 62 % (wirkungslos) |
+| Vireo Taktchip (jeder 3.) | 56 % | 56 % (wirkungslos) | -- |
+| Molok Stachelgitter | 59 % | **80 %** | -- |
+| Molok Wuchtkante | 51 % | 57 % | -- |
+
+Vergleich: Vireo Schnellfeuer + Langer Lauf + Doppellauf 62 % (dreimal
+Schnellfeuer 69 %); Molok Wuchtkante + Stachelgitter 67 %, Raufbold 69 %
+(der Eigeneffekt bringt ~2 Punkte), zweimal Stachelgitter 80 %; Nimbus
+Taktgeber 78 %, zweimal 89 % (jetzt gesperrt).
+
+**Stapeln und Rezepte -- entschieden (8. Nov., gebaut):**
+
+* Grundmodule duerfen sich stapeln. **Frueh im Lauf** ist Stapeln gut, **spaeter
+  sind Rezepte deutlich besser** -- wann man zusammenfuegt, ist eine taktische
+  Entscheidung. Werte, die beim Stapeln zu schnell eskalieren, gibt es nur
+  als Rezept.
+* Ausrasten ist erlaubt: wer Beutegluck hat, darf sich mit perfekten Modulen
+  wie ein Gott fuehlen. Balancing ja, aber nicht alles glattbuegeln.
+* **Taktchip ist ein Rezept** = **Zeiger** (+5 % Angriffstempo, jede Waffe) +
+  **Schaltkreis** (+5 Schild); eigener Effekt: Faehigkeit 1 Angriff frueher
+  bzw. Zeit-Takt **20 %** kuerzer. Damit gibt es ihn nur einmal je Halter.
+* **Taktgeber** = Taktchip + Verstaerker -- ein Rezept als Zutat (Aufstieg
+  "2er-Rezept + 1"). Ein Rezept passt nicht in einen Halter, in dem es schon
+  steckt, auch nicht als Teil eines anderen (Taktchip neben Taktgeber).
+* **Raufbold** (Wuchtkante + Stachelgitter): **Vergeltung** -- jeder
+  Nahkampftreffer am Traeger laedt den naechsten Angriff um 25 % auf (bis 3x).
+* **Rundumschlag** (neu, Wuchtkante + Koedersender, nur Nahkampf): jeder
+  Angriff trifft dazu alle anderen Gegner direkt neben dem Traeger mit 50 %.
+  Der Koedersender holt die Gegner heran, der Schlag trifft sie alle.
+* Erstschlag wird, wenn er kommt, "Faehigkeit zum Kampfbeginn geladen".
+
+Gemessen nach dem Umbau (je 800 Kaempfe; gleiche Zahl Modulplaetze verglichen):
+
+| Rezept | Wert | Gestapelt / Zutaten |
+|---|---|---|
+| Vireo Gunslinger + 2x Schnellfeuer | 80 % | 3x Schnellfeuer 69 % |
+| Molok Raufbold + Stachelgitter | 87 % | 2x Stachelgitter 80 % |
+| Molok Raufbold allein | 81 % | Wuchtkante + Stachelgitter 67 % |
+| Molok Bollwerk | 63 % | 2x Panzerplatte 58 % |
+| Nimbus Taktchip / Taktgeber | 83 % / 85 % | 2x Zeiger 59 % |
+| Strix Taktchip / Gunslinger | 62 % / 78 % | -- |
+| Molok Rundumschlag | 51 % | Wuchtkante allein 51 % |
+
+Rundumschlag wirkt im Spiegel allein nicht: neben dem Molok steht ausser
+seinem Ziel fast nie ein zweiter Gegner (der Squad kaempft auf Abstand).
+Deshalb (Vorgabe des Spielers, 8. Nov., gebaut):
+
+* **Kette** (Grundmodul, Abwehr): +2 Panzerung.
+* **Fesselkette** = 2x Kette + Doppellauf (Taktik, jede Waffe): die
+  Faehigkeit zieht bis zu 3 Gegner in Reichweite 3 neben den Traeger und
+  betaeubt sie 1 s. Der Molok ist dafuer gemacht (Nahkampf, steht vorn).
+* Gemessen: Molok Fesselkette 57 %, Fesselkette + Rundumschlag 61 %,
+  Rundumschlag allein 51 %, Raufbold + Stachelgitter 83 %.
+
+**Lauftempo -30 %** (Vorgabe des Spielers, 8. Nov.): `realtime.move_base`
+0,7, `move_per_spd` 0,084, `move_min` 0,84. Felder je Sekunde vorher ->
+nachher: Vireo 2,68 -> 1,88; Nimbus 2,56 -> 1,79; Strix 1,96 -> 1,37; Molok
+1,72 -> 1,20. Kampfdauer im Spiegel fast gleich (20,3 -> 20,5 s).
+
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
 Vom Spieler angestossen (6. Nov. 2026):
@@ -560,9 +672,9 @@ Regionsthemen (Vorschlag, die ersten beiden Regionen nur skizziert):
   wenig Integritaet. Neon-DROMEs **bezahlen ihre Faehigkeiten mit Schild** --
   wer ihren Schild bricht, nimmt ihnen die Faehigkeiten. Konter: Energieschaden,
   Neon-Blaster, Schild-Module.
-* **Gruenzone -- Wucherung:** Regeneration und Ueberzahl (viele kleine Gegner).
+* **Parkanlage -- Wucherung:** Regeneration und Ueberzahl (viele kleine Gegner).
   Konter: Flaeche, Verwundbar.
-* **Anlage 7 -- Panzerung:** hohe DEF, langsam, schwer. Konter: kinetischer
+* **Factory 5 -- Panzerung:** hohe DEF, langsam, schwer. Konter: kinetischer
   Schaden, Durchschlag.
 
 **Markenzeichen Neon: es leuchtet** (Vorgabe des Spielers). Neon-Gegner,

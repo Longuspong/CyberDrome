@@ -117,6 +117,17 @@ static func add_effects(a: Dictionary, b: Dictionary) -> Dictionary:
 	return out
 
 
+## Alle Module, aus denen dieses besteht -- es selbst eingeschlossen, Rezepte
+## als Zutat aufgeloest (Taktgeber -> Taktchip -> Zeiger, Schaltkreis).
+func parts() -> Array:
+	var out: Array = [id]
+	for ingredient in from:
+		var module := get_module(ingredient)
+		if module != null:
+			out.append_array(module.parts())
+	return out
+
+
 static func get_module(module_id) -> ModuleData:
 	if module_id == null:
 		return null
@@ -273,6 +284,12 @@ static func effect_text(key: String, value) -> String:
 			return "Schild laedt schon nach %s s Ruhe" % _seconds(v)
 		"ready_after_ability":
 			return "nach der Faehigkeit sofort wieder geladen" if value else ""
+		"retaliation":
+			return "Vergeltung: jeder Nahkampftreffer am Traeger laedt den naechsten Angriff um %d %% auf (bis 3x)" % _pct(v)
+		"shackle":
+			return "Fesselkette: Faehigkeit zieht bis zu %d Gegner (Rw 3) heran und betaeubt sie 1 s" % int(v)
+		"cleave":
+			return "Rundumschlag: trifft dazu alle Gegner direkt neben dem Traeger mit %d %% Schaden" % _pct(v)
 	return ""
 
 

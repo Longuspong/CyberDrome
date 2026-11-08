@@ -8,6 +8,8 @@
     "nicht, ruht das Modul (grau), bleibt aber im Halter.",
     "Klassen: attack (Modifikatoren), defense (Abwehr/Konter), tactic (Taktik).",
     "Keine Stufen. Staerker nur durch Rezepte: die Zutaten aus dem Lager",
+    "(auch ein Rezept kann Zutat sein: Taktchip -> Taktgeber; Rezepte muessen",
+    "VOR dem Rezept stehen, das sie verwendet)",
     "ergeben ein neues Modul mit der SUMME ihrer Wirkungen plus einem eigenen",
     "Effekt (bonus). Alle Werte vorlaeufig.",
     "Wirkungen (effects):",
@@ -25,6 +27,14 @@
     "  field_shot_every   jeder N-te Angriff trifft dazu einen Gegner irgendwo auf dem Feld",
     "  shield_delay       Schild laedt schon nach so vielen Sekunden Ruhe",
     "  ready_after_ability  nach der Faehigkeit ist die Waffe sofort wieder geladen",
+    "  retaliation        Vergeltung: jeder Nahkampftreffer, den der Traeger einsteckt,",
+    "                     laedt seinen naechsten Angriff um diesen Anteil auf (max. 3x)",
+    "  shackle            Fesselkette: die Faehigkeit zieht bis zu so viele Gegner",
+    "                     in Reichweite 3 neben den Traeger und betaeubt sie 1 s",
+    "  cleave             Rundumschlag: jeder Angriff trifft dazu alle anderen Gegner",
+    "                     direkt neben dem Traeger mit diesem Anteil des Schadens",
+    "Gestaltungsregel (6i): Grundmodule sind Zahlen, Rezepte aendern eine Regel.",
+    "Was beim Stapeln zu schnell eskaliert, gibt es nur als Rezept (Taktchip).",
     "short: zwei Buchstaben fuer den Chip (eindeutig), falls kein Symbol da ist.",
     "Symbol: assets/modules/<id>.svg (64x64, transparent); anderer Pfad mit icon.",
     "sell_value: Credits beim Verkauf (Grundmodul / Rezept-Modul).",
@@ -63,13 +73,21 @@
       "name": "Kondensator", "short": "KD", "class": "defense", "condition": "",
       "effects": {"shield": 10}
     },
+    "mod_chain": {
+      "name": "Kette", "short": "KT", "class": "defense", "condition": "",
+      "effects": {"def": 2}
+    },
     "mod_spike_grid": {
       "name": "Stachelgitter", "short": "SG", "class": "defense", "condition": "",
       "effects": {"thorns": 3}
     },
-    "mod_takt_chip": {
-      "name": "Taktchip", "short": "TC", "class": "tactic", "condition": "",
-      "effects": {"takt_cut": 1, "takt_time": 0.15}
+    "mod_pointer": {
+      "name": "Zeiger", "short": "ZG", "class": "tactic", "condition": "",
+      "effects": {"attack_speed": 0.05}
+    },
+    "mod_circuit": {
+      "name": "Schaltkreis", "short": "SK", "class": "tactic", "condition": "",
+      "effects": {"shield": 5}
     },
     "mod_amplifier": {
       "name": "Verstaerker", "short": "VS", "class": "tactic", "condition": "",
@@ -91,6 +109,11 @@
       "from": ["mod_armor_plate", "mod_capacitor"],
       "bonus": {"shield_delay": 2.0}
     },
+    "mod_takt_chip": {
+      "name": "Taktchip", "short": "TC", "class": "tactic", "condition": "",
+      "from": ["mod_pointer", "mod_circuit"],
+      "bonus": {"takt_cut": 1, "takt_time": 0.2}
+    },
     "mod_metronome": {
       "name": "Taktgeber", "short": "TG", "class": "tactic", "condition": "",
       "from": ["mod_takt_chip", "mod_amplifier"],
@@ -99,7 +122,17 @@
     "mod_brawler": {
       "name": "Raufbold", "short": "RB", "class": "attack", "condition": "melee",
       "from": ["mod_heavy_edge", "mod_spike_grid"],
-      "bonus": {"attack_speed": 0.15}
+      "bonus": {"retaliation": 0.25}
+    },
+    "mod_shackle": {
+      "name": "Fesselkette", "short": "FK", "class": "tactic", "condition": "",
+      "from": ["mod_chain", "mod_chain", "mod_twin_barrel"],
+      "bonus": {"shackle": 3}
+    },
+    "mod_whirlwind": {
+      "name": "Rundumschlag", "short": "RS", "class": "attack", "condition": "melee",
+      "from": ["mod_heavy_edge", "mod_bait"],
+      "bonus": {"cleave": 0.5}
     }
   }
 }

@@ -2,7 +2,7 @@ class_name Ambience
 extends Control
 
 ## Die Kulisse hinter den Bildschirmen: Neon-Grossstadt, Sci-Fi-Hangar,
-## Gruenzone, Industrieanlage.
+## Parkanlage, Factory 5.
 ##
 ## Gezeichnet statt als Bild geladen. Ein Hochformat-Hintergrund als Grafik
 ## muesste fuer jedes Seitenverhaeltnis passen und kostet im Web-Export
@@ -398,7 +398,7 @@ func _ellipse(center: Vector2, rx: float, ry: float, color: Color, width: float)
 
 
 # ---------------------------------------------------------------------------
-# Gruenzone: ueberwucherte Ruinen, Biolumineszenz
+# Parkanlage: ueberwucherte Ruinen, Biolumineszenz
 # ---------------------------------------------------------------------------
 
 func _draw_green() -> void:
@@ -437,7 +437,7 @@ func _draw_green() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Anlage 7: Industrie, Schlote, Warnlichter, Smog
+# Factory 5: Industrie, Schlote, Warnlichter, Smog
 # ---------------------------------------------------------------------------
 
 func _draw_plant() -> void:

@@ -108,8 +108,10 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    bleiben beim Waffentausch, verfallen nach dem Lauf). Als Naechstes: der
    Laden (Credits ausgeben). Neu entschieden (7. Nov.): Story- und
    Endlos-Modus, Lager nur fuer Module, Gegner staerker ueber Level/Waffen/
-   Module statt Faktor -- `docs/NEUANFANG.md` Abschnitt 6h. Module sind
-   beim Spieler im Brainstorming.
+   Module statt Faktor -- `docs/NEUANFANG.md` Abschnitt 6h. Module nach den
+   Gutachten entschieden (8. Nov.): Module nur im Laden, Beute zufaellig
+   (Credits oder Teile), Gegner tragen Module, Gebiete Neon City /
+   Parkanlage / Factory 5 / Dachterrassen -- `docs/NEUANFANG.md` 6i.
    Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den

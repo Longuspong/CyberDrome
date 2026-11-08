@@ -254,6 +254,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 			_execute(unit, aim["tile"], ability, aim["target"])
 			_echo(unit, ability, aim)
 			_after_ability(unit, ability, aim)
+			_shackle(unit, mount)
 			mount["count"] = 0
 			mount["instant"] = bool((mount.get("fx", {}) as Dictionary).get("ready_after_ability", false))
 			return true
@@ -273,8 +274,9 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 
 
 ## Module, die an einem Angriff haengen (NEUANFANG 6g): Doppellauf (Chance
-## auf einen Querschlaeger aufs selbe Ziel) und Gunslinger (jeder N-te
-## Angriff trifft dazu einen Gegner irgendwo auf dem Feld). Nur auf Angriffe
+## auf einen Querschlaeger aufs selbe Ziel), Raufbold (Vergeltung), Rundum-
+## schlag (Nachbarn) und Gunslinger (jeder N-te Angriff trifft dazu einen
+## Gegner irgendwo auf dem Feld). Nur auf Angriffe
 ## gegen Gegner, nicht auf Heilstrahlen.
 func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) -> void:
 	var fx: Dictionary = mount.get("fx", {})
@@ -289,6 +291,21 @@ func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) 
 		var bounce := maxi(1, int(round(float(raw) * float(fx.get("ricochet_share", 0.15)))))
 		EventBus.log_line("%s: Querschlaeger." % unit.display_name)
 		battle.resolver.apply_damage(unit, target, bounce, attack)
+	# Raufbold: aufgeladene Vergeltung entlaedt sich auf das Ziel.
+	var payback := float(fx.get("retaliation", 0.0))
+	if payback > 0.0 and unit.retaliation_stacks > 0 and target.is_alive():
+		var extra_dmg := maxi(1, int(round(float(raw) * payback * unit.retaliation_stacks)))
+		EventBus.log_line("%s: Vergeltung (x%d)." % [unit.display_name, unit.retaliation_stacks])
+		unit.retaliation_stacks = 0
+		battle.resolver.apply_damage(unit, target, extra_dmg, attack)
+	# Rundumschlag: alle anderen Gegner direkt neben dem Traeger.
+	var cleave := float(fx.get("cleave", 0.0))
+	if cleave > 0.0:
+		var side := maxi(1, int(round(float(raw) * cleave)))
+		for foe in battle.enemies_of(unit):
+			if foe == target or not foe.is_alive() or Grid.distance(unit.tile, foe.tile) > 1:
+				continue
+			battle.resolver.apply_damage(unit, foe, side, attack)
 	var every := int(fx.get("field_shot_every", 0))
 	if every > 0 and int(mount["shots"]) % every == 0:
 		var extra := _field_shot_target(unit, target)
@@ -314,6 +331,39 @@ func _field_shot_target(unit: Unit, target: Unit) -> Unit:
 	if best == null and target != null and target.is_alive():
 		return target
 	return best
+
+
+## Fesselkette: Reichweite und Betaeubung (die Zahl der Gegner steht am Modul).
+const SHACKLE_RANGE := 3
+const SHACKLE_STUN := 1.0
+
+
+## Nach einer Faehigkeit: Modul Fesselkette -- die naechsten Gegner in
+## Reichweite 3 ruecken neben den Traeger und sind kurz betaeubt. Wer schon
+## daneben steht, zaehlt mit. Blockierte bleiben stehen, werden aber betaeubt.
+func _shackle(unit: Unit, mount: Dictionary) -> void:
+	var count := int((mount.get("fx", {}) as Dictionary).get("shackle", 0))
+	if count <= 0 or not unit.is_alive():
+		return
+	var caught: Array = []
+	for foe in battle.enemies_of(unit):
+		if foe.is_alive() and Grid.distance(unit.tile, foe.tile) <= SHACKLE_RANGE:
+			caught.append(foe)
+	if caught.is_empty():
+		return
+	caught.sort_custom(func(a, b):
+		return Grid.distance(a.tile, unit.tile) < Grid.distance(b.tile, unit.tile))
+	caught = caught.slice(0, count)
+	for foe in caught:
+		for _i in SHACKLE_RANGE:
+			if Grid.distance(foe.tile, unit.tile) <= 1:
+				break
+			var next: Vector2i = battle.resolver._step_toward(foe, unit.tile)
+			if next == foe.tile:
+				break
+			battle.resolver.move_unit(foe, next)
+		foe.apply_status(&"stun", SHACKLE_STUN, {"id": "stun", "stunned": true})
+	EventBus.log_line("%s legt %d Gegner in Ketten." % [unit.display_name, caught.size()])
 
 
 ## Nach einer Faehigkeit: Modul Koedersender -- das Ziel muss eine Weile den
