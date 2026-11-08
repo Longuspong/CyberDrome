@@ -1,0 +1,105 @@
+{
+  "_kommentar": [
+    "Module (NEUANFANG 6g): gibt es nur im Lauf, sie veraendern, wie eine Waffe",
+    "funktioniert. Sie stecken im WAFFENHALTER eines DROME (slots je Halter,",
+    "slots_by_body fuer Ausnahmen wie den Molok) und wirken auf die Waffe, die",
+    "gerade darin sitzt. Bedingung (condition): 'ranged' = Angriff mit",
+    "Reichweite ab 2, 'melee' = Reichweite 1, leer = jede Waffe. Passt die Waffe",
+    "nicht, ruht das Modul (grau), bleibt aber im Halter.",
+    "Klassen: attack (Modifikatoren), defense (Abwehr/Konter), tactic (Taktik).",
+    "Keine Stufen. Staerker nur durch Rezepte: die Zutaten aus dem Lager",
+    "ergeben ein neues Modul mit der SUMME ihrer Wirkungen plus einem eigenen",
+    "Effekt (bonus). Alle Werte vorlaeufig.",
+    "Wirkungen (effects):",
+    "  attack_speed       +Anteil Angriffstempo (Intervall / (1 + x))",
+    "  attack_power       +Anteil Schaden der Angriffe",
+    "  range              +Reichweite der Angriffe",
+    "  ricochet_chance    Chance je Angriff auf einen Querschlaeger aufs selbe Ziel",
+    "  ricochet_share     dessen Schaden als Anteil des Angriffs",
+    "  def / shield       +Panzerung / +Schild des Traegers",
+    "  thorns             Nahkampf-Angreifer nehmen je Treffer so viel Schaden",
+    "  takt_cut           Treffer-Takt der Faehigkeit so viele Angriffe kuerzer (mind. 2)",
+    "  takt_time          Zeit-Takt der Faehigkeit um diesen Anteil kuerzer",
+    "  status_time        Statuseffekte der Waffe um diesen Anteil laenger",
+    "  taunt              die Faehigkeit lockt ihr Ziel so viele Sekunden auf den Traeger",
+    "  field_shot_every   jeder N-te Angriff trifft dazu einen Gegner irgendwo auf dem Feld",
+    "  shield_delay       Schild laedt schon nach so vielen Sekunden Ruhe",
+    "  ready_after_ability  nach der Faehigkeit ist die Waffe sofort wieder geladen",
+    "short: zwei Buchstaben fuer den Chip (eindeutig), falls kein Symbol da ist.",
+    "Symbol: assets/modules/<id>.svg (64x64, transparent); anderer Pfad mit icon.",
+    "sell_value: Credits beim Verkauf (Grundmodul / Rezept-Modul).",
+    "reward: Grundmodule als Beute je Stufe (choices), Elite bietet mit",
+    "recipe_chance ein fertiges Rezept-Modul statt eines Grundmoduls."
+  ],
+  "slots": 3,
+  "slots_by_body": {"jugg_body": 2},
+  "sell_value": {"base": 2, "recipe": 6},
+  "reward": {
+    "choices": {"easy": 1, "normal": 1, "elite": 1},
+    "recipe_chance": 0.5
+  },
+  "modules": {
+    "mod_rapid_fire": {
+      "name": "Schnellfeuer", "short": "SF", "class": "attack", "condition": "ranged",
+      "effects": {"attack_speed": 0.08}
+    },
+    "mod_long_barrel": {
+      "name": "Langer Lauf", "short": "LL", "class": "attack", "condition": "ranged",
+      "effects": {"range": 1}
+    },
+    "mod_twin_barrel": {
+      "name": "Doppellauf", "short": "DL", "class": "attack", "condition": "ranged",
+      "effects": {"ricochet_chance": 0.2, "ricochet_share": 0.15}
+    },
+    "mod_heavy_edge": {
+      "name": "Wuchtkante", "short": "WK", "class": "attack", "condition": "melee",
+      "effects": {"attack_power": 0.15}
+    },
+    "mod_armor_plate": {
+      "name": "Panzerplatte", "short": "PP", "class": "defense", "condition": "",
+      "effects": {"def": 3}
+    },
+    "mod_capacitor": {
+      "name": "Kondensator", "short": "KD", "class": "defense", "condition": "",
+      "effects": {"shield": 10}
+    },
+    "mod_spike_grid": {
+      "name": "Stachelgitter", "short": "SG", "class": "defense", "condition": "",
+      "effects": {"thorns": 3}
+    },
+    "mod_takt_chip": {
+      "name": "Taktchip", "short": "TC", "class": "tactic", "condition": "",
+      "effects": {"takt_cut": 1, "takt_time": 0.15}
+    },
+    "mod_amplifier": {
+      "name": "Verstaerker", "short": "VS", "class": "tactic", "condition": "",
+      "effects": {"status_time": 0.5}
+    },
+    "mod_bait": {
+      "name": "Koedersender", "short": "KS", "class": "tactic", "condition": "",
+      "effects": {"taunt": 3.0}
+    }
+  },
+  "recipes": {
+    "mod_gunslinger": {
+      "name": "Gunslinger", "short": "GS", "class": "attack", "condition": "ranged",
+      "from": ["mod_rapid_fire", "mod_long_barrel", "mod_twin_barrel"],
+      "bonus": {"field_shot_every": 5}
+    },
+    "mod_bulwark": {
+      "name": "Bollwerk", "short": "BW", "class": "defense", "condition": "",
+      "from": ["mod_armor_plate", "mod_capacitor"],
+      "bonus": {"shield_delay": 2.0}
+    },
+    "mod_metronome": {
+      "name": "Taktgeber", "short": "TG", "class": "tactic", "condition": "",
+      "from": ["mod_takt_chip", "mod_amplifier"],
+      "bonus": {"ready_after_ability": true}
+    },
+    "mod_brawler": {
+      "name": "Raufbold", "short": "RB", "class": "attack", "condition": "melee",
+      "from": ["mod_heavy_edge", "mod_spike_grid"],
+      "bonus": {"attack_speed": 0.15}
+    }
+  }
+}

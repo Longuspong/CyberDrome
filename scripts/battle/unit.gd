@@ -326,28 +326,33 @@ func init_realtime(pulse_offset: float) -> void:
 		var part := build.part_in(slot)
 		if part == null:
 			continue
+		# Module des Halters (nur im Lauf): die Aktionen werden als Kopie
+		# angepasst, die PartDB bleibt unberuehrt.
+		var fx := build.module_effects(slot)
 		var attack: ActionData = null
 		for action in part.actions:
 			if action.is_attack():
-				attack = action
+				attack = action.with_modules(fx)
 				break
 		for action in part.actions:
 			if action.is_attack():
 				continue
 			if action.trigger_kind == "attacks" and attack != null:
 				continue
-			var first := float(action.trigger_every) * echo_slower() \
-				if action.trigger_kind == "time" else 0.0
-			gadgets.append({"part": part, "ability": action, "ready": first})
+			var gadget_action: ActionData = action.with_modules(fx)
+			var first := float(gadget_action.trigger_every) * echo_slower() \
+				if gadget_action.trigger_kind == "time" else 0.0
+			gadgets.append({"part": part, "ability": gadget_action, "ready": first, "fx": fx})
 		if attack == null:
 			continue
 		var ability: ActionData = null
 		for action in part.actions:
 			if not action.is_attack() and action.trigger_kind == "attacks":
-				ability = action
+				ability = action.with_modules(fx)
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
-			"ability": ability, "ready": attack.interval * 0.5, "count": 0})
+			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
+			"fx": fx, "shots": 0})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
@@ -510,7 +515,12 @@ func recharge_shield(dt: float) -> int:
 		_recharge_carry = 0.0
 		return 0
 	var rule: Dictionary = Config.section("combat").get("shield_recharge", {})
-	if calm_time < float(rule.get("delay", 4.0)):
+	var delay := float(rule.get("delay", 4.0))
+	# Modul Bollwerk: laedt frueher.
+	var quick := float(stats.get("shield_delay", 0.0))
+	if quick > 0.0:
+		delay = minf(delay, quick)
+	if calm_time < delay:
 		return 0
 	_recharge_carry += float(maximum) * float(rule.get("per_second", 0.1)) * dt
 	var gain := mini(int(_recharge_carry), maximum - shield)

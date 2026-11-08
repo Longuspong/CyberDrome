@@ -79,7 +79,20 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	_on_hit(source, dealt)
 	if target.hp <= 0:
 		_kill(target)
+	else:
+		_thorns(source, target, action)
 	return amount
+
+
+## Modul Stachelgitter: wer den Traeger im Nahkampf ANGREIFT, nimmt selbst
+## Schaden. Nicht auf Faehigkeiten, nicht auf den Konter selbst (ohne Aktion).
+func _thorns(source: Unit, target: Unit, action: ActionData) -> void:
+	if source == null or action == null or not action.is_attack() or not source.is_alive():
+		return
+	var spikes := int(target.stats.get("thorns", 0))
+	if spikes <= 0 or Grid.distance(source.tile, target.tile) > 1:
+		return
+	apply_damage(target, source, spikes, null, false)
 
 
 ## Der naechste lebende Verbuendete mit Praesenz im Schutzradius -- nicht das

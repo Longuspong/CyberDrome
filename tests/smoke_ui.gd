@@ -51,6 +51,15 @@ func _process(_delta: float) -> bool:
 			stop._selected_storage = 0
 			stop._refresh()
 			print("SMOKE: Lauf (Zwischenstopp) instanziiert, Lager %d" % gs.run.storage.size())
+		14:
+			# Module im Lager, eines angetippt, eines eingesetzt, Rezeptbuch offen.
+			var stop = root.get_node("RunStop")
+			gs.run.storage.append_array([&"mod_rapid_fire", &"mod_long_barrel", &"mod_twin_barrel"])
+			gs.run.squad[0].modules[gs.run.squad[0].equip_slots()[0]] = [&"mod_capacitor"]
+			stop._recipes_open = true
+			stop._selected_storage = gs.run.storage.size() - 1
+			stop._refresh()
+			print("SMOKE: Zwischenstopp mit Modulen und Rezeptbuch, Lager %d" % gs.run.storage.size())
 		16:
 			print("SMOKE_OK")
 			quit(0)
