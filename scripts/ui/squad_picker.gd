@@ -111,7 +111,16 @@ static func loadout_text(build: DromeBuild) -> String:
 	var names: Array[String] = []
 	for part in build.equipment():
 		names.append(part.display_name)
-	return ", ".join(names) if not names.is_empty() else "ohne Ausruestung"
+	var text := ", ".join(names) if not names.is_empty() else "ohne Ausruestung"
+	# Module (6i): bei Gegnern im Lauf sichtbar, damit man weiss, worauf man
+	# sich einlaesst.
+	var mods: Array[String] = []
+	for slot in build.equip_slots():
+		for module in build.modules_in(slot):
+			mods.append(module.display_name)
+	if not mods.is_empty():
+		text += "\nModule: %s" % ", ".join(mods)
+	return text
 
 
 func _card(item: Dictionary, chosen: bool, enabled: bool) -> Control:

@@ -231,9 +231,62 @@ func enemies(which: int = -1) -> Array:
 		which = tier
 	var key := round * 10 + which
 	if not _enemy_cache.has(key):
-		_enemy_cache[key] = EnemyGenerator.new(battle_seed(which)) \
+		var foes := EnemyGenerator.new(battle_seed(which)) \
 			.generate(enemy_count(which), enemy_power(which))
+		_arm_enemies(foes, which)
+		_enemy_cache[key] = foes
 	return _enemy_cache[key]
+
+
+## Wie viele Module jeder Gegner dieser Runde und Stufe traegt (6i):
+## run.enemy_modules.by_round plus tier_offset, hoechstens so viele, wie der
+## Halter fasst.
+func enemy_module_count(which: int = -1) -> int:
+	if which < 0:
+		which = tier
+	var settings: Dictionary = cfg().get("enemy_modules", {})
+	var by_round: Array = settings.get("by_round", [0])
+	if by_round.is_empty():
+		return 0
+	var count := int(by_round[clampi(round - 1, 0, by_round.size() - 1)])
+	count += int((settings.get("tier_offset", {}) as Dictionary).get(TIER_KEYS[which], 0))
+	return maxi(0, count)
+
+
+## Gegner tragen Module (6i) -- dieselben wie der Spieler, aber handverlesen:
+## nur was zur Waffe passt (keine ruhenden Module), keines doppelt. Ab
+## enemy_modules.recipe_from_round und mindestens zwei Plaetzen ist das erste
+## ein passendes Rezept. Alles in den Halter der ersten Waffe, am Seed des
+## Kampfes.
+func _arm_enemies(foes: Array, which: int) -> void:
+	var count := enemy_module_count(which)
+	if count <= 0:
+		return
+	var settings: Dictionary = cfg().get("enemy_modules", {})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = battle_seed(which) ^ 0x30D
+	for build in foes:
+		var slot := ""
+		for candidate in build.equip_slots():
+			if build.part_in(candidate) != null:
+				slot = candidate
+				break
+		if slot == "":
+			continue
+		var weapon: PartData = build.part_in(slot)
+		var room := mini(count, ModuleData.slots_for(build))
+		var picked: Array = []
+		if room >= 2 and round >= int(settings.get("recipe_from_round", 5)):
+			var recipes := ModuleData.recipes().filter(func(m): return m.fits(weapon))
+			if not recipes.is_empty():
+				picked.append(recipes[rng.randi() % recipes.size()].id)
+		var pool := ModuleData.base_modules().filter(func(m): return m.fits(weapon))
+		while picked.size() < room and not pool.is_empty():
+			var index := rng.randi() % pool.size()
+			picked.append(pool[index].id)
+			pool.remove_at(index)
+		if not picked.is_empty():
+			build.modules[slot] = picked
 
 
 ## Alles, was man vor dem Kampf wissen muss. Die Region kommt aus

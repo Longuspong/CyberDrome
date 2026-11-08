@@ -108,8 +108,9 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    bleiben beim Waffentausch, verfallen nach dem Lauf), am 8. Nov. der
    Laden (2 Grundmodule je Zwischenstopp fuer Credits, Mitleid fuer
    angefangene Rezepte; Module nicht mehr als Beute) und die gewuerfelte
-   Beute ohne Auswahl (Credits oder Teil, DROME-Runden, Notstrom). Als
-   Naechstes aus 6i: Gegner mit Modulen. Neu entschieden (7. Nov.): Story- und
+   Beute ohne Auswahl (Credits oder Teil, DROME-Runden, Notstrom) und
+   Gegner mit Modulen (nach Runde und Stufe, passend zur Waffe). Als
+   Naechstes laut Abschnitt 8: Level fuer DROMEs und Waffen. Neu entschieden (7. Nov.): Story- und
    Endlos-Modus, Lager nur fuer Module, Gegner staerker ueber Level/Waffen/
    Module statt Faktor -- `docs/NEUANFANG.md` Abschnitt 6h. Module nach den
    Gutachten entschieden (8. Nov.): Module nur im Laden, Beute zufaellig

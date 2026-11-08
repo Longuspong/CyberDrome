@@ -68,7 +68,10 @@
       "life_chance: Chance auf 'Notstrom' (+1 Leben) obendrauf, wenn eines fehlt.",
       "Zwischenstopp (NEUANFANG 7d): storage_size Plaetze im Lager; Credits je",
       "Sieg nach tiers.<stufe>.credits, loss_credits bei einer Niederlage;",
-      "sell_value: Verkaufspreis einer Waffe nach Gewichtsklasse."
+      "sell_value: Verkaufspreis einer Waffe nach Gewichtsklasse.",
+      "enemy_modules (6i): Module je Gegner = by_round[runde] + tier_offset;",
+      "nur passende, keines doppelt; ab recipe_from_round (und 2 Plaetzen) ist",
+      "eines ein Rezept (RunState._arm_enemies)."
     ],
     "rounds": 8,
     "lives": 3,
@@ -81,6 +84,11 @@
     "storage_size": 8,
     "loss_credits": 4,
     "sell_value": {"light": 3, "medium": 5, "heavy": 8},
+    "enemy_modules": {
+      "by_round": [0, 0, 1, 1, 1, 2, 2, 2],
+      "tier_offset": {"easy": -1, "normal": 0, "elite": 1},
+      "recipe_from_round": 5
+    },
     "tiers": {
       "easy": {"power": 0.7, "count_offset": -1, "life_chance": 0.6, "credits": 6,
         "part_chance": 0.4, "loot_credits": 4,

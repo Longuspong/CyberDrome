@@ -234,6 +234,29 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * Preise vorlaeufig: ein normaler Sieg (10) kauft ein Modul, ein Elite-Sieg
   (16) zwei; Verkauf bringt 2.
 
+### Gegner mit Modulen (8. Nov. 2026, 6i) -- `RunState._arm_enemies`
+* Zahl je Gegner nach Runde (`run.enemy_modules.by_round` 0,0,1,1,1,2,2,2)
+  plus Stufe (Leicht -1, Elite +1), hoechstens so viele, wie der Halter
+  fasst. Handverlesen: nur Module, die zur Waffe passen (keine ruhenden),
+  keines doppelt; ab Runde 5 mit mindestens zwei Plaetzen ist eines ein
+  passendes Rezept. Alles im Halter der ersten Waffe, am Kampf-Seed --
+  Vorschau und Kampf sind dieselben. Die Vorschau zeigt "Module: ...".
+* Messwerkzeug `tools/playtest/run_bench.gd -- 30`: Standard-Squad (ohne
+  Beute, ohne Module) gegen die Lauf-Gegner, mit und ohne deren Module.
+  Gemessen (30 Laeufe je Feld, Siege mit / ohne Gegner-Module):
+
+  | Runde | Leicht | Normal | Elite |
+  |---|---|---|---|
+  | 1 | 30 / 30 | 29 / 29 | 13 / 16 |
+  | 3 | 30 / 30 | 21 / 22 | 13 / 20 |
+  | 5 | 30 / 30 | 17 / 20 | 2 / 10 |
+  | 8 | 29 / 29 | 7 / 18 | 6 / 12 |
+
+  Lesart: Leicht bleibt leicht, Normal wird spaet deutlich haerter -- der
+  Spieler hat dann aber selbst Module (Laden) und Beute. Die feste Kurve
+  (`power_growth`) gilt weiter; laut 6h soll sie spaeter durch Level/
+  Waffen/Module ersetzt werden.
+
 ### Chaos-Virus
 * Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
   eigene Mannschaft (`chaos.enemy_power_factor` 0,9). Handicap und Beute

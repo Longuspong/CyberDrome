@@ -302,3 +302,39 @@ func test_enemy_power_ignores_how_strong_the_chosen_squad_is() -> void:
 		bare.append(copy)
 	var weak := RunState.start(11, bare)
 	t.equal(weak.enemy_power(), full.enemy_power(), "gleiche Gegnerstaerke")
+
+
+func test_enemies_carry_fitting_modules_later_in_the_run() -> void:
+	# 6i: Gegner tragen Module, handverlesen -- passend zur Waffe, keine doppelt.
+	var early := RunState.start(41)
+	for build in early.enemies(RunState.Tier.NORMAL):
+		t.ok(build.modules.is_empty(), "Runde 1: noch keine Module")
+	var run := RunState.start(42)
+	run.round = RunState.rounds_total()
+	var count := run.enemy_module_count(RunState.Tier.ELITE)
+	t.ok(count >= 2, "spaet und Elite: mehrere Module (%d)" % count)
+	var recipes := 0
+	for build in run.enemies(RunState.Tier.ELITE):
+		var all: Array = []
+		for slot in build.equip_slots():
+			for module in build.modules_in(slot):
+				all.append(module.id)
+				t.ok(module.fits(build.part_in(slot)), "%s passt zur Waffe" % module.display_name)
+				if module.is_recipe():
+					recipes += 1
+		t.ok(not all.is_empty(), "%s traegt Module" % build.display_name)
+		t.ok(all.size() <= ModuleData.slots_for(build), "nicht mehr als Plaetze")
+		var unique := {}
+		for id in all:
+			unique[id] = true
+		t.equal(unique.size(), all.size(), "keines doppelt")
+	t.ok(recipes > 0, "spaet gibt es Rezepte")
+	t.equal(run.enemies(RunState.Tier.ELITE), run.enemies(RunState.Tier.ELITE),
+		"Vorschau und Kampf sehen dieselben Module")
+
+
+func test_easy_enemies_carry_fewer_modules() -> void:
+	var run := RunState.start(43)
+	run.round = 4
+	t.ok(run.enemy_module_count(RunState.Tier.EASY) < run.enemy_module_count(RunState.Tier.ELITE),
+		"Leicht weniger als Elite")
