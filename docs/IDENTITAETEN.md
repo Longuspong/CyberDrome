@@ -79,3 +79,96 @@ zu Modulen machen und als Ausruestung streichen?
 
 **F. Waffen-Level allgemein**: steigt die Waffe in ihrem Kernwert (Schaden
 oder Tempo), oder in ihrer Faehigkeit (Takt kuerzer, Wirkung staerker)?
+
+---
+
+## 5. Entscheidungen des Spielers (8. Nov. 2026)
+
+**Werte eines DROME** -- nur noch diese:
+
+* **Speed** (Lauftempo)
+* **Integritaet** (HP)
+* **Schild**
+* **Schildpuls** -- EIN Wert fuer zwei Dinge: wie lange man ohne Schaden sein
+  muss, bis der Schild laedt, UND wie viel Schild je Puls (3 s) zurueckkommt.
+* **Ruestung**
+* **Slots** (Waffenhalter)
+* **Power** (neu) -- Faktor, mit dem der Schaden der Waffe skaliert. Damit
+  wird z. B. ein Squad aus vier Moloks mit je zwei Runenstaeben und
+  Taktgeber nicht zu stark: der Molok hat wenig Power, der Nimbus viel.
+
+ATK entfaellt. Hohe Power gleicht der Strix mit wenig Speed aus, der Nimbus
+mit wenig Integritaet und Ruestung.
+
+**Die vier Identitaeten:**
+
+* **Vireo** -- der schnelle Allrounder, traegt nur eine **leichte** Waffe.
+* **Molok** -- der harte Zweihaender, will in die Frontlinie. (Spaeter fuer
+  Off-Tank-Aufbauten: eine Waffe, deren Faehigkeit mit der maximalen
+  Integritaet des Traegers skaliert.)
+* **Nimbus** -- fragil, schildlastig, Richtung Faehigkeiten.
+* **Strix** -- Langstrecke mit schwerem Scharfschuetzengewehr. **Passive:**
+  nach 4 s ohne Bewegung +20 % Schaden und Reichweite.
+
+**Gewichtsklassen:** Hammer und Schild werden **mittel**, schwer ist nur,
+was wirklich schwer ist (Schienen-Lanze). So verwischt der Molok nicht.
+
+**Werte einer Waffe:** Schadensart (Energie oder kinetisch), Schaden,
+Angriffstempo, Takt, Faehigkeit, Reichweite. Der Autoangriff ist der normale
+Angriff. Dazu gibt **jede Waffe einen DROME-Wert**:
+
+| Waffe | Bonus-Wert |
+|---|---|
+| Plasmaklinge | Power (damit auch fuer den Molok interessant) |
+| Schild (Deflektor) | Ruestung |
+| Hammer | Integritaet |
+| Puls-Blaster | Speed |
+| Neon-Blaster | Schildpuls |
+| Drohnen-Pod | Integritaet |
+| Runenstab | Schild |
+| Schienen-Lanze | Power |
+
+**Frei fuer alle:** keine Heimatwaffe, jede Waffe darf jeder tragen -- nur
+die Gewichtsklasse zaehlt.
+
+**Die drei Nicht-Waffen** (Orbit-Fokus, Hologramm-Boost, Koedersender)
+werden Module.
+
+**Waffen-Level:** es steigen immer **zwei Werte** -- der Bonus-Wert der
+Waffe und der Schaden (oder das Angriffstempo). Faehigkeit und Takt bleiben
+gleich; die Faehigkeit wird staerker, weil ihr Schaden am Waffenschaden
+haengt. Beispiel Neon-Blaster: Schildpuls und Energieschaden steigen,
+kinetischer Schaden und Tempo nicht. Puls-Blaster: Energie- und kinetischer
+Schaden sind gleich hoch und steigen gemeinsam, dazu Speed, das Tempo nicht.
+
+## 6. Zahlenvorschlag (zur Abstimmung, noch nicht gebaut)
+
+**Schildpuls S:** Ruhezeit = 6 s - 0,3 s je Punkt (mind. 1,5 s); Ladung je
+Puls = 2 x S Schild.
+
+**Power:** in Prozent, 100 = Waffenschaden wie angegeben.
+
+| | Vireo | Molok | Nimbus | Strix |
+|---|---|---|---|---|
+| Speed | 14 | 6 | 12 | 7 |
+| Integritaet | 70 | 200 | 60 | 80 |
+| Schild | 30 | 10 | 60 | 30 |
+| Schildpuls | 5 (4,5 s / +10) | 2 (5,4 s / +4) | 10 (3 s / +20) | 4 (4,8 s / +8) |
+| Ruestung | 2 | 10 | 0 | 2 |
+| Slots | 1 leicht | 2 bis schwer | 1 bis mittel | 1 bis schwer |
+| Power | 100 % | 70 % | 130 % | 130 % |
+
+Faehigkeiten in Prozent des Waffenschadens:
+
+| Waffe | Klasse | Schaden | Tempo | Rw | Takt -> Faehigkeit | Bonus | Level (je Stufe) |
+|---|---|---|---|---|---|---|---|
+| Puls-Blaster | leicht | 5 kin + 5 En | 1,4 s | 3 | jeder 3. -> Doppelschuss 2 x 70 % | Speed +2 | beide Schaden +6 %, Speed +0,2 |
+| Neon-Blaster | leicht | 4 kin + 6 En | 1,4 s | 3 | jeder 3. -> Schildbrecher 120 %, doppelt gegen Schild | Schildpuls +2 | Energie +6 %, Schildpuls +0,2 |
+| Plasmaklinge | leicht | 12 kin | 1,0 s | 1 | jeder 3. -> Aufschlitzen 150 % + verwundbar | Power +10 % | Schaden +6 %, Power +1 % |
+| Runenstab | leicht | 9 En | 1,2 s | 3 | alle 3 s -> Vortex 150 % Flaeche | Schild +10 | Schaden +6 %, Schild +1 |
+| Drohnen-Pod | leicht | 4 En / Heilung 6 | 1,5 s | 3 | jeder 4. -> Schutzdrohne +15 Schild | Integritaet +10 | Heilung +6 %, Integritaet +1 |
+| Hammer | mittel | 16 kin | 1,8 s | 1 | jeder 3. -> Betaeubungsschlag 100 % + 1 s | Integritaet +20 | Schaden +6 %, Integritaet +2 |
+| Schild | mittel | 6 kin | 1,5 s | 1 | jeder 4. -> Schildladung +15 | Ruestung +4 | Schaden +6 %, Ruestung +0,4 |
+| Schienen-Lanze | schwer | 22 kin | 2,6 s | 8 | jeder 4. -> Praezisionsschuss 120 % | Power +10 % | Schaden +6 %, Power +1 % |
+
+Level 10 = Schaden +60 %, Bonus-Wert doppelt so hoch wie auf Level 0.
