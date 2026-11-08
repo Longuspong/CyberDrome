@@ -56,6 +56,9 @@ var pulse_left: float = 0.0
 ## Sekunden seit dem letzten Schaden, und der Bruchteil Schild, der beim
 ## Nachladen noch nicht ganz voll ist.
 var calm_time: float = 0.0
+## Modul Raufbold (Vergeltung): eingesteckte Nahkampftreffer, die den
+## naechsten Angriff aufladen (max. 3).
+var retaliation_stacks: int = 0
 var _recharge_carry: float = 0.0
 ## Bis zur naechsten Pruefung des Ziels, und das aktuelle Ziel.
 var think_left: float = 0.0

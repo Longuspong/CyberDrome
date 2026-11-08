@@ -167,7 +167,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Schaden und Reichweite nur auf Angriffe; Takt, Statusdauer, Locken auf
   Faehigkeiten. Werte des Traegers (DEF, Schild, Stacheln, frueheres
   Schildladen) stehen in `DromeBuild.stats()`.
-* Zehn Grundmodule (vorlaeufig): Angriff -- Schnellfeuer, Langer Lauf,
+* Grundmodule (vorlaeufig; Stand 7. Nov., Umbau 8. Nov. unten): Angriff -- Schnellfeuer, Langer Lauf,
   Doppellauf (je Fernwaffe), Wuchtkante (Nahkampf); Abwehr -- Panzerplatte,
   Kondensator, Stachelgitter; Taktik -- Taktchip, Verstaerker, Koedersender
   (die Faehigkeit lockt ihr Ziel 3 s auf den Traeger, Status `taunt`).
@@ -198,8 +198,15 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   deutlichen Unterschied -- die Gegnerkurve ist noch nicht darauf
   eingestellt (Gegner tragen keine Module).
 * **Rezepte nur einmal je Halter** (8. Nov. 2026, Gutachten): dasselbe
-  Rezept-Modul passt kein zweites Mal in denselben Halter
-  (`RunState._recipe_twice`); Grundmodule stapeln weiter.
+  Rezept-Modul passt kein zweites Mal in denselben Halter, auch nicht als
+  Teil eines anderen (`RunState._recipe_twice`, `ModuleData.parts()`);
+  Grundmodule stapeln weiter.
+* **Umbau 8. Nov. (6i):** Taktchip ist ein Rezept (Zeiger + Schaltkreis, neue
+  Grundmodule; Zeit-Takt 20 %), Taktgeber = Taktchip + Verstaerker (Rezept
+  als Zutat). Raufbold: Vergeltung (`retaliation`, `Unit.retaliation_stacks`,
+  aufgeladen in `ActionResolver._thorns`, entladen in
+  `AIController._attack_modules`). Neues Rezept Rundumschlag (Wuchtkante +
+  Koedersender, `cleave`). Symbole fuer Zeiger, Schaltkreis, Rundumschlag.
 * **Messwerkzeug** `tools/playtest/module_bench.gd -- 400 "Vireo=mod_a+mod_b"`:
   Squad mit Modulen gegen sich selbst ohne, je Seed beide Seiten (400 Seeds =
   800 Kaempfe). 1000 Spiegelkaempfe ohne Module: 483:517 -- kein Seitenbias,

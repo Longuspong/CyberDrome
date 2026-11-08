@@ -273,8 +273,9 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 
 
 ## Module, die an einem Angriff haengen (NEUANFANG 6g): Doppellauf (Chance
-## auf einen Querschlaeger aufs selbe Ziel) und Gunslinger (jeder N-te
-## Angriff trifft dazu einen Gegner irgendwo auf dem Feld). Nur auf Angriffe
+## auf einen Querschlaeger aufs selbe Ziel), Raufbold (Vergeltung), Rundum-
+## schlag (Nachbarn) und Gunslinger (jeder N-te Angriff trifft dazu einen
+## Gegner irgendwo auf dem Feld). Nur auf Angriffe
 ## gegen Gegner, nicht auf Heilstrahlen.
 func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) -> void:
 	var fx: Dictionary = mount.get("fx", {})
@@ -289,6 +290,21 @@ func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) 
 		var bounce := maxi(1, int(round(float(raw) * float(fx.get("ricochet_share", 0.15)))))
 		EventBus.log_line("%s: Querschlaeger." % unit.display_name)
 		battle.resolver.apply_damage(unit, target, bounce, attack)
+	# Raufbold: aufgeladene Vergeltung entlaedt sich auf das Ziel.
+	var payback := float(fx.get("retaliation", 0.0))
+	if payback > 0.0 and unit.retaliation_stacks > 0 and target.is_alive():
+		var extra_dmg := maxi(1, int(round(float(raw) * payback * unit.retaliation_stacks)))
+		EventBus.log_line("%s: Vergeltung (x%d)." % [unit.display_name, unit.retaliation_stacks])
+		unit.retaliation_stacks = 0
+		battle.resolver.apply_damage(unit, target, extra_dmg, attack)
+	# Rundumschlag: alle anderen Gegner direkt neben dem Traeger.
+	var cleave := float(fx.get("cleave", 0.0))
+	if cleave > 0.0:
+		var side := maxi(1, int(round(float(raw) * cleave)))
+		for foe in battle.enemies_of(unit):
+			if foe == target or not foe.is_alive() or Grid.distance(unit.tile, foe.tile) > 1:
+				continue
+			battle.resolver.apply_damage(unit, foe, side, attack)
 	var every := int(fx.get("field_shot_every", 0))
 	if every > 0 and int(mount["shots"]) % every == 0:
 		var extra := _field_shot_target(unit, target)

@@ -230,6 +230,7 @@ func stats() -> Dictionary:
 		total["shield"] += int(fx.get("shield", 0))
 		total["thorns"] = int(fx.get("thorns", 0))
 		total["shield_delay"] = float(fx.get("shield_delay", 0.0))
+		total["retaliation"] = float(fx.get("retaliation", 0.0))
 
 	# Negative Summen sind sinnlos, aber ein DROME darf sie erreichen -- die
 	# Validierung faengt das ab und sagt dem Spieler, welche Regel bricht.

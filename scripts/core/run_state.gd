@@ -646,7 +646,7 @@ func module_options(index: int) -> Array:
 			var entry := {"drome": drome, "slot": slot, "allowed": used < room and not twice,
 				"active": module.fits(weapon), "detail": ""}
 			if twice:
-				entry["detail"] = "%s steckt schon hier (Rezepte einmal je Halter)" % module.display_name
+				entry["detail"] = "%s steckt hier schon drin (Rezepte einmal je Halter)" % module.display_name
 			elif used >= room:
 				entry["detail"] = "Modulplaetze voll (%d/%d)" % [used, room]
 			elif weapon == null:
@@ -676,12 +676,20 @@ func install_module(index: int, drome: int, slot: String) -> bool:
 	return true
 
 
-## Dasselbe Rezept-Modul steckt schon in diesem Halter? Rezepte gibt es nur
-## einmal je Halter (Gutachten Nov. 2026: sonst drei Taktgeber an einer Waffe).
-## Grundmodule duerfen sich stapeln.
+## Steckt dieses Rezept schon in diesem Halter -- selbst oder als Teil eines
+## anderen Rezepts (Taktchip neben Taktgeber)? Rezepte gibt es nur einmal je
+## Halter (6i: sonst drei Taktgeber an einer Waffe). Grundmodule stapeln.
 func _recipe_twice(build: DromeBuild, slot: String, module: ModuleData) -> bool:
-	return module != null and module.is_recipe() \
-		and (build.modules.get(slot, []) as Array).has(module.id)
+	if module == null or not module.is_recipe():
+		return false
+	var mine := module.parts()
+	for other_id in build.modules.get(slot, []):
+		var other := ModuleData.get_module(other_id)
+		if other == null or not other.is_recipe():
+			continue
+		if other.parts().has(module.id) or mine.has(other.id):
+			return true
+	return false
 
 
 ## Nimmt das ``position``-te Modul aus dem Halter zurueck ins Lager.

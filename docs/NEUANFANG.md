@@ -540,9 +540,26 @@ Schnellfeuer 69 %); Molok Wuchtkante + Stachelgitter 67 %, Raufbold 69 %
 (der Eigeneffekt bringt ~2 Punkte), zweimal Stachelgitter 80 %; Nimbus
 Taktgeber 78 %, zweimal 89 % (jetzt gesperrt).
 
-**Offen:** Stapeln gleicher Grundmodule (bleibt vorerst erlaubt), Taktchip
-(Stapelgrenze), Raufbold-Effekt, Erstschlag -> "Faehigkeit zum Kampfbeginn
-geladen" (wenn neue Module kommen).
+**Stapeln und Rezepte -- entschieden (8. Nov., gebaut):**
+
+* Grundmodule duerfen sich stapeln. **Frueh im Lauf** ist Stapeln gut, **spaeter
+  sind Rezepte deutlich besser** -- wann man zusammenfuegt, ist eine taktische
+  Entscheidung. Werte, die beim Stapeln zu schnell eskalieren, gibt es nur
+  als Rezept.
+* Ausrasten ist erlaubt: wer Beutegluck hat, darf sich mit perfekten Modulen
+  wie ein Gott fuehlen. Balancing ja, aber nicht alles glattbuegeln.
+* **Taktchip ist ein Rezept** = **Zeiger** (+5 % Angriffstempo, jede Waffe) +
+  **Schaltkreis** (+5 Schild); eigener Effekt: Faehigkeit 1 Angriff frueher
+  bzw. Zeit-Takt **20 %** kuerzer. Damit gibt es ihn nur einmal je Halter.
+* **Taktgeber** = Taktchip + Verstaerker -- ein Rezept als Zutat (Aufstieg
+  "2er-Rezept + 1"). Ein Rezept passt nicht in einen Halter, in dem es schon
+  steckt, auch nicht als Teil eines anderen (Taktchip neben Taktgeber).
+* **Raufbold** (Wuchtkante + Stachelgitter): **Vergeltung** -- jeder
+  Nahkampftreffer am Traeger laedt den naechsten Angriff um 25 % auf (bis 3x).
+* **Rundumschlag** (neu, Wuchtkante + Koedersender, nur Nahkampf): jeder
+  Angriff trifft dazu alle anderen Gegner direkt neben dem Traeger mit 50 %.
+  Der Koedersender holt die Gegner heran, der Schlag trifft sie alle.
+* Erstschlag wird, wenn er kommt, "Faehigkeit zum Kampfbeginn geladen".
 
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
