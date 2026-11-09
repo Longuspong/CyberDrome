@@ -141,34 +141,92 @@ haengt. Beispiel Neon-Blaster: Schildpuls und Energieschaden steigen,
 kinetischer Schaden und Tempo nicht. Puls-Blaster: Energie- und kinetischer
 Schaden sind gleich hoch und steigen gemeinsam, dazu Speed, das Tempo nicht.
 
-## 6. Zahlenvorschlag (zur Abstimmung, noch nicht gebaut)
+## 6. Gebaut (8./9. Nov. 2026)
 
-**Schildpuls S:** Ruhezeit = 6 s - 0,3 s je Punkt (mind. 1,5 s); Ladung je
-Puls = 2 x S Schild.
-
-**Power:** in Prozent, 100 = Waffenschaden wie angegeben.
+Zahlen nach der Rueckmeldung des Spielers. Stellschrauben: `tools/build_sample_parts.py`
+(STATS), `data/config.json` -> `combat.shield_pulse`, `passives.steady`, `levels`.
 
 | | Vireo | Molok | Nimbus | Strix |
 |---|---|---|---|---|
-| Speed | 14 | 6 | 12 | 7 |
-| Integritaet | 70 | 200 | 60 | 80 |
-| Schild | 30 | 10 | 60 | 30 |
-| Schildpuls | 5 (4,5 s / +10) | 2 (5,4 s / +4) | 10 (3 s / +20) | 4 (4,8 s / +8) |
+| Speed | 12 | 10 | 12 | 7 |
+| Integritaet | 80 | 250 | 60 | 100 |
+| Schild | 50 | 50 | 60 | 30 |
+| Schildpuls | 5 | 5 | 10 | 5 |
 | Ruestung | 2 | 10 | 0 | 2 |
-| Slots | 1 leicht | 2 bis schwer | 1 bis mittel | 1 bis schwer |
-| Power | 100 % | 70 % | 130 % | 130 % |
+| Halter | 1 leicht | 2 bis mittel | 1 bis mittel | 1 bis schwer |
+| Power | 10 | 6 | 12 | 15 |
+| Modulplaetze je Halter | 3 | 2 | 3 | 3 |
+| Passive | Sprint | Praesenz | Echo | Anlegen (4 s still: +20 % Schaden/Reichweite) |
 
-Faehigkeiten in Prozent des Waffenschadens:
+* **Power:** Rohschaden = Waffenschaden x Power / 10 (1 Punkt = 10 %).
+* **Schildpuls S:** Ruhezeit 6 s - 0,3 s je Punkt (mind. 1,5 s), Ladung
+  2 x S Schild je Puls (3 s). S 5: 4,5 s / +10; S 10: 3 s / +20.
+* Gewicht und ATK sind gestrichen; Kopf, Antrieb, Kern haben keine Werte.
 
-| Waffe | Klasse | Schaden | Tempo | Rw | Takt -> Faehigkeit | Bonus | Level (je Stufe) |
-|---|---|---|---|---|---|---|---|
-| Puls-Blaster | leicht | 5 kin + 5 En | 1,4 s | 3 | jeder 3. -> Doppelschuss 2 x 70 % | Speed +2 | beide Schaden +6 %, Speed +0,2 |
-| Neon-Blaster | leicht | 4 kin + 6 En | 1,4 s | 3 | jeder 3. -> Schildbrecher 120 %, doppelt gegen Schild | Schildpuls +2 | Energie +6 %, Schildpuls +0,2 |
-| Plasmaklinge | leicht | 12 kin | 1,0 s | 1 | jeder 3. -> Aufschlitzen 150 % + verwundbar | Power +10 % | Schaden +6 %, Power +1 % |
-| Runenstab | leicht | 9 En | 1,2 s | 3 | alle 3 s -> Vortex 150 % Flaeche | Schild +10 | Schaden +6 %, Schild +1 |
-| Drohnen-Pod | leicht | 4 En / Heilung 6 | 1,5 s | 3 | jeder 4. -> Schutzdrohne +15 Schild | Integritaet +10 | Heilung +6 %, Integritaet +1 |
-| Hammer | mittel | 16 kin | 1,8 s | 1 | jeder 3. -> Betaeubungsschlag 100 % + 1 s | Integritaet +20 | Schaden +6 %, Integritaet +2 |
-| Schild | mittel | 6 kin | 1,5 s | 1 | jeder 4. -> Schildladung +15 | Ruestung +4 | Schaden +6 %, Ruestung +0,4 |
-| Schienen-Lanze | schwer | 22 kin | 2,6 s | 8 | jeder 4. -> Praezisionsschuss 120 % | Power +10 % | Schaden +6 %, Power +1 % |
+**Schadensrechnung** (`ActionResolver.resolve_damage`):
 
-Level 10 = Schaden +60 %, Bonus-Wert doppelt so hoch wie auf Level 0.
+1. Rohschaden = Schaden der Aktion x Power / 10 (angelegt x 1,2 beim Strix),
+   bei "verwundbar" x 1,5.
+2. Aufteilen nach Art: Energieanteil und kinetischer Anteil (Puls-Blaster
+   5 + 5, Neon-Blaster 4 + 6).
+3. **Am Schild:** kinetisch x 0,8, Energie x 1,2 (Schildbrecher dazu x 2).
+   Was der Schild nicht mehr fasst, laeuft als Rohschaden (ohne Faktor) auf
+   die Integritaet durch.
+4. **An der Integritaet:** beide Arten x 1,0, dann die **Ruestung** als
+   Teiler mit abnehmendem Ertrag: Schaden / (1 + 0,5 x R / (R + 15)).
+   Ruestung 10 nimmt 17 % weg, 15 nimmt 20 %, nie mehr als ein Drittel.
+   Mindestens 1 Schaden.
+
+Kinetisch ist also gut gegen Integritaet und Tanks, Energie gegen Schilde.
+
+**Waffen** (Faehigkeit = Anteil des Waffenschadens):
+
+| Waffe | Klasse | Schaden | Tempo | Rw | Faehigkeit | Bonus (Lv 0 -> 10) |
+|---|---|---|---|---|---|---|
+| Puls-Blaster | leicht | 5 kin + 5 En | 1,4 s | 3 | jeder 3.: Doppelschuss 2 x 70 % | Speed 2 -> 3 |
+| Neon-Blaster | leicht | 4 kin + 6 En | 1,4 s | 3 | jeder 3.: Schildbrecher 120 % | Schildpuls 2 -> 4 |
+| Plasmaklinge | leicht | 12 kin | 1,0 s | 1 | jeder 3.: Aufschlitzen 150 % + verwundbar | Power 1 -> 2 |
+| Runenstab | leicht | 9 En | 1,2 s | 3 | alle 3 s: Vortex 150 % | Schild 10 -> 20 |
+| Drohnen-Pod | leicht | 4 En / Heilung 6 | 1,5 s | 3 | jeder 4.: Schutzdrohne +15 | Integritaet 10 -> 20 |
+| Hammer | mittel | 16 kin | 1,8 s | 1 | jeder 3.: Betaeubungsschlag 100 % | Integritaet 20 -> 40 |
+| Schild | mittel | 6 kin | 1,5 s | 1 | jeder 4.: Schildladung +15 | Ruestung 4 -> 8 |
+| Schienen-Lanze | schwer | 22 kin | 2,6 s | 8 | jeder 4.: Praezisionsschuss 120 % | Power 1 -> 2 |
+
+Beispiel Strix mit Lanze: Power 15 + 1 = 16, Angriff 22 x 1,6 = 35,
+Praezisionsschuss 26 x 1,6 = 42; angelegt x 1,2 -> 42 / 50.
+
+**Level** (`scripts/core/leveling.gd`):
+
+* **Waffe 0-10:** Schaden +7 % je Level (Level 10 = +70 %), dazu der
+  Bonus-Wert linear bis zu seinem Endwert (Tabelle oben). Neon-Blaster:
+  nur der Energieanteil waechst. EP: 1 je Sieg, in dem sie getragen wurde,
+  +1 je Abschuss ihres Traegers; Schwellen 3, 7, 12, 18, 25, 33, 42, 52,
+  63, 75.
+* **DROME 0-5:** zwei Hauptwerte +10 % je Level (Level 5 = +50 %), die
+  anderen Werte +4 % (+20 %); Speed und Power nie. Hauptwerte (Vorschlag):
+  Vireo Integritaet + Schild, Molok Integritaet + Ruestung, Nimbus Schild +
+  Schildpuls, Strix Integritaet + Ruestung. Modulplaetze +1 auf Level 1, 3, 5
+  (Molok 2, 4). EP: 1 je Sieg, Elite 2; Schwellen 2, 5, 9, 14, 20.
+* EP gibt es nach jedem **Sieg im Lauf**, gutgeschrieben am Exemplar im
+  Hangar; die Lauf-Kopie uebernimmt die Level sofort. Beute-Waffen, die
+  erst im Lauf eingebaut werden, sammeln keine EP (sie sind noch kein
+  Exemplar zuhause).
+
+**Module statt Ausruestung:** Orbit-Fokus (`mod_orbit`) und
+Hologramm-Boost (`mod_holo`) bringen ihre Faehigkeit als Modul mit
+(`modules.json` -> `gadgets`); der Koedersender war schon Modul.
+
+**Gemessen** (200 Spiegelkaempfe, Standard-Squad):
+
+| DROME | Schaden/s | faellt in % der Kaempfe |
+|---|---|---|
+| Molok | 3,8 | 100 |
+| Vireo | 4,7 | 88 |
+| Nimbus | 11,4 | 82 |
+| Strix | 10,7 | 51 |
+
+Lesart: der Strix ist mit Power 16 und Anlegen jetzt die zweite
+Schadensquelle und lebt am laengsten; der Molok faellt trotz 270
+Integritaet immer -- die Praesenz zieht alles auf ihn. Der Vireo macht wenig
+Schaden (Power 10, leichte Waffe). Naechster Schritt laut Spieler: die
+Waffen.

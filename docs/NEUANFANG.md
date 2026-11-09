@@ -769,7 +769,9 @@ entfallen (6g). Weiter:
    8. Nov.: 2 Grundmodule je Stopp, 6 Credits, Mitleid fuer angefangene
    Rezepte), ~~Beute gewuerfelt ohne Auswahl~~ und ~~Gegner tragen
    Module~~ (beides gebaut 8. Nov.).
-4. Level fuer DROMEs und Waffen, die nach dem Lauf bleiben.
+4. ~~Level fuer DROMEs und Waffen~~ (gebaut 9. Nov., mit neuem Werte-Satz
+   und Identitaeten -- `docs/IDENTITAETEN.md`). Als Naechstes laut Spieler:
+   die Waffen ueberarbeiten.
 5. Karte wie bei FTL mit Chaos-Kaempfen.
 6. Neon City als erste Region mit Neon-Gegnern und Neon-Varianten.
 7. Spaeter: Skillbaeume.

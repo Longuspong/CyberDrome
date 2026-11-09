@@ -257,6 +257,21 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   (`power_growth`) gilt weiter; laut 6h soll sie spaeter durch Level/
   Waffen/Module ersetzt werden.
 
+### Werte, Identitaeten, Level (8./9. Nov. 2026) -- `docs/IDENTITAETEN.md`
+* Ein DROME hat nur noch Speed, Integritaet, Schild, Schildpuls, Ruestung,
+  Halter, Power und Modulplaetze -- alles am Chassis. ATK und Gewicht sind
+  gestrichen. Power skaliert den Waffenschaden (`Unit.raw_damage`),
+  Schildpuls regelt Ruhezeit und Ladung (`Unit.recharge_shield`).
+* Jede Waffe gibt einen DROME-Wert als Bonus, Faehigkeitsschaden ist ein
+  Anteil des Waffenschadens (`damage_pct`). Hammer und Schild mittel, schwer
+  nur die Schienen-Lanze; Vireo nur leicht, Molok zwei Halter bis mittel.
+* Strix-Passive Anlegen (`steady`, `Unit.track_stillness`).
+* Orbit-Fokus, Hologramm-Boost, Koedersender sind keine Ausruestung mehr,
+  sondern Module (`gadget` in `modules.json`).
+* Level (`Leveling`): DROME 0-5, Waffe 0-10, EP nach jedem Sieg im Lauf,
+  gespeichert an `RosterEntry` und `PartInstance`. Gegner haben noch kein
+  Level.
+
 ### Chaos-Virus
 * Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
   eigene Mannschaft (`chaos.enemy_power_factor` 0,9). Handicap und Beute
