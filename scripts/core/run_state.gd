@@ -85,11 +85,21 @@ var credits: int = 0
 ## Der Laden des aktuellen Zwischenstopps (6i): je Angebot {module_id, sold}.
 ## Gewuerfelt beim Betreten des Zwischenstopps, geleert beim Weitergehen.
 var shop_offers: Array = []
+## Wie oft im aktuellen Zwischenstopp neu gewuerfelt wurde (Preis steigt).
+var rerolls: int = 0
+## Ziel-Rezept (MODULE_KONZEPT.md 7): nur dessen fehlende Zutaten bekommen das
+## volle Mitleid im Laden. Leer = keins, dann gilt das schwaechere Mitleid fuer
+## alle angefangenen Rezepte.
+var target_recipe: StringName = &""
 
-## Das Lager des Laufs: Waffen (Teil-IDs) und Module (Modul-IDs, siehe
-## ModuleData.is_module), die gerade niemand traegt. Beides teilt sich die
-## storage_size() Plaetze.
+## Das Lager des Laufs: nur Module (seit 9. Nov. 2026, NEUANFANG 6h), die
+## gerade in keinem Halter stecken -- storage_size() Plaetze.
 var storage: Array = []
+
+## Die Tasche (6h): Beute-Teile (Waffen) dieses Laufs. Waffen sind im Lauf
+## fest (MODULE_KONZEPT.md) -- die Teile werden nicht eingebaut, belegen keinen
+## Lagerplatz und gehen am Ende nach Hause.
+var bag: Array = []
 
 ## Wie oft jede Waffe beim Start im Squad steckte. Was am Ende darueber
 ## hinaus im Lauf ist, ist Beute und geht nach Hause.
@@ -443,8 +453,9 @@ func _send_loot_home() -> void:
 	for build in squad:
 		for part in build.equipment():
 			counts[part.id] = int(counts.get(part.id, 0)) + 1
-	for id in storage:
+	for id in bag:
 		counts[id] = int(counts.get(id, 0)) + 1
+	bag.clear()
 	storage.clear()
 	for id in counts:
 		for _i in maxi(0, int(counts[id]) - int(_start_counts.get(id, 0))):
@@ -458,12 +469,14 @@ func _advance() -> void:
 	round += 1
 	tier = Tier.NORMAL
 	shop_offers = []
+	rerolls = 0
 	phase = Phase.PREPARE
 
 
 ## Weiter in den Zwischenstopp -- dabei wird der Laden gewuerfelt.
 func _enter_stop() -> void:
 	phase = Phase.STOP
+	rerolls = 0
 	shop_offers = roll_shop()
 
 
@@ -528,18 +541,14 @@ func _loot_part(rng: RandomNumberGenerator, enemy_pool: Array) -> PartData:
 
 
 ## Verteilt einen Beute-Eintrag und schreibt hinein, wo er gelandet ist:
-## Teile ins Lager (voll: nach Hause), ein DROME in den Squad (voll: nach
-## Hause), Credits und Notstrom sofort.
+## Teile in die Tasche (gehen am Ende nach Hause), ein DROME in den Squad
+## (voll: nach Hause), Credits und Notstrom sofort.
 func _apply_loot(item: Dictionary) -> void:
 	item["where"] = ""
 	match item["kind"]:
 		"part":
-			if storage_full():
-				item["where"] = "home"
-				home_queue.append(item.duplicate())
-			else:
-				item["where"] = "lager"
-				storage.append(StringName(item["part_id"]))
+			item["where"] = "tasche"
+			bag.append(StringName(item["part_id"]))
 		"drome":
 			if has_room():
 				item["where"] = "squad"
@@ -618,73 +627,7 @@ func continue_run() -> void:
 		_advance()
 
 
-## Wohin die Waffe aus Lagerplatz ``index`` passt: je DROME alle Halter, auch
-## die, die sie nicht nehmen -- mit Grund (SlotRules). Eintraege:
-## {drome, slot, label, detail, allowed}.
-func equip_options(index: int) -> Array:
-	var out: Array = []
-	if index < 0 or index >= storage.size():
-		return out
-	var part := PartDB.get_part(storage[index])
-	for drome in squad.size():
-		for choice in SlotRules.slot_choices(squad[drome], part):
-			var entry: Dictionary = choice.duplicate()
-			entry["drome"] = drome
-			if entry["allowed"]:
-				var trial: DromeBuild = squad[drome].clone()
-				trial.slots[entry["slot"]] = part.id
-				if not trial.is_valid():
-					entry["allowed"] = false
-					entry["detail"] = "Aufbau waere ungueltig"
-			out.append(entry)
-	return out
-
-
-## Baut die Waffe aus Lagerplatz ``index`` in ``slot`` von DROME ``drome``.
-## Was dort steckte, kommt auf ihren Platz im Lager -- ein Tausch, geht also
-## auch bei vollem Lager.
-func equip_from_storage(index: int, drome: int, slot: String) -> bool:
-	if phase != Phase.STOP or index < 0 or index >= storage.size() \
-			or drome < 0 or drome >= squad.size():
-		return false
-	var build: DromeBuild = squad[drome]
-	var part := PartDB.get_part(storage[index])
-	var chassis := build.body()
-	if part == null or chassis == null or slot not in build.equip_slots() \
-			or not chassis.accepts(part, slot):
-		return false
-	var trial := build.clone()
-	trial.slots[slot] = part.id
-	if not trial.is_valid():
-		return false
-	var old := build.part_in(slot)
-	build.slots[slot] = part.id
-	# Die Beute-Waffe ist kein Exemplar aus dem Hangar: kein Level, keine EP.
-	build.weapon_levels.erase(slot)
-	build.instance_uids.erase(slot)
-	if old != null:
-		storage[index] = old.id
-	else:
-		storage.remove_at(index)
-	return true
-
-
-## Baut die Waffe aus ``slot`` aus und legt sie ins Lager.
-func unequip(drome: int, slot: String) -> bool:
-	if phase != Phase.STOP or storage_full() or drome < 0 or drome >= squad.size():
-		return false
-	var build: DromeBuild = squad[drome]
-	var part := build.part_in(slot)
-	if part == null or slot not in build.equip_slots():
-		return false
-	build.slots.erase(slot)
-	build.weapon_levels.erase(slot)
-	build.instance_uids.erase(slot)
-	storage.append(part.id)
-	return true
-
-
-## Verkauft die Waffe aus Lagerplatz ``index``. Gibt die Credits zurueck.
+## Verkauft das Modul aus Lagerplatz ``index``. Gibt die Credits zurueck.
 func sell(index: int) -> int:
 	if phase != Phase.STOP or index < 0 or index >= storage.size():
 		return 0
@@ -693,37 +636,6 @@ func sell(index: int) -> int:
 	storage.remove_at(index)
 	credits += value
 	return value
-
-
-## Schickt die Waffe aus Lagerplatz ``index`` jetzt schon nach Hause.
-func send_home(index: int) -> bool:
-	if phase != Phase.STOP or index < 0 or index >= storage.size():
-		return false
-	# Module gibt es nur im Lauf -- sie koennen nicht nach Hause.
-	if ModuleData.is_module(storage[index]):
-		return false
-	var part := PartDB.get_part(storage[index])
-	storage.remove_at(index)
-	if part == null:
-		return false
-	# Liegt danach weniger davon im Lauf als beim Start, war es mitgenommene
-	# Ausruestung -- die ist zuhause schon da und wird nicht verdoppelt.
-	var start := int(_start_counts.get(part.id, 0))
-	if _count_in_run(part.id) < start:
-		_start_counts[part.id] = start - 1
-		return true
-	home_queue.append({"kind": "part", "part_id": part.id,
-		"title": part.display_name, "text": _part_text(part)})
-	return true
-
-
-func _count_in_run(id: StringName) -> int:
-	var count := storage.count(id)
-	for build in squad:
-		for part in build.equipment():
-			if part.id == id:
-				count += 1
-	return count
 
 
 # ---------------------------------------------------------------------------
@@ -865,18 +777,27 @@ static func shop_price(module: ModuleData) -> int:
 
 
 ## Wuerfelt die Angebote dieses Zwischenstopps: shop.offers Grundmodule,
-## keines doppelt. Unsichtbares Mitleid (6i): ein Modul, das ein
-## angefangenes Rezept ergaenzt, zaehlt shop.recipe_weight-mal so viel.
-## Am Seed von Lauf und Runde -- derselbe Lauf hat denselben Laden.
+## keines doppelt. Unsichtbares Mitleid (6i, MODULE_KONZEPT.md 7): mit
+## Ziel-Rezept zaehlen nur dessen fehlende Zutaten shop.recipe_weight-mal so
+## viel, ohne Ziel jede Zutat, die einem angefangenen Rezept fehlt,
+## shop.recipe_weight_open-mal. Ab shop.recipe_from_round ist mit
+## shop.recipe_chance das letzte Angebot ein fertiges Rezept.
+## Am Seed von Lauf, Runde und Wurf -- derselbe Lauf hat denselben Laden.
 func roll_shop() -> Array:
 	var settings: Dictionary = ModuleData.data().get("shop", {})
 	var rng := RandomNumberGenerator.new()
-	rng.seed = absi(hash([run_seed, round, "laden"]))
+	rng.seed = absi(hash([run_seed, round, rerolls, "laden"]))
 	var pool: Array = ModuleData.base_modules().duplicate()
-	var wanted := recipe_missing()
-	var boost := float(settings.get("recipe_weight", 3.0))
+	var wanted := target_missing() if target_recipe != &"" else recipe_missing()
+	var boost := float(settings.get("recipe_weight", 3.0)) if target_recipe != &"" \
+		else float(settings.get("recipe_weight_open", 2.0))
+	var count := int(settings.get("offers", 3))
 	var out: Array = []
-	for _i in int(settings.get("offers", 2)):
+	var with_recipe := round >= int(settings.get("recipe_from_round", 5)) \
+		and rng.randf() < float(settings.get("recipe_chance", 0.25))
+	if with_recipe:
+		count -= 1
+	for _i in count:
 		if pool.is_empty():
 			break
 		var weights: Array = []
@@ -894,16 +815,75 @@ func roll_shop() -> Array:
 				break
 		out.append({"module_id": pool[pick].id, "sold": false})
 		pool.remove_at(pick)
+	if with_recipe:
+		var recipes := ModuleData.recipes()
+		out.append({"module_id": recipes[rng.randi() % recipes.size()].id, "sold": false})
 	return out
+
+
+## Was das naechste Neuwuerfeln kostet: shop.reroll.price, je weiterem Wurf im
+## selben Zwischenstopp +shop.reroll.step.
+func reroll_price() -> int:
+	var settings: Dictionary = (ModuleData.data().get("shop", {}) as Dictionary).get("reroll", {})
+	return int(settings.get("price", 2)) + rerolls * int(settings.get("step", 1))
+
+
+func reroll_blocker() -> String:
+	if phase != Phase.STOP:
+		return "kein Laden"
+	if credits < reroll_price():
+		return "zu wenig Credits"
+	return ""
+
+
+## Neue Angebote fuer Credits. Auch gekaufte Plaetze werden neu besetzt.
+func reroll_shop() -> bool:
+	if reroll_blocker() != "":
+		return false
+	credits -= reroll_price()
+	rerolls += 1
+	shop_offers = roll_shop()
+	return true
+
+
+## Markiert ein Rezept als Ziel (noch einmal: Ziel weg). Gilt ab dem naechsten
+## Wurf des Ladens.
+func set_target_recipe(recipe_id: StringName) -> void:
+	var recipe := ModuleData.get_module(recipe_id)
+	if recipe == null or not recipe.is_recipe() or target_recipe == recipe_id:
+		target_recipe = &""
+	else:
+		target_recipe = recipe_id
+
+
+## Die Zutaten des Ziel-Rezepts, die im Lauf (Lager oder Halter) fehlen.
+func target_missing() -> Array:
+	var recipe := ModuleData.get_module(target_recipe)
+	if recipe == null:
+		return []
+	var pool := _owned_modules()
+	var out: Array = []
+	for ingredient in recipe.from:
+		var found := pool.find(ingredient)
+		if found >= 0:
+			pool.remove_at(found)
+		elif not out.has(ingredient):
+			out.append(ingredient)
+	return out
+
+
+func _owned_modules() -> Array:
+	var owned: Array = storage.filter(func(id): return ModuleData.is_module(id))
+	for build in squad:
+		for slot in build.modules:
+			owned.append_array(build.modules[slot])
+	return owned
 
 
 ## Grundmodule, die einem angefangenen Rezept fehlen: von dem Rezept liegt
 ## mindestens eine Zutat im Lauf (Lager oder Halter), diese aber nicht.
 func recipe_missing() -> Array:
-	var owned: Array = storage.filter(func(id): return ModuleData.is_module(id))
-	for build in squad:
-		for slot in build.modules:
-			owned.append_array(build.modules[slot])
+	var owned := _owned_modules()
 	var out: Array = []
 	for recipe in ModuleData.recipes():
 		var pool := owned.duplicate()

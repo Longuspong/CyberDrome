@@ -528,20 +528,19 @@ func test_a_recipe_fits_only_once_per_holder() -> void:
 
 func test_recipes_combine_in_the_storage() -> void:
 	var run := _stop_run()
-	run.storage.append_array([&"mod_rapid_fire", &"eq_hammer"])
+	run.storage.append_array([&"mod_rapid_fire", &"mod_bait"])
 	var book := run.recipe_book()
 	var gun: Dictionary = book.filter(func(e): return e["module"].id == &"mod_gunslinger")[0]
 	t.ok(not gun["ready"], "Doppellauf fehlt noch")
 	t.ok(not run.craft(&"mod_gunslinger"), "ohne alle Zutaten geht es nicht")
 	run.storage.append(&"mod_twin_barrel")
 	t.ok(run.craft(&"mod_gunslinger"), "zusammengefuegt")
-	t.equal(run.storage, [&"eq_hammer", &"mod_gunslinger"], "Zutaten weg, Ergebnis im Lager")
+	t.equal(run.storage, [&"mod_bait", &"mod_gunslinger"], "Zutaten weg, Ergebnis im Lager")
 
 
 func test_modules_sell_but_never_go_home() -> void:
 	var run := _stop_run()
 	run.storage.append(&"mod_bait")
-	t.ok(not run.send_home(0), "Module koennen nicht nach Hause")
 	var before := run.credits
 	t.ok(run.sell(0) > 0, "verkaufen bringt Credits")
 	t.ok(run.credits > before, "die Credits steigen")
@@ -560,6 +559,7 @@ func test_the_shop_sells_modules_into_the_storage() -> void:
 	t.equal(run.shop_offers.size(), int(ModuleData.data()["shop"]["offers"]), "der Laden bietet an")
 	var first: StringName = run.shop_offers[0]["module_id"]
 	t.ok(not ModuleData.get_module(first).is_recipe(), "nur Grundmodule")
+	t.equal(run.shop_offers.size(), 3, "drei Angebote")
 	t.ok(run.shop_offers[0]["module_id"] != run.shop_offers[1]["module_id"], "keines doppelt")
 	var price := RunState.shop_price(ModuleData.get_module(first))
 	run.credits = price - 1
@@ -580,7 +580,7 @@ func test_the_shop_is_full_storage_aware_and_seeded() -> void:
 	t.equal(run.roll_shop(), run.shop_offers, "derselbe Seed, derselbe Laden")
 	run.credits = 99
 	for _i in RunState.storage_size():
-		run.storage.append(&"eq_hammer")
+		run.storage.append(&"mod_capacitor")
 	t.equal(run.shop_blocker(0), "Lager voll", "voll")
 	t.ok(not run.buy(0), "kein Kauf bei vollem Lager")
 
@@ -605,3 +605,57 @@ func test_the_shop_favours_missing_recipe_parts() -> void:
 			if offer["module_id"] in [&"mod_capacitor", &"mod_twin_barrel"]:
 				without_hits += 1
 	t.ok(with_hits > without_hits * 1.3, "angefangenes Rezept zieht (%d gegen %d)" % [with_hits, without_hits])
+
+
+func test_the_shop_can_be_rerolled_for_rising_credits() -> void:
+	var run := _stop_run()
+	run.shop_offers = run.roll_shop()
+	run.credits = 5
+	t.equal(run.reroll_price(), 2, "erster Wurf 2 Credits")
+	t.ok(run.reroll_shop(), "neu gewuerfelt")
+	t.equal(run.credits, 3, "bezahlt")
+	t.equal(run.reroll_price(), 3, "der naechste kostet mehr")
+	t.ok(run.reroll_shop(), "noch einmal")
+	t.equal(run.credits, 0, "bezahlt")
+	t.equal(run.reroll_blocker(), "zu wenig Credits", "dann ist Schluss")
+	t.ok(not run.reroll_shop(), "ohne Credits nicht")
+	run.continue_run()
+	t.equal(run.rerolls, 0, "im naechsten Zwischenstopp wieder guenstig")
+
+
+func test_a_target_recipe_steers_the_shop() -> void:
+	# Ziel Gunslinger: Schnellfeuer und Doppellauf kommen deutlich oefter.
+	var run := _stop_run()
+	run.set_target_recipe(&"mod_gunslinger")
+	t.equal(run.target_recipe, &"mod_gunslinger", "Ziel gesetzt")
+	t.equal(run.target_missing(), [&"mod_rapid_fire", &"mod_twin_barrel"], "beide Zutaten fehlen")
+	var bare := _stop_run()
+	var hits := 0
+	var bare_hits := 0
+	for seed_value in 300:
+		run.run_seed = seed_value
+		bare.run_seed = seed_value
+		for offer in run.roll_shop():
+			if offer["module_id"] in [&"mod_rapid_fire", &"mod_twin_barrel"]:
+				hits += 1
+		for offer in bare.roll_shop():
+			if offer["module_id"] in [&"mod_rapid_fire", &"mod_twin_barrel"]:
+				bare_hits += 1
+	t.ok(hits > bare_hits * 1.5, "Ziel zieht (%d gegen %d)" % [hits, bare_hits])
+	run.set_target_recipe(&"mod_gunslinger")
+	t.equal(run.target_recipe, &"", "noch einmal: Ziel weg")
+
+
+func test_late_shops_sometimes_offer_a_recipe() -> void:
+	var found := false
+	for seed_value in 60:
+		var run := RunState.start(500 + seed_value)
+		run.phase = RunState.Phase.STOP
+		run.round = 6
+		for offer in run.roll_shop():
+			if ModuleData.get_module(offer["module_id"]).is_recipe():
+				found = true
+		run.round = 2
+		for offer in run.roll_shop():
+			t.ok(not ModuleData.get_module(offer["module_id"]).is_recipe(), "frueh nur Grundmodule")
+	t.ok(found, "ab Runde 5 gelegentlich ein fertiges Rezept")

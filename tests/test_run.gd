@@ -80,11 +80,12 @@ func test_loot_is_rolled_without_a_choice() -> void:
 		var win := int(RunState.tier_cfg(RunState.Tier.NORMAL).get("credits", 0))
 		if item["kind"] == "part":
 			t.equal(item["part_id"], &"eq_deflector", "das Teil kommt aus der Gegnerausruestung")
-			t.equal(run.storage, [&"eq_deflector"], "und liegt im Lager")
-			t.equal(item["where"], "lager", "mit Ort")
+			t.equal(run.bag, [&"eq_deflector"], "und liegt in der Tasche")
+			t.ok(run.storage.is_empty(), "nicht im Lager")
+			t.equal(item["where"], "tasche", "mit Ort")
 			t.equal(run.credits, win, "nur die Credits fuer den Sieg")
 		elif item["kind"] == "credits":
-			t.ok(run.storage.is_empty(), "kein Teil")
+			t.ok(run.bag.is_empty(), "kein Teil")
 			t.equal(run.credits, win + int(item["amount"]), "Beute-Credits obendrauf")
 	t.ok(kinds.has("part") and kinds.has("credits"), "beides kommt vor")
 
@@ -104,14 +105,14 @@ func test_a_new_drome_comes_in_the_drome_rounds() -> void:
 	t.equal(full.last_loot[0]["where"], "home", "mit Ort")
 
 
-func test_loot_goes_home_when_the_storage_is_full() -> void:
+func test_loot_parts_need_no_storage_room() -> void:
 	var run := RunState.start(33)
 	for _i in RunState.storage_size():
-		run.storage.append(&"eq_hammer")
+		run.storage.append(&"mod_capacitor")
 	var id := _win_a_part(run, [&"eq_deflector"])
 	t.equal(id, &"eq_deflector", "ein Teil gewuerfelt")
-	t.equal(run.storage.size(), RunState.storage_size(), "das Lager bleibt voll")
-	t.equal(run.home_queue.map(func(item): return item["part_id"]), [id], "es geht nach Hause")
+	t.equal(run.storage.size(), RunState.storage_size(), "das Lager bleibt, wie es ist")
+	t.equal(run.bag, [id], "das Teil liegt in der Tasche")
 
 
 func test_the_same_run_rolls_the_same_loot() -> void:
@@ -232,7 +233,7 @@ func test_a_part_reward_lands_in_the_storage() -> void:
 	var id := _win_a_part(run, [&"eq_deflector", &"eq_rune_staff", &"eq_neon_blaster"])
 	t.ok(id != &"", "es gab ein Teil")
 	t.equal(run.phase, RunState.Phase.STOP, "Zwischenstopp nach dem Sieg")
-	t.equal(run.storage, [id], "das Teil liegt im Lager")
+	t.equal(run.bag, [id], "das Teil liegt in der Tasche")
 	t.equal(run.credits, int(RunState.tier_cfg(RunState.Tier.NORMAL).get("credits", 0)),
 		"Credits fuer den Sieg")
 	t.equal(run.round, 1, "die Runde wechselt erst mit 'weiter'")
@@ -241,79 +242,35 @@ func test_a_part_reward_lands_in_the_storage() -> void:
 	t.equal(run.phase, RunState.Phase.PREPARE, "und zur Gegnerwahl")
 
 
-func test_equipping_from_storage_swaps_with_the_old_weapon() -> void:
+func test_weapons_are_fixed_during_the_run() -> void:
+	# MODULE_KONZEPT.md: im Lauf wird keine Waffe getauscht.
 	var run := RunState.start(21)
-	var id := _win_a_part(run, [&"eq_plasma_blade"])
-	var spots: Array = run.equip_options(0).filter(func(o): return o["allowed"])
-	t.ok(not spots.is_empty(), "%s passt irgendwo" % id)
-	if spots.is_empty():
-		return
-	var spot: Dictionary = spots[0]
-	var build: DromeBuild = run.squad[int(spot["drome"])]
-	var old := build.part_in(spot["slot"])
-	t.ok(run.equip_from_storage(0, int(spot["drome"]), spot["slot"]), "eingebaut")
-	t.equal(build.slots.get(spot["slot"]), id, "steckt im Halter")
-	if old != null:
-		t.equal(run.storage, [old.id], "die alte Waffe liegt im Lager")
-	else:
-		t.ok(run.storage.is_empty(), "das Lager ist leer")
+	var before: Array = run.squad.map(func(b): return b.slots.duplicate())
+	_win_a_part(run, [&"eq_plasma_blade"])
+	t.ok(not run.has_method("equip_from_storage"), "kein Einbauen im Lauf")
+	t.ok(not run.has_method("unequip"), "kein Ausbauen im Lauf")
+	t.equal(run.squad.map(func(b): return b.slots.duplicate()), before, "die Waffen bleiben")
 
 
-func test_options_name_the_reason_when_a_weapon_does_not_fit() -> void:
-	var run := RunState.start(22)
-	run.phase = RunState.Phase.STOP
-	run.storage.append(&"eq_hammer")
-	var refused: Array = run.equip_options(0).filter(func(o): return not o["allowed"])
-	t.ok(not refused.is_empty(), "ein schwerer Hammer passt nicht ueberall")
-	for option in refused:
-		t.ok(str(option["detail"]) != "", "mit Grund: %s" % option["detail"])
-		t.ok(not run.equip_from_storage(0, int(option["drome"]), option["slot"]),
-			"und laesst sich dort nicht einbauen")
-
-
-func test_unequip_sell_and_the_storage_limit() -> void:
+func test_selling_a_module_from_the_storage() -> void:
 	var run := RunState.start(23)
 	run.phase = RunState.Phase.STOP
-	var build: DromeBuild = run.squad[0]
-	var slot: String = build.equip_slots()[0]
-	var part := build.part_in(slot)
-	t.ok(run.unequip(0, slot), "ausbauen ins Lager")
-	t.equal(run.storage, [part.id], "liegt im Lager")
-	t.equal(build.part_in(slot), null, "der Halter ist leer")
+	run.storage.append(&"mod_capacitor")
 	var value := run.sell(0)
-	t.equal(value, RunState.sell_value(part), "Verkaufspreis nach Klasse")
+	t.equal(value, ModuleData.sell_value(ModuleData.get_module(&"mod_capacitor")), "Verkaufspreis")
 	t.equal(run.credits, value, "Credits gutgeschrieben")
-	for _i in RunState.storage_size():
-		run.storage.append(&"eq_pulse_blaster")
-	t.ok(run.storage_full(), "Lager voll")
-	var other: DromeBuild = run.squad[1]
-	t.ok(not run.unequip(1, other.equip_slots()[0]), "volles Lager: nichts mehr ausbauen")
+	t.ok(run.storage.is_empty(), "das Lager ist leer")
 
 
 func test_loot_goes_home_at_the_end_without_doubling_the_start_gear() -> void:
 	var run := RunState.start(24)
 	var id := _win_a_part(run, [&"eq_plasma_blade"])
 	run.phase = RunState.Phase.STOP
-	# Mitgenommene Ausruestung aus- und wieder eingebaut: keine Beute.
-	var slot: String = run.squad[0].equip_slots()[0]
-	run.unequip(0, slot)
-	run.equip_from_storage(run.storage.size() - 1, 0, slot)
 	run.abandon()
 	t.equal(run.phase, RunState.Phase.LOST, "aufgegeben")
 	t.equal(run.home_queue.map(func(item): return item["part_id"]), [id],
 		"nur die Beute geht nach Hause")
-	t.ok(run.storage.is_empty(), "das Lager ist geleert")
-
-
-func test_sending_start_gear_home_does_not_double_it() -> void:
-	var run := RunState.start(25)
-	run.phase = RunState.Phase.STOP
-	var slot: String = run.squad[0].equip_slots()[0]
-	run.unequip(0, slot)
-	t.ok(run.send_home(0), "nach Hause")
-	t.ok(run.home_queue.is_empty(), "die Waffe liegt zuhause schon -- nicht doppelt")
-	run.abandon()
-	t.ok(run.home_queue.is_empty(), "auch am Ende nicht")
+	t.ok(run.bag.is_empty(), "die Tasche ist geleert")
 
 
 func test_winning_the_last_round_wins_the_run() -> void:

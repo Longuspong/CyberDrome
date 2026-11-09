@@ -281,7 +281,7 @@ func _show_stop(run: RunState) -> void:
 	_side.add_child(_label("Lager  %d / %d" % [run.storage.size(), RunState.storage_size()],
 		18, COLOR_HEADING))
 	if run.storage.is_empty():
-		_side.add_child(_label("Leer. Beute landet hier; ausgebaute Waffen auch.",
+		_side.add_child(_label("Leer. Module aus dem Laden landen hier.",
 			16, COLOR_MUTED))
 	else:
 		var grid := GridContainer.new()
@@ -291,26 +291,24 @@ func _show_stop(run: RunState) -> void:
 		_side.add_child(grid)
 		for index in run.storage.size():
 			grid.add_child(_storage_tile(run, index))
-	if _selected_storage >= 0:
-		_side.add_child(_module_card(run, _selected_storage) if run.is_module_at(_selected_storage)
-			else _storage_card(run, _selected_storage))
+	if run.is_module_at(_selected_storage):
+		_side.add_child(_module_card(run, _selected_storage))
 	_side.add_child(_recipe_section(run))
+	if not run.bag.is_empty():
+		_side.add_child(_bag_section(run))
 
 	# --- Squad mit Haltern ---
 	_side.add_child(_label("Dein Lauf-Squad  ·  Staerke %d"
 		% int(DromeBuild.squad_power(run.squad)), 18, COLOR_HEADING))
 	var module_mode := run.is_module_at(_selected_storage)
-	if _selected_storage >= 0:
-		_side.add_child(_label("Tippe einen Halter an, um das Modul einzusetzen." if module_mode
-			else "Tippe einen Halter an, um die Waffe einzubauen.", 16, COLOR_MUTED))
+	if module_mode:
+		_side.add_child(_label("Tippe einen Halter an, um das Modul einzusetzen.", 16, COLOR_MUTED))
 	else:
-		_side.add_child(_label("Modul im Halter antippen: zurueck ins Lager. Module bleiben im Halter, wenn du die Waffe tauschst.",
+		_side.add_child(_label("Modul im Halter antippen: zurueck ins Lager. Die Waffen bleiben im Lauf, wie sie sind.",
 			16, COLOR_MUTED))
 	var options: Array = []
 	if module_mode:
 		options = run.module_options(_selected_storage)
-	elif _selected_storage >= 0:
-		options = run.equip_options(_selected_storage)
 	for drome in run.squad.size():
 		_side.add_child(_stop_drome_card(run, drome, options))
 
@@ -333,6 +331,7 @@ func _loot_section(run: RunState) -> Control:
 	box.add_child(_label("Beute", 18, COLOR_GOOD))
 	for item in run.last_loot:
 		var where: String = {"lager": "  ->  Lager", "squad": "  ->  Lauf-Squad",
+			"tasche": "  ->  Tasche (nach dem Lauf in den Hangar)",
 			"home": "  ->  nach Hause (kein Platz)"}.get(str(item.get("where", "")), "")
 		box.add_child(_label("%s%s%s" % ["[Selten] " if item.get("rare", false) else "",
 			item["title"], where], 18, COLOR_WARN if item.get("rare", false) else Color.WHITE))
@@ -382,8 +381,20 @@ func _shop_section(run: RunState) -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	box.add_child(_label("Laden", 18, COLOR_HEADING))
+	var target := ModuleData.get_module(run.target_recipe)
+	if target != null:
+		box.add_child(_label("Ziel: %s -- seine fehlenden Zutaten kommen oefter." % target.display_name,
+			16, COLOR_GOOD))
+	var reroll_block := run.reroll_blocker()
+	var reroll := UiKit.button("Neu wuerfeln  %d Credits%s" % [run.reroll_price(),
+		"" if reroll_block == "" else " -- " + reroll_block])
+	reroll.disabled = reroll_block != ""
+	reroll.pressed.connect(func():
+		run.reroll_shop()
+		_refresh())
 	if run.shop_offers.is_empty():
 		box.add_child(_label("Heute nichts im Angebot.", 16, COLOR_MUTED))
+		box.add_child(reroll)
 		return box
 	for index in run.shop_offers.size():
 		var offer: Dictionary = run.shop_offers[index]
@@ -420,6 +431,31 @@ func _shop_section(run: RunState) -> Control:
 			_refresh())
 		inner.add_child(buy)
 		box.add_child(panel)
+	box.add_child(reroll)
+	return box
+
+
+## Die Tasche (6h): Beute-Waffen dieses Laufs. Sie werden im Lauf nicht
+## eingebaut und gehen am Ende in den Hangar.
+func _bag_section(run: RunState) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	box.add_child(_label("Tasche  %d" % run.bag.size(), 18, COLOR_HEADING))
+	box.add_child(_label("Beute-Waffen gehen nach dem Lauf in den Hangar. Im Lauf bleiben die Waffen fest.",
+		16, COLOR_MUTED))
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 8)
+	box.add_child(flow)
+	for id in run.bag:
+		var part := PartDB.get_part(id)
+		if part == null:
+			continue
+		var tile := VBoxContainer.new()
+		var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), 48.0)
+		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		tile.add_child(shape)
+		tile.add_child(_tile_name(part.display_name))
+		flow.add_child(tile)
 	return box
 
 
@@ -586,55 +622,31 @@ func _recipe_section(run: RunState) -> Control:
 				ingredient.display_name if ingredient != null else str(module.from[i])],
 				16, COLOR_GOOD if have else COLOR_MUTED))
 		_add_module_lines(inner, module)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		inner.add_child(row)
 		var make := UiKit.button("Zusammenfuegen" if entry["ready"] else "Zutaten fehlen")
+		make.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		make.disabled = not entry["ready"]
 		make.pressed.connect(func():
 			if run.craft(module.id):
 				_selected_storage = -1
 			_refresh())
-		inner.add_child(make)
+		row.add_child(make)
+		var aimed := run.target_recipe == module.id
+		var aim := UiKit.button("Ziel aufheben" if aimed else "Als Ziel")
+		aim.tooltip_text = "Der Laden bietet die fehlenden Zutaten oefter an"
+		aim.pressed.connect(func():
+			run.set_target_recipe(module.id)
+			_refresh())
+		row.add_child(aim)
 		box.add_child(panel)
 	return box
 
 
-## Die Karte zur angetippten Lager-Waffe: was sie kann, Verkaufen, nach Hause.
-func _storage_card(run: RunState, index: int) -> Control:
-	var part := PartDB.get_part(run.storage[index])
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(true))
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	panel.add_child(box)
-	# Dieselbe Darstellung wie die Waffen-Karte im Hangar: Symbole, Takt,
-	# Faehigkeit; ein Symbol antippen schreibt den Klartext darunter.
-	var hint := UiKit.label("Symbol antippen: Erklaerung", UiKit.SMALL, UiKit.MUTED)
-	WeaponCard.fill(box, part, hint)
-	box.add_child(hint)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	box.add_child(row)
-	var sell := UiKit.button("Verkaufen  +%d" % RunState.sell_value(part))
-	sell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sell.pressed.connect(func():
-		run.sell(index)
-		_selected_storage = -1
-		_refresh())
-	row.add_child(sell)
-	var home := UiKit.button("Nach Hause")
-	home.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	home.tooltip_text = "Sofort in den Hangar -- frei im Lager, fehlt aber im Lauf"
-	home.pressed.connect(func():
-		run.send_home(index)
-		GameState.deliver_run_home()
-		_selected_storage = -1
-		_refresh())
-	row.add_child(home)
-	return panel
-
-
 ## Ein DROME im Zwischenstopp: Bild, Name, und je Halter ein Knopf. Mit
-## ausgewaehlter Lager-Waffe heisst er "hier einbauen" (oder sagt, warum
-## nicht); ohne Auswahl baut er die Waffe aus.
+## ausgewaehltem Modul heisst er "hier einsetzen" (oder sagt, warum nicht);
+## ohne Auswahl zeigt er nur die Waffe -- sie ist im Lauf fest.
 func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 	var build: DromeBuild = run.squad[drome]
 	var panel := PanelContainer.new()
@@ -680,30 +692,8 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 				if run.install_module(_selected_storage, drome, slot):
 					_selected_storage = -1
 				_refresh())
-		elif _selected_storage >= 0:
-			var choice: Dictionary = {}
-			for entry in options:
-				if int(entry["drome"]) == drome and entry["slot"] == slot:
-					choice = entry
-			var allowed := bool(choice.get("allowed", false))
-			button.text = "%s\n%s" % [line, ("Hier einbauen -- %s" % choice.get("detail", ""))
-				if allowed else "geht nicht: %s" % choice.get("detail", "passt nicht")]
-			button.disabled = not allowed
-			if allowed:
-				button.add_theme_stylebox_override("normal", UiKit.card_style(true))
-			button.pressed.connect(func():
-				if run.equip_from_storage(_selected_storage, drome, slot):
-					_selected_storage = -1
-				_refresh())
-		elif part != null:
-			button.text = "%s\n%s" % [line, "Ins Lager" if not run.storage_full()
-				else "Lager voll -- erst verkaufen"]
-			button.disabled = run.storage_full()
-			button.pressed.connect(func():
-				run.unequip(drome, slot)
-				_refresh())
 		else:
-			button.text = "%s\nWaffe im Lager antippen, dann hier" % line
+			button.text = line
 			button.disabled = true
 		box.add_child(button)
 		box.add_child(_module_row(run, drome, slot))

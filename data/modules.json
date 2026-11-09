@@ -65,9 +65,12 @@
     "short: zwei Buchstaben fuer den Chip, falls kein Symbol da ist.",
     "Symbol: assets/modules/<id>.svg (64x64, transparent); anderer Pfad mit icon.",
     "sell_value: Credits beim Verkauf (Grundmodul / Rezept-Modul).",
-    "shop: der Laden im Zwischenstopp -- offers Grundmodule je Stopp, price in",
-    "Credits, recipe_weight: so viel wahrscheinlicher ist ein Modul, das einem",
-    "angefangenen Rezept fehlt."
+    "shop: der Laden im Zwischenstopp (MODULE_KONZEPT.md 7) -- offers Angebote je",
+    "Stopp, price in Credits (Grundmodul / Rezept-Modul). Mitleid: mit Ziel-Rezept",
+    "zaehlen dessen fehlende Zutaten recipe_weight-mal, ohne Ziel jede Zutat eines",
+    "angefangenen Rezepts recipe_weight_open-mal. reroll: Neuwuerfeln kostet price,",
+    "je weiterem Wurf im selben Stopp +step. Ab recipe_from_round ist mit",
+    "recipe_chance das letzte Angebot ein fertiges Rezept. Kein Sperren."
   ],
   "slots": 3,
   "sell_value": {
@@ -75,12 +78,19 @@
     "recipe": 6
   },
   "shop": {
-    "offers": 2,
+    "offers": 3,
     "price": {
       "base": 6,
       "recipe": 16
     },
-    "recipe_weight": 3.0
+    "recipe_weight": 3.0,
+    "recipe_weight_open": 2.0,
+    "reroll": {
+      "price": 2,
+      "step": 1
+    },
+    "recipe_from_round": 5,
+    "recipe_chance": 0.25
   },
   "rules": {
     "_kommentar": "Feste Zahlen der Modul-Regeln (ModuleData.rule).",
