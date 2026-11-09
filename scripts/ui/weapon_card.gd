@@ -116,17 +116,12 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label) -> void:
 		chips.add_child(_chip("attack", "", hint, "Angriff"))
 		for spec in attack_chips(attack):
 			chips.add_child(_chip(spec[0], spec[1], hint, spec[2]))
-	# Werte am Teil selbst (Deflektor DEF +5) und was das Gewicht kostet.
+	# Werte am Teil selbst (Deflektor DEF +5).
 	var extras := _chip_row(right)
 	if part.def != 0:
 		extras.add_child(_chip("def", "%+d" % part.def, hint, "DEF %+d" % part.def))
 	if part.shield != 0:
 		extras.add_child(_chip("shield", "%+d" % part.shield, hint, "Schild %+d" % part.shield))
-	var step := Config.get_int("spd_weight_step", 4)
-	var slow := part.weight / step if step > 0 else 0
-	if slow > 0:
-		extras.add_child(_chip("weight", "-%d SPD" % slow, hint,
-			"Schwer: bremst den Traeger um %d SPD" % slow))
 	if extras.get_child_count() == 0:
 		extras.queue_free()
 

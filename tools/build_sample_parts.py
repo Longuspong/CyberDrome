@@ -371,13 +371,19 @@ def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
 # Vollstaendiger Satz mit Nullwerten. Jedes Teil ueberschreibt nur, was es
 # tatsaechlich beitraegt.
 STAT_DEFAULTS = {
-    "hp": 0, "spd": 0, "atk": 0, "def": 0,
-    # Zwei-Verteidigungs-System: shield = Energieschild-Grundwert (Chassis);
-    # shield_regen = Nachfuellung je Puls (Kern); shield_bonus = Schild-
-    # Effizienz (Kern, 0.1 = +10 %).
+    # Werte eines DROME (Entscheidung 8. Nov. 2026, docs/IDENTITAETEN.md):
+    # Speed (spd), Integritaet (hp), Schild, Schildpuls, Ruestung (def),
+    # Power und Modulplaetze. Sie stehen am CHASSIS; Kopf, Antrieb und Kern
+    # sind Optik. Waffen geben je einen dieser Werte als Bonus.
+    "hp": 0, "spd": 0, "def": 0,
     "shield": 0, "shield_regen": 0, "shield_bonus": 0.0,
-    # Gewicht der Ausruestung bremst (spd_weight_step in data/config.json).
-    "weight": 0,
+    # Schildpuls: EIN Wert fuer die Ruhezeit bis zum Laden und die Ladung je
+    # Puls (Formel in data/config.json -> combat.shield_pulse).
+    "shield_pulse": 0,
+    # Power: Schaden der Waffe x power / 10 (10 = 100 %).
+    "power": 0,
+    # Modulplaetze je Waffenhalter (nur Chassis).
+    "module_slots": 0,
     # Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet.
     "hp_regen_pct": 0,
     # Lockradius in Feldern: Gegner so nah greifen den Traeger an statt ihres
@@ -411,46 +417,35 @@ STAT_DEFAULTS = {
 #               {"kind": "adjacent", "every": s}                      Gegner daneben
 
 
-# Spiegelt spd_weight_step aus data/config.json -- nur fuer die
-# Baubarkeitspruefung unten.
-SPD_WEIGHT_STEP = 4
-
-
 STATS = {
     # --- CHASSIS (body) ----------------------------------------------------
-    "scout_body":  {"hp":  60, "def": 1, "spd": 2, "shield": 30, "ai_role": "skirmisher",
-                    "passive": "hit_rush"},
-    # Tank: viel Integritaet, kaum Schild (Entscheidung 6. Nov. 2026) -- mit
-    # Kopf 200 Integritaet, 10 Schild. Kinetische Waffen sind gegen ihn gut,
-    # Energie und Schildbrecher kaum.
-    "jugg_body":   {"hp": 185, "def": 5, "shield": 10, "ai_role": "vanguard",
-                    "passive": "presence"},
-    "mage_body":   {"hp":  85, "def": 2, "shield": 50, "ai_role": "controller",
-                    "passive": "echo"},
-    "strix_body":  {"hp":  70, "def": 2, "spd": 1, "shield": 30, "ai_role": "sniper"},
+    # Alle Werte des DROME stehen hier (8. Nov. 2026). ATK und Gewicht
+    # gibt es nicht mehr.
+    # Vireo: der schnelle Allrounder, nur eine leichte Waffe.
+    "scout_body":  {"spd": 12, "hp":  80, "shield": 50, "shield_pulse":  5, "def":  2,
+                    "power": 10, "module_slots": 3,
+                    "ai_role": "skirmisher", "passive": "hit_rush"},
+    # Molok: der harte Zweihaender fuer die Frontlinie, wenig Power.
+    "jugg_body":   {"spd": 10, "hp": 250, "shield": 50, "shield_pulse":  5, "def": 10,
+                    "power":  6, "module_slots": 2,
+                    "ai_role": "vanguard", "passive": "presence"},
+    # Nimbus: fragil, schildlastig, Richtung Faehigkeiten.
+    "mage_body":   {"spd": 12, "hp":  60, "shield": 60, "shield_pulse": 10, "def":  0,
+                    "power": 12, "module_slots": 3,
+                    "ai_role": "controller", "passive": "echo"},
+    # Strix: Langstrecke, langsam, viel Power.
+    "strix_body":  {"spd":  7, "hp": 100, "shield": 30, "shield_pulse":  5, "def":  2,
+                    "power": 15, "module_slots": 3,
+                    "ai_role": "sniper"},
 
-    # --- KERN (core) -------------------------------------------------------
-    # Kerne sind seit 6g nur noch Optik am Chassis -- keine Werte.
-    "scout_core":  {"weight": 3},
-    "jugg_core":   {"weight": 6},
-    "mage_core":   {"weight": 5},
-    "strix_core":  {"weight": 4},
-
-    # --- ANTRIEB (feet) ----------------------------------------------------
-    "scout_feet":  {"spd": 11, "weight": 3},
-    "jugg_feet":   {"spd":  8, "weight": 6, "def": 2},
-    "mage_drive":  {"spd": 14, "weight": 4},
-    "strix_feet":  {"spd":  9, "weight": 5},
-
-    # --- KOPF (head) -------------------------------------------------------
-    "scout_head":  {"spd": 2, "weight": 2},
-    "jugg_head":   {"hp": 15, "def": 2, "weight": 4},
-    "mage_head":   {"weight": 2},
-    "strix_head":  {"atk": 4, "weight": 3},
+    # --- KERN, ANTRIEB, KOPF -------------------------------------------------
+    # Nur noch Optik am Chassis -- keine Werte.
+    "scout_core": {}, "jugg_core": {}, "mage_core": {}, "strix_core": {},
+    "scout_feet": {}, "jugg_feet": {}, "mage_drive": {}, "strix_feet": {},
+    "scout_head": {}, "jugg_head": {}, "mage_head": {}, "strix_head": {},
 
     # --- AUSRUESTUNG (equipment) -------------------------------------------
     "eq_pulse_blaster": {
-        "weight": 5,
         "actions": [
             # Halb physisch, halb Energie.
             {"id": "act_pulse", "display_name": "Angriff",
@@ -470,7 +465,6 @@ STATS = {
     # Neon-Variante: gleicher Angriff, aber die Faehigkeit ist ein aufgeladener
     # Schuss mit doppeltem Schaden AM SCHILD (Vorgabe des Spielers, Nov. 2026).
     "eq_neon_blaster": {
-        "weight": 5,
         "actions": [
             {"id": "act_neon_pulse", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -486,7 +480,6 @@ STATS = {
     # Plasmaklinge: Nahkampf, nur kinetisch, etwas mehr Schaden, schneller als
     # der Blaster. Jeder 3. Hieb macht das Ziel 5 s verwundbar (+50 % Schaden).
     "eq_plasma_blade": {
-        "weight": 4,
         "actions": [
             {"id": "act_plasma_slash", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -502,7 +495,7 @@ STATS = {
     # Schutz-Waffe (7. Nov. 2026): schwacher Stoss, jeder 4. Angriff laedt
     # den eigenen Schild um 15 (auch ueber das Maximum).
     "eq_deflector": {
-        "def": 5, "weight": 4,
+        "def": 5,
         "actions": [
             {"id": "act_deflector_bash", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -516,7 +509,6 @@ STATS = {
 
     # Springt weg, wenn ein Gegner danebensteht.
     "eq_holo_boost": {
-        "weight": 3,
         "actions": [
             {"id": "act_holo_dash", "display_name": "Hologramm-Boost",
              "category": "ability", "targeting": "dash",
@@ -528,7 +520,6 @@ STATS = {
     # Hammer des Molok: schwer, langsam, kinetisch. Jeder 3. Schlag betaeubt
     # das Ziel 1 s (Vorgabe des Spielers, Nov. 2026).
     "eq_hammer": {
-        "weight": 7,
         "actions": [
             {"id": "act_hammer", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -545,7 +536,6 @@ STATS = {
     # schiessen die Drohnen schwach auf Gegner. Jeder 4. Angriff setzt eine
     # Schutzdrohne: 15 Schild fuer den am staerksten Verletzten.
     "eq_drone_pod": {
-        "weight": 3,
         "actions": [
             {"id": "act_drone_repair", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -558,14 +548,13 @@ STATS = {
         ],
     },
     # Lockt: Gegner im Umkreis 2 greifen den Traeger an.
-    "eq_bait_beacon": {"weight": 3, "lure_radius": 2},
+    "eq_bait_beacon": {"lure_radius": 2},
 
     # Kontrollwaffe des Nimbus: Einzelschuss auf Blaster-Reichweite, reine
     # Energie. Die Faehigkeit (Vortex) zieht die Gegner um das Ziel zusammen,
     # kurz danach schlaegt eine Schockwelle von innen nach aussen zu und
     # verlangsamt (Vorgabe des Spielers, Nov. 2026).
     "eq_rune_staff": {
-        "weight": 4,
         "actions": [
             {"id": "act_runestaff", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -581,7 +570,6 @@ STATS = {
     },
     # Zieht alle 6 s ein Ziel zwei Felder heran.
     "eq_orbit_focus": {
-        "weight": 3, "atk": 1,
         "actions": [
             {"id": "act_orbitpull", "display_name": "Orbit-Sog",
              "category": "ability", "targeting": "single",
@@ -590,7 +578,6 @@ STATS = {
         ],
     },
     "eq_rail_lance": {
-        "weight": 8,
         "actions": [
             {"id": "act_raillance", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -1846,9 +1833,10 @@ SETS = [
                 # Kampf auffaellt -- und weil ein Vireo mit Belagerungskanone
                 # eine Silhouette haette, die ueber seine Reichweite luegt.
                 # Ein Ausruestungsplatz (Nov. 2026). Der rechte Anker bleibt fuer
-                # die Optik, ist aber kein Halter mehr ("off").
+                # die Optik, ist aber kein Halter mehr ("off"). Seit 8. Nov.
+                # 2026 nur leicht (der schnelle Allrounder).
                 "slot_rules": {
-                    "equip_left": {"max_class": "medium",
+                    "equip_left": {"max_class": "light",
                                    "categories": ["weapon", "support"]},
                     "equip_right": {"off": True},
                 },
@@ -1937,11 +1925,11 @@ SETS = [
                 # woran sich ein Schild abstuetzen koennte -- dort gehoert
                 # Sensorik und Support hin, nichts Schweres und nichts, was
                 # gehalten werden muss.
-                # Zwei Plaetze: links alles bis schwer, rechts Schild oder Gadget.
+                # Zwei Plaetze, beide bis mittel (8. Nov. 2026): schwer ist nur
+                # das Scharfschuetzengewehr des Strix.
                 "slot_rules": {
-                    "equip_left": {"max_class": "heavy"},
-                    "equip_right": {"max_class": "heavy",
-                                    "categories": ["shield", "support"]},
+                    "equip_left": {"max_class": "medium"},
+                    "equip_right": {"max_class": "medium"},
                     "equip_shoulder": {"off": True},
                 },
             },
@@ -1964,7 +1952,7 @@ SETS = [
                 "id": "eq_hammer", "code": "EQP-012", "type": "equipment",
                 "name": "Hammer", "tags": ["weapon", "melee", "heavy"],
                 "shapes": EQ_HAMMER,
-                "mount_class": "heavy", "category": "weapon",
+                "mount_class": "medium", "category": "weapon",
                 "anchors": {"mount": (0, 0, 49), "head": (23.8, 0, 39)},
             },
             {
@@ -2483,18 +2471,14 @@ def check_stats() -> None:
                     chosen.append(p)
                     break
 
-        stats = {k: 0 for k in ("hp", "spd", "atk", "def", "weight")}
+        stats = {k: 0 for k in ("hp", "spd", "def", "power")}
         has_weapon = False
-        payload = 0
         for p in chosen:
             s = part_stats(p["id"])
             for k in stats:
                 stats[k] += s[k]
-            if p["type"].startswith("equipment"):
-                payload += s["weight"]
             if p.get("category") == "weapon":
                 has_weapon = True
-        stats["spd"] -= payload // SPD_WEIGHT_STEP
 
         problems = []
         if not has_weapon:
@@ -2507,10 +2491,9 @@ def check_stats() -> None:
         rows.append((spec["id"], stats))
 
     print("\nStandardaufbau je Bausatz (eigene Teile, alle Anker belegt):")
-    print(f"  {'':<7}{'HP':>5}{'SPD':>5}{'ATK':>5}{'DEF':>5}{'Gewicht':>9}")
+    print(f"  {'':<7}{'HP':>5}{'SPD':>5}{'DEF':>5}{'Power':>7}")
     for where, s in rows:
-        print(f"  {where:<7}{s['hp']:>5}{s['spd']:>5}{s['atk']:>5}{s['def']:>5}"
-              f"{s['weight']:>9}")
+        print(f"  {where:<7}{s['hp']:>5}{s['spd']:>5}{s['def']:>5}{s['power']:>7}")
 
 
 def print_slot_matrix() -> None:

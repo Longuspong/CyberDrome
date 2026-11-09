@@ -47,9 +47,9 @@ func test_stock_builds_are_valid() -> void:
 		t.ok(problems.is_empty(), "%s: %s" % [set_id, ", ".join(problems)])
 		if problems.is_empty():
 			var s := build.stats()
-			t.note("%s  hp %3d  spd %2d  atk %d  def %d  kampfwert %.0f"
+			t.note("%s  hp %3d  spd %2d  power %d  def %d  kampfwert %.0f"
 				% [set_id, s["hp_max"], s["spd"],
-					s["atk"], s["def"], build.power_score()])
+					s["power"], s["def"], build.power_score()])
 
 
 func test_stats_are_pure_sum() -> void:
@@ -90,49 +90,48 @@ func test_a_build_without_a_weapon_is_a_decision_not_an_error() -> void:
 		"der Sender ist passiv -- gar keine Aktion, und das ist gueltig")
 
 
-func test_the_payload_slows_you_down() -> void:
-	# Masse bremst: die Belagerungskanone zahlt in Gewicht und Tempo.
-	var step := Config.get_int("spd_weight_step", 4)
+func test_weight_no_longer_slows_anyone_down() -> void:
+	# 8. Nov. 2026: Gewicht ist gestrichen, die Halterklasse reicht. Eine
+	# Waffe aendert den Speed nicht mehr (ausser sie gibt ihn als Bonus).
 	var bare := DromeBuild.create("NACKT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core"})
 	var armed := bare.clone()
 	armed.slots["equip_left"] = &"eq_hammer"
-
-	var cannon := PartDB.get_part(&"eq_hammer")
-
-	t.equal(bare.payload_slowdown(), 0, "ohne Zuladung bremst nichts")
-	t.equal(armed.payload_slowdown(), cannon.weight / step,
-		"mit Kanone kostet die Zuladung Tempo")
-	t.equal(armed.stats()["spd"], bare.stats()["spd"] - armed.payload_slowdown(),
-		"und der Abzug steht in den Stats, nicht nur in der Rechnung")
+	t.equal(armed.stats()["spd"], bare.stats()["spd"], "der Hammer bremst nicht")
+	t.ok(not armed.stats().has("weight"), "es gibt keinen Gewichtswert mehr")
 
 
-func test_the_same_weapon_slows_every_chassis_equally() -> void:
-	# Gerechnet wird auf der Ausruestung, nicht auf dem Gesamtgewicht. Deshalb
-	# bremst dieselbe Waffe ueberall gleich viel -- ein Aufbau kann sich seinem
-	# Tempoverlust nicht durch ein groesseres Chassis entziehen.
-	var molok := DromeBuild.create("MOLOK", {
-		"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_rune_staff"})
-	var vireo := DromeBuild.create("VIREO", {
-		"body": &"scout_body", "head": &"scout_head",
-		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_rune_staff"})
-	t.equal(molok.payload_slowdown(), vireo.payload_slowdown(),
-		"derselbe Runenstab, derselbe Abzug")
+func test_the_dromes_carry_the_agreed_values() -> void:
+	# docs/IDENTITAETEN.md Abschnitt 5/6 (Vorgabe des Spielers, 8. Nov. 2026).
+	var expected := {
+		"bot1": {"spd": 12, "hp_max": 80, "shield_max": 50, "shield_pulse": 5, "def": 2, "power": 10, "module_slots": 3},
+		"bot2": {"spd": 10, "hp_max": 250, "shield_max": 50, "shield_pulse": 5, "def": 10, "power": 6, "module_slots": 2},
+		"bot3": {"spd": 12, "hp_max": 60, "shield_max": 60, "shield_pulse": 10, "def": 0, "power": 12, "module_slots": 3},
+		"bot4": {"spd": 7, "hp_max": 100, "shield_max": 30, "shield_pulse": 5, "def": 2, "power": 15, "module_slots": 3},
+	}
+	for set_id in expected:
+		var bare := DromeBuild.create(set_id, {})
+		var body: PartData = PartDB.of_type(PartData.Type.BODY).filter(
+			func(p): return p.set_id == set_id)[0]
+		bare.apply_chassis(body.id)
+		var s := bare.stats()
+		for key in expected[set_id]:
+			t.equal(s[key], expected[set_id][key], "%s %s" % [body.display_name, key])
 
-	var heavy := molok.clone()
-	heavy.slots["equip_left"] = &"eq_rail_lance"
-	t.ok(heavy.payload_slowdown() > molok.payload_slowdown(),
-		"die schwerere Waffe bremst staerker (%d gegen %d)"
-		% [heavy.payload_slowdown(), molok.payload_slowdown()])
+
+func test_power_scales_the_damage_of_the_weapon() -> void:
+	var strix := Unit.create(DromeBuild.create("S", {"body": &"strix_body",
+		"head": &"strix_head", "feet": &"strix_feet", "core": &"strix_core",
+		"equip_center": &"eq_rail_lance"}), &"P0", true)
+	var lance: ActionData = PartDB.get_part(&"eq_rail_lance").actions[0]
+	t.equal(strix.raw_damage(lance), int(round(lance.power * 1.5)), "Power 15 = 150 %")
+	strix.free()
 
 
 func test_the_molok_has_two_holders() -> void:
-	# Seit Nov. 2026: ein Platz je DROME, der Molok zwei -- links alles bis
-	# schwer, rechts nur Schild oder Gadget.
+	# Seit Nov. 2026: ein Platz je DROME, der Molok zwei -- seit 8. Nov.
+	# beide bis mittel (zwei Waffen gehen, schwer nicht).
 	var molok := DromeBuild.create("MOLOK", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
@@ -141,8 +140,11 @@ func test_the_molok_has_two_holders() -> void:
 		% ", ".join(molok.validate()))
 
 	var two_guns := molok.clone()
-	two_guns.slots["equip_right"] = &"eq_rail_lance"
-	t.ok(not two_guns.is_valid(), "eine zweite Waffe rechts nicht")
+	two_guns.slots["equip_right"] = &"eq_rune_staff"
+	t.ok(two_guns.is_valid(), "eine zweite Waffe rechts geht")
+	var lance := molok.clone()
+	lance.slots["equip_right"] = &"eq_rail_lance"
+	t.ok(not lance.is_valid(), "das schwere Gewehr nicht")
 
 	var shoulder := molok.clone()
 	shoulder.slots["equip_shoulder"] = &"eq_drone_pod"
@@ -233,8 +235,9 @@ func test_slot_rules_are_enforced() -> void:
 	var jugg := PartDB.get_part(&"jugg_body")
 	var cannon := PartDB.get_part(&"eq_hammer")
 	var pod := PartDB.get_part(&"eq_drone_pod")
-	t.ok(jugg.accepts(cannon, "equip_left"), "schwere Kanone passt an den linken Arm")
-	t.ok(not jugg.accepts(cannon, "equip_right"), "rechts nur Schild oder Gadget")
+	t.ok(jugg.accepts(cannon, "equip_left"), "der Hammer passt an den linken Arm")
+	t.ok(jugg.accepts(cannon, "equip_right"), "und an den rechten")
+	t.ok(not jugg.accepts(PartDB.get_part(&"eq_rail_lance"), "equip_left"), "schwer passt nicht")
 	t.ok(jugg.accepts(pod, "equip_right"), "der Drohnen-Pod passt rechts")
 	t.ok(not jugg.accepts(pod, "equip_shoulder"), "die Schulter ist reine Optik")
 
@@ -261,11 +264,13 @@ func test_chassis_swap_drops_equipment_that_no_longer_fits() -> void:
 		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": &"eq_hammer",
 	})
-	var before: int = build.stats()["weight"]
 	var delta := build.preview_delta("body", &"scout_body")
-	t.ok(delta.has("weight"), "Chassiswechsel aendert das Gewicht")
-	t.ok(delta["weight"]["after"] < before,
-		"die nicht mehr passende Kanone faellt aus der Rechnung")
+	t.ok(delta.has("hp_max"), "Chassiswechsel aendert die Werte")
+	var swapped := build.clone()
+	swapped.slots["body"] = &"scout_body"
+	swapped._drop_invalid_equipment()
+	t.ok(swapped.part_in("equip_left") == null,
+		"der mittlere Hammer passt nicht an den leichten Vireo und faellt ab")
 
 
 func test_power_score_rewards_the_obviously_stronger_build() -> void:
@@ -288,21 +293,21 @@ func test_loadout_survives_a_round_trip() -> void:
 # ---------------------------------------------------------------------------
 
 func test_the_same_part_twice_grants_one_action() -> void:
-	# Zwei Orbit-Fokusse am Molok. Die Stats summieren sich, die Aktionsliste
+	# Zwei Deflektoren am Molok. Die Stats summieren sich, die Aktionsliste
 	# nicht: ein zweiter Eintrag verspraeche eine Wahl, die es nicht gibt.
 	var build := DromeBuild.create("DOPPELT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_orbit_focus",
+		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector",
 	})
-	var single: int = build.stats()["atk"]
+	var single: int = build.stats()["def"]
 	var actions_before := build.actions().size()
 
-	build.slots["equip_left"] = &"eq_orbit_focus"
-	t.equal(build.stats()["atk"], single + 1,
-		"zwei Fokusse geben weiterhin zweimal ATK")
-	t.equal(build.actions().size(), 1,
-		"aber nur EINEN Orbit-Sog (vorher waren es %d Eintraege)" % actions_before)
+	build.slots["equip_left"] = &"eq_deflector"
+	t.equal(build.stats()["def"], single + PartDB.get_part(&"eq_deflector").def,
+		"zwei Deflektoren geben zweimal Ruestung")
+	t.equal(build.actions().size(), 2,
+		"aber nur EINEN Stoss und EINE Schildladung (vorher %d Eintraege)" % actions_before)
 
 
 func test_actions_are_split_by_budget() -> void:
@@ -364,11 +369,10 @@ func test_a_part_finds_its_own_slot() -> void:
 	t.equal(build.slot_for(shield, "equip_right"), "equip_right",
 		"der angewaehlte Halter gewinnt")
 
-	# Rechts nimmt der Molok nur Schild oder Gadget. Eine Kanone landet deshalb
-	# NICHT dort, auch wenn der rechte Halter angewaehlt ist.
-	var cannon := PartDB.get_part(&"eq_hammer")
+	# Schwer passt beim Molok nirgends hin (8. Nov. 2026).
+	var cannon := PartDB.get_part(&"eq_rail_lance")
 	var target := build.slot_for(cannon, "equip_right")
-	t.equal(target, "equip_left", "die Kanone landet links")
+	t.equal(target, "", "das Gewehr findet keinen Halter")
 
 
 func test_a_part_that_fits_nowhere_says_so() -> void:

@@ -2,7 +2,7 @@
   "_kommentar": [
     "Module (NEUANFANG 6g): gibt es nur im Lauf, sie veraendern, wie eine Waffe",
     "funktioniert. Sie stecken im WAFFENHALTER eines DROME (slots je Halter,",
-    "slots_by_body fuer Ausnahmen wie den Molok) und wirken auf die Waffe, die",
+    "seit 8. Nov. 2026 ein Wert des Chassis: module_slots, slots nur Ersatz) und wirken auf die Waffe, die",
     "gerade darin sitzt. Bedingung (condition): 'ranged' = Angriff mit",
     "Reichweite ab 2, 'melee' = Reichweite 1, leer = jede Waffe. Passt die Waffe",
     "nicht, ruht das Modul (grau), bleibt aber im Halter.",
@@ -43,7 +43,6 @@
     "wahrscheinlicher ist ein Modul, das einem angefangenen Rezept fehlt."
   ],
   "slots": 3,
-  "slots_by_body": {"jugg_body": 2},
   "sell_value": {"base": 2, "recipe": 6},
   "shop": {
     "offers": 2,

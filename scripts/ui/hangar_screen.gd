@@ -562,8 +562,8 @@ func _delta_lines(build: DromeBuild, slot: String, part: PartData, box: VBoxCont
 	trial.slots[slot] = part.id
 	var before := build.stats()
 	var after := trial.stats()
-	for key in [["hp_max", "Integritaet"], ["shield_max", "Schild"], ["spd", "SPD"],
-			["atk", "ATK"], ["def", "DEF"]]:
+	for key in [["hp_max", "Integritaet"], ["shield_max", "Schild"], ["shield_pulse", "Schildpuls"],
+			["spd", "Speed"], ["def", "Ruestung"], ["power", "Power"]]:
 		var a: int = before.get(key[0], 0)
 		var b: int = after.get(key[0], 0)
 		if a != b:

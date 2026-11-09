@@ -285,7 +285,7 @@ func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) 
 	if target == null or not (target is Unit) or target.is_player == unit.is_player:
 		return
 	mount["shots"] = int(mount.get("shots", 0)) + 1
-	var raw := attack.power + unit.atk()
+	var raw := unit.raw_damage(attack)
 	var chance := float(fx.get("ricochet_chance", 0.0))
 	if chance > 0.0 and target.is_alive() and battle.rng.randf() < chance:
 		var bounce := maxi(1, int(round(float(raw) * float(fx.get("ricochet_share", 0.15)))))
@@ -756,7 +756,7 @@ func _shield_damage(unit: Unit, target: Unit, action: ActionData) -> int:
 	if target.shield <= 0 or action.power <= 0:
 		return 0
 	var outcome := battle.resolver.resolve_damage(target,
-		action.power + unit.atk(), action.energy_fraction, action.shield_mult)
+		unit.raw_damage(action), action.energy_fraction, action.shield_mult)
 	return maxi(0, target.shield - int(outcome["shield_after"]))
 
 

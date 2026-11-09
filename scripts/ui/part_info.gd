@@ -28,7 +28,8 @@ const ROLE := {
 ## SPD ist die Laufgeschwindigkeit, Faehigkeiten loesen nach ihrer Regel aus.
 const STAT_LABELS := [
 	["hp", "Integritaet"], ["shield", "Schild"],
-	["def", "Panzerung"], ["atk", "Angriff"], ["spd", "Tempo (SPD, Laufgeschwindigkeit)"],
+	["shield_pulse", "Schildpuls"], ["def", "Ruestung"], ["power", "Power"],
+	["spd", "Speed (Laufgeschwindigkeit)"], ["module_slots", "Modulplaetze je Halter"],
 ]
 
 
@@ -54,14 +55,6 @@ static func lines(part: PartData) -> Array:
 			out.append(["%s %+d" % [entry[1], value], "stat"])
 	if part.shield_bonus > 0.0:
 		out.append(["Schild-Effizienz +%d %%" % int(round(part.shield_bonus * 100.0)), "stat"])
-
-	# Gewicht zeigt sich nur als das, was es kostet: Tempo. Gerechnet wird wie
-	# in DromeBuild.payload_slowdown() -- hier fuer das Teil allein.
-	if part.type == PartData.Type.EQUIPMENT:
-		var step := Config.get_int("spd_weight_step", 4)
-		var slow := part.weight / step if step > 0 else 0
-		if slow > 0:
-			out.append(["Schwer: bremst um %d SPD" % slow, "stat_bad"])
 
 	for text in traits(part):
 		out.append([text, "trait"])

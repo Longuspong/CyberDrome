@@ -172,11 +172,13 @@ func is_recipe() -> bool:
 
 
 ## Wie viele Module ein Halter dieses DROME fasst: 3, Molok 2 (6g).
+## Modulplaetze je Waffenhalter: ein Wert des DROME (Chassis, 8. Nov. 2026).
+## Fehlt er (alte Daten), gilt modules.json -> slots.
 static func slots_for(build: DromeBuild) -> int:
-	var per_body: Dictionary = data().get("slots_by_body", {})
-	var chassis := build.body() if build != null else null
-	if chassis != null and per_body.has(str(chassis.id)):
-		return int(per_body[str(chassis.id)])
+	if build != null:
+		var own := int(build.stats().get("module_slots", 0))
+		if own > 0:
+			return own
 	return int(data().get("slots", 3))
 
 

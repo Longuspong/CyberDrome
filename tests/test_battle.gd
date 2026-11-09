@@ -123,7 +123,7 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"})
 	t.ok(bunker.is_valid(), "der Bunker ist baubar: %s" % ", ".join(bunker.validate()))
-	t.equal(bunker.stats()["def"], 14, "und kommt auf DEF 14")
+	t.equal(bunker.stats()["def"], 15, "und kommt auf Ruestung 15 (Molok 10 + Deflektor 5)")
 
 	var grid := Grid.new(10, 10)
 	var shooter := Unit.create(_squad()[0], &"P0", true)
@@ -143,9 +143,9 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	t.ok(dealt >= int(ceil(blaster.power * 0.5)),
 		"DEF nimmt hoechstens die Haelfte weg: %d von %d" % [dealt, blaster.power])
 	var hits := int(ceil(float(wall.stat("hp_max")) / float(dealt)))
-	t.ok(hits <= 30,
+	t.ok(hits <= 45,
 		"und der Bunker faellt in absehbarer Zeit (%d Treffer)" % hits)
-	t.equal(resolver.apply_damage(shooter, wall, blaster.power + shooter.atk(), blaster), dealt,
+	t.equal(resolver.apply_damage(shooter, wall, shooter.raw_damage(blaster), blaster), dealt,
 		"die Vorschau sagt genau das, was die Ausfuehrung tut")
 
 	shooter.free()

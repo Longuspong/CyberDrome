@@ -24,8 +24,8 @@ const SOCKET_SLOTS := ["body", "head", "feet", "core"]
 ## ### Keine Bau-Budgets
 ##
 ## Frueher deckelten Traglast und Strombedarf den Aufbau; beide sind gestrichen,
-## ebenso die Energie (Echtzeit-Kampf, Nov. 2026). Gewicht ist reines Tempo
-## (``payload_slowdown`` zieht SPD ab). Die natuerliche Grenze ist ``spd >= 1``
+## ebenso die Energie (Echtzeit-Kampf, Nov. 2026) und seit 8. Nov. 2026 das
+## Gewicht -- die Halterklasse reicht. Die natuerliche Grenze ist ``spd >= 1``
 ## in ``structural_problems()``.
 
 var display_name: String = "DROME"
@@ -203,25 +203,23 @@ func actions_of(category: ActionData.Category) -> Array:
 func stats() -> Dictionary:
 	var total := {
 		"hp_max": 0,
-		"spd": 0, "atk": 0, "def": 0,
+		"spd": 0, "def": 0, "power": 0, "shield_pulse": 0, "module_slots": 0,
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
-		"weight": 0,
 		"hp_regen_pct": 0,
 		"lure_radius": 0,
 	}
 	for part in all_parts():
 		total["hp_max"] += part.hp
 		total["spd"] += part.spd
-		total["atk"] += part.atk
+		total["power"] += part.power
+		total["shield_pulse"] += part.shield_pulse
+		total["module_slots"] = maxi(int(total["module_slots"]), part.module_slots)
 		total["def"] += part.def
 		total["shield"] += part.shield
 		total["shield_regen"] += part.shield_regen
 		total["shield_bonus"] += part.shield_bonus
-		total["weight"] += part.weight
 		total["hp_regen_pct"] += part.hp_regen_pct
 		total["lure_radius"] = maxi(int(total["lure_radius"]), part.lure_radius)
-
-	total["spd"] -= payload_slowdown()
 
 	# Module (nur im Lauf): Panzerung, Schild und Konter des Traegers.
 	if not modules.is_empty():
@@ -236,7 +234,8 @@ func stats() -> Dictionary:
 	# Validierung faengt das ab und sagt dem Spieler, welche Regel bricht.
 	total["hp_max"] = maxi(0, total["hp_max"])
 	total["def"] = maxi(0, total["def"])
-	total["atk"] = maxi(0, total["atk"])
+	total["power"] = maxi(0, total["power"])
+	total["shield_pulse"] = maxi(0, total["shield_pulse"])
 	total["shield"] = maxi(0, total["shield"])
 	# Das Schild-Maximum ist der Grundwert mal der prozentualen Schild-Effizienz
 	# des Kerns (§11): shield_max = shield * (1 + shield_bonus). Der Bonus ist
@@ -245,22 +244,11 @@ func stats() -> Dictionary:
 	return total
 
 
-## Wie sehr die ZULADUNG bremst: je ``spd_weight_step`` Gewicht an Ausruestung
-## ein Punkt SPD weniger.
-##
-## Gerechnet wird auf der AUSRUESTUNG, nicht auf dem Gesamtgewicht: dieselbe
-## Waffe bremst an jedem Chassis gleich viel.
-##
-## Abgerundet, damit leichte Module (Gewicht 3) gratis bleiben und der Abzug
-## erst bei echter Zuladung einsetzt.
-func payload_slowdown() -> int:
-	var step := Config.get_int("spd_weight_step", 4)
-	if step <= 0:
-		return 0
-	var payload := 0
-	for part in equipment():
-		payload += part.weight
-	return payload / step
+## Power als Faktor: 10 Punkte = 100 % Waffenschaden (8. Nov. 2026). Ohne
+## Power-Wert (alte Daten) gilt 100 %.
+func power_factor() -> float:
+	var points := int(stats().get("power", 0))
+	return 1.0 if points <= 0 else float(points) / 10.0
 
 
 ## Was ein einzelnes Teil an den Stats aendern wuerde -- fuer die Delta-Anzeige
@@ -460,10 +448,9 @@ func power_score() -> float:
 				best_weapon = action.power
 	return (
 		float(total["hp_max"]) * 1.0
-		+ float(total["atk"]) * 6.0
 		+ float(total["def"]) * 8.0
 		+ float(total["spd"]) * 3.0
-		+ float(best_weapon) * 2.0
+		+ float(best_weapon) * 2.0 * power_factor()
 	)
 
 

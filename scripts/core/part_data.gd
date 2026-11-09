@@ -50,14 +50,20 @@ var slot_rules: Dictionary = {}
 ## Spielwerte. Flach, additiv, ohne Grundwerte irgendwo sonst.
 var hp: int = 0
 var spd: int = 0
-var atk: int = 0
 var def: int = 0
+## Power (8. Nov. 2026): Waffenschaden x power / 10. Am Chassis, Waffen
+## koennen etwas dazugeben (Plasmaklinge, Schienen-Lanze).
+var power: int = 0
+## Schildpuls: Ruhezeit bis zum Laden und Ladung je Puls in einem Wert
+## (combat.shield_pulse in data/config.json).
+var shield_pulse: int = 0
+## Modulplaetze je Waffenhalter (nur Chassis).
+var module_slots: int = 0
 ## Zwei-Verteidigungs-System (§11): Energieschild-Grundwert (Chassis), seine
 ## Nachfuellung je Puls (Kern) und die prozentuale Schild-Effizienz (Kern).
 var shield: int = 0
 var shield_regen: int = 0
 var shield_bonus: float = 0.0
-var weight: int = 0
 
 ## Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet (5 = 5 %).
 ## Der Drohnen-Pod traegt sie -- eine Passive statt einer aktiven Heilung.
@@ -105,12 +111,13 @@ static func from_meta(meta: Dictionary) -> PartData:
 	var stats: Dictionary = meta.get("stats", {})
 	part.hp = stats.get("hp", 0)
 	part.spd = stats.get("spd", 0)
-	part.atk = stats.get("atk", 0)
+	part.power = int(stats.get("power", 0))
+	part.shield_pulse = int(stats.get("shield_pulse", 0))
+	part.module_slots = int(stats.get("module_slots", 0))
 	part.def = stats.get("def", 0)
 	part.shield = stats.get("shield", 0)
 	part.shield_regen = stats.get("shield_regen", 0)
 	part.shield_bonus = float(stats.get("shield_bonus", 0.0))
-	part.weight = stats.get("weight", 0)
 	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
 	part.lure_radius = int(stats.get("lure_radius", 0))
 	part.ai_role = str(stats.get("ai_role", ""))

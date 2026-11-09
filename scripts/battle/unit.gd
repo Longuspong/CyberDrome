@@ -507,25 +507,29 @@ func shield_fraction() -> float:
 	return 0.0 if maximum <= 0 else float(shield) / float(maximum)
 
 
-## Schild-Nachfuellung (6g): keine Grundregeneration mehr. Der Schild laedt
-## erst, wenn der DROME ``combat.shield_recharge.delay`` Sekunden keinen
-## Schaden genommen hat, dann ``per_second`` (Anteil am Maximum) je Sekunde.
-## Wird jeden Schritt aufgerufen; gibt die aufgefuellte Menge zurueck.
+## Schild-Nachfuellung nach dem SCHILDPULS (8. Nov. 2026): ein Wert S regelt
+## beides -- die Ruhezeit ohne Schaden (base_delay - delay_per_point * S,
+## mindestens min_delay) und die Ladung je Puls (gain_per_point * S je
+## ``pulse`` Sekunden, gleichmaessig verteilt). Wird jeden Schritt
+## aufgerufen; gibt die aufgefuellte Menge zurueck.
 func recharge_shield(dt: float) -> int:
 	calm_time += dt
 	var maximum := shield_max()
 	if maximum <= 0 or shield >= maximum:
 		_recharge_carry = 0.0
 		return 0
-	var rule: Dictionary = Config.section("combat").get("shield_recharge", {})
-	var delay := float(rule.get("delay", 4.0))
+	var rule: Dictionary = Config.section("combat").get("shield_pulse", {})
+	var pulse_points := maxi(0, stat("shield_pulse"))
+	var delay := maxf(float(rule.get("min_delay", 1.5)),
+		float(rule.get("base_delay", 6.0)) - float(rule.get("delay_per_point", 0.3)) * pulse_points)
 	# Modul Bollwerk: laedt frueher.
 	var quick := float(stats.get("shield_delay", 0.0))
 	if quick > 0.0:
 		delay = minf(delay, quick)
 	if calm_time < delay:
 		return 0
-	_recharge_carry += float(maximum) * float(rule.get("per_second", 0.1)) * dt
+	var per_pulse := float(rule.get("gain_per_point", 2.0)) * pulse_points
+	_recharge_carry += per_pulse / maxf(0.1, float(rule.get("pulse", 3.0))) * dt
 	var gain := mini(int(_recharge_carry), maximum - shield)
 	_recharge_carry -= float(gain)
 	shield += gain
@@ -538,8 +542,18 @@ func note_damage() -> void:
 	_recharge_carry = 0.0
 
 
-func atk() -> int:
-	return stat("atk")
+## Power als Faktor (8. Nov. 2026): 10 Punkte = 100 % Waffenschaden.
+func power_factor() -> float:
+	var points := stat("power")
+	return 1.0 if points <= 0 else float(points) / 10.0
+
+
+## Rohschaden einer Aktion: ihr Schaden mal Power. Davor kommt nichts, danach
+## Schild und Ruestung (ActionResolver.resolve_damage).
+func raw_damage(action: ActionData) -> int:
+	if action == null or action.power <= 0:
+		return 0
+	return maxi(1, int(round(float(action.power) * power_factor())))
 
 
 ## Alle Aktionen dieses DROME -- die seiner Teile, jede genau einmal.

@@ -108,13 +108,6 @@
     "pct_per_cycle": 0.05
   },
 
-  "_kommentar_zuladung": [
-    "spd_weight_step koppelt das Tempo an die Masse: je so viel Gewicht an",
-    "AUSRUESTUNG ein Punkt SPD weniger, abgerundet. Auf 0 gesetzt ist die",
-    "Kopplung aus. Siehe DromeBuild.payload_slowdown()."
-  ],
-  "spd_weight_step": 4,
-
   "realtime": {
     "_kommentar": [
       "Echtzeit-Kampf (Nov. 2026). Alle DROMEs handeln gleichzeitig.",
@@ -199,10 +192,12 @@
       "  armor_ehp_k   15   wie schnell die Panzerung an den Deckel laeuft",
       "                     (m = 1 + cap * A/(A+K)). Kleiner K = frueher satt.",
       "Volle Panzerdurchdringung bringt den Schaden auf 100 %, nie darueber.",
-      "SCHILD-NACHLADEN (6g): keine Grundregeneration. Nach delay Sekunden ohne",
-      "  Schaden laedt der Schild per_second (Anteil am Maximum) je Sekunde."
+      "SCHILDPULS (8. Nov. 2026): ein Wert S am DROME. Ruhezeit ohne Schaden =",
+      "  base_delay - delay_per_point * S (mind. min_delay), danach laedt der",
+      "  Schild gain_per_point * S je pulse Sekunden (Unit.recharge_shield).",
+      "POWER: Rohschaden = Waffenschaden * power / 10 (Unit.raw_damage)."
     ],
-    "shield_recharge": {"delay": 4.0, "per_second": 0.1},
+    "shield_pulse": {"base_delay": 6.0, "delay_per_point": 0.3, "min_delay": 1.5, "gain_per_point": 2.0, "pulse": 3.0},
     "physical_vs_shield": 0.8,
     "energy_vs_shield": 1.2,
     "physical_vs_hp": 1.0,

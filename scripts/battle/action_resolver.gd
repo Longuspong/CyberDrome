@@ -5,7 +5,8 @@ extends RefCounted
 ##
 ## Schaden ist deterministisch:
 ##
-##     schaden = max(1, waffe.power + angreifer.atk - ziel.def)
+##     roh = waffe.power x angreifer.power / 10   (Unit.raw_damage)
+##     danach Schild (Faktor je Schadensart) und Ruestung (eHP-Multiplikator)
 ##
 ## Kein Trefferwurf, kein Krit, keine Ausweichchance: derselbe Seed ergibt
 ## denselben Kampf.
@@ -245,7 +246,7 @@ func forget_unit(unit: Unit) -> void:
 func preview_damage(source: Unit, target: Unit, action: ActionData) -> int:
 	if action.power <= 0:
 		return 0
-	return mitigate(source, target, action.power + source.atk(), action.energy_fraction,
+	return mitigate(source, target, source.raw_damage(action), action.energy_fraction,
 		action.shield_mult)
 
 
@@ -413,7 +414,7 @@ func _multi_shot(source: Unit, tile: Vector2i, action: ActionData) -> void:
 		targets.append(primary)
 	for target in targets:
 		if target.is_alive():
-			apply_damage(source, target, action.power + source.atk(), action)
+			apply_damage(source, target, source.raw_damage(action), action)
 
 
 ## Laesst verzoegerte Wirkungen ablaufen. Gibt zurueck, ob eine ausgeloest hat.
@@ -446,7 +447,7 @@ func _apply_area(source: Unit, tile: Vector2i, action: ActionData) -> void:
 		if not is_meaningful_target(source, target, action):
 			continue
 		if action.power > 0:
-			apply_damage(source, target, action.power + source.atk(), action)
+			apply_damage(source, target, source.raw_damage(action), action)
 		if action.push_tiles != 0 and target.is_alive():
 			_shove(source, target, action.push_tiles)
 		if not action.status.is_empty() and target.is_alive():

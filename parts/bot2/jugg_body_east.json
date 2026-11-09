@@ -73,28 +73,25 @@
   },
   "slot_rules": {
     "equip_left": {
-      "max_class": "heavy"
+      "max_class": "medium"
     },
     "equip_right": {
-      "max_class": "heavy",
-      "categories": [
-        "shield",
-        "support"
-      ]
+      "max_class": "medium"
     },
     "equip_shoulder": {
       "off": true
     }
   },
   "stats": {
-    "hp": 185,
-    "spd": 0,
-    "atk": 0,
-    "def": 5,
-    "shield": 10,
+    "hp": 250,
+    "spd": 10,
+    "def": 10,
+    "shield": 50,
     "shield_regen": 0,
     "shield_bonus": 0.0,
-    "weight": 0,
+    "shield_pulse": 5,
+    "power": 6,
+    "module_slots": 2,
     "hp_regen_pct": 0,
     "lure_radius": 0,
     "ai_role": "vanguard",
