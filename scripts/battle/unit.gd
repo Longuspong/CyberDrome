@@ -88,6 +88,8 @@ var _still_tile: Vector2i = Vector2i(-9999, -9999)
 ## Modul Raufbold (Vergeltung): eingesteckte Nahkampftreffer, die den
 ## naechsten Angriff aufladen (max. 3).
 var retaliation_stacks: int = 0
+## Modul Entladung: Sekunden bis zur naechsten Entladung (tick_statuses).
+var burst_cooldown: float = 0.0
 var _recharge_carry: float = 0.0
 ## Bis zur naechsten Pruefung des Ziels, und das aktuelle Ziel.
 var think_left: float = 0.0
@@ -384,6 +386,7 @@ func init_realtime(pulse_offset: float) -> void:
 		for module in build.active_modules(slot):
 			var granted := ModuleData.gadget_action(module.gadget)
 			if granted != null:
+				granted = granted.with_modules(fx)
 				var first_ready := float(granted.trigger_every) * echo_slower() \
 					if granted.trigger_kind == "time" else 0.0
 				gadgets.append({"part": part, "ability": granted, "ready": first_ready, "fx": fx})
@@ -410,6 +413,21 @@ func takt_every(ability: ActionData) -> int:
 	return int(round(float(every - 1) * echo_slower())) + 1
 
 
+## Wie viel ein Angriff im Treffer-Takt zaehlt: 1, mit Taktchip 1,25
+## (modules.json -> takt_count). Der Zaehler (mount["count"]) ist deshalb
+## eine Kommazahl; der Rest ueber den Takt hinaus bleibt nach der Faehigkeit.
+func takt_step(mount: Dictionary) -> float:
+	return maxf(1.0, float((mount.get("fx", {}) as Dictionary).get("takt_count", 1.0)))
+
+
+## Ist der naechste Angriff dieses Halters die Faehigkeit?
+func takt_due(mount: Dictionary) -> bool:
+	var ability = mount.get("ability")
+	if ability == null:
+		return false
+	return float(mount["count"]) + takt_step(mount) >= float(takt_every(ability)) - 0.001
+
+
 ## Der Takt einer Zeit-Faehigkeit in Sekunden -- mit Echo ebenso laenger.
 func takt_seconds(ability: ActionData) -> float:
 	return float(ability.trigger_every) * echo_slower()
@@ -429,10 +447,10 @@ func takt_bars(step: float = 0.5) -> Array:
 		if ability == null:
 			continue
 		var every := takt_every(ability)
-		var count := int(mount["count"])
-		var ready := count + 1 >= every
+		var count := float(mount["count"])
+		var ready := takt_due(mount)
 		out.append({"kind": "hits", "segments": every,
-			"filled": every if ready else count, "ready": ready})
+			"filled": every if ready else mini(every - 1, int(count)), "ready": ready})
 	for gadget in gadgets:
 		var ability: ActionData = gadget["ability"]
 		if ability.trigger_kind != "time":
@@ -633,6 +651,9 @@ func raw_damage(action: ActionData) -> int:
 	var raw := float(action.power) * power_factor()
 	if steady:
 		raw *= float(steady_rule().get("damage_mult", 1.2))
+	# Rammbock: ein Teil der eigenen Panzerung kommt dazu, ohne Power.
+	if action.armor_to_damage > 0.0:
+		raw += float(def()) * action.armor_to_damage
 	return maxi(1, int(round(raw)))
 
 
@@ -676,6 +697,7 @@ func apply_status(id: StringName, seconds: float, modifiers: Dictionary) -> void
 
 ## Je Simulationsschritt. Gibt true zurueck, wenn ein Effekt abgelaufen ist.
 func tick_statuses(dt: float) -> bool:
+	burst_cooldown = maxf(0.0, burst_cooldown - dt)
 	var changed := false
 	for id in statuses.keys():
 		statuses[id]["seconds_left"] = float(statuses[id]["seconds_left"]) - dt

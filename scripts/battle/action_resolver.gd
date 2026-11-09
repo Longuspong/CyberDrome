@@ -19,6 +19,10 @@ var units: Array = []
 ## Der BattleManager ruft advance() je Schritt.
 var delayed: Array = []
 
+## Zufall des Kampfes (BattleManager.rng) -- fuer den Zusatztreffer der
+## Stacheln (Splitterpanzer). Fehlt er, gibt es keinen.
+var rng: RandomNumberGenerator
+
 
 func _init(battle_grid: Grid, all_units: Array) -> void:
 	grid = battle_grid
@@ -33,7 +37,10 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 ##
 ## ``action`` traegt die Schadensart. Sie darf fehlen (Overtime).
 func apply_damage(source: Unit, target: Unit, raw: int,
-		action: ActionData = null, guarded: bool = true) -> int:
+		action: ActionData = null, guarded: bool = true, pierce_shield: bool = false) -> int:
+	# Zielsucher: Angriffe gegen markierte Gegner treffen haerter.
+	if action != null and action.bonus_vs_marked > 0.0 and is_marked(target):
+		raw = int(round(float(raw) * (1.0 + action.bonus_vs_marked)))
 	# Praesenz (Molok): ein Teil des Treffers geht auf den Beschuetzer.
 	if guarded and raw > 0:
 		var guard := _guard_for(target)
@@ -46,9 +53,13 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 					% [guard.display_name, taken, target.display_name])
 				apply_damage(source, guard, taken, action, false)
 	var frac := action.energy_fraction if action != null else 0.0
+	# Ueberspannung: solange der eigene Schild steht, wird ein Teil des
+	# kinetischen Schadens zu Energie.
+	if action != null and action.kinetic_to_energy > 0.0 and source != null and source.shield > 0:
+		frac += (1.0 - frac) * clampf(action.kinetic_to_energy, 0.0, 1.0)
 	var shield_before := target.shield
 	var res := resolve_damage(target, raw, frac,
-		action.shield_mult if action != null else 1.0)
+		action.shield_mult if action != null else 1.0, pierce_shield)
 	target.shield = res["shield_after"]
 	var amount: int = res["hp"]
 
@@ -80,6 +91,8 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 			% [who, target.display_name, amount])
 
 	_on_hit(source, dealt)
+	if shield_before > 0 and target.shield <= 0 and target.hp > 0:
+		_shield_broken(target)
 	if target.hp <= 0:
 		if source != null and source != target and source.is_player != target.is_player:
 			source.kills += 1
@@ -91,20 +104,79 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	return amount
 
 
-## Modul Stachelgitter: wer den Traeger im Nahkampf ANGREIFT, nimmt selbst
-## Schaden. Dazu zaehlt hier die Vergeltung (Raufbold) mit. Nicht auf Faehigkeiten, nicht auf den Konter selbst (ohne Aktion).
+## Konter am Traeger, wenn ihn ein ANGRIFF trifft (nicht Faehigkeiten, nicht
+## der Konter selbst -- der kommt ohne Aktion):
+##   * Stachelgitter: jeder Angreifer nimmt ``thorns``, im Nahkampf dazu
+##     ``thorns_melee``. Splitterpanzer: am Schild vorbei, mit Chance auf
+##     einen Zusatztreffer (Doppellauf des Traegers).
+##   * Raufbold: der Treffer laedt den naechsten eigenen Angriff auf
+##     (Nahkampf zaehlt doppelt, hoechstens 3x).
+##   * Brandmarke: der Angreifer wird markiert.
 func _thorns(source: Unit, target: Unit, action: ActionData) -> void:
 	if source == null or action == null or not action.is_attack() or not source.is_alive():
 		return
-	if Grid.distance(source.tile, target.tile) > 1:
+	if source.is_player == target.is_player:
 		return
-	# Modul Raufbold: der Treffer laedt den naechsten eigenen Angriff auf.
+	var melee := Grid.distance(source.tile, target.tile) <= 1
 	if float(target.stats.get("retaliation", 0.0)) > 0.0:
-		target.retaliation_stacks = mini(3, target.retaliation_stacks + 1)
+		target.retaliation_stacks = mini(3, target.retaliation_stacks + (2 if melee else 1))
+	var brand := float(target.stats.get("mark_on_hit_taken", 0.0))
+	if brand > 0.0:
+		mark(source, brand)
 	var spikes := int(target.stats.get("thorns", 0))
+	if melee:
+		spikes += int(target.stats.get("thorns_melee", 0))
 	if spikes <= 0:
 		return
-	apply_damage(target, source, spikes, null, false)
+	var pierce := bool(target.stats.get("thorns_true", false))
+	apply_damage(target, source, spikes, null, false, pierce)
+	var chance := float(target.stats.get("thorn_ricochet", 0.0))
+	if pierce and chance > 0.0 and rng != null and source.is_alive() and rng.randf() < chance:
+		var extra := maxi(1, int(round(float(spikes) * float(target.stats.get("thorn_ricochet_share", 0.25)))))
+		apply_damage(target, source, extra, null, false, true)
+
+
+# ---------------------------------------------------------------------------
+# Markierung und Entladung (Module, MODULE_KONZEPT.md)
+# ---------------------------------------------------------------------------
+
+## Markiert ``foe`` (Peilsender, Brandmarke): nimmt ``rules.mark_damage_taken``
+## mehr Schaden von allen. Stapelt nicht, frischt nur die Dauer auf.
+func mark(foe: Unit, seconds: float) -> void:
+	if foe == null or not foe.is_alive() or seconds <= 0.0:
+		return
+	var left := float((foe.statuses.get(&"mark", {}) as Dictionary).get("seconds_left", 0.0))
+	foe.apply_status(&"mark", maxf(seconds, left),
+		{"damage_taken_mult": 1.0 + ModuleData.rule("mark_damage_taken", 0.1)})
+
+
+static func is_marked(unit: Unit) -> bool:
+	return unit != null and unit.statuses.has(&"mark")
+
+
+## Modul Entladung: bricht der Schild des Traegers, nehmen alle Gegner in
+## ``rules.burst_range`` Energieschaden und sind kurz betaeubt.
+func _shield_broken(unit: Unit) -> void:
+	var burst := int(unit.stats.get("shield_break_burst", 0))
+	if burst <= 0 or unit.burst_cooldown > 0.0:
+		return
+	unit.burst_cooldown = ModuleData.rule("burst_cooldown", 6.0)
+	var reach := int(ModuleData.rule("burst_range", 2))
+	var stun := ModuleData.rule("burst_stun", 0.5)
+	var spark := ActionData.new()
+	spark.id = &"mod_discharge"
+	spark.display_name = "Entladung"
+	spark.category = ActionData.Category.ABILITY
+	spark.energy_fraction = 1.0
+	EventBus.log_line("%s: Entladung." % unit.display_name)
+	for foe in units.duplicate():
+		if foe.is_player == unit.is_player or not foe.is_alive():
+			continue
+		if Grid.distance(unit.tile, foe.tile) > reach:
+			continue
+		apply_damage(unit, foe, burst, spark, false)
+		if foe.is_alive():
+			foe.apply_status(&"stun", stun, {"id": "stun", "stunned": true})
 
 
 ## Der naechste lebende Verbuendete mit Praesenz im Schutzradius -- nicht das
@@ -162,13 +234,14 @@ func _on_hit(source: Unit, dealt: int) -> void:
 ##
 ## Erst das Schild vollstaendig, dann die HP: das Schild wird immer zuerst leer.
 func resolve_damage(target: Unit, raw: int, energy_fraction: float,
-		shield_mult: float = 1.0) -> Dictionary:
+		shield_mult: float = 1.0, pierce_shield: bool = false) -> Dictionary:
 	var section := Config.section("combat")
 	# Verwundbar (Plasmaklinge): der Statuseffekt vergroessert jeden Treffer.
 	raw = int(round(float(raw) * target.damage_taken_mult()))
 	var e := int(round(float(raw) * clampf(energy_fraction, 0.0, 1.0)))
 	var p := raw - e
-	var shield := target.shield
+	# Splitterpanzer: die Stacheln gehen am Schild vorbei.
+	var shield := 0 if pierce_shield else target.shield
 	var to_hp := 0.0
 	# Feste Reihenfolge physisch -> Energie, damit die Rechnung reproduzierbar
 	# bleibt (bei gemischtem Schaden wie dem Puls-Blaster).
@@ -197,7 +270,8 @@ func resolve_damage(target: Unit, raw: int, energy_fraction: float,
 				shield = 0
 		else:
 			to_hp += float(amt) * float(portion["hf"])
-	return {"hp": _apply_armor_ehp(to_hp, target.def()), "shield_after": shield}
+	return {"hp": _apply_armor_ehp(to_hp, target.def()),
+		"shield_after": target.shield if pierce_shield else shield}
 
 
 ## Die Panzerung als effektive-HP-Multiplikator mit abnehmendem Ertrag,

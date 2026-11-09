@@ -256,8 +256,19 @@ func stats() -> Dictionary:
 		total["def"] += int(fx.get("def", 0))
 		total["shield"] += int(fx.get("shield", 0))
 		total["thorns"] = int(fx.get("thorns", 0))
+		total["thorns_melee"] = int(fx.get("thorns_melee", 0))
 		total["shield_delay"] = float(fx.get("shield_delay", 0.0))
 		total["retaliation"] = float(fx.get("retaliation", 0.0))
+		# Konter, die am Traeger haengen (nicht an einer Waffe): Splitterpanzer,
+		# Brandmarke, Entladung. Der Zusatztreffer der Stacheln nutzt den
+		# Doppellauf des Traegers.
+		total["thorns_true"] = bool(fx.get("thorns_true", false))
+		total["mark_on_hit_taken"] = float(fx.get("mark", 0.0)) \
+			if bool(fx.get("mark_on_hit_taken", false)) else 0.0
+		total["shield_break_burst"] = int(fx.get("shield_break_burst", 0))
+		total["thorn_ricochet"] = float(fx.get("ricochet_chance", 0.0)) \
+			if bool(fx.get("thorns_true", false)) else 0.0
+		total["thorn_ricochet_share"] = float(fx.get("ricochet_share", 0.25))
 
 	# Negative Summen sind sinnlos, aber ein DROME darf sie erreichen -- die
 	# Validierung faengt das ab und sagt dem Spieler, welche Regel bricht.

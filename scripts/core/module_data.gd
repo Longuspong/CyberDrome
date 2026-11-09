@@ -118,20 +118,41 @@ static func reload() -> void:
 	_load()
 
 
-## Zahlen addieren sich, Schalter (true) bleiben an.
+## Wirkungen, die nicht stapeln: es zaehlt der groesste Wert (Querschlaeger-
+## Anteil, Dauer der Markierung, Spruenge, Gabelung, Umwandlung in Energie).
+const MAX_KEYS := ["ricochet_share", "mark", "chain_jumps", "ability_fork",
+	"kinetic_to_energy", "takt_count", "field_shot_every", "decoy",
+	"shield_break_burst"]
+## Wirkungen, bei denen der kleinste Wert zaehlt (Bollwerk: frueher laden).
+const MIN_KEYS := ["shield_delay"]
+
+
+## Zahlen addieren sich, Schalter (true) bleiben an. Ausnahmen: MAX_KEYS und
+## MIN_KEYS (zwei Bollwerke im Molok laden nicht spaeter als eins).
 static func add_effects(a: Dictionary, b: Dictionary) -> Dictionary:
 	var out := a.duplicate()
 	for key in b:
 		var value = b[key]
 		if value is bool:
 			out[key] = bool(out.get(key, false)) or value
+		elif not out.has(key):
+			out[key] = float(value)
+		elif MAX_KEYS.has(key):
+			out[key] = maxf(float(out[key]), float(value))
+		elif MIN_KEYS.has(key):
+			out[key] = minf(float(out[key]), float(value))
 		else:
-			out[key] = float(out.get(key, 0.0)) + float(value)
+			out[key] = float(out[key]) + float(value)
 	return out
 
 
-## Alle Module, aus denen dieses besteht -- es selbst eingeschlossen, Rezepte
-## als Zutat aufgeloest (Taktgeber -> Taktchip -> Zeiger, Schaltkreis).
+## Feste Zahl einer Modul-Regel (modules.json -> rules).
+static func rule(key: String, fallback: float) -> float:
+	return float((data().get("rules", {}) as Dictionary).get(key, fallback))
+
+
+## Alle Module, aus denen dieses besteht -- es selbst eingeschlossen (seit
+## 9. Nov. 2026 keine Rezeptketten mehr, die Aufloesung bleibt trotzdem).
 func parts() -> Array:
 	var out: Array = [id]
 	for ingredient in from:
@@ -266,8 +287,16 @@ func effect_lines(which: Dictionary = {}) -> Array[String]:
 
 
 ## Nur der eigene Effekt eines Rezepts.
+## Ein Rezept mit eigener Faehigkeit (Orbit-Fokus, Hologramm) nennt sie hier.
 func bonus_lines() -> Array[String]:
-	return effect_lines(bonus) if not bonus.is_empty() else [] as Array[String]
+	var lines: Array[String] = []
+	if gadget != &"":
+		var action := gadget_action(gadget)
+		if action != null:
+			lines.append("Faehigkeit %s (%s)" % [action.display_name, action.trigger_text()])
+	if not bonus.is_empty():
+		lines.append_array(effect_lines(bonus))
+	return lines
 
 
 static func effect_text(key: String, value) -> String:
@@ -280,15 +309,49 @@ static func effect_text(key: String, value) -> String:
 		"range":
 			return "+%d Reichweite" % int(v)
 		"ricochet_chance":
-			return "%d %% Chance: Querschlaeger aufs selbe Ziel" % _pct(v)
+			return "%d %% Chance je Angriff auf einen Zusatztreffer" % _pct(v)
 		"ricochet_share":
-			return "Querschlaeger mit %d %% Schaden" % _pct(v)
+			return "Zusatztreffer mit %d %% Schaden" % _pct(v)
 		"def":
 			return "+%d Panzerung" % int(v)
 		"shield":
 			return "+%d Schild" % int(v)
 		"thorns":
-			return "Nahkampf-Angreifer nehmen %d Schaden je Treffer" % int(v)
+			return "Angreifer nehmen %d Schaden je Treffer" % int(v)
+		"thorns_melee":
+			return "Nahkampf-Angreifer %d mehr" % int(v)
+		"ability_power":
+			return "Faehigkeit +%d %% Wirkung" % _pct(v)
+		"mark":
+			return "Faehigkeit markiert ihr Ziel %s s (+%d %% Schaden von allen)" \
+				% [_seconds(v), _pct(rule("mark_damage_taken", 0.1))]
+		"kinetic_to_energy":
+			return "solange der Schild steht: %d %% des kinetischen Schadens wird Energie" % _pct(v)
+		"takt_count":
+			return "Treffer-Takt: jeder Angriff zaehlt %s" % _seconds(v)
+		"bonus_vs_marked":
+			return "+%d %% Schaden gegen markierte Ziele" % _pct(v)
+		"armor_to_damage":
+			return "Angriffe +%d %% der eigenen Panzerung als Schaden" % _pct(v)
+		"post_ability_power":
+			return "nach der Faehigkeit: naechste %d Angriffe +%d %% Schaden" \
+				% [int(rule("overload_attacks", 3)), _pct(v)]
+		"thorns_true":
+			return "Stacheln gehen am Schild vorbei und koennen Zusatztreffer ausloesen" if value else ""
+		"ability_fork":
+			return "Faehigkeit trifft dazu ein zweites Ziel mit %d %% Wirkung" % _pct(v)
+		"chain_jumps":
+			return "Zusatztreffer springen weiter (bis %d), bevorzugt auf Markierte" % int(v)
+		"ability_armor_aura":
+			return "Faehigkeit: alle in Rw %d +%d Panzerung fuer %s s" \
+				% [int(rule("aura_range", 2)), int(v), _seconds(rule("aura_seconds", 4.0))]
+		"shield_break_burst":
+			return "bricht der Schild: %d Energieschaden an alle in Rw %d, kurz betaeubt" \
+				% [int(v), int(rule("burst_range", 2))]
+		"decoy":
+			return "Koeder lenkt die Nachbarn %s s ab" % _seconds(v)
+		"mark_on_hit_taken":
+			return "wer den Traeger trifft, wird markiert" if value else ""
 		"takt_cut":
 			return "Faehigkeit %d Angriff frueher" % int(v)
 		"takt_time":
@@ -296,7 +359,7 @@ static func effect_text(key: String, value) -> String:
 		"status_time":
 			return "Statuseffekte %d %% laenger" % _pct(v)
 		"taunt":
-			return "Faehigkeit lockt ihr Ziel %s s auf den Traeger" % _seconds(v)
+			return "Faehigkeit lockt ihr Ziel %s s auf den Traeger" % _seconds(1.0 + v)
 		"field_shot_every":
 			return "jeder %d. Angriff trifft dazu einen Gegner irgendwo auf dem Feld" % int(v)
 		"shield_delay":
@@ -304,7 +367,7 @@ static func effect_text(key: String, value) -> String:
 		"ready_after_ability":
 			return "nach der Faehigkeit sofort wieder geladen" if value else ""
 		"retaliation":
-			return "Vergeltung: jeder Nahkampftreffer am Traeger laedt den naechsten Angriff um %d %% auf (bis 3x)" % _pct(v)
+			return "Vergeltung: jeder Treffer am Traeger laedt den naechsten Angriff um %d %% auf (bis 3x, Nahkampf doppelt)" % _pct(v)
 		"shackle":
 			return "Fesselkette: Faehigkeit zieht bis zu %d Gegner (Rw 3) heran und betaeubt sie 1 s" % int(v)
 		"cleave":

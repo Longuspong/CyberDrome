@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ck81gpkl3yqvs"
-path="res://.godot/imported/mod_metronome.svg-daa6ef6533b3643e62d9c401e39a10fd.ctex"
+uid="uid://bkqhslbsyql7v"
+path="res://.godot/imported/mod_splinter.svg-11a2c64131605bd27a86f18150fe4957.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/modules/mod_metronome.svg"
-dest_files=["res://.godot/imported/mod_metronome.svg-daa6ef6533b3643e62d9c401e39a10fd.ctex"]
+source_file="res://assets/modules/mod_splinter.svg"
+dest_files=["res://.godot/imported/mod_splinter.svg-11a2c64131605bd27a86f18150fe4957.ctex"]
 
 [params]
 

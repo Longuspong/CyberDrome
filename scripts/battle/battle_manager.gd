@@ -109,6 +109,7 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 			side[i].init_realtime(_pulse * float(i) / float(maxi(1, side.size())))
 
 	resolver = ActionResolver.new(grid, units)
+	resolver.rng = self.rng
 	# self: setup() hat eine lokale "rng" fuer Karte und Gegner.
 	self.rng.seed = battle_seed ^ 0x5EED5
 	brain = AIController.new(self)

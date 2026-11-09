@@ -100,6 +100,16 @@ var trigger_weapon: StringName = &""
 ## den Traeger. 0 = nicht.
 var taunt_seconds: float = 0.0
 
+## Module (MODULE_KONZEPT.md), als Kopie gesetzt (with_modules):
+## Ueberspannung -- solange der Schild des Traegers steht, wird dieser Anteil
+## des kinetischen Schadens zu Energie (ActionResolver.apply_damage).
+var kinetic_to_energy: float = 0.0
+## Zielsucher: Angriffe gegen markierte Gegner +Anteil Schaden.
+var bonus_vs_marked: float = 0.0
+## Rammbock: Angriffe +Anteil der eigenen Panzerung als Schaden, ohne Power
+## (Unit.raw_damage).
+var armor_to_damage: float = 0.0
+
 ## Faehigkeitsschaden als Anteil des Waffenschadens (8. Nov. 2026). power ist
 ## daraus schon berechnet; der Anteil bleibt fuer die Anzeige.
 var damage_pct: float = 0.0
@@ -155,9 +165,9 @@ func copy() -> ActionData:
 ## Die Aktion mit den Wirkungen der Module eines Halters (ModuleData).
 ## Ohne Wirkung die Aktion selbst, sonst eine Kopie.
 ##
-## Angriffstempo, Schaden und Reichweite wirken nur auf Angriffe (6g:
-## Modifikatoren wirken nur auf Angriffe); Takt, Statusdauer und Locken nur
-## auf Faehigkeiten.
+## Angriffstempo, Schaden, Reichweite, Zielsucher und Rammbock wirken nur
+## auf Angriffe; Takt, Wirkung (Verstaerker) und Locken nur auf
+## Faehigkeiten; Statusdauer und Ueberspannung auf beides.
 func with_modules(fx: Dictionary) -> ActionData:
 	if fx.is_empty():
 		return self
@@ -170,14 +180,24 @@ func with_modules(fx: Dictionary) -> ActionData:
 		if more > 0.0 and power > 0:
 			out.power = int(round(float(power) * (1.0 + more)))
 		out.range_tiles += int(fx.get("range", 0))
+		out.bonus_vs_marked = float(fx.get("bonus_vs_marked", 0.0))
+		out.armor_to_damage = float(fx.get("armor_to_damage", 0.0))
 	else:
-		var cut := int(fx.get("takt_cut", 0))
-		if trigger_kind == "attacks" and cut > 0:
-			out.trigger_every = maxf(2.0, trigger_every - float(cut))
+		# Treffer-Takt: Taktchip zaehlt jeden Angriff mehr (Unit.takt_step),
+		# hier aendert sich nur der Zeit-Takt.
 		var faster := float(fx.get("takt_time", 0.0))
 		if trigger_kind == "time" and faster > 0.0:
 			out.trigger_every = trigger_every * maxf(0.2, 1.0 - faster)
-		out.taunt_seconds = float(fx.get("taunt", 0.0))
+		# Koedersender: ein Exemplar 2 s, jedes weitere +1 s.
+		var taunt := float(fx.get("taunt", 0.0))
+		out.taunt_seconds = 1.0 + taunt if taunt > 0.0 else 0.0
+		# Verstaerker: Faehigkeit +Anteil Wirkung.
+		var stronger := float(fx.get("ability_power", 0.0))
+		if stronger > 0.0:
+			out.power = int(round(float(power) * (1.0 + stronger)))
+			out.heal = int(round(float(heal) * (1.0 + stronger)))
+			out.shield_gain = int(round(float(shield_gain) * (1.0 + stronger)))
+	out.kinetic_to_energy = float(fx.get("kinetic_to_energy", 0.0))
 	var longer := float(fx.get("status_time", 0.0))
 	if longer > 0.0 and status.has("seconds"):
 		out.status["seconds"] = float(status["seconds"]) * (1.0 + longer)
