@@ -443,7 +443,9 @@ static func effect_text(key: String, value) -> String:
 		"mark_hunt":
 			return "stirbt ein Markierter, springt die Markierung weiter" if value else ""
 		"gravity":
-			return "der Sog zieht ein zweites Ziel, beide verlangsamt" if value else ""
+			return "das Wurzeln trifft dazu den naechsten Gegner am Ziel" if value else ""
+		"root":
+			return "Faehigkeit wurzelt ihr Ziel %s s (greift an, bewegt sich nicht)" % _seconds(v)
 		"knockback_every":
 			return "jeder %d. Angriff stoesst das Ziel 1 Feld zurueck" % int(v)
 		"bonus_vs_unshielded":

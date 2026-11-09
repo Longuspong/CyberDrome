@@ -573,6 +573,14 @@ func ai_role() -> String:
 	return build.body().ai_role
 
 
+## Gewurzelt (Orbit-Fokus): greift an, laeuft aber nicht.
+func is_rooted() -> bool:
+	for status in statuses.values():
+		if status.get("rooted", false):
+			return true
+	return false
+
+
 ## Betaeubt (Hammer): handelt nicht, solange der Status laeuft.
 func is_stunned() -> bool:
 	for status in statuses.values():

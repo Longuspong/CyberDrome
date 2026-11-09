@@ -59,8 +59,9 @@
     "  decoy              Hologramm: wer beim Sprung daneben stand, ist so viele",
     "                     Sekunden vom Koeder abgelenkt (tut nichts)",
     "  mark_on_hit_taken  jeder Gegner, der den Traeger trifft, wird markiert",
-    "gadget: das Modul bringt eine eigene Faehigkeit mit (gadgets): Orbit-Fokus,",
-    "Hologramm. Sie loest nach ihrem Takt aus, solange das Modul wirkt.",
+    "  root               Orbit-Fokus (9. Nov. 2026): das Ziel der Faehigkeit ist so viele",
+    "                     Sekunden gewurzelt -- greift an, bewegt sich aber nicht",
+    "gadget: das Modul bringt eine eigene Faehigkeit mit (gadgets): Hologramm.",
     "short: zwei Buchstaben fuer den Chip, falls kein Symbol da ist.",
     "Symbol: assets/modules/<id>.svg (64x64, transparent); anderer Pfad mit icon.",
     "sell_value: Credits beim Verkauf (Grundmodul / Rezept-Modul).",
@@ -71,7 +72,7 @@
     "je weiterem Wurf im selben Stopp +step. Ab recipe_from_round ist mit",
     "recipe_chance das letzte Angebot ein fertiges Rezept. Kein Sperren.",
     "Takt (9. Nov. 2026, Vorgabe des Spielers): Faehigkeiten zaehlen immer Angriffe,",
-    "keinen Zeit-Takt mehr. Orbit-Fokus: jeder 4. Angriff der Waffe im Halter."
+    "keinen Zeit-Takt mehr. Der Orbit-Fokus wurzelt seit 9. Nov. das Ziel (root)."
   ],
   "slots": 3,
   "sell_value": {
@@ -111,9 +112,7 @@
     "bios_rush_attack_speed": 0.2,
     "bios_ability_shield": 6,
     "bios_steady_seconds": 2.5,
-    "bios_mark_mult": 2.0,
-    "gravity_slow": 1.5,
-    "gravity_move_mult": 0.6
+    "bios_mark_mult": 2.0
   },
   "modules": {
     "mod_rapid_fire": {
@@ -202,17 +201,6 @@
     }
   },
   "gadgets": {
-    "act_orbitpull": {
-      "display_name": "Orbit-Sog",
-      "category": "ability",
-      "targeting": "single",
-      "range_tiles": 4,
-      "push_tiles": -2,
-      "trigger": {
-        "kind": "attacks",
-        "every": 4
-      }
-    },
     "act_holo_dash": {
       "display_name": "Hologramm",
       "category": "ability",
@@ -456,8 +444,9 @@
         "mod_bait",
         "mod_beacon"
       ],
-      "bonus": {},
-      "gadget": "act_orbitpull"
+      "bonus": {
+        "root": 2.0
+      }
     }
   },
   "bios_kommentar": [
@@ -474,7 +463,7 @@
     "  retaliation_max      Vergeltung bis zu so viele Ladungen",
     "  berserk              volle Vergeltung trifft dazu alle Gegner daneben",
     "  mark_hunt            stirbt ein markierter Gegner, springt die Markierung weiter",
-    "  gravity              der Orbit-Sog zieht ein zweites Ziel, beide verlangsamt",
+    "  gravity              das Wurzeln trifft dazu den naechsten Gegner am Ziel (Rw 2)",
     "  knockback_every      jeder N-te Angriff stoesst das Ziel 1 Feld zurueck",
     "  bonus_vs_unshielded  +Anteil Schaden gegen Gegner ohne Schild"
   ],

@@ -100,6 +100,9 @@ func update(unit: Unit, dt: float) -> void:
 				return
 	if fired:
 		return
+	# Gewurzelt (Orbit-Fokus): schiessen ja, laufen nein.
+	if unit.is_rooted():
+		return
 	var next := next_step(unit, target)
 	if next != unit.tile:
 		_walk(unit, next)
@@ -465,16 +468,20 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 	if target is Unit and target.is_alive() and target.is_player != unit.is_player:
 		foe = target
 	var mark_seconds := float(fx.get("mark", 0.0))
-	if foe == null and (ability.taunt_seconds > 0.0 or mark_seconds > 0.0):
+	var root_seconds := float(fx.get("root", 0.0))
+	if foe == null and (ability.taunt_seconds > 0.0 or mark_seconds > 0.0 or root_seconds > 0.0):
 		foe = _nearest_enemy(unit, int(ModuleData.rule("fallback_range", 3)))
 	if foe != null and ability.taunt_seconds > 0.0:
 		foe.apply_status(&"taunt", ability.taunt_seconds, {"taunt_by": unit.unit_id})
 		EventBus.log_line("%s lockt %s an." % [unit.display_name, foe.display_name])
 	if foe != null and mark_seconds > 0.0:
 		battle.resolver.mark(foe, mark_seconds * ActionResolver.mark_mult(unit))
-	# Gravitation (BIOS): ein zweites Ziel heran, beide verlangsamt.
-	if bool(fx.get("gravity", false)) and ability.push_tiles < 0:
-		_gravity(unit, ability, foe)
+	# Orbit-Fokus: das Ziel ist gewurzelt. Gravitation (BIOS): dazu der
+	# naechste Gegner an ihm.
+	if foe != null and root_seconds > 0.0:
+		foe.apply_status(&"root", root_seconds, {"rooted": true})
+		if bool(fx.get("gravity", false)):
+			_gravity(foe, root_seconds)
 	# Nimbus-BIOS: jede Faehigkeit gibt dem Traeger Schild.
 	if unit.passive() == "echo" and unit.has_bios():
 		var gain := int(round(ModuleData.rule("bios_ability_shield", 6) * unit.power_factor()))
@@ -491,23 +498,18 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 				ally.apply_status(&"guard_pulse", seconds, {"def": aura})
 
 
-func _gravity(unit: Unit, ability: ActionData, first: Unit) -> void:
-	var slow := {"move_mult": ModuleData.rule("gravity_move_mult", 0.6)}
-	var seconds := ModuleData.rule("gravity_slow", 1.5)
+func _gravity(first: Unit, seconds: float) -> void:
 	var second: Unit = null
 	var best_gap := 1 << 30
-	for foe in battle.enemies_of(unit):
-		if foe == first or not foe.is_alive():
+	for other in battle.allies_of(first):
+		if other == first or not other.is_alive():
 			continue
-		var gap := Grid.distance(unit.tile, foe.tile)
-		if gap <= ability.range_tiles and gap < best_gap:
+		var gap := Grid.distance(first.tile, other.tile)
+		if gap <= 2 and gap < best_gap:
 			best_gap = gap
-			second = foe
+			second = other
 	if second != null:
-		battle.resolver._shove(unit, second, ability.push_tiles)
-	for foe in [first, second]:
-		if foe != null and foe.is_alive():
-			foe.apply_status(&"slow", seconds, slow)
+		second.apply_status(&"root", seconds, {"rooted": true})
 
 
 func _nearest_enemy(unit: Unit, reach: int) -> Unit:

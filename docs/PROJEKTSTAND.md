@@ -40,7 +40,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * **Waffen**: jede Waffe (je Teil) laedt fuer sich, `interval` an der
   Aktion (Blaster 1,4 s, Runenstab 1,2 s, Lanze 2,6 s, Hammer 1,8 s).
 * **Faehigkeiten** loesen selbst aus (`trigger` an der Aktion): jeder N-te
-  Angriff einer Waffe IST ihre Faehigkeit; Vortex alle 3 s; Orbit-Sog alle 6 s; Boost, wenn ein
+  Angriff einer Waffe IST ihre Faehigkeit; Vortex jeder 3. Angriff (seit 9. Nov.); Orbit-Fokus wurzelt; Boost, wenn ein
   Gegner danebensteht (hoechstens alle 4 s).
 * **Aufgeraeumt (5. Nov. 2026, mit dem Spieler abgesprochen)**: Energie
   (`en_max`, `en_regen`, `en_cost`), Abklingzeiten, MOV, Strombedarf,
@@ -306,7 +306,12 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Taktchip 90,5 / 71 -- jetzt echt stark, weil der Zaehler 1,25 den Vortex
   (staerkste Faehigkeit) gut 25 % haeufiger macht; Gabelung 82,5 / 72,5;
   Orbit 58,5 / 56,5. Molok Brandmarke 90,5 / 76, Raufbold 79,5 / 68; Strix
-  Gunslinger 82,5 / 75. Vorschlaege an den Spieler offen.
+  Gunslinger 82,5 / 75. Entscheidung des Spielers: Taktchip bleibt,
+  Balancing erst nach einem groesseren Playtest (auch nach Gefuehl).
+* **Orbit-Fokus neu** (Spieler, 9. Nov.): kein Sog mehr, sondern das Ziel
+  der Faehigkeit ist 2 s gewurzelt (`root`, `Unit.is_rooted`): greift an,
+  laeuft aber nicht. Gravitation-BIOS wurzelt dazu den naechsten Gegner am
+  Ziel. Der Orbit-Sog (`act_orbitpull`) ist entfernt.
 
 ### Neue Waffen und freie Arme (9. Nov. 2026)
 * **Bollwerk-Ramme** (`eq_bulwark_ram`, mittel, bot2): Rw 1, 10 alle 1,6 s;

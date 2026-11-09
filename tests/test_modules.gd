@@ -907,18 +907,36 @@ func test_a_battle_with_the_new_weapons_runs_to_the_end() -> void:
 	battle.free()
 
 
-func test_the_orbit_focus_pulls_every_fourth_attack() -> void:
-	# Nahkaempfer gegen Fernkaempfer: Heranziehen lohnt sich (_shove_score).
-	var orbit := _with(_vireo(&"eq_plasma_blade"), "equip_left", [&"mod_orbit"])
-	var battle := _battle([orbit], [_vireo()], [Vector2i(10, 13), Vector2i(10, 10)])
+func test_the_orbit_focus_roots_the_target_of_the_ability() -> void:
+	var orbit := _with(_vireo(), "equip_left", [&"mod_orbit"])
+	var battle := _battle([orbit], [_vireo(), _vireo()],
+		[Vector2i(10, 13), Vector2i(10, 10), Vector2i(11, 10)])
 	var bearer: Unit = battle.units[0]
 	var foe: Unit = battle.units[1]
-	var mount: Dictionary = bearer.mounts[0]
-	t.equal((mount["extras"] as Array).size(), 1, "der Orbit-Sog haengt am Halter")
+	var other: Unit = battle.units[2]
+	battle.brain._after_ability(bearer, bearer.mounts[0]["ability"],
+		{"tile": foe.tile, "target": foe}, bearer.mounts[0]["fx"])
+	t.ok(foe.is_rooted(), "das Ziel ist gewurzelt")
+	t.ok(not other.is_rooted(), "der Nachbar nicht")
+	t.ok(not foe.is_stunned(), "greift aber weiter an")
+	foe.target_id = bearer.unit_id
 	var before := foe.tile
-	for _i in 3:
-		battle.brain._tick_extras(bearer, mount, foe)
-	t.equal(foe.tile, before, "nach drei Angriffen noch nicht")
-	battle.brain._tick_extras(bearer, mount, foe)
-	t.ok(Grid.distance(foe.tile, bearer.tile) < Grid.distance(before, bearer.tile), "beim vierten zieht er heran")
+	foe.step_left = 0.0
+	battle.brain.update(foe, 0.05)
+	t.equal(foe.tile, before, "und laeuft nicht")
+	foe.tick_statuses(2.1)
+	t.ok(not foe.is_rooted(), "nach 2 s vorbei")
+	battle.free()
+
+
+func test_the_gravity_bios_roots_a_second_foe() -> void:
+	var gravity := _with(_vireo(), "equip_left", [&"mod_gravity"])
+	var battle := _battle([gravity], [_vireo(), _vireo()],
+		[Vector2i(10, 13), Vector2i(10, 10), Vector2i(11, 10)])
+	var bearer: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	var other: Unit = battle.units[2]
+	battle.brain._after_ability(bearer, bearer.mounts[0]["ability"],
+		{"tile": foe.tile, "target": foe}, bearer.mounts[0]["fx"])
+	t.ok(foe.is_rooted() and other.is_rooted(), "beide gewurzelt")
 	battle.free()

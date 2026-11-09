@@ -224,7 +224,7 @@ Gesamtwirkung = Wirkung beider Zutaten + eigener Effekt.
 | **Entladung** | EN | Abwehr | jede | KD + SG | Bricht der Schild, erleiden alle Gegner in Rw 2 15 Schaden (Energie) und werden 0,5 s betäubt (höchstens alle 6 s) |
 | **Hologramm** | HG | Abwehr | jede | KD + KS | Steht ein Gegner direkt daneben: Sprung weg (Rw 3), am alten Platz bleibt ein Köder, der 2 s lockt; danach 4 s Pause |
 | **Brandmarke** | BM | Taktik | jede | SG + PS | Jeder Gegner, der den Träger trifft, wird markiert |
-| **Orbit-Fokus** | OF | Taktik | jede | KS + PS | Alle 6 s Orbit-Sog: zieht ein Ziel in Rw 4 um 2 Felder heran und markiert es |
+| **Orbit-Fokus** | OF | Taktik | jede | KS + PS | Das Ziel der Fähigkeit ist 2 s gewurzelt: greift an, bewegt sich aber nicht (geändert 9. Nov. 2026, Spieler) |
 
 Verteilung: 8 Angriff, 5 Abwehr, 5 Taktik. Bedingt sind nur Gunslinger und Rundumschlag.
 
@@ -304,7 +304,7 @@ Wer den Elite-Kampf wählt und knapp gewinnt, darf kein BIOS bekommen, das er ni
 | Bollwerk | **Festung** | Schildladung des Trägers wirkt mit 50 % auch auf DROMEs direkt daneben |
 | Raufbold | **Berserker** | Vergeltung bis 5×; bei voller Ladung trifft der Angriff alle Gegner daneben |
 | Brandmarke | **Treibjagd** | Stirbt ein markierter Gegner, springt die Markierung auf den nächsten |
-| Orbit-Fokus | **Gravitation** | Der Sog zieht 2 Ziele und verlangsamt sie 1,5 s |
+| Orbit-Fokus | **Gravitation** | Das Wurzeln trifft dazu den nächsten Gegner am Ziel (Rw 2) |
 | Rammbock | **Abrissbirne** | Jeder 3. Angriff stößt das Ziel 1 Feld zurück (nutzt `push_tiles`) |
 | Überspannung | **Phasenbruch** | Gegen Gegner ohne Schild: +15 % Schaden |
 
@@ -515,6 +515,10 @@ Technisch:
 4. BIOS bei Elite: **statt des Teils**, zusätzlich zu den Credits; nie nach dem letzten Kampf.
 5. Sperren im Laden: **nein**, Neuwürfeln reicht.
 6. Waffen: zuerst **Bollwerk-Ramme, Mörser, Klingenbumerang**; Optik und Ton klärt der Spieler.
+
+**Nachtrag 9. Nov. 2026 (Spieler):** Kein Zeit-Takt mehr -- alle Fähigkeiten zählen Angriffe.
+Der Orbit-Fokus wurzelt statt zu ziehen. Balancing erst nach einem größeren Playtest
+(„nicht nur die Zahlen, auch das Gefühl").
 
 ## 14. Bauplan
 
