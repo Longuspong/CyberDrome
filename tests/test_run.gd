@@ -170,16 +170,64 @@ func test_preview_region_survives_the_way_into_battle_and_a_save() -> void:
 			GameState.begin_run_battle()
 			t.equal(GameState.battle_seed, shown["seed"], "Kampf-Seed wie in der Vorschau")
 			var battle := BattleManager.new()
-			battle.setup(GameState.battle_seed, GameState.squad, GameState.enemy_override)
+			battle.setup(GameState.battle_seed, GameState.squad, GameState.enemy_override,
+				GameState.battle_region)
 			t.equal(battle.region.display_name, shown["region"],
 				"Kampf in der gezeigten Region (%d, Stufe %d)" % [seed_value, which])
 			battle.free()
 			GameState.in_run_battle = false
 			GameState.enemy_override = []
+			GameState.battle_region = &""
 			GameState.battle_seed = 0
 			GameState.clear_chaos_run()
 	GameState.run = saved_run
 	GameState.squad = saved_squad
+
+
+## Der gemeldete Fehler: der Lauf spielt in Neon City, die Kaempfe aber in
+## gewuerfelten Regionen -- je nach Stufe ein anderes Gebiet. Ein Lauf bleibt
+## in seinem Gebiet (config run.region), in jeder Runde und jeder Stufe.
+func test_every_battle_of_a_run_is_in_the_run_region() -> void:
+	var saved_run = GameState.run
+	var saved_squad = GameState.squad
+	var home: Terrain.Region = TerrainDB.get_region(StringName(str(RunState.cfg().get("region", "city"))))
+	t.ok(home != null, "das Gebiet des Laufs ist eine bekannte Region")
+	for seed_value in [3, 77, 2812845978]:
+		GameState.start_run(seed_value)
+		var run: RunState = GameState.run
+		t.equal(run.region_id, home.id, "der Lauf kennt sein Gebiet")
+		for round_value in [1, 4, RunState.rounds_total()]:
+			run.round = round_value
+			for which in 3:
+				run.choose_tier(which)
+				t.equal(run.preview()["region"], home.display_name,
+					"Vorschau im Gebiet (Seed %d, Runde %d, Stufe %d)" % [seed_value, round_value, which])
+				GameState.begin_run_battle()
+				var battle := BattleManager.new()
+				battle.setup(GameState.battle_seed, GameState.squad, GameState.enemy_override,
+					GameState.battle_region)
+				t.equal(battle.region.id, home.id,
+					"Kampf im Gebiet (Seed %d, Runde %d, Stufe %d)" % [seed_value, round_value, which])
+				battle.free()
+				GameState.finish_run_battle(BattleManager.Outcome.DEFEAT, [])
+				run.lives = RunState.max_lives()
+				run.phase = RunState.Phase.PREPARE
+	t.equal(GameState.battle_region, &"", "nach dem Kampf keine feste Region mehr")
+	GameState.run = saved_run
+	GameState.squad = saved_squad
+
+
+## Ohne Gebiet (Chaos-Virus) wuerfelt der Kampf die Region weiter aus dem Seed.
+func test_without_a_region_the_battle_still_rolls_one() -> void:
+	var seen := {}
+	for seed_value in range(1, 40):
+		var info := BattleManager.preview_conditions(seed_value)
+		var battle := BattleManager.new()
+		battle.setup(seed_value, RunState.standard_squad())
+		t.equal(battle.region.display_name, info["region"], "Vorschau = Kampf (Seed %d)" % seed_value)
+		seen[battle.region.id] = true
+		battle.free()
+	t.ok(seen.size() > 1, "verschiedene Regionen (%d)" % seen.size())
 
 
 func test_enemy_power_follows_a_fixed_rising_curve() -> void:

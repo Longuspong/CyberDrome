@@ -140,6 +140,11 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * **Drei Gegner je Runde**: Leicht / Normal / Elite (`run.tiers`). Vorher
   sichtbar: Region und die gegnerischen DROMEs mit Ausruestung
   (`RunState.enemies()`, dieselben im Kampf ueber `GameState.enemy_override`).
+* **Ein Lauf bleibt in seinem Gebiet** (`run.region` in `data/config.json`,
+  heute `city` = Neon City; `RunState.region_id` -> `GameState.battle_region`
+  -> `BattleManager.setup`). Bis 9. Nov. 2026 wuerfelte jeder Kampf die
+  Region aus seinem Seed -- je Stufe ein anderes Gebiet, obwohl der Lauf in
+  Neon City spielt. Nur der Chaos-Virus wuerfelt noch.
 * Gegnerstaerke = Startstaerke des mitgenommenen Squads * (0,85 + 0,06 *
   (Runde - 1)) * Stufenfaktor (0,7 / 1,0 / 1,3) -- **feste Kurve**.
   Gegnerzahl = Startgroesse + `enemy_offsets[runde]` (-1 bei Leicht, +1 bei

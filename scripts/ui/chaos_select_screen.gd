@@ -111,6 +111,7 @@ func _start_battle() -> void:
 	# (alle kampftauglichen), skaliert auf deren volle Staerke -- unabhaengig
 	# davon, wie wenige man tatsaechlich mitnimmt.
 	GameState.enemy_override = []
+	GameState.battle_region = &""
 	GameState.configure_chaos_run(_picker.all_builds().size(),
 		DromeBuild.squad_power(_picker.all_builds()))
 	GameState.save_roster()

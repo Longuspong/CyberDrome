@@ -59,7 +59,10 @@ var _time_limit: float = 180.0
 
 ## ``enemy_override``: feste Gegner statt gewuerfelter -- fuer Spiegel- und
 ## Fairness-Tests (dasselbe Squad auf beiden Seiten).
-func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) -> void:
+## ``region_id``: feste Region (Lauf: das Gebiet des Laufs). Leer = aus dem
+## Seed gewuerfelt (Chaos-Virus, Tests).
+func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
+		region_id: StringName = &"") -> void:
 	battle_seed = seed_value
 	var realtime := Config.section("realtime")
 	_dt = float(realtime.get("tick", 0.05))
@@ -71,7 +74,7 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 	var rng := RandomNumberGenerator.new()
 	rng.seed = battle_seed
 
-	region = TerrainDB.pick_region(rng)
+	region = _region_for(rng, region_id)
 	grid = MapGenerator.generate(region)
 	MapGenerator.place_obstacles(grid, battle_seed)
 
@@ -122,15 +125,27 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = []) ->
 ## Vorschau vor dem Kampf (Lauf). Dieselbe Reihenfolge der Zufallszuege wie
 ## oben; wer setup() umstellt, stellt hier mit um, sonst zeigt die Vorschau
 ## einen anderen Kampf als den, der dann kommt. tests/test_run.gd prueft das.
-static func preview_conditions(seed_value: int) -> Dictionary:
+static func preview_conditions(seed_value: int, region_id: StringName = &"") -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	var preview_region := TerrainDB.pick_region(rng)
+	var preview_region := _region_for(rng, region_id)
 	return {
 		"seed": seed_value,
 		"region": preview_region.display_name if preview_region else "",
 	}
 
+
+
+## Die feste Region, wenn eine Id gegeben und bekannt ist, sonst aus dem Seed.
+## Der Zufallszug laeuft in beiden Faellen, damit die Folge danach gleich bleibt.
+static func _region_for(rng: RandomNumberGenerator, region_id: StringName) -> Terrain.Region:
+	var drawn := TerrainDB.pick_region(rng)
+	if region_id != &"":
+		var fixed := TerrainDB.get_region(region_id)
+		if fixed != null:
+			return fixed
+		push_warning("BattleManager: unbekannte Region '%s', gewuerfelt" % region_id)
+	return drawn
 
 ## Wie weit vorn eine Rolle in der Aufstellung steht: Frontlinie zuerst,
 ## Scharfschuetze zuletzt. Ohne eigenes Zutun des Spielers steht damit der
