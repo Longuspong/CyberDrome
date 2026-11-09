@@ -94,6 +94,20 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   additive Lichtflecken, Vignette. Hindernisse als Iso-Bloecke je Region
   (Container, Kisten, Absperrung / Ruine, Fels / Tank, Rohre, Kisten).
   Die Boden-SVGs unter `assets/terrain/` werden im Kampf nicht mehr gezeichnet.
+* **Neon City aus Bildern** (9. Nov. 2026, Wunsch des Spielers): Boden,
+  Hindernisse und Deko kommen aus KI-Bildern (Quelle `art/arena_city/`,
+  mit `.gdignore`). `tools/cut_arena_city.py` schneidet sie zu: Bodenkacheln
+  von Draufsicht auf die Spiel-Raute, Objekte per weichem Gruen-Key
+  freigestellt, alles in doppelter Groesse nach `assets/arena/city/` samt
+  Ankerpunkten (`sprites.json`). Boden: drei Betonplatten, 7 % Akzente
+  (Luke, Gitter, Gully, Neonraster, Warnstreifen), Feld leicht, Rand stark
+  abgedunkelt. Hindernisse (`config.json` -> `obstacles.kinds.city`):
+  Absperrung, Kisten, Server, Automat, Generator, Poller, Holo-Saeule,
+  Kabeltrommel; Deko (`obstacles.props.city`): Laden, Schuessel,
+  Wartehaeuschen, Klimablock, Antenne, dazu Laternen als Bild. Die Objekte
+  sind etwas flacher gezeichnet (ca. 1,8:1 statt 1,4:1) -- faellt im Spiel
+  nicht auf. Gibt es zu einer Region oder Art kein Bild, wird wie bisher
+  gezeichnet (Parkanlage, Factory 5).
 
 ### Lesbarkeit im Kampf (7. Nov. 2026, mit dem Spieler abgesprochen)
 * **Lebensbalken** (`BattleView.UnitBadgePainter`): Abstand zur Figur in

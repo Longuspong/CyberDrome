@@ -1,0 +1,146 @@
+{
+ "_kommentar": "erzeugt von tools/cut_arena_city.py -- nicht von Hand aendern. anchor: Feldmitte in Texturpixeln, Texturen in doppelter Groesse.",
+ "scale": 2,
+ "sprites": {
+  "barrier": {
+   "anchor": [
+    62.3,
+    82.3
+   ],
+   "size": [
+    144,
+    136
+   ]
+  },
+  "crates": {
+   "anchor": [
+    72.2,
+    93.1
+   ],
+   "size": [
+    144,
+    147
+   ]
+  },
+  "server": {
+   "anchor": [
+    45.1,
+    123.5
+   ],
+   "size": [
+    91,
+    159
+   ]
+  },
+  "vending": {
+   "anchor": [
+    49.7,
+    122.5
+   ],
+   "size": [
+    91,
+    158
+   ]
+  },
+  "generator": {
+   "anchor": [
+    53.7,
+    91.0
+   ],
+   "size": [
+    129,
+    140
+   ]
+  },
+  "bollards": {
+   "anchor": [
+    61.3,
+    86.8
+   ],
+   "size": [
+    122,
+    132
+   ]
+  },
+  "holo": {
+   "anchor": [
+    48.8,
+    149.2
+   ],
+   "size": [
+    99,
+    187
+   ]
+  },
+  "spool": {
+   "anchor": [
+    38.6,
+    84.1
+   ],
+   "size": [
+    114,
+    128
+   ]
+  },
+  "shop": {
+   "anchor": [
+    113.7,
+    142.1
+   ],
+   "size": [
+    228,
+    227
+   ]
+  },
+  "lamp": {
+   "anchor": [
+    56.6,
+    194.2
+   ],
+   "size": [
+    114,
+    238
+   ]
+  },
+  "dish": {
+   "anchor": [
+    60.8,
+    140.9
+   ],
+   "size": [
+    122,
+    187
+   ]
+  },
+  "shelter": {
+   "anchor": [
+    115.8,
+    148.7
+   ],
+   "size": [
+    213,
+    228
+   ]
+  },
+  "ac": {
+   "anchor": [
+    98.8,
+    127.4
+   ],
+   "size": [
+    198,
+    201
+   ]
+  },
+  "antenna": {
+   "anchor": [
+    56.7,
+    165.8
+   ],
+   "size": [
+    114,
+    209
+   ]
+  }
+ }
+}

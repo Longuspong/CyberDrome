@@ -233,16 +233,21 @@
       "Hindernisse (7. Nov. 2026, scripts/generation/map_generator.gd): sperren nur",
       "Laufwege, Schuesse gehen darueber. groups_min..groups_max Gruppen, jede",
       "punktsymmetrisch gespiegelt (also doppelt so viele auf dem Feld), nie in",
-      "den Aufstellungszonen oder zone_margin Felder daneben. kinds: Optik je Region."
+      "den Aufstellungszonen oder zone_margin Felder daneben. kinds: Optik je Region.",
+      "props: Deko auf dem Randstreifen je Region (sonst wie kinds). Neon City",
+      "seit 9. Nov. 2026 aus Bildern (assets/arena/city/, tools/cut_arena_city.py)."
     ],
     "enabled": true,
     "groups_min": 3,
     "groups_max": 5,
     "zone_margin": 1,
     "kinds": {
-      "city": ["container", "crate", "barrier"],
+      "city": ["barrier", "crates", "server", "vending", "generator", "bollards", "holo", "spool"],
       "green": ["ruin", "rock", "ruin"],
       "plant7": ["tank", "pipes", "crate"]
+    },
+    "props": {
+      "city": ["shop", "dish", "shelter", "ac", "antenna"]
     }
   },
 
