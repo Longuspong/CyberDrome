@@ -257,6 +257,10 @@ var run: RunState = null
 ## der Kampf wuerfelt selbst.
 var enemy_override: Array = []
 
+## Feste Region fuer den naechsten Kampf (Lauf: sein Gebiet). Leer = der Kampf
+## wuerfelt selbst.
+var battle_region: StringName = &""
+
 ## Ob der naechste/aktuelle Kampf ein Kampf dieses Laufs ist. Dann kaempft der
 ## Lauf-Squad statt des Roster-Squads, es gibt keine Chaos-Beute, und das
 ## Ergebnis geht an den Lauf zurueck.
@@ -314,6 +318,7 @@ func begin_run_battle() -> void:
 	in_run_battle = true
 	squad = run.squad.map(func(b): return b.clone())
 	battle_seed = run.battle_seed()
+	battle_region = run.region_id
 	enemy_override = run.enemies().map(func(b): return b.clone())
 	configure_chaos_run(enemy_override.size(), run.enemy_power())
 
@@ -329,6 +334,7 @@ func finish_run_battle(outcome: int, enemy_pool: Array, fighters: Array = []) ->
 			deliver_run_home()
 	in_run_battle = false
 	enemy_override = []
+	battle_region = &""
 	battle_seed = 0
 	clear_chaos_run()
 	refresh_squad()

@@ -43,6 +43,9 @@ const TIER_KEYS := ["easy", "normal", "elite"]
 const TIER_NAMES := ["Leicht", "Normal", "Elite"]
 
 var run_seed: int = 0
+## Das Gebiet des Laufs (data/regions.json, config run.region). Alle Kaempfe
+## des Laufs finden dort statt.
+var region_id: StringName = &"city"
 var round: int = 1
 var lives: int = 3
 var squad: Array = []
@@ -143,6 +146,7 @@ static func tier_cfg(which: int) -> Dictionary:
 static func start(seed_value: int, chosen: Array = []) -> RunState:
 	var run := RunState.new()
 	run.run_seed = seed_value
+	run.region_id = StringName(str(cfg().get("region", "city")))
 	run.lives = max_lives()
 	var source: Array = chosen if not chosen.is_empty() else standard_squad()
 	for build in source.slice(0, squad_max()):
@@ -331,7 +335,7 @@ func _arm_enemies(foes: Array, which: int) -> void:
 func preview(which: int = -1) -> Dictionary:
 	if which < 0:
 		which = tier
-	var conditions := BattleManager.preview_conditions(battle_seed(which))
+	var conditions := BattleManager.preview_conditions(battle_seed(which), region_id)
 	var foes := enemies(which)
 	conditions["tier"] = which
 	conditions["enemies"] = foes.size()

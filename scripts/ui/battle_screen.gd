@@ -97,7 +97,8 @@ func _start_battle() -> void:
 	if GameState.battle_seed == 0:
 		GameState.new_seed()
 
-	battle.setup(GameState.battle_seed, builds, GameState.enemy_override)
+	battle.setup(GameState.battle_seed, builds, GameState.enemy_override,
+		GameState.battle_region)
 	battle.overtime_enabled = true
 	view.build_terrain(battle.grid)
 	# Die gemerkte Aufstellung des letzten Kampfs, wenn sie noch passt.

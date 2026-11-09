@@ -66,6 +66,8 @@
       "in new_drome_rounds einen neuen DROME, 'elite' mit drome_chance; sonst mit",
       "part_chance ein Teil (Elite: mittel/schwer), sonst loot_credits Credits.",
       "life_chance: Chance auf 'Notstrom' (+1 Leben) obendrauf, wenn eines fehlt.",
+      "region: das Gebiet des Laufs (Id aus data/regions.json). Alle Kaempfe",
+      "des Laufs finden dort statt -- keine gewuerfelte Region (9. Nov. 2026).",
       "Zwischenstopp (NEUANFANG 7d): storage_size Plaetze im Lager; Credits je",
       "Sieg nach tiers.<stufe>.credits, loss_credits bei einer Niederlage;",
       "sell_value: Verkaufspreis einer Waffe nach Gewichtsklasse.",
@@ -77,6 +79,7 @@
       "0..Hoechstlevel. Annahme: ein frischer Squad ist Level 0, nach etwa einem",
       "Lauf DROME 2 / Waffe 2-3, nach drei Laeufen DROME 3-4 / Waffe 5."
     ],
+    "region": "city",
     "rounds": 8,
     "lives": 3,
     "power_start": 0.85,
