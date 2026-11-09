@@ -325,7 +325,7 @@ func _pulse_unit(unit: Unit) -> void:
 	var healed := unit.regenerate_hp()
 	if healed > 0:
 		EventBus.unit_healed.emit(unit, healed, unit)
-		EventBus.log_line("%s regeneriert %d Integritaet (Drohnen-Pod)."
+		EventBus.log_line("%s regeneriert %d Integritaet (Reparatur)."
 			% [unit.display_name, healed])
 	var collapse := overtime_damage(unit)
 	if collapse > 0:

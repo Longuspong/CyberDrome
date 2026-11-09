@@ -123,9 +123,21 @@ func set_pixel_scale(camera_zoom: float) -> void:
 
 
 ## Echtzeit: eine Schussspur von ``from`` nach ``to`` (Weltkoordinaten der
-## Feldmitten), kurz und in Teamfarbe.
+## Feldmitten), kurz und in Teamfarbe. Alter Weg ohne Stil (gerader Schuss).
 func show_shot(from: Vector2, to: Vector2, color: Color, heavy: bool = false) -> void:
-	_effects.add_shot(from, to, color, heavy)
+	_effects.add_attack(from, to, color, {"projectile": "bolt", "energy": 0.0, "heavy": heavy})
+
+
+## Ein Angriff mit Stil (9. Nov. 2026, Wunsch des Spielers):
+##   projectile  "" (Nahkampf, keins), "bolt" (gerader Schuss), "slug"
+##               (schweres Geschoss), "orb" (Energiekugel), "beam" (Heilstrahl)
+##   energy      Energieanteil 0..1: >= 0,5 leuchtend und durchscheinend,
+##               sonst matt; der Einschlag zeigt Ring (Energie) und/oder
+##               Funken (kinetisch) nach dem Anteil
+##   heavy       groesser (Faehigkeit, Flaeche)
+##   area        Radius der Flaeche in Feldern (Ring am Ziel)
+func show_attack(from: Vector2, to: Vector2, color: Color, style: Dictionary) -> void:
+	_effects.add_attack(from, to, color, style)
 
 
 ## Schwebender Text ueber einer Stelle: Schaden, Reparatur, Faehigkeit.
@@ -451,12 +463,15 @@ class UnitBadgePainter extends Node2D:
 ## demselben Grund wie die Balken: Knoten, die dauernd entstehen und vergehen,
 ## bleiben irgendwann als Rest im Baum haengen.
 class EffectPainter extends Node2D:
-	const SHOT_TIME := 0.22
 	const TEXT_TIME := 0.9
 	const TEXT_SIZE := 16
 	const BIG_SIZE := 18
 	const RISE := 34.0
 	const COLOR_SHADOW := Color(0.0, 0.0, 0.0, 0.85)
+	## Flugzeit je Projektil (Sekunden) und Dauer des Einschlags.
+	const FLIGHT := {"": 0.0, "bolt": 0.12, "slug": 0.08, "orb": 0.26, "beam": 0.0}
+	const IMPACT_TIME := 0.32
+	const BEAM_TIME := 0.35
 
 	var pixel_scale: float = 1.0
 	var _shots: Array = []
@@ -465,9 +480,16 @@ class EffectPainter extends Node2D:
 	func _ready() -> void:
 		z_index = 4020
 
-	func add_shot(from: Vector2, to: Vector2, color: Color, heavy: bool) -> void:
+	func add_attack(from: Vector2, to: Vector2, color: Color, style: Dictionary) -> void:
+		var kind := str(style.get("projectile", "bolt"))
+		var flight := float(FLIGHT.get(kind, 0.12))
+		var total := (BEAM_TIME if kind == "beam" else flight + IMPACT_TIME)
+		# Funken: feste Richtungen je Treffer, damit nichts flackert.
+		var seed_angle := fmod(absf(to.x * 0.37 + to.y * 0.71 + from.x * 0.13), TAU)
 		_shots.append({"from": from, "to": to, "color": color, "age": 0.0,
-			"heavy": heavy})
+			"kind": kind, "flight": flight, "total": total,
+			"energy": float(style.get("energy", 0.0)), "heavy": bool(style.get("heavy", false)),
+			"area": int(style.get("area", 0)), "spin": seed_angle})
 
 	func add_text(at: Vector2, text: String, color: Color, big: bool) -> void:
 		# Mehrere Zahlen am selben Ort stapeln sich, statt sich zu ueberdecken.
@@ -485,26 +507,121 @@ class EffectPainter extends Node2D:
 			entry["age"] = float(entry["age"]) + delta
 		for entry in _texts:
 			entry["age"] = float(entry["age"]) + delta
-		_shots = _shots.filter(func(e): return float(e["age"]) < SHOT_TIME)
+		_shots = _shots.filter(func(e): return float(e["age"]) < float(e["total"]))
 		_texts = _texts.filter(func(e): return float(e["age"]) < TEXT_TIME)
 		queue_redraw()
 
 	func _draw() -> void:
-		var s := pixel_scale
 		for entry in _shots:
-			var t: float = float(entry["age"]) / SHOT_TIME
-			var color: Color = entry["color"]
-			var from: Vector2 = entry["from"] + Vector2(0, -34)
-			var to: Vector2 = entry["to"] + Vector2(0, -24)
-			# Die Spur waechst zum Ziel und verblasst dann von hinten.
-			var head := from.lerp(to, clampf(t * 2.5, 0.0, 1.0))
-			var tail := from.lerp(to, clampf(t * 2.5 - 0.6, 0.0, 1.0))
-			var width := (5.0 if entry["heavy"] else 3.0) * maxf(1.0, s * 0.8)
-			draw_line(tail, head, Color(color, 0.35 * (1.0 - t)), width * 2.2, true)
-			draw_line(tail, head, Color(color.lightened(0.5), 1.0 - t), width, true)
-			if t > 0.35:
-				draw_circle(to, (6.0 if entry["heavy"] else 4.0) * s * (1.0 - t) + 1.0,
-					Color(color.lightened(0.6), 1.0 - t))
+			if entry["kind"] == "beam":
+				_draw_beam(entry)
+				continue
+			var age: float = entry["age"]
+			var flight: float = entry["flight"]
+			if age < flight and entry["kind"] != "":
+				_draw_projectile(entry, age / maxf(0.001, flight))
+			elif age >= flight:
+				_draw_impact(entry, (age - flight) / IMPACT_TIME)
+		_draw_texts()
+
+	func _ends(entry: Dictionary) -> Array:
+		return [entry["from"] + Vector2(0, -34), entry["to"] + Vector2(0, -24)]
+
+	## Das Projektil im Flug: leuchtend/durchscheinend bei Energie, matt bei
+	## kinetisch. Gerader Schuss = Streifen, Geschoss = kurzer dicker Bolzen,
+	## Kugel = pulsierender Ball mit Blitzen.
+	func _draw_projectile(entry: Dictionary, t: float) -> void:
+		var s := pixel_scale
+		var ends := _ends(entry)
+		var pos: Vector2 = (ends[0] as Vector2).lerp(ends[1], t)
+		var dir: Vector2 = ((ends[1] as Vector2) - ends[0]).normalized()
+		var color: Color = entry["color"]
+		var glow: bool = float(entry["energy"]) >= 0.5
+		var big := 1.4 if entry["heavy"] else 1.0
+		match entry["kind"]:
+			"orb":
+				var r := 6.0 * big * maxf(1.0, s * 0.8)
+				var pulse := 1.0 + 0.15 * sin(t * 30.0)
+				draw_circle(pos, r * 2.0 * pulse, Color(color, 0.18))
+				draw_circle(pos, r * pulse, Color(color.lightened(0.3), 0.55))
+				draw_circle(pos, r * 0.45, Color(1, 1, 1, 0.9))
+				# Kleine Blitze um die Kugel.
+				for i in 3:
+					var ang := float(entry["spin"]) + t * 12.0 + i * TAU / 3.0
+					var a := pos + Vector2(cos(ang), sin(ang)) * r
+					var b := pos + Vector2(cos(ang + 0.5), sin(ang + 0.5)) * r * 1.9
+					draw_line(a, b, Color(color.lightened(0.6), 0.8), 1.5 * maxf(1.0, s * 0.6), true)
+			"slug":
+				var len := 16.0 * big * maxf(1.0, s * 0.8)
+				var width := 5.0 * big * maxf(1.0, s * 0.8)
+				var tail := pos - dir * len
+				if glow:
+					draw_line(tail, pos, Color(color, 0.3), width * 2.4, true)
+					draw_line(tail, pos, Color(color.lightened(0.6), 0.85), width, true)
+				else:
+					draw_line(tail - dir * len, pos, Color(0.85, 0.82, 0.75, 0.25), width * 0.5, true)
+					draw_line(tail, pos, Color(0.55, 0.55, 0.58), width, true)
+					draw_line(tail, pos, Color(0.85, 0.85, 0.88), width * 0.4, true)
+			_:
+				var len := 22.0 * big * maxf(1.0, s * 0.8)
+				var width := 3.0 * big * maxf(1.0, s * 0.8)
+				var tail := pos - dir * len
+				if glow:
+					draw_line(tail, pos, Color(color, 0.28), width * 3.0, true)
+					draw_line(tail, pos, Color(color.lightened(0.5), 0.75), width, true)
+					draw_line(tail.lerp(pos, 0.5), pos, Color(1, 1, 1, 0.8), width * 0.5, true)
+				else:
+					draw_line(tail, pos, Color(0.6, 0.6, 0.62, 0.9), width, true)
+					draw_line(tail.lerp(pos, 0.6), pos, Color(0.9, 0.88, 0.8), width * 0.6, true)
+
+	## Der Einschlag: Ring fuer den Energieanteil, Funken fuer den kinetischen.
+	func _draw_impact(entry: Dictionary, t: float) -> void:
+		var s := pixel_scale
+		var at: Vector2 = _ends(entry)[1]
+		var color: Color = entry["color"]
+		var energy: float = entry["energy"]
+		var big := 1.5 if entry["heavy"] else 1.0
+		var fade := 1.0 - t
+		if energy > 0.0:
+			var r := (6.0 + 18.0 * t) * big * maxf(1.0, s * 0.8)
+			var alpha := fade * clampf(0.4 + energy, 0.0, 1.0)
+			draw_arc(at, r, 0.0, TAU, 28, Color(color.lightened(0.4), alpha), 2.5 * maxf(1.0, s * 0.7), true)
+			draw_arc(at, r * 0.6, 0.0, TAU, 20, Color(1, 1, 1, alpha * 0.6), 1.2 * maxf(1.0, s * 0.7), true)
+		if energy < 1.0:
+			var count := 7 if entry["heavy"] else 5
+			for i in count:
+				var ang := float(entry["spin"]) + i * TAU / float(count) + sin(i * 1.7) * 0.4
+				var dir := Vector2(cos(ang), sin(ang) * 0.6)
+				var from := at + dir * (3.0 + 10.0 * t) * big * maxf(1.0, s * 0.8)
+				var to := at + dir * (8.0 + 22.0 * t) * big * maxf(1.0, s * 0.8)
+				draw_line(from, to, Color(1.0, 0.85 - 0.3 * t, 0.45, fade * (1.0 - energy * 0.5)),
+					2.0 * maxf(1.0, s * 0.6), true)
+		if int(entry["area"]) > 0:
+			var reach := float(entry["area"]) * 34.0 * (0.4 + 0.6 * t)
+			draw_arc(at + Vector2(0, 24), reach, 0.0, TAU, 40, Color(color, fade * 0.5), 3.0, true)
+
+	## Elektronischer Heilstrahl: ein zitternder Zickzack-Strahl mit Glanz.
+	func _draw_beam(entry: Dictionary) -> void:
+		var s := pixel_scale
+		var ends := _ends(entry)
+		var a: Vector2 = ends[0]
+		var b: Vector2 = ends[1]
+		var t: float = float(entry["age"]) / BEAM_TIME
+		var fade := 1.0 - t
+		var green := Color(0.45, 1.0, 0.7)
+		var normal := (b - a).normalized().orthogonal()
+		var points := PackedVector2Array()
+		var steps := 9
+		for i in steps + 1:
+			var f := float(i) / float(steps)
+			var jitter := 0.0 if i == 0 or i == steps else sin(f * 37.0 + float(entry["age"]) * 60.0) * 5.0
+			points.append(a.lerp(b, f) + normal * jitter * maxf(1.0, s * 0.7))
+		draw_polyline(points, Color(green, 0.3 * fade), 7.0 * maxf(1.0, s * 0.7), true)
+		draw_polyline(points, Color(green.lightened(0.4), 0.9 * fade), 2.0 * maxf(1.0, s * 0.7), true)
+		draw_circle(b, (5.0 + 6.0 * t) * maxf(1.0, s * 0.8), Color(green, 0.4 * fade))
+
+	func _draw_texts() -> void:
+		var s := pixel_scale
 		var font := ThemeDB.fallback_font
 		for entry in _texts:
 			var t: float = float(entry["age"]) / TEXT_TIME

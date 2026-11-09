@@ -545,7 +545,7 @@ STATS = {
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 4, "heal": 6, "support": "ally",
              "energy_fraction": 1.0, "interval": 1.5},
-            {"id": "act_drone_guard", "display_name": "Schutzdrohne",
+            {"id": "act_drone_guard", "display_name": "Schildfeld",
              "category": "ability", "targeting": "single",
              "range_tiles": 3, "power": 0, "shield_gain": 15, "support": "ally",
              "trigger": {"kind": "attacks", "every": 4, "weapon": "act_drone_repair"}},
@@ -1439,17 +1439,22 @@ EQ_HAMMER = [
     D(24.0, 0, 39, 2.0, "glow"),
 ]
 
-# Der Pod sitzt hinter dem Kopf auf der Schulterbruecke und zeigt vor allem
-# seine Oberseite -- das deutlichste Beispiel dafuer, wie stark die
-# 45-Grad-Kamera waagerechte Flaechen betont. In der Nordansicht schiebt ihn
-# die Tiefensortierung von selbst vor den Kopf.
+# Elektronischer Schraubenschluessel (9. Nov. 2026, Wunsch des Spielers;
+# frueher Drohnen-Pod): ein Werkzeug am Arm wie der Hammer, aber schlank --
+# langer Griff mit Wicklung, vorn ein offenes Maul aus zwei Backen, dazwischen
+# ein leuchtender Kern, aus dem Heilstrahl und Energiekugel kommen.
 EQ_DRONE_POD = [
-    B((-8, 2), (-5, 5), (59, 62), "metal"),
-    B((-10, 4), (-8, 8), (62, 69), "plate"),
-    B((-10.5, 4.5), (-8.5, 8.5), (69, 71), "light"),
-    B((4, 4.6), (-6, 6), (63.5, 67.5), "dark"),
-    D(4.9, 0, 65.5, 1.9, "glow"),
-    B((-7, -3), (-2, 2), (71, 74.5), "accent"),
+    B((-3.5, 3.5), (-4.5, 4.5), (45, 53), "metal"),        # Halterung am Anker
+    B((-4, 4), (-4.5, 4.5), (36, 46), "plate"),            # Unterarm
+    B((3, 17), (-1.6, 1.6), (38, 41.5), "plate"),          # Griff
+    B((5, 10), (-2.0, 2.0), (37.5, 42), "dark"),           # Wicklung
+    B((17, 21), (-5, 5), (35, 45), "metal"),               # Kopf
+    B((17, 21), (-5.3, 5.3), (39, 41), "accent"),          # Leuchtband
+    B((21, 27), (-5, -2.2), (35, 45), "metal"),            # Backe links
+    B((21, 27), (2.2, 5), (35, 45), "metal"),              # Backe rechts
+    B((21, 24), (-1.4, 1.4), (38.3, 41.7), "glow"),        # Kern im Maul
+    D(27.2, -3.6, 40, 1.0, "glow"),
+    D(27.2, 3.6, 40, 1.0, "glow"),
 ]
 
 # Koedersender -- laut, aber ausdruecklich KEINE Waffe.
@@ -1961,10 +1966,11 @@ SETS = [
             {
                 # Frueher fest auf der Molok-Schulter ("slots"); seit es die
                 # Schulter als Halter nicht mehr gibt, ein Gadget wie die anderen.
-                "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment", "name": "Drohnen-Pod",
-                "tags": ["support", "shoulder"], "shapes": EQ_DRONE_POD,
+                "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment",
+                "name": "E-Schraubenschluessel",
+                "tags": ["support", "tool"], "shapes": EQ_DRONE_POD,
                 "mount_class": "light", "category": "support",
-                "anchors": {"mount": (0, 0, 61)},
+                "anchors": {"mount": (0, 0, 49)},
             },
         ],
     },

@@ -3,7 +3,7 @@
   "code": "EQP-004",
   "set": "bot2",
   "type": "equipment",
-  "name": "Drohnen-Pod",
+  "name": "E-Schraubenschluessel",
   "direction": "west",
   "svg": "eq_drone_pod_west.svg",
   "view_box": [
@@ -17,7 +17,7 @@
     {
       "name": "mount",
       "x": 64.0,
-      "y": 37.77
+      "y": 49.22
     }
   ],
   "color_scheme": {
@@ -32,7 +32,7 @@
   },
   "tags": [
     "support",
-    "shoulder"
+    "tool"
   ],
   "mount_class": "light",
   "category": "support",
@@ -76,7 +76,7 @@
       },
       {
         "id": "act_drone_guard",
-        "display_name": "Schutzdrohne",
+        "display_name": "Schildfeld",
         "category": "ability",
         "targeting": "single",
         "range_tiles": 3,

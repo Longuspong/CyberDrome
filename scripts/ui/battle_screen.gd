@@ -250,13 +250,34 @@ func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 	if tile != unit.tile:
 		unit.play_attack(tile)
 	var color := Teams.color(unit.is_player)
-	if not action.is_move():
-		view.show_shot(unit.visual_anchor(), IsoView.map_to_local(tile), color,
-			not action.is_attack() or action.aoe_radius > 0)
+	if not action.is_move() and (action.power > 0 or action.heal > 0):
+		view.show_attack(unit.visual_anchor(), IsoView.map_to_local(tile), color,
+			attack_style(unit, tile, action, battle.resolver.unit_at(tile)))
 	if not action.is_attack():
 		view.show_float(unit.visual_anchor(), action.display_name + "!",
 			Color(1.0, 0.86, 0.3), true)
 	_refresh_hud()
+
+
+## Wie ein Angriff aussieht (Wunsch des Spielers, 9. Nov. 2026): Nahkampf ohne
+## Projektil; Blaster gerader Schuss, Lanze schweres Geschoss, Runenstab und
+## E-Schraubenschluessel eine Energiekugel, die Reparatur ein Heilstrahl. Die
+## Schadensart steuert Leuchten und Einschlag (BattleView.show_attack).
+static func attack_style(unit: Unit, tile: Vector2i, action: ActionData, target: Unit = null) -> Dictionary:
+	var style := {"energy": action.energy_fraction, "area": action.aoe_radius,
+		"heavy": not action.is_attack() or action.aoe_radius > 0, "projectile": "bolt"}
+	var id := str(action.id)
+	var reach := Grid.distance(unit.tile, tile)
+	if action.heal > 0 and target != null and target != unit and target.is_player == unit.is_player:
+		style["projectile"] = "beam"
+		style["energy"] = 1.0
+	elif action.range_tiles <= 1 or reach <= 1:
+		style["projectile"] = ""
+	elif id.begins_with("act_rune") or id.begins_with("act_drone"):
+		style["projectile"] = "orb"
+	elif id.begins_with("act_rail"):
+		style["projectile"] = "slug"
+	return style
 
 
 ## Ein Treffer muss man sehen: Zucken, Blende, Zahl, und bei einem grossen
