@@ -71,7 +71,11 @@
       "sell_value: Verkaufspreis einer Waffe nach Gewichtsklasse.",
       "enemy_modules (6i): Module je Gegner = by_round[runde] + tier_offset;",
       "nur passende, keines doppelt; ab recipe_from_round (und 2 Plaetzen) ist",
-      "eines ein Rezept (RunState._arm_enemies)."
+      "eines ein Rezept (RunState._arm_enemies).",
+      "enemy_levels (9. Nov. 2026, Leitplanke): DROME- und Waffenlevel der Gegner",
+      "je Runde (drome/weapon, Index = Runde - 1) plus tier_offset, begrenzt auf",
+      "0..Hoechstlevel. Annahme: ein frischer Squad ist Level 0, nach etwa einem",
+      "Lauf DROME 2 / Waffe 2-3, nach drei Laeufen DROME 3-4 / Waffe 5."
     ],
     "rounds": 8,
     "lives": 3,
@@ -84,6 +88,15 @@
     "storage_size": 8,
     "loss_credits": 4,
     "sell_value": {"light": 3, "medium": 5, "heavy": 8},
+    "enemy_levels": {
+      "drome": [0, 0, 1, 1, 1, 2, 2, 2],
+      "weapon": [0, 0, 1, 1, 2, 2, 3, 3],
+      "tier_offset": {
+        "easy": {"drome": -1, "weapon": -1},
+        "normal": {"drome": 0, "weapon": 0},
+        "elite": {"drome": 1, "weapon": 2}
+      }
+    },
     "enemy_modules": {
       "by_round": [0, 0, 1, 1, 1, 2, 2, 2],
       "tier_offset": {"easy": -1, "normal": 0, "elite": 1},

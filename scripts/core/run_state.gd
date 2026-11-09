@@ -266,12 +266,35 @@ func enemy_module_count(which: int = -1) -> int:
 	return maxi(0, count)
 
 
+## DROME- und Waffenlevel der Gegner dieser Runde und Stufe
+## (run.enemy_levels): {drome, weapon}.
+func enemy_levels(which: int = -1) -> Dictionary:
+	if which < 0:
+		which = tier
+	var settings: Dictionary = cfg().get("enemy_levels", {})
+	var offset: Dictionary = (settings.get("tier_offset", {}) as Dictionary).get(TIER_KEYS[which], {})
+	var out := {}
+	for kind in ["drome", "weapon"]:
+		var table: Array = settings.get(kind, [0])
+		var value := int(table[clampi(round - 1, 0, table.size() - 1)]) if not table.is_empty() else 0
+		value += int(offset.get(kind, 0))
+		var top := Leveling.drome_max() if kind == "drome" else Leveling.weapon_max()
+		out[kind] = clampi(value, 0, top)
+	return out
+
+
 ## Gegner tragen Module (6i) -- dieselben wie der Spieler, aber handverlesen:
 ## nur was zur Waffe passt (keine ruhenden Module), keines doppelt. Ab
 ## enemy_modules.recipe_from_round und mindestens zwei Plaetzen ist das erste
 ## ein passendes Rezept. Alles in den Halter der ersten Waffe, am Seed des
 ## Kampfes.
 func _arm_enemies(foes: Array, which: int) -> void:
+	var levels := enemy_levels(which)
+	for build in foes:
+		build.drome_level = levels["drome"]
+		for slot in build.equip_slots():
+			if build.part_in(slot) != null and levels["weapon"] > 0:
+				build.weapon_levels[slot] = levels["weapon"]
 	var count := enemy_module_count(which)
 	if count <= 0:
 		return
