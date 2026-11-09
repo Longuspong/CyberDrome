@@ -79,6 +79,8 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 
 	_on_hit(source, dealt)
 	if target.hp <= 0:
+		if source != null and source != target and source.is_player != target.is_player:
+			source.kills += 1
 		_kill(target)
 	else:
 		_thorns(source, target, action)

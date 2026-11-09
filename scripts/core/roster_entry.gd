@@ -37,6 +37,10 @@ var assignments: Dictionary = {}
 ## nur die Eintraege, bei denen das gesetzt ist.
 var in_squad: bool = false
 
+## Erfahrung und Level des DROME (0-5; Leveling).
+var xp: int = 0
+var level: int = 0
+
 
 static func create(entry_name: String, chassis_uid: String) -> RosterEntry:
 	var entry := RosterEntry.new()
@@ -59,6 +63,8 @@ func to_dict() -> Dictionary:
 		"palette": palette,
 		"in_squad": in_squad,
 		"assignments": assignments.duplicate(),
+		"xp": xp,
+		"level": level,
 	}
 
 
@@ -71,6 +77,8 @@ static func from_dict(data: Dictionary) -> RosterEntry:
 	var pal = data.get("palette", {})
 	entry.palette = pal if pal is Dictionary else {}
 	entry.in_squad = bool(data.get("in_squad", false))
+	entry.xp = int(data.get("xp", 0))
+	entry.level = int(data.get("level", 0))
 	var raw = data.get("assignments", {})
 	if raw is Dictionary:
 		for slot in raw:
@@ -78,6 +86,16 @@ static func from_dict(data: Dictionary) -> RosterEntry:
 			if uid_value != "":
 				entry.assignments[str(slot)] = uid_value
 	return entry
+
+
+## EP gutschreiben; gibt true zurueck, wenn ein Level dazukam.
+func add_xp(amount: int) -> bool:
+	if amount <= 0:
+		return false
+	xp += amount
+	var before := level
+	level = Leveling.drome_level_for(xp)
+	return level > before
 
 
 func _to_string() -> String:

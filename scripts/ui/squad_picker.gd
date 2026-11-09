@@ -99,7 +99,8 @@ static func drome_card(build: DromeBuild, highlight: bool = false) -> PanelConta
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text.add_theme_constant_override("separation", 2)
 	row.add_child(text)
-	var name := UiKit.label("%s  ·  %d" % [build.display_name, int(build.power_score())],
+	var name := UiKit.label("%s%s  ·  %d" % [build.display_name,
+		"  Lv %d" % build.drome_level if build.drome_level > 0 else "", int(build.power_score())],
 		UiKit.BODY)
 	name.tooltip_text = "Name und Kampfwert"
 	text.add_child(name)

@@ -36,6 +36,8 @@ var statuses: Dictionary = {}
 
 ## Kampfbilanz fuer den Ergebnisbildschirm
 var damage_dealt: int = 0
+## Abschuesse in diesem Kampf (EP fuer die Waffen, Leveling).
+var kills: int = 0
 var damage_taken: int = 0
 
 # --- Echtzeit (Nov. 2026) ---------------------------------------------------
@@ -340,17 +342,19 @@ func init_realtime(pulse_offset: float) -> void:
 		# Module des Halters (nur im Lauf): die Aktionen werden als Kopie
 		# angepasst, die PartDB bleibt unberuehrt.
 		var fx := build.module_effects(slot)
+		# Waffenlevel (Leveling): Schaden waechst, als Kopie.
+		var level := build.weapon_level(slot)
 		var attack: ActionData = null
 		for action in part.actions:
 			if action.is_attack():
-				attack = action.with_modules(fx)
+				attack = Leveling.level_action(action, part, level).with_modules(fx)
 				break
 		for action in part.actions:
 			if action.is_attack():
 				continue
 			if action.trigger_kind == "attacks" and attack != null:
 				continue
-			var gadget_action: ActionData = action.with_modules(fx)
+			var gadget_action: ActionData = Leveling.level_action(action, part, level).with_modules(fx)
 			var first := float(gadget_action.trigger_every) * echo_slower() \
 				if gadget_action.trigger_kind == "time" else 0.0
 			gadgets.append({"part": part, "ability": gadget_action, "ready": first, "fx": fx})
@@ -366,7 +370,7 @@ func init_realtime(pulse_offset: float) -> void:
 		var ability: ActionData = null
 		for action in part.actions:
 			if not action.is_attack() and action.trigger_kind == "attacks":
-				ability = action.with_modules(fx)
+				ability = Leveling.level_action(action, part, level).with_modules(fx)
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,

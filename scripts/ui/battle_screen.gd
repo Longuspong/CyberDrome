@@ -809,8 +809,13 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	if GameState.in_run_battle:
 		var onward := UiKit.button("Weiter im Lauf", true)
 		var pool: Array = battle.enemy_equipment.duplicate()
+		# Wer hat wie viele Abschuesse -- fuer die EP der Waffen (Leveling).
+		var fighters: Array = []
+		for unit in battle.units:
+			if unit.is_player and unit.build != null:
+				fighters.append({"source_uid": unit.build.source_uid, "kills": unit.kills})
 		onward.pressed.connect(func():
-			GameState.finish_run_battle(outcome, pool)
+			GameState.finish_run_battle(outcome, pool, fighters)
 			get_tree().change_scene_to_file("res://scenes/run.tscn"))
 		buttons.add_child(onward)
 		onward.grab_focus.call_deferred()

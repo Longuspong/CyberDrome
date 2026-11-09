@@ -273,6 +273,8 @@ func _show_stop(run: RunState) -> void:
 	_side.add_child(_label(_credit_line(run), 18, COLOR_WARN))
 	if not run.last_loot.is_empty():
 		_side.add_child(_loot_section(run))
+	if not run.last_growth.is_empty():
+		_side.add_child(_growth_section(run))
 	_side.add_child(_shop_section(run))
 
 	# --- Lager ---
@@ -335,6 +337,28 @@ func _loot_section(run: RunState) -> Control:
 		box.add_child(_label("%s%s%s" % ["[Selten] " if item.get("rare", false) else "",
 			item["title"], where], 18, COLOR_WARN if item.get("rare", false) else Color.WHITE))
 		box.add_child(_label(str(item.get("text", "")), 16, COLOR_MUTED))
+	return panel
+
+
+## Erfahrung nach dem Sieg (Leveling): je DROME und Waffe Level und EP,
+## Aufstiege hervorgehoben. Gutgeschrieben ist schon -- zuhause und im Lauf.
+func _growth_section(run: RunState) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style(false))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 2)
+	panel.add_child(box)
+	box.add_child(_label("Erfahrung", 18, COLOR_HEADING))
+	for row in run.last_growth:
+		var table: Array = (Leveling.drome_cfg() if row["kind"] == "drome"
+			else Leveling.weapon_cfg()).get("xp", [])
+		var step := Leveling.progress(int(row["xp"]), table)
+		var text := "%s  Lv %d  ·  %s" % [row["name"], int(row["level"]),
+			"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Hoechstlevel"]
+		if row["up"]:
+			text += "  ·  Aufstieg!"
+		box.add_child(_label(text, 16 if row["kind"] == "drome" else 14,
+			COLOR_GOOD if row["up"] else (Color.WHITE if row["kind"] == "drome" else COLOR_MUTED)))
 	return panel
 
 

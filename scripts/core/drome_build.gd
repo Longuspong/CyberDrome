@@ -45,6 +45,16 @@ var direction: String = "south"
 ## tragen Module; der Hangar zuhause kennt keine (sie verfallen nach dem Lauf).
 var modules: Dictionary = {}
 
+## Level (6g, 8. Nov. 2026): DROME 0-5, je Waffenhalter das Level der Waffe
+## darin (0-10). Kommen aus dem Hangar (Roster.build_for); Gegner haben 0.
+var drome_level: int = 0
+var weapon_levels: Dictionary = {}
+
+## Herkunft im Hangar, damit EP aus dem Lauf zurueckfinden: die uid des
+## Chassis-Exemplars (= der DROME) und je Halter die uid der Waffe.
+var source_uid: String = ""
+var instance_uids: Dictionary = {}
+
 
 static func create(name: String, assignment: Dictionary) -> DromeBuild:
 	var build := DromeBuild.new()
@@ -231,6 +241,15 @@ func stats() -> Dictionary:
 		total["hp_regen_pct"] += part.hp_regen_pct
 		total["lure_radius"] = maxi(int(total["lure_radius"]), part.lure_radius)
 
+	# Level: DROME-Werte des Chassis und Bonus-Werte der Waffen.
+	var chassis := body()
+	if chassis != null and drome_level > 0:
+		_add_stats(total, Leveling.drome_bonus(chassis, drome_level))
+		total["module_slots"] += Leveling.extra_module_slots(chassis.id, drome_level)
+	for slot in equip_slots():
+		if weapon_level(slot) > 0:
+			_add_stats(total, Leveling.weapon_bonus(part_in(slot), weapon_level(slot)))
+
 	# Module (nur im Lauf): Panzerung, Schild und Konter des Traegers.
 	if not modules.is_empty():
 		var fx := all_module_effects()
@@ -252,6 +271,13 @@ func stats() -> Dictionary:
 	# ein Anteil (0.1 = +10 %).
 	total["shield_max"] = int(round(float(total["shield"]) * (1.0 + total["shield_bonus"])))
 	return total
+
+
+## Zuwaechse (Schluessel wie in PartData) auf die Summe: hp -> hp_max.
+static func _add_stats(total: Dictionary, bonus: Dictionary) -> void:
+	for stat in bonus:
+		var key := "hp_max" if stat == "hp" else str(stat)
+		total[key] = total.get(key, 0) + bonus[stat]
 
 
 ## Power als Faktor: 10 Punkte = 100 % Waffenschaden (8. Nov. 2026). Ohne
@@ -310,7 +336,16 @@ func clone() -> DromeBuild:
 	copy.palette = palette.duplicate(true)
 	copy.direction = direction
 	copy.modules = modules.duplicate(true)
+	copy.drome_level = drome_level
+	copy.weapon_levels = weapon_levels.duplicate()
+	copy.source_uid = source_uid
+	copy.instance_uids = instance_uids.duplicate()
 	return copy
+
+
+## Das Level der Waffe in diesem Halter.
+func weapon_level(slot: String) -> int:
+	return int(weapon_levels.get(slot, 0))
 
 
 # ---------------------------------------------------------------------------

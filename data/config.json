@@ -102,6 +102,52 @@
     }
   },
 
+  "levels": {
+    "_kommentar": [
+      "Level fuer DROMEs und Waffen (scripts/core/leveling.gd), bleiben nach dem Lauf.",
+      "drome: xp = EP-Schwellen fuer Level 1..5; win_xp je Sieg nach Stufe. main =",
+      "die zwei Hauptwerte je Chassis (+main_per_level je Level, Level 5 = +50 %),",
+      "alle anderen Werte (hp, shield, shield_pulse, def) +other_per_level (+20 %).",
+      "Speed und Power steigen nie. module_slots_at: auf diesen Leveln +1 Modulplatz.",
+      "weapon: xp = Schwellen fuer Level 1..10; win_xp je Sieg, in dem sie getragen",
+      "wurde, kill_xp je Abschuss ihres Traegers. damage_per_level (Level 10 = +70 %).",
+      "bonus_at_max: Endwert des Bonus-Werts auf Level 10 je Waffe (linear vom",
+      "Grundwert). energy_only: nur der Energieanteil waechst (Neon-Blaster)."
+    ],
+    "drome": {
+      "max": 5,
+      "xp": [2, 5, 9, 14, 20],
+      "win_xp": {"easy": 1, "normal": 1, "elite": 2},
+      "main_per_level": 0.1,
+      "other_per_level": 0.04,
+      "main": {
+        "scout_body": ["hp", "shield"],
+        "jugg_body": ["hp", "def"],
+        "mage_body": ["shield", "shield_pulse"],
+        "strix_body": ["hp", "def"]
+      },
+      "module_slots_at": {"default": [1, 3, 5], "jugg_body": [2, 4]}
+    },
+    "weapon": {
+      "max": 10,
+      "xp": [3, 7, 12, 18, 25, 33, 42, 52, 63, 75],
+      "win_xp": 1,
+      "kill_xp": 1,
+      "damage_per_level": 0.07,
+      "energy_only": ["eq_neon_blaster"],
+      "bonus_at_max": {
+        "eq_pulse_blaster": {"spd": 3},
+        "eq_neon_blaster": {"shield_pulse": 4},
+        "eq_plasma_blade": {"power": 2},
+        "eq_rail_lance": {"power": 2},
+        "eq_deflector": {"def": 8},
+        "eq_hammer": {"hp": 40},
+        "eq_drone_pod": {"hp": 20},
+        "eq_rune_staff": {"shield": 20}
+      }
+    }
+  },
+
   "overtime": {
     "_kommentar": "Ab start_seconds verliert jeder DROME je Puls ceil(hp_max * pct_per_cycle * (Pulse seit Start + 1)).",
     "start_seconds": 60.0,

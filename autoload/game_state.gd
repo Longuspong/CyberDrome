@@ -317,9 +317,12 @@ func begin_run_battle() -> void:
 
 ## Nimmt das Kampfergebnis zurueck in den Lauf und raeumt die Kampfparameter
 ## weg -- sonst erbte ein spaeterer Chaos-Kampf Seed und Gegnerstaerke.
-func finish_run_battle(outcome: int, enemy_pool: Array) -> void:
+func finish_run_battle(outcome: int, enemy_pool: Array, fighters: Array = []) -> void:
 	if run != null:
+		var tier_key: String = RunState.TIER_KEYS[clampi(run.tier, 0, 2)]
 		run.record_result(outcome, enemy_pool)
+		if outcome == BattleManager.Outcome.VICTORY:
+			run.last_growth = grant_run_xp(tier_key, fighters)
 		# Beute, die nicht mehr in Lager oder Squad passte, gleich nach Hause.
 		if not run.is_over():
 			deliver_run_home()
@@ -328,6 +331,40 @@ func finish_run_battle(outcome: int, enemy_pool: Array) -> void:
 	battle_seed = 0
 	clear_chaos_run()
 	refresh_squad()
+
+
+## EP nach einem Sieg im Lauf (Leveling): jeder DROME des Lauf-Squads, der
+## aus dem Hangar stammt, bekommt EP nach Stufe; jede Waffe, die er traegt
+## (das Exemplar aus dem Hangar), EP fuer den Sieg und je Abschuss. Gut-
+## geschrieben wird ZUHAUSE -- die Lauf-Kopien uebernehmen die neuen Level
+## sofort. Gibt die Aenderungen fuer die Anzeige zurueck:
+## [{name, kind ("drome"/"weapon"), xp, level, up}].
+func grant_run_xp(tier_key: String, fighters: Array) -> Array:
+	var out: Array = []
+	if run == null:
+		return out
+	var kills := {}
+	for row in fighters:
+		kills[str(row.get("source_uid", ""))] = int(row.get("kills", 0))
+	for build in run.squad:
+		var entry := roster.entry_by_chassis(build.source_uid)
+		if entry == null:
+			continue
+		var up := entry.add_xp(Leveling.drome_win_xp(tier_key))
+		build.drome_level = entry.level
+		out.append({"name": entry.name, "kind": "drome", "xp": entry.xp,
+			"level": entry.level, "up": up})
+		for slot in build.instance_uids.keys():
+			var owned := roster.instance(str(build.instance_uids[slot]))
+			if owned == null or StringName(build.slots.get(slot, &"")) != owned.part_id:
+				continue
+			var weapon_up := owned.add_xp(Leveling.weapon_win_xp(int(kills.get(build.source_uid, 0))))
+			build.weapon_levels[slot] = owned.level
+			var part := owned.part()
+			out.append({"name": part.display_name if part != null else str(owned.part_id),
+				"kind": "weapon", "xp": owned.xp, "level": owned.level, "up": weapon_up})
+	save_roster()
+	return out
 
 
 ## Zuruecksetzen auf den Spiegel-Modus -- nach einem Lauf, damit ein spaeterer

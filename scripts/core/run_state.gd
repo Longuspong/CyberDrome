@@ -61,6 +61,10 @@ var start_size: int = 2
 ## sie gelandet ist ("lager", "squad", "home", "" fuer Credits/Leben).
 var last_loot: Array = []
 
+## EP und Level nach dem letzten Sieg (GameState.grant_run_xp), fuer die
+## Anzeige im Zwischenstopp.
+var last_growth: Array = []
+
 ## Beute, die nach Hause geschickt wurde und noch ins Inventar muss.
 ## GameState.deliver_run_home() leert die Liste. Eintraege wie last_loot.
 var home_queue: Array = []
@@ -325,6 +329,7 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 	credits += gain
 	history.append({"round": round, "won": won, "tier": tier, "credits": gain})
 	last_loot = []
+	last_growth = []
 	if not won:
 		lives -= 1
 		if lives <= 0:
@@ -585,6 +590,9 @@ func equip_from_storage(index: int, drome: int, slot: String) -> bool:
 		return false
 	var old := build.part_in(slot)
 	build.slots[slot] = part.id
+	# Die Beute-Waffe ist kein Exemplar aus dem Hangar: kein Level, keine EP.
+	build.weapon_levels.erase(slot)
+	build.instance_uids.erase(slot)
 	if old != null:
 		storage[index] = old.id
 	else:
@@ -601,6 +609,8 @@ func unequip(drome: int, slot: String) -> bool:
 	if part == null or slot not in build.equip_slots():
 		return false
 	build.slots.erase(slot)
+	build.weapon_levels.erase(slot)
+	build.instance_uids.erase(slot)
 	storage.append(part.id)
 	return true
 
