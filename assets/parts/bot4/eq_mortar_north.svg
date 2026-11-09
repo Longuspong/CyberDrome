@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_mortar" data-type="equipment" data-direction="north">
+  <title>Moerser (north)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#060f0d" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M54.45 41.45 L58.27 44.15 L58.27 42.24 L54.45 39.54 Z" fill="#6dff9f" stroke="none"/>
+  <path d="M58.27 42.24 L58.85 41.84 L55.03 39.14 L54.45 39.54 Z" fill="#6dff9f" stroke="none"/>
+  <path d="M58.27 44.15 L58.85 43.75 L58.85 41.84 L58.27 42.24 Z" fill="#6dff9f" stroke="none"/>
+  <path d="M50.64 55.12 L60.18 48.37 L60.18 39.77 L50.64 46.52 Z" fill="#101d1b"/>
+  <path d="M50.64 46.52 L60.18 39.77 L52.54 34.37 L43.0 41.12 Z" fill="#335954"/>
+  <path d="M43.0 49.72 L50.64 55.12 L50.64 46.52 L43.0 41.12 Z" fill="#1c3330"/>
+  <path d="M43.86 49.22 L48.63 52.6 L48.63 47.83 L43.86 44.45 Z" fill="#101d1b"/>
+  <path d="M48.63 52.6 L49.2 52.19 L49.2 47.42 L48.63 47.83 Z" fill="#101d1b"/>
+  <path d="M48.63 47.83 L49.2 47.42 L44.43 44.05 L43.86 44.45 Z" fill="#1c3330"/>
+  <path d="M47.66 26.6 L48.19 21.87 L48.91 20.43 L50.44 19.34 L52.48 18.84 L54.63 19.01 L56.46 19.82 L57.61 21.12 L57.85 22.64 L58.39 27.46 L58.12 39.84 L57.37 41.37 L55.75 42.51 L53.6 43.04 L51.33 42.86 L49.39 42.0 L48.18 40.64 L47.92 39.03 Z" fill="none"/>
+  <path d="M47.92 39.03 L48.18 40.64 L47.93 28.29 L47.66 26.6 Z" fill="#557d71" stroke="#557d71" stroke-width="0.4"/>
+  <path d="M57.37 41.37 L58.12 39.84 L58.39 27.46 L57.59 29.06 Z" fill="#101d1b" stroke="#101d1b" stroke-width="0.4"/>
+  <path d="M48.18 40.64 L49.39 42.0 L49.2 29.73 L47.93 28.29 Z" fill="#557d71" stroke="#557d71" stroke-width="0.4"/>
+  <path d="M57.8 45.35 L62.57 41.97 L55.89 37.25 L51.11 40.62 Z" fill="#557d71"/>
+  <path d="M55.75 42.51 L57.37 41.37 L57.59 29.06 L55.9 30.26 Z" fill="#101d1b" stroke="#101d1b" stroke-width="0.4"/>
+  <path d="M51.11 44.44 L57.8 49.17 L57.8 45.35 L51.11 40.62 Z" fill="#557d71"/>
+  <path d="M49.39 42.0 L51.33 42.86 L51.24 30.63 L49.2 29.73 Z" fill="#557d71" stroke="#557d71" stroke-width="0.4"/>
+  <path d="M57.8 49.17 L62.57 45.79 L62.57 41.97 L57.8 45.35 Z" fill="#101d1b"/>
+  <path d="M53.6 43.04 L55.75 42.51 L55.9 30.26 L53.63 30.82 Z" fill="#101d1b" stroke="#101d1b" stroke-width="0.4"/>
+  <path d="M51.33 42.86 L53.6 43.04 L53.63 30.82 L51.24 30.63 Z" fill="#557d71" stroke="#557d71" stroke-width="0.4"/>
+  <path d="M47.66 26.6 L47.93 28.29 L48.43 23.39 L48.19 21.87 Z" fill="#557d71" stroke="#557d71" stroke-width="0.4"/>
+  <path d="M46.85 24.63 L47.16 26.57 L47.16 25.23 L46.85 23.29 Z" fill="#6dff9f" stroke="#6dff9f" stroke-width="0.4"/>
+  <path d="M57.59 29.06 L58.39 27.46 L57.85 22.64 L57.14 24.08 Z" fill="#101d1b" stroke="#101d1b" stroke-width="0.4"/>
+  <path d="M58.28 27.45 L59.19 25.61 L59.19 24.27 L58.28 26.12 Z" fill="#6dff9f" stroke="#6dff9f" stroke-width="0.4"/>
+  <path d="M57.32 52.37 L64.95 57.77 L64.95 49.18 L57.32 43.78 Z" fill="#557d71"/>
+  <path d="M56.46 19.82 L54.63 19.01 L52.48 18.84 L50.44 19.34 L48.91 20.43 L48.19 21.87 L48.43 23.39 L49.59 24.68 L51.42 25.5 L53.57 25.67 L55.61 25.16 L57.14 24.08 L57.85 22.64 L57.61 21.12 Z" fill="#557d71" stroke="#557d71" stroke-width="0.4"/>
+  <path d="M47.93 28.29 L49.2 29.73 L49.59 24.68 L48.43 23.39 Z" fill="#557d71" stroke="#557d71" stroke-width="0.4"/>
+  <path d="M55.5 19.93 L54.18 19.34 L52.63 19.22 L51.15 19.58 L50.05 20.36 L49.53 21.4 L49.71 22.5 L50.54 23.44 L51.86 24.02 L53.42 24.15 L54.89 23.78 L55.99 23.0 L56.51 21.96 L56.34 20.86 Z" fill="#9affcc" stroke="#9affcc" stroke-width="0.4"/>
+  <path d="M49.53 21.98 L49.71 23.07 L49.71 22.5 L49.53 21.4 Z" fill="#9affcc" stroke="#9affcc" stroke-width="0.4"/>
+  <path d="M64.95 57.77 L70.68 53.72 L70.68 45.13 L64.95 49.18 Z" fill="#101d1b"/>
+  <path d="M47.16 26.57 L48.63 28.22 L48.63 26.89 L47.16 25.23 Z" fill="#6dff9f" stroke="#6dff9f" stroke-width="0.4"/>
+  <path d="M55.9 30.26 L57.59 29.06 L57.14 24.08 L55.61 25.16 Z" fill="#101d1b" stroke="#101d1b" stroke-width="0.4"/>
+  <path d="M55.99 23.58 L56.51 22.53 L56.51 21.96 L55.99 23.0 Z" fill="#9affcc" stroke="#9affcc" stroke-width="0.4"/>
+  <path d="M64.95 49.18 L70.68 45.13 L63.05 39.73 L57.32 43.78 Z" fill="#557d71"/>
+  <path d="M49.2 29.73 L51.24 30.63 L51.42 25.5 L49.59 24.68 Z" fill="#557d71" stroke="#557d71" stroke-width="0.4"/>
+  <path d="M56.33 28.84 L58.28 27.45 L58.28 26.12 L56.33 27.5 Z" fill="#6dff9f" stroke="#6dff9f" stroke-width="0.4"/>
+  <path d="M49.71 23.07 L50.54 24.01 L50.54 23.44 L49.71 22.5 Z" fill="#9affcc" stroke="#9affcc" stroke-width="0.4"/>
+  <path d="M53.63 30.82 L55.9 30.26 L55.61 25.16 L53.57 25.67 Z" fill="#101d1b" stroke="#101d1b" stroke-width="0.4"/>
+  <path d="M51.24 30.63 L53.63 30.82 L53.57 25.67 L51.42 25.5 Z" fill="#557d71" stroke="#557d71" stroke-width="0.4"/>
+  <path d="M54.89 24.36 L55.99 23.58 L55.99 23.0 L54.89 23.78 Z" fill="#9affcc" stroke="#9affcc" stroke-width="0.4"/>
+  <path d="M48.63 28.22 L50.97 29.26 L50.97 27.93 L48.63 26.89 Z" fill="#6dff9f" stroke="#6dff9f" stroke-width="0.4"/>
+  <path d="M50.54 24.01 L51.86 24.6 L51.86 24.02 L50.54 23.44 Z" fill="#9affcc" stroke="#9affcc" stroke-width="0.4"/>
+  <path d="M53.42 24.72 L54.89 24.36 L54.89 23.78 L53.42 24.15 Z" fill="#9affcc" stroke="#9affcc" stroke-width="0.4"/>
+  <path d="M53.72 29.48 L56.33 28.84 L56.33 27.5 L53.72 28.15 Z" fill="#6dff9f" stroke="#6dff9f" stroke-width="0.4"/>
+  <path d="M51.86 24.6 L53.42 24.72 L53.42 24.15 L51.86 24.02 Z" fill="#9affcc" stroke="#9affcc" stroke-width="0.4"/>
+  <path d="M50.97 29.26 L53.72 29.48 L53.72 28.15 L50.97 27.93 Z" fill="#6dff9f" stroke="#6dff9f" stroke-width="0.4"/>
+</g>
+</svg>

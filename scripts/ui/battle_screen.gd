@@ -276,7 +276,8 @@ static func attack_style(unit: Unit, tile: Vector2i, action: ActionData, target:
 		style["projectile"] = ""
 	elif id.begins_with("act_rune") or id.begins_with("act_drone"):
 		style["projectile"] = "orb"
-	elif id.begins_with("act_rail"):
+	elif id.begins_with("act_rail") or id.begins_with("act_mortar"):
+		# Moerser: schweres Geschoss wie die Lanze, schlaegt als Flaeche ein.
 		style["projectile"] = "slug"
 	return style
 

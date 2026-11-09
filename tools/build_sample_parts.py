@@ -574,6 +574,53 @@ STATS = {
         ],
     },
     # Schwer -- das einzige schwere Teil. Bonus Power.
+    # Bollwerk-Ramme (9. Nov. 2026): der Molok schlaegt mit seiner Masse.
+    # Der Rammstoss skaliert mit der eigenen Integritaet statt mit Power und
+    # stoesst zurueck. Bonus Integritaet.
+    "eq_bulwark_ram": {
+        "hp": 20,
+        "actions": [
+            {"id": "act_ram", "display_name": "Angriff",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 1, "power": 10, "interval": 1.6},
+            {"id": "act_ram_slam", "display_name": "Rammstoss",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 1, "damage_pct": 1.0, "hp_scaling": 0.08, "push_tiles": 1,
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_ram"}},
+        ],
+    },
+    # Moerser (9. Nov. 2026): zweite schwere Waffe. Flaeche mit Verzoegerung,
+    # trifft nicht auf kurze Distanz. Bonus Ruestung.
+    "eq_mortar": {
+        "def": 2,
+        "actions": [
+            {"id": "act_mortar", "display_name": "Angriff",
+             "category": "attack", "targeting": "aoe_around_target",
+             "range_tiles": 6, "min_range": 2, "aoe_radius": 1, "power": 14,
+             "interval": 2.8, "delay": 0.8},
+            {"id": "act_mortar_barrage", "display_name": "Sperrfeuer",
+             "category": "ability", "targeting": "aoe_around_target",
+             "range_tiles": 6, "min_range": 2, "aoe_radius": 2, "damage_pct": 1.0,
+             "push_tiles": 1, "delay": 0.8,
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_mortar"}},
+        ],
+    },
+    # Klingenbumerang (9. Nov. 2026): die Vireo-Waffe, die das Laufen belohnt.
+    # Trifft auf Hin- und Rueckweg (2 Treffer), nach Bewegung haerter.
+    # Bonus Speed.
+    "eq_boomerang": {
+        "spd": 1,
+        "actions": [
+            {"id": "act_boomerang", "display_name": "Angriff",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 2, "power": 6, "shots": 2, "interval": 1.3,
+             "moving_bonus": 0.3},
+            {"id": "act_boomerang_whirl", "display_name": "Wirbelwurf",
+             "category": "ability", "targeting": "aoe_around_target",
+             "range_tiles": 2, "aoe_radius": 1, "damage_pct": 1.4, "moving_bonus": 0.3,
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_boomerang"}},
+        ],
+    },
     "eq_rail_lance": {
         "power": 1,
         "actions": [
@@ -624,6 +671,15 @@ ACTION_DEFAULTS = {
     # aus base_action (Faehigkeiten nach Zeit).
     "damage_pct": 0.0,
     "base_action": "",
+    # Neue Waffen (9. Nov. 2026, docs/MODULE_KONZEPT.md 11.8):
+    # hp_scaling   Zusatzschaden als Anteil der EIGENEN maximalen Integritaet,
+    #              ohne Power (Bollwerk-Ramme)
+    # min_range    naeher als so viele Felder kann die Waffe nicht treffen (Moerser)
+    # moving_bonus +Anteil Schaden, wenn der Traeger gerade gelaufen ist
+    #              (Klingenbumerang)
+    "hp_scaling": 0.0,
+    "min_range": 0,
+    "moving_bonus": 0.0,
 }
 
 TARGETINGS = ("single", "aoe_around_target", "aoe_cross", "dash")
@@ -1160,6 +1216,14 @@ SCOUT_BODY = [
     B((6.5, 7.1), (-17.5, -13), (56, 58), "accent"),
     # -- Hals: die Luecke, die den Kopf lesbar macht ----------------------
     B((-3.5, 3.5), (-4, 4), (62.5, 66), "metal"),
+    # -- Freier Arm am rechten Anker (9. Nov. 2026, Wunsch des Spielers) ---
+    # Seit es nur EINEN Halter gibt, blieb rechts eine Luecke unter dem
+    # Schulterpanzer. Der Arm traegt keine Waffe: Oberarm, Unterarm, Faust,
+    # gebaut wie der Arm am Blaster, damit beide Seiten zusammenpassen.
+    B((-3, 3), (-23.5, -15.5), (45, 54), "metal"),       # Oberarm
+    B((-3.5, 4), (-23, -16), (34, 46), "plate"),         # Unterarm
+    B((-3, 4.5), (-22.5, -16.5), (29.5, 34), "dark"),    # Faust
+    B((4, 4.6), (-21.5, -17.5), (39, 41), "accent"),     # Leuchtstreifen
 ]
 
 SCOUT_HEAD = [
@@ -1223,6 +1287,20 @@ EQ_PLASMA_BLADE = [
     B((5, 27), (-0.6, 0.6), (34.5, 37.5), "glow"),       # Klinge
     B((5, 27.5), (-0.8, 0.8), (37.5, 38.3), "accent"),   # Schneide oben
     B((5, 22), (-0.8, 0.8), (33.7, 34.5), "accent"),     # Schneide unten
+]
+
+# Klingenbumerang (EQP-013): am Arm wie der Blaster, aber statt Lauf eine
+# flache, winklige Klinge -- ein "L" aus zwei leuchtenden Schenkeln, quer zur
+# Laufrichtung, damit sie sich klar vom langen Stich der Plasmaklinge abhebt.
+EQ_BOOMERANG = [
+    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Oberarm am Anker
+    B((-3.5, 4), (-3.5, 3.5), (34, 46), "plate"),        # Unterarm
+    B((3, 6), (-2.5, 2.5), (35, 39), "dark"),            # Griffhalter
+    B((6, 15), (-1.2, 1.2), (36, 37.6), "glow"),         # Schenkel nach vorn
+    B((13, 15), (-11, -1.2), (36, 37.6), "glow"),        # Schenkel quer
+    B((6, 15), (-1.4, 1.4), (37.6, 38.2), "accent"),
+    B((13, 15.2), (-11.2, -1.2), (37.6, 38.2), "accent"),
+    B((12.6, 15.4), (-11.6, -9.6), (35.6, 38.4), "plate"),   # Spitze
 ]
 
 # Pruefstein, kein Teil.
@@ -1439,6 +1517,22 @@ EQ_HAMMER = [
     D(24.0, 0, 39, 2.0, "glow"),
 ]
 
+# Bollwerk-Ramme (EQP-014): kein Stiel wie beim Hammer, sondern ein dicker
+# Kolben direkt vor dem Unterarm mit einer breiten, flachen Rammplatte --
+# kurz und massig, mit Hydraulikzylindern oben und unten.
+EQ_BULWARK_RAM = [
+    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),          # Halterung am Anker
+    B((-4.5, 4.5), (-5, 5), (33, 46), "plate"),          # Unterarm
+    B((4.5, 15), (-2.6, 2.6), (35.5, 42.5), "metal"),    # langer Kolben
+    B((4.5, 13), (-1.2, 1.2), (42.5, 45), "dark"),       # Hydraulik oben
+    B((4.5, 13), (-1.2, 1.2), (33, 35.5), "dark"),       # Hydraulik unten
+    B((6, 7), (-4, 4), (34, 44), "light"),               # Manschette
+    B((15, 19), (-6, 6), (32, 46), "plate"),             # Rammkopf, kompakt
+    B((19, 19.8), (-5, 5), (33.5, 44.5), "dark"),        # Stirn
+    B((19.8, 20.6), (-1.6, 1.6), (37.4, 40.6), "glow"),  # Stoesselkern
+    B((15, 19), (-6.3, 6.3), (38.4, 39.6), "accent"),    # Leuchtband
+]
+
 # Elektronischer Schraubenschluessel (9. Nov. 2026, Wunsch des Spielers;
 # frueher Drohnen-Pod): ein Werkzeug am Arm wie der Hammer, aber schlank --
 # langer Griff mit Wicklung, vorn ein offenes Maul aus zwei Backen, dazwischen
@@ -1575,6 +1669,14 @@ MAGE_BODY = [
     L((0, -13.8), [(5.3, 49.2), (5.3, 50.0)], "accent", caps=False, segments=16),
     # -- Hals: die Luecke, die den Helm lesbar macht ----------------------
     L((0, 0), [(3.6, 58.2), (3.8, 61)], "metal", segments=12),
+    # -- Freier Arm am rechten Schulterorb (9. Nov. 2026, Wunsch des Spielers)
+    # Gerundet wie der Arm am Runenstab; die offene Hand haelt einen kleinen
+    # Arkanfunken -- der Magier zaubert mit beiden Haenden.
+    L((0, -13.8), [(3.4, 41), (3.8, 47), (3.4, 50)], "metal", segments=12),   # Oberarm
+    L((1.0, -13.8), [(3.0, 31), (3.6, 40)], "plate", segments=12),            # Unterarm
+    L((1.0, -13.8), [(4.2, 29), (4.2, 31.6)], "dark", segments=12),           # Hand
+    L((1.0, -13.8), [(3.9, 34.4), (3.9, 35.2)], "accent", caps=False, segments=12),
+    L((3.4, -13.8), [(0, 23.2), (1.6, 24.4), (2.1, 26.0), (1.6, 27.6), (0, 28.8)], "glow"),
 ]
 
 # Flacher Helm.
@@ -1786,6 +1888,22 @@ STRIX_CORE = [
 # parallele Schienen mit Energiespalt statt eines Rohrs, ein weit vorn
 # sitzender Zielblock, eine Stabilisatorgabel. Aus der Silhouette faellt
 # "grosse Reichweite, ein Schuss" ab, ohne dass ein Tooltip es sagen muss.
+# Moerser (EQP-015): das Rohr steht STEIL nach oben -- die Silhouette sagt
+# "Bogenschuss", im Gegensatz zur waagerechten Lanze. Breiter Sockel am Arm,
+# Ladeschacht hinten, Muendung mit Leuchtring.
+EQ_MORTAR = [
+    # Halterung am Anker, dann ein Ausleger zur Seite: der Halter des Strix
+    # sitzt mittig, ein senkrechtes Rohr dort verschwaende im Torso.
+    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Halterung am Anker
+    B((-2.5, 2.5), (4, 11), (48, 52), "metal"),          # Ausleger zur Seite
+    B((-5, 5), (9, 17), (40, 49), "plate"),              # Sockel auf der Schulter
+    B((-5.6, -5), (10.5, 15.5), (42, 47), "dark"),       # Ladeschacht hinten
+    L((1.5, 13), [(3.8, 49), (4.0, 62), (3.6, 67)], "metal", segments=14),   # Rohr
+    L((1.5, 13), [(4.6, 64.0), (4.6, 65.4)], "accent", caps=False, segments=14),
+    L((1.5, 13), [(2.6, 67.0), (2.6, 67.6)], "glow", segments=14),          # Muendung
+    B((5, 5.6), (11, 15), (43, 45), "accent"),
+]
+
 EQ_RAIL_LANCE = [
     # Wiegenlager -- sitzt im Joch des Chassis, nicht an einem Arm
     B((-4, 3), (-5, 5), (47.5, 54.5), "metal"),
@@ -1898,6 +2016,13 @@ SETS = [
                 "anchors": {"mount": (0, 0, 52), "tip": (27, 0, 36)},
             },
             {
+                "id": "eq_boomerang", "code": "EQP-013", "type": "equipment",
+                "name": "Klingenbumerang", "tags": ["weapon", "melee", "thrown"],
+                "shapes": EQ_BOOMERANG,
+                "mount_class": "light", "category": "weapon",
+                "anchors": {"mount": (0, 0, 52), "tip": (15.4, -11.6, 37)},
+            },
+            {
                 "id": "eq_deflector", "code": "EQP-002", "type": "equipment", "name": "Deflektor-Schild",
                 "tags": ["defense"], "shapes": EQ_SHIELD,
                 # Ein Schild ist sperrig, nicht schwer -- "medium" haelt es von
@@ -1962,6 +2087,13 @@ SETS = [
                 "shapes": EQ_HAMMER,
                 "mount_class": "medium", "category": "weapon",
                 "anchors": {"mount": (0, 0, 49), "head": (23.8, 0, 39)},
+            },
+            {
+                "id": "eq_bulwark_ram", "code": "EQP-014", "type": "equipment",
+                "name": "Bollwerk-Ramme", "tags": ["weapon", "melee", "heavy"],
+                "shapes": EQ_BULWARK_RAM,
+                "mount_class": "medium", "category": "weapon",
+                "anchors": {"mount": (0, 0, 49), "head": (20.6, 0, 39)},
             },
             {
                 # Frueher fest auf der Molok-Schulter ("slots"); seit es die
@@ -2079,6 +2211,13 @@ SETS = [
                 # kommt sie damit ebenso wenig.
                 "mount_class": "heavy", "category": "weapon",
                 "anchors": {"mount": (0, 0, 51), "muzzle": (29.3, 0, 50.9)},
+            },
+            {
+                "id": "eq_mortar", "code": "EQP-015", "type": "equipment",
+                "name": "Moerser", "tags": ["weapon", "heavy", "artillery"],
+                "shapes": EQ_MORTAR,
+                "mount_class": "heavy", "category": "weapon",
+                "anchors": {"mount": (0, 0, 51), "muzzle": (1.5, 13, 67.6)},
             },
         ],
     },

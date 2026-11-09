@@ -11,6 +11,18 @@
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
   -->
 <g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M45.39 46.33 L38.23 51.39 L43.95 55.44 L51.11 50.38 Z" fill="var(--c-plate)"/>
+  <path d="M43.95 59.74 L51.11 54.68 L51.11 50.38 L43.95 55.44 Z" fill="var(--c-plate-dark)"/>
+  <path d="M38.23 55.69 L43.95 59.74 L43.95 55.44 L38.23 51.39 Z" fill="var(--c-plate-dark)"/>
+  <path d="M44.91 55.44 L52.07 50.38 L52.07 38.93 L44.91 43.99 Z" fill="var(--c-plate-dark)"/>
+  <path d="M38.23 50.72 L44.91 55.44 L44.91 43.99 L38.23 39.26 Z" fill="var(--c-plate)"/>
+  <path d="M39.09 47.36 L42.9 50.06 L42.9 48.15 L39.09 45.45 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M39.66 45.05 L39.09 45.45 L42.9 48.15 L43.48 47.75 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M45.39 34.2 L38.23 39.26 L44.91 43.99 L52.07 38.93 Z" fill="var(--c-plate-light)"/>
+  <path d="M42.9 50.06 L43.48 49.66 L43.48 47.75 L42.9 48.15 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M38.7 39.21 L46.34 44.61 L46.34 36.01 L38.7 30.61 Z" fill="var(--c-metal)"/>
+  <path d="M46.34 44.61 L52.07 40.56 L52.07 31.96 L46.34 36.01 Z" fill="var(--c-plate-dark)"/>
+  <path d="M44.43 26.56 L38.7 30.61 L46.34 36.01 L52.07 31.96 Z" fill="var(--c-metal)"/>
   <path d="M65.53 42.91 L76.98 51.01 L76.98 49.58 L65.53 41.48 Z" fill="var(--c-plate-light)"/>
   <path d="M66.0 41.14 L65.53 41.48 L76.98 49.58 L77.46 49.24 Z" fill="var(--c-plate-light)"/>
   <path d="M60.66 45.72 L48.25 54.5 L67.34 68.0 L79.75 59.22 Z" fill="var(--c-metal)"/>

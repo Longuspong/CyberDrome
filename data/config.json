@@ -165,7 +165,7 @@
         "eq_deflector": {"def": 8},
         "eq_hammer": {"hp": 40},
         "eq_drone_pod": {"hp": 20},
-        "eq_rune_staff": {"shield": 20}
+        "eq_rune_staff": {"shield": 20}, "eq_bulwark_ram": {"hp": 40}, "eq_mortar": {"def": 4}, "eq_boomerang": {"spd": 2}
       }
     }
   },
@@ -188,8 +188,10 @@
       "time_limit        harte Grenze, danach unentschieden",
       "think_interval    wie oft ein DROME prueft, ob ein sicherer Abschuss in Reichweite ist",
       "retarget_after    so lange darf das Ziel unerreichbar sein, dann wird neu gewaehlt",
-      "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist"
+      "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist",
+      "start_jitter      Zufallsversatz der Takte zu Kampfbeginn (0..x s je DROME, je Seed fest)"
     ],
+    "start_jitter": 0.5,
     "tick": 0.05,
     "move_base": 0.7,
     "move_per_spd": 0.084,

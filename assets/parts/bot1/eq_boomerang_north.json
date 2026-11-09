@@ -1,0 +1,118 @@
+{
+  "id": "eq_boomerang",
+  "code": "EQP-013",
+  "set": "bot1",
+  "type": "equipment",
+  "name": "Klingenbumerang",
+  "direction": "north",
+  "svg": "eq_boomerang_north.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 30,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 46.36
+    },
+    {
+      "name": "tip",
+      "x": 89.77,
+      "y": 58.12
+    }
+  ],
+  "color_scheme": {
+    "plate": "#28304a",
+    "plate_light": "#47547e",
+    "plate_dark": "#161b29",
+    "metal": "#5b6785",
+    "accent": "#2de2e6",
+    "glow": "#5affff",
+    "visor": "#5affff",
+    "outline": "#080b13"
+  },
+  "tags": [
+    "weapon",
+    "melee",
+    "thrown"
+  ],
+  "mount_class": "light",
+  "category": "weapon",
+  "stats": {
+    "hp": 0,
+    "spd": 1,
+    "def": 0,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
+    "shield_pulse": 0,
+    "power": 0,
+    "module_slots": 0,
+    "hp_regen_pct": 0,
+    "lure_radius": 0,
+    "ai_role": "",
+    "passive": "",
+    "actions": [
+      {
+        "id": "act_boomerang",
+        "display_name": "Angriff",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 2,
+        "aoe_radius": 0,
+        "power": 6,
+        "push_tiles": 0,
+        "energy_fraction": 0.0,
+        "interval": 1.3,
+        "trigger": null,
+        "shield_mult": 1.0,
+        "shots": 2,
+        "gather": false,
+        "delay": 0.0,
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": "",
+        "damage_pct": 0.0,
+        "base_action": "",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.3
+      },
+      {
+        "id": "act_boomerang_whirl",
+        "display_name": "Wirbelwurf",
+        "category": "ability",
+        "targeting": "aoe_around_target",
+        "range_tiles": 2,
+        "aoe_radius": 1,
+        "power": 8,
+        "push_tiles": 0,
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 3,
+          "weapon": "act_boomerang"
+        },
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": "",
+        "damage_pct": 1.4,
+        "base_action": "act_boomerang",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.3
+      }
+    ]
+  }
+}

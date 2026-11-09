@@ -35,7 +35,8 @@ func _stock(set_id: String) -> DromeBuild:
 
 func test_library_loaded() -> void:
 	# 8. Nov. 2026: Orbit-Fokus, Hologramm-Boost und Koedersender sind Module.
-	t.equal(PartDB.parts.size(), 24, "24 Bauteile erwartet")
+	# 9. Nov. 2026: Bollwerk-Ramme, Moerser, Klingenbumerang dazu.
+	t.equal(PartDB.parts.size(), 27, "27 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausaetze erwartet")
 	for part in PartDB.parts.values():
 		t.equal(part.views.size(), 4, "%s braucht vier Ansichten" % part.id)

@@ -112,6 +112,15 @@ var armor_to_damage: float = 0.0
 ## Phasenbruch (BIOS): +Anteil Schaden gegen Gegner ohne Schild.
 var bonus_vs_unshielded: float = 0.0
 
+## Neue Waffen (9. Nov. 2026): Zusatzschaden als Anteil der EIGENEN maximalen
+## Integritaet, ohne Power (Bollwerk-Ramme) ...
+var hp_scaling: float = 0.0
+## ... naeher als so viele Felder trifft die Waffe nicht (Moerser) ...
+var min_range: int = 0
+## ... und +Anteil Schaden, wenn der Traeger gerade gelaufen ist
+## (Klingenbumerang, Unit.MOVING_WINDOW).
+var moving_bonus: float = 0.0
+
 ## Faehigkeitsschaden als Anteil des Waffenschadens (8. Nov. 2026). power ist
 ## daraus schon berechnet; der Anteil bleibt fuer die Anzeige.
 var damage_pct: float = 0.0
@@ -142,6 +151,9 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.support = str(meta.get("support", ""))
 	action.damage_pct = float(meta.get("damage_pct", 0.0))
 	action.base_action = StringName(str(meta.get("base_action", "")))
+	action.hp_scaling = float(meta.get("hp_scaling", 0.0))
+	action.min_range = int(meta.get("min_range", 0))
+	action.moving_bonus = float(meta.get("moving_bonus", 0.0))
 	var status_meta = meta.get("status")
 	if status_meta is Dictionary:
 		action.status = status_meta

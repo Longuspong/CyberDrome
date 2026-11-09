@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_boomerang" data-type="equipment" data-direction="west">
+  <title>Klingenbumerang (west)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung west.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M58.46 45.14 L61.14 47.03 L61.14 44.36 L58.46 42.47 Z" fill="var(--c-plate)"/>
+  <path d="M63.05 43.01 L60.37 41.12 L58.46 42.47 L61.14 44.36 Z" fill="var(--c-plate-light)"/>
+  <path d="M61.14 47.03 L63.05 45.68 L63.05 43.01 L61.14 44.36 Z" fill="var(--c-plate-dark)"/>
+  <path d="M62.09 43.91 L60.18 42.56 L50.83 49.17 L52.74 50.52 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M52.74 52.05 L62.09 45.43 L62.09 43.91 L52.74 50.52 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M62.28 43.2 L60.18 41.71 L50.64 48.46 L52.74 49.95 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M52.74 50.52 L62.28 43.77 L62.28 43.2 L52.74 49.95 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M50.83 50.7 L52.74 52.05 L52.74 50.52 L50.83 49.17 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M50.64 49.04 L52.74 50.52 L52.74 49.95 L50.64 48.46 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M59.42 55.25 L50.83 49.17 L48.54 50.79 L57.13 56.87 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M48.54 52.32 L57.13 58.39 L57.13 56.87 L48.54 50.79 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M59.61 54.54 L51.02 48.46 L48.34 50.35 L56.94 56.43 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M48.34 50.93 L56.94 57.0 L56.94 56.43 L48.34 50.35 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M57.13 58.39 L59.42 56.77 L59.42 55.25 L57.13 56.87 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M56.94 57.0 L59.61 55.11 L59.61 54.54 L56.94 56.43 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M58.75 62.25 L63.52 58.88 L63.52 55.06 L58.75 58.43 Z" fill="var(--c-plate-dark)"/>
+  <path d="M63.52 55.06 L60.66 53.03 L55.89 56.41 L58.75 58.43 Z" fill="var(--c-plate)"/>
+  <path d="M55.89 60.23 L58.75 62.25 L58.75 58.43 L55.89 56.41 Z" fill="var(--c-plate-dark)"/>
+  <path d="M56.84 63.21 L64.0 68.27 L64.0 56.81 L56.84 51.75 Z" fill="var(--c-plate)"/>
+  <path d="M64.0 68.27 L70.68 63.54 L70.68 52.09 L64.0 56.81 Z" fill="var(--c-plate-dark)"/>
+  <path d="M70.68 52.09 L63.52 47.03 L56.84 51.75 L64.0 56.81 Z" fill="var(--c-plate-light)"/>
+  <path d="M63.05 57.77 L70.68 52.37 L70.68 43.78 L63.05 49.18 Z" fill="var(--c-plate-dark)"/>
+  <path d="M57.32 53.72 L63.05 57.77 L63.05 49.18 L57.32 45.13 Z" fill="var(--c-metal)"/>
+  <path d="M70.68 43.78 L64.95 39.73 L57.32 45.13 L63.05 49.18 Z" fill="var(--c-metal)"/>
+</g>
+</svg>

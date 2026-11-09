@@ -286,6 +286,34 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
     ausloesen. Das misst den Gleichtakt, nicht die Staerke -- Abhilfe waere
     ein kleiner Zufallsversatz der Takte zu Kampfbeginn (offen, mit dem
     Spieler zu besprechen).
+  * **Zufallsversatz gebaut** (freigegeben 9. Nov.): `realtime.start_jitter`
+    0,5 s, Waffen und Zeit-Faehigkeiten je DROME (nicht Ereignisse wie das
+    Hologramm). Nachmessung: Nimbus Taktchip bleibt 91 % (lose 64,5),
+    Brandmarke 90,5 (74,5), Raufbold 84,5 (69), Stachelgitter 63, Strix
+    Gunslinger 86,5. Gegenprobe mit 3 s Versatz: Taktchip 75 / 67 -- es
+    entscheidet, wer den ERSTEN Vortex zuendet, nicht der Gleichtakt. Offen:
+    Zeit-Takt-Module nur fuer die Wiederholungen, der erste Ausloeser zur
+    Grundzeit (Vorschlag an den Spieler).
+
+### Neue Waffen und freie Arme (9. Nov. 2026)
+* **Bollwerk-Ramme** (`eq_bulwark_ram`, mittel, bot2): Rw 1, 10 alle 1,6 s;
+  jeder 3.: Rammstoss +8 % der eigenen max. Integritaet (`hp_scaling`, ohne
+  Power), stoesst 1 Feld zurueck. Bonus Integritaet 20 -> 40.
+* **Moerser** (`eq_mortar`, schwer, bot4, Schultermoerser): Rw 6, mind. 2
+  (`min_range`), Flaeche r1, 14 alle 2,8 s, 0,8 s Verzoegerung; jeder 3.:
+  Sperrfeuer r2 mit Rueckstoss. Bonus Ruestung 2 -> 4.
+* **Klingenbumerang** (`eq_boomerang`, leicht, bot1): Rw 2, 2 x 6 alle 1,3 s,
+  +30 % in Bewegung (`moving_bonus`, `Unit.MOVING_WINDOW` 1 s); jeder 3.:
+  Wirbelwurf r1. Bonus Speed 1 -> 2.
+* Formen in `tools/build_sample_parts.py` (EQ_BULWARK_RAM, EQ_MORTAR,
+  EQ_BOOMERANG), Silhouetten-Pruefung bestanden. Alle Werte Startwerte,
+  noch ungemessen.
+* **Freie Arme** fuer Vireo und Nimbus am rechten (nicht nutzbaren) Anker,
+  fest im Chassis (SCOUT_BODY, MAGE_BODY); der Nimbus haelt einen
+  Arkanfunken.
+* Hinweis: der Generator ist nicht byte-gleich mit dem Stand im Repo
+  (gleich tiefe Flaechen in anderer Reihenfolge, optisch gleich) -- nur die
+  geaenderten Teile einchecken.
 
 ### Laden (8. Nov. 2026) -- `RunState.roll_shop/buy`, `modules.json` -> `shop`
 * Im Zwischenstopp oben, unter den Credits: **2 Grundmodule** je Stopp

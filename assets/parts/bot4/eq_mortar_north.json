@@ -1,0 +1,118 @@
+{
+  "id": "eq_mortar",
+  "code": "EQP-015",
+  "set": "bot4",
+  "type": "equipment",
+  "name": "Moerser",
+  "direction": "north",
+  "svg": "eq_mortar_north.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 30,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 47.32
+    },
+    {
+      "name": "muzzle",
+      "x": 53.02,
+      "y": 21.68
+    }
+  ],
+  "color_scheme": {
+    "plate": "#1c3330",
+    "plate_light": "#335954",
+    "plate_dark": "#101d1b",
+    "metal": "#557d71",
+    "accent": "#6dff9f",
+    "glow": "#9affcc",
+    "visor": "#9affcc",
+    "outline": "#060f0d"
+  },
+  "tags": [
+    "weapon",
+    "heavy",
+    "artillery"
+  ],
+  "mount_class": "heavy",
+  "category": "weapon",
+  "stats": {
+    "hp": 0,
+    "spd": 0,
+    "def": 2,
+    "shield": 0,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
+    "shield_pulse": 0,
+    "power": 0,
+    "module_slots": 0,
+    "hp_regen_pct": 0,
+    "lure_radius": 0,
+    "ai_role": "",
+    "passive": "",
+    "actions": [
+      {
+        "id": "act_mortar",
+        "display_name": "Angriff",
+        "category": "attack",
+        "targeting": "aoe_around_target",
+        "range_tiles": 6,
+        "aoe_radius": 1,
+        "power": 14,
+        "push_tiles": 0,
+        "energy_fraction": 0.0,
+        "interval": 2.8,
+        "trigger": null,
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.8,
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": "",
+        "damage_pct": 0.0,
+        "base_action": "",
+        "hp_scaling": 0.0,
+        "min_range": 2,
+        "moving_bonus": 0.0
+      },
+      {
+        "id": "act_mortar_barrage",
+        "display_name": "Sperrfeuer",
+        "category": "ability",
+        "targeting": "aoe_around_target",
+        "range_tiles": 6,
+        "aoe_radius": 2,
+        "power": 14,
+        "push_tiles": 1,
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 3,
+          "weapon": "act_mortar"
+        },
+        "shield_mult": 1.0,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.8,
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": "",
+        "damage_pct": 1.0,
+        "base_action": "act_mortar",
+        "hp_scaling": 0.0,
+        "min_range": 2,
+        "moving_bonus": 0.0
+      }
+    ]
+  }
+}

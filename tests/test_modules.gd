@@ -839,3 +839,69 @@ func test_phase_break_hits_unshielded_foes_harder() -> void:
 	var hit := battle.resolver.apply_damage(bearer, bare, 20, attack)
 	t.ok(hit > plain, "ohne Schild mehr (%d gegen %d)" % [hit, plain])
 	battle.free()
+
+
+# ---------------------------------------------------------------------------
+# Neue Waffen (9. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+func test_the_new_weapons_exist_with_their_classes() -> void:
+	for entry in [[&"eq_bulwark_ram", "medium"], [&"eq_mortar", "heavy"], [&"eq_boomerang", "light"]]:
+		var part := PartDB.get_part(entry[0])
+		t.ok(part != null, "%s ist geladen" % entry[0])
+		if part != null:
+			t.equal(part.mount_class, entry[1], "%s ist %s" % [part.display_name, entry[1]])
+			t.equal(part.actions.size(), 2, "%s: Angriff und Faehigkeit" % part.display_name)
+
+
+func test_the_bulwark_ram_scales_with_integrity() -> void:
+	var ram := DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_bulwark_ram"})
+	var unit := Unit.create(ram, &"M", true)
+	unit.init_realtime(0.0)
+	var slam: ActionData = unit.mounts[0]["ability"]
+	t.ok(slam.hp_scaling > 0.0, "der Rammstoss skaliert mit der Integritaet")
+	t.equal(slam.push_tiles, 1, "und stoesst zurueck")
+	var plain := slam.copy()
+	plain.hp_scaling = 0.0
+	t.ok(unit.raw_damage(slam) >= unit.raw_damage(plain) + int(unit.stat("hp_max") * 0.08) - 1,
+		"+8 %% der max. Integritaet (%d gegen %d)" % [unit.raw_damage(slam), unit.raw_damage(plain)])
+	unit.free()
+
+
+func test_the_mortar_cannot_hit_close_targets() -> void:
+	var strix := DromeBuild.create("Strix", {"body": &"strix_body", "head": &"strix_head",
+		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_mortar"})
+	var battle := _battle([strix], [_molok(), _molok()],
+		[Vector2i(10, 10), Vector2i(10, 9), Vector2i(10, 6)])
+	var mortar: Unit = battle.units[0]
+	var attack: ActionData = mortar.mounts[0]["attack"]
+	t.equal(battle.resolver.target_blocker(mortar, battle.units[1].tile, attack), "Zu nah", "direkt daneben nicht")
+	t.equal(battle.resolver.target_blocker(mortar, battle.units[2].tile, attack), "", "auf Abstand schon")
+	t.ok(attack.aoe_radius >= 1 and attack.delay > 0.0, "Flaeche mit Verzoegerung")
+	battle.free()
+
+
+func test_the_boomerang_hits_harder_on_the_move() -> void:
+	var unit := Unit.create(_vireo(&"eq_boomerang"), &"V", true)
+	unit.init_realtime(0.0)
+	var attack: ActionData = unit.mounts[0]["attack"]
+	t.equal(attack.shots, 2, "hin und zurueck: zwei Treffer")
+	unit.still_time = 0.2
+	var moving := unit.raw_damage(attack)
+	unit.still_time = 5.0
+	var standing := unit.raw_damage(attack)
+	t.ok(moving > standing, "in Bewegung mehr (%d gegen %d)" % [moving, standing])
+	unit.free()
+
+
+func test_a_battle_with_the_new_weapons_runs_to_the_end() -> void:
+	var ram := DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_bulwark_ram"})
+	var strix := DromeBuild.create("Strix", {"body": &"strix_body", "head": &"strix_head",
+		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_mortar"})
+	var battle := BattleManager.new()
+	battle.setup(4242, [ram, strix, _vireo(&"eq_boomerang")], [_molok(), _vireo(), _vireo()])
+	var outcome := battle.run_to_end()
+	t.ok(outcome != BattleManager.Outcome.RUNNING, "der Kampf endet (%s)" % BattleManager.outcome_label(outcome))
+	battle.free()

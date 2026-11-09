@@ -670,6 +670,11 @@ func power_factor() -> float:
 	return 1.0 if points <= 0 else float(points) / 10.0
 
 
+## So lange nach dem letzten Feldwechsel gilt ein DROME als "in Bewegung"
+## (Klingenbumerang, ActionData.moving_bonus).
+const MOVING_WINDOW := 1.0
+
+
 ## Rohschaden einer Aktion: ihr Schaden mal Power. Davor kommt nichts, danach
 ## Schild und Ruestung (ActionResolver.resolve_damage).
 func raw_damage(action: ActionData) -> int:
@@ -678,9 +683,15 @@ func raw_damage(action: ActionData) -> int:
 	var raw := float(action.power) * power_factor()
 	if steady:
 		raw *= float(steady_rule().get("damage_mult", 1.2))
+	# Klingenbumerang: wer gerade gelaufen ist, wirft haerter.
+	if action.moving_bonus > 0.0 and still_time < MOVING_WINDOW:
+		raw *= 1.0 + action.moving_bonus
 	# Rammbock: ein Teil der eigenen Panzerung kommt dazu, ohne Power.
 	if action.armor_to_damage > 0.0:
 		raw += float(def()) * action.armor_to_damage
+	# Bollwerk-Ramme: ein Teil der eigenen maximalen Integritaet, ohne Power.
+	if action.hp_scaling > 0.0:
+		raw += float(stat("hp_max")) * action.hp_scaling
 	return maxi(1, int(round(raw)))
 
 

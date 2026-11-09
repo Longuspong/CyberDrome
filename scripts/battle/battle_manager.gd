@@ -111,6 +111,23 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 		for i in side.size():
 			side[i].init_realtime(_pulse * float(i) / float(maxi(1, side.size())))
 
+	# Zufallsversatz der Takte (9. Nov. 2026, vom Spieler freigegeben): jeder
+	# DROME laedt Waffen und Zeit-Faehigkeiten um 0..realtime.start_jitter s
+	# spaeter. Ohne ihn loesten gleiche DROMEs auf beiden Seiten exakt im
+	# selben Augenblick aus, und ein minimal schnellerer Takt entschied den
+	# Spiegelkampf. Deterministisch je Seed.
+	var jitter_rng := RandomNumberGenerator.new()
+	jitter_rng.seed = battle_seed ^ 0x7A1C3
+	var spread := float(Config.section("realtime").get("start_jitter", 0.0))
+	for unit in units:
+		var late := jitter_rng.randf() * spread
+		for mount in unit.mounts:
+			mount["ready"] = float(mount["ready"]) + late
+		# Nur Zeit-Faehigkeiten -- Ereignisse (Hologramm) bleiben sofort bereit.
+		for gadget in unit.gadgets:
+			if (gadget["ability"] as ActionData).trigger_kind == "time":
+				gadget["ready"] = float(gadget["ready"]) + late
+
 	resolver = ActionResolver.new(grid, units)
 	resolver.rng = self.rng
 	# self: setup() hat eine lokale "rng" fuer Karte und Gegner.
