@@ -22,7 +22,8 @@ const PATH := "res://data/modules.json"
 ## Fehlt die Datei, zeigt der Chip zwei Buchstaben (short).
 const ICON_DIR := "res://assets/modules/"
 
-const CLASS_LABEL := {"attack": "Angriff", "defense": "Abwehr", "tactic": "Taktik"}
+const CLASS_LABEL := {"attack": "Angriff", "defense": "Abwehr", "tactic": "Taktik",
+	"bios": "Matrix-BIOS"}
 const CONDITION_LABEL := {"ranged": "nur Fernwaffen", "melee": "nur Nahkampfwaffen"}
 
 ## Farbe je Klasse -- fuer die Modul-Kacheln (rot Angriff, blau Abwehr,
@@ -31,6 +32,7 @@ const CLASS_COLOR := {
 	"attack": Color(1.0, 0.45, 0.4),
 	"defense": Color(0.4, 0.7, 1.0),
 	"tactic": Color(1.0, 0.82, 0.35),
+	"bios": Color(0.78, 0.55, 1.0),
 }
 
 var id: StringName = &""
@@ -50,6 +52,18 @@ var from: Array = []
 ## Eigene Faehigkeit des Moduls (modules.json -> gadgets), leer = keine.
 var gadget: StringName = &"" 
 var bonus: Dictionary = {}
+
+## Matrix-BIOS (MODULE_KONZEPT.md 6). Ein BIOS-Gegenstand hat ``bios_kind``
+## "chassis" (fuer ``bios_chassis``) oder "recipe" (verwandelt ``bios_recipe``
+## in ``bios_result``); er steckt nie in einem Halter.
+var bios_kind: String = ""
+var bios_chassis: StringName = &""
+var bios_recipe: StringName = &""
+var bios_result: StringName = &""
+var bios_text: String = ""
+## Ergebnis eines Rezept-BIOS (Taktgeber ...): ``from`` ist dann das
+## Grundrezept, die Wirkung dessen Summe plus ``bonus``.
+var is_bios_result: bool = false
 
 static var _data: Dictionary = {}
 static var _modules: Dictionary = {}
@@ -88,6 +102,34 @@ static func _load() -> void:
 		module.bonus = meta.get("bonus", {})
 		module.effects = add_effects(module.effects, module.bonus)
 		_modules[module.id] = module
+	var items: Dictionary = _data.get("bios", {})
+	for key in items:
+		var meta: Dictionary = items[key]
+		var item := _from_meta(StringName(key), meta)
+		item.klass = "bios"
+		item.bios_kind = str(meta.get("kind", ""))
+		item.bios_chassis = StringName(str(meta.get("chassis", "")))
+		item.bios_recipe = StringName(str(meta.get("recipe", "")))
+		item.bios_result = StringName(str(meta.get("result", "")))
+		item.bios_text = str(meta.get("text", ""))
+		_modules[item.id] = item
+	var results: Dictionary = _data.get("bios_recipes", {})
+	for key in results:
+		var meta: Dictionary = results[key]
+		var origin: ModuleData = _modules.get(StringName(str(meta.get("base", ""))))
+		var module := _from_meta(StringName(key), meta)
+		module.is_bios_result = true
+		module.bonus = meta.get("bonus", {})
+		if origin != null:
+			module.from = [origin.id]
+			module.effects = add_effects(origin.effects, module.bonus)
+			if not meta.has("condition"):
+				module.condition = origin.condition
+			if module.gadget == &"":
+				module.gadget = origin.gadget
+		else:
+			module.effects = module.bonus.duplicate()
+		_modules[module.id] = module
 
 
 static func _from_meta(key: StringName, meta: Dictionary) -> ModuleData:
@@ -121,10 +163,11 @@ static func reload() -> void:
 ## Wirkungen, die nicht stapeln: es zaehlt der groesste Wert (Querschlaeger-
 ## Anteil, Dauer der Markierung, Spruenge, Gabelung, Umwandlung in Energie).
 const MAX_KEYS := ["ricochet_share", "mark", "chain_jumps", "ability_fork",
-	"kinetic_to_energy", "takt_count", "field_shot_every", "decoy",
-	"shield_break_burst"]
-## Wirkungen, bei denen der kleinste Wert zaehlt (Bollwerk: frueher laden).
-const MIN_KEYS := ["shield_delay"]
+	"kinetic_to_energy", "takt_count", "decoy", "shield_break_burst",
+	"retaliation_max", "bonus_vs_unshielded"]
+## Wirkungen, bei denen der kleinste Wert zaehlt (Bollwerk: frueher laden;
+## Revolverheld: Feldschuss haeufiger als beim Gunslinger).
+const MIN_KEYS := ["shield_delay", "field_shot_every", "knockback_every"]
 
 
 ## Zahlen addieren sich, Schalter (true) bleiben an. Ausnahmen: MAX_KEYS und
@@ -183,6 +226,26 @@ static func base_modules() -> Array:
 	return out
 
 
+## Die BIOS-Gegenstaende, in der Reihenfolge der Datei.
+static func bios_items() -> Array:
+	var out: Array = []
+	for key in data().get("bios", {}):
+		out.append(_modules[StringName(key)])
+	return out
+
+
+## Die Ergebnisse der Rezept-BIOS (Taktgeber ...).
+static func bios_results() -> Array:
+	var out: Array = []
+	for key in data().get("bios_recipes", {}):
+		out.append(_modules[StringName(key)])
+	return out
+
+
+func is_bios_item() -> bool:
+	return bios_kind != ""
+
+
 ## Die Rezept-Module, in der Reihenfolge der Datei.
 static func recipes() -> Array:
 	var out: Array = []
@@ -208,18 +271,28 @@ func is_recipe() -> bool:
 ## Wie viele Module ein Halter dieses DROME fasst: 3, Molok 2 (6g).
 ## Modulplaetze je Waffenhalter: ein Wert des DROME (Chassis, 8. Nov. 2026).
 ## Fehlt er (alte Daten), gilt modules.json -> slots.
-static func slots_for(build: DromeBuild) -> int:
+## Mit Chassis-BIOS einer mehr -- beim Molok nur im gewaehlten Halter
+## (``slot`` leer = der erste bzw. einzige Halter).
+static func slots_for(build: DromeBuild, slot: String = "") -> int:
+	var base := int(data().get("slots", 3))
 	if build != null:
 		var own := int(build.stats().get("module_slots", 0))
 		if own > 0:
-			return own
-	return int(data().get("slots", 3))
+			base = own
+		if build.chassis_bios:
+			var chosen := build.bios_slot
+			var asked := slot if slot != "" else (build.equip_slots()[0] if not build.equip_slots().is_empty() else "")
+			if chosen == "" or chosen == asked:
+				base += 1
+	return base
 
 
 static func sell_value(module: ModuleData) -> int:
 	if module == null:
 		return 0
 	var values: Dictionary = data().get("sell_value", {})
+	if module.is_bios_item() or module.is_bios_result:
+		return int(values.get("bios", 8))
 	return int(values.get("recipe" if module.is_recipe() else "base", 2))
 
 
@@ -275,6 +348,15 @@ func short_name() -> String:
 func effect_lines(which: Dictionary = {}) -> Array[String]:
 	var source := effects if which.is_empty() else which
 	var lines: Array[String] = []
+	if is_bios_item() and which.is_empty():
+		if bios_text != "":
+			lines.append(bios_text)
+		var result := get_module(bios_result)
+		var recipe := get_module(bios_recipe)
+		if result != null and recipe != null:
+			lines.append("macht aus %s den %s: %s" % [recipe.display_name, result.display_name,
+				", ".join(result.effect_lines(result.bonus))])
+		return lines
 	if which.is_empty() and gadget != &"":
 		var action := gadget_action(gadget)
 		if action != null:
@@ -352,6 +434,20 @@ static func effect_text(key: String, value) -> String:
 			return "Koeder lenkt die Nachbarn %s s ab" % _seconds(v)
 		"mark_on_hit_taken":
 			return "wer den Traeger trifft, wird markiert" if value else ""
+		"field_shot_marked":
+			return "Feldschuss bevorzugt markierte Gegner" if value else ""
+		"retaliation_max":
+			return "Vergeltung bis %dx" % int(v)
+		"berserk":
+			return "volle Vergeltung trifft dazu alle Gegner daneben" if value else ""
+		"mark_hunt":
+			return "stirbt ein Markierter, springt die Markierung weiter" if value else ""
+		"gravity":
+			return "der Sog zieht ein zweites Ziel, beide verlangsamt" if value else ""
+		"knockback_every":
+			return "jeder %d. Angriff stoesst das Ziel 1 Feld zurueck" % int(v)
+		"bonus_vs_unshielded":
+			return "+%d %% Schaden gegen Gegner ohne Schild" % _pct(v)
 		"takt_cut":
 			return "Faehigkeit %d Angriff frueher" % int(v)
 		"takt_time":
@@ -387,7 +483,9 @@ static func _seconds(value: float) -> String:
 
 ## Kurzer Klartext fuer Belohnung und Lager: "Angriff · nur Fernwaffen".
 func headline() -> String:
-	var parts: Array[String] = ["Modul", class_label()]
+	if is_bios_item():
+		return "Matrix-BIOS · %s" % ("Chassis" if bios_kind == "chassis" else "Rezept")
+	var parts: Array[String] = ["BIOS-Rezept" if is_bios_result else "Modul", class_label()]
 	if condition != "":
 		parts.append(CONDITION_LABEL.get(condition, condition))
 	return " · ".join(parts)

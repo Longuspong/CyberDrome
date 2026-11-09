@@ -93,7 +93,7 @@ func update(unit: Unit, dt: float) -> void:
 		if _fire(unit, mount, target):
 			# Modul Taktgeber: nach der Faehigkeit sofort wieder geladen.
 			mount["ready"] = 0.0 if mount.get("instant", false) \
-				else (mount["attack"] as ActionData).interval
+				else (mount["attack"] as ActionData).interval / unit.attack_speed_mult()
 			mount["instant"] = false
 			fired = true
 			if battle.outcome != BattleManager.Outcome.RUNNING:
@@ -324,8 +324,14 @@ func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) 
 	if payback > 0.0 and unit.retaliation_stacks > 0 and target.is_alive():
 		var extra_dmg := maxi(1, int(round(float(raw) * payback * unit.retaliation_stacks)))
 		EventBus.log_line("%s: Vergeltung (x%d)." % [unit.display_name, unit.retaliation_stacks])
+		# Berserker (BIOS): volle Ladung trifft dazu alle Gegner daneben.
+		var full := unit.retaliation_stacks >= int(unit.stats.get("retaliation_max", 3))
 		unit.retaliation_stacks = 0
 		battle.resolver.apply_damage(unit, target, extra_dmg, attack)
+		if full and bool(fx.get("berserk", false)):
+			for foe in battle.enemies_of(unit):
+				if foe != target and foe.is_alive() and Grid.distance(unit.tile, foe.tile) <= 1:
+					battle.resolver.apply_damage(unit, foe, extra_dmg, attack)
 	# Rundumschlag: alle anderen Gegner direkt neben dem Traeger.
 	var cleave := float(fx.get("cleave", 0.0))
 	if cleave > 0.0:
@@ -334,9 +340,13 @@ func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) 
 			if foe == target or not foe.is_alive() or Grid.distance(unit.tile, foe.tile) > 1:
 				continue
 			battle.resolver.apply_damage(unit, foe, side, attack)
+	# Abrissbirne (BIOS): jeder N-te Angriff stoesst zurueck.
+	var knock := int(fx.get("knockback_every", 0))
+	if knock > 0 and int(mount["shots"]) % knock == 0 and target.is_alive():
+		battle.resolver._shove(unit, target, 1)
 	var every := int(fx.get("field_shot_every", 0))
 	if every > 0 and int(mount["shots"]) % every == 0:
-		var extra := _field_shot_target(unit, target)
+		var extra := _field_shot_target(unit, target, bool(fx.get("field_shot_marked", false)))
 		if extra != null:
 			EventBus.log_line("%s trifft quer uebers Feld %s." % [unit.display_name, extra.display_name])
 			battle.resolver.apply_damage(unit, extra, raw, attack)
@@ -361,9 +371,18 @@ func _chain_next(unit: Unit, last: Unit) -> Unit:
 
 ## Gunslinger: ein ANDERER Gegner irgendwo auf dem Feld -- der mit dem
 ## geringsten Anteil Integritaet. Ist nur das Ziel uebrig, dieses.
-func _field_shot_target(unit: Unit, target: Unit) -> Unit:
+func _field_shot_target(unit: Unit, target: Unit, marked_first: bool = false) -> Unit:
 	var best: Unit = null
 	var best_share := 2.0
+	# Revolverheld (BIOS): markierte Gegner zuerst.
+	if marked_first:
+		for foe in battle.enemies_of(unit):
+			if foe.is_alive() and foe != target and ActionResolver.is_marked(foe) \
+					and foe.hp_fraction() < best_share:
+				best_share = foe.hp_fraction()
+				best = foe
+		if best != null:
+			return best
 	for foe in battle.enemies_of(unit):
 		if not foe.is_alive() or foe == target:
 			continue
@@ -431,7 +450,14 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 		foe.apply_status(&"taunt", ability.taunt_seconds, {"taunt_by": unit.unit_id})
 		EventBus.log_line("%s lockt %s an." % [unit.display_name, foe.display_name])
 	if foe != null and mark_seconds > 0.0:
-		battle.resolver.mark(foe, mark_seconds)
+		battle.resolver.mark(foe, mark_seconds * ActionResolver.mark_mult(unit))
+	# Gravitation (BIOS): ein zweites Ziel heran, beide verlangsamt.
+	if bool(fx.get("gravity", false)) and ability.push_tiles < 0:
+		_gravity(unit, ability, foe)
+	# Nimbus-BIOS: jede Faehigkeit gibt dem Traeger Schild.
+	if unit.passive() == "echo" and unit.has_bios():
+		var gain := int(round(ModuleData.rule("bios_ability_shield", 6) * unit.power_factor()))
+		unit.shield = mini(ActionResolver.shield_cap(unit), unit.shield + gain)
 	var fork := float(fx.get("ability_fork", 0.0))
 	if fork > 0.0:
 		_fork(unit, ability, aim, fork)
@@ -442,6 +468,25 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 		for ally in battle.allies_of(unit):
 			if ally.is_alive() and Grid.distance(unit.tile, ally.tile) <= reach:
 				ally.apply_status(&"guard_pulse", seconds, {"def": aura})
+
+
+func _gravity(unit: Unit, ability: ActionData, first: Unit) -> void:
+	var slow := {"move_mult": ModuleData.rule("gravity_move_mult", 0.6)}
+	var seconds := ModuleData.rule("gravity_slow", 1.5)
+	var second: Unit = null
+	var best_gap := 1 << 30
+	for foe in battle.enemies_of(unit):
+		if foe == first or not foe.is_alive():
+			continue
+		var gap := Grid.distance(unit.tile, foe.tile)
+		if gap <= ability.range_tiles and gap < best_gap:
+			best_gap = gap
+			second = foe
+	if second != null:
+		battle.resolver._shove(unit, second, ability.push_tiles)
+	for foe in [first, second]:
+		if foe != null and foe.is_alive():
+			foe.apply_status(&"slow", seconds, slow)
 
 
 func _nearest_enemy(unit: Unit, reach: int) -> Unit:
@@ -571,6 +616,13 @@ func _echo(unit: Unit, ability: ActionData, aim: Dictionary) -> void:
 	var target: Unit = aim.get("target")
 	if target == null or not target.is_alive():
 		again = _aim(unit, ability, null)
+	elif unit.has_bios() and ability.support == "":
+		# Nimbus-BIOS: das Echo darf ein anderes Ziel waehlen.
+		for foe in battle.enemies_of(unit):
+			if foe != target and foe.is_alive() \
+					and battle.resolver.target_blocker(unit, foe.tile, ability) == "":
+				again = {"tile": foe.tile, "target": foe}
+				break
 	if not again.is_empty():
 		_execute(unit, again["tile"], ability, again["target"])
 

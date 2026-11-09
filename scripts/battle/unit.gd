@@ -85,8 +85,10 @@ var calm_time: float = 0.0
 var still_time: float = 0.0
 var steady: bool = false
 var _still_tile: Vector2i = Vector2i(-9999, -9999)
-## Modul Raufbold (Vergeltung): eingesteckte Nahkampftreffer, die den
-## naechsten Angriff aufladen (max. 3).
+## Strix-BIOS: der eine erlaubte Feldwechsel ist verbraucht.
+var _steady_grace_used: bool = false
+## Modul Raufbold (Vergeltung): eingesteckte Treffer, die den naechsten
+## Angriff aufladen (max. 3, Berserker 5).
 var retaliation_stacks: int = 0
 ## Modul Entladung: Sekunden bis zur naechsten Entladung (tick_statuses).
 var burst_cooldown: float = 0.0
@@ -356,6 +358,7 @@ func init_realtime(pulse_offset: float) -> void:
 	_recharge_carry = 0.0
 	still_time = 0.0
 	steady = false
+	_steady_grace_used = false
 	_still_tile = Vector2i(-9999, -9999)
 	if build == null:
 		return
@@ -479,11 +482,19 @@ func echo_slower() -> float:
 func track_stillness(dt: float) -> void:
 	if tile != _still_tile:
 		_still_tile = tile
-		still_time = 0.0
+		# Strix-BIOS: ein Feldwechsel bricht das Anlegen nicht.
+		if steady and has_bios() and not _steady_grace_used:
+			_steady_grace_used = true
+		else:
+			still_time = 0.0
+			_steady_grace_used = false
 	else:
 		still_time += dt
 	var rule := steady_rule()
-	var now := passive() == "steady" and still_time >= float(rule.get("seconds", 4.0))
+	var needed := float(rule.get("seconds", 4.0))
+	if has_bios():
+		needed = minf(needed, ModuleData.rule("bios_steady_seconds", 2.5))
+	var now := passive() == "steady" and still_time >= needed
 	if now == steady:
 		return
 	steady = now
@@ -522,7 +533,23 @@ func lure_radius() -> int:
 	if passive() == "presence":
 		var p := Config.section("passives").get("presence", {}) as Dictionary
 		radius = maxi(radius, int(p.get("lure_radius", 2)))
+		# Molok-BIOS: lockt weiter.
+		if has_bios():
+			radius += int(ModuleData.rule("bios_lure_bonus", 1))
 	return radius
+
+
+## Traegt dieser DROME ein Chassis-BIOS (nur im Lauf)?
+func has_bios() -> bool:
+	return build != null and build.chassis_bios
+
+
+## Faktor aufs Angriffstempo aus Statuseffekten (Vireo-BIOS: Sprint).
+func attack_speed_mult() -> float:
+	var mult := 1.0
+	for status in statuses.values():
+		mult *= float(status.get("attack_speed_mult", 1.0))
+	return maxf(0.1, mult)
 
 
 ## Wie die KI diesen DROME fuehrt -- aus dem Chassis. Leer = nach Waffe.

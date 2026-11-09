@@ -659,3 +659,183 @@ func test_late_shops_sometimes_offer_a_recipe() -> void:
 		for offer in run.roll_shop():
 			t.ok(not ModuleData.get_module(offer["module_id"]).is_recipe(), "frueh nur Grundmodule")
 	t.ok(found, "ab Runde 5 gelegentlich ein fertiges Rezept")
+
+
+# ---------------------------------------------------------------------------
+# Matrix-BIOS (MODULE_KONZEPT.md 6)
+# ---------------------------------------------------------------------------
+
+func test_the_bios_catalog() -> void:
+	var chassis := ModuleData.bios_items().filter(func(i): return i.bios_kind == "chassis")
+	var recipe := ModuleData.bios_items().filter(func(i): return i.bios_kind == "recipe")
+	t.equal(chassis.size(), 4, "ein Chassis-BIOS je DROME")
+	t.ok(recipe.size() >= 6, "6-8 Rezept-BIOS fuer den Anfang (%d)" % recipe.size())
+	for item in recipe:
+		var base := ModuleData.get_module(item.bios_recipe)
+		var result := ModuleData.get_module(item.bios_result)
+		t.ok(base != null and base.is_recipe(), "%s: Grundrezept existiert" % item.display_name)
+		t.ok(result != null and result.is_bios_result, "%s: Ergebnis existiert" % item.display_name)
+		if base == null or result == null:
+			continue
+		for key in base.effects:
+			t.ok(result.effects.has(key), "%s behaelt %s" % [result.display_name, key])
+		t.ok(not result.bonus.is_empty(), "%s bringt eine eigene Regel" % result.display_name)
+	var revolver := ModuleData.get_module(&"mod_revolver")
+	t.equal(int(revolver.effects["field_shot_every"]), 3, "Revolverheld: jeder 3. statt 5.")
+
+
+func _elite_win(seed_value: int, last: bool = false) -> RunState:
+	var run := RunState.start(seed_value)
+	if last:
+		run.round = RunState.rounds_total()
+	run.choose_tier(RunState.Tier.ELITE)
+	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_hammer"])
+	return run
+
+
+func test_elite_wins_offer_a_bios_but_never_after_the_last_fight() -> void:
+	var seen := false
+	for seed_value in 30:
+		var run := _elite_win(6000 + seed_value)
+		var kinds: Array = run.last_loot.map(func(i): return i["kind"])
+		t.ok(not kinds.has("part"), "Elite gibt kein Teil mehr, solange ein Kampf folgt")
+		if kinds.has("bios"):
+			seen = true
+			t.equal(run.bios_offers.size(), 3, "drei zur Wahl")
+		var final := _elite_win(6000 + seed_value, true)
+		t.ok(not final.last_loot.map(func(i): return i["kind"]).has("bios"), "nach dem letzten Kampf kein BIOS")
+		t.ok(final.bios_offers.is_empty(), "und keine Wahl")
+	t.ok(seen, "Elite bringt ein BIOS zur Wahl")
+
+
+func test_bios_offers_are_always_usable() -> void:
+	var run := RunState.start(61, RunState.standard_squad().filter(
+		func(b): return b.body().id in [&"scout_body", &"jugg_body"]))
+	run.phase = RunState.Phase.STOP
+	for seed_value in 20:
+		run.run_seed = seed_value
+		var offers := run.roll_bios_offers()
+		t.ok(not offers.has(&"bios_nimbus") and not offers.has(&"bios_strix"),
+			"keins fuer DROMEs ausserhalb des Squads")
+		var now := offers.filter(func(id): return id in [&"bios_vireo", &"bios_molok"])
+		t.ok(not now.is_empty(), "mindestens eins sofort nutzbar")
+		for id in offers:
+			var item := ModuleData.get_module(id)
+			t.ok(item.bios_kind == "chassis", "ohne Module nur Chassis-BIOS (%s)" % id)
+	run.storage.append(&"mod_rapid_fire")
+	run.run_seed = 3
+	var with_part := run.roll_bios_offers()
+	t.ok(with_part.size() == 3, "eine Zutat fuellt als 'angefangen' auf")
+
+
+func test_choosing_and_installing_a_chassis_bios() -> void:
+	var run := _stop_run()
+	run.bios_offers = [&"bios_molok", &"bios_vireo", &"bios_strix"]
+	t.ok(run.choose_bios(0), "gewaehlt")
+	t.equal(run.storage, [&"bios_molok"], "liegt im Lager")
+	t.ok(run.bios_offers.is_empty(), "die anderen verfallen")
+	var drome := -1
+	for i in run.squad.size():
+		if run.squad[i].body().id == &"jugg_body":
+			drome = i
+	var build: DromeBuild = run.squad[drome]
+	var right: String = build.equip_slots()[1]
+	var left: String = build.equip_slots()[0]
+	t.ok(not run.install_module(0, drome, left), "ein BIOS steckt nicht wie ein Modul")
+	t.ok(not run.install_bios(0, 0 if drome != 0 else 1, left), "nicht in einen anderen DROME")
+	t.ok(run.install_bios(0, drome, right), "eingebaut")
+	t.ok(build.chassis_bios, "der Molok traegt es")
+	t.equal(ModuleData.slots_for(build, right), 3, "+1 Modulplatz im gewaehlten Halter")
+	t.equal(ModuleData.slots_for(build, left), 2, "der andere bleibt")
+	t.ok(build.clone().chassis_bios, "die Kopie fuer den Kampf traegt es mit")
+	run.storage.append(&"bios_molok")
+	t.ok(not run.install_bios(0, drome, left), "nur ein Chassis-BIOS je DROME")
+
+
+func test_a_recipe_bios_fuses_from_recipe_or_ingredients() -> void:
+	var run := _stop_run()
+	run.storage.append_array([&"bios_metronome", &"mod_takt_chip"])
+	var entry: Array = run.recipe_book().filter(func(e): return e["module"].id == &"mod_metronome")
+	t.equal(entry.size(), 1, "der Taktgeber steht im Rezeptbuch")
+	t.ok(entry[0]["ready"], "Rezept + BIOS reicht")
+	t.ok(run.craft(&"mod_metronome"), "verschmolzen")
+	t.equal(run.storage, [&"mod_metronome"], "BIOS und Rezept sind weg")
+	var raw := _stop_run()
+	raw.storage.append_array([&"mod_rapid_fire", &"bios_metronome", &"mod_amplifier"])
+	t.ok(raw.craft(&"mod_metronome"), "Zutat + Zutat + BIOS geht auch")
+	t.equal(raw.storage, [&"mod_metronome"], "alles verbraucht")
+	var none := _stop_run()
+	none.storage.append(&"mod_takt_chip")
+	t.ok(none.recipe_book().filter(func(e): return e["module"].id == &"mod_metronome").is_empty(),
+		"ohne BIOS kein Eintrag")
+
+
+func test_only_one_bios_recipe_per_drome() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.storage.append_array([&"mod_metronome", &"mod_phase"])
+	t.ok(run.install_module(0, 0, slot), "erstes BIOS-Rezept")
+	t.ok(not run.install_module(0, 0, slot), "ein zweites nicht")
+	t.ok(run.install_module(0, 1, run.squad[1].equip_slots()[0]), "in einem anderen DROME schon")
+
+
+func test_a_held_recipe_bios_pulls_its_ingredients_in_the_shop() -> void:
+	var run := _stop_run()
+	run.storage.append(&"bios_revolver")
+	t.equal(run._bios_missing(), [&"mod_rapid_fire", &"mod_twin_barrel"], "Gunslinger fehlt ganz")
+
+
+func test_chassis_bios_strengthen_the_passives() -> void:
+	# Vireo: Sprint mit Angriffstempo.
+	var vireo := _vireo()
+	vireo.chassis_bios = true
+	var battle := _battle([vireo], [_molok()], [Vector2i(10, 12), Vector2i(10, 10)])
+	var v: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	battle.resolver.apply_damage(v, foe, 10, v.mounts[0]["attack"])
+	t.ok(v.attack_speed_mult() > 1.1, "Sprint macht auch schneller im Angriff")
+	battle.free()
+	# Molok: lockt weiter.
+	var molok := _molok()
+	molok.chassis_bios = true
+	var m := Unit.create(molok, &"M", true)
+	var plain := Unit.create(_molok(), &"M", true)
+	t.equal(m.lure_radius(), plain.lure_radius() + 1, "Praesenz lockt 1 Feld weiter")
+	m.free()
+	plain.free()
+
+
+func test_the_strix_bios_keeps_aiming_through_one_step() -> void:
+	var strix := DromeBuild.create("Strix", {"body": &"strix_body", "head": &"strix_head",
+		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_rail_lance"})
+	strix.chassis_bios = true
+	var unit := Unit.create(strix, &"S", true)
+	unit.init_realtime(0.0)
+	unit.place_at(Vector2i(5, 5))
+	unit.track_stillness(0.0)
+	unit.track_stillness(2.6)
+	t.ok(unit.steady, "angelegt nach 2,5 s")
+	unit.place_at(Vector2i(5, 6))
+	unit.track_stillness(0.05)
+	t.ok(unit.steady, "ein Feldwechsel bricht es nicht")
+	unit.place_at(Vector2i(5, 7))
+	unit.track_stillness(0.05)
+	t.ok(not unit.steady, "der zweite schon")
+	unit.free()
+
+
+func test_phase_break_hits_unshielded_foes_harder() -> void:
+	var phase := _with(_vireo(), "equip_left", [&"mod_phase"])
+	# Weit auseinander: die Praesenz des einen Molok faengt sonst mit ab.
+	var battle := _battle([phase], [_molok(), _molok()],
+		[Vector2i(10, 12), Vector2i(2, 2), Vector2i(12, 10)])
+	var bearer: Unit = battle.units[0]
+	var shielded: Unit = battle.units[1]
+	var bare: Unit = battle.units[2]
+	bare.shield = 0
+	var attack: ActionData = bearer.mounts[0]["attack"]
+	shielded.shield = 0
+	var plain := battle.resolver.resolve_damage(shielded, 20, 0.0)["hp"] as int
+	var hit := battle.resolver.apply_damage(bearer, bare, 20, attack)
+	t.ok(hit > plain, "ohne Schild mehr (%d gegen %d)" % [hit, plain])
+	battle.free()

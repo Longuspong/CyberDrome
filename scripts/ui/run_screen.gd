@@ -273,6 +273,8 @@ func _show_stop(run: RunState) -> void:
 	_side.add_child(_label(_credit_line(run), 18, COLOR_WARN))
 	if not run.last_loot.is_empty():
 		_side.add_child(_loot_section(run))
+	if not run.bios_offers.is_empty():
+		_side.add_child(_bios_section(run))
 	if not run.last_growth.is_empty():
 		_side.add_child(_growth_section(run))
 	_side.add_child(_shop_section(run))
@@ -301,13 +303,18 @@ func _show_stop(run: RunState) -> void:
 	_side.add_child(_label("Dein Lauf-Squad  ·  Staerke %d"
 		% int(DromeBuild.squad_power(run.squad)), 18, COLOR_HEADING))
 	var module_mode := run.is_module_at(_selected_storage)
-	if module_mode:
+	if run.is_bios_at(_selected_storage):
+		_side.add_child(_label("Chassis-BIOS: tippe einen Halter des passenden DROME an. Rezept-BIOS: im Rezeptbuch verschmelzen.",
+			16, COLOR_MUTED))
+	elif module_mode:
 		_side.add_child(_label("Tippe einen Halter an, um das Modul einzusetzen.", 16, COLOR_MUTED))
 	else:
 		_side.add_child(_label("Modul im Halter antippen: zurueck ins Lager. Die Waffen bleiben im Lauf, wie sie sind.",
 			16, COLOR_MUTED))
 	var options: Array = []
-	if module_mode:
+	if run.is_bios_at(_selected_storage):
+		options = run.bios_options(_selected_storage)
+	elif module_mode:
 		options = run.module_options(_selected_storage)
 	for drome in run.squad.size():
 		_side.add_child(_stop_drome_card(run, drome, options))
@@ -336,6 +343,41 @@ func _loot_section(run: RunState) -> Control:
 		box.add_child(_label("%s%s%s" % ["[Selten] " if item.get("rare", false) else "",
 			item["title"], where], 18, COLOR_WARN if item.get("rare", false) else Color.WHITE))
 		box.add_child(_label(str(item.get("text", "")), 16, COLOR_MUTED))
+	return panel
+
+
+## Die BIOS-Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): eines von
+## drei kommt ins Lager, die anderen verfallen beim Weitergehen.
+func _bios_section(run: RunState) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style(true))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	panel.add_child(box)
+	box.add_child(_label("Matrix-BIOS -- waehle eines", 18, ModuleData.CLASS_COLOR["bios"]))
+	box.add_child(_label("Die anderen verfallen, wenn du weitergehst.", 14, COLOR_MUTED))
+	var blocker := run.bios_blocker()
+	for index in run.bios_offers.size():
+		var item := ModuleData.get_module(run.bios_offers[index])
+		if item == null:
+			continue
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 10)
+		box.add_child(head)
+		head.add_child(ModuleChip.new(item, 44.0))
+		var title := VBoxContainer.new()
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		head.add_child(title)
+		title.add_child(_label(item.display_name, 18))
+		title.add_child(_label(item.headline(), 14, item.color()))
+		for line in item.effect_lines():
+			box.add_child(_flow_label(line, 16))
+		var take := UiKit.button("Nehmen" if blocker == "" else blocker)
+		take.disabled = blocker != ""
+		take.pressed.connect(func():
+			run.choose_bios(index)
+			_refresh())
+		box.add_child(take)
 	return panel
 
 
@@ -541,7 +583,8 @@ func _module_card(run: RunState, index: int) -> Control:
 	title.add_child(_label(module.display_name, 20))
 	title.add_child(_label(module.headline(), 16, module.color()))
 	_add_module_lines(box, module)
-	box.add_child(_label("Module gibt es nur in diesem Lauf.", 16, COLOR_MUTED))
+	box.add_child(_label("BIOS gibt es nur in diesem Lauf." if module.is_bios_item()
+		else "Module gibt es nur in diesem Lauf.", 16, COLOR_MUTED))
 	var sell := UiKit.button("Verkaufen  +%d" % ModuleData.sell_value(module))
 	sell.pressed.connect(func():
 		run.sell(index)
@@ -633,13 +676,14 @@ func _recipe_section(run: RunState) -> Control:
 				_selected_storage = -1
 			_refresh())
 		row.add_child(make)
-		var aimed := run.target_recipe == module.id
-		var aim := UiKit.button("Ziel aufheben" if aimed else "Als Ziel")
-		aim.tooltip_text = "Der Laden bietet die fehlenden Zutaten oefter an"
-		aim.pressed.connect(func():
-			run.set_target_recipe(module.id)
-			_refresh())
-		row.add_child(aim)
+		if not module.is_bios_result:
+			var aimed := run.target_recipe == module.id
+			var aim := UiKit.button("Ziel aufheben" if aimed else "Als Ziel")
+			aim.tooltip_text = "Der Laden bietet die fehlenden Zutaten oefter an"
+			aim.pressed.connect(func():
+				run.set_target_recipe(module.id)
+				_refresh())
+			row.add_child(aim)
 		box.add_child(panel)
 	return box
 
@@ -661,7 +705,8 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 	var title := VBoxContainer.new()
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
-	title.add_child(_label("%s  ·  %d" % [build.display_name, int(build.power_score())], 18))
+	title.add_child(_label("%s  ·  %d%s" % [build.display_name, int(build.power_score()),
+		"  ·  BIOS" if build.chassis_bios else ""], 18))
 	if build.equipment().is_empty():
 		title.add_child(_label("ohne Waffe -- kaempft nicht mit", 16, COLOR_BAD))
 
@@ -683,13 +728,16 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 				if int(entry["drome"]) == drome and entry["slot"] == slot:
 					choice = entry
 			var allowed := bool(choice.get("allowed", false))
-			button.text = "%s\n%s" % [line, ("Modul hier einsetzen -- %s" % choice.get("detail", ""))
-				if allowed else "geht nicht: %s" % choice.get("detail", "kein Platz")]
 			button.disabled = not allowed
 			if allowed:
 				button.add_theme_stylebox_override("normal", UiKit.card_style(true))
+			var bios := run.is_bios_at(_selected_storage)
+			button.text = "%s\n%s" % [line, ("BIOS hier einbauen -- %s" if bios else "Modul hier einsetzen -- %s")
+				% choice.get("detail", "") if allowed else "geht nicht: %s" % choice.get("detail", "kein Platz")]
 			button.pressed.connect(func():
-				if run.install_module(_selected_storage, drome, slot):
+				var done := run.install_bios(_selected_storage, drome, slot) if bios \
+					else run.install_module(_selected_storage, drome, slot)
+				if done:
 					_selected_storage = -1
 				_refresh())
 		else:
@@ -708,7 +756,7 @@ func _module_row(run: RunState, drome: int, slot: String) -> Control:
 	row.add_theme_constant_override("h_separation", 6)
 	row.add_theme_constant_override("v_separation", 6)
 	var installed := build.modules_in(slot)
-	var room := ModuleData.slots_for(build)
+	var room := ModuleData.slots_for(build, slot)
 	row.add_child(_flow_label("Module %d/%d" % [installed.size(), room], 16, COLOR_MUTED))
 	var weapon := build.part_in(slot)
 	for position in installed.size():

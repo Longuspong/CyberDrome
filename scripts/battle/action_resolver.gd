@@ -41,11 +41,17 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	# Zielsucher: Angriffe gegen markierte Gegner treffen haerter.
 	if action != null and action.bonus_vs_marked > 0.0 and is_marked(target):
 		raw = int(round(float(raw) * (1.0 + action.bonus_vs_marked)))
+	# Phasenbruch: gegen Gegner ohne Schild.
+	if action != null and action.bonus_vs_unshielded > 0.0 and target.shield <= 0:
+		raw = int(round(float(raw) * (1.0 + action.bonus_vs_unshielded)))
 	# Praesenz (Molok): ein Teil des Treffers geht auf den Beschuetzer.
 	if guarded and raw > 0:
 		var guard := _guard_for(target)
 		if guard != null:
 			var share := float((Config.section("passives").get("presence", {}) as Dictionary).get("guard_share", 0.3))
+			# Molok-BIOS: faengt mehr ab.
+			if guard.has_bios():
+				share = maxf(share, ModuleData.rule("bios_guard_share", 0.4))
 			var taken := int(round(float(raw) * share))
 			if taken > 0:
 				raw -= taken
@@ -94,6 +100,7 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	if shield_before > 0 and target.shield <= 0 and target.hp > 0:
 		_shield_broken(target)
 	if target.hp <= 0:
+		_hunt(source, target)
 		if source != null and source != target and source.is_player != target.is_player:
 			source.kills += 1
 			if action != null:
@@ -119,10 +126,11 @@ func _thorns(source: Unit, target: Unit, action: ActionData) -> void:
 		return
 	var melee := Grid.distance(source.tile, target.tile) <= 1
 	if float(target.stats.get("retaliation", 0.0)) > 0.0:
-		target.retaliation_stacks = mini(3, target.retaliation_stacks + (2 if melee else 1))
+		target.retaliation_stacks = mini(int(target.stats.get("retaliation_max", 3)),
+			target.retaliation_stacks + (2 if melee else 1))
 	var brand := float(target.stats.get("mark_on_hit_taken", 0.0))
 	if brand > 0.0:
-		mark(source, brand)
+		mark(source, brand * mark_mult(target))
 	var spikes := int(target.stats.get("thorns", 0))
 	if melee:
 		spikes += int(target.stats.get("thorns_melee", 0))
@@ -150,8 +158,41 @@ func mark(foe: Unit, seconds: float) -> void:
 		{"damage_taken_mult": 1.0 + ModuleData.rule("mark_damage_taken", 0.1)})
 
 
+## Strix-BIOS: Markierungen des Strix halten laenger.
+static func mark_mult(by: Unit) -> float:
+	if by != null and by.passive() == "steady" and by.has_bios():
+		return ModuleData.rule("bios_mark_mult", 2.0)
+	return 1.0
+
+
 static func is_marked(unit: Unit) -> bool:
 	return unit != null and unit.statuses.has(&"mark")
+
+
+## Treibjagd (BIOS): stirbt ein markierter Gegner, springt die Markierung auf
+## den naechsten seiner Seite -- wenn irgendein Gegner von ihm Treibjagd traegt.
+func _hunt(_source: Unit, fallen: Unit) -> void:
+	if not is_marked(fallen):
+		return
+	var hunter := false
+	for unit in units:
+		if unit.is_alive() and unit.is_player != fallen.is_player and bool(unit.stats.get("mark_hunt", false)):
+			hunter = true
+	if not hunter:
+		return
+	var left := float((fallen.statuses[&"mark"] as Dictionary).get("seconds_left", 0.0))
+	var best: Unit = null
+	var best_gap := 1 << 30
+	for unit in units:
+		if unit == fallen or not unit.is_alive() or unit.is_player != fallen.is_player:
+			continue
+		var gap := Grid.distance(unit.tile, fallen.tile)
+		if gap < best_gap:
+			best = unit
+			best_gap = gap
+	if best != null:
+		mark(best, maxf(left, 2.0))
+		EventBus.log_line("Treibjagd: %s ist markiert." % best.display_name)
 
 
 ## Modul Entladung: bricht der Schild des Traegers, nehmen alle Gegner in
@@ -203,8 +244,11 @@ func _on_hit(source: Unit, dealt: int) -> void:
 		return
 	if source.passive() == "hit_rush":
 		var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
-		source.apply_status(&"rush", float(rush.get("seconds", 2.0)),
-			{"move_mult": float(rush.get("move_mult", 1.4))})
+		var mods := {"move_mult": float(rush.get("move_mult", 1.4))}
+		# Vireo-BIOS: Sprint macht auch schneller im Angriff.
+		if source.has_bios():
+			mods["attack_speed_mult"] = 1.0 + ModuleData.rule("bios_rush_attack_speed", 0.2)
+		source.apply_status(&"rush", float(rush.get("seconds", 2.0)), mods)
 
 
 ## Das Zwei-Verteidigungs-System (§11) als reine Rechnung -- was von ``raw`` auf

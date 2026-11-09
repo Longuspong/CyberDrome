@@ -101,6 +101,10 @@ var storage: Array = []
 ## Lagerplatz und gehen am Ende nach Hause.
 var bag: Array = []
 
+## Matrix-BIOS zur Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): BIOS-IDs,
+## eines davon kommt ins Lager. Verfaellt beim Weitergehen.
+var bios_offers: Array = []
+
 ## Wie oft jede Waffe beim Start im Squad steckte. Was am Ende darueber
 ## hinaus im Lauf ist, ist Beute und geht nach Hause.
 var _start_counts: Dictionary = {}
@@ -469,6 +473,7 @@ func _advance() -> void:
 	round += 1
 	tier = Tier.NORMAL
 	shop_offers = []
+	bios_offers = []
 	rerolls = 0
 	phase = Phase.PREPARE
 
@@ -503,6 +508,11 @@ func roll_loot(enemy_pool: Array) -> Array:
 		var entry := _drome_reward(rng)
 		entry["rare"] = tier == Tier.ELITE
 		out.append(entry)
+	elif tier == Tier.ELITE and round < rounds_total() and not roll_bios_offers().is_empty():
+		# Elite: ein Matrix-BIOS zur Wahl statt des Teils -- nie nach dem
+		# letzten Kampf, dort waere es wertlos (Module verfallen).
+		out.append({"kind": "bios", "rare": true, "title": "Matrix-BIOS",
+			"text": "Waehle eines von %d -- es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))})
 	elif rng.randf() < float(settings.get("part_chance", 0.5)):
 		var part := _loot_part(rng, enemy_pool)
 		if part != null:
@@ -559,6 +569,9 @@ func _apply_loot(item: Dictionary) -> void:
 			else:
 				item["where"] = "home"
 				home_queue.append(item.duplicate())
+		"bios":
+			item["where"] = "wahl"
+			bios_offers = roll_bios_offers()
 		"credits":
 			credits += int(item.get("amount", 0))
 		"life":
@@ -658,14 +671,20 @@ func module_options(index: int) -> Array:
 	var module := ModuleData.get_module(storage[index])
 	for drome in squad.size():
 		var build: DromeBuild = squad[drome]
-		var room := ModuleData.slots_for(build)
 		for slot in build.equip_slots():
+			var room := ModuleData.slots_for(build, slot)
 			var used := build.module_count(slot)
 			var weapon := build.part_in(slot)
 			var twice := _recipe_twice(build, slot, module)
-			var entry := {"drome": drome, "slot": slot, "allowed": used < room and not twice,
+			var second_bios := module.is_bios_result and has_bios_recipe(build)
+			var entry := {"drome": drome, "slot": slot,
+				"allowed": used < room and not twice and not second_bios and not module.is_bios_item(),
 				"active": module.fits(weapon), "detail": ""}
-			if twice:
+			if module.is_bios_item():
+				entry["detail"] = "ein BIOS steckt nicht im Halter"
+			elif second_bios:
+				entry["detail"] = "hoechstens ein BIOS-Rezept je DROME"
+			elif twice:
 				entry["detail"] = "%s steckt hier schon drin (Rezepte einmal je Halter)" % module.display_name
 			elif used >= room:
 				entry["detail"] = "Modulplaetze voll (%d/%d)" % [used, room]
@@ -685,9 +704,12 @@ func install_module(index: int, drome: int, slot: String) -> bool:
 	if phase != Phase.STOP or not is_module_at(index) or drome < 0 or drome >= squad.size():
 		return false
 	var build: DromeBuild = squad[drome]
-	if slot not in build.equip_slots() or build.module_count(slot) >= ModuleData.slots_for(build):
+	if slot not in build.equip_slots() or build.module_count(slot) >= ModuleData.slots_for(build, slot):
 		return false
-	if _recipe_twice(build, slot, ModuleData.get_module(storage[index])):
+	var module := ModuleData.get_module(storage[index])
+	if module.is_bios_item() or (module.is_bios_result and has_bios_recipe(build)):
+		return false
+	if _recipe_twice(build, slot, module):
 		return false
 	var list: Array = build.modules.get(slot, [])
 	list.append(storage[index])
@@ -733,6 +755,16 @@ func remove_module(drome: int, slot: String, position: int) -> bool:
 ## wird nur, was im LAGER liegt -- zusammengefuegt wird dort.
 func recipe_book() -> Array:
 	var out: Array = []
+	# BIOS-Rezepte erscheinen, sobald ihr BIOS im Lager liegt: Rezept + BIOS
+	# oder Zutat + Zutat + BIOS.
+	for item in ModuleData.bios_items():
+		if item.bios_kind != "recipe" or not storage.has(item.id):
+			continue
+		var result := ModuleData.get_module(item.bios_result)
+		if result == null:
+			continue
+		out.append({"module": result, "bios": item.id, "have": _bios_have(item),
+			"ready": _bios_ingredients(item) != []})
 	for recipe in ModuleData.recipes():
 		var pool := storage.duplicate()
 		var have: Array = []
@@ -753,6 +785,8 @@ func craft(recipe_id: StringName) -> bool:
 	var recipe := ModuleData.get_module(recipe_id)
 	if recipe == null or not recipe.is_recipe():
 		return false
+	if recipe.is_bios_result:
+		return _craft_bios(recipe)
 	var pool := storage.duplicate()
 	for ingredient in recipe.from:
 		var found := pool.find(ingredient)
@@ -762,6 +796,184 @@ func craft(recipe_id: StringName) -> bool:
 	pool.append(recipe.id)
 	storage = pool
 	return true
+
+
+# ---------------------------------------------------------------------------
+# Matrix-BIOS (MODULE_KONZEPT.md 6)
+# ---------------------------------------------------------------------------
+
+## Was der Lauf an Modulen hat, um ``item`` (Rezept-BIOS) zu verschmelzen:
+## [Grundrezept] oder [Zutat, Zutat] aus dem Lager -- leer, wenn es fehlt.
+func _bios_ingredients(item: ModuleData) -> Array:
+	var recipe := ModuleData.get_module(item.bios_recipe)
+	if recipe == null:
+		return []
+	if storage.has(recipe.id):
+		return [recipe.id]
+	var pool := storage.duplicate()
+	for ingredient in recipe.from:
+		var found := pool.find(ingredient)
+		if found < 0:
+			return []
+		pool.remove_at(found)
+	return recipe.from.duplicate()
+
+
+## Fuer die Anzeige im Rezeptbuch: [Rezept da?] bzw. je Zutat.
+func _bios_have(item: ModuleData) -> Array:
+	var recipe := ModuleData.get_module(item.bios_recipe)
+	if recipe == null:
+		return [false]
+	if storage.has(recipe.id):
+		return [true]
+	var pool := storage.duplicate()
+	var have: Array = []
+	for ingredient in recipe.from:
+		var found := pool.find(ingredient)
+		have.append(found >= 0)
+		if found >= 0:
+			pool.remove_at(found)
+	return [have.count(true) == have.size()]
+
+
+func _craft_bios(result: ModuleData) -> bool:
+	var item: ModuleData = null
+	for candidate in ModuleData.bios_items():
+		if candidate.bios_result == result.id and storage.has(candidate.id):
+			item = candidate
+	if item == null:
+		return false
+	var used := _bios_ingredients(item)
+	if used.is_empty():
+		return false
+	var pool := storage.duplicate()
+	pool.erase(item.id)
+	for id in used:
+		pool.erase(id)
+	pool.append(result.id)
+	storage = pool
+	return true
+
+
+## Die BIOS-Wahl nach einem Elite-Sieg (6.2): rules.bios_offers Angebote, jedes
+## nutzbar. Rangfolge: SOFORT (Rezept steckt im Lauf, oder Chassis-BIOS fuer
+## einen DROME im Squad ohne BIOS), BALD (beide Zutaten im Lauf), ANGEFANGEN
+## (eine Zutat) nur als Lueckenfueller. Mindestens eines ist sofort nutzbar --
+## sonst gibt es keine Wahl (dann die normale Beute). Nie fuer DROMEs ausser-
+## halb des Squads oder Rezepte ohne vorhandene Zutat.
+func roll_bios_offers() -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = absi(hash([run_seed, round, "bios"]))
+	var owned := _owned_modules()
+	var ranks := [[], [], []]
+	for item in ModuleData.bios_items():
+		if item.bios_kind == "chassis":
+			for build in squad:
+				if build.body() != null and build.body().id == item.bios_chassis \
+						and not build.chassis_bios and not ranks[0].has(item.id):
+					ranks[0].append(item.id)
+			continue
+		var recipe := ModuleData.get_module(item.bios_recipe)
+		if recipe == null:
+			continue
+		if owned.has(recipe.id):
+			ranks[0].append(item.id)
+			continue
+		var have := 0
+		var pool := owned.duplicate()
+		for ingredient in recipe.from:
+			var found := pool.find(ingredient)
+			if found >= 0:
+				have += 1
+				pool.remove_at(found)
+		if have >= recipe.from.size():
+			ranks[1].append(item.id)
+		elif have > 0:
+			ranks[2].append(item.id)
+	if ranks[0].is_empty():
+		return []
+	var out: Array = []
+	var want := int(ModuleData.rule("bios_offers", 3))
+	for rank in ranks:
+		var list: Array = rank.duplicate()
+		while not list.is_empty() and out.size() < want:
+			var pick := rng.randi() % list.size()
+			out.append(list[pick])
+			list.remove_at(pick)
+	return out
+
+
+func bios_blocker() -> String:
+	if phase != Phase.STOP or bios_offers.is_empty():
+		return "keine Wahl"
+	if storage_full():
+		return "Lager voll -- erst verkaufen"
+	return ""
+
+
+## Nimmt BIOS-Angebot ``index`` ins Lager; die anderen verfallen.
+func choose_bios(index: int) -> bool:
+	if bios_blocker() != "" or index < 0 or index >= bios_offers.size():
+		return false
+	storage.append(StringName(bios_offers[index]))
+	bios_offers = []
+	return true
+
+
+func is_bios_at(index: int) -> bool:
+	if index < 0 or index >= storage.size():
+		return false
+	var item := ModuleData.get_module(storage[index])
+	return item != null and item.is_bios_item()
+
+
+## Wohin das Chassis-BIOS aus Lagerplatz ``index`` passt: je DROME und Halter
+## {drome, slot, allowed, detail}.
+func bios_options(index: int) -> Array:
+	var out: Array = []
+	if not is_bios_at(index):
+		return out
+	var item := ModuleData.get_module(storage[index])
+	for drome in squad.size():
+		var build: DromeBuild = squad[drome]
+		for slot in build.equip_slots():
+			var entry := {"drome": drome, "slot": slot, "allowed": false, "detail": ""}
+			if item.bios_kind != "chassis":
+				entry["detail"] = "im Rezeptbuch verschmelzen"
+			elif build.body() == null or build.body().id != item.bios_chassis:
+				entry["detail"] = "nur fuer %s" % item.display_name.trim_suffix("-BIOS")
+			elif build.chassis_bios:
+				entry["detail"] = "hat schon ein BIOS"
+			else:
+				entry["allowed"] = true
+				entry["detail"] = "+1 Modulplatz hier, Passive verstaerkt"
+			out.append(entry)
+	return out
+
+
+## Baut das Chassis-BIOS aus Lagerplatz ``index`` in DROME ``drome`` ein; der
+## Extraplatz gehoert zu ``slot`` (wichtig beim Molok mit zwei Haltern).
+func install_bios(index: int, drome: int, slot: String) -> bool:
+	if phase != Phase.STOP:
+		return false
+	for entry in bios_options(index):
+		if int(entry["drome"]) == drome and entry["slot"] == slot and entry["allowed"]:
+			var build: DromeBuild = squad[drome]
+			build.chassis_bios = true
+			build.bios_slot = slot if build.equip_slots().size() > 1 else ""
+			storage.remove_at(index)
+			return true
+	return false
+
+
+## Steckt in diesem DROME schon ein BIOS-Rezept? Hoechstens eines je DROME.
+static func has_bios_recipe(build: DromeBuild) -> bool:
+	for slot in build.modules:
+		for id in build.modules[slot]:
+			var module := ModuleData.get_module(id)
+			if module != null and module.is_bios_result:
+				return true
+	return false
 
 
 # ---------------------------------------------------------------------------
@@ -791,6 +1003,9 @@ func roll_shop() -> Array:
 	var wanted := target_missing() if target_recipe != &"" else recipe_missing()
 	var boost := float(settings.get("recipe_weight", 3.0)) if target_recipe != &"" \
 		else float(settings.get("recipe_weight_open", 2.0))
+	# Ein Rezept-BIOS im Lager: dessen fehlende Zutaten kommen voll gewichtet.
+	var bios_wanted := _bios_missing()
+	var full := float(settings.get("recipe_weight", 3.0))
 	var count := int(settings.get("offers", 3))
 	var out: Array = []
 	var with_recipe := round >= int(settings.get("recipe_from_round", 5)) \
@@ -803,7 +1018,8 @@ func roll_shop() -> Array:
 		var weights: Array = []
 		var total := 0.0
 		for module in pool:
-			var weight := boost if wanted.has(module.id) else 1.0
+			var weight := full if bios_wanted.has(module.id) \
+				else (boost if wanted.has(module.id) else 1.0)
 			weights.append(weight)
 			total += weight
 		var roll := rng.randf() * total
@@ -869,6 +1085,27 @@ func target_missing() -> Array:
 			pool.remove_at(found)
 		elif not out.has(ingredient):
 			out.append(ingredient)
+	return out
+
+
+## Zutaten, die den Rezepten der Rezept-BIOS im Lager fehlen.
+func _bios_missing() -> Array:
+	var out: Array = []
+	var owned := _owned_modules()
+	for id in storage:
+		var item := ModuleData.get_module(id)
+		if item == null or item.bios_kind != "recipe":
+			continue
+		var recipe := ModuleData.get_module(item.bios_recipe)
+		if recipe == null or owned.has(recipe.id):
+			continue
+		var pool := owned.duplicate()
+		for ingredient in recipe.from:
+			var found := pool.find(ingredient)
+			if found >= 0:
+				pool.remove_at(found)
+			elif not out.has(ingredient):
+				out.append(ingredient)
 	return out
 
 

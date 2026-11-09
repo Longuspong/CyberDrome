@@ -109,6 +109,8 @@ var bonus_vs_marked: float = 0.0
 ## Rammbock: Angriffe +Anteil der eigenen Panzerung als Schaden, ohne Power
 ## (Unit.raw_damage).
 var armor_to_damage: float = 0.0
+## Phasenbruch (BIOS): +Anteil Schaden gegen Gegner ohne Schild.
+var bonus_vs_unshielded: float = 0.0
 
 ## Faehigkeitsschaden als Anteil des Waffenschadens (8. Nov. 2026). power ist
 ## daraus schon berechnet; der Anteil bleibt fuer die Anzeige.
@@ -198,6 +200,7 @@ func with_modules(fx: Dictionary) -> ActionData:
 			out.heal = int(round(float(heal) * (1.0 + stronger)))
 			out.shield_gain = int(round(float(shield_gain) * (1.0 + stronger)))
 	out.kinetic_to_energy = float(fx.get("kinetic_to_energy", 0.0))
+	out.bonus_vs_unshielded = float(fx.get("bonus_vs_unshielded", 0.0))
 	var longer := float(fx.get("status_time", 0.0))
 	if longer > 0.0 and status.has("seconds"):
 		out.status["seconds"] = float(status["seconds"]) * (1.0 + longer)

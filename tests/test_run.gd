@@ -61,7 +61,7 @@ func test_an_elite_win_guarantees_something_rare() -> void:
 		t.equal(run.last_loot.size(), 1, "eine Beute, kein Notstrom bei Elite")
 		var item: Dictionary = run.last_loot[0]
 		t.ok(item.get("rare", false), "%s ist selten" % item["title"])
-		t.ok(item["kind"] in ["part", "drome"], "Teil oder DROME, keine Credits")
+		t.ok(item["kind"] in ["bios", "drome"], "BIOS-Wahl oder DROME, keine Credits")
 		if item["kind"] == "part":
 			t.ok(PartDB.get_part(item["part_id"]).mount_class != "light",
 				"%s ist mittel oder schwer" % item["title"])

@@ -75,7 +75,8 @@
   "slots": 3,
   "sell_value": {
     "base": 2,
-    "recipe": 6
+    "recipe": 6,
+    "bios": 8
   },
   "shop": {
     "offers": 3,
@@ -102,7 +103,16 @@
     "aura_seconds": 4.0,
     "burst_range": 2,
     "burst_stun": 0.5,
-    "burst_cooldown": 6.0
+    "burst_cooldown": 6.0,
+    "bios_offers": 3,
+    "bios_guard_share": 0.4,
+    "bios_lure_bonus": 1,
+    "bios_rush_attack_speed": 0.2,
+    "bios_ability_shield": 6,
+    "bios_steady_seconds": 2.5,
+    "bios_mark_mult": 2.0,
+    "gravity_slow": 1.5,
+    "gravity_move_mult": 0.6
   },
   "modules": {
     "mod_rapid_fire": {
@@ -448,6 +458,172 @@
       ],
       "bonus": {},
       "gadget": "act_orbitpull"
+    }
+  },
+  "bios_kommentar": [
+    "Matrix-BIOS (MODULE_KONZEPT.md 6): spaete Schicht, nur aus Elite-Kaempfen (Wahl 1 aus 3,",
+    "statt des Teils, nie nach dem letzten Kampf). Ein BIOS liegt im Lager.",
+    "bios: die Gegenstaende. kind 'chassis': +1 Modulplatz (Molok: in einem Halter nach Wahl)",
+    "und eine verstaerkte Passive (DromeBuild.chassis_bios, Zahlen in rules). kind 'recipe':",
+    "verwandelt das Rezept 'recipe' im Rezeptbuch in 'result' (Rezept + BIOS oder",
+    "Zutat + Zutat + BIOS). Hoechstens ein BIOS-Rezept je DROME, nicht trennbar.",
+    "bios_recipes: die Ergebnisse -- Wirkung des Grundrezepts plus bonus:",
+    "  ready_after_ability  nach der Faehigkeit sofort wieder geladen",
+    "  field_shot_every     (kleinster Wert zaehlt) Feldschuss haeufiger",
+    "  field_shot_marked    Feldschuss bevorzugt markierte Gegner",
+    "  retaliation_max      Vergeltung bis zu so viele Ladungen",
+    "  berserk              volle Vergeltung trifft dazu alle Gegner daneben",
+    "  mark_hunt            stirbt ein markierter Gegner, springt die Markierung weiter",
+    "  gravity              der Orbit-Sog zieht ein zweites Ziel, beide verlangsamt",
+    "  knockback_every      jeder N-te Angriff stoesst das Ziel 1 Feld zurueck",
+    "  bonus_vs_unshielded  +Anteil Schaden gegen Gegner ohne Schild"
+  ],
+  "bios": {
+    "bios_vireo": {
+      "name": "Vireo-BIOS",
+      "short": "V+",
+      "kind": "chassis",
+      "chassis": "scout_body",
+      "text": "+1 Modulplatz. Sprint gibt dazu +20 % Angriffstempo."
+    },
+    "bios_molok": {
+      "name": "Molok-BIOS",
+      "short": "M+",
+      "kind": "chassis",
+      "chassis": "jugg_body",
+      "text": "+1 Modulplatz in einem Halter. Praesenz faengt 40 % statt 30 % ab und lockt 1 Feld weiter."
+    },
+    "bios_nimbus": {
+      "name": "Nimbus-BIOS",
+      "short": "N+",
+      "kind": "chassis",
+      "chassis": "mage_body",
+      "text": "+1 Modulplatz. Jede Faehigkeit gibt Schild (6 x Power / 10), das Echo darf ein anderes Ziel waehlen."
+    },
+    "bios_strix": {
+      "name": "Strix-BIOS",
+      "short": "S+",
+      "kind": "chassis",
+      "chassis": "strix_body",
+      "text": "+1 Modulplatz. Anlegen schon nach 2,5 s und haelt einen Feldwechsel aus; Markierungen halten doppelt."
+    },
+    "bios_metronome": {
+      "name": "Taktgeber-BIOS",
+      "short": "T+",
+      "kind": "recipe",
+      "recipe": "mod_takt_chip",
+      "result": "mod_metronome"
+    },
+    "bios_revolver": {
+      "name": "Revolverheld-BIOS",
+      "short": "R+",
+      "kind": "recipe",
+      "recipe": "mod_gunslinger",
+      "result": "mod_revolver"
+    },
+    "bios_berserker": {
+      "name": "Berserker-BIOS",
+      "short": "B+",
+      "kind": "recipe",
+      "recipe": "mod_brawler",
+      "result": "mod_berserker"
+    },
+    "bios_hunt": {
+      "name": "Treibjagd-BIOS",
+      "short": "J+",
+      "kind": "recipe",
+      "recipe": "mod_brand",
+      "result": "mod_hunt"
+    },
+    "bios_gravity": {
+      "name": "Gravitation-BIOS",
+      "short": "G+",
+      "kind": "recipe",
+      "recipe": "mod_orbit",
+      "result": "mod_gravity"
+    },
+    "bios_wrecker": {
+      "name": "Abrissbirne-BIOS",
+      "short": "A+",
+      "kind": "recipe",
+      "recipe": "mod_ram",
+      "result": "mod_wrecker"
+    },
+    "bios_phase": {
+      "name": "Phasenbruch-BIOS",
+      "short": "P+",
+      "kind": "recipe",
+      "recipe": "mod_overvolt",
+      "result": "mod_phase"
+    }
+  },
+  "bios_recipes": {
+    "mod_metronome": {
+      "name": "Taktgeber",
+      "short": "TG",
+      "class": "tactic",
+      "base": "mod_takt_chip",
+      "bonus": {
+        "ready_after_ability": true
+      }
+    },
+    "mod_revolver": {
+      "name": "Revolverheld",
+      "short": "RH",
+      "class": "attack",
+      "condition": "ranged",
+      "base": "mod_gunslinger",
+      "bonus": {
+        "field_shot_every": 3,
+        "field_shot_marked": true,
+        "range": 1
+      }
+    },
+    "mod_berserker": {
+      "name": "Berserker",
+      "short": "BK",
+      "class": "defense",
+      "base": "mod_brawler",
+      "bonus": {
+        "retaliation_max": 5,
+        "berserk": true
+      }
+    },
+    "mod_hunt": {
+      "name": "Treibjagd",
+      "short": "TJ",
+      "class": "tactic",
+      "base": "mod_brand",
+      "bonus": {
+        "mark_hunt": true
+      }
+    },
+    "mod_gravity": {
+      "name": "Gravitation",
+      "short": "GV",
+      "class": "tactic",
+      "base": "mod_orbit",
+      "bonus": {
+        "gravity": true
+      }
+    },
+    "mod_wrecker": {
+      "name": "Abrissbirne",
+      "short": "AB",
+      "class": "attack",
+      "base": "mod_ram",
+      "bonus": {
+        "knockback_every": 3
+      }
+    },
+    "mod_phase": {
+      "name": "Phasenbruch",
+      "short": "PB",
+      "class": "attack",
+      "base": "mod_overvolt",
+      "bonus": {
+        "bonus_vs_unshielded": 0.15
+      }
     }
   }
 }
