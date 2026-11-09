@@ -49,7 +49,7 @@
     "shield_regen": 0,
     "shield_bonus": 0.0,
     "shield_pulse": 0,
-    "power": 0,
+    "power": 1,
     "module_slots": 0,
     "hp_regen_pct": 0,
     "lure_radius": 0,
@@ -75,7 +75,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 0.0,
+        "base_action": ""
       },
       {
         "id": "act_plasma_rend",
@@ -104,7 +106,9 @@
         },
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 1.5,
+        "base_action": "act_plasma_slash"
       }
     ]
   }

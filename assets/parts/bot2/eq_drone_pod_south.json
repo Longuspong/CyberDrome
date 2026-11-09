@@ -37,7 +37,7 @@
   "mount_class": "light",
   "category": "support",
   "stats": {
-    "hp": 0,
+    "hp": 10,
     "spd": 0,
     "def": 0,
     "shield": 0,
@@ -70,7 +70,9 @@
         "status": null,
         "heal": 6,
         "shield_gain": 0,
-        "support": "ally"
+        "support": "ally",
+        "damage_pct": 0.0,
+        "base_action": ""
       },
       {
         "id": "act_drone_guard",
@@ -95,7 +97,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 15,
-        "support": "ally"
+        "support": "ally",
+        "damage_pct": 0.0,
+        "base_action": ""
       }
     ]
   }

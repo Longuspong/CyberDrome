@@ -38,7 +38,7 @@
   "stats": {
     "hp": 0,
     "spd": 0,
-    "def": 5,
+    "def": 4,
     "shield": 0,
     "shield_regen": 0,
     "shield_bonus": 0.0,
@@ -69,7 +69,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 0.0,
+        "base_action": ""
       },
       {
         "id": "act_deflector_charge",
@@ -94,7 +96,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 15,
-        "support": "self"
+        "support": "self",
+        "damage_pct": 0.0,
+        "base_action": ""
       }
     ]
   }

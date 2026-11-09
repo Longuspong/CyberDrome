@@ -46,7 +46,7 @@
     "hp": 0,
     "spd": 0,
     "def": 0,
-    "shield": 0,
+    "shield": 10,
     "shield_regen": 0,
     "shield_bonus": 0.0,
     "shield_pulse": 0,
@@ -76,7 +76,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 0.0,
+        "base_action": ""
       },
       {
         "id": "act_rune_vortex",
@@ -105,7 +107,9 @@
         },
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 1.5,
+        "base_action": "act_runestaff"
       }
     ]
   }

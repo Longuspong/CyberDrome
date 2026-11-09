@@ -100,6 +100,11 @@ var trigger_weapon: StringName = &""
 ## den Traeger. 0 = nicht.
 var taunt_seconds: float = 0.0
 
+## Faehigkeitsschaden als Anteil des Waffenschadens (8. Nov. 2026). power ist
+## daraus schon berechnet; der Anteil bleibt fuer die Anzeige.
+var damage_pct: float = 0.0
+var base_action: StringName = &""
+
 
 static func from_meta(meta: Dictionary, owner_name: String = "",
 		owner_code: String = "") -> ActionData:
@@ -123,6 +128,8 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.heal = int(meta.get("heal", 0))
 	action.shield_gain = int(meta.get("shield_gain", 0))
 	action.support = str(meta.get("support", ""))
+	action.damage_pct = float(meta.get("damage_pct", 0.0))
+	action.base_action = StringName(str(meta.get("base_action", "")))
 	var status_meta = meta.get("status")
 	if status_meta is Dictionary:
 		action.status = status_meta

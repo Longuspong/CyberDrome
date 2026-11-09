@@ -123,7 +123,7 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"})
 	t.ok(bunker.is_valid(), "der Bunker ist baubar: %s" % ", ".join(bunker.validate()))
-	t.equal(bunker.stats()["def"], 15, "und kommt auf Ruestung 15 (Molok 10 + Deflektor 5)")
+	t.equal(bunker.stats()["def"], 14, "und kommt auf Ruestung 14 (Molok 10 + Schild 4)")
 
 	var grid := Grid.new(10, 10)
 	var shooter := Unit.create(_squad()[0], &"P0", true)

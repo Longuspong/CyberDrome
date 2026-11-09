@@ -388,7 +388,7 @@ func _hammer_molok() -> DromeBuild:
 func test_the_molok_is_a_tank_with_little_shield() -> void:
 	var stats := _hammer_molok().stats()
 	# 8. Nov. 2026: 250 Integritaet, 50 Schild, Ruestung 10 (+ Deflektor).
-	t.equal(stats["hp_max"], 250, "250 Integritaet")
+	t.equal(stats["hp_max"], 270, "250 Integritaet + 20 vom Hammer")
 	t.ok(stats["def"] >= 10, "viel Ruestung (%d)" % stats["def"])
 	t.ok(_hammer_molok().is_valid(), "Hammer und Deflektor sind baubar")
 

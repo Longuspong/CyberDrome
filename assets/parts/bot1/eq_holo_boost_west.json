@@ -79,7 +79,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 0.0,
+        "base_action": ""
       }
     ]
   }

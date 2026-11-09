@@ -125,7 +125,11 @@ func test_power_scales_the_damage_of_the_weapon() -> void:
 		"head": &"strix_head", "feet": &"strix_feet", "core": &"strix_core",
 		"equip_center": &"eq_rail_lance"}), &"P0", true)
 	var lance: ActionData = PartDB.get_part(&"eq_rail_lance").actions[0]
-	t.equal(strix.raw_damage(lance), int(round(lance.power * 1.5)), "Power 15 = 150 %")
+	# Strix 15 + Lanze 1 = 16 Power = 160 %.
+	t.equal(strix.raw_damage(lance), int(round(lance.power * 1.6)), "Power 16 = 160 %")
+	var pierce: ActionData = PartDB.get_part(&"eq_rail_lance").actions[1]
+	t.equal(pierce.power, int(round(lance.power * pierce.damage_pct)),
+		"die Faehigkeit ist ein Anteil des Waffenschadens")
 	strix.free()
 
 

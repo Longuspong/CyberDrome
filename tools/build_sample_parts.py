@@ -445,7 +445,12 @@ STATS = {
     "scout_head": {}, "jugg_head": {}, "mage_head": {}, "strix_head": {},
 
     # --- AUSRUESTUNG (equipment) -------------------------------------------
+    # Seit 8. Nov. 2026 (docs/IDENTITAETEN.md): jede Waffe gibt EINEN
+    # DROME-Wert als Bonus; der Schaden ihrer Faehigkeit ist ein fester Anteil
+    # des Waffenschadens (damage_pct), so steigt sie mit dem Waffenlevel mit.
+    # Puls-Blaster: 5 kinetisch + 5 Energie, Bonus Speed.
     "eq_pulse_blaster": {
+        "spd": 2,
         "actions": [
             # Halb physisch, halb Energie.
             {"id": "act_pulse", "display_name": "Angriff",
@@ -457,36 +462,40 @@ STATS = {
             # trifft er ihn zweimal.
             {"id": "act_pulse_double", "display_name": "Doppelschuss",
              "category": "ability", "targeting": "single",
-             "range_tiles": 3, "power": 7, "shots": 2,
+             "range_tiles": 3, "damage_pct": 0.7, "shots": 2,
              "energy_fraction": 0.5,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_pulse"}},
         ],
     },
     # Neon-Variante: gleicher Angriff, aber die Faehigkeit ist ein aufgeladener
     # Schuss mit doppeltem Schaden AM SCHILD (Vorgabe des Spielers, Nov. 2026).
+    # 4 kinetisch + 6 Energie, Bonus Schildpuls.
     "eq_neon_blaster": {
+        "shield_pulse": 2,
         "actions": [
             {"id": "act_neon_pulse", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
-             "range_tiles": 3, "power": 10, "energy_fraction": 0.5,
+             "range_tiles": 3, "power": 10, "energy_fraction": 0.6,
              "interval": 1.4},
             {"id": "act_neon_breaker", "display_name": "Schildbrecher",
              "category": "ability", "targeting": "single",
-             "range_tiles": 3, "power": 12, "energy_fraction": 1.0,
+             "range_tiles": 3, "damage_pct": 1.2, "energy_fraction": 1.0,
              "shield_mult": 2.0,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_neon_pulse"}},
         ],
     },
     # Plasmaklinge: Nahkampf, nur kinetisch, etwas mehr Schaden, schneller als
     # der Blaster. Jeder 3. Hieb macht das Ziel 5 s verwundbar (+50 % Schaden).
+    # Bonus Power (+1 = +10 %) -- damit auch fuer den Molok interessant.
     "eq_plasma_blade": {
+        "power": 1,
         "actions": [
             {"id": "act_plasma_slash", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 12, "interval": 1.0},
             {"id": "act_plasma_rend", "display_name": "Aufschlitzen",
              "category": "ability", "targeting": "single",
-             "range_tiles": 1, "power": 18,
+             "range_tiles": 1, "damage_pct": 1.5,
              "status": {"id": "vulnerable", "seconds": 5.0, "damage_taken_mult": 1.5},
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_plasma_slash"}},
         ],
@@ -494,8 +503,9 @@ STATS = {
     # Passiv.
     # Schutz-Waffe (7. Nov. 2026): schwacher Stoss, jeder 4. Angriff laedt
     # den eigenen Schild um 15 (auch ueber das Maximum).
+    # Schild, mittel (8. Nov. 2026). Bonus Ruestung.
     "eq_deflector": {
-        "def": 5,
+        "def": 4,
         "actions": [
             {"id": "act_deflector_bash", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -519,14 +529,16 @@ STATS = {
 
     # Hammer des Molok: schwer, langsam, kinetisch. Jeder 3. Schlag betaeubt
     # das Ziel 1 s (Vorgabe des Spielers, Nov. 2026).
+    # Mittel (8. Nov. 2026). Bonus Integritaet.
     "eq_hammer": {
+        "hp": 20,
         "actions": [
             {"id": "act_hammer", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 16, "interval": 1.8},
             {"id": "act_hammer_stun", "display_name": "Betaeubungsschlag",
              "category": "ability", "targeting": "single",
-             "range_tiles": 1, "power": 16,
+             "range_tiles": 1, "damage_pct": 1.0,
              "status": {"id": "stun", "seconds": 1.0, "stunned": True},
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_hammer"}},
         ],
@@ -535,7 +547,9 @@ STATS = {
     # dem geringsten Anteil Integritaet in Reichweite; ist niemand verletzt,
     # schiessen die Drohnen schwach auf Gegner. Jeder 4. Angriff setzt eine
     # Schutzdrohne: 15 Schild fuer den am staerksten Verletzten.
+    # Bonus Integritaet.
     "eq_drone_pod": {
+        "hp": 10,
         "actions": [
             {"id": "act_drone_repair", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -554,7 +568,9 @@ STATS = {
     # Energie. Die Faehigkeit (Vortex) zieht die Gegner um das Ziel zusammen,
     # kurz danach schlaegt eine Schockwelle von innen nach aussen zu und
     # verlangsamt (Vorgabe des Spielers, Nov. 2026).
+    # Bonus Schild.
     "eq_rune_staff": {
+        "shield": 10,
         "actions": [
             {"id": "act_runestaff", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -562,7 +578,8 @@ STATS = {
              "energy_fraction": 1.0, "interval": 1.2},
             {"id": "act_rune_vortex", "display_name": "Vortex",
              "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 5, "aoe_radius": 2, "power": 14,
+             "range_tiles": 5, "aoe_radius": 2, "damage_pct": 1.5,
+             "base_action": "act_runestaff",
              "energy_fraction": 1.0, "gather": True, "delay": 0.6,
              "status": {"id": "slow", "seconds": 2.5, "move_mult": 0.6},
              "trigger": {"kind": "time", "every": 3, "weapon": ""}},
@@ -577,7 +594,9 @@ STATS = {
              "trigger": {"kind": "time", "every": 6, "weapon": ""}},
         ],
     },
+    # Schwer -- das einzige schwere Teil. Bonus Power.
     "eq_rail_lance": {
+        "power": 1,
         "actions": [
             {"id": "act_raillance", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
@@ -585,7 +604,7 @@ STATS = {
              "interval": 2.6},
             {"id": "act_rail_pierce", "display_name": "Praezisionsschuss",
              "category": "ability", "targeting": "single",
-             "range_tiles": 8, "power": 26,
+             "range_tiles": 8, "damage_pct": 1.2,
              "trigger": {"kind": "attacks", "every": 4, "weapon": "act_raillance"}},
         ],
     },
@@ -621,6 +640,11 @@ ACTION_DEFAULTS = {
     "heal": 0,
     "shield_gain": 0,
     "support": "",
+    # Faehigkeitsschaden als Anteil des Waffenschadens (8. Nov. 2026): power
+    # wird daraus berechnet -- aus dem Angriff, den trigger.weapon nennt, oder
+    # aus base_action (Faehigkeiten nach Zeit).
+    "damage_pct": 0.0,
+    "base_action": "",
 }
 
 TARGETINGS = ("single", "aoe_around_target", "aoe_cross", "dash")
@@ -651,6 +675,15 @@ def part_stats(part_id: str) -> dict:
     # Ein Teil gewaehrt eine LISTE von Aktionen (Angriff und/oder Faehigkeit).
     # Ohne ``actions`` ist es passiv -- die Liste bleibt leer.
     stats["actions"] = [_merge_action(part_id, a) for a in raw.get("actions", [])]
+    by_id = {a["id"]: a for a in stats["actions"]}
+    for action in stats["actions"]:
+        if action["damage_pct"] <= 0:
+            continue
+        base_id = action["base_action"] or (action["trigger"] or {}).get("weapon", "")
+        if base_id not in by_id:
+            raise SystemExit(f"[stats] {part_id}/{action['id']}: damage_pct ohne Grundangriff")
+        action["base_action"] = base_id
+        action["power"] = int(round(by_id[base_id]["power"] * action["damage_pct"]))
     return stats
 
 

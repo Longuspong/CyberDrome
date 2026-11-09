@@ -43,7 +43,7 @@
   "category": "weapon",
   "stats": {
     "hp": 0,
-    "spd": 0,
+    "spd": 2,
     "def": 0,
     "shield": 0,
     "shield_regen": 0,
@@ -75,7 +75,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 0.0,
+        "base_action": ""
       },
       {
         "id": "act_pulse_double",
@@ -100,7 +102,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 0.7,
+        "base_action": "act_pulse"
       }
     ]
   }
