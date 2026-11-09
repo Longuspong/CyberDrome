@@ -1,158 +1,629 @@
 {
   "_kommentar": [
-    "Module (NEUANFANG 6g): gibt es nur im Lauf, sie veraendern, wie eine Waffe",
-    "funktioniert. Sie stecken im WAFFENHALTER eines DROME (slots je Halter,",
-    "seit 8. Nov. 2026 ein Wert des Chassis: module_slots, slots nur Ersatz) und wirken auf die Waffe, die",
-    "gerade darin sitzt. Bedingung (condition): 'ranged' = Angriff mit",
-    "Reichweite ab 2, 'melee' = Reichweite 1, leer = jede Waffe. Passt die Waffe",
-    "nicht, ruht das Modul (grau), bleibt aber im Halter.",
-    "Klassen: attack (Modifikatoren), defense (Abwehr/Konter), tactic (Taktik).",
-    "Keine Stufen. Staerker nur durch Rezepte: die Zutaten aus dem Lager",
-    "(auch ein Rezept kann Zutat sein: Taktchip -> Taktgeber; Rezepte muessen",
-    "VOR dem Rezept stehen, das sie verwendet)",
-    "ergeben ein neues Modul mit der SUMME ihrer Wirkungen plus einem eigenen",
-    "Effekt (bonus). Alle Werte vorlaeufig.",
-    "Wirkungen (effects):",
-    "  attack_speed       +Anteil Angriffstempo (Intervall / (1 + x))",
+    "Module (MODULE_KONZEPT.md, 9. Nov. 2026): gibt es nur im Lauf, sie veraendern,",
+    "wie eine Waffe funktioniert. Sie stecken im WAFFENHALTER eines DROME (Plaetze",
+    "je Halter = module_slots des Chassis, slots nur Ersatz) und wirken auf die Waffe",
+    "darin. Bedingung (condition): 'ranged' = Angriff mit Reichweite ab 2, 'melee' =",
+    "Reichweite 1, leer = jede Waffe. Passt die Waffe nicht, ruht das Modul.",
+    "Klassen: attack, defense, tactic. Keine Stufen.",
+    "9 Grundmodule (Zahlen, wirken auf jede Waffe) und 18 Rezepte aus genau ZWEI",
+    "verschiedenen Grundmodulen (aendern eine Regel). Jedes Grundmodul steckt in",
+    "genau 4 Rezepten. Keine Rezeptketten. Ein Rezept-Modul hat die SUMME der",
+    "Wirkungen seiner Zutaten plus einen eigenen Effekt (bonus). Werte vorlaeufig.",
+    "Wirkungen (effects) -- Zahlen addieren sich, ausser den Schluesseln in",
+    "ModuleData.MAX_KEYS / MIN_KEYS:",
+    "  attack_speed       +Anteil Angriffstempo (Intervall / (1 + x)); bei Treffer-Takt",
+    "                     kommt damit auch die Faehigkeit schneller",
     "  attack_power       +Anteil Schaden der Angriffe",
-    "  range              +Reichweite der Angriffe",
-    "  ricochet_chance    Chance je Angriff auf einen Querschlaeger aufs selbe Ziel",
-    "  ricochet_share     dessen Schaden als Anteil des Angriffs",
+    "  ricochet_chance    Chance je Angriff auf einen Zusatztreffer aufs selbe Ziel",
+    "  ricochet_share     dessen Schaden als Anteil des Angriffs (stapelt nicht)",
     "  def / shield       +Panzerung / +Schild des Traegers",
-    "  thorns             Nahkampf-Angreifer nehmen je Treffer so viel Schaden",
-    "  takt_cut           Treffer-Takt der Faehigkeit so viele Angriffe kuerzer (mind. 2)",
-    "  takt_time          Zeit-Takt der Faehigkeit um diesen Anteil kuerzer",
+    "  thorns             jeder Angreifer nimmt je Treffer am Traeger so viel Schaden",
+    "  thorns_melee       Nahkampf-Angreifer zusaetzlich so viel",
+    "  ability_power      Faehigkeit +Anteil Wirkung (Schaden, Heilung, Schildgabe)",
     "  status_time        Statuseffekte der Waffe um diesen Anteil laenger",
-    "  taunt              die Faehigkeit lockt ihr Ziel so viele Sekunden auf den Traeger",
-    "  field_shot_every   jeder N-te Angriff trifft dazu einen Gegner irgendwo auf dem Feld",
+    "  taunt              Koedersender: die Faehigkeit lockt ihr Ziel 1 + taunt Sekunden",
+    "                     auf den Traeger (ein Exemplar 2 s, jedes weitere +1 s)",
+    "  mark               Peilsender: die Faehigkeit markiert ihr Ziel so viele Sekunden;",
+    "                     markierte Gegner nehmen rules.mark_damage_taken mehr Schaden",
+    "                     von allen (stapelt nicht)",
+    "  Faehigkeiten ohne Gegnerziel (Schildgaben): Koedersender und Peilsender wirken",
+    "  auf den naechsten Gegner in rules.fallback_range.",
+    "Eigene Effekte der Rezepte (bonus):",
+    "  field_shot_every   jeder N-te Angriff trifft dazu den schwaechsten anderen Gegner",
+    "  kinetic_to_energy  solange der eigene Schild steht, wird dieser Anteil des",
+    "                     kinetischen Schadens zu Energie",
+    "  takt_count         Treffer-Takt: jeder Angriff zaehlt so viel (1,25)",
+    "  takt_time          Zeit-Takt der Faehigkeit um diesen Anteil kuerzer",
+    "  bonus_vs_marked    Angriffe gegen markierte Ziele +Anteil Schaden",
+    "  armor_to_damage    Angriffe +Anteil der eigenen Panzerung als Schaden (ohne Power)",
+    "  retaliation        Vergeltung: jeder Treffer am Traeger laedt den naechsten",
+    "                     Angriff um diesen Anteil auf (max. 3x, Nahkampf zaehlt doppelt)",
+    "  post_ability_power nach der Faehigkeit: die naechsten rules.overload_attacks",
+    "                     Angriffe +Anteil Schaden",
+    "  cleave             jeder Angriff trifft dazu alle anderen Gegner direkt neben",
+    "                     dem Traeger mit diesem Anteil",
+    "  thorns_true        Stacheln gehen am Schild vorbei und koennen den Zusatztreffer",
+    "                     (ricochet) ausloesen",
+    "  ability_fork       die Faehigkeit wird auf ein zweites Ziel (rules.fork_range)",
+    "                     mit diesem Anteil wiederholt (Schildgabe: zweiter Verbuendeter)",
+    "  chain_jumps        Zusatztreffer koennen erneut ausloesen (so viele Spruenge)",
+    "                     und springen bevorzugt auf markierte Gegner",
     "  shield_delay       Schild laedt schon nach so vielen Sekunden Ruhe",
-    "  ready_after_ability  nach der Faehigkeit ist die Waffe sofort wieder geladen",
-    "  retaliation        Vergeltung: jeder Nahkampftreffer, den der Traeger einsteckt,",
-    "                     laedt seinen naechsten Angriff um diesen Anteil auf (max. 3x)",
-    "  shackle            Fesselkette: die Faehigkeit zieht bis zu so viele Gegner",
-    "                     in Reichweite 3 neben den Traeger und betaeubt sie 1 s",
-    "  cleave             Rundumschlag: jeder Angriff trifft dazu alle anderen Gegner",
-    "                     direkt neben dem Traeger mit diesem Anteil des Schadens",
-    "Gestaltungsregel (6i): Grundmodule sind Zahlen, Rezepte aendern eine Regel.",
-    "Was beim Stapeln zu schnell eskaliert, gibt es nur als Rezept (Taktchip).",
-    "short: zwei Buchstaben fuer den Chip (eindeutig), falls kein Symbol da ist.",
+    "  ability_armor_aura die Faehigkeit gibt allen DROMEs in rules.aura_range fuer",
+    "                     rules.aura_seconds so viel Panzerung",
+    "  shackle            die Faehigkeit zieht bis zu so viele Gegner (Rw 3) neben den",
+    "                     Traeger und betaeubt sie 1 s",
+    "  shield_break_burst bricht der Schild, nehmen alle Gegner in rules.burst_range so",
+    "                     viel Energieschaden und sind rules.burst_stun s betaeubt",
+    "                     (hoechstens alle rules.burst_cooldown s)",
+    "  decoy              Hologramm: wer beim Sprung daneben stand, ist so viele",
+    "                     Sekunden vom Koeder abgelenkt (tut nichts)",
+    "  mark_on_hit_taken  jeder Gegner, der den Traeger trifft, wird markiert",
+    "gadget: das Modul bringt eine eigene Faehigkeit mit (gadgets): Orbit-Fokus,",
+    "Hologramm. Sie loest nach ihrem Takt aus, solange das Modul wirkt.",
+    "short: zwei Buchstaben fuer den Chip, falls kein Symbol da ist.",
     "Symbol: assets/modules/<id>.svg (64x64, transparent); anderer Pfad mit icon.",
     "sell_value: Credits beim Verkauf (Grundmodul / Rezept-Modul).",
-    "gadget (8. Nov. 2026): das Modul bringt eine eigene Faehigkeit mit, die",
-    "unter gadgets steht (Orbit-Fokus, Hologramm-Boost -- frueher Ausruestung).",
-    "Sie loest nach ihrem Takt aus, solange das Modul wirkt.",
-    "shop: der Laden im Zwischenstopp (6i) -- offers Grundmodule je Stopp,",
-    "price in Credits (Grundmodul / Rezept-Modul), recipe_weight: so viel",
-    "wahrscheinlicher ist ein Modul, das einem angefangenen Rezept fehlt."
+    "shop: der Laden im Zwischenstopp (MODULE_KONZEPT.md 7) -- offers Angebote je",
+    "Stopp, price in Credits (Grundmodul / Rezept-Modul). Mitleid: mit Ziel-Rezept",
+    "zaehlen dessen fehlende Zutaten recipe_weight-mal, ohne Ziel jede Zutat eines",
+    "angefangenen Rezepts recipe_weight_open-mal. reroll: Neuwuerfeln kostet price,",
+    "je weiterem Wurf im selben Stopp +step. Ab recipe_from_round ist mit",
+    "recipe_chance das letzte Angebot ein fertiges Rezept. Kein Sperren."
   ],
   "slots": 3,
-  "sell_value": {"base": 2, "recipe": 6},
+  "sell_value": {
+    "base": 2,
+    "recipe": 6,
+    "bios": 8
+  },
   "shop": {
-    "offers": 2,
-    "price": {"base": 6, "recipe": 16},
-    "recipe_weight": 3.0
+    "offers": 3,
+    "price": {
+      "base": 6,
+      "recipe": 16
+    },
+    "recipe_weight": 3.0,
+    "recipe_weight_open": 2.0,
+    "reroll": {
+      "price": 2,
+      "step": 1
+    },
+    "recipe_from_round": 5,
+    "recipe_chance": 0.25
+  },
+  "rules": {
+    "_kommentar": "Feste Zahlen der Modul-Regeln (ModuleData.rule).",
+    "mark_damage_taken": 0.1,
+    "fallback_range": 3,
+    "overload_attacks": 3,
+    "fork_range": 3,
+    "aura_range": 2,
+    "aura_seconds": 4.0,
+    "burst_range": 2,
+    "burst_stun": 0.5,
+    "burst_cooldown": 6.0,
+    "bios_offers": 3,
+    "bios_guard_share": 0.4,
+    "bios_lure_bonus": 1,
+    "bios_rush_attack_speed": 0.2,
+    "bios_ability_shield": 6,
+    "bios_steady_seconds": 2.5,
+    "bios_mark_mult": 2.0,
+    "gravity_slow": 1.5,
+    "gravity_move_mult": 0.6
   },
   "modules": {
     "mod_rapid_fire": {
-      "name": "Schnellfeuer", "short": "SF", "class": "attack", "condition": "ranged",
-      "effects": {"attack_speed": 0.08}
-    },
-    "mod_long_barrel": {
-      "name": "Langer Lauf", "short": "LL", "class": "attack", "condition": "ranged",
-      "effects": {"range": 1}
-    },
-    "mod_twin_barrel": {
-      "name": "Doppellauf", "short": "DL", "class": "attack", "condition": "ranged",
-      "effects": {"ricochet_chance": 0.2, "ricochet_share": 0.15}
+      "name": "Schnellfeuer",
+      "short": "SF",
+      "class": "attack",
+      "condition": "",
+      "effects": {
+        "attack_speed": 0.08
+      }
     },
     "mod_heavy_edge": {
-      "name": "Wuchtkante", "short": "WK", "class": "attack", "condition": "melee",
-      "effects": {"attack_power": 0.15}
+      "name": "Wuchtkante",
+      "short": "WK",
+      "class": "attack",
+      "condition": "",
+      "effects": {
+        "attack_power": 0.12
+      }
+    },
+    "mod_twin_barrel": {
+      "name": "Doppellauf",
+      "short": "DL",
+      "class": "attack",
+      "condition": "",
+      "effects": {
+        "ricochet_chance": 0.2,
+        "ricochet_share": 0.35
+      }
     },
     "mod_armor_plate": {
-      "name": "Panzerplatte", "short": "PP", "class": "defense", "condition": "",
-      "effects": {"def": 3}
+      "name": "Panzerplatte",
+      "short": "PP",
+      "class": "defense",
+      "condition": "",
+      "effects": {
+        "def": 3
+      }
     },
     "mod_capacitor": {
-      "name": "Kondensator", "short": "KD", "class": "defense", "condition": "",
-      "effects": {"shield": 10}
-    },
-    "mod_chain": {
-      "name": "Kette", "short": "KT", "class": "defense", "condition": "",
-      "effects": {"def": 2}
+      "name": "Kondensator",
+      "short": "KD",
+      "class": "defense",
+      "condition": "",
+      "effects": {
+        "shield": 10
+      }
     },
     "mod_spike_grid": {
-      "name": "Stachelgitter", "short": "SG", "class": "defense", "condition": "",
-      "effects": {"thorns": 3}
-    },
-    "mod_pointer": {
-      "name": "Zeiger", "short": "ZG", "class": "tactic", "condition": "",
-      "effects": {"attack_speed": 0.05}
-    },
-    "mod_circuit": {
-      "name": "Schaltkreis", "short": "SK", "class": "tactic", "condition": "",
-      "effects": {"shield": 5}
+      "name": "Stachelgitter",
+      "short": "SG",
+      "class": "defense",
+      "condition": "",
+      "effects": {
+        "thorns": 1,
+        "thorns_melee": 2
+      }
     },
     "mod_amplifier": {
-      "name": "Verstaerker", "short": "VS", "class": "tactic", "condition": "",
-      "effects": {"status_time": 0.5}
+      "name": "Verstaerker",
+      "short": "VS",
+      "class": "tactic",
+      "condition": "",
+      "effects": {
+        "ability_power": 0.2,
+        "status_time": 0.3
+      }
     },
     "mod_bait": {
-      "name": "Koedersender", "short": "KS", "class": "tactic", "condition": "",
-      "effects": {"taunt": 3.0}
+      "name": "Koedersender",
+      "short": "KS",
+      "class": "tactic",
+      "condition": "",
+      "effects": {
+        "taunt": 1.0
+      }
     },
-    "mod_orbit": {
-      "name": "Orbit-Fokus", "short": "OF", "class": "tactic", "condition": "",
-      "effects": {}, "gadget": "act_orbitpull"
-    },
-    "mod_holo": {
-      "name": "Hologramm-Boost", "short": "HB", "class": "defense", "condition": "",
-      "effects": {}, "gadget": "act_holo_dash"
+    "mod_beacon": {
+      "name": "Peilsender",
+      "short": "PS",
+      "class": "tactic",
+      "condition": "",
+      "effects": {
+        "mark": 4.0
+      }
     }
   },
   "gadgets": {
-    "act_orbitpull": {"display_name": "Orbit-Sog", "category": "ability",
-      "targeting": "single", "range_tiles": 4, "push_tiles": -2,
-      "trigger": {"kind": "time", "every": 6}},
-    "act_holo_dash": {"display_name": "Hologramm-Boost", "category": "ability",
-      "targeting": "dash", "range_tiles": 3,
-      "trigger": {"kind": "adjacent", "every": 4}}
+    "act_orbitpull": {
+      "display_name": "Orbit-Sog",
+      "category": "ability",
+      "targeting": "single",
+      "range_tiles": 4,
+      "push_tiles": -2,
+      "trigger": {
+        "kind": "time",
+        "every": 6
+      }
+    },
+    "act_holo_dash": {
+      "display_name": "Hologramm",
+      "category": "ability",
+      "targeting": "dash",
+      "range_tiles": 3,
+      "trigger": {
+        "kind": "adjacent",
+        "every": 4
+      }
+    }
   },
   "recipes": {
     "mod_gunslinger": {
-      "name": "Gunslinger", "short": "GS", "class": "attack", "condition": "ranged",
-      "from": ["mod_rapid_fire", "mod_long_barrel", "mod_twin_barrel"],
-      "bonus": {"field_shot_every": 5}
+      "name": "Gunslinger",
+      "short": "GS",
+      "class": "attack",
+      "condition": "ranged",
+      "from": [
+        "mod_rapid_fire",
+        "mod_twin_barrel"
+      ],
+      "bonus": {
+        "field_shot_every": 6
+      }
     },
-    "mod_bulwark": {
-      "name": "Bollwerk", "short": "BW", "class": "defense", "condition": "",
-      "from": ["mod_armor_plate", "mod_capacitor"],
-      "bonus": {"shield_delay": 2.0}
+    "mod_overvolt": {
+      "name": "Ueberspannung",
+      "short": "US",
+      "class": "attack",
+      "condition": "",
+      "from": [
+        "mod_rapid_fire",
+        "mod_capacitor"
+      ],
+      "bonus": {
+        "kinetic_to_energy": 0.5
+      }
     },
     "mod_takt_chip": {
-      "name": "Taktchip", "short": "TC", "class": "tactic", "condition": "",
-      "from": ["mod_pointer", "mod_circuit"],
-      "bonus": {"takt_cut": 1, "takt_time": 0.2}
+      "name": "Taktchip",
+      "short": "TC",
+      "class": "tactic",
+      "condition": "",
+      "from": [
+        "mod_rapid_fire",
+        "mod_amplifier"
+      ],
+      "bonus": {
+        "takt_count": 1.25,
+        "takt_time": 0.1
+      }
     },
-    "mod_metronome": {
-      "name": "Taktgeber", "short": "TG", "class": "tactic", "condition": "",
-      "from": ["mod_takt_chip", "mod_amplifier"],
-      "bonus": {"ready_after_ability": true}
+    "mod_seeker": {
+      "name": "Zielsucher",
+      "short": "ZS",
+      "class": "attack",
+      "condition": "",
+      "from": [
+        "mod_rapid_fire",
+        "mod_beacon"
+      ],
+      "bonus": {
+        "bonus_vs_marked": 0.4
+      }
+    },
+    "mod_ram": {
+      "name": "Rammbock",
+      "short": "RM",
+      "class": "attack",
+      "condition": "",
+      "from": [
+        "mod_heavy_edge",
+        "mod_armor_plate"
+      ],
+      "bonus": {
+        "armor_to_damage": 0.3
+      }
     },
     "mod_brawler": {
-      "name": "Raufbold", "short": "RB", "class": "attack", "condition": "melee",
-      "from": ["mod_heavy_edge", "mod_spike_grid"],
-      "bonus": {"retaliation": 0.25}
+      "name": "Raufbold",
+      "short": "RB",
+      "class": "defense",
+      "condition": "",
+      "from": [
+        "mod_heavy_edge",
+        "mod_spike_grid"
+      ],
+      "bonus": {
+        "retaliation": 0.2
+      }
     },
-    "mod_shackle": {
-      "name": "Fesselkette", "short": "FK", "class": "tactic", "condition": "",
-      "from": ["mod_chain", "mod_chain", "mod_twin_barrel"],
-      "bonus": {"shackle": 3}
+    "mod_overload": {
+      "name": "Ueberladung",
+      "short": "UL",
+      "class": "attack",
+      "condition": "",
+      "from": [
+        "mod_heavy_edge",
+        "mod_amplifier"
+      ],
+      "bonus": {
+        "post_ability_power": 0.3
+      }
     },
     "mod_whirlwind": {
-      "name": "Rundumschlag", "short": "RS", "class": "attack", "condition": "melee",
-      "from": ["mod_heavy_edge", "mod_bait"],
-      "bonus": {"cleave": 1.0}
+      "name": "Rundumschlag",
+      "short": "RS",
+      "class": "attack",
+      "condition": "melee",
+      "from": [
+        "mod_heavy_edge",
+        "mod_bait"
+      ],
+      "bonus": {
+        "cleave": 0.6
+      }
+    },
+    "mod_splinter": {
+      "name": "Splitterpanzer",
+      "short": "SP",
+      "class": "defense",
+      "condition": "",
+      "from": [
+        "mod_twin_barrel",
+        "mod_spike_grid"
+      ],
+      "bonus": {
+        "thorns_true": true
+      }
+    },
+    "mod_fork": {
+      "name": "Gabelung",
+      "short": "GB",
+      "class": "tactic",
+      "condition": "",
+      "from": [
+        "mod_twin_barrel",
+        "mod_amplifier"
+      ],
+      "bonus": {
+        "ability_fork": 0.35
+      }
+    },
+    "mod_chain_reaction": {
+      "name": "Kettenreaktion",
+      "short": "KR",
+      "class": "attack",
+      "condition": "",
+      "from": [
+        "mod_twin_barrel",
+        "mod_beacon"
+      ],
+      "bonus": {
+        "chain_jumps": 3
+      }
+    },
+    "mod_bulwark": {
+      "name": "Bollwerk",
+      "short": "BW",
+      "class": "defense",
+      "condition": "",
+      "from": [
+        "mod_armor_plate",
+        "mod_capacitor"
+      ],
+      "bonus": {
+        "shield_delay": 2.0
+      }
+    },
+    "mod_guard_pulse": {
+      "name": "Schutzimpuls",
+      "short": "SI",
+      "class": "defense",
+      "condition": "",
+      "from": [
+        "mod_armor_plate",
+        "mod_amplifier"
+      ],
+      "bonus": {
+        "ability_armor_aura": 3
+      }
+    },
+    "mod_shackle": {
+      "name": "Fesselkette",
+      "short": "FK",
+      "class": "tactic",
+      "condition": "",
+      "from": [
+        "mod_armor_plate",
+        "mod_bait"
+      ],
+      "bonus": {
+        "shackle": 3
+      }
+    },
+    "mod_discharge": {
+      "name": "Entladung",
+      "short": "EN",
+      "class": "defense",
+      "condition": "",
+      "from": [
+        "mod_capacitor",
+        "mod_spike_grid"
+      ],
+      "bonus": {
+        "shield_break_burst": 15
+      }
+    },
+    "mod_holo": {
+      "name": "Hologramm",
+      "short": "HG",
+      "class": "defense",
+      "condition": "",
+      "from": [
+        "mod_capacitor",
+        "mod_bait"
+      ],
+      "bonus": {
+        "decoy": 2.0
+      },
+      "gadget": "act_holo_dash"
+    },
+    "mod_brand": {
+      "name": "Brandmarke",
+      "short": "BM",
+      "class": "tactic",
+      "condition": "",
+      "from": [
+        "mod_spike_grid",
+        "mod_beacon"
+      ],
+      "bonus": {
+        "mark_on_hit_taken": true
+      }
+    },
+    "mod_orbit": {
+      "name": "Orbit-Fokus",
+      "short": "OF",
+      "class": "tactic",
+      "condition": "",
+      "from": [
+        "mod_bait",
+        "mod_beacon"
+      ],
+      "bonus": {},
+      "gadget": "act_orbitpull"
+    }
+  },
+  "bios_kommentar": [
+    "Matrix-BIOS (MODULE_KONZEPT.md 6): spaete Schicht, nur aus Elite-Kaempfen (Wahl 1 aus 3,",
+    "statt des Teils, nie nach dem letzten Kampf). Ein BIOS liegt im Lager.",
+    "bios: die Gegenstaende. kind 'chassis': +1 Modulplatz (Molok: in einem Halter nach Wahl)",
+    "und eine verstaerkte Passive (DromeBuild.chassis_bios, Zahlen in rules). kind 'recipe':",
+    "verwandelt das Rezept 'recipe' im Rezeptbuch in 'result' (Rezept + BIOS oder",
+    "Zutat + Zutat + BIOS). Hoechstens ein BIOS-Rezept je DROME, nicht trennbar.",
+    "bios_recipes: die Ergebnisse -- Wirkung des Grundrezepts plus bonus:",
+    "  ready_after_ability  nach der Faehigkeit sofort wieder geladen",
+    "  field_shot_every     (kleinster Wert zaehlt) Feldschuss haeufiger",
+    "  field_shot_marked    Feldschuss bevorzugt markierte Gegner",
+    "  retaliation_max      Vergeltung bis zu so viele Ladungen",
+    "  berserk              volle Vergeltung trifft dazu alle Gegner daneben",
+    "  mark_hunt            stirbt ein markierter Gegner, springt die Markierung weiter",
+    "  gravity              der Orbit-Sog zieht ein zweites Ziel, beide verlangsamt",
+    "  knockback_every      jeder N-te Angriff stoesst das Ziel 1 Feld zurueck",
+    "  bonus_vs_unshielded  +Anteil Schaden gegen Gegner ohne Schild"
+  ],
+  "bios": {
+    "bios_vireo": {
+      "name": "Vireo-BIOS",
+      "short": "V+",
+      "kind": "chassis",
+      "chassis": "scout_body",
+      "text": "+1 Modulplatz. Sprint gibt dazu +20 % Angriffstempo."
+    },
+    "bios_molok": {
+      "name": "Molok-BIOS",
+      "short": "M+",
+      "kind": "chassis",
+      "chassis": "jugg_body",
+      "text": "+1 Modulplatz in einem Halter. Praesenz faengt 40 % statt 30 % ab und lockt 1 Feld weiter."
+    },
+    "bios_nimbus": {
+      "name": "Nimbus-BIOS",
+      "short": "N+",
+      "kind": "chassis",
+      "chassis": "mage_body",
+      "text": "+1 Modulplatz. Jede Faehigkeit gibt Schild (6 x Power / 10), das Echo darf ein anderes Ziel waehlen."
+    },
+    "bios_strix": {
+      "name": "Strix-BIOS",
+      "short": "S+",
+      "kind": "chassis",
+      "chassis": "strix_body",
+      "text": "+1 Modulplatz. Anlegen schon nach 2,5 s und haelt einen Feldwechsel aus; Markierungen halten doppelt."
+    },
+    "bios_metronome": {
+      "name": "Taktgeber-BIOS",
+      "short": "T+",
+      "kind": "recipe",
+      "recipe": "mod_takt_chip",
+      "result": "mod_metronome"
+    },
+    "bios_revolver": {
+      "name": "Revolverheld-BIOS",
+      "short": "R+",
+      "kind": "recipe",
+      "recipe": "mod_gunslinger",
+      "result": "mod_revolver"
+    },
+    "bios_berserker": {
+      "name": "Berserker-BIOS",
+      "short": "B+",
+      "kind": "recipe",
+      "recipe": "mod_brawler",
+      "result": "mod_berserker"
+    },
+    "bios_hunt": {
+      "name": "Treibjagd-BIOS",
+      "short": "J+",
+      "kind": "recipe",
+      "recipe": "mod_brand",
+      "result": "mod_hunt"
+    },
+    "bios_gravity": {
+      "name": "Gravitation-BIOS",
+      "short": "G+",
+      "kind": "recipe",
+      "recipe": "mod_orbit",
+      "result": "mod_gravity"
+    },
+    "bios_wrecker": {
+      "name": "Abrissbirne-BIOS",
+      "short": "A+",
+      "kind": "recipe",
+      "recipe": "mod_ram",
+      "result": "mod_wrecker"
+    },
+    "bios_phase": {
+      "name": "Phasenbruch-BIOS",
+      "short": "P+",
+      "kind": "recipe",
+      "recipe": "mod_overvolt",
+      "result": "mod_phase"
+    }
+  },
+  "bios_recipes": {
+    "mod_metronome": {
+      "name": "Taktgeber",
+      "short": "TG",
+      "class": "tactic",
+      "base": "mod_takt_chip",
+      "bonus": {
+        "ready_after_ability": true
+      }
+    },
+    "mod_revolver": {
+      "name": "Revolverheld",
+      "short": "RH",
+      "class": "attack",
+      "condition": "ranged",
+      "base": "mod_gunslinger",
+      "bonus": {
+        "field_shot_every": 3,
+        "field_shot_marked": true,
+        "range": 1
+      }
+    },
+    "mod_berserker": {
+      "name": "Berserker",
+      "short": "BK",
+      "class": "defense",
+      "base": "mod_brawler",
+      "bonus": {
+        "retaliation_max": 5,
+        "berserk": true
+      }
+    },
+    "mod_hunt": {
+      "name": "Treibjagd",
+      "short": "TJ",
+      "class": "tactic",
+      "base": "mod_brand",
+      "bonus": {
+        "mark_hunt": true
+      }
+    },
+    "mod_gravity": {
+      "name": "Gravitation",
+      "short": "GV",
+      "class": "tactic",
+      "base": "mod_orbit",
+      "bonus": {
+        "gravity": true
+      }
+    },
+    "mod_wrecker": {
+      "name": "Abrissbirne",
+      "short": "AB",
+      "class": "attack",
+      "base": "mod_ram",
+      "bonus": {
+        "knockback_every": 3
+      }
+    },
+    "mod_phase": {
+      "name": "Phasenbruch",
+      "short": "PB",
+      "class": "attack",
+      "base": "mod_overvolt",
+      "bonus": {
+        "bonus_vs_unshielded": 0.15
+      }
     }
   }
 }

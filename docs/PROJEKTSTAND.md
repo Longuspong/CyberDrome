@@ -239,6 +239,54 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * Entscheidungen nach den Gutachten (Laden statt Modul-Beute, Gegner-Module,
   Gebietsnamen): `NEUANFANG.md` Abschnitt 6i.
 
+### Neues Modulsystem und BIOS (9. Nov. 2026) -- `docs/MODULE_KONZEPT.md`
+* **Module:** 9 Grundmodule (wirken auf jede Waffe) und 18 Rezepte aus genau
+  zwei verschiedenen Zutaten, jedes Grundmodul in genau 4 Rezepten, keine
+  Ketten. Feste Zahlen in `modules.json` -> `rules`. Nicht stapelnde Werte:
+  `ModuleData.MAX_KEYS` / `MIN_KEYS`. Markierung als Status `mark`
+  (`ActionResolver.mark`), Taktchip als Zaehler 1,25 (`Unit.takt_step`,
+  `takt_due`). Die Abschnitte "Module und Rezepte" und "Laden" unten sind
+  damit in Teilen ueberholt (Langer Lauf, Kette, Zeiger, Schaltkreis weg).
+* **Lauf:** Waffen sind fest. Beute-Teile gehen in die **Tasche**
+  (`RunState.bag`), das Lager haelt nur Module und BIOS. Laden: 3 Angebote,
+  Neuwuerfeln (2 Credits, +1 je Wurf), Ziel-Rezept im Rezeptbuch, ab Runde 5
+  gelegentlich ein fertiges Rezept; kein Sperren.
+* **Matrix-BIOS:** nach Elite-Siegen (nicht nach dem letzten Kampf) 1 aus 3
+  statt des Teils (`roll_bios_offers`, `choose_bios`). Chassis-BIOS am DROME
+  (`DromeBuild.chassis_bios`, `bios_slot`), Rezept-BIOS im Rezeptbuch
+  (`bios_recipes`), hoechstens eins je DROME. Abweichung vom Konzept: Molok-
+  BIOS lockt 1 Feld weiter statt "abgefangener Schaden zaehlt als Treffer"
+  -- das tut er schon ohne BIOS. Festung-BIOS (Bollwerk) noch nicht gebaut.
+* **Gemessen (9. Nov., je 200 Spiegelkaempfe, Squad mit Modul gegen sich
+  ohne; Rauschen etwa +-7 Punkte):**
+  * Grundmodule (Ziel: je Chassis hoechstens +-3 Punkte auseinander):
+    Molok Stachelgitter **74 %**, sonst 46-54. Strix Schnellfeuer 68,5,
+    Wuchtkante 67,5 (Power 15), Verstaerker 59. Nimbus Verstaerker 59,
+    Schnellfeuer / Kondensator 56,5. Vireo Schnellfeuer 58,5. Doppellauf
+    und Koedersender fast wirkungslos (48-53).
+  * Rezepte gegen ihre zwei Zutaten lose (Ziel +5 bis +8): zu stark --
+    Nimbus Taktchip 92 / 62,5, Strix Gunslinger 90 / 74, Nimbus Gabelung
+    78,5 / 62, Molok Entladung 82 / 70,5, Vireo Zielsucher 71,5 / 60,5,
+    Molok Raufbold 86 / 76, Brandmarke 90,5 / 82,5. Ohne Gewinn: Bollwerk
+    50,5 / 50,5, Rundumschlag 51 / 51, Splitterpanzer 73 / 73,5,
+    Kettenreaktion (Strix 54,5 / 54,5), Ueberladung Nimbus 62 / 62,
+    Schutzimpuls Molok 52 / 50,5. Im Rahmen: Strix Zielsucher 74,5 / 69,
+    Ueberspannung 73,5 / 69,5, Vireo Gunslinger 58 / 55,5, Taktchip
+    61,5 / 59, Rammbock 57 / 53, Fesselkette 55 / 51, Orbit 57,5 / 55,5.
+  * Werkzeug: `module_bench.gd -- 100 base` bzw. `recipes`.
+  * **Balancing Runde 1** (freigegeben, 9. Nov.): Stachelgitter 1 (+2 Nah),
+    Taktchip Zeit-Takt 10 %, Gunslinger jeder 6., Gabelung 35 %, Doppellauf
+    35 %. Nachgemessen: Molok Stachelgitter 74 -> 64,5, Raufbold 86 -> 79,5,
+    Entladung 82 -> 73,5, Brandmarke 90,5 -> 89; Strix Gunslinger 90 -> 81,5
+    (Zutaten 75,5); Nimbus Gabelung 78,5 -> 74,5 (61,5); Vireo Gunslinger 59
+    (54); Doppellauf Vireo 50,5, Strix 55.
+  * **Messfehler des Spiegels:** Nimbus Taktchip bleibt bei 91 %. Gegenprobe:
+    Zeit-Takt 0 % -> 60 %, 5 % -> 85 %. Schon ein minimal frueherer Vortex
+    entscheidet den Spiegelkampf, weil beide Nimbus sonst exakt gleichzeitig
+    ausloesen. Das misst den Gleichtakt, nicht die Staerke -- Abhilfe waere
+    ein kleiner Zufallsversatz der Takte zu Kampfbeginn (offen, mit dem
+    Spieler zu besprechen).
+
 ### Laden (8. Nov. 2026) -- `RunState.roll_shop/buy`, `modules.json` -> `shop`
 * Im Zwischenstopp oben, unter den Credits: **2 Grundmodule** je Stopp
   (`shop.offers`), keines doppelt, Preis **6 Credits** (`shop.price.base`;

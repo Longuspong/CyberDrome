@@ -590,6 +590,27 @@ Deshalb (Vorgabe des Spielers, 8. Nov., gebaut):
 nachher: Vireo 2,68 -> 1,88; Nimbus 2,56 -> 1,79; Strix 1,96 -> 1,37; Molok
 1,72 -> 1,20. Kampfdauer im Spiegel fast gleich (20,3 -> 20,5 s).
 
+## 6j. Neues Modulsystem und BIOS (Vorgabe des Spielers, 9. Nov. 2026)
+
+Ausgearbeitet in **`docs/MODULE_KONZEPT.md`** (geht 6i bei Modulen, Laden
+und Rezepten vor). Kurz:
+
+* **9 Grundmodule, 18 Rezepte** aus genau zwei verschiedenen Grundmodulen,
+  jedes Grundmodul in genau 4 Rezepten. Keine Rezeptketten mehr (Taktgeber
+  wird ein BIOS). Grundmodule wirken auf jede Waffe.
+* **Matrix-BIOS (kurz BIOS)** als spaete Schicht: Rezept-BIOS, Chassis-BIOS,
+  Lage-BIOS. Nur aus **Elite-Kaempfen** (statt des Teils, zusaetzlich zu den
+  Credits), nie nach dem letzten Kampf -- Module und BIOS verfallen nach
+  dem Lauf.
+* **Bosse** am Ende jedes Story-Levels droppen **dauerhafte Beute** und
+  tragen selbst ein BIOS-Rezept.
+* **Profile = Fraktionen:** Neon Ninja's = Kaempfer, Solar Sentients = Rudel
+  (Bio-/Virus-Cyber, spaeter ein DROME, der sich aufteilt / selbst
+  beschwoert), Mega Mechas = Festung, Hipstar Hookers offen.
+* **Waffen im Lauf fest**; Beute-Teile erst nach dem Lauf in den Hangar.
+* **Laden:** 3 Angebote, Neuwuerfeln, Ziel-Rezept, **kein Sperren**.
+* Neue Waffen zuerst: Bollwerk-Ramme, Moerser, Klingenbumerang.
+
 ## 6b. Brainstorming -- als Naechstes zu besprechen
 
 Vom Spieler angestossen (6. Nov. 2026):
@@ -772,6 +793,9 @@ entfallen (6g). Weiter:
 4. ~~Level fuer DROMEs und Waffen~~ (gebaut 9. Nov., mit neuem Werte-Satz
    und Identitaeten -- `docs/IDENTITAETEN.md`). Als Naechstes laut Spieler:
    die Waffen ueberarbeiten.
-5. Karte wie bei FTL mit Chaos-Kaempfen.
-6. Neon City als erste Region mit Neon-Gegnern und Neon-Varianten.
-7. Spaeter: Skillbaeume.
+5. **Neues Modulsystem nach `MODULE_KONZEPT.md`** (6j, 9. Nov.): Module
+   und Rezepte, Laden mit Neuwuerfeln, Waffen fest im Lauf, BIOS, Profile,
+   neue Waffen -- Bauplan dort in Abschnitt 14.
+6. Karte wie bei FTL mit Chaos-Kaempfen.
+7. Neon City als erste Region mit Neon-Gegnern und Neon-Varianten.
+8. Spaeter: Skillbaeume.

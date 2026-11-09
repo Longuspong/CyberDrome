@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://kistuhgvkcsj"
-path="res://.godot/imported/mod_long_barrel.svg-d376f3180b66f74adf75fb1728dc5949.ctex"
+uid="uid://ckgp7xnhnenmr"
+path="res://.godot/imported/mod_ram.svg-2b7651a1bb12d8e4b0b656c857af73f9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/modules/mod_long_barrel.svg"
-dest_files=["res://.godot/imported/mod_long_barrel.svg-d376f3180b66f74adf75fb1728dc5949.ctex"]
+source_file="res://assets/modules/mod_ram.svg"
+dest_files=["res://.godot/imported/mod_ram.svg-2b7651a1bb12d8e4b0b656c857af73f9.ctex"]
 
 [params]
 

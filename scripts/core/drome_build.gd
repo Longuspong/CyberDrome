@@ -45,6 +45,12 @@ var direction: String = "south"
 ## tragen Module; der Hangar zuhause kennt keine (sie verfallen nach dem Lauf).
 var modules: Dictionary = {}
 
+## Chassis-BIOS (MODULE_KONZEPT.md 6.5, nur im Lauf): +1 Modulplatz und eine
+## verstaerkte Passive. ``bios_slot``: der Halter mit dem Extraplatz (Molok,
+## zwei Halter); leer = der einzige Halter.
+var chassis_bios: bool = false
+var bios_slot: String = ""
+
 ## Level (6g, 8. Nov. 2026): DROME 0-5, je Waffenhalter das Level der Waffe
 ## darin (0-10). Kommen aus dem Hangar (Roster.build_for); Gegner haben 0.
 var drome_level: int = 0
@@ -256,8 +262,23 @@ func stats() -> Dictionary:
 		total["def"] += int(fx.get("def", 0))
 		total["shield"] += int(fx.get("shield", 0))
 		total["thorns"] = int(fx.get("thorns", 0))
+		total["thorns_melee"] = int(fx.get("thorns_melee", 0))
 		total["shield_delay"] = float(fx.get("shield_delay", 0.0))
 		total["retaliation"] = float(fx.get("retaliation", 0.0))
+		# Konter, die am Traeger haengen (nicht an einer Waffe): Splitterpanzer,
+		# Brandmarke, Entladung. Der Zusatztreffer der Stacheln nutzt den
+		# Doppellauf des Traegers.
+		total["thorns_true"] = bool(fx.get("thorns_true", false))
+		total["mark_on_hit_taken"] = float(fx.get("mark", 0.0)) \
+			if bool(fx.get("mark_on_hit_taken", false)) else 0.0
+		total["shield_break_burst"] = int(fx.get("shield_break_burst", 0))
+		total["thorn_ricochet"] = float(fx.get("ricochet_chance", 0.0)) \
+			if bool(fx.get("thorns_true", false)) else 0.0
+		total["thorn_ricochet_share"] = float(fx.get("ricochet_share", 0.25))
+		# BIOS-Rezepte am Traeger: Berserker, Treibjagd.
+		total["retaliation_max"] = int(fx.get("retaliation_max", 3))
+		total["berserk"] = bool(fx.get("berserk", false))
+		total["mark_hunt"] = bool(fx.get("mark_hunt", false))
 
 	# Negative Summen sind sinnlos, aber ein DROME darf sie erreichen -- die
 	# Validierung faengt das ab und sagt dem Spieler, welche Regel bricht.
@@ -336,6 +357,8 @@ func clone() -> DromeBuild:
 	copy.palette = palette.duplicate(true)
 	copy.direction = direction
 	copy.modules = modules.duplicate(true)
+	copy.chassis_bios = chassis_bios
+	copy.bios_slot = bios_slot
 	copy.drome_level = drome_level
 	copy.weapon_levels = weapon_levels.duplicate()
 	copy.source_uid = source_uid

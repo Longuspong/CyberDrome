@@ -53,7 +53,7 @@ func _process(_delta: float) -> bool:
 		14:
 			# Module im Lager, eines angetippt, eines eingesetzt, Rezeptbuch offen.
 			var stop = root.get_node("RunStop")
-			gs.run.storage.append_array([&"mod_rapid_fire", &"mod_long_barrel", &"mod_twin_barrel"])
+			gs.run.storage.append_array([&"mod_rapid_fire", &"mod_capacitor", &"mod_twin_barrel"])
 			gs.run.squad[0].modules[gs.run.squad[0].equip_slots()[0]] = [&"mod_capacitor"]
 			stop._recipes_open = true
 			stop._selected_storage = gs.run.storage.size() - 1
