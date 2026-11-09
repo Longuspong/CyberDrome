@@ -340,8 +340,9 @@ func _loot_section(run: RunState) -> Control:
 	return panel
 
 
-## Erfahrung nach dem Sieg (Leveling): je DROME und Waffe Level und EP,
-## Aufstiege hervorgehoben. Gutgeschrieben ist schon -- zuhause und im Lauf.
+## Erfahrung des letzten Kampfes (Leveling): je DROME und Waffe die neuen EP
+## und was der Lauf bisher gesammelt hat -- mit dem Level, das er nach dem
+## Lauf haette. Gutgeschrieben wird erst am Ende, zuhause.
 func _growth_section(run: RunState) -> Control:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _panel_style(false))
@@ -349,16 +350,28 @@ func _growth_section(run: RunState) -> Control:
 	box.add_theme_constant_override("separation", 2)
 	panel.add_child(box)
 	box.add_child(_label("Erfahrung", 18, COLOR_HEADING))
+	box.add_child(_label("Wird am Ende des Laufs zuhause gutgeschrieben.", 14, COLOR_MUTED))
 	for row in run.last_growth:
-		var table: Array = (Leveling.drome_cfg() if row["kind"] == "drome"
-			else Leveling.weapon_cfg()).get("xp", [])
-		var step := Leveling.progress(int(row["xp"]), table)
-		var text := "%s  Lv %d  ·  %s" % [row["name"], int(row["level"]),
-			"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Hoechstlevel"]
-		if row["up"]:
-			text += "  ·  Aufstieg!"
-		box.add_child(_label(text, 16 if row["kind"] == "drome" else 14,
-			COLOR_GOOD if row["up"] else (Color.WHITE if row["kind"] == "drome" else COLOR_MUTED)))
+		var drome: bool = row["kind"] == "drome"
+		var have := 0
+		var level := 0
+		var total := int((run.pending_xp["dromes" if drome else "weapons"] as Dictionary).get(row["uid"], 0))
+		if drome:
+			var entry := GameState.roster.entry_by_chassis(str(row["uid"]))
+			if entry != null:
+				have = entry.xp
+				level = entry.level
+		else:
+			var owned := GameState.roster.instance(str(row["uid"]))
+			if owned != null:
+				have = owned.xp
+				level = owned.level
+		var after := Leveling.drome_level_for(have + total) if drome \
+			else Leveling.weapon_level_for(have + total)
+		var text := "%s  +%d EP  (Lauf %d)  ·  Lv %d%s" % [row["name"], int(row["gain"]), total,
+			level, (" -> %d" % after) if after > level else ""]
+		box.add_child(_label(text, 16 if drome else 14,
+			COLOR_GOOD if after > level else (Color.WHITE if drome else COLOR_MUTED)))
 	return panel
 
 
@@ -753,6 +766,13 @@ func _show_end(run: RunState) -> void:
 	for entry in run.history:
 		line += "%s(%s) " % ["S" if entry["won"] else "N", "LNE"[int(entry.get("tier", 1))]]
 	_side.add_child(_label("Verlauf: %s (S = Sieg, N = Niederlage; in Klammern die Stufe)" % line.strip_edges(), 16, COLOR_MUTED))
+
+	# Die EP des Laufs, jetzt zuhause gutgeschrieben (Leveling).
+	for row in run.final_growth:
+		var up: bool = row["up"]
+		_side.add_child(_label("%s  +%d EP  ·  Level %d%s" % [row["name"], int(row["gain"]),
+			int(row["level"]), "  ·  Aufstieg!" if up else ""],
+			16 if row["kind"] == "drome" else 14, COLOR_GOOD if up else COLOR_MUTED))
 
 	var parts: Array = _delivered.filter(func(item): return item.get("kind", "") == "part") \
 		.map(func(item): return str(item["title"]))

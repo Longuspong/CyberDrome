@@ -49,12 +49,30 @@ static func level_for(xp: int, table: Array) -> int:
 	return level
 
 
+## Die Schwellen (Gesamt-EP je Level) aus den Kosten je Level.
+static func thresholds(section: Dictionary) -> Array:
+	var out: Array = []
+	var sum := 0
+	for cost in section.get("xp_per_level", []):
+		sum += int(cost)
+		out.append(sum)
+	return out
+
+
+static func drome_table() -> Array:
+	return thresholds(drome_cfg())
+
+
+static func weapon_table() -> Array:
+	return thresholds(weapon_cfg())
+
+
 static func drome_level_for(xp: int) -> int:
-	return mini(drome_max(), level_for(xp, drome_cfg().get("xp", [])))
+	return mini(drome_max(), level_for(xp, drome_table()))
 
 
 static func weapon_level_for(xp: int) -> int:
-	return mini(weapon_max(), level_for(xp, weapon_cfg().get("xp", [])))
+	return mini(weapon_max(), level_for(xp, weapon_table()))
 
 
 ## EP bis zum naechsten Level: [jetzt, Schwelle]; Schwelle 0 = Hoechstlevel.
@@ -154,12 +172,17 @@ static func level_action(action: ActionData, part: PartData, level: int) -> Acti
 # EP
 # ---------------------------------------------------------------------------
 
-## EP fuer den DROME nach einem Sieg dieser Stufe (RunState.TIER_KEYS).
-static func drome_win_xp(tier_key: String) -> int:
-	return int((drome_cfg().get("win_xp", {}) as Dictionary).get(tier_key, 1))
+## EP fuer jeden DROME des Squads nach einem Sieg: Grundwert mal Stufe mal
+## Runde (spaetere Kaempfe sind haerter und zaehlen mehr). Auch wer im Kampf
+## gefallen ist, bekommt sie -- der Tank soll nicht bestraft werden.
+static func drome_win_xp(tier_key: String, round_no: int = 1) -> int:
+	var mult := float((drome_cfg().get("tier_mult", {}) as Dictionary).get(tier_key, 1.0))
+	var growth := 1.0 + float(drome_cfg().get("per_round", 0.1)) * float(maxi(0, round_no - 1))
+	return int(round(float(drome_cfg().get("win_base", 40)) * mult * growth))
 
 
-## EP fuer eine Waffe, die im Sieg getragen wurde, mit so vielen Abschuessen
-## ihres Traegers.
-static func weapon_win_xp(kills: int) -> int:
-	return int(weapon_cfg().get("win_xp", 1)) + int(weapon_cfg().get("kill_xp", 1)) * maxi(0, kills)
+## EP fuer eine Waffe nach einem Kampf: je Schadenspunkt (Schild und
+## Integritaet) und je Abschuss mit ihr -- in Sieg und Niederlage.
+static func weapon_fight_xp(damage: int, kills: int) -> int:
+	return int(round(float(weapon_cfg().get("damage_xp", 0.25)) * float(maxi(0, damage)))) \
+		+ int(weapon_cfg().get("kill_xp", 25)) * maxi(0, kills)

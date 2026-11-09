@@ -273,7 +273,7 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 	info.add_theme_constant_override("separation", 4)
 	info.add_child(UiKit.label(entry.name, UiKit.H2))
 	# Level und EP (Leveling): "Level 2 · EP 6/9".
-	var step := Leveling.progress(entry.xp, Leveling.drome_cfg().get("xp", []))
+	var step := Leveling.progress(entry.xp, Leveling.drome_table())
 	info.add_child(UiKit.label("Level %d · %s" % [entry.level,
 		"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Hoechstlevel"], UiKit.SMALL, UiKit.GOOD))
 	info.add_child(UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL,

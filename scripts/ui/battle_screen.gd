@@ -813,7 +813,10 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		var fighters: Array = []
 		for unit in battle.units:
 			if unit.is_player and unit.build != null:
-				fighters.append({"source_uid": unit.build.source_uid, "kills": unit.kills})
+				var weapons := {}
+				for slot in unit.build.equip_slots():
+					weapons[slot] = unit.weapon_record(slot)
+				fighters.append({"source_uid": unit.build.source_uid, "weapons": weapons})
 		onward.pressed.connect(func():
 			GameState.finish_run_battle(outcome, pool, fighters)
 			get_tree().change_scene_to_file("res://scenes/run.tscn"))

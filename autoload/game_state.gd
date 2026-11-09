@@ -275,6 +275,9 @@ func deliver_run_home() -> Array:
 	var delivered: Array = []
 	if run == null:
 		return delivered
+	# Am Ende des Laufs: die gesammelten EP zuhause gutschreiben.
+	if run.is_over() and not run.xp_credited:
+		run.final_growth = credit_run_xp()
 	for item in run.home_queue:
 		match item.get("kind", ""):
 			"part":
@@ -319,10 +322,8 @@ func begin_run_battle() -> void:
 ## weg -- sonst erbte ein spaeterer Chaos-Kampf Seed und Gegnerstaerke.
 func finish_run_battle(outcome: int, enemy_pool: Array, fighters: Array = []) -> void:
 	if run != null:
-		var tier_key: String = RunState.TIER_KEYS[clampi(run.tier, 0, 2)]
+		run.collect_xp(fighters, outcome == BattleManager.Outcome.VICTORY)
 		run.record_result(outcome, enemy_pool)
-		if outcome == BattleManager.Outcome.VICTORY:
-			run.last_growth = grant_run_xp(tier_key, fighters)
 		# Beute, die nicht mehr in Lager oder Squad passte, gleich nach Hause.
 		if not run.is_over():
 			deliver_run_home()
@@ -333,36 +334,31 @@ func finish_run_battle(outcome: int, enemy_pool: Array, fighters: Array = []) ->
 	refresh_squad()
 
 
-## EP nach einem Sieg im Lauf (Leveling): jeder DROME des Lauf-Squads, der
-## aus dem Hangar stammt, bekommt EP nach Stufe; jede Waffe, die er traegt
-## (das Exemplar aus dem Hangar), EP fuer den Sieg und je Abschuss. Gut-
-## geschrieben wird ZUHAUSE -- die Lauf-Kopien uebernehmen die neuen Level
-## sofort. Gibt die Aenderungen fuer die Anzeige zurueck:
-## [{name, kind ("drome"/"weapon"), xp, level, up}].
-func grant_run_xp(tier_key: String, fighters: Array) -> Array:
+## Schreibt die gesammelten EP des Laufs zuhause gut (Leveling) -- einmal, am
+## Ende des Laufs. Gibt die Aenderungen fuer die Anzeige zurueck:
+## [{name, kind ("drome"/"weapon"), gain, xp, level, up}].
+func credit_run_xp() -> Array:
 	var out: Array = []
-	if run == null:
+	if run == null or run.xp_credited:
 		return out
-	var kills := {}
-	for row in fighters:
-		kills[str(row.get("source_uid", ""))] = int(row.get("kills", 0))
-	for build in run.squad:
-		var entry := roster.entry_by_chassis(build.source_uid)
+	run.xp_credited = true
+	var dromes: Dictionary = run.pending_xp.get("dromes", {})
+	for uid in dromes:
+		var entry := roster.entry_by_chassis(str(uid))
 		if entry == null:
 			continue
-		var up := entry.add_xp(Leveling.drome_win_xp(tier_key))
-		build.drome_level = entry.level
-		out.append({"name": entry.name, "kind": "drome", "xp": entry.xp,
-			"level": entry.level, "up": up})
-		for slot in build.instance_uids.keys():
-			var owned := roster.instance(str(build.instance_uids[slot]))
-			if owned == null or StringName(build.slots.get(slot, &"")) != owned.part_id:
-				continue
-			var weapon_up := owned.add_xp(Leveling.weapon_win_xp(int(kills.get(build.source_uid, 0))))
-			build.weapon_levels[slot] = owned.level
-			var part := owned.part()
-			out.append({"name": part.display_name if part != null else str(owned.part_id),
-				"kind": "weapon", "xp": owned.xp, "level": owned.level, "up": weapon_up})
+		var up := entry.add_xp(int(dromes[uid]))
+		out.append({"name": entry.name, "kind": "drome", "gain": int(dromes[uid]),
+			"xp": entry.xp, "level": entry.level, "up": up})
+	var weapons: Dictionary = run.pending_xp.get("weapons", {})
+	for uid in weapons:
+		var owned := roster.instance(str(uid))
+		if owned == null:
+			continue
+		var up := owned.add_xp(int(weapons[uid]))
+		var part := owned.part()
+		out.append({"name": part.display_name if part != null else str(owned.part_id),
+			"kind": "weapon", "gain": int(weapons[uid]), "xp": owned.xp, "level": owned.level, "up": up})
 	save_roster()
 	return out
 

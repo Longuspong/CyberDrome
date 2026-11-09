@@ -105,19 +105,25 @@
   "levels": {
     "_kommentar": [
       "Level fuer DROMEs und Waffen (scripts/core/leveling.gd), bleiben nach dem Lauf.",
-      "drome: xp = EP-Schwellen fuer Level 1..5; win_xp je Sieg nach Stufe. main =",
+      "xp_per_level: EP, die das jeweils naechste Level kostet (Level 1, 2, ...).",
+      "drome: EP je Sieg = win_base * tier_mult[stufe] * (1 + per_round * (runde - 1)).",
+      "main =",
       "die zwei Hauptwerte je Chassis (+main_per_level je Level, Level 5 = +50 %),",
       "alle anderen Werte (hp, shield, shield_pulse, def) +other_per_level (+20 %).",
       "Speed und Power steigen nie. module_slots_at: auf diesen Leveln +1 Modulplatz.",
-      "weapon: xp = Schwellen fuer Level 1..10; win_xp je Sieg, in dem sie getragen",
-      "wurde, kill_xp je Abschuss ihres Traegers. damage_per_level (Level 10 = +70 %).",
+      "weapon: EP je Kampf = damage_xp * angerichteter Schaden (Schild + Integritaet)",
+      "+ kill_xp je Abschuss mit dieser Waffe. Nur Waffen in Squad-DROMEs, die aus dem",
+      "Hangar stammen. EP sammeln sich im Lauf und werden am Ende zuhause gutgeschrieben.",
+      "damage_per_level (Level 10 = +70 %).",
       "bonus_at_max: Endwert des Bonus-Werts auf Level 10 je Waffe (linear vom",
       "Grundwert). energy_only: nur der Energieanteil waechst (Neon-Blaster)."
     ],
     "drome": {
       "max": 5,
-      "xp": [2, 5, 9, 14, 20],
-      "win_xp": {"easy": 1, "normal": 1, "elite": 2},
+      "xp_per_level": [100, 200, 300, 400, 500],
+      "win_base": 40,
+      "tier_mult": {"easy": 0.75, "normal": 1.0, "elite": 1.5},
+      "per_round": 0.1,
       "main_per_level": 0.1,
       "other_per_level": 0.04,
       "main": {
@@ -130,9 +136,9 @@
     },
     "weapon": {
       "max": 10,
-      "xp": [3, 7, 12, 18, 25, 33, 42, 52, 63, 75],
-      "win_xp": 1,
-      "kill_xp": 1,
+      "xp_per_level": [100, 150, 200, 250, 300, 500, 650, 800, 1200, 1600],
+      "damage_xp": 0.25,
+      "kill_xp": 25,
       "damage_per_level": 0.07,
       "energy_only": ["eq_neon_blaster"],
       "bonus_at_max": {

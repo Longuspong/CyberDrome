@@ -16,10 +16,14 @@ func _molok() -> DromeBuild:
 
 
 func test_xp_tables_give_levels() -> void:
-	t.equal(Leveling.drome_level_for(0), 0, "ohne EP Level 0")
-	t.equal(Leveling.drome_level_for(2), 1, "2 EP: Level 1")
-	t.equal(Leveling.drome_level_for(999), Leveling.drome_max(), "nie ueber das Hoechstlevel")
-	t.equal(Leveling.weapon_level_for(999), Leveling.weapon_max(), "Waffe hoechstens 10")
+	t.equal(Leveling.drome_level_for(99), 0, "99 EP: Level 0")
+	t.equal(Leveling.drome_level_for(100), 1, "100 EP: Level 1")
+	t.equal(Leveling.drome_level_for(300), 2, "100 + 200 EP: Level 2")
+	t.equal(Leveling.drome_table(), [100, 300, 600, 1000, 1500], "100, 200, 300 ... je Level")
+	var costs: Array = Leveling.weapon_cfg()["xp_per_level"]
+	t.ok(costs[4] < costs[5] and costs[7] < costs[8], "Waffen: 1-5 schnell, 6-8 mittel, 9-10 langsam")
+	t.equal(Leveling.drome_level_for(99999), Leveling.drome_max(), "nie ueber das Hoechstlevel")
+	t.equal(Leveling.weapon_level_for(99999), Leveling.weapon_max(), "Waffe hoechstens 10")
 
 
 func test_a_level_ten_weapon_hits_seventy_percent_harder() -> void:
@@ -85,11 +89,11 @@ func test_the_roster_carries_levels_into_the_build() -> void:
 	var roster := Roster.new()
 	roster.seed_starter()
 	var entry: RosterEntry = roster.entries[0]
-	t.ok(entry.add_xp(5), "5 EP: Aufstieg")
+	t.ok(entry.add_xp(300), "300 EP: Aufstieg")
 	t.equal(entry.level, 2, "Level 2")
 	var uid := str(entry.assignments.values().filter(
 		func(u): return roster.instance(str(u)).part().type == PartData.Type.EQUIPMENT)[0])
-	roster.instance(uid).add_xp(12)
+	roster.instance(uid).add_xp(450)
 	var build := roster.build_for(entry)
 	t.equal(build.drome_level, 2, "das Level steckt im Aufbau")
 	t.equal(build.source_uid, entry.chassis_uid(), "mit Herkunft")
@@ -102,23 +106,38 @@ func test_the_roster_carries_levels_into_the_build() -> void:
 	t.equal(inst.level, 3, "Waffenlevel uebersteht Speichern")
 
 
-func test_a_run_victory_grants_xp_at_home_and_in_the_run() -> void:
+func test_run_xp_is_collected_and_credited_at_home_at_the_end() -> void:
 	var saved_roster = GameState.roster
 	var saved_run = GameState.run
 	var roster := Roster.new()
 	roster.seed_starter()
 	GameState.roster = roster
 	GameState.run = RunState.start(55, roster.squad_builds())
-	var first: DromeBuild = GameState.run.squad[0]
-	var growth: Array = GameState.grant_run_xp("elite", [{"source_uid": first.source_uid, "kills": 2}])
-	var entry := roster.entry_by_chassis(first.source_uid)
-	t.equal(entry.xp, Leveling.drome_win_xp("elite"), "der DROME zuhause bekommt EP")
-	t.equal(first.drome_level, entry.level, "die Lauf-Kopie uebernimmt das Level")
+	var run: RunState = GameState.run
+	var first: DromeBuild = run.squad[0]
 	var slot: String = first.instance_uids.keys()[0]
+	var fighters := [{"source_uid": first.source_uid,
+		"weapons": {slot: {"damage": 200, "kills": 2}}}]
+	run.choose_tier(RunState.Tier.ELITE)
+	run.collect_xp(fighters, true)
+	var entry := roster.entry_by_chassis(first.source_uid)
 	var owned := roster.instance(str(first.instance_uids[slot]))
-	t.equal(owned.xp, Leveling.weapon_win_xp(2), "die Waffe bekommt EP fuer Sieg und Abschuesse")
-	t.equal(owned.level, 1, "3 EP: Waffenlevel 1")
-	t.equal(first.weapon_level(slot), 1, "auch im Lauf")
-	t.ok(growth.any(func(g): return g["up"]), "die Anzeige meldet den Aufstieg")
+	t.equal(entry.xp, 0, "im Lauf noch nichts gutgeschrieben")
+	t.equal(int(run.pending_xp["dromes"][first.source_uid]), Leveling.drome_win_xp("elite", 1),
+		"der DROME sammelt EP fuer den Sieg")
+	t.equal(int(run.pending_xp["weapons"][str(first.instance_uids[slot])]), 50 + 50,
+		"die Waffe: 200 Schaden x 0,25 + 2 Abschuesse x 25")
+	run.collect_xp(fighters, false)
+	t.equal(int(run.pending_xp["dromes"][first.source_uid]), Leveling.drome_win_xp("elite", 1),
+		"eine Niederlage gibt dem DROME nichts")
+	t.equal(int(run.pending_xp["weapons"][str(first.instance_uids[slot])]), 200,
+		"der Waffe schon (Schaden ist Schaden)")
+	run.abandon()
+	GameState.deliver_run_home()
+	t.equal(entry.xp, Leveling.drome_win_xp("elite", 1), "am Ende zuhause gutgeschrieben")
+	t.equal(owned.xp, 200, "die Waffe auch")
+	t.equal(owned.level, 1, "200 EP: Waffenlevel 1")
+	GameState.deliver_run_home()
+	t.equal(owned.xp, 200, "nur einmal")
 	GameState.roster = saved_roster
 	GameState.run = saved_run

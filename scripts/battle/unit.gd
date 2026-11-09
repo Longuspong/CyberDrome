@@ -38,6 +38,28 @@ var statuses: Dictionary = {}
 var damage_dealt: int = 0
 ## Abschuesse in diesem Kampf (EP fuer die Waffen, Leveling).
 var kills: int = 0
+## Schaden (Schild + Integritaet) und Abschuesse je Aktions-ID -- daraus
+## bekommt jede Waffe ihre EP (Leveling.weapon_fight_xp).
+var damage_by_action: Dictionary = {}
+var kills_by_action: Dictionary = {}
+
+
+## Was die Waffe in ``slot`` in diesem Kampf angerichtet hat: {damage, kills}.
+## Zwei gleiche Waffen teilen sich die Summe.
+func weapon_record(slot: String) -> Dictionary:
+	var part := build.part_in(slot) if build != null else null
+	if part == null:
+		return {"damage": 0, "kills": 0}
+	var twins := 0
+	for other in build.equip_slots():
+		if build.part_in(other) == part:
+			twins += 1
+	var damage := 0
+	var downs := 0
+	for action in part.actions:
+		damage += int(damage_by_action.get(action.id, 0))
+		downs += int(kills_by_action.get(action.id, 0))
+	return {"damage": damage / maxi(1, twins), "kills": downs / maxi(1, twins)}
 var damage_taken: int = 0
 
 # --- Echtzeit (Nov. 2026) ---------------------------------------------------

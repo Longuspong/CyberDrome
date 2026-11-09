@@ -60,6 +60,8 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	var dealt := (shield_before - target.shield) + amount
 	if dealt > 0:
 		target.note_damage()
+		if source != null and action != null and source.is_player != target.is_player:
+			source.damage_by_action[action.id] = int(source.damage_by_action.get(action.id, 0)) + dealt
 
 	EventBus.unit_damaged.emit(target, amount, source)
 	# Was der Schild geschluckt hat, steht mit im Log. Vorher hiess ein
@@ -81,6 +83,8 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	if target.hp <= 0:
 		if source != null and source != target and source.is_player != target.is_player:
 			source.kills += 1
+			if action != null:
+				source.kills_by_action[action.id] = int(source.kills_by_action.get(action.id, 0)) + 1
 		_kill(target)
 	else:
 		_thorns(source, target, action)
