@@ -354,6 +354,13 @@ func init_realtime(pulse_offset: float) -> void:
 			var first := float(gadget_action.trigger_every) * echo_slower() \
 				if gadget_action.trigger_kind == "time" else 0.0
 			gadgets.append({"part": part, "ability": gadget_action, "ready": first, "fx": fx})
+		# Module mit eigener Faehigkeit (Orbit-Fokus, Hologramm-Boost).
+		for module in build.active_modules(slot):
+			var granted := ModuleData.gadget_action(module.gadget)
+			if granted != null:
+				var first_ready := float(granted.trigger_every) * echo_slower() \
+					if granted.trigger_kind == "time" else 0.0
+				gadgets.append({"part": part, "ability": granted, "ready": first_ready, "fx": fx})
 		if attack == null:
 			continue
 		var ability: ActionData = null

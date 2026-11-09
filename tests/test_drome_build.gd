@@ -34,7 +34,8 @@ func _stock(set_id: String) -> DromeBuild:
 
 
 func test_library_loaded() -> void:
-	t.equal(PartDB.parts.size(), 27, "27 Bauteile erwartet")
+	# 8. Nov. 2026: Orbit-Fokus, Hologramm-Boost und Koedersender sind Module.
+	t.equal(PartDB.parts.size(), 24, "24 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausaetze erwartet")
 	for part in PartDB.parts.values():
 		t.equal(part.views.size(), 4, "%s braucht vier Ansichten" % part.id)
@@ -74,20 +75,18 @@ func test_a_build_without_a_weapon_is_a_decision_not_an_error() -> void:
 	# Slotmodell die Aussage, fuer die es da ist: welche Aktionen ein DROME hat,
 	# sagt seine Ausruestung. Wer Deflektor und Drohnen-Pod traegt, hat eben
 	# keinen Angriff -- eine Entscheidung mit Folgen, keine Panne. Seit 7. Nov.
-	# haben Deflektor und Drohnen-Pod einen Angriff; der Koedersender ist
-	# weiter rein passiv, der Techniker also ganz ohne aktive Aktion -- und
-	# trotzdem gueltig.
+	# haben Deflektor und Drohnen-Pod einen Angriff; seit 8. Nov. sind die
+	# Gadgets Module. Ein DROME ganz ohne Ausruestung ist trotzdem gueltig.
 	var techniker := DromeBuild.create("TECHNIKER", {
 		"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_bait_beacon"})
+		"feet": &"jugg_feet", "core": &"jugg_core"})
 	t.ok(techniker.weapons().is_empty(), "der Techniker traegt keine Waffe")
 	t.ok(techniker.is_valid(),
 		"und ist trotzdem baubar: %s" % ", ".join(techniker.validate()))
 	t.ok(techniker.actions_of(ActionData.Category.ATTACK).is_empty(),
 		"die Folge steht in der Aktionsliste: kein Angriff")
 	t.ok(techniker.actions().is_empty(),
-		"der Sender ist passiv -- gar keine Aktion, und das ist gueltig")
+		"gar keine Aktion, und das ist gueltig")
 
 
 func test_weight_no_longer_slows_anyone_down() -> void:
@@ -318,12 +317,13 @@ func test_actions_are_split_by_budget() -> void:
 	var build := DromeBuild.create("GEMISCHT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_orbit_focus",
+		"equip_left": &"eq_hammer",
 	})
+	build.modules["equip_left"] = [&"mod_orbit"]
 	var attacks := build.actions_of(ActionData.Category.ATTACK)
 	var abilities := build.actions_of(ActionData.Category.ABILITY)
 	# Die Kanone traegt zwei Aktionen: Belagerungsschlag (Angriff) UND
-	# Sperrfeuer (Faehigkeit). Dazu der Orbit-Sog aus dem Fokus. Also ein
+	# Sperrfeuer (Faehigkeit). Dazu der Orbit-Sog aus dem Modul. Also ein
 	# Angriff, zwei Faehigkeiten.
 	t.equal(attacks.size(), 1, "nur der Belagerungsschlag ist ein Angriff")
 	t.equal(abilities.size(), 2, "Sperrfeuer und Orbit-Sog sind Faehigkeiten")

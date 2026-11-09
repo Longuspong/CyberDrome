@@ -519,18 +519,6 @@ STATS = {
         ],
     },
 
-    # Springt weg, wenn ein Gegner danebensteht.
-    "eq_holo_boost": {
-        "actions": [
-            {"id": "act_holo_dash", "display_name": "Hologramm-Boost",
-             "category": "ability", "targeting": "dash",
-             "range_tiles": 3, "power": 0,
-             "trigger": {"kind": "adjacent", "every": 4, "weapon": ""}},
-        ],
-    },
-
-    # Hammer des Molok: schwer, langsam, kinetisch. Jeder 3. Schlag betaeubt
-    # das Ziel 1 s (Vorgabe des Spielers, Nov. 2026).
     # Mittel (8. Nov. 2026). Bonus Integritaet.
     "eq_hammer": {
         "hp": 20,
@@ -563,8 +551,6 @@ STATS = {
              "trigger": {"kind": "attacks", "every": 4, "weapon": "act_drone_repair"}},
         ],
     },
-    # Lockt: Gegner im Umkreis 2 greifen den Traeger an.
-    "eq_bait_beacon": {"lure_radius": 2},
 
     # Kontrollwaffe des Nimbus: Einzelschuss auf Blaster-Reichweite, reine
     # Energie. Die Faehigkeit (Vortex) zieht die Gegner um das Ziel zusammen,
@@ -585,15 +571,6 @@ STATS = {
              "energy_fraction": 1.0, "gather": True, "delay": 0.6,
              "status": {"id": "slow", "seconds": 2.5, "move_mult": 0.6},
              "trigger": {"kind": "time", "every": 3, "weapon": ""}},
-        ],
-    },
-    # Zieht alle 6 s ein Ziel zwei Felder heran.
-    "eq_orbit_focus": {
-        "actions": [
-            {"id": "act_orbitpull", "display_name": "Orbit-Sog",
-             "category": "ability", "targeting": "single",
-             "range_tiles": 4, "power": 0, "push_tiles": -2,
-             "trigger": {"kind": "time", "every": 6, "weapon": ""}},
         ],
     },
     # Schwer -- das einzige schwere Teil. Bonus Power.
@@ -1924,15 +1901,6 @@ SETS = [
                 "mount_class": "medium", "category": "shield",
                 "anchors": {"mount": (0, 0, 52)},
             },
-            {
-                "id": "eq_holo_boost", "code": "EQP-009", "type": "equipment",
-                "name": "Hologramm-Boost", "tags": ["support", "mobility"],
-                "shapes": EQ_HOLO_BOOST,
-                # Leicht -- ein Projektor, kein Geschuetz. Support, damit er an
-                # jeden Standardarm passt (auch den Schulterpod-Slot des Molok).
-                "mount_class": "light", "category": "support",
-                "anchors": {"mount": (0, 0, 52), "emitter": (7.6, 0, 47)},
-            },
         ],
     },
     {
@@ -1998,21 +1966,6 @@ SETS = [
                 "mount_class": "light", "category": "support",
                 "anchors": {"mount": (0, 0, 61)},
             },
-            {
-                # Bewusst OHNE "slots": der Sender passt an jeden Arm und auf
-                # die Molok-Schulter. Nur so kostet er auch etwas. Waere er
-                # schulterfest, koennte ihn allein der Molok tragen -- und
-                # zwar in einem Slot, in dem ohnehin keine Waffe sitzen darf.
-                # Am Strix mit seinem einzigen Anker ist er dagegen gar nicht
-                # tragbar, ohne dass der Aufbau seine Waffe verliert und damit
-                # ungueltig wird. Das ist die Slot-Achse aus Abschnitt 3c, auf
-                # das Locken angewandt: eine Kaufentscheidung ohne eine Zahl.
-                "id": "eq_bait_beacon", "code": "EQP-008", "type": "equipment",
-                "name": "Koedersender", "tags": ["support", "beacon", "lure"],
-                "shapes": EQ_BAIT_BEACON,
-                "mount_class": "light", "category": "support",
-                "anchors": {"mount": (0, 0, 52)},
-            },
         ],
     },
     {
@@ -2065,13 +2018,6 @@ SETS = [
                 "shapes": EQ_RUNE_STAFF,
                 "mount_class": "light", "category": "weapon",
                 "anchors": {"mount": (0, 0, 47), "muzzle": (7.6, 0, 61.0)},
-            },
-            {
-                "id": "eq_orbit_focus", "code": "EQP-006", "type": "equipment",
-                "name": "Orbit-Fokus", "tags": ["support", "arcane", "round"],
-                "shapes": EQ_ORBIT_FOCUS,
-                "mount_class": "light", "category": "support",
-                "anchors": {"mount": (0, 0, 47), "muzzle": (7.6, 0, 30.5)},
             },
         ],
     },

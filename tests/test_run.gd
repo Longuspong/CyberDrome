@@ -188,7 +188,7 @@ func _win_a_part(run: RunState, pool: Array) -> StringName:
 
 func test_a_part_reward_lands_in_the_storage() -> void:
 	var run := RunState.start(12)
-	var id := _win_a_part(run, [&"eq_deflector", &"eq_rune_staff", &"eq_holo_boost"])
+	var id := _win_a_part(run, [&"eq_deflector", &"eq_rune_staff", &"eq_neon_blaster"])
 	t.ok(id != &"", "es gab ein Teil")
 	t.equal(run.phase, RunState.Phase.STOP, "Zwischenstopp nach dem Sieg")
 	t.equal(run.storage, [id], "das Teil liegt im Lager")

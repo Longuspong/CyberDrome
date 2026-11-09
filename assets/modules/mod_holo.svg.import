@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b5ayg35ugk8ct"
-path="res://.godot/imported/eq_bait_beacon_west.svg-9b6a322b37614b6c2bba60767cae7f16.ctex"
+uid="uid://8qnq8504kvaa"
+path="res://.godot/imported/mod_holo.svg-d62c74915e429a3e18421b6593c97840.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/parts/bot2/eq_bait_beacon_west.svg"
-dest_files=["res://.godot/imported/eq_bait_beacon_west.svg-9b6a322b37614b6c2bba60767cae7f16.ctex"]
+source_file="res://assets/modules/mod_holo.svg"
+dest_files=["res://.godot/imported/mod_holo.svg-d62c74915e429a3e18421b6593c97840.ctex"]
 
 [params]
 

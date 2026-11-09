@@ -445,15 +445,6 @@ func test_presence_lures_nearby_foes() -> void:
 	battle.free()
 
 
-func test_the_beacon_lures_too() -> void:
-	var beacon := DromeBuild.create("Koeder", {"body": &"strix_body", "head": &"strix_head",
-		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_bait_beacon"})
-	var battle := _battle([beacon, _vireo()], [_vireo()],
-		[Vector2i(10, 11), Vector2i(4, 14), Vector2i(10, 10)])
-	t.equal(battle.brain.lured_by(battle.units[2]), battle.units[0], "der Koedersender lockt")
-	battle.free()
-
-
 func test_each_role_picks_by_its_own_rule() -> void:
 	# Ein naher, voller Vireo und ein ferner, angeschlagener Vireo.
 	var tiles := [Vector2i(10, 14), Vector2i(12, 14), Vector2i(10, 12), Vector2i(13, 9)]

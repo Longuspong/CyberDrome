@@ -178,6 +178,16 @@ func actions() -> Array:
 				continue
 			seen[action.id] = true
 			result.append(action)
+	# Faehigkeiten aus Modulen (Orbit-Fokus, Hologramm-Boost), solange sie wirken.
+	if not modules.is_empty():
+		for slot in equip_slots():
+			for module in active_modules(slot):
+				if module.gadget == &"" or seen.has(module.gadget):
+					continue
+				var granted := ModuleData.gadget_action(module.gadget)
+				if granted != null:
+					seen[granted.id] = true
+					result.append(granted)
 	return result
 
 

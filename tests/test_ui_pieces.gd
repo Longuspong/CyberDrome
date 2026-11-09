@@ -80,7 +80,8 @@ func test_an_action_without_damage_previews_no_damage() -> void:
 	var mage := DromeBuild.create("SOG", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_orbit_focus"})
+		"equip_left": &"eq_hammer"})
+	mage.modules["equip_left"] = [&"mod_orbit"]
 	var caster := Unit.create(mage, &"P0", true)
 	var victim := Unit.create(mage, &"E0", false)
 	caster.tile = Vector2i(2, 2)

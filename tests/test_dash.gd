@@ -1,6 +1,7 @@
 extends RefCounted
 
-## Der Hologramm-Boost (Dash): die einzige BEWEGUNGS-Aktion im Bestand.
+## Der Hologramm-Boost (Dash): die einzige BEWEGUNGS-Aktion im Bestand. Seit
+## 8. Nov. 2026 ein Modul im Waffenhalter (mod_holo), keine Ausruestung mehr.
 ##
 ## Sie versetzt den eigenen DROME in gerader Linie und stoppt vor anderen
 ## DROMEs. Ausgefuehrt landet der DROME wirklich auf dem gewaehlten Feld.
@@ -9,11 +10,13 @@ var t
 
 
 func _vireo() -> DromeBuild:
-	return DromeBuild.create("VIREO", {
+	var build := DromeBuild.create("VIREO", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_holo_boost",
+		"equip_left": &"eq_pulse_blaster",
 	})
+	build.modules["equip_left"] = [&"mod_holo"]
+	return build
 
 
 func _dash_action(unit: Unit) -> ActionData:

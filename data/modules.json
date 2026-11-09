@@ -38,6 +38,9 @@
     "short: zwei Buchstaben fuer den Chip (eindeutig), falls kein Symbol da ist.",
     "Symbol: assets/modules/<id>.svg (64x64, transparent); anderer Pfad mit icon.",
     "sell_value: Credits beim Verkauf (Grundmodul / Rezept-Modul).",
+    "gadget (8. Nov. 2026): das Modul bringt eine eigene Faehigkeit mit, die",
+    "unter gadgets steht (Orbit-Fokus, Hologramm-Boost -- frueher Ausruestung).",
+    "Sie loest nach ihrem Takt aus, solange das Modul wirkt.",
     "shop: der Laden im Zwischenstopp (6i) -- offers Grundmodule je Stopp,",
     "price in Credits (Grundmodul / Rezept-Modul), recipe_weight: so viel",
     "wahrscheinlicher ist ein Modul, das einem angefangenen Rezept fehlt."
@@ -97,7 +100,23 @@
     "mod_bait": {
       "name": "Koedersender", "short": "KS", "class": "tactic", "condition": "",
       "effects": {"taunt": 3.0}
+    },
+    "mod_orbit": {
+      "name": "Orbit-Fokus", "short": "OF", "class": "tactic", "condition": "",
+      "effects": {}, "gadget": "act_orbitpull"
+    },
+    "mod_holo": {
+      "name": "Hologramm-Boost", "short": "HB", "class": "defense", "condition": "",
+      "effects": {}, "gadget": "act_holo_dash"
     }
+  },
+  "gadgets": {
+    "act_orbitpull": {"display_name": "Orbit-Sog", "category": "ability",
+      "targeting": "single", "range_tiles": 4, "push_tiles": -2,
+      "trigger": {"kind": "time", "every": 6}},
+    "act_holo_dash": {"display_name": "Hologramm-Boost", "category": "ability",
+      "targeting": "dash", "range_tiles": 3,
+      "trigger": {"kind": "adjacent", "every": 4}}
   },
   "recipes": {
     "mod_gunslinger": {

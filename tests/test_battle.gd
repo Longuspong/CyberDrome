@@ -70,10 +70,13 @@ func test_damage_actually_happens() -> void:
 ## tragen den Orbit-Sog am rechten Halter. Damit haengt der Unterschied im
 ## Verhalten allein an der Reichweite, so wie die Bewertung es behauptet.
 func _with_orbit_pull(display_name: String, weapon: StringName) -> DromeBuild:
-	return DromeBuild.create(display_name, {
+	var build := DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": weapon, "equip_right": &"eq_orbit_focus"})
+		"equip_left": weapon})
+	# Orbit-Fokus ist seit 8. Nov. 2026 ein Modul im Halter der Waffe.
+	build.modules["equip_left"] = [&"mod_orbit"]
+	return build
 
 
 func _pull_action(unit: Unit) -> ActionData:
@@ -283,12 +286,17 @@ func _ability_squad() -> Array:
 		DromeBuild.create("KOEDER", {
 			"body": &"jugg_body", "head": &"jugg_head",
 			"feet": &"jugg_feet", "core": &"jugg_core",
-			"equip_left": &"eq_hammer", "equip_right": &"eq_bait_beacon"}),
-		DromeBuild.create("SANI", {
+			"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"}),
+		_with_modules(DromeBuild.create("SANI", {
 			"body": &"mage_body", "head": &"mage_head",
 			"feet": &"mage_drive", "core": &"mage_core",
-			"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus"}),
+			"equip_left": &"eq_rune_staff"}), "equip_left", [&"mod_orbit"]),
 	]
+
+
+func _with_modules(build: DromeBuild, slot: String, ids: Array) -> DromeBuild:
+	build.modules[slot] = ids
+	return build
 
 
 ## Spielt ``battles`` Gefechte und schreibt je DROME die Folge seiner Aktionen
@@ -319,13 +327,11 @@ func test_every_ability_fires_by_itself() -> void:
 	# Echtzeit (Nov. 2026): Faehigkeiten werden nicht mehr gezogen, sie loesen
 	# nach ihrer Regel aus. Jede Faehigkeit im Bestand muss im Kampf auch
 	# wirklich kommen -- sonst ist ihr Ausloeser kaputt.
-	var squads := [_ability_squad(), _squad(), [DromeBuild.create("BOOST", {
+	# Orbit-Fokus an einer Nahkampfwaffe: wer kuerzer reicht, will heranziehen.
+	var squads := [_ability_squad(), _squad(), [_with_modules(DromeBuild.create("ORBIT", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_holo_boost"})], [DromeBuild.create("ORBIT", {
-		"body": &"mage_body", "head": &"mage_head",
-		"feet": &"mage_drive", "core": &"mage_core",
-		"equip_left": &"eq_orbit_focus"})]]
+		"equip_left": &"eq_plasma_blade"}), "equip_left", [&"mod_orbit"])]]
 	var uses := {}
 	for squad in squads:
 		var measured: Dictionary = _record(8, squad, 7000)

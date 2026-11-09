@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ckaeu8bkxi0xv"
-path="res://.godot/imported/eq_holo_boost_north.svg-041528ddbfb329165573913124bb8287.ctex"
+uid="uid://cc2ggutb3l08u"
+path="res://.godot/imported/mod_orbit.svg-50c60dc288bd8ca3a799ad016a58c916.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/parts/bot1/eq_holo_boost_north.svg"
-dest_files=["res://.godot/imported/eq_holo_boost_north.svg-041528ddbfb329165573913124bb8287.ctex"]
+source_file="res://assets/modules/mod_orbit.svg"
+dest_files=["res://.godot/imported/mod_orbit.svg-50c60dc288bd8ca3a799ad016a58c916.ctex"]
 
 [params]
 

@@ -18,10 +18,7 @@ const ROLE := {
 	&"eq_deflector": "Ein Energieschild zum Umschnallen: mehr Schild, der sich jeden Puls (alle 3 s) wieder auflaedt. Keine eigene Aktion.",
 	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integritaet zurueck.",
 	&"eq_rune_staff": "Nahkampfstab mit reinem Energieschaden. Trifft das Ziel und die vier geraden Nachbarfelder.",
-	&"eq_orbit_focus": "Kontrolle statt Schaden: zieht einen Gegner zu sich heran.",
 	&"eq_rail_lance": "Scharfschuetzenwaffe mit der groessten Reichweite.",
-	&"eq_bait_beacon": "Lockt Gegner an: wer ihm zu nahe kommt, greift den Traeger an.",
-	&"eq_holo_boost": "Ein schneller Sprung in gerader Linie -- fuer Stellungswechsel, nicht fuer Schaden.",
 }
 
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
