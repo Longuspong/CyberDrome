@@ -1,13 +1,40 @@
 {
   "_kommentar": [
-    "Drei Regionen (Stage 1-3; Stage 4 Dachterrassen folgt), reine Optik: Name, Bodenkachel (assets/terrain/<id>/)",
+    "Drei Regionen (Stage 1-3; Stage 4 Dachterrassen folgt): Name, Bodenkachel (assets/terrain/<id>/)",
     "und die passende Kulisse (scripts/ui/ambience.gd). Gelaende gibt es",
-    "seit dem Umbau zum Autobattler (Nov. 2026) nicht mehr."
+    "seit dem Umbau zum Autobattler (Nov. 2026) nicht mehr.",
+    "faction (9. Nov. 2026, docs/MODULE_KONZEPT.md 9): die Fraktion des Gebiets und ihr",
+    "Profil -- wie sich ihre Gegner zusammensetzen (EnemyGenerator.profile, RunState._arm_enemies):",
+    "  chassis   Gewicht je Chassis beim Wuerfeln (fehlt = 1)",
+    "  weapons   bevorzugte Waffen, zaehlen weapon_weight-mal so viel",
+    "  modules   bevorzugte Grundmodule, recipes bevorzugte Rezepte (module_weight-mal)",
+    "Spaeter kommen eigene DROMEs je Fraktion dazu (Solar Sentients: einer, der sich aufteilt)."
   ],
 
   "regions": [
-    {"id": "city",   "name": "Neon City",   "floor": {"name": "Asphalt",    "svg": "asphalt.svg"}},
-    {"id": "green",  "name": "Parkanlage",  "floor": {"name": "Wiese",      "svg": "meadow.svg"}},
-    {"id": "plant7", "name": "Factory 5",   "floor": {"name": "Gitterrost", "svg": "grating.svg"}}
-  ]
+    {"id": "city",   "name": "Neon City",   "floor": {"name": "Asphalt",    "svg": "asphalt.svg"},
+     "faction": {"name": "Neon Ninja's", "profile": "Kaempfer",
+                 "text": "Nahkaempfer, die dicht ranruecken: Klingen, Haemmer, Rammen.",
+                 "chassis": {"scout_body": 3, "jugg_body": 1, "mage_body": 0.5, "strix_body": 0.5},
+                 "weapons": ["eq_plasma_blade", "eq_hammer", "eq_bulwark_ram", "eq_boomerang"],
+                 "modules": ["mod_heavy_edge", "mod_spike_grid", "mod_bait", "mod_amplifier"],
+                 "recipes": ["mod_whirlwind", "mod_brawler", "mod_overload"]}},
+    {"id": "green",  "name": "Parkanlage",  "floor": {"name": "Wiese",      "svg": "meadow.svg"},
+     "faction": {"name": "Solar Sentients", "profile": "Rudel",
+                 "text": "Viele leichte DROMEs, die sich gegenseitig verstaerken (Bio-/Virus-Cyber).",
+                 "chassis": {"scout_body": 3, "mage_body": 2, "jugg_body": 0.5, "strix_body": 0.5},
+                 "weapons": ["eq_pulse_blaster", "eq_neon_blaster", "eq_rune_staff", "eq_boomerang"],
+                 "modules": ["mod_twin_barrel", "mod_rapid_fire", "mod_amplifier", "mod_beacon"],
+                 "recipes": ["mod_fork", "mod_chain_reaction", "mod_seeker"]}},
+    {"id": "plant7", "name": "Factory 5",   "floor": {"name": "Gitterrost", "svg": "grating.svg"},
+     "faction": {"name": "Mega Mechas", "profile": "Festung",
+                 "text": "Schwere Panzer, Schilde und Artillerie aus der zweiten Reihe.",
+                 "chassis": {"jugg_body": 4, "strix_body": 1.5, "scout_body": 0.5, "mage_body": 0.5},
+                 "weapons": ["eq_hammer", "eq_deflector", "eq_bulwark_ram", "eq_mortar"],
+                 "modules": ["mod_armor_plate", "mod_capacitor", "mod_spike_grid"],
+                 "recipes": ["mod_ram", "mod_brand", "mod_bulwark"]}}
+  ],
+
+  "weapon_weight": 4.0,
+  "module_weight": 4.0
 }

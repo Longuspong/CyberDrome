@@ -14,6 +14,9 @@ var regions: Dictionary = {}
 ## Magenta-Fehlfeld dargestellt -- sichtbar, nicht stillschweigend ersetzt.
 var missing_tiles: Array[String] = []
 
+## Gewichte der Fraktions-Profile (data/regions.json -> weapon_weight ...).
+var _weights: Dictionary = {}
+
 
 func _init() -> void:
 	load_regions()
@@ -32,6 +35,9 @@ func load_regions() -> void:
 		push_error("TerrainDB: %s ist kein JSON-Objekt" % PATH)
 		return
 
+	for key in ["weapon_weight", "module_weight"]:
+		if parsed.has(key):
+			_weights[key] = float(parsed[key])
 	for meta in parsed.get("regions", []):
 		var region_id: String = meta.get("id", "")
 		var region := Terrain.Region.from_meta(meta, TILE_DIR.path_join(region_id))
@@ -57,6 +63,11 @@ func region_names() -> Array[String]:
 
 func get_region(region_id: StringName) -> Terrain.Region:
 	return regions.get(region_id)
+
+
+## Ein Gewicht der Fraktions-Profile (weapon_weight, module_weight).
+func weight(key: String, fallback: float) -> float:
+	return float(_weights.get(key, fallback))
 
 
 ## Zieht eine Region aus dem Seed. Derselbe Seed ergibt dieselbe Region.

@@ -212,6 +212,11 @@ func _show_prepare(run: RunState) -> void:
 	_side.add_child(panel)
 
 	box.add_child(_label("Region: %s" % info["region"], 18))
+	if str(info.get("faction", "")) != "":
+		box.add_child(_label("Gegner: %s  ·  Profil %s" % [info["faction"], info["profile"]],
+			16, COLOR_WARN))
+		if str(info.get("faction_text", "")) != "":
+			box.add_child(_flow_label(str(info["faction_text"]), 14, COLOR_MUTED))
 
 	var own := float(info["own_power"])
 	var foe := float(info["enemy_power"])

@@ -399,3 +399,55 @@ func test_enemies_level_up_with_round_and_tier() -> void:
 			if build.part_in(slot) != null:
 				t.equal(build.weapon_level(slot), late["weapon"], "und das Waffenlevel")
 	t.ok(run.enemy_levels(RunState.Tier.EASY)["weapon"] < late["weapon"], "Leicht darunter")
+
+
+# ---------------------------------------------------------------------------
+# Fraktionen und Profile (MODULE_KONZEPT.md 9, 9. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+## Zaehlt Chassis und Waffen der Gegner ueber viele Runden eines Gebiets.
+func _faction_counts(region: StringName) -> Dictionary:
+	var bodies := {}
+	var weapons := {}
+	for seed_value in 25:
+		var run := RunState.start(9100 + seed_value)
+		run.region_id = region
+		for which in [RunState.Tier.EASY, RunState.Tier.NORMAL, RunState.Tier.ELITE]:
+			for build in run.enemies(which):
+				var body: StringName = build.body().id
+				bodies[body] = int(bodies.get(body, 0)) + 1
+				for part in build.weapons():
+					weapons[part.id] = int(weapons.get(part.id, 0)) + 1
+	return {"bodies": bodies, "weapons": weapons}
+
+
+func test_every_region_has_a_faction_with_a_profile() -> void:
+	for id in [&"city", &"green", &"plant7"]:
+		var run := RunState.start(1)
+		run.region_id = id
+		var faction := run.faction()
+		t.ok(str(faction.get("name", "")) != "", "%s hat eine Fraktion" % id)
+		t.ok(str(faction.get("profile", "")) != "", "mit Profil")
+		var info := run.preview()
+		t.equal(info["faction"], faction["name"], "die Vorschau nennt sie")
+
+
+func test_the_mega_mechas_bring_more_moloks_than_the_ninjas() -> void:
+	var mechas: Dictionary = _faction_counts(&"plant7")
+	var ninjas: Dictionary = _faction_counts(&"city")
+	# Die Zielstaerke zieht bei allen Fraktionen viele Moloks (hoher
+	# Kampfwert); die Festung unterscheidet sich vor allem ueber schwere
+	# Rahmen insgesamt (Molok + Strix).
+	var heavy := func(counts: Dictionary) -> int:
+		return int(counts.get(&"jugg_body", 0)) + int(counts.get(&"strix_body", 0))
+	var mech_heavy: int = heavy.call(mechas["bodies"])
+	var ninja_heavy: int = heavy.call(ninjas["bodies"])
+	var ninja_vireos := int(ninjas["bodies"].get(&"scout_body", 0))
+	t.note("Chassis Mega Mechas %s, Neon Ninja's %s" % [mechas["bodies"], ninjas["bodies"]])
+	t.ok(mech_heavy > ninja_heavy * 1.3, "Festung: deutlich mehr schwere Rahmen (%d gegen %d)" % [mech_heavy, ninja_heavy])
+	t.ok(ninja_vireos > int(mechas["bodies"].get(&"scout_body", 0)), "Kaempfer: mehr Vireos")
+	var blades := int(ninjas["weapons"].get(&"eq_plasma_blade", 0)) \
+		+ int(ninjas["weapons"].get(&"eq_boomerang", 0))
+	var guns := int(ninjas["weapons"].get(&"eq_pulse_blaster", 0)) \
+		+ int(ninjas["weapons"].get(&"eq_neon_blaster", 0))
+	t.ok(blades > guns, "die Neon Ninja's kaempfen eher nah (%d gegen %d)" % [blades, guns])

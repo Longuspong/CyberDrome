@@ -18,6 +18,11 @@ var rng := RandomNumberGenerator.new()
 var attempts_used: int = 0
 var achieved_power: float = 0.0
 
+## Profil der Fraktion (data/regions.json -> faction, MODULE_KONZEPT.md 9):
+## Gewichte je Chassis, bevorzugte Waffen (weapon_weight-mal). Leer = frei
+## gewuerfelt wie bisher.
+var profile: Dictionary = {}
+
 
 func _init(battle_seed: int = 0) -> void:
 	rng.seed = battle_seed
@@ -74,7 +79,9 @@ func _roll(display_name: String) -> DromeBuild:
 	# Der Rahmen ist eine Huelle: Kopf und Fuesse stammen aus DEMSELBEN Set wie
 	# das Chassis (GAME_DESIGN §9). Frei gewuerfelt entstuenden gemischte Rahmen,
 	# die der Aufbau ablehnt. Der Kern gehoert seit 6g ebenso zum Rahmen.
-	var chassis: PartData = _pick(PartDB.of_type(PartData.Type.BODY))
+	var bodies := PartDB.of_type(PartData.Type.BODY)
+	var chassis: PartData = _pick(bodies) if profile.is_empty() \
+		else _pick_weighted(bodies, _chassis_weight)
 	var assignment := {
 		"body": chassis.id,
 		"head": PartDB.frame_mate(chassis.set_id, PartData.Type.HEAD).id,
@@ -95,7 +102,8 @@ func _roll(display_name: String) -> DromeBuild:
 			var weapons: Array = candidates.filter(
 				func(part): return part.category == "weapon")
 			if not weapons.is_empty():
-				assignment[slot] = _pick(weapons).id
+				assignment[slot] = (_pick(weapons) if profile.is_empty()
+					else _pick_weighted(weapons, _weapon_weight)).id
 				weapon_placed = true
 				continue
 		# Die weiteren Slots nur mit 70 Prozent Wahrscheinlichkeit -- ein
@@ -157,3 +165,28 @@ func _draw_names(count: int) -> Array[String]:
 
 func _pick(pool: Array):
 	return pool[rng.randi() % pool.size()]
+
+
+## Gewichtet nach ``weight`` (Callable: Teil -> float). Gewicht 0 faellt raus,
+## solange etwas anderes da ist.
+func _pick_weighted(pool: Array, weight: Callable):
+	var total := 0.0
+	for item in pool:
+		total += maxf(0.0, float(weight.call(item)))
+	if total <= 0.0:
+		return _pick(pool)
+	var roll := rng.randf() * total
+	for item in pool:
+		roll -= maxf(0.0, float(weight.call(item)))
+		if roll < 0.0:
+			return item
+	return pool[pool.size() - 1]
+
+
+func _chassis_weight(part: PartData) -> float:
+	return float((profile.get("chassis", {}) as Dictionary).get(str(part.id), 1.0))
+
+
+func _weapon_weight(part: PartData) -> float:
+	var preferred: Array = profile.get("weapons", [])
+	return float(profile.get("weapon_weight", 4.0)) if preferred.has(str(part.id)) else 1.0

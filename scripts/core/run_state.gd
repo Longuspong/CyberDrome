@@ -262,8 +262,9 @@ func enemies(which: int = -1) -> Array:
 		which = tier
 	var key := round * 10 + which
 	if not _enemy_cache.has(key):
-		var foes := EnemyGenerator.new(battle_seed(which)) \
-			.generate(enemy_count(which), enemy_power(which))
+		var generator := EnemyGenerator.new(battle_seed(which))
+		generator.profile = faction()
+		var foes := generator.generate(enemy_count(which), enemy_power(which))
 		_arm_enemies(foes, which)
 		_enemy_cache[key] = foes
 	return _enemy_cache[key]
@@ -319,6 +320,11 @@ func _arm_enemies(foes: Array, which: int) -> void:
 	var settings: Dictionary = cfg().get("enemy_modules", {})
 	var rng := RandomNumberGenerator.new()
 	rng.seed = battle_seed(which) ^ 0x30D
+	# Profil der Fraktion: bevorzugte Module und Rezepte zaehlen mehr.
+	var profile := faction()
+	var favoured: Array = profile.get("modules", [])
+	var favoured_recipes: Array = profile.get("recipes", [])
+	var boost := float(profile.get("module_weight", 1.0))
 	for build in foes:
 		var slot := ""
 		for candidate in build.equip_slots():
@@ -333,14 +339,42 @@ func _arm_enemies(foes: Array, which: int) -> void:
 		if room >= 2 and round >= int(settings.get("recipe_from_round", 5)):
 			var recipes := ModuleData.recipes().filter(func(m): return m.fits(weapon))
 			if not recipes.is_empty():
-				picked.append(recipes[rng.randi() % recipes.size()].id)
+				picked.append(recipes[_weighted_index(rng, recipes, favoured_recipes, boost)].id)
 		var pool := ModuleData.base_modules().filter(func(m): return m.fits(weapon))
 		while picked.size() < room and not pool.is_empty():
-			var index := rng.randi() % pool.size()
+			var index := _weighted_index(rng, pool, favoured, boost)
 			picked.append(pool[index].id)
 			pool.remove_at(index)
 		if not picked.is_empty():
 			build.modules[slot] = picked
+
+
+## Die Fraktion des Gebiets mit ihrem Profil (data/regions.json -> faction),
+## dazu die Gewichte aus der Datei. Leer, wenn das Gebiet keine hat.
+func faction() -> Dictionary:
+	var region := TerrainDB.get_region(region_id)
+	if region == null or region.faction.is_empty():
+		return {}
+	var out := region.faction.duplicate(true)
+	out["weapon_weight"] = TerrainDB.weight("weapon_weight", 4.0)
+	out["module_weight"] = TerrainDB.weight("module_weight", 4.0)
+	return out
+
+
+## Ein Index aus ``pool`` (Module), bevorzugte IDs ``boost``-mal so schwer.
+## Ohne Bevorzugung genau wie frueher (ein randi-Aufruf).
+static func _weighted_index(rng: RandomNumberGenerator, pool: Array, favoured: Array, boost: float) -> int:
+	if favoured.is_empty() or boost <= 1.0:
+		return rng.randi() % pool.size()
+	var total := 0.0
+	for module in pool:
+		total += boost if favoured.has(str(module.id)) else 1.0
+	var roll := rng.randf() * total
+	for i in pool.size():
+		roll -= boost if favoured.has(str(pool[i].id)) else 1.0
+		if roll < 0.0:
+			return i
+	return pool.size() - 1
 
 
 ## Alles, was man vor dem Kampf wissen muss. Die Region kommt aus
@@ -357,6 +391,10 @@ func preview(which: int = -1) -> Dictionary:
 	conditions["enemy_power"] = DromeBuild.squad_power(foes)
 	conditions["own_power"] = DromeBuild.squad_power(squad)
 	conditions["reward_text"] = str(tier_cfg(which).get("reward_text", ""))
+	var own_faction := faction()
+	conditions["faction"] = str(own_faction.get("name", ""))
+	conditions["profile"] = str(own_faction.get("profile", ""))
+	conditions["faction_text"] = str(own_faction.get("text", ""))
 	return conditions
 
 

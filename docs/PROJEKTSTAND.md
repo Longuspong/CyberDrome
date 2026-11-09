@@ -313,6 +313,24 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   laeuft aber nicht. Gravitation-BIOS wurzelt dazu den naechsten Gegner am
   Ziel. Der Orbit-Sog (`act_orbitpull`) ist entfernt.
 
+### Fraktionen und Profile (9. Nov. 2026) -- `data/regions.json` -> `faction`
+* Jedes Gebiet hat eine Fraktion mit Profil: Neon City / Neon Ninja's =
+  Kaempfer (Vireo, Klingen, Haemmer, Rammen; Rundumschlag, Raufbold,
+  Ueberladung), Parkanlage / Solar Sentients = Rudel (Vireo, Nimbus,
+  Blaster, Runenstab, Bumerang; Gabelung, Kettenreaktion, Zielsucher),
+  Factory 5 / Mega Mechas = Festung (Molok, Strix; Hammer, Deflektor,
+  Ramme, Moerser; Rammbock, Brandmarke, Bollwerk). Hipstar Hookers offen.
+* Wirkung: Gewichte beim Wuerfeln der Gegner (`EnemyGenerator.profile`,
+  `_pick_weighted`) und bei ihren Modulen (`RunState._arm_enemies`,
+  `module_weight`). Die Vorschau zeigt Fraktion, Profil und einen Satz.
+* Grenze: der Generator waehlt ganze Squads nach der Zielstaerke, das zieht
+  bei allen Fraktionen viele Moloks (hoher Kampfwert). Gemessen ueber 25
+  Laeufe: Mega Mechas 97 Molok / 80 Strix, Neon Ninja's 95 Molok / 18 Strix
+  / 100 Vireo. Die Waffen unterscheiden sich deutlich. Staerker getrennt
+  wird es mit eigenen DROMEs je Fraktion.
+* Noch nicht: Lage-BIOS (brauchen die Profile), Endlos-Modus mit
+  gewuerfelten Profilen, eigene Fraktions-DROMEs.
+
 ### Neue Waffen und freie Arme (9. Nov. 2026)
 * **Bollwerk-Ramme** (`eq_bulwark_ram`, mittel, bot2): Rw 1, 10 alle 1,6 s;
   jeder 3.: Rammstoss +8 % der eigenen max. Integritaet (`hp_scaling`, ohne
