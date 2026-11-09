@@ -36,6 +36,30 @@ var statuses: Dictionary = {}
 
 ## Kampfbilanz fuer den Ergebnisbildschirm
 var damage_dealt: int = 0
+## Abschuesse in diesem Kampf (EP fuer die Waffen, Leveling).
+var kills: int = 0
+## Schaden (Schild + Integritaet) und Abschuesse je Aktions-ID -- daraus
+## bekommt jede Waffe ihre EP (Leveling.weapon_fight_xp).
+var damage_by_action: Dictionary = {}
+var kills_by_action: Dictionary = {}
+
+
+## Was die Waffe in ``slot`` in diesem Kampf angerichtet hat: {damage, kills}.
+## Zwei gleiche Waffen teilen sich die Summe.
+func weapon_record(slot: String) -> Dictionary:
+	var part := build.part_in(slot) if build != null else null
+	if part == null:
+		return {"damage": 0, "kills": 0}
+	var twins := 0
+	for other in build.equip_slots():
+		if build.part_in(other) == part:
+			twins += 1
+	var damage := 0
+	var downs := 0
+	for action in part.actions:
+		damage += int(damage_by_action.get(action.id, 0))
+		downs += int(kills_by_action.get(action.id, 0))
+	return {"damage": damage / maxi(1, twins), "kills": downs / maxi(1, twins)}
 var damage_taken: int = 0
 
 # --- Echtzeit (Nov. 2026) ---------------------------------------------------
@@ -56,6 +80,11 @@ var pulse_left: float = 0.0
 ## Sekunden seit dem letzten Schaden, und der Bruchteil Schild, der beim
 ## Nachladen noch nicht ganz voll ist.
 var calm_time: float = 0.0
+## Passive "steady" (Strix, 8. Nov. 2026): Sekunden ohne Feldwechsel und ob
+## er gerade angelegt hat (+Schaden, +Reichweite).
+var still_time: float = 0.0
+var steady: bool = false
+var _still_tile: Vector2i = Vector2i(-9999, -9999)
 ## Modul Raufbold (Vergeltung): eingesteckte Nahkampftreffer, die den
 ## naechsten Angriff aufladen (max. 3).
 var retaliation_stacks: int = 0
@@ -323,6 +352,9 @@ func init_realtime(pulse_offset: float) -> void:
 	target_blocked = 0.0
 	calm_time = 0.0
 	_recharge_carry = 0.0
+	still_time = 0.0
+	steady = false
+	_still_tile = Vector2i(-9999, -9999)
 	if build == null:
 		return
 	for slot in build.equip_slots():
@@ -332,30 +364,39 @@ func init_realtime(pulse_offset: float) -> void:
 		# Module des Halters (nur im Lauf): die Aktionen werden als Kopie
 		# angepasst, die PartDB bleibt unberuehrt.
 		var fx := build.module_effects(slot)
+		# Waffenlevel (Leveling): Schaden waechst, als Kopie.
+		var level := build.weapon_level(slot)
 		var attack: ActionData = null
 		for action in part.actions:
 			if action.is_attack():
-				attack = action.with_modules(fx)
+				attack = Leveling.level_action(action, part, level).with_modules(fx)
 				break
 		for action in part.actions:
 			if action.is_attack():
 				continue
 			if action.trigger_kind == "attacks" and attack != null:
 				continue
-			var gadget_action: ActionData = action.with_modules(fx)
+			var gadget_action: ActionData = Leveling.level_action(action, part, level).with_modules(fx)
 			var first := float(gadget_action.trigger_every) * echo_slower() \
 				if gadget_action.trigger_kind == "time" else 0.0
 			gadgets.append({"part": part, "ability": gadget_action, "ready": first, "fx": fx})
+		# Module mit eigener Faehigkeit (Orbit-Fokus, Hologramm-Boost).
+		for module in build.active_modules(slot):
+			var granted := ModuleData.gadget_action(module.gadget)
+			if granted != null:
+				var first_ready := float(granted.trigger_every) * echo_slower() \
+					if granted.trigger_kind == "time" else 0.0
+				gadgets.append({"part": part, "ability": granted, "ready": first_ready, "fx": fx})
 		if attack == null:
 			continue
 		var ability: ActionData = null
 		for action in part.actions:
 			if not action.is_attack() and action.trigger_kind == "attacks":
-				ability = action.with_modules(fx)
+				ability = Leveling.level_action(action, part, level).with_modules(fx)
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
-			"fx": fx, "shots": 0})
+			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
@@ -411,6 +452,42 @@ func echo_slower() -> float:
 	if passive() != "echo":
 		return 1.0
 	return float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
+
+
+## Passive "steady" (Strix): wer passives.steady.seconds lang das Feld nicht
+## wechselt, legt an -- mehr Schaden (raw_damage) und mehr Reichweite (die
+## Aktionen der Halter werden als Kopie verlaengert). Jeder Feldwechsel setzt
+## zurueck. Jeden Schritt vom BattleManager gerufen.
+func track_stillness(dt: float) -> void:
+	if tile != _still_tile:
+		_still_tile = tile
+		still_time = 0.0
+	else:
+		still_time += dt
+	var rule := steady_rule()
+	var now := passive() == "steady" and still_time >= float(rule.get("seconds", 4.0))
+	if now == steady:
+		return
+	steady = now
+	if steady:
+		EventBus.log_line("%s legt an." % display_name)
+	var mult := float(rule.get("range_mult", 1.2))
+	for mount in mounts:
+		mount["attack"] = _steady_copy(mount["base_attack"], mult)
+		mount["ability"] = _steady_copy(mount.get("base_ability"), mult)
+
+
+func _steady_copy(action, mult: float):
+	if action == null or not steady:
+		return action
+	var out: ActionData = (action as ActionData).copy()
+	if out.range_tiles > 0:
+		out.range_tiles += maxi(1, int(round(float(out.range_tiles) * (mult - 1.0))))
+	return out
+
+
+static func steady_rule() -> Dictionary:
+	return Config.section("passives").get("steady", {}) as Dictionary
 
 
 ## Die Passive des Chassis ("echo" ...). Leer = keine.
@@ -507,25 +584,29 @@ func shield_fraction() -> float:
 	return 0.0 if maximum <= 0 else float(shield) / float(maximum)
 
 
-## Schild-Nachfuellung (6g): keine Grundregeneration mehr. Der Schild laedt
-## erst, wenn der DROME ``combat.shield_recharge.delay`` Sekunden keinen
-## Schaden genommen hat, dann ``per_second`` (Anteil am Maximum) je Sekunde.
-## Wird jeden Schritt aufgerufen; gibt die aufgefuellte Menge zurueck.
+## Schild-Nachfuellung nach dem SCHILDPULS (8. Nov. 2026): ein Wert S regelt
+## beides -- die Ruhezeit ohne Schaden (base_delay - delay_per_point * S,
+## mindestens min_delay) und die Ladung je Puls (gain_per_point * S je
+## ``pulse`` Sekunden, gleichmaessig verteilt). Wird jeden Schritt
+## aufgerufen; gibt die aufgefuellte Menge zurueck.
 func recharge_shield(dt: float) -> int:
 	calm_time += dt
 	var maximum := shield_max()
 	if maximum <= 0 or shield >= maximum:
 		_recharge_carry = 0.0
 		return 0
-	var rule: Dictionary = Config.section("combat").get("shield_recharge", {})
-	var delay := float(rule.get("delay", 4.0))
+	var rule: Dictionary = Config.section("combat").get("shield_pulse", {})
+	var pulse_points := maxi(0, stat("shield_pulse"))
+	var delay := maxf(float(rule.get("min_delay", 1.5)),
+		float(rule.get("base_delay", 6.0)) - float(rule.get("delay_per_point", 0.3)) * pulse_points)
 	# Modul Bollwerk: laedt frueher.
 	var quick := float(stats.get("shield_delay", 0.0))
 	if quick > 0.0:
 		delay = minf(delay, quick)
 	if calm_time < delay:
 		return 0
-	_recharge_carry += float(maximum) * float(rule.get("per_second", 0.1)) * dt
+	var per_pulse := float(rule.get("gain_per_point", 2.0)) * pulse_points
+	_recharge_carry += per_pulse / maxf(0.1, float(rule.get("pulse", 3.0))) * dt
 	var gain := mini(int(_recharge_carry), maximum - shield)
 	_recharge_carry -= float(gain)
 	shield += gain
@@ -538,8 +619,21 @@ func note_damage() -> void:
 	_recharge_carry = 0.0
 
 
-func atk() -> int:
-	return stat("atk")
+## Power als Faktor (8. Nov. 2026): 10 Punkte = 100 % Waffenschaden.
+func power_factor() -> float:
+	var points := stat("power")
+	return 1.0 if points <= 0 else float(points) / 10.0
+
+
+## Rohschaden einer Aktion: ihr Schaden mal Power. Davor kommt nichts, danach
+## Schild und Ruestung (ActionResolver.resolve_damage).
+func raw_damage(action: ActionData) -> int:
+	if action == null or action.power <= 0:
+		return 0
+	var raw := float(action.power) * power_factor()
+	if steady:
+		raw *= float(steady_rule().get("damage_mult", 1.2))
+	return maxi(1, int(round(raw)))
 
 
 ## Alle Aktionen dieses DROME -- die seiner Teile, jede genau einmal.

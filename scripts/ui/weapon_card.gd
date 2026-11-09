@@ -116,19 +116,18 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label) -> void:
 		chips.add_child(_chip("attack", "", hint, "Angriff"))
 		for spec in attack_chips(attack):
 			chips.add_child(_chip(spec[0], spec[1], hint, spec[2]))
-	# Werte am Teil selbst (Deflektor DEF +5) und was das Gewicht kostet.
+	# Werte am Teil selbst (Deflektor DEF +5).
 	var extras := _chip_row(right)
 	if part.def != 0:
 		extras.add_child(_chip("def", "%+d" % part.def, hint, "DEF %+d" % part.def))
 	if part.shield != 0:
 		extras.add_child(_chip("shield", "%+d" % part.shield, hint, "Schild %+d" % part.shield))
-	var step := Config.get_int("spd_weight_step", 4)
-	var slow := part.weight / step if step > 0 else 0
-	if slow > 0:
-		extras.add_child(_chip("weight", "-%d SPD" % slow, hint,
-			"Schwer: bremst den Traeger um %d SPD" % slow))
 	if extras.get_child_count() == 0:
 		extras.queue_free()
+	# Der Bonus-Wert der Waffe fuer den Traeger (8. Nov. 2026).
+	var bonus := bonus_text(part)
+	if bonus != "":
+		right.add_child(UiKit.label("Bonus: " + bonus, UiKit.SMALL, UiKit.GOOD))
 
 	for ability in abilities:
 		box.add_child(HSeparator.new())
@@ -146,11 +145,31 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label) -> void:
 			for spec in effects:
 				row.add_child(_chip(spec[0], spec[1], hint, spec[2]))
 		var text := short_text(ability)
+		if ability.damage_pct > 0.0:
+			text = ("%d %% des Waffenschadens. " % int(round(ability.damage_pct * 100.0))) + text
 		if text != "":
 			box.add_child(UiKit.label(text, UiKit.SMALL, Color(0.9, 0.93, 1.0)))
 
 	for line in PartInfo.traits(part):
 		box.add_child(UiKit.label(line, UiKit.SMALL, UiKit.WARN))
+
+
+## Was die Waffe dem Traeger gibt: "Speed +2", "Power +10 %" ...
+static func bonus_text(part: PartData) -> String:
+	var out: Array[String] = []
+	if part.hp != 0:
+		out.append("Integritaet %+d" % part.hp)
+	if part.shield != 0:
+		out.append("Schild %+d" % part.shield)
+	if part.shield_pulse != 0:
+		out.append("Schildpuls %+d" % part.shield_pulse)
+	if part.def != 0:
+		out.append("Ruestung %+d" % part.def)
+	if part.spd != 0:
+		out.append("Speed %+d" % part.spd)
+	if part.power != 0:
+		out.append("Power %+d (%+d %%)" % [part.power, part.power * 10])
+	return ", ".join(out)
 
 
 ## Die Symbol-Werte einer Aktion: [art, wert, klartext] -- Schaden mit Art,
@@ -163,6 +182,9 @@ static func attack_chips(action: ActionData) -> Array:
 		var value := str(action.power)
 		if action.shots > 1:
 			value += " x%d" % action.shots
+		if action.energy_fraction > 0.0 and action.energy_fraction < 1.0:
+			var e := int(round(action.power * action.energy_fraction))
+			what = "%d kinetisch + %d Energie" % [action.power - e, e]
 		out.append([type, value, "%s, Staerke %d%s" % [what, action.power,
 			(" -- %d Treffer" % action.shots) if action.shots > 1 else ""]])
 	if action.heal > 0:

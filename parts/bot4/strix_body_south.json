@@ -71,18 +71,19 @@
     }
   },
   "stats": {
-    "hp": 70,
-    "spd": 1,
-    "atk": 0,
+    "hp": 100,
+    "spd": 7,
     "def": 2,
     "shield": 30,
     "shield_regen": 0,
     "shield_bonus": 0.0,
-    "weight": 0,
+    "shield_pulse": 5,
+    "power": 15,
+    "module_slots": 3,
     "hp_regen_pct": 0,
     "lure_radius": 0,
     "ai_role": "sniper",
-    "passive": "",
+    "passive": "steady",
     "actions": []
   }
 }

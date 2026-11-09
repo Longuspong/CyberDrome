@@ -80,7 +80,8 @@ func test_an_action_without_damage_previews_no_damage() -> void:
 	var mage := DromeBuild.create("SOG", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_orbit_focus"})
+		"equip_left": &"eq_hammer"})
+	mage.modules["equip_left"] = [&"mod_orbit"]
 	var caster := Unit.create(mage, &"P0", true)
 	var victim := Unit.create(mage, &"E0", false)
 	caster.tile = Vector2i(2, 2)
@@ -137,17 +138,16 @@ func _molok() -> DromeBuild:
 
 
 func test_every_mount_of_the_chassis_is_offered_with_its_verdict() -> void:
-	# Der Molok hat zwei Halter (Nov. 2026): links alles bis schwer, rechts nur
-	# Schild oder Gadget. Die Belagerungskanone ist eine Waffe -- also einmal
-	# ja, einmal nein, und das Nein mit Grund.
+	# Der Molok hat zwei Halter, beide bis mittel (8. Nov. 2026). Das schwere
+	# Gewehr passt in keinen -- beide stehen zur Wahl, beide mit Grund.
 	var choices := Workshop.slot_choices(_molok(),
-		PartDB.get_part(&"eq_hammer"))
+		PartDB.get_part(&"eq_rail_lance"))
 	t.equal(choices.size(), 2, "beide Halter stehen zur Wahl")
 	t.equal(choices[0]["slot"], "equip_left", "Slot 1 ist der linke Arm")
 	t.equal(choices[0]["number"], 1, "und wird als 1 gezaehlt")
-	t.ok(choices[0]["allowed"], "der linke Arm nimmt die Kanone")
-	t.ok(not choices[1]["allowed"], "der rechte nicht")
-	t.ok(choices[1]["detail"].contains("Schild"),
+	t.ok(not choices[0]["allowed"], "der linke Arm nimmt das Gewehr nicht")
+	t.ok(not choices[1]["allowed"], "der rechte auch nicht")
+	t.ok(choices[1]["detail"].contains("mittel"),
 		"und sagt, woran es liegt: %s" % choices[1]["detail"])
 
 
@@ -173,7 +173,7 @@ func test_a_vireo_takes_no_shield() -> void:
 	var choices := Workshop.slot_choices(vireo, PartDB.get_part(&"eq_deflector"))
 	t.equal(choices.size(), 1, "der Vireo hat genau einen Halter")
 	t.ok(not choices[0]["allowed"], "und der nimmt keinen Schild")
-	t.ok(choices[0]["detail"].contains("Waffe"),
+	t.ok(choices[0]["detail"].contains("leicht"),
 		"die Absage nennt, was er nimmt: %s" % choices[0]["detail"])
 
 

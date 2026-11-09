@@ -387,8 +387,9 @@ func _hammer_molok() -> DromeBuild:
 
 func test_the_molok_is_a_tank_with_little_shield() -> void:
 	var stats := _hammer_molok().stats()
-	t.equal(stats["hp_max"], 200, "200 Integritaet")
-	t.ok(stats["shield_max"] <= 12, "kaum Schild (%d)" % stats["shield_max"])
+	# 8. Nov. 2026: 250 Integritaet, 50 Schild, Ruestung 10 (+ Deflektor).
+	t.equal(stats["hp_max"], 270, "250 Integritaet + 20 vom Hammer")
+	t.ok(stats["def"] >= 10, "viel Ruestung (%d)" % stats["def"])
 	t.ok(_hammer_molok().is_valid(), "Hammer und Deflektor sind baubar")
 
 
@@ -444,15 +445,6 @@ func test_presence_lures_nearby_foes() -> void:
 	battle.free()
 
 
-func test_the_beacon_lures_too() -> void:
-	var beacon := DromeBuild.create("Koeder", {"body": &"strix_body", "head": &"strix_head",
-		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_bait_beacon"})
-	var battle := _battle([beacon, _vireo()], [_vireo()],
-		[Vector2i(10, 11), Vector2i(4, 14), Vector2i(10, 10)])
-	t.equal(battle.brain.lured_by(battle.units[2]), battle.units[0], "der Koedersender lockt")
-	battle.free()
-
-
 func test_each_role_picks_by_its_own_rule() -> void:
 	# Ein naher, voller Vireo und ein ferner, angeschlagener Vireo.
 	var tiles := [Vector2i(10, 14), Vector2i(12, 14), Vector2i(10, 12), Vector2i(13, 9)]
@@ -464,4 +456,28 @@ func test_each_role_picks_by_its_own_rule() -> void:
 	t.equal(battle.brain.choose_target(skirmisher), near, "der Vireo nimmt den naechsten")
 	far.damage_dealt = 80
 	t.equal(battle.brain.choose_target(sniper), far, "der Strix den mit dem meisten Schaden in Reichweite")
+	battle.free()
+
+
+func test_the_strix_steadies_after_standing_still() -> void:
+	# Passive "steady" (8. Nov. 2026): 4 s ohne Feldwechsel -> +20 % Schaden
+	# und Reichweite; ein Schritt setzt zurueck.
+	var battle := _battle([_strix()], [_vireo()], [Vector2i(2, 2), Vector2i(17, 17)])
+	var strix: Unit = battle.units[0]
+	var lance: ActionData = strix.mounts[0]["base_attack"]
+	var plain := strix.raw_damage(lance)
+	for _i in 70:   # 3,5 s
+		strix.track_stillness(0.05)
+	t.ok(not strix.steady, "nach 3,5 s noch nicht angelegt")
+	for _i in 12:
+		strix.track_stillness(0.05)
+	t.ok(strix.steady, "nach 4 s angelegt")
+	t.equal(strix.raw_damage(lance), int(round(plain * 1.2)), "+20 % Schaden")
+	t.equal((strix.mounts[0]["attack"] as ActionData).range_tiles,
+		lance.range_tiles + 2, "Reichweite 8 -> 10")
+	strix.place_at(Vector2i(3, 2))
+	strix.track_stillness(0.05)
+	t.ok(not strix.steady, "ein Schritt setzt zurueck")
+	t.equal((strix.mounts[0]["attack"] as ActionData).range_tiles, lance.range_tiles,
+		"Reichweite wieder normal")
 	battle.free()

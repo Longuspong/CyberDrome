@@ -43,13 +43,14 @@
   "category": "weapon",
   "stats": {
     "hp": 0,
-    "spd": 0,
-    "atk": 0,
+    "spd": 2,
     "def": 0,
     "shield": 0,
     "shield_regen": 0,
     "shield_bonus": 0.0,
-    "weight": 5,
+    "shield_pulse": 0,
+    "power": 0,
+    "module_slots": 0,
     "hp_regen_pct": 0,
     "lure_radius": 0,
     "ai_role": "",
@@ -74,7 +75,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 0.0,
+        "base_action": ""
       },
       {
         "id": "act_pulse_double",
@@ -99,7 +102,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 0,
-        "support": ""
+        "support": "",
+        "damage_pct": 0.7,
+        "base_action": "act_pulse"
       }
     ]
   }

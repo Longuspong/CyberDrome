@@ -50,7 +50,7 @@ func test_pity_guarantees_a_drop() -> void:
 
 
 func test_pick_draws_from_the_pool_without_inventing_parts() -> void:
-	var pool := [&"eq_pulse_blaster", &"eq_deflector", &"eq_orbit_focus"]
+	var pool := [&"eq_pulse_blaster", &"eq_deflector", &"eq_plasma_blade"]
 	t.ok(ChaosLoot.pick(pool, 0, _rng()).is_empty(), "ohne Ziehung keine Beute")
 	t.ok(ChaosLoot.pick([], 2, _rng()).is_empty(), "leerer Pool -> leere Beute")
 	var two := ChaosLoot.pick(pool, 2, _rng())

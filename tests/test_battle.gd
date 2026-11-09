@@ -70,10 +70,13 @@ func test_damage_actually_happens() -> void:
 ## tragen den Orbit-Sog am rechten Halter. Damit haengt der Unterschied im
 ## Verhalten allein an der Reichweite, so wie die Bewertung es behauptet.
 func _with_orbit_pull(display_name: String, weapon: StringName) -> DromeBuild:
-	return DromeBuild.create(display_name, {
+	var build := DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": weapon, "equip_right": &"eq_orbit_focus"})
+		"equip_left": weapon})
+	# Orbit-Fokus ist seit 8. Nov. 2026 ein Modul im Halter der Waffe.
+	build.modules["equip_left"] = [&"mod_orbit"]
+	return build
 
 
 func _pull_action(unit: Unit) -> ActionData:
@@ -123,7 +126,7 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"})
 	t.ok(bunker.is_valid(), "der Bunker ist baubar: %s" % ", ".join(bunker.validate()))
-	t.equal(bunker.stats()["def"], 14, "und kommt auf DEF 14")
+	t.equal(bunker.stats()["def"], 14, "und kommt auf Ruestung 14 (Molok 10 + Schild 4)")
 
 	var grid := Grid.new(10, 10)
 	var shooter := Unit.create(_squad()[0], &"P0", true)
@@ -143,9 +146,9 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	t.ok(dealt >= int(ceil(blaster.power * 0.5)),
 		"DEF nimmt hoechstens die Haelfte weg: %d von %d" % [dealt, blaster.power])
 	var hits := int(ceil(float(wall.stat("hp_max")) / float(dealt)))
-	t.ok(hits <= 30,
+	t.ok(hits <= 45,
 		"und der Bunker faellt in absehbarer Zeit (%d Treffer)" % hits)
-	t.equal(resolver.apply_damage(shooter, wall, blaster.power + shooter.atk(), blaster), dealt,
+	t.equal(resolver.apply_damage(shooter, wall, shooter.raw_damage(blaster), blaster), dealt,
 		"die Vorschau sagt genau das, was die Ausfuehrung tut")
 
 	shooter.free()
@@ -248,7 +251,19 @@ func test_the_drone_pod_repairs_the_most_hurt_ally() -> void:
 	t.equal(aim.get("target"), heavy, "geheilt wird, wer den geringsten Anteil hat")
 	var before := heavy.hp
 	t.ok(battle.resolver.execute(sani, heavy.tile, repair), "die Heilung geht raus")
-	t.equal(heavy.hp, before + repair.heal, "und repariert %d" % repair.heal)
+	var amount := ActionResolver.support_amount(sani, heavy, repair.heal)
+	t.equal(heavy.hp, before + amount,
+		"und repariert %d (Grundwert x Power + 3 %% der Integritaet des Ziels)" % amount)
+
+	# Ueber die volle Integritaet hinaus wird die Heilung zu Schild -- aber
+	# nur bis zum normalen Maximum; ist beides voll, verpufft sie.
+	heavy.hp = heavy.stat("hp_max") - 1
+	heavy.shield = heavy.shield_max() - 3
+	battle.resolver.execute(sani, heavy.tile, repair)
+	t.equal(heavy.hp, heavy.stat("hp_max"), "Integritaet voll")
+	t.equal(heavy.shield, heavy.shield_max(), "der Rest fuellt den Schild, kein Ueberschild")
+	battle.resolver.execute(sani, heavy.tile, repair)
+	t.equal(heavy.shield, heavy.shield_max(), "beides voll: die Heilung geht ins Leere")
 
 	heavy.hp = heavy.stat("hp_max")
 	light.hp = light.stat("hp_max")
@@ -270,9 +285,12 @@ func test_the_deflector_charges_its_own_shield() -> void:
 	t.ok(charge != null and charge.shield_gain > 0, "der Deflektor hat die Schildladung")
 	unit.shield = unit.shield_max()
 	t.ok(resolver.execute(unit, unit.tile, charge), "sie wirkt auf den Traeger")
-	t.equal(unit.shield, unit.shield_max() + charge.shield_gain, "auch ueber das Maximum")
-	resolver.execute(unit, unit.tile, charge)
-	t.equal(unit.shield, unit.shield_max() + charge.shield_gain, "aber nicht beliebig weit")
+	t.equal(unit.shield, unit.shield_max() + ActionResolver.support_amount(unit, unit, charge.shield_gain),
+		"auch ueber das Maximum")
+	for _i in 6:
+		resolver.execute(unit, unit.tile, charge)
+	t.equal(unit.shield, ActionResolver.shield_cap(unit), "aber hoechstens Maximum + 50 %")
+	t.equal(ActionResolver.shield_cap(unit), int(round(unit.shield_max() * 1.5)), "das ist der Deckel")
 	unit.free()
 
 
@@ -283,12 +301,17 @@ func _ability_squad() -> Array:
 		DromeBuild.create("KOEDER", {
 			"body": &"jugg_body", "head": &"jugg_head",
 			"feet": &"jugg_feet", "core": &"jugg_core",
-			"equip_left": &"eq_hammer", "equip_right": &"eq_bait_beacon"}),
-		DromeBuild.create("SANI", {
+			"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"}),
+		_with_modules(DromeBuild.create("SANI", {
 			"body": &"mage_body", "head": &"mage_head",
 			"feet": &"mage_drive", "core": &"mage_core",
-			"equip_left": &"eq_rune_staff", "equip_right": &"eq_orbit_focus"}),
+			"equip_left": &"eq_rune_staff"}), "equip_left", [&"mod_orbit"]),
 	]
+
+
+func _with_modules(build: DromeBuild, slot: String, ids: Array) -> DromeBuild:
+	build.modules[slot] = ids
+	return build
 
 
 ## Spielt ``battles`` Gefechte und schreibt je DROME die Folge seiner Aktionen
@@ -319,13 +342,11 @@ func test_every_ability_fires_by_itself() -> void:
 	# Echtzeit (Nov. 2026): Faehigkeiten werden nicht mehr gezogen, sie loesen
 	# nach ihrer Regel aus. Jede Faehigkeit im Bestand muss im Kampf auch
 	# wirklich kommen -- sonst ist ihr Ausloeser kaputt.
-	var squads := [_ability_squad(), _squad(), [DromeBuild.create("BOOST", {
+	# Orbit-Fokus an einer Nahkampfwaffe: wer kuerzer reicht, will heranziehen.
+	var squads := [_ability_squad(), _squad(), [_with_modules(DromeBuild.create("ORBIT", {
 		"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_holo_boost"})], [DromeBuild.create("ORBIT", {
-		"body": &"mage_body", "head": &"mage_head",
-		"feet": &"mage_drive", "core": &"mage_core",
-		"equip_left": &"eq_orbit_focus"})]]
+		"equip_left": &"eq_plasma_blade"}), "equip_left", [&"mod_orbit"])]]
 	var uses := {}
 	for squad in squads:
 		var measured: Dictionary = _record(8, squad, 7000)

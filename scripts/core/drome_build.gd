@@ -24,8 +24,8 @@ const SOCKET_SLOTS := ["body", "head", "feet", "core"]
 ## ### Keine Bau-Budgets
 ##
 ## Frueher deckelten Traglast und Strombedarf den Aufbau; beide sind gestrichen,
-## ebenso die Energie (Echtzeit-Kampf, Nov. 2026). Gewicht ist reines Tempo
-## (``payload_slowdown`` zieht SPD ab). Die natuerliche Grenze ist ``spd >= 1``
+## ebenso die Energie (Echtzeit-Kampf, Nov. 2026) und seit 8. Nov. 2026 das
+## Gewicht -- die Halterklasse reicht. Die natuerliche Grenze ist ``spd >= 1``
 ## in ``structural_problems()``.
 
 var display_name: String = "DROME"
@@ -44,6 +44,16 @@ var direction: String = "south"
 ## die Waffe nicht zur Bedingung eines Moduls, ruht es. Nur Lauf-Kopien
 ## tragen Module; der Hangar zuhause kennt keine (sie verfallen nach dem Lauf).
 var modules: Dictionary = {}
+
+## Level (6g, 8. Nov. 2026): DROME 0-5, je Waffenhalter das Level der Waffe
+## darin (0-10). Kommen aus dem Hangar (Roster.build_for); Gegner haben 0.
+var drome_level: int = 0
+var weapon_levels: Dictionary = {}
+
+## Herkunft im Hangar, damit EP aus dem Lauf zurueckfinden: die uid des
+## Chassis-Exemplars (= der DROME) und je Halter die uid der Waffe.
+var source_uid: String = ""
+var instance_uids: Dictionary = {}
 
 
 static func create(name: String, assignment: Dictionary) -> DromeBuild:
@@ -178,6 +188,16 @@ func actions() -> Array:
 				continue
 			seen[action.id] = true
 			result.append(action)
+	# Faehigkeiten aus Modulen (Orbit-Fokus, Hologramm-Boost), solange sie wirken.
+	if not modules.is_empty():
+		for slot in equip_slots():
+			for module in active_modules(slot):
+				if module.gadget == &"" or seen.has(module.gadget):
+					continue
+				var granted := ModuleData.gadget_action(module.gadget)
+				if granted != null:
+					seen[granted.id] = true
+					result.append(granted)
 	return result
 
 
@@ -203,25 +223,32 @@ func actions_of(category: ActionData.Category) -> Array:
 func stats() -> Dictionary:
 	var total := {
 		"hp_max": 0,
-		"spd": 0, "atk": 0, "def": 0,
+		"spd": 0, "def": 0, "power": 0, "shield_pulse": 0, "module_slots": 0,
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
-		"weight": 0,
 		"hp_regen_pct": 0,
 		"lure_radius": 0,
 	}
 	for part in all_parts():
 		total["hp_max"] += part.hp
 		total["spd"] += part.spd
-		total["atk"] += part.atk
+		total["power"] += part.power
+		total["shield_pulse"] += part.shield_pulse
+		total["module_slots"] = maxi(int(total["module_slots"]), part.module_slots)
 		total["def"] += part.def
 		total["shield"] += part.shield
 		total["shield_regen"] += part.shield_regen
 		total["shield_bonus"] += part.shield_bonus
-		total["weight"] += part.weight
 		total["hp_regen_pct"] += part.hp_regen_pct
 		total["lure_radius"] = maxi(int(total["lure_radius"]), part.lure_radius)
 
-	total["spd"] -= payload_slowdown()
+	# Level: DROME-Werte des Chassis und Bonus-Werte der Waffen.
+	var chassis := body()
+	if chassis != null and drome_level > 0:
+		_add_stats(total, Leveling.drome_bonus(chassis, drome_level))
+		total["module_slots"] += Leveling.extra_module_slots(chassis.id, drome_level)
+	for slot in equip_slots():
+		if weapon_level(slot) > 0:
+			_add_stats(total, Leveling.weapon_bonus(part_in(slot), weapon_level(slot)))
 
 	# Module (nur im Lauf): Panzerung, Schild und Konter des Traegers.
 	if not modules.is_empty():
@@ -236,7 +263,8 @@ func stats() -> Dictionary:
 	# Validierung faengt das ab und sagt dem Spieler, welche Regel bricht.
 	total["hp_max"] = maxi(0, total["hp_max"])
 	total["def"] = maxi(0, total["def"])
-	total["atk"] = maxi(0, total["atk"])
+	total["power"] = maxi(0, total["power"])
+	total["shield_pulse"] = maxi(0, total["shield_pulse"])
 	total["shield"] = maxi(0, total["shield"])
 	# Das Schild-Maximum ist der Grundwert mal der prozentualen Schild-Effizienz
 	# des Kerns (§11): shield_max = shield * (1 + shield_bonus). Der Bonus ist
@@ -245,22 +273,18 @@ func stats() -> Dictionary:
 	return total
 
 
-## Wie sehr die ZULADUNG bremst: je ``spd_weight_step`` Gewicht an Ausruestung
-## ein Punkt SPD weniger.
-##
-## Gerechnet wird auf der AUSRUESTUNG, nicht auf dem Gesamtgewicht: dieselbe
-## Waffe bremst an jedem Chassis gleich viel.
-##
-## Abgerundet, damit leichte Module (Gewicht 3) gratis bleiben und der Abzug
-## erst bei echter Zuladung einsetzt.
-func payload_slowdown() -> int:
-	var step := Config.get_int("spd_weight_step", 4)
-	if step <= 0:
-		return 0
-	var payload := 0
-	for part in equipment():
-		payload += part.weight
-	return payload / step
+## Zuwaechse (Schluessel wie in PartData) auf die Summe: hp -> hp_max.
+static func _add_stats(total: Dictionary, bonus: Dictionary) -> void:
+	for stat in bonus:
+		var key := "hp_max" if stat == "hp" else str(stat)
+		total[key] = total.get(key, 0) + bonus[stat]
+
+
+## Power als Faktor: 10 Punkte = 100 % Waffenschaden (8. Nov. 2026). Ohne
+## Power-Wert (alte Daten) gilt 100 %.
+func power_factor() -> float:
+	var points := int(stats().get("power", 0))
+	return 1.0 if points <= 0 else float(points) / 10.0
 
 
 ## Was ein einzelnes Teil an den Stats aendern wuerde -- fuer die Delta-Anzeige
@@ -312,7 +336,16 @@ func clone() -> DromeBuild:
 	copy.palette = palette.duplicate(true)
 	copy.direction = direction
 	copy.modules = modules.duplicate(true)
+	copy.drome_level = drome_level
+	copy.weapon_levels = weapon_levels.duplicate()
+	copy.source_uid = source_uid
+	copy.instance_uids = instance_uids.duplicate()
 	return copy
+
+
+## Das Level der Waffe in diesem Halter.
+func weapon_level(slot: String) -> int:
+	return int(weapon_levels.get(slot, 0))
 
 
 # ---------------------------------------------------------------------------
@@ -460,10 +493,9 @@ func power_score() -> float:
 				best_weapon = action.power
 	return (
 		float(total["hp_max"]) * 1.0
-		+ float(total["atk"]) * 6.0
 		+ float(total["def"]) * 8.0
 		+ float(total["spd"]) * 3.0
-		+ float(best_weapon) * 2.0
+		+ float(best_weapon) * 2.0 * power_factor()
 	)
 
 

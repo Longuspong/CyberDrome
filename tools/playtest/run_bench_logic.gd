@@ -6,9 +6,10 @@ extends RefCounted
 const ROUNDS := [1, 3, 5, 8]
 
 
-func run(count: int) -> void:
-	print("Siege des Standard-Squads gegen die Lauf-Gegner (%d Laeufe je Feld)" % count)
-	print("Runde  Stufe    Module/Gegner  mit Modulen  ohne")
+func run(count: int, drome_level: int = 0, weapon_level: int = 0) -> void:
+	print("Siege des Standard-Squads (DROME Lv %d, Waffen Lv %d) gegen die Lauf-Gegner (%d Laeufe je Feld)"
+		% [drome_level, weapon_level, count])
+	print("Runde  Stufe    Gegner-Lv  Module/Gegner  mit Modulen  ohne")
 	for round in ROUNDS:
 		for which in 3:
 			var with_mods := 0
@@ -16,6 +17,11 @@ func run(count: int) -> void:
 			var mods := 0
 			for i in count:
 				var state := RunState.start(9000 + i)
+				for own in state.squad:
+					own.drome_level = drome_level
+					for slot in own.equip_slots():
+						if weapon_level > 0:
+							own.weapon_levels[slot] = weapon_level
 				state.round = round
 				var foes: Array = state.enemies(which)
 				mods = state.enemy_module_count(which)
@@ -28,8 +34,15 @@ func run(count: int) -> void:
 					with_mods += 1
 				if _play(seed_value, state.squad, bare):
 					without += 1
-			print("%5d  %-7s  %13d  %5d/%d    %d/%d" % [round, RunState.TIER_NAMES[which], mods,
+			print("%5d  %-7s  %9s  %13d  %5d/%d    %d/%d" % [round, RunState.TIER_NAMES[which], _lv(round, which), mods,
 				with_mods, count, without, count])
+
+
+func _lv(round: int, which: int) -> String:
+	var state := RunState.start(1)
+	state.round = round
+	var lv := state.enemy_levels(which)
+	return "%d/%d" % [lv["drome"], lv["weapon"]]
 
 
 func _play(seed_value: int, ours: Array, theirs: Array) -> bool:

@@ -71,7 +71,11 @@
       "sell_value: Verkaufspreis einer Waffe nach Gewichtsklasse.",
       "enemy_modules (6i): Module je Gegner = by_round[runde] + tier_offset;",
       "nur passende, keines doppelt; ab recipe_from_round (und 2 Plaetzen) ist",
-      "eines ein Rezept (RunState._arm_enemies)."
+      "eines ein Rezept (RunState._arm_enemies).",
+      "enemy_levels (9. Nov. 2026, Leitplanke): DROME- und Waffenlevel der Gegner",
+      "je Runde (drome/weapon, Index = Runde - 1) plus tier_offset, begrenzt auf",
+      "0..Hoechstlevel. Annahme: ein frischer Squad ist Level 0, nach etwa einem",
+      "Lauf DROME 2 / Waffe 2-3, nach drei Laeufen DROME 3-4 / Waffe 5."
     ],
     "rounds": 8,
     "lives": 3,
@@ -84,6 +88,15 @@
     "storage_size": 8,
     "loss_credits": 4,
     "sell_value": {"light": 3, "medium": 5, "heavy": 8},
+    "enemy_levels": {
+      "drome": [0, 0, 1, 1, 1, 2, 2, 2],
+      "weapon": [0, 0, 1, 1, 2, 2, 3, 3],
+      "tier_offset": {
+        "easy": {"drome": -1, "weapon": -1},
+        "normal": {"drome": 0, "weapon": 0},
+        "elite": {"drome": 1, "weapon": 2}
+      }
+    },
     "enemy_modules": {
       "by_round": [0, 0, 1, 1, 1, 2, 2, 2],
       "tier_offset": {"easy": -1, "normal": 0, "elite": 1},
@@ -102,18 +115,63 @@
     }
   },
 
+  "levels": {
+    "_kommentar": [
+      "Level fuer DROMEs und Waffen (scripts/core/leveling.gd), bleiben nach dem Lauf.",
+      "xp_per_level: EP, die das jeweils naechste Level kostet (Level 1, 2, ...).",
+      "drome: EP je Sieg = win_base * tier_mult[stufe] * (1 + per_round * (runde - 1)).",
+      "main =",
+      "die zwei Hauptwerte je Chassis (+main_per_level je Level, Level 5 = +50 %),",
+      "alle anderen Werte (hp, shield, shield_pulse, def) +other_per_level (+20 %).",
+      "Speed und Power steigen nie. module_slots_at: auf diesen Leveln +1 Modulplatz.",
+      "weapon: EP je Kampf = damage_xp * angerichteter Schaden (Schild + Integritaet)",
+      "+ kill_xp je Abschuss mit dieser Waffe. Nur Waffen in Squad-DROMEs, die aus dem",
+      "Hangar stammen. EP sammeln sich im Lauf und werden am Ende zuhause gutgeschrieben.",
+      "damage_per_level (Level 10 = +70 %).",
+      "bonus_at_max: Endwert des Bonus-Werts auf Level 10 je Waffe (linear vom",
+      "Grundwert). energy_only: nur der Energieanteil waechst (Neon-Blaster)."
+    ],
+    "drome": {
+      "max": 5,
+      "xp_per_level": [100, 200, 300, 400, 500],
+      "win_base": 40,
+      "tier_mult": {"easy": 0.75, "normal": 1.0, "elite": 1.5},
+      "per_round": 0.1,
+      "main_per_level": 0.1,
+      "other_per_level": 0.04,
+      "main": {
+        "scout_body": ["hp", "shield"],
+        "jugg_body": ["hp", "def"],
+        "mage_body": ["shield", "shield_pulse"],
+        "strix_body": ["hp", "def"]
+      },
+      "module_slots_at": {"default": [1, 3, 5], "jugg_body": [2, 4]}
+    },
+    "weapon": {
+      "max": 10,
+      "xp_per_level": [100, 150, 200, 250, 300, 500, 650, 800, 1200, 1600],
+      "damage_xp": 0.25,
+      "kill_xp": 25,
+      "damage_per_level": 0.07,
+      "energy_only": ["eq_neon_blaster"],
+      "bonus_at_max": {
+        "eq_pulse_blaster": {"spd": 3},
+        "eq_neon_blaster": {"shield_pulse": 4},
+        "eq_plasma_blade": {"power": 2},
+        "eq_rail_lance": {"power": 2},
+        "eq_deflector": {"def": 8},
+        "eq_hammer": {"hp": 40},
+        "eq_drone_pod": {"hp": 20},
+        "eq_rune_staff": {"shield": 20}
+      }
+    }
+  },
+
   "overtime": {
     "_kommentar": "Ab start_seconds verliert jeder DROME je Puls ceil(hp_max * pct_per_cycle * (Pulse seit Start + 1)).",
     "start_seconds": 60.0,
     "pct_per_cycle": 0.05
   },
-
-  "_kommentar_zuladung": [
-    "spd_weight_step koppelt das Tempo an die Masse: je so viel Gewicht an",
-    "AUSRUESTUNG ein Punkt SPD weniger, abgerundet. Auf 0 gesetzt ist die",
-    "Kopplung aus. Siehe DromeBuild.payload_slowdown()."
-  ],
-  "spd_weight_step": 4,
 
   "realtime": {
     "_kommentar": [
@@ -149,11 +207,14 @@
       "Verbuendeten im guard_radius geht stattdessen auf ihn.",
       "echo (Nimbus, 7. Nov. 2026): der Takt der Faehigkeiten ist slower-mal so",
       "lang (normale Angriffe dazwischen gerundet, oder die Zeit), dafuer wirkt",
-      "jede Faehigkeit gleich zweimal."
+      "jede Faehigkeit gleich zweimal.",
+      "steady (Strix, 8. Nov. 2026): nach seconds ohne Feldwechsel damage_mult",
+      "auf den Schaden und range_mult auf die Reichweite (mind. +1 Feld)."
     ],
     "hit_rush": {"seconds": 2.0, "move_mult": 1.4},
     "presence": {"lure_radius": 2, "guard_radius": 3, "guard_share": 0.3},
-    "echo": {"slower": 1.5}
+    "echo": {"slower": 1.5},
+    "steady": {"seconds": 4.0, "damage_mult": 1.2, "range_mult": 1.2}
   },
 
   "power_tolerance": 0.12,
@@ -199,10 +260,17 @@
       "  armor_ehp_k   15   wie schnell die Panzerung an den Deckel laeuft",
       "                     (m = 1 + cap * A/(A+K)). Kleiner K = frueher satt.",
       "Volle Panzerdurchdringung bringt den Schaden auf 100 %, nie darueber.",
-      "SCHILD-NACHLADEN (6g): keine Grundregeneration. Nach delay Sekunden ohne",
-      "  Schaden laedt der Schild per_second (Anteil am Maximum) je Sekunde."
+      "SCHILDPULS (8. Nov. 2026): ein Wert S am DROME. Ruhezeit ohne Schaden =",
+      "  base_delay - delay_per_point * S (mind. min_delay), danach laedt der",
+      "  Schild gain_per_point * S je pulse Sekunden (Unit.recharge_shield).",
+      "POWER: Rohschaden = Waffenschaden * power / 10 (Unit.raw_damage).",
+      "SUPPORT (9. Nov. 2026): Heilung/Schildgabe = Grundwert * Power / 10 +",
+      "  target_share * max. Integritaet des Ziels; Schildgaben bis Maximum +",
+      "  overshield (50 %), Heilung ueber volle Integritaet wird Schild bis zum",
+      "  normalen Maximum (ActionResolver.support)."
     ],
-    "shield_recharge": {"delay": 4.0, "per_second": 0.1},
+    "support": {"target_share": 0.03, "overshield": 0.5},
+    "shield_pulse": {"base_delay": 6.0, "delay_per_point": 0.3, "min_delay": 1.5, "gain_per_point": 2.0, "pulse": 3.0},
     "physical_vs_shield": 0.8,
     "energy_vs_shield": 1.2,
     "physical_vs_hp": 1.0,

@@ -188,7 +188,7 @@ func _win_a_part(run: RunState, pool: Array) -> StringName:
 
 func test_a_part_reward_lands_in_the_storage() -> void:
 	var run := RunState.start(12)
-	var id := _win_a_part(run, [&"eq_deflector", &"eq_rune_staff", &"eq_holo_boost"])
+	var id := _win_a_part(run, [&"eq_deflector", &"eq_rune_staff", &"eq_neon_blaster"])
 	t.ok(id != &"", "es gab ein Teil")
 	t.equal(run.phase, RunState.Phase.STOP, "Zwischenstopp nach dem Sieg")
 	t.equal(run.storage, [id], "das Teil liegt im Lager")
@@ -338,3 +338,18 @@ func test_easy_enemies_carry_fewer_modules() -> void:
 	run.round = 4
 	t.ok(run.enemy_module_count(RunState.Tier.EASY) < run.enemy_module_count(RunState.Tier.ELITE),
 		"Leicht weniger als Elite")
+
+
+func test_enemies_level_up_with_round_and_tier() -> void:
+	# Leitplanke 9. Nov. 2026: Gegner-Level nach Runde und Stufe (run.enemy_levels).
+	var run := RunState.start(44)
+	t.equal(run.enemy_levels(RunState.Tier.NORMAL), {"drome": 0, "weapon": 0}, "Runde 1 Normal: Level 0")
+	run.round = RunState.rounds_total()
+	var late := run.enemy_levels(RunState.Tier.ELITE)
+	t.ok(late["drome"] > 0 and late["weapon"] > late["drome"], "spaet Elite: DROME und Waffen gelevelt")
+	for build in run.enemies(RunState.Tier.ELITE):
+		t.equal(build.drome_level, late["drome"], "%s traegt das DROME-Level" % build.display_name)
+		for slot in build.equip_slots():
+			if build.part_in(slot) != null:
+				t.equal(build.weapon_level(slot), late["weapon"], "und das Waffenlevel")
+	t.ok(run.enemy_levels(RunState.Tier.EASY)["weapon"] < late["weapon"], "Leicht darunter")

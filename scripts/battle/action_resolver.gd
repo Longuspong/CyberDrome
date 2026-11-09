@@ -5,7 +5,8 @@ extends RefCounted
 ##
 ## Schaden ist deterministisch:
 ##
-##     schaden = max(1, waffe.power + angreifer.atk - ziel.def)
+##     roh = waffe.power x angreifer.power / 10   (Unit.raw_damage)
+##     danach Schild (Faktor je Schadensart) und Ruestung (eHP-Multiplikator)
 ##
 ## Kein Trefferwurf, kein Krit, keine Ausweichchance: derselbe Seed ergibt
 ## denselben Kampf.
@@ -59,6 +60,8 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	var dealt := (shield_before - target.shield) + amount
 	if dealt > 0:
 		target.note_damage()
+		if source != null and action != null and source.is_player != target.is_player:
+			source.damage_by_action[action.id] = int(source.damage_by_action.get(action.id, 0)) + dealt
 
 	EventBus.unit_damaged.emit(target, amount, source)
 	# Was der Schild geschluckt hat, steht mit im Log. Vorher hiess ein
@@ -78,6 +81,10 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 
 	_on_hit(source, dealt)
 	if target.hp <= 0:
+		if source != null and source != target and source.is_player != target.is_player:
+			source.kills += 1
+			if action != null:
+				source.kills_by_action[action.id] = int(source.kills_by_action.get(action.id, 0)) + 1
 		_kill(target)
 	else:
 		_thorns(source, target, action)
@@ -245,7 +252,7 @@ func forget_unit(unit: Unit) -> void:
 func preview_damage(source: Unit, target: Unit, action: ActionData) -> int:
 	if action.power <= 0:
 		return 0
-	return mitigate(source, target, action.power + source.atk(), action.energy_fraction,
+	return mitigate(source, target, source.raw_damage(action), action.energy_fraction,
 		action.shield_mult)
 
 
@@ -368,22 +375,48 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 	return true
 
 
-## Heilen und Schild geben (Deflektor, Drohnen-Pod). Gibt zurueck, wie viel
-## Integritaet und Schild zusammen dazukamen.
+## Wie viel eine Heilung oder Schildgabe bewirkt (9. Nov. 2026, Vorgabe des
+## Spielers): Grundwert x Power des Anwenders / 10, dazu ein Anteil der
+## maximalen Integritaet des ZIELS (combat.support.target_share) -- so bleibt
+## Unterstuetzung auch spaeter wertvoll, wenn Tanks viel Integritaet haben.
+static func support_amount(source: Unit, target: Unit, base: int) -> int:
+	if base <= 0:
+		return 0
+	var share := float((Config.section("combat").get("support", {}) as Dictionary).get("target_share", 0.03))
+	var from_source := float(base) * (source.power_factor() if source != null else 1.0)
+	return int(round(from_source + share * float(target.stat("hp_max"))))
+
+
+## Der hoechste Schild, den Schildgaben erreichen koennen: Maximum plus
+## Ueberschild (combat.support.overshield, Anteil des Maximums).
+static func shield_cap(target: Unit) -> int:
+	var over := float((Config.section("combat").get("support", {}) as Dictionary).get("overshield", 0.5))
+	return int(round(float(target.shield_max()) * (1.0 + over)))
+
+
+## Heilen und Schild geben (Schild-Waffe, E-Schraubenschluessel). Was die
+## Heilung ueber die volle Integritaet hinaus bringt, wird zu Schild -- aber
+## nur bis zum normalen Maximum (kein Ueberschild aus Heilung). Ist beides
+## voll, geht die Heilung ins Leere. Schildgaben duerfen ueber das Maximum,
+## gedeckelt bei Maximum + 50 %. Gibt zurueck, wie viel zusammen dazukam.
 func support(source: Unit, target: Unit, action: ActionData) -> int:
 	var healed := 0
+	var charged := 0
+	var before_shield := target.shield
 	if action.heal > 0:
+		var amount := support_amount(source, target, action.heal)
 		var before := target.hp
-		target.hp = mini(target.stat("hp_max"), target.hp + action.heal)
+		target.hp = mini(target.stat("hp_max"), target.hp + amount)
 		healed = target.hp - before
+		var rest := amount - healed
+		if rest > 0 and target.shield < target.shield_max():
+			target.shield = mini(target.shield_max(), target.shield + rest)
 		if healed > 0:
 			EventBus.unit_healed.emit(target, healed, source)
-	var charged := 0
 	if action.shield_gain > 0:
-		var before_shield := target.shield
-		target.shield = mini(target.shield_max() + action.shield_gain,
-			target.shield + action.shield_gain)
-		charged = target.shield - before_shield
+		var gain := support_amount(source, target, action.shield_gain)
+		target.shield = maxi(target.shield, mini(shield_cap(target), target.shield + gain))
+	charged = target.shield - before_shield
 	if healed > 0 or charged > 0:
 		EventBus.log_line("%s: %s +%d Integritaet, +%d Schild."
 			% [source.display_name, target.display_name, healed, charged])
@@ -413,7 +446,7 @@ func _multi_shot(source: Unit, tile: Vector2i, action: ActionData) -> void:
 		targets.append(primary)
 	for target in targets:
 		if target.is_alive():
-			apply_damage(source, target, action.power + source.atk(), action)
+			apply_damage(source, target, source.raw_damage(action), action)
 
 
 ## Laesst verzoegerte Wirkungen ablaufen. Gibt zurueck, ob eine ausgeloest hat.
@@ -446,7 +479,7 @@ func _apply_area(source: Unit, tile: Vector2i, action: ActionData) -> void:
 		if not is_meaningful_target(source, target, action):
 			continue
 		if action.power > 0:
-			apply_damage(source, target, action.power + source.atk(), action)
+			apply_damage(source, target, source.raw_damage(action), action)
 		if action.push_tiles != 0 and target.is_alive():
 			_shove(source, target, action.push_tiles)
 		if not action.status.is_empty() and target.is_alive():

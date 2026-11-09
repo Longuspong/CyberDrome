@@ -3,7 +3,7 @@
   "code": "EQP-004",
   "set": "bot2",
   "type": "equipment",
-  "name": "Drohnen-Pod",
+  "name": "E-Schraubenschluessel",
   "direction": "north",
   "svg": "eq_drone_pod_north.svg",
   "view_box": [
@@ -17,7 +17,7 @@
     {
       "name": "mount",
       "x": 64.0,
-      "y": 37.77
+      "y": 49.22
     }
   ],
   "color_scheme": {
@@ -32,19 +32,20 @@
   },
   "tags": [
     "support",
-    "shoulder"
+    "tool"
   ],
   "mount_class": "light",
   "category": "support",
   "stats": {
-    "hp": 0,
+    "hp": 10,
     "spd": 0,
-    "atk": 0,
     "def": 0,
     "shield": 0,
     "shield_regen": 0,
     "shield_bonus": 0.0,
-    "weight": 3,
+    "shield_pulse": 0,
+    "power": 0,
+    "module_slots": 0,
     "hp_regen_pct": 0,
     "lure_radius": 0,
     "ai_role": "",
@@ -69,11 +70,13 @@
         "status": null,
         "heal": 6,
         "shield_gain": 0,
-        "support": "ally"
+        "support": "ally",
+        "damage_pct": 0.0,
+        "base_action": ""
       },
       {
         "id": "act_drone_guard",
-        "display_name": "Schutzdrohne",
+        "display_name": "Schildfeld",
         "category": "ability",
         "targeting": "single",
         "range_tiles": 3,
@@ -94,7 +97,9 @@
         "status": null,
         "heal": 0,
         "shield_gain": 15,
-        "support": "ally"
+        "support": "ally",
+        "damage_pct": 0.0,
+        "base_action": ""
       }
     ]
   }

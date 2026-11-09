@@ -24,6 +24,10 @@ var uid: String = ""
 ## kommen Werte, Grafik und Slotregeln; die Instanz selbst haelt keine davon.
 var part_id: StringName = &""
 
+## Erfahrung und Level dieses Exemplars (Waffen, 0-10; Leveling).
+var xp: int = 0
+var level: int = 0
+
 
 static func create(new_uid: String, new_part_id: StringName) -> PartInstance:
 	var instance := PartInstance.new()
@@ -47,7 +51,11 @@ func type() -> int:
 
 
 func to_dict() -> Dictionary:
-	return {"uid": uid, "part_id": str(part_id)}
+	var out := {"uid": uid, "part_id": str(part_id)}
+	if xp > 0:
+		out["xp"] = xp
+		out["level"] = level
+	return out
 
 
 static func from_dict(data: Dictionary) -> PartInstance:
@@ -57,7 +65,20 @@ static func from_dict(data: Dictionary) -> PartInstance:
 	var part_value := StringName(data.get("part_id", ""))
 	if uid_value == "" or part_value == &"":
 		return null
-	return PartInstance.create(uid_value, part_value)
+	var instance := PartInstance.create(uid_value, part_value)
+	instance.xp = int(data.get("xp", 0))
+	instance.level = int(data.get("level", 0))
+	return instance
+
+
+## EP gutschreiben; gibt true zurueck, wenn ein Level dazukam.
+func add_xp(amount: int) -> bool:
+	if amount <= 0:
+		return false
+	xp += amount
+	var before := level
+	level = Leveling.weapon_level_for(xp)
+	return level > before
 
 
 func _to_string() -> String:

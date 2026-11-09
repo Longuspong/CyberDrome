@@ -2,7 +2,7 @@
   "_kommentar": [
     "Module (NEUANFANG 6g): gibt es nur im Lauf, sie veraendern, wie eine Waffe",
     "funktioniert. Sie stecken im WAFFENHALTER eines DROME (slots je Halter,",
-    "slots_by_body fuer Ausnahmen wie den Molok) und wirken auf die Waffe, die",
+    "seit 8. Nov. 2026 ein Wert des Chassis: module_slots, slots nur Ersatz) und wirken auf die Waffe, die",
     "gerade darin sitzt. Bedingung (condition): 'ranged' = Angriff mit",
     "Reichweite ab 2, 'melee' = Reichweite 1, leer = jede Waffe. Passt die Waffe",
     "nicht, ruht das Modul (grau), bleibt aber im Halter.",
@@ -38,12 +38,14 @@
     "short: zwei Buchstaben fuer den Chip (eindeutig), falls kein Symbol da ist.",
     "Symbol: assets/modules/<id>.svg (64x64, transparent); anderer Pfad mit icon.",
     "sell_value: Credits beim Verkauf (Grundmodul / Rezept-Modul).",
+    "gadget (8. Nov. 2026): das Modul bringt eine eigene Faehigkeit mit, die",
+    "unter gadgets steht (Orbit-Fokus, Hologramm-Boost -- frueher Ausruestung).",
+    "Sie loest nach ihrem Takt aus, solange das Modul wirkt.",
     "shop: der Laden im Zwischenstopp (6i) -- offers Grundmodule je Stopp,",
     "price in Credits (Grundmodul / Rezept-Modul), recipe_weight: so viel",
     "wahrscheinlicher ist ein Modul, das einem angefangenen Rezept fehlt."
   ],
   "slots": 3,
-  "slots_by_body": {"jugg_body": 2},
   "sell_value": {"base": 2, "recipe": 6},
   "shop": {
     "offers": 2,
@@ -98,7 +100,23 @@
     "mod_bait": {
       "name": "Koedersender", "short": "KS", "class": "tactic", "condition": "",
       "effects": {"taunt": 3.0}
+    },
+    "mod_orbit": {
+      "name": "Orbit-Fokus", "short": "OF", "class": "tactic", "condition": "",
+      "effects": {}, "gadget": "act_orbitpull"
+    },
+    "mod_holo": {
+      "name": "Hologramm-Boost", "short": "HB", "class": "defense", "condition": "",
+      "effects": {}, "gadget": "act_holo_dash"
     }
+  },
+  "gadgets": {
+    "act_orbitpull": {"display_name": "Orbit-Sog", "category": "ability",
+      "targeting": "single", "range_tiles": 4, "push_tiles": -2,
+      "trigger": {"kind": "time", "every": 6}},
+    "act_holo_dash": {"display_name": "Hologramm-Boost", "category": "ability",
+      "targeting": "dash", "range_tiles": 3,
+      "trigger": {"kind": "adjacent", "every": 4}}
   },
   "recipes": {
     "mod_gunslinger": {

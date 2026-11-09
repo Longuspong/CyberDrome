@@ -1,10 +1,11 @@
 extends Control
 
-## Die Startseite -- mobile first, Hochformat.
+## Die Startseite -- mobile first, Hochformat (neu 9. Nov. 2026).
 ##
-##   oben     der Name des Spiels
-##   Mitte    die Kulisse: zufaellige DROMEs, die einander bearbeiten
-##            (MenuArena). Sie fuellt den Platz, den die Knoepfe uebrig lassen.
+##   oben     der Name des Spiels als Neonschrift, darunter der Ort
+##   Mitte    die Buehne (HomeStage): das Tor der Arena von Neon City bei
+##            Nacht, davor DEIN Squad auf dem Podest
+##   darunter eine Karte: naechstes Gebiet und dein Squad in einer Zeile
 ##   unten    die Hauptaktion "Lauf starten", darunter der Chaos-Virus
 ##   Leiste   Spielen · Hangar · Optionen (UiKit.tab_bar)
 ##
@@ -13,32 +14,28 @@ extends Control
 
 var _status: Label
 var _chaos: Button
-var _stage: Control
-var _arena: MenuArena
+var _stage: HomeStage
 
 
 func _ready() -> void:
 	var content := UiKit.page(self, "", "", 0, false, Ambience.Kind.MENU)
 
-	var title := UiKit.label("CYBERDROME", 40, UiKit.HEADING)
+	var title := UiKit.label("CYBERDROME", 40, Color(1.0, 0.8, 0.96))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_outline_color", Color(1.0, 0.17, 0.84, 0.55))
+	title.add_theme_constant_override("outline_size", 10)
 	content.add_child(title)
-	var subtitle := UiKit.label("Baue DROMEs. Lass sie kaempfen.", UiKit.SMALL, UiKit.MUTED)
+	var subtitle := UiKit.label("Die Arena von Neon City", UiKit.SMALL, Color(0.18, 0.89, 0.92))
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(subtitle)
 
-	# Die Buehne der Kulisse. Ein Control, damit sie im Layout Platz bekommt;
-	# die Bots selbst sind ein Node2D darin, mittig und auf die Breite skaliert.
-	_stage = Control.new()
+	_stage = HomeStage.new()
 	_stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_stage.custom_minimum_size = Vector2(0, 180)
-	_stage.clip_contents = true
-	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stage.custom_minimum_size = Vector2(0, 260)
 	content.add_child(_stage)
-	_arena = MenuArena.new()
-	_stage.add_child(_arena)
-	_stage.resized.connect(_place_arena)
-	_arena.start()
+	_stage.show_squad(GameState.battle_ready_builds())
+
+	content.add_child(_info_card())
 
 	_status = UiKit.label("", UiKit.SMALL)
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -47,10 +44,6 @@ func _ready() -> void:
 	var run := UiKit.button("Lauf starten", true)
 	run.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/run.tscn"))
 	content.add_child(run)
-	var run_hint := UiKit.label("Roguelike: 8 Autokaempfe, 3 Leben, Beute nach jedem Sieg.",
-		UiKit.SMALL, UiKit.MUTED)
-	run_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(run_hint)
 
 	_chaos = UiKit.button("Chaos-Virus")
 	_chaos.pressed.connect(func():
@@ -61,14 +54,26 @@ func _ready() -> void:
 	run.grab_focus.call_deferred()
 
 
-## Die Kulisse braucht rund 460 Pixel Breite (zwei Teams links und rechts der
-## Mitte) und 240 Hoehe. Sie wird so gross wie moeglich eingepasst -- auf dem
-## Handy ist die Buehne hoch, aber schmal, also entscheidet meist die Breite.
-func _place_arena() -> void:
-	var area := _stage.size
-	var fit := clampf(minf(area.x / 460.0, area.y / 240.0), 0.4, 1.6)
-	_arena.scale = Vector2(fit, fit)
-	_arena.position = Vector2(area.x * 0.5, area.y * 0.62)
+## Eine schmale Karte: wohin der naechste Lauf geht und wer mitkommt.
+func _info_card() -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiKit.card_style(false))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 2)
+	panel.add_child(box)
+	box.add_child(UiKit.label("Neon City  ·  Revier der Neon Ninja's", UiKit.BODY, UiKit.HEADING))
+	var squad: Array = GameState.battle_ready_builds()
+	if squad.is_empty():
+		box.add_child(UiKit.label("Noch kein kampfbereiter Squad -- ab in den Hangar.",
+			UiKit.SMALL, UiKit.MUTED))
+	else:
+		var levels := 0
+		for build in squad:
+			levels += build.drome_level
+		box.add_child(UiKit.label("Dein Squad: %d DROMEs  ·  Level im Schnitt %.1f  ·  Staerke %d"
+			% [squad.size(), float(levels) / squad.size(), int(DromeBuild.squad_power(squad))],
+			UiKit.SMALL, UiKit.MUTED))
+	return panel
 
 
 func _refresh_status() -> void:

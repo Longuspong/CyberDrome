@@ -272,11 +272,17 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_theme_constant_override("separation", 4)
 	info.add_child(UiKit.label(entry.name, UiKit.H2))
+	# Level und EP (Leveling): "Level 2 · EP 6/9".
+	var step := Leveling.progress(entry.xp, Leveling.drome_table())
+	info.add_child(UiKit.label("Level %d · %s" % [entry.level,
+		"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Hoechstlevel"], UiKit.SMALL, UiKit.GOOD))
 	info.add_child(UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL,
 		UiKit.ACCENT))
 	var stats := build.stats()
-	info.add_child(UiKit.label("Integritaet %d · Schild %d · SPD %d" % [stats["hp_max"],
+	info.add_child(UiKit.label("Integritaet %d · Schild %d · Speed %d" % [stats["hp_max"],
 		stats.get("shield_max", 0), stats["spd"]], UiKit.SMALL, UiKit.MUTED))
+	info.add_child(UiKit.label("Schildpuls %d · Ruestung %d · Power %d" % [stats.get("shield_pulse", 0),
+		stats["def"], stats.get("power", 0)], UiKit.SMALL, UiKit.MUTED))
 	info.add_child(UiKit.label(_loadout(build), UiKit.SMALL, UiKit.MUTED))
 	return info
 
@@ -562,8 +568,8 @@ func _delta_lines(build: DromeBuild, slot: String, part: PartData, box: VBoxCont
 	trial.slots[slot] = part.id
 	var before := build.stats()
 	var after := trial.stats()
-	for key in [["hp_max", "Integritaet"], ["shield_max", "Schild"], ["spd", "SPD"],
-			["atk", "ATK"], ["def", "DEF"]]:
+	for key in [["hp_max", "Integritaet"], ["shield_max", "Schild"], ["shield_pulse", "Schildpuls"],
+			["spd", "Speed"], ["def", "Ruestung"], ["power", "Power"]]:
 		var a: int = before.get(key[0], 0)
 		var b: int = after.get(key[0], 0)
 		if a != b:

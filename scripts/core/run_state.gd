@@ -61,6 +61,19 @@ var start_size: int = 2
 ## sie gelandet ist ("lager", "squad", "home", "" fuer Credits/Leben).
 var last_loot: Array = []
 
+## EP des letzten Kampfes (collect_xp), fuer die Anzeige im Zwischenstopp:
+## [{kind ("drome"/"weapon"), uid, name, gain}].
+var last_growth: Array = []
+
+## Gesammelte EP dieses Laufs (Leveling): uid -> EP, getrennt nach DROMEs
+## (Chassis-uid) und Waffen (Exemplar-uid). Gutgeschrieben wird erst am Ende
+## zuhause (GameState.credit_run_xp); im Lauf bleiben die Level, wie sie sind.
+var pending_xp: Dictionary = {"dromes": {}, "weapons": {}}
+var xp_credited: bool = false
+## Was am Ende gutgeschrieben wurde (GameState.credit_run_xp), fuer die
+## Abschlussanzeige.
+var final_growth: Array = []
+
 ## Beute, die nach Hause geschickt wurde und noch ins Inventar muss.
 ## GameState.deliver_run_home() leert die Liste. Eintraege wie last_loot.
 var home_queue: Array = []
@@ -253,12 +266,35 @@ func enemy_module_count(which: int = -1) -> int:
 	return maxi(0, count)
 
 
+## DROME- und Waffenlevel der Gegner dieser Runde und Stufe
+## (run.enemy_levels): {drome, weapon}.
+func enemy_levels(which: int = -1) -> Dictionary:
+	if which < 0:
+		which = tier
+	var settings: Dictionary = cfg().get("enemy_levels", {})
+	var offset: Dictionary = (settings.get("tier_offset", {}) as Dictionary).get(TIER_KEYS[which], {})
+	var out := {}
+	for kind in ["drome", "weapon"]:
+		var table: Array = settings.get(kind, [0])
+		var value := int(table[clampi(round - 1, 0, table.size() - 1)]) if not table.is_empty() else 0
+		value += int(offset.get(kind, 0))
+		var top := Leveling.drome_max() if kind == "drome" else Leveling.weapon_max()
+		out[kind] = clampi(value, 0, top)
+	return out
+
+
 ## Gegner tragen Module (6i) -- dieselben wie der Spieler, aber handverlesen:
 ## nur was zur Waffe passt (keine ruhenden Module), keines doppelt. Ab
 ## enemy_modules.recipe_from_round und mindestens zwei Plaetzen ist das erste
 ## ein passendes Rezept. Alles in den Halter der ersten Waffe, am Seed des
 ## Kampfes.
 func _arm_enemies(foes: Array, which: int) -> void:
+	var levels := enemy_levels(which)
+	for build in foes:
+		build.drome_level = levels["drome"]
+		for slot in build.equip_slots():
+			if build.part_in(slot) != null and levels["weapon"] > 0:
+				build.weapon_levels[slot] = levels["weapon"]
 	var count := enemy_module_count(which)
 	if count <= 0:
 		return
@@ -339,6 +375,44 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 		_finish(Phase.WON)
 		return
 	_enter_stop()
+
+
+## Sammelt die EP eines Kampfes, BEVOR record_result ihn eintraegt (Runde und
+## Stufe stimmen dann noch). ``fighters``: je Squad-DROME {source_uid,
+## weapons: {slot: {damage, kills}}} aus dem Kampf. DROMEs bekommen EP nur
+## fuer einen Sieg, Waffen fuer Schaden und Abschuesse in jedem Kampf -- aber
+## nur Waffen aus dem Hangar (Exemplar-uid), die im Halter stecken.
+func collect_xp(fighters: Array, won: bool) -> void:
+	last_growth = []
+	var records := {}
+	for row in fighters:
+		records[str(row.get("source_uid", ""))] = row.get("weapons", {})
+	for build in squad:
+		if build.source_uid == "":
+			continue
+		if won:
+			var gain := Leveling.drome_win_xp(TIER_KEYS[tier], round)
+			_add_pending("dromes", build.source_uid, gain)
+			last_growth.append({"kind": "drome", "uid": build.source_uid,
+				"name": build.display_name, "gain": gain})
+		var weapons: Dictionary = records.get(build.source_uid, {})
+		for slot in build.instance_uids:
+			var part: PartData = build.part_in(slot)
+			if part == null:
+				continue
+			var rec: Dictionary = weapons.get(slot, {})
+			var gain := Leveling.weapon_fight_xp(int(rec.get("damage", 0)), int(rec.get("kills", 0)))
+			if gain <= 0:
+				continue
+			var uid := str(build.instance_uids[slot])
+			_add_pending("weapons", uid, gain)
+			last_growth.append({"kind": "weapon", "uid": uid, "name": part.display_name,
+				"gain": gain})
+
+
+func _add_pending(kind: String, uid: String, gain: int) -> void:
+	var table: Dictionary = pending_xp[kind]
+	table[uid] = int(table.get(uid, 0)) + gain
 
 
 ## Credits fuer den Kampf dieser Runde: nach Stufe bei einem Sieg, ein
@@ -585,6 +659,9 @@ func equip_from_storage(index: int, drome: int, slot: String) -> bool:
 		return false
 	var old := build.part_in(slot)
 	build.slots[slot] = part.id
+	# Die Beute-Waffe ist kein Exemplar aus dem Hangar: kein Level, keine EP.
+	build.weapon_levels.erase(slot)
+	build.instance_uids.erase(slot)
 	if old != null:
 		storage[index] = old.id
 	else:
@@ -601,6 +678,8 @@ func unequip(drome: int, slot: String) -> bool:
 	if part == null or slot not in build.equip_slots():
 		return false
 	build.slots.erase(slot)
+	build.weapon_levels.erase(slot)
+	build.instance_uids.erase(slot)
 	storage.append(part.id)
 	return true
 

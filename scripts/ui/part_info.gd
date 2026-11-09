@@ -18,17 +18,15 @@ const ROLE := {
 	&"eq_deflector": "Ein Energieschild zum Umschnallen: mehr Schild, der sich jeden Puls (alle 3 s) wieder auflaedt. Keine eigene Aktion.",
 	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integritaet zurueck.",
 	&"eq_rune_staff": "Nahkampfstab mit reinem Energieschaden. Trifft das Ziel und die vier geraden Nachbarfelder.",
-	&"eq_orbit_focus": "Kontrolle statt Schaden: zieht einen Gegner zu sich heran.",
 	&"eq_rail_lance": "Scharfschuetzenwaffe mit der groessten Reichweite.",
-	&"eq_bait_beacon": "Lockt Gegner an: wer ihm zu nahe kommt, greift den Traeger an.",
-	&"eq_holo_boost": "Ein schneller Sprung in gerader Linie -- fuer Stellungswechsel, nicht fuer Schaden.",
 }
 
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
 ## SPD ist die Laufgeschwindigkeit, Faehigkeiten loesen nach ihrer Regel aus.
 const STAT_LABELS := [
 	["hp", "Integritaet"], ["shield", "Schild"],
-	["def", "Panzerung"], ["atk", "Angriff"], ["spd", "Tempo (SPD, Laufgeschwindigkeit)"],
+	["shield_pulse", "Schildpuls"], ["def", "Ruestung"], ["power", "Power"],
+	["spd", "Speed (Laufgeschwindigkeit)"], ["module_slots", "Modulplaetze je Halter"],
 ]
 
 
@@ -54,14 +52,6 @@ static func lines(part: PartData) -> Array:
 			out.append(["%s %+d" % [entry[1], value], "stat"])
 	if part.shield_bonus > 0.0:
 		out.append(["Schild-Effizienz +%d %%" % int(round(part.shield_bonus * 100.0)), "stat"])
-
-	# Gewicht zeigt sich nur als das, was es kostet: Tempo. Gerechnet wird wie
-	# in DromeBuild.payload_slowdown() -- hier fuer das Teil allein.
-	if part.type == PartData.Type.EQUIPMENT:
-		var step := Config.get_int("spd_weight_step", 4)
-		var slow := part.weight / step if step > 0 else 0
-		if slow > 0:
-			out.append(["Schwer: bremst um %d SPD" % slow, "stat_bad"])
 
 	for text in traits(part):
 		out.append([text, "trait"])
@@ -99,6 +89,11 @@ static func traits(part: PartData) -> Array[String]:
 				int(p.get("guard_radius", 3))])
 		"echo":
 			out.append("Echo: jede Faehigkeit wirkt zweimal, ihr Takt ist dafuer 50 % laenger.")
+		"steady":
+			var st := Config.section("passives").get("steady", {}) as Dictionary
+			out.append("Anlegen: nach %s s ohne Bewegung +%d %% Schaden und Reichweite." % [
+				ActionData._seconds(float(st.get("seconds", 4.0))),
+				int(round((float(st.get("damage_mult", 1.2)) - 1.0) * 100.0))])
 	return out
 
 

@@ -61,7 +61,7 @@ const STARTER_CHASSIS := [
 ## Seit es nur noch einen Platz je DROME gibt (Molok zwei), liegen die
 ## Gadgets hier und laden zum Umbauen ein.
 const STARTER_LOOSE_EQUIPMENT := [
-	&"eq_holo_boost", &"eq_orbit_focus", &"eq_drone_pod", &"eq_bait_beacon",
+	&"eq_drone_pod", &"eq_plasma_blade",
 ]
 
 
@@ -202,14 +202,32 @@ func build_for(entry: RosterEntry) -> DromeBuild:
 	var chassis_id := instance_part_id(entry.chassis_uid())
 	if chassis_id != &"":
 		build.apply_chassis(chassis_id)
+	build.drome_level = entry.level
+	build.source_uid = entry.chassis_uid()
 
 	for slot in entry.assignments:
 		if slot == "body":
 			continue
-		var part_id := instance_part_id(str(entry.assignments[slot]))
+		var uid := str(entry.assignments[slot])
+		var part_id := instance_part_id(uid)
 		if part_id != &"":
 			build.slots[slot] = part_id
+			if str(slot).begins_with("equip_"):
+				build.instance_uids[slot] = uid
+				var owned := instance(uid)
+				if owned != null and owned.level > 0:
+					build.weapon_levels[slot] = owned.level
 	return build
+
+
+## Der Eintrag, dessen Chassis-Exemplar diese uid hat (DromeBuild.source_uid).
+func entry_by_chassis(uid: String) -> RosterEntry:
+	if uid == "":
+		return null
+	for entry in entries:
+		if entry.chassis_uid() == uid:
+			return entry
+	return null
 
 
 ## Die Aufbauten aller DROMEs, die ins Gefecht mitgenommen werden (§10b). Das

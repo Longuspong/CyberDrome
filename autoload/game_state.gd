@@ -275,6 +275,9 @@ func deliver_run_home() -> Array:
 	var delivered: Array = []
 	if run == null:
 		return delivered
+	# Am Ende des Laufs: die gesammelten EP zuhause gutschreiben.
+	if run.is_over() and not run.xp_credited:
+		run.final_growth = credit_run_xp()
 	for item in run.home_queue:
 		match item.get("kind", ""):
 			"part":
@@ -317,8 +320,9 @@ func begin_run_battle() -> void:
 
 ## Nimmt das Kampfergebnis zurueck in den Lauf und raeumt die Kampfparameter
 ## weg -- sonst erbte ein spaeterer Chaos-Kampf Seed und Gegnerstaerke.
-func finish_run_battle(outcome: int, enemy_pool: Array) -> void:
+func finish_run_battle(outcome: int, enemy_pool: Array, fighters: Array = []) -> void:
 	if run != null:
+		run.collect_xp(fighters, outcome == BattleManager.Outcome.VICTORY)
 		run.record_result(outcome, enemy_pool)
 		# Beute, die nicht mehr in Lager oder Squad passte, gleich nach Hause.
 		if not run.is_over():
@@ -328,6 +332,35 @@ func finish_run_battle(outcome: int, enemy_pool: Array) -> void:
 	battle_seed = 0
 	clear_chaos_run()
 	refresh_squad()
+
+
+## Schreibt die gesammelten EP des Laufs zuhause gut (Leveling) -- einmal, am
+## Ende des Laufs. Gibt die Aenderungen fuer die Anzeige zurueck:
+## [{name, kind ("drome"/"weapon"), gain, xp, level, up}].
+func credit_run_xp() -> Array:
+	var out: Array = []
+	if run == null or run.xp_credited:
+		return out
+	run.xp_credited = true
+	var dromes: Dictionary = run.pending_xp.get("dromes", {})
+	for uid in dromes:
+		var entry := roster.entry_by_chassis(str(uid))
+		if entry == null:
+			continue
+		var up := entry.add_xp(int(dromes[uid]))
+		out.append({"name": entry.name, "kind": "drome", "gain": int(dromes[uid]),
+			"xp": entry.xp, "level": entry.level, "up": up})
+	var weapons: Dictionary = run.pending_xp.get("weapons", {})
+	for uid in weapons:
+		var owned := roster.instance(str(uid))
+		if owned == null:
+			continue
+		var up := owned.add_xp(int(weapons[uid]))
+		var part := owned.part()
+		out.append({"name": part.display_name if part != null else str(owned.part_id),
+			"kind": "weapon", "gain": int(weapons[uid]), "xp": owned.xp, "level": owned.level, "up": up})
+	save_roster()
+	return out
 
 
 ## Zuruecksetzen auf den Spiegel-Modus -- nach einem Lauf, damit ein spaeterer

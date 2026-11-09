@@ -47,6 +47,8 @@ var condition: String = ""
 var effects: Dictionary = {}
 ## Nur Rezept-Module: die Zutaten und der eigene Effekt.
 var from: Array = []
+## Eigene Faehigkeit des Moduls (modules.json -> gadgets), leer = keine.
+var gadget: StringName = &"" 
 var bonus: Dictionary = {}
 
 static var _data: Dictionary = {}
@@ -97,7 +99,18 @@ static func _from_meta(key: StringName, meta: Dictionary) -> ModuleData:
 	module.klass = str(meta.get("class", "attack"))
 	module.condition = str(meta.get("condition", ""))
 	module.effects = meta.get("effects", {}).duplicate()
+	module.gadget = StringName(str(meta.get("gadget", "")))
 	return module
+
+
+## Die Faehigkeit, die ein Modul mitbringt (modules.json -> gadgets).
+static func gadget_action(action_id: StringName) -> ActionData:
+	var metas: Dictionary = data().get("gadgets", {})
+	if action_id == &"" or not metas.has(str(action_id)):
+		return null
+	var meta: Dictionary = (metas[str(action_id)] as Dictionary).duplicate()
+	meta["id"] = str(action_id)
+	return ActionData.from_meta(meta, str(meta.get("display_name", action_id)))
 
 
 static func reload() -> void:
@@ -172,11 +185,13 @@ func is_recipe() -> bool:
 
 
 ## Wie viele Module ein Halter dieses DROME fasst: 3, Molok 2 (6g).
+## Modulplaetze je Waffenhalter: ein Wert des DROME (Chassis, 8. Nov. 2026).
+## Fehlt er (alte Daten), gilt modules.json -> slots.
 static func slots_for(build: DromeBuild) -> int:
-	var per_body: Dictionary = data().get("slots_by_body", {})
-	var chassis := build.body() if build != null else null
-	if chassis != null and per_body.has(str(chassis.id)):
-		return int(per_body[str(chassis.id)])
+	if build != null:
+		var own := int(build.stats().get("module_slots", 0))
+		if own > 0:
+			return own
 	return int(data().get("slots", 3))
 
 
@@ -239,6 +254,10 @@ func short_name() -> String:
 func effect_lines(which: Dictionary = {}) -> Array[String]:
 	var source := effects if which.is_empty() else which
 	var lines: Array[String] = []
+	if which.is_empty() and gadget != &"":
+		var action := gadget_action(gadget)
+		if action != null:
+			lines.append("Faehigkeit %s (%s)" % [action.display_name, action.trigger_text()])
 	for key in source:
 		var line := effect_text(str(key), source[key])
 		if line != "":

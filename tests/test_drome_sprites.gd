@@ -130,7 +130,7 @@ func test_turning_does_not_move_equipment_relative_to_its_socket() -> void:
 	# Gemessen heisst das: der Abstand zwischen Teil und Sockel darf sich
 	# beim Drehen nicht aendern -- er muss null bleiben, in jeder Richtung.
 	var chassis := PartDB.get_part(&"mage_body")
-	var focus := PartDB.get_part(&"eq_orbit_focus")
+	var focus := PartDB.get_part(&"eq_rune_staff")
 	var seen := {}
 	for direction in DIRECTIONS:
 		var sockets: Dictionary = chassis.view(direction).get("anchors", {})
