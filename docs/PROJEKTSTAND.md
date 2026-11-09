@@ -268,9 +268,19 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * Strix-Passive Anlegen (`steady`, `Unit.track_stillness`).
 * Orbit-Fokus, Hologramm-Boost, Koedersender sind keine Ausruestung mehr,
   sondern Module (`gadget` in `modules.json`).
-* Level (`Leveling`): DROME 0-5, Waffe 0-10, EP nach jedem Sieg im Lauf,
-  gespeichert an `RosterEntry` und `PartInstance`. Gegner haben noch kein
-  Level.
+* Level (`Leveling`): DROME 0-5, Waffe 0-10, gespeichert an `RosterEntry`
+  und `PartInstance`. EP (9. Nov.): DROME je Sieg 40 x Stufe x Runde, Level
+  kosten 100/200/300/400/500; Waffe 0,25 je Schadenspunkt + 25 je Abschuss,
+  Level 1-5 schnell, 6-8 mittel, 9-10 langsam. Gesammelt im Lauf
+  (`RunState.pending_xp`), gutgeschrieben am Ende zuhause.
+* Gegner-Level (Leitplanke, `run.enemy_levels`): DROME 0-2, Waffen 0-3 ueber
+  die acht Runden, Leicht -1, Elite +1/+2. Messung: `run_bench.gd -- 20 0 0`
+  (frisch) bzw. `-- 20 2 3` (erfahren), Tabelle in `IDENTITAETEN.md`.
+* Effekte (9. Nov.): Einschlag Ring (Energie) / Funken (kinetisch),
+  Nahkampf ohne Projektil, Projektil matt oder leuchtend nach Schadensart,
+  Blaster gerader Schuss, Lanze Geschoss, Runenstab Energiekugel,
+  E-Schraubenschluessel (frueher Drohnen-Pod) Heilstrahl und Energiekugel
+  (`BattleView.show_attack`, `BattleScreen.attack_style`).
 
 ### Chaos-Virus
 * Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
@@ -321,8 +331,10 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * `UiKit`: `page()` (Rahmen, Kopfzeile, Scroll, Tab-Leiste), `button()`,
   `card()`, `label()`, `row()`, `drome_view()`, `chassis_view()`,
   `part_texture()` (zugeschnitten). Tab-Leiste: Spielen · Hangar · Optionen.
-* Startseite: Titel, Kulisse mit animierten DROMEs (`MenuArena`: Leerlauf je
-  Bauteil, Einmarsch, Schuesse, Funken, Schildring, Auseinanderfallen).
+* Startseite (neu 9. Nov. 2026, `HomeStage`): Neonschrift CYBERDROME, das
+  Tor der Arena von Neon City bei Nacht (Neonbogen ARENA, Suchscheinwerfer,
+  Regen, Perspektiv-Boden), davor der eigene Squad auf einem Podest; Karte
+  mit Gebiet und Squad. `MenuArena` (zufaellige Kaempfe) ist geloescht.
 
 ### Hosting
 * Vercel baut mit `tools/build_web.sh` (Godot 4.7 mit Pruefsumme, nur die

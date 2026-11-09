@@ -230,3 +230,47 @@ Schadensquelle und lebt am laengsten; der Molok faellt trotz 270
 Integritaet immer -- die Praesenz zieht alles auf ihn. Der Vireo macht wenig
 Schaden (Power 10, leichte Waffe). Naechster Schritt laut Spieler: die
 Waffen.
+
+## 7. EP, Gegner-Level, offene Fragen (9. Nov. 2026)
+
+**EP** (Vorgabe des Spielers, Formeln von Claude):
+
+* DROME: Level kosten 100, 200, 300, 400, 500 EP (Level 5 = 1500). Je Sieg
+  bekommt jeder DROME des Squads 40 EP x Stufe (Leicht 0,75 / Normal 1 /
+  Elite 1,5) x (1 + 10 % je Runde) -- auch wer gefallen ist. Ein Lauf mit
+  sieben Siegen bringt rund 380 EP: Level 2 nach dem ersten Lauf, Level 5
+  nach etwa vier.
+* Waffe: 0,25 EP je Schadenspunkt (Schild und Integritaet) und 25 je
+  Abschuss -- ein Abschuss zaehlt so viel wie rund zehn Treffer. In jedem
+  Kampf, auch bei einer Niederlage. Level kosten 100, 150, 200, 250, 300
+  (1-5), 500, 650, 800 (6-8), 1200, 1600 (9-10). Gemessen bringt eine Waffe
+  45-85 EP je Kampf: Level 1 nach ~2 Kaempfen, Level 5 nach 2-3 Laeufen,
+  Level 10 nach ~100 Kaempfen.
+* Nur Waffen aus dem Hangar, die in einem Squad-DROME stecken. EP sammeln
+  sich im Lauf (im Zwischenstopp mit dem kommenden Level zu sehen) und werden
+  am Ende zuhause gutgeschrieben.
+
+**Gegner-Level** (Leitplanke, `config.json` -> `run.enemy_levels`): DROME
+0, 0, 1, 1, 1, 2, 2, 2 und Waffen 0, 0, 1, 1, 2, 2, 3, 3 ueber die acht
+Runden; Leicht -1/-1, Elite +1/+2. Gemessen (Standard-Squad OHNE eigene
+Module und Beute, 20 Laeufe, Siege):
+
+| Runde | Stufe | Gegner Lv | frischer Squad (0/0) | erfahrener Squad (2/3) |
+|---|---|---|---|---|
+| 1 | Normal | 0/0 | 19 | 20 |
+| 1 | Elite | 1/2 | 9 | 16 |
+| 3 | Normal | 1/1 | 13 | 19 |
+| 5 | Normal | 1/2 | 7 | 16 |
+| 5 | Elite | 2/4 | 2 | 5 |
+| 8 | Leicht | 1/2 | 16 | 19 |
+| 8 | Normal | 2/3 | 1 | 7 |
+| 8 | Elite | 3/5 | 0 | 3 |
+
+Lesart: ohne eigene Module schafft ein frischer Squad spaet nur noch Leicht,
+ein erfahrener auch Normal. Im echten Lauf kommen Module aus dem Laden und
+Beute dazu -- die Stages modelliert der Spieler selbst.
+
+**Gemessen: Backline, solange der Molok steht** (100 Spiegelkaempfe): der
+Molok faellt nach 10 s; bis dahin bekommen Nimbus 3 % und Strix 4 % ihres
+gesamten Schadens ab, der Vireo (vorn) 21 %. Die Praesenz zieht praktisch
+alles auf den Molok.
