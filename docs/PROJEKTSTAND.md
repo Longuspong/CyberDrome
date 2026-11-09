@@ -302,6 +302,11 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Zeit-Anteil. Hintergrund: beim Zeit-Takt entschied, wer den ersten Vortex
   zuendet (Taktchip 91 %). Die Zeit-Logik im Code bleibt fuer Altdaten,
   wird aber von keinem Teil mehr genutzt.
+* Gemessen danach (je 200 Kaempfe, Rezept / lose Zutaten): Nimbus
+  Taktchip 90,5 / 71 -- jetzt echt stark, weil der Zaehler 1,25 den Vortex
+  (staerkste Faehigkeit) gut 25 % haeufiger macht; Gabelung 82,5 / 72,5;
+  Orbit 58,5 / 56,5. Molok Brandmarke 90,5 / 76, Raufbold 79,5 / 68; Strix
+  Gunslinger 82,5 / 75. Vorschlaege an den Spieler offen.
 
 ### Neue Waffen und freie Arme (9. Nov. 2026)
 * **Bollwerk-Ramme** (`eq_bulwark_ram`, mittel, bot2): Rw 1, 10 alle 1,6 s;
