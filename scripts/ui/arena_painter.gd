@@ -42,6 +42,66 @@ static func style(region_id: String) -> Dictionary:
 	return STYLE.get(region_id, STYLE["city"])
 
 
+# ---------------------------------------------------------------------------
+# Bildteile (9. Nov. 2026): Neon City aus Bildern statt gezeichnet
+# ---------------------------------------------------------------------------
+# Zugeschnitten von tools/cut_arena_city.py aus art/arena_city/. Gibt es fuer
+# eine Region keinen Ordner oder fuer eine Art kein Bild, wird wie bisher
+# gezeichnet.
+
+const ART_DIR := "res://assets/arena/%s/"
+## Bodenkacheln: drei Betonplatten, dazu ab und zu ein Akzent.
+const FLOOR_BASE := ["concrete_a", "concrete_b", "concrete_c"]
+const FLOOR_ACCENT := ["hatch", "grate", "drain", "grid_cyan", "grid_magenta", "warning"]
+## Anteil der Felder mit Akzent.
+const FLOOR_ACCENT_CHANCE := 0.07
+## Spielfeld leicht abgedunkelt, damit Neon und DROMEs vorn bleiben;
+## Randstreifen: dieselben Platten, deutlich dunkler.
+const FLOOR_TINT := Color(0.78, 0.8, 0.88)
+const APRON_TINT := Color(0.46, 0.48, 0.56)
+
+static var _textures := {}
+static var _anchors := {}
+
+
+## Bild eines Arena-Teils oder null, wenn es keins gibt.
+static func art(region_id: String, name: String) -> Texture2D:
+	var path := (ART_DIR % region_id) + name + ".png"
+	if not _textures.has(path):
+		_textures[path] = load(path) if ResourceLoader.exists(path) else null
+	return _textures[path]
+
+
+## Ankerpunkt und Massstab eines Objektbildes: [anchor, scale] oder leer.
+static func art_anchor(region_id: String, name: String) -> Array:
+	if not _anchors.has(region_id):
+		var data := {}
+		var path := (ART_DIR % region_id) + "sprites.json"
+		if FileAccess.file_exists(path):
+			var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+			if parsed is Dictionary:
+				data = parsed
+		_anchors[region_id] = data
+	var sprites: Dictionary = _anchors[region_id].get("sprites", {})
+	if not sprites.has(name):
+		return []
+	var a: Array = sprites[name]["anchor"]
+	return [Vector2(float(a[0]), float(a[1])), float(_anchors[region_id].get("scale", 1))]
+
+
+## Zeichnet ein Objektbild so, dass sein Anker auf der Feldmitte (0, 0) liegt.
+## Gibt false zurueck, wenn es kein Bild gibt.
+static func draw_art(item: CanvasItem, region_id: String, name: String) -> bool:
+	var tex := art(region_id, name)
+	var info := art_anchor(region_id, name)
+	if tex == null or info.is_empty():
+		return false
+	var k: float = 1.0 / float(info[1])
+	var anchor: Vector2 = info[0]
+	item.draw_texture_rect(tex, Rect2(-anchor * k, tex.get_size() * k), false)
+	return true
+
+
 ## Punkt auf einem Feld: u, v von -0,5 bis 0,5 entlang der Gitterachsen.
 static func at(tile: Vector2i, u: float, v: float) -> Vector2:
 	return IsoView.map_to_local(tile) + Vector2((u - v) * TW * 0.5, (u + v) * TH * 0.5)
@@ -82,6 +142,9 @@ class Floor extends Node2D:
 		var w := grid.width
 		var h := grid.height
 		var a := ArenaPainter.APRON
+		if ArenaPainter.art(region_id, "floor_" + ArenaPainter.FLOOR_BASE[0]) != null:
+			_draw_art_floor(s, w, h, a)
+			return
 		# Randstreifen und Sockel zuerst -- von hinten nach vorn.
 		for y in range(-a, h + a):
 			for x in range(-a, w + a):
@@ -100,6 +163,24 @@ class Floor extends Node2D:
 			var c := IsoView.tile_corners(tile)
 			draw_line(c[0], c[1], seam, 1.0)
 			draw_line(c[0], c[3], seam, 1.0)
+		_border(s, w, h)
+
+	## Boden aus Bildkacheln: Randstreifen abgedunkelt, im Feld Platten mit
+	## gelegentlichen Akzenten. Der Zufall haengt am Feld.
+	func _draw_art_floor(s: Dictionary, w: int, h: int, a: int) -> void:
+		for y in range(-a, h + a):
+			for x in range(-a, w + a):
+				var tile := Vector2i(x, y)
+				var rng := ArenaPainter.tile_rng(tile, 1)
+				var inside := grid.in_bounds(tile)
+				var name: String = ArenaPainter.FLOOR_BASE[rng.randi() % ArenaPainter.FLOOR_BASE.size()]
+				if inside and rng.randf() < ArenaPainter.FLOOR_ACCENT_CHANCE:
+					name = ArenaPainter.FLOOR_ACCENT[rng.randi() % ArenaPainter.FLOOR_ACCENT.size()]
+				var tex := ArenaPainter.art(region_id, "floor_" + name)
+				var center := IsoView.map_to_local(tile)
+				var rect := Rect2(center - Vector2(TW, TH) * 0.5, Vector2(TW, TH))
+				draw_texture_rect(tex, rect, false, ArenaPainter.FLOOR_TINT if inside else ArenaPainter.APRON_TINT)
+		_plinth(s, w, h, a)
 		_border(s, w, h)
 
 	func _tile(tile: Vector2i, s: Dictionary) -> void:
@@ -219,8 +300,11 @@ class Floor extends Node2D:
 class Obstacle extends Node2D:
 	var tile := Vector2i.ZERO
 	var kind := "block"
+	var region_id := "city"
 
 	func _draw() -> void:
+		if ArenaPainter.draw_art(self, region_id, kind):
+			return
 		var rng := ArenaPainter.tile_rng(tile, 7)
 		match kind:
 			"container":
@@ -449,6 +533,7 @@ static func build(world: Node2D, grid: Grid, depth_of: Callable) -> Array:
 		var block := Obstacle.new()
 		block.tile = tile
 		block.kind = str(grid.obstacles[tile])
+		block.region_id = region_id
 		block.position = IsoView.map_to_local(tile)
 		block.z_index = depth_of.call(tile)
 		world.add_child(block)
@@ -458,7 +543,10 @@ static func build(world: Node2D, grid: Grid, depth_of: Callable) -> Array:
 	var colors: Array = s["lights"]
 	# Deko: auf dem hinteren Randstreifen dichter, vorn nur an den Ecken --
 	# hohe Deko vorn verdeckte das Spielfeld.
-	var kinds: Array = Config.section("obstacles").get("kinds", {}).get(region_id, ["crate"])
+	var settings := Config.section("obstacles")
+	var kinds: Array = settings.get("props", {}).get(region_id,
+		settings.get("kinds", {}).get(region_id, ["crate"]))
+	var lamp_art := art(region_id, "lamp") != null
 	var spots: Array = []
 	for i in range(1, grid.width, 4):
 		spots.append([Vector2i(i, -2), "lamp" if (i / 4) % 2 == 0 else "deco"])
@@ -470,7 +558,13 @@ static func build(world: Node2D, grid: Grid, depth_of: Callable) -> Array:
 		var tile: Vector2i = spots[index][0]
 		var rng := tile_rng(tile, 11)
 		var node: Node2D
-		if spots[index][1] == "lamp":
+		if spots[index][1] == "lamp" and lamp_art:
+			var post := Obstacle.new()
+			post.kind = "lamp"
+			post.region_id = region_id
+			node = post
+			lights.spots.append([IsoView.map_to_local(tile), colors[index % colors.size()], 90.0])
+		elif spots[index][1] == "lamp":
 			var lamp := Prop.new()
 			lamp.light = colors[index % colors.size()]
 			node = lamp
@@ -478,6 +572,7 @@ static func build(world: Node2D, grid: Grid, depth_of: Callable) -> Array:
 		else:
 			var block := Obstacle.new()
 			block.kind = str(kinds[rng.randi() % kinds.size()])
+			block.region_id = region_id
 			node = block
 		node.set("tile", tile)
 		node.position = IsoView.map_to_local(tile)
