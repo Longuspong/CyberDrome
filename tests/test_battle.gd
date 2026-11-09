@@ -251,7 +251,19 @@ func test_the_drone_pod_repairs_the_most_hurt_ally() -> void:
 	t.equal(aim.get("target"), heavy, "geheilt wird, wer den geringsten Anteil hat")
 	var before := heavy.hp
 	t.ok(battle.resolver.execute(sani, heavy.tile, repair), "die Heilung geht raus")
-	t.equal(heavy.hp, before + repair.heal, "und repariert %d" % repair.heal)
+	var amount := ActionResolver.support_amount(sani, heavy, repair.heal)
+	t.equal(heavy.hp, before + amount,
+		"und repariert %d (Grundwert x Power + 3 %% der Integritaet des Ziels)" % amount)
+
+	# Ueber die volle Integritaet hinaus wird die Heilung zu Schild -- aber
+	# nur bis zum normalen Maximum; ist beides voll, verpufft sie.
+	heavy.hp = heavy.stat("hp_max") - 1
+	heavy.shield = heavy.shield_max() - 3
+	battle.resolver.execute(sani, heavy.tile, repair)
+	t.equal(heavy.hp, heavy.stat("hp_max"), "Integritaet voll")
+	t.equal(heavy.shield, heavy.shield_max(), "der Rest fuellt den Schild, kein Ueberschild")
+	battle.resolver.execute(sani, heavy.tile, repair)
+	t.equal(heavy.shield, heavy.shield_max(), "beides voll: die Heilung geht ins Leere")
 
 	heavy.hp = heavy.stat("hp_max")
 	light.hp = light.stat("hp_max")
@@ -273,9 +285,12 @@ func test_the_deflector_charges_its_own_shield() -> void:
 	t.ok(charge != null and charge.shield_gain > 0, "der Deflektor hat die Schildladung")
 	unit.shield = unit.shield_max()
 	t.ok(resolver.execute(unit, unit.tile, charge), "sie wirkt auf den Traeger")
-	t.equal(unit.shield, unit.shield_max() + charge.shield_gain, "auch ueber das Maximum")
-	resolver.execute(unit, unit.tile, charge)
-	t.equal(unit.shield, unit.shield_max() + charge.shield_gain, "aber nicht beliebig weit")
+	t.equal(unit.shield, unit.shield_max() + ActionResolver.support_amount(unit, unit, charge.shield_gain),
+		"auch ueber das Maximum")
+	for _i in 6:
+		resolver.execute(unit, unit.tile, charge)
+	t.equal(unit.shield, ActionResolver.shield_cap(unit), "aber hoechstens Maximum + 50 %")
+	t.equal(ActionResolver.shield_cap(unit), int(round(unit.shield_max() * 1.5)), "das ist der Deckel")
 	unit.free()
 
 

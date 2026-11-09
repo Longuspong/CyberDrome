@@ -263,8 +263,13 @@
       "SCHILDPULS (8. Nov. 2026): ein Wert S am DROME. Ruhezeit ohne Schaden =",
       "  base_delay - delay_per_point * S (mind. min_delay), danach laedt der",
       "  Schild gain_per_point * S je pulse Sekunden (Unit.recharge_shield).",
-      "POWER: Rohschaden = Waffenschaden * power / 10 (Unit.raw_damage)."
+      "POWER: Rohschaden = Waffenschaden * power / 10 (Unit.raw_damage).",
+      "SUPPORT (9. Nov. 2026): Heilung/Schildgabe = Grundwert * Power / 10 +",
+      "  target_share * max. Integritaet des Ziels; Schildgaben bis Maximum +",
+      "  overshield (50 %), Heilung ueber volle Integritaet wird Schild bis zum",
+      "  normalen Maximum (ActionResolver.support)."
     ],
+    "support": {"target_share": 0.03, "overshield": 0.5},
     "shield_pulse": {"base_delay": 6.0, "delay_per_point": 0.3, "min_delay": 1.5, "gain_per_point": 2.0, "pulse": 3.0},
     "physical_vs_shield": 0.8,
     "energy_vs_shield": 1.2,

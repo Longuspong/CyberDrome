@@ -89,7 +89,7 @@
     "shield": 50,
     "shield_regen": 0,
     "shield_bonus": 0.0,
-    "shield_pulse": 5,
+    "shield_pulse": 3,
     "power": 6,
     "module_slots": 2,
     "hp_regen_pct": 0,

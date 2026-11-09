@@ -393,8 +393,9 @@ func _support_aim(unit: Unit, action: ActionData) -> Dictionary:
 			continue
 		var hp_max := maxi(1, ally.stat("hp_max"))
 		var share := float(ally.hp) / float(hp_max)
-		var needs: bool = (action.heal > 0 and ally.hp < hp_max) \
-			or (action.shield_gain > 0 and ally.shield < ally.shield_max() + action.shield_gain)
+		# Heilung hilft auch bei leerem Schild (der Rest wird Schild).
+		var needs: bool = (action.heal > 0 and (ally.hp < hp_max or ally.shield < ally.shield_max())) \
+			or (action.shield_gain > 0 and ally.shield < ActionResolver.shield_cap(ally))
 		if not needs:
 			continue
 		if share < best_share:

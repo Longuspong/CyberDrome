@@ -375,22 +375,48 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 	return true
 
 
-## Heilen und Schild geben (Deflektor, Drohnen-Pod). Gibt zurueck, wie viel
-## Integritaet und Schild zusammen dazukamen.
+## Wie viel eine Heilung oder Schildgabe bewirkt (9. Nov. 2026, Vorgabe des
+## Spielers): Grundwert x Power des Anwenders / 10, dazu ein Anteil der
+## maximalen Integritaet des ZIELS (combat.support.target_share) -- so bleibt
+## Unterstuetzung auch spaeter wertvoll, wenn Tanks viel Integritaet haben.
+static func support_amount(source: Unit, target: Unit, base: int) -> int:
+	if base <= 0:
+		return 0
+	var share := float((Config.section("combat").get("support", {}) as Dictionary).get("target_share", 0.03))
+	var from_source := float(base) * (source.power_factor() if source != null else 1.0)
+	return int(round(from_source + share * float(target.stat("hp_max"))))
+
+
+## Der hoechste Schild, den Schildgaben erreichen koennen: Maximum plus
+## Ueberschild (combat.support.overshield, Anteil des Maximums).
+static func shield_cap(target: Unit) -> int:
+	var over := float((Config.section("combat").get("support", {}) as Dictionary).get("overshield", 0.5))
+	return int(round(float(target.shield_max()) * (1.0 + over)))
+
+
+## Heilen und Schild geben (Schild-Waffe, E-Schraubenschluessel). Was die
+## Heilung ueber die volle Integritaet hinaus bringt, wird zu Schild -- aber
+## nur bis zum normalen Maximum (kein Ueberschild aus Heilung). Ist beides
+## voll, geht die Heilung ins Leere. Schildgaben duerfen ueber das Maximum,
+## gedeckelt bei Maximum + 50 %. Gibt zurueck, wie viel zusammen dazukam.
 func support(source: Unit, target: Unit, action: ActionData) -> int:
 	var healed := 0
+	var charged := 0
+	var before_shield := target.shield
 	if action.heal > 0:
+		var amount := support_amount(source, target, action.heal)
 		var before := target.hp
-		target.hp = mini(target.stat("hp_max"), target.hp + action.heal)
+		target.hp = mini(target.stat("hp_max"), target.hp + amount)
 		healed = target.hp - before
+		var rest := amount - healed
+		if rest > 0 and target.shield < target.shield_max():
+			target.shield = mini(target.shield_max(), target.shield + rest)
 		if healed > 0:
 			EventBus.unit_healed.emit(target, healed, source)
-	var charged := 0
 	if action.shield_gain > 0:
-		var before_shield := target.shield
-		target.shield = mini(target.shield_max() + action.shield_gain,
-			target.shield + action.shield_gain)
-		charged = target.shield - before_shield
+		var gain := support_amount(source, target, action.shield_gain)
+		target.shield = maxi(target.shield, mini(shield_cap(target), target.shield + gain))
+	charged = target.shield - before_shield
 	if healed > 0 or charged > 0:
 		EventBus.log_line("%s: %s +%d Integritaet, +%d Schild."
 			% [source.display_name, target.display_name, healed, charged])

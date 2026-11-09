@@ -151,7 +151,7 @@ Zahlen nach der Rueckmeldung des Spielers. Stellschrauben: `tools/build_sample_p
 | Speed | 12 | 10 | 12 | 7 |
 | Integritaet | 80 | 250 | 60 | 100 |
 | Schild | 50 | 50 | 60 | 30 |
-| Schildpuls | 5 | 5 | 10 | 5 |
+| Schildpuls | 7 | 3 | 10 | 5 |
 | Ruestung | 2 | 10 | 0 | 2 |
 | Halter | 1 leicht | 2 bis mittel | 1 bis mittel | 1 bis schwer |
 | Power | 10 | 6 | 12 | 15 |
@@ -274,3 +274,16 @@ Beute dazu -- die Stages modelliert der Spieler selbst.
 Molok faellt nach 10 s; bis dahin bekommen Nimbus 3 % und Strix 4 % ihres
 gesamten Schadens ab, der Vireo (vorn) 21 %. Die Praesenz zieht praktisch
 alles auf den Molok.
+
+## 8. Schildpuls und Unterstuetzung (9. Nov. 2026, entschieden)
+
+* **Schildpuls** je DROME: Vireo 7 (laedt zwischen Gefechten schnell
+  nach), Strix 5, Molok 3, Nimbus 10.
+* **Heilung und Schildgabe** = Grundwert x Power des Anwenders / 10 + 3 %
+  der maximalen Integritaet des Ziels (`ActionResolver.support_amount`,
+  `combat.support.target_share`).
+* **Ueberschild** (Schildgaben ueber das Maximum) gedeckelt bei Maximum +
+  50 % (`combat.support.overshield`).
+* **Ueberheilung** wird zu Schild, aber nur bis zum normalen Maximum -- kein
+  Ueberschild aus Heilung. Sind Integritaet und Schild voll, geht die
+  Heilung ins Leere.

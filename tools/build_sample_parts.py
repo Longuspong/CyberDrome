@@ -424,11 +424,11 @@ STATS = {
     # Alle Werte des DROME stehen hier (8. Nov. 2026). ATK und Gewicht
     # gibt es nicht mehr.
     # Vireo: der schnelle Allrounder, nur eine leichte Waffe.
-    "scout_body":  {"spd": 12, "hp":  80, "shield": 50, "shield_pulse":  5, "def":  2,
+    "scout_body":  {"spd": 12, "hp":  80, "shield": 50, "shield_pulse":  7, "def":  2,
                     "power": 10, "module_slots": 3,
                     "ai_role": "skirmisher", "passive": "hit_rush"},
     # Molok: der harte Zweihaender fuer die Frontlinie, wenig Power.
-    "jugg_body":   {"spd": 10, "hp": 250, "shield": 50, "shield_pulse":  5, "def": 10,
+    "jugg_body":   {"spd": 10, "hp": 250, "shield": 50, "shield_pulse":  3, "def": 10,
                     "power":  6, "module_slots": 2,
                     "ai_role": "vanguard", "passive": "presence"},
     # Nimbus: fragil, schildlastig, Richtung Faehigkeiten.

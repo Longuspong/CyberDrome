@@ -66,7 +66,7 @@ func test_a_drome_level_raises_two_values_more_than_the_rest() -> void:
 	var after := vireo.stats()
 	t.equal(after["hp_max"] - before["hp_max"], 40, "Integritaet ist Hauptwert: 80 -> 120 (+50 %)")
 	t.equal(after["shield_max"] - before["shield_max"], 25, "Schild ist Hauptwert: 50 -> 75")
-	t.equal(after["shield_pulse"], 6, "Schildpuls +20 %: 5 -> 6")
+	t.equal(after["shield_pulse"], 8, "Schildpuls +20 %: 7 -> 8")
 	t.equal(after["spd"], before["spd"], "Speed steigt nie")
 	t.equal(after["power"], before["power"], "Power steigt nie")
 	t.equal(after["module_slots"], 6, "Modulplaetze 3 -> 6 (Level 1, 3, 5)")

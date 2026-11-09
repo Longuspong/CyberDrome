@@ -104,8 +104,8 @@ func test_weight_no_longer_slows_anyone_down() -> void:
 func test_the_dromes_carry_the_agreed_values() -> void:
 	# docs/IDENTITAETEN.md Abschnitt 5/6 (Vorgabe des Spielers, 8. Nov. 2026).
 	var expected := {
-		"bot1": {"spd": 12, "hp_max": 80, "shield_max": 50, "shield_pulse": 5, "def": 2, "power": 10, "module_slots": 3},
-		"bot2": {"spd": 10, "hp_max": 250, "shield_max": 50, "shield_pulse": 5, "def": 10, "power": 6, "module_slots": 2},
+		"bot1": {"spd": 12, "hp_max": 80, "shield_max": 50, "shield_pulse": 7, "def": 2, "power": 10, "module_slots": 3},
+		"bot2": {"spd": 10, "hp_max": 250, "shield_max": 50, "shield_pulse": 3, "def": 10, "power": 6, "module_slots": 2},
 		"bot3": {"spd": 12, "hp_max": 60, "shield_max": 60, "shield_pulse": 10, "def": 0, "power": 12, "module_slots": 3},
 		"bot4": {"spd": 7, "hp_max": 100, "shield_max": 30, "shield_pulse": 5, "def": 2, "power": 15, "module_slots": 3},
 	}
