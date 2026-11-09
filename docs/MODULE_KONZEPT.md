@@ -519,7 +519,7 @@ Technisch:
 ## 14. Bauplan
 
 1. ~~Konzept festhalten~~ (dieses Dokument, 9. Nov.).
-2. 9 Grundmodule und 18 Rezepte in `data/modules.json`, die neuen Wirkungen im Kampf, Bench je Chassis.
-3. Laden (3 Angebote, Neuwürfeln, Ziel-Rezept), Waffen im Lauf fest.
-4. BIOS: zuerst Chassis-BIOS, dann 6–8 Rezept-BIOS.
+2. ~~9 Grundmodule und 18 Rezepte~~ (gebaut 9. Nov.; Messung in `PROJEKTSTAND.md`, Balancing offen).
+3. ~~Laden (3 Angebote, Neuwürfeln, Ziel-Rezept), Waffen im Lauf fest~~ (gebaut 9. Nov.).
+4. ~~BIOS: 4 Chassis-BIOS, 7 Rezept-BIOS~~ (gebaut 9. Nov.; Festung noch offen).
 5. Profile und Fraktionen, danach die neuen Waffen.
