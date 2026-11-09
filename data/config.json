@@ -142,11 +142,14 @@
       "Verbuendeten im guard_radius geht stattdessen auf ihn.",
       "echo (Nimbus, 7. Nov. 2026): der Takt der Faehigkeiten ist slower-mal so",
       "lang (normale Angriffe dazwischen gerundet, oder die Zeit), dafuer wirkt",
-      "jede Faehigkeit gleich zweimal."
+      "jede Faehigkeit gleich zweimal.",
+      "steady (Strix, 8. Nov. 2026): nach seconds ohne Feldwechsel damage_mult",
+      "auf den Schaden und range_mult auf die Reichweite (mind. +1 Feld)."
     ],
     "hit_rush": {"seconds": 2.0, "move_mult": 1.4},
     "presence": {"lure_radius": 2, "guard_radius": 3, "guard_share": 0.3},
-    "echo": {"slower": 1.5}
+    "echo": {"slower": 1.5},
+    "steady": {"seconds": 4.0, "damage_mult": 1.2, "range_mult": 1.2}
   },
 
   "power_tolerance": 0.12,

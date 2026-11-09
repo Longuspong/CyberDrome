@@ -92,6 +92,11 @@ static func traits(part: PartData) -> Array[String]:
 				int(p.get("guard_radius", 3))])
 		"echo":
 			out.append("Echo: jede Faehigkeit wirkt zweimal, ihr Takt ist dafuer 50 % laenger.")
+		"steady":
+			var st := Config.section("passives").get("steady", {}) as Dictionary
+			out.append("Anlegen: nach %s s ohne Bewegung +%d %% Schaden und Reichweite." % [
+				ActionData._seconds(float(st.get("seconds", 4.0))),
+				int(round((float(st.get("damage_mult", 1.2)) - 1.0) * 100.0))])
 	return out
 
 

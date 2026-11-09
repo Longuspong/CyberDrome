@@ -56,6 +56,11 @@ var pulse_left: float = 0.0
 ## Sekunden seit dem letzten Schaden, und der Bruchteil Schild, der beim
 ## Nachladen noch nicht ganz voll ist.
 var calm_time: float = 0.0
+## Passive "steady" (Strix, 8. Nov. 2026): Sekunden ohne Feldwechsel und ob
+## er gerade angelegt hat (+Schaden, +Reichweite).
+var still_time: float = 0.0
+var steady: bool = false
+var _still_tile: Vector2i = Vector2i(-9999, -9999)
 ## Modul Raufbold (Vergeltung): eingesteckte Nahkampftreffer, die den
 ## naechsten Angriff aufladen (max. 3).
 var retaliation_stacks: int = 0
@@ -323,6 +328,9 @@ func init_realtime(pulse_offset: float) -> void:
 	target_blocked = 0.0
 	calm_time = 0.0
 	_recharge_carry = 0.0
+	still_time = 0.0
+	steady = false
+	_still_tile = Vector2i(-9999, -9999)
 	if build == null:
 		return
 	for slot in build.equip_slots():
@@ -355,7 +363,7 @@ func init_realtime(pulse_offset: float) -> void:
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
-			"fx": fx, "shots": 0})
+			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
@@ -411,6 +419,42 @@ func echo_slower() -> float:
 	if passive() != "echo":
 		return 1.0
 	return float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
+
+
+## Passive "steady" (Strix): wer passives.steady.seconds lang das Feld nicht
+## wechselt, legt an -- mehr Schaden (raw_damage) und mehr Reichweite (die
+## Aktionen der Halter werden als Kopie verlaengert). Jeder Feldwechsel setzt
+## zurueck. Jeden Schritt vom BattleManager gerufen.
+func track_stillness(dt: float) -> void:
+	if tile != _still_tile:
+		_still_tile = tile
+		still_time = 0.0
+	else:
+		still_time += dt
+	var rule := steady_rule()
+	var now := passive() == "steady" and still_time >= float(rule.get("seconds", 4.0))
+	if now == steady:
+		return
+	steady = now
+	if steady:
+		EventBus.log_line("%s legt an." % display_name)
+	var mult := float(rule.get("range_mult", 1.2))
+	for mount in mounts:
+		mount["attack"] = _steady_copy(mount["base_attack"], mult)
+		mount["ability"] = _steady_copy(mount.get("base_ability"), mult)
+
+
+func _steady_copy(action, mult: float):
+	if action == null or not steady:
+		return action
+	var out: ActionData = (action as ActionData).copy()
+	if out.range_tiles > 0:
+		out.range_tiles += maxi(1, int(round(float(out.range_tiles) * (mult - 1.0))))
+	return out
+
+
+static func steady_rule() -> Dictionary:
+	return Config.section("passives").get("steady", {}) as Dictionary
 
 
 ## Die Passive des Chassis ("echo" ...). Leer = keine.
@@ -553,7 +597,10 @@ func power_factor() -> float:
 func raw_damage(action: ActionData) -> int:
 	if action == null or action.power <= 0:
 		return 0
-	return maxi(1, int(round(float(action.power) * power_factor())))
+	var raw := float(action.power) * power_factor()
+	if steady:
+		raw *= float(steady_rule().get("damage_mult", 1.2))
+	return maxi(1, int(round(raw)))
 
 
 ## Alle Aktionen dieses DROME -- die seiner Teile, jede genau einmal.

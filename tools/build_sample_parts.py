@@ -401,6 +401,8 @@ STAT_DEFAULTS = {
     #   hit_rush     jeder Treffer gibt kurz mehr Lauftempo (Vireo)
     #   presence     lockt Gegner in der Naehe an und faengt Schaden fuer
     #                Verbuendete ab (Molok)
+    #   steady       Anlegen: nach 4 s ohne Bewegung +20 % Schaden und
+    #                Reichweite (Strix)
     # Die Zahlen der Passiven stehen in data/config.json unter "passives".
     "passive": "",
 }
@@ -436,7 +438,7 @@ STATS = {
     # Strix: Langstrecke, langsam, viel Power.
     "strix_body":  {"spd":  7, "hp": 100, "shield": 30, "shield_pulse":  5, "def":  2,
                     "power": 15, "module_slots": 3,
-                    "ai_role": "sniper"},
+                    "ai_role": "sniper", "passive": "steady"},
 
     # --- KERN, ANTRIEB, KOPF -------------------------------------------------
     # Nur noch Optik am Chassis -- keine Werte.

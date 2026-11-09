@@ -466,3 +466,27 @@ func test_each_role_picks_by_its_own_rule() -> void:
 	far.damage_dealt = 80
 	t.equal(battle.brain.choose_target(sniper), far, "der Strix den mit dem meisten Schaden in Reichweite")
 	battle.free()
+
+
+func test_the_strix_steadies_after_standing_still() -> void:
+	# Passive "steady" (8. Nov. 2026): 4 s ohne Feldwechsel -> +20 % Schaden
+	# und Reichweite; ein Schritt setzt zurueck.
+	var battle := _battle([_strix()], [_vireo()], [Vector2i(2, 2), Vector2i(17, 17)])
+	var strix: Unit = battle.units[0]
+	var lance: ActionData = strix.mounts[0]["base_attack"]
+	var plain := strix.raw_damage(lance)
+	for _i in 70:   # 3,5 s
+		strix.track_stillness(0.05)
+	t.ok(not strix.steady, "nach 3,5 s noch nicht angelegt")
+	for _i in 12:
+		strix.track_stillness(0.05)
+	t.ok(strix.steady, "nach 4 s angelegt")
+	t.equal(strix.raw_damage(lance), int(round(plain * 1.2)), "+20 % Schaden")
+	t.equal((strix.mounts[0]["attack"] as ActionData).range_tiles,
+		lance.range_tiles + 2, "Reichweite 8 -> 10")
+	strix.place_at(Vector2i(3, 2))
+	strix.track_stillness(0.05)
+	t.ok(not strix.steady, "ein Schritt setzt zurueck")
+	t.equal((strix.mounts[0]["attack"] as ActionData).range_tiles, lance.range_tiles,
+		"Reichweite wieder normal")
+	battle.free()

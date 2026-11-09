@@ -83,7 +83,7 @@
     "hp_regen_pct": 0,
     "lure_radius": 0,
     "ai_role": "sniper",
-    "passive": "",
+    "passive": "steady",
     "actions": []
   }
 }
