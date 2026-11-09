@@ -7,6 +7,9 @@ Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
 als Handy testet. **Dann `docs/NEUANFANG.md`** -- der Neuentwurf des
 Spielprinzips, der gerade mit dem Spieler besprochen wird.
+**Fuer Module: `docs/MODULE_KONZEPT.md`** -- seit 9. Nov. 2026 die
+festgelegte Richtung (9 Grundmodule, 18 Rezepte, Matrix-BIOS, Profile =
+Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
 
 ## Zusammenarbeit
 
@@ -120,6 +123,8 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
    Gutachten entschieden (8. Nov.): Module nur im Laden, Beute zufaellig
    (Credits oder Teile), Gegner tragen Module, Gebiete Neon City /
    Parkanlage / Factory 5 / Dachterrassen -- `docs/NEUANFANG.md` 6i.
+   Neu (9. Nov.): das Modulsystem nach `docs/MODULE_KONZEPT.md`
+   (`NEUANFANG.md` 6j) -- wird jetzt Schritt fuer Schritt gebaut.
    Die Punkte unten gehen darin auf.
 
 1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den

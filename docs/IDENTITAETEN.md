@@ -208,9 +208,11 @@ Praezisionsschuss 26 x 1,6 = 42; angelegt x 1,2 -> 42 / 50.
   Schildpuls, Strix Integritaet + Ruestung. Modulplaetze +1 auf Level 1, 3, 5
   (Molok 2, 4). EP: 1 je Sieg, Elite 2; Schwellen 2, 5, 9, 14, 20.
 * EP gibt es nach jedem **Sieg im Lauf**, gutgeschrieben am Exemplar im
-  Hangar; die Lauf-Kopie uebernimmt die Level sofort. Beute-Waffen, die
-  erst im Lauf eingebaut werden, sammeln keine EP (sie sind noch kein
-  Exemplar zuhause).
+  Hangar; die Lauf-Kopie uebernimmt die Level sofort. Beute-Waffen sammeln
+  keine EP (sie sind noch kein Exemplar zuhause). **Seit 9. Nov. 2026
+  (`MODULE_KONZEPT.md`): Waffen sind im Lauf fest** -- Beute-Teile gehen in
+  die Tasche und erst nach dem Lauf in den Hangar, im Lauf baut man sie
+  nicht mehr ein.
 
 **Module statt Ausruestung:** Orbit-Fokus (`mod_orbit`) und
 Hologramm-Boost (`mod_holo`) bringen ihre Faehigkeit als Modul mit
