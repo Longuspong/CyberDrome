@@ -385,11 +385,17 @@ func init_realtime(pulse_offset: float) -> void:
 			var first := float(gadget_action.trigger_every) * echo_slower() \
 				if gadget_action.trigger_kind == "time" else 0.0
 			gadgets.append({"part": part, "ability": gadget_action, "ready": first, "fx": fx})
-		# Module mit eigener Faehigkeit (Orbit-Fokus, Hologramm-Boost).
+		# Module mit eigener Faehigkeit (Orbit-Fokus, Hologramm). Seit 9. Nov.
+		# 2026 zaehlen sie die Angriffe der Waffe in ihrem Halter ("extras"
+		# am Halter); nur Ereignisse (Hologramm: Gegner daneben) bleiben Gadgets.
+		var extras: Array = []
 		for module in build.active_modules(slot):
 			var granted := ModuleData.gadget_action(module.gadget)
 			if granted != null:
 				granted = granted.with_modules(fx)
+				if granted.trigger_kind == "attacks":
+					extras.append({"ability": granted, "count": 0.0})
+					continue
 				var first_ready := float(granted.trigger_every) * echo_slower() \
 					if granted.trigger_kind == "time" else 0.0
 				gadgets.append({"part": part, "ability": granted, "ready": first_ready, "fx": fx})
@@ -402,7 +408,8 @@ func init_realtime(pulse_offset: float) -> void:
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
-			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability})
+			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability,
+			"extras": extras})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
@@ -454,6 +461,13 @@ func takt_bars(step: float = 0.5) -> Array:
 		var ready := takt_due(mount)
 		out.append({"kind": "hits", "segments": every,
 			"filled": every if ready else mini(every - 1, int(count)), "ready": ready})
+	# Modul-Faehigkeiten nach Angriffen (Orbit-Fokus).
+	for mount in mounts:
+		for extra in mount.get("extras", []):
+			var each := takt_every(extra["ability"])
+			var have := int(float(extra["count"]))
+			out.append({"kind": "hits", "segments": each,
+				"filled": mini(each, have), "ready": have >= each - 1})
 	for gadget in gadgets:
 		var ability: ActionData = gadget["ability"]
 		if ability.trigger_kind != "time":

@@ -34,7 +34,6 @@
     "  kinetic_to_energy  solange der eigene Schild steht, wird dieser Anteil des",
     "                     kinetischen Schadens zu Energie",
     "  takt_count         Treffer-Takt: jeder Angriff zaehlt so viel (1,25)",
-    "  takt_time          Zeit-Takt der Faehigkeit um diesen Anteil kuerzer",
     "  bonus_vs_marked    Angriffe gegen markierte Ziele +Anteil Schaden",
     "  armor_to_damage    Angriffe +Anteil der eigenen Panzerung als Schaden (ohne Power)",
     "  retaliation        Vergeltung: jeder Treffer am Traeger laedt den naechsten",
@@ -70,7 +69,9 @@
     "zaehlen dessen fehlende Zutaten recipe_weight-mal, ohne Ziel jede Zutat eines",
     "angefangenen Rezepts recipe_weight_open-mal. reroll: Neuwuerfeln kostet price,",
     "je weiterem Wurf im selben Stopp +step. Ab recipe_from_round ist mit",
-    "recipe_chance das letzte Angebot ein fertiges Rezept. Kein Sperren."
+    "recipe_chance das letzte Angebot ein fertiges Rezept. Kein Sperren.",
+    "Takt (9. Nov. 2026, Vorgabe des Spielers): Faehigkeiten zaehlen immer Angriffe,",
+    "keinen Zeit-Takt mehr. Orbit-Fokus: jeder 4. Angriff der Waffe im Halter."
   ],
   "slots": 3,
   "sell_value": {
@@ -208,8 +209,8 @@
       "range_tiles": 4,
       "push_tiles": -2,
       "trigger": {
-        "kind": "time",
-        "every": 6
+        "kind": "attacks",
+        "every": 4
       }
     },
     "act_holo_dash": {
@@ -260,8 +261,7 @@
         "mod_amplifier"
       ],
       "bonus": {
-        "takt_count": 1.25,
-        "takt_time": 0.1
+        "takt_count": 1.25
       }
     },
     "mod_seeker": {

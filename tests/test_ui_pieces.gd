@@ -237,19 +237,18 @@ func test_takt_bars_follow_the_ability_counter() -> void:
 	battle.free()
 
 
-func test_time_takt_fills_in_half_seconds() -> void:
+func test_every_takt_counts_attacks() -> void:
+	# Seit 9. Nov. 2026 gibt es keinen Zeit-Takt mehr: Runenstab und
+	# Orbit-Fokus zaehlen Angriffe, die Leiste zeigt Abschnitte.
 	var nimbus: DromeBuild = RunState.standard_squad().filter(func(b):
 		return b.equipment().any(func(p): return p.id == &"eq_rune_staff"))[0]
+	nimbus.modules[nimbus.equip_slots()[0]] = [&"mod_orbit"]
 	var battle := BattleManager.new()
 	battle.setup(4712, [nimbus], _squad())
 	var unit: Unit = battle.living(true)[0]
-	var bars: Array = unit.takt_bars().filter(func(b): return b["kind"] == "time")
-	t.ok(not bars.is_empty(), "der Runenstab hat eine Zeit-Leiste")
-	if not bars.is_empty():
-		var total: float = unit.takt_seconds(unit.gadgets[0]["ability"])
-		unit.gadgets[0]["ready"] = total - 0.7
-		var fill: float = unit.takt_bars().filter(func(b): return b["kind"] == "time")[0]["fill"]
-		t.ok(is_equal_approx(fill, 0.5 / total), "0,7 s vergangen zeigt 0,5 s")
+	var bars: Array = unit.takt_bars()
+	t.ok(bars.filter(func(b): return b["kind"] == "time").is_empty(), "keine Zeit-Leiste")
+	t.equal(bars.filter(func(b): return b["kind"] == "hits").size(), 2, "Vortex und Orbit-Sog zaehlen Angriffe")
 	battle.free()
 
 

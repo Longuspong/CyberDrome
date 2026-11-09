@@ -295,6 +295,14 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
     Zeit-Takt-Module nur fuer die Wiederholungen, der erste Ausloeser zur
     Grundzeit (Vorschlag an den Spieler).
 
+### Takt nur noch ueber Angriffe (9. Nov. 2026, Vorgabe des Spielers)
+* Kein Zeit-Takt mehr: Vortex (Runenstab) jeder 3. Angriff (mit Echo jeder
+  4.), Orbit-Sog jeder 4. Angriff der Waffe im Halter (`mount["extras"]`,
+  `AIController._tick_extras`). Taktchip nur noch Zaehler 1,25, ohne
+  Zeit-Anteil. Hintergrund: beim Zeit-Takt entschied, wer den ersten Vortex
+  zuendet (Taktchip 91 %). Die Zeit-Logik im Code bleibt fuer Altdaten,
+  wird aber von keinem Teil mehr genutzt.
+
 ### Neue Waffen und freie Arme (9. Nov. 2026)
 * **Bollwerk-Ramme** (`eq_bulwark_ram`, mittel, bot2): Rw 1, 10 alle 1,6 s;
   jeder 3.: Rammstoss +8 % der eigenen max. Integritaet (`hp_scaling`, ohne

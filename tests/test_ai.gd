@@ -191,8 +191,9 @@ func test_the_rune_staff_hits_one_target_at_blaster_range() -> void:
 	t.equal(staff.range_tiles, blaster.range_tiles, "Runenstab reicht so weit wie der Blaster")
 	t.equal(staff.aoe_radius, 0, "und trifft immer nur ein Ziel")
 	var vortex := _action(unit, &"act_rune_vortex")
-	t.equal(vortex.trigger_kind, "time", "der Vortex kommt nach Zeit, nicht nach Angriffen")
-	t.equal(float(vortex.trigger_every), 3.0, "alle 3 s")
+	# Seit 9. Nov. 2026 (Vorgabe des Spielers): Takt immer ueber Angriffe.
+	t.equal(vortex.trigger_kind, "attacks", "der Vortex kommt nach Angriffen")
+	t.equal(int(vortex.trigger_every), 3, "jeder 3. Angriff")
 	unit.free()
 	vireo.free()
 
@@ -239,9 +240,9 @@ func test_echo_lengthens_the_takt_and_casts_twice() -> void:
 	var vortex := _action(nimbus, &"act_rune_vortex")
 	var scatter := _action(vireo, &"act_pulse_double")
 	t.equal(nimbus.passive(), "echo", "der Nimbus hat Echo")
-	t.equal(vortex.trigger_kind, "time", "der Vortex loest nach Zeit aus")
+	t.equal(vortex.trigger_kind, "attacks", "der Vortex loest nach Angriffen aus")
 	t.equal(vortex.range_tiles, 5, "mit Reichweite 5")
-	t.equal(battle.brain._time_after_ability(nimbus, vortex), 4.5, "Takt 3 s -> 4,5 s")
+	t.equal(battle.brain.trigger_every(nimbus, vortex), 4, "mit Echo jeder 4. statt jeder 3. Angriff")
 	t.equal(battle.brain.trigger_every(nimbus, scatter), 4,
 		"Blaster am Nimbus: jeder 4. statt jeder 3. Angriff")
 	t.equal(battle.brain.trigger_every(vireo, scatter), 3, "ohne Echo bleibt es beim 3.")

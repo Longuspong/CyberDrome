@@ -567,10 +567,11 @@ STATS = {
             {"id": "act_rune_vortex", "display_name": "Vortex",
              "category": "ability", "targeting": "aoe_around_target",
              "range_tiles": 5, "aoe_radius": 2, "damage_pct": 1.5,
-             "base_action": "act_runestaff",
              "energy_fraction": 1.0, "gather": True, "delay": 0.6,
              "status": {"id": "slow", "seconds": 2.5, "move_mult": 0.6},
-             "trigger": {"kind": "time", "every": 3, "weapon": ""}},
+             # Seit 9. Nov. 2026 nach Angriffen statt alle 3 s (Vorgabe des
+             # Spielers: Takt immer ueber Angriffe).
+             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_runestaff"}},
         ],
     },
     # Schwer -- das einzige schwere Teil. Bonus Power.

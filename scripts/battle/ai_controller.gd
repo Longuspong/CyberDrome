@@ -285,11 +285,32 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		return false
 	_execute(unit, shot["tile"], attack, shot["target"])
 	_attack_modules(unit, mount, attack, shot.get("target"))
+	_tick_extras(unit, mount, target)
 	if overload > 0:
 		mount["overload"] = overload - 1
 	if ability != null and not due:
 		mount["count"] = float(mount["count"]) + unit.takt_step(mount)
 	return true
+
+
+## Modul-Faehigkeiten nach Angriffen (Orbit-Fokus, 9. Nov. 2026): jeder
+## Angriff der Waffe zaehlt mit (Taktchip 1,25); ist der Takt voll, loest die
+## Faehigkeit dazu aus. Mit Echo laenger wie jeder Treffer-Takt.
+func _tick_extras(unit: Unit, mount: Dictionary, target: Unit) -> void:
+	for extra in mount.get("extras", []):
+		if not unit.is_alive() or battle.outcome != BattleManager.Outcome.RUNNING:
+			return
+		var ability: ActionData = extra["ability"]
+		extra["count"] = float(extra["count"]) + unit.takt_step(mount)
+		if float(extra["count"]) < float(unit.takt_every(ability)) - 0.001:
+			continue
+		var aim := _aim(unit, ability, target)
+		if aim.is_empty():
+			continue
+		extra["count"] = maxf(0.0, float(extra["count"]) - float(unit.takt_every(ability)))
+		_execute(unit, aim["tile"], ability, aim["target"])
+		_echo(unit, ability, aim)
+		_after_ability(unit, ability, aim, mount.get("fx", {}))
 
 
 ## Module, die an einem Angriff haengen (NEUANFANG 6g): Doppellauf (Chance

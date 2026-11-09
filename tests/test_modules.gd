@@ -161,7 +161,7 @@ func test_the_takt_chip_counts_each_attack_as_one_and_a_quarter() -> void:
 	t.equal(chip.takt_bars()[0]["segments"], 3, "die Takt-Leiste behaelt ihre Abschnitte")
 	var recipe := ModuleData.get_module(&"mod_takt_chip")
 	t.equal(recipe.from, [&"mod_rapid_fire", &"mod_amplifier"], "aus Schnellfeuer und Verstaerker")
-	t.ok(is_equal_approx(float(recipe.effects.get("takt_time", 0.0)), 0.1), "Zeit-Takt 10 % kuerzer")
+	t.ok(not recipe.effects.has("takt_time"), "kein Zeit-Takt mehr (9. Nov. 2026)")
 
 
 func test_the_amplifier_strengthens_the_ability() -> void:
@@ -904,4 +904,21 @@ func test_a_battle_with_the_new_weapons_runs_to_the_end() -> void:
 	battle.setup(4242, [ram, strix, _vireo(&"eq_boomerang")], [_molok(), _vireo(), _vireo()])
 	var outcome := battle.run_to_end()
 	t.ok(outcome != BattleManager.Outcome.RUNNING, "der Kampf endet (%s)" % BattleManager.outcome_label(outcome))
+	battle.free()
+
+
+func test_the_orbit_focus_pulls_every_fourth_attack() -> void:
+	# Nahkaempfer gegen Fernkaempfer: Heranziehen lohnt sich (_shove_score).
+	var orbit := _with(_vireo(&"eq_plasma_blade"), "equip_left", [&"mod_orbit"])
+	var battle := _battle([orbit], [_vireo()], [Vector2i(10, 13), Vector2i(10, 10)])
+	var bearer: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	var mount: Dictionary = bearer.mounts[0]
+	t.equal((mount["extras"] as Array).size(), 1, "der Orbit-Sog haengt am Halter")
+	var before := foe.tile
+	for _i in 3:
+		battle.brain._tick_extras(bearer, mount, foe)
+	t.equal(foe.tile, before, "nach drei Angriffen noch nicht")
+	battle.brain._tick_extras(bearer, mount, foe)
+	t.ok(Grid.distance(foe.tile, bearer.tile) < Grid.distance(before, bearer.tile), "beim vierten zieht er heran")
 	battle.free()
