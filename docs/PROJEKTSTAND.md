@@ -269,6 +269,18 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
     Ueberspannung 73,5 / 69,5, Vireo Gunslinger 58 / 55,5, Taktchip
     61,5 / 59, Rammbock 57 / 53, Fesselkette 55 / 51, Orbit 57,5 / 55,5.
   * Werkzeug: `module_bench.gd -- 100 base` bzw. `recipes`.
+  * **Balancing Runde 1** (freigegeben, 9. Nov.): Stachelgitter 1 (+2 Nah),
+    Taktchip Zeit-Takt 10 %, Gunslinger jeder 6., Gabelung 35 %, Doppellauf
+    35 %. Nachgemessen: Molok Stachelgitter 74 -> 64,5, Raufbold 86 -> 79,5,
+    Entladung 82 -> 73,5, Brandmarke 90,5 -> 89; Strix Gunslinger 90 -> 81,5
+    (Zutaten 75,5); Nimbus Gabelung 78,5 -> 74,5 (61,5); Vireo Gunslinger 59
+    (54); Doppellauf Vireo 50,5, Strix 55.
+  * **Messfehler des Spiegels:** Nimbus Taktchip bleibt bei 91 %. Gegenprobe:
+    Zeit-Takt 0 % -> 60 %, 5 % -> 85 %. Schon ein minimal frueherer Vortex
+    entscheidet den Spiegelkampf, weil beide Nimbus sonst exakt gleichzeitig
+    ausloesen. Das misst den Gleichtakt, nicht die Staerke -- Abhilfe waere
+    ein kleiner Zufallsversatz der Takte zu Kampfbeginn (offen, mit dem
+    Spieler zu besprechen).
 
 ### Laden (8. Nov. 2026) -- `RunState.roll_shop/buy`, `modules.json` -> `shop`
 * Im Zwischenstopp oben, unter den Credits: **2 Grundmodule** je Stopp
