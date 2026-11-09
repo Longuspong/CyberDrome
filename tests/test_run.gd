@@ -141,6 +141,47 @@ func test_the_preview_matches_the_real_battle() -> void:
 		battle.free()
 
 
+## Der ganze Weg wie im Spiel: Lauf starten (GameState), Vorschau zeigen,
+## "Kampf starten" (begin_run_battle) und setup() mit GameState.battle_seed.
+## Dazu ein Speichern/Laden-Durchlauf: Laeufe werden derzeit nicht
+## gespeichert, aber ein JSON-Speicherstand liest Zahlen als float zurueck.
+## randi() liefert Seeds bis 2^32 -- weit unter 2^53, also verlustfrei;
+## der Test haelt das fest, auch fuer die groessten Seeds.
+func test_preview_region_survives_the_way_into_battle_and_a_save() -> void:
+	var saved_run = GameState.run
+	var saved_squad = GameState.squad
+	for seed_value in [1, 2812845978, 4294967295, 2147483647, 93758548]:
+		GameState.start_run(seed_value)
+		var run: RunState = GameState.run
+		for which in 3:
+			run.choose_tier(which)
+			var shown: Dictionary = run.preview()
+			# Speichern/Laden: run_seed, Runde und Stufe als JSON hin und zurueck.
+			var text := JSON.stringify({"run_seed": run.run_seed, "round": run.round,
+				"tier": run.tier})
+			var data: Dictionary = JSON.parse_string(text)
+			var loaded := RunState.start(int(data["run_seed"]))
+			loaded.round = int(data["round"])
+			loaded.choose_tier(int(data["tier"]))
+			t.equal(loaded.run_seed, run.run_seed, "run_seed uebersteht JSON (%d)" % seed_value)
+			t.equal(loaded.preview()["region"], shown["region"],
+				"Region nach Laden wie gezeigt (%d, Stufe %d)" % [seed_value, which])
+
+			GameState.begin_run_battle()
+			t.equal(GameState.battle_seed, shown["seed"], "Kampf-Seed wie in der Vorschau")
+			var battle := BattleManager.new()
+			battle.setup(GameState.battle_seed, GameState.squad, GameState.enemy_override)
+			t.equal(battle.region.display_name, shown["region"],
+				"Kampf in der gezeigten Region (%d, Stufe %d)" % [seed_value, which])
+			battle.free()
+			GameState.in_run_battle = false
+			GameState.enemy_override = []
+			GameState.battle_seed = 0
+			GameState.clear_chaos_run()
+	GameState.run = saved_run
+	GameState.squad = saved_squad
+
+
 func test_enemy_power_follows_a_fixed_rising_curve() -> void:
 	var run := RunState.start(7)
 	var first := run.enemy_power()
