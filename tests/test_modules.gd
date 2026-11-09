@@ -91,7 +91,7 @@ func test_a_recipe_sums_its_ingredients_and_adds_its_own_effect() -> void:
 	t.ok(gun != null and gun.is_recipe(), "Gunslinger ist ein Rezept")
 	t.ok(is_equal_approx(float(gun.effects["attack_speed"]), 0.08), "Schnellfeuer steckt drin")
 	t.ok(is_equal_approx(float(gun.effects["ricochet_chance"]), 0.2), "Doppellauf steckt drin")
-	t.equal(int(gun.effects["field_shot_every"]), 5, "dazu jeder 5. Angriff quer uebers Feld")
+	t.equal(int(gun.effects["field_shot_every"]), 6, "dazu jeder 6. Angriff quer uebers Feld")
 
 
 func test_conditions_decide_whether_a_module_works() -> void:
@@ -161,7 +161,7 @@ func test_the_takt_chip_counts_each_attack_as_one_and_a_quarter() -> void:
 	t.equal(chip.takt_bars()[0]["segments"], 3, "die Takt-Leiste behaelt ihre Abschnitte")
 	var recipe := ModuleData.get_module(&"mod_takt_chip")
 	t.equal(recipe.from, [&"mod_rapid_fire", &"mod_amplifier"], "aus Schnellfeuer und Verstaerker")
-	t.ok(is_equal_approx(float(recipe.effects.get("takt_time", 0.0)), 0.2), "Zeit-Takt 20 % kuerzer")
+	t.ok(is_equal_approx(float(recipe.effects.get("takt_time", 0.0)), 0.1), "Zeit-Takt 10 % kuerzer")
 
 
 func test_the_amplifier_strengthens_the_ability() -> void:

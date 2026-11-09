@@ -140,7 +140,7 @@
       "condition": "",
       "effects": {
         "ricochet_chance": 0.2,
-        "ricochet_share": 0.25
+        "ricochet_share": 0.35
       }
     },
     "mod_armor_plate": {
@@ -167,7 +167,7 @@
       "class": "defense",
       "condition": "",
       "effects": {
-        "thorns": 2,
+        "thorns": 1,
         "thorns_melee": 2
       }
     },
@@ -234,7 +234,7 @@
         "mod_twin_barrel"
       ],
       "bonus": {
-        "field_shot_every": 5
+        "field_shot_every": 6
       }
     },
     "mod_overvolt": {
@@ -261,7 +261,7 @@
       ],
       "bonus": {
         "takt_count": 1.25,
-        "takt_time": 0.2
+        "takt_time": 0.1
       }
     },
     "mod_seeker": {
@@ -352,7 +352,7 @@
         "mod_amplifier"
       ],
       "bonus": {
-        "ability_fork": 0.5
+        "ability_fork": 0.35
       }
     },
     "mod_chain_reaction": {
