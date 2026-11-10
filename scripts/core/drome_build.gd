@@ -574,6 +574,41 @@ static func from_loadout(loadout: Dictionary) -> DromeBuild:
 	return build
 
 
+## Spielstand eines Lauf-DROME (10. Nov. 2026): das Loadout plus alles, was
+## nur im Lauf dazukommt (Module, Chassis-BIOS) und was ihn mit dem Hangar
+## verbindet (Level, Exemplar-uids).
+func to_save() -> Dictionary:
+	var out := to_loadout()
+	var mods := {}
+	for slot in modules:
+		mods[slot] = (modules[slot] as Array).map(func(id): return str(id))
+	out["modules"] = mods
+	out["drome_level"] = drome_level
+	out["weapon_levels"] = weapon_levels.duplicate()
+	out["source_uid"] = source_uid
+	out["instance_uids"] = instance_uids.duplicate()
+	out["chassis_bios"] = chassis_bios
+	out["bios_slot"] = bios_slot
+	return out
+
+
+static func from_save(data: Dictionary) -> DromeBuild:
+	var build := from_loadout(data)
+	if build == null:
+		return null
+	for slot in data.get("modules", {}):
+		build.modules[slot] = (data["modules"][slot] as Array).map(func(id): return StringName(str(id)))
+	build.drome_level = int(data.get("drome_level", 0))
+	for slot in data.get("weapon_levels", {}):
+		build.weapon_levels[slot] = int(data["weapon_levels"][slot])
+	build.source_uid = str(data.get("source_uid", ""))
+	for slot in data.get("instance_uids", {}):
+		build.instance_uids[slot] = str(data["instance_uids"][slot])
+	build.chassis_bios = bool(data.get("chassis_bios", false))
+	build.bios_slot = str(data.get("bios_slot", ""))
+	return build
+
+
 func _to_string() -> String:
 	var total := stats()
 	return "DromeBuild(%s hp=%d spd=%d)" % [

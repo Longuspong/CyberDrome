@@ -11,6 +11,18 @@
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
   -->
 <g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M88.34 50.38 L81.18 45.32 L75.46 49.37 L82.61 54.43 Z" fill="#28304a"/>
+  <path d="M75.46 53.66 L82.61 58.73 L82.61 54.43 L75.46 49.37 Z" fill="#161b29"/>
+  <path d="M82.61 58.73 L88.34 54.68 L88.34 50.38 L82.61 54.43 Z" fill="#161b29"/>
+  <path d="M76.89 44.26 L80.71 41.56 L80.71 39.65 L76.89 42.35 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M80.71 39.65 L80.13 39.24 L76.31 41.94 L76.89 42.35 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M76.31 43.85 L76.89 44.26 L76.89 42.35 L76.31 41.94 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M75.46 50.04 L82.61 55.11 L82.61 43.65 L75.46 38.59 Z" fill="#28304a"/>
+  <path d="M82.61 55.11 L89.3 50.38 L89.3 38.93 L82.61 43.65 Z" fill="#161b29"/>
+  <path d="M89.3 38.93 L82.14 33.86 L75.46 38.59 L82.61 43.65 Z" fill="#47547e"/>
+  <path d="M81.66 44.61 L89.3 39.21 L89.3 30.61 L81.66 36.01 Z" fill="#161b29"/>
+  <path d="M75.93 40.56 L81.66 44.61 L81.66 36.01 L75.93 31.96 Z" fill="#5b6785"/>
+  <path d="M89.3 30.61 L83.57 26.56 L75.93 31.96 L81.66 36.01 Z" fill="#5b6785"/>
   <path d="M70.2 29.38 L74.5 26.34 L74.5 24.43 L70.2 27.47 Z" fill="#2de2e6" stroke="none"/>
   <path d="M74.5 24.43 L73.93 24.03 L69.63 27.07 L70.2 27.47 Z" fill="#2de2e6" stroke="none"/>
   <path d="M69.63 28.98 L70.2 29.38 L70.2 27.47 L69.63 27.07 Z" fill="#2de2e6" stroke="none"/>

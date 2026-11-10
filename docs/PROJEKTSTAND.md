@@ -40,7 +40,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * **Waffen**: jede Waffe (je Teil) laedt fuer sich, `interval` an der
   Aktion (Blaster 1,4 s, Runenstab 1,2 s, Lanze 2,6 s, Hammer 1,8 s).
 * **Faehigkeiten** loesen selbst aus (`trigger` an der Aktion): jeder N-te
-  Angriff einer Waffe IST ihre Faehigkeit; Vortex alle 3 s; Orbit-Sog alle 6 s; Boost, wenn ein
+  Angriff einer Waffe IST ihre Faehigkeit; Vortex jeder 3. Angriff (seit 9. Nov.); Orbit-Fokus wurzelt; Boost, wenn ein
   Gegner danebensteht (hoechstens alle 4 s).
 * **Aufgeraeumt (5. Nov. 2026, mit dem Spieler abgesprochen)**: Energie
   (`en_max`, `en_regen`, `en_cost`), Abklingzeiten, MOV, Strombedarf,
@@ -286,6 +286,93 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
     ausloesen. Das misst den Gleichtakt, nicht die Staerke -- Abhilfe waere
     ein kleiner Zufallsversatz der Takte zu Kampfbeginn (offen, mit dem
     Spieler zu besprechen).
+  * **Zufallsversatz gebaut** (freigegeben 9. Nov.): `realtime.start_jitter`
+    0,5 s, Waffen und Zeit-Faehigkeiten je DROME (nicht Ereignisse wie das
+    Hologramm). Nachmessung: Nimbus Taktchip bleibt 91 % (lose 64,5),
+    Brandmarke 90,5 (74,5), Raufbold 84,5 (69), Stachelgitter 63, Strix
+    Gunslinger 86,5. Gegenprobe mit 3 s Versatz: Taktchip 75 / 67 -- es
+    entscheidet, wer den ERSTEN Vortex zuendet, nicht der Gleichtakt. Offen:
+    Zeit-Takt-Module nur fuer die Wiederholungen, der erste Ausloeser zur
+    Grundzeit (Vorschlag an den Spieler).
+
+### Takt nur noch ueber Angriffe (9. Nov. 2026, Vorgabe des Spielers)
+* Kein Zeit-Takt mehr: Vortex (Runenstab) jeder 3. Angriff (mit Echo jeder
+  4.), Orbit-Sog jeder 4. Angriff der Waffe im Halter (`mount["extras"]`,
+  `AIController._tick_extras`). Taktchip nur noch Zaehler 1,25, ohne
+  Zeit-Anteil. Hintergrund: beim Zeit-Takt entschied, wer den ersten Vortex
+  zuendet (Taktchip 91 %). Die Zeit-Logik im Code bleibt fuer Altdaten,
+  wird aber von keinem Teil mehr genutzt.
+* Gemessen danach (je 200 Kaempfe, Rezept / lose Zutaten): Nimbus
+  Taktchip 90,5 / 71 -- jetzt echt stark, weil der Zaehler 1,25 den Vortex
+  (staerkste Faehigkeit) gut 25 % haeufiger macht; Gabelung 82,5 / 72,5;
+  Orbit 58,5 / 56,5. Molok Brandmarke 90,5 / 76, Raufbold 79,5 / 68; Strix
+  Gunslinger 82,5 / 75. Entscheidung des Spielers: Taktchip bleibt,
+  Balancing erst nach einem groesseren Playtest (auch nach Gefuehl).
+* **Orbit-Fokus neu** (Spieler, 9. Nov.): kein Sog mehr, sondern das Ziel
+  der Faehigkeit ist 2 s gewurzelt (`root`, `Unit.is_rooted`): greift an,
+  laeuft aber nicht. Gravitation-BIOS wurzelt dazu den naechsten Gegner am
+  Ziel. Der Orbit-Sog (`act_orbitpull`) ist entfernt.
+
+### Komfort und Lauf (10. Nov. 2026, Wunsch des Spielers)
+* **Haptik:** `Accessibility.vibrate` (gedrosselt, Schalter in den Optionen)
+  bei schweren Treffern auf eigene DROMEs, Abschuessen, Kampfende, Einbauen,
+  Kaufen, Verschmelzen.
+* **Bester Aufbau:** `Roster.best_loadout` / `loadout_score` -- Knopf im Umbau
+  (ein DROME) und im Squad-Reiter (alle im Squad).
+* **Vergleichsbalken:** `StatBar` statt nackter Zahlen im Hangar, beim
+  Waffentausch vorher -> nachher in einem Balken.
+* **Ziehen auf Halter:** Hangar (Teil-Kachel auf Halter) und Zwischenstopp
+  (Modul/BIOS aus dem Lager); nur waagerecht startet ein Zug. Im Browser
+  mit Touch noch nicht vom Spieler getestet.
+* **Spielstand:** `save_enabled` an; Hangar in `user://roster.json`, Lauf in
+  `user://run.json` (`RunState.to_dict/from_dict`, `DromeBuild.to_save`),
+  nach jeder Aenderung geschrieben. "Lauf fortsetzen" im Hauptmenue,
+  "Spielstand zuruecksetzen" in den Optionen. Tests/Werkzeuge beruehren den
+  Spielstand nie (`GameState._is_tool_run`).
+* **Karte wie bei FTL:** `RunState.map_layers` -- je Runde 2-3 Knoten
+  (Leicht/Normal/Elite, ab Runde 2 manchmal Chaos statt Normal), Wege in die
+  naechste Reihe; `available_nodes`, `choose_node`. `MapView` zeigt die
+  Reihe dieser Runde und die naechste als Vorausschau. Chaos: Gegner in der
+  Vorschau verdeckt, Beute wie Elite, Credits x1,5 (`run.map` in config).
+  Bild: `tools/screenshot_run.gd`.
+
+### Fraktionen und Profile (9. Nov. 2026) -- `data/regions.json` -> `faction`
+* Jedes Gebiet hat eine Fraktion mit Profil: Neon City / Neon Ninja's =
+  Kaempfer (Vireo, Klingen, Haemmer, Rammen; Rundumschlag, Raufbold,
+  Ueberladung), Parkanlage / Solar Sentients = Rudel (Vireo, Nimbus,
+  Blaster, Runenstab, Bumerang; Gabelung, Kettenreaktion, Zielsucher),
+  Factory 5 / Mega Mechas = Festung (Molok, Strix; Hammer, Deflektor,
+  Ramme, Moerser; Rammbock, Brandmarke, Bollwerk). Hipstar Hookers offen.
+* Wirkung: Gewichte beim Wuerfeln der Gegner (`EnemyGenerator.profile`,
+  `_pick_weighted`) und bei ihren Modulen (`RunState._arm_enemies`,
+  `module_weight`). Die Vorschau zeigt Fraktion, Profil und einen Satz.
+* Grenze: der Generator waehlt ganze Squads nach der Zielstaerke, das zieht
+  bei allen Fraktionen viele Moloks (hoher Kampfwert). Gemessen ueber 25
+  Laeufe: Mega Mechas 97 Molok / 80 Strix, Neon Ninja's 95 Molok / 18 Strix
+  / 100 Vireo. Die Waffen unterscheiden sich deutlich. Staerker getrennt
+  wird es mit eigenen DROMEs je Fraktion.
+* Noch nicht: Lage-BIOS (brauchen die Profile), Endlos-Modus mit
+  gewuerfelten Profilen, eigene Fraktions-DROMEs.
+
+### Neue Waffen und freie Arme (9. Nov. 2026)
+* **Bollwerk-Ramme** (`eq_bulwark_ram`, mittel, bot2): Rw 1, 10 alle 1,6 s;
+  jeder 3.: Rammstoss +8 % der eigenen max. Integritaet (`hp_scaling`, ohne
+  Power), stoesst 1 Feld zurueck. Bonus Integritaet 20 -> 40.
+* **Moerser** (`eq_mortar`, schwer, bot4, Schultermoerser): Rw 6, mind. 2
+  (`min_range`), Flaeche r1, 14 alle 2,8 s, 0,8 s Verzoegerung; jeder 3.:
+  Sperrfeuer r2 mit Rueckstoss. Bonus Ruestung 2 -> 4.
+* **Klingenbumerang** (`eq_boomerang`, leicht, bot1): Rw 2, 2 x 6 alle 1,3 s,
+  +30 % in Bewegung (`moving_bonus`, `Unit.MOVING_WINDOW` 1 s); jeder 3.:
+  Wirbelwurf r1. Bonus Speed 1 -> 2.
+* Formen in `tools/build_sample_parts.py` (EQ_BULWARK_RAM, EQ_MORTAR,
+  EQ_BOOMERANG), Silhouetten-Pruefung bestanden. Alle Werte Startwerte,
+  noch ungemessen.
+* **Freie Arme** fuer Vireo und Nimbus am rechten (nicht nutzbaren) Anker,
+  fest im Chassis (SCOUT_BODY, MAGE_BODY); der Nimbus haelt einen
+  Arkanfunken.
+* Hinweis: der Generator ist nicht byte-gleich mit dem Stand im Repo
+  (gleich tiefe Flaechen in anderer Reihenfolge, optisch gleich) -- nur die
+  geaenderten Teile einchecken.
 
 ### Laden (8. Nov. 2026) -- `RunState.roll_shop/buy`, `modules.json` -> `shop`
 * Im Zwischenstopp oben, unter den Credits: **2 Grundmodule** je Stopp

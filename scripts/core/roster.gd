@@ -183,6 +183,83 @@ func clear_slot(entry: RosterEntry, slot: String) -> void:
 	entry.assignments.erase(slot)
 
 
+## "Bester Aufbau" (10. Nov. 2026, Wunsch des Spielers): ruestet die
+## gegebenen Eintraege neu aus. Zuerst werden ihre Waffen frei, dann bekommt
+## Halter fuer Halter das Exemplar, das den Aufbau am staerksten macht
+## (loadout_score) -- von mehreren Exemplaren eines Typs das mit dem hoechsten
+## Level. Gibt zurueck, wie viele Halter jetzt anders bestueckt sind.
+func best_loadout(targets: Array) -> int:
+	var before := {}
+	for entry in targets:
+		before[entry] = entry.assignments.duplicate()
+		for slot in entry.assignments.keys():
+			if str(slot).begins_with("equip_"):
+				entry.assignments.erase(slot)
+	for entry in targets:
+		var chassis := PartDB.get_part(instance_part_id(entry.chassis_uid()))
+		if chassis == null:
+			continue
+		for slot in chassis.equip_slots():
+			var best_uid := ""
+			var best_score := loadout_score(build_for(entry))
+			for part_id in owned_part_ids(PartData.Type.EQUIPMENT):
+				var part := PartDB.get_part(part_id)
+				if part == null or not chassis.accepts(part, slot):
+					continue
+				var uid := _best_free_uid(part_id)
+				if uid == "":
+					continue
+				entry.assignments[slot] = uid
+				var trial := build_for(entry)
+				if trial.is_valid():
+					var score := loadout_score(trial)
+					if score > best_score:
+						best_score = score
+						best_uid = uid
+				entry.assignments.erase(slot)
+			if best_uid != "":
+				entry.assignments[slot] = best_uid
+	var changed := 0
+	for entry in targets:
+		var old: Dictionary = before[entry]
+		for slot in entry.assignments.keys() + old.keys():
+			if str(entry.assignments.get(slot, "")) != str(old.get(slot, "")):
+				changed += 1
+	return changed
+
+
+## Das freie Exemplar eines Typs mit dem hoechsten Level ("" = keins frei).
+func _best_free_uid(part_id: StringName) -> String:
+	var used := assigned_uids()
+	var best: PartInstance = null
+	for inst in _instances.values():
+		if inst.part_id != part_id or used.has(inst.uid):
+			continue
+		if best == null or inst.level > best.level:
+			best = inst
+	return best.uid if best != null else ""
+
+
+## Wie gut ein Aufbau zum Kaempfen ist -- fuer "Bester Aufbau". Der Kampfwert
+## (power_score) zaehlt nur den staerksten Treffer; hier kommt der Schaden je
+## Sekunde jeder Waffe dazu (mit Power, Schuessen und Waffenlevel), damit eine
+## schnelle Waffe nicht hinter einer langsamen, harten zurueckfaellt.
+static func loadout_score(build: DromeBuild) -> float:
+	var score := build.power_score()
+	for slot in build.equip_slots():
+		var part := build.part_in(slot)
+		if part == null:
+			continue
+		var level_mult := 1.0 + 0.07 * float(build.weapon_level(slot))
+		for item in part.actions:
+			var action: ActionData = item
+			if action.is_attack() and action.interval > 0.0:
+				var dps: float = float(action.power * maxi(1, action.shots)) / action.interval
+				score += dps * build.power_factor() * level_mult * 10.0
+				score += float(action.heal) / action.interval * 10.0
+	return score
+
+
 # ---------------------------------------------------------------------------
 # Ableitung: Roster-Eintrag -> DromeBuild
 # ---------------------------------------------------------------------------

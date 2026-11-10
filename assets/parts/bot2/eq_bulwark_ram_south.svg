@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_bulwark_ram" data-type="equipment" data-direction="south">
+  <title>Bollwerk-Ramme (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#100a0e" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M54.93 64.16 L64.48 70.91 L64.48 58.5 L54.93 51.75 Z" fill="#3d2b35"/>
+  <path d="M52.74 74.08 L60.85 68.35 L60.85 65.96 L52.74 71.7 Z" fill="#22181e"/>
+  <path d="M58.56 64.34 L50.44 70.08 L52.74 71.7 L60.85 65.96 Z" fill="#3d2b35"/>
+  <path d="M64.48 70.91 L73.07 64.84 L73.07 52.43 L64.48 58.5 Z" fill="#22181e"/>
+  <path d="M63.52 45.68 L54.93 51.75 L64.48 58.5 L73.07 52.43 Z" fill="#694c5c"/>
+  <path d="M53.5 65.57 L61.14 70.97 L61.14 61.42 L53.5 56.02 Z" fill="#694c5c"/>
+  <path d="M50.44 72.46 L52.74 74.08 L52.74 71.7 L50.44 70.08 Z" fill="#22181e"/>
+  <path d="M61.14 70.97 L62.09 70.29 L62.09 60.75 L61.14 61.42 Z" fill="#3d2b35"/>
+  <path d="M54.45 55.35 L53.5 56.02 L61.14 61.42 L62.09 60.75 Z" fill="#694c5c"/>
+  <path d="M52.16 73.99 L62.19 66.9 L62.19 60.22 L52.16 67.31 Z" fill="#22181e"/>
+  <path d="M57.22 56.71 L47.2 63.8 L52.16 67.31 L62.19 60.22 Z" fill="#7d6b78"/>
+  <path d="M55.89 52.03 L65.43 58.78 L65.43 51.14 L55.89 44.39 Z" fill="#7d6b78"/>
+  <path d="M62.57 39.67 L55.89 44.39 L65.43 51.14 L72.11 46.42 Z" fill="#7d6b78"/>
+  <path d="M52.74 65.01 L60.85 59.28 L60.85 56.89 L52.74 62.63 Z" fill="#22181e"/>
+  <path d="M58.56 55.27 L50.44 61.01 L52.74 62.63 L60.85 56.89 Z" fill="#3d2b35"/>
+  <path d="M65.43 58.78 L72.11 54.06 L72.11 46.42 L65.43 51.14 Z" fill="#22181e"/>
+  <path d="M47.2 70.48 L52.16 73.99 L52.16 67.31 L47.2 63.8 Z" fill="#7d6b78"/>
+  <path d="M43.67 64.07 L39.85 66.77 L51.88 75.28 L55.7 72.58 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M50.44 63.39 L52.74 65.01 L52.74 62.63 L50.44 61.01 Z" fill="#22181e"/>
+  <path d="M40.14 74.23 L51.59 82.33 L51.59 68.96 L40.14 60.86 Z" fill="#3d2b35"/>
+  <path d="M39.85 67.92 L51.88 76.42 L51.88 75.28 L39.85 66.77 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M40.33 74.01 L49.87 80.76 L49.87 70.26 L40.33 63.51 Z" fill="#22181e"/>
+  <path d="M42.81 73.12 L45.86 75.28 L45.86 72.23 L42.81 70.07 Z" fill="#ffb76a" stroke="none"/>
+  <path d="M45.86 75.28 L46.63 74.74 L46.63 71.69 L45.86 72.23 Z" fill="#ffb76a" stroke="none"/>
+  <path d="M43.57 69.53 L42.81 70.07 L45.86 72.23 L46.63 71.69 Z" fill="#ffb76a" stroke="none"/>
+  <path d="M51.59 82.33 L55.41 79.63 L55.41 66.26 L51.59 68.96 Z" fill="#22181e"/>
+  <path d="M51.88 76.42 L55.7 73.72 L55.7 72.58 L51.88 75.28 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M43.95 58.16 L40.14 60.86 L51.59 68.96 L55.41 66.26 Z" fill="#694c5c"/>
+  <path d="M49.87 80.76 L50.64 80.22 L50.64 69.72 L49.87 70.26 Z" fill="#22181e"/>
+  <path d="M41.09 62.97 L40.33 63.51 L49.87 70.26 L50.64 69.72 Z" fill="#3d2b35"/>
+</g>
+</svg>

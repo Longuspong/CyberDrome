@@ -74,16 +74,19 @@ func _with_orbit_pull(display_name: String, weapon: StringName) -> DromeBuild:
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": weapon})
-	# Orbit-Fokus ist seit 8. Nov. 2026 ein Modul im Halter der Waffe.
-	build.modules["equip_left"] = [&"mod_orbit"]
 	return build
 
 
-func _pull_action(unit: Unit) -> ActionData:
-	for action in unit.actions():
-		if action.push_tiles != 0:
-			return action
-	return null
+## Ein Sog ohne Schaden (frueher der Orbit-Sog, seit 9. Nov. 2026 wurzelt der
+## Orbit-Fokus nur noch) -- die Bewertung _shove_score bleibt fuer jede
+## Aktion mit push_tiles < 0 gueltig.
+func _pull_action(_unit: Unit) -> ActionData:
+	var pull := ActionData.new()
+	pull.id = &"test_pull"
+	pull.category = ActionData.Category.ABILITY
+	pull.range_tiles = 4
+	pull.push_tiles = -2
+	return pull
 
 
 func test_the_ai_does_not_drag_its_target_into_its_own_face() -> void:
@@ -102,7 +105,7 @@ func test_the_ai_does_not_drag_its_target_into_its_own_face() -> void:
 
 	var pull := _pull_action(sniper)
 	t.ok(pull != null and pull.power <= 0,
-		"der Orbit-Sog zieht und richtet dabei keinen Schaden an")
+		"der Sog zieht und richtet dabei keinen Schaden an")
 
 	t.ok(controller._shove_score(sniper, pull, brawler) < 0.0,
 		"wer weiter schiesst, will den Abstand behalten (%.1f)"
@@ -342,11 +345,7 @@ func test_every_ability_fires_by_itself() -> void:
 	# Echtzeit (Nov. 2026): Faehigkeiten werden nicht mehr gezogen, sie loesen
 	# nach ihrer Regel aus. Jede Faehigkeit im Bestand muss im Kampf auch
 	# wirklich kommen -- sonst ist ihr Ausloeser kaputt.
-	# Orbit-Fokus an einer Nahkampfwaffe: wer kuerzer reicht, will heranziehen.
-	var squads := [_ability_squad(), _squad(), [_with_modules(DromeBuild.create("ORBIT", {
-		"body": &"scout_body", "head": &"scout_head",
-		"feet": &"scout_feet", "core": &"scout_core",
-		"equip_left": &"eq_plasma_blade"}), "equip_left", [&"mod_orbit"])]]
+	var squads := [_ability_squad(), _squad()]
 	var uses := {}
 	for squad in squads:
 		var measured: Dictionary = _record(8, squad, 7000)
@@ -356,8 +355,7 @@ func test_every_ability_fires_by_itself() -> void:
 	# direkt danebensteht, und solange es keine Nahkampfwaffe gibt (Plasmaklinge
 	# und Hammer kommen erst), kommt im Kampf niemand so nah. Sein Ausloeser
 	# wird in tests/test_dash.gd geprueft.
-	for id in [&"act_pulse_double", &"act_rune_vortex",
-			&"act_rail_pierce", &"act_orbitpull"]:
+	for id in [&"act_pulse_double", &"act_rune_vortex", &"act_rail_pierce"]:
 		t.ok(int(uses.get(id, 0)) > 0, "%s loest im Kampf aus (%d)" % [id, uses.get(id, 0)])
 	t.note("Aktionen: %s" % str(uses))
 

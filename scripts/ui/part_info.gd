@@ -19,6 +19,9 @@ const ROLE := {
 	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integritaet zurueck.",
 	&"eq_rune_staff": "Nahkampfstab mit reinem Energieschaden. Trifft das Ziel und die vier geraden Nachbarfelder.",
 	&"eq_rail_lance": "Scharfschuetzenwaffe mit der groessten Reichweite.",
+	&"eq_bulwark_ram": "Rammkolben fuer die Frontlinie: der Rammstoss waechst mit der eigenen Integritaet und stoesst zurueck.",
+	&"eq_mortar": "Schwerer Schultermoerser: Flaeche aus der zweiten Reihe, trifft aber nicht auf kurze Distanz.",
+	&"eq_boomerang": "Wurfklinge fuer den Plaenkler: trifft hin und zurueck, wer laeuft, wirft haerter.",
 }
 
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
@@ -144,6 +147,12 @@ static func action_lines(action: ActionData) -> Array[String]:
 		var who := "dem Traeger" if action.support == "self" \
 			else "dem am staerksten verletzten Verbuendeten"
 		out.append("Gibt %s %d Schild (auch ueber das Maximum)." % [who, action.shield_gain])
+	if action.min_range > 0:
+		out.append("Trifft erst ab %d Feldern Abstand." % action.min_range)
+	if action.hp_scaling > 0.0:
+		out.append("Dazu %d %% der eigenen maximalen Integritaet als Schaden." % int(round(action.hp_scaling * 100.0)))
+	if action.moving_bonus > 0.0:
+		out.append("+%d %% Schaden, wenn der Traeger gerade gelaufen ist." % int(round(action.moving_bonus * 100.0)))
 	if action.push_tiles > 0:
 		out.append("Stoesst das Ziel %d Feld(er) weg." % action.push_tiles)
 	elif action.push_tiles < 0:

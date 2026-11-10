@@ -64,9 +64,11 @@ bash tools/build_web.sh                                       # Web-Export nach 
 
 1. **Faehigkeiten loesen automatisch aus -- ENTSCHIEDEN und gebaut.** Nur
    Ausruestung hat Faehigkeiten. Waffen zaehlen ihre Angriffe, der N-te
-   Angriff IST die Faehigkeit (Blaster, Runenstab, Kanone jeder 3., Lanze
-   jeder 4.); Gadgets nach Zeit (Orbit-Sog alle 6 s) oder Ereignis (Boost,
-   wenn ein Gegner danebensteht). Steht als `trigger` an der Aktion.
+   Angriff IST die Faehigkeit (Blaster, Runenstab jeder 3., Lanze jeder 4.).
+   **Seit 9. Nov. 2026 kein Zeit-Takt mehr** (Vorgabe des Spielers): auch
+   der Vortex zaehlt Angriffe; nur Ereignisse bleiben (Hologramm, wenn ein
+   Gegner danebensteht). Der Orbit-Fokus wurzelt seitdem das Ziel einer
+   Faehigkeit 2 s, statt zu ziehen. Steht als `trigger` an der Aktion.
 2. **Skill-Tiefe ueber Synergien -- ENTSCHIEDEN (6. Nov. 2026), nicht
    gebaut.** Kerne entfallen als Gegenstand, die Synergie steckt in
    **Waffen-Varianten** und **Modulen** (nur im Lauf, Rezepte, keine Stufen).

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_boomerang" data-type="equipment" data-direction="east">
+  <title>Klingenbumerang (east)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung east.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M67.34 68.33 L72.11 64.95 L72.11 61.13 L67.34 64.51 Z" fill="#161b29"/>
+  <path d="M64.48 62.48 L67.34 64.51 L72.11 61.13 L69.25 59.11 Z" fill="#28304a"/>
+  <path d="M57.32 63.54 L64.48 68.61 L64.48 57.15 L57.32 52.09 Z" fill="#28304a"/>
+  <path d="M64.48 68.61 L71.16 63.88 L71.16 52.43 L64.48 57.15 Z" fill="#161b29"/>
+  <path d="M64.48 66.3 L67.34 68.33 L67.34 64.51 L64.48 62.48 Z" fill="#161b29"/>
+  <path d="M57.32 52.09 L64.48 57.15 L71.16 52.43 L64.0 47.36 Z" fill="#47547e"/>
+  <path d="M68.58 64.97 L77.17 71.04 L79.46 69.42 L70.87 63.35 Z" fill="#5affff" stroke="none"/>
+  <path d="M68.58 66.49 L77.17 72.57 L77.17 71.04 L68.58 64.97 Z" fill="#5affff" stroke="none"/>
+  <path d="M68.39 64.53 L76.98 70.6 L79.66 68.71 L71.06 62.64 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M68.39 65.1 L76.98 71.18 L76.98 70.6 L68.39 64.53 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M77.17 72.57 L79.46 70.95 L79.46 69.42 L77.17 71.04 Z" fill="#5affff" stroke="none"/>
+  <path d="M63.05 57.77 L70.68 52.37 L70.68 43.78 L63.05 49.18 Z" fill="#161b29"/>
+  <path d="M76.98 71.18 L79.66 69.29 L79.66 68.71 L76.98 70.6 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M57.32 53.72 L63.05 57.77 L63.05 49.18 L57.32 45.13 Z" fill="#5b6785"/>
+  <path d="M57.32 45.13 L63.05 49.18 L70.68 43.78 L64.95 39.73 Z" fill="#5b6785"/>
+  <path d="M65.91 76.31 L67.82 77.66 L77.17 71.04 L75.26 69.69 Z" fill="#5affff" stroke="none"/>
+  <path d="M67.82 79.18 L77.17 72.57 L77.17 71.04 L67.82 77.66 Z" fill="#5affff" stroke="none"/>
+  <path d="M65.72 75.87 L67.82 77.35 L77.36 70.6 L75.26 69.12 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M67.82 77.93 L77.36 71.18 L77.36 70.6 L67.82 77.35 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M65.91 77.83 L67.82 79.18 L67.82 77.66 L65.91 76.31 Z" fill="#5affff" stroke="none"/>
+  <path d="M64.95 78.35 L67.63 80.24 L67.63 77.57 L64.95 75.68 Z" fill="#28304a"/>
+  <path d="M67.63 80.24 L69.54 78.89 L69.54 76.22 L67.63 77.57 Z" fill="#161b29"/>
+  <path d="M64.95 75.68 L67.63 77.57 L69.54 76.22 L66.86 74.33 Z" fill="#47547e"/>
+  <path d="M65.72 76.44 L67.82 77.93 L67.82 77.35 L65.72 75.87 Z" fill="#2de2e6" stroke="none"/>
+</g>
+</svg>

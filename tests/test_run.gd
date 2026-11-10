@@ -399,3 +399,189 @@ func test_enemies_level_up_with_round_and_tier() -> void:
 			if build.part_in(slot) != null:
 				t.equal(build.weapon_level(slot), late["weapon"], "und das Waffenlevel")
 	t.ok(run.enemy_levels(RunState.Tier.EASY)["weapon"] < late["weapon"], "Leicht darunter")
+
+
+# ---------------------------------------------------------------------------
+# Fraktionen und Profile (MODULE_KONZEPT.md 9, 9. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+## Zaehlt Chassis und Waffen der Gegner ueber viele Runden eines Gebiets.
+func _faction_counts(region: StringName) -> Dictionary:
+	var bodies := {}
+	var weapons := {}
+	for seed_value in 25:
+		var run := RunState.start(9100 + seed_value)
+		run.region_id = region
+		for which in [RunState.Tier.EASY, RunState.Tier.NORMAL, RunState.Tier.ELITE]:
+			for build in run.enemies(which):
+				var body: StringName = build.body().id
+				bodies[body] = int(bodies.get(body, 0)) + 1
+				for part in build.weapons():
+					weapons[part.id] = int(weapons.get(part.id, 0)) + 1
+	return {"bodies": bodies, "weapons": weapons}
+
+
+func test_every_region_has_a_faction_with_a_profile() -> void:
+	for id in [&"city", &"green", &"plant7"]:
+		var run := RunState.start(1)
+		run.region_id = id
+		var faction := run.faction()
+		t.ok(str(faction.get("name", "")) != "", "%s hat eine Fraktion" % id)
+		t.ok(str(faction.get("profile", "")) != "", "mit Profil")
+		var info := run.preview()
+		t.equal(info["faction"], faction["name"], "die Vorschau nennt sie")
+
+
+func test_the_mega_mechas_bring_more_moloks_than_the_ninjas() -> void:
+	var mechas: Dictionary = _faction_counts(&"plant7")
+	var ninjas: Dictionary = _faction_counts(&"city")
+	# Die Zielstaerke zieht bei allen Fraktionen viele Moloks (hoher
+	# Kampfwert); die Festung unterscheidet sich vor allem ueber schwere
+	# Rahmen insgesamt (Molok + Strix).
+	var heavy := func(counts: Dictionary) -> int:
+		return int(counts.get(&"jugg_body", 0)) + int(counts.get(&"strix_body", 0))
+	var mech_heavy: int = heavy.call(mechas["bodies"])
+	var ninja_heavy: int = heavy.call(ninjas["bodies"])
+	var ninja_vireos := int(ninjas["bodies"].get(&"scout_body", 0))
+	t.note("Chassis Mega Mechas %s, Neon Ninja's %s" % [mechas["bodies"], ninjas["bodies"]])
+	t.ok(mech_heavy > ninja_heavy * 1.3, "Festung: deutlich mehr schwere Rahmen (%d gegen %d)" % [mech_heavy, ninja_heavy])
+	t.ok(ninja_vireos > int(mechas["bodies"].get(&"scout_body", 0)), "Kaempfer: mehr Vireos")
+	var blades := int(ninjas["weapons"].get(&"eq_plasma_blade", 0)) \
+		+ int(ninjas["weapons"].get(&"eq_boomerang", 0))
+	var guns := int(ninjas["weapons"].get(&"eq_pulse_blaster", 0)) \
+		+ int(ninjas["weapons"].get(&"eq_neon_blaster", 0))
+	t.ok(blades > guns, "die Neon Ninja's kaempfen eher nah (%d gegen %d)" % [blades, guns])
+
+
+# ---------------------------------------------------------------------------
+# Spielstand (10. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+## Wie auf der Platte: einmal durch JSON und zurueck.
+func _through_json(run: RunState) -> RunState:
+	var text := JSON.stringify(run.to_dict())
+	return RunState.from_dict(JSON.parse_string(text))
+
+
+func test_a_run_survives_saving_and_loading() -> void:
+	var run := RunState.start(5150)
+	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_hammer", &"eq_deflector"])
+	run.storage.append_array([&"mod_rapid_fire", &"bios_metronome"])
+	run.bag.append(&"eq_mortar")
+	run.squad[0].modules[run.squad[0].equip_slots()[0]] = [&"mod_capacitor", &"mod_seeker"]
+	run.squad[1].chassis_bios = true
+	run.set_target_recipe(&"mod_gunslinger")
+	run.credits = 17
+	var back := _through_json(run)
+	t.ok(back != null, "der Lauf laesst sich laden")
+	if back == null:
+		return
+	t.equal(back.round, run.round, "Runde")
+	t.equal(back.lives, run.lives, "Leben")
+	t.equal(back.phase, run.phase, "Phase")
+	t.equal(back.credits, 17, "Credits")
+	t.equal(back.storage, run.storage, "Lager (als StringName)")
+	t.equal(back.bag, run.bag, "Tasche")
+	t.equal(back.target_recipe, &"mod_gunslinger", "Ziel-Rezept")
+	t.equal(back.squad.size(), run.squad.size(), "Squad")
+	t.equal(back.squad[0].modules, run.squad[0].modules, "Module im Halter")
+	t.ok(back.squad[1].chassis_bios, "Chassis-BIOS")
+	t.equal(back.shop_offers, run.shop_offers, "Laden")
+	for i in run.squad.size():
+		t.equal(back.squad[i].slots, run.squad[i].slots, "%s: Waffen" % run.squad[i].display_name)
+		t.equal(back.squad[i].drome_level, run.squad[i].drome_level, "Level")
+
+
+func test_a_loaded_run_meets_the_same_enemies() -> void:
+	var run := RunState.start(7331)
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	run.continue_run()
+	var back := _through_json(run)
+	var a: Array = run.enemies().map(func(b): return b.to_loadout())
+	var b: Array = back.enemies().map(func(x): return x.to_loadout())
+	t.equal(a, b, "dieselben Gegner nach dem Laden")
+	t.equal(back.battle_seed(), run.battle_seed(), "derselbe Kampf-Seed")
+
+
+func test_an_old_or_broken_save_is_refused() -> void:
+	t.equal(RunState.from_dict({"version": 0}), null, "falsche Version")
+	t.equal(RunState.from_dict({"version": RunState.SAVE_VERSION,
+		"squad": [{"slots": {}}]}), null, "Squad ohne Chassis")
+
+
+# ---------------------------------------------------------------------------
+# Karte wie bei FTL (10. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+func test_the_map_has_a_row_per_round_with_paths_forward() -> void:
+	for seed_value in 30:
+		var run := RunState.start(8800 + seed_value)
+		var layers := run.map_layers()
+		t.equal(layers.size(), RunState.rounds_total(), "eine Reihe je Runde")
+		for r in layers.size():
+			var layer: Array = layers[r]
+			t.ok(layer.size() >= 2 and layer.size() <= 3, "2-3 Knoten je Reihe")
+			var tiers: Array = layer.map(func(n): return int(n["tier"]))
+			var unique := {}
+			for x in tiers:
+				unique[x] = true
+			t.equal(unique.size(), tiers.size(), "jede Stufe hoechstens einmal je Reihe")
+			if r == 0:
+				t.ok(not layer.any(func(n): return n["chaos"]), "kein Chaos in Runde 1")
+			if r < layers.size() - 1:
+				var incoming := {}
+				for node in layer:
+					t.ok(not (node["next"] as Array).is_empty(), "jeder Knoten hat einen Weg nach vorn")
+					for j in node["next"]:
+						incoming[j] = true
+				t.equal(incoming.size(), (layers[r + 1] as Array).size(), "jeder Knoten ist erreichbar")
+
+
+func test_the_same_seed_draws_the_same_map() -> void:
+	t.equal(RunState.start(77).map_layers(), RunState.start(77).map_layers(), "gleicher Seed, gleiche Karte")
+
+
+func test_only_connected_nodes_can_be_chosen() -> void:
+	var run := RunState.start(9901)
+	var first: int = run.available_nodes()[0]
+	t.ok(run.choose_node(first), "Runde 1: jeder Knoten")
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	run.continue_run()
+	var allowed := run.available_nodes()
+	t.equal(allowed, run.map_layers()[0][first]["next"], "Runde 2: nur die Wege vom gewaehlten Knoten")
+	for i in (run.map_layers()[1] as Array).size():
+		if i not in allowed:
+			t.ok(not run.choose_node(i), "Knoten %d ist nicht erreichbar" % i)
+	t.ok(run.node in allowed, "die Vorwahl liegt auf einem erreichbaren Knoten")
+
+
+func test_a_chaos_fight_hides_the_foes_and_pays_better() -> void:
+	var found := false
+	for seed_value in 200:
+		var run := RunState.start(12000 + seed_value)
+		run.round = 2
+		run.prev_node = -1
+		for i in (run.map_layers()[1] as Array).size():
+			if run.map_layers()[1][i]["chaos"]:
+				run.node = i
+				run.tier = int(run.map_layers()[1][i]["tier"])
+				found = true
+				t.ok(run.is_chaos(), "Chaos-Kampf erkannt")
+				t.ok(run.preview()["chaos"], "die Vorschau weiss es")
+				var normal := int(RunState.tier_cfg(RunState.Tier.NORMAL).get("credits", 10))
+				t.ok(run.battle_credits(true) > normal, "mehr Credits")
+				break
+		if found:
+			break
+	t.ok(found, "Chaos-Kaempfe kommen vor")
+
+
+func test_the_chosen_path_survives_saving() -> void:
+	var run := RunState.start(4545)
+	run.choose_node(run.available_nodes()[-1])
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	run.continue_run()
+	var back := _through_json(run)
+	t.equal(back.node, run.node, "gewaehlter Knoten")
+	t.equal(back.prev_node, run.prev_node, "Weg aus der Runde davor")
+	t.equal(back.available_nodes(), run.available_nodes(), "dieselben Wege")

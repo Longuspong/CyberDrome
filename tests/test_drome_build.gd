@@ -35,7 +35,8 @@ func _stock(set_id: String) -> DromeBuild:
 
 func test_library_loaded() -> void:
 	# 8. Nov. 2026: Orbit-Fokus, Hologramm-Boost und Koedersender sind Module.
-	t.equal(PartDB.parts.size(), 24, "24 Bauteile erwartet")
+	# 9. Nov. 2026: Bollwerk-Ramme, Moerser, Klingenbumerang dazu.
+	t.equal(PartDB.parts.size(), 27, "27 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausaetze erwartet")
 	for part in PartDB.parts.values():
 		t.equal(part.views.size(), 4, "%s braucht vier Ansichten" % part.id)
@@ -319,14 +320,14 @@ func test_actions_are_split_by_budget() -> void:
 		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": &"eq_hammer",
 	})
-	build.modules["equip_left"] = [&"mod_orbit"]
+	build.modules["equip_left"] = [&"mod_holo"]
 	var attacks := build.actions_of(ActionData.Category.ATTACK)
 	var abilities := build.actions_of(ActionData.Category.ABILITY)
 	# Die Kanone traegt zwei Aktionen: Belagerungsschlag (Angriff) UND
-	# Sperrfeuer (Faehigkeit). Dazu der Orbit-Sog aus dem Modul. Also ein
-	# Angriff, zwei Faehigkeiten.
+	# Sperrfeuer (Faehigkeit). Dazu der Sprung aus dem Hologramm-Modul. Also
+	# ein Angriff, zwei Faehigkeiten.
 	t.equal(attacks.size(), 1, "nur der Belagerungsschlag ist ein Angriff")
-	t.equal(abilities.size(), 2, "Sperrfeuer und Orbit-Sog sind Faehigkeiten")
+	t.equal(abilities.size(), 2, "Betaeubungsschlag und Hologramm-Sprung sind Faehigkeiten")
 	t.equal(build.attack_budget(), 1, "eine Waffe -- ein Angriffs-Aktionspunkt")
 	t.equal(attacks.size() + abilities.size(), build.actions().size(),
 		"jede Aktion gehoert zu genau einem Budget")

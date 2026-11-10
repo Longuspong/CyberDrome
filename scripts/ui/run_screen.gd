@@ -81,6 +81,8 @@ func _build_ui() -> void:
 
 
 func _refresh() -> void:
+	# Jede Aenderung im Lauf geht gleich in den Spielstand (10. Nov. 2026).
+	GameState.save_run()
 	var run := _run()
 	for child in _side.get_children():
 		child.queue_free()
@@ -176,32 +178,17 @@ func _show_setup() -> void:
 
 
 func _show_prepare(run: RunState) -> void:
-	_side.add_child(_label("Waehle deinen Gegner", 22, COLOR_HEADING))
-
-	# Die drei Stufen als Reiter nebeneinander -- mit Staerke, damit man
-	# vergleichen kann, ohne jede einzeln anzutippen.
-	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 8)
-	_side.add_child(tabs)
-	for which in 3:
-		var tab := Button.new()
-		var foes := run.enemies(which)
-		var foe_power := int(DromeBuild.squad_power(foes))
-		tab.text = "%s\n%d  ·  %dx" % [RunState.TIER_NAMES[which], foe_power, foes.size()]
-		tab.tooltip_text = "%s: %d Gegner, Staerke %d" % [RunState.TIER_NAMES[which],
-			foes.size(), foe_power]
-		tab.toggle_mode = true
-		tab.button_pressed = which == run.tier
-		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tab.custom_minimum_size = Vector2(0, 64)
-		tab.add_theme_font_size_override("font_size", 18)
-		if which == run.tier:
-			tab.add_theme_stylebox_override("normal", UiKit.card_style(true))
-			tab.add_theme_stylebox_override("pressed", UiKit.card_style(true))
-		tab.pressed.connect(func():
-			run.choose_tier(which)
-			_refresh())
-		tabs.add_child(tab)
+	_side.add_child(_label("Waehle deinen Weg", 22, COLOR_HEADING))
+	# Karte wie bei FTL (10. Nov. 2026): erreichbare Knoten dieser Runde,
+	# darunter die naechste Reihe als Vorausschau.
+	var map := MapView.new(run)
+	map.picked.connect(func(index: int):
+		if run.choose_node(index):
+			Accessibility.vibrate(15, true)
+		_refresh())
+	_side.add_child(map)
+	_side.add_child(_label("Leicht (Kreis) · Normal (Raute) · Elite (Stern) · ? = Chaos: Gegner unbekannt, bessere Beute",
+		14, COLOR_MUTED))
 
 	var info := run.preview()
 	var panel := PanelContainer.new()
@@ -212,20 +199,34 @@ func _show_prepare(run: RunState) -> void:
 	_side.add_child(panel)
 
 	box.add_child(_label("Region: %s" % info["region"], 18))
+	if str(info.get("faction", "")) != "":
+		box.add_child(_label("Gegner: %s  ·  Profil %s" % [info["faction"], info["profile"]],
+			16, COLOR_WARN))
+		if str(info.get("faction_text", "")) != "":
+			box.add_child(_label(str(info["faction_text"]), 14, COLOR_MUTED))
 
+	var chaos := bool(info.get("chaos", false))
+	box.add_child(_label("%s%s" % [RunState.TIER_NAMES[run.tier], "  ·  CHAOS" if chaos else ""],
+		18, MapView.CHAOS_COLOR if chaos else Color.WHITE))
 	var own := float(info["own_power"])
 	var foe := float(info["enemy_power"])
 	var ratio := own / maxf(1.0, foe)
 	var verdict := "ueberlegen" if ratio >= 1.1 else ("ausgeglichen" if ratio >= 0.9 else "unterlegen")
 	var color := COLOR_GOOD if ratio >= 1.1 else (COLOR_WARN if ratio >= 0.9 else COLOR_BAD)
-	box.add_child(_label("Staerke: du %d  ·  Gegner %d  (%s)" % [int(own), int(foe), verdict],
-		18, color))
+	if chaos:
+		box.add_child(_label("Staerke: du %d  ·  Gegner ???" % int(own), 18, COLOR_WARN))
+	else:
+		box.add_child(_label("Staerke: du %d  ·  Gegner %d  (%s)" % [int(own), int(foe), verdict],
+			18, color))
 	box.add_child(_label("Beute: %s" % info["reward_text"], 16,
 		COLOR_WARN if run.tier == RunState.Tier.ELITE else COLOR_MUTED))
 
-	box.add_child(_label("Gegner: %d DROMEs" % int(info["enemies"]), 18, COLOR_HEADING))
-	for build in info["enemy_builds"]:
-		box.add_child(SquadPicker.drome_card(build))
+	if chaos:
+		box.add_child(_label("Gegner: unbekannt -- erst im Kampf zu sehen", 18, MapView.CHAOS_COLOR))
+	else:
+		box.add_child(_label("Gegner: %d DROMEs" % int(info["enemies"]), 18, COLOR_HEADING))
+		for build in info["enemy_builds"]:
+			box.add_child(SquadPicker.drome_card(build))
 
 	var start := _big_button("Kampf starten")
 	start.pressed.connect(func():
@@ -371,11 +372,12 @@ func _bios_section(run: RunState) -> Control:
 		title.add_child(_label(item.display_name, 18))
 		title.add_child(_label(item.headline(), 14, item.color()))
 		for line in item.effect_lines():
-			box.add_child(_flow_label(line, 16))
+			box.add_child(_label(line, 16))
 		var take := UiKit.button("Nehmen" if blocker == "" else blocker)
 		take.disabled = blocker != ""
 		take.pressed.connect(func():
-			run.choose_bios(index)
+			if run.choose_bios(index):
+				Accessibility.vibrate(30, true)
 			_refresh())
 		box.add_child(take)
 	return panel
@@ -469,6 +471,7 @@ func _shop_section(run: RunState) -> Control:
 		buy.disabled = blocker != ""
 		buy.pressed.connect(func():
 			if run.buy(index):
+				Accessibility.vibrate(20, true)
 				_selected_storage = -1
 			_refresh())
 		inner.add_child(buy)
@@ -547,6 +550,21 @@ func _storage_tile(run: RunState, index: int) -> Control:
 		name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		box.add_child(name)
+	# Ziehen auf einen Halter (Tippen bleibt); waagerecht startet den Zug.
+	var start := {"at": Vector2.ZERO}
+	button.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed:
+			start["at"] = event.global_position)
+	button.set_drag_forwarding(func(_at):
+		if not run.is_module_at(index):
+			return null
+		var moved: Vector2 = button.get_global_mouse_position() - start["at"]
+		if absf(moved.y) > absf(moved.x):
+			return null
+		var preview := ModuleChip.new(ModuleData.get_module(run.storage[index]), 56.0)
+		button.set_drag_preview(preview)
+		return {"kind": "storage", "index": index},
+		Callable(), Callable())
 	button.pressed.connect(func():
 		_selected_storage = -1 if _selected_storage == index else index
 		_refresh())
@@ -673,6 +691,7 @@ func _recipe_section(run: RunState) -> Control:
 		make.disabled = not entry["ready"]
 		make.pressed.connect(func():
 			if run.craft(module.id):
+				Accessibility.vibrate(40, true)
 				_selected_storage = -1
 			_refresh())
 		row.add_child(make)
@@ -738,14 +757,43 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 				var done := run.install_bios(_selected_storage, drome, slot) if bios \
 					else run.install_module(_selected_storage, drome, slot)
 				if done:
+					Accessibility.vibrate(20, true)
 					_selected_storage = -1
 				_refresh())
 		else:
 			button.text = line
 			button.disabled = true
+		# Ziehen (10. Nov. 2026): ein Modul oder BIOS aus dem Lager hierher.
+		button.set_drag_forwarding(Callable(),
+			func(_at, data): return _can_drop_storage(run, drome, slot, data),
+			func(_at, data): _drop_storage(run, drome, slot, data))
 		box.add_child(button)
 		box.add_child(_module_row(run, drome, slot))
 	return panel
+
+
+## Darf das gezogene Lager-Stueck in diesen Halter? Dieselben Regeln wie beim
+## Antippen (module_options / bios_options).
+func _can_drop_storage(run: RunState, drome: int, slot: String, data) -> bool:
+	if not data is Dictionary or data.get("kind", "") != "storage":
+		return false
+	var index := int(data.get("index", -1))
+	var options: Array = run.bios_options(index) if run.is_bios_at(index) \
+		else run.module_options(index)
+	for entry in options:
+		if int(entry["drome"]) == drome and entry["slot"] == slot:
+			return bool(entry.get("allowed", false))
+	return false
+
+
+func _drop_storage(run: RunState, drome: int, slot: String, data) -> void:
+	var index := int(data.get("index", -1))
+	var done := run.install_bios(index, drome, slot) if run.is_bios_at(index) \
+		else run.install_module(index, drome, slot)
+	if done:
+		Accessibility.vibrate(20, true)
+		_selected_storage = -1
+	_refresh()
 
 
 ## Die Module eines Halters als Chips mit Namen. Antippen nimmt eines zurueck

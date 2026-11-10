@@ -8,17 +8,13 @@
   ],
 
   "_kommentar_save": [
-    "Ob Inventar + Roster ueber einen Programmlauf hinaus auf die Platte",
-    "geschrieben und beim Start wieder geladen werden. In dieser Dev-Phase",
-    "AUS: jeder Start beginnt mit dem handgesetzten Startbestand",
-    "(Roster.seed_starter), und ein alter Spielstand -- auch ein kaputter aus",
-    "einer aelteren Version -- wird beim Start weggeraeumt statt geladen. So",
-    "kommt jeder 'Run' in ein frisches Spiel. Auf true stellen, sobald die",
-    "Persistenz gewollt ist; die Lade-/Speicher-/Migrationslogik in",
-    "GameState liegt dafuer schon bereit.",
-    "Siehe GameState.load_roster()/save_roster()."
+    "Ob Inventar, Roster und ein laufender Lauf ueber einen Programmlauf hinaus",
+    "gespeichert und beim Start wieder geladen werden (user://roster.json,",
+    "user://run.json). Seit 10. Nov. 2026 AN (Wunsch des Spielers). Auf false",
+    "startet jeder Start frisch und raeumt alte Staende weg. Tests und",
+    "Werkzeuge (--script res://tests/..., res://tools/...) speichern nie."
   ],
-  "save_enabled": false,
+  "save_enabled": true,
 
   "squad_size": 2,
   "squad_size_max": 4,
@@ -81,6 +77,8 @@
     ],
     "region": "city",
     "rounds": 8,
+    "map": {"_kommentar": "Karte wie bei FTL (RunState.map_layers): Wahrscheinlichkeit fuer 3 statt 2 Knoten je Reihe, fuer einen zweiten Weg je Knoten, fuer einen Chaos-Kampf statt Normal (ab Runde 2) und der Credit-Faktor im Chaos-Kampf.",
+            "three_chance": 0.5, "branch_chance": 0.6, "chaos_chance": 0.2, "chaos_credits": 1.5},
     "lives": 3,
     "power_start": 0.85,
     "power_growth": 0.06,
@@ -165,7 +163,7 @@
         "eq_deflector": {"def": 8},
         "eq_hammer": {"hp": 40},
         "eq_drone_pod": {"hp": 20},
-        "eq_rune_staff": {"shield": 20}
+        "eq_rune_staff": {"shield": 20}, "eq_bulwark_ram": {"hp": 40}, "eq_mortar": {"def": 4}, "eq_boomerang": {"spd": 2}
       }
     }
   },
@@ -188,8 +186,10 @@
       "time_limit        harte Grenze, danach unentschieden",
       "think_interval    wie oft ein DROME prueft, ob ein sicherer Abschuss in Reichweite ist",
       "retarget_after    so lange darf das Ziel unerreichbar sein, dann wird neu gewaehlt",
-      "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist"
+      "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist",
+      "start_jitter      Zufallsversatz der Takte zu Kampfbeginn (0..x s je DROME, je Seed fest)"
     ],
+    "start_jitter": 0.5,
     "tick": 0.05,
     "move_base": 0.7,
     "move_per_spd": 0.084,

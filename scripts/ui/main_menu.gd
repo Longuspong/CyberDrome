@@ -41,7 +41,8 @@ func _ready() -> void:
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(_status)
 
-	var run := UiKit.button("Lauf starten", true)
+	var running: bool = GameState.run != null and not GameState.run.is_over()
+	var run := UiKit.button("Lauf fortsetzen" if running else "Lauf starten", true)
 	run.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/run.tscn"))
 	content.add_child(run)
 

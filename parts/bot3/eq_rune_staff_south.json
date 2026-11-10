@@ -78,7 +78,10 @@
         "shield_gain": 0,
         "support": "",
         "damage_pct": 0.0,
-        "base_action": ""
+        "base_action": "",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.0
       },
       {
         "id": "act_rune_vortex",
@@ -92,9 +95,9 @@
         "energy_fraction": 1.0,
         "interval": 2.0,
         "trigger": {
-          "kind": "time",
+          "kind": "attacks",
           "every": 3,
-          "weapon": ""
+          "weapon": "act_runestaff"
         },
         "shield_mult": 1.0,
         "shots": 1,
@@ -109,7 +112,10 @@
         "shield_gain": 0,
         "support": "",
         "damage_pct": 1.5,
-        "base_action": "act_runestaff"
+        "base_action": "act_runestaff",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.0
       }
     ]
   }

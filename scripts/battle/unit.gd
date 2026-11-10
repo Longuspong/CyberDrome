@@ -385,11 +385,17 @@ func init_realtime(pulse_offset: float) -> void:
 			var first := float(gadget_action.trigger_every) * echo_slower() \
 				if gadget_action.trigger_kind == "time" else 0.0
 			gadgets.append({"part": part, "ability": gadget_action, "ready": first, "fx": fx})
-		# Module mit eigener Faehigkeit (Orbit-Fokus, Hologramm-Boost).
+		# Module mit eigener Faehigkeit (Orbit-Fokus, Hologramm). Seit 9. Nov.
+		# 2026 zaehlen sie die Angriffe der Waffe in ihrem Halter ("extras"
+		# am Halter); nur Ereignisse (Hologramm: Gegner daneben) bleiben Gadgets.
+		var extras: Array = []
 		for module in build.active_modules(slot):
 			var granted := ModuleData.gadget_action(module.gadget)
 			if granted != null:
 				granted = granted.with_modules(fx)
+				if granted.trigger_kind == "attacks":
+					extras.append({"ability": granted, "count": 0.0})
+					continue
 				var first_ready := float(granted.trigger_every) * echo_slower() \
 					if granted.trigger_kind == "time" else 0.0
 				gadgets.append({"part": part, "ability": granted, "ready": first_ready, "fx": fx})
@@ -402,7 +408,8 @@ func init_realtime(pulse_offset: float) -> void:
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
-			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability})
+			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability,
+			"extras": extras})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
@@ -454,6 +461,13 @@ func takt_bars(step: float = 0.5) -> Array:
 		var ready := takt_due(mount)
 		out.append({"kind": "hits", "segments": every,
 			"filled": every if ready else mini(every - 1, int(count)), "ready": ready})
+	# Modul-Faehigkeiten nach Angriffen (Orbit-Fokus).
+	for mount in mounts:
+		for extra in mount.get("extras", []):
+			var each := takt_every(extra["ability"])
+			var have := int(float(extra["count"]))
+			out.append({"kind": "hits", "segments": each,
+				"filled": mini(each, have), "ready": have >= each - 1})
 	for gadget in gadgets:
 		var ability: ActionData = gadget["ability"]
 		if ability.trigger_kind != "time":
@@ -557,6 +571,14 @@ func ai_role() -> String:
 	if build == null or build.body() == null:
 		return ""
 	return build.body().ai_role
+
+
+## Gewurzelt (Orbit-Fokus): greift an, laeuft aber nicht.
+func is_rooted() -> bool:
+	for status in statuses.values():
+		if status.get("rooted", false):
+			return true
+	return false
 
 
 ## Betaeubt (Hammer): handelt nicht, solange der Status laeuft.
@@ -670,6 +692,11 @@ func power_factor() -> float:
 	return 1.0 if points <= 0 else float(points) / 10.0
 
 
+## So lange nach dem letzten Feldwechsel gilt ein DROME als "in Bewegung"
+## (Klingenbumerang, ActionData.moving_bonus).
+const MOVING_WINDOW := 1.0
+
+
 ## Rohschaden einer Aktion: ihr Schaden mal Power. Davor kommt nichts, danach
 ## Schild und Ruestung (ActionResolver.resolve_damage).
 func raw_damage(action: ActionData) -> int:
@@ -678,9 +705,15 @@ func raw_damage(action: ActionData) -> int:
 	var raw := float(action.power) * power_factor()
 	if steady:
 		raw *= float(steady_rule().get("damage_mult", 1.2))
+	# Klingenbumerang: wer gerade gelaufen ist, wirft haerter.
+	if action.moving_bonus > 0.0 and still_time < MOVING_WINDOW:
+		raw *= 1.0 + action.moving_bonus
 	# Rammbock: ein Teil der eigenen Panzerung kommt dazu, ohne Power.
 	if action.armor_to_damage > 0.0:
 		raw += float(def()) * action.armor_to_damage
+	# Bollwerk-Ramme: ein Teil der eigenen maximalen Integritaet, ohne Power.
+	if action.hp_scaling > 0.0:
+		raw += float(stat("hp_max")) * action.hp_scaling
 	return maxi(1, int(round(raw)))
 
 

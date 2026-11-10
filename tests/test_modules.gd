@@ -161,7 +161,7 @@ func test_the_takt_chip_counts_each_attack_as_one_and_a_quarter() -> void:
 	t.equal(chip.takt_bars()[0]["segments"], 3, "die Takt-Leiste behaelt ihre Abschnitte")
 	var recipe := ModuleData.get_module(&"mod_takt_chip")
 	t.equal(recipe.from, [&"mod_rapid_fire", &"mod_amplifier"], "aus Schnellfeuer und Verstaerker")
-	t.ok(is_equal_approx(float(recipe.effects.get("takt_time", 0.0)), 0.1), "Zeit-Takt 10 % kuerzer")
+	t.ok(not recipe.effects.has("takt_time"), "kein Zeit-Takt mehr (9. Nov. 2026)")
 
 
 func test_the_amplifier_strengthens_the_ability() -> void:
@@ -838,4 +838,105 @@ func test_phase_break_hits_unshielded_foes_harder() -> void:
 	var plain := battle.resolver.resolve_damage(shielded, 20, 0.0)["hp"] as int
 	var hit := battle.resolver.apply_damage(bearer, bare, 20, attack)
 	t.ok(hit > plain, "ohne Schild mehr (%d gegen %d)" % [hit, plain])
+	battle.free()
+
+
+# ---------------------------------------------------------------------------
+# Neue Waffen (9. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+func test_the_new_weapons_exist_with_their_classes() -> void:
+	for entry in [[&"eq_bulwark_ram", "medium"], [&"eq_mortar", "heavy"], [&"eq_boomerang", "light"]]:
+		var part := PartDB.get_part(entry[0])
+		t.ok(part != null, "%s ist geladen" % entry[0])
+		if part != null:
+			t.equal(part.mount_class, entry[1], "%s ist %s" % [part.display_name, entry[1]])
+			t.equal(part.actions.size(), 2, "%s: Angriff und Faehigkeit" % part.display_name)
+
+
+func test_the_bulwark_ram_scales_with_integrity() -> void:
+	var ram := DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_bulwark_ram"})
+	var unit := Unit.create(ram, &"M", true)
+	unit.init_realtime(0.0)
+	var slam: ActionData = unit.mounts[0]["ability"]
+	t.ok(slam.hp_scaling > 0.0, "der Rammstoss skaliert mit der Integritaet")
+	t.equal(slam.push_tiles, 1, "und stoesst zurueck")
+	var plain := slam.copy()
+	plain.hp_scaling = 0.0
+	t.ok(unit.raw_damage(slam) >= unit.raw_damage(plain) + int(unit.stat("hp_max") * 0.08) - 1,
+		"+8 %% der max. Integritaet (%d gegen %d)" % [unit.raw_damage(slam), unit.raw_damage(plain)])
+	unit.free()
+
+
+func test_the_mortar_cannot_hit_close_targets() -> void:
+	var strix := DromeBuild.create("Strix", {"body": &"strix_body", "head": &"strix_head",
+		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_mortar"})
+	var battle := _battle([strix], [_molok(), _molok()],
+		[Vector2i(10, 10), Vector2i(10, 9), Vector2i(10, 6)])
+	var mortar: Unit = battle.units[0]
+	var attack: ActionData = mortar.mounts[0]["attack"]
+	t.equal(battle.resolver.target_blocker(mortar, battle.units[1].tile, attack), "Zu nah", "direkt daneben nicht")
+	t.equal(battle.resolver.target_blocker(mortar, battle.units[2].tile, attack), "", "auf Abstand schon")
+	t.ok(attack.aoe_radius >= 1 and attack.delay > 0.0, "Flaeche mit Verzoegerung")
+	battle.free()
+
+
+func test_the_boomerang_hits_harder_on_the_move() -> void:
+	var unit := Unit.create(_vireo(&"eq_boomerang"), &"V", true)
+	unit.init_realtime(0.0)
+	var attack: ActionData = unit.mounts[0]["attack"]
+	t.equal(attack.shots, 2, "hin und zurueck: zwei Treffer")
+	unit.still_time = 0.2
+	var moving := unit.raw_damage(attack)
+	unit.still_time = 5.0
+	var standing := unit.raw_damage(attack)
+	t.ok(moving > standing, "in Bewegung mehr (%d gegen %d)" % [moving, standing])
+	unit.free()
+
+
+func test_a_battle_with_the_new_weapons_runs_to_the_end() -> void:
+	var ram := DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_bulwark_ram"})
+	var strix := DromeBuild.create("Strix", {"body": &"strix_body", "head": &"strix_head",
+		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_mortar"})
+	var battle := BattleManager.new()
+	battle.setup(4242, [ram, strix, _vireo(&"eq_boomerang")], [_molok(), _vireo(), _vireo()])
+	var outcome := battle.run_to_end()
+	t.ok(outcome != BattleManager.Outcome.RUNNING, "der Kampf endet (%s)" % BattleManager.outcome_label(outcome))
+	battle.free()
+
+
+func test_the_orbit_focus_roots_the_target_of_the_ability() -> void:
+	var orbit := _with(_vireo(), "equip_left", [&"mod_orbit"])
+	var battle := _battle([orbit], [_vireo(), _vireo()],
+		[Vector2i(10, 13), Vector2i(10, 10), Vector2i(11, 10)])
+	var bearer: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	var other: Unit = battle.units[2]
+	battle.brain._after_ability(bearer, bearer.mounts[0]["ability"],
+		{"tile": foe.tile, "target": foe}, bearer.mounts[0]["fx"])
+	t.ok(foe.is_rooted(), "das Ziel ist gewurzelt")
+	t.ok(not other.is_rooted(), "der Nachbar nicht")
+	t.ok(not foe.is_stunned(), "greift aber weiter an")
+	foe.target_id = bearer.unit_id
+	var before := foe.tile
+	foe.step_left = 0.0
+	battle.brain.update(foe, 0.05)
+	t.equal(foe.tile, before, "und laeuft nicht")
+	foe.tick_statuses(2.1)
+	t.ok(not foe.is_rooted(), "nach 2 s vorbei")
+	battle.free()
+
+
+func test_the_gravity_bios_roots_a_second_foe() -> void:
+	var gravity := _with(_vireo(), "equip_left", [&"mod_gravity"])
+	var battle := _battle([gravity], [_vireo(), _vireo()],
+		[Vector2i(10, 13), Vector2i(10, 10), Vector2i(11, 10)])
+	var bearer: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	var other: Unit = battle.units[2]
+	battle.brain._after_ability(bearer, bearer.mounts[0]["ability"],
+		{"tile": foe.tile, "target": foe}, bearer.mounts[0]["fx"])
+	t.ok(foe.is_rooted() and other.is_rooted(), "beide gewurzelt")
 	battle.free()

@@ -39,6 +39,22 @@ func _process(_delta: float) -> bool:
 			root.add_child(umbau)
 			print("SMOKE: Hangar (Umbau) instanziiert fuer '%s'"
 				% gs.roster.entries[0].name)
+		9:
+			# Ziehen (10. Nov. 2026): die freie Plasmaklinge auf den Halter
+			# des ersten DROME ablegen -- dieselben Pruefungen wie im Spiel.
+			var hangar = null
+			for child in root.get_children():
+				if child.has_method("_can_drop_part"):
+					hangar = child
+			var entry = gs.roster.entries[0]
+			var build = gs.roster.build_for(entry)
+			var slot: String = build.equip_slots()[0]
+			var data := {"kind": "part", "part_id": &"eq_plasma_blade"}
+			if hangar != null and hangar._can_drop_part(entry, build, slot, data):
+				hangar._drop_part(entry, slot, data)
+				print("SMOKE: Ziehen auf Halter -> %s" % gs.roster.build_for(entry).part_in(slot).display_name)
+			else:
+				print("SMOKE: Ziehen auf Halter nicht moeglich")
 		12:
 			# Lauf im Zwischenstopp: Lager mit Waffe, eine davon angetippt.
 			gs.start_run(4242)
@@ -59,6 +75,11 @@ func _process(_delta: float) -> bool:
 			stop._selected_storage = gs.run.storage.size() - 1
 			stop._refresh()
 			print("SMOKE: Zwischenstopp mit Modulen und Rezeptbuch, Lager %d" % gs.run.storage.size())
+			var drop := {"kind": "storage", "index": gs.run.storage.find(&"mod_rapid_fire")}
+			var target_slot: String = gs.run.squad[1].equip_slots()[0]
+			if stop._can_drop_storage(gs.run, 1, target_slot, drop):
+				stop._drop_storage(gs.run, 1, target_slot, drop)
+				print("SMOKE: Modul per Ziehen eingesetzt, Lager %d" % gs.run.storage.size())
 		16:
 			print("SMOKE_OK")
 			quit(0)

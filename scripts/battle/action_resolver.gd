@@ -425,6 +425,9 @@ func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
 		return "Weg blockiert"
 	if Grid.distance(source.tile, tile) > action.range_tiles:
 		return "Ausser Reichweite"
+	# Moerser: zu nah kann er nicht feuern.
+	if action.min_range > 0 and Grid.distance(source.tile, tile) < action.min_range:
+		return "Zu nah"
 	if unit_at(tile) == null:
 		return "Kein Ziel"
 	return ""

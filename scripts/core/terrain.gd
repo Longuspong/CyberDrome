@@ -11,6 +11,9 @@ class Region extends RefCounted:
 	var display_name: String
 	var floor_name: String = ""          ## "Asphalt", "Wiese" ...
 	var floor_texture: String = ""
+	## Die Fraktion des Gebiets und ihr Profil (MODULE_KONZEPT.md 9): wie
+	## sich ihre Gegner zusammensetzen. Leer = frei gewuerfelt.
+	var faction: Dictionary = {}
 
 	static func from_meta(meta: Dictionary, base_dir: String) -> Region:
 		var region := Region.new()
@@ -20,4 +23,5 @@ class Region extends RefCounted:
 		region.floor_name = floor.get("name", "")
 		var svg: String = floor.get("svg", "")
 		region.floor_texture = base_dir.path_join(svg) if svg != "" else ""
+		region.faction = meta.get("faction", {})
 		return region

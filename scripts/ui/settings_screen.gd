@@ -39,6 +39,35 @@ func _ready() -> void:
 		+ "Animationen ab. Folgt beim ersten Start der Systemeinstellung.",
 		UiKit.SMALL, UiKit.MUTED))
 
+	var haptic := CheckButton.new()
+	haptic.text = "Vibration (Haptik)"
+	haptic.custom_minimum_size = Vector2(0, 48)
+	haptic.add_theme_font_size_override("font_size", UiKit.BODY)
+	haptic.button_pressed = Accessibility.haptics
+	haptic.toggled.connect(Accessibility.set_haptics)
+	motion.add_child(haptic)
+	motion.add_child(UiKit.label("Kurzes Vibrieren bei schweren Treffern, Abschuessen, "
+		+ "Kampfende und beim Einbauen. Nur auf Geraeten, die es koennen.",
+		UiKit.SMALL, UiKit.MUTED))
+
+	# Spielstand (10. Nov. 2026): wird jetzt gespeichert -- hier zuruecksetzen.
+	var save := UiKit.card(content)
+	save.add_child(UiKit.heading("Spielstand"))
+	save.add_child(UiKit.label("Hangar, Level und ein laufender Lauf werden automatisch "
+		+ "gespeichert.", UiKit.SMALL, UiKit.MUTED))
+	var reset := UiKit.button("Spielstand zuruecksetzen")
+	reset.add_theme_color_override("font_color", UiKit.BAD)
+	var armed := {"on": false}
+	reset.pressed.connect(func():
+		if not armed["on"]:
+			armed["on"] = true
+			reset.text = "Wirklich? Alles geht verloren -- nochmal tippen"
+			return
+		GameState.reset_progress()
+		reset.text = "Zurueckgesetzt"
+		reset.disabled = true)
+	save.add_child(reset)
+
 	var screen := UiKit.card(content)
 	screen.add_child(UiKit.heading("Bildschirm"))
 	var fullscreen := UiKit.button("Vollbild")
