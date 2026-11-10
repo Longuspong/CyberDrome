@@ -389,6 +389,17 @@ Spielstand). Vorschlaege zu Story, Fraktionen, Klassen und Anstieg stehen in
   Kaufen, Verschmelzen.
 * ~~**Bester Aufbau:** Knopf im Umbau und im Squad-Reiter~~ -- am selben Tag
   auf Wunsch des Spielers wieder entfernt (Knopf, `Roster.best_loadout`).
+* **Umbau neu geordnet** (Wunsch des Spielers nach dem ersten Test am
+  Handy): oben FEST die DROME-Auswahl und die Karte des DROME, seine Halter
+  stehen in der Karte direkt unter dem Bild. Darunter eine waagerechte
+  Leiste nur mit Teilen, die frei sind und in diesen DROME passen (keine
+  ausgegrauten Kacheln mehr, `_parts_strip`, `_slots_taking`). Eine Kachel
+  nach oben auf einen Halter ziehen baut ein -- die Seite scrollt dabei
+  nicht mehr mit (waagerecht blaettert die Leiste). Das Teilebild bleibt in
+  seiner Form (`SlotShape.inner_rect`; Dreieck und Fuenfeck fuellen ihr
+  Feld). Die Waffen-Karte zeigt hinter jedem Symbol einen Balken mit Wert --
+  Schaden, Tempo, Reichweite, Faehigkeit --, beim Einbauen im Vergleich zur
+  Waffe im Halter (`WeaponCard.attack_bars`, `StatBar.custom`).
 * **Halter ohne Richtung** (Wunsch des Spielers): "links" und "rechts"
   stehen nirgends mehr. Unter dem Halter steht nur seine Klasse; im Text
   heisst er "Halter", beim Molok "Halter 1" / "Halter 2"

@@ -32,6 +32,15 @@ var value: float = 0.0
 ## Vergleichswert (vorher), -1 = kein Vergleich.
 var compare: float = -1.0
 
+## Fuer Werte ausserhalb der festen Liste (Waffenwerte in der Waffen-Karte):
+## eigener Name, eigene Skala, eigene Farbe, eigener Text statt der Zahl und
+## die Breite der Namensspalte. Leer / 0 = aus SCALE, LABEL, BAR_COLOR.
+var title: String = ""
+var max_value: float = 0.0
+var tint: Color = Color(0, 0, 0, 0)
+var text: String = ""
+var name_width: float = 96.0
+
 var _name: Label
 var _number: Label
 var _bar: Control
@@ -45,6 +54,20 @@ static func make(stat_key: String, stat_value: float, compare_value: float = -1.
 	return bar
 
 
+## Ein Balken fuer einen freien Wert: ``name`` links, ``scale`` = voller
+## Balken, ``shown`` = der Text rechts (leer: die Zahl mit Unterschied).
+static func custom(name: String, stat_value: float, scale: float, color: Color,
+		compare_value: float = -1.0, shown: String = "") -> StatBar:
+	var bar := StatBar.new()
+	bar.title = name
+	bar.value = stat_value
+	bar.max_value = scale
+	bar.tint = color
+	bar.compare = compare_value
+	bar.text = shown
+	return bar
+
+
 func _ready() -> void:
 	custom_minimum_size = Vector2(0, 26)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -54,9 +77,9 @@ func _ready() -> void:
 	row.add_theme_constant_override("separation", 8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(row)
-	_name = UiKit.label(str(LABEL.get(key, key)), UiKit.SMALL, UiKit.MUTED)
+	_name = UiKit.label(title if title != "" else str(LABEL.get(key, key)), UiKit.SMALL, UiKit.MUTED)
 	_name.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_name.custom_minimum_size = Vector2(96, 0)
+	_name.custom_minimum_size = Vector2(name_width, 0)
 	row.add_child(_name)
 	_bar = Control.new()
 	_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -71,6 +94,8 @@ func _ready() -> void:
 
 
 func _number_text() -> String:
+	if text != "":
+		return text
 	if compare < 0.0 or is_equal_approx(compare, value):
 		return str(int(round(value)))
 	return "%d (%+d)" % [int(round(value)), int(round(value - compare))]
@@ -84,13 +109,14 @@ func _number_color() -> Color:
 
 ## Anteil am Balken, 0..1.
 func _share(amount: float) -> float:
-	return clampf(amount / maxf(1.0, float(SCALE.get(key, 100.0))), 0.0, 1.0)
+	var full := max_value if max_value > 0.0 else float(SCALE.get(key, 100.0))
+	return clampf(amount / maxf(0.001, full), 0.0, 1.0)
 
 
 func _draw_bar() -> void:
 	var rect := Rect2(Vector2(0, _bar.size.y * 0.3), Vector2(_bar.size.x, _bar.size.y * 0.4))
 	_bar.draw_rect(rect, Color(1, 1, 1, 0.08), true)
-	var base: Color = BAR_COLOR.get(key, UiKit.ACCENT)
+	var base: Color = tint if tint.a > 0.0 else BAR_COLOR.get(key, UiKit.ACCENT)
 	var now := _share(value) * rect.size.x
 	if compare < 0.0:
 		_bar.draw_rect(Rect2(rect.position, Vector2(now, rect.size.y)), base, true)
