@@ -81,6 +81,49 @@ func _process(_delta: float) -> bool:
 				stop._drop_storage(gs.run, 1, target_slot, drop)
 				print("SMOKE: Modul per Ziehen eingesetzt, Lager %d" % gs.run.storage.size())
 		16:
+			# Spielstand-Auswahl, Hauptmenue, Optionen (10. Nov. 2026).
+			root.get_node("RunStop").free()
+			for scene in ["saves", "main", "settings"]:
+				var node = load("res://scenes/%s.tscn" % scene).instantiate()
+				node.name = "Probe_%s" % scene
+				root.add_child(node)
+			print("SMOKE: Spielstaende, Hauptmenue und Optionen instanziiert")
+		18:
+			for scene in ["saves", "main", "settings"]:
+				root.get_node("Probe_%s" % scene).free()
+			# Lauf vor dem Kampf: Story-Reihe, dann Endlos mit Chaos-Knoten.
+			gs.start_run(4242)
+			gs.run.round = 4
+			gs.run._pick_default_node()
+			var prepare = load("res://scenes/run.tscn").instantiate()
+			prepare.name = "RunPrepare"
+			root.add_child(prepare)
+			print("SMOKE: Lauf (Gegnerwahl) instanziiert, %d Knoten" % gs.run.row().size())
+		20:
+			var prepare = root.get_node("RunPrepare")
+			for seed_value in range(12000, 12200):
+				gs.start_run(seed_value, "endless")
+				gs.run.round = 3
+				gs.run._pick_default_node()
+				if gs.run.row().size() == 4:
+					gs.run.choose_node(3)
+					break
+			prepare._refresh()
+			print("SMOKE: Endlos-Lauf mit Chaos-Knoten: %s" % gs.run.is_chaos())
+		22:
+			root.get_node("RunPrepare").free()
+			gs.begin_run_battle()
+			var battle = load("res://scenes/battle.tscn").instantiate()
+			battle.name = "Battle"
+			root.add_child(battle)
+			print("SMOKE: Kampf instanziiert")
+		26:
+			var battle = root.get_node("Battle")
+			battle._start_fight()
+			print("SMOKE: Kampf gestartet, %d DROMEs" % battle.battle.units.size())
+		40:
+			root.get_node("Battle").free()
+			gs.run = null
 			print("SMOKE_OK")
 			quit(0)
 	return false

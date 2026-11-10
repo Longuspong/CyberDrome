@@ -124,44 +124,100 @@ static func _connected(grid: Grid) -> bool:
 	return seen.size() == free
 
 
-## Spieler unten links, Gegner oben rechts.
+## Die Aufstellungszone einer Seite: ein Streifen am Kartenrand (seit
+## 10. Nov. 2026, Wunsch des Spielers -- vorher ein 3 x 5-Block, der 5 Felder
+## von der Ecke eingerueckt mitten im Feld lag). Der Spieler steht an der
+## Kante unten links, der Gegner an der Kante oben rechts; im Hochformat
+## laeuft der Kampf damit schraeg ueber den Bildschirm statt quer.
+##
+## data/config.json -> "deployment": rows Reihen tief, columns Felder breit
+## (mittig an der Kante), inset Felder Abstand zum Rand.
+##
+## Reihenfolge: die vorderste Reihe (dem Gegner am naechsten) zuerst, in
+## jeder Reihe von der Mitte nach aussen. Die Gegnerzone ist Feld fuer Feld
+## die um die Kartenmitte gedrehte Spielerzone -- gleiche Stelle in der
+## Liste, gespiegeltes Feld. Daran haengt die Fairness im Spiegelkampf.
 static func deployment_zone(grid: Grid, is_player: bool) -> Array[Vector2i]:
-	var deploy := Config.section("deployment")
-	var rows := int(deploy.get("rows", 2))
-	var columns := int(deploy.get("columns", 6))
-	# Abstand der Zonen von den Ecken (Nov. 2026). Im Autobattler ist
-	# Anlaufzeit Zeit ohne Inhalt: in der Ecke standen sich die Squads rund
-	# 22 Felder entfernt gegenueber, und langsame DROMEs kamen erst an, als
-	# der Kampf halb vorbei war. Mit 5 Feldern Einzug sind es etwa 8 bis 12.
-	var inset := clampi(int(deploy.get("inset", 0)), 0,
-		maxi(0, mini(grid.width - columns, grid.height - rows) / 2))
 	var tiles: Array[Vector2i] = []
-	for row in rows:
+	for row in deployment_rows(grid):
+		var columns := range(deployment_columns(grid))
+		var middle := (float(columns.size()) - 1.0) * 0.5
+		columns.sort_custom(func(a: int, b: int):
+			var da := absf(float(a) - middle)
+			var db := absf(float(b) - middle)
+			return da < db if not is_equal_approx(da, db) else a < b)
 		for column in columns:
-			if is_player:
-				tiles.append(Vector2i(inset + column, grid.height - 1 - inset - row))
-			else:
-				tiles.append(Vector2i(grid.width - 1 - inset - column, inset + row))
-
-	# Aufgestellt wird in dieser Reihenfolge -- deshalb steht sie hier und
-	# nicht dem Zufall ueberlassen.
-	#
-	# Isometrisch ist x+y die Bildschirmtiefe: was hoehere Summe hat, liegt
-	# weiter unten. Ohne diese Sortierung faengt jede Zone an ihrer Ecke an,
-	# und beide Squads landen auf den beiden SEITLICHEN Spitzen der Raute --
-	# auf gleicher Hoehe, links und rechts. Der Entwurf will "unten links"
-	# gegen "oben rechts", und genau das faellt heraus, wenn der Spieler von
-	# der tiefsten Kachel seiner Zone aus aufstellt und der Gegner von der
-	# hoechsten seiner.
-	tiles.sort_custom(func(a: Vector2i, b: Vector2i):
-		var da := a.x + a.y
-		var db := b.x + b.y
-		if da != db:
-			return da > db if is_player else da < db
-		# Auch der Gleichstand wird gespiegelt: die Gegnerzone ist die um die
-		# Kartenmitte gedrehte Spielerzone, also laeuft x dort andersherum.
-		# Mit derselben Richtung stand der zweite Gegner eine Reihe weiter vorn
-		# als sein Gegenstueck -- im Echtzeit-Kampf gewann die Spielerseite
-		# dadurch 33 von 40 Spiegelkaempfen.
-		return a.x < b.x if is_player else a.x > b.x)
+			tiles.append(deployment_tile(grid, is_player, row, column))
 	return tiles
+
+
+static func deployment_rows(grid: Grid) -> int:
+	return clampi(int(Config.section("deployment").get("rows", 3)), 1, maxi(1, grid.height / 2 - 1))
+
+
+static func deployment_columns(grid: Grid) -> int:
+	return clampi(int(Config.section("deployment").get("columns", 8)), 1, grid.width)
+
+
+## Das Feld an Reihe ``row`` (0 = vorn, am Gegner) und Spalte ``column``
+## (0 = links aus Sicht des Spielers) der Zone einer Seite.
+static func deployment_tile(grid: Grid, is_player: bool, row: int, column: int) -> Vector2i:
+	var rows := deployment_rows(grid)
+	var columns := deployment_columns(grid)
+	var inset := clampi(int(Config.section("deployment").get("inset", 1)), 0,
+		maxi(0, grid.height / 2 - rows))
+	var left := (grid.width - columns) / 2
+	var tile := Vector2i(left + column, grid.height - inset - rows + row)
+	return tile if is_player else mirror(grid, tile)
+
+
+## Die Standard-Aufstellung fuer ``roles`` (die Rollen der DROMEs in der
+## Reihenfolge des Squads): wer vorn steht und wie weit die Figuren
+## auseinander. Gibt je DROME {row, column} zurueck.
+##
+##   Reihe    Frontlinie vorn, Plaenkler in der Mitte, Wirker und
+##            Scharfschuetze hinten.
+##   Spalte   gleichmaessig ueber die Breite verteilt, jeder in einer eigenen
+##            Spalte; die Mitte bekommt, wer weiter vorn steht.
+##
+## Vorher standen alle Schulter an Schulter auf den vordersten Feldern --
+## vier Figuren uebereinander, die man mit dem Finger nicht auseinanderbekam.
+const ROLE_ROW := {"vanguard": 0, "skirmisher": 1, "": 1, "controller": 2, "sniper": 2}
+
+static func default_formation(grid: Grid, roles: Array) -> Array:
+	var rows := deployment_rows(grid)
+	var columns := deployment_columns(grid)
+	var count := roles.size()
+	var out: Array = []
+	out.resize(count)
+	# Wer weiter vorn steht, waehlt zuerst (stabil in Squad-Reihenfolge).
+	var order := range(count)
+	order.sort_custom(func(a: int, b: int):
+		var ra: int = ROLE_ROW.get(roles[a], 1)
+		var rb: int = ROLE_ROW.get(roles[b], 1)
+		return ra < rb if ra != rb else a < b)
+	# Die Spalten: gleichmaessig verteilt, die mittleren zuerst.
+	var spread: Array = []
+	for i in mini(count, columns):
+		spread.append(clampi(int(floor((float(i) + 0.5) * float(columns) / float(mini(count, columns)))),
+			0, columns - 1))
+	var middle := (float(columns) - 1.0) * 0.5
+	spread.sort_custom(func(a: int, b: int):
+		var da := absf(float(a) - middle)
+		var db := absf(float(b) - middle)
+		return da < db if not is_equal_approx(da, db) else a < b)
+	var taken := {}
+	for n in order.size():
+		var index: int = order[n]
+		var row := mini(int(ROLE_ROW.get(roles[index], 1)), rows - 1)
+		var column: int = spread[n % spread.size()] if not spread.is_empty() else 0
+		# Mehr DROMEs als Spalten: das naechste freie Feld der Zone.
+		var guard := 0
+		while taken.has(Vector2i(row, column)) and guard < rows * columns:
+			column = (column + 1) % columns
+			if column == 0:
+				row = (row + 1) % rows
+			guard += 1
+		taken[Vector2i(row, column)] = true
+		out[index] = {"row": row, "column": column}
+	return out

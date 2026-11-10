@@ -688,7 +688,8 @@ func _elite_win(seed_value: int, last: bool = false) -> RunState:
 	var run := RunState.start(seed_value)
 	if last:
 		run.round = RunState.rounds_total()
-	run.choose_tier(RunState.Tier.ELITE)
+	# Die Stufe direkt: Elite steht nicht in jeder Reihe zur Wahl.
+	run.tier = RunState.Tier.ELITE
 	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_hammer"])
 	return run
 

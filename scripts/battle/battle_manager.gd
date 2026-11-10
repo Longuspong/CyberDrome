@@ -38,7 +38,7 @@ var time: float = 0.0
 var ticks: int = 0
 
 ## Die Ausruestungs-Typen der Gegner dieses Gefechts -- der Beute-Pool des
-## Chaos-Virus. Steht schon beim Aufbau fest und ueberlebt den Tod der Gegner,
+## Laufs. Steht schon beim Aufbau fest und ueberlebt den Tod der Gegner,
 ## damit die Beute-Rechnung nach dem Sieg noch weiss, WAS zu erbeuten war.
 var enemy_equipment: Array = []
 
@@ -60,7 +60,7 @@ var _time_limit: float = 180.0
 ## ``enemy_override``: feste Gegner statt gewuerfelter -- fuer Spiegel- und
 ## Fairness-Tests (dasselbe Squad auf beiden Seiten).
 ## ``region_id``: feste Region (Lauf: das Gebiet des Laufs). Leer = aus dem
-## Seed gewuerfelt (Chaos-Virus, Tests).
+## Seed gewuerfelt (Tests, Direktstart).
 func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 		region_id: StringName = &"") -> void:
 	battle_seed = seed_value
@@ -78,23 +78,13 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 	grid = MapGenerator.generate(region)
 	MapGenerator.place_obstacles(grid, battle_seed)
 
-	# Der Gegner spiegelt normalerweise den eigenen Squad (Anzahl und Staerke).
-	# Im Chaos-Virus entkoppeln GameState.chaos_* das: der Gegner tritt in voller
-	# Staerke an (chaos_reference_power), unabhaengig davon, wie wenige DROMEs man
-	# selbst mitnimmt -- genau das ist die Erschwernis, an der die Beute haengt.
-	var enemy_count := player_builds.size()
-	var target_power := DromeBuild.squad_power(player_builds)
-	if GameState.chaos_enemy_count > 0:
-		enemy_count = GameState.chaos_enemy_count
-	if GameState.chaos_reference_power > 0.0:
-		# Etwas schwaecher als die volle eigene Mannschaft: im Chaos-Virus sieht
-		# man den Gegner vorher nicht (chaos.enemy_power_factor). Das Handicap und
-		# damit die Beute rechnen weiter gegen die volle Referenz.
-		target_power = GameState.chaos_reference_power \
-			* float(Config.section("chaos").get("enemy_power_factor", 1.0))
+	# Ohne feste Gegner (Direktstart der Kampfszene, Tests, Werkzeuge) wird
+	# ein Squad in der Staerke des eigenen gewuerfelt. Im Spiel selbst kommen
+	# die Gegner immer vom Lauf (GameState.enemy_override).
 	var enemy_builds: Array = enemy_override
 	if enemy_builds.is_empty():
-		enemy_builds = EnemyGenerator.new(battle_seed).generate(enemy_count, target_power)
+		enemy_builds = EnemyGenerator.new(battle_seed).generate(player_builds.size(),
+			DromeBuild.squad_power(player_builds))
 	enemy_equipment = _distinct_equipment(enemy_builds)
 
 	units.clear()
@@ -165,12 +155,9 @@ static func _region_for(rng: RandomNumberGenerator, region_id: StringName) -> Te
 		push_warning("BattleManager: unbekannte Region '%s', gewuerfelt" % region_id)
 	return drawn
 
-## Wie weit vorn eine Rolle in der Aufstellung steht: Frontlinie zuerst,
-## Scharfschuetze zuletzt. Ohne eigenes Zutun des Spielers steht damit der
-## Molok vorn und der Strix hinten -- auf beiden Seiten.
-const FRONT_ORDER := {"vanguard": 0, "skirmisher": 1, "": 2, "controller": 3, "sniper": 4}
-
-
+## Stellt eine Seite auf: nach Rolle gestaffelt und ueber die Breite der Zone
+## verteilt (MapGenerator.default_formation) -- der Molok vorn in der Mitte,
+## der Strix hinten aussen, auf beiden Seiten spiegelgleich.
 func _spawn(builds: Array, is_player: bool) -> void:
 	var zone := deployment_tiles(is_player)
 	var prefix := "P" if is_player else "E"
@@ -179,16 +166,12 @@ func _spawn(builds: Array, is_player: bool) -> void:
 	for build in builds:
 		created.append(Unit.create(build, StringName("%s%d" % [prefix, index]), is_player))
 		index += 1
-	# Die Reihenfolge der Aufstellung nach Rolle, stabil innerhalb einer Rolle.
-	var ordered := created.duplicate()
-	ordered.sort_custom(func(a, b):
-		var ra: int = FRONT_ORDER.get(a.ai_role(), 2)
-		var rb: int = FRONT_ORDER.get(b.ai_role(), 2)
-		if ra != rb:
-			return ra < rb
-		return created.find(a) < created.find(b))
-	for unit in ordered:
-		var tile := _free_deployment_tile(zone, unit)
+	var spots := MapGenerator.default_formation(grid, created.map(func(u): return u.ai_role()))
+	for i in created.size():
+		var unit: Unit = created[i]
+		var tile := MapGenerator.deployment_tile(grid, is_player, spots[i]["row"], spots[i]["column"])
+		if not grid.can_stand_on(tile, unit.unit_id):
+			tile = _free_deployment_tile(zone, unit)
 		unit.place_at(tile)
 		unit.set_facing("north" if is_player else "south")
 		grid.set_occupant(tile, unit.unit_id)
@@ -209,23 +192,10 @@ func _distinct_equipment(builds: Array) -> Array:
 	return ids
 
 
-## Die Aufstellungszone einer Seite, vorderstes Feld zuerst (dem Gegner am
-## naechsten).
+## Die Aufstellungszone einer Seite, vorderste Reihe zuerst (dem Gegner am
+## naechsten), in jeder Reihe von der Mitte nach aussen.
 func deployment_tiles(is_player: bool) -> Array[Vector2i]:
-	var zone := MapGenerator.deployment_zone(grid, is_player)
-	var foe_zone := MapGenerator.deployment_zone(grid, not is_player)
-	var center := Vector2.ZERO
-	for tile in foe_zone:
-		center += Vector2(tile)
-	center /= maxf(1.0, float(foe_zone.size()))
-	var ranked := zone.duplicate()
-	ranked.sort_custom(func(a: Vector2i, b: Vector2i):
-		var da := Vector2(a).distance_to(center)
-		var db := Vector2(b).distance_to(center)
-		if not is_equal_approx(da, db):
-			return da < db
-		return zone.find(a) < zone.find(b))
-	return ranked
+	return MapGenerator.deployment_zone(grid, is_player)
 
 
 ## Aufstellung vor dem Kampf: einen eigenen DROME auf ein Feld der eigenen

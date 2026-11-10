@@ -26,7 +26,6 @@ func run(count: int, detail_seed: int) -> void:
 	for i in count:
 		var seed_value := 5000 + i
 		_detail = seed_value == detail_seed
-		GameState.configure_chaos_run(builds.size(), DromeBuild.squad_power(builds))
 		var result := _play(seed_value, builds)
 		seconds += float(result["seconds"])
 		first_contact += float(result["first_contact"])

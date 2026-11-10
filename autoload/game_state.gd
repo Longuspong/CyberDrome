@@ -14,19 +14,42 @@ extends Node
 ## naechste Gefecht ziehen (``in_squad``). Der Kampf liest weiter ``squad`` und
 ## merkt von der Besitz-Schicht nichts.
 
-## Wohin das Spiel schreibt (v2: Inventar + Roster).
-const ROSTER_PATH := "user://roster.json"
+## ### Spielstaende (10. Nov. 2026, Wunsch des Spielers)
+##
+## Es gibt SLOT_COUNT Spielstaende. Jeder liegt in einem eigenen Ordner
+## (``user://slot1/`` ...) mit drei Dateien: Hangar (roster.json), laufender
+## Lauf (run.json) und Fortschritt (progress.json). Welcher zuletzt gespielt
+## wurde, steht in ``user://slots.json``. Beim Start waehlt der Spieler einen
+## aus (scenes/saves.tscn); bis dahin ist ``slot`` 0 und nichts wird
+## geschrieben. Die Optionen (user://settings.json) gelten fuer alle.
+const SLOT_COUNT := 3
+const ROSTER_FILE := "roster.json"
+const RUN_FILE := "run.json"
+const PROGRESS_FILE := "progress.json"
+const META_FILE := "slots.json"
 
-## Altformate, aus denen migriert wird. ``SQUAD_PATH`` ist der fruehere
-## Wegwerf-Squad des Spiels; ``WORKSHOP_SQUAD_PATH`` liefert die SVG-Werkstatt
-## (python3 main.py) neben die Builds. Beide tragen das v1-Loadout-Format. Der
-## neuere der drei Dateien gewinnt beim Start, damit ein frisch gebauter Squad
-## nicht von einem alten Stand verdeckt wird -- und ein v1-Squad wird dabei
-## einmalig in den Roster ueberfuehrt.
+## Der Stand vor den Spielstaenden: eine Datei je Art direkt in user://. Wird
+## beim ersten Start einmal in Spielstand 1 ueberfuehrt.
+const LEGACY_ROSTER_PATH := "user://roster.json"
+const LEGACY_RUN_PATH := "user://run.json"
+
+## Altformat v1 (Wegwerf-Squad) und der Export der SVG-Werkstatt
+## (python3 main.py). Der neuere von Spielstand und Werkstatt-Export gewinnt
+## beim Laden, damit ein frisch gebauter Squad nicht von einem alten Stand
+## verdeckt wird -- ein v1-Squad wird dabei einmalig in den Roster ueberfuehrt.
 const SQUAD_PATH := "user://squad.json"
-## Der laufende Lauf (10. Nov. 2026) -- uebersteht Neuladen.
-const RUN_PATH := "user://run.json"
 const WORKSHOP_SQUAD_PATH := "res://builds/squad.json"
+
+## Wo die Spielstaende liegen. Tests legen sie in einen eigenen Ordner.
+var save_root: String = "user://"
+
+## Der gewaehlte Spielstand, 1..SLOT_COUNT. 0 = noch keiner -- dann lebt der
+## Bestand nur im Speicher.
+var slot: int = 0
+
+## Nur fuer Tests: Speichern erzwingen (true) oder verbieten (false), obwohl
+## ein Testlauf sonst nie schreibt. null = die normale Regel.
+var persistence_override = null
 
 ## Der Besitz: Inventar (Instanzen) + Roster (DROMEs). Quelle der Wahrheit.
 var roster: Roster = Roster.new()
@@ -52,35 +75,47 @@ var formation: Array = []
 ## Ergebnis des letzten Kampfes, fuer den Ergebnisbildschirm
 var last_result: Dictionary = {}
 
-# --- Chaos-Virus: Risiko/Beute (§Chaos) ------------------------------------
-#
-# Die Bit-Auswahl setzt diese Werte vor dem Start; der Kampf und die Beute
-# lesen sie. Bei 0 laeuft der Kampf im alten Spiegel-Modus (Gegner = eigener
-# Squad) -- so bleibt ein Direktstart der Kampfszene (Tests, Werkzeuge) ohne
-# Chaos-Kontext gueltig und wirft keine Beute ab.
+## Die Art des naechsten Laufs, vom Hauptmenue gesetzt: "story" oder
+## "endless". Der Lauf-Bildschirm startet damit.
+var next_run_mode: String = "story"
 
-## Wie viele Gegner der Chaos-Virus aufstellt (das volle Feld, unabhaengig von
-## der eigenen Auswahl). 0 = Spiegel-Modus.
-var chaos_enemy_count: int = 0
+## Fortschritt des Spielstands ueber Laeufe hinweg: {story_cleared: bool}.
+## Wer Neon City gewinnt, schaltet den Endlos-Modus frei (NEUANFANG 6h).
+var progress: Dictionary = {}
 
-## Der Referenz-Kampfwert: die Staerke ALLER kampftauglichen eigenen DROMEs.
-## Der Gegner wird darauf skaliert, nicht auf den reduzierten Squad -- sonst
-## waere ein kleinerer Squad keine Erschwernis, sondern nur ein schwaecherer
-## Gegner. 0 = Spiegel-Modus (kein Handicap, keine Beute).
-var chaos_reference_power: float = 0.0
-
-## Erfolglose Siege in Folge -- der Pity-Zaehler. Ab der Schwelle
-## (config chaos.loot_pity_threshold) ist der naechste Sieg ein garantierter
-## Drop. Ueberlebt den Programmlauf nur bei aktiver Persistenz.
-var chaos_pity: int = 0
-
-## Die Teile-Typen, die der letzte Sieg abgeworfen hat -- fuer den
-## Ergebnisbildschirm. Array[StringName].
-var last_loot: Array = []
+## Hat der gerade beendete Lauf den Endlos-Modus freigeschaltet? Nur fuer die
+## Anzeige am Ende des Laufs.
+var just_unlocked_endless: bool = false
 
 
 func _ready() -> void:
-	load_roster()
+	boot()
+
+
+## Beim Programmstart: ohne Persistenz der frische Startbestand; sonst der
+## zuletzt gespielte Spielstand, damit ein Direktstart einer Szene (Editor,
+## Neuladen im Browser) nicht leer dasteht. Gewaehlt wird in scenes/saves.tscn.
+func boot() -> void:
+	slot = 0
+	run = null
+	progress = {}
+	if not _persistence_enabled():
+		if not _is_tool_run() and persistence_override == null:
+			_wipe_saves()
+		roster = Roster.new()
+		roster.seed_starter()
+		refresh_squad()
+		print("[GameState] Persistenz aus -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
+			% [roster.entries.size(), roster.all_instances().size()])
+		return
+	_migrate_legacy()
+	var last := int(_read_meta().get("last", 0))
+	if last >= 1 and last <= SLOT_COUNT and slot_exists(last):
+		select_slot(last)
+	else:
+		roster = Roster.new()
+		roster.seed_starter()
+		refresh_squad()
 
 
 func new_seed() -> int:
@@ -106,12 +141,11 @@ func refresh_squad() -> void:
 # Persistenz
 # ---------------------------------------------------------------------------
 
-## Ob ueberhaupt auf die Platte geschrieben und von dort geladen wird. In der
-## Dev-Phase steht ``save_enabled`` in data/config.json auf false: dann bleibt
-## der Roster ein reiner Laufzeit-Bestand, jeder Start beginnt frisch. Die
-## ganze Persistenz haengt an diesem einen Schalter -- umlegen genuegt, sobald
-## Spielstaende gewollt sind.
+## Ob ueberhaupt auf die Platte geschrieben und von dort geladen wird
+## (``save_enabled`` in data/config.json). Tests und Werkzeuge schreiben nie.
 func _persistence_enabled() -> bool:
+	if persistence_override != null:
+		return bool(persistence_override)
 	if _is_tool_run():
 		return false
 	return bool(Config.get_value("save_enabled", false))
@@ -126,67 +160,147 @@ static func _is_tool_run() -> bool:
 	return false
 
 
-func save_roster() -> void:
-	# refresh_squad() IMMER: der Kampf liest die abgeleitete Squad-Liste, und die
-	# Garage ruft save_roster() nach jeder Aenderung genau dafuer -- unabhaengig
-	# davon, ob der Stand auch auf die Platte geht.
-	refresh_squad()
-	if not _persistence_enabled():
-		return
-	var file := FileAccess.open(ROSTER_PATH, FileAccess.WRITE)
-	if file == null:
-		push_error("GameState: %s nicht schreibbar" % ROSTER_PATH)
-		return
-	file.store_string(JSON.stringify(roster.to_dict(), "  "))
+func slot_dir(which: int) -> String:
+	return "%sslot%d/" % [save_root, which]
 
 
-func load_roster() -> void:
-	# Persistenz aus (Dev-Phase): frisch starten und einen alten Stand wegraeumen,
-	# statt ihn zu laden. So kann ein kaputter Spielstand aus einer aelteren
-	# Version das Spiel nicht mehr in einen unbrauchbaren Zustand ziehen.
-	if not _persistence_enabled():
-		if not _is_tool_run():
-			_wipe_saves()
+func _slot_file(which: int, file_name: String) -> String:
+	return slot_dir(which) + file_name
+
+
+func slot_exists(which: int) -> bool:
+	return FileAccess.file_exists(_slot_file(which, ROSTER_FILE))
+
+
+## Waehlt einen Spielstand und laedt ihn. Ein leerer beginnt mit dem
+## Startbestand und wird gleich angelegt.
+func select_slot(which: int) -> void:
+	slot = clampi(which, 1, SLOT_COUNT)
+	run = null
+	progress = {}
+	just_unlocked_endless = false
+	formation = []
+	editing_index = -1
+	if _persistence_enabled():
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(slot_dir(slot)))
+		_write_json(save_root + META_FILE, {"last": slot})
+	load_roster()
+
+
+## Loescht einen Spielstand ganz. War es der gewaehlte, ist danach keiner
+## gewaehlt (frischer Bestand im Speicher).
+func delete_slot(which: int) -> void:
+	for file_name in [ROSTER_FILE, RUN_FILE, PROGRESS_FILE]:
+		_remove(_slot_file(which, file_name))
+	if which == slot:
+		slot = 0
+		run = null
+		progress = {}
+		roster = Roster.new()
 		roster.seed_starter()
 		refresh_squad()
-		print("[GameState] Persistenz aus -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
-			% [roster.entries.size(), roster.all_instances().size()])
+
+
+## Was auf der Karte eines Spielstands steht, ohne ihn zu laden:
+## {exists, dromes, squad, level (Schnitt der DROME-Level), run (Text zum
+## laufenden Lauf oder ""), story_cleared}.
+func slot_summary(which: int) -> Dictionary:
+	var out := {"exists": false, "dromes": 0, "squad": 0, "level": 0.0, "run": "",
+		"story_cleared": false}
+	if not _persistence_enabled() or not slot_exists(which):
+		return out
+	var data = _read_json(_slot_file(which, ROSTER_FILE))
+	if data == null:
+		return out
+	out["exists"] = true
+	var entries: Array = data.get("roster", [])
+	out["dromes"] = entries.size()
+	var levels := 0
+	for entry in entries:
+		if entry is Dictionary:
+			levels += int(entry.get("level", 0))
+			if bool(entry.get("in_squad", false)):
+				out["squad"] += 1
+	out["level"] = float(levels) / float(maxi(1, entries.size()))
+	var saved_run = _read_json(_slot_file(which, RUN_FILE)) \
+		if FileAccess.file_exists(_slot_file(which, RUN_FILE)) else null
+	if saved_run != null and int(saved_run.get("phase", 0)) not in [RunState.Phase.WON, RunState.Phase.LOST]:
+		out["run"] = "%s, Runde %d" % ["Endlos" if str(saved_run.get("mode", "story")) == "endless"
+			else "Neon City", int(saved_run.get("round", 1))]
+	var saved_progress = _read_json(_slot_file(which, PROGRESS_FILE)) \
+		if FileAccess.file_exists(_slot_file(which, PROGRESS_FILE)) else null
+	if saved_progress != null:
+		out["story_cleared"] = bool(saved_progress.get("story_cleared", false))
+	return out
+
+
+func save_roster() -> void:
+	# refresh_squad() IMMER: der Kampf liest die abgeleitete Squad-Liste, und der
+	# Hangar ruft save_roster() nach jeder Aenderung genau dafuer -- unabhaengig
+	# davon, ob der Stand auch auf die Platte geht.
+	refresh_squad()
+	if not _persistence_enabled() or slot == 0:
+		return
+	_write_json(_slot_file(slot, ROSTER_FILE), roster.to_dict(), true)
+
+
+## Laedt den Hangar des gewaehlten Spielstands, danach Lauf und Fortschritt.
+func load_roster() -> void:
+	roster = Roster.new()
+	if not _persistence_enabled() or slot == 0:
+		roster.seed_starter()
+		refresh_squad()
 		return
 
 	var path := _newest_save_file()
 	if path == "":
-		# Ein frischer Start: der handgesetzte Startbestand (§10g).
+		# Ein frischer Spielstand: der handgesetzte Startbestand (§10g), gleich
+		# abgelegt -- sonst gaebe es ihn in der Auswahl noch nicht.
 		roster.seed_starter()
-		# Gleich ablegen: ein Lauf ohne gespeicherten Hangar wuerde sonst beim
-		# naechsten Start nicht gefunden.
 		save_roster()
-		print("[GameState] Kein Spielstand -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
-			% [roster.entries.size(), roster.all_instances().size()])
+		print("[GameState] Spielstand %d neu -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
+			% [slot, roster.entries.size(), roster.all_instances().size()])
+		load_progress()
 		load_run()
 		return
 
 	var parsed = _read_json(path)
-	if parsed == null:
-		roster.seed_starter()
-		refresh_squad()
-		return
-
 	# v2 (Roster) direkt laden; ein v1-Stand (Wegwerf-Squad, auch der SVG-Export)
 	# wird migriert und beim naechsten Speichern als v2 abgelegt.
 	var loaded := false
-	if int(parsed.get("version", 0)) >= 2:
-		loaded = roster.load_dict(parsed)
-	else:
-		loaded = roster.migrate_v1(parsed)
-		if loaded:
-			print("[GameState] v1-Squad aus %s in den Roster ueberfuehrt" % path)
+	if parsed != null:
+		if int(parsed.get("version", 0)) >= 2:
+			loaded = roster.load_dict(parsed)
+		else:
+			loaded = roster.migrate_v1(parsed)
+			if loaded:
+				print("[GameState] v1-Squad aus %s in den Roster ueberfuehrt" % path)
 	if not loaded:
+		roster = Roster.new()
 		roster.seed_starter()
 
 	refresh_squad()
-	print("[GameState] Roster aus %s: %d DROMEs, %d im Squad"
-		% [path, roster.entries.size(), roster.squad_count()])
+	print("[GameState] Spielstand %d aus %s: %d DROMEs, %d im Squad"
+		% [slot, path, roster.entries.size(), roster.squad_count()])
+	load_progress()
 	load_run()
+
+
+func save_progress() -> void:
+	if not _persistence_enabled() or slot == 0:
+		return
+	_write_json(_slot_file(slot, PROGRESS_FILE), progress)
+
+
+func load_progress() -> void:
+	progress = {}
+	if not _persistence_enabled() or slot == 0:
+		return
+	var path := _slot_file(slot, PROGRESS_FILE)
+	if FileAccess.file_exists(path):
+		var parsed = _read_json(path)
+		if parsed != null:
+			progress = parsed
 
 
 func _read_json(path: String):
@@ -200,17 +314,55 @@ func _read_json(path: String):
 	return parsed
 
 
-## Raeumt die beschreibbaren Spielstaende weg (der Reset). Nur die ``user://``-
-## Dateien: der Werkstatt-Export unter ``res://builds`` ist Entwickler-Material
-## und im Export ohnehin schreibgeschuetzt. Fehlt eine Datei, ist nichts zu tun.
+func _write_json(path: String, data: Dictionary, pretty: bool = false) -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(path.get_base_dir()))
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		push_error("GameState: %s nicht schreibbar" % path)
+		return
+	file.store_string(JSON.stringify(data, "  " if pretty else ""))
+
+
+func _remove(path: String) -> void:
+	if FileAccess.file_exists(path):
+		var err := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+		if err != OK:
+			push_warning("GameState: %s liess sich nicht entfernen (%d)" % [path, err])
+
+
+func _read_meta() -> Dictionary:
+	var path := save_root + META_FILE
+	if not FileAccess.file_exists(path):
+		return {}
+	var parsed = _read_json(path)
+	return parsed if parsed != null else {}
+
+
+## Der Stand von vor den Spielstaenden (eine Datei direkt in user://) zieht
+## einmal in Spielstand 1 um -- wer schon gespielt hat, verliert nichts.
+func _migrate_legacy() -> void:
+	if save_root != "user://" or not FileAccess.file_exists(LEGACY_ROSTER_PATH):
+		return
+	if not slot_exists(1):
+		for pair in [[LEGACY_ROSTER_PATH, ROSTER_FILE], [LEGACY_RUN_PATH, RUN_FILE]]:
+			var data = _read_json(pair[0]) if FileAccess.file_exists(pair[0]) else null
+			if data != null:
+				_write_json(_slot_file(1, pair[1]), data)
+		_write_json(save_root + META_FILE, {"last": 1})
+		print("[GameState] alter Spielstand nach Spielstand 1 ueberfuehrt")
+	_remove(LEGACY_ROSTER_PATH)
+	_remove(LEGACY_RUN_PATH)
+
+
+## Raeumt alle Spielstaende weg (Persistenz in der Konfiguration aus). Nur
+## die ``user://``-Dateien: der Werkstatt-Export unter ``res://builds`` ist
+## Entwickler-Material und im Export ohnehin schreibgeschuetzt.
 func _wipe_saves() -> void:
-	for path in [ROSTER_PATH, SQUAD_PATH, RUN_PATH]:
-		if FileAccess.file_exists(path):
-			var err := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-			if err == OK:
-				print("[GameState] alter Spielstand entfernt: %s" % path)
-			else:
-				push_warning("GameState: %s liess sich nicht entfernen (%d)" % [path, err])
+	for which in range(1, SLOT_COUNT + 1):
+		for file_name in [ROSTER_FILE, RUN_FILE, PROGRESS_FILE]:
+			_remove(_slot_file(which, file_name))
+	for path in [save_root + META_FILE, LEGACY_ROSTER_PATH, LEGACY_RUN_PATH, SQUAD_PATH]:
+		_remove(path)
 
 
 ## Der neuere von Spielstand und Werkstatt-Export -- so muss der Spieler nicht
@@ -218,7 +370,7 @@ func _wipe_saves() -> void:
 func _newest_save_file() -> String:
 	var newest := ""
 	var newest_time := -1
-	for path in [ROSTER_PATH, SQUAD_PATH, WORKSHOP_SQUAD_PATH]:
+	for path in [_slot_file(slot, ROSTER_FILE), WORKSHOP_SQUAD_PATH]:
 		if not FileAccess.file_exists(path):
 			continue
 		var mtime := FileAccess.get_modified_time(ProjectSettings.globalize_path(path))
@@ -242,11 +394,11 @@ func squad_is_valid() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Chaos-Virus: Risiko/Beute
+# Kampfbereit
 # ---------------------------------------------------------------------------
 
 ## Alle kampftauglichen DROMEs des Rosters -- die Grundgesamtheit, aus der die
-## Bit-Auswahl schoepft und an der sich die Referenz-Staerke bemisst.
+## Aufstellung vor dem Lauf schoepft.
 func battle_ready_builds() -> Array:
 	var builds: Array = []
 	for entry in roster.entries:
@@ -256,13 +408,10 @@ func battle_ready_builds() -> Array:
 	return builds
 
 
-## Setzt die Parameter eines Chaos-Laufs: der Gegner tritt mit ``enemy_count``
-## DROMEs an, skaliert auf ``reference_power`` (die Staerke der VOLLEN eigenen
-## Mannschaft). Danach ist chaos_handicap() aussagekraeftig und die Beute knuepft
-## daran an.
-func configure_chaos_run(enemy_count: int, reference_power: float) -> void:
-	chaos_enemy_count = maxi(0, enemy_count)
-	chaos_reference_power = maxf(0.0, reference_power)
+## Ist der Endlos-Modus frei? Nach dem ersten gewonnenen Lauf in Neon City --
+## oder mit dem Testschalter in den Optionen (``unlock_all``).
+func endless_unlocked() -> bool:
+	return bool(progress.get("story_cleared", false)) or bool(progress.get("unlock_all", false))
 
 
 # --- Lauf (Roguelike) --------------------------------------------------------
@@ -286,9 +435,10 @@ var in_run_battle: bool = false
 
 
 ## Startet einen Lauf mit den DROMEs, die gerade im Squad sind.
-func start_run(seed_value: int = 0) -> void:
+func start_run(seed_value: int = 0, mode: String = "story") -> void:
 	refresh_squad()
-	run = RunState.start(seed_value if seed_value != 0 else randi(), squad)
+	just_unlocked_endless = false
+	run = RunState.start(seed_value if seed_value != 0 else randi(), squad, mode)
 	save_run()
 
 
@@ -297,25 +447,23 @@ func start_run(seed_value: int = 0) -> void:
 ## Kampfende). Ein Kampf selbst wird nicht gespeichert: wer mittendrin
 ## schliesst, steht danach wieder vor demselben Kampf.
 func save_run() -> void:
-	if not _persistence_enabled():
+	if not _persistence_enabled() or slot == 0:
 		return
 	if run == null:
-		if FileAccess.file_exists(RUN_PATH):
-			DirAccess.remove_absolute(ProjectSettings.globalize_path(RUN_PATH))
+		_remove(_slot_file(slot, RUN_FILE))
 		return
-	var file := FileAccess.open(RUN_PATH, FileAccess.WRITE)
-	if file == null:
-		push_error("GameState: %s nicht schreibbar" % RUN_PATH)
-		return
-	file.store_string(JSON.stringify(run.to_dict()))
+	_write_json(_slot_file(slot, RUN_FILE), run.to_dict())
 
 
-## Holt einen gespeicherten Lauf zurueck (beim Start, nach dem Roster).
+## Holt einen gespeicherten Lauf zurueck (nach dem Hangar).
 func load_run() -> void:
 	run = null
-	if not _persistence_enabled() or not FileAccess.file_exists(RUN_PATH):
+	if not _persistence_enabled() or slot == 0:
 		return
-	var parsed = _read_json(RUN_PATH)
+	var path := _slot_file(slot, RUN_FILE)
+	if not FileAccess.file_exists(path):
+		return
+	var parsed = _read_json(path)
 	if parsed == null:
 		return
 	run = RunState.from_dict(parsed)
@@ -326,14 +474,17 @@ func load_run() -> void:
 		print("[GameState] Lauf fortgesetzt: Runde %d, %d Leben" % [run.round, run.lives])
 
 
-## Setzt den ganzen Spielstand zurueck: Hangar, Lauf, alles (Optionen).
+## Setzt den gewaehlten Spielstand zurueck: Hangar, Lauf, Fortschritt
+## (Optionen). Die anderen Spielstaende bleiben.
 func reset_progress() -> void:
-	if not _is_tool_run():
-		_wipe_saves()
 	run = null
+	progress = {}
+	just_unlocked_endless = false
 	roster = Roster.new()
 	roster.seed_starter()
 	save_roster()
+	save_run()
+	save_progress()
 
 
 ## Bringt die nach Hause geschickte Beute ins Inventar: Teile als neue
@@ -384,7 +535,6 @@ func begin_run_battle() -> void:
 	battle_seed = run.battle_seed()
 	battle_region = run.region_id
 	enemy_override = run.enemies().map(func(b): return b.clone())
-	configure_chaos_run(enemy_override.size(), run.enemy_power())
 
 
 ## Nimmt das Kampfergebnis zurueck in den Lauf und raeumt die Kampfparameter
@@ -393,14 +543,20 @@ func finish_run_battle(outcome: int, enemy_pool: Array, fighters: Array = []) ->
 	if run != null:
 		run.collect_xp(fighters, outcome == BattleManager.Outcome.VICTORY)
 		run.record_result(outcome, enemy_pool)
-		# Beute, die nicht mehr in Lager oder Squad passte, gleich nach Hause.
-		if not run.is_over():
+		# Beute, die nicht mehr in Lager oder Squad passte, gleich nach Hause --
+		# im Endlos-Modus erst am Ende (wer verliert, verliert sie).
+		if not run.is_over() and not run.is_endless():
 			deliver_run_home()
+		# Neon City gewonnen: der Endlos-Modus ist frei.
+		if run.phase == RunState.Phase.WON and not run.is_endless() \
+				and not bool(progress.get("story_cleared", false)):
+			progress["story_cleared"] = true
+			just_unlocked_endless = true
+			save_progress()
 	in_run_battle = false
 	enemy_override = []
 	battle_region = &""
 	battle_seed = 0
-	clear_chaos_run()
 	refresh_squad()
 	save_run()
 
@@ -432,39 +588,3 @@ func credit_run_xp() -> Array:
 			"kind": "weapon", "gain": int(weapons[uid]), "xp": owned.xp, "level": owned.level, "up": up})
 	save_roster()
 	return out
-
-
-## Zuruecksetzen auf den Spiegel-Modus -- nach einem Lauf, damit ein spaeterer
-## Direktstart der Kampfszene nicht die Chaos-Parameter erbt. Pity und die
-## letzte Beute bleiben (der Zaehler soll ja ueber Laeufe hinweg zaehlen).
-func clear_chaos_run() -> void:
-	chaos_enemy_count = 0
-	chaos_reference_power = 0.0
-
-
-## Das Handicap des aktuellen Squads gegen die Referenz: 0 = volle Mannschaft,
-## ~1 = fast allein. Daran haengt die Beute-Chance (ChaosLoot.drop_chance).
-func chaos_handicap() -> float:
-	if chaos_reference_power <= 0.0:
-		return 0.0
-	var mine := DromeBuild.squad_power(squad)
-	return clampf(1.0 - mine / chaos_reference_power, 0.0, 1.0)
-
-
-## Vergibt die Beute eines gewonnenen Chaos-Gefechts. ``enemy_pool`` sind die
-## Ausruestungs-Typen der besiegten Gegner -- was man erbeutet, kommt aus IHNEN.
-## Faellt nichts, waechst der Pity-Zaehler; faellt etwas, wandert es als neue
-## Instanz ins Inventar und der Zaehler geht zurueck. Gibt die gefallenen Typen
-## zurueck (auch fuer den Ergebnisbildschirm ueber ``last_loot``).
-func roll_chaos_loot(enemy_pool: Array, rng: RandomNumberGenerator) -> Array:
-	var count := ChaosLoot.roll_count(chaos_handicap(), chaos_pity, rng)
-	var dropped := ChaosLoot.pick(enemy_pool, count, rng)
-	if dropped.is_empty():
-		chaos_pity += 1
-	else:
-		chaos_pity = 0
-		for part_id in dropped:
-			roster.add_instance(part_id)
-	last_loot = dropped
-	save_roster()
-	return dropped

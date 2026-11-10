@@ -118,7 +118,8 @@ func test_run_xp_is_collected_and_credited_at_home_at_the_end() -> void:
 	var slot: String = first.instance_uids.keys()[0]
 	var fighters := [{"source_uid": first.source_uid,
 		"weapons": {slot: {"damage": 200, "kills": 2}}}]
-	run.choose_tier(RunState.Tier.ELITE)
+	# Die Stufe direkt: Elite steht nicht in jeder Reihe zur Wahl.
+	run.tier = RunState.Tier.ELITE
 	run.collect_xp(fighters, true)
 	var entry := roster.entry_by_chassis(first.source_uid)
 	var owned := roster.instance(str(first.instance_uids[slot]))

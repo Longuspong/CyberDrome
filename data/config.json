@@ -19,45 +19,21 @@
   "squad_size": 2,
   "squad_size_max": 4,
 
-  "_kommentar_chaos": [
-    "Der Chaos-Virus als Risiko/Beute-Modus. Der Spieler waehlt vor dem Start,",
-    "wie viele der eigenen DROMEs er mitnimmt (die 'Bits'). Der Gegner tritt",
-    "immer in voller Staerke an -- gemessen an der REFERENZ (dem Kampfwert aller",
-    "kampftauglichen eigenen DROMEs, unabhaengig von der Auswahl). Wer mit",
-    "weniger antritt, macht es sich schwerer: das ist der HANDICAP-Anteil",
-    "  handicap = 1 - eigene_staerke / referenz    (0 = volle Mannschaft, ~1 = fast allein)",
-    "und genau daran haengt die Beute-Chance:",
-    "  chance = min(loot_cap, loot_base + handicap * loot_handicap_gain)",
-    "Ein zweites Item faellt mit chance * loot_second_factor. Hoechstens zwei.",
-    "Das PITY-System verhindert Duerre: nach loot_pity_threshold gewonnenen",
-    "Gefechten OHNE Beute ist das naechste ein garantierter Drop (Zaehler dann",
-    "zurueck). Beute faellt nur bei SIEG und kommt AUS der Ausruestung der",
-    "besiegten Gegner-DROMEs -- was man erbeutet, haengt also am Gegner.",
-    "Siehe GameState.roll_chaos_loot() und ChaosLoot.",
-    "enemy_power_factor: der Gegner ist ein kleines bisschen schwaecher als die",
-    "volle eigene Mannschaft -- man sieht ihn vorher nicht und kann nicht planen."
-  ],
-  "chaos": {
-    "loot_base": 0.15,
-    "loot_handicap_gain": 0.7,
-    "loot_cap": 0.9,
-    "loot_second_factor": 0.4,
-    "loot_pity_threshold": 4,
-    "enemy_power_factor": 0.9
-  },
-
   "grid_width": 20,
   "grid_height": 20,
 
   "run": {
     "_kommentar": [
       "Der Lauf (Roguelike, scripts/core/run_state.gd): rounds Kaempfe, lives",
-      "Leben. Gegnerstaerke = Bezugsstaerke (Durchschnitt der Standard-DROMEs",
-      "mal Zahl der mitgenommenen, RunState.reference_power -- nicht die Staerke",
-      "des eigenen Aufbaus) *",
-      "(power_start + power_growth * (runde - 1)) * tiers.<stufe>.power -- eine",
-      "FESTE Kurve, damit Belohnungen zaehlen. Gegnerzahl = Startgroesse des",
-      "Squads + enemy_offsets[runde] + tiers.<stufe>.count_offset (1..squad_max).",
+      "Leben. Die Gegner sind handverlesene Teams (data/encounters.json); in den",
+      "ersten training_rounds Runden normale DROMEs ohne Fraktion. Staerker werden",
+      "sie ueber Zahl, Level und Module (enemy_offsets, enemy_levels, enemy_modules).",
+      "Gegnerzahl = Startgroesse des Squads + enemy_offsets[runde] +",
+      "tiers.<stufe>.count_offset (1..squad_max).",
+      "Nur fuer die gewuerfelten Gegner des Chaos-Kampfs (Endlos-Modus) gilt die",
+      "Bezugsstaerke: Durchschnitt der Standard-DROMEs mal Zahl der mitgenommenen",
+      "(RunState.reference_power) * (power_start + power_growth * (runde - 1)) *",
+      "tiers.<stufe>.power.",
       "Beute (6i, gewuerfelt, keine Auswahl, RunState.roll_loot): 'normal' gibt",
       "in new_drome_rounds einen neuen DROME, 'elite' mit drome_chance; sonst mit",
       "part_chance ein Teil (Elite: mittel/schwer), sonst loot_credits Credits.",
@@ -77,8 +53,28 @@
     ],
     "region": "city",
     "rounds": 8,
-    "map": {"_kommentar": "Karte wie bei FTL (RunState.map_layers): Wahrscheinlichkeit fuer 3 statt 2 Knoten je Reihe, fuer einen zweiten Weg je Knoten, fuer einen Chaos-Kampf statt Normal (ab Runde 2) und der Credit-Faktor im Chaos-Kampf.",
-            "three_chance": 0.5, "branch_chance": 0.6, "chaos_chance": 0.2, "chaos_credits": 1.5},
+    "map": {
+      "_kommentar": [
+        "Die Reihe der Runde (RunState.row): immer ein Leichter, dazu zwei Normale mit",
+        "verschiedenen Gegnertypen ODER ein Normaler und ein Elite. Elite kommt mit",
+        "elite_chance, je vorher gewaehltem Elite um elite_bonus oefter, hoechstens",
+        "elite_cap. chaos_credits: Credit-Faktor im Chaos-Kampf (nur Endlos-Modus)."
+      ],
+      "elite_chance": 0.35, "elite_bonus": 0.12, "elite_cap": 0.85, "chaos_credits": 1.5
+    },
+    "training_rounds": 2,
+    "endless": {
+      "_kommentar": [
+        "Endlos-Modus (NEUANFANG 6h): kein Ende, lives Leben (die erste Niederlage",
+        "beendet den Lauf und kostet die Beute), nach jeder Runde kann man aussteigen.",
+        "chaos_chance: Chance auf einen Chaos-Knoten obendrauf (ab Runde 2).",
+        "Nach dem Ende der Rundentabellen (enemy_levels, enemy_modules) steigen die",
+        "Gegner weiter: alle drome_level_every / weapon_level_every Runden ein Level,",
+        "alle module_every Runden ein Modul mehr -- bis zum Hoechstwert. VORLAEUFIG."
+      ],
+      "lives": 1, "chaos_chance": 0.25,
+      "drome_level_every": 3, "weapon_level_every": 2, "module_every": 4
+    },
     "lives": 3,
     "power_start": 0.85,
     "power_growth": 0.06,
@@ -225,10 +221,16 @@
   "build_attempts": 50,
 
   "deployment": {
-    "_kommentar": "Spieler unten links, Gegner oben rechts, je 3 Reihen x 5 Felder (Aufstellung per Ziehen vor dem Kampf). inset: Abstand der Zonen von den Ecken -- kuerzere Anlaufzeit im Autokampf.",
+    "_kommentar": [
+      "Aufstellung (MapGenerator.deployment_zone): ein Streifen am Kartenrand,",
+      "Spieler an der Kante unten links, Gegner oben rechts. rows Reihen tief,",
+      "columns Felder breit (mittig), inset Felder Abstand zum Rand. Ohne Zutun",
+      "stehen die DROMEs nach Rolle gestaffelt und ueber die Breite verteilt.",
+      "Bis 10. Nov. 2026 ein 3 x 5-Block, 5 Felder von der Ecke eingerueckt."
+    ],
     "rows": 3,
-    "columns": 5,
-    "inset": 5
+    "columns": 8,
+    "inset": 1
   },
 
   "obstacles": {

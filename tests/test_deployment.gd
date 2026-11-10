@@ -1,9 +1,9 @@
 extends RefCounted
 
-## Aufstellung vor dem Kampf (Wunsch des Spielers, Nov. 2026): eine Zone von
-## 3 x 5 Feldern unten links, darin zieht der Spieler seine DROMEs zurecht.
-## Ohne sein Zutun stellt die Aufstellung nach Rolle auf: Molok vorn, Strix
-## hinten.
+## Aufstellung vor dem Kampf (Wunsch des Spielers, Nov. 2026): ein Streifen
+## von 3 x 8 Feldern am Kartenrand unten links, darin zieht der Spieler seine
+## DROMEs zurecht. Ohne sein Zutun stellt die Aufstellung nach Rolle auf und
+## verteilt ueber die Breite: Molok vorn, Strix hinten.
 
 var t
 
@@ -26,20 +26,48 @@ func _unit(battle: BattleManager, name: String, player: bool) -> Unit:
 	return null
 
 
-func test_the_zone_is_three_by_five() -> void:
+func test_the_zone_is_a_strip_at_the_edge() -> void:
 	var battle := BattleManager.new()
 	battle.setup(321, _squad(), _squad())
 	var zone := battle.deployment_tiles(true)
-	t.equal(zone.size(), 15, "15 Felder")
+	t.equal(zone.size(), 24, "24 Felder")
 	var xs := {}
 	var ys := {}
 	for tile in zone:
 		xs[tile.x] = true
 		ys[tile.y] = true
-	t.equal(xs.size() * ys.size(), 15, "ein Rechteck 3 x 5")
+	t.equal(ys.size(), 3, "drei Reihen tief")
+	t.equal(xs.size(), 8, "acht Felder breit")
+	var edge := 0
+	for y in ys:
+		edge = maxi(edge, y)
+	t.ok(edge >= battle.grid.height - 2, "am Rand der Karte (unterste Reihe %d)" % edge)
+	var foes := battle.deployment_tiles(false)
+	for i in zone.size():
+		t.equal(foes[i], MapGenerator.mirror(battle.grid, zone[i]),
+			"Gegnerzone ist die gedrehte Spielerzone (%d)" % i)
 	for unit in battle.units:
 		t.ok(unit.tile in battle.deployment_tiles(unit.is_player),
 			"%s steht in seiner Zone" % unit.display_name)
+	battle.free()
+
+
+func test_the_default_spreads_the_squad_out() -> void:
+	var battle := BattleManager.new()
+	battle.setup(327, _squad(), _squad())
+	for side in [true, false]:
+		var own: Array = battle.units.filter(func(u): return u.is_player == side)
+		for a in own:
+			for b in own:
+				if a != b:
+					t.ok(Grid.distance(a.tile, b.tile) >= 2,
+						"%s und %s stehen nicht Schulter an Schulter" % [a.display_name, b.display_name])
+	# Spiegelgleich: jeder Gegner steht auf dem gedrehten Feld seines Gegenstuecks.
+	for unit in battle.units:
+		if unit.is_player:
+			var twin := _unit(battle, unit.display_name, false)
+			t.equal(twin.tile, MapGenerator.mirror(battle.grid, unit.tile),
+				"%s steht gespiegelt" % unit.display_name)
 	battle.free()
 
 

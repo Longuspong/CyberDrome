@@ -26,6 +26,8 @@ var _header_round: Label
 var _lives_box: HBoxContainer
 var _squad_list: VBoxContainer
 var _side: VBoxContainer
+## Fester Platz am unteren Rand fuer die Hauptaktion der Phase.
+var _footer: VBoxContainer
 
 ## Zwischenstopp: der angetippte Lagerplatz (-1 = keiner).
 var _selected_storage: int = -1
@@ -79,6 +81,44 @@ func _build_ui() -> void:
 	_squad_list.add_theme_constant_override("separation", 10)
 	content.add_child(_squad_list)
 
+	# Die Hauptaktion steht fest am unteren Rand (10. Nov. 2026): "Kampf
+	# starten" lag vorher unter der Gegnerliste, und man musste in jeder
+	# Runde erst dorthin scrollen.
+	var frame := _page_frame(content)
+	if frame != null:
+		var bar := PanelContainer.new()
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.07, 0.09, 0.13, 0.96)
+		style.border_color = UiKit.CARD_LINE
+		style.border_width_top = 1
+		style.set_content_margin_all(UiKit.PAD)
+		style.content_margin_top = 10
+		style.content_margin_bottom = 10
+		bar.add_theme_stylebox_override("panel", style)
+		frame.add_child(bar)
+		_footer = VBoxContainer.new()
+		_footer.add_theme_constant_override("separation", 6)
+		bar.add_child(_footer)
+
+
+## Der Seitenrahmen von UiKit.page (die VBox ueber Kopfzeile und Inhalt).
+func _page_frame(content: Control) -> VBoxContainer:
+	var node: Node = content.get_parent()
+	while node != null and node != self:
+		if node is VBoxContainer and node.get_parent() == self:
+			return node
+		node = node.get_parent()
+	return null
+
+
+## Setzt die Hauptaktion in die Fusszeile (oder, ohne sie, unter den Inhalt).
+func _main_action(button: Control) -> void:
+	if _footer != null:
+		_footer.add_child(button)
+		(_footer.get_parent() as Control).visible = true
+	else:
+		_side.add_child(button)
+
 
 func _refresh() -> void:
 	# Jede Aenderung im Lauf geht gleich in den Spielstand (10. Nov. 2026).
@@ -86,6 +126,10 @@ func _refresh() -> void:
 	var run := _run()
 	for child in _side.get_children():
 		child.queue_free()
+	if _footer != null:
+		for child in _footer.get_children():
+			child.queue_free()
+		(_footer.get_parent() as Control).visible = false
 	_lives_box.visible = run != null
 	# Im Zwischenstopp steht der Squad mit seinen Haltern oben -- dort wird
 	# eingebaut. Die Liste unten waere doppelt.
@@ -94,8 +138,11 @@ func _refresh() -> void:
 		_header_round.text = "Aufstellung"
 		_show_setup()
 		return
-	_header_round.text = "Runde %d von %d" % [mini(run.round, RunState.rounds_total()),
-		RunState.rounds_total()]
+	if run.is_endless():
+		_header_round.text = "Endlos  ·  Runde %d" % run.round
+	else:
+		_header_round.text = "Runde %d von %d" % [mini(run.round, RunState.rounds_total()),
+			RunState.rounds_total()]
 	_refresh_lives(run)
 	_refresh_squad(run)
 	match run.phase:
@@ -132,7 +179,7 @@ func _refresh_squad(run: RunState) -> void:
 	for child in _squad_list.get_children():
 		child.queue_free()
 	var heading := Label.new()
-	heading.text = "Dein Lauf-Squad  ·  Staerke %d" % int(DromeBuild.squad_power(run.squad))
+	heading.text = "Dein Lauf-Squad  ·  Kampfwert %d" % int(DromeBuild.squad_power(run.squad))
 	heading.add_theme_font_size_override("font_size", 20)
 	heading.modulate = COLOR_HEADING
 	_squad_list.add_child(heading)
@@ -158,39 +205,47 @@ func _drome_card(build: DromeBuild) -> Control:
 
 ## Vor dem Lauf: wer kommt mit? Vorgeschlagen ist der Hangar-Squad.
 func _show_setup() -> void:
+	var endless := GameState.next_run_mode == "endless"
+	_header_round.text = "Endlos-Modus" if endless else "Neon City"
 	_side.add_child(_label("Wer kommt mit? Vorgeschlagen ist dein Hangar-Squad. Im Lauf "
-		+ "baust du nur mit Beute um -- nicht mit dem Inventar von zuhause. Beute, die "
-		+ "du nicht einbaust, kannst du nach Hause schicken.", UiKit.SMALL, COLOR_MUTED))
+		+ "bleiben die Waffen, wie sie sind -- staerker wirst du mit Modulen aus dem Laden.",
+		UiKit.SMALL, COLOR_MUTED))
 	var picker := SquadPicker.new()
 	_side.add_child(picker)
 	picker.setup(RunState.squad_max())
-	_side.add_child(_label("%d Kaempfe, %d Leben. Vor jedem Kampf waehlst du den Gegner: "
-		% [RunState.rounds_total(), RunState.max_lives()]
-		+ "Leicht, Normal oder Elite -- je haerter, desto besser die Beute.",
-		UiKit.SMALL, COLOR_MUTED))
+	if endless:
+		_side.add_child(_label("Kein Ende, ein Leben: die erste Niederlage beendet den Lauf und "
+			+ "kostet die Beute. Nach jeder Runde kannst du aussteigen und sie behalten. "
+			+ "Ab und zu taucht ein Chaos-Kampf auf -- Gegner unbekannt, bessere Beute.",
+			UiKit.SMALL, COLOR_MUTED))
+	else:
+		_side.add_child(_label("%d Kaempfe, %d Leben. Die ersten %d sind Training gegen normale "
+			% [RunState.rounds_total(), RunState.max_lives(),
+				int(RunState.cfg().get("training_rounds", 0))]
+			+ "DROMEs, danach kommen die Neon Ninja's. Vor jedem Kampf waehlst du: immer ein "
+			+ "leichter Gegner, dazu zwei normale oder ein normaler und ein Elite.",
+			UiKit.SMALL, COLOR_MUTED))
 	var start := _big_button("Lauf starten")
 	start.disabled = picker.chosen_count() < 1
 	picker.changed.connect(func(): start.disabled = picker.chosen_count() < 1)
 	start.pressed.connect(func():
-		GameState.start_run()
+		GameState.start_run(0, GameState.next_run_mode)
 		_refresh())
-	_side.add_child(start)
+	_main_action(start)
 
 
 func _show_prepare(run: RunState) -> void:
-	_side.add_child(_label("Waehle deinen Weg", 22, COLOR_HEADING))
-	# Karte wie bei FTL (10. Nov. 2026): erreichbare Knoten dieser Runde,
-	# darunter die naechste Reihe als Vorausschau.
+	_side.add_child(_label("Waehle deinen Gegner", 22, COLOR_HEADING))
+	# Die Knoten dieser Runde, darunter die Reihe, die danach kaeme.
 	var map := MapView.new(run)
 	map.picked.connect(func(index: int):
 		if run.choose_node(index):
 			Accessibility.vibrate(15, true)
 		_refresh())
 	_side.add_child(map)
-	_side.add_child(_label("Leicht (Kreis) · Normal (Raute) · Elite (Stern) · ? = Chaos: Gegner unbekannt, bessere Beute",
-		14, COLOR_MUTED))
 
 	var info := run.preview()
+	var chaos := bool(info.get("chaos", false))
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _panel_style(true))
 	var box := VBoxContainer.new()
@@ -198,33 +253,39 @@ func _show_prepare(run: RunState) -> void:
 	panel.add_child(box)
 	_side.add_child(panel)
 
-	box.add_child(_label("Region: %s" % info["region"], 18))
-	if str(info.get("faction", "")) != "":
-		box.add_child(_label("Gegner: %s  ·  Profil %s" % [info["faction"], info["profile"]],
-			16, COLOR_WARN))
-		if str(info.get("faction_text", "")) != "":
-			box.add_child(_label(str(info["faction_text"]), 14, COLOR_MUTED))
+	# Wer: Stufe, Team und Gegnertyp -- der Typ sagt, was auf einen zukommt.
+	var tier_color: Color = MapView.CHAOS_COLOR if chaos else MapView.COLOR.get(run.tier, Color.WHITE)
+	if chaos:
+		box.add_child(_label("CHAOS-Kampf", 20, tier_color))
+		box.add_child(_label("Der Virus wuerfelt alles: DROMEs, Waffen, Module. Gegner erst im "
+			+ "Kampf zu sehen.", 14, COLOR_MUTED))
+	else:
+		box.add_child(_label("%s  ·  %s" % [RunState.TIER_NAMES[run.tier], info["team"]], 20, tier_color))
+		if str(info.get("type", "")) != "":
+			box.add_child(_label("Gegnertyp: %s" % info["type"], 16, COLOR_WARN))
+		if str(info.get("team_text", "")) != "":
+			box.add_child(_label(str(info["team_text"]), 14))
+		if str(info.get("type_hint", "")) != "":
+			box.add_child(_label(str(info["type_hint"]), 14, COLOR_MUTED))
+	var where := str(info["region"])
+	if str(info.get("faction", "")) != "" and not chaos:
+		where += "  ·  %s" % info["faction"]
+	box.add_child(_label(where, 14, COLOR_MUTED))
 
-	var chaos := bool(info.get("chaos", false))
-	box.add_child(_label("%s%s" % [RunState.TIER_NAMES[run.tier], "  ·  CHAOS" if chaos else ""],
-		18, MapView.CHAOS_COLOR if chaos else Color.WHITE))
 	var own := float(info["own_power"])
 	var foe := float(info["enemy_power"])
 	var ratio := own / maxf(1.0, foe)
 	var verdict := "ueberlegen" if ratio >= 1.1 else ("ausgeglichen" if ratio >= 0.9 else "unterlegen")
 	var color := COLOR_GOOD if ratio >= 1.1 else (COLOR_WARN if ratio >= 0.9 else COLOR_BAD)
 	if chaos:
-		box.add_child(_label("Staerke: du %d  ·  Gegner ???" % int(own), 18, COLOR_WARN))
+		box.add_child(_label("Kampfwert: du %d  ·  Gegner ???" % int(own), 16, COLOR_WARN))
 	else:
-		box.add_child(_label("Staerke: du %d  ·  Gegner %d  (%s)" % [int(own), int(foe), verdict],
-			18, color))
-	box.add_child(_label("Beute: %s" % info["reward_text"], 16,
-		COLOR_WARN if run.tier == RunState.Tier.ELITE else COLOR_MUTED))
+		box.add_child(_label("Kampfwert: du %d  ·  Gegner %d  (%s)" % [int(own), int(foe), verdict],
+			16, color))
+	box.add_child(_label("Beute: %s" % info["reward_text"], 14,
+		COLOR_WARN if run.tier == RunState.Tier.ELITE or chaos else COLOR_MUTED))
 
-	if chaos:
-		box.add_child(_label("Gegner: unbekannt -- erst im Kampf zu sehen", 18, MapView.CHAOS_COLOR))
-	else:
-		box.add_child(_label("Gegner: %d DROMEs" % int(info["enemies"]), 18, COLOR_HEADING))
+	if not chaos:
 		for build in info["enemy_builds"]:
 			box.add_child(SquadPicker.drome_card(build))
 
@@ -232,11 +293,11 @@ func _show_prepare(run: RunState) -> void:
 	start.pressed.connect(func():
 		GameState.begin_run_battle()
 		get_tree().change_scene_to_file("res://scenes/battle.tscn"))
-	_side.add_child(start)
+	_main_action(start)
 	start.grab_focus.call_deferred()
 
 	var abandon := Button.new()
-	abandon.text = "Lauf aufgeben"
+	abandon.text = "Aussteigen und Beute behalten" if run.is_endless() else "Lauf aufgeben"
 	abandon.flat = true
 	abandon.custom_minimum_size = Vector2(0, 44)
 	abandon.pressed.connect(func():
@@ -301,7 +362,7 @@ func _show_stop(run: RunState) -> void:
 		_side.add_child(_bag_section(run))
 
 	# --- Squad mit Haltern ---
-	_side.add_child(_label("Dein Lauf-Squad  ·  Staerke %d"
+	_side.add_child(_label("Dein Lauf-Squad  ·  Kampfwert %d"
 		% int(DromeBuild.squad_power(run.squad)), 18, COLOR_HEADING))
 	var module_mode := run.is_module_at(_selected_storage)
 	if run.is_bios_at(_selected_storage):
@@ -325,7 +386,15 @@ func _show_stop(run: RunState) -> void:
 		_selected_storage = -1
 		run.continue_run()
 		_refresh())
-	_side.add_child(go)
+	_main_action(go)
+	# Endlos-Modus: nach jeder Runde aussteigen und die Beute behalten.
+	if run.is_endless():
+		var out := UiKit.button("Aussteigen und Beute behalten")
+		out.pressed.connect(func():
+			_selected_storage = -1
+			run.cash_out()
+			_refresh())
+		_side.add_child(out)
 
 
 ## Die gewuerfelte Beute des letzten Siegs (6i): was es gab und wo es
@@ -738,7 +807,7 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.custom_minimum_size = Vector2(0, 56)
 		button.add_theme_font_size_override("font_size", 16)
-		var line := "Halter %s (%s): %s" % [SlotRules.slot_label(slot),
+		var line := "%s (%s): %s" % [SlotRules.holder_label(build, slot),
 			SlotRules.class_label(limit), what]
 		var module_mode := run.is_module_at(_selected_storage)
 		if module_mode:
@@ -844,9 +913,18 @@ func _show_end(run: RunState) -> void:
 	# Die Beute, die noch im Lauf war, geht jetzt nach Hause (7f).
 	_delivered.append_array(GameState.deliver_run_home())
 	var won := run.phase == RunState.Phase.WON
-	_side.add_child(_label("Lauf gewonnen!" if won else "Lauf verloren.", 30,
-		COLOR_GOOD if won else COLOR_BAD))
-	var wins := run.history.filter(func(h): return h["won"]).size()
+	var wins := run.wins()
+	if run.is_endless():
+		_side.add_child(_label("Ausgestiegen nach %d Siegen" % wins if won
+			else "Gefallen in Runde %d" % run.round, 28, COLOR_GOOD if won else COLOR_BAD))
+		_side.add_child(_label("Die Beute kommt mit nach Hause." if won
+			else "Die Beute dieses Laufs ist verloren -- was zuhause liegt, ist sicher.", 16,
+			COLOR_MUTED))
+	else:
+		_side.add_child(_label("Lauf gewonnen!" if won else "Lauf verloren.", 30,
+			COLOR_GOOD if won else COLOR_BAD))
+		if won and GameState.just_unlocked_endless:
+			_side.add_child(_label("Neon City ist bezwungen -- der Endlos-Modus ist frei.", 18, COLOR_WARN))
 	_side.add_child(_label("%d von %d Kaempfen gewonnen." % [wins, run.history.size()], 18))
 	var line := ""
 	for entry in run.history:
@@ -872,7 +950,7 @@ func _show_end(run: RunState) -> void:
 		_delivered.clear()
 		GameState.run = null
 		_refresh())
-	_side.add_child(again)
+	_main_action(again)
 	again.grab_focus.call_deferred()
 
 

@@ -21,7 +21,6 @@ const SUITES := [
 	"res://tests/test_roster.gd",
 	"res://tests/test_ui_pieces.gd",
 	"res://tests/test_dash.gd",
-	"res://tests/test_chaos_loot.gd",
 	"res://tests/test_autobattle.gd",
 	"res://tests/test_ai.gd",
 	"res://tests/test_deployment.gd",
@@ -29,6 +28,9 @@ const SUITES := [
 	"res://tests/test_run.gd",
 	"res://tests/test_modules.gd",
 	"res://tests/test_leveling.gd",
+	"res://tests/test_encounters.gd",
+	"res://tests/test_saves.gd",
+	"res://tests/test_scripts_compile.gd",
 ]
 
 
@@ -47,7 +49,7 @@ func _initialize() -> void:
 		# Exitcode -- ein Tippfehler in einer Suite sah damit aus wie ein
 		# haengender Testlauf. Hier wird daraus ein Fehlschlag mit Namen.
 		var script = load(path)
-		var suite = script.new() if script is GDScript else null
+		var suite = script.new() if script is GDScript and script.can_instantiate() else null
 		if suite == null:
 			_current = name
 			ok(false, "Suite laedt nicht (Syntaxfehler in %s?)" % path)

@@ -1,7 +1,7 @@
 class_name SquadPicker
 extends VBoxContainer
 
-## Wer kommt mit? Die Squad-Auswahl vor einem Lauf und vor dem Chaos-Virus.
+## Wer kommt mit? Die Squad-Auswahl vor einem Lauf.
 ##
 ## Oben "Dabei" -- je DROME eine Karte mit Bild, Staerke und Ausruestung und
 ## einem Minus. Darunter "Bleibt zuhause" mit einem Plus. Vorgeschlagen ist der
@@ -36,7 +36,7 @@ func setup(max_count: int) -> void:
 	_rebuild()
 
 
-## Alle waehlbaren Aufbauten -- fuer die Referenz-Staerke im Chaos-Virus.
+## Alle waehlbaren Aufbauten.
 func all_builds() -> Array:
 	return _items.map(func(item): return item["build"])
 
@@ -70,7 +70,7 @@ func _rebuild() -> void:
 
 	var count := chosen_count()
 	var power := DromeBuild.squad_power(chosen_builds())
-	add_child(UiKit.label("Dabei  %d / %d   ·   Staerke %d" % [count, _max_count, int(power)],
+	add_child(UiKit.label("Dabei  %d / %d   ·   Kampfwert %d" % [count, _max_count, int(power)],
 		UiKit.H2, UiKit.HEADING))
 	if count == 0:
 		add_child(UiKit.label("Noch niemand -- tippe unten auf +.", UiKit.SMALL, UiKit.MUTED))

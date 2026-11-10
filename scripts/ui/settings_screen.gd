@@ -53,8 +53,12 @@ func _ready() -> void:
 	# Spielstand (10. Nov. 2026): wird jetzt gespeichert -- hier zuruecksetzen.
 	var save := UiKit.card(content)
 	save.add_child(UiKit.heading("Spielstand"))
-	save.add_child(UiKit.label("Hangar, Level und ein laufender Lauf werden automatisch "
-		+ "gespeichert.", UiKit.SMALL, UiKit.MUTED))
+	save.add_child(UiKit.label("Spielstand %d  ·  Hangar, Level und ein laufender Lauf werden "
+		% GameState.slot + "automatisch gespeichert." if GameState.slot > 0
+		else "Kein Spielstand gewaehlt -- nichts wird gespeichert.", UiKit.SMALL, UiKit.MUTED))
+	var switch := UiKit.button("Spielstand wechseln")
+	switch.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/saves.tscn"))
+	save.add_child(switch)
 	var reset := UiKit.button("Spielstand zuruecksetzen")
 	reset.add_theme_color_override("font_color", UiKit.BAD)
 	var armed := {"on": false}
@@ -67,6 +71,21 @@ func _ready() -> void:
 		reset.text = "Zurueckgesetzt"
 		reset.disabled = true)
 	save.add_child(reset)
+
+	# Zum Testen: alles freischalten, ohne es erst zu erspielen.
+	var test := UiKit.card(content)
+	test.add_child(UiKit.heading("Zum Testen"))
+	var unlock := CheckButton.new()
+	unlock.text = "Endlos-Modus freischalten"
+	unlock.custom_minimum_size = Vector2(0, 48)
+	unlock.add_theme_font_size_override("font_size", UiKit.BODY)
+	unlock.button_pressed = bool(GameState.progress.get("unlock_all", false))
+	unlock.toggled.connect(func(on: bool):
+		GameState.progress["unlock_all"] = on
+		GameState.save_progress())
+	test.add_child(unlock)
+	test.add_child(UiKit.label("Sonst wird der Endlos-Modus frei, sobald Neon City einmal "
+		+ "gewonnen ist.", UiKit.SMALL, UiKit.MUTED))
 
 	var screen := UiKit.card(content)
 	screen.add_child(UiKit.heading("Bildschirm"))

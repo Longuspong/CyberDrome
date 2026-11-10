@@ -26,9 +26,11 @@ const ICON_EDGE := 22.0
 ## ``extra`` (optional) bekommt die VBox der Kachel und kann Zeilen anhaengen
 ## (Wertaenderung, "ersetzt X"). ``buttons``: je Knopf
 ## {"text", "primary", "disabled", "on": Callable} -- nach dem Druck schliesst
-## die Kachel, dann wird ``on`` gerufen. Gibt die Ebene zurueck.
+## die Kachel, dann wird ``on`` gerufen. ``compare``: die Waffe, die dafuer
+## weichen wuerde -- die Balken zeigen dann den Unterschied. Gibt die Ebene
+## zurueck.
 static func open(host: Control, part: PartData, extra: Callable = Callable(),
-		buttons: Array = []) -> CanvasLayer:
+		buttons: Array = [], compare: PartData = null) -> CanvasLayer:
 	# Eigene Zeichenebene: die DROME-Bilder darunter sortieren ihre Teile mit
 	# z_index und laegen sonst ueber einer normalen Ueberlagerung.
 	var layer := CanvasLayer.new()
@@ -62,7 +64,7 @@ static func open(host: Control, part: PartData, extra: Callable = Callable(),
 	panel.add_child(box)
 
 	var hint := UiKit.label("Symbol antippen: Erklaerung", UiKit.SMALL, UiKit.MUTED)
-	fill(box, part, hint)
+	fill(box, part, hint, compare)
 	if extra.is_valid():
 		extra.call(box)
 	box.add_child(hint)
@@ -88,7 +90,7 @@ static func open(host: Control, part: PartData, extra: Callable = Callable(),
 
 
 ## Der Inhalt der Kachel ohne Ebene und Knoepfe -- auch fuer Tests.
-static func fill(box: VBoxContainer, part: PartData, hint: Label) -> void:
+static func fill(box: VBoxContainer, part: PartData, hint: Label, compare: PartData = null) -> void:
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 12)
 	box.add_child(top)
@@ -111,11 +113,6 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label) -> void:
 		elif not action.is_attack():
 			abilities.append(action)
 
-	if attack != null:
-		var chips := _chip_row(right)
-		chips.add_child(_chip("attack", "", hint, "Angriff"))
-		for spec in attack_chips(attack):
-			chips.add_child(_chip(spec[0], spec[1], hint, spec[2]))
 	# Werte am Teil selbst (Deflektor DEF +5).
 	var extras := _chip_row(right)
 	if part.def != 0:
@@ -129,6 +126,14 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label) -> void:
 	if bonus != "":
 		right.add_child(UiKit.label("Bonus: " + bonus, UiKit.SMALL, UiKit.GOOD))
 
+	# Der Angriff als Symbol + Balken (Wunsch des Spielers, 10. Nov. 2026):
+	# hinter jedem Symbol sein Wert, vergleichbar -- mit ``compare`` gegen die
+	# Waffe, die gerade im Halter steckt.
+	var other := _first_attack(compare)
+	if attack != null:
+		for row in attack_bars(attack, other, hint):
+			box.add_child(row)
+
 	for ability in abilities:
 		box.add_child(HSeparator.new())
 		var head := _chip_row(box)
@@ -139,7 +144,19 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label) -> void:
 		var takt := takt_chip(ability)
 		if not takt.is_empty():
 			head.add_child(_chip(takt[0], takt[1], hint, "Takt: %s" % ability.trigger_text()))
-		var effects := attack_chips(ability)
+		var rival: ActionData = null
+		if compare != null:
+			for action in compare.actions:
+				if not action.is_attack() and rival == null:
+					rival = action
+		for row in ability_bars(ability, rival, hint):
+			box.add_child(row)
+		# Was schon als Balken dasteht, kommt nicht nochmal als Symbol.
+		var shown_as_bar := ["kinetic", "energy"]
+		if ability.power > 0 and ability.support != "self" and not ability.is_move():
+			shown_as_bar.append("range")
+		var effects := attack_chips(ability).filter(
+			func(spec): return spec[0] not in shown_as_bar)
 		if not effects.is_empty():
 			var row := _chip_row(box)
 			for spec in effects:
@@ -152,6 +169,92 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label) -> void:
 
 	for line in PartInfo.traits(part):
 		box.add_child(UiKit.label(line, UiKit.SMALL, UiKit.WARN))
+
+
+static func _first_attack(part: PartData) -> ActionData:
+	if part == null:
+		return null
+	for action in part.actions:
+		if action.is_attack():
+			return action
+	return null
+
+
+## Volle Balken in der Waffen-Karte: Schaden je Treffer, Angriffe je Sekunde,
+## Reichweite -- etwa das Hoechste, was eine Waffe erreicht.
+const BAR_DAMAGE := 30.0
+const BAR_RATE := 1.25
+const BAR_RANGE := 8.0
+
+
+## Die Zeilen "Symbol + Balken + Wert" eines Angriffs: Schaden, Tempo,
+## Reichweite (und Reparatur). ``other``: der Angriff zum Vergleich oder null.
+static func attack_bars(attack: ActionData, other: ActionData, hint: Label) -> Array:
+	var rows: Array = []
+	if attack.power > 0:
+		var type := "energy" if attack.energy_fraction >= 0.5 else "kinetic"
+		var damage := float(attack.power * attack.shots)
+		var before := float(other.power * other.shots) if other != null else -1.0
+		var shown := str(attack.power) + (" x%d" % attack.shots if attack.shots > 1 else "")
+		rows.append(_bar_row(type, "Schaden", damage, BAR_DAMAGE, before,
+			shown + _delta(damage, before), hint, attack_chips(attack)[0][2]))
+	if attack.heal > 0:
+		rows.append(_bar_row("heal", "Reparatur", float(attack.heal), BAR_DAMAGE,
+			float(other.heal) if other != null else -1.0, "", hint,
+			"Repariert %d Integritaet" % attack.heal))
+	if attack.interval > 0.0:
+		# Der Balken zeigt Angriffe je Sekunde (laenger = schneller), der Text
+		# die Sekunden zwischen zwei Angriffen.
+		var rate := 1.0 / attack.interval
+		var before := 1.0 / other.interval if other != null and other.interval > 0.0 else -1.0
+		var shown := "%s s" % ActionData._seconds(attack.interval)
+		if other != null and not is_equal_approx(other.interval, attack.interval):
+			shown += " (%s)" % ("%+.1f" % (attack.interval - other.interval)).replace(".", ",")
+		rows.append(_bar_row("speed", "Tempo", rate, BAR_RATE, before, shown, hint,
+			"Greift alle %s s an" % ActionData._seconds(attack.interval)))
+	if attack.support != "self":
+		var reach := float(attack.range_tiles)
+		var before := float(other.range_tiles) if other != null else -1.0
+		rows.append(_bar_row("range", "Reichweite", reach, BAR_RANGE, before, "", hint,
+			"Reichweite %d%s" % [attack.range_tiles, " (Nahkampf)" if attack.range_tiles <= 1 else ""]))
+	return rows
+
+
+## Die Balken einer Faehigkeit: ihr Schaden (oder ihre Reparatur / ihr Schild).
+static func ability_bars(ability: ActionData, other: ActionData, hint: Label) -> Array:
+	var rows: Array = []
+	if ability.power > 0:
+		var type := "energy" if ability.energy_fraction >= 0.5 else "kinetic"
+		var damage := float(ability.power * ability.shots)
+		var before := float(other.power * other.shots) if other != null else -1.0
+		var shown := str(ability.power) + (" x%d" % ability.shots if ability.shots > 1 else "")
+		rows.append(_bar_row(type, "Schaden", damage, BAR_DAMAGE, before,
+			shown + _delta(damage, before), hint, attack_chips(ability)[0][2]))
+	if ability.support != "self" and not ability.is_move() and ability.power > 0:
+		rows.append(_bar_row("range", "Reichweite", float(ability.range_tiles), BAR_RANGE,
+			float(other.range_tiles) if other != null else -1.0, "", hint,
+			"Reichweite %d" % ability.range_tiles))
+	return rows
+
+
+## " (+3)" / " (-2)" hinter einem Wert, leer ohne Vergleich oder Unterschied.
+static func _delta(now: float, before: float) -> String:
+	if before < 0.0 or is_equal_approx(now, before):
+		return ""
+	return " (%+d)" % int(round(now - before))
+
+
+## Eine Zeile: antippbares Symbol, dahinter der Balken mit Wert.
+static func _bar_row(kind: String, name: String, value: float, scale: float, before: float,
+		shown: String, hint: Label, title: String) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.add_child(_chip(kind, "", hint, title))
+	var bar := StatBar.custom(name, value, scale, StatIcon.COLORS.get(kind, UiKit.ACCENT),
+		before, shown)
+	bar.name_width = 84.0
+	row.add_child(bar)
+	return row
 
 
 ## Was die Waffe dem Traeger gibt: "Speed +2", "Power +10 %" ...

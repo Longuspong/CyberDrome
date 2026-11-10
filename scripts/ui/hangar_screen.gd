@@ -12,34 +12,38 @@ extends Control
 ##           umrandet und mit ">>"). Plus/Minus oben rechts in der Kachel nimmt
 ##           in den Squad auf oder heraus (7. Nov. 2026, Wunsch des Spielers --
 ##           vorher stand der Squad doppelt da).
-##   Umbau   oben die DROME-Auswahl (Squad zuerst, mit ">>"), darunter seine
-##           Halter als Formen (Dreieck leicht, Viereck mittel, Fuenfeck
-##           schwer) mit Klasse darunter; der gewaehlte steht im Kasten. Seine
-##           Waffen als Kacheln, passende zuerst. Ein Bild antippen (im Halter
-##           oder als Kachel) oeffnet die Waffen-Karte (WeaponCard) mit
-##           Symbolen, Wertaenderung und "Einbauen" bzw. "Ausbauen".
+##   Umbau   oben FEST (scrollt nicht mit): die DROME-Auswahl und die Karte
+##           des gewaehlten DROME -- sein Bild, darunter seine Halter als
+##           Formen (Dreieck leicht, Viereck mittel, Fuenfeck schwer), rechts
+##           die Werte. Darunter eine Leiste mit den Teilen, die frei sind
+##           und in diesen DROME passen (nichts Ausgegrautes). Eine Kachel
+##           nach oben auf einen Halter ziehen baut ein; antippen (Kachel
+##           oder Halter) oeffnet die Waffen-Karte (WeaponCard) mit Symbolen,
+##           Vergleichsbalken und "Einbauen" bzw. "Ausbauen".
 ##
 ## Regeln, Werte und Validierung kommen wie ueberall aus Roster, DromeBuild und
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
 
-const PORTRAIT := 150.0
+const PORTRAIT := 124.0
 const PRIMARY_EDGE := 140.0
 const TILE_EDGE := 104.0
 const TILE_COLUMNS := 3
 const TILE_GAP := 10
-const SLOT_EDGE := 64.0
-const PART_EDGE := 72.0
+const SLOT_EDGE := 60.0
+const PART_EDGE := 92.0
+## Kantenlaenge einer Teil-Kachel in der Leiste des Umbaus.
+const STRIP_TILE := 104.0
 
 ## Welcher Reiter: "squad" oder "umbau". Ueberlebt einen Szenenwechsel ueber
 ## die Meta des GameState nicht -- muss es auch nicht: aus dem Kampf kommt man
 ## am besten im Squad an.
 var _tab := "squad"
 var _selected := -1
-## Kurze Rueckmeldung oben (z. B. nach "Bester Aufbau"), einmal gezeigt.
-var _notice := ""
 var _selected_slot := ""
 
 var _content: VBoxContainer
+## Der feste Bereich ueber dem scrollbaren Inhalt (nur im Umbau gefuellt).
+var _fixed: VBoxContainer
 var _tab_squad: Button
 var _tab_umbau: Button
 
@@ -88,6 +92,18 @@ func _build_tabs() -> void:
 	holder.add_child(bar)
 	frame.add_child(holder)
 	frame.move_child(holder, 1)
+	# Darunter ein Bereich, der nicht mitscrollt: im Umbau stehen dort die
+	# DROME-Auswahl und der DROME mit seinen Haltern. Wer ein Teil nach oben
+	# auf einen Halter zieht, verschiebt so nicht mehr die ganze Seite.
+	var fixed_holder := MarginContainer.new()
+	for side in ["left", "right"]:
+		fixed_holder.add_theme_constant_override("margin_" + side, UiKit.PAD)
+	fixed_holder.add_theme_constant_override("margin_top", 8)
+	_fixed = VBoxContainer.new()
+	_fixed.add_theme_constant_override("separation", 8)
+	fixed_holder.add_child(_fixed)
+	frame.add_child(fixed_holder)
+	frame.move_child(fixed_holder, 2)
 	_tab_squad = _tab_button("Squad")
 	_tab_squad.pressed.connect(func(): _switch("squad"))
 	bar.add_child(_tab_squad)
@@ -119,9 +135,9 @@ func _refresh() -> void:
 	_tab_umbau.button_pressed = _tab == "umbau"
 	for child in _content.get_children():
 		child.queue_free()
-	if _notice != "":
-		_content.add_child(UiKit.label(_notice, UiKit.SMALL, UiKit.GOOD))
-		_notice = ""
+	for child in _fixed.get_children():
+		child.queue_free()
+	(_fixed.get_parent() as Control).visible = _tab == "umbau"
 	if _tab == "squad":
 		_show_squad()
 	else:
@@ -152,25 +168,7 @@ func _show_squad() -> void:
 		tiles.append(_drome_tile(index))
 	_add_tile_rows(_content, tiles)
 
-	if count > 0:
-		var best := UiKit.button("Bester Aufbau fuer den Squad")
-		best.tooltip_text = "Verteilt die staerksten Waffen auf alle DROMEs im Squad"
-		best.pressed.connect(func():
-			_best_loadout(GameState.roster.entries.filter(func(e): return e.in_squad)))
-		_content.add_child(best)
-
 	_new_drome_section()
-
-
-## "Bester Aufbau" (Roster.best_loadout) fuer ``targets``, mit kurzer
-## Rueckmeldung, was sich geaendert hat.
-func _best_loadout(targets: Array) -> void:
-	var changed := GameState.roster.best_loadout(targets)
-	if changed > 0:
-		Accessibility.vibrate(30, true)
-	_notice = "Bester Aufbau: %s" % ("%d Halter neu bestueckt" % changed if changed > 0
-		else "schon optimal")
-	_changed()
 
 
 ## Indizes aller DROMEs, die im Squad zuerst.
@@ -352,20 +350,37 @@ func _show_umbau() -> void:
 	_selected = clampi(_selected, 0, _entries().size() - 1)
 	var entry: RosterEntry = _entries()[_selected]
 	var build := GameState.roster.build_for(entry)
+	# Ohne Kern-Halter (6g) ist der erste Ausruestungshalter vorgewaehlt.
+	var equip := build.equip_slots()
+	if not equip.is_empty() and _selected_slot not in equip:
+		_selected_slot = equip[0]
 
-	_content.add_child(_picker())
+	# --- fest: Auswahl und der DROME mit seinen Haltern --------------------
+	_fixed.add_child(_picker())
 
-	# Der gewaehlte DROME: Bild und die Werte, die beim Bauen zaehlen.
+	# Bild und Halter links, die Werte rechts -- in einer Karte, sonst laufen
+	# die Streifen der Kulisse durch die Zahlen. Die Halter stehen direkt
+	# unter dem Bild (10. Nov. 2026, Wunsch des Spielers): vorher lagen sie
+	# zwischen DROME und Teilen und schoben die Teile nach unten.
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 12)
-	_content.add_child(head)
-	head.add_child(UiKit.drome_view(build, PORTRAIT))
+	var card := UiKit.card(_fixed)
+	(card.get_parent() as PanelContainer).add_theme_stylebox_override("panel", _head_style())
+	card.add_child(head)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 2)
+	head.add_child(left)
+	var portrait := UiKit.drome_view(build, PORTRAIT)
+	portrait.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	left.add_child(portrait)
+	left.add_child(_slots(entry, build))
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 2)
 	head.add_child(info)
 	var name_field := LineEdit.new()
 	name_field.text = entry.name
-	name_field.custom_minimum_size = Vector2(0, 44)
+	name_field.custom_minimum_size = Vector2(0, 40)
 	name_field.add_theme_font_size_override("font_size", UiKit.BODY)
 	name_field.text_submitted.connect(func(text):
 		entry.name = text
@@ -380,17 +395,8 @@ func _show_umbau() -> void:
 		info.add_child(StatBar.make(key, float(stats.get(key, 0))))
 	info.add_child(StatBar.make("power_score", build.power_score()))
 
-	# Ohne Kern-Halter (6g) ist der erste Ausruestungshalter vorgewaehlt.
-	var equip := build.equip_slots()
-	if not equip.is_empty() and _selected_slot not in equip:
-		_selected_slot = equip[0]
-	_content.add_child(_slots(entry, build))
-	var best := UiKit.button("Bester Aufbau")
-	best.tooltip_text = "Ruestet diesen DROME mit den staerksten freien Waffen aus"
-	best.pressed.connect(func():
-		_best_loadout([entry]))
-	_content.add_child(best)
-	_parts_for_slot(entry, build)
+	# --- darunter: was sich einbauen laesst --------------------------------
+	_parts_strip(entry, build)
 
 	var problems := build.validate()
 	for line in problems:
@@ -407,11 +413,19 @@ func _show_umbau() -> void:
 	_content.add_child(scrap)
 
 
+## Die Karte des DROME im Umbau: etwas knapperer Innenabstand, damit oben
+## nicht mehr Platz verloren geht als noetig.
+func _head_style() -> StyleBoxFlat:
+	var style := UiKit.card_style(false)
+	style.set_content_margin_all(10)
+	return style
+
+
 ## Die DROME-Auswahl oben: der Squad zuerst, dann der Rest.
 func _picker() -> Control:
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.custom_minimum_size = Vector2(0, 104)
+	scroll.custom_minimum_size = Vector2(0, 96)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	scroll.add_child(row)
@@ -473,12 +487,14 @@ func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 		shape.highlight = chosen
 		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		box.add_child(shape)
-		var label := _quiet(UiKit.label(SlotRules.slot_label(slot), UiKit.SMALL,
-			Color.WHITE if chosen else UiKit.MUTED))
-		label.autowrap_mode = TextServer.AUTOWRAP_OFF
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(label)
+		# Unter dem Halter steht nur seine Klasse -- keine Richtung mehr
+		# (links, rechts): sie sagte nichts, was man nicht sieht.
 		if kind == "core":
+			var label := _quiet(UiKit.label(SlotRules.slot_label(slot), UiKit.SMALL,
+				Color.WHITE if chosen else UiKit.MUTED))
+			label.autowrap_mode = TextServer.AUTOWRAP_OFF
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			box.add_child(label)
 			row.add_child(holder)
 			continue
 		var weight := _quiet(UiKit.label(_class_name(kind), UiKit.SMALL,
@@ -504,30 +520,53 @@ func _class_color(kind: String) -> Color:
 		_: return UiKit.ACCENT
 
 
-## Die Teile fuer den gewaehlten Halter als Kacheln -- nur die Form mit Bild,
-## passende zuerst, die uebrigen gedaempft. Eine Kachel angetippt zeigt
-## daruber alle Angaben, die Wertaenderung und "Einbauen".
-func _parts_for_slot(entry: RosterEntry, build: DromeBuild) -> void:
-	var type := PartData.Type.CORE if _selected_slot == "core" else PartData.Type.EQUIPMENT
-	var fits: Array = []
-	var rest: Array = []
-	for part_id in GameState.roster.owned_part_ids(type):
+## Die Halter dieses DROME, die ``part`` aufnehmen wuerden: frei im Hangar,
+## passend zur Klasse, nicht schon dasselbe Teil darin, und der Aufbau bleibt
+## gueltig.
+func _slots_taking(build: DromeBuild, part: PartData) -> Array:
+	var out: Array = []
+	if part == null or GameState.roster.free_count(part.id) <= 0:
+		return out
+	for slot in build.equip_slots():
+		if _can_drop_part(null, build, slot, {"kind": "part", "part_id": part.id}):
+			out.append(slot)
+	return out
+
+
+## Der Halter, in den ein angetipptes Teil kaeme: der gewaehlte, wenn er es
+## nimmt, sonst der erste, der es nimmt. "" = keiner.
+func _target_slot(build: DromeBuild, part: PartData) -> String:
+	var taking := _slots_taking(build, part)
+	if taking.is_empty():
+		return ""
+	return _selected_slot if _selected_slot in taking else str(taking[0])
+
+
+## Die Teile, die sich in diesen DROME einbauen lassen, als Leiste -- nur was
+## frei ist UND passt, nichts Ausgegrautes (Wunsch des Spielers, 10. Nov.
+## 2026). Die Leiste laeuft waagerecht: wischen blaettert, eine Kachel nach
+## oben ziehen legt sie auf einen Halter.
+func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
+	var parts: Array = []
+	for part_id in GameState.roster.owned_part_ids(PartData.Type.EQUIPMENT):
 		var part := PartDB.get_part(part_id)
-		if part == null:
-			continue
-		var verdict := _verdict(entry, build, part)
-		(fits if verdict == "" else rest).append([part, verdict])
-	var items := fits + rest
-	if items.is_empty():
-		_content.add_child(UiKit.label("Keine Teile fuer diesen Halter.", UiKit.SMALL,
-			UiKit.MUTED))
+		if part != null and not _slots_taking(build, part).is_empty():
+			parts.append(part)
+	if parts.is_empty():
+		_content.add_child(UiKit.label("Kein freies Teil passt in diesen DROME.",
+			UiKit.SMALL, UiKit.MUTED))
 		return
-	if fits.is_empty():
-		_content.add_child(UiKit.label("Nichts Passendes frei.", UiKit.SMALL, UiKit.MUTED))
-	var tiles: Array = []
-	for item in items:
-		tiles.append(_part_tile(entry, build, item[0], item[1]))
-	_add_tile_rows(_content, tiles)
+	_content.add_child(UiKit.label("Frei und passend -- antippen oder hochziehen",
+		UiKit.SMALL, UiKit.MUTED))
+	var scroll := ScrollContainer.new()
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, STRIP_TILE + 8.0)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", TILE_GAP)
+	scroll.add_child(row)
+	for part in parts:
+		row.add_child(_part_tile(entry, build, part))
+	_content.add_child(scroll)
 
 
 ## Darf ein gezogenes Teil auf diesen Halter? Dieselbe Pruefung wie beim
@@ -555,82 +594,67 @@ func _drop_part(entry: RosterEntry, slot: String, data) -> void:
 		_changed()
 
 
-## Leer = einbaubar; sonst der Grund.
-func _verdict(entry: RosterEntry, build: DromeBuild, part: PartData) -> String:
-	var current := build.part_in(_selected_slot)
-	if current != null and current.id == part.id:
-		return "steckt schon hier"
-	if _selected_slot != "core" and not build.body().accepts(part, _selected_slot):
-		var rule: Dictionary = build.body().slot_rules.get(_selected_slot, {})
-		return SlotRules.rejection(part, rule, SlotRules.slot_class(build.body(), _selected_slot))
-	if GameState.roster.free_count(part.id) <= 0:
-		return "alle Exemplare verbaut"
-	return ""
-
-
-## Eine Teil-Kachel: nur die Form mit dem Bild. Gedaempft, wenn es hier nicht
-## eingebaut werden kann. Antippen oeffnet die Waffen-Karte.
-func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData,
-		verdict: String) -> Control:
+## Eine Teil-Kachel: die Form mit dem Bild, darunter wie viele frei sind.
+## Antippen oeffnet die Waffen-Karte; nach oben (oder unten) ziehen nimmt das
+## Teil mit auf einen Halter. Waagerecht blaettert die Leiste.
+func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData) -> Control:
 	var panel := _tappable(_tile_style(false, false), func():
-		_open_card(entry, build, part, "", verdict))
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_open_card(entry, build, part, ""))
+	panel.custom_minimum_size = Vector2(STRIP_TILE, STRIP_TILE)
 	panel.tooltip_text = part.display_name
-	# Ziehen auf einen Halter (Tippen bleibt). Nur eine waagerechte Bewegung
-	# startet den Zug -- senkrecht wird weiter gescrollt.
 	var start := {"at": Vector2.ZERO}
 	panel.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed:
 			start["at"] = event.global_position)
 	panel.set_drag_forwarding(func(_at):
 		var moved: Vector2 = panel.get_global_mouse_position() - start["at"]
-		if absf(moved.y) > absf(moved.x):
+		if absf(moved.x) > absf(moved.y):
 			return null
 		var preview := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE)
 		preview.modulate = Color(1, 1, 1, 0.85)
 		panel.set_drag_preview(preview)
 		return {"kind": "part", "part_id": part.id},
 		Callable(), Callable())
-	var kind := "core" if part.type == PartData.Type.CORE else part.mount_class
-	var shape := SlotShape.new(kind, UiKit.part_texture(part), PART_EDGE)
-	shape.dim = verdict != ""
+	var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE)
 	shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	shape.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	shape.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(shape)
-	if verdict != "":
-		panel.modulate = Color(1, 1, 1, 0.55)
 	return panel
 
 
 ## Die Waffen-Karte. ``installed_in``: der Halter, in dem sie steckt (dann
 ## "Ausbauen"); leer = eine Kachel aus dem Bestand (dann "Einbauen" in den
-## gewaehlten Halter, mit Wertaenderung, oder der Grund, warum nicht).
+## gewaehlten Halter oder den ersten, der sie nimmt -- mit Vergleich gegen
+## die Waffe, die dort steckt, und der Wertaenderung am DROME).
 func _open_card(entry: RosterEntry, build: DromeBuild, part: PartData,
-		installed_in: String, verdict: String = "") -> void:
+		installed_in: String) -> void:
 	if installed_in != "":
 		WeaponCard.open(self, part, Callable(), [{"text": "Ausbauen", "on": func():
 			GameState.roster.clear_slot(entry, installed_in)
 			_changed()}])
 		return
-	var slot := _selected_slot
+	var slot := _target_slot(build, part)
+	var replaced := build.part_in(slot) if slot != "" else null
 	var extra := func(box: VBoxContainer):
-		box.add_child(UiKit.label("%d frei im Hangar" % GameState.roster.free_count(part.id),
-			UiKit.SMALL, UiKit.MUTED))
-		if verdict != "":
-			box.add_child(UiKit.label("Halter %s: %s" % [SlotRules.slot_label(slot), verdict],
-				UiKit.SMALL, UiKit.WARN))
+		box.add_child(HSeparator.new())
+		if slot == "":
+			box.add_child(UiKit.label("Passt gerade in keinen Halter.", UiKit.SMALL, UiKit.WARN))
 			return
-		var replaced := build.part_in(slot)
+		var where := SlotRules.holder_label(build, slot)
 		if replaced != null:
-			box.add_child(UiKit.label("ersetzt %s (zurueck in den Hangar)"
-				% replaced.display_name, UiKit.SMALL, UiKit.WARN))
+			box.add_child(UiKit.label("%s: ersetzt %s (zurueck in den Hangar)"
+				% [where, replaced.display_name], UiKit.SMALL, UiKit.WARN))
+		else:
+			box.add_child(UiKit.label("%s ist frei  ·  %d frei im Hangar"
+				% [where, GameState.roster.free_count(part.id)], UiKit.SMALL, UiKit.MUTED))
 		_delta_lines(build, slot, part, box)
 	WeaponCard.open(self, part, extra, [{"text": "Einbauen", "primary": true,
-		"disabled": verdict != "", "on": func():
+		"disabled": slot == "", "on": func():
 			if GameState.roster.assign(entry, slot, part.id):
 				Accessibility.vibrate(20, true)
-				_changed()}])
+				_selected_slot = slot
+				_changed()}], replaced)
 
 
 ## Was sich am DROME aendern wuerde -- nur die Werte, die sich bewegen.

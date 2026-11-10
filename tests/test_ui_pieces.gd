@@ -137,6 +137,21 @@ func _molok() -> DromeBuild:
 		"feet": &"jugg_feet", "core": &"jugg_core"})
 
 
+
+func test_holders_are_named_without_a_direction() -> void:
+	# Wunsch des Spielers (10. Nov. 2026): "links" und "rechts" stehen nirgends
+	# mehr. Ein einzelner Halter heisst "Halter", mehrere bekommen eine Nummer.
+	var molok := _molok()
+	var names: Array = molok.equip_slots().map(func(slot): return SlotRules.holder_label(molok, slot))
+	t.equal(names, ["Halter 1", "Halter 2"], "der Molok hat Halter 1 und 2")
+	var vireo := DromeBuild.create("Vireo", {"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core"})
+	t.equal(SlotRules.holder_label(vireo, vireo.equip_slots()[0]), "Halter", "ein einzelner heisst nur Halter")
+	for choice in SlotRules.slot_choices(molok, PartDB.get_part(&"eq_pulse_blaster")):
+		for word in ["links", "rechts"]:
+			t.ok(not str(choice["label"]).contains(word), "keine Richtung in '%s'" % choice["label"])
+	t.equal(SlotRules.slot_label("core"), "Kern", "Sockel behalten ihren Namen")
+
 func test_every_mount_of_the_chassis_is_offered_with_its_verdict() -> void:
 	# Der Molok hat zwei Halter, beide bis mittel (8. Nov. 2026). Das schwere
 	# Gewehr passt in keinen -- beide stehen zur Wahl, beide mit Grund.
@@ -279,3 +294,45 @@ func test_overlapping_bars_move_up_or_hide_when_far() -> void:
 	t.equal(lifts[2], 0.0, "der freie bleibt")
 	var far: Array = BattleView.UnitBadgePainter.layout([a, b, c], 0)
 	t.equal(far[1], -1.0, "fern: verdeckter Balken entfaellt, der Ring reicht")
+
+
+func test_a_part_picture_never_leaves_its_shape() -> void:
+	# Wunsch des Spielers (10. Nov. 2026): kein Bild ragt ueber den Rand seiner
+	# Form -- nicht ueber das Dreieck (leicht), nicht ueber das Fuenfeck (schwer).
+	for kind in ["light", "medium", "heavy", "core"]:
+		for edge in [48.0, 84.0, 140.0]:
+			var points := SlotShape.polygon(kind, Rect2(0, 0, edge, edge).grow(-3.0))
+			for aspect in [0.4, 1.0, 1.6, 2.5]:
+				var inner := SlotShape.inner_rect(points, aspect)
+				t.ok(inner.size.x > edge * 0.2, "%s %.0f: das Bild bleibt erkennbar gross (%.0f)"
+					% [kind, edge, inner.size.x])
+				t.ok(absf(inner.size.x / inner.size.y - aspect) < 0.02, "%s: Seitenverhaeltnis bleibt" % kind)
+				for corner in [inner.position, inner.position + Vector2(inner.size.x, 0),
+						inner.end, inner.position + Vector2(0, inner.size.y)]:
+					t.ok(Geometry2D.is_point_in_polygon(corner, points),
+						"%s %.0f (%.1f): Ecke %s liegt in der Form" % [kind, edge, aspect, corner])
+
+
+func test_the_weapon_card_shows_values_as_bars_to_compare() -> void:
+	var blade := PartDB.get_part(&"eq_plasma_blade")
+	var blaster := PartDB.get_part(&"eq_pulse_blaster")
+	var attack: ActionData = WeaponCard._first_attack(blade)
+	var rows := WeaponCard.attack_bars(attack, WeaponCard._first_attack(blaster), null)
+	t.equal(rows.size(), 3, "Schaden, Tempo und Reichweite als Zeilen")
+	var bars: Array = []
+	for row in rows:
+		for child in row.get_children():
+			if child is StatBar:
+				bars.append(child)
+	t.equal(bars.map(func(b): return b.title), ["Schaden", "Tempo", "Reichweite"], "mit Namen")
+	t.ok(bars[0].compare >= 0.0, "der Schaden vergleicht mit der eingebauten Waffe")
+	t.ok(bars[1].value > bars[1].compare, "die Klinge ist schneller als der Blaster -- laengerer Balken")
+	t.ok(bars[2].value < bars[2].compare, "und reicht weniger weit")
+	t.ok(bars[1].text.contains("s"), "das Tempo steht in Sekunden da (%s)" % bars[1].text)
+	var alone := WeaponCard.attack_bars(attack, null, null)
+	for row in alone:
+		for child in row.get_children():
+			if child is StatBar:
+				t.ok(child.compare < 0.0, "ohne Vergleichswaffe kein Vergleich")
+	for row in rows + alone:
+		row.free()
