@@ -301,11 +301,10 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 		"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Hoechstlevel"], UiKit.SMALL, UiKit.GOOD))
 	info.add_child(UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL,
 		UiKit.ACCENT))
+	# Werte als Balken (10. Nov. 2026) -- zwischen DROMEs vergleichbar.
 	var stats := build.stats()
-	info.add_child(UiKit.label("Integritaet %d · Schild %d · Speed %d" % [stats["hp_max"],
-		stats.get("shield_max", 0), stats["spd"]], UiKit.SMALL, UiKit.MUTED))
-	info.add_child(UiKit.label("Schildpuls %d · Ruestung %d · Power %d" % [stats.get("shield_pulse", 0),
-		stats["def"], stats.get("power", 0)], UiKit.SMALL, UiKit.MUTED))
+	for key in ["hp_max", "shield_max", "spd", "def", "power"]:
+		info.add_child(StatBar.make(key, float(stats.get(key, 0))))
 	info.add_child(UiKit.label(_loadout(build), UiKit.SMALL, UiKit.MUTED))
 	return info
 
@@ -377,10 +376,9 @@ func _show_umbau() -> void:
 			GameState.save_roster())
 	info.add_child(name_field)
 	var stats := build.stats()
-	info.add_child(UiKit.row("Integritaet", str(stats["hp_max"])))
-	info.add_child(UiKit.row("Schild", str(stats.get("shield_max", 0))))
-	info.add_child(UiKit.row("SPD", str(stats["spd"])))
-	info.add_child(UiKit.row("Kampfwert", str(int(build.power_score())), UiKit.ACCENT))
+	for key in ["hp_max", "shield_max", "spd", "def", "power"]:
+		info.add_child(StatBar.make(key, float(stats.get(key, 0))))
+	info.add_child(StatBar.make("power_score", build.power_score()))
 
 	# Ohne Kern-Halter (6g) ist der erste Ausruestungshalter vorgewaehlt.
 	var equip := build.equip_slots()
@@ -597,13 +595,16 @@ func _delta_lines(build: DromeBuild, slot: String, part: PartData, box: VBoxCont
 	trial.slots[slot] = part.id
 	var before := build.stats()
 	var after := trial.stats()
-	for key in [["hp_max", "Integritaet"], ["shield_max", "Schild"], ["shield_pulse", "Schildpuls"],
-			["spd", "Speed"], ["def", "Ruestung"], ["power", "Power"]]:
-		var a: int = before.get(key[0], 0)
-		var b: int = after.get(key[0], 0)
+	# Vorher -> nachher als Vergleichsbalken: gruen dazu, rot weg.
+	for key in ["hp_max", "shield_max", "shield_pulse", "spd", "def", "power"]:
+		var a: int = before.get(key, 0)
+		var b: int = after.get(key, 0)
 		if a != b:
-			box.add_child(UiKit.row(key[1], "%d -> %d  (%+d)" % [a, b, b - a],
-				UiKit.GOOD if b > a else UiKit.BAD))
+			box.add_child(StatBar.make(key, float(b), float(a)))
+	var score_before := build.power_score()
+	var score_after := trial.power_score()
+	if not is_equal_approx(score_before, score_after):
+		box.add_child(StatBar.make("power_score", score_after, score_before))
 	for line in trial.validate():
 		box.add_child(UiKit.label("danach: " + line, UiKit.SMALL, UiKit.BAD))
 
