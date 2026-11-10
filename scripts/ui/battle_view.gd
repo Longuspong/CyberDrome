@@ -27,13 +27,17 @@ var _world: Node2D
 var _badges: UnitBadgePainter
 var _effects: EffectPainter
 var _arena: Array = []
-var _zone_sprites: Array = []
+var _zone: ZonePainter
 
 
 func _ready() -> void:
 	_world = Node2D.new()
 	_world.name = "World"
 	add_child(_world)
+
+	_zone = ZonePainter.new()
+	_zone.name = "Zone"
+	_world.add_child(_zone)
 
 	_badges = UnitBadgePainter.new()
 	_badges.name = "UnitBadges"
@@ -62,23 +66,60 @@ func build_terrain(battle_grid: Grid) -> void:
 
 ## Felder einfaerben -- die Aufstellungszone vor dem Kampf.
 func show_zone(tiles: Array, color: Color) -> void:
-	clear_zone()
-	for tile in tiles:
-		var sprite := Sprite2D.new()
-		sprite.texture = load(OVERLAY_TILE)
-		sprite.centered = false
-		sprite.position = IsoView.sprite_position(tile)
-		sprite.z_index = IsoView.depth(tile) * DEPTH_STRIDE + 2
-		sprite.modulate = color
-		IsoView.fit_sprite(sprite)
-		_world.add_child(sprite)
-		_zone_sprites.append(sprite)
+	_zone.tiles = tiles
+	_zone.color = color
+	_zone.target = null
+	_zone.selected = null
+	_zone.queue_redraw()
 
 
 func clear_zone() -> void:
-	for sprite in _zone_sprites:
-		sprite.queue_free()
-	_zone_sprites.clear()
+	show_zone([], Color.WHITE)
+
+
+## Aufstellung: das Feld, auf dem die gezogene Figur landen wuerde (``ok``:
+## in der Zone), und das Feld der angetippten Figur. null loescht.
+func mark_zone(target, ok: bool, selected) -> void:
+	if _zone.target == target and _zone.target_ok == ok and _zone.selected == selected:
+		return
+	_zone.target = target
+	_zone.target_ok = ok
+	_zone.selected = selected
+	_zone.queue_redraw()
+
+
+## Die Aufstellungszone als einzelne Kaestchen (10. Nov. 2026): je Feld eine
+## Raute mit Rand, damit man sieht, WO eine Figur stehen kann -- vorher eine
+## durchgehende gruene Flaeche. Dazu das Zielfeld beim Ziehen und das Feld der
+## gewaehlten Figur.
+class ZonePainter extends Node2D:
+	var tiles: Array = []
+	var color := Color.WHITE
+	var target = null
+	var target_ok := true
+	var selected = null
+
+	func _ready() -> void:
+		# Ueber dem Boden (-60/-50), unter Hindernissen und Figuren (ab 8).
+		z_index = -40
+
+	func _draw() -> void:
+		for tile in tiles:
+			_tile(tile, 0.86, Color(color, 0.14), Color(color, 0.6), 1.5)
+		if selected != null:
+			_tile(selected, 0.92, Color(1, 1, 1, 0.16), Color(1, 1, 1, 0.95), 2.5)
+		if target != null:
+			var mark := Color(0.45, 1.0, 0.7) if target_ok else Color(1.0, 0.4, 0.35)
+			_tile(target, 0.94, Color(mark, 0.4), Color(mark, 1.0), 3.0)
+
+	func _tile(tile: Vector2i, shrink: float, fill: Color, line: Color, width: float) -> void:
+		var center := IsoView.map_to_local(tile)
+		var points := PackedVector2Array()
+		for corner in IsoView.tile_corners(tile):
+			points.append(center + (corner - center) * shrink)
+		draw_colored_polygon(points, fill)
+		points.append(points[0])
+		draw_polyline(points, line, width, true)
 
 
 # ---------------------------------------------------------------------------

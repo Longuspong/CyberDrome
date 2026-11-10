@@ -225,10 +225,16 @@
   "build_attempts": 50,
 
   "deployment": {
-    "_kommentar": "Spieler unten links, Gegner oben rechts, je 3 Reihen x 5 Felder (Aufstellung per Ziehen vor dem Kampf). inset: Abstand der Zonen von den Ecken -- kuerzere Anlaufzeit im Autokampf.",
+    "_kommentar": [
+      "Aufstellung (MapGenerator.deployment_zone): ein Streifen am Kartenrand,",
+      "Spieler an der Kante unten links, Gegner oben rechts. rows Reihen tief,",
+      "columns Felder breit (mittig), inset Felder Abstand zum Rand. Ohne Zutun",
+      "stehen die DROMEs nach Rolle gestaffelt und ueber die Breite verteilt.",
+      "Bis 10. Nov. 2026 ein 3 x 5-Block, 5 Felder von der Ecke eingerueckt."
+    ],
     "rows": 3,
-    "columns": 5,
-    "inset": 5
+    "columns": 8,
+    "inset": 1
   },
 
   "obstacles": {

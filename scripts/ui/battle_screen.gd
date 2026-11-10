@@ -39,7 +39,13 @@ var battle: BattleManager
 ## Aufstellung vor dem Kampf (Nov. 2026): solange true, laeuft die Zeit nicht,
 ## und der Spieler zieht seine DROMEs in der markierten Zone zurecht.
 var _deploying: bool = true
+## Aufstellung: die Figur unter dem Finger (_grabbed), ab der Ziehschwelle
+## auch gezogen (_dragged), und die per Antippen gewaehlte (_selected).
+var _grabbed: Unit = null
 var _dragged: Unit = null
+var _selected: Unit = null
+var _grab_start := Vector2.ZERO
+var _grab_offset := Vector2.ZERO
 var _deploy_bar: Control
 var _play_bar: Control
 var _paused: bool = false
@@ -416,6 +422,7 @@ func _set_follow(on: bool) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	_track_touches(event)
 	if _deploying and _deploy_input(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -431,8 +438,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # Aufstellung
 # ---------------------------------------------------------------------------
 
-const ZONE_COLOR := Color(0.25, 0.85, 0.55, 0.32)
-const ZONE_FOE_COLOR := Color(1.0, 0.35, 0.35, 0.18)
+const ZONE_COLOR := Color(0.3, 0.95, 0.62)
 
 
 ## Vor dem Kampf: Zonen zeigen, Kamera auf beide Seiten, Startknopf.
@@ -449,7 +455,8 @@ func _start_fight() -> void:
 	if not _deploying:
 		return
 	_deploying = false
-	_dragged = null
+	_cancel_drag()
+	_selected = null
 	GameState.formation = battle.formation(true)
 	view.clear_zone()
 	_deploy_bar.visible = false
@@ -480,24 +487,62 @@ func _pointer_world(screen_position: Vector2) -> Vector2:
 	return view.to_local(get_canvas_transform().affine_inverse() * screen_position)
 
 
-## Ziehen und Ablegen der eigenen DROMEs. Tippt der Finger auf einen eigenen
-## DROME, wird er gezogen; sonst bleibt die Geste bei der Kamera. Touch kommt
-## auf dem Handy zusaetzlich als Maus an -- beides fuehrt zum selben Ergebnis.
+## Der eigene DROME unter dem Finger. Gegriffen wird die FIGUR, nicht ihr
+## Feld: das Bild steht gut eine Feldhoehe ueber seinem Feld, und wer auf den
+## Koerper tippte, traf vorher das Feld dahinter (oder keins). Liegen mehrere
+## uebereinander, gewinnt die vordere. Ohne Treffer zaehlt das Feld.
+func _unit_under(screen_position: Vector2) -> Unit:
+	var world := _pointer_world(screen_position)
+	var best: Unit = null
+	for unit in battle.units:
+		if not unit.is_player or not unit.is_alive():
+			continue
+		var feet: Vector2 = unit.visual_anchor()
+		# Koerper im 128er Bild: rund 64 breit, vom Boden 84 hoch; dazu etwas
+		# Rand fuer den Finger.
+		if Rect2(feet + Vector2(-36, -88), Vector2(72, 108)).has_point(world):
+			if best == null or IsoView.depth(unit.tile) > IsoView.depth(best.tile):
+				best = unit
+	if best != null:
+		return best
+	var on_tile := battle.resolver.unit_at(_pointer_tile(screen_position))
+	return on_tile if on_tile != null and on_tile.is_player else null
+
+
+## Aufstellen per Finger (10. Nov. 2026 ueberarbeitet):
+##
+##   Ziehen   Figur greifen und auf ein Feld der Zone ziehen. Sie haengt am
+##            Finger, wie sie gegriffen wurde; es zaehlt das Feld unter ihren
+##            Fuessen, und das leuchtet (gruen: geht, rot: ausserhalb).
+##   Tippen   Figur antippen (ihr Feld wird weiss), dann ein Feld der Zone
+##            oder eine andere eigene Figur -- setzt um bzw. tauscht.
+##
+## Beginnt die Geste nicht auf einer eigenen Figur, gehoert sie der Kamera.
+## Der Browser schickt jede Beruehrung zusaetzlich als Maus-Ereignis; diese
+## Doppelgaenger werden uebergangen, sonst zaehlte jedes Tippen zweimal.
 func _deploy_input(event: InputEvent) -> bool:
 	var pressed := false
 	var released := false
 	var moved := false
 	var at := Vector2.ZERO
-	if event is InputEventScreenTouch and event.index == 0:
+	if event is InputEventScreenTouch:
+		if event.index != 0:
+			# Zweiter Finger: Zoomen -- eine laufende Geste endet ohne Wirkung.
+			_cancel_drag()
+			return false
 		pressed = event.pressed
 		released = not event.pressed
 		at = event.position
+	elif event is InputEventScreenDrag:
+		if event.index != 0:
+			return false
+		moved = true
+		at = event.position
+	elif event is InputEventMouse and event.device == InputEvent.DEVICE_ID_EMULATION:
+		return _grabbed != null
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		pressed = event.pressed
 		released = not event.pressed
-		at = event.position
-	elif event is InputEventScreenDrag and event.index == 0:
-		moved = true
 		at = event.position
 	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
 		moved = true
@@ -505,49 +550,103 @@ func _deploy_input(event: InputEvent) -> bool:
 	else:
 		return false
 
-	if pressed and _dragged == null:
-		var unit := battle.resolver.unit_at(_pointer_tile(at))
-		if unit != null and unit.is_player:
-			_dragged = unit
-			unit.z_index = 5000
-			return true
-		return false
-	if moved and _dragged != null:
-		_dragged.position = _pointer_world(at) - IsoView.SPRITE_ORIGIN
-		return true
-	if released and _dragged != null:
-		var unit := _dragged
+	if pressed:
+		_grabbed = _unit_under(at)
 		_dragged = null
-		var target := _pointer_tile(at)
-		var other := battle.resolver.unit_at(target)
-		if not battle.place_unit(unit, target):
-			unit.place_at(unit.tile)
-		if other != null and other != unit:
-			view.refresh_unit_depth(other)
-		view.refresh_unit_depth(unit)
+		_grab_start = at
+		if _grabbed != null:
+			_grab_offset = _pointer_world(at) - _grabbed.position
+			return true
+		# Daneben getippt: ein Feld der Zone setzt die gewaehlte Figur um.
+		return _selected != null
+	if moved and _grabbed != null:
+		if _dragged == null and at.distance_to(_grab_start) > DRAG_THRESHOLD:
+			_dragged = _grabbed
+			_selected = null
+			_dragged.z_index = 4000
+		if _dragged != null:
+			_dragged.position = _pointer_world(at) - _grab_offset
+			var under := IsoView.local_to_map(_dragged.visual_anchor())
+			view.mark_zone(under, under in battle.deployment_tiles(true), null)
 		return true
+	if released:
+		var grabbed := _grabbed
+		var dragged := _dragged
+		_grabbed = null
+		_dragged = null
+		if dragged != null:
+			# Abgelegt: das Feld unter den Fuessen der Figur.
+			_place(dragged, IsoView.local_to_map(dragged.visual_anchor()))
+			return true
+		if grabbed != null:
+			# Angetippt: waehlen, abwaehlen oder mit der gewaehlten tauschen.
+			if _selected != null and _selected != grabbed:
+				_place(_selected, grabbed.tile)
+			else:
+				_selected = null if _selected == grabbed else grabbed
+				view.mark_zone(null, true, _selected.tile if _selected != null else null)
+			return true
+		if _selected != null and at.distance_to(_grab_start) <= DRAG_THRESHOLD:
+			var tile := _pointer_tile(at)
+			if tile in battle.deployment_tiles(true):
+				_place(_selected, tile)
+				return true
+			_selected = null
+			view.mark_zone(null, true, null)
 	return false
+
+
+## Setzt eine Figur auf ein Feld der Zone (oder zurueck, wenn es nicht geht)
+## und raeumt Auswahl und Markierung ab.
+func _place(unit: Unit, tile: Vector2i) -> void:
+	var other := battle.resolver.unit_at(tile)
+	if battle.place_unit(unit, tile):
+		Accessibility.vibrate(15)
+	else:
+		unit.place_at(unit.tile)
+	if other != null and other != unit:
+		view.refresh_unit_depth(other)
+	view.refresh_unit_depth(unit)
+	_selected = null
+	view.mark_zone(null, true, null)
+	_refresh_hud()
+
+
+func _cancel_drag() -> void:
+	if _dragged != null:
+		_dragged.place_at(_dragged.tile)
+		view.refresh_unit_depth(_dragged)
+	_dragged = null
+	_grabbed = null
+	view.mark_zone(null, true, _selected.tile if _selected != null else null)
+
+
+## Buchfuehrung ueber die Finger auf dem Bildschirm -- immer, auch wenn die
+## Aufstellung die Geste verbraucht. Sonst kennt das Zoomen den ersten Finger
+## nicht, wenn der zweite dazukommt.
+func _track_touches(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_touches[event.index] = event.position
+			_drag_distance = 0.0
+		else:
+			_touches.erase(event.index)
+		_pinch_distance = 0.0
+	elif event is InputEventScreenDrag:
+		_touches[event.index] = event.position
 
 
 ## Ziehen und Zoomen. Gibt true zurueck, wenn die Geste das Ereignis
 ## verbraucht hat.
 func _camera_input(event: InputEvent) -> bool:
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			_touches[event.index] = event.position
-			_drag_distance = 0.0
-			if _touches.size() == 2:
-				var points: Array = _touches.values()
-				_pinch_distance = maxf(1.0, points[0].distance_to(points[1]))
-				_pinch_zoom = camera.zoom.x
-		else:
-			_touches.erase(event.index)
-		return false
 	if event is InputEventScreenDrag:
-		_touches[event.index] = event.position
 		if _touches.size() >= 2:
 			var points: Array = _touches.values()
-			var distance: float = points[0].distance_to(points[1])
+			var distance: float = maxf(1.0, points[0].distance_to(points[1]))
+			if _pinch_distance <= 0.0:
+				# Der erste Zug mit zwei Fingern legt den Bezug fest.
+				_pinch_distance = distance
+				_pinch_zoom = camera.zoom.x
 			_set_follow(false)
 			_set_zoom(_pinch_zoom * distance / _pinch_distance)
 			return true
@@ -669,8 +768,8 @@ func _build_ui() -> void:
 	deploy.add_theme_constant_override("separation", 6)
 	_deploy_bar = deploy
 	bars.add_child(deploy)
-	var hint := UiKit.label("Zieh deine DROMEs in der gruenen Zone zurecht -- "
-		+ "Molok nach vorn, Strix nach hinten.", UiKit.SMALL, UiKit.MUTED)
+	var hint := UiKit.label("Zieh deine DROMEs auf ein gruenes Feld -- oder tippe "
+		+ "erst die Figur an, dann das Feld.", UiKit.SMALL, UiKit.MUTED)
 	deploy.add_child(hint)
 	var start := UiKit.button("Kampf starten", true)
 	start.pressed.connect(_start_fight)
