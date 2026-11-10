@@ -1,0 +1,1206 @@
+{
+ "_kommentar": [
+  "Handverlesene Gegnerteams (10. Nov. 2026, Vorgabe des Spielers: ausser im Chaos-Kampf",
+  "des Endlos-Modus wird kein Gegner gewuerfelt). Gelesen von scripts/core/encounters.gd,",
+  "benutzt von RunState.row()/enemies(). VORSCHLAG -- Namen, Zusammenstellung und Module",
+  "sind zum Aendern gedacht; der Test tests/test_encounters.gd prueft, dass jedes Team baubar ist.",
+  "types: die Gegnertypen. Zwei Normal-Knoten einer Reihe haben verschiedene Typen.",
+  "factions.<gebiet>.teams: je Team",
+  "  id, name, type, text   Anzeige in der Vorschau",
+  "  label                  kurzer Text unter dem Knoten; fehlt = der Name des Gegnertyps",
+  "  tiers                  wo es auftauchen darf (easy/normal/elite); fehlt = ueberall",
+  "  from_round, to_round   Rundenbereich im Lauf; fehlt = immer",
+  "  dromes                 in Reihenfolge der Wichtigkeit -- treten N Gegner an, sind es die ersten N.",
+  "                         chassis: Koerper-Id; weapons: je Halter eine Waffe (Molok zwei);",
+  "                         modules: Grundmodule in der Reihenfolge, in der sie mit Runde und Stufe",
+  "                         dazukommen (run.enemy_modules); recipe: ersetzt ab",
+  "                         run.enemy_modules.recipe_from_round das erste Modul, wenn 2 Plaetze frei sind.",
+  "training: die Teams der ersten Runden (run.training_rounds) -- normale DROMEs ohne Fraktion."
+ ],
+ "types": {
+  "training": {
+   "name": "Training",
+   "hint": "Standard-DROMEs zum Warmwerden."
+  },
+  "sturm": {
+   "name": "Sturm",
+   "hint": "Nahkaempfer, die sofort ranruecken. Hilft: eine feste Front, Stacheln, Abstand."
+  },
+  "schuetzen": {
+   "name": "Schuetzen",
+   "hint": "Bleiben auf Abstand und schiessen. Hilft: schnell ran, Schild, Locken."
+  },
+  "bollwerk": {
+   "name": "Bollwerk",
+   "hint": "Dicke Front mit Schild und Reparatur. Hilft: Energie gegen Schild, Feuer buendeln."
+  },
+  "kontrolle": {
+   "name": "Kontrolle",
+   "hint": "Betaeuben, Locken, Flaechen. Hilft: verteilt aufstellen, den Wirker zuerst."
+  },
+  "gemischt": {
+   "name": "Gemischt",
+   "hint": "Von allem etwas -- keine klare Schwaeche, keine klare Staerke."
+  }
+ },
+ "training": [
+  {
+   "id": "sparring_feuer",
+   "name": "Sparring: Feuerlinie",
+   "type": "training",
+   "text": "Zwei Blaster und ein Runenstab -- die Grundlagen des Fernkampfs.",
+   "dromes": [
+    {
+     "name": "Trainer A",
+     "chassis": "scout_body",
+     "weapons": [
+      "eq_pulse_blaster"
+     ]
+    },
+    {
+     "name": "Trainer B",
+     "chassis": "mage_body",
+     "weapons": [
+      "eq_rune_staff"
+     ]
+    },
+    {
+     "name": "Trainer C",
+     "chassis": "scout_body",
+     "weapons": [
+      "eq_pulse_blaster"
+     ]
+    },
+    {
+     "name": "Trainer D",
+     "chassis": "strix_body",
+     "weapons": [
+      "eq_pulse_blaster"
+     ]
+    }
+   ],
+   "label": "Feuerlinie"
+  },
+  {
+   "id": "sparring_front",
+   "name": "Sparring: Frontlinie",
+   "type": "training",
+   "text": "Ein Molok vorn, dahinter ein Schuetze -- so sieht eine Aufstellung aus.",
+   "dromes": [
+    {
+     "name": "Trainer A",
+     "chassis": "jugg_body",
+     "weapons": [
+      "eq_hammer",
+      "eq_deflector"
+     ]
+    },
+    {
+     "name": "Trainer B",
+     "chassis": "scout_body",
+     "weapons": [
+      "eq_pulse_blaster"
+     ]
+    },
+    {
+     "name": "Trainer C",
+     "chassis": "strix_body",
+     "weapons": [
+      "eq_rail_lance"
+     ]
+    },
+    {
+     "name": "Trainer D",
+     "chassis": "mage_body",
+     "weapons": [
+      "eq_rune_staff"
+     ]
+    }
+   ],
+   "label": "Frontlinie"
+  },
+  {
+   "id": "sparring_klingen",
+   "name": "Sparring: Nahkampf",
+   "type": "training",
+   "text": "Klingen, die ranwollen -- halte sie von deinen Schuetzen fern.",
+   "dromes": [
+    {
+     "name": "Trainer A",
+     "chassis": "scout_body",
+     "weapons": [
+      "eq_plasma_blade"
+     ]
+    },
+    {
+     "name": "Trainer B",
+     "chassis": "scout_body",
+     "weapons": [
+      "eq_plasma_blade"
+     ]
+    },
+    {
+     "name": "Trainer C",
+     "chassis": "jugg_body",
+     "weapons": [
+      "eq_hammer",
+      "eq_bulwark_ram"
+     ]
+    },
+    {
+     "name": "Trainer D",
+     "chassis": "scout_body",
+     "weapons": [
+      "eq_boomerang"
+     ]
+    }
+   ],
+   "label": "Nahkampf"
+  }
+ ],
+ "factions": {
+  "city": {
+   "teams": [
+    {
+     "id": "klingentrupp",
+     "name": "Klingentrupp",
+     "type": "sturm",
+     "text": "Klingen voraus, der Hammer hinterher. Wer zuerst faellt, entscheidet.",
+     "dromes": [
+      {
+       "name": "Kiri",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_heavy_edge",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_overload"
+      },
+      {
+       "name": "Oni",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_hammer",
+        "eq_bulwark_ram"
+       ],
+       "modules": [
+        "mod_spike_grid",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_brawler"
+      },
+      {
+       "name": "Kaze",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_heavy_edge"
+       ]
+      },
+      {
+       "name": "Tsubame",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_boomerang"
+       ],
+       "modules": [
+        "mod_twin_barrel",
+        "mod_rapid_fire"
+       ]
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "wurfsterne",
+     "name": "Wurfsterne",
+     "type": "schuetzen",
+     "text": "Bumerangs und Blaster aus der Bewegung, dahinter eine Lanze.",
+     "dromes": [
+      {
+       "name": "Tsubame",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_boomerang"
+       ],
+       "modules": [
+        "mod_twin_barrel",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_gunslinger"
+      },
+      {
+       "name": "Yumi",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_rail_lance"
+       ],
+       "modules": [
+        "mod_beacon",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_seeker"
+      },
+      {
+       "name": "Suzume",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_neon_blaster"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_overvolt"
+      },
+      {
+       "name": "Kabuto",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_deflector",
+        "eq_pulse_blaster"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_bait"
+       ]
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "eisenfaust",
+     "name": "Eisenfaust",
+     "type": "bollwerk",
+     "text": "Zwei Moloks als Mauer, ein Mechaniker haelt sie am Laufen.",
+     "dromes": [
+      {
+       "name": "Oni",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_hammer",
+        "eq_bulwark_ram"
+       ],
+       "modules": [
+        "mod_spike_grid",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_brawler"
+      },
+      {
+       "name": "Sensei",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_drone_pod"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_capacitor"
+       ]
+      },
+      {
+       "name": "Kabuto",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_deflector",
+        "eq_hammer"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_bulwark"
+      },
+      {
+       "name": "Kiri",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_heavy_edge",
+        "mod_rapid_fire"
+       ]
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "schattenlaeufer",
+     "name": "Schattenlaeufer",
+     "type": "kontrolle",
+     "text": "Ein Klingenmeister mit Echo, ein Koeder, der dich festhaelt.",
+     "dromes": [
+      {
+       "name": "Kage",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_overload"
+      },
+      {
+       "name": "Oni",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_hammer",
+        "eq_deflector"
+       ],
+       "modules": [
+        "mod_bait",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_whirlwind"
+      },
+      {
+       "name": "Kaze",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_heavy_edge"
+       ]
+      },
+      {
+       "name": "Tsubame",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_boomerang"
+       ],
+       "modules": [
+        "mod_beacon",
+        "mod_twin_barrel"
+       ],
+       "recipe": "mod_chain_reaction"
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "strassenbande",
+     "name": "Strassenbande",
+     "type": "gemischt",
+     "text": "Wer gerade Zeit hatte: Klinge, Blaster, Hammer.",
+     "dromes": [
+      {
+       "name": "Riku",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_pulse_blaster"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_twin_barrel"
+       ]
+      },
+      {
+       "name": "Kiri",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_heavy_edge",
+        "mod_spike_grid"
+       ]
+      },
+      {
+       "name": "Goro",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_hammer",
+        "eq_pulse_blaster"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_ram"
+      },
+      {
+       "name": "Hana",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_neon_blaster"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_beacon"
+       ],
+       "recipe": "mod_seeker"
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "hornissen",
+     "name": "Hornissen",
+     "type": "sturm",
+     "text": "Schnell, leicht, immer in Bewegung -- Bumerangs von allen Seiten.",
+     "from_round": 3,
+     "dromes": [
+      {
+       "name": "Tsubame",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_boomerang"
+       ],
+       "modules": [
+        "mod_twin_barrel",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_gunslinger"
+      },
+      {
+       "name": "Hachi",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_boomerang"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_twin_barrel"
+       ],
+       "recipe": "mod_fork"
+      },
+      {
+       "name": "Kaze",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_heavy_edge"
+       ]
+      },
+      {
+       "name": "Suzume",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_boomerang"
+       ],
+       "modules": [
+        "mod_beacon",
+        "mod_twin_barrel"
+       ],
+       "recipe": "mod_chain_reaction"
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "schattenrat",
+     "name": "Schattenrat",
+     "type": "kontrolle",
+     "tiers": [
+      "elite"
+     ],
+     "text": "Die Meister des Clans: eine Lanze, ein Wirker mit Echo, davor der Schildtraeger.",
+     "dromes": [
+      {
+       "name": "Meister Yumi",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_rail_lance"
+       ],
+       "modules": [
+        "mod_beacon",
+        "mod_rapid_fire",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_seeker"
+      },
+      {
+       "name": "Meister Hachi",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_rune_staff"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_rapid_fire",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_takt_chip"
+      },
+      {
+       "name": "Meister Kabuto",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_deflector",
+        "eq_hammer"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_bulwark"
+      },
+      {
+       "name": "Meister Kiri",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_heavy_edge",
+        "mod_rapid_fire",
+        "mod_spike_grid"
+       ],
+       "recipe": "mod_overload"
+      }
+     ]
+    },
+    {
+     "id": "klingenmeister",
+     "name": "Klingenmeister",
+     "type": "sturm",
+     "tiers": [
+      "elite"
+     ],
+     "text": "Vier Klingen, eine davon mit Echo. Wer sie rankommen laesst, verliert.",
+     "dromes": [
+      {
+       "name": "Meister Kage",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_heavy_edge",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_overload"
+      },
+      {
+       "name": "Meister Oni",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_hammer",
+        "eq_bulwark_ram"
+       ],
+       "modules": [
+        "mod_spike_grid",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_brawler"
+      },
+      {
+       "name": "Meister Kiri",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_heavy_edge",
+        "mod_rapid_fire",
+        "mod_spike_grid"
+       ],
+       "recipe": "mod_overload"
+      },
+      {
+       "name": "Meister Kaze",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_heavy_edge",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_overvolt"
+      }
+     ]
+    },
+    {
+     "id": "nachtwache",
+     "name": "Nachtwache",
+     "type": "schuetzen",
+     "tiers": [
+      "elite"
+     ],
+     "text": "Zwei Lanzen hinter zwei Moloks. Jeder Schuss sitzt -- komm schnell ran.",
+     "dromes": [
+      {
+       "name": "Meister Yumi",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_rail_lance"
+       ],
+       "modules": [
+        "mod_beacon",
+        "mod_rapid_fire",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_seeker"
+      },
+      {
+       "name": "Meister Kabuto",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_deflector",
+        "eq_hammer"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_bait"
+       ],
+       "recipe": "mod_shackle"
+      },
+      {
+       "name": "Meister Ya",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_rail_lance"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_twin_barrel",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_gunslinger"
+      },
+      {
+       "name": "Meister Oni",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_hammer",
+        "eq_bulwark_ram"
+       ],
+       "modules": [
+        "mod_spike_grid",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_brawler"
+      }
+     ]
+    }
+   ]
+  },
+  "green": {
+   "teams": [
+    {
+     "id": "schwarm",
+     "name": "Schwarm",
+     "type": "sturm",
+     "text": "Viele leichte DROMEs, die gemeinsam ein Ziel zerlegen.",
+     "dromes": [
+      {
+       "name": "Spore 1",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_boomerang"
+       ],
+       "modules": [
+        "mod_twin_barrel",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_chain_reaction"
+      },
+      {
+       "name": "Spore 2",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_boomerang"
+       ],
+       "modules": [
+        "mod_twin_barrel",
+        "mod_beacon"
+       ]
+      },
+      {
+       "name": "Spore 3",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_plasma_blade"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_heavy_edge"
+       ]
+      },
+      {
+       "name": "Myzel",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_rune_staff"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_twin_barrel"
+       ],
+       "recipe": "mod_fork"
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "lichtfaenger",
+     "name": "Lichtfaenger",
+     "type": "schuetzen",
+     "text": "Blaster in Reihe, jeder Treffer springt weiter.",
+     "dromes": [
+      {
+       "name": "Halm 1",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_pulse_blaster"
+       ],
+       "modules": [
+        "mod_twin_barrel",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_gunslinger"
+      },
+      {
+       "name": "Halm 2",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_neon_blaster"
+       ],
+       "modules": [
+        "mod_rapid_fire",
+        "mod_beacon"
+       ],
+       "recipe": "mod_seeker"
+      },
+      {
+       "name": "Bluete",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_rune_staff"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_twin_barrel"
+       ],
+       "recipe": "mod_fork"
+      },
+      {
+       "name": "Halm 3",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_pulse_blaster"
+       ],
+       "modules": [
+        "mod_twin_barrel",
+        "mod_beacon"
+       ],
+       "recipe": "mod_chain_reaction"
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "wurzelwerk",
+     "name": "Wurzelwerk",
+     "type": "kontrolle",
+     "text": "Zwei Wirker ziehen dich zusammen, der Rest erntet.",
+     "dromes": [
+      {
+       "name": "Bluete",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_rune_staff"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_takt_chip"
+      },
+      {
+       "name": "Myzel",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_rune_staff"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_twin_barrel"
+       ],
+       "recipe": "mod_fork"
+      },
+      {
+       "name": "Gaertner",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_drone_pod"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_capacitor"
+       ]
+      },
+      {
+       "name": "Spore 1",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_boomerang"
+       ],
+       "modules": [
+        "mod_twin_barrel",
+        "mod_rapid_fire"
+       ]
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "mutterbluete",
+     "name": "Mutterbluete",
+     "type": "kontrolle",
+     "tiers": [
+      "elite"
+     ],
+     "text": "Zwei Wirker mit Echo und ihr Schwarm -- alles zieht sich um dich zusammen.",
+     "dromes": [
+      {
+       "name": "Mutterbluete",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_rune_staff"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_rapid_fire",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_takt_chip"
+      },
+      {
+       "name": "Myzel",
+       "chassis": "mage_body",
+       "weapons": [
+        "eq_rune_staff"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_twin_barrel"
+       ],
+       "recipe": "mod_fork"
+      },
+      {
+       "name": "Halm 1",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_pulse_blaster"
+       ],
+       "modules": [
+        "mod_twin_barrel",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_gunslinger"
+      },
+      {
+       "name": "Gaertner",
+       "chassis": "scout_body",
+       "weapons": [
+        "eq_drone_pod"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_capacitor"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "plant7": {
+   "teams": [
+    {
+     "id": "panzerkeil",
+     "name": "Panzerkeil",
+     "type": "bollwerk",
+     "text": "Drei Moloks nebeneinander. Langsam, aber sie kommen an.",
+     "dromes": [
+      {
+       "name": "Block 1",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_hammer",
+        "eq_deflector"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_bulwark"
+      },
+      {
+       "name": "Block 2",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_bulwark_ram",
+        "eq_hammer"
+       ],
+       "modules": [
+        "mod_heavy_edge",
+        "mod_armor_plate"
+       ],
+       "recipe": "mod_ram"
+      },
+      {
+       "name": "Block 3",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_deflector",
+        "eq_bulwark_ram"
+       ],
+       "modules": [
+        "mod_spike_grid",
+        "mod_beacon"
+       ],
+       "recipe": "mod_brand"
+      },
+      {
+       "name": "Lader",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_mortar"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_rapid_fire"
+       ]
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "batterie",
+     "name": "Batterie",
+     "type": "schuetzen",
+     "text": "Moerser und Lanze hinten, davor ein Schildtraeger.",
+     "dromes": [
+      {
+       "name": "Rohr 1",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_mortar"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_rapid_fire"
+       ]
+      },
+      {
+       "name": "Block 1",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_deflector",
+        "eq_hammer"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_bulwark"
+      },
+      {
+       "name": "Rohr 2",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_rail_lance"
+       ],
+       "modules": [
+        "mod_beacon",
+        "mod_rapid_fire"
+       ],
+       "recipe": "mod_seeker"
+      },
+      {
+       "name": "Block 2",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_deflector",
+        "eq_pulse_blaster"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_bait"
+       ],
+       "recipe": "mod_shackle"
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "walze",
+     "name": "Walze",
+     "type": "sturm",
+     "text": "Rammen in Reihe: jeder Stoss schiebt dich weiter zurueck.",
+     "dromes": [
+      {
+       "name": "Block 2",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_bulwark_ram",
+        "eq_hammer"
+       ],
+       "modules": [
+        "mod_heavy_edge",
+        "mod_armor_plate"
+       ],
+       "recipe": "mod_ram"
+      },
+      {
+       "name": "Block 4",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_bulwark_ram",
+        "eq_bulwark_ram"
+       ],
+       "modules": [
+        "mod_heavy_edge",
+        "mod_spike_grid"
+       ],
+       "recipe": "mod_brawler"
+      },
+      {
+       "name": "Hammerwerk",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_hammer"
+       ],
+       "modules": [
+        "mod_heavy_edge",
+        "mod_amplifier"
+       ],
+       "recipe": "mod_overload"
+      },
+      {
+       "name": "Block 1",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_hammer",
+        "eq_deflector"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_bulwark"
+      }
+     ],
+     "tiers": [
+      "easy",
+      "normal"
+     ]
+    },
+    {
+     "id": "werkschutz",
+     "name": "Werkschutz",
+     "type": "bollwerk",
+     "tiers": [
+      "elite"
+     ],
+     "text": "Moerser, Lanze und zwei Moloks mit vollem Schild. Die Fabrik laesst niemanden durch.",
+     "dromes": [
+      {
+       "name": "Rohr 1",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_mortar"
+       ],
+       "modules": [
+        "mod_amplifier",
+        "mod_rapid_fire",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_overload"
+      },
+      {
+       "name": "Block 1",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_hammer",
+        "eq_deflector"
+       ],
+       "modules": [
+        "mod_armor_plate",
+        "mod_capacitor"
+       ],
+       "recipe": "mod_bulwark"
+      },
+      {
+       "name": "Rohr 2",
+       "chassis": "strix_body",
+       "weapons": [
+        "eq_rail_lance"
+       ],
+       "modules": [
+        "mod_beacon",
+        "mod_rapid_fire",
+        "mod_heavy_edge"
+       ],
+       "recipe": "mod_seeker"
+      },
+      {
+       "name": "Block 3",
+       "chassis": "jugg_body",
+       "weapons": [
+        "eq_deflector",
+        "eq_bulwark_ram"
+       ],
+       "modules": [
+        "mod_spike_grid",
+        "mod_beacon"
+       ],
+       "recipe": "mod_brand"
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

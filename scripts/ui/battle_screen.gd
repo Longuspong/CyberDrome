@@ -339,24 +339,7 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	view.show_unit_badges([])
 	_status.text = "%s nach %d s  ·  Seed %d" % [
 		BattleManager.outcome_label(outcome), int(battle.time), battle.battle_seed]
-	_grant_loot(outcome)
 	_show_result(outcome)
-
-
-## Beute: nur bei SIEG und nur in einem echten Chaos-Lauf (chaos_reference_power
-## gesetzt). Der Wuerfel haengt am Seed des Gefechts -- derselbe Kampf gibt
-## dieselbe Beute. Laeuft genau einmal, weil battle_over genau einmal feuert.
-func _grant_loot(outcome: BattleManager.Outcome) -> void:
-	GameState.last_loot = []
-	if GameState.in_run_battle:
-		return              # im Lauf ist die Belohnung die Kartenwahl danach
-	if outcome != BattleManager.Outcome.VICTORY:
-		return
-	if GameState.chaos_reference_power <= 0.0:
-		return
-	var rng := RandomNumberGenerator.new()
-	rng.seed = battle.battle_seed ^ 0x10CE10C
-	GameState.roll_chaos_loot(battle.enemy_equipment, rng)
 
 
 # ---------------------------------------------------------------------------
@@ -847,31 +830,13 @@ func _toggle_pause() -> void:
 # Ergebnis
 # ---------------------------------------------------------------------------
 
-## Die Beute-Zeile im Ergebnis. Nur bei einem echten Chaos-Sieg; sonst
-## schweigt sie. Bei Beute nennt sie die Teile, bei Duerre den Pity-Fortschritt.
+## Im Lauf: die Credits des Kampfes; die Beute zeigt der Zwischenstopp.
 func _add_loot_section(box: VBoxContainer, outcome: BattleManager.Outcome) -> void:
-	if GameState.in_run_battle:
-		# Im Lauf kommen Credits und danach die Belohnung -- kein Chaos-Wuerfel.
-		if GameState.run != null:
-			var won := outcome == BattleManager.Outcome.VICTORY
-			box.add_child(UiKit.label("+%d Credits%s" % [GameState.run.battle_credits(won),
-				"  ·  Belohnung im Lauf" if won else ""], UiKit.BODY, UiKit.WARN))
+	if not GameState.in_run_battle or GameState.run == null:
 		return
-	if GameState.chaos_reference_power <= 0.0 and GameState.last_loot.is_empty():
-		return
-	if outcome != BattleManager.Outcome.VICTORY:
-		return
-	if GameState.last_loot.is_empty():
-		box.add_child(UiKit.label("Keine Beute.", UiKit.BODY, UiKit.MUTED))
-		var threshold := int(Config.section("chaos").get("loot_pity_threshold", 4))
-		box.add_child(UiKit.label("Pity: %d / %d bis zum garantierten Drop." % [
-			GameState.chaos_pity, threshold], UiKit.SMALL, UiKit.MUTED))
-		return
-	box.add_child(UiKit.label("Beute!", UiKit.H2, UiKit.GOOD))
-	for part_id in GameState.last_loot:
-		var part := PartDB.get_part(part_id)
-		box.add_child(UiKit.label("  + %s" % (part.display_name if part != null else str(part_id)),
-			UiKit.BODY, UiKit.GOOD))
+	var won := outcome == BattleManager.Outcome.VICTORY
+	box.add_child(UiKit.label("+%d Credits%s" % [GameState.run.battle_credits(won),
+		"  ·  Beute im Zwischenstopp" if won else ""], UiKit.BODY, UiKit.WARN))
 
 
 func _show_result(outcome: BattleManager.Outcome) -> void:
@@ -954,13 +919,11 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	var back := UiKit.button("Zum Hangar", true)
 	back.pressed.connect(func():
 		GameState.battle_seed = 0
-		GameState.clear_chaos_run()
 		get_tree().change_scene_to_file("res://scenes/hangar.tscn"))
 	buttons.add_child(back)
 
 	var menu := UiKit.button("Zur Startseite")
 	menu.pressed.connect(func():
 		GameState.battle_seed = 0
-		GameState.clear_chaos_run()
 		get_tree().change_scene_to_file("res://scenes/main.tscn"))
 	buttons.add_child(menu)

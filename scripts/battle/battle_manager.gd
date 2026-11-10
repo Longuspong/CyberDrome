@@ -38,7 +38,7 @@ var time: float = 0.0
 var ticks: int = 0
 
 ## Die Ausruestungs-Typen der Gegner dieses Gefechts -- der Beute-Pool des
-## Chaos-Virus. Steht schon beim Aufbau fest und ueberlebt den Tod der Gegner,
+## Laufs. Steht schon beim Aufbau fest und ueberlebt den Tod der Gegner,
 ## damit die Beute-Rechnung nach dem Sieg noch weiss, WAS zu erbeuten war.
 var enemy_equipment: Array = []
 
@@ -60,7 +60,7 @@ var _time_limit: float = 180.0
 ## ``enemy_override``: feste Gegner statt gewuerfelter -- fuer Spiegel- und
 ## Fairness-Tests (dasselbe Squad auf beiden Seiten).
 ## ``region_id``: feste Region (Lauf: das Gebiet des Laufs). Leer = aus dem
-## Seed gewuerfelt (Chaos-Virus, Tests).
+## Seed gewuerfelt (Tests, Direktstart).
 func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 		region_id: StringName = &"") -> void:
 	battle_seed = seed_value
@@ -78,23 +78,13 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 	grid = MapGenerator.generate(region)
 	MapGenerator.place_obstacles(grid, battle_seed)
 
-	# Der Gegner spiegelt normalerweise den eigenen Squad (Anzahl und Staerke).
-	# Im Chaos-Virus entkoppeln GameState.chaos_* das: der Gegner tritt in voller
-	# Staerke an (chaos_reference_power), unabhaengig davon, wie wenige DROMEs man
-	# selbst mitnimmt -- genau das ist die Erschwernis, an der die Beute haengt.
-	var enemy_count := player_builds.size()
-	var target_power := DromeBuild.squad_power(player_builds)
-	if GameState.chaos_enemy_count > 0:
-		enemy_count = GameState.chaos_enemy_count
-	if GameState.chaos_reference_power > 0.0:
-		# Etwas schwaecher als die volle eigene Mannschaft: im Chaos-Virus sieht
-		# man den Gegner vorher nicht (chaos.enemy_power_factor). Das Handicap und
-		# damit die Beute rechnen weiter gegen die volle Referenz.
-		target_power = GameState.chaos_reference_power \
-			* float(Config.section("chaos").get("enemy_power_factor", 1.0))
+	# Ohne feste Gegner (Direktstart der Kampfszene, Tests, Werkzeuge) wird
+	# ein Squad in der Staerke des eigenen gewuerfelt. Im Spiel selbst kommen
+	# die Gegner immer vom Lauf (GameState.enemy_override).
 	var enemy_builds: Array = enemy_override
 	if enemy_builds.is_empty():
-		enemy_builds = EnemyGenerator.new(battle_seed).generate(enemy_count, target_power)
+		enemy_builds = EnemyGenerator.new(battle_seed).generate(player_builds.size(),
+			DromeBuild.squad_power(player_builds))
 	enemy_equipment = _distinct_equipment(enemy_builds)
 
 	units.clear()

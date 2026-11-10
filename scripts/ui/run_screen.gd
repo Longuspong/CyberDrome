@@ -94,8 +94,11 @@ func _refresh() -> void:
 		_header_round.text = "Aufstellung"
 		_show_setup()
 		return
-	_header_round.text = "Runde %d von %d" % [mini(run.round, RunState.rounds_total()),
-		RunState.rounds_total()]
+	if run.is_endless():
+		_header_round.text = "Endlos  ·  Runde %d" % run.round
+	else:
+		_header_round.text = "Runde %d von %d" % [mini(run.round, RunState.rounds_total()),
+			RunState.rounds_total()]
 	_refresh_lives(run)
 	_refresh_squad(run)
 	match run.phase:
@@ -158,39 +161,47 @@ func _drome_card(build: DromeBuild) -> Control:
 
 ## Vor dem Lauf: wer kommt mit? Vorgeschlagen ist der Hangar-Squad.
 func _show_setup() -> void:
+	var endless := GameState.next_run_mode == "endless"
+	_header_round.text = "Endlos-Modus" if endless else "Neon City"
 	_side.add_child(_label("Wer kommt mit? Vorgeschlagen ist dein Hangar-Squad. Im Lauf "
-		+ "baust du nur mit Beute um -- nicht mit dem Inventar von zuhause. Beute, die "
-		+ "du nicht einbaust, kannst du nach Hause schicken.", UiKit.SMALL, COLOR_MUTED))
+		+ "bleiben die Waffen, wie sie sind -- staerker wirst du mit Modulen aus dem Laden.",
+		UiKit.SMALL, COLOR_MUTED))
 	var picker := SquadPicker.new()
 	_side.add_child(picker)
 	picker.setup(RunState.squad_max())
-	_side.add_child(_label("%d Kaempfe, %d Leben. Vor jedem Kampf waehlst du den Gegner: "
-		% [RunState.rounds_total(), RunState.max_lives()]
-		+ "Leicht, Normal oder Elite -- je haerter, desto besser die Beute.",
-		UiKit.SMALL, COLOR_MUTED))
+	if endless:
+		_side.add_child(_label("Kein Ende, ein Leben: die erste Niederlage beendet den Lauf und "
+			+ "kostet die Beute. Nach jeder Runde kannst du aussteigen und sie behalten. "
+			+ "Ab und zu taucht ein Chaos-Kampf auf -- Gegner unbekannt, bessere Beute.",
+			UiKit.SMALL, COLOR_MUTED))
+	else:
+		_side.add_child(_label("%d Kaempfe, %d Leben. Die ersten %d sind Training gegen normale "
+			% [RunState.rounds_total(), RunState.max_lives(),
+				int(RunState.cfg().get("training_rounds", 0))]
+			+ "DROMEs, danach kommen die Neon Ninja's. Vor jedem Kampf waehlst du: immer ein "
+			+ "leichter Gegner, dazu zwei normale oder ein normaler und ein Elite.",
+			UiKit.SMALL, COLOR_MUTED))
 	var start := _big_button("Lauf starten")
 	start.disabled = picker.chosen_count() < 1
 	picker.changed.connect(func(): start.disabled = picker.chosen_count() < 1)
 	start.pressed.connect(func():
-		GameState.start_run()
+		GameState.start_run(0, GameState.next_run_mode)
 		_refresh())
 	_side.add_child(start)
 
 
 func _show_prepare(run: RunState) -> void:
-	_side.add_child(_label("Waehle deinen Weg", 22, COLOR_HEADING))
-	# Karte wie bei FTL (10. Nov. 2026): erreichbare Knoten dieser Runde,
-	# darunter die naechste Reihe als Vorausschau.
+	_side.add_child(_label("Waehle deinen Gegner", 22, COLOR_HEADING))
+	# Die Knoten dieser Runde, darunter die Reihe, die danach kaeme.
 	var map := MapView.new(run)
 	map.picked.connect(func(index: int):
 		if run.choose_node(index):
 			Accessibility.vibrate(15, true)
 		_refresh())
 	_side.add_child(map)
-	_side.add_child(_label("Leicht (Kreis) · Normal (Raute) · Elite (Stern) · ? = Chaos: Gegner unbekannt, bessere Beute",
-		14, COLOR_MUTED))
 
 	var info := run.preview()
+	var chaos := bool(info.get("chaos", false))
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _panel_style(true))
 	var box := VBoxContainer.new()
@@ -198,33 +209,39 @@ func _show_prepare(run: RunState) -> void:
 	panel.add_child(box)
 	_side.add_child(panel)
 
-	box.add_child(_label("Region: %s" % info["region"], 18))
-	if str(info.get("faction", "")) != "":
-		box.add_child(_label("Gegner: %s  ·  Profil %s" % [info["faction"], info["profile"]],
-			16, COLOR_WARN))
-		if str(info.get("faction_text", "")) != "":
-			box.add_child(_label(str(info["faction_text"]), 14, COLOR_MUTED))
+	# Wer: Stufe, Team und Gegnertyp -- der Typ sagt, was auf einen zukommt.
+	var tier_color: Color = MapView.CHAOS_COLOR if chaos else MapView.COLOR.get(run.tier, Color.WHITE)
+	if chaos:
+		box.add_child(_label("CHAOS-Kampf", 20, tier_color))
+		box.add_child(_label("Der Virus wuerfelt alles: DROMEs, Waffen, Module. Gegner erst im "
+			+ "Kampf zu sehen.", 14, COLOR_MUTED))
+	else:
+		box.add_child(_label("%s  ·  %s" % [RunState.TIER_NAMES[run.tier], info["team"]], 20, tier_color))
+		if str(info.get("type", "")) != "":
+			box.add_child(_label("Gegnertyp: %s" % info["type"], 16, COLOR_WARN))
+		if str(info.get("team_text", "")) != "":
+			box.add_child(_label(str(info["team_text"]), 14))
+		if str(info.get("type_hint", "")) != "":
+			box.add_child(_label(str(info["type_hint"]), 14, COLOR_MUTED))
+	var where := str(info["region"])
+	if str(info.get("faction", "")) != "" and not chaos:
+		where += "  ·  %s" % info["faction"]
+	box.add_child(_label(where, 14, COLOR_MUTED))
 
-	var chaos := bool(info.get("chaos", false))
-	box.add_child(_label("%s%s" % [RunState.TIER_NAMES[run.tier], "  ·  CHAOS" if chaos else ""],
-		18, MapView.CHAOS_COLOR if chaos else Color.WHITE))
 	var own := float(info["own_power"])
 	var foe := float(info["enemy_power"])
 	var ratio := own / maxf(1.0, foe)
 	var verdict := "ueberlegen" if ratio >= 1.1 else ("ausgeglichen" if ratio >= 0.9 else "unterlegen")
 	var color := COLOR_GOOD if ratio >= 1.1 else (COLOR_WARN if ratio >= 0.9 else COLOR_BAD)
 	if chaos:
-		box.add_child(_label("Staerke: du %d  ·  Gegner ???" % int(own), 18, COLOR_WARN))
+		box.add_child(_label("Kampfwert: du %d  ·  Gegner ???" % int(own), 16, COLOR_WARN))
 	else:
-		box.add_child(_label("Staerke: du %d  ·  Gegner %d  (%s)" % [int(own), int(foe), verdict],
-			18, color))
-	box.add_child(_label("Beute: %s" % info["reward_text"], 16,
-		COLOR_WARN if run.tier == RunState.Tier.ELITE else COLOR_MUTED))
+		box.add_child(_label("Kampfwert: du %d  ·  Gegner %d  (%s)" % [int(own), int(foe), verdict],
+			16, color))
+	box.add_child(_label("Beute: %s" % info["reward_text"], 14,
+		COLOR_WARN if run.tier == RunState.Tier.ELITE or chaos else COLOR_MUTED))
 
-	if chaos:
-		box.add_child(_label("Gegner: unbekannt -- erst im Kampf zu sehen", 18, MapView.CHAOS_COLOR))
-	else:
-		box.add_child(_label("Gegner: %d DROMEs" % int(info["enemies"]), 18, COLOR_HEADING))
+	if not chaos:
 		for build in info["enemy_builds"]:
 			box.add_child(SquadPicker.drome_card(build))
 
@@ -236,7 +253,7 @@ func _show_prepare(run: RunState) -> void:
 	start.grab_focus.call_deferred()
 
 	var abandon := Button.new()
-	abandon.text = "Lauf aufgeben"
+	abandon.text = "Aussteigen und Beute behalten" if run.is_endless() else "Lauf aufgeben"
 	abandon.flat = true
 	abandon.custom_minimum_size = Vector2(0, 44)
 	abandon.pressed.connect(func():
@@ -326,6 +343,14 @@ func _show_stop(run: RunState) -> void:
 		run.continue_run()
 		_refresh())
 	_side.add_child(go)
+	# Endlos-Modus: nach jeder Runde aussteigen und die Beute behalten.
+	if run.is_endless():
+		var out := UiKit.button("Aussteigen und Beute behalten")
+		out.pressed.connect(func():
+			_selected_storage = -1
+			run.cash_out()
+			_refresh())
+		_side.add_child(out)
 
 
 ## Die gewuerfelte Beute des letzten Siegs (6i): was es gab und wo es
@@ -844,9 +869,18 @@ func _show_end(run: RunState) -> void:
 	# Die Beute, die noch im Lauf war, geht jetzt nach Hause (7f).
 	_delivered.append_array(GameState.deliver_run_home())
 	var won := run.phase == RunState.Phase.WON
-	_side.add_child(_label("Lauf gewonnen!" if won else "Lauf verloren.", 30,
-		COLOR_GOOD if won else COLOR_BAD))
-	var wins := run.history.filter(func(h): return h["won"]).size()
+	var wins := run.wins()
+	if run.is_endless():
+		_side.add_child(_label("Ausgestiegen nach %d Siegen" % wins if won
+			else "Gefallen in Runde %d" % run.round, 28, COLOR_GOOD if won else COLOR_BAD))
+		_side.add_child(_label("Die Beute kommt mit nach Hause." if won
+			else "Die Beute dieses Laufs ist verloren -- was zuhause liegt, ist sicher.", 16,
+			COLOR_MUTED))
+	else:
+		_side.add_child(_label("Lauf gewonnen!" if won else "Lauf verloren.", 30,
+			COLOR_GOOD if won else COLOR_BAD))
+		if won and GameState.just_unlocked_endless:
+			_side.add_child(_label("Neon City ist bezwungen -- der Endlos-Modus ist frei.", 18, COLOR_WARN))
 	_side.add_child(_label("%d von %d Kaempfen gewonnen." % [wins, run.history.size()], 18))
 	var line := ""
 	for entry in run.history:

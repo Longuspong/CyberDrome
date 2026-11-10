@@ -12,10 +12,17 @@ extends RefCounted
 ##   * Start mit dem Squad, den man mitnimmt (vorgeschlagen: der Hangar-
 ##     Squad). Die DROMEs werden kopiert -- im Lauf baut man nur mit Beute um,
 ##     nicht mit dem Inventar von zuhause.
-##   * Vor jedem Kampf waehlt man zwischen drei Gegnern: Leicht, Normal, Elite.
-##     Region und die gegnerischen DROMEs sind vorher sichtbar.
-##   * Die Gegnerstaerke folgt einer FESTEN Kurve (Startstaerke des Squads),
-##     nicht dem eigenen Aufbau. Wuchse sie mit, waere jede Belohnung wertlos.
+##   * Vor jedem Kampf waehlt man einen Knoten der Reihe (row): immer ein
+##     Leichter, dazu zwei Normale mit verschiedenen Gegnertypen oder ein
+##     Normaler und ein Elite. Region und die gegnerischen DROMEs sind vorher
+##     sichtbar.
+##   * Die Gegner sind HANDVERLESENE Teams (Encounters, data/encounters.json),
+##     nicht gewuerfelt. Staerker werden sie ueber Zahl, Level und Module je
+##     Runde und Stufe -- unabhaengig vom eigenen Aufbau. Gewuerfelt wird nur
+##     im Chaos-Kampf des Endlos-Modus.
+##   * Zwei Arten (mode): "story" -- feste Zahl Kaempfe, mehrere Leben;
+##     "endless" -- ohne Ende, die erste Niederlage beendet den Lauf und
+##     kostet die Beute, nach jeder Runde kann man aussteigen (NEUANFANG 6h).
 ##   * Sieg: Credits nach Stufe, dazu gewuerfelte Beute OHNE Auswahl (6i):
 ##     Credits oder ein Teil, in bestimmten Runden ein DROME, mit Glueck
 ##     Notstrom. Teile kommen ins Lager. Niederlage: ein Leben weniger,
@@ -43,6 +50,8 @@ const TIER_KEYS := ["easy", "normal", "elite"]
 const TIER_NAMES := ["Leicht", "Normal", "Elite"]
 
 var run_seed: int = 0
+## Die Art des Laufs: "story" oder "endless" (siehe oben).
+var mode: String = "story"
 ## Das Gebiet des Laufs (data/regions.json, config run.region). Alle Kaempfe
 ## des Laufs finden dort statt.
 var region_id: StringName = &"city"
@@ -108,12 +117,11 @@ var bag: Array = []
 ## eines davon kommt ins Lager. Verfaellt beim Weitergehen.
 var bios_offers: Array = []
 
-## Karte wie bei FTL (10. Nov. 2026): der gewaehlte Knoten in der Reihe der
-## aktuellen Runde und der aus der Runde davor (fuer die Wege). Die Karte
-## selbst entsteht aus dem Seed (map_layers) und steht nicht im Spielstand.
+## Der gewaehlte Knoten in der Reihe der aktuellen Runde (row). Die Reihen
+## selbst entstehen aus Seed, Runde und Verlauf und stehen nicht im
+## Spielstand.
 var node: int = -1
-var prev_node: int = -1
-var _map: Array = []
+var _row_cache: Dictionary = {}
 
 ## Wie oft jede Waffe beim Start im Squad steckte. Was am Ende darueber
 ## hinaus im Lauf ist, ist Beute und geht nach Hause.
@@ -131,8 +139,45 @@ static func cfg() -> Dictionary:
 	return Config.section("run")
 
 
+## Die Zahl der Kaempfe im Story-Lauf. Der Endlos-Modus hat kein Ende
+## (is_endless).
 static func rounds_total() -> int:
 	return int(cfg().get("rounds", 8))
+
+
+static func endless_cfg() -> Dictionary:
+	return cfg().get("endless", {})
+
+
+func is_endless() -> bool:
+	return mode == "endless"
+
+
+## Verlegt den Lauf in ein anderes Gebiet (Tests, spaeter weitere Gebiete).
+## Reihen und Gegner entstehen danach neu.
+func set_region(id: StringName) -> void:
+	region_id = id
+	_row_cache.clear()
+	_enemy_cache.clear()
+	_pick_default_node()
+
+
+## Hoechstzahl der Leben in diesem Lauf (Endlos: eines).
+func lives_max() -> int:
+	return int(endless_cfg().get("lives", 1)) if is_endless() else max_lives()
+
+
+## Ist dies der letzte Kampf des Laufs? Im Endlos-Modus nie.
+func is_last_round() -> bool:
+	return not is_endless() and round >= rounds_total()
+
+
+## Die ersten Runden eines Story-Laufs sind Training: normale DROMEs ohne
+## Fraktion (run.training_rounds).
+func is_training(for_round: int = -1) -> bool:
+	if for_round < 0:
+		for_round = round
+	return not is_endless() and for_round <= int(cfg().get("training_rounds", 0))
 
 
 static func max_lives() -> int:
@@ -164,7 +209,7 @@ static func tier_cfg(which: int) -> Dictionary:
 # Spielstand (10. Nov. 2026): der Lauf uebersteht Neuladen
 # ---------------------------------------------------------------------------
 
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 ## Alles, was den Lauf ausmacht, als JSON-taugliches Woerterbuch. Die Gegner
 ## stehen nicht drin: sie entstehen aus Seed, Runde und Gebiet neu und sind
@@ -175,7 +220,7 @@ func to_dict() -> Dictionary:
 		counts[str(id)] = _start_counts[id]
 	return {
 		"version": SAVE_VERSION,
-		"run_seed": run_seed, "region_id": str(region_id), "round": round,
+		"run_seed": run_seed, "mode": mode, "region_id": str(region_id), "round": round,
 		"lives": lives, "phase": phase, "tier": tier, "base_power": base_power,
 		"start_size": start_size, "credits": credits,
 		"squad": squad.map(func(b): return b.to_save()),
@@ -188,7 +233,7 @@ func to_dict() -> Dictionary:
 		"pending_xp": _plain(pending_xp), "xp_credited": xp_credited,
 		"final_growth": _plain(final_growth), "home_queue": _plain(home_queue),
 		"start_counts": counts, "history": _plain(history),
-		"node": node, "prev_node": prev_node,
+		"node": node,
 	}
 
 
@@ -199,9 +244,10 @@ static func from_dict(data: Dictionary) -> RunState:
 		return null
 	var run := RunState.new()
 	run.run_seed = int(data.get("run_seed", 0))
+	run.mode = str(data.get("mode", "story"))
 	run.region_id = StringName(str(data.get("region_id", "city")))
 	run.round = int(data.get("round", 1))
-	run.lives = int(data.get("lives", max_lives()))
+	run.lives = int(data.get("lives", run.lives_max()))
 	run.phase = int(data.get("phase", Phase.PREPARE))
 	run.tier = int(data.get("tier", Tier.NORMAL))
 	run.base_power = float(data.get("base_power", 0.0))
@@ -229,10 +275,9 @@ static func from_dict(data: Dictionary) -> RunState:
 	for id in data.get("start_counts", {}):
 		run._start_counts[StringName(id)] = int(data["start_counts"][id])
 	run.node = int(data.get("node", -1))
-	run.prev_node = int(data.get("prev_node", -1))
 	run.history = data.get("history", [])
 	for entry in run.history:
-		for key in ["round", "tier", "credits"]:
+		for key in ["round", "tier", "credits", "node"]:
 			if entry.has(key):
 				entry[key] = int(entry[key])
 	return run
@@ -269,11 +314,12 @@ static func _with_part_ids(items: Array) -> Array:
 ## was im Lauf eingebaut wird, bleibt im Lauf -- der Hangar zuhause aendert
 ## sich nur durch Beute, die man ausdruecklich nach Hause schickt.
 ## Ohne Squad (Tests, Werkzeuge) kommen die vier Standard-DROMEs.
-static func start(seed_value: int, chosen: Array = []) -> RunState:
+static func start(seed_value: int, chosen: Array = [], run_mode: String = "story") -> RunState:
 	var run := RunState.new()
 	run.run_seed = seed_value
+	run.mode = run_mode if run_mode in ["story", "endless"] else "story"
 	run.region_id = StringName(str(cfg().get("region", "city")))
-	run.lives = max_lives()
+	run.lives = int(endless_cfg().get("lives", 1)) if run.is_endless() else max_lives()
 	var source: Array = chosen if not chosen.is_empty() else standard_squad()
 	for build in source.slice(0, squad_max()):
 		run.squad.append(build.clone())
@@ -336,18 +382,28 @@ func is_over() -> bool:
 # Der naechste Kampf
 # ---------------------------------------------------------------------------
 
-## Der Seed des Kampfes dieser Runde und Stufe. Aus Lauf-Seed, Runde und
-## Stufe, damit jede Wahl ein eigener Kampf ist und derselbe Lauf trotzdem
-## dieselben Kaempfe hat.
-func battle_seed(which: int = -1) -> int:
-	if which < 0:
-		which = tier
-	return absi(hash([run_seed, round, which])) % 2000000000 + 1
+## Der Seed des Kampfes an einem Knoten dieser Runde (ohne Angabe: der
+## gewaehlte). Aus Lauf-Seed, Runde und Knoten, damit jede Wahl ein eigener
+## Kampf ist und derselbe Lauf trotzdem dieselben Kaempfe hat.
+func battle_seed(index: int = -1) -> int:
+	if index < 0:
+		index = node
+	return absi(hash([run_seed, round, "knoten", index])) % 2000000000 + 1
+
+
+## Die Stufe eines Knotens dieser Runde (ohne Angabe: des gewaehlten).
+func node_tier(index: int = -1) -> int:
+	var nodes := row()
+	if index < 0:
+		index = node
+	if index < 0 or index >= nodes.size():
+		return tier
+	return int(nodes[index]["tier"])
 
 
 ## Wie viele Gegner: so viele, wie man mitgebracht hat, plus/minus der
-## Verschiebung dieser Runde (run.enemy_offsets). Ein kleinerer Squad trifft
-## also auf weniger Gegner -- er bekommt aber auch weniger Kampfwert.
+## Verschiebung dieser Runde (run.enemy_offsets) und der Stufe. Ein kleinerer
+## Squad trifft also auf weniger Gegner.
 func enemy_count(which: int = -1) -> int:
 	if which < 0:
 		which = tier
@@ -357,9 +413,11 @@ func enemy_count(which: int = -1) -> int:
 	return clampi(start_size + offset, 1, squad_max())
 
 
-## Die Gegnerstaerke: ein fester Anteil der Bezugsstaerke (reference_power),
-## der je Runde waechst, mal dem Faktor der Stufe. Bewusst unabhaengig davon,
-## wie stark der mitgenommene Squad ist.
+## Die Bezugsstaerke dieser Runde und Stufe: ein fester Anteil von
+## reference_power, der je Runde waechst, mal dem Faktor der Stufe. Die
+## handverlesenen Teams richten sich NICHT danach (sie werden ueber Zahl,
+## Level und Module staerker) -- der Wert ist das Ziel fuer die gewuerfelten
+## Gegner des Chaos-Kampfs.
 func enemy_power(which: int = -1) -> float:
 	if which < 0:
 		which = tier
@@ -369,23 +427,35 @@ func enemy_power(which: int = -1) -> float:
 	return base_power * (start_factor + growth * float(round - 1)) * factor
 
 
-## Die Gegner dieser Runde und Stufe -- dieselben in Vorschau und Kampf.
-func enemies(which: int = -1) -> Array:
-	if which < 0:
-		which = tier
-	var key := round * 10 + which
+## Die Gegner eines Knotens dieser Runde (ohne Angabe: des gewaehlten) --
+## dieselben in Vorschau und Kampf. Ein handverlesenes Team (Encounters) mit
+## Leveln und Modulen nach Runde und Stufe; nur der Chaos-Knoten wuerfelt.
+func enemies(index: int = -1) -> Array:
+	if index < 0:
+		index = node
+	var nodes := row()
+	if index < 0 or index >= nodes.size():
+		return []
+	var key := round * 10 + index
 	if not _enemy_cache.has(key):
-		var generator := EnemyGenerator.new(battle_seed(which))
-		generator.profile = faction()
-		var foes := generator.generate(enemy_count(which), enemy_power(which))
-		_arm_enemies(foes, which)
+		var info: Dictionary = nodes[index]
+		var which := int(info["tier"])
+		var foes: Array = []
+		if bool(info["chaos"]):
+			foes = EnemyGenerator.new(battle_seed(index)).generate(enemy_count(which), enemy_power(which))
+			_arm_chaos(foes, which, index)
+		else:
+			var entry := Encounters.team(str(info["team"]))
+			foes = Encounters.build(entry, enemy_count(which))
+			_arm_team(foes, which, entry)
 		_enemy_cache[key] = foes
 	return _enemy_cache[key]
 
 
 ## Wie viele Module jeder Gegner dieser Runde und Stufe traegt (6i):
 ## run.enemy_modules.by_round plus tier_offset, hoechstens so viele, wie der
-## Halter fasst.
+## Halter fasst. Im Endlos-Modus nach dem Ende der Tabelle alle
+## endless.module_every Runden eines mehr.
 func enemy_module_count(which: int = -1) -> int:
 	if which < 0:
 		which = tier
@@ -394,12 +464,15 @@ func enemy_module_count(which: int = -1) -> int:
 	if by_round.is_empty():
 		return 0
 	var count := int(by_round[clampi(round - 1, 0, by_round.size() - 1)])
+	count += _endless_steps(by_round.size(), "module_every")
 	count += int((settings.get("tier_offset", {}) as Dictionary).get(TIER_KEYS[which], 0))
 	return maxi(0, count)
 
 
 ## DROME- und Waffenlevel der Gegner dieser Runde und Stufe
-## (run.enemy_levels): {drome, weapon}.
+## (run.enemy_levels): {drome, weapon}. Im Endlos-Modus steigen sie nach dem
+## Ende der Tabelle weiter (endless.drome_level_every / weapon_level_every),
+## bis zum Hoechstlevel.
 func enemy_levels(which: int = -1) -> Dictionary:
 	if which < 0:
 		which = tier
@@ -409,41 +482,68 @@ func enemy_levels(which: int = -1) -> Dictionary:
 	for kind in ["drome", "weapon"]:
 		var table: Array = settings.get(kind, [0])
 		var value := int(table[clampi(round - 1, 0, table.size() - 1)]) if not table.is_empty() else 0
+		value += _endless_steps(table.size(), "%s_level_every" % kind)
 		value += int(offset.get(kind, 0))
 		var top := Leveling.drome_max() if kind == "drome" else Leveling.weapon_max()
 		out[kind] = clampi(value, 0, top)
 	return out
 
 
-## Gegner tragen Module (6i) -- dieselben wie der Spieler, aber handverlesen:
-## nur was zur Waffe passt (keine ruhenden Module), keines doppelt. Ab
-## enemy_modules.recipe_from_round und mindestens zwei Plaetzen ist das erste
-## ein passendes Rezept. Alles in den Halter der ersten Waffe, am Seed des
-## Kampfes.
-func _arm_enemies(foes: Array, which: int) -> void:
+## Endlos-Modus: wie viele Schritte ueber das Ende einer Rundentabelle
+## (``table_size`` Runden) hinaus, bei einem Schritt alle endless.<key> Runden.
+func _endless_steps(table_size: int, key: String) -> int:
+	if not is_endless() or round <= table_size:
+		return 0
+	var every := int(endless_cfg().get(key, 0))
+	return (round - table_size) / every if every > 0 else 0
+
+
+func _apply_levels(foes: Array, which: int) -> void:
 	var levels := enemy_levels(which)
 	for build in foes:
 		build.drome_level = levels["drome"]
 		for slot in build.equip_slots():
 			if build.part_in(slot) != null and levels["weapon"] > 0:
 				build.weapon_levels[slot] = levels["weapon"]
+
+
+## Ein handverlesenes Team bekommt Level und Module nach Runde und Stufe. Die
+## Module stehen im Team (Encounters.modules_for): die ersten der Liste, ab
+## enemy_modules.recipe_from_round und zwei Plaetzen vorn das Rezept. Alles
+## in den Halter der ersten Waffe.
+func _arm_team(foes: Array, which: int, entry: Dictionary) -> void:
+	_apply_levels(foes, which)
+	var count := enemy_module_count(which)
+	if count <= 0:
+		return
+	var settings: Dictionary = cfg().get("enemy_modules", {})
+	var with_recipe := round >= int(settings.get("recipe_from_round", 5))
+	var dromes: Array = entry.get("dromes", [])
+	for i in mini(foes.size(), dromes.size()):
+		var build: DromeBuild = foes[i]
+		var slot := Encounters.first_weapon_slot(build)
+		if slot == "":
+			continue
+		var picked := Encounters.modules_for(dromes[i], build,
+			mini(count, ModuleData.slots_for(build)), with_recipe)
+		if not picked.is_empty():
+			build.modules[slot] = picked
+
+
+## Chaos-Kampf (nur Endlos-Modus): gewuerfelte Gegner tragen gewuerfelte
+## Module -- irgendwelche, die zur Waffe passen, ohne Profil; ab
+## recipe_from_round und zwei Plaetzen ist eines ein Rezept. Am Seed des
+## Kampfes.
+func _arm_chaos(foes: Array, which: int, index: int) -> void:
+	_apply_levels(foes, which)
 	var count := enemy_module_count(which)
 	if count <= 0:
 		return
 	var settings: Dictionary = cfg().get("enemy_modules", {})
 	var rng := RandomNumberGenerator.new()
-	rng.seed = battle_seed(which) ^ 0x30D
-	# Profil der Fraktion: bevorzugte Module und Rezepte zaehlen mehr.
-	var profile := faction()
-	var favoured: Array = profile.get("modules", [])
-	var favoured_recipes: Array = profile.get("recipes", [])
-	var boost := float(profile.get("module_weight", 1.0))
+	rng.seed = battle_seed(index) ^ 0x30D
 	for build in foes:
-		var slot := ""
-		for candidate in build.equip_slots():
-			if build.part_in(candidate) != null:
-				slot = candidate
-				break
+		var slot := Encounters.first_weapon_slot(build)
 		if slot == "":
 			continue
 		var weapon: PartData = build.part_in(slot)
@@ -452,12 +552,12 @@ func _arm_enemies(foes: Array, which: int) -> void:
 		if room >= 2 and round >= int(settings.get("recipe_from_round", 5)):
 			var recipes := ModuleData.recipes().filter(func(m): return m.fits(weapon))
 			if not recipes.is_empty():
-				picked.append(recipes[_weighted_index(rng, recipes, favoured_recipes, boost)].id)
+				picked.append(recipes[rng.randi() % recipes.size()].id)
 		var pool := ModuleData.base_modules().filter(func(m): return m.fits(weapon))
 		while picked.size() < room and not pool.is_empty():
-			var index := _weighted_index(rng, pool, favoured, boost)
-			picked.append(pool[index].id)
-			pool.remove_at(index)
+			var pick := rng.randi() % pool.size()
+			picked.append(pool[pick].id)
+			pool.remove_at(pick)
 		if not picked.is_empty():
 			build.modules[slot] = picked
 
@@ -474,49 +574,52 @@ func faction() -> Dictionary:
 	return out
 
 
-## Ein Index aus ``pool`` (Module), bevorzugte IDs ``boost``-mal so schwer.
-## Ohne Bevorzugung genau wie frueher (ein randi-Aufruf).
-static func _weighted_index(rng: RandomNumberGenerator, pool: Array, favoured: Array, boost: float) -> int:
-	if favoured.is_empty() or boost <= 1.0:
-		return rng.randi() % pool.size()
-	var total := 0.0
-	for module in pool:
-		total += boost if favoured.has(str(module.id)) else 1.0
-	var roll := rng.randf() * total
-	for i in pool.size():
-		roll -= boost if favoured.has(str(pool[i].id)) else 1.0
-		if roll < 0.0:
-			return i
-	return pool.size() - 1
-
-
-## Alles, was man vor dem Kampf wissen muss. Die Region kommt aus
-## demselben Seed und derselben Reihenfolge wie im echten Aufbau
-## (BattleManager.preview_conditions), ist also keine Schaetzung.
-func preview(which: int = -1) -> Dictionary:
-	if which < 0:
-		which = tier
-	var conditions := BattleManager.preview_conditions(battle_seed(which), region_id)
-	var foes := enemies(which)
+## Alles, was man vor dem Kampf an einem Knoten wissen muss (ohne Angabe:
+## am gewaehlten). Die Region kommt aus demselben Seed und derselben
+## Reihenfolge wie im echten Aufbau (BattleManager.preview_conditions), ist
+## also keine Schaetzung.
+func preview(index: int = -1) -> Dictionary:
+	if index < 0:
+		index = node
+	var nodes := row()
+	var info: Dictionary = nodes[index] if index >= 0 and index < nodes.size() else {}
+	var which := int(info.get("tier", tier))
+	var chaos := bool(info.get("chaos", false))
+	var conditions := BattleManager.preview_conditions(battle_seed(index), region_id)
+	var foes := enemies(index)
 	conditions["tier"] = which
 	conditions["enemies"] = foes.size()
 	conditions["enemy_builds"] = foes
 	conditions["enemy_power"] = DromeBuild.squad_power(foes)
 	conditions["own_power"] = DromeBuild.squad_power(squad)
 	conditions["reward_text"] = str(tier_cfg(which).get("reward_text", ""))
-	conditions["chaos"] = is_chaos() and which == tier
-	if conditions["chaos"]:
+	conditions["chaos"] = chaos
+	var entry := Encounters.team(str(info.get("team", "")))
+	var kind := Encounters.type_info(str(entry.get("type", "")))
+	conditions["team"] = str(entry.get("name", ""))
+	conditions["team_text"] = str(entry.get("text", ""))
+	conditions["type"] = str(kind["name"]) if not entry.is_empty() else ""
+	conditions["type_hint"] = str(kind["hint"]) if not entry.is_empty() else ""
+	if chaos:
 		conditions["reward_text"] = "Chaos: Beute wie bei Elite, mehr Credits -- Gegner unbekannt"
 	var own_faction := faction()
-	conditions["faction"] = str(own_faction.get("name", ""))
-	conditions["profile"] = str(own_faction.get("profile", ""))
-	conditions["faction_text"] = str(own_faction.get("text", ""))
+	var training := is_training() and not chaos
+	conditions["faction"] = "" if training else str(own_faction.get("name", ""))
+	conditions["profile"] = "" if training else str(own_faction.get("profile", ""))
+	conditions["faction_text"] = "" if training else str(own_faction.get("text", ""))
 	return conditions
 
 
-func choose_tier(which: int) -> void:
-	if phase == Phase.PREPARE:
-		tier = clampi(which, 0, 2)
+## Waehlt den ersten Knoten mit dieser Stufe (kein Chaos-Knoten). false, wenn
+## die Reihe keinen hat -- Elite gibt es nicht in jeder Runde.
+func choose_tier(which: int) -> bool:
+	if phase != Phase.PREPARE:
+		return false
+	var nodes := row()
+	for i in nodes.size():
+		if int(nodes[i]["tier"]) == which and not bool(nodes[i]["chaos"]):
+			return choose_node(i)
+	return false
 
 
 # ---------------------------------------------------------------------------
@@ -531,7 +634,8 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 	var won := outcome == BattleManager.Outcome.VICTORY
 	var gain := battle_credits(won)
 	credits += gain
-	history.append({"round": round, "won": won, "tier": tier, "credits": gain})
+	history.append({"round": round, "won": won, "tier": tier, "credits": gain,
+		"node": node, "chaos": is_chaos()})
 	last_loot = []
 	if not won:
 		lives -= 1
@@ -543,7 +647,7 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 	last_loot = roll_loot(enemy_pool)
 	for item in last_loot:
 		_apply_loot(item)
-	if round >= rounds_total():
+	if is_last_round():
 		_finish(Phase.WON)
 		return
 	_enter_stop()
@@ -599,14 +703,40 @@ func battle_credits(won: bool) -> int:
 	return gain
 
 
-## Lauf aufgeben: wie verloren, die Beute geht trotzdem nach Hause.
+## Lauf aufgeben: wie verloren, die Beute geht trotzdem nach Hause. Im
+## Endlos-Modus ist Aufgeben zwischen zwei Kaempfen dasselbe wie Aussteigen.
 func abandon() -> void:
-	if not is_over():
+	if is_over():
+		return
+	if is_endless():
+		cash_out()
+	else:
 		_finish(Phase.LOST)
+
+
+## Endlos-Modus: nach einer Runde aussteigen und die Beute behalten
+## (NEUANFANG 6h). Zaehlt als gewonnenes Ende.
+func cash_out() -> bool:
+	if not is_endless() or is_over():
+		return false
+	_finish(Phase.WON)
+	return true
+
+
+## Gewonnene Kaempfe dieses Laufs -- im Endlos-Modus das Ergebnis.
+func wins() -> int:
+	return history.filter(func(h): return bool(h.get("won", false))).size()
 
 
 func _finish(final: Phase) -> void:
 	phase = final
+	# Endlos-Modus: wer verliert, bekommt aus diesem Lauf keine Beute (6h).
+	# Was zuhause ist, ist sicher; die EP bleiben.
+	if is_endless() and final == Phase.LOST:
+		bag.clear()
+		storage.clear()
+		home_queue.clear()
+		return
 	_send_loot_home()
 
 
@@ -638,108 +768,138 @@ func _advance() -> void:
 	bios_offers = []
 	rerolls = 0
 	phase = Phase.PREPARE
-	prev_node = node
 	_pick_default_node()
 
 
 # ---------------------------------------------------------------------------
-# Karte wie bei FTL (10. Nov. 2026, Wunsch des Spielers)
+# Die Reihe der Runde: welche Kaempfe zur Wahl stehen
 # ---------------------------------------------------------------------------
 
-## Die Karte des Laufs: je Runde eine Reihe aus 2-3 Knoten
-## {tier, chaos, next: [Indizes in der naechsten Reihe]}. Jede Stufe hoechstens
-## einmal je Reihe (die Gegner haengen an Runde und Stufe). Ab Runde 2 ersetzt
-## mit run.map.chaos_chance ein Chaos-Kampf den Normal-Knoten: Gegner vorher
-## unsichtbar, Beute wie Elite, mehr Credits. Jeder Knoten hat mindestens
-## einen Weg nach vorn, jeder Knoten der naechsten Reihe mindestens einen
-## herein. Am Seed des Laufs -- dieselbe Karte nach dem Laden.
-func map_layers() -> Array:
-	if not _map.is_empty():
-		return _map
+## Wie oft bisher ein Elite-Knoten gewaehlt wurde (in Runden vor
+## ``before_round``) -- daran haengt, wie oft weitere kommen.
+func elites_chosen(before_round: int = -1) -> int:
+	if before_round < 0:
+		before_round = round
+	var count := 0
+	for entry in history:
+		if int(entry.get("round", 0)) < before_round and int(entry.get("tier", 1)) == Tier.ELITE \
+				and not bool(entry.get("chaos", false)):
+			count += 1
+	return count
+
+
+## Die Knoten einer Runde (Vorgabe des Spielers, 10. Nov. 2026):
+##
+##   immer   ein LEICHTER Kampf
+##   dazu    zwei NORMALE mit verschiedenen Gegnertypen
+##           ODER ein Normaler und ein ELITE
+##   Endlos  ab und zu obendrauf ein CHAOS-Kampf (gewuerfelte Gegner)
+##
+## Ein Elite-Knoten kommt mit run.map.elite_chance, je vorher gewaehltem
+## Elite um elite_bonus oefter (hoechstens elite_cap) -- wer das Risiko
+## sucht, bekommt mehr davon. Alle Knoten der Reihe stehen zur Wahl.
+##
+## Je Knoten {tier, chaos, team}. Aus Lauf-Seed, Runde und der Zahl der
+## bisher gewaehlten Elite -- dieselbe Reihe nach dem Laden. ``elites`` < 0:
+## nach dem bisherigen Verlauf.
+func row(for_round: int = -1, elites: int = -1) -> Array:
+	if for_round < 0:
+		for_round = round
+	if elites < 0:
+		elites = elites_chosen(for_round)
+	var key := "%d:%d" % [for_round, elites]
+	if _row_cache.has(key):
+		return _row_cache[key]
 	var settings: Dictionary = cfg().get("map", {})
 	var rng := RandomNumberGenerator.new()
-	rng.seed = absi(hash([run_seed, "karte"]))
-	for r in rounds_total():
-		var tiers: Array = [Tier.EASY, Tier.NORMAL, Tier.ELITE]
-		var size := 3 if rng.randf() < float(settings.get("three_chance", 0.5)) else 2
-		while tiers.size() > size:
-			# Zwei Knoten: Normal bleibt fast immer, eine der Randstufen faellt.
-			tiers.remove_at(0 if rng.randf() < 0.5 else 2)
-		var layer: Array = []
-		for which in tiers:
-			var chaos: bool = which == Tier.NORMAL and r >= 1 \
-				and rng.randf() < float(settings.get("chaos_chance", 0.2))
-			layer.append({"tier": which, "chaos": chaos, "next": []})
-		_map.append(layer)
-	# Wege: jeder Knoten zu einem oder zwei Nachbarn der naechsten Reihe.
-	for r in _map.size() - 1:
-		var here: Array = _map[r]
-		var there: Array = _map[r + 1]
-		var reached := {}
-		for i in here.size():
-			var aim := roundi(float(i) * float(there.size() - 1) / float(maxi(1, here.size() - 1)))
-			var links := [aim]
-			var side := aim + (1 if rng.randf() < 0.5 else -1)
-			if side >= 0 and side < there.size() and rng.randf() < float(settings.get("branch_chance", 0.6)):
-				links.append(side)
-			links.sort()
-			here[i]["next"] = links
-			for j in links:
-				reached[j] = true
-		for j in there.size():
-			if not reached.has(j):
-				var from := mini(j, here.size() - 1)
-				(here[from]["next"] as Array).append(j)
-				(here[from]["next"] as Array).sort()
-	return _map
+	rng.seed = absi(hash([run_seed, "reihe", for_round]))
+	var training := is_training(for_round)
+	var nodes: Array = []
+	var used: Array = []
+	var easy := _pick_team(rng, for_round, Tier.EASY, training, used, "")
+	nodes.append({"tier": Tier.EASY, "chaos": false, "team": easy})
+	var first := _pick_team(rng, for_round, Tier.NORMAL, training, used, "")
+	nodes.append({"tier": Tier.NORMAL, "chaos": false, "team": first})
+	# Beide Wuerfe immer ziehen, damit die Folge nicht von der Elite-Zahl abhaengt.
+	var elite_roll := rng.randf()
+	var chaos_roll := rng.randf()
+	var chance := minf(float(settings.get("elite_cap", 0.85)),
+		float(settings.get("elite_chance", 0.35)) + float(settings.get("elite_bonus", 0.12)) * float(elites))
+	if elite_roll < chance and not training:
+		nodes.append({"tier": Tier.ELITE, "chaos": false,
+			"team": _pick_team(rng, for_round, Tier.ELITE, training, used, "")})
+	else:
+		var first_type := str(Encounters.team(first).get("type", ""))
+		nodes.append({"tier": Tier.NORMAL, "chaos": false,
+			"team": _pick_team(rng, for_round, Tier.NORMAL, training, used, first_type)})
+	if is_endless() and for_round >= 2 and chaos_roll < float(endless_cfg().get("chaos_chance", 0.25)):
+		nodes.append({"tier": Tier.NORMAL, "chaos": true, "team": ""})
+	_row_cache[key] = nodes
+	return nodes
 
 
-## Die Knoten der aktuellen Runde, die man von der letzten Wahl aus erreicht
-## (Runde 1: alle).
-func available_nodes() -> Array:
-	var layers := map_layers()
-	if round < 1 or round > layers.size():
+## Ein Team fuer einen Knoten: aus den Teams, die in Runde und Stufe duerfen,
+## keines doppelt in der Reihe, und wenn moeglich nicht vom Typ ``avoid_type``
+## (der zweite Normal-Knoten soll ein anderer Gegnertyp sein).
+func _pick_team(rng: RandomNumberGenerator, for_round: int, which: int, training: bool,
+		used: Array, avoid_type: String) -> String:
+	var pool := Encounters.pool(region_id, for_round, TIER_KEYS[which], training)
+	var roll := rng.randi()
+	var fresh := pool.filter(func(t): return not used.has(str(t.get("id", ""))))
+	if fresh.is_empty():
+		fresh = pool
+	var other := fresh.filter(func(t): return avoid_type == "" or str(t.get("type", "")) != avoid_type)
+	if not other.is_empty():
+		fresh = other
+	if fresh.is_empty():
+		return ""
+	var team_id := str(fresh[roll % fresh.size()].get("id", ""))
+	used.append(team_id)
+	return team_id
+
+
+## Die Reihe der naechsten Runde, wie sie kaeme, wenn man jetzt den gewaehlten
+## Knoten nimmt -- die Vorausschau. Leer nach dem letzten Kampf.
+func next_row() -> Array:
+	if is_last_round():
 		return []
-	var layer: Array = layers[round - 1]
-	if round == 1 or prev_node < 0:
-		return range(layer.size())
-	var before: Array = layers[round - 2]
-	if prev_node >= before.size():
-		return range(layer.size())
-	return (before[prev_node]["next"] as Array).duplicate()
+	var more := 1 if node_tier() == Tier.ELITE and not is_chaos() else 0
+	return row(round + 1, elites_chosen(round) + more)
 
 
-## Waehlt einen erreichbaren Knoten; seine Stufe wird die des Kampfes.
+## Alle Knoten der Reihe stehen zur Wahl.
+func available_nodes() -> Array:
+	return range(row().size())
+
+
+## Waehlt einen Knoten; seine Stufe wird die des Kampfes.
 func choose_node(index: int) -> bool:
 	if phase != Phase.PREPARE or index not in available_nodes():
 		return false
 	node = index
-	tier = int(map_layers()[round - 1][index]["tier"])
+	tier = int(row()[index]["tier"])
 	return true
 
 
-## Vorwahl: Normal, wenn erreichbar, sonst der erste erreichbare Knoten.
+## Vorwahl: der erste Normal-Knoten.
 func _pick_default_node() -> void:
-	var options := available_nodes()
-	if options.is_empty():
+	var nodes := row()
+	if nodes.is_empty():
 		node = -1
 		return
-	var layer: Array = map_layers()[round - 1]
-	var pick: int = options[0]
-	for i in options:
-		if int(layer[i]["tier"]) == Tier.NORMAL and not bool(layer[i]["chaos"]):
+	var pick := 0
+	for i in nodes.size():
+		if int(nodes[i]["tier"]) == Tier.NORMAL and not bool(nodes[i]["chaos"]):
 			pick = i
+			break
 	node = pick
-	tier = int(layer[pick]["tier"])
+	tier = int(nodes[pick]["tier"])
 
 
 ## Ist der gewaehlte Kampf ein Chaos-Kampf?
 func is_chaos() -> bool:
-	var layers := map_layers()
-	if node < 0 or round < 1 or round > layers.size():
-		return false
-	var layer: Array = layers[round - 1]
-	return node < layer.size() and bool(layer[node]["chaos"]) and int(layer[node]["tier"]) == tier
+	var nodes := row()
+	return node >= 0 and node < nodes.size() and bool(nodes[node]["chaos"])
 
 
 ## Weiter in den Zwischenstopp -- dabei wird der Laden gewuerfelt.
@@ -774,7 +934,7 @@ func roll_loot(enemy_pool: Array) -> Array:
 		var entry := _drome_reward(rng)
 		entry["rare"] = tier == Tier.ELITE
 		out.append(entry)
-	elif rare and round < rounds_total() and not roll_bios_offers().is_empty():
+	elif rare and not is_last_round() and not roll_bios_offers().is_empty():
 		# Elite: ein Matrix-BIOS zur Wahl statt des Teils -- nie nach dem
 		# letzten Kampf, dort waere es wertlos (Module verfallen).
 		out.append({"kind": "bios", "rare": true, "title": "Matrix-BIOS",
@@ -788,7 +948,7 @@ func roll_loot(enemy_pool: Array) -> Array:
 		var amount := int(settings.get("loot_credits", 5))
 		out.append({"kind": "credits", "amount": amount,
 			"title": "%d Credits" % amount, "text": "Gefundene Credits"})
-	if tier != Tier.ELITE and lives < max_lives() \
+	if tier != Tier.ELITE and lives < lives_max() \
 			and rng.randf() < float(settings.get("life_chance", cfg().get("life_chance", 0.35))):
 		out.append({"kind": "life", "title": "Notstrom",
 			"text": "Ein verlorenes Leben zurueck."})
@@ -841,7 +1001,7 @@ func _apply_loot(item: Dictionary) -> void:
 		"credits":
 			credits += int(item.get("amount", 0))
 		"life":
-			lives = mini(max_lives(), lives + 1)
+			lives = mini(lives_max(), lives + 1)
 
 
 static func _is_rare(part: PartData) -> bool:

@@ -6,14 +6,15 @@ extends Control
 ##   Mitte    die Buehne (HomeStage): das Tor der Arena von Neon City bei
 ##            Nacht, davor DEIN Squad auf dem Podest
 ##   darunter eine Karte: naechstes Gebiet und dein Squad in einer Zeile
-##   unten    die Hauptaktion "Lauf starten", darunter der Chaos-Virus
+##   unten    die Hauptaktion "Neon City" (der Lauf), darunter der
+##            Endlos-Modus (frei nach dem ersten Sieg in Neon City)
 ##   Leiste   Spielen · Hangar · Optionen (UiKit.tab_bar)
 ##
 ## Der Daumen erreicht unten alles, was man hier tut; oben steht nur, was man
 ## ansieht.
 
 var _status: Label
-var _chaos: Button
+var _endless: Button
 var _stage: HomeStage
 
 
@@ -41,18 +42,31 @@ func _ready() -> void:
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(_status)
 
+	# Ein laufender Lauf geht vor: er wird fortgesetzt, ein zweiter beginnt
+	# erst, wenn er zu Ende ist.
 	var running: bool = GameState.run != null and not GameState.run.is_over()
-	var run := UiKit.button("Lauf fortsetzen" if running else "Lauf starten", true)
-	run.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/run.tscn"))
-	content.add_child(run)
+	var endless_running: bool = running and GameState.run.is_endless()
+	var story := UiKit.button("Neon City fortsetzen" if running and not endless_running
+		else "Neon City", not endless_running)
+	story.disabled = endless_running
+	story.pressed.connect(func(): _open_run("story"))
+	content.add_child(story)
 
-	_chaos = UiKit.button("Chaos-Virus")
-	_chaos.pressed.connect(func():
-		get_tree().change_scene_to_file("res://scenes/chaos_select.tscn"))
-	content.add_child(_chaos)
+	# Endlos-Modus: frei nach dem ersten Sieg in Neon City (NEUANFANG 6h).
+	var unlocked := GameState.endless_unlocked()
+	_endless = UiKit.button("Endlos-Modus fortsetzen" if endless_running else
+		("Endlos-Modus" if unlocked else "Endlos-Modus  ·  nach Neon City"), endless_running)
+	_endless.disabled = not unlocked or (running and not endless_running)
+	_endless.pressed.connect(func(): _open_run("endless"))
+	content.add_child(_endless)
 
 	_refresh_status()
-	run.grab_focus.call_deferred()
+	story.grab_focus.call_deferred()
+
+
+func _open_run(mode: String) -> void:
+	GameState.next_run_mode = mode
+	get_tree().change_scene_to_file("res://scenes/run.tscn")
 
 
 ## Eine schmale Karte: wohin der naechste Lauf geht und wer mitkommt.
@@ -78,13 +92,10 @@ func _info_card() -> Control:
 
 
 func _refresh_status() -> void:
-	# Chaos-Virus und Lauf brauchen kampftaugliche eigene DROMEs; die
-	# Aufstellung im Lauf sagt es selbst, hier steht es fuer den Chaos-Virus.
+	# Ein Lauf braucht kampftaugliche eigene DROMEs; die Aufstellung im Lauf
+	# sagt es selbst, hier steht es vorab.
 	var ready := not GameState.battle_ready_builds().is_empty()
-	if ready:
-		_status.text = ""
-		_status.visible = false
-	else:
-		_status.text = "Fuer den Chaos-Virus fehlen kampftaugliche DROMEs -- im Hangar welche bauen."
+	_status.visible = not ready
+	if not ready:
+		_status.text = "Noch kein kampftauglicher DROME -- im Hangar einen bauen."
 		_status.modulate = UiKit.BAD
-	_chaos.disabled = not ready

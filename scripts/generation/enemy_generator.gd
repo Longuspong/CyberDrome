@@ -1,7 +1,9 @@
 class_name EnemyGenerator
 extends RefCounted
 
-## Wuerfelt das Gegnersquad fuer den Chaos-Virus.
+## Wuerfelt ein Gegnersquad -- im Spiel nur noch fuer den Chaos-Kampf des
+## Endlos-Modus (RunState.enemies); sonst kommen handverlesene Teams
+## (Encounters). Dazu fuer Tests und Werkzeuge.
 ##
 ## Keine Godot-Knoten, ohne Szene testbar. Derselbe Seed ergibt exakt
 ## dieselben Gegner -- zusammen mit der Karte macht das einen Kampf
