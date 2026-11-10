@@ -23,6 +23,26 @@ stehen dort in Abschnitt 6.
 * Designfragen, die das Spiel selbst aendern (Regeln, Balancing, Layout-
   Muster), vorher kurz mit Empfehlung vorlegen.
 
+## Token sparen (Vorgabe des Spielers, 10. Nov. 2026)
+
+Die Sitzung vom 10. Nov. war gut, aber sehr teuer. Deshalb gilt:
+
+* **Ein Thema je Sitzung.** Fuer jedes neue Thema eine frische Sitzung --
+  je laenger eine Sitzung laeuft, desto teurer wird jeder Schritt. Nur
+  lesen, was das Thema braucht (gezielt mit `grep`/`sed -n`, nicht ganze
+  grosse Dateien).
+* **Browser nur bei Touch- und Layout-Themen.** Fuer Logik (Level, Gegner,
+  Balance, Daten) reichen `tests/run_tests.gd` und `tests/smoke_ui.gd`;
+  kein Web-Export, keine Screenshots. Die Sichtpruefung macht der Spieler
+  auf der Vercel-Vorschau. Wenn doch Browser: so wenige Builds wie moeglich,
+  erst alle Aenderungen, dann einmal bauen.
+* **PR nicht beobachten.** Draft-PR oeffnen und aufhoeren -- kein
+  `subscribe_pr_activity`, keine Nachschau-Termine. Der Spieler meldet sich,
+  wenn etwas rot ist. Nur auf ausdruecklichen Wunsch beobachten.
+* **Lange Messlaeufe sparsam.** `power_bench`, `run_bench`, Spiegelkaempfe
+  nur, wenn eine Aenderung die Balance trifft -- und dann mit kleinen
+  Zahlen zuerst.
+
 ## Befehle
 
 ```bash
@@ -102,6 +122,31 @@ bash tools/build_web.sh                                       # Web-Export nach 
 Bis diese Punkte entschieden sind: keine groesseren Umbauten an
 Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
+## Todo fuer spaetere Sitzungen (Stand 10. Nov. 2026)
+
+Je Punkt eine eigene Sitzung. Erst entscheiden (Spieler), dann bauen.
+Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
+
+- [ ] **Aufhaenger** "Die Liga und der Virus" uebernehmen? (Abschnitt 1)
+- [ ] **Level-Struktur Story-Modus** bauen: zehn Level fuer Neon City,
+      Level 1 mit 2 und Level 2 mit 3 DROMEs als Training, ab Level 3 vier
+      gegen vier; je Level 3 Leben, Fortschritt bleibt (Abschnitt 2,
+      `NEUANFANG.md` 6h). Groesster offener Baustein, Teams sind da.
+- [ ] **Wege zwischen den Reihen** zurueck? Heute stehen alle Knoten zur
+      Wahl (immer ein Leichter, dazu zwei Normale oder Normal + Elite).
+- [ ] **Erstes Fraktions-Chassis**, z. B. Shinobi (Jaeger) -- braucht ein
+      Bild aus der Werkstatt (Abschnitt 3).
+- [ ] **Hipstar Hookers = Trickser?** (Abschnitt 3)
+- [ ] **Bosse** am Ende der Story-Level (Oni, Shogun Kage; Abschnitt 3).
+- [ ] **Schwierigkeit** pruefen: Normal Runde 8 63 %, Elite 41 % ohne
+      Module -- so lassen oder Elite-Teams anziehen? (Abschnitt 5)
+- [ ] **Aufstellung**: erster Treffer nach 5,6 s statt 2,0 s -- zu lang?
+      Stellschraube `deployment.inset` in `data/config.json` (1 -> 3).
+- [ ] **Umlaute in der Anzeige** ("Kaempfe" -> "Kämpfe")? Die Schrift kann es.
+- [ ] **Endlos-Modus** ausbauen: Sektoren je Fraktion, bessere Beute je
+      Sektor (Abschnitt 5; heute Platzhalter in `run.endless`).
+- [ ] Designpunkt 3 **Eingreifen des Spielers** (siehe oben) besprechen.
+
 ## Naechste Schritte (Stand 10. November 2026)
 
 Zuletzt gebaut (PR #55, Details in `docs/PROJEKTSTAND.md` "Playtest-Runde"):
@@ -109,9 +154,10 @@ Aufstellung am Rand, Kampfwert neu (Standhaftigkeit mal Feuerkraft, 80 %
 Vorhersage), handverlesene Gegnerteams mit Gegnertyp, Gegnerwahl ohne Wege
 (immer ein Leichter, dazu zwei Normale oder Normal + Elite), Endlos-Modus
 mit Chaos-Knoten, drei Spielstaende, Touch-Ziehen repariert, gemeinsames
-Theme. Als Naechstes mit dem Spieler: die offenen Punkte aus
-`docs/VORSCHLAG_STORY.md` Abschnitt 6 (Aufhaenger, Level-Struktur des
-Story-Modus, Fraktions-Chassis, Schwierigkeit).
+Theme. Danach (gleicher Tag): Umbau mit fester Ansicht, Halter in der
+DROME-Karte, nur einbaubare Teile, Vergleichsbalken in der Waffen-Karte;
+"Bester Aufbau" und Halter-Richtung entfernt. Als Naechstes: die Todo-Liste
+oben.
 
 Aelterer Stand (5. November 2026):
 
