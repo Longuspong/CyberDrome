@@ -35,6 +35,8 @@ const PART_EDGE := 72.0
 ## am besten im Squad an.
 var _tab := "squad"
 var _selected := -1
+## Kurze Rueckmeldung oben (z. B. nach "Bester Aufbau"), einmal gezeigt.
+var _notice := ""
 var _selected_slot := ""
 
 var _content: VBoxContainer
@@ -117,6 +119,9 @@ func _refresh() -> void:
 	_tab_umbau.button_pressed = _tab == "umbau"
 	for child in _content.get_children():
 		child.queue_free()
+	if _notice != "":
+		_content.add_child(UiKit.label(_notice, UiKit.SMALL, UiKit.GOOD))
+		_notice = ""
 	if _tab == "squad":
 		_show_squad()
 	else:
@@ -147,7 +152,25 @@ func _show_squad() -> void:
 		tiles.append(_drome_tile(index))
 	_add_tile_rows(_content, tiles)
 
+	if count > 0:
+		var best := UiKit.button("Bester Aufbau fuer den Squad")
+		best.tooltip_text = "Verteilt die staerksten Waffen auf alle DROMEs im Squad"
+		best.pressed.connect(func():
+			_best_loadout(GameState.roster.entries.filter(func(e): return e.in_squad)))
+		_content.add_child(best)
+
 	_new_drome_section()
+
+
+## "Bester Aufbau" (Roster.best_loadout) fuer ``targets``, mit kurzer
+## Rueckmeldung, was sich geaendert hat.
+func _best_loadout(targets: Array) -> void:
+	var changed := GameState.roster.best_loadout(targets)
+	if changed > 0:
+		Accessibility.vibrate(30, true)
+	_notice = "Bester Aufbau: %s" % ("%d Halter neu bestueckt" % changed if changed > 0
+		else "schon optimal")
+	_changed()
 
 
 ## Indizes aller DROMEs, die im Squad zuerst.
@@ -364,6 +387,11 @@ func _show_umbau() -> void:
 	if not equip.is_empty() and _selected_slot not in equip:
 		_selected_slot = equip[0]
 	_content.add_child(_slots(entry, build))
+	var best := UiKit.button("Bester Aufbau")
+	best.tooltip_text = "Ruestet diesen DROME mit den staerksten freien Waffen aus"
+	best.pressed.connect(func():
+		_best_loadout([entry]))
+	_content.add_child(best)
 	_parts_for_slot(entry, build)
 
 	var problems := build.validate()
