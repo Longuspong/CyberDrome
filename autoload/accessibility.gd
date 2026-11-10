@@ -288,7 +288,7 @@ const SCROLL_THRESHOLD := 12.0
 const SCROLL_FRICTION := 5.0
 var _scroll_target: ScrollContainer
 var _scroll_dragging := false
-var _scroll_distance := 0.0
+var _scroll_travel := Vector2.ZERO
 var _scroll_velocity := Vector2.ZERO
 var _scroll_coasting := false
 var _tip_layer: CanvasLayer
@@ -312,6 +312,17 @@ func _input(event: InputEvent) -> void:
 		if event is InputEventMouseButton:
 			get_viewport().set_input_as_handled()
 			return
+	# Ein Zug laeuft (Teil oder Modul auf einen Halter): die Geste gehoert
+	# ihm allein. Kein Scrollen, keine Erklaerung, und vor allem wird das
+	# Loslassen nicht verschluckt -- sonst kommt der Zug nie an und sein Bild
+	# bleibt am Bildschirm haengen (so war es bis 10. Nov. 2026).
+	if get_viewport().gui_is_dragging():
+		_press_active = false
+		_scroll_target = null
+		_scroll_dragging = false
+		_swallow_release = false
+		_hide_tip()
+		return
 	if _scroll_input(event):
 		return
 	if event is InputEventScreenTouch:
@@ -322,7 +333,8 @@ func _input(event: InputEvent) -> void:
 			_press_serial += 1
 			var serial := _press_serial
 			get_tree().create_timer(LONG_PRESS_SECONDS).timeout.connect(func():
-				if _press_active and serial == _press_serial:
+				if _press_active and serial == _press_serial \
+						and not get_viewport().gui_is_dragging():
 					_show_tip_at(_press_position))
 		else:
 			_press_active = false
@@ -346,9 +358,9 @@ func _scroll_input(event: InputEvent) -> bool:
 		if event.pressed and event.index == 0:
 			_scroll_coasting = false
 			_scroll_velocity = Vector2.ZERO
-			_scroll_target = _scroll_container_under_finger()
+			_scroll_target = _scroll_container_at(event.position)
 			_scroll_dragging = false
-			_scroll_distance = 0.0
+			_scroll_travel = Vector2.ZERO
 		elif not event.pressed and _scroll_dragging:
 			_scroll_dragging = false
 			_scroll_coasting = _scroll_velocity.length() > 60.0
@@ -357,8 +369,15 @@ func _scroll_input(event: InputEvent) -> bool:
 		if not is_instance_valid(_scroll_target):
 			_scroll_target = null
 			return false
-		_scroll_distance += event.relative.length()
-		if not _scroll_dragging and _scroll_distance > SCROLL_THRESHOLD:
+		_scroll_travel += event.relative
+		if not _scroll_dragging and _scroll_travel.length() > SCROLL_THRESHOLD:
+			# Die Richtung entscheidet: nur ein Wischer entlang der Liste
+			# scrollt. Quer dazu gehoert die Geste jemand anderem -- so
+			# beginnt das Ziehen eines Teils auf einen Halter (waagerecht),
+			# ohne dass die Liste mitlaeuft und das Loslassen verschluckt.
+			if not _can_scroll_along(_scroll_target, _scroll_travel):
+				_scroll_target = null
+				return false
 			_scroll_dragging = true
 			_press_active = false        # kein langes Druecken mehr
 			_swallow_release = true      # und kein Klick am Ende
@@ -371,13 +390,33 @@ func _scroll_input(event: InputEvent) -> bool:
 	return false
 
 
-func _scroll_container_under_finger() -> ScrollContainer:
-	var node: Node = get_viewport().gui_get_hovered_control()
-	while node != null:
-		if node is ScrollContainer:
-			return node
-		node = node.get_parent()
-	return null
+## Laesst sich ``container`` in der Hauptrichtung von ``travel`` scrollen?
+static func _can_scroll_along(container: ScrollContainer, travel: Vector2) -> bool:
+	if absf(travel.y) >= absf(travel.x):
+		return container.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED
+	return container.horizontal_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED
+
+
+## Die Liste unter dem Finger -- nach ihrer Lage, nicht nach dem Control,
+## ueber dem die Maus "schwebt": auf einem Touchscreen ist das beim Aufsetzen
+## noch das vom vorigen Tippen, und der erste Wischer griff ins Leere. Liegen
+## mehrere uebereinander, gewinnt die innerste.
+func _scroll_container_at(at: Vector2) -> ScrollContainer:
+	var best: ScrollContainer = null
+	var best_depth := -1
+	for node in get_tree().root.find_children("*", "ScrollContainer", true, false):
+		var container := node as ScrollContainer
+		if not container.is_visible_in_tree() or not container.get_global_rect().has_point(at):
+			continue
+		var depth := 0
+		var parent := container.get_parent()
+		while parent != null:
+			depth += 1
+			parent = parent.get_parent()
+		if depth > best_depth:
+			best_depth = depth
+			best = container
+	return best
 
 
 func _scroll_by(amount: Vector2) -> void:
