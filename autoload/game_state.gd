@@ -112,12 +112,18 @@ func refresh_squad() -> void:
 ## ganze Persistenz haengt an diesem einen Schalter -- umlegen genuegt, sobald
 ## Spielstaende gewollt sind.
 func _persistence_enabled() -> bool:
-	# Tests und Werkzeuge (--script res://tests/..., res://tools/...) schreiben
-	# nie in den Spielstand des Spielers und lesen ihn nicht.
+	if _is_tool_run():
+		return false
+	return bool(Config.get_value("save_enabled", false))
+
+
+## Tests und Werkzeuge (--script res://tests/..., res://tools/...) lesen,
+## schreiben und loeschen den Spielstand des Spielers nie.
+static func _is_tool_run() -> bool:
 	for arg in OS.get_cmdline_args():
 		if str(arg).begins_with("res://tests/") or str(arg).begins_with("res://tools/"):
-			return false
-	return bool(Config.get_value("save_enabled", false))
+			return true
+	return false
 
 
 func save_roster() -> void:
@@ -139,7 +145,8 @@ func load_roster() -> void:
 	# statt ihn zu laden. So kann ein kaputter Spielstand aus einer aelteren
 	# Version das Spiel nicht mehr in einen unbrauchbaren Zustand ziehen.
 	if not _persistence_enabled():
-		_wipe_saves()
+		if not _is_tool_run():
+			_wipe_saves()
 		roster.seed_starter()
 		refresh_squad()
 		print("[GameState] Persistenz aus -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
@@ -321,7 +328,8 @@ func load_run() -> void:
 
 ## Setzt den ganzen Spielstand zurueck: Hangar, Lauf, alles (Optionen).
 func reset_progress() -> void:
-	_wipe_saves()
+	if not _is_tool_run():
+		_wipe_saves()
 	run = null
 	roster = Roster.new()
 	roster.seed_starter()
