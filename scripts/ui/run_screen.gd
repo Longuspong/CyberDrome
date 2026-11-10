@@ -554,6 +554,21 @@ func _storage_tile(run: RunState, index: int) -> Control:
 		name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		box.add_child(name)
+	# Ziehen auf einen Halter (Tippen bleibt); waagerecht startet den Zug.
+	var start := {"at": Vector2.ZERO}
+	button.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed:
+			start["at"] = event.global_position)
+	button.set_drag_forwarding(func(_at):
+		if not run.is_module_at(index):
+			return null
+		var moved: Vector2 = button.get_global_mouse_position() - start["at"]
+		if absf(moved.y) > absf(moved.x):
+			return null
+		var preview := ModuleChip.new(ModuleData.get_module(run.storage[index]), 56.0)
+		button.set_drag_preview(preview)
+		return {"kind": "storage", "index": index},
+		Callable(), Callable())
 	button.pressed.connect(func():
 		_selected_storage = -1 if _selected_storage == index else index
 		_refresh())
@@ -752,9 +767,37 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 		else:
 			button.text = line
 			button.disabled = true
+		# Ziehen (10. Nov. 2026): ein Modul oder BIOS aus dem Lager hierher.
+		button.set_drag_forwarding(Callable(),
+			func(_at, data): return _can_drop_storage(run, drome, slot, data),
+			func(_at, data): _drop_storage(run, drome, slot, data))
 		box.add_child(button)
 		box.add_child(_module_row(run, drome, slot))
 	return panel
+
+
+## Darf das gezogene Lager-Stueck in diesen Halter? Dieselben Regeln wie beim
+## Antippen (module_options / bios_options).
+func _can_drop_storage(run: RunState, drome: int, slot: String, data) -> bool:
+	if not data is Dictionary or data.get("kind", "") != "storage":
+		return false
+	var index := int(data.get("index", -1))
+	var options: Array = run.bios_options(index) if run.is_bios_at(index) \
+		else run.module_options(index)
+	for entry in options:
+		if int(entry["drome"]) == drome and entry["slot"] == slot:
+			return bool(entry.get("allowed", false))
+	return false
+
+
+func _drop_storage(run: RunState, drome: int, slot: String, data) -> void:
+	var index := int(data.get("index", -1))
+	var done := run.install_bios(index, drome, slot) if run.is_bios_at(index) \
+		else run.install_module(index, drome, slot)
+	if done:
+		Accessibility.vibrate(20, true)
+		_selected_storage = -1
+	_refresh()
 
 
 ## Die Module eines Halters als Chips mit Namen. Antippen nimmt eines zurueck

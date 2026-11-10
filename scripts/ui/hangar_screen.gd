@@ -461,6 +461,10 @@ func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 			_refresh()
 			if part != null:
 				_open_card(entry, build, part, slot))
+		# Ziehen (10. Nov. 2026): eine Teil-Kachel auf den Halter fallen lassen.
+		holder.set_drag_forwarding(Callable(),
+			func(_at, data): return _can_drop_part(entry, build, slot, data),
+			func(_at, data): _drop_part(entry, slot, data))
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 0)
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -526,6 +530,31 @@ func _parts_for_slot(entry: RosterEntry, build: DromeBuild) -> void:
 	_add_tile_rows(_content, tiles)
 
 
+## Darf ein gezogenes Teil auf diesen Halter? Dieselbe Pruefung wie beim
+## Einbauen ueber die Karte.
+func _can_drop_part(entry: RosterEntry, build: DromeBuild, slot: String, data) -> bool:
+	if not data is Dictionary or data.get("kind", "") != "part":
+		return false
+	var part := PartDB.get_part(data.get("part_id", &""))
+	if part == null or not build.body().accepts(part, slot):
+		return false
+	var current := build.part_in(slot)
+	if current != null and current.id == part.id:
+		return false
+	if GameState.roster.free_count(part.id) <= 0:
+		return false
+	var trial := build.clone()
+	trial.slots[slot] = part.id
+	return trial.is_valid()
+
+
+func _drop_part(entry: RosterEntry, slot: String, data) -> void:
+	if GameState.roster.assign(entry, slot, StringName(data.get("part_id", ""))):
+		Accessibility.vibrate(20, true)
+		_selected_slot = slot
+		_changed()
+
+
 ## Leer = einbaubar; sonst der Grund.
 func _verdict(entry: RosterEntry, build: DromeBuild, part: PartData) -> String:
 	var current := build.part_in(_selected_slot)
@@ -547,6 +576,21 @@ func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData,
 		_open_card(entry, build, part, "", verdict))
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.tooltip_text = part.display_name
+	# Ziehen auf einen Halter (Tippen bleibt). Nur eine waagerechte Bewegung
+	# startet den Zug -- senkrecht wird weiter gescrollt.
+	var start := {"at": Vector2.ZERO}
+	panel.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed:
+			start["at"] = event.global_position)
+	panel.set_drag_forwarding(func(_at):
+		var moved: Vector2 = panel.get_global_mouse_position() - start["at"]
+		if absf(moved.y) > absf(moved.x):
+			return null
+		var preview := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE)
+		preview.modulate = Color(1, 1, 1, 0.85)
+		panel.set_drag_preview(preview)
+		return {"kind": "part", "part_id": part.id},
+		Callable(), Callable())
 	var kind := "core" if part.type == PartData.Type.CORE else part.mount_class
 	var shape := SlotShape.new(kind, UiKit.part_texture(part), PART_EDGE)
 	shape.dim = verdict != ""
