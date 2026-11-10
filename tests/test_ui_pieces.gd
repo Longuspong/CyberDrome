@@ -137,6 +137,21 @@ func _molok() -> DromeBuild:
 		"feet": &"jugg_feet", "core": &"jugg_core"})
 
 
+
+func test_holders_are_named_without_a_direction() -> void:
+	# Wunsch des Spielers (10. Nov. 2026): "links" und "rechts" stehen nirgends
+	# mehr. Ein einzelner Halter heisst "Halter", mehrere bekommen eine Nummer.
+	var molok := _molok()
+	var names: Array = molok.equip_slots().map(func(slot): return SlotRules.holder_label(molok, slot))
+	t.equal(names, ["Halter 1", "Halter 2"], "der Molok hat Halter 1 und 2")
+	var vireo := DromeBuild.create("Vireo", {"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core"})
+	t.equal(SlotRules.holder_label(vireo, vireo.equip_slots()[0]), "Halter", "ein einzelner heisst nur Halter")
+	for choice in SlotRules.slot_choices(molok, PartDB.get_part(&"eq_pulse_blaster")):
+		for word in ["links", "rechts"]:
+			t.ok(not str(choice["label"]).contains(word), "keine Richtung in '%s'" % choice["label"])
+	t.equal(SlotRules.slot_label("core"), "Kern", "Sockel behalten ihren Namen")
+
 func test_every_mount_of_the_chassis_is_offered_with_its_verdict() -> void:
 	# Der Molok hat zwei Halter, beide bis mittel (8. Nov. 2026). Das schwere
 	# Gewehr passt in keinen -- beide stehen zur Wahl, beide mit Grund.

@@ -487,17 +487,10 @@ func is_valid() -> bool:
 	return validate().is_empty()
 
 
+## Der Name eines Slots im Text. Ausruestungshalter heissen "Halter", bei
+## mehreren mit Nummer -- ohne Richtung (SlotRules.holder_label).
 func _slot_label(slot: String) -> String:
-	match slot:
-		"body": return "Chassis"
-		"head": return "Sensorik"
-		"feet": return "Antrieb"
-		"core": return "Kern"
-		"equip_left": return "Ausruestung links"
-		"equip_right": return "Ausruestung rechts"
-		"equip_shoulder": return "Schulterhalterung"
-		"equip_center": return "Zentralhalterung"
-		_: return slot
+	return SlotRules.holder_label(self, slot)
 
 
 # ---------------------------------------------------------------------------

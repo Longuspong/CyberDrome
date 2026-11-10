@@ -387,8 +387,12 @@ Spielstand). Vorschlaege zu Story, Fraktionen, Klassen und Anstieg stehen in
 * **Haptik:** `Accessibility.vibrate` (gedrosselt, Schalter in den Optionen)
   bei schweren Treffern auf eigene DROMEs, Abschuessen, Kampfende, Einbauen,
   Kaufen, Verschmelzen.
-* **Bester Aufbau:** `Roster.best_loadout` / `loadout_score` -- Knopf im Umbau
-  (ein DROME) und im Squad-Reiter (alle im Squad).
+* ~~**Bester Aufbau:** Knopf im Umbau und im Squad-Reiter~~ -- am selben Tag
+  auf Wunsch des Spielers wieder entfernt (Knopf, `Roster.best_loadout`).
+* **Halter ohne Richtung** (Wunsch des Spielers): "links" und "rechts"
+  stehen nirgends mehr. Unter dem Halter steht nur seine Klasse; im Text
+  heisst er "Halter", beim Molok "Halter 1" / "Halter 2"
+  (`SlotRules.holder_label`).
 * **Vergleichsbalken:** `StatBar` statt nackter Zahlen im Hangar, beim
   Waffentausch vorher -> nachher in einem Balken.
 * **Ziehen auf Halter:** Hangar (Teil-Kachel auf Halter) und Zwischenstopp

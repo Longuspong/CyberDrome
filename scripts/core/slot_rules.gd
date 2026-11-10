@@ -17,13 +17,25 @@ extends RefCounted
 
 const SLOT_LABEL := {
 	"body": "Chassis", "head": "Sensorik", "feet": "Antrieb", "core": "Kern",
-	"equip_left": "links", "equip_right": "rechts",
-	"equip_shoulder": "Schulter", "equip_center": "Zentral",
 }
 
 
+## Der Name eines Sockels (Chassis, Sensorik ...). Ausruestungshalter heissen
+## schlicht "Halter" -- die Richtung (links, rechts) steht seit 10. Nov. 2026
+## nirgends mehr (Wunsch des Spielers); mehrere Halter eines DROME
+## unterscheidet holder_label ueber eine Nummer.
 static func slot_label(slot: String) -> String:
-	return SLOT_LABEL.get(slot, slot)
+	return SLOT_LABEL.get(slot, "Halter" if slot.begins_with("equip_") else slot)
+
+
+## Wie ein Ausruestungshalter dieses DROME im Text heisst: "Halter", bei
+## mehreren (Molok) "Halter 1", "Halter 2".
+static func holder_label(build: DromeBuild, slot: String) -> String:
+	var holders: Array = build.equip_slots() if build != null else []
+	var index := holders.find(slot)
+	if holders.size() <= 1 or index < 0:
+		return slot_label(slot)
+	return "Halter %d" % (index + 1)
 
 
 static func class_label(mount_class: String) -> String:
@@ -81,7 +93,7 @@ static func slot_choices(build: DromeBuild, part: PartData) -> Array:
 		choices.append({
 			"slot": slot,
 			"number": number,
-			"label": "Slot %d · %s (%s)" % [number, slot_label(slot), class_label(limit)],
+			"label": "Halter %d (%s)" % [number, class_label(limit)],
 			"detail": detail,
 			"allowed": allowed,
 		})

@@ -807,7 +807,7 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.custom_minimum_size = Vector2(0, 56)
 		button.add_theme_font_size_override("font_size", 16)
-		var line := "Halter %s (%s): %s" % [SlotRules.slot_label(slot),
+		var line := "%s (%s): %s" % [SlotRules.holder_label(build, slot),
 			SlotRules.class_label(limit), what]
 		var module_mode := run.is_module_at(_selected_storage)
 		if module_mode:
