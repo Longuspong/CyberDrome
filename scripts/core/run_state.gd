@@ -108,6 +108,13 @@ var bag: Array = []
 ## eines davon kommt ins Lager. Verfaellt beim Weitergehen.
 var bios_offers: Array = []
 
+## Karte wie bei FTL (10. Nov. 2026): der gewaehlte Knoten in der Reihe der
+## aktuellen Runde und der aus der Runde davor (fuer die Wege). Die Karte
+## selbst entsteht aus dem Seed (map_layers) und steht nicht im Spielstand.
+var node: int = -1
+var prev_node: int = -1
+var _map: Array = []
+
 ## Wie oft jede Waffe beim Start im Squad steckte. Was am Ende darueber
 ## hinaus im Lauf ist, ist Beute und geht nach Hause.
 var _start_counts: Dictionary = {}
@@ -181,6 +188,7 @@ func to_dict() -> Dictionary:
 		"pending_xp": _plain(pending_xp), "xp_credited": xp_credited,
 		"final_growth": _plain(final_growth), "home_queue": _plain(home_queue),
 		"start_counts": counts, "history": _plain(history),
+		"node": node, "prev_node": prev_node,
 	}
 
 
@@ -220,6 +228,8 @@ static func from_dict(data: Dictionary) -> RunState:
 	run.home_queue = _with_part_ids(data.get("home_queue", []))
 	for id in data.get("start_counts", {}):
 		run._start_counts[StringName(id)] = int(data["start_counts"][id])
+	run.node = int(data.get("node", -1))
+	run.prev_node = int(data.get("prev_node", -1))
 	run.history = data.get("history", [])
 	for entry in run.history:
 		for key in ["round", "tier", "credits"]:
@@ -271,6 +281,7 @@ static func start(seed_value: int, chosen: Array = []) -> RunState:
 	for build in run.squad:
 		run._count_start(build)
 	run.base_power = reference_power(run.start_size)
+	run._pick_default_node()
 	return run
 
 
@@ -493,6 +504,9 @@ func preview(which: int = -1) -> Dictionary:
 	conditions["enemy_power"] = DromeBuild.squad_power(foes)
 	conditions["own_power"] = DromeBuild.squad_power(squad)
 	conditions["reward_text"] = str(tier_cfg(which).get("reward_text", ""))
+	conditions["chaos"] = is_chaos() and which == tier
+	if conditions["chaos"]:
+		conditions["reward_text"] = "Chaos: Beute wie bei Elite, mehr Credits -- Gegner unbekannt"
 	var own_faction := faction()
 	conditions["faction"] = str(own_faction.get("name", ""))
 	conditions["profile"] = str(own_faction.get("profile", ""))
@@ -578,7 +592,11 @@ func _add_pending(kind: String, uid: String, gain: int) -> void:
 func battle_credits(won: bool) -> int:
 	if not won:
 		return int(cfg().get("loss_credits", 4))
-	return int(tier_cfg(tier).get("credits", 10))
+	var gain := int(tier_cfg(tier).get("credits", 10))
+	# Chaos-Kampf: mehr Credits fuer das Risiko, die Gegner nicht zu kennen.
+	if is_chaos():
+		gain = roundi(float(gain) * float((cfg().get("map", {}) as Dictionary).get("chaos_credits", 1.5)))
+	return gain
 
 
 ## Lauf aufgeben: wie verloren, die Beute geht trotzdem nach Hause.
@@ -620,6 +638,108 @@ func _advance() -> void:
 	bios_offers = []
 	rerolls = 0
 	phase = Phase.PREPARE
+	prev_node = node
+	_pick_default_node()
+
+
+# ---------------------------------------------------------------------------
+# Karte wie bei FTL (10. Nov. 2026, Wunsch des Spielers)
+# ---------------------------------------------------------------------------
+
+## Die Karte des Laufs: je Runde eine Reihe aus 2-3 Knoten
+## {tier, chaos, next: [Indizes in der naechsten Reihe]}. Jede Stufe hoechstens
+## einmal je Reihe (die Gegner haengen an Runde und Stufe). Ab Runde 2 ersetzt
+## mit run.map.chaos_chance ein Chaos-Kampf den Normal-Knoten: Gegner vorher
+## unsichtbar, Beute wie Elite, mehr Credits. Jeder Knoten hat mindestens
+## einen Weg nach vorn, jeder Knoten der naechsten Reihe mindestens einen
+## herein. Am Seed des Laufs -- dieselbe Karte nach dem Laden.
+func map_layers() -> Array:
+	if not _map.is_empty():
+		return _map
+	var settings: Dictionary = cfg().get("map", {})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = absi(hash([run_seed, "karte"]))
+	for r in rounds_total():
+		var tiers: Array = [Tier.EASY, Tier.NORMAL, Tier.ELITE]
+		var size := 3 if rng.randf() < float(settings.get("three_chance", 0.5)) else 2
+		while tiers.size() > size:
+			# Zwei Knoten: Normal bleibt fast immer, eine der Randstufen faellt.
+			tiers.remove_at(0 if rng.randf() < 0.5 else 2)
+		var layer: Array = []
+		for which in tiers:
+			var chaos: bool = which == Tier.NORMAL and r >= 1 \
+				and rng.randf() < float(settings.get("chaos_chance", 0.2))
+			layer.append({"tier": which, "chaos": chaos, "next": []})
+		_map.append(layer)
+	# Wege: jeder Knoten zu einem oder zwei Nachbarn der naechsten Reihe.
+	for r in _map.size() - 1:
+		var here: Array = _map[r]
+		var there: Array = _map[r + 1]
+		var reached := {}
+		for i in here.size():
+			var aim := roundi(float(i) * float(there.size() - 1) / float(maxi(1, here.size() - 1)))
+			var links := [aim]
+			var side := aim + (1 if rng.randf() < 0.5 else -1)
+			if side >= 0 and side < there.size() and rng.randf() < float(settings.get("branch_chance", 0.6)):
+				links.append(side)
+			links.sort()
+			here[i]["next"] = links
+			for j in links:
+				reached[j] = true
+		for j in there.size():
+			if not reached.has(j):
+				var from := mini(j, here.size() - 1)
+				(here[from]["next"] as Array).append(j)
+				(here[from]["next"] as Array).sort()
+	return _map
+
+
+## Die Knoten der aktuellen Runde, die man von der letzten Wahl aus erreicht
+## (Runde 1: alle).
+func available_nodes() -> Array:
+	var layers := map_layers()
+	if round < 1 or round > layers.size():
+		return []
+	var layer: Array = layers[round - 1]
+	if round == 1 or prev_node < 0:
+		return range(layer.size())
+	var before: Array = layers[round - 2]
+	if prev_node >= before.size():
+		return range(layer.size())
+	return (before[prev_node]["next"] as Array).duplicate()
+
+
+## Waehlt einen erreichbaren Knoten; seine Stufe wird die des Kampfes.
+func choose_node(index: int) -> bool:
+	if phase != Phase.PREPARE or index not in available_nodes():
+		return false
+	node = index
+	tier = int(map_layers()[round - 1][index]["tier"])
+	return true
+
+
+## Vorwahl: Normal, wenn erreichbar, sonst der erste erreichbare Knoten.
+func _pick_default_node() -> void:
+	var options := available_nodes()
+	if options.is_empty():
+		node = -1
+		return
+	var layer: Array = map_layers()[round - 1]
+	var pick: int = options[0]
+	for i in options:
+		if int(layer[i]["tier"]) == Tier.NORMAL and not bool(layer[i]["chaos"]):
+			pick = i
+	node = pick
+	tier = int(layer[pick]["tier"])
+
+
+## Ist der gewaehlte Kampf ein Chaos-Kampf?
+func is_chaos() -> bool:
+	var layers := map_layers()
+	if node < 0 or round < 1 or round > layers.size():
+		return false
+	var layer: Array = layers[round - 1]
+	return node < layer.size() and bool(layer[node]["chaos"]) and int(layer[node]["tier"]) == tier
 
 
 ## Weiter in den Zwischenstopp -- dabei wird der Laden gewuerfelt.
@@ -646,13 +766,15 @@ func roll_loot(enemy_pool: Array) -> Array:
 	var out: Array = []
 	# JSON liefert Gleitkommazahlen -- 2.0 ist fuer "in" nicht 2.
 	var drome_rounds: Array = (cfg().get("new_drome_rounds", [2, 5]) as Array).map(func(r): return int(r))
+	# Chaos-Kampf: Beute wie bei Elite (BIOS-Wahl oder seltenes Teil).
+	var rare := tier == Tier.ELITE or is_chaos()
 	var drome := (tier == Tier.NORMAL and round in drome_rounds) \
 		or (tier == Tier.ELITE and rng.randf() < float(settings.get("drome_chance", 0.0)))
 	if drome:
 		var entry := _drome_reward(rng)
 		entry["rare"] = tier == Tier.ELITE
 		out.append(entry)
-	elif tier == Tier.ELITE and round < rounds_total() and not roll_bios_offers().is_empty():
+	elif rare and round < rounds_total() and not roll_bios_offers().is_empty():
 		# Elite: ein Matrix-BIOS zur Wahl statt des Teils -- nie nach dem
 		# letzten Kampf, dort waere es wertlos (Module verfallen).
 		out.append({"kind": "bios", "rare": true, "title": "Matrix-BIOS",

@@ -313,6 +313,29 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   laeuft aber nicht. Gravitation-BIOS wurzelt dazu den naechsten Gegner am
   Ziel. Der Orbit-Sog (`act_orbitpull`) ist entfernt.
 
+### Komfort und Lauf (10. Nov. 2026, Wunsch des Spielers)
+* **Haptik:** `Accessibility.vibrate` (gedrosselt, Schalter in den Optionen)
+  bei schweren Treffern auf eigene DROMEs, Abschuessen, Kampfende, Einbauen,
+  Kaufen, Verschmelzen.
+* **Bester Aufbau:** `Roster.best_loadout` / `loadout_score` -- Knopf im Umbau
+  (ein DROME) und im Squad-Reiter (alle im Squad).
+* **Vergleichsbalken:** `StatBar` statt nackter Zahlen im Hangar, beim
+  Waffentausch vorher -> nachher in einem Balken.
+* **Ziehen auf Halter:** Hangar (Teil-Kachel auf Halter) und Zwischenstopp
+  (Modul/BIOS aus dem Lager); nur waagerecht startet ein Zug. Im Browser
+  mit Touch noch nicht vom Spieler getestet.
+* **Spielstand:** `save_enabled` an; Hangar in `user://roster.json`, Lauf in
+  `user://run.json` (`RunState.to_dict/from_dict`, `DromeBuild.to_save`),
+  nach jeder Aenderung geschrieben. "Lauf fortsetzen" im Hauptmenue,
+  "Spielstand zuruecksetzen" in den Optionen. Tests/Werkzeuge beruehren den
+  Spielstand nie (`GameState._is_tool_run`).
+* **Karte wie bei FTL:** `RunState.map_layers` -- je Runde 2-3 Knoten
+  (Leicht/Normal/Elite, ab Runde 2 manchmal Chaos statt Normal), Wege in die
+  naechste Reihe; `available_nodes`, `choose_node`. `MapView` zeigt die
+  Reihe dieser Runde und die naechste als Vorausschau. Chaos: Gegner in der
+  Vorschau verdeckt, Beute wie Elite, Credits x1,5 (`run.map` in config).
+  Bild: `tools/screenshot_run.gd`.
+
 ### Fraktionen und Profile (9. Nov. 2026) -- `data/regions.json` -> `faction`
 * Jedes Gebiet hat eine Fraktion mit Profil: Neon City / Neon Ninja's =
   Kaempfer (Vireo, Klingen, Haemmer, Rammen; Rundumschlag, Raufbold,

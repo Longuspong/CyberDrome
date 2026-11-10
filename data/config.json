@@ -77,6 +77,8 @@
     ],
     "region": "city",
     "rounds": 8,
+    "map": {"_kommentar": "Karte wie bei FTL (RunState.map_layers): Wahrscheinlichkeit fuer 3 statt 2 Knoten je Reihe, fuer einen zweiten Weg je Knoten, fuer einen Chaos-Kampf statt Normal (ab Runde 2) und der Credit-Faktor im Chaos-Kampf.",
+            "three_chance": 0.5, "branch_chance": 0.6, "chaos_chance": 0.2, "chaos_credits": 1.5},
     "lives": 3,
     "power_start": 0.85,
     "power_growth": 0.06,

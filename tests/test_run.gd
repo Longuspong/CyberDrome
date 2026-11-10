@@ -507,3 +507,81 @@ func test_an_old_or_broken_save_is_refused() -> void:
 	t.equal(RunState.from_dict({"version": 0}), null, "falsche Version")
 	t.equal(RunState.from_dict({"version": RunState.SAVE_VERSION,
 		"squad": [{"slots": {}}]}), null, "Squad ohne Chassis")
+
+
+# ---------------------------------------------------------------------------
+# Karte wie bei FTL (10. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+func test_the_map_has_a_row_per_round_with_paths_forward() -> void:
+	for seed_value in 30:
+		var run := RunState.start(8800 + seed_value)
+		var layers := run.map_layers()
+		t.equal(layers.size(), RunState.rounds_total(), "eine Reihe je Runde")
+		for r in layers.size():
+			var layer: Array = layers[r]
+			t.ok(layer.size() >= 2 and layer.size() <= 3, "2-3 Knoten je Reihe")
+			var tiers: Array = layer.map(func(n): return int(n["tier"]))
+			var unique := {}
+			for x in tiers:
+				unique[x] = true
+			t.equal(unique.size(), tiers.size(), "jede Stufe hoechstens einmal je Reihe")
+			if r == 0:
+				t.ok(not layer.any(func(n): return n["chaos"]), "kein Chaos in Runde 1")
+			if r < layers.size() - 1:
+				var incoming := {}
+				for node in layer:
+					t.ok(not (node["next"] as Array).is_empty(), "jeder Knoten hat einen Weg nach vorn")
+					for j in node["next"]:
+						incoming[j] = true
+				t.equal(incoming.size(), (layers[r + 1] as Array).size(), "jeder Knoten ist erreichbar")
+
+
+func test_the_same_seed_draws_the_same_map() -> void:
+	t.equal(RunState.start(77).map_layers(), RunState.start(77).map_layers(), "gleicher Seed, gleiche Karte")
+
+
+func test_only_connected_nodes_can_be_chosen() -> void:
+	var run := RunState.start(9901)
+	var first: int = run.available_nodes()[0]
+	t.ok(run.choose_node(first), "Runde 1: jeder Knoten")
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	run.continue_run()
+	var allowed := run.available_nodes()
+	t.equal(allowed, run.map_layers()[0][first]["next"], "Runde 2: nur die Wege vom gewaehlten Knoten")
+	for i in (run.map_layers()[1] as Array).size():
+		if i not in allowed:
+			t.ok(not run.choose_node(i), "Knoten %d ist nicht erreichbar" % i)
+	t.ok(run.node in allowed, "die Vorwahl liegt auf einem erreichbaren Knoten")
+
+
+func test_a_chaos_fight_hides_the_foes_and_pays_better() -> void:
+	var found := false
+	for seed_value in 200:
+		var run := RunState.start(12000 + seed_value)
+		run.round = 2
+		run.prev_node = -1
+		for i in (run.map_layers()[1] as Array).size():
+			if run.map_layers()[1][i]["chaos"]:
+				run.node = i
+				run.tier = int(run.map_layers()[1][i]["tier"])
+				found = true
+				t.ok(run.is_chaos(), "Chaos-Kampf erkannt")
+				t.ok(run.preview()["chaos"], "die Vorschau weiss es")
+				var normal := int(RunState.tier_cfg(RunState.Tier.NORMAL).get("credits", 10))
+				t.ok(run.battle_credits(true) > normal, "mehr Credits")
+				break
+		if found:
+			break
+	t.ok(found, "Chaos-Kaempfe kommen vor")
+
+
+func test_the_chosen_path_survives_saving() -> void:
+	var run := RunState.start(4545)
+	run.choose_node(run.available_nodes()[-1])
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	run.continue_run()
+	var back := _through_json(run)
+	t.equal(back.node, run.node, "gewaehlter Knoten")
+	t.equal(back.prev_node, run.prev_node, "Weg aus der Runde davor")
+	t.equal(back.available_nodes(), run.available_nodes(), "dieselben Wege")
