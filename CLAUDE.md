@@ -10,6 +10,9 @@ Spielprinzips, der gerade mit dem Spieler besprochen wird.
 **Fuer Module: `docs/MODULE_KONZEPT.md`** -- seit 9. Nov. 2026 die
 festgelegte Richtung (9 Grundmodule, 18 Rezepte, Matrix-BIOS, Profile =
 Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
+**Fuer Story, Fraktionen, Gegnergruppen: `docs/VORSCHLAG_STORY.md`** --
+Vorschlaege vom 10. Nov. 2026, noch NICHT entschieden; die offenen Punkte
+stehen dort in Abschnitt 6.
 
 ## Zusammenarbeit
 
@@ -29,7 +32,11 @@ bash tools/build_web.sh                                       # Web-Export nach 
 ```
 
 * Seit dem Aufraeumen vom 5. Nov. 2026 sind alle Tests gruen -- neue Arbeit
-  haelt das so.
+  haelt das so. Der Testlauf laedt auch jedes Skript und jede Szene; die
+  Bildschirme selbst baut `tests/smoke_ui.gd` (eigener Lauf, `--fixed-fps 60`).
+* Messen: `tools/playtest/power_bench.gd -- 3000` (wie gut sagt der
+  Kampfwert Kaempfe voraus), `run_bench.gd -- 60` (Standard-Squad gegen die
+  Lauf-Gegner), `playtest.gd -- 200 0 spiegel` (Spiegelkaempfe).
 * Headless-Hilfsskripte (`extends SceneTree`) duerfen Projektklassen nicht
   direkt referenzieren -- sie kompilieren vor den Autoloads. Logik in ein
   `RefCounted`-Skript legen und zur Laufzeit per `load()` holen (wie
@@ -41,6 +48,8 @@ bash tools/build_web.sh                                       # Web-Export nach 
 * **Mobile first, Hochformat ist die Hauptansicht.** Querformat wird
   angeboten, ist aber zweitrangig. Neue Bildschirme werden zuerst fuer
   ein Handy im Hochformat entworfen (ca. 400 CSS-Pixel breit).
+* Erster Bildschirm ist die Wahl des Spielstands (drei Stueck,
+  `scenes/saves.tscn`, `GameState.select_slot`).
 * Navigation: Tab-Leiste unten (Spielen, Hangar, Optionen). Der Hangar
   vereint Squad (Karussell, max. 4) und Umbau (ein Ausruestungsplatz je
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
@@ -49,13 +58,18 @@ bash tools/build_web.sh                                       # Web-Export nach 
 * Spielfeld bleibt 20x20, ohne Gelaende-Regeln und ohne Sichtlinie (seit
   5. Nov. 2026). Seit 7. Nov. 2026 gibt es **Hindernisse**, die nur Laufwege
   sperren (Schuesse gehen darueber), punktsymmetrisch je Seed, nie an den
-  Zonen (`MapGenerator.place_obstacles`, `config.json` -> `obstacles`). Die
+  Zonen (`MapGenerator.place_obstacles`, `config.json` -> `obstacles`).
+  Aufgestellt wird in einem Streifen 3 x 8 am Kartenrand, ohne Zutun nach
+  Rolle gestaffelt und verteilt (seit 10. Nov. 2026). Die
   Arena zeichnet `ArenaPainter` (Boden, Rand, Deko, Licht je Region). Die
   Kamera folgt dem Geschehen, Zoomen und Ziehen per Finger.
 * Das Spiel ist ein **Autobattler in Echtzeit** (seit Nov. 2026): alle
   DROMEs handeln gleichzeitig, keine Zuege. `BattleManager.tick()` rechnet in
   festen Schritten (0,05 s, deterministisch je Seed), die KI (`AIController`)
-  steuert beide Seiten. Jede Waffe hat ein Schussintervall, SPD ist die
+  steuert beide Seiten. **Gegner werden nicht gewuerfelt** (seit 10. Nov.
+  2026, Vorgabe des Spielers): handverlesene Teams aus
+  `data/encounters.json` (`Encounters`), gewuerfelt wird nur im Chaos-Kampf
+  des Endlos-Modus. Jede Waffe hat ein Schussintervall, SPD ist die
   Laufgeschwindigkeit, MOV und Energie spielen keine Rolle mehr. Was frueher
   zu Zugbeginn lief (Schild, Reparatur, Overtime ...), laeuft je Puls (3 s).
   Der Spieler entscheidet ueber Aufbau und Auswahl.
@@ -88,7 +102,18 @@ bash tools/build_web.sh                                       # Web-Export nach 
 Bis diese Punkte entschieden sind: keine groesseren Umbauten an
 Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
-## Naechste Schritte (Stand 5. November 2026)
+## Naechste Schritte (Stand 10. November 2026)
+
+Zuletzt gebaut (PR #55, Details in `docs/PROJEKTSTAND.md` "Playtest-Runde"):
+Aufstellung am Rand, Kampfwert neu (Standhaftigkeit mal Feuerkraft, 80 %
+Vorhersage), handverlesene Gegnerteams mit Gegnertyp, Gegnerwahl ohne Wege
+(immer ein Leichter, dazu zwei Normale oder Normal + Elite), Endlos-Modus
+mit Chaos-Knoten, drei Spielstaende, Touch-Ziehen repariert, gemeinsames
+Theme. Als Naechstes mit dem Spieler: die offenen Punkte aus
+`docs/VORSCHLAG_STORY.md` Abschnitt 6 (Aufhaenger, Level-Struktur des
+Story-Modus, Fraktions-Chassis, Schwierigkeit).
+
+Aelterer Stand (5. November 2026):
 
 0. **Neuentwurf umsetzen** (`docs/NEUANFANG.md`, Reihenfolge in Abschnitt 8).
    Erledigt: KI-Grundlagen (Ziel halten, Rolle je Chassis, Fokus); Nimbus

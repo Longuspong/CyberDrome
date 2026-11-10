@@ -12,13 +12,12 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * **Autobattler in Echtzeit** (seit Nov. 2026, vorher Zuege mit
   Initiative). Die KI (`scripts/battle/ai_controller.gd`) steuert beide
   Seiten. Der Spieler entscheidet ueber Aufbau, Squad und Belohnungen -- nicht
-  ueber einzelne Zuege. Auch der Chaos-Virus ist immer Autokampf (der
-  Schalter ist weg, Nov. 2026 -- vorher stand er auf "aus" und der Spieler
-  musste ungewollt selbst steuern). Den manuellen Kampf gibt es nicht mehr.
+  ueber einzelne Zuege. Den manuellen Kampf gibt es nicht mehr.
 * **Mobile first, Hochformat ist die Hauptansicht** (Wunsch des Spielers,
   ausdruecklich). Querformat wird angeboten, ist zweitrangig. Ziel-Plattform
   ist das Handy, gehostet als PWA auf Vercel; Android-APK kommt spaeter.
-* **Roguelike-Lauf** als zentraler Modus (Hauptknopf "Lauf starten").
+* **Roguelike-Lauf** als zentraler Modus: "Neon City" (8 Kaempfe) und der
+  Endlos-Modus. Beim Start waehlt man einen von drei Spielstaenden.
 
 ## 2. Was gebaut ist (Chronologie)
 
@@ -65,8 +64,8 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * **Puls** (3 s je DROME, versetzt): Schild, Drohnen-Pod, Overtime.
   Statuseffekte laufen in Sekunden ab.
 * **Overtime** ab 60 s, je Puls wachsend; Zeitgrenze 180 s.
-* **Startzonen** 5 Felder von den Ecken eingerueckt (`deployment.inset`):
-  erster Treffer nach rund 2 s statt nach zwei Zyklen.
+* ~~**Startzonen** 5 Felder von den Ecken eingerueckt~~ -- seit 10. Nov.
+  2026 am Kartenrand (siehe "Playtest-Runde").
 * **Takt-Leiste** (7. Nov. 2026) unter dem Lebensbalken je Faehigkeit:
   Treffer-Takt in Abschnitten (jeder 4. Angriff = vier Viertel), Zeit-Takt
   fuellt sich in halben Sekunden; voll = hell, als Naechstes kommt die
@@ -129,7 +128,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * 8 Kaempfe, 3 Leben, alles am Seed. Werte in `data/config.json` -> `run`.
 * **Aufstellung vor dem Lauf** (`SquadPicker`, `scripts/ui/squad_picker.gd`):
   vorgeschlagen ist der Hangar-Squad, Plus/Minus nimmt mit oder laesst zuhause
-  (max. 4). Dieselbe Ansicht vor dem Chaos-Virus.
+  (max. 4).
 * Der Lauf **kopiert** die mitgenommenen DROMEs. Im Lauf wird nur mit Beute
   umgebaut, nicht mit dem Inventar zuhause. Beute kann eingebaut oder **nach
   Hause geschickt** werden (`RunState.home_queue` ->
@@ -137,16 +136,18 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Was im Lauf eingebaut wurde, bleibt im Lauf.
 * (Frueher fester Start-Squad Vireo + Nimbus -- das war der Fehler "im Lauf
   kommt ein ganz anderes Squad raus", behoben Nov. 2026.)
-* **Drei Gegner je Runde**: Leicht / Normal / Elite (`run.tiers`). Vorher
-  sichtbar: Region und die gegnerischen DROMEs mit Ausruestung
+* **Drei Knoten je Runde** (seit 10. Nov. 2026 `RunState.row`, siehe
+  "Playtest-Runde"): Stufen Leicht / Normal / Elite (`run.tiers`). Vorher
+  sichtbar: Team, Gegnertyp und die gegnerischen DROMEs mit Ausruestung
   (`RunState.enemies()`, dieselben im Kampf ueber `GameState.enemy_override`).
 * **Ein Lauf bleibt in seinem Gebiet** (`run.region` in `data/config.json`,
   heute `city` = Neon City; `RunState.region_id` -> `GameState.battle_region`
   -> `BattleManager.setup`). Bis 9. Nov. 2026 wuerfelte jeder Kampf die
   Region aus seinem Seed -- je Stufe ein anderes Gebiet, obwohl der Lauf in
-  Neon City spielt. Nur der Chaos-Virus wuerfelt noch.
+  Neon City spielt.
 * Gegnerstaerke = Startstaerke des mitgenommenen Squads * (0,85 + 0,06 *
-  (Runde - 1)) * Stufenfaktor (0,7 / 1,0 / 1,3) -- **feste Kurve**.
+  (Runde - 1)) * Stufenfaktor (0,7 / 1,0 / 1,3) -- **feste Kurve**; seit
+  10. Nov. 2026 nur noch das Ziel fuer die gewuerfelten Chaos-Gegner.
   Gegnerzahl = Startgroesse + `enemy_offsets[runde]` (-1 bei Leicht, +1 bei
   Elite), 1..4. Elite braucht den Extra-Gegner: zwei Gegner kommen im
   Generator nicht ueber ~680 Kampfwert, bei vier ist bei ~1300 Schluss.
@@ -313,6 +314,75 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   laeuft aber nicht. Gravitation-BIOS wurzelt dazu den naechsten Gegner am
   Ziel. Der Orbit-Sog (`act_orbitpull`) ist entfernt.
 
+### Playtest-Runde (10. Nov. 2026, Wunsch des Spielers) -- PR #55
+Ausloeser: das Playtesten machte keinen Spass (Bedienung hakelig, Aufstellung
+auf einem Haufen, Kampfwert unplausibel, gewuerfelte Gegner, kein Start mit
+Spielstand). Vorschlaege zu Story, Fraktionen, Klassen und Anstieg stehen in
+**`docs/VORSCHLAG_STORY.md`** -- nichts davon ist entschieden.
+
+* **Aufstellung am Kartenrand** (`MapGenerator.deployment_zone`,
+  `default_formation`): ein Streifen 3 x 8 an der Kante (Spieler unten links,
+  Gegner oben rechts) statt 3 x 5 mitten im Feld; ohne Zutun nach Rolle
+  gestaffelt und ueber die Breite verteilt, beide Seiten spiegelgleich.
+  Ziehen greift die FIGUR unter dem Finger (vorher das Feld -- bei
+  ueberlappenden Figuren die falsche), das Zielfeld leuchtet; dazu Antippen
+  (Figur, dann Feld). Zone als einzelne Kaestchen (`BattleView.ZonePainter`).
+  Gemessen (200 Spiegelkaempfe): 91:109, erster Treffer nach 5,6 s statt
+  2,0 s, Dauer 32 s statt 23 s. Stellschraube: `deployment.inset`.
+* **Kampfwert neu** (`DromeBuild.power_score/power_parts`): Wurzel aus
+  Standhaftigkeit (Integritaet mal Ruestungsfaktor + 3 x Schild + Reparatur)
+  mal Feuerkraft (Schaden je Sekunde mal Reichweite, dazu Betaeubung,
+  Stacheln); 100 = Schnitt der Standard-DROMEs. Standard: Strix 146,
+  Nimbus 109, Vireo 74, Molok 71. An 2500 Kaempfe angepasst, an 1500 und
+  nochmal 3000 anderen geprueft: der hoehere Wert gewinnt in 80 % (alt 65 %),
+  bei ueber 25 % Abstand in 93-94 %. Siegchance nach Verhaeltnis Gegner/eigen:
+  0,6-0,8 -> 89 %, 0,8-0,95 -> 72 %, ~1 -> 50 %, 1,05-1,2 -> 25 %,
+  1,2-1,4 -> 10 %. Werkzeug: `tools/playtest/power_bench.gd -- 3000`.
+  Grenze: kein Zusammenspiel -- der Molok ist allein wenig wert und macht
+  den Strix dahinter erst stark.
+* **Gegner handverlesen** (`Encounters`, `data/encounters.json`): kein
+  Wuerfeln mehr ausser im Chaos-Kampf. Je Team feste DROMEs mit Namen, Waffen
+  und Modulen (in Listenreihenfolge nach Runde/Stufe, ab Runde 5 vorn das
+  Rezept) und ein **Gegnertyp** (Sturm, Schuetzen, Bollwerk, Kontrolle,
+  Gemischt). Eigene Elite-Teams je Fraktion. Runde 1-2 sind **Training**
+  gegen normale DROMEs (`run.training_rounds`). Die Teams sind ein Vorschlag;
+  `tests/test_encounters.gd` prueft, dass jedes baubar ist.
+* **Gegnerwahl** (`RunState.row`, ersetzt die Karte mit Wegen): immer ein
+  Leichter, dazu zwei Normale mit verschiedenen Gegnertypen ODER ein Normaler
+  und ein Elite. Elite-Chance 35 %, je gewaehltem Elite +12 Punkte (bis 85 %).
+  Alle Knoten stehen zur Wahl; die Vorausschau zeigt die Reihe, die nach der
+  aktuellen Wahl kaeme. Die Wege entfielen, weil "immer ein leichter Kampf"
+  sonst nicht zu halten war.
+* **Chaos-Virus als eigener Modus entfernt** (Bildschirm, `ChaosLoot`, Pity,
+  Handicap). Chaos ist ein Knoten im **Endlos-Modus** (`mode = "endless"`):
+  gewuerfelte DROMEs, Waffen und Module ohne Profil, Beute wie Elite.
+* **Endlos-Modus** nach `NEUANFANG.md` 6h: kein Ende, ein Leben, eine
+  Niederlage kostet die Beute, nach jeder Runde aussteigen
+  (`RunState.cash_out`). Frei nach dem ersten Sieg in Neon City
+  (`GameState.progress`) oder per Testschalter in den Optionen. Der Anstieg
+  nach Runde 8 (`run.endless`) ist ein Platzhalter.
+* **Drei Spielstaende** (`GameState.select_slot`, `scenes/saves.tscn` als
+  erster Bildschirm): je Ordner `user://slotN/` Hangar, Lauf, Fortschritt;
+  ein alter Spielstand zieht in Spielstand 1. Wechseln in den Optionen.
+* **Touch repariert** (`Accessibility`): die Wisch-Scroll-Logik verschluckte
+  nach 12 Pixeln jedes Loslassen -- ein gezogenes Teil kam nie an und blieb
+  am Bildschirm haengen. Jetzt hat ein laufender Zug Vorrang, gescrollt wird
+  nur entlang der Liste, und die Liste unter dem Finger wird nach ihrer Lage
+  bestimmt (nicht nach dem zuletzt ueberfahrenen Control). Im Browser als
+  Pixel 7 nachgestellt.
+* **Optik**: gemeinsames Theme (`UiKit.theme`) fuer Standard-Knoepfe,
+  Eingabefelder, Schalter, Rollbalken; rundere Karten mit Schatten, die
+  Hauptaktion leuchtet, die Tab-Leiste zeigt die aktive Seite, der Umbau
+  steht in einer Karte. Im Lauf sitzt die Hauptaktion fest am unteren Rand.
+* **Neu im Testlauf**: `tests/test_scripts_compile.gd` laedt jedes Skript und
+  jede Szene (ein Tippfehler in einem Bildschirm blieb sonst unbemerkt);
+  `tests/smoke_ui.gd` baut auch Spielstaende, Menue, Gegnerwahl und Kampf.
+* Gemessen (`run_bench.gd -- 60`, Standard-Squad ohne Module und Level):
+  Leicht 100 %; Normal 97 / 80 / 63 % in Runde 3 / 5 / 8; Elite 55 / 32 / 41 %.
+* **Noch nicht gebaut:** die Level-Struktur des Story-Modus (zehn Level,
+  Training mit 2 und 3 DROMEs), eigene Fraktions-Chassis, Bosse, bessere
+  Beute im Endlos-Modus. Vorschlaege dazu in `VORSCHLAG_STORY.md`.
+
 ### Komfort und Lauf (10. Nov. 2026, Wunsch des Spielers)
 * **Haptik:** `Accessibility.vibrate` (gedrosselt, Schalter in den Optionen)
   bei schweren Treffern auf eigene DROMEs, Abschuessen, Kampfende, Einbauen,
@@ -329,12 +399,10 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   nach jeder Aenderung geschrieben. "Lauf fortsetzen" im Hauptmenue,
   "Spielstand zuruecksetzen" in den Optionen. Tests/Werkzeuge beruehren den
   Spielstand nie (`GameState._is_tool_run`).
-* **Karte wie bei FTL:** `RunState.map_layers` -- je Runde 2-3 Knoten
-  (Leicht/Normal/Elite, ab Runde 2 manchmal Chaos statt Normal), Wege in die
-  naechste Reihe; `available_nodes`, `choose_node`. `MapView` zeigt die
-  Reihe dieser Runde und die naechste als Vorausschau. Chaos: Gegner in der
-  Vorschau verdeckt, Beute wie Elite, Credits x1,5 (`run.map` in config).
-  Bild: `tools/screenshot_run.gd`.
+* ~~**Karte wie bei FTL** mit Wegen (`RunState.map_layers`)~~ -- am selben
+  Tag ersetzt durch die Reihe ohne Wege (`RunState.row`, siehe
+  "Playtest-Runde" oben). `MapView` zeigt weiter die Reihe dieser Runde und
+  die naechste als Vorausschau.
 
 ### Fraktionen und Profile (9. Nov. 2026) -- `data/regions.json` -> `faction`
 * Jedes Gebiet hat eine Fraktion mit Profil: Neon City / Neon Ninja's =
@@ -437,9 +505,9 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   (`BattleView.show_attack`, `BattleScreen.attack_style`).
 
 ### Chaos-Virus
-* Gegner sieht man vorher nicht; sie sind etwas schwaecher als die volle
-  eigene Mannschaft (`chaos.enemy_power_factor` 0,9). Handicap und Beute
-  rechnen weiter gegen die volle Referenz.
+* ~~Eigener Modus mit Bit-Auswahl, Handicap und Pity~~ -- entfernt am
+  10. Nov. 2026. Chaos ist ein Knoten im Endlos-Modus (siehe
+  "Playtest-Runde").
 
 ### Startbestand
 * Neuer Spielstand: jeder der vier Standard-DROMEs einmal in voller
@@ -548,14 +616,15 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Playtest kann jetzt auch Spiegelkaempfe (`... playtest.gd -- 200 0 spiegel`).
 * ~~Namensschilder/Balken schweben beim Herauszoomen und ueberlappen~~ --
   behoben 7. Nov. 2026 (siehe "Lesbarkeit im Kampf").
-* Module: Gegner tragen keine, die Gegnerkurve kennt sie nicht; der
-  Kampfwert (`power_score`) sieht nur DEF und Schild. Die alten Teile
+* ~~Module: Gegner tragen keine, der Kampfwert sieht nur DEF und Schild~~
+  -- Gegner tragen Module (8. Nov.), der Kampfwert rechnet sie mit
+  (10. Nov.). Die alten Teile
   Koedersender (`eq_bait_beacon`), Hologramm-Boost und Orbit-Fokus sind
   noch Ausruestung, obwohl sie laut 6g Module werden sollen.
-* Spielstand-Auswahl vor dem Hauptmenue (Wunsch des Spielers, Nov. 2026)
-  ist noch nicht gebaut -- haengt an der Persistenz.
-* Spielstand-Persistenz ist in der Dev-Phase aus (`save_enabled: false`) --
-  ein Lauf uebersteht kein Neuladen.
+* ~~Spielstand-Auswahl vor dem Hauptmenue~~ -- gebaut 10. Nov. 2026 (drei
+  Spielstaende).
+* Die Anzeige schreibt ohne Umlaute ("Kaempfe", "waehlen"), obwohl die
+  Schrift sie kann -- offen (`VORSCHLAG_STORY.md` 6).
 * `docs/GAME_DESIGN.md` und Teile der `README.md` beschreiben noch die alte
   Querformat-Werkstatt.
 
