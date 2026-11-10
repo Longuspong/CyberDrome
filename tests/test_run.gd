@@ -451,3 +451,59 @@ func test_the_mega_mechas_bring_more_moloks_than_the_ninjas() -> void:
 	var guns := int(ninjas["weapons"].get(&"eq_pulse_blaster", 0)) \
 		+ int(ninjas["weapons"].get(&"eq_neon_blaster", 0))
 	t.ok(blades > guns, "die Neon Ninja's kaempfen eher nah (%d gegen %d)" % [blades, guns])
+
+
+# ---------------------------------------------------------------------------
+# Spielstand (10. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+## Wie auf der Platte: einmal durch JSON und zurueck.
+func _through_json(run: RunState) -> RunState:
+	var text := JSON.stringify(run.to_dict())
+	return RunState.from_dict(JSON.parse_string(text))
+
+
+func test_a_run_survives_saving_and_loading() -> void:
+	var run := RunState.start(5150)
+	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_hammer", &"eq_deflector"])
+	run.storage.append_array([&"mod_rapid_fire", &"bios_metronome"])
+	run.bag.append(&"eq_mortar")
+	run.squad[0].modules[run.squad[0].equip_slots()[0]] = [&"mod_capacitor", &"mod_seeker"]
+	run.squad[1].chassis_bios = true
+	run.set_target_recipe(&"mod_gunslinger")
+	run.credits = 17
+	var back := _through_json(run)
+	t.ok(back != null, "der Lauf laesst sich laden")
+	if back == null:
+		return
+	t.equal(back.round, run.round, "Runde")
+	t.equal(back.lives, run.lives, "Leben")
+	t.equal(back.phase, run.phase, "Phase")
+	t.equal(back.credits, 17, "Credits")
+	t.equal(back.storage, run.storage, "Lager (als StringName)")
+	t.equal(back.bag, run.bag, "Tasche")
+	t.equal(back.target_recipe, &"mod_gunslinger", "Ziel-Rezept")
+	t.equal(back.squad.size(), run.squad.size(), "Squad")
+	t.equal(back.squad[0].modules, run.squad[0].modules, "Module im Halter")
+	t.ok(back.squad[1].chassis_bios, "Chassis-BIOS")
+	t.equal(back.shop_offers, run.shop_offers, "Laden")
+	for i in run.squad.size():
+		t.equal(back.squad[i].slots, run.squad[i].slots, "%s: Waffen" % run.squad[i].display_name)
+		t.equal(back.squad[i].drome_level, run.squad[i].drome_level, "Level")
+
+
+func test_a_loaded_run_meets_the_same_enemies() -> void:
+	var run := RunState.start(7331)
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	run.continue_run()
+	var back := _through_json(run)
+	var a: Array = run.enemies().map(func(b): return b.to_loadout())
+	var b: Array = back.enemies().map(func(x): return x.to_loadout())
+	t.equal(a, b, "dieselben Gegner nach dem Laden")
+	t.equal(back.battle_seed(), run.battle_seed(), "derselbe Kampf-Seed")
+
+
+func test_an_old_or_broken_save_is_refused() -> void:
+	t.equal(RunState.from_dict({"version": 0}), null, "falsche Version")
+	t.equal(RunState.from_dict({"version": RunState.SAVE_VERSION,
+		"squad": [{"slots": {}}]}), null, "Squad ohne Chassis")

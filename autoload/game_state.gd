@@ -24,6 +24,8 @@ const ROSTER_PATH := "user://roster.json"
 ## nicht von einem alten Stand verdeckt wird -- und ein v1-Squad wird dabei
 ## einmalig in den Roster ueberfuehrt.
 const SQUAD_PATH := "user://squad.json"
+## Der laufende Lauf (10. Nov. 2026) -- uebersteht Neuladen.
+const RUN_PATH := "user://run.json"
 const WORKSHOP_SQUAD_PATH := "res://builds/squad.json"
 
 ## Der Besitz: Inventar (Instanzen) + Roster (DROMEs). Quelle der Wahrheit.
@@ -110,6 +112,11 @@ func refresh_squad() -> void:
 ## ganze Persistenz haengt an diesem einen Schalter -- umlegen genuegt, sobald
 ## Spielstaende gewollt sind.
 func _persistence_enabled() -> bool:
+	# Tests und Werkzeuge (--script res://tests/..., res://tools/...) schreiben
+	# nie in den Spielstand des Spielers und lesen ihn nicht.
+	for arg in OS.get_cmdline_args():
+		if str(arg).begins_with("res://tests/") or str(arg).begins_with("res://tools/"):
+			return false
 	return bool(Config.get_value("save_enabled", false))
 
 
@@ -143,9 +150,12 @@ func load_roster() -> void:
 	if path == "":
 		# Ein frischer Start: der handgesetzte Startbestand (§10g).
 		roster.seed_starter()
-		refresh_squad()
+		# Gleich ablegen: ein Lauf ohne gespeicherten Hangar wuerde sonst beim
+		# naechsten Start nicht gefunden.
+		save_roster()
 		print("[GameState] Kein Spielstand -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
 			% [roster.entries.size(), roster.all_instances().size()])
+		load_run()
 		return
 
 	var parsed = _read_json(path)
@@ -169,6 +179,7 @@ func load_roster() -> void:
 	refresh_squad()
 	print("[GameState] Roster aus %s: %d DROMEs, %d im Squad"
 		% [path, roster.entries.size(), roster.squad_count()])
+	load_run()
 
 
 func _read_json(path: String):
@@ -186,7 +197,7 @@ func _read_json(path: String):
 ## Dateien: der Werkstatt-Export unter ``res://builds`` ist Entwickler-Material
 ## und im Export ohnehin schreibgeschuetzt. Fehlt eine Datei, ist nichts zu tun.
 func _wipe_saves() -> void:
-	for path in [ROSTER_PATH, SQUAD_PATH]:
+	for path in [ROSTER_PATH, SQUAD_PATH, RUN_PATH]:
 		if FileAccess.file_exists(path):
 			var err := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 			if err == OK:
@@ -271,6 +282,50 @@ var in_run_battle: bool = false
 func start_run(seed_value: int = 0) -> void:
 	refresh_squad()
 	run = RunState.start(seed_value if seed_value != 0 else randi(), squad)
+	save_run()
+
+
+## Schreibt den Lauf in den Spielstand (10. Nov. 2026); ohne Lauf wird die
+## Datei entfernt. Nach jeder Aenderung am Lauf gerufen (Zwischenstopp,
+## Kampfende). Ein Kampf selbst wird nicht gespeichert: wer mittendrin
+## schliesst, steht danach wieder vor demselben Kampf.
+func save_run() -> void:
+	if not _persistence_enabled():
+		return
+	if run == null:
+		if FileAccess.file_exists(RUN_PATH):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(RUN_PATH))
+		return
+	var file := FileAccess.open(RUN_PATH, FileAccess.WRITE)
+	if file == null:
+		push_error("GameState: %s nicht schreibbar" % RUN_PATH)
+		return
+	file.store_string(JSON.stringify(run.to_dict()))
+
+
+## Holt einen gespeicherten Lauf zurueck (beim Start, nach dem Roster).
+func load_run() -> void:
+	run = null
+	if not _persistence_enabled() or not FileAccess.file_exists(RUN_PATH):
+		return
+	var parsed = _read_json(RUN_PATH)
+	if parsed == null:
+		return
+	run = RunState.from_dict(parsed)
+	if run == null:
+		push_warning("GameState: gespeicherter Lauf passt nicht zur Version -- verworfen")
+		save_run()
+	else:
+		print("[GameState] Lauf fortgesetzt: Runde %d, %d Leben" % [run.round, run.lives])
+
+
+## Setzt den ganzen Spielstand zurueck: Hangar, Lauf, alles (Optionen).
+func reset_progress() -> void:
+	_wipe_saves()
+	run = null
+	roster = Roster.new()
+	roster.seed_starter()
+	save_roster()
 
 
 ## Bringt die nach Hause geschickte Beute ins Inventar: Teile als neue
@@ -307,6 +362,7 @@ func deliver_run_home() -> Array:
 	run.home_queue.clear()
 	if not delivered.is_empty():
 		save_roster()
+	save_run()
 	return delivered
 
 
@@ -338,6 +394,7 @@ func finish_run_battle(outcome: int, enemy_pool: Array, fighters: Array = []) ->
 	battle_seed = 0
 	clear_chaos_run()
 	refresh_squad()
+	save_run()
 
 
 ## Schreibt die gesammelten EP des Laufs zuhause gut (Leveling) -- einmal, am

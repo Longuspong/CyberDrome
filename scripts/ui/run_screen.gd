@@ -81,6 +81,8 @@ func _build_ui() -> void:
 
 
 func _refresh() -> void:
+	# Jede Aenderung im Lauf geht gleich in den Spielstand (10. Nov. 2026).
+	GameState.save_run()
 	var run := _run()
 	for child in _side.get_children():
 		child.queue_free()

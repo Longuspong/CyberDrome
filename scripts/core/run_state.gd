@@ -153,6 +153,108 @@ static func tier_cfg(which: int) -> Dictionary:
 	return tiers.get(TIER_KEYS[clampi(which, 0, 2)], {})
 
 
+# ---------------------------------------------------------------------------
+# Spielstand (10. Nov. 2026): der Lauf uebersteht Neuladen
+# ---------------------------------------------------------------------------
+
+const SAVE_VERSION := 1
+
+## Alles, was den Lauf ausmacht, als JSON-taugliches Woerterbuch. Die Gegner
+## stehen nicht drin: sie entstehen aus Seed, Runde und Gebiet neu und sind
+## damit dieselben.
+func to_dict() -> Dictionary:
+	var counts := {}
+	for id in _start_counts:
+		counts[str(id)] = _start_counts[id]
+	return {
+		"version": SAVE_VERSION,
+		"run_seed": run_seed, "region_id": str(region_id), "round": round,
+		"lives": lives, "phase": phase, "tier": tier, "base_power": base_power,
+		"start_size": start_size, "credits": credits,
+		"squad": squad.map(func(b): return b.to_save()),
+		"storage": storage.map(func(id): return str(id)),
+		"bag": bag.map(func(id): return str(id)),
+		"bios_offers": bios_offers.map(func(id): return str(id)),
+		"shop_offers": shop_offers.map(func(o): return {"module_id": str(o["module_id"]), "sold": o["sold"]}),
+		"rerolls": rerolls, "target_recipe": str(target_recipe),
+		"last_loot": _plain(last_loot), "last_growth": _plain(last_growth),
+		"pending_xp": _plain(pending_xp), "xp_credited": xp_credited,
+		"final_growth": _plain(final_growth), "home_queue": _plain(home_queue),
+		"start_counts": counts, "history": _plain(history),
+	}
+
+
+## Gegenstueck zu to_dict. null, wenn die Daten nicht passen (dann beginnt
+## man ohne Lauf, statt mit einem kaputten).
+static func from_dict(data: Dictionary) -> RunState:
+	if int(data.get("version", 0)) != SAVE_VERSION:
+		return null
+	var run := RunState.new()
+	run.run_seed = int(data.get("run_seed", 0))
+	run.region_id = StringName(str(data.get("region_id", "city")))
+	run.round = int(data.get("round", 1))
+	run.lives = int(data.get("lives", max_lives()))
+	run.phase = int(data.get("phase", Phase.PREPARE))
+	run.tier = int(data.get("tier", Tier.NORMAL))
+	run.base_power = float(data.get("base_power", 0.0))
+	run.start_size = int(data.get("start_size", 2))
+	run.credits = int(data.get("credits", 0))
+	for item in data.get("squad", []):
+		var build := DromeBuild.from_save(item)
+		if build == null or build.body() == null:
+			return null
+		run.squad.append(build)
+	run.storage = (data.get("storage", []) as Array).map(func(id): return StringName(str(id)))
+	run.bag = (data.get("bag", []) as Array).map(func(id): return StringName(str(id)))
+	run.bios_offers = (data.get("bios_offers", []) as Array).map(func(id): return StringName(str(id)))
+	run.shop_offers = (data.get("shop_offers", []) as Array).map(func(o):
+		return {"module_id": StringName(str(o.get("module_id", ""))), "sold": bool(o.get("sold", false))})
+	run.rerolls = int(data.get("rerolls", 0))
+	run.target_recipe = StringName(str(data.get("target_recipe", "")))
+	run.last_loot = _with_part_ids(data.get("last_loot", []))
+	run.last_growth = data.get("last_growth", [])
+	var xp: Dictionary = data.get("pending_xp", {})
+	run.pending_xp = {"dromes": xp.get("dromes", {}), "weapons": xp.get("weapons", {})}
+	run.xp_credited = bool(data.get("xp_credited", false))
+	run.final_growth = data.get("final_growth", [])
+	run.home_queue = _with_part_ids(data.get("home_queue", []))
+	for id in data.get("start_counts", {}):
+		run._start_counts[StringName(id)] = int(data["start_counts"][id])
+	run.history = data.get("history", [])
+	for entry in run.history:
+		for key in ["round", "tier", "credits"]:
+			if entry.has(key):
+				entry[key] = int(entry[key])
+	return run
+
+
+## Eine tiefe Kopie, in der StringName zu String wird (JSON kennt nur Text).
+static func _plain(value):
+	if value is Dictionary:
+		var out := {}
+		for key in value:
+			out[str(key)] = _plain(value[key])
+		return out
+	if value is Array:
+		return value.map(func(v): return _plain(v))
+	if value is StringName:
+		return str(value)
+	return value
+
+
+## Beute-Eintraege: part_id wieder als StringName, Zahlen als int.
+static func _with_part_ids(items: Array) -> Array:
+	var out: Array = []
+	for item in items:
+		var copy: Dictionary = (item as Dictionary).duplicate(true)
+		if copy.has("part_id"):
+			copy["part_id"] = StringName(str(copy["part_id"]))
+		if copy.has("amount"):
+			copy["amount"] = int(copy["amount"])
+		out.append(copy)
+	return out
+
+
 ## Startet einen Lauf mit dem mitgenommenen Squad. Die DROMEs werden KOPIERT:
 ## was im Lauf eingebaut wird, bleibt im Lauf -- der Hangar zuhause aendert
 ## sich nur durch Beute, die man ausdruecklich nach Hause schickt.
