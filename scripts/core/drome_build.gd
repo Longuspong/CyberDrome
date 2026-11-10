@@ -504,22 +504,113 @@ func _slot_label(slot: String) -> String:
 # Kampfwert
 # ---------------------------------------------------------------------------
 
-## Errechnete Staerke eines Aufbaus. Basis fuers Gegner-Matching im
-## Chaos-Virus: das Gegnersquad wird so lange neu gewuerfelt, bis sein Wert
-## nahe genug am Spielersquad liegt.
+## Der Kampfwert: wie viel ein Aufbau im Kampf wert ist. 100 = der
+## Durchschnitt der vier Standard-DROMEs.
+##
+##     Kampfwert = POWER_SCALE * Wurzel(Standhaftigkeit * Feuerkraft)
+##
+##   Standhaftigkeit  Integritaet mal Ruestungsfaktor, dazu der Schild
+##                    (dreifach: er laedt nach) und was der DROME je Sekunde
+##                    repariert oder an Schild gibt.
+##   Feuerkraft       Schaden je Sekunde jeder Waffe (Angriffe und Faehigkeit
+##                    im Takt, mit Power, Level und Modulen) MAL ihrer
+##                    Reichweite, dazu Betaeubung und Stacheln.
+##
+## ### Warum so (10. Nov. 2026)
+##
+## Die alte Formel zaehlte Integritaet + 8 x Ruestung + 3 x Speed + den
+## staerksten Einzeltreffer. Damit stand der Molok immer oben (viel
+## Integritaet), und eine schnelle Waffe zaehlte weniger als eine langsame,
+## harte. Gemessen an 1500 Kaempfen zufaelliger Squads gewann die Seite mit
+## dem hoeheren Wert nur in 65 % der Faelle -- selbst bei ueber 25 % Abstand
+## nur in 74 %. Diese Formel ist an 2500 Kaempfe angepasst und an 1500 anderen
+## geprueft: 80 % insgesamt, 94 % bei ueber 25 % Abstand
+## (tools/playtest/power_bench.gd). Die Gewichte stehen in POWER_WEIGHTS.
+##
+## Was sie nicht kann: Zusammenspiel. Ein Molok ist allein wenig wert und
+## macht einen Strix dahinter erst stark; der Wert eines Squads ist hier
+## trotzdem die Summe seiner DROMEs.
+const POWER_SCALE := 0.979
+const POWER_WEIGHTS := {
+	"shield": 3.0,          # ein Punkt Schild gegen einen Punkt Integritaet
+	"support": 20.0,        # Reparatur/Schildgabe je Sekunde als Standhaftigkeit
+	"attack_heal": 2.0,     # Heil-Angriff (Schraubenschluessel) gegen Faehigkeit
+	"stun": 15.0,           # Sekunden Betaeubung je Sekunde als Feuerkraft
+	"soft_control": 0.3,    # Verlangsamen/Wurzeln/Verwundbar gegen Betaeubung
+	"thorns": 6.0,          # Stacheln je Punkt
+	"moving": 0.5,          # Anteil der Zeit, in der der Bewegungsbonus gilt
+}
+
+
 func power_score() -> float:
+	var parts := power_parts()
+	return POWER_SCALE * sqrt(float(parts["staying"]) * float(parts["firepower"]))
+
+
+## Die zwei Haelften des Kampfwerts: {staying, firepower}.
+func power_parts() -> Dictionary:
 	var total := stats()
-	var best_weapon := 0
-	for part in equipment():
+	var weights := POWER_WEIGHTS
+	var armor := float(total["def"])
+	var staying := float(total["hp_max"]) * ActionResolver.armor_multiplier(armor) \
+		+ float(total["shield_max"]) * float(weights["shield"])
+	var firepower := 0.0
+	var support := 0.0
+	var control := 0.0
+	var factor := power_factor()
+	var chassis := body()
+	var echo := chassis != null and chassis.passive == "echo"
+	var slower := float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
+	for slot in equip_slots():
+		var part := part_in(slot)
+		if part == null:
+			continue
+		var fx := module_effects(slot)
+		var level := weapon_level(slot)
+		var attack: ActionData = null
+		var ability: ActionData = null
 		for action in part.actions:
-			if action.power > best_weapon:
-				best_weapon = action.power
-	return (
-		float(total["hp_max"]) * 1.0
-		+ float(total["def"]) * 8.0
-		+ float(total["spd"]) * 3.0
-		+ float(best_weapon) * 2.0 * power_factor()
-	)
+			var tuned: ActionData = Leveling.level_action(action, part, level).with_modules(fx)
+			if tuned.is_attack():
+				if attack == null:
+					attack = tuned
+			elif tuned.trigger_kind == "attacks":
+				ability = tuned
+		if attack == null or attack.interval <= 0.0:
+			continue
+		var hit := _expected_damage(attack, factor, total)
+		var per_attack := hit
+		if ability != null:
+			# Jeder N-te Angriff IST die Faehigkeit; Echo: seltener, zweimal.
+			var every := float(ability.trigger_every)
+			var times := 1.0
+			if echo:
+				every = round((every - 1.0) * slower) + 1.0
+				times = 2.0
+			every = maxf(1.0, every / maxf(1.0, float(fx.get("takt_count", 1.0))))
+			per_attack = ((every - 1.0) * hit + times * _expected_damage(ability, factor, total)) / every
+			var cycle := every * attack.interval
+			support += times * float(ability.heal + ability.shield_gain) / cycle
+			var seconds := float(ability.status.get("seconds", 0.0))
+			match str(ability.status.get("id", "")):
+				"stun":
+					control += times * seconds / cycle
+				"slow", "vulnerable", "root":
+					control += float(weights["soft_control"]) * times * seconds / cycle
+		firepower += per_attack / attack.interval * float(maxi(1, attack.range_tiles))
+		support += float(weights["attack_heal"]) * float(attack.heal) / attack.interval
+	firepower += control * float(weights["stun"]) + float(total.get("thorns", 0)) * float(weights["thorns"])
+	staying += support * float(weights["support"])
+	return {"staying": staying, "firepower": maxf(0.1, firepower)}
+
+
+## Erwarteter Schaden eines Ausloesens: Staerke mal Treffer mal Power, dazu
+## der Anteil der eigenen Integritaet (Bollwerk-Ramme) und der halbe
+## Bewegungsbonus (Klingenbumerang).
+func _expected_damage(action: ActionData, factor: float, total: Dictionary) -> float:
+	var damage := float(action.power * maxi(1, action.shots)) * factor \
+		+ action.hp_scaling * float(total["hp_max"])
+	return damage * (1.0 + float(POWER_WEIGHTS["moving"]) * action.moving_bonus)
 
 
 static func squad_power(builds: Array) -> float:

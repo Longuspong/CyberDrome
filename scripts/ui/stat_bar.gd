@@ -12,7 +12,7 @@ extends Control
 
 const SCALE := {
 	"hp_max": 320.0, "shield_max": 130.0, "shield_pulse": 15.0, "spd": 16.0,
-	"def": 24.0, "power": 20.0, "power_score": 600.0,
+	"def": 24.0, "power": 20.0, "power_score": 250.0,
 }
 
 const LABEL := {

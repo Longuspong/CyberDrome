@@ -240,24 +240,11 @@ func _best_free_uid(part_id: StringName) -> String:
 	return best.uid if best != null else ""
 
 
-## Wie gut ein Aufbau zum Kaempfen ist -- fuer "Bester Aufbau". Der Kampfwert
-## (power_score) zaehlt nur den staerksten Treffer; hier kommt der Schaden je
-## Sekunde jeder Waffe dazu (mit Power, Schuessen und Waffenlevel), damit eine
-## schnelle Waffe nicht hinter einer langsamen, harten zurueckfaellt.
+## Wie gut ein Aufbau zum Kaempfen ist -- fuer "Bester Aufbau". Seit
+## 10. Nov. 2026 schlicht der Kampfwert: er rechnet selbst mit Schaden je
+## Sekunde, Reichweite, Level und Reparatur (DromeBuild.power_parts).
 static func loadout_score(build: DromeBuild) -> float:
-	var score := build.power_score()
-	for slot in build.equip_slots():
-		var part := build.part_in(slot)
-		if part == null:
-			continue
-		var level_mult := 1.0 + 0.07 * float(build.weapon_level(slot))
-		for item in part.actions:
-			var action: ActionData = item
-			if action.is_attack() and action.interval > 0.0:
-				var dps: float = float(action.power * maxi(1, action.shots)) / action.interval
-				score += dps * build.power_factor() * level_mult * 10.0
-				score += float(action.heal) / action.interval * 10.0
-	return score
+	return build.power_score()
 
 
 # ---------------------------------------------------------------------------

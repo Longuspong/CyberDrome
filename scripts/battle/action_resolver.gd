@@ -328,12 +328,18 @@ func resolve_damage(target: Unit, raw: int, energy_fraction: float,
 func _apply_armor_ehp(raw_hp: float, armor: int, pen: float = 0.0) -> int:
 	if raw_hp <= 0.0:
 		return 0
+	var a := float(maxi(0, armor)) * (1.0 - clampf(pen, 0.0, 1.0))
+	return maxi(1, int(round(raw_hp / armor_multiplier(a))))
+
+
+## Der eHP-Faktor einer Panzerung (>= 1) -- auch fuer den Kampfwert
+## (DromeBuild.power_parts).
+static func armor_multiplier(armor: float) -> float:
 	var section := Config.section("combat")
 	var cap := float(section.get("armor_ehp_cap", 0.5))
 	var k := maxf(0.001, float(section.get("armor_ehp_k", 15.0)))
-	var a := float(maxi(0, armor)) * (1.0 - clampf(pen, 0.0, 1.0))
-	var m := 1.0 + cap * a / (a + k)
-	return maxi(1, int(round(raw_hp / m)))
+	var a := maxf(0.0, armor)
+	return 1.0 + cap * a / (a + k)
 
 
 ## Duenner Vorschau-Zugang: nur der HP-Schaden. Fuer alte Aufrufer und Tests.

@@ -277,12 +277,41 @@ func test_chassis_swap_drops_equipment_that_no_longer_fits() -> void:
 		"der mittlere Hammer passt nicht an den leichten Vireo und faellt ab")
 
 
-func test_power_score_rewards_the_obviously_stronger_build() -> void:
-	var heavy := _stock("bot2")
-	var light := _stock("bot1")
-	t.ok(heavy.power_score() > light.power_score(),
-		"der Molok ist staerker als der Vireo (%.0f vs %.0f)"
-		% [heavy.power_score(), light.power_score()])
+func test_power_score_is_100_for_the_average_starter() -> void:
+	var squad := RunState.standard_squad()
+	var mean := DromeBuild.squad_power(squad) / float(squad.size())
+	t.ok(absf(mean - 100.0) < 1.5, "der Schnitt der Standard-DROMEs ist 100 (%.1f)" % mean)
+
+
+func test_power_score_does_not_crown_the_molok() -> void:
+	# Der alte Kampfwert zaehlte vor allem Integritaet -- der Molok stand
+	# immer oben, obwohl er allein am wenigsten ausrichtet.
+	var by_name := {}
+	for build in RunState.standard_squad():
+		by_name[build.display_name] = build.power_score()
+	t.ok(by_name["Strix"] > by_name["Molok"],
+		"der Strix zaehlt mehr als der Molok (%.0f vs %.0f)" % [by_name["Strix"], by_name["Molok"]])
+	t.ok(by_name["Nimbus"] > by_name["Molok"],
+		"der Nimbus zaehlt mehr als der Molok (%.0f vs %.0f)" % [by_name["Nimbus"], by_name["Molok"]])
+
+
+func test_power_score_counts_what_makes_a_build_stronger() -> void:
+	var base := DromeBuild.create("Vireo", {"body": &"scout_body", "head": &"scout_head",
+		"feet": &"scout_feet", "core": &"scout_core", "equip_left": &"eq_pulse_blaster"})
+	var bare := base.clone()
+	bare.slots.erase("equip_left")
+	t.ok(base.power_score() > bare.power_score() * 2.0, "eine Waffe zaehlt")
+	var levelled := base.clone()
+	levelled.weapon_levels["equip_left"] = 5
+	t.ok(levelled.power_score() > base.power_score(), "Waffenlevel zaehlt")
+	var veteran := base.clone()
+	veteran.drome_level = 3
+	t.ok(veteran.power_score() > base.power_score(), "DROME-Level zaehlt")
+	var tuned := base.clone()
+	tuned.modules["equip_left"] = [&"mod_rapid_fire"]
+	t.ok(tuned.power_score() > base.power_score(), "ein Schnellfeuer-Modul zaehlt")
+	var parts := base.power_parts()
+	t.ok(parts["staying"] > 0.0 and parts["firepower"] > 0.0, "beide Haelften sind da")
 
 
 func test_loadout_survives_a_round_trip() -> void:
