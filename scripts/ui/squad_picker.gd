@@ -70,7 +70,7 @@ func _rebuild() -> void:
 
 	var count := chosen_count()
 	var power := DromeBuild.squad_power(chosen_builds())
-	add_child(UiKit.label("Dabei  %d / %d   ·   Staerke %d" % [count, _max_count, int(power)],
+	add_child(UiKit.label("Dabei  %d / %d   ·   Kampfwert %d" % [count, _max_count, int(power)],
 		UiKit.H2, UiKit.HEADING))
 	if count == 0:
 		add_child(UiKit.label("Noch niemand -- tippe unten auf +.", UiKit.SMALL, UiKit.MUTED))

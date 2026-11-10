@@ -95,12 +95,11 @@ func font(size: int) -> int:
 	return maxi(MIN_FONT, int(round(float(size) * font_scale())))
 
 
-## Grundschrift fuer alles ohne eigene Groesse: ueber das Theme der Wurzel,
-## das an jedes Control weitervererbt wird.
+## Grundschrift fuer alles ohne eigene Groesse und der gemeinsame Stil von
+## Knoepfen, Eingabefeldern und Rollbalken (UiKit.theme): ueber das Theme der
+## Wurzel, das an jedes Control weitervererbt wird.
 func _apply_font_theme() -> void:
-	var theme := Theme.new()
-	theme.default_font_size = font(BASE_FONT)
-	get_tree().root.theme = theme
+	get_tree().root.theme = UiKit.theme(font(BASE_FONT))
 
 
 func set_reduce_motion(value: bool) -> void:

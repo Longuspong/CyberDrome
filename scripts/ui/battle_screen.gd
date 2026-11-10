@@ -798,7 +798,7 @@ func _bar_style(raised: bool) -> StyleBoxFlat:
 	style.border_color = UiKit.CARD_LINE
 	style.border_width_top = 1
 	style.border_width_bottom = 1
-	style.set_content_margin_all(8)
+	style.set_content_margin_all(10)
 	return style
 
 

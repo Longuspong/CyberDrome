@@ -24,6 +24,8 @@ const GAP := 12
 const BUTTON_HEIGHT := 56
 const TAB_HEIGHT := 64
 const MAX_COLUMN := 640.0
+## Rundung der Ecken von Karten und Knoepfen.
+const RADIUS := 14
 
 # --- Farben ----------------------------------------------------------------
 
@@ -176,20 +178,22 @@ static func tab_bar(root: Control, active: int) -> Control:
 	for index in TABS.size():
 		var button := Button.new()
 		button.text = TABS[index][0]
-		button.flat = true
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size = Vector2(0, TAB_HEIGHT)
 		button.add_theme_font_size_override("font_size", SMALL)
+		# Die aktive Seite: Akzentfarbe und ein Strich oben. Der Knopf darf
+		# dafuer nicht "flat" sein -- flache Knoepfe zeichnen ihren Stil nicht.
+		var mark := StyleBoxFlat.new()
+		mark.bg_color = Color(0.1, 0.14, 0.2) if index == active else Color(0, 0, 0, 0)
+		mark.border_color = ACCENT if index == active else Color(0, 0, 0, 0)
+		mark.border_width_top = 3
+		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+			button.add_theme_stylebox_override(state, mark)
 		if index == active:
 			button.add_theme_color_override("font_color", ACCENT)
 			button.add_theme_color_override("font_hover_color", ACCENT)
-			var mark := StyleBoxFlat.new()
-			mark.bg_color = Color(0.1, 0.14, 0.2)
-			mark.border_color = ACCENT
-			mark.border_width_top = 3
-			button.add_theme_stylebox_override("normal", mark)
-			button.add_theme_stylebox_override("hover", mark)
-			button.add_theme_stylebox_override("pressed", mark)
+			button.add_theme_color_override("font_pressed_color", ACCENT)
+			button.add_theme_color_override("font_focus_color", ACCENT)
 		else:
 			var scene: String = TABS[index][1]
 			button.pressed.connect(func(): root.get_tree().change_scene_to_file(scene))
@@ -234,12 +238,16 @@ static func button(text: String, primary: bool = false) -> Button:
 
 static func _button_style(state: String, primary: bool) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.set_corner_radius_all(10)
+	style.set_corner_radius_all(RADIUS)
 	style.set_content_margin_all(12)
 	if primary:
 		style.bg_color = ACCENT if state != "pressed" else ACCENT.darkened(0.2)
 		if state == "disabled":
 			style.bg_color = Color(0.2, 0.24, 0.3)
+		elif state != "focus":
+			# Die Hauptaktion leuchtet: ein weicher Schein in Akzentfarbe.
+			style.shadow_color = Color(ACCENT, 0.3)
+			style.shadow_size = 10
 	else:
 		style.bg_color = Color(0.13, 0.16, 0.22) if state != "pressed" else Color(0.18, 0.24, 0.32)
 		style.border_color = CARD_LINE if state != "hover" else ACCENT
@@ -267,12 +275,83 @@ static func card_style(highlight: bool = false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	# Leicht durchscheinend: die Kulisse soll hinter den Karten zu ahnen
 	# sein, ohne die Schrift zu stoeren.
-	style.bg_color = Color(CARD, 0.9)
+	style.bg_color = Color(CARD, 0.92)
 	style.border_color = ACCENT if highlight else CARD_LINE
 	style.set_border_width_all(2 if highlight else 1)
-	style.set_corner_radius_all(10)
+	style.set_corner_radius_all(RADIUS)
 	style.set_content_margin_all(14)
+	# Ein weicher Schatten hebt die Karte von der Kulisse ab.
+	style.shadow_color = Color(0, 0, 0, 0.35)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 2)
 	return style
+
+
+## Das Theme fuer alles, was keinen eigenen Stil setzt (10. Nov. 2026): die
+## Standard-Knoepfe (Reiter, Plus/Minus, Leiste im Kampf), Eingabefelder und
+## Rollbalken sahen wie der graue Godot-Editor aus -- eckig, neben den
+## runden Karten. Hier bekommen sie dieselben Formen und Farben.
+## Accessibility haengt es an die Wurzel und setzt die Schriftgroesse.
+static func theme(font_size: int) -> Theme:
+	var result := Theme.new()
+	result.default_font_size = font_size
+
+	var states := {
+		"normal": [Color(0.13, 0.16, 0.22, 0.96), CARD_LINE, 1],
+		"hover": [Color(0.15, 0.19, 0.26, 0.96), Color(0.36, 0.42, 0.52), 1],
+		"pressed": [Color(0.13, 0.24, 0.34, 0.98), ACCENT, 2],
+		"disabled": [Color(0.1, 0.12, 0.16, 0.6), Color(CARD_LINE, 0.5), 1],
+	}
+	for state in states:
+		var box := StyleBoxFlat.new()
+		box.bg_color = states[state][0]
+		box.border_color = states[state][1]
+		box.set_border_width_all(states[state][2])
+		box.set_corner_radius_all(RADIUS - 2)
+		box.set_content_margin_all(10)
+		result.set_stylebox(state, "Button", box)
+	var focus := StyleBoxFlat.new()
+	focus.draw_center = false
+	focus.border_color = Color(ACCENT, 0.7)
+	focus.set_border_width_all(2)
+	focus.set_corner_radius_all(RADIUS - 2)
+	result.set_stylebox("focus", "Button", focus)
+	result.set_color("font_color", "Button", Color(0.9, 0.93, 0.98))
+	result.set_color("font_hover_color", "Button", Color.WHITE)
+	result.set_color("font_pressed_color", "Button", Color.WHITE)
+	result.set_color("font_focus_color", "Button", Color.WHITE)
+	result.set_color("font_disabled_color", "Button", Color(0.55, 0.6, 0.68))
+
+	for state in ["normal", "focus", "read_only"]:
+		var field := StyleBoxFlat.new()
+		field.bg_color = Color(0.06, 0.08, 0.12, 0.95)
+		field.border_color = ACCENT if state == "focus" else CARD_LINE
+		field.set_border_width_all(2 if state == "focus" else 1)
+		field.set_corner_radius_all(RADIUS - 4)
+		field.set_content_margin_all(10)
+		result.set_stylebox(state, "LineEdit", field)
+
+	# Schalter: ohne Kasten -- sonst saehe ein eingeschalteter aus wie ein
+	# gedrueckter Knopf.
+	for kind in ["CheckButton", "CheckBox"]:
+		for state in ["normal", "hover", "pressed", "disabled", "hover_pressed", "focus"]:
+			var plain := StyleBoxEmpty.new()
+			plain.set_content_margin_all(6)
+			result.set_stylebox(state, kind, plain)
+
+	# Rollbalken: ein schmaler runder Strich statt einer grauen Leiste.
+	for bar in ["VScrollBar", "HScrollBar"]:
+		var track := StyleBoxFlat.new()
+		track.bg_color = Color(0, 0, 0, 0)
+		track.set_content_margin_all(3)
+		result.set_stylebox("scroll", bar, track)
+		result.set_stylebox("scroll_focus", bar, track)
+		for state in ["grabber", "grabber_highlight", "grabber_pressed"]:
+			var grabber := StyleBoxFlat.new()
+			grabber.bg_color = Color(1, 1, 1, 0.22 if state == "grabber" else 0.4)
+			grabber.set_corner_radius_all(3)
+			result.set_stylebox(state, bar, grabber)
+	return result
 
 
 ## Eine Zeile "Name ........ Wert".

@@ -26,6 +26,8 @@ var _header_round: Label
 var _lives_box: HBoxContainer
 var _squad_list: VBoxContainer
 var _side: VBoxContainer
+## Fester Platz am unteren Rand fuer die Hauptaktion der Phase.
+var _footer: VBoxContainer
 
 ## Zwischenstopp: der angetippte Lagerplatz (-1 = keiner).
 var _selected_storage: int = -1
@@ -79,6 +81,44 @@ func _build_ui() -> void:
 	_squad_list.add_theme_constant_override("separation", 10)
 	content.add_child(_squad_list)
 
+	# Die Hauptaktion steht fest am unteren Rand (10. Nov. 2026): "Kampf
+	# starten" lag vorher unter der Gegnerliste, und man musste in jeder
+	# Runde erst dorthin scrollen.
+	var frame := _page_frame(content)
+	if frame != null:
+		var bar := PanelContainer.new()
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.07, 0.09, 0.13, 0.96)
+		style.border_color = UiKit.CARD_LINE
+		style.border_width_top = 1
+		style.set_content_margin_all(UiKit.PAD)
+		style.content_margin_top = 10
+		style.content_margin_bottom = 10
+		bar.add_theme_stylebox_override("panel", style)
+		frame.add_child(bar)
+		_footer = VBoxContainer.new()
+		_footer.add_theme_constant_override("separation", 6)
+		bar.add_child(_footer)
+
+
+## Der Seitenrahmen von UiKit.page (die VBox ueber Kopfzeile und Inhalt).
+func _page_frame(content: Control) -> VBoxContainer:
+	var node: Node = content.get_parent()
+	while node != null and node != self:
+		if node is VBoxContainer and node.get_parent() == self:
+			return node
+		node = node.get_parent()
+	return null
+
+
+## Setzt die Hauptaktion in die Fusszeile (oder, ohne sie, unter den Inhalt).
+func _main_action(button: Control) -> void:
+	if _footer != null:
+		_footer.add_child(button)
+		(_footer.get_parent() as Control).visible = true
+	else:
+		_side.add_child(button)
+
 
 func _refresh() -> void:
 	# Jede Aenderung im Lauf geht gleich in den Spielstand (10. Nov. 2026).
@@ -86,6 +126,10 @@ func _refresh() -> void:
 	var run := _run()
 	for child in _side.get_children():
 		child.queue_free()
+	if _footer != null:
+		for child in _footer.get_children():
+			child.queue_free()
+		(_footer.get_parent() as Control).visible = false
 	_lives_box.visible = run != null
 	# Im Zwischenstopp steht der Squad mit seinen Haltern oben -- dort wird
 	# eingebaut. Die Liste unten waere doppelt.
@@ -135,7 +179,7 @@ func _refresh_squad(run: RunState) -> void:
 	for child in _squad_list.get_children():
 		child.queue_free()
 	var heading := Label.new()
-	heading.text = "Dein Lauf-Squad  ·  Staerke %d" % int(DromeBuild.squad_power(run.squad))
+	heading.text = "Dein Lauf-Squad  ·  Kampfwert %d" % int(DromeBuild.squad_power(run.squad))
 	heading.add_theme_font_size_override("font_size", 20)
 	heading.modulate = COLOR_HEADING
 	_squad_list.add_child(heading)
@@ -187,7 +231,7 @@ func _show_setup() -> void:
 	start.pressed.connect(func():
 		GameState.start_run(0, GameState.next_run_mode)
 		_refresh())
-	_side.add_child(start)
+	_main_action(start)
 
 
 func _show_prepare(run: RunState) -> void:
@@ -249,7 +293,7 @@ func _show_prepare(run: RunState) -> void:
 	start.pressed.connect(func():
 		GameState.begin_run_battle()
 		get_tree().change_scene_to_file("res://scenes/battle.tscn"))
-	_side.add_child(start)
+	_main_action(start)
 	start.grab_focus.call_deferred()
 
 	var abandon := Button.new()
@@ -318,7 +362,7 @@ func _show_stop(run: RunState) -> void:
 		_side.add_child(_bag_section(run))
 
 	# --- Squad mit Haltern ---
-	_side.add_child(_label("Dein Lauf-Squad  ·  Staerke %d"
+	_side.add_child(_label("Dein Lauf-Squad  ·  Kampfwert %d"
 		% int(DromeBuild.squad_power(run.squad)), 18, COLOR_HEADING))
 	var module_mode := run.is_module_at(_selected_storage)
 	if run.is_bios_at(_selected_storage):
@@ -342,7 +386,7 @@ func _show_stop(run: RunState) -> void:
 		_selected_storage = -1
 		run.continue_run()
 		_refresh())
-	_side.add_child(go)
+	_main_action(go)
 	# Endlos-Modus: nach jeder Runde aussteigen und die Beute behalten.
 	if run.is_endless():
 		var out := UiKit.button("Aussteigen und Beute behalten")
@@ -906,7 +950,7 @@ func _show_end(run: RunState) -> void:
 		_delivered.clear()
 		GameState.run = null
 		_refresh())
-	_side.add_child(again)
+	_main_action(again)
 	again.grab_focus.call_deferred()
 
 

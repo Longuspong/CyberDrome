@@ -355,10 +355,11 @@ func _show_umbau() -> void:
 
 	_content.add_child(_picker())
 
-	# Der gewaehlte DROME: Bild und die Werte, die beim Bauen zaehlen.
+	# Der gewaehlte DROME: Bild und die Werte, die beim Bauen zaehlen -- in
+	# einer Karte, sonst laufen die Streifen der Kulisse durch die Zahlen.
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 12)
-	_content.add_child(head)
+	UiKit.card(_content).add_child(head)
 	head.add_child(UiKit.drome_view(build, PORTRAIT))
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL

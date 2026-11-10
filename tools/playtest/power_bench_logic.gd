@@ -4,6 +4,9 @@ extends RefCounted
 ## kompiliert).
 
 
+const RATIO_BANDS := [[0.0, 0.6], [0.6, 0.8], [0.8, 0.95], [0.95, 1.05], [1.05, 1.2], [1.2, 1.4], [1.4, 99.0]]
+
+
 func run(count: int, out_path: String, seed_base: int = 77000) -> void:
 	var rows: Array = []
 	var decided := 0
@@ -45,6 +48,23 @@ func run(count: int, out_path: String, seed_base: int = 77000) -> void:
 		var entry: Array = bands[band]
 		print("  Abstand %-11s %4d Kaempfe, richtig %5.1f %%" % [band, entry[0],
 			100.0 * float(entry[1]) / float(maxi(1, entry[0]))])
+	# Siegchance von A nach dem Verhaeltnis Kampfwert B / Kampfwert A -- die
+	# Tabelle, mit der sich Gegnerstufen planen lassen.
+	print("Siegchance nach Verhaeltnis (Gegner / eigener Kampfwert):")
+	for band in RATIO_BANDS:
+		var fights := 0
+		var won := 0
+		for row in rows:
+			if row["result"] == "draw":
+				continue
+			var ratio: float = float(row["power_b"]) / maxf(1.0, float(row["power_a"]))
+			if ratio >= band[0] and ratio < band[1]:
+				fights += 1
+				if row["result"] == "a":
+					won += 1
+		if fights > 0:
+			print("  %.2f-%.2f  %4d Kaempfe, gewonnen %5.1f %%" % [band[0], band[1], fights,
+				100.0 * float(won) / float(fights)])
 	if out_path != "":
 		var file := FileAccess.open(out_path, FileAccess.WRITE)
 		file.store_string(JSON.stringify(rows))

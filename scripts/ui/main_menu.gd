@@ -85,7 +85,7 @@ func _info_card() -> Control:
 		var levels := 0
 		for build in squad:
 			levels += build.drome_level
-		box.add_child(UiKit.label("Dein Squad: %d DROMEs  ·  Level im Schnitt %.1f  ·  Staerke %d"
+		box.add_child(UiKit.label("Dein Squad: %d DROMEs  ·  Level im Schnitt %.1f  ·  Kampfwert %d"
 			% [squad.size(), float(levels) / squad.size(), int(DromeBuild.squad_power(squad))],
 			UiKit.SMALL, UiKit.MUTED))
 	return panel
