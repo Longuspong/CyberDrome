@@ -291,6 +291,9 @@ func _on_unit_damaged(unit: Unit, amount: int, _source) -> void:
 			Color(1.0, 0.45, 0.4) if unit.is_player else Color(1.0, 0.9, 0.5))
 	var maximum: int = maxi(1, unit.stat("hp_max"))
 	_shake_camera(clampf(float(amount) / float(maximum), 0.0, 1.0))
+	# Haptik: nur schwere Treffer auf die eigenen DROMEs (ab 10 %).
+	if unit.is_player and float(amount) >= 0.1 * float(maximum):
+		Accessibility.vibrate(25)
 	_refresh_hud()
 
 
@@ -303,6 +306,7 @@ func _on_unit_healed(unit: Unit, amount: int, _source) -> void:
 
 func _on_unit_died(unit: Unit) -> void:
 	unit.visible = false
+	Accessibility.vibrate(70 if unit.is_player else 35, true)
 	_refresh_hud()
 
 
@@ -808,6 +812,7 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	scroll.add_child(box)
 
 	var won := outcome == BattleManager.Outcome.VICTORY
+	Accessibility.vibrate(120 if won else 200, true)
 	box.add_child(UiKit.label(BattleManager.outcome_label(outcome), UiKit.H1,
 		UiKit.GOOD if won else (UiKit.BAD if outcome == BattleManager.Outcome.DEFEAT else UiKit.WARN)))
 

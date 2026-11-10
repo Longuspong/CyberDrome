@@ -55,6 +55,13 @@ const BASE_FONT := 18
 
 var size_option: int = 0
 var reduce_motion: bool = false
+## Haptik (10. Nov. 2026, Wunsch des Spielers): kurzes Vibrieren bei
+## Treffern, Abschuessen, Kampfende und beim Einbauen. Abschaltbar.
+var haptics: bool = true
+## Zeitpunkt (ms) der letzten Vibration -- Drosselung, damit ein Echtzeit-
+## kampf das Handy nicht dauerhaft brummen laesst.
+var _last_vibration: int = -100000
+const HAPTIC_GAP_MS := 150
 
 
 
@@ -102,6 +109,26 @@ func set_reduce_motion(value: bool) -> void:
 	settings_changed.emit()
 
 
+func set_haptics(value: bool) -> void:
+	haptics = value
+	_save()
+	settings_changed.emit()
+	if value:
+		vibrate(40, true)
+
+
+## Kurz vibrieren (Handy, im Browser ueber navigator.vibrate). Gedrosselt:
+## hoechstens alle HAPTIC_GAP_MS, ausser ``force``. Ohne Geraet passiert nichts.
+func vibrate(duration_ms: int, force: bool = false) -> void:
+	if not haptics or duration_ms <= 0:
+		return
+	var now := Time.get_ticks_msec()
+	if not force and now - _last_vibration < HAPTIC_GAP_MS:
+		return
+	_last_vibration = now
+	Input.vibrate_handheld(duration_ms)
+
+
 ## Bewegungsdauer-Faktor fuer dekorative Animationen: 0 = aus.
 func motion() -> float:
 	return 0.0 if reduce_motion else 1.0
@@ -120,6 +147,7 @@ func _load() -> void:
 	# alte Werte landen sicher auf "Normal".
 	size_option = clampi(int(data.get("font_option", 0)), 0, SIZE_OPTIONS.size() - 1)
 	reduce_motion = bool(data.get("reduce_motion", reduce_motion))
+	haptics = bool(data.get("haptics", haptics))
 
 
 ## Einstellungen werden IMMER gespeichert -- unabhaengig von save_enabled.
@@ -132,6 +160,7 @@ func _save() -> void:
 	file.store_string(JSON.stringify({
 		"font_option": size_option,
 		"reduce_motion": reduce_motion,
+		"haptics": haptics,
 	}))
 
 

@@ -39,6 +39,17 @@ func _ready() -> void:
 		+ "Animationen ab. Folgt beim ersten Start der Systemeinstellung.",
 		UiKit.SMALL, UiKit.MUTED))
 
+	var haptic := CheckButton.new()
+	haptic.text = "Vibration (Haptik)"
+	haptic.custom_minimum_size = Vector2(0, 48)
+	haptic.add_theme_font_size_override("font_size", UiKit.BODY)
+	haptic.button_pressed = Accessibility.haptics
+	haptic.toggled.connect(Accessibility.set_haptics)
+	motion.add_child(haptic)
+	motion.add_child(UiKit.label("Kurzes Vibrieren bei schweren Treffern, Abschuessen, "
+		+ "Kampfende und beim Einbauen. Nur auf Geraeten, die es koennen.",
+		UiKit.SMALL, UiKit.MUTED))
+
 	var screen := UiKit.card(content)
 	screen.add_child(UiKit.heading("Bildschirm"))
 	var fullscreen := UiKit.button("Vollbild")

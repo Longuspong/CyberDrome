@@ -559,6 +559,7 @@ func _open_card(entry: RosterEntry, build: DromeBuild, part: PartData,
 	WeaponCard.open(self, part, extra, [{"text": "Einbauen", "primary": true,
 		"disabled": verdict != "", "on": func():
 			if GameState.roster.assign(entry, slot, part.id):
+				Accessibility.vibrate(20, true)
 				_changed()}])
 
 

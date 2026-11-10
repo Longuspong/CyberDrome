@@ -380,7 +380,8 @@ func _bios_section(run: RunState) -> Control:
 		var take := UiKit.button("Nehmen" if blocker == "" else blocker)
 		take.disabled = blocker != ""
 		take.pressed.connect(func():
-			run.choose_bios(index)
+			if run.choose_bios(index):
+				Accessibility.vibrate(30, true)
 			_refresh())
 		box.add_child(take)
 	return panel
@@ -474,6 +475,7 @@ func _shop_section(run: RunState) -> Control:
 		buy.disabled = blocker != ""
 		buy.pressed.connect(func():
 			if run.buy(index):
+				Accessibility.vibrate(20, true)
 				_selected_storage = -1
 			_refresh())
 		inner.add_child(buy)
@@ -678,6 +680,7 @@ func _recipe_section(run: RunState) -> Control:
 		make.disabled = not entry["ready"]
 		make.pressed.connect(func():
 			if run.craft(module.id):
+				Accessibility.vibrate(40, true)
 				_selected_storage = -1
 			_refresh())
 		row.add_child(make)
@@ -743,6 +746,7 @@ func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
 				var done := run.install_bios(_selected_storage, drome, slot) if bios \
 					else run.install_module(_selected_storage, drome, slot)
 				if done:
+					Accessibility.vibrate(20, true)
 					_selected_storage = -1
 				_refresh())
 		else:
