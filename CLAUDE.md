@@ -28,6 +28,10 @@ Punkte). Sie wird **nicht von Hand** bearbeitet, sondern von
   nachtragen, dann `python3 tools/build_spot.py` und die xlsx mit einchecken.
 * Die CI (`.github/workflows/spot.yml`) prueft mit `--check`, dass die
   Tabelle aktuell ist.
+* Heute ein Spiegel: der Spieler trifft darin Designentscheidungen und gibt
+  sie als Export zum Umsetzen. Vision des Spielers: spaeter ein
+  Balance-Werkzeug (Werte in der Excel aendern -> ins Spiel uebernehmen).
+  Noch nicht bauen, erst besprechen.
 
 ## Zusammenarbeit
 
