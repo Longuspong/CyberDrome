@@ -14,6 +14,25 @@ Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
 Vorschlaege vom 10. Nov. 2026, noch NICHT entschieden; die offenen Punkte
 stehen dort in Abschnitt 6.
 
+## SPOT-Tabelle (Vorgabe des Spielers, 12. Nov. 2026)
+
+`docs/spot/CyberDrome_SPOT.xlsx` ist die **Single Point of Truth** fuer alle
+inhaltlichen Daten (DROMEs, Waffen, Passiven, Module, Rezepte, BIOS,
+Fraktionen, Stages, Teams, Einheiten, Lauf, Level, Regeln, Eckpunkte, offene
+Punkte). Sie wird **nicht von Hand** bearbeitet, sondern von
+`tools/build_spot.py` aus `parts/`, `data/*.json` und
+`docs/spot/inhalte.json` erzeugt.
+
+* **Jede Aenderung** an Werten, Daten oder Entscheidungen: neue Texte
+  (Eckpunkte, Story, Fraktionen, offene Punkte) in `docs/spot/inhalte.json`
+  nachtragen, dann `python3 tools/build_spot.py` und die xlsx mit einchecken.
+* Die CI (`.github/workflows/spot.yml`) prueft mit `--check`, dass die
+  Tabelle aktuell ist.
+* Heute ein Spiegel: der Spieler trifft darin Designentscheidungen und gibt
+  sie als Export zum Umsetzen. Vision des Spielers: spaeter ein
+  Balance-Werkzeug (Werte in der Excel aendern -> ins Spiel uebernehmen).
+  Noch nicht bauen, erst besprechen.
+
 ## Zusammenarbeit
 
 * Der Spieler schreibt Deutsch -- Antworten, Commits und PRs auf Deutsch.
@@ -49,6 +68,7 @@ Die Sitzung vom 10. Nov. war gut, aber sehr teuer. Deshalb gilt:
 godot --headless --path . --script res://tests/run_tests.gd   # Tests
 godot --headless --path . --import                            # nach neuer class_name noetig
 bash tools/build_web.sh                                       # Web-Export nach build/web
+python3 tools/build_spot.py                                   # SPOT-Tabelle neu bauen
 ```
 
 * Seit dem Aufraeumen vom 5. Nov. 2026 sind alle Tests gruen -- neue Arbeit

@@ -1,0 +1,150 @@
+{
+  "_kommentar": [
+    "Texte fuer die SPOT-Tabelle (docs/spot/CyberDrome_SPOT.xlsx), die NICHT in den Spieldaten stehen:",
+    "Eckpunkte, Identitaeten, Fraktionen, Story, Bosse, Rollen, offene Punkte, Glossar.",
+    "Alle Zahlen und Namen aus dem Spiel (DROMEs, Waffen, Module, Teams, Regeln) liest",
+    "tools/build_spot.py direkt aus parts/, data/*.json -- die stehen hier bewusst nicht.",
+    "Nach jeder Aenderung: python3 tools/build_spot.py",
+    "status: gebaut | entschieden | Vorschlag | offen"
+  ],
+
+  "eckpunkte": [
+    {"bereich": "Spielprinzip", "thema": "Genre", "festlegung": "Autobattler in Echtzeit: alle DROMEs handeln gleichzeitig, keine Züge. Die KI steuert beide Seiten, der Spieler entscheidet über Aufbau, Squad und Auswahl.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md, PROJEKTSTAND 1"},
+    {"bereich": "Spielprinzip", "thema": "Simulation", "festlegung": "Feste Schritte von 0,05 s, deterministisch je Seed. Puls alle 3 s (Schild, Reparatur, Overtime). Zeitlimit 180 s, danach unentschieden.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> realtime"},
+    {"bereich": "Spielprinzip", "thema": "Spieler steuert keine DROMEs", "festlegung": "Grundsätzlich Autobattler. Eingreifen (vermutlich: Gegner als Ziel Nr. 1 markieren) wird später besprochen -- nichts davon bauen.", "seit": "Nov. 2026", "status": "offen", "quelle": "CLAUDE.md Designpunkt 3"},
+    {"bereich": "Plattform", "thema": "Mobile first", "festlegung": "Hochformat ist die Hauptansicht (ca. 400 CSS-Pixel breit), Querformat zweitrangig. PWA auf Vercel, Android-APK später.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
+    {"bereich": "Bedienung", "thema": "Navigation", "festlegung": "Erster Bildschirm: Wahl von drei Spielständen. Danach Tab-Leiste unten: Spielen, Hangar, Optionen. Hangar = Squad (Karussell, max. 4) + Umbau.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
+    {"bereich": "Arena", "thema": "Spielfeld", "festlegung": "20 x 20 Felder, ohne Gelände-Regeln und ohne Sichtlinie.", "seit": "5. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
+    {"bereich": "Arena", "thema": "Hindernisse", "festlegung": "Sperren nur Laufwege, Schüsse gehen darüber. Punktsymmetrisch je Seed, nie an den Aufstellungszonen.", "seit": "7. Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> obstacles"},
+    {"bereich": "Arena", "thema": "Aufstellung", "festlegung": "Streifen 3 x 8 am Kartenrand (Spieler unten links, Gegner oben rechts), ohne Zutun nach Rolle gestaffelt. Spieler kann per Ziehen umstellen.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> deployment"},
+    {"bereich": "DROMEs", "thema": "Ganzheit", "festlegung": "Kopf, Kern und Antrieb sind fest am Chassis und haben keine Werte -- ein DROME wird immer als Ganzes gestaltet.", "seit": "6. Nov. 2026", "status": "gebaut", "quelle": "NEUANFANG 6g"},
+    {"bereich": "DROMEs", "thema": "Werte-Satz", "festlegung": "Nur noch Speed, Integrität, Schild, Schildpuls, Rüstung, Halter, Power, Modulplätze. ATK, Gewicht, MOV und Energie entfallen.", "seit": "8. Nov. 2026", "status": "gebaut", "quelle": "IDENTITAETEN 5"},
+    {"bereich": "DROMEs", "thema": "Passive", "festlegung": "Jeder DROME hat genau eine Passive am Chassis.", "seit": "8. Nov. 2026", "status": "gebaut", "quelle": "IDENTITAETEN 5"},
+    {"bereich": "DROMEs", "thema": "Zielwahl", "festlegung": "Feste Regel je Rolle statt Aggro-Tabelle. Locken (Präsenz, Ködersender) geht vor.", "seit": "6. Nov. 2026", "status": "gebaut", "quelle": "NEUANFANG 6f"},
+    {"bereich": "Waffen", "thema": "Halter", "festlegung": "Ein Waffenplatz je DROME, Molok zwei. Halter als Formen: Dreieck leicht, Viereck mittel, Fünfeck schwer. Leicht passt nach oben in größere Halter, schwer nur in schwer.", "seit": "6. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Designpunkt 4"},
+    {"bereich": "Waffen", "thema": "Frei für alle", "festlegung": "Keine Heimatwaffe -- jede Waffe darf jeder DROME tragen, nur die Gewichtsklasse zählt.", "seit": "8. Nov. 2026", "status": "gebaut", "quelle": "IDENTITAETEN 5"},
+    {"bereich": "Waffen", "thema": "Fähigkeiten", "festlegung": "Nur Ausrüstung hat Fähigkeiten. Die Waffe zählt ihre Angriffe, der N-te Angriff IST die Fähigkeit (Takt). Kein Zeit-Takt mehr; einzige Ausnahme sind Ereignisse (Hologramm, wenn ein Gegner danebensteht).", "seit": "9. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Designpunkt 1"},
+    {"bereich": "Waffen", "thema": "Bonus-Wert", "festlegung": "Jede Waffe gibt dem Träger einen DROME-Wert (z. B. Hammer Integrität). Er steigt mit dem Waffenlevel.", "seit": "8. Nov. 2026", "status": "gebaut", "quelle": "IDENTITAETEN 5"},
+    {"bereich": "Waffen", "thema": "Im Lauf fest", "festlegung": "Waffen bleiben im Lauf fest im DROME; die Synergie steckt in Modulen.", "seit": "9. Nov. 2026", "status": "entschieden", "quelle": "MODULE_KONZEPT 1"},
+    {"bereich": "Kampf", "thema": "Schadensarten", "festlegung": "Kinetisch und Energie. Am Schild: kinetisch x 0,8, Energie x 1,2. An der Integrität beide x 1,0, dann Rüstung als Teiler mit abnehmendem Ertrag (nie mehr als ein Drittel weg).", "seit": "8. Nov. 2026", "status": "gebaut", "quelle": "IDENTITAETEN 6, config -> combat"},
+    {"bereich": "Kampf", "thema": "Power", "festlegung": "Rohschaden = Waffenschaden x Power / 10. Damit hat ein Molok mit Runenstab weniger Wirkung als ein Nimbus.", "seit": "8. Nov. 2026", "status": "gebaut", "quelle": "IDENTITAETEN 5"},
+    {"bereich": "Kampf", "thema": "Schildpuls", "festlegung": "Ein Wert S für zwei Dinge: Ruhezeit bis der Schild lädt (6 s - 0,3 s je Punkt, mind. 1,5 s) und Ladung je Puls (2 x S).", "seit": "8. Nov. 2026", "status": "gebaut", "quelle": "config -> combat.shield_pulse"},
+    {"bereich": "Kampf", "thema": "Overtime", "festlegung": "Ab 60 s verliert jeder DROME je Puls einen wachsenden Anteil seiner Integrität.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "config -> overtime"},
+    {"bereich": "Module", "thema": "Modulsystem", "festlegung": "9 Grundmodule, 18 Rezepte aus genau zwei verschiedenen Grundmodulen, keine Stufen, keine Rezeptketten. Module stecken im Waffenhalter und verfallen nach dem Lauf.", "seit": "9. Nov. 2026", "status": "gebaut", "quelle": "MODULE_KONZEPT, data/modules.json"},
+    {"bereich": "Module", "thema": "Matrix-BIOS", "festlegung": "Späte Schicht, nur aus Elite-Kämpfen (1 aus 3). Chassis-BIOS: +1 Modulplatz und verstärkte Passive. Rezept-BIOS: verwandelt ein Rezept. Höchstens ein BIOS-Rezept je DROME.", "seit": "9. Nov. 2026", "status": "gebaut", "quelle": "MODULE_KONZEPT 6"},
+    {"bereich": "Module", "thema": "Laden", "festlegung": "Module gibt es nur im Laden des Zwischenstopps (für Credits), nicht als Beute. Mitleid für angefangene Rezepte.", "seit": "8. Nov. 2026", "status": "gebaut", "quelle": "NEUANFANG 6i"},
+    {"bereich": "Lauf", "thema": "Roguelike-Lauf", "festlegung": "Neon City: 8 Kämpfe, 3 Leben, die ersten 2 als Training. Je Runde eine Reihe: immer ein Leichter, dazu zwei Normale (verschiedene Typen) oder Normal + Elite.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "config -> run"},
+    {"bereich": "Lauf", "thema": "Gegner nicht gewürfelt", "festlegung": "Handverlesene Teams aus data/encounters.json. Gewürfelt wird nur im Chaos-Kampf des Endlos-Modus.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
+    {"bereich": "Lauf", "thema": "Gegnerstärke", "festlegung": "Gegner werden stärker über Zahl, Level und Module -- nicht über einen Faktor.", "seit": "7. Nov. 2026", "status": "gebaut", "quelle": "NEUANFANG 6h"},
+    {"bereich": "Lauf", "thema": "Beute", "festlegung": "Gewürfelt, ohne Auswahl: Credits oder ein Teil der Gegner, dazu neue DROMEs in bestimmten Runden und Notstrom (+1 Leben).", "seit": "8. Nov. 2026", "status": "gebaut", "quelle": "config -> run.tiers"},
+    {"bereich": "Lauf", "thema": "Was bleibt", "festlegung": "Ausrüstung und Level von DROMEs (0-5) und Waffen (0-10) bleiben nach dem Lauf; Module verfallen.", "seit": "6. Nov. 2026", "status": "gebaut", "quelle": "NEUANFANG 6g"},
+    {"bereich": "Modi", "thema": "Story- und Endlos-Modus", "festlegung": "Zwei Modi. Endlos: kein Ende, 1 Leben, nach jeder Runde aussteigen, Chaos-Knoten. Story: Level-Struktur noch nicht gebaut.", "seit": "7. Nov. 2026", "status": "entschieden", "quelle": "NEUANFANG 6h"},
+    {"bereich": "Welt", "thema": "Gebiete", "festlegung": "Neon City, Parkanlage, Factory 5, Dachterrassen -- je Gebiet eine Fraktion mit Profil.", "seit": "8. Nov. 2026", "status": "entschieden", "quelle": "NEUANFANG 6i, data/regions.json"},
+    {"bereich": "Start", "thema": "Startbestand", "festlegung": "Neuer Spielstand: jeder der vier Standard-DROMEs einmal in Standardausstattung, alle vier im Squad.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "PROJEKTSTAND Startbestand"}
+  ],
+
+  "dromes": {
+    "scout_body": {"identitaet": "Der schnelle Allrounder. Trägt nur eine leichte Waffe und lebt vom Bewegen.", "standardwaffe": "Puls-Blaster", "beschreibung": "Leichte, wendige DROME auf Sprintbeinen. Nimmt Treffer in Kauf, um dranzubleiben."},
+    "jugg_body": {"identitaet": "Der harte Zweihänder. Will in die Frontlinie und schützt andere.", "standardwaffe": "Hammer + Deflektor-Schild", "beschreibung": "Schwerer Tank mit zwei Haltern. Wenig Power, dafür sehr viel Integrität und Rüstung."},
+    "mage_body": {"identitaet": "Fragil und schildlastig, ganz auf Fähigkeiten ausgelegt.", "standardwaffe": "Runenstab", "beschreibung": "Gerundete Support-DROME auf Fahrgestell. Größter Schildpuls, höchste Power nach dem Strix."},
+    "strix_body": {"identitaet": "Langstrecke: wenige, sehr harte Treffer aus der Ferne.", "standardwaffe": "Schienen-Lanze", "beschreibung": "Scharfschütze auf Federbeinen. Langsam, aber die höchste Power."}
+  },
+
+  "rollen": [
+    {"id": "vanguard", "name": "Vorhut", "traeger": "Molok", "zielregel": "den nächsten Gegner", "fraktion": "Mega Mechas", "status": "gebaut"},
+    {"id": "skirmisher", "name": "Plänkler", "traeger": "Vireo", "zielregel": "den nächsten Gegner, weicht aus (kitet)", "fraktion": "Neon Ninja's", "status": "gebaut"},
+    {"id": "controller", "name": "Kontrolle", "traeger": "Nimbus", "zielregel": "den, um den die meisten Gegner stehen (für den Vortex)", "fraktion": "Solar Sentients", "status": "gebaut"},
+    {"id": "sniper", "name": "Scharfschütze", "traeger": "Strix", "zielregel": "in Reichweite den, der am meisten Schaden macht", "fraktion": "Mega Mechas", "status": "gebaut"},
+    {"id": "hunter", "name": "Jäger", "traeger": "-- (geplant: Shinobi)", "zielregel": "den Verwundbarsten (wenig Integrität, verwundbar oder betäubt); Regel liegt im Code bereit", "fraktion": "Neon Ninja's", "status": "Vorschlag"},
+    {"id": "support", "name": "Stütze", "traeger": "-- (heute nur als Waffe: E-Schraubenschlüssel)", "zielregel": "heilt den Verletztesten", "fraktion": "Solar Sentients", "status": "Vorschlag"}
+  ],
+
+  "waffen": {
+    "eq_pulse_blaster": "Halb kinetisch, halb Energie -- der Allrounder ohne Schwäche.",
+    "eq_neon_blaster": "Mehr Energie: knackt Schilde. Beim Leveln wächst nur der Energieanteil.",
+    "eq_plasma_blade": "Nahkampf. Aufschlitzen macht das Ziel 5 s verwundbar (+50 % Schaden von allen).",
+    "eq_boomerang": "Zwei Treffer je Wurf; +30 % Schaden, wenn der Träger in der letzten Sekunde gelaufen ist.",
+    "eq_rune_staff": "Energie auf Distanz. Vortex trifft eine Fläche, zieht zusammen und verlangsamt.",
+    "eq_drone_pod": "Support-Werkzeug: heilt Verbündete und gibt ihnen Schild, kitzelt Gegner nur.",
+    "eq_hammer": "Nahkampf. Jeder 3. Schlag betäubt 1 s.",
+    "eq_bulwark_ram": "Nahkampf. Der Rammstoß skaliert mit der eigenen max. Integrität (ohne Power) und stößt zurück -- für Off-Tanks.",
+    "eq_deflector": "Schild für den zweiten Molok-Halter: gibt Rüstung und lädt sich selbst Schild auf.",
+    "eq_rail_lance": "Reichweite 8, harte Einzeltreffer. Die einzige echte Scharfschützenwaffe.",
+    "eq_mortar": "Artillerie: Mindestreichweite 2, Einschlag nach 0,8 s. Sperrfeuer trifft eine Fläche und stößt zurück."
+  },
+
+  "fraktionen": [
+    {"name": "Neon Ninja's", "gebiet": "Neon City", "profil": "Kämpfer", "virus": "„Eine Prüfung. Wer besteht, ist würdig.“", "chassis_vorschlag": "Shinobi (Jäger) -- Hinterhalt: der erste Treffer auf ein neues Ziel +50 %", "boss": "Oni (Level 5), Shogun Kage (Level 10)", "status": "gebaut (Profil + Teams); Chassis Vorschlag"},
+    {"name": "Solar Sentients", "gebiet": "Parkanlage", "profil": "Rudel", "virus": "„Kein Feind – ein neuer Zweig.“ Sie nehmen ihn auf.", "chassis_vorschlag": "Spore (Rudel) -- Teilung: zerfällt beim Tod in zwei schwache Sporlinge", "boss": "--", "status": "gebaut (Profil + erste Teams); Chassis Vorschlag"},
+    {"name": "Mega Mechas", "gebiet": "Factory 5", "profil": "Festung", "virus": "„Einsperren und verkaufen.“", "chassis_vorschlag": "Bastion (Geschütz) -- Verankert: läuft nicht, +2 Reichweite und Schildwall für Nachbarn", "boss": "--", "status": "gebaut (Profil + erste Teams); Chassis Vorschlag"},
+    {"name": "Hipstar Hookers", "gebiet": "Dachterrassen", "profil": "Trickser (Vorschlag)", "virus": "Haben ihn freigesetzt – aus Versehen, sagen sie.", "chassis_vorschlag": "Hook (Trickser) -- Greifhaken: jede Fähigkeit zieht ihr Ziel 2 Felder heran", "boss": "--", "status": "offen"}
+  ],
+
+  "stages_zusatz": [
+    {"stage": 4, "id": "roof", "name": "Dachterrassen", "boden": "--", "fraktion": "Hipstar Hookers", "profil": "Trickser (Vorschlag)", "text": "Ziehen die Hinterreihe nach vorn, stellen Hologramm-Köder, stören den Takt.", "status": "geplant"}
+  ],
+
+  "story_level": [
+    {"level": 1, "titel": "Zulassung I", "squad": 2, "kaempfe": 3, "gegner": "Sparring, je 2", "neu": "Aufstellen, Kampf lesen", "status": "Vorschlag"},
+    {"level": 2, "titel": "Zulassung II", "squad": 3, "kaempfe": 3, "gegner": "Sparring, je 3", "neu": "Laden, erstes Modul", "status": "Vorschlag"},
+    {"level": 3, "titel": "Erster Ligakampf", "squad": 4, "kaempfe": 4, "gegner": "Straßenbande, Klingentrupp", "neu": "Gegnertypen, Gegnerwahl", "status": "Vorschlag"},
+    {"level": 4, "titel": "Die Werfer", "squad": 4, "kaempfe": 4, "gegner": "Wurfsterne, Hornissen", "neu": "Elite-Knoten", "status": "Vorschlag"},
+    {"level": 5, "titel": "Das Dojo", "squad": 4, "kaempfe": 5, "gegner": "Eisenfaust + Boss Oni", "neu": "Rezepte, erster Boss", "status": "Vorschlag"},
+    {"level": 6, "titel": "Schattenviertel", "squad": 4, "kaempfe": 5, "gegner": "Schattenläufer, Klingentrupp", "neu": "Gegner tragen Rezepte", "status": "Vorschlag"},
+    {"level": 7, "titel": "Rivalen", "squad": 4, "kaempfe": 5, "gegner": "gemischt, Gegner Level 2", "neu": "Matrix-BIOS", "status": "Vorschlag"},
+    {"level": 8, "titel": "Die Meister", "squad": 4, "kaempfe": 6, "gegner": "Schattenrat, Nachtwache", "neu": "nur noch Elite-Teams als Elite", "status": "Vorschlag"},
+    {"level": 9, "titel": "Vor dem Turm", "squad": 4, "kaempfe": 6, "gegner": "alles, Gegner Level 3", "neu": "--", "status": "Vorschlag"},
+    {"level": 10, "titel": "Der Turm", "squad": 4, "kaempfe": 6, "gegner": "Klingenmeister + Boss Shogun Kage", "neu": "Endlos-Modus", "status": "Vorschlag"}
+  ],
+
+  "bosse": [
+    {"name": "Oni", "fraktion": "Neon Ninja's", "level": 5, "drome": "Molok mit Hammer + Bollwerk-Ramme, BIOS-Rezept Berserker", "lehrt": "nicht alle in den Nahkampf schicken", "status": "Vorschlag"},
+    {"name": "Shogun Kage", "fraktion": "Neon Ninja's", "level": 10, "drome": "Nimbus mit Plasmaklinge, BIOS-Rezept Taktgeber -- Echo macht aus jedem 3. Hieb einen doppelten Aufschlitzer", "lehrt": "den Wirker zuerst, mit Betäubung oder Locken", "status": "Vorschlag"}
+  ],
+
+  "story": [
+    {"thema": "Aufhänger", "text": "„Die Liga und der Virus“: Neon City trägt seine Revierkämpfe in der DROME-Liga aus -- und ein Virus bringt die Liga gerade zum Kippen.", "status": "Vorschlag"},
+    {"thema": "Die Welt", "text": "Vier Fraktionen teilen sich die Stadt. Statt auf der Straße kämpfen sie in Arenen, mit DROMEs. Wer gewinnt, hält sein Revier.", "status": "Vorschlag"},
+    {"thema": "Der Spieler", "text": "Ein neuer Dromer (Mechaniker und Teamchef) mit vier gebrauchten Standard-DROMEs. Eine alte Mechanikerin bringt ihn durch die Zulassung (Level 1 und 2).", "status": "Vorschlag"},
+    {"thema": "Der Chaos-Virus", "text": "Befällt die Arena-Netze. Befallene DROMEs bauen sich selbst um und greifen alles an -- der Chaos-Kampf, der einzige Ort, an dem gewürfelt wird.", "status": "Vorschlag"},
+    {"thema": "Endlos-Modus", "text": "Das Chaos-Netz: die Simulation unter der Stadt, in der der Virus wohnt. Freigeschaltet, sobald Neon City bezwungen ist.", "status": "Vorschlag"},
+    {"thema": "Alternativen", "text": "Schrottplatz (aus Wracks die erste Mannschaft bauen) oder Meisterschaft (reine Sport-Geschichte ohne Virus).", "status": "Vorschlag"}
+  ],
+
+  "offene_punkte": [
+    {"punkt": "Aufhänger „Die Liga und der Virus“ übernehmen?", "quelle": "VORSCHLAG_STORY 1", "status": "offen"},
+    {"punkt": "Level-Struktur Story-Modus bauen (10 Level Neon City, Level 1 mit 2 und Level 2 mit 3 DROMEs, je Level 3 Leben)", "quelle": "VORSCHLAG_STORY 2", "status": "offen"},
+    {"punkt": "Wege zwischen den Reihen zurück?", "quelle": "VORSCHLAG_STORY 6", "status": "offen"},
+    {"punkt": "Erstes Fraktions-Chassis, z. B. Shinobi (Jäger) -- braucht ein Bild aus der Werkstatt", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
+    {"punkt": "Hipstar Hookers = Trickser?", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
+    {"punkt": "Bosse am Ende der Story-Level (Oni, Shogun Kage)", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
+    {"punkt": "Schwierigkeit: Normal Runde 8 63 %, Elite 41 % ohne Module -- so lassen oder Elite anziehen?", "quelle": "VORSCHLAG_STORY 5", "status": "offen"},
+    {"punkt": "Aufstellung: erster Treffer nach 5,6 s statt 2,0 s -- zu lang? (deployment.inset 1 -> 3)", "quelle": "VORSCHLAG_STORY 6", "status": "offen"},
+    {"punkt": "Umlaute in der Anzeige („Kaempfe“ -> „Kämpfe“)?", "quelle": "VORSCHLAG_STORY 6", "status": "offen"},
+    {"punkt": "Endlos-Modus ausbauen: Sektoren je Fraktion, bessere Beute je Sektor", "quelle": "VORSCHLAG_STORY 5", "status": "offen"},
+    {"punkt": "Eingreifen des Spielers (Gegner als Ziel Nr. 1 markieren?)", "quelle": "CLAUDE.md Designpunkt 3", "status": "offen"},
+    {"punkt": "Klassen: sechs Rollen statt vier (Jäger, Stütze neu)?", "quelle": "VORSCHLAG_STORY 4", "status": "offen"}
+  ],
+
+  "glossar": [
+    {"begriff": "DROME", "erklaerung": "Eine Kampfeinheit. Besteht aus Chassis (mit Werten und Passive), Kopf, Kern, Antrieb (nur Optik) und Waffen im Halter."},
+    {"begriff": "Squad", "erklaerung": "Die DROMEs, die in den Kampf gehen (max. 4)."},
+    {"begriff": "Halter", "erklaerung": "Waffenplatz am Chassis. Form = Gewichtsklasse: Dreieck leicht, Viereck mittel, Fünfeck schwer."},
+    {"begriff": "Takt", "erklaerung": "Auslösevoraussetzung einer Fähigkeit, z. B. „jeder 3. Angriff“."},
+    {"begriff": "Puls", "erklaerung": "Alle 3 s: Schildladung, Reparatur, Overtime."},
+    {"begriff": "Power", "erklaerung": "Schadensfaktor des DROME: Rohschaden = Waffenschaden x Power / 10."},
+    {"begriff": "Schildpuls", "erklaerung": "Wie schnell der Schild nach Ruhe wieder lädt und wie viel je Puls zurückkommt."},
+    {"begriff": "Integrität", "erklaerung": "Lebenspunkte (HP)."},
+    {"begriff": "Rüstung", "erklaerung": "Teiler auf Schaden an der Integrität, mit abnehmendem Ertrag (max. ein Drittel weniger)."},
+    {"begriff": "Kinetisch / Energie", "erklaerung": "Schadensarten. Kinetisch gut gegen Integrität und Tanks, Energie gegen Schilde."},
+    {"begriff": "Modul", "erklaerung": "Steckt im Waffenhalter und verändert die Waffe. Nur im Lauf, verfällt danach."},
+    {"begriff": "Rezept", "erklaerung": "Modul aus zwei verschiedenen Grundmodulen: Summe der Zutaten plus eigener Effekt."},
+    {"begriff": "Matrix-BIOS", "erklaerung": "Seltene Verbesserung aus Elite-Kämpfen: verstärkt ein Chassis oder verwandelt ein Rezept."},
+    {"begriff": "Gegnertyp", "erklaerung": "Sturm, Schützen, Bollwerk, Kontrolle, Gemischt -- sagt, welches Problem ein Team stellt."},
+    {"begriff": "Stufe", "erklaerung": "Leicht, Normal, Elite -- Schwierigkeit eines Knotens in der Reihe."},
+    {"begriff": "Kampfwert", "erklaerung": "Standhaftigkeit mal Feuerkraft; sagt den Ausgang zu etwa 80 % voraus."},
+    {"begriff": "Chaos-Kampf", "erklaerung": "Gewürfelte Gegner im Endlos-Modus, mehr Credits."},
+    {"begriff": "Notstrom", "erklaerung": "Beute: +1 Leben."},
+    {"begriff": "Zwischenstopp", "erklaerung": "Nach jedem Kampf: Lager, Laden, Ausrüsten."}
+  ]
+}
