@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Spielstand wählen Arcade</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0618}
+a{color:#ffe14d}a:hover{color:#fff3a8}
+@keyframes cdGlitchA{0%,90%,100%{transform:translate(-2px,0)}91%{transform:translate(-6px,2px)}93%{transform:translate(4px,-1px)}}
+@keyframes cdGlitchB{0%,90%,100%{transform:translate(2px,0)}91%{transform:translate(6px,-2px)}93%{transform:translate(-4px,1px)}}
+@keyframes cdIn{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes cdBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.cd-ga{animation:cdGlitchA 4s steps(1) infinite}
+.cd-gb{animation:cdGlitchB 4s steps(1) infinite}
+.cd-in{animation:cdIn .3s ease-out both}
+.cd-blink{animation:cdBlink 1s steps(1) infinite}
+.cd-btn{cursor:pointer;font-family:inherit}
+.cd-btn:focus-visible,.cd-back:focus-visible{outline:3px solid #ffe14d;outline-offset:3px}
+@media (prefers-reduced-motion: reduce){.cd-ga,.cd-gb,.cd-in,.cd-blink{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 450px; height: 800px; overflow: hidden; background: #0a0618; font-family: 'Chakra Petch', system-ui, sans-serif; color: #e9dcff">
+
+<svg aria-hidden="true" width="450" height="800" viewBox="0 0 450 800" style="position: absolute; inset: 0; display: block">
+<defs>
+<pattern id="cdDots2" width="14" height="14" patternUnits="userSpaceOnUse">
+<circle cx="7" cy="7" r="1.6" fill="#ff3dbb" fill-opacity="0.22"></circle>
+</pattern>
+<linearGradient id="cdSunFill2" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#ffe14d"></stop>
+<stop offset="0.55" stop-color="#ff6a3d"></stop>
+<stop offset="1" stop-color="#ff2bd6"></stop>
+</linearGradient>
+<clipPath id="cdSunCut2">
+<rect x="0" y="0" width="450" height="700"></rect>
+<rect x="0" y="704" width="450" height="12"></rect>
+<rect x="0" y="722" width="450" height="9"></rect>
+<rect x="0" y="737" width="450" height="6"></rect>
+</clipPath>
+</defs>
+<rect x="0" y="0" width="450" height="800" fill="url(#cdDots2)"></rect>
+<circle cx="225" cy="760" r="130" fill="url(#cdSunFill2)" fill-opacity="0.35" clip-path="url(#cdSunCut2)"></circle>
+<rect x="0" y="748" width="450" height="52" fill="#12082a"></rect>
+<g stroke="#2ee3eb" stroke-opacity="0.45" stroke-width="1.5">
+<line x1="0" y1="748" x2="450" y2="748"></line>
+<line x1="0" y1="760" x2="450" y2="760" stroke-opacity="0.3"></line>
+<line x1="0" y1="780" x2="450" y2="780" stroke-opacity="0.25"></line>
+<line x1="225" y1="748" x2="-200" y2="800" stroke-opacity="0.3"></line>
+<line x1="225" y1="748" x2="100" y2="800" stroke-opacity="0.3"></line>
+<line x1="225" y1="748" x2="350" y2="800" stroke-opacity="0.3"></line>
+<line x1="225" y1="748" x2="650" y2="800" stroke-opacity="0.3"></line>
+</g>
+</svg>
+
+<div style="position: absolute; inset: 0; overflow-y: auto; box-sizing: border-box; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 14px">
+
+<div style="display: flex; align-items: center; justify-content: space-between; height: 44px">
+<a href="TitleArcade.dc.html" class="cd-back" aria-label="Zurück zum Titel" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #ffe14d">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square" stroke-linejoin="miter"><path d="M15 4l-8 8 8 8"></path></svg>
+</a>
+<p style="margin: 0; padding: 5px 10px; background: #ffe14d; color: #12082a; font-weight: 700; font-size: 13px; letter-spacing: 0.24em; transform: rotate(2deg)">SAVE SELECT</p>
+</div>
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 6px">
+<div style="position: relative; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 36px; line-height: 1; transform: rotate(-4deg)">
+<span aria-hidden="true" class="cd-ga" style="position: absolute; inset: 0; color: #2ee3eb; mix-blend-mode: screen">CYBERDROME</span>
+<span aria-hidden="true" class="cd-gb" style="position: absolute; inset: 0; color: #ff2bd6; mix-blend-mode: screen">CYBERDROME</span>
+<p style="position: relative; margin: 0; color: #fff7fe">CYBERDROME</p>
+</div>
+<h1 style="margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.26em; color: #2ee3eb">SPIELSTAND WÄHLEN</h1>
+</div>
+
+<sc-for list="{{slots}}" as="slot" hint-placeholder-count="3">
+<section class="cd-in" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; background: #1b0b3a; border: {{slot.border}}; box-shadow: {{slot.shadow}}">
+<div style="display: flex; align-items: center; gap: 14px">
+<div style="width: 60px; height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{slot.numBg}}; color: {{slot.numColor}}; clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 26px">{{slot.code}}</div>
+<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0; flex-grow: 1">
+<div style="display: flex; align-items: center; gap: 8px">
+<h2 style="margin: 0; font-size: 19px; font-weight: 700; letter-spacing: 0.08em; color: {{slot.nameColor}}">SLOT {{slot.no}}</h2>
+<sc-if value="{{slot.last}}" hint-placeholder-val="{{ false }}">
+<span style="padding: 2px 6px; background: #2ee3eb; color: #0a0618; font-size: 11px; font-weight: 700; letter-spacing: 0.14em">ZULETZT</span>
+</sc-if>
+</div>
+<sc-if value="{{slot.used}}" hint-placeholder-val="{{ true }}">
+<p style="margin: 0; font-size: 15px; font-weight: 500; color: #e9dcff">{{slot.stats}}</p>
+<p style="margin: 0; font-size: 15px; color: #c3b3e6">{{slot.state}}</p>
+</sc-if>
+<sc-if value="{{slot.empty}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 15px; color: #c3b3e6">Leer – startet mit den vier Standard-DROMEs.</p>
+</sc-if>
+</div>
+</div>
+
+<button type="button" class="cd-btn" onClick="{{slot.play}}" style="height: 54px; border: {{slot.btnBorder}}; background: {{slot.btnBg}}; color: {{slot.btnColor}}; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 19px; letter-spacing: 0.06em">{{slot.playLabel}}</button>
+
+<sc-if value="{{slot.used}}" hint-placeholder-val="{{ true }}">
+<button type="button" class="cd-btn" onClick="{{slot.remove}}" style="height: 44px; border: 0; background: transparent; font-size: 15px; font-weight: 600; letter-spacing: 0.12em; color: #ff8ce8">{{slot.removeLabel}}</button>
+</sc-if>
+</section>
+</sc-for>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<p role="status" style="margin: 0; padding: 12px 14px; background: #0a0618; border: 2px solid #2ee3eb; color: #2ee3eb; font-weight: 700; font-size: 15px; letter-spacing: 0.14em">{{toast}}<span class="cd-blink">_</span></p>
+</sc-if>
+
+<p style="margin: 2px 0 0; font-size: 14px; line-height: 1.45; color: #c3b3e6">Jeder Slot hat seinen eigenen Hangar, seine Level und seinen laufenden Lauf. Gespeichert wird automatisch.</p>
+</div>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.16) 3px)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":450,"height":800}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = {
+armed: 0,
+toast: '',
+slots: [
+{ no: 1, used: true, last: true, stats: '4 DROMEs · 4 im Squad · Ø Level 3,2', state: 'Lauf: Neon City, Runde 5' },
+{ no: 2, used: true, last: false, stats: '6 DROMEs · 4 im Squad · Ø Level 7,5', state: 'Kein Lauf · Neon City bezwungen' },
+{ no: 3, used: false, last: false }
+]
+};
+}
+renderVals() {
+const s = this.state;
+const slots = s.slots.map((x) => {
+const hot = x.used && x.last;
+return {
+...x,
+empty: !x.used,
+code: '0' + x.no,
+border: x.used ? (hot ? '2px solid #2ee3eb' : '2px solid #ff2bd6') : '2px dashed #6a5a96',
+shadow: x.used ? (hot ? '6px 6px 0 #ff2bd6' : '6px 6px 0 #3a1a6e') : 'none',
+numBg: x.used ? (hot ? '#2ee3eb' : '#ff2bd6') : 'transparent',
+numColor: x.used ? '#0a0618' : '#8f80bd',
+nameColor: x.used ? '#fff7fe' : '#c3b3e6',
+playLabel: x.used ? 'Weiterspielen ▶' : 'Neues Spiel +',
+btnBorder: x.used ? '0' : '2px solid #ffe14d',
+btnBg: x.used ? '#ffe14d' : 'transparent',
+btnColor: x.used ? '#12082a' : '#ffe14d',
+removeLabel: s.armed === x.no ? 'WIRKLICH LÖSCHEN? NOCHMAL TIPPEN' : 'LÖSCHEN',
+play: () => this.setState({
+armed: 0,
+toast: x.used ? 'LADE SLOT 0' + x.no : 'NEUES SPIEL IN SLOT 0' + x.no,
+slots: s.slots.map((y) => ({ ...y, last: y.no === x.no, used: y.used || y.no === x.no,
+stats: y.no === x.no && !y.used ? '4 DROMEs · 4 im Squad · Ø Level 1,0' : y.stats,
+state: y.no === x.no && !y.used ? 'Kein Lauf' : y.state }))
+}),
+remove: () => {
+if (s.armed !== x.no) { this.setState({ armed: x.no, toast: '' }); return; }
+this.setState({ armed: 0, toast: 'SLOT 0' + x.no + ' GELÖSCHT',
+slots: s.slots.map((y) => y.no === x.no ? { no: y.no, used: false, last: false } : y) });
+}
+};
+});
+return { slots, toast: s.toast };
+}
+}
+</script>
+</body>
+</html>

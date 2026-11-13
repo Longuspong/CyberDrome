@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>CyberDrome Titel Arcade</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0618}
+a{color:#ffe14d}a:hover{color:#fff3a8}
+@keyframes cdGlitchA{0%,86%,100%{transform:translate(0,0);clip-path:inset(0 0 0 0)}87%{transform:translate(-6px,2px);clip-path:inset(10% 0 55% 0)}89%{transform:translate(5px,-2px);clip-path:inset(60% 0 8% 0)}91%{transform:translate(-3px,0);clip-path:inset(30% 0 40% 0)}}
+@keyframes cdGlitchB{0%,86%,100%{transform:translate(0,0);clip-path:inset(0 0 0 0)}87%{transform:translate(6px,-2px);clip-path:inset(50% 0 20% 0)}89%{transform:translate(-5px,3px);clip-path:inset(5% 0 70% 0)}91%{transform:translate(4px,0);clip-path:inset(70% 0 5% 0)}}
+@keyframes cdTape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes cdTapeRev{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+@keyframes cdSpin{to{transform:rotate(360deg)}}
+@keyframes cdBob{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes cdSun{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.cd-ga{animation:cdGlitchA 3.2s steps(1) infinite}
+.cd-gb{animation:cdGlitchB 3.2s steps(1) infinite}
+.cd-tape{animation:cdTape 22s linear infinite}
+.cd-tape-rev{animation:cdTapeRev 28s linear infinite}
+.cd-spin{animation:cdSpin 7s linear infinite}
+.cd-bob{animation:cdBob 1.4s ease-in-out infinite}
+.cd-sun{animation:cdSun 5s ease-in-out infinite}
+.cd-tap:focus-visible{outline:4px solid #ffe14d;outline-offset:-8px}
+@media (prefers-reduced-motion: reduce){.cd-ga,.cd-gb,.cd-tape,.cd-tape-rev,.cd-spin,.cd-bob,.cd-sun{animation:none}}
+</style>
+</helmet>
+<a href="SavesArcade.dc.html" class="cd-tap" aria-label="Antippen zum Starten" style="display: block; position: relative; width: 450px; height: 800px; overflow: hidden; text-decoration: none; background: #0a0618; font-family: 'Chakra Petch', system-ui, sans-serif; color: #f4ecff">
+
+<svg aria-hidden="true" width="450" height="800" viewBox="0 0 450 800" style="position: absolute; inset: 0; display: block">
+<defs>
+<pattern id="cdDots" width="14" height="14" patternUnits="userSpaceOnUse">
+<circle cx="7" cy="7" r="1.6" fill="#ff3dbb" fill-opacity="0.35"></circle>
+</pattern>
+<linearGradient id="cdSunFill" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#ffe14d"></stop>
+<stop offset="0.55" stop-color="#ff6a3d"></stop>
+<stop offset="1" stop-color="#ff2bd6"></stop>
+</linearGradient>
+<clipPath id="cdSunCut">
+<rect x="0" y="0" width="450" height="300"></rect>
+<rect x="0" y="304" width="450" height="14"></rect>
+<rect x="0" y="324" width="450" height="12"></rect>
+<rect x="0" y="342" width="450" height="9"></rect>
+<rect x="0" y="357" width="450" height="7"></rect>
+<rect x="0" y="370" width="450" height="5"></rect>
+</clipPath>
+</defs>
+<rect x="0" y="0" width="450" height="800" fill="url(#cdDots)"></rect>
+<g class="cd-sun">
+<circle cx="225" cy="300" r="150" fill="url(#cdSunFill)" clip-path="url(#cdSunCut)"></circle>
+</g>
+<polygon points="0,420 70,330 120,372 190,300 250,360 310,312 380,380 450,340 450,420" fill="#1b0b3a"></polygon>
+<rect x="0" y="420" width="450" height="380" fill="#12082a"></rect>
+<g stroke="#2ee3eb" stroke-width="2" stroke-opacity="0.75">
+<line x1="0" y1="420" x2="450" y2="420"></line>
+<line x1="0" y1="436" x2="450" y2="436" stroke-opacity="0.5"></line>
+<line x1="0" y1="462" x2="450" y2="462" stroke-opacity="0.45"></line>
+<line x1="0" y1="502" x2="450" y2="502" stroke-opacity="0.4"></line>
+<line x1="0" y1="562" x2="450" y2="562" stroke-opacity="0.35"></line>
+<line x1="0" y1="650" x2="450" y2="650" stroke-opacity="0.3"></line>
+<line x1="225" y1="420" x2="-500" y2="800" stroke-opacity="0.4"></line>
+<line x1="225" y1="420" x2="-200" y2="800" stroke-opacity="0.4"></line>
+<line x1="225" y1="420" x2="80" y2="800" stroke-opacity="0.4"></line>
+<line x1="225" y1="420" x2="370" y2="800" stroke-opacity="0.4"></line>
+<line x1="225" y1="420" x2="650" y2="800" stroke-opacity="0.4"></line>
+<line x1="225" y1="420" x2="950" y2="800" stroke-opacity="0.4"></line>
+</g>
+</svg>
+
+<div style="position: absolute; left: 0; right: 0; top: 70px; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<p style="margin: 0; padding: 6px 12px; background: #ffe14d; color: #12082a; font-weight: 700; font-size: 14px; letter-spacing: 0.24em; transform: rotate(-3deg)">PLAYER 1 · READY</p>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; top: 168px; display: flex; justify-content: center; transform: rotate(-6deg)">
+<div style="position: relative; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 50px; line-height: 0.95; text-align: center">
+<span aria-hidden="true" class="cd-ga" style="position: absolute; inset: 0; color: #2ee3eb; transform: translate(-3px, 0); mix-blend-mode: screen">CYBER<br>DROME</span>
+<span aria-hidden="true" class="cd-gb" style="position: absolute; inset: 0; color: #ff2bd6; transform: translate(3px, 0); mix-blend-mode: screen">CYBER<br>DROME</span>
+<h1 style="position: relative; margin: 0; font-size: inherit; font-weight: 400; line-height: inherit; color: #fff7fe; text-shadow: 0 6px 0 #12082a">CYBER<br>DROME</h1>
+</div>
+</div>
+
+<div style="position: absolute; left: -60px; right: -60px; top: 470px; height: 26px; overflow: hidden; background: rgba(255, 225, 77, 0.1); border-top: 1px solid rgba(255, 225, 77, 0.45); border-bottom: 1px solid rgba(255, 225, 77, 0.45); transform: rotate(-4deg)">
+<div class="cd-tape" style="display: flex; width: max-content; white-space: nowrap; font-weight: 600; font-size: 12px; line-height: 26px; letter-spacing: 0.3em; color: rgba(255, 225, 77, 0.8)">
+<span style="padding-right: 24px">DEATH ROBOT ◆ OMNI MACHINE ◆ EXECUTOR ◆ DEATH ROBOT ◆ OMNI MACHINE ◆ EXECUTOR ◆</span>
+<span style="padding-right: 24px">DEATH ROBOT ◆ OMNI MACHINE ◆ EXECUTOR ◆ DEATH ROBOT ◆ OMNI MACHINE ◆ EXECUTOR ◆</span>
+</div>
+</div>
+<div style="position: absolute; left: -60px; right: -60px; top: 512px; height: 22px; overflow: hidden; background: rgba(255, 43, 214, 0.08); border-top: 1px solid rgba(255, 43, 214, 0.4); border-bottom: 1px solid rgba(255, 43, 214, 0.4); transform: rotate(2deg)">
+<div class="cd-tape-rev" style="display: flex; width: max-content; white-space: nowrap; font-weight: 600; font-size: 11px; line-height: 22px; letter-spacing: 0.34em; color: rgba(255, 140, 232, 0.8)">
+<span style="padding-right: 24px">AUTOBATTLER ✕ NEON CITY ✕ AUTOBATTLER ✕ NEON CITY ✕ AUTOBATTLER ✕ NEON CITY ✕</span>
+<span style="padding-right: 24px">AUTOBATTLER ✕ NEON CITY ✕ AUTOBATTLER ✕ NEON CITY ✕ AUTOBATTLER ✕ NEON CITY ✕</span>
+</div>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 70px; display: flex; flex-direction: column; align-items: center; gap: 16px">
+<div aria-hidden="true" style="position: relative; width: 132px; height: 132px; display: flex; align-items: center; justify-content: center">
+<svg class="cd-spin" width="132" height="132" viewBox="0 0 132 132" style="position: absolute; inset: 0">
+<circle cx="66" cy="66" r="62" fill="none" stroke="#2ee3eb" stroke-width="3" stroke-dasharray="14 10"></circle>
+</svg>
+<div class="cd-bob" style="width: 96px; height: 96px; display: flex; align-items: center; justify-content: center; background: #ffe14d; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 26px; color: #12082a">TAP</div>
+</div>
+<p style="margin: 0; font-weight: 700; font-size: 18px; letter-spacing: 0.22em; color: #f4ecff">IRGENDWO TIPPEN</p>
+</div>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.18) 3px); width: 376px; height: 701px; left: 74px; top: 99px"></div>
+</a>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":450,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

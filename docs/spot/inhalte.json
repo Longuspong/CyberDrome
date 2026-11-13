@@ -13,6 +13,8 @@
     {"bereich": "Spielprinzip", "thema": "Simulation", "festlegung": "Feste Schritte von 0,05 s, deterministisch je Seed. Puls alle 3 s (Schild, Reparatur, heute noch Overtime). Heute gebaut: Zeitlimit 180 s, danach unentschieden -- wird vom Virusschaden abgelöst.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> realtime"},
     {"bereich": "Spielprinzip", "thema": "Spieler steuert keine DROMEs", "festlegung": "Grundsätzlich Autobattler. Eingreifen (vermutlich: Gegner als Ziel Nr. 1 markieren) wird später besprochen -- nichts davon bauen.", "seit": "Nov. 2026", "status": "offen", "quelle": "CLAUDE.md Designpunkt 3"},
     {"bereich": "Plattform", "thema": "Mobile first", "festlegung": "Hochformat ist die Hauptansicht (ca. 400 CSS-Pixel breit), Querformat zweitrangig. PWA auf Vercel, Android-APK später.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
+    {"bereich": "Optik", "thema": "Arcade-Glitch-Stil", "festlegung": "Neuer Grafikstil: Synthwave-Arcade mit Glitch-Logo, Scanlines, Punktraster, Sonne über Gitterboden. Farben Nachtschwarz/Violett mit Gelb, Cyan, Magenta; Schriften Bungee und Chakra Petch. Details: Blatt Design, Entwürfe in docs/design/.", "seit": "13. Nov. 2026", "status": "entschieden", "quelle": "Entwürfe Titelbildschirm B, Spielstand wählen B"},
+    {"bereich": "Bedienung", "thema": "Titelbildschirm", "festlegung": "Neuer erster Bildschirm vor der Spielstand-Wahl: Glitch-Logo, Laufbänder, TAP-Knopf, irgendwo tippen startet. Danach Spielstand wählen im neuen Stil (Slots mit Weiterspielen / Neues Spiel / Löschen mit Nachfrage).", "seit": "13. Nov. 2026", "status": "entschieden", "quelle": "Entwürfe Titelbildschirm B, Spielstand wählen B"},
     {"bereich": "Bedienung", "thema": "Navigation", "festlegung": "Erster Bildschirm: Wahl von drei Spielständen. Danach Tab-Leiste unten: Spielen, Hangar, Optionen. Hangar = Squad (Karussell, max. 4) + Umbau.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
     {"bereich": "Arena", "thema": "Spielfeld", "festlegung": "20 x 20 Felder, ohne Gelände-Regeln und ohne Sichtlinie.", "seit": "5. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
     {"bereich": "Arena", "thema": "Hindernisse", "festlegung": "Sperren nur Laufwege, Schüsse gehen darüber. Punktsymmetrisch je Seed, nie an den Aufstellungszonen.", "seit": "7. Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> obstacles"},
@@ -147,7 +149,9 @@
     {"punkt": "Archetyp Mage: kommt er als vierter Archetyp zurück, und unter welchem Namen?", "quelle": "GEGNERDESIGN 13.4/13.5", "status": "offen"},
     {"punkt": "Wellen: alle Wellen mit denselben DROMEs ohne Shop dazwischen? Bleibt Schaden zwischen Wellen?", "quelle": "GEGNERDESIGN 13.6", "status": "offen"},
     {"punkt": "Monetarisierung: Premium ohne Gacha oder Free-to-Play? (betrifft Coins und Caches)", "quelle": "GEGNERDESIGN 13.7", "status": "offen"},
-    {"punkt": "Playtest-Ergebnisse (Bedienung, Änderung am Gesamtsetup) einarbeiten", "quelle": "GEGNERDESIGN 13.8", "status": "offen"}
+    {"punkt": "Playtest-Ergebnisse (Bedienung, Änderung am Gesamtsetup) einarbeiten", "quelle": "GEGNERDESIGN 13.8", "status": "offen"},
+    {"punkt": "Arcade-Glitch-Stil auch für Hangar, Kampf, Einsatz und Optionen? Entwürfe fehlen noch.", "quelle": "Design 13. Nov.", "status": "offen"},
+    {"punkt": "Spielstand-Text „laufender Lauf / Lauf: Neon City, Runde 5“ auf Einsatz umstellen.", "quelle": "Design 13. Nov.", "status": "offen"}
   ],
 
   "glossar": [
@@ -309,5 +313,45 @@
     {"formation": "Neon-Squad", "fraktion": "Neon", "welle": 3, "dromes": "Neon Vireo", "assault": 2, "sniper": 1, "support": 1, "variante": "Basic", "module": "wie Welle 2", "text": "Verstärkung", "status": "Vorschlag"},
     {"formation": "Neon-Squad", "fraktion": "Neon", "welle": 4, "dromes": "Neon Vireo + Neon Nimbus", "assault": 2, "sniper": 1, "support": 1, "variante": "Basic", "module": "wie Welle 2", "text": "Support-Erweiterung: zweiter DROME", "status": "Vorschlag"},
     {"formation": "Neon Bullies (neu)", "fraktion": "Neon", "welle": 1, "dromes": "", "assault": null, "sniper": null, "support": null, "variante": "", "module": "", "text": "alt: 2 Tanks + 2 Plänkler -- neue Fassung offen", "status": "offen"}
+  ],
+
+  "_kommentar_design": ["Arcade-Glitch-Stil (13. Nov. 2026): Entwuerfe in docs/design/ (Titel, Spielstand). NOCH NICHT GEBAUT."],
+
+  "design_farben": [
+    {"name": "Nachtschwarz", "hex": "#0a0618", "verwendung": "Hintergrund aller Bildschirme"},
+    {"name": "Tiefviolett", "hex": "#12082a", "verwendung": "Boden unter dem Horizont, Text auf Gelb"},
+    {"name": "Violett", "hex": "#1b0b3a", "verwendung": "Karten / Slots, Bergsilhouette"},
+    {"name": "Arcade-Gelb", "hex": "#ffe14d", "verwendung": "Hauptknopf, Etiketten (PLAYER 1, SAVE SELECT), Fokusrahmen, Zurück-Pfeil"},
+    {"name": "Cyan", "hex": "#2ee3eb", "verwendung": "Gitterlinien, Glitch-Kanal, Zwischentitel, zuletzt gespielter Slot, Meldungen"},
+    {"name": "Magenta", "hex": "#ff2bd6", "verwendung": "Glitch-Kanal, andere belegte Slots, Sonnen-Verlauf unten"},
+    {"name": "Pink-Punkte", "hex": "#ff3dbb", "verwendung": "Punktraster im Hintergrund (Deckkraft 0,22-0,35)"},
+    {"name": "Orange", "hex": "#ff6a3d", "verwendung": "Mitte des Sonnen-Verlaufs"},
+    {"name": "Rosa", "hex": "#ff8ce8", "verwendung": "Löschen-Knopf"},
+    {"name": "Weiß-Rosa", "hex": "#fff7fe", "verwendung": "Logo, Slot-Namen"},
+    {"name": "Fließtext", "hex": "#e9dcff", "verwendung": "normaler Text"},
+    {"name": "Fließtext gedämpft", "hex": "#c3b3e6", "verwendung": "Nebentext, leere Slots"},
+    {"name": "Leer-Rahmen", "hex": "#6a5a96", "verwendung": "gestrichelter Rahmen leerer Slots"}
+  ],
+
+  "design_schriften": [
+    {"schrift": "Bungee", "einsatz": "Logo CYBERDROME, Knöpfe, Slot-Nummern, TAP", "groessen": "Logo 50 px (Titel) / 36 px (Slots), Knöpfe 19 px, Nummer 26 px", "quelle": "Google Fonts (frei)"},
+    {"schrift": "Chakra Petch 500-700", "einsatz": "alles andere: Etiketten, Überschriften, Fließtext", "groessen": "Überschrift 18 px, Slot-Name 19 px, Text 15 px, Etikett 13-14 px, Laufband 11-12 px", "quelle": "Google Fonts (frei)"}
+  ],
+
+  "design_bildschirme": [
+    {"bildschirm": "Titelbildschirm (NEU)", "inhalt": "Erster Bildschirm vor der Spielstand-Wahl. Etikett PLAYER 1 · READY, schräges Glitch-Logo CYBER/DROME, Synthwave-Sonne mit Schlitzen über Bergsilhouette und Cyan-Gitterboden, zwei gegenläufige Laufbänder (DEATH ROBOT ◆ OMNI MACHINE ◆ EXECUTOR / AUTOBATTLER ✕ NEON CITY), unten sechseckiger TAP-Knopf mit drehendem Ring und IRGENDWO TIPPEN. Tippen irgendwo -> Spielstand wählen.", "status": "entschieden"},
+    {"bildschirm": "Spielstand wählen (neu gestaltet)", "inhalt": "Kopf: Zurück-Pfeil zum Titel, Etikett SAVE SELECT. Glitch-Logo, Überschrift SPIELSTAND WÄHLEN. Drei Slot-Karten mit abgeschrägten Ecken: Nummer 01-03, SLOT n, Kennzeichen ZULETZT, Zeile mit DROMEs / Squad / Ø Level und Zeile mit dem Stand. Knopf Weiterspielen ▶ (gelb) bzw. Neues Spiel + (gelber Rahmen). LÖSCHEN mit Nachfrage durch zweites Tippen. Statusmeldung mit blinkendem Cursor. Fußtext: jeder Slot hat eigenen Hangar und Level, Speichern automatisch.", "status": "entschieden"},
+    {"bildschirm": "Übrige Bildschirme", "inhalt": "Hangar, Kampf, Einsatz, Optionen im selben Stil? Noch kein Entwurf.", "status": "offen"}
+  ],
+
+  "design_effekte": [
+    {"effekt": "Glitch", "wirkung": "Logo dreifach: Cyan und Magenta versetzt (Bildschirm-Mischung), springt alle 3,2-4 s kurz und zerschneidet sich", "status": "entschieden"},
+    {"effekt": "Scanlines", "wirkung": "feine dunkle Querlinien über dem ganzen Bild (alle 3 px, 16-18 %)", "status": "entschieden"},
+    {"effekt": "Laufbänder", "wirkung": "zwei schräge Textbänder, gegenläufig (22 s / 28 s je Durchlauf)", "status": "entschieden"},
+    {"effekt": "Sonne", "wirkung": "Verlauf Gelb -> Orange -> Magenta, unten in Streifen geschnitten, schwebt sanft", "status": "entschieden"},
+    {"effekt": "TAP-Knopf", "wirkung": "pulsiert (1,4 s), gestrichelter Ring dreht sich (7 s)", "status": "entschieden"},
+    {"effekt": "Slots einblenden", "wirkung": "gleiten von links herein (0,3 s)", "status": "entschieden"},
+    {"effekt": "Weniger Bewegung", "wirkung": "bei der Systemeinstellung ‚Bewegung reduzieren‘ stehen alle Animationen still", "status": "entschieden"},
+    {"effekt": "Formensprache", "wirkung": "abgeschrägte Ecken (12-14 px), harte Versatzschatten (6 px), schräge Etiketten (-3° bis +2°), Fokusrahmen gelb", "status": "entschieden"}
   ]
 }

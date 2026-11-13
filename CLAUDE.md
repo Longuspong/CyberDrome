@@ -24,6 +24,9 @@ Sniper, Support je Fraktion), asymmetrisch. Beute = fraktionsabhaengige
 den Hangar. Overtime war so nicht entschieden: stattdessen **Virusschaden**
 ab 5 Min., je Puls 10 % von Schild + Integritaet, an der Ruestung vorbei.
 Werte dazu traegt der Spieler in der Excel ein (hellblaue Felder).
+Neuer Grafikstil **Arcade-Glitch** (Synthwave, Bungee + Chakra Petch, Gelb/
+Cyan/Magenta auf Nachtschwarz) mit neuem **Titelbildschirm** vor der
+Spielstand-Wahl: Entwuerfe in `docs/design/`, Werte im SPOT-Blatt Design.
 
 ## SPOT-Tabelle (Vorgabe des Spielers, 12. Nov. 2026)
 

@@ -1036,6 +1036,28 @@ def build_formationen(ws):
             "Zusammensetzung, Module, Varianten, Synergien.").font = BODY_FONT
 
 
+def build_design(ws):
+    rows = [[f["name"], f["hex"], "", f["verwendung"], "entschieden"] for f in TEXTE["design_farben"]]
+    last = write_table(ws, ["Farbe", "Hex", "Muster", "Verwendung", "Status"], rows, [20, 11, 9, 80, 12])
+    for i, f in enumerate(TEXTE["design_farben"], 2):
+        ws.cell(row=i, column=3).fill = PatternFill("solid", fgColor=f["hex"].lstrip("#").upper())
+    r = last + 2
+    ws.cell(row=r, column=1, value="Schriften").font = SUB_FONT
+    rows = [[f["schrift"], f["einsatz"], f["groessen"], f["quelle"]] for f in TEXTE["design_schriften"]]
+    last = write_table(ws, ["Schrift", "Einsatz", "Groessen (bei 450 px Breite)", "Quelle"], rows, start_row=r + 1)
+    r = last + 2
+    ws.cell(row=r, column=1, value="Bildschirme").font = SUB_FONT
+    rows = [[b["bildschirm"], b["inhalt"], b["status"]] for b in TEXTE["design_bildschirme"]]
+    last = write_table(ws, ["Bildschirm", "Inhalt", "Status"], rows, start_row=r + 1)
+    r = last + 2
+    ws.cell(row=r, column=1, value="Effekte und Formensprache").font = SUB_FONT
+    rows = [[e["effekt"], e["wirkung"], e["status"]] for e in TEXTE["design_effekte"]]
+    last = write_table(ws, ["Effekt", "Wirkung", "Status"], rows, start_row=r + 1)
+    ws.cell(row=last + 2, column=1, value="Entwuerfe (450 x 800, Hochformat): docs/design/titel_arcade/TitleArcade.dc.html, "
+            "docs/design/spielstand_arcade/SavesArcade.dc.html -- Ordner ausliefern (python3 -m http.server) "
+            "und im Browser oeffnen. Noch nicht gebaut.").font = BODY_FONT
+
+
 SHEETS = [
     ("Uebersicht", "Wie die Tabelle gepflegt wird, Legende", build_uebersicht),
     ("Eckpunkte", "Alle festgehaltenen Entscheidungen mit Datum und Status", build_eckpunkte),
@@ -1045,6 +1067,7 @@ SHEETS = [
     ("Sentinels", "NEU (nicht gebaut): Gegner-Bots je Fraktion und Archetyp, Varianten", build_sentinels),
     ("Gegner-DROMEs", "NEU (nicht gebaut): die DROMEs der Gegner-Squads", build_gegner_dromes),
     ("Formationen", "NEU (nicht gebaut): Gegner-Squads Welle fuer Welle", build_formationen),
+    ("Design", "NEU (nicht gebaut): Arcade-Glitch-Stil -- Farben, Schriften, Titel und Spielstand-Wahl", build_design),
     ("DROMEs", "Die DROMEs: Rolle, Identitaet, Werte, Passive, Level, BIOS, Bauteile", build_dromes),
     ("Waffen", "Alle Waffen: Angriff, Faehigkeit, Takt, Bonus-Wert (Passive), Besonderheit", build_waffen),
     ("Passiven", "Alle Passiven: DROMEs, Waffen-Bonus, Chassis-BIOS, Fraktions-Vorschlaege", build_passiven),
