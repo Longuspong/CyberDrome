@@ -81,15 +81,15 @@ func _process(_delta: float) -> bool:
 				stop._drop_storage(gs.run, 1, target_slot, drop)
 				print("SMOKE: Modul per Ziehen eingesetzt, Lager %d" % gs.run.storage.size())
 		16:
-			# Spielstand-Auswahl, Hauptmenue, Optionen (10. Nov. 2026).
+			# Titel (13. Nov. 2026), Spielstand-Auswahl, Hauptmenue, Optionen (10. Nov. 2026).
 			root.get_node("RunStop").free()
-			for scene in ["saves", "main", "settings"]:
+			for scene in ["title", "saves", "main", "settings"]:
 				var node = load("res://scenes/%s.tscn" % scene).instantiate()
 				node.name = "Probe_%s" % scene
 				root.add_child(node)
-			print("SMOKE: Spielstaende, Hauptmenue und Optionen instanziiert")
+			print("SMOKE: Titel, Spielstaende, Hauptmenue und Optionen instanziiert")
 		18:
-			for scene in ["saves", "main", "settings"]:
+			for scene in ["title", "saves", "main", "settings"]:
 				root.get_node("Probe_%s" % scene).free()
 			# Lauf vor dem Kampf: Story-Reihe, dann Endlos mit Chaos-Knoten.
 			gs.start_run(4242)
