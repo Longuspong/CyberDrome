@@ -27,7 +27,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="zDrome"
 config/description="Isometrisches Taktik-RPG. MVP: Werkstatt und Chaos-Virus."
-run/main_scene="res://scenes/saves.tscn"
+run/main_scene="res://scenes/title.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://assets/icon/app_icon.svg"
 

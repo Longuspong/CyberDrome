@@ -14,6 +14,21 @@ Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
 Vorschlaege vom 10. Nov. 2026, noch NICHT entschieden; die offenen Punkte
 stehen dort in Abschnitt 6.
 
+**Neues Spielprinzip (12./13. Nov. 2026, NOCH NICHT GEBAUT):**
+`docs/GEGNERDESIGN.md` (Brainstorming) und die SPOT-Blaetter Einsatz,
+Lootcaches, Hangar-Shop, Sentinels, Gegner-DROMEs, Formationen. Kurz: Lauf
+heisst **Einsatz**, Gegner-Squads = DROME(s) + **Sentinels** (einfache Bots,
+ein Waffenslot, echte Waffe, eigene schwaechere Power; Archetypen Assault,
+Sniper, Support je Fraktion), asymmetrisch. Beute = fraktionsabhaengige
+**Lootcaches** (Inhalt legt der Spieler fest), sonst **Platzhaltercoin** fuer
+den Hangar. Overtime war so nicht entschieden: stattdessen **Virusschaden**
+ab 5 Min., je Puls 10 % von Schild + Integritaet, an der Ruestung vorbei.
+Werte dazu traegt der Spieler in der Excel ein (hellblaue Felder).
+Neuer Grafikstil **Arcade-Glitch** (Synthwave, Bungee + Chakra Petch, Gelb/
+Cyan/Magenta auf Nachtschwarz) mit neuem **Titelbildschirm** vor der
+Spielstand-Wahl: Entwuerfe in `docs/design/`, Werte im SPOT-Blatt Design.
+Titel und Spielstand-Wahl sind GEBAUT (13. Nov.), der Rest noch nicht.
+
 ## SPOT-Tabelle (Vorgabe des Spielers, 12. Nov. 2026)
 
 `docs/spot/CyberDrome_SPOT.xlsx` ist die **Single Point of Truth** fuer alle
@@ -88,8 +103,11 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
 * **Mobile first, Hochformat ist die Hauptansicht.** Querformat wird
   angeboten, ist aber zweitrangig. Neue Bildschirme werden zuerst fuer
   ein Handy im Hochformat entworfen (ca. 400 CSS-Pixel breit).
-* Erster Bildschirm ist die Wahl des Spielstands (drei Stueck,
-  `scenes/saves.tscn`, `GameState.select_slot`).
+* Erster Bildschirm ist der **Titel** (`scenes/title.tscn`, seit 13. Nov.
+  2026, irgendwo tippen), dann die Wahl des Spielstands (drei Stueck,
+  `scenes/saves.tscn`, `GameState.select_slot`). Beide im Arcade-Glitch-Stil
+  ueber den Baukasten `Arcade` (`scripts/ui/arcade.gd`, Schriften unter
+  `assets/fonts/`, OFL); die uebrigen Bildschirme nutzen noch `UiKit`.
 * Navigation: Tab-Leiste unten (Spielen, Hangar, Optionen). Der Hangar
   vereint Squad (Karussell, max. 4) und Umbau (ein Ausruestungsplatz je
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:

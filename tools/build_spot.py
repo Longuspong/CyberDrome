@@ -11,7 +11,8 @@ selbst liest -- so kann die Tabelle nie vom Spiel abweichen:
   data/regions.json      Stages / Gebiete und Fraktionsprofile
   data/encounters.json   Gegnertypen, Gegnerteams, Einheiten
   docs/spot/inhalte.json Texte, die nicht in den Spieldaten stehen
-                         (Eckpunkte, Identitaeten, Story, Bosse, offene Punkte)
+                         (Eckpunkte, Identitaeten, Story, Bosse, offene Punkte,
+                         Entwurf: Einsatz, Lootcaches, Sentinels, Formationen)
 
 Aufruf:
   python3 tools/build_spot.py           # Tabelle neu schreiben
@@ -29,6 +30,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -318,8 +320,9 @@ BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 WRAP = Alignment(wrap_text=True, vertical="top")
 STATUS_FILL = {
     "gebaut": "D9F2E3", "entschieden": "DCE8FA", "Vorschlag": "FFF2CC",
-    "offen": "FCE4D6", "geplant": "EDE7F6",
+    "offen": "FCE4D6", "geplant": "EDE7F6", "abgelöst": "E7E6E6",
 }
+INPUT_FILL = PatternFill("solid", fgColor="E3F4F8")  # Eingabefelder fuer den Spieler
 
 TABLES = []
 
@@ -330,8 +333,11 @@ def sheet(wb, title):
     return ws
 
 
-def write_table(ws, headers, rows, widths=None, start_row=1, name=None, notes=None):
-    """Schreibt eine Tabelle mit Kopfzeile, Filter, Rahmen und Status-Farben."""
+def write_table(ws, headers, rows, widths=None, start_row=1, name=None, notes=None, inputs=()):
+    """Schreibt eine Tabelle mit Kopfzeile, Filter, Rahmen und Status-Farben.
+
+    inputs: Spaltenkoepfe, die der Spieler in der Excel ausfuellt (hellblau)."""
+    input_cols = {headers.index(h) + 1 for h in inputs}
     for c, h in enumerate(headers, 1):
         cell = ws.cell(row=start_row, column=c, value=h)
         cell.font = HEAD_FONT
@@ -347,6 +353,8 @@ def write_table(ws, headers, rows, widths=None, start_row=1, name=None, notes=No
             cell.font = BODY_FONT
             cell.alignment = WRAP
             cell.border = BORDER
+            if c in input_cols:
+                cell.fill = INPUT_FILL
         if status_col:
             st = str(ws.cell(row=r, column=status_col).value or "")
             key = next((k for k in STATUS_FILL if st.startswith(k)), None)
@@ -447,11 +455,18 @@ def build_uebersicht(ws):
         "Aendern: Werte in parts/ (ueber tools/build_sample_parts.py) oder data/*.json, Texte in docs/spot/inhalte.json,",
         "dann: python3 tools/build_spot.py  -- die CI prueft mit --check, dass die Tabelle aktuell ist.",
         "Texte aus den Spieldaten stehen so wie im Spiel (ohne Umlaute, z. B. 'Praesenz').",
+        "Hellblaue Felder (Blaetter Einsatz, Lootcaches, Hangar-Shop, Sentinels, Gegner-DROMEs, Formationen): hier "
+        "traegst du Werte ein und gibst die Datei zurueck -- sie werden dann nach docs/spot/inhalte.json uebertragen.",
     ]
     for i, t in enumerate(lines, 2):
         ws.cell(row=i, column=1, value=t).font = BODY_FONT
     ws.cell(row=8, column=1, value="Status-Farben").font = SUB_FONT
     r = 9
+    c = ws.cell(row=r, column=1, value="Eingabefeld")
+    c.fill = INPUT_FILL
+    c.font = BODY_FONT
+    c.border = BORDER
+    r += 1
     for st, col in STATUS_FILL.items():
         c = ws.cell(row=r, column=1, value=st)
         c.fill = PatternFill("solid", fgColor=col)
@@ -830,9 +845,229 @@ def build_glossar(ws):
     write_table(ws, ["Begriff", "Erklaerung"], rows, [20, 100])
 
 
+# ---------------------------------------------------------------------------
+# Neues Spielprinzip (12./13. Nov. 2026, docs/GEGNERDESIGN.md) -- noch nicht
+# gebaut. Daten aus docs/spot/inhalte.json, hellblaue Spalten fuellt der Spieler.
+# ---------------------------------------------------------------------------
+
+VIRUS = {}  # id -> Zelle auf "Einsatz" (fuer Formeln)
+ART_NAMES = ["Waffe", "DROME", "Modul", "BIOS", "Credits", "Platzhaltercoin"]
+
+
+def item_name(pid):
+    if not pid:
+        return ""
+    if pid in PARTS:
+        return drome_name(pid) if PARTS[pid]["type"] == "body" else part_name(pid)
+    return module_name(pid)
+
+
+def weapon_dps(cell, power_cell):
+    """Formel: Schaden/s roh der Waffe (Blatt Waffen) x Power / 10."""
+    return f"IFERROR(INDEX(Waffen!$L:$L,MATCH({cell},Waffen!$B:$B,0))*{power_cell}/10,0)"
+
+
+def add_list(ws, values, ref):
+    dv = DataValidation(type="list", formula1='"' + ",".join(values) + '"', allow_blank=True)
+    ws.add_data_validation(dv)
+    dv.add(ref)
+
+
+def build_einsatz(ws):
+    rows = []
+    for v in TEXTE["virusschaden"]:
+        VIRUS[v["id"]] = f"Einsatz!$C${len(rows) + 2}"
+        rows.append(["Virusschaden", v["parameter"], v["wert"], v["status"], v["notiz"]])
+    r = len(rows) + 2
+    rows.append(["Virusschaden", "Spätestes Kampfende (s), Bezug Höchstwerte",
+                 f"={VIRUS['start']}+ROUNDUP(1/{VIRUS['anteil']},0)*{VIRUS['puls']}", "Formel",
+                 "danach ist jede Einheit zerstört"])
+    for e in TEXTE["einsatz"]:
+        rows.append(["Einsatz", e["parameter"], e["wert"], e["status"], e["notiz"]])
+    last = write_table(ws, ["Bereich", "Parameter", "Wert", "Status", "Notiz"], rows, [14, 44, 26, 13, 60],
+                       inputs=("Wert",))
+    ws[VIRUS["anteil"].split("!")[1].replace("$", "")].number_format = "0%"
+    r = last + 2
+    ws.cell(row=r, column=1, value="Lootdrop: wann gibt es einen Cache?").font = SUB_FONT
+    rows = []
+    for i, l in enumerate(TEXTE["lootregeln"], r + 2):
+        rows.append([l["wann"], l["art"], l["chance"], l["anzahl"], f"=C{i}*D{i}", l["coins"], l["status"]])
+    notes = {"Art": "sicher = deterministisch, Glück = gewürfelt mit der Chance daneben.",
+             "Platzhaltercoin ohne Cache": "So viele Coins gibt es, wenn kein Cache droppt."}
+    last = write_table(ws, ["Wann", "Art", "Chance auf Cache", "Caches", "Erwartete Caches",
+                            "Platzhaltercoin ohne Cache", "Status"], rows, start_row=r + 1, notes=notes,
+                       inputs=("Art", "Chance auf Cache", "Caches", "Platzhaltercoin ohne Cache"))
+    for rr in range(r + 2, last + 1):
+        ws.cell(row=rr, column=3).number_format = "0%"
+    add_list(ws, ["sicher", "Glück", "--"], f"B{r + 2}:B{last + 10}")
+    ws.cell(row=last + 1, column=1, value="Welcher Cache: immer der der Fraktion des Gebiets "
+            "(Blatt Lootcaches). Was drin ist: Blatt Lootcaches.").font = BODY_FONT
+    ws.column_dimensions["F"].width = 16
+    ws.column_dimensions["G"].width = 13
+
+
+def build_lootcaches(ws):
+    drops = TEXTE["cache_drops"] + [{"cache": "", "art": "", "gegenstand": "", "menge": None, "gewicht": None,
+                                     "status": ""}] * 20  # freie Zeilen fuer eigene Drops
+    n = len(drops) + 1
+    rows = []
+    for i, d in enumerate(drops, 2):
+        rows.append([d["cache"], d["art"], item_name(d["gegenstand"]) or d["gegenstand"], d["menge"], d["gewicht"],
+                     f'=IF(E{i}="","",IFERROR(E{i}/SUMIF($A$2:$A${n},A{i},$E$2:$E${n}),""))', d["status"]])
+    notes = {"Gewicht": "Je höher, desto öfter. Die Chance ergibt sich aus Gewicht / Summe der Gewichte im selben Cache.",
+             "Gegenstand": "Name aus den Blättern Waffen, DROMEs, Module, BIOS -- oder Credits / Platzhaltercoin.",
+             "Menge": "Stückzahl bzw. Betrag (Credits, Coins)."}
+    last = write_table(ws, ["Cache", "Art", "Gegenstand", "Menge", "Gewicht", "Chance im Cache", "Status"], rows,
+                       [16, 16, 26, 9, 9, 12, 12], notes=notes, inputs=("Cache", "Art", "Gegenstand", "Menge", "Gewicht"))
+    for rr in range(2, n + 1):
+        ws.cell(row=rr, column=6).number_format = "0%"
+    caches = [c["cache"] for c in TEXTE["caches"]]
+    add_list(ws, caches, f"A2:A{n}")
+    add_list(ws, ART_NAMES, f"B2:B{n}")
+    ws.cell(row=last + 1, column=1, value="Leere Zeilen oben: eigene Drops einfach eintragen.").font = BODY_FONT
+    r = last + 3
+    ws.cell(row=r, column=1, value="Caches je Fraktion").font = SUB_FONT
+    rows = []
+    for i, c in enumerate(TEXTE["caches"], r + 2):
+        rows.append([c["cache"], c["fraktion"], c["gebiet"], c["preis_coin"],
+                     f'=COUNTIFS($A$2:$A${n},A{i},$E$2:$E${n},">0")', c["status"]])
+    write_table(ws, ["Cache", "Fraktion", "Gebiet", "Preis im Hangar (Coin)", "Drops mit Gewicht", "Status"], rows,
+                start_row=r + 1, inputs=("Cache", "Preis im Hangar (Coin)"))
+
+
+def build_hangar(ws):
+    rows = [[h["angebot"], h["art"], h["preis"], h["wirkung"], h["status"]] for h in TEXTE["hangar_shop"]]
+    last = write_table(ws, ["Angebot", "Art", "Preis (Platzhaltercoin)", "Wirkung", "Status"], rows,
+                       [22, 12, 14, 60, 12], inputs=("Angebot", "Art", "Preis (Platzhaltercoin)", "Wirkung"))
+    add_list(ws, ["Cache", "Upgrade"], f"B2:B{last + 10}")
+    ws.cell(row=last + 2, column=1, value="Platzhaltercoin gibt es, wenn kein Lootcache droppt (Blatt Einsatz). "
+            "Credits bleiben die Währung des Shops im Einsatz.").font = BODY_FONT
+
+
+def build_sentinels(ws):
+    weapons = [w["name"] for w in WEAPONS]
+    headers = ["Sentinel", "Fraktion", "Archetyp", "Waffe", "Gewichtsklasse", "Speed", "Lauftempo (Felder/s)",
+               "Integritaet", "Schild", "Integritaet + Schild", "Schildpuls", "Ruestung", "Power", "Modulplaetze",
+               "Schaden/s roh (Waffe x Power)", "Virusschaden je Puls", "Status"]
+    rows = []
+    for i, s in enumerate(TEXTE["sentinels"], 2):
+        rows.append([f"{s['fraktion']} {s['archetyp']} Sentinel", s["fraktion"], s["archetyp"], part_name(s["waffe"]),
+                     f'=IFERROR(INDEX(Waffen!$D:$D,MATCH(D{i},Waffen!$B:$B,0)),"--")', s["speed"],
+                     f"=ROUND(MAX({REG['realtime.move_min']},{REG['realtime.move_base']}+F{i}*{REG['realtime.move_per_spd']}),2)",
+                     s["integritaet"], s["schild"], f"=H{i}+I{i}", s["schildpuls"], s["ruestung"], s["power"],
+                     s["modulplaetze"], f"=ROUND({weapon_dps(f'D{i}', f'M{i}')},1)",
+                     f"=ROUND(J{i}*{VIRUS['anteil']},1)", s["status"]])
+    notes = {"Power": "Eigene, schwächere Power-Wertung: Rohschaden = Waffenschaden x Power / 10 (DROMEs 6-15).",
+             "Waffe": "Echte Waffe aus dem Blatt Waffen -- ein Waffenslot.",
+             "Schaden/s roh (Waffe x Power)": "Schaden/s roh der Waffe (Blatt Waffen) x Power / 10, ohne Fähigkeit.",
+             "Virusschaden je Puls": "Ab Minute 5: Anteil (Blatt Einsatz) x (Integritaet + Schild)."}
+    inputs = ("Fraktion", "Archetyp", "Waffe", "Speed", "Integritaet", "Schild", "Schildpuls", "Ruestung", "Power",
+              "Modulplaetze")
+    last = write_table(ws, headers, rows, [24, 10, 10, 20, 12, 7, 10, 10, 8, 10, 9, 8, 7, 10, 12, 11, 11],
+                       notes=notes, inputs=inputs)
+    add_list(ws, weapons, f"D2:D{last + 10}")
+    add_list(ws, [a["archetyp"] for a in TEXTE["sentinel_archetypen"]], f"C2:C{last + 10}")
+    add_list(ws, [f["kurz"] for f in TEXTE["fraktionen"]], f"B2:B{last + 10}")
+    r = last + 2
+    ws.cell(row=r, column=1, value="Archetypen").font = SUB_FONT
+    rows = [[a["archetyp"], a["aufgabe"], a["verhalten"], a["status"]] for a in TEXTE["sentinel_archetypen"]]
+    last = write_table(ws, ["Archetyp", "Aufgabe", "Verhalten (kommt aus der Waffe)", "Status"], rows, start_row=r + 1)
+    ws.cell(row=last + 1, column=1, value="Tank und Plänkler gibt es bewusst nicht als Sentinel -- die Rollen "
+            "decken die DROMEs ab.").font = BODY_FONT
+    r = last + 3
+    ws.cell(row=r, column=1, value="Varianten (wirken auf die Basic-Werte oben)").font = SUB_FONT
+    rows = [[v["variante"], v["integritaet"], v["schild"], v["power"], v["ruestung"], v["speed"], v["module"],
+             v["herausforderung"], v["status"]] for v in TEXTE["sentinel_varianten"]]
+    write_table(ws, ["Variante", "Integritaet x", "Schild x", "Power x", "Ruestung +", "Speed +", "Modulplaetze +",
+                     "Neue Herausforderung", "Status"], rows, start_row=r + 1,
+                inputs=("Integritaet x", "Schild x", "Power x", "Ruestung +", "Speed +", "Modulplaetze +",
+                        "Neue Herausforderung"))
+    ws.cell(row=r + len(rows) + 2, column=1, value="Regel: eine höhere Variante darf nicht nur mehr Integrität und "
+            "Schaden bedeuten -- jede bringt eine neue taktische Herausforderung.").font = BODY_FONT
+
+
+def build_gegner_dromes(ws):
+    weapons = [w["name"] for w in WEAPONS]
+    headers = ["Gegner-DROME", "Fraktion", "Chassis", "Rolle", "Waffe 1", "Waffe 2", "Speed", "Lauftempo (Felder/s)",
+               "Integritaet", "Schild", "Integritaet + Schild", "Schildpuls", "Ruestung", "Power", "Modulplaetze",
+               "Schaden/s roh (Waffen x Power)", "Virusschaden je Puls", "Aufgabe in der Squad", "Status"]
+    rows = []
+    for i, g in enumerate(TEXTE["gegner_dromes"], 2):
+        w = [part_name(x) for x in g["waffe"].split(" + ")] + [""]
+        role = PARTS[g["chassis"]]["stats"]["ai_role"]
+        rows.append([g["name"], g["fraktion"], drome_name(g["chassis"]), ROLE_NAMES.get(role, role), w[0], w[1],
+                     g["speed"],
+                     f"=ROUND(MAX({REG['realtime.move_min']},{REG['realtime.move_base']}+G{i}*{REG['realtime.move_per_spd']}),2)",
+                     g["integritaet"], g["schild"], f"=I{i}+J{i}", g["schildpuls"], g["ruestung"], g["power"],
+                     g["modulplaetze"], f"=ROUND({weapon_dps(f'E{i}', f'N{i}')}+{weapon_dps(f'F{i}', f'N{i}')},1)",
+                     f"=ROUND(K{i}*{VIRUS['anteil']},1)", g["aufgabe"], g["status"]])
+    notes = {"Speed": "Startwerte = Werte des Chassis (Blatt DROMEs) -- hier frei ausbalancieren.",
+             "Waffe 2": "Nur Molok hat zwei Halter.",
+             "Schaden/s roh (Waffen x Power)": "Summe Schaden/s roh beider Waffen (Blatt Waffen) x Power / 10."}
+    inputs = ("Gegner-DROME", "Fraktion", "Chassis", "Waffe 1", "Waffe 2", "Speed", "Integritaet", "Schild",
+              "Schildpuls", "Ruestung", "Power", "Modulplaetze", "Aufgabe in der Squad")
+    last = write_table(ws, headers, rows, [16, 10, 10, 13, 18, 18, 7, 10, 10, 8, 10, 9, 8, 7, 10, 12, 11, 46, 11],
+                       notes=notes, inputs=inputs)
+    add_list(ws, weapons, f"E2:F{last + 10}")
+    add_list(ws, [drome_name(b["id"]) for b in BODIES], f"C2:C{last + 10}")
+    add_list(ws, [f["kurz"] for f in TEXTE["fraktionen"]], f"B2:B{last + 10}")
+    ws.cell(row=last + 2, column=1, value="Der gegnerische DROME ist der taktische Mittelpunkt: eigene Waffe und "
+            "Passive, aktive Bedrohung, prägt die Spielweise der Squad. Ob besiegte DROMEs freigeschaltet "
+            "werden, ist bewusst offen.").font = BODY_FONT
+
+
+def build_formationen(ws):
+    rows = []
+    for i, f in enumerate(TEXTE["formationen"], 2):
+        rows.append([f["formation"], f["fraktion"], f["welle"], f["dromes"], f["assault"], f["sniper"], f["support"],
+                     f"=SUM(E{i}:G{i})",
+                     f'=H{i}+IF(D{i}="",0,LEN(D{i})-LEN(SUBSTITUTE(D{i},"+",""))+1)',
+                     f["variante"], f["module"], f["text"], f["status"]])
+    notes = {"DROMEs": "Namen aus Blatt Gegner-DROMEs, mehrere mit + verbinden.",
+             "Einheiten gesamt": "Sentinels + DROMEs. Der Spieler hat bis zu 4 DROMEs."}
+    inputs = ("Formation", "Fraktion", "Welle", "DROMEs", "Assault", "Sniper", "Support", "Variante", "Module",
+              "Steigerung")
+    last = write_table(ws, ["Formation", "Fraktion", "Welle", "DROMEs", "Assault", "Sniper", "Support",
+                            "Sentinels gesamt", "Einheiten gesamt", "Variante", "Module", "Steigerung", "Status"],
+                       rows, [20, 10, 7, 26, 8, 8, 8, 10, 10, 11, 22, 36, 11], notes=notes, inputs=inputs)
+    add_list(ws, [v["variante"] for v in TEXTE["sentinel_varianten"]], f"J2:J{last + 10}")
+    ws.cell(row=last + 2, column=1, value="Name und Zusammensetzung sollen schon vor dem Kampf zeigen, welche "
+            "Herausforderung wartet. Stellschrauben: Zahl der Gegner, Zahl der DROMEs (stärkste Eskalation), "
+            "Zusammensetzung, Module, Varianten, Synergien.").font = BODY_FONT
+
+
+def build_design(ws):
+    rows = [[f["name"], f["hex"], "", f["verwendung"], "entschieden"] for f in TEXTE["design_farben"]]
+    last = write_table(ws, ["Farbe", "Hex", "Muster", "Verwendung", "Status"], rows, [20, 11, 9, 80, 12])
+    for i, f in enumerate(TEXTE["design_farben"], 2):
+        ws.cell(row=i, column=3).fill = PatternFill("solid", fgColor=f["hex"].lstrip("#").upper())
+    r = last + 2
+    ws.cell(row=r, column=1, value="Schriften").font = SUB_FONT
+    rows = [[f["schrift"], f["einsatz"], f["groessen"], f["quelle"]] for f in TEXTE["design_schriften"]]
+    last = write_table(ws, ["Schrift", "Einsatz", "Groessen (bei 450 px Breite)", "Quelle"], rows, start_row=r + 1)
+    r = last + 2
+    ws.cell(row=r, column=1, value="Bildschirme").font = SUB_FONT
+    rows = [[b["bildschirm"], b["inhalt"], b["status"]] for b in TEXTE["design_bildschirme"]]
+    last = write_table(ws, ["Bildschirm", "Inhalt", "Status"], rows, start_row=r + 1)
+    r = last + 2
+    ws.cell(row=r, column=1, value="Effekte und Formensprache").font = SUB_FONT
+    rows = [[e["effekt"], e["wirkung"], e["status"]] for e in TEXTE["design_effekte"]]
+    last = write_table(ws, ["Effekt", "Wirkung", "Status"], rows, start_row=r + 1)
+    ws.cell(row=last + 2, column=1, value="Entwuerfe (450 x 800, Hochformat): docs/design/titel_arcade/TitleArcade.dc.html, "
+            "docs/design/spielstand_arcade/SavesArcade.dc.html -- Ordner ausliefern (python3 -m http.server) "
+            "und im Browser oeffnen. Noch nicht gebaut.").font = BODY_FONT
+
+
 SHEETS = [
     ("Uebersicht", "Wie die Tabelle gepflegt wird, Legende", build_uebersicht),
     ("Eckpunkte", "Alle festgehaltenen Entscheidungen mit Datum und Status", build_eckpunkte),
+    ("Einsatz", "NEU (nicht gebaut): Einsatz, Virusschaden, wann ein Lootcache droppt", build_einsatz),
+    ("Lootcaches", "NEU (nicht gebaut): was in welchem Cache steckt -- vom Spieler festgelegt", build_lootcaches),
+    ("Hangar-Shop", "NEU (nicht gebaut): Upgrades und Caches fuer Platzhaltercoin", build_hangar),
+    ("Sentinels", "NEU (nicht gebaut): Gegner-Bots je Fraktion und Archetyp, Varianten", build_sentinels),
+    ("Gegner-DROMEs", "NEU (nicht gebaut): die DROMEs der Gegner-Squads", build_gegner_dromes),
+    ("Formationen", "NEU (nicht gebaut): Gegner-Squads Welle fuer Welle", build_formationen),
+    ("Design", "NEU (nicht gebaut): Arcade-Glitch-Stil -- Farben, Schriften, Titel und Spielstand-Wahl", build_design),
     ("DROMEs", "Die DROMEs: Rolle, Identitaet, Werte, Passive, Level, BIOS, Bauteile", build_dromes),
     ("Waffen", "Alle Waffen: Angriff, Faehigkeit, Takt, Bonus-Wert (Passive), Besonderheit", build_waffen),
     ("Passiven", "Alle Passiven: DROMEs, Waffen-Bonus, Chassis-BIOS, Fraktions-Vorschlaege", build_passiven),
@@ -844,10 +1079,10 @@ SHEETS = [
     ("Stages", "Gebiete / Stages mit Fraktion und Boden", build_stages),
     ("Story", "Aufhaenger, Story-Level, Bosse (Vorschlaege)", build_story),
     ("Gegnertypen", "Sturm, Schuetzen, Bollwerk, Kontrolle, Gemischt", build_gegnertypen),
-    ("Gegnerteams", "Alle handverlesenen Teams, je DROME eine Zeile", build_teams),
-    ("Einheiten", "Alle benannten Einheiten und wo sie auftreten", build_einheiten),
+    ("Gegnerteams", "Heute gebaut (symmetrisch): alle Teams, je DROME eine Zeile -- abgeloest durch Formationen", build_teams),
+    ("Einheiten", "Heute gebaut: alle benannten Einheiten und wo sie auftreten", build_einheiten),
     ("Rollen", "KI-Rollen und Zielregeln", build_rollen),
-    ("Lauf", "Der Lauf Runde fuer Runde, Stufen und Beute", build_lauf),
+    ("Lauf", "Heute gebaut: der Lauf Runde fuer Runde, Stufen und Beute -- abgeloest durch Einsatz", build_lauf),
     ("Level", "Level von DROMEs und Waffen", build_level),
     ("Regeln", "Alle Stellschrauben aus config.json und modules.json", build_regeln),
     ("Teile", "Alle Bauteile mit Code", build_teile),
@@ -863,8 +1098,9 @@ def build():
     sheets = {name: sheet(wb, name) for name, _, _ in SHEETS}
     # Regeln zuerst fuellen: die Formeln der anderen Blaetter zeigen darauf.
     build_regeln(sheets["Regeln"])
+    build_einsatz(sheets["Einsatz"])
     for name, _, fn in SHEETS:
-        if fn is not build_regeln:
+        if fn not in (build_regeln, build_einsatz):
             fn(sheets[name])
     wb.calculation.fullCalcOnLoad = True
     return wb
