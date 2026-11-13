@@ -28,6 +28,10 @@ Neuer Grafikstil **Arcade-Glitch** (Synthwave, Bungee + Chakra Petch, Gelb/
 Cyan/Magenta auf Nachtschwarz) mit neuem **Titelbildschirm** vor der
 Spielstand-Wahl: Entwuerfe in `docs/design/`, Werte im SPOT-Blatt Design.
 Titel und Spielstand-Wahl sind GEBAUT (13. Nov.), der Rest noch nicht.
+**Bauplan:** 1 Sentinels (+ neue Waffe Nano-Strahl), 2 Formationen, 3 Einsatz
+(Wellen, Virus), 4 Lootcaches, 5 Hangar-Shop, 6 Sentinel-Designs, 7 Arcade-Stil
+fuer die uebrigen Bildschirme (macht der Spieler gerade). Vor 1-3: SPOT-Blatt
+**Fragen** -- erst bauen, wenn der Spieler die Spalte Antwort gefuellt hat.
 
 ## SPOT-Tabelle (Vorgabe des Spielers, 12. Nov. 2026)
 

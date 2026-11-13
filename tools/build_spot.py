@@ -1016,6 +1016,17 @@ def build_gegner_dromes(ws):
             "werden, ist bewusst offen.").font = BODY_FONT
 
 
+def build_fragen(ws):
+    rows = [[i, f["schritt"], f["thema"], f["frage"], f["vorschlag"], "", ""]
+            for i, f in enumerate(TEXTE["fragen"], 1)]
+    notes = {"Antwort": "ok = Vorschlag übernehmen. Sonst deine Entscheidung in eigenen Worten.",
+             "Vorschlag (Claude)": "Empfehlung von Claude -- nicht entschieden."}
+    last = write_table(ws, ["Nr.", "Schritt", "Thema", "Frage", "Vorschlag (Claude)", "Antwort", "Notiz"], rows,
+                       [6, 18, 18, 55, 60, 40, 30], notes=notes, inputs=("Antwort", "Notiz"))
+    ws.cell(row=last + 2, column=1, value="Detailfragen für die Bauschritte 1 Sentinels (mit Heilstrahl), "
+            "2 Formationen, 3 Einsatz. Hellblau ausfüllen: 'ok' übernimmt den Vorschlag.").font = BODY_FONT
+
+
 def build_formationen(ws):
     rows = []
     for i, f in enumerate(TEXTE["formationen"], 2):
@@ -1061,6 +1072,7 @@ def build_design(ws):
 SHEETS = [
     ("Uebersicht", "Wie die Tabelle gepflegt wird, Legende", build_uebersicht),
     ("Eckpunkte", "Alle festgehaltenen Entscheidungen mit Datum und Status", build_eckpunkte),
+    ("Fragen", "OFFEN: Detailfragen fuer die Schritte 1-3 (Sentinels, Heilstrahl, Formationen, Einsatz) -- Antwort ausfuellen", build_fragen),
     ("Einsatz", "NEU (nicht gebaut): Einsatz, Virusschaden, wann ein Lootcache droppt", build_einsatz),
     ("Lootcaches", "NEU (nicht gebaut): was in welchem Cache steckt -- vom Spieler festgelegt", build_lootcaches),
     ("Hangar-Shop", "NEU (nicht gebaut): Upgrades und Caches fuer Platzhaltercoin", build_hangar),
