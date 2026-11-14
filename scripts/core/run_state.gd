@@ -209,7 +209,8 @@ static func tier_cfg(which: int) -> Dictionary:
 # Spielstand (10. Nov. 2026): der Lauf uebersteht Neuladen
 # ---------------------------------------------------------------------------
 
-const SAVE_VERSION := 2
+## 3 seit 14. Nov. 2026: Kampfkarte mit Pfaden und Formationen.
+const SAVE_VERSION := 3
 
 ## Alles, was den Lauf ausmacht, als JSON-taugliches Woerterbuch. Die Gegner
 ## stehen nicht drin: sie entstehen aus Seed, Runde und Gebiet neu und sind
@@ -428,8 +429,9 @@ func enemy_power(which: int = -1) -> float:
 
 
 ## Die Gegner eines Knotens dieser Runde (ohne Angabe: des gewaehlten) --
-## dieselben in Vorschau und Kampf. Ein handverlesenes Team (Encounters) mit
-## Leveln und Modulen nach Runde und Stufe; nur der Chaos-Knoten wuerfelt.
+## dieselben in Vorschau und Kampf. Seit 14. Nov. 2026 eine Formation
+## (DROMEs + Sentinels) nach Reinforcement-Level und Stufe; nur der
+## Chaos-Knoten wuerfelt.
 func enemies(index: int = -1) -> Array:
 	if index < 0:
 		index = node
@@ -445,11 +447,24 @@ func enemies(index: int = -1) -> Array:
 			foes = EnemyGenerator.new(battle_seed(index)).generate(enemy_count(which), enemy_power(which))
 			_arm_chaos(foes, which, index)
 		else:
-			var entry := Encounters.team(str(info["team"]))
-			foes = Encounters.build(entry, enemy_count(which))
-			_arm_team(foes, which, entry)
+			var entry := Formations.formation(str(info["team"]))
+			foes = Formations.build(entry, reinforcement(), TIER_KEYS[which], battle_seed(index))
+			_apply_levels(foes.filter(func(b): return not b.is_sentinel()), which)
 		_enemy_cache[key] = foes
 	return _enemy_cache[key]
+
+
+## Das Reinforcement-Level (SPOT-Blatt Fragen 44): steigt nach jedem Kampf,
+## je gewaehltem Elite-Kampf um reinforcement.elite_bonus mehr. Im
+## Infinity-Einsatz langsamer (endless_rate je Kampf).
+func reinforcement(for_round: int = -1) -> int:
+	if for_round < 0:
+		for_round = round
+	var settings := Formations.reinforcement_cfg()
+	var bonus := int(settings.get("elite_bonus", 1)) * elites_chosen(for_round)
+	if is_endless():
+		return 1 + int(float(for_round - 1) * float(settings.get("endless_rate", 0.6))) + bonus
+	return for_round + bonus
 
 
 ## Wie viele Module jeder Gegner dieser Runde und Stufe traegt (6i):
@@ -505,29 +520,6 @@ func _apply_levels(foes: Array, which: int) -> void:
 		for slot in build.equip_slots():
 			if build.part_in(slot) != null and levels["weapon"] > 0:
 				build.weapon_levels[slot] = levels["weapon"]
-
-
-## Ein handverlesenes Team bekommt Level und Module nach Runde und Stufe. Die
-## Module stehen im Team (Encounters.modules_for): die ersten der Liste, ab
-## enemy_modules.recipe_from_round und zwei Plaetzen vorn das Rezept. Alles
-## in den Halter der ersten Waffe.
-func _arm_team(foes: Array, which: int, entry: Dictionary) -> void:
-	_apply_levels(foes, which)
-	var count := enemy_module_count(which)
-	if count <= 0:
-		return
-	var settings: Dictionary = cfg().get("enemy_modules", {})
-	var with_recipe := round >= int(settings.get("recipe_from_round", 5))
-	var dromes: Array = entry.get("dromes", [])
-	for i in mini(foes.size(), dromes.size()):
-		var build: DromeBuild = foes[i]
-		var slot := Encounters.first_weapon_slot(build)
-		if slot == "":
-			continue
-		var picked := Encounters.modules_for(dromes[i], build,
-			mini(count, ModuleData.slots_for(build)), with_recipe)
-		if not picked.is_empty():
-			build.modules[slot] = picked
 
 
 ## Chaos-Kampf (nur Endlos-Modus): gewuerfelte Gegner tragen gewuerfelte
@@ -594,12 +586,12 @@ func preview(index: int = -1) -> Dictionary:
 	conditions["own_power"] = DromeBuild.squad_power(squad)
 	conditions["reward_text"] = str(tier_cfg(which).get("reward_text", ""))
 	conditions["chaos"] = chaos
-	var entry := Encounters.team(str(info.get("team", "")))
-	var kind := Encounters.type_info(str(entry.get("type", "")))
+	var entry := Formations.formation(str(info.get("team", "")))
 	conditions["team"] = str(entry.get("name", ""))
-	conditions["team_text"] = str(entry.get("text", ""))
-	conditions["type"] = str(kind["name"]) if not entry.is_empty() else ""
-	conditions["type_hint"] = str(kind["hint"]) if not entry.is_empty() else ""
+	conditions["team_text"] = str(entry.get("idea", ""))
+	conditions["type"] = ""
+	conditions["type_hint"] = ""
+	conditions["reinforcement"] = reinforcement()
 	if chaos:
 		conditions["reward_text"] = "Chaos: Beute wie bei Elite, mehr Credits -- Gegner unbekannt"
 	var own_faction := faction()
@@ -616,7 +608,7 @@ func choose_tier(which: int) -> bool:
 	if phase != Phase.PREPARE:
 		return false
 	var nodes := row()
-	for i in nodes.size():
+	for i in available_nodes():
 		if int(nodes[i]["tier"]) == which and not bool(nodes[i]["chaos"]):
 			return choose_node(i)
 	return false
@@ -788,26 +780,20 @@ func elites_chosen(before_round: int = -1) -> int:
 	return count
 
 
-## Die Knoten einer Runde (Vorgabe des Spielers, 10. Nov. 2026):
+## Die Kampfkarte (14. Nov. 2026, SPOT-Blatt Fragen 34/43): FTL-artig mit
+## festen Pfaden. Jede Runde ist eine Reihe von Knoten; von einem Knoten
+## fuehren Wege nur zu bestimmten Knoten der naechsten Reihe. Anfangs gabelt
+## sich der Weg fast nach jedem Kampf, spaeter werden es Korridore. Der
+## letzte Kampf eines Einsatzes ist ein einzelner Elite-Knoten (der
+## schwerste Kampf).
 ##
-##   immer   ein LEICHTER Kampf
-##   dazu    zwei NORMALE mit verschiedenen Gegnertypen
-##           ODER ein Normaler und ein ELITE
-##   Endlos  ab und zu obendrauf ein CHAOS-Kampf (gewuerfelte Gegner)
-##
-## Ein Elite-Knoten kommt mit run.map.elite_chance, je vorher gewaehltem
-## Elite um elite_bonus oefter (hoechstens elite_cap) -- wer das Risiko
-## sucht, bekommt mehr davon. Alle Knoten der Reihe stehen zur Wahl.
-##
-## Je Knoten {tier, chaos, team}. Aus Lauf-Seed, Runde und der Zahl der
-## bisher gewaehlten Elite -- dieselbe Reihe nach dem Laden. ``elites`` < 0:
-## nach dem bisherigen Verlauf.
-func row(for_round: int = -1, elites: int = -1) -> Array:
+## Je Knoten {tier, chaos, team (Formations-Id)}. Aus Einsatz-Seed und
+## Runde -- dieselbe Karte nach dem Laden. ``elites`` bleibt fuer alte
+## Aufrufer, die Karte haengt nicht mehr davon ab.
+func row(for_round: int = -1, _elites: int = -1) -> Array:
 	if for_round < 0:
 		for_round = round
-	if elites < 0:
-		elites = elites_chosen(for_round)
-	var key := "%d:%d" % [for_round, elites]
+	var key := "%d" % for_round
 	if _row_cache.has(key):
 		return _row_cache[key]
 	var settings: Dictionary = cfg().get("map", {})
@@ -816,60 +802,135 @@ func row(for_round: int = -1, elites: int = -1) -> Array:
 	var training := is_training(for_round)
 	var nodes: Array = []
 	var used: Array = []
-	var easy := _pick_team(rng, for_round, Tier.EASY, training, used, "")
-	nodes.append({"tier": Tier.EASY, "chaos": false, "team": easy})
-	var first := _pick_team(rng, for_round, Tier.NORMAL, training, used, "")
-	nodes.append({"tier": Tier.NORMAL, "chaos": false, "team": first})
-	# Beide Wuerfe immer ziehen, damit die Folge nicht von der Elite-Zahl abhaengt.
-	var elite_roll := rng.randf()
-	var chaos_roll := rng.randf()
-	var chance := minf(float(settings.get("elite_cap", 0.85)),
-		float(settings.get("elite_chance", 0.35)) + float(settings.get("elite_bonus", 0.12)) * float(elites))
-	if elite_roll < chance and not training:
-		nodes.append({"tier": Tier.ELITE, "chaos": false,
-			"team": _pick_team(rng, for_round, Tier.ELITE, training, used, "")})
-	else:
-		var first_type := str(Encounters.team(first).get("type", ""))
-		nodes.append({"tier": Tier.NORMAL, "chaos": false,
-			"team": _pick_team(rng, for_round, Tier.NORMAL, training, used, first_type)})
-	if is_endless() and for_round >= 2 and chaos_roll < float(endless_cfg().get("chaos_chance", 0.25)):
-		nodes.append({"tier": Tier.NORMAL, "chaos": true, "team": ""})
+	var size := row_size(for_round)
+	var finale := not is_endless() and for_round >= rounds_total()
+	for i in size:
+		var which := Tier.NORMAL
+		var roll := rng.randf()
+		if finale:
+			which = Tier.ELITE
+		elif roll < float(settings.get("easy_share", 0.3)):
+			which = Tier.EASY
+		elif roll > 1.0 - float(settings.get("elite_share", 0.22)) and not training \
+				and for_round >= int(settings.get("elite_from", 3)):
+			which = Tier.ELITE
+		nodes.append({"tier": which, "chaos": false,
+			"team": _pick_formation(rng, for_round, training, used)})
+	# Nie nur Elite: ein Knoten der Reihe bleibt machbar.
+	if not finale and nodes.all(func(n): return int(n["tier"]) == Tier.ELITE):
+		nodes[0]["tier"] = Tier.NORMAL
+	if is_endless() and for_round >= 2 and size >= 2 \
+			and rng.randf() < float(endless_cfg().get("chaos_chance", 0.25)):
+		nodes[size - 1] = {"tier": Tier.NORMAL, "chaos": true, "team": ""}
 	_row_cache[key] = nodes
 	return nodes
 
 
-## Ein Team fuer einen Knoten: aus den Teams, die in Runde und Stufe duerfen,
-## keines doppelt in der Reihe, und wenn moeglich nicht vom Typ ``avoid_type``
-## (der zweite Normal-Knoten soll ein anderer Gegnertyp sein).
-func _pick_team(rng: RandomNumberGenerator, for_round: int, which: int, training: bool,
-		used: Array, avoid_type: String) -> String:
-	var pool := Encounters.pool(region_id, for_round, TIER_KEYS[which], training)
+## Wie viele Knoten eine Reihe hat: am Anfang drei, spaeter zwei, im
+## letzten Kampf einer.
+func row_size(for_round: int) -> int:
+	if not is_endless() and for_round >= rounds_total():
+		return 1
+	var rng := RandomNumberGenerator.new()
+	rng.seed = absi(hash([run_seed, "breite", for_round]))
+	var settings: Dictionary = cfg().get("map", {})
+	if for_round <= int(settings.get("wide_until", 3)):
+		return 3
+	return 2 + (1 if rng.randf() < float(settings.get("wide_chance", 0.4)) else 0)
+
+
+## Die Wege von Reihe ``for_round`` zur naechsten: je Knoten die Indizes der
+## erreichbaren Knoten. Bis map.forks_until gabelt sich jeder Weg (zwei
+## Ziele, wo moeglich), danach meist nur einer (Korridor). Jeder Knoten der
+## naechsten Reihe ist von mindestens einem erreichbar.
+func links(for_round: int) -> Array:
+	var here := row_size(for_round)
+	var next_size := row_size(for_round + 1)
+	var settings: Dictionary = cfg().get("map", {})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = absi(hash([run_seed, "pfad", for_round]))
+	var forks := for_round <= int(settings.get("forks_until", 4))
+	var fork_chance := 0.85 if forks else float(settings.get("late_fork_chance", 0.25))
+	var out: Array = []
+	var reached := {}
+	for i in here:
+		var center := int(round(float(i) * float(next_size - 1) / float(maxi(1, here - 1)))) \
+			if here > 1 else next_size / 2
+		var targets: Array = [center]
+		if next_size > 1 and rng.randf() < fork_chance:
+			var side := center + (1 if rng.randf() < 0.5 else -1)
+			if side < 0 or side >= next_size:
+				side = center - (side - center)
+			if side >= 0 and side < next_size and side != center:
+				targets.append(side)
+		targets.sort()
+		for j in targets:
+			reached[j] = true
+		out.append(targets)
+	# Waisen der naechsten Reihe an den naechstgelegenen Knoten haengen.
+	for j in next_size:
+		if reached.has(j):
+			continue
+		var best := 0
+		var best_gap := 999.0
+		for i in here:
+			var at := float(i) * float(next_size - 1) / float(maxi(1, here - 1)) if here > 1 else 0.0
+			if absf(at - float(j)) < best_gap:
+				best_gap = absf(at - float(j))
+				best = i
+		(out[best] as Array).append(j)
+		(out[best] as Array).sort()
+	return out
+
+
+## Eine Formation fuer einen Knoten: aus den Formationen des Gebiets, die
+## beim Reinforcement-Level dieser Runde schon auftauchen duerfen, keine
+## doppelt in der Reihe. In den ersten Kaempfen (run.training_rounds) nur
+## Einfuehrungen (intro).
+func _pick_formation(rng: RandomNumberGenerator, for_round: int, training: bool,
+		used: Array) -> String:
+	var level := for_round if not is_endless() else reinforcement(for_round)
+	var pool := Formations.of_region(region_id).filter(func(f):
+		return Formations.first_level(f) <= level and (not training or bool(f.get("intro", false))))
+	if pool.is_empty():
+		pool = Formations.of_region(region_id)
 	var roll := rng.randi()
-	var fresh := pool.filter(func(t): return not used.has(str(t.get("id", ""))))
+	var fresh := pool.filter(func(f): return not used.has(str(f.get("id", ""))))
 	if fresh.is_empty():
 		fresh = pool
-	var other := fresh.filter(func(t): return avoid_type == "" or str(t.get("type", "")) != avoid_type)
-	if not other.is_empty():
-		fresh = other
 	if fresh.is_empty():
 		return ""
-	var team_id := str(fresh[roll % fresh.size()].get("id", ""))
-	used.append(team_id)
-	return team_id
+	var formation_id := str(fresh[roll % fresh.size()].get("id", ""))
+	used.append(formation_id)
+	return formation_id
 
 
-## Die Reihe der naechsten Runde, wie sie kaeme, wenn man jetzt den gewaehlten
-## Knoten nimmt -- die Vorausschau. Leer nach dem letzten Kampf.
+## Die naechste Reihe der Karte -- die Vorausschau. Leer nach dem letzten Kampf.
 func next_row() -> Array:
 	if is_last_round():
 		return []
-	var more := 1 if node_tier() == Tier.ELITE and not is_chaos() else 0
-	return row(round + 1, elites_chosen(round) + more)
+	return row(round + 1)
 
 
-## Alle Knoten der Reihe stehen zur Wahl.
+## Der Knoten, ueber den man in diese Runde kam (-1 in der ersten Runde).
+func came_from() -> int:
+	for k in range(history.size() - 1, -1, -1):
+		if int(history[k].get("round", 0)) == round - 1:
+			return int(history[k].get("node", -1))
+	return -1
+
+
+## Die Knoten, die von hier aus erreichbar sind: in der ersten Runde alle,
+## danach nur die Wege vom Knoten des letzten Kampfs (feste Pfade).
 func available_nodes() -> Array:
-	return range(row().size())
+	var size := row().size()
+	var from := came_from()
+	if round <= 1 or from < 0:
+		return range(size)
+	var paths := links(round - 1)
+	if from >= paths.size():
+		return range(size)
+	return (paths[from] as Array).filter(func(j): return j < size)
 
 
 ## Waehlt einen Knoten; seine Stufe wird die des Kampfes.
@@ -881,14 +942,15 @@ func choose_node(index: int) -> bool:
 	return true
 
 
-## Vorwahl: der erste Normal-Knoten.
+## Vorwahl: der erste erreichbare Normal-Knoten, sonst der erste erreichbare.
 func _pick_default_node() -> void:
 	var nodes := row()
-	if nodes.is_empty():
+	var open := available_nodes()
+	if nodes.is_empty() or open.is_empty():
 		node = -1
 		return
-	var pick := 0
-	for i in nodes.size():
+	var pick: int = open[0]
+	for i in open:
 		if int(nodes[i]["tier"]) == Tier.NORMAL and not bool(nodes[i]["chaos"]):
 			pick = i
 			break

@@ -238,8 +238,17 @@ func _show_setup() -> void:
 
 
 func _show_prepare(run: RunState) -> void:
-	_side.add_child(_label("Wähle deinen Gegner", 22, COLOR_HEADING))
-	# Die Knoten dieser Runde, darunter die Reihe, die danach kaeme.
+	var head := HBoxContainer.new()
+	var title := _label("WÄHLE DEINEN WEG", 14, COLOR_HEADING)
+	title.add_theme_font_override("font", Arcade.font("bold", 14, 0.14))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	if not run.is_chaos():
+		head.add_child(_chip("Reinforcement %d" % run.reinforcement(), UiKit.MAGENTA, Callable(),
+			"Steigt nach jedem Kampf, nach Elite-Kämpfen schneller. Je höher, desto "
+			+ "mehr und stärkere Gegner."))
+	_side.add_child(head)
+	# Die Kampfkarte mit festen Wegen (14. Nov. 2026).
 	var map := MapView.new(run)
 	map.picked.connect(func(index: int):
 		if run.choose_node(index):
@@ -256,41 +265,40 @@ func _show_prepare(run: RunState) -> void:
 	panel.add_child(box)
 	_side.add_child(panel)
 
-	# Wer: Stufe, Team und Gegnertyp -- der Typ sagt, was auf einen zukommt.
 	var tier_color: Color = MapView.CHAOS_COLOR if chaos else MapView.COLOR.get(run.tier, Color.WHITE)
 	if chaos:
-		box.add_child(_label("CHAOS-Kampf", 20, tier_color))
+		box.add_child(_label("CHAOS-KAMPF", 18, tier_color))
 		box.add_child(_label("Der Virus würfelt alles: DROMEs, Waffen, Module. Gegner erst im "
-			+ "Kampf zu sehen.", 14, COLOR_MUTED))
+			+ "Kampf zu sehen.", 13, COLOR_MUTED))
 	else:
-		box.add_child(_label("%s  ·  %s" % [RunState.TIER_NAMES[run.tier], info["team"]], 20, tier_color))
-		if str(info.get("type", "")) != "":
-			box.add_child(_label("Gegnertyp: %s" % info["type"], 16, COLOR_WARN))
+		var name := _label("%s  ·  %s" % [RunState.TIER_NAMES[run.tier], info["team"]], 18, tier_color)
+		name.add_theme_font_override("font", Arcade.font("bold", 18, 0.03))
+		box.add_child(name)
 		if str(info.get("team_text", "")) != "":
-			box.add_child(_label(str(info["team_text"]), 14))
-		if str(info.get("type_hint", "")) != "":
-			box.add_child(_label(str(info["type_hint"]), 14, COLOR_MUTED))
-	var where := str(info["region"])
-	if str(info.get("faction", "")) != "" and not chaos:
-		where += "  ·  %s" % info["faction"]
-	box.add_child(_label(where, 14, COLOR_MUTED))
+			box.add_child(_label(str(info["team_text"]), 13, COLOR_MUTED))
+		# Die Einheiten der Formation als Kacheln -- antippen zeigt die Werte.
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 6)
+		flow.add_theme_constant_override("v_separation", 6)
+		box.add_child(flow)
+		var foes: Array = info["enemy_builds"]
+		for k in foes.size():
+			flow.add_child(_enemy_tile(foes[k], k))
 
 	var own := float(info["own_power"])
 	var foe := float(info["enemy_power"])
 	var ratio := own / maxf(1.0, foe)
-	var verdict := "ueberlegen" if ratio >= 1.1 else ("ausgeglichen" if ratio >= 0.9 else "unterlegen")
+	var verdict := "überlegen" if ratio >= 1.1 else ("ausgeglichen" if ratio >= 0.9 else "unterlegen")
 	var color := COLOR_GOOD if ratio >= 1.1 else (COLOR_WARN if ratio >= 0.9 else COLOR_BAD)
+	var line := HBoxContainer.new()
+	box.add_child(line)
 	if chaos:
-		box.add_child(_label("Kampfwert: du %d  ·  Gegner ???" % int(own), 16, COLOR_WARN))
+		line.add_child(_flow_label("Kampfwert: du %d  ·  Gegner ???" % int(own), 14, COLOR_WARN))
 	else:
-		box.add_child(_label("Kampfwert: du %d  ·  Gegner %d  (%s)" % [int(own), int(foe), verdict],
-			16, color))
-	box.add_child(_label("Beute: %s" % info["reward_text"], 14,
+		line.add_child(_flow_label("Kampfwert: du %d · Gegner %d · %s" % [int(own), int(foe), verdict],
+			14, color))
+	box.add_child(_label("Beute: %s" % info["reward_text"], 13,
 		COLOR_WARN if run.tier == RunState.Tier.ELITE or chaos else COLOR_MUTED))
-
-	if not chaos:
-		for build in info["enemy_builds"]:
-			box.add_child(SquadPicker.drome_card(build))
 
 	var start := _big_button("Kampf starten")
 	start.pressed.connect(func():
@@ -302,13 +310,62 @@ func _show_prepare(run: RunState) -> void:
 	var abandon := Button.new()
 	abandon.text = "Aussteigen und Beute behalten" if run.is_endless() else "Einsatz aufgeben"
 	abandon.flat = true
-	abandon.custom_minimum_size = Vector2(0, 44)
+	abandon.custom_minimum_size = Vector2(0, 40)
+	abandon.add_theme_color_override("font_color", COLOR_MUTED)
 	abandon.pressed.connect(func():
-		run.abandon()
-		GameState.deliver_run_home()
-		GameState.run = null
-		_refresh())
+		InfoPopup.open(self, "Einsatz aufgeben?", {"lines": ["Module und Credits verfallen. "
+			+ "Erfahrung und Beute in der Tasche nimmst du mit."],
+			"actions": [{"text": "Aufgeben", "call": func():
+				run.abandon()
+				GameState.deliver_run_home()
+				GameState.run = null
+				_refresh()}, {"text": "Weiterkämpfen", "primary": true}]}))
 	_side.add_child(abandon)
+
+
+## Eine Gegner-Kachel: DROMEs gross, Sentinels klein mit Rang-Kuerzel.
+## Antippen zeigt Werte, Waffe und Module.
+func _enemy_tile(build: DromeBuild, index: int) -> Control:
+	var sentinel := build.is_sentinel()
+	var edge := 40.0 if sentinel else 52.0
+	var tile := Tile.new("foe:%d:%s" % [index, build.display_name], UiKit.drome_view(build, edge),
+		"", Vector2(68 if sentinel else 76, 66 if sentinel else 74))
+	tile.accent = UiKit.BAD
+	tile.glow = not sentinel
+	var tag: String = {"elite": "E", "heavy": "H", "heavy_elite": "HE"}.get(build.rank, "")
+	var short: String = ({"assault": "Assault", "sniper": "Sniper", "support": "Support"}.get(build.archetype, "")
+		if sentinel else build.display_name.split(" ")[-1])
+	tile.add_caption("%s%s" % [short, (" " + tag) if tag != "" else ""],
+		COLOR_WARN if tag != "" else UiKit.TEXT, 10 if sentinel else 11)
+	tile.on_info = func(): _enemy_popup(build)
+	return tile
+
+
+func _enemy_popup(build: DromeBuild) -> void:
+	var stats := build.stats()
+	var lines: Array = []
+	if build.is_sentinel():
+		lines.append(["Sentinel · %s · %s" % [
+			{"assault": "Assault", "sniper": "Sniper", "support": "Support"}.get(build.archetype, ""),
+			{"basic": "Basic", "elite": "Elite", "heavy": "Heavy", "heavy_elite": "Heavy Elite"}.get(build.rank, "")],
+			COLOR_MUTED, UiKit.SMALL])
+		lines.append(["Nur Auto-Angriff, keine Passive.", COLOR_MUTED, UiKit.SMALL])
+	lines.append("Integrität %d  ·  Schild %d  ·  Rüstung %d" % [int(stats["hp_max"]),
+		int(stats["shield_max"]), int(stats["def"])])
+	lines.append("Speed %d  ·  Power %d  ·  Kampfwert %d" % [int(stats["spd"]), int(stats["power"]),
+		int(build.power_score())])
+	for part in build.equipment():
+		lines.append(["Waffe: %s" % part.display_name, COLOR_HEADING])
+	var names: Array = []
+	for slot in build.modules:
+		for module_id in build.modules[slot]:
+			var module := ModuleData.get_module(module_id)
+			if module != null:
+				names.append(module.display_name)
+	if not names.is_empty():
+		lines.append(["Module: %s" % ", ".join(names), COLOR_GOOD])
+	InfoPopup.open(self, build.display_name, {"picture": UiKit.drome_view(build, 64),
+		"lines": lines})
 
 
 ## "+10 Credits fuer den Sieg  ·  jetzt 24"

@@ -55,12 +55,15 @@
     "rounds": 8,
     "map": {
       "_kommentar": [
-        "Die Reihe der Runde (RunState.row): immer ein Leichter, dazu zwei Normale mit",
-        "verschiedenen Gegnertypen ODER ein Normaler und ein Elite. Elite kommt mit",
-        "elite_chance, je vorher gewaehltem Elite um elite_bonus oefter, hoechstens",
-        "elite_cap. chaos_credits: Credit-Faktor im Chaos-Kampf (nur Endlos-Modus)."
+        "Kampfkarte (14. Nov. 2026, FTL-artig, RunState.row/links): je Runde eine Reihe,",
+        "feste Wege zur naechsten. Bis wide_until drei Knoten, danach zwei (mit wide_chance",
+        "drei), der letzte Kampf ein einzelner Elite-Knoten. Bis forks_until gabelt sich",
+        "fast jeder Weg, danach mit late_fork_chance (Korridore). Stufe je Knoten:",
+        "easy_share Leicht, elite_share Elite (ab elite_from, nicht im Training), sonst",
+        "Normal. chaos_credits: Credit-Faktor im Chaos-Kampf (nur Infinity-Einsatz)."
       ],
-      "elite_chance": 0.35, "elite_bonus": 0.12, "elite_cap": 0.85, "chaos_credits": 1.5
+      "wide_until": 3, "wide_chance": 0.4, "forks_until": 4, "late_fork_chance": 0.25,
+      "easy_share": 0.3, "elite_share": 0.22, "elite_from": 3, "chaos_credits": 1.5
     },
     "training_rounds": 2,
     "endless": {

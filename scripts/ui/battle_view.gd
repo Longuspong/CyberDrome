@@ -289,8 +289,15 @@ class UnitBadgePainter extends Node2D:
 		var width := WIDTH * s
 		var height := HEIGHT * s * (0.7 if level == "far" else 1.0)
 		var takt_rows: int = 0 if level == "far" else (entry.get("takt", []) as Array).size()
+		var base := BASE_Y
+		# Sentinels: kleiner Balken, naeher an der kleineren Figur.
+		if entry.get("small", false):
+			width *= 0.6
+			height *= 0.75
+			base *= 0.62
+			takt_rows = 0
 		var total := height + float(takt_rows) * (TAKT_HEIGHT + TAKT_GAP) * s
-		var top := center.y + BASE_Y - height
+		var top := center.y + base - height
 		return {"s": s, "width": width, "height": height, "center": center,
 			"rect": Rect2(center.x - width * 0.5, top, width, total)}
 
@@ -382,7 +389,7 @@ class UnitBadgePainter extends Node2D:
 		var width: float = box["width"]
 		var height: float = box["height"]
 		var left := center.x - width * 0.5
-		var top := center.y + BASE_Y - height - lift
+		var top := center.y + (BASE_Y * 0.62 if entry.get("small", false) else BASE_Y) - height - lift
 
 		var parts := split(int(entry.get("hp", 0)), int(entry.get("hp_max", 0)),
 			int(entry.get("shield", 0)), int(entry.get("shield_max", 0)))

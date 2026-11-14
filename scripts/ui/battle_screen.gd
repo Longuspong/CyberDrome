@@ -272,6 +272,7 @@ func _refresh_badges() -> void:
 			"id": unit.unit_id,
 			"statuses": unit.statuses.keys(),
 			"focus": unit.unit_id == _focus_id and Time.get_ticks_msec() < _focus_until,
+			"small": unit.is_sentinel(),
 		})
 	view.show_unit_badges(entries)
 

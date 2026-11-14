@@ -88,7 +88,7 @@ func test_loot_is_rolled_without_a_choice() -> void:
 		t.ok(not run.last_loot.is_empty(), "es gibt Beute")
 		var item: Dictionary = run.last_loot[0]
 		kinds[item["kind"]] = true
-		var win := int(RunState.tier_cfg(RunState.Tier.NORMAL).get("credits", 0))
+		var win := int(RunState.tier_cfg(run.history[-1]["tier"]).get("credits", 0))
 		if item["kind"] == "part":
 			t.equal(item["part_id"], &"eq_deflector", "das Teil kommt aus der Gegnerausrüstung")
 			t.equal(run.bag, [&"eq_deflector"], "und liegt in der Tasche")
@@ -402,7 +402,8 @@ func test_enemies_level_up_with_round_and_tier() -> void:
 	var run := _run_with_tier(RunState.Tier.ELITE, 44, RunState.rounds_total())
 	var late := run.enemy_levels(RunState.Tier.ELITE)
 	t.ok(late["drome"] > 0 and late["weapon"] > late["drome"], "spät Elite: DROME und Waffen gelevelt")
-	for build in run.enemies():
+	# Sentinels haben kein Level (SPOT-Blatt Fragen 5) -- nur die DROMEs.
+	for build in run.enemies().filter(func(b): return not b.is_sentinel()):
 		t.equal(build.drome_level, late["drome"], "%s trägt das DROME-Level" % build.display_name)
 		for slot in build.equip_slots():
 			if build.part_in(slot) != null:
@@ -444,24 +445,28 @@ func test_every_region_has_a_faction_with_a_profile() -> void:
 		t.equal(info["faction"], faction["name"], "die Vorschau nennt sie")
 
 
-func test_the_mega_mechas_bring_more_moloks_than_the_ninjas() -> void:
-	var mechas: Dictionary = _faction_counts(&"plant7")
-	var ninjas: Dictionary = _faction_counts(&"city")
-	# Handverlesene Teams (data/encounters.json): die Festung bringt schwere
-	# Rahmen (Molok + Strix), die Kaempfer Vireos mit Klingen.
-	var heavy := func(counts: Dictionary) -> int:
-		return int(counts.get(&"jugg_body", 0)) + int(counts.get(&"strix_body", 0))
-	var mech_heavy: int = heavy.call(mechas["bodies"])
-	var ninja_heavy: int = heavy.call(ninjas["bodies"])
-	var ninja_vireos := int(ninjas["bodies"].get(&"scout_body", 0))
-	t.note("Chassis Mega Mechas %s, Neon Ninja's %s" % [mechas["bodies"], ninjas["bodies"]])
-	t.ok(mech_heavy > ninja_heavy * 1.3, "Festung: deutlich mehr schwere Rahmen (%d gegen %d)" % [mech_heavy, ninja_heavy])
-	t.ok(ninja_vireos > int(mechas["bodies"].get(&"scout_body", 0)), "Kämpfer: mehr Vireos")
-	var blades := int(ninjas["weapons"].get(&"eq_plasma_blade", 0)) \
-		+ int(ninjas["weapons"].get(&"eq_boomerang", 0))
-	var guns := int(ninjas["weapons"].get(&"eq_pulse_blaster", 0)) \
-		+ int(ninjas["weapons"].get(&"eq_neon_blaster", 0))
-	t.ok(blades > guns, "die Neon Ninja's kämpfen eher nah (%d gegen %d)" % [blades, guns])
+## Formationen (14. Nov. 2026): in Neon City kommen Neon-Sentinels mit
+## einem oder zwei DROMEs. Die anderen Fraktionen bekommen ihre Formationen
+## noch (SPOT-Blatt Offene Punkte 30) und leihen sich bis dahin die von Neon.
+func test_neon_city_brings_neon_squads() -> void:
+	var counts: Dictionary = _faction_counts(&"city")
+	t.note("Chassis Neon City %s" % [counts["bodies"]])
+	var blades := int(counts["weapons"].get(&"eq_plasma_blade", 0))
+	var guns := int(counts["weapons"].get(&"eq_pulse_blaster", 0)) \
+		+ int(counts["weapons"].get(&"eq_neon_blaster", 0))
+	t.ok(blades > guns, "die Neon Ninjas kämpfen eher nah (%d gegen %d)" % [blades, guns])
+	for seed_value in 20:
+		var run := RunState.start(9300 + seed_value)
+		run.round = 2 + seed_value % 6
+		run._pick_default_node()
+		for which in run.available_nodes():
+			var foes := run.enemies(which)
+			var dromes := foes.filter(func(b): return not b.is_sentinel())
+			var sentinels := foes.filter(func(b): return b.is_sentinel())
+			t.ok(dromes.size() >= 1 and dromes.size() <= 2, "ein oder zwei DROMEs (%d)" % dromes.size())
+			t.ok(sentinels.size() >= 2, "dazu Sentinels (%d)" % sentinels.size())
+			for build in sentinels:
+				t.equal(build.faction, "Neon", "%s gehört zu Neon" % build.display_name)
 
 
 # ---------------------------------------------------------------------------
@@ -524,47 +529,71 @@ func test_an_old_or_broken_save_is_refused() -> void:
 # Die Reihe der Runde (10. Nov. 2026, Regel des Spielers)
 # ---------------------------------------------------------------------------
 
-func test_every_row_has_an_easy_fight_and_two_harder_ones() -> void:
-	var elite_rows := 0
-	var normal_rows := 0
+## Die Kampfkarte (14. Nov. 2026): feste Pfade wie bei FTL. Jede Reihe hat
+## zwei oder drei Knoten, der letzte Kampf ist ein einzelner Elite-Knoten.
+## Jeder Knoten der naechsten Reihe ist erreichbar, und anfangs gabelt sich
+## der Weg oefter als spaeter.
+func test_the_map_has_paths_and_ends_in_one_elite_fight() -> void:
+	var early_forks := 0
+	var late_forks := 0
+	var tiers := {}
 	for seed_value in 40:
 		var run := RunState.start(8800 + seed_value)
-		for round_value in range(1, RunState.rounds_total() + 1):
+		var last := RunState.rounds_total()
+		for round_value in range(1, last + 1):
 			var nodes := run.row(round_value)
-			t.equal(nodes.size(), 3, "drei Knoten je Reihe")
-			t.equal(int(nodes[0]["tier"]), RunState.Tier.EASY, "immer ein Leichter")
-			t.equal(int(nodes[1]["tier"]), RunState.Tier.NORMAL, "immer ein Normaler")
-			t.ok(not nodes.any(func(n): return n["chaos"]), "kein Chaos im Story-Lauf")
-			var teams: Array = nodes.map(func(n): return str(n["team"]))
-			for team_id in teams:
-				t.ok(not Encounters.team(team_id).is_empty(), "Team '%s' gibt es" % team_id)
-			if int(nodes[2]["tier"]) == RunState.Tier.ELITE:
-				elite_rows += 1
-				t.ok(not run.is_training(round_value), "kein Elite im Training")
-			else:
-				normal_rows += 1
-				t.equal(int(nodes[2]["tier"]), RunState.Tier.NORMAL, "sonst ein zweiter Normaler")
-				t.ok(teams[1] != teams[2], "zwei verschiedene Teams")
-				t.ok(Encounters.team(teams[1])["type"] != Encounters.team(teams[2])["type"]
-					or run.is_training(round_value), "mit verschiedenen Gegnertypen")
-	t.ok(elite_rows > 0 and normal_rows > 0, "beide Formen kommen vor (%d Elite, %d Normal)"
-		% [elite_rows, normal_rows])
+			t.ok(not nodes.any(func(n): return n["chaos"]), "kein Chaos im Story-Einsatz")
+			for info in nodes:
+				t.ok(not Formations.formation(str(info["team"])).is_empty(),
+					"Formation '%s' gibt es" % info["team"])
+				tiers[int(info["tier"])] = true
+			if round_value == last:
+				t.equal(nodes.size(), 1, "der letzte Kampf ist ein Knoten")
+				t.equal(int(nodes[0]["tier"]), RunState.Tier.ELITE, "und Elite")
+				continue
+			t.ok(nodes.size() >= 2 and nodes.size() <= 3, "zwei oder drei Knoten (%d)" % nodes.size())
+			t.ok(not nodes.all(func(n): return int(n["tier"]) == RunState.Tier.ELITE),
+				"nie nur Elite")
+			var paths := run.links(round_value)
+			t.equal(paths.size(), nodes.size(), "Wege von jedem Knoten")
+			var reached := {}
+			for targets in paths:
+				t.ok(not (targets as Array).is_empty(), "jeder Knoten führt weiter")
+				for j in targets:
+					reached[j] = true
+					if round_value <= 3:
+						early_forks += 1 if (targets as Array).size() > 1 else 0
+					elif round_value >= 5:
+						late_forks += 1 if (targets as Array).size() > 1 else 0
+			t.equal(reached.size(), run.row(round_value + 1).size(), "jeder Knoten erreichbar")
+	t.ok(tiers.size() == 3, "Leicht, Normal und Elite kommen vor")
+	t.ok(early_forks > late_forks, "anfangs mehr Gabelungen (%d gegen %d)" % [early_forks, late_forks])
 
 
-func test_the_first_rounds_are_training_against_plain_dromes() -> void:
+## Der Weg zaehlt: nach einem Kampf stehen nur die Knoten zur Wahl, zu denen
+## ein Weg fuehrt.
+func test_only_linked_nodes_can_be_chosen() -> void:
+	var run := RunState.start(4711)
+	t.equal(run.available_nodes(), range(run.row().size()), "am Anfang alle")
+	run.choose_node(0)
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	run.continue_run()
+	var expected: Array = run.links(1)[0]
+	t.equal(run.available_nodes(), expected, "danach nur die Wege vom gewählten Knoten")
+	for i in run.row().size():
+		t.equal(run.choose_node(i), expected.has(i), "Knoten %d wählbar: %s" % [i, expected.has(i)])
+	t.ok(expected.has(run.node), "die Vorwahl liegt auf dem Weg")
+
+
+func test_the_first_rounds_bring_introductions() -> void:
 	var run := RunState.start(8901)
 	var training := int(RunState.cfg().get("training_rounds", 0))
-	t.ok(training >= 1, "es gibt Trainingsrunden")
+	t.ok(training >= 1, "es gibt Einführungskämpfe")
 	for round_value in range(1, training + 1):
 		for info in run.row(round_value):
-			t.equal(str(Encounters.team(str(info["team"]))["type"]), "training",
-				"Runde %d: ein Trainingsteam" % round_value)
-	for info in run.row(training + 1):
-		t.ok(str(Encounters.team(str(info["team"]))["type"]) != "training",
-			"danach die Fraktion")
-	t.equal(run.preview()["faction"], "", "im Training nennt die Vorschau keine Fraktion")
-	for build in run.enemies():
-		t.ok(build.modules.is_empty(), "Trainingsgegner tragen keine Module")
+			t.ok(bool(Formations.formation(str(info["team"])).get("intro", false)),
+				"Kampf %d: eine Einführung" % round_value)
+			t.ok(int(info["tier"]) != RunState.Tier.ELITE, "kein Elite in der Einführung")
 
 
 func test_the_same_seed_draws_the_same_rows() -> void:
@@ -572,49 +601,39 @@ func test_the_same_seed_draws_the_same_rows() -> void:
 	var b := RunState.start(77)
 	for round_value in range(1, RunState.rounds_total() + 1):
 		t.equal(a.row(round_value), b.row(round_value), "gleicher Seed, gleiche Reihe %d" % round_value)
+		t.equal(a.links(round_value), b.links(round_value), "gleiche Wege %d" % round_value)
 
 
-func test_every_node_of_the_row_can_be_chosen() -> void:
+func test_every_open_node_can_be_chosen() -> void:
 	var run := RunState.start(9901)
 	run.round = 4
 	run._pick_default_node()
-	t.equal(run.tier, RunState.Tier.NORMAL, "vorgewählt ist ein Normaler")
 	for index in run.available_nodes():
 		t.ok(run.choose_node(index), "Knoten %d lässt sich wählen" % index)
 		t.equal(run.tier, int(run.row()[index]["tier"]), "und setzt die Stufe")
 		t.ok(not run.enemies().is_empty(), "mit Gegnern")
 	t.ok(not run.choose_node(run.row().size()), "ausserhalb der Reihe nicht")
-	t.ok(run.choose_tier(RunState.Tier.EASY), "Leicht gibt es immer")
 
 
-func test_choosing_elites_brings_more_elites() -> void:
-	# Wer Elite waehlt, bekommt in den Reihen danach oefter welche angeboten.
-	var none := 0
-	var many := 0
-	for seed_value in 300:
-		var run := RunState.start(20000 + seed_value)
-		if int(run.row(5, 0)[2]["tier"]) == RunState.Tier.ELITE:
-			none += 1
-		if int(run.row(5, 3)[2]["tier"]) == RunState.Tier.ELITE:
-			many += 1
-	t.ok(many > none * 1.4, "nach drei Elite deutlich öfter (%d gegen %d von 300)" % [many, none])
-	# Und der Verlauf zaehlt wirklich mit.
+## Reinforcement-Level: steigt nach jedem Kampf, nach Elite schneller.
+func test_reinforcement_rises_after_each_fight() -> void:
 	var run := _run_with_tier(RunState.Tier.ELITE, 20500)
-	t.equal(run.elites_chosen(), 0, "noch kein Elite gewählt")
+	var before := run.reinforcement()
+	t.equal(before, run.round + run.elites_chosen(), "Kampf plus gewählte Elite")
 	run.record_result(BattleManager.Outcome.VICTORY, [])
 	run.continue_run()
 	t.equal(run.elites_chosen(), 1, "ein Elite gewählt")
-	t.equal(run.row(), run.row(run.round, 1), "die Reihe rechnet mit ihm")
+	t.equal(run.reinforcement(), before + 2, "ein Kampf mehr und ein Elite-Bonus")
 
 
-func test_the_preview_names_team_and_type() -> void:
+func test_the_preview_names_the_formation() -> void:
 	var run := RunState.start(9950)
 	run.round = 4
 	run._pick_default_node()
 	var info := run.preview()
-	t.ok(str(info["team"]) != "", "das Team hat einen Namen")
-	t.ok(str(info["type"]) != "", "und einen Gegnertyp")
-	t.ok(str(info["type_hint"]) != "", "mit Hinweis")
+	t.ok(str(info["team"]) != "", "die Formation hat einen Namen")
+	t.ok(str(info["team_text"]) != "", "und einen Grundgedanken")
+	t.ok(int(info["reinforcement"]) >= 4, "mit Reinforcement-Level")
 	t.ok(not run.next_row().is_empty(), "die Vorausschau zeigt die nächste Reihe")
 	run.round = RunState.rounds_total()
 	t.ok(run.next_row().is_empty(), "nach dem letzten Kampf kommt nichts mehr")
@@ -625,7 +644,7 @@ func test_the_chosen_node_survives_saving() -> void:
 	run.choose_node(run.available_nodes()[-1])
 	run.record_result(BattleManager.Outcome.VICTORY, [])
 	run.continue_run()
-	run.choose_node(0)
+	run.choose_node(run.available_nodes()[0])
 	var back := _through_json(run)
 	t.equal(back.node, run.node, "gewählter Knoten")
 	t.equal(back.tier, run.tier, "seine Stufe")
@@ -697,9 +716,9 @@ func test_a_chaos_fight_only_shows_up_in_the_endless_run() -> void:
 		run.round = 3
 		run._pick_default_node()
 		var nodes := run.row()
-		for i in nodes.size():
+		for i in run.available_nodes():
 			if nodes[i]["chaos"] and found == null:
-				t.equal(nodes.size(), 4, "der Chaos-Knoten kommt obendrauf")
+				t.ok(nodes.size() >= 2, "der Chaos-Knoten ersetzt einen der Reihe")
 				run.choose_node(i)
 				found = run
 	t.ok(found != null, "Chaos-Kämpfe kommen vor")

@@ -61,6 +61,31 @@ var weapon_levels: Dictionary = {}
 var source_uid: String = ""
 var instance_uids: Dictionary = {}
 
+## Gegner aus Formationen (14. Nov. 2026, SPOT-Blaetter Sentinels und
+## Gegner-DROMEs):
+##   stat_override   feste Werte statt der Summe der Teile (hp_max, shield,
+##                   spd, def, power, shield_pulse, module_slots). Module
+##                   kommen danach obendrauf.
+##   unit_kind       "drome" oder "sentinel"
+##   rank            Sentinel-Rang: basic, elite, heavy, heavy_elite
+##   archetype       Sentinel: assault, sniper, support
+##   auto_only       nur Auto-Angriff, keine Faehigkeit (Sentinels)
+##   sprite_scale    Groesse der Figur (Sentinels 0,6)
+##   role_override   KI-Rolle statt der des Chassis (Sentinels)
+##   faction         Fraktion (Anzeige)
+var stat_override: Dictionary = {}
+var unit_kind: String = "drome"
+var rank: String = ""
+var archetype: String = ""
+var auto_only: bool = false
+var sprite_scale: float = 1.0
+var role_override: String = ""
+var faction: String = ""
+
+
+func is_sentinel() -> bool:
+	return unit_kind == "sentinel"
+
 
 static func create(name: String, assignment: Dictionary) -> DromeBuild:
 	var build := DromeBuild.new()
@@ -256,6 +281,10 @@ func stats() -> Dictionary:
 		if weapon_level(slot) > 0:
 			_add_stats(total, Leveling.weapon_bonus(part_in(slot), weapon_level(slot)))
 
+	# Feste Werte (Sentinels, Gegner-DROMEs): ersetzen Teile und Level.
+	for key in stat_override:
+		total[key] = stat_override[key]
+
 	# Module (nur im Lauf): Panzerung, Schild und Konter des Traegers.
 	if not modules.is_empty():
 		var fx := all_module_effects()
@@ -363,6 +392,14 @@ func clone() -> DromeBuild:
 	copy.weapon_levels = weapon_levels.duplicate()
 	copy.source_uid = source_uid
 	copy.instance_uids = instance_uids.duplicate()
+	copy.stat_override = stat_override.duplicate()
+	copy.unit_kind = unit_kind
+	copy.rank = rank
+	copy.archetype = archetype
+	copy.auto_only = auto_only
+	copy.sprite_scale = sprite_scale
+	copy.role_override = role_override
+	copy.faction = faction
 	return copy
 
 
@@ -552,7 +589,7 @@ func power_parts() -> Dictionary:
 	var control := 0.0
 	var factor := power_factor()
 	var chassis := body()
-	var echo := chassis != null and chassis.passive == "echo"
+	var echo := chassis != null and chassis.passive == "echo" and not is_sentinel()
 	var slower := float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
 	for slot in equip_slots():
 		var part := part_in(slot)

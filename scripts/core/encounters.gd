@@ -1,95 +1,12 @@
 class_name Encounters
 extends RefCounted
 
-## Handverlesene Gegnerteams (data/encounters.json).
+## Bausteine fuer Gegner: einen DROME aus Chassis und Waffen bauen, Module
+## passend zur Waffe waehlen, den Halter der ersten Waffe finden.
 ##
-## Vorgabe des Spielers (10. Nov. 2026): Gegner werden nicht gewuerfelt --
-## ausser im Chaos-Kampf des Endlos-Modus. Jedes Team ist eine feste Liste
-## von DROMEs mit Namen, Waffen und Modulen und hat einen **Typ** (Sturm,
-## Schuetzen, Bollwerk, Kontrolle, Gemischt), an dem der Spieler erkennt, was
-## auf ihn zukommt. Treten weniger Gegner an, als das Team hat, sind es die
-## ersten der Liste.
-##
-## Reine Daten und Logik, ohne Szene testbar.
-
-const PATH := "res://data/encounters.json"
-
-static var _data: Dictionary = {}
-
-
-static func data() -> Dictionary:
-	if _data.is_empty():
-		var file := FileAccess.open(PATH, FileAccess.READ)
-		if file == null:
-			push_error("Encounters: %s nicht lesbar" % PATH)
-			return {}
-		var parsed = JSON.parse_string(file.get_as_text())
-		if parsed is Dictionary:
-			_data = parsed
-		else:
-			push_error("Encounters: %s ist kein JSON-Objekt" % PATH)
-	return _data
-
-
-## Die Teams der Fraktion eines Gebiets (leer, wenn das Gebiet keine hat).
-static func faction_teams(region_id: StringName) -> Array:
-	var faction: Dictionary = (data().get("factions", {}) as Dictionary).get(str(region_id), {})
-	return faction.get("teams", [])
-
-
-## Die Trainingsteams: normale DROMEs ohne Fraktion, fuer die ersten Runden.
-static func training_teams() -> Array:
-	return data().get("training", [])
-
-
-## Alle Teams aller Fraktionen und das Training -- fuer Tests und Uebersichten.
-static func all_teams() -> Array:
-	var out: Array = training_teams().duplicate()
-	for region in data().get("factions", {}):
-		out.append_array(faction_teams(StringName(region)))
-	return out
-
-
-static func team(team_id: String) -> Dictionary:
-	for entry in all_teams():
-		if str(entry.get("id", "")) == team_id:
-			return entry
-	return {}
-
-
-## Die Teams, die in dieser Runde und Stufe auftauchen duerfen. ``training``:
-## die ersten Runden des Laufs (run.training_rounds) -- dann nur die
-## Trainingsteams.
-static func pool(region_id: StringName, round: int, tier_key: String, training: bool) -> Array:
-	var source: Array = training_teams() if training else faction_teams(region_id)
-	var out: Array = []
-	for entry in source:
-		var tiers: Array = entry.get("tiers", [])
-		if not tiers.is_empty() and not tiers.has(tier_key):
-			continue
-		if round < int(entry.get("from_round", 1)) or round > int(entry.get("to_round", 9999)):
-			continue
-		out.append(entry)
-	# Nie leer: lieber ein Team ausserhalb seines Bereichs als gar keins.
-	return out if not out.is_empty() else source.duplicate()
-
-
-## Name und Hinweis eines Gegnertyps: {name, hint}.
-static func type_info(type_id: String) -> Dictionary:
-	var info: Dictionary = (data().get("types", {}) as Dictionary).get(type_id, {})
-	return {"name": str(info.get("name", type_id.capitalize())), "hint": str(info.get("hint", ""))}
-
-
-## Baut die ersten ``count`` DROMEs eines Teams -- ohne Level und Module (die
-## setzt RunState nach Runde und Stufe, siehe modules_for).
-static func build(entry: Dictionary, count: int) -> Array:
-	var builds: Array = []
-	var dromes: Array = entry.get("dromes", [])
-	for i in mini(count, dromes.size()):
-		var build := build_drome(dromes[i])
-		if build != null:
-			builds.append(build)
-	return builds
+## Die handverlesenen Teams (10. Nov. 2026) sind seit 14. Nov. 2026 durch
+## Formationen ersetzt (Formations, data/formations.json; SPOT-Blatt Fragen
+## 35). Uebrig bleiben diese Helfer, die Formations und der Chaos-Kampf nutzen.
 
 
 ## Ein DROME aus seinem Eintrag {name, chassis, weapons}. Die Waffen kommen

@@ -105,8 +105,9 @@ func _process(_delta: float) -> bool:
 				gs.start_run(seed_value, "endless")
 				gs.run.round = 3
 				gs.run._pick_default_node()
-				if gs.run.row().size() == 4:
-					gs.run.choose_node(3)
+				var chaos: Array = gs.run.available_nodes().filter(func(i): return gs.run.row()[i]["chaos"])
+				if not chaos.is_empty():
+					gs.run.choose_node(chaos[0])
 					break
 			prepare._refresh()
 			print("SMOKE: Endlos-Lauf mit Chaos-Knoten: %s" % gs.run.is_chaos())
