@@ -37,6 +37,8 @@ var _recipes_open: bool = false
 var _recipe_filter: String = "alle"
 ## Lagerplatz, der kurz aufleuchten soll (frisch gekauft); -1 = keiner.
 var _flash_storage: int = -1
+## Halter "drome:slot", der kurz aufleuchten soll (frisch eingesetzt).
+var _flash_holder: String = ""
 
 ## Was am Ende des Laufs nach Hause ging -- fuer die Abschlussanzeige.
 var _delivered: Array = []
@@ -955,6 +957,9 @@ func _holder_row(run: RunState, drome: int, slot: String, picking: bool, allowed
 	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(name)
+	if _flash_holder == "%d:%s" % [drome, slot]:
+		_flash_holder = ""
+		_flash(row)
 	# Ziehen (10. Nov. 2026): ein Modul oder BIOS aus dem Lager hierher.
 	row.set_drag_forwarding(Callable(),
 		func(_at, data): return _can_drop_storage(run, drome, slot, data),
@@ -968,6 +973,7 @@ func _install(run: RunState, drome: int, slot: String) -> void:
 	if done:
 		Accessibility.vibrate(20, true)
 		_selected_storage = -1
+		_flash_holder = "%d:%s" % [drome, slot]
 	_refresh()
 
 
@@ -1006,6 +1012,7 @@ func _drop_storage(run: RunState, drome: int, slot: String, data) -> void:
 	if done:
 		Accessibility.vibrate(20, true)
 		_selected_storage = -1
+		_flash_holder = "%d:%s" % [drome, slot]
 	_refresh()
 
 
@@ -1106,7 +1113,7 @@ func _recipe_popup(run: RunState, entry: Dictionary) -> void:
 			if run.craft(module.id):
 				Accessibility.vibrate(40, true)
 				_selected_storage = -1
-				_flash_storage = -2
+				_flash_storage = run.storage.size() - 1
 			_recipes_open = true
 			_refresh()}]
 	if not module.is_bios_result:

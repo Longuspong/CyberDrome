@@ -670,16 +670,21 @@ class EffectPainter extends Node2D:
 
 	func _draw_texts() -> void:
 		var s := pixel_scale
-		var font := ThemeDB.fallback_font
+		# Arcade-Schrift mit dunklem Umriss (14. Nov. 2026): lesbar auch ueber
+		# hellen Effekten. Kurzes Aufpoppen am Anfang.
+		var font := Arcade.font("display")
 		for entry in _texts:
 			var t: float = float(entry["age"]) / TEXT_TIME
-			var size := maxi(1, int(round((BIG_SIZE if entry["big"] else TEXT_SIZE) * s)))
+			var pop := 1.0 + 0.35 * maxf(0.0, 1.0 - t * 6.0)
+			var size := maxi(1, int(round((BIG_SIZE if entry["big"] else TEXT_SIZE) * s * pop)))
 			var at: Vector2 = entry["at"] + Vector2(0, (-84.0 - RISE * t - 18.0 * int(entry["stack"])) * s)
 			var text: String = entry["text"]
 			var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 			var origin := at - Vector2(width * 0.5, 0)
 			var alpha := 1.0 if t < 0.6 else 1.0 - (t - 0.6) / 0.4
+			font.draw_string_outline(get_canvas_item(), origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1,
+				size, maxi(2, int(round(4.0 * s))), Color(0.04, 0.02, 0.1, alpha))
 			font.draw_string(get_canvas_item(), origin + Vector2(1.5, 1.5) * s, text,
-				HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(COLOR_SHADOW, alpha))
+				HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(COLOR_SHADOW, alpha * 0.6))
 			font.draw_string(get_canvas_item(), origin, text,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(entry["color"], alpha))
