@@ -40,11 +40,14 @@ landen von dort in den Teil-JSONs unter `parts/`.
 * Unten: Tempo 1x/2x, Pause, Log, Folgen. Kamera folgt dem Geschehen,
   Ziehen und Zoomen per Finger.
 
-### Lauf (Roguelike)
+### Einsatz (Roguelike, Code-Name "Lauf")
 
 Acht Kaempfe, drei Leben, alles am Seed (`scripts/core/run_state.gd`, Werte
-unter `run` in `data/config.json`). Vor jedem Kampf drei Gegner zur Wahl
-(Leicht / Normal / Elite), nach dem Sieg Beute aus der Gegnerausruestung.
+unter `run` in `data/config.json`). Eine Kampfkarte mit festen Wegen (FTL-
+artig); Gegner sind Formationen aus DROMEs und Sentinels
+(`data/formations.json`), die mit dem Reinforcement-Level wachsen. Beute sind
+Lootcaches der Fraktion oder Platzhaltercoin. Ab Minute 5 trifft der
+Virusschaden jede Einheit.
 
 ### Mobile first (Hochformat)
 
@@ -53,7 +56,9 @@ unter `run` in `data/config.json`). Vor jedem Kampf drei Gegner zur Wahl
   unten (Spielen, Hangar, Optionen).
 * **Hangar**: Reiter *Squad* (max. 4) und *Umbau* (Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern).
-* Wischen scrollt jede Liste, langes Druecken zeigt den Erklaertext.
+* Wischen scrollt jede Liste mit Schwung, langes Druecken zeigt den Erklaertext.
+* Kacheln (`Tile`): einmal tippen handelt, doppelt tippen oder lange druecken
+  oeffnet das Popup (`InfoPopup`). Stil: Arcade-Glitch (`scripts/ui/arcade.gd`).
 * Optionen: Schriftgroesse (nur Text), Animationen reduzieren, Vollbild.
 
 ### PWA

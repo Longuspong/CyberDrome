@@ -29,6 +29,45 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Grosse Umsetzung (14. Nov. 2026, Wunsch des Spielers)
+
+Eine Sitzung, alles aus der abgesegneten Liste (Bedienung, Arcade-Stil,
+Bauschritte 1-3 und Teile von 4). Details in den SPOT-Blaettern Eckpunkte
+und Offene Punkte.
+
+* **Bedienung**: Wischen mit Schwung (`Accessibility._scroll_*`, zeitbasiert,
+  Kommazahlen). Baukasten **`Tile`** (einmal tippen = Handlung, doppelt oder
+  lange = Popup) und **`InfoPopup`**. Zwischenstopp passt fast auf einen
+  Bildschirm (Chips, Laden als Kacheln mit Preis-Knopf, Lager als Raster,
+  Squad als Zeilen mit Modulplaetzen), **Rezeptbuch als Popup-Raster** mit
+  Filter. Hangar: Kacheln zuerst, Doppeltipp = Umbau, Waffe antippen baut ein.
+* **Arcade-Glitch-Stil ueberall**: `UiKit` nutzt Farben, Schriften und Formen
+  aus `Arcade` (abgeschraegte Ecken, harte Versatzschatten, gelbe
+  Hauptknoepfe, schraege Kopf-Etiketten, Scanlines). Hauptmenue mit
+  Glitch-Logo, Kampfleisten, Ergebnis mit Glitch-Schriftzug.
+* **Anzeige mit Umlauten** (Werkzeug-Lauf ueber alle Texte in `scripts/`,
+  `autoload/`, `data/`, `parts/`; Kommentare bleiben ohne) und Begriffe
+  Einsatz / Kampf / Infinity-Einsatz.
+* **Virusschaden** (`BattleManager._virus_pulse`, config `virus`): ersetzt
+  Overtime und Zeitlimit; Glitch-Flackern als Vorwarnung (`Arcade.GlitchOverlay`).
+* **Sentinels, Gegner-DROMEs, Formationen** (`Formations`,
+  `data/formations.json`): DromeBuild kennt jetzt `stat_override`,
+  `unit_kind`, `rank`, `auto_only`, `sprite_scale`, `role_override`.
+  Sentinels 60 % gross, kleiner Balken, nur Auto-Angriff, keine Passive.
+  Sechs Neon-Formationen als Vorschlag, Varianten Leicht/Normal/Elite,
+  **Reinforcement-Level** (`RunState.reinforcement`). Die alten Teams
+  (`data/encounters.json`) sind geloescht; `Encounters` haelt nur noch Helfer.
+* **Kampfkarte FTL-artig** (`RunState.row/links/available_nodes`, `MapView`):
+  feste Wege, anfangs Gabelungen, spaeter Korridore, letzter Kampf ein
+  Elite-Knoten. Spielstand-Version 3 (alte Einsaetze werden verworfen).
+* **Lootcaches und Platzhaltercoin** (config `run.loot`): Caches der Fraktion
+  statt Teilen und Credits, im Einsatz gesammelt, am Ende im Hangar
+  (`Roster.caches/coins`). Oeffnen und Hangar-Shop folgen.
+* **Heilregel** fuer Support-Waffen (`AIController._care_choice`).
+* Messung (`run_bench -- 12`): Normal bis Kampf 5 fast immer Sieg, Elite in
+  Kampf 8 etwa 45-60 % -- Sentinels mit den Blattwerten sind eher leicht
+  (offener Punkt im SPOT-Blatt).
+
 ### Kampf (Echtzeit, Nov. 2026)
 * Alle DROMEs handeln gleichzeitig. `BattleManager.tick()` rechnet in festen
   Schritten (`realtime.tick` = 0,05 s); derselbe Seed ergibt denselben Kampf.
@@ -340,7 +379,7 @@ Spielstand). Vorschlaege zu Story, Fraktionen, Klassen und Anstieg stehen in
   1,2-1,4 -> 10 %. Werkzeug: `tools/playtest/power_bench.gd -- 3000`.
   Grenze: kein Zusammenspiel -- der Molok ist allein wenig wert und macht
   den Strix dahinter erst stark.
-* **Gegner handverlesen** (`Encounters`, `data/encounters.json`): kein
+* **Gegner handverlesen** (bis 14. Nov. 2026 `data/encounters.json`, seither Formationen): kein
   Wuerfeln mehr ausser im Chaos-Kampf. Je Team feste DROMEs mit Namen, Waffen
   und Modulen (in Listenreihenfolge nach Runde/Stufe, ab Runde 5 vorn das
   Rezept) und ein **Gegnertyp** (Sturm, Schuetzen, Bollwerk, Kontrolle,
