@@ -102,4 +102,21 @@ Weiß. Solar: Grün (aus der „Neon-Sättigung“ der ersten Playtests).
 * Der geheime Twist.
 * **Widerspruch zum Bestand:** Mega Mechas haben heute das Profil *Festung*
   mit Schilden und Artillerie – laut Leitfaden keine Schilde. Anpassen?
-* Story-Vermittlung (Porträts + Textboxen): Vorschlag noch zu besprechen.
+* Story-Vermittlung: entschieden, siehe Abschnitt 8.
+
+## 8. Story-Vermittlung (entschieden 14. Nov. 2026, noch nicht gebaut)
+
+* **Daten:** `data/story.json` mit Sprechern (Name, Fraktionsfarbe, Porträt)
+  und Szenen (Liste von Zeilen: Sprecher, Text). Texte später als SPOT-Blatt
+  „Dialoge“.
+* **Dialogfenster** als Overlay über jedem Bildschirm, Hochformat zuerst:
+  Porträt über der Textbox, **Sprecher wechseln links/rechts ab**. Name in
+  Fraktionsfarbe, Text tippt sich ein, Antippen = ganzer Text bzw. nächste
+  Zeile, Knopf Überspringen. Arcade-Glitch-Stil.
+* **Ein Porträt je Figur** (vorerst keine Stimmungen), Platzhalter-Silhouetten
+  in Fraktionsfarbe unter `assets/portraits/`. Der Spieler hat kein Porträt.
+* **Auslöser:** vor/nach Kampf, Region betreten, Hangar; Bedingung nach
+  Gesamtfortschritt (z. B. Siege gesamt), gesehene Szenen im Spielstand.
+* **Prolog als „Video“:** gleiches Fenster mit Zeitangaben und Kinobalken über
+  einem deterministischen Kampf (fester Seed). Später.
+* **Erster Bauschritt:** Daten + Dialogfenster mit einer Testszene im Prolog.

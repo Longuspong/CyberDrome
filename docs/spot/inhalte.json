@@ -66,7 +66,8 @@
     {"bereich": "Einsatz", "thema": "Beute bis Lootcaches", "festlegung": "Bis Schritt 4: Caches als Beute, aber noch nicht zu öffnen.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
     {"bereich": "Einsatz", "thema": "Infinity-Einsatz", "festlegung": "Der Endlos-Modus heißt Infinity-Einsatz.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
     {"bereich": "Story", "thema": "Umbenennung", "festlegung": "Die Hipstar Hookers heißen jetzt Hipstar Hackers.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Spieler"},
-    {"bereich": "Story", "thema": "Story-Leitfaden", "festlegung": "Dystopie mit Cybervirus, keine Hauptfigur (Beobachter), Drahtzieher + Gegenspieler, Prolog, Akt 1, zwei Wendepunkte (Mega Mechas, Hipstar Hackers), Akt 2 Sondertrupp, Akt 3. Ersetzt 'Die Liga und der Virus'.", "seit": "14. Nov. 2026", "status": "Leitfaden", "quelle": "docs/STORY_LEITFADEN.md"}
+    {"bereich": "Story", "thema": "Story-Leitfaden", "festlegung": "Dystopie mit Cybervirus, keine Hauptfigur (Beobachter), Drahtzieher + Gegenspieler, Prolog, Akt 1, zwei Wendepunkte (Mega Mechas, Hipstar Hackers), Akt 2 Sondertrupp, Akt 3. Ersetzt 'Die Liga und der Virus'.", "seit": "14. Nov. 2026", "status": "Leitfaden", "quelle": "docs/STORY_LEITFADEN.md"},
+    {"bereich": "Story", "thema": "Story-Vermittlung", "festlegung": "Szenen aus data/story.json, Dialogfenster mit Porträt und Textbox (Text tippt sich ein, Antippen weiter, Überspringen). Sprecher links/rechts abwechselnd, vorerst ein Porträt je Figur, Spieler ohne Porträt. Auslöser nach Gesamtfortschritt. Noch nicht gebaut.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Spieler"}
   ],
 
   "dromes": {
@@ -190,7 +191,7 @@
     {"punkt": "Weitere Standard-DROMEs neben Molok, Vireo, Nimbus, Strix", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
     {"punkt": "Der geheime Twist (bewusst noch nicht festgehalten)", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
     {"punkt": "Mega Mechas laut Leitfaden ohne Schilde -- heutiges Profil Festung (Schilde, Artillerie) anpassen?", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
-    {"punkt": "Story-Vermittlung: Porträts + Textboxen (Vorschlag in Sitzung 14. Nov.)", "quelle": "STORY_LEITFADEN 7", "status": "offen"}
+    {"punkt": "Story-Vermittlung: Porträts + Textboxen -> Dialogfenster mit Porträt, Sprecher links/rechts abwechselnd, vorerst ein Porträt je Figur (noch nicht gebaut)", "quelle": "STORY_LEITFADEN 8", "status": "entschieden"}
   ],
 
   "glossar": [
