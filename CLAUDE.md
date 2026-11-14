@@ -12,7 +12,9 @@ festgelegte Richtung (9 Grundmodule, 18 Rezepte, Matrix-BIOS, Profile =
 Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
 **Fuer Story, Fraktionen, Gegnergruppen: `docs/VORSCHLAG_STORY.md`** --
 Vorschlaege vom 10. Nov. 2026, noch NICHT entschieden; die offenen Punkte
-stehen dort in Abschnitt 6.
+stehen dort in Abschnitt 6. **Story-Rahmen seit 14. Nov. 2026: `docs/STORY_LEITFADEN.md`**
+(ersetzt den Aufhaenger "Die Liga und der Virus"; Hipstar Hookers heissen jetzt
+Hipstar Hackers).
 
 **Neues Spielprinzip (12./13. Nov. 2026, NOCH NICHT GEBAUT):**
 `docs/GEGNERDESIGN.md` (Brainstorming) und die SPOT-Blaetter Einsatz,
@@ -174,7 +176,7 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 Je Punkt eine eigene Sitzung. Erst entscheiden (Spieler), dann bauen.
 Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
 
-- [ ] **Aufhaenger** "Die Liga und der Virus" uebernehmen? (Abschnitt 1)
+- [x] ~~Aufhaenger~~ -- ersetzt durch `docs/STORY_LEITFADEN.md` (14. Nov.)
 - [ ] **Level-Struktur Story-Modus** bauen: zehn Level fuer Neon City,
       Level 1 mit 2 und Level 2 mit 3 DROMEs als Training, ab Level 3 vier
       gegen vier; je Level 3 Leben, Fortschritt bleibt (Abschnitt 2,
@@ -183,7 +185,7 @@ Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
       Wahl (immer ein Leichter, dazu zwei Normale oder Normal + Elite).
 - [ ] **Erstes Fraktions-Chassis**, z. B. Shinobi (Jaeger) -- braucht ein
       Bild aus der Werkstatt (Abschnitt 3).
-- [ ] **Hipstar Hookers = Trickser?** (Abschnitt 3)
+- [ ] **Hipstar Hackers = Trickser?** (Abschnitt 3)
 - [ ] **Bosse** am Ende der Story-Level (Oni, Shogun Kage; Abschnitt 3).
 - [ ] **Schwierigkeit** pruefen: Normal Runde 8 63 %, Elite 41 % ohne
       Module -- so lassen oder Elite-Teams anziehen? (Abschnitt 5)
