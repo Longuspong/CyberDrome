@@ -28,6 +28,7 @@ import sys
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
+from openpyxl.formatting.rule import CellIsRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
@@ -1027,6 +1028,69 @@ def build_fragen(ws):
             "2 Formationen, 3 Einsatz. Hellblau ausfüllen: 'ok' übernimmt den Vorschlag.").font = BODY_FONT
 
 
+MAP_SIZE = 24  # Raster der Vorlagen; heute gebaut sind 20 x 20
+MAP_COLORS = {"X": "3A3A46", "H": "8A8FA0", "F": "F4B6B6", "M": "FFE8A3", "B": "B6E3F4"}
+
+
+def build_maps(ws):
+    """Quadratische Zellen zum Zeichnen von Arenen (Buchstaben, Rahmen nach Belieben)."""
+    ws.sheet_view.showGridLines = True
+    ws.sheet_view.zoomScale = 85
+    for c in range(1, MAP_SIZE + 2):
+        ws.column_dimensions[get_column_letter(c)].width = 3.0
+    legend = [
+        "Maps: Arenen zeichnen. Jede Zelle ist ein Feld. Buchstaben ins Feld, Umrisse gern zusätzlich als Rahmen.",
+        "X = außerhalb / Wand (so entstehen nicht-rechteckige Arenen)   H = festes Hindernis (sperrt Laufwege, Schüsse gehen drüber)",
+        "F = Frontline (Assault)   M = Mittellinie (Support)   B = Backline (Sniper)   leer = freies Feld",
+        "Gegnerseite: leer lassen = gespiegelt zur Spielerseite (um die Mitte gedreht), oder selbst eintragen.",
+        "Gelesen werden nur die Buchstaben -- Rahmen und Farben sind für dich. Name, Gebiet, Notiz: hellblau.",
+        "Heute gebaut: 20 x 20, Hindernisse je Seed gewürfelt. Die Vorlagen sind 24 x 24, damit Platz für andere Formen ist.",
+    ]
+    for r, t in enumerate(legend, 1):
+        ws.cell(row=r, column=1, value=t).font = SUB_FONT if r == 1 else BODY_FONT
+    row = len(legend) + 2
+    cell_font = Font(name=FONT, bold=True, size=9)
+    small = Font(name=FONT, size=7, color="8A8FA0")
+    center = Alignment(horizontal="center", vertical="center")
+    for n, m in enumerate(TEXTE["maps"], 1):
+        ws.cell(row=row, column=1, value=f"Map {n}").font = SUB_FONT
+        for col, label, key, span in ((4, "Name", "name", 7), (13, "Gebiet", "gebiet", 5)):
+            ws.cell(row=row, column=col, value=label).font = BODY_FONT
+            c = ws.cell(row=row, column=col + 2, value=m[key] or None)
+            c.fill = INPUT_FILL
+            c.font = BODY_FONT
+            ws.merge_cells(start_row=row, start_column=col + 2, end_row=row, end_column=col + 1 + span)
+        row += 1
+        ws.cell(row=row, column=1, value="Notiz").font = BODY_FONT
+        c = ws.cell(row=row, column=3, value=m["notiz"] or None)
+        c.fill = INPUT_FILL
+        c.font = BODY_FONT
+        c.alignment = Alignment(wrap_text=True, vertical="top")
+        ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=MAP_SIZE + 1)
+        ws.row_dimensions[row].height = 30
+        row += 1
+        lines = m["zeilen"]
+        width = len(lines[0])
+        for x in range(width):
+            h = ws.cell(row=row, column=x + 2, value=x + 1)
+            h.font, h.alignment = small, center
+        ws.row_dimensions[row].height = 12
+        top = row + 1
+        for y, line in enumerate(lines):
+            r = top + y
+            ws.row_dimensions[r].height = 19.5  # Spaltenbreite 3,0 = 26 px = 19,5 pt -> quadratisch
+            h = ws.cell(row=r, column=1, value=y + 1)
+            h.font, h.alignment = small, center
+            for x, ch in enumerate(line):
+                c = ws.cell(row=r, column=x + 2, value=None if ch == "." else ch)
+                c.font, c.alignment = cell_font, center
+        rng = f"B{top}:{get_column_letter(width + 1)}{top + len(lines) - 1}"
+        for ch, color in MAP_COLORS.items():
+            ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=[f'"{ch}"'],
+                                                          fill=PatternFill("solid", bgColor=color)))
+        row = top + len(lines) + 2
+
+
 def build_formationen(ws):
     rows = []
     for i, f in enumerate(TEXTE["formationen"], 2):
@@ -1079,6 +1143,7 @@ SHEETS = [
     ("Sentinels", "NEU (nicht gebaut): Gegner-Bots je Fraktion und Archetyp, Varianten", build_sentinels),
     ("Gegner-DROMEs", "NEU (nicht gebaut): die DROMEs der Gegner-Squads", build_gegner_dromes),
     ("Formationen", "NEU (nicht gebaut): Gegner-Squads Welle fuer Welle", build_formationen),
+    ("Maps", "OFFEN: Arenen zeichnen -- Frontline, Mittellinie, Backline, Umrisse (quadratische Zellen)", build_maps),
     ("Design", "NEU (nicht gebaut): Arcade-Glitch-Stil -- Farben, Schriften, Titel und Spielstand-Wahl", build_design),
     ("DROMEs", "Die DROMEs: Rolle, Identitaet, Werte, Passive, Level, BIOS, Bauteile", build_dromes),
     ("Waffen", "Alle Waffen: Angriff, Faehigkeit, Takt, Bonus-Wert (Passive), Besonderheit", build_waffen),
