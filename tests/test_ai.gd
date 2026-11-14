@@ -85,7 +85,7 @@ func test_a_controller_waits_until_the_frontline_fights() -> void:
 	var nimbus: Unit = battle.units[0]
 	var foe: Unit = battle.units[2]
 	t.equal(battle.brain.next_step(nimbus, foe), nimbus.tile,
-		"solange der Molok niemanden trifft, wartet der Nimbus")
+		"solange der Molok niemanden trifft, geht der Nimbus nicht vor ihn")
 
 	# Molok am Gegner (Hammer, Reichweite 1): jetzt ist die Frontlinie im Kampf.
 	var molok: Unit = battle.units[1]
@@ -94,6 +94,21 @@ func test_a_controller_waits_until_the_frontline_fights() -> void:
 	battle.grid.set_occupant(molok.tile, molok.unit_id)
 	t.ok(battle.brain.next_step(nimbus, foe) != nimbus.tile,
 		"sobald die Frontlinie trifft, rueckt der Nimbus nach")
+	battle.free()
+
+
+func test_a_controller_follows_behind_the_frontline() -> void:
+	# Molok schon weiter vorn, aber noch ohne Treffer: der Nimbus steht nicht
+	# rum, sondern rueckt nach -- bleibt aber hinter ihm.
+	var tiles := [Vector2i(10, 15), Vector2i(10, 10), Vector2i(10, 4)]
+	var battle := _battle([_nimbus(), _molok()], [_vireo()], tiles)
+	var nimbus: Unit = battle.units[0]
+	var molok: Unit = battle.units[1]
+	var foe: Unit = battle.units[2]
+	var step := battle.brain.next_step(nimbus, foe)
+	t.ok(step != nimbus.tile, "der Nimbus rueckt hinter dem Molok nach")
+	t.ok(Grid.distance(step, foe.tile) > Grid.distance(molok.tile, foe.tile),
+		"und bleibt dabei hinter der Frontlinie (%s)" % step)
 	battle.free()
 
 
