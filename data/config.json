@@ -164,10 +164,17 @@
     }
   },
 
-  "overtime": {
-    "_kommentar": "Ab start_seconds verliert jeder DROME je Puls ceil(hp_max * pct_per_cycle * (Pulse seit Start + 1)).",
-    "start_seconds": 60.0,
-    "pct_per_cycle": 0.05
+  "virus": {
+    "_kommentar": [
+      "Virusschaden (14. Nov. 2026, SPOT-Blatt Einsatz, ersetzt Overtime und Zeitlimit):",
+      "ab start_seconds trifft jeder Puls ALLE Einheiten gleichzeitig mit",
+      "ceil((hp_max + shield_max) * pct_of_max) -- erst Schild, dann Integritaet,",
+      "an der Ruestung vorbei. Fallen beide Seiten im selben Puls: Niederlage.",
+      "warn_seconds: so lange vorher flackert das Bild (Glitch, immer schneller)."
+    ],
+    "start_seconds": 300.0,
+    "pct_of_max": 0.1,
+    "warn_seconds": 30.0
   },
 
   "realtime": {
@@ -179,7 +186,6 @@
       "                  (8. Nov. 2026: alle drei um 30 % gesenkt, Wunsch des Spielers)",
       "pulse             Sekunden je Puls: Schild- und Integritaetsregeneration,",
       "                  Overtime",
-      "time_limit        harte Grenze, danach unentschieden",
       "think_interval    wie oft ein DROME prueft, ob ein sicherer Abschuss in Reichweite ist",
       "retarget_after    so lange darf das Ziel unerreichbar sein, dann wird neu gewaehlt",
       "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist",
@@ -191,7 +197,6 @@
     "move_per_spd": 0.084,
     "move_min": 0.84,
     "pulse": 3.0,
-    "time_limit": 180.0,
     "think_interval": 0.5,
     "retarget_after": 2.0,
     "kite_distance": 2

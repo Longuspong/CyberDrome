@@ -462,3 +462,54 @@ class BackButton extends Button:
 		var o := (size - Vector2(24, 24)) * 0.5
 		draw_polyline(PackedVector2Array([o + Vector2(15, 4), o + Vector2(7, 12), o + Vector2(15, 20)]),
 			Arcade.YELLOW, 2.6)
+
+
+## Glitch ueber dem ganzen Bild (Virusschaden, 14. Nov. 2026): ein kurzer
+## Ausbruch aus versetzten Streifen in Cyan und Magenta und einer Toenung.
+## burst(staerke) loest ihn aus. Bei "Bewegung reduzieren" nur eine ruhige
+## magentafarbene Toenung ohne Streifen.
+class GlitchOverlay extends Control:
+	var _left := 0.0
+	var _length := 0.0
+	var _power := 1.0
+	var _rng := RandomNumberGenerator.new()
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		set_anchors_preset(Control.PRESET_FULL_RECT)
+		_rng.seed = 1406
+
+	func burst(power: float = 1.0, seconds: float = 0.18) -> void:
+		_power = power
+		_length = seconds
+		_left = seconds
+		set_process(true)
+		queue_redraw()
+
+	func _ready() -> void:
+		set_process(false)
+
+	func _process(delta: float) -> void:
+		_left -= delta
+		if _left <= 0.0:
+			_left = 0.0
+			set_process(false)
+		queue_redraw()
+
+	func _draw() -> void:
+		if _left <= 0.0:
+			return
+		var fade := _left / maxf(0.01, _length)
+		draw_rect(Rect2(Vector2.ZERO, size), Color(Arcade.MAGENTA, 0.12 * _power * fade))
+		if not Arcade.moving():
+			return
+		var bands := int(4 + 6 * _power)
+		for i in bands:
+			var y := _rng.randf_range(0.0, size.y)
+			var h := _rng.randf_range(2.0, 14.0 + 18.0 * _power)
+			var shift := _rng.randf_range(-24.0, 24.0) * _power
+			var color := Arcade.CYAN if i % 2 == 0 else Arcade.MAGENTA
+			draw_rect(Rect2(Vector2(shift, y), Vector2(size.x, h)), Color(color, 0.22 * fade))
+		# ein heller Riss
+		var cut := _rng.randf_range(0.0, size.y)
+		draw_rect(Rect2(Vector2(0, cut), Vector2(size.x, 2)), Color(Arcade.WHITE, 0.5 * fade))

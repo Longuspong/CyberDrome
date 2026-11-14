@@ -42,12 +42,14 @@ var ticks: int = 0
 ## damit die Beute-Rechnung nach dem Sieg noch weiss, WAS zu erbeuten war.
 var enemy_equipment: Array = []
 
-## Overtime: ab ``overtime.start_seconds`` verliert jeder DROME je Puls einen
-## wachsenden ANTEIL seiner maximalen Integritaet. Ohne das endeten
-## Spiegelkaempfe KI gegen KI oft unentschieden -- im Autobattler, in dem man
-## nur zusieht, das schlechteste denkbare Ende. Prozentual statt fest, damit
-## ein dickes Chassis nicht ewig steht und ein duennes nicht sofort faellt.
-var overtime_enabled: bool = true
+## Virusschaden (14. Nov. 2026, ersetzt Overtime und Zeitlimit -- SPOT-Blatt
+## Einsatz): ab ``virus.start_seconds`` trifft ein Puls ALLE Einheiten
+## gleichzeitig mit ``pct_of_max`` ihrer Hoechstwerte (Schild + Integritaet),
+## erst den Schild, dann die Integritaet, an der Ruestung vorbei. Fallen
+## beide Seiten im selben Puls, ist es eine Niederlage. So endet jeder Kampf
+## spaetestens ein paar Pulse nach Minute 5.
+var virus_enabled: bool = true
+var _virus_next: float = 0.0
 
 var _dt: float = 0.05
 var _pulse: float = 3.0
@@ -67,7 +69,11 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 	var realtime := Config.section("realtime")
 	_dt = float(realtime.get("tick", 0.05))
 	_pulse = maxf(0.5, float(realtime.get("pulse", 3.0)))
-	_time_limit = float(realtime.get("time_limit", 180.0))
+	var virus := Config.section("virus")
+	_virus_next = float(virus.get("start_seconds", 300.0))
+	# Sicherheitsgrenze: nach so vielen Viruspulsen ist jede Einheit gefallen.
+	_time_limit = _virus_next + _pulse * (ceil(1.0 / maxf(0.01,
+		float(virus.get("pct_of_max", 0.1)))) + 2.0)
 	time = 0.0
 	ticks = 0
 
@@ -300,8 +306,14 @@ func tick() -> void:
 			return
 
 
+	if virus_enabled and time >= _virus_next - 0.0001:
+		_virus_next += _pulse
+		_virus_pulse()
+		if outcome != Outcome.RUNNING:
+			return
 	if time >= _time_limit:
-		_finish(Outcome.DRAW)
+		_finish(Outcome.DEFEAT if not living(true).is_empty() and not living(false).is_empty()
+			else Outcome.DRAW)
 		return
 	_check_victory()
 
@@ -330,35 +342,60 @@ func _pulse_unit(unit: Unit) -> void:
 		EventBus.unit_healed.emit(unit, healed, unit)
 		EventBus.log_line("%s regeneriert %d Integrität (Reparatur)."
 			% [unit.display_name, healed])
-	var collapse := overtime_damage(unit)
-	if collapse > 0:
-		unit.hp = maxi(0, unit.hp - collapse)
-		EventBus.log_line("%s verliert %d Integrität (Overtime)."
-			% [unit.display_name, collapse])
-		EventBus.unit_damaged.emit(unit, collapse, null)
+
+
+## Ein Viruspuls: trifft alle lebenden Einheiten zugleich. Erst danach wird
+## gezaehlt -- fallen beide Seiten, verliert der Spieler.
+func _virus_pulse() -> void:
+	var fallen: Array = []
+	var hit := 0
+	for unit in units:
+		if not unit.is_alive():
+			continue
+		var amount := virus_damage(unit)
+		if amount <= 0:
+			continue
+		var on_shield := mini(unit.shield, amount)
+		unit.shield -= on_shield
+		var on_hp := mini(unit.hp, amount - on_shield)
+		unit.hp -= on_hp
+		hit += 1
+		EventBus.unit_damaged.emit(unit, on_shield + on_hp, null)
 		if unit.hp <= 0:
-			_handle_death(unit)
+			fallen.append(unit)
+	EventBus.log_line("Viruspuls: %d Einheiten getroffen." % hit)
+	EventBus.virus_pulsed.emit()
+	for unit in fallen:
+		grid.clear_occupant(unit.tile)
+		resolver.forget_unit(unit)
+		EventBus.unit_died.emit(unit)
+	if living(true).is_empty():
+		_finish(Outcome.DEFEAT)
+	elif living(false).is_empty():
+		_finish(Outcome.VICTORY)
 
 
-## Overtime-Schaden je Puls fuer diesen DROME. 0 vor dem Start oder wenn
-## Overtime aus ist. Waechst je Puls um ``pct_per_cycle`` der maximalen
-## Integritaet, aufgerundet.
-func overtime_damage(unit: Unit) -> int:
-	if not overtime_enabled or unit == null:
+## Virusschaden je Puls fuer diese Einheit: ``pct_of_max`` ihrer Hoechstwerte
+## (Schild + Integritaet), aufgerundet. 0 vor dem Start oder wenn aus.
+func virus_damage(unit: Unit) -> int:
+	if not virus_enabled or unit == null or time < virus_start() - 0.0001:
 		return 0
-	var section := Config.section("overtime")
-	var start := float(section.get("start_seconds", 60.0))
-	if time < start:
-		return 0
-	var past := int(floor((time - start) / _pulse)) + 1
-	var pct := float(section.get("pct_per_cycle", 0.05))
-	return int(ceil(float(unit.stat("hp_max")) * pct * float(past)))
+	var pct := float(Config.section("virus").get("pct_of_max", 0.1))
+	return int(ceil(float(unit.stat("hp_max") + unit.shield_max()) * pct))
 
 
-## Laeuft die Overtime schon? Fuer die Anzeige.
-func in_overtime() -> bool:
-	return overtime_enabled \
-		and time >= float(Config.section("overtime").get("start_seconds", 60.0))
+func virus_start() -> float:
+	return float(Config.section("virus").get("start_seconds", 300.0))
+
+
+## Laeuft der Virus schon? Fuer die Anzeige.
+func in_virus() -> bool:
+	return virus_enabled and time >= virus_start()
+
+
+## Sekunden bis zum Virus (negativ: laeuft schon) -- fuer das Flackern.
+func virus_in() -> float:
+	return virus_start() - time
 
 
 # ---------------------------------------------------------------------------

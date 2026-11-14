@@ -8,8 +8,8 @@ extends RefCounted
 ##   2. Fair: dasselbe Squad gewinnt auf beiden Seiten etwa gleich oft. Wer
 ##      unten links aufstellt oder "P" statt "E" heisst, darf keinen Vorteil
 ##      haben.
-##   3. Entschieden: Spiegelkaempfe enden mit Sieg oder Niederlage, nicht am
-##      Zeitgrenze. Dafuer gibt es die Overtime (config "overtime").
+##   3. Entschieden: Spiegelkaempfe enden mit Sieg oder Niederlage. Dafuer
+##      gibt es den Virusschaden (config "virus", 14. Nov. 2026).
 
 var t
 
@@ -34,10 +34,10 @@ func _squad() -> Array:
 
 
 ## Spielt einen Kampf KI gegen KI zu Ende (Echtzeit).
-func _play(seed_value: int, player: Array, enemy: Array, overtime: bool) -> Dictionary:
+func _play(seed_value: int, player: Array, enemy: Array, virus: bool) -> Dictionary:
 	var battle := BattleManager.new()
 	battle.setup(seed_value, player, enemy)
-	battle.overtime_enabled = overtime
+	battle.virus_enabled = virus
 	battle.run_to_end()
 	var result := battle.build_result()
 	battle.free()
@@ -52,37 +52,56 @@ func test_both_sides_pick_targets_by_the_same_rule() -> void:
 	battle.free()
 
 
-func test_overtime_is_off_unless_enabled() -> void:
+func test_virus_is_off_unless_enabled() -> void:
 	var battle := BattleManager.new()
 	battle.setup(4243, _squad(), _squad())
 	var unit: Unit = battle.units[0]
-	battle.overtime_enabled = false
+	battle.virus_enabled = false
 	battle.time = 400.0
-	t.equal(battle.overtime_damage(unit), 0, "ohne Schalter kein Overtime-Schaden")
+	t.equal(battle.virus_damage(unit), 0, "ohne Schalter kein Virusschaden")
 	battle.free()
 
 
-func test_overtime_grows_with_each_cycle() -> void:
+## Virusschaden (14. Nov. 2026): ab Minute 5 je Puls 10 % der Hoechstwerte
+## (Schild + Integritaet), gleichbleibend, erst Schild, dann Integritaet.
+func test_virus_hits_ten_percent_of_max() -> void:
 	var battle := BattleManager.new()
 	battle.setup(4244, _squad(), _squad())
-	battle.overtime_enabled = true
+	battle.virus_enabled = true
 	var unit: Unit = battle.units[0]
-	var start := float(Config.section("overtime").get("start_seconds", 60.0))
-
+	var start := battle.virus_start()
+	t.equal(start, 300.0, "Virus ab 5:00")
 	battle.time = start - 1.0
-	t.equal(battle.overtime_damage(unit), 0, "vor dem Start kein Schaden")
+	t.equal(battle.virus_damage(unit), 0, "vor dem Start kein Schaden")
 	battle.time = start
-	var first := battle.overtime_damage(unit)
-	battle.time = start + 3.0 * battle.pulse_seconds()
-	var later := battle.overtime_damage(unit)
-	t.ok(first > 0, "ab dem Start-Zyklus Schaden (%d)" % first)
-	t.ok(later > first, "der Schaden wächst (%d -> %d)" % [first, later])
+	var expected := int(ceil(float(unit.stat("hp_max") + unit.shield_max()) * 0.1))
+	t.equal(battle.virus_damage(unit), expected, "10 % der Hoechstwerte (%d)" % expected)
+	battle.time = start + 5.0 * battle.pulse_seconds()
+	t.equal(battle.virus_damage(unit), expected, "bleibt gleich, waechst nicht")
+	# Erst der Schild, an der Ruestung vorbei.
+	unit.shield = unit.shield_max()
+	var hp_before := unit.hp
+	battle._virus_pulse()
+	t.equal(unit.shield, maxi(0, unit.shield_max() - expected), "erst den Schild")
+	t.equal(unit.hp, hp_before - maxi(0, expected - unit.shield_max()), "dann die Integritaet")
 	battle.free()
 
 
-## Ohne Overtime enden Spiegelkaempfe ueberwiegend unentschieden (gemessen:
-## 3 von 4). Mit Overtime muss fast jeder entschieden werden -- und zwar,
-## bevor das harte Zyklus-Limit greift.
+## Fallen beide Seiten im selben Puls, verliert der Spieler.
+func test_virus_double_fall_is_defeat() -> void:
+	var battle := BattleManager.new()
+	battle.setup(4245, _squad(), _squad())
+	battle.time = battle.virus_start()
+	for unit in battle.units:
+		unit.shield = 0
+		unit.hp = 1
+	battle._virus_pulse()
+	t.equal(battle.outcome, BattleManager.Outcome.DEFEAT, "gleichzeitiger Fall = Niederlage")
+	battle.free()
+
+
+## Mit dem Virus endet jeder Kampf entschieden -- ein Unentschieden gibt es
+## nicht mehr (gleichzeitiger Fall zaehlt als Niederlage).
 func test_mirror_battles_end_decisively() -> void:
 	var draws := 0
 	var total := 0
@@ -93,7 +112,7 @@ func test_mirror_battles_end_decisively() -> void:
 		if result["outcome"] == BattleManager.Outcome.DRAW \
 				or result["outcome"] == BattleManager.Outcome.RUNNING:
 			draws += 1
-	t.note("Overtime: %d/%d unentschieden, im Schnitt %.1f s"
+	t.note("Virus: %d/%d unentschieden, im Schnitt %.1f s"
 		% [draws, count, float(total) / count])
 	t.ok(draws <= count / 10, "höchstens 10%% Unentschieden (waren %d/%d)" % [draws, count])
 

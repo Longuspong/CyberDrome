@@ -79,6 +79,10 @@ var _log_panel: PanelContainer
 var _speed_button: Button
 var _pause_button: Button
 var _follow_button: Button
+## Glitch ueber dem Bild: Vorwarnung vor dem Virus und je Viruspuls.
+var _glitch: Arcade.GlitchOverlay
+## Kampfzeit des naechsten Warn-Flackerns (-1 = noch nicht gesetzt).
+var _next_flicker: float = -1.0
 
 
 func _ready() -> void:
@@ -92,6 +96,7 @@ func _ready() -> void:
 	EventBus.unit_damaged.connect(_on_unit_damaged)
 	EventBus.unit_healed.connect(_on_unit_healed)
 	EventBus.action_used.connect(_on_action_used)
+	EventBus.virus_pulsed.connect(_on_virus_pulse)
 	battle.battle_over.connect(_on_battle_over)
 
 	_start_battle()
@@ -107,7 +112,7 @@ func _start_battle() -> void:
 
 	battle.setup(GameState.battle_seed, builds, GameState.enemy_override,
 		GameState.battle_region)
-	battle.overtime_enabled = true
+	battle.virus_enabled = true
 	view.build_terrain(battle.grid)
 	# Die gemerkte Aufstellung des letzten Kampfs, wenn sie noch passt.
 	battle.apply_formation(GameState.formation)
@@ -193,8 +198,36 @@ func _process(delta: float) -> void:
 		if steps >= MAX_STEPS_PER_FRAME:
 			_accumulator = 0.0
 	_refresh_badges()
+	_virus_flicker()
 	if _follow and not _over and not _deploying:
 		_follow_fight(delta)
+
+
+func _virus_warn() -> float:
+	return float(Config.section("virus").get("warn_seconds", 30.0))
+
+
+## Die letzten Sekunden vor dem Virus flackert das Bild -- erst selten, dann
+## immer schneller, bis es beim Start im Takt der Viruspulse ankommt.
+func _virus_flicker() -> void:
+	if _glitch == null or _over or _deploying or battle.virus_in() <= 0.0:
+		return
+	var warn := _virus_warn()
+	var start := battle.virus_start()
+	if _next_flicker < 0.0:
+		_next_flicker = start - warn
+	if battle.time < _next_flicker:
+		return
+	var progress := clampf(1.0 - battle.virus_in() / warn, 0.0, 1.0)
+	_glitch.burst(0.35 + 0.55 * progress, 0.14 + 0.08 * progress)
+	_next_flicker = battle.time + lerpf(2.4 * battle.pulse_seconds(), battle.pulse_seconds(), progress)
+
+
+func _on_virus_pulse() -> void:
+	if _glitch != null:
+		_glitch.burst(1.0, 0.32)
+	_shake_camera(0.6)
+	Accessibility.vibrate(60)
 
 
 ## Kacheln und Statuszeile -- je Bild, das ist billig genug.
@@ -211,8 +244,15 @@ func _refresh_hud() -> void:
 	var seconds := int(battle.time)
 	_status.text = "%d:%02d  ·  %s" % [seconds / 60, seconds % 60,
 		battle.region.display_name if battle.region != null else ""]
-	if battle.in_overtime():
-		_status.text += "  ·  OVERTIME"
+	var until := battle.virus_in()
+	if until <= 0.0:
+		_status.text += "  ·  VIRUS"
+		_status.modulate = UiKit.MAGENTA
+	elif until <= _virus_warn():
+		_status.text += "  ·  Virus in %d s" % int(ceil(until))
+		_status.modulate = UiKit.WARN
+	else:
+		_status.modulate = Color.WHITE
 	if _paused:
 		_status.text += "  ·  Pause"
 
@@ -692,6 +732,11 @@ func _build_ui() -> void:
 	_ui = CanvasLayer.new()
 	_ui.layer = 2
 	add_child(_ui)
+	var glitch_layer := CanvasLayer.new()
+	glitch_layer.layer = 3
+	add_child(glitch_layer)
+	_glitch = Arcade.GlitchOverlay.new()
+	glitch_layer.add_child(_glitch)
 
 	var frame := VBoxContainer.new()
 	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
