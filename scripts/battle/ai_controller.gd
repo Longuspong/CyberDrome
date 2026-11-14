@@ -567,35 +567,57 @@ func _fork(unit: Unit, ability: ActionData, aim: Dictionary, share: float) -> vo
 
 
 ## Wen unterstuetzt ``action``? "self": den Traeger. "ally" (und Angriffe mit
-## ``heal``): den Verbuendeten mit dem geringsten Anteil Integritaet in
-## Reichweite -- nur wenn er verletzt ist (heal) bzw. Schild brauchen kann
-## (shield_gain). Leer, wenn niemand Hilfe braucht.
+## ``heal``): nach der Heilregel (_care_choice) -- nur wenn er verletzt ist
+## (heal) bzw. Schild brauchen kann (shield_gain) und in Reichweite steht.
+## Leer, wenn niemand Hilfe braucht.
 func _support_aim(unit: Unit, action: ActionData) -> Dictionary:
 	if action.support == "self":
 		return {"tile": unit.tile, "target": unit}
-	var best: Unit = null
-	var best_share := 2.0
-	for ally in battle.allies_of(unit):
-		if not ally.is_alive() or Grid.distance(unit.tile, ally.tile) > action.range_tiles:
-			continue
+	var best := _care_choice(unit, action.range_tiles, func(ally: Unit) -> bool:
 		var hp_max := maxi(1, ally.stat("hp_max"))
-		var share := float(ally.hp) / float(hp_max)
 		# Heilung hilft auch bei leerem Schild (der Rest wird Schild).
-		var needs: bool = (action.heal > 0 and (ally.hp < hp_max or ally.shield < ally.shield_max())) \
-			or (action.shield_gain > 0 and ally.shield < ActionResolver.shield_cap(ally))
-		if not needs:
-			continue
-		if share < best_share:
-			best_share = share
-			best = ally
-	if best == null:
+		return (action.heal > 0 and (ally.hp < hp_max or ally.shield < ally.shield_max())) \
+			or (action.shield_gain > 0 and ally.shield < ActionResolver.shield_cap(ally)), true)
+	if best == null or Grid.distance(unit.tile, best.tile) > action.range_tiles:
 		return {}
 	return {"tile": best.tile, "target": best}
 
 
-## Der verletzte Verbuendete, zu dem ein Heiler hin muss: der mit dem
-## geringsten Anteil Integritaet, der ausser Reichweite der Heilung steht.
-## Null, wenn der DROME nicht heilt oder alle Verletzten erreichbar sind.
+## Die Heilregel fuer alle Support-Waffen (14. Nov. 2026, SPOT-Blatt Fragen
+## 11): geheilt wird grundsaetzlich das NAECHSTE Ziel, das Hilfe braucht --
+## es sei denn, ein anderes in Reichweite oder bis zu 3 Felder dahinter hat
+## mehr als 30 Prozentpunkte weniger Integritaet; dann das schwaechste davon.
+const CARE_EXTRA_TILES := 3
+const CARE_GAP := 0.30
+
+
+func _care_choice(unit: Unit, reach: int, needs: Callable, with_self: bool) -> Unit:
+	var nearest: Unit = null
+	var nearest_gap := 1 << 30
+	var candidates: Array = []
+	for ally in battle.allies_of(unit):
+		if not ally.is_alive() or (ally == unit and not with_self) or not needs.call(ally):
+			continue
+		var gap := Grid.distance(unit.tile, ally.tile)
+		if gap > reach + CARE_EXTRA_TILES:
+			continue
+		candidates.append(ally)
+		if gap < nearest_gap or (gap == nearest_gap and ally.hp_fraction() < nearest.hp_fraction()):
+			nearest = ally
+			nearest_gap = gap
+	if nearest == null:
+		return null
+	var pick := nearest
+	for ally in candidates:
+		if ally.hp_fraction() < nearest.hp_fraction() - CARE_GAP and ally.hp_fraction() < pick.hp_fraction():
+			pick = ally
+	return pick
+
+
+## Der verletzte Verbuendete, zu dem ein Heiler hin muss: nach der Heilregel
+## gewaehlt, aber ausser Reichweite der Heilung. Ohne Kandidaten in der
+## Naehe: der mit dem geringsten Anteil Integritaet ueberhaupt. Null, wenn
+## der DROME nicht heilt oder der Gewaehlte erreichbar ist.
 func _patient_out_of_reach(unit: Unit) -> Unit:
 	var reach := 0
 	for mount in unit.mounts:
@@ -603,15 +625,16 @@ func _patient_out_of_reach(unit: Unit) -> Unit:
 			reach = maxi(reach, (mount["attack"] as ActionData).range_tiles)
 	if reach <= 0:
 		return null
-	var best: Unit = null
-	var best_share := 1.0
-	for ally in battle.allies_of(unit):
-		if ally == unit or not ally.is_alive():
-			continue
-		var share := float(ally.hp) / float(maxi(1, ally.stat("hp_max")))
-		if share < best_share:
-			best_share = share
-			best = ally
+	var hurt := func(ally: Unit) -> bool: return ally.hp < ally.stat("hp_max")
+	var best := _care_choice(unit, reach, hurt, false)
+	if best == null:
+		var best_share := 1.0
+		for ally in battle.allies_of(unit):
+			if ally == unit or not ally.is_alive():
+				continue
+			if ally.hp_fraction() < best_share:
+				best_share = ally.hp_fraction()
+				best = ally
 	if best != null and Grid.distance(unit.tile, best.tile) <= reach:
 		return null
 	return best

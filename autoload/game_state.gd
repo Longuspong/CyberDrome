@@ -519,6 +519,17 @@ func deliver_run_home() -> Array:
 						entry.assignments[slot] = roster.add_instance(part.id)
 				delivered.append(item)
 	run.home_queue.clear()
+	# Lootcaches und Platzhaltercoin (14. Nov. 2026): am Ende nach Hause.
+	if run.is_over() and (not run.run_caches.is_empty() or run.run_coins > 0):
+		for key in run.run_caches:
+			roster.caches[key] = int(roster.caches.get(key, 0)) + int(run.run_caches[key])
+			delivered.append({"kind": "cache", "title": "%d× %s" % [int(run.run_caches[key]),
+				RunState.cache_name(StringName(key))]})
+		roster.coins += run.run_coins
+		if run.run_coins > 0:
+			delivered.append({"kind": "coins", "title": "%d %s" % [run.run_coins, RunState.coin_name()]})
+		run.run_caches.clear()
+		run.run_coins = 0
 	if not delivered.is_empty():
 		save_roster()
 	save_run()

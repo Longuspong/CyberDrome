@@ -504,6 +504,12 @@ func _stop_status(run: RunState) -> Control:
 		flow.add_child(_chip("Niederlage  ·  −1 Leben", COLOR_BAD, Callable(), ""))
 	if not run.last_loot.is_empty():
 		flow.add_child(_chip("Beute ▸", COLOR_GOOD, func(): _loot_popup(run), ""))
+	var cache_total := 0
+	for key in run.run_caches:
+		cache_total += int(run.run_caches[key])
+	if cache_total > 0 or run.run_coins > 0:
+		flow.add_child(_chip("◆ %d  ·  ◈ %d" % [cache_total, run.run_coins], UiKit.MAGENTA,
+			func(): _caches_popup(run), ""))
 	if not run.last_growth.is_empty():
 		flow.add_child(_chip("Erfahrung ▸", COLOR_HEADING, func(): _growth_popup(run), ""))
 	if not run.bag.is_empty():
@@ -542,12 +548,25 @@ func _loot_popup(run: RunState) -> void:
 	for item in run.last_loot:
 		var where: String = {"lager": "  →  Lager", "squad": "  →  Squad",
 			"tasche": "  →  Tasche (nach dem Einsatz in den Hangar)",
-			"home": "  →  nach Hause"}.get(str(item.get("where", "")), "")
+			"home": "  →  nach Hause", "caches": "  →  Einsatz-Beute",
+			"coins": "  →  Einsatz-Beute"}.get(str(item.get("where", "")), "")
 		lines.append(["%s%s%s" % ["[Selten] " if item.get("rare", false) else "", item["title"], where],
 			COLOR_WARN if item.get("rare", false) else Color.WHITE])
 		if str(item.get("text", "")) != "":
 			lines.append([str(item["text"]), COLOR_MUTED, UiKit.SMALL])
 	InfoPopup.open(self, "Beute", {"lines": lines})
+
+
+## Was der Einsatz bisher an Caches und Platzhaltercoin gesammelt hat.
+func _caches_popup(run: RunState) -> void:
+	var lines: Array = [["Geht am Ende des Einsatzes in den Hangar -- auch wenn er scheitert.",
+		COLOR_MUTED, UiKit.SMALL]]
+	for key in run.run_caches:
+		lines.append(["◆  %d× %s" % [int(run.run_caches[key]), RunState.cache_name(StringName(key))],
+			UiKit.MAGENTA])
+	lines.append(["◈  %d %s" % [run.run_coins, RunState.coin_name()], COLOR_WARN])
+	lines.append(["Caches öffnen kommt mit dem Hangar-Shop.", COLOR_MUTED, UiKit.SMALL])
+	InfoPopup.open(self, "Einsatz-Beute", {"lines": lines})
 
 
 ## Erfahrung des letzten Kampfes (Leveling): je DROME und Waffe die neuen EP
@@ -1131,6 +1150,10 @@ func _show_end(run: RunState) -> void:
 			int(row["level"]), "  ·  Aufstieg!" if up else ""],
 			16 if row["kind"] == "drome" else 14, COLOR_GOOD if up else COLOR_MUTED))
 
+	var gains: Array = _delivered.filter(func(item): return item.get("kind", "") in ["cache", "coins"]) \
+		.map(func(item): return str(item["title"]))
+	if not gains.is_empty():
+		_side.add_child(_label("In den Hangar: %s" % ", ".join(gains), 16, UiKit.MAGENTA))
 	var parts: Array = _delivered.filter(func(item): return item.get("kind", "") == "part") \
 		.map(func(item): return str(item["title"]))
 	if not parts.is_empty():

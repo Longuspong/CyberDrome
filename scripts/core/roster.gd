@@ -35,6 +35,12 @@ var entries: Array = []
 ## wiederfindet. Wird beim Laden hinter das hoechste vorhandene gesetzt.
 var _next_uid: int = 1
 
+## Lootcaches (14. Nov. 2026, SPOT-Blatt Lootcaches): Gebiet -> Anzahl. Noch
+## nicht zu oeffnen (kommt mit dem Hangar-Shop, Bauschritt 4/5).
+var caches: Dictionary = {}
+## Platzhaltercoin (Arbeitsname): Waehrung fuer den Hangar-Shop.
+var coins: int = 0
+
 ## Die vier Standard-DROMEs mit ihrer VOLLEN Standard-Ausstattung -- der
 ## handgesetzte Startbestand (§10g/§12c). Reihenfolge = Reihenfolge im frischen
 ## Roster. Die Ausruestung wird der Reihe nach in den ersten passenden freien
@@ -297,6 +303,8 @@ func seed_starter() -> void:
 	_instances.clear()
 	entries.clear()
 	_next_uid = 1
+	caches = {}
+	coins = 0
 
 	for row in STARTER_CHASSIS:
 		var chassis_uid := add_instance(row["body"])
@@ -351,6 +359,8 @@ func to_dict() -> Dictionary:
 		"version": 2,
 		"inventory": inventory,
 		"roster": roster,
+		"caches": caches.duplicate(),
+		"coins": coins,
 	}
 
 
@@ -363,6 +373,10 @@ func load_dict(data: Dictionary) -> bool:
 	_instances.clear()
 	entries.clear()
 	_next_uid = 1
+	caches = {}
+	for key in data.get("caches", {}):
+		caches[str(key)] = int(data["caches"][key])
+	coins = int(data.get("coins", 0))
 
 	for entry_data in data.get("inventory", []):
 		var inst := PartInstance.from_dict(entry_data)

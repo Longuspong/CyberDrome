@@ -179,7 +179,59 @@ func _show_squad() -> void:
 	for index in _squad_first_order():
 		grid.add_child(_drome_tile(index))
 	_content.add_child(_primary_card(_selected))
+	_content.add_child(_vault_row())
 	_new_drome_section()
+
+
+## Lootcaches und Platzhaltercoin (14. Nov. 2026): eine Kachelreihe. Oeffnen
+## und Ausgeben kommen mit dem Hangar-Shop (Bauschritt 5).
+func _vault_row() -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.add_child(UiKit.heading("Beute"))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	box.add_child(row)
+	var roster := GameState.roster
+	var keys: Array = roster.caches.keys()
+	keys.sort()
+	for key in keys:
+		var count := int(roster.caches[key])
+		if count <= 0:
+			continue
+		var name := RunState.cache_name(StringName(key))
+		var tile := Tile.new("cache:%s" % key, _cache_icon(), "%d× %s" % [count, name], Vector2(0, 84))
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tile.accent = UiKit.MAGENTA
+		tile.glow = true
+		tile.on_info = func():
+			InfoPopup.open(self, name, {"picture": _cache_icon(), "lines": ["%d Stück im Hangar." % count,
+				["Öffnen kommt mit dem Hangar-Shop. Was drin ist, legst du in der SPOT-Tabelle "
+				+ "fest (Blatt Lootcaches).", UiKit.MUTED, UiKit.SMALL]]})
+		row.add_child(tile)
+	var coin := Tile.new("coins", UiKit.label("◈", 30, UiKit.WARN),
+		"%d %s" % [roster.coins, RunState.coin_name()], Vector2(0, 84))
+	coin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	coin.on_info = func():
+		InfoPopup.open(self, RunState.coin_name(), {"lines": ["%d im Hangar." % roster.coins,
+			["Gibt es nach Kämpfen ohne Cache. Damit kauft man bald Upgrades und Caches im "
+			+ "Hangar-Shop.", UiKit.MUTED, UiKit.SMALL]]})
+	row.add_child(coin)
+	return box
+
+
+## Ein Cache als Symbol: Kiste mit Neon-Rand (gezeichnet, bis es ein Bild gibt).
+func _cache_icon() -> Control:
+	var icon := Panel.new()
+	icon.custom_minimum_size = Vector2(40, 34)
+	var style := Arcade.chamfer_box(Color(UiKit.MAGENTA, 0.25), 8, UiKit.MAGENTA, 2)
+	icon.add_theme_stylebox_override("panel", style)
+	var mark := UiKit.label("◆", 18, UiKit.PRIMARY)
+	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	mark.set_anchors_preset(Control.PRESET_FULL_RECT)
+	icon.add_child(mark)
+	return icon
 
 
 ## Indizes aller DROMEs, die im Squad zuerst.

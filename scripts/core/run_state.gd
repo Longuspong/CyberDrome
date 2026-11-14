@@ -117,6 +117,12 @@ var bag: Array = []
 ## eines davon kommt ins Lager. Verfaellt beim Weitergehen.
 var bios_offers: Array = []
 
+## Lootcaches und Platzhaltercoin dieses Einsatzes (14. Nov. 2026). Gehen am
+## Ende nach Hause -- auch bei einem gescheiterten Einsatz (Fortschritt
+## bleibt), nur der Infinity-Einsatz verliert sie mit der Niederlage.
+var run_caches: Dictionary = {}
+var run_coins: int = 0
+
 ## Der gewaehlte Knoten in der Reihe der aktuellen Runde (row). Die Reihen
 ## selbst entstehen aus Seed, Runde und Verlauf und stehen nicht im
 ## Spielstand.
@@ -235,6 +241,7 @@ func to_dict() -> Dictionary:
 		"final_growth": _plain(final_growth), "home_queue": _plain(home_queue),
 		"start_counts": counts, "history": _plain(history),
 		"node": node,
+		"run_caches": run_caches.duplicate(), "run_coins": run_coins,
 	}
 
 
@@ -281,6 +288,9 @@ static func from_dict(data: Dictionary) -> RunState:
 		for key in ["round", "tier", "credits", "node"]:
 			if entry.has(key):
 				entry[key] = int(entry[key])
+	for key in data.get("run_caches", {}):
+		run.run_caches[str(key)] = int(data["run_caches"][key])
+	run.run_coins = int(data.get("run_coins", 0))
 	return run
 
 
@@ -630,6 +640,12 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 		"node": node, "chaos": is_chaos()})
 	last_loot = []
 	if not won:
+		var consolation := int(loot_cfg().get("loss_coins", 3))
+		if consolation > 0:
+			var item := {"kind": "coins", "amount": consolation,
+				"title": "%d %s" % [consolation, coin_name()], "text": "Trostpreis."}
+			_apply_loot(item)
+			last_loot.append(item)
 		lives -= 1
 		if lives <= 0:
 			_finish(Phase.LOST)
@@ -728,7 +744,13 @@ func _finish(final: Phase) -> void:
 		bag.clear()
 		storage.clear()
 		home_queue.clear()
+		run_caches.clear()
+		run_coins = 0
 		return
+	# Einsatz geschafft: der Abschluss-Cache (SPOT-Blatt Einsatz).
+	if final == Phase.WON and not is_endless():
+		var key := str(region_id)
+		run_caches[key] = int(run_caches.get(key, 0)) + int(loot_cfg().get("complete_caches", 1))
 	_send_loot_home()
 
 
@@ -1001,15 +1023,10 @@ func roll_loot(enemy_pool: Array) -> Array:
 		# letzten Kampf, dort waere es wertlos (Module verfallen).
 		out.append({"kind": "bios", "rare": true, "title": "Matrix-BIOS",
 			"text": "Wähle eines von %d -- es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))})
-	elif rng.randf() < float(settings.get("part_chance", 0.5)):
-		var part := _loot_part(rng, enemy_pool)
-		if part != null:
-			out.append({"kind": "part", "part_id": part.id, "rare": tier == Tier.ELITE,
-				"title": part.display_name, "text": _part_text(part)})
-	if out.is_empty():
-		var amount := int(settings.get("loot_credits", 5))
-		out.append({"kind": "credits", "amount": amount,
-			"title": "%d Credits" % amount, "text": "Gefundene Credits"})
+	# Lootcaches statt Teilen und Credits (14. Nov. 2026, SPOT-Blatt Einsatz):
+	# je Stufe eine Chance auf einen Cache der Fraktion, sonst Platzhaltercoin.
+	# Der letzte Kampf eines Einsatzes (der schwerste) gibt zwei.
+	out.append(_cache_roll(rng, rare))
 	if tier != Tier.ELITE and lives < lives_max() \
 			and rng.randf() < float(settings.get("life_chance", cfg().get("life_chance", 0.35))):
 		out.append({"kind": "life", "title": "Notstrom",
@@ -1062,8 +1079,43 @@ func _apply_loot(item: Dictionary) -> void:
 			bios_offers = roll_bios_offers()
 		"credits":
 			credits += int(item.get("amount", 0))
+		"cache":
+			item["where"] = "caches"
+			var key := str(item.get("cache", region_id))
+			run_caches[key] = int(run_caches.get(key, 0)) + int(item.get("count", 1))
+		"coins":
+			item["where"] = "coins"
+			run_coins += int(item.get("amount", 0))
 		"life":
 			lives = mini(lives_max(), lives + 1)
+
+
+## Cache oder Platzhaltercoin nach der Stufe (run.loot).
+func _cache_roll(rng: RandomNumberGenerator, rare: bool) -> Dictionary:
+	var loot := loot_cfg()
+	var key: String = "elite" if rare else TIER_KEYS[tier]
+	var chance := float((loot.get("cache_chance", {}) as Dictionary).get(key, 0.5))
+	if rng.randf() < chance:
+		var count := int(loot.get("final_caches", 2)) if is_last_round() else 1
+		return {"kind": "cache", "cache": str(region_id), "count": count, "rare": count > 1,
+			"title": "%s%s" % ["%d× " % count if count > 1 else "", cache_name(region_id)],
+			"text": "Lootcache der Fraktion -- öffnen kommt mit dem Hangar-Shop."}
+	var amount := int((loot.get("coins", {}) as Dictionary).get(key, 5))
+	return {"kind": "coins", "amount": amount, "title": "%d %s" % [amount, coin_name()],
+		"text": "Für Upgrades und Caches im Hangar."}
+
+
+static func loot_cfg() -> Dictionary:
+	return cfg().get("loot", {})
+
+
+## Name des Lootcaches eines Gebiets (Neon Cache, Solar Cache ...).
+static func cache_name(region: StringName) -> String:
+	return str((loot_cfg().get("cache_names", {}) as Dictionary).get(str(region), "Cache"))
+
+
+static func coin_name() -> String:
+	return str(loot_cfg().get("coin_name", "Platzhaltercoin"))
 
 
 static func _is_rare(part: PartData) -> bool:

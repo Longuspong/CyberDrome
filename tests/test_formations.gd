@@ -99,3 +99,32 @@ func test_enemy_dromes_get_more_modules_with_reinforcement() -> void:
 		return total
 	t.equal(count.call(1), 0, "Level 1: keine Module")
 	t.ok(count.call(8) > count.call(2), "später mehr Module")
+
+
+## Heilregel fuer Support-Waffen (SPOT-Blatt Fragen 11): das naechste Ziel,
+## ausser ein anderes in Reichweite (+3 Felder) hat 30 Punkte weniger Leben.
+func test_support_heals_the_nearest_unless_another_is_much_worse() -> void:
+	var battle := BattleManager.new()
+	var support := Formations.build_sentinel("neon_support")
+	var squad := RunState.standard_squad()
+	battle.setup(5151, [support, squad[0], squad[1]], [Formations.build_sentinel("neon_assault")])
+	var healer: Unit = battle.units.filter(func(u): return u.is_player and u.is_sentinel())[0]
+	var others: Array = battle.units.filter(func(u): return u.is_player and not u.is_sentinel())
+	var near: Unit = others[0]
+	var far: Unit = others[1]
+	var reach := 3
+	healer.tile = Vector2i(5, 5)
+	near.tile = Vector2i(6, 5)
+	far.tile = Vector2i(5, 9)
+	var hurt := func(ally: Unit) -> bool: return ally.hp < ally.stat("hp_max")
+	near.hp = int(near.stat("hp_max") * 0.8)
+	far.hp = int(far.stat("hp_max") * 0.6)
+	t.equal(battle.brain._care_choice(healer, reach, hurt, false), near,
+		"nur 20 Punkte schlechter: der Nächste")
+	far.hp = int(far.stat("hp_max") * 0.4)
+	t.equal(battle.brain._care_choice(healer, reach, hurt, false), far,
+		"40 Punkte schlechter und in Reichweite + 3: der Schwächere")
+	far.tile = Vector2i(5, 14)
+	t.equal(battle.brain._care_choice(healer, reach, hurt, false), near,
+		"zu weit weg: wieder der Nächste")
+	battle.free()

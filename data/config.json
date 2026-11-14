@@ -65,6 +65,20 @@
       "wide_until": 3, "wide_chance": 0.4, "forks_until": 4, "late_fork_chance": 0.25,
       "easy_share": 0.3, "elite_share": 0.22, "elite_from": 3, "chaos_credits": 1.5
     },
+    "loot": {
+      "_kommentar": [
+        "Lootcaches statt Teilen und Credits (14. Nov. 2026, SPOT-Blatt Einsatz, Vorschlag",
+        "uebernommen): nach einem Sieg mit cache_chance je Stufe ein Cache der Fraktion,",
+        "sonst coins Platzhaltercoin. Elite und Chaos sicher. Der letzte Kampf gibt",
+        "final_caches, ein geschaffter Einsatz zusaetzlich complete_caches, eine",
+        "Niederlage loss_coins. Caches sind noch nicht zu oeffnen (Hangar-Shop folgt)."
+      ],
+      "cache_chance": {"easy": 0.25, "normal": 0.5, "elite": 1.0},
+      "coins": {"easy": 5, "normal": 10, "elite": 0},
+      "final_caches": 2, "complete_caches": 1, "loss_coins": 3,
+      "cache_names": {"city": "Neon Cache", "green": "Solar Cache", "plant7": "Mecha Cache"},
+      "coin_name": "Platzhaltercoin"
+    },
     "training_rounds": 2,
     "endless": {
       "_kommentar": [

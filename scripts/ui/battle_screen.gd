@@ -888,7 +888,8 @@ func _add_loot_section(box: VBoxContainer, outcome: BattleManager.Outcome) -> vo
 		return
 	var won := outcome == BattleManager.Outcome.VICTORY
 	box.add_child(UiKit.label("+%d Credits%s" % [GameState.run.battle_credits(won),
-		"  ·  Beute im Zwischenstopp" if won else ""], UiKit.BODY, UiKit.WARN))
+		"  ·  Cache oder Coins im Zwischenstopp" if won else "  ·  Trostpreis in Coins"],
+		UiKit.BODY, UiKit.WARN))
 
 
 func _show_result(outcome: BattleManager.Outcome) -> void:

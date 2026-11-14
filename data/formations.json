@@ -418,8 +418,8 @@
    "level_offset": 0
   },
   "elite": {
-   "level_offset": 2,
-   "promote": 2,
+   "level_offset": 3,
+   "promote": 3,
    "drome_modules": 1
   }
  },
@@ -472,6 +472,18 @@
        "neon_assault:elite",
        "neon_assault",
        "neon_support"
+      ]
+     },
+     {
+      "from": 8,
+      "dromes": [
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:elite",
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_support:elite"
       ]
      }
     ]
@@ -529,6 +541,20 @@
        "neon_assault",
        "neon_assault"
       ]
+     },
+     {
+      "from": 10,
+      "dromes": [
+       "molok",
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:heavy_elite",
+       "neon_assault:heavy",
+       "neon_assault:elite",
+       "neon_assault:elite",
+       "neon_assault"
+      ]
      }
     ]
    },
@@ -581,8 +607,24 @@
       "sentinels": [
        "neon_assault:elite",
        "neon_assault",
-       "neon_sniper",
+       "neon_assault",
+       "neon_sniper:elite",
        "neon_support"
+      ]
+     },
+     {
+      "from": 9,
+      "dromes": [
+       "neon_vireo",
+       "neon_nimbus"
+      ],
+      "sentinels": [
+       "neon_assault:heavy",
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_sniper:elite",
+       "neon_sniper",
+       "neon_support:elite"
       ]
      }
     ]
@@ -640,6 +682,20 @@
        "neon_sniper",
        "neon_assault:heavy"
       ]
+     },
+     {
+      "from": 10,
+      "dromes": [
+       "neon_nimbus",
+       "strix"
+      ],
+      "sentinels": [
+       "neon_sniper:heavy_elite",
+       "neon_sniper:elite",
+       "neon_sniper:elite",
+       "neon_assault:heavy",
+       "neon_support:elite"
+      ]
      }
     ]
    },
@@ -683,6 +739,20 @@
        "neon_assault:heavy",
        "neon_assault"
       ]
+     },
+     {
+      "from": 9,
+      "dromes": [
+       "neon_nimbus",
+       "molok"
+      ],
+      "sentinels": [
+       "neon_support:elite",
+       "neon_support:elite",
+       "neon_assault:heavy_elite",
+       "neon_assault:heavy",
+       "neon_sniper"
+      ]
      }
     ]
    },
@@ -724,7 +794,22 @@
        "neon_assault:elite",
        "neon_assault:elite",
        "neon_assault",
+       "neon_assault",
        "neon_support"
+      ]
+     },
+     {
+      "from": 10,
+      "dromes": [
+       "neon_vireo",
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:heavy_elite",
+       "neon_assault:elite",
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_support:elite"
       ]
      }
     ]

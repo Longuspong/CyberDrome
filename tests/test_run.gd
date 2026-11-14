@@ -69,36 +69,32 @@ func test_an_elite_win_guarantees_something_rare() -> void:
 	for seed_value in 20:
 		var run := _run_with_tier(RunState.Tier.ELITE, 1800 + seed_value * 301)
 		run.record_result(BattleManager.Outcome.VICTORY, [&"eq_pulse_blaster", &"eq_rune_staff"])
-		t.equal(run.last_loot.size(), 1, "eine Beute, kein Notstrom bei Elite")
+		t.equal(run.last_loot.size(), 2, "BIOS oder DROME und ein Cache, kein Notstrom bei Elite")
 		var item: Dictionary = run.last_loot[0]
 		t.ok(item.get("rare", false), "%s ist selten" % item["title"])
-		t.ok(item["kind"] in ["bios", "drome"], "BIOS-Wahl oder DROME, keine Credits")
-		if item["kind"] == "part":
-			t.ok(PartDB.get_part(item["part_id"]).mount_class != "light",
-				"%s ist mittel oder schwer" % item["title"])
+		t.ok(item["kind"] in ["bios", "drome"], "BIOS-Wahl oder DROME")
+		t.equal(run.last_loot[1]["kind"], "cache", "Elite: der Cache ist sicher")
 
 
-func test_loot_is_rolled_without_a_choice() -> void:
-	# 6i: nach dem Sieg wird gewuerfelt -- Credits oder ein Teil, sofort verteilt.
+## Seit 14. Nov. 2026 Lootcaches statt Teilen und Credits (SPOT-Blatt
+## Einsatz): ein Cache der Fraktion oder Platzhaltercoin, sofort verbucht.
+func test_loot_is_a_cache_or_coins() -> void:
 	var kinds := {}
 	for seed_value in 40:
 		var run := RunState.start(3000 + seed_value)
 		run.record_result(BattleManager.Outcome.VICTORY, [&"eq_deflector"])
 		t.equal(run.phase, RunState.Phase.STOP, "gleich der Zwischenstopp")
-		t.ok(not run.last_loot.is_empty(), "es gibt Beute")
-		var item: Dictionary = run.last_loot[0]
+		var item: Dictionary = run.last_loot.filter(func(i): return i["kind"] in ["cache", "coins"])[0]
 		kinds[item["kind"]] = true
 		var win := int(RunState.tier_cfg(run.history[-1]["tier"]).get("credits", 0))
-		if item["kind"] == "part":
-			t.equal(item["part_id"], &"eq_deflector", "das Teil kommt aus der Gegnerausrüstung")
-			t.equal(run.bag, [&"eq_deflector"], "und liegt in der Tasche")
-			t.ok(run.storage.is_empty(), "nicht im Lager")
-			t.equal(item["where"], "tasche", "mit Ort")
-			t.equal(run.credits, win, "nur die Credits für den Sieg")
-		elif item["kind"] == "credits":
-			t.ok(run.bag.is_empty(), "kein Teil")
-			t.equal(run.credits, win + int(item["amount"]), "Beute-Credits obendrauf")
-	t.ok(kinds.has("part") and kinds.has("credits"), "beides kommt vor")
+		t.equal(run.credits, win, "Credits nur für den Sieg")
+		t.ok(run.bag.is_empty(), "keine Teile mehr als Beute")
+		if item["kind"] == "cache":
+			t.equal(run.run_caches.get("city", 0), 1, "ein Neon Cache im Einsatz")
+			t.equal(item["title"], "Neon Cache", "mit Namen")
+		else:
+			t.equal(run.run_coins, int(item["amount"]), "Platzhaltercoin verbucht")
+	t.ok(kinds.has("cache") and kinds.has("coins"), "beides kommt vor")
 
 
 func test_a_new_drome_comes_in_the_drome_rounds() -> void:
@@ -116,14 +112,10 @@ func test_a_new_drome_comes_in_the_drome_rounds() -> void:
 	t.equal(full.last_loot[0]["where"], "home", "mit Ort")
 
 
-func test_loot_parts_need_no_storage_room() -> void:
+func test_a_loss_still_pays_coins() -> void:
 	var run := RunState.start(33)
-	for _i in RunState.storage_size():
-		run.storage.append(&"mod_capacitor")
-	var id := _win_a_part(run, [&"eq_deflector"])
-	t.equal(id, &"eq_deflector", "ein Teil gewürfelt")
-	t.equal(run.storage.size(), RunState.storage_size(), "das Lager bleibt, wie es ist")
-	t.equal(run.bag, [id], "das Teil liegt in der Tasche")
+	run.record_result(BattleManager.Outcome.DEFEAT, [])
+	t.equal(run.run_coins, int(RunState.loot_cfg().get("loss_coins", 3)), "Trostpreis in Platzhaltercoin")
 
 
 func test_the_same_run_rolls_the_same_loot() -> void:
@@ -275,36 +267,36 @@ func test_losing_all_lives_ends_the_run() -> void:
 ## Gewinnt einen Kampf, dessen Beute ein Teil ist -- sucht dafuer einen
 ## Lauf-Seed, bei dem ein Teil gewuerfelt wird. Danach ist der Lauf im
 ## Zwischenstopp.
-func _win_a_part(run: RunState, pool: Array) -> StringName:
-	var base := run.run_seed
-	for offset in 200:
-		run.run_seed = base + offset
-		var loot := run.roll_loot(pool)
-		if loot[0]["kind"] == "part":
-			run.record_result(BattleManager.Outcome.VICTORY, pool)
-			return run.last_loot[0]["part_id"]
-	return &""
-
-
-func test_a_part_reward_lands_in_the_storage() -> void:
+func test_caches_go_home_even_when_the_mission_fails() -> void:
 	var run := RunState.start(12)
-	var id := _win_a_part(run, [&"eq_deflector", &"eq_rune_staff", &"eq_neon_blaster"])
-	t.ok(id != &"", "es gab ein Teil")
-	t.equal(run.phase, RunState.Phase.STOP, "Zwischenstopp nach dem Sieg")
-	t.equal(run.bag, [id], "das Teil liegt in der Tasche")
-	t.equal(run.credits, int(RunState.tier_cfg(RunState.Tier.NORMAL).get("credits", 0)),
-		"Credits für den Sieg")
-	t.equal(run.round, 1, "die Runde wechselt erst mit 'weiter'")
-	run.continue_run()
-	t.equal(run.round, 2, "danach geht es in die nächste Runde")
-	t.equal(run.phase, RunState.Phase.PREPARE, "und zur Gegnerwahl")
+	run.run_caches = {"city": 2}
+	run.run_coins = 15
+	run.phase = RunState.Phase.STOP
+	run.abandon()
+	t.equal(run.phase, RunState.Phase.LOST, "aufgegeben")
+	t.equal(run.run_caches, {"city": 2}, "die Caches bleiben dem Einsatz")
+	var back := _through_json(run)
+	t.equal(back.run_caches, {"city": 2}, "und überstehen das Speichern")
+	t.equal(back.run_coins, 15, "die Coins auch")
+
+
+func test_a_won_mission_brings_the_completion_cache() -> void:
+	var run := RunState.start(13)
+	run.round = RunState.rounds_total()
+	run._pick_default_node()
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	t.equal(run.phase, RunState.Phase.WON, "geschafft")
+	var final := int(RunState.loot_cfg().get("final_caches", 2))
+	var complete := int(RunState.loot_cfg().get("complete_caches", 1))
+	t.equal(int(run.run_caches.get("city", 0)), final + complete,
+		"letzter Kampf (Elite, sicher) und Abschluss-Cache")
 
 
 func test_weapons_are_fixed_during_the_run() -> void:
 	# MODULE_KONZEPT.md: im Lauf wird keine Waffe getauscht.
 	var run := RunState.start(21)
 	var before: Array = run.squad.map(func(b): return b.slots.duplicate())
-	_win_a_part(run, [&"eq_plasma_blade"])
+	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_plasma_blade"])
 	t.ok(not run.has_method("equip_from_storage"), "kein Einbauen im Lauf")
 	t.ok(not run.has_method("unequip"), "kein Ausbauen im Lauf")
 	t.equal(run.squad.map(func(b): return b.slots.duplicate()), before, "die Waffen bleiben")
@@ -320,14 +312,11 @@ func test_selling_a_module_from_the_storage() -> void:
 	t.ok(run.storage.is_empty(), "das Lager ist leer")
 
 
-func test_loot_goes_home_at_the_end_without_doubling_the_start_gear() -> void:
+func test_nothing_extra_goes_home_without_loot() -> void:
 	var run := RunState.start(24)
-	var id := _win_a_part(run, [&"eq_plasma_blade"])
 	run.phase = RunState.Phase.STOP
 	run.abandon()
-	t.equal(run.phase, RunState.Phase.LOST, "aufgegeben")
-	t.equal(run.home_queue.map(func(item): return item["part_id"]), [id],
-		"nur die Beute geht nach Hause")
+	t.equal(run.home_queue, [], "die Startausrüstung wird nicht verdoppelt")
 	t.ok(run.bag.is_empty(), "die Tasche ist geleert")
 
 
