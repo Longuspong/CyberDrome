@@ -15,7 +15,7 @@ direkt unten und gehen dem Text darunter vor.
   Bosse **tragen** selbst ein BIOS-Rezept. Ein Boss steht am Ende jedes Story-Levels (`NEUANFANG.md` 6h).
 * **Gegner-Profile = Fraktionen** je Gebiet (`NEUANFANG.md` 6i), siehe Abschnitt 9:
   Neon Ninja's = **Kämpfer**, Solar Sentients = **Rudel** (Bio-/Virus-Cyber; später ein DROME,
-  der sich aufteilt bzw. sich selbst beschwört), Mega Mechas = **Festung**, Hipstar Hookers = offen.
+  der sich aufteilt bzw. sich selbst beschwört), Mega Mechas = **Festung**, Hipstar Hackers = offen.
   Damit steht beim Start fest, welche Profile kommen (Lage-BIOS).
 * **Waffen sind im Lauf fest.** Beute-Teile gehen in die Tasche und erst nach dem Lauf in den Hangar.
 * **Laden:** 3 Angebote, Neuwürfeln, Ziel-Rezept. **Kein Sperren** -- bei 9 Grundmodulen reicht Neuwürfeln.
@@ -355,9 +355,9 @@ Rezepten. Das Profil steht in der Kampf-Vorschau. Später kommen eigene DROMEs j
 | Neon City / Neon Ninja's | **Kämpfer** | Vireos mit Plasmaklinge, Molok mit Hammer | Rundumschlag, Raufbold, Überladung | Stachelgitter, Splitterpanzer, Fesselkette |
 | Parkanlage / Solar Sentients | **Rudel** (Bio-/Virus-Cyber) | viele leichte DROMEs; später ein DROME, der sich aufteilt und sich selbst beschwört | Gabelung, Kettenreaktion, Doppellauf | Rundumschlag, Entladung, Orbit-Fokus |
 | Factory 5 / Mega Mechas | **Festung** | Moloks, Deflektor | Rammbock, Brandmarke, Bollwerk | kinetisch, Rammbock, Kettenreaktion |
-| Dachterrassen / Hipstar Hookers | offen | -- | -- | -- |
+| Dachterrassen / Hipstar Hackers | offen | -- | -- | -- |
 
-Weitere Profile, noch ohne Fraktion (Kandidaten für Hipstar Hookers oder Mischkämpfe im Endlos-Modus):
+Weitere Profile, noch ohne Fraktion (Kandidaten für Hipstar Hackers oder Mischkämpfe im Endlos-Modus):
 
 | Profil | Zusammensetzung | Bevorzugte Module | Antwort des Spielers |
 |---|---|---|---|

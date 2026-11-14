@@ -8,6 +8,8 @@ die Teams in `data/encounters.json` sind die spielbare Fassung von Abschnitt 3.
 
 ## 1. Der Aufhänger: „Die Liga und der Virus"
 
+> **Ersetzt (14. Nov. 2026)** durch den Story-Leitfaden in `STORY_LEITFADEN.md`.
+
 **Empfehlung.** Ein Satz: *Neon City trägt seine Revierkämpfe in der DROME-Liga
 aus – und ein Virus bringt die Liga gerade zum Kippen.*
 
@@ -27,7 +29,7 @@ aus – und ein Virus bringt die Liga gerade zum Kippen.*
   | Neon Ninja's (Neon City) | „Eine Prüfung. Wer besteht, ist würdig." | Kämpfer, suchen den Nahkampf |
   | Solar Sentients (Parkanlage) | „Kein Feind – ein neuer Zweig." Sie nehmen ihn auf. | Rudel, teilen und vermehren sich |
   | Mega Mechas (Factory 5) | „Einsperren und verkaufen." | Festung, Schilde, Artillerie |
-  | Hipstar Hookers (Dachterrassen) | Sie haben ihn freigesetzt – aus Versehen, sagen sie. | Trickser (Vorschlag, Abschnitt 3) |
+  | Hipstar Hackers (Dachterrassen) | Sie haben ihn freigesetzt – aus Versehen, sagen sie. | Trickser (Vorschlag, Abschnitt 3) |
 
 * **Der Endlos-Modus** ist das *Chaos-Netz*: die Simulation unter der Stadt, in
   der der Virus wohnt. Dort tauchen Chaos-Knoten auf, dort gibt es kein Ende.
@@ -122,9 +124,9 @@ man aus diesem Gebiet mitnimmt.
 | Neon Ninja's | **Shinobi** | Jäger | *Hinterhalt:* der erste Treffer auf ein neues Ziel +50 % | Die geplante Jägerklasse (`NEUANFANG.md` 6f): jagt den Verwundbarsten. Der Ausgleich zum Strix. |
 | Solar Sentients | **Spore** | Rudel | *Teilung:* zerfällt beim Tod in zwei schwache Sporlinge | Der DROME, der sich aufteilt (steht schon in `MODULE_KONZEPT.md` 9). |
 | Mega Mechas | **Bastion** | Geschütz | *Verankert:* läuft nicht, dafür +2 Reichweite und ein Schildwall für Nachbarn | Eine Festung braucht einen Turm. Antwort: flankieren, Mörser. |
-| Hipstar Hookers | **Hook** | Trickser | *Greifhaken:* jede Fähigkeit zieht ihr Ziel 2 Felder heran | Zerreißt die Aufstellung des Spielers – der einzige Gegner, der das kann. |
+| Hipstar Hackers | **Hook** | Trickser | *Greifhaken:* jede Fähigkeit zieht ihr Ziel 2 Felder heran | Zerreißt die Aufstellung des Spielers – der einzige Gegner, der das kann. |
 
-**Hipstar Hookers = Trickser** ist der Vorschlag für das offene Profil: sie
+**Hipstar Hackers = Trickser** ist der Vorschlag für das offene Profil: sie
 ziehen die Hinterreihe nach vorn, stellen Hologramm-Köder und stören den Takt.
 Antwort des Spielers: Wurzeln, robuste Hinterreihe, Fluchtpunkt-BIOS.
 
@@ -226,7 +228,7 @@ Platzhalter. Vorschlag:
    jeder Knoten führt zum Leichten und zu *einem* der beiden schwereren.
 4. **Erstes Fraktions-Chassis** – Shinobi (Jäger) zuerst? Er braucht ein
    Bild aus der Werkstatt.
-5. **Hipstar Hookers = Trickser?**
+5. **Hipstar Hackers = Trickser?**
 6. **Schwierigkeit** – Normal ist für einen Squad ohne Module in Runde 8 zu
    63 % zu gewinnen, Elite zu 41 %. Mit Modulen wird das leichter. So lassen
    und im Playtest prüfen, oder die Elite-Teams anziehen?

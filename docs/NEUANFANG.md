@@ -489,7 +489,7 @@ den Code geprueft. Entschieden:
 | 1 | Neon City | Neon Ninja's |
 | 2 | Parkanlage | Solar Sentients |
 | 3 | Factory 5 | Mega Mechas |
-| 4 | Dachterrassen | Hipstar Hookers |
+| 4 | Dachterrassen | Hipstar Hackers |
 
 In `data/regions.json` umbenannt (Ids `city`, `green`, `plant7` bleiben).
 Stage 4 hat noch keine Region (Boden, Kulisse).
@@ -606,7 +606,7 @@ und Rezepten vor). Kurz:
   tragen selbst ein BIOS-Rezept.
 * **Profile = Fraktionen:** Neon Ninja's = Kaempfer, Solar Sentients = Rudel
   (Bio-/Virus-Cyber, spaeter ein DROME, der sich aufteilt / selbst
-  beschwoert), Mega Mechas = Festung, Hipstar Hookers offen.
+  beschwoert), Mega Mechas = Festung, Hipstar Hackers offen.
 * **Waffen im Lauf fest**; Beute-Teile erst nach dem Lauf in den Hangar.
 * **Laden:** 3 Angebote, Neuwuerfeln, Ziel-Rezept, **kein Sperren**.
 * Neue Waffen zuerst: Bollwerk-Ramme, Moerser, Klingenbumerang.
