@@ -780,10 +780,16 @@ func next_step(unit: Unit, target: Unit) -> Vector2i:
 				return _kite_step(unit, target, 1)
 			return _approach(unit, target)
 		"controller":
-			# Wartet hinter der Frontlinie, bis die im Kampf ist. Wer selbst
-			# bedraengt wird, wartet natuerlich nicht.
+			# Laeuft hinter der Frontlinie mit, bis die im Kampf ist: ein
+			# Schritt nur, wenn er danach noch weiter vom Gegner weg steht
+			# als die vorderste Frontlinie. Frueher stand er bis zum ersten
+			# Treffer still -- zu Beginn ein paar Sekunden Leerlauf. Wer
+			# selbst bedraengt wird, wartet natuerlich nicht.
 			if not shooting and not _frontline_engaged(unit) \
 					and _nearest_foe(unit, unit.tile) > int(_realtime.get("kite_distance", 2)):
+				var step := _approach(unit, target)
+				if _nearest_foe(unit, step) > _frontline_gap(unit):
+					return step
 				return unit.tile
 		"skirmisher":
 			pass
@@ -855,6 +861,19 @@ func _frontline_engaged(unit: Unit) -> bool:
 		if _can_shoot_anyone(ally, ally.tile):
 			return true
 	return not has_front
+
+
+## Wie nah ist die vorderste eigene Frontlinie (vanguard, skirmisher) am
+## Gegner? Ohne Frontlinie 0 -- dann haelt nichts zurueck.
+func _frontline_gap(unit: Unit) -> int:
+	var gap := 99
+	var has_front := false
+	for ally in battle.allies_of(unit):
+		if ally == unit or not ally.ai_role() in ["vanguard", "skirmisher"]:
+			continue
+		has_front = true
+		gap = mini(gap, _nearest_foe(ally, ally.tile))
+	return gap if has_front else 0
 
 
 func _nearest_foe(unit: Unit, tile: Vector2i) -> int:
