@@ -128,6 +128,17 @@ func vibrate(duration_ms: int, force: bool = false) -> void:
 	Input.vibrate_handheld(duration_ms)
 
 
+## Laeuft gerade ein Wischer oder rollt eine Liste aus? (Kacheln zaehlen
+## dann kein langes Druecken.)
+func is_scrolling() -> bool:
+	return _scroll_dragging or _scroll_coasting
+
+
+## Ganz kurzes Antippen-Gefuehl fuer Knoepfe und Kacheln (14. Nov. 2026).
+func tap() -> void:
+	vibrate(8)
+
+
 ## Bewegungsdauer-Faktor fuer dekorative Animationen: 0 = aus.
 func motion() -> float:
 	return 0.0 if reduce_motion else 1.0
@@ -284,7 +295,9 @@ var _swallow_until_msec := 0
 const SWALLOW_AFTER_MSEC := 400
 ## Wischen zum Scrollen (siehe _scroll_input).
 const SCROLL_THRESHOLD := 12.0
-const SCROLL_FRICTION := 5.0
+const SCROLL_FRICTION := 3.2
+const SCROLL_MAX_SPEED := 5000.0
+var _scroll_samples: Array = []
 var _scroll_target: ScrollContainer
 var _scroll_dragging := false
 var _scroll_travel := Vector2.ZERO
@@ -355,6 +368,9 @@ func _input(event: InputEvent) -> void:
 func _scroll_input(event: InputEvent) -> bool:
 	if event is InputEventScreenTouch:
 		if event.pressed and event.index == 0:
+			# Ein Tippen in eine auslaufende Liste haelt sie nur an.
+			if _scroll_coasting and _scroll_velocity.length() > 250.0:
+				_swallow_release = true
 			_scroll_coasting = false
 			_scroll_velocity = Vector2.ZERO
 			_scroll_target = _scroll_container_at(event.position)
@@ -362,6 +378,7 @@ func _scroll_input(event: InputEvent) -> bool:
 			_scroll_travel = Vector2.ZERO
 		elif not event.pressed and _scroll_dragging:
 			_scroll_dragging = false
+			_scroll_velocity = _scroll_release_velocity()
 			_scroll_coasting = _scroll_velocity.length() > 60.0
 		return false
 	if event is InputEventScreenDrag and event.index == 0 and _scroll_target != null:
@@ -380,10 +397,13 @@ func _scroll_input(event: InputEvent) -> bool:
 			_scroll_dragging = true
 			_press_active = false        # kein langes Druecken mehr
 			_swallow_release = true      # und kein Klick am Ende
+			_scroll_samples.clear()
+			# Den Weg bis zur Schwelle nachholen -- sonst springt die Liste
+			# beim Loslaufen und fuehlt sich zaeh an.
+			_scroll_by(-(_scroll_travel - event.relative))
 		if _scroll_dragging:
 			_scroll_by(-event.relative)
-			var delta := maxf(get_process_delta_time(), 1.0 / 120.0)
-			_scroll_velocity = _scroll_velocity.lerp(-event.relative / delta, 0.5)
+			_scroll_sample(-event.relative)
 			get_viewport().set_input_as_handled()
 			return true
 	return false
@@ -421,10 +441,47 @@ func _scroll_container_at(at: Vector2) -> ScrollContainer:
 func _scroll_by(amount: Vector2) -> void:
 	if _scroll_target == null or not is_instance_valid(_scroll_target):
 		return
+	# Ueber die Leisten in Kommazahlen: scroll_vertical ist ganzzahlig, und
+	# kleine Schritte (langsames Wischen, Auslaufen) gingen dort verloren --
+	# die Liste ruckelte und blieb am Ende stehen (bis 14. Nov. 2026).
 	if _scroll_target.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
-		_scroll_target.scroll_vertical += int(round(amount.y))
+		var bar := _scroll_target.get_v_scroll_bar()
+		var before := bar.value
+		bar.value = before + amount.y
+		if is_equal_approx(bar.value, before) and absf(amount.y) > 0.01:
+			_scroll_velocity.y = 0.0     # am Rand: nicht weiterlaufen
 	if _scroll_target.horizontal_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
-		_scroll_target.scroll_horizontal += int(round(amount.x))
+		var hbar := _scroll_target.get_h_scroll_bar()
+		var hbefore := hbar.value
+		hbar.value = hbefore + amount.x
+		if is_equal_approx(hbar.value, hbefore) and absf(amount.x) > 0.01:
+			_scroll_velocity.x = 0.0
+
+
+## Merkt sich die letzten Bewegungen mit Zeitstempel. Das Tempo beim
+## Loslassen kommt aus den letzten ~90 ms -- nicht aus dem Bildtakt, der mit
+## mehreren Touch-Ereignissen je Bild das Tempo verfaelschte.
+func _scroll_sample(amount: Vector2) -> void:
+	var now := Time.get_ticks_usec()
+	_scroll_samples.append([now, amount])
+	while _scroll_samples.size() > 1 and now - int(_scroll_samples[0][0]) > 120000:
+		_scroll_samples.pop_front()
+
+
+func _scroll_release_velocity() -> Vector2:
+	if _scroll_samples.is_empty():
+		return Vector2.ZERO
+	var now := Time.get_ticks_usec()
+	# Finger stand vor dem Loslassen still: kein Schwung.
+	if now - int(_scroll_samples[-1][0]) > 80000:
+		return Vector2.ZERO
+	var total := Vector2.ZERO
+	var first := int(_scroll_samples[0][0])
+	for sample in _scroll_samples:
+		total += sample[1]
+	var span := maxf(float(now - first) / 1000000.0, 1.0 / 60.0)
+	var velocity := total / span
+	return velocity.limit_length(SCROLL_MAX_SPEED)
 
 
 func _process(delta: float) -> void:
@@ -434,8 +491,8 @@ func _process(delta: float) -> void:
 		_scroll_coasting = false
 		return
 	_scroll_by(_scroll_velocity * delta)
-	_scroll_velocity = _scroll_velocity.lerp(Vector2.ZERO, clampf(SCROLL_FRICTION * delta, 0.0, 1.0))
-	if _scroll_velocity.length() < 20.0:
+	_scroll_velocity *= exp(-SCROLL_FRICTION * delta)
+	if _scroll_velocity.length() < 15.0:
 		_scroll_coasting = false
 
 

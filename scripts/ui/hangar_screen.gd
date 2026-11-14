@@ -25,9 +25,9 @@ extends Control
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
 
 const PORTRAIT := 124.0
-const PRIMARY_EDGE := 140.0
-const TILE_EDGE := 104.0
-const TILE_COLUMNS := 3
+const PRIMARY_EDGE := 120.0
+const TILE_EDGE := 110.0
+const TILE_COLUMNS := 4
 const TILE_GAP := 10
 const SLOT_EDGE := 60.0
 const PART_EDGE := 92.0
@@ -156,18 +156,29 @@ func _changed() -> void:
 
 func _show_squad() -> void:
 	var count := GameState.roster.squad_count()
-	_content.add_child(UiKit.label("Squad  %d / %d" % [count, _squad_max()], UiKit.H2,
-		UiKit.GOOD if count > 0 else UiKit.BAD))
 	if _selected < 0 or _selected >= _entries().size():
 		_selected = _first_in_squad()
-	_content.add_child(_primary_card(_selected))
-
-	# Alle DROMEs genau einmal -- der Squad zuerst. Plus/Minus in der Kachel.
-	var tiles: Array = []
+	# Seit 14. Nov. 2026: erst alle DROMEs als Kacheln (einmal tippen
+	# waehlt, doppelt tippen oeffnet den Umbau), darunter der gewaehlte
+	# kompakt -- vorher stand er gross oben UND noch einmal als Kachel.
+	var head := HBoxContainer.new()
+	var title := UiKit.heading("Squad  %d / %d" % [count, _squad_max()])
+	title.modulate = UiKit.GOOD if count > 0 else UiKit.BAD
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	var hint := _quiet(UiKit.label("Doppeltipp: Umbau", 13, UiKit.MUTED)) as Label
+	hint.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(hint)
+	_content.add_child(head)
+	var grid := GridContainer.new()
+	grid.columns = TILE_COLUMNS
+	grid.add_theme_constant_override("h_separation", TILE_GAP)
+	grid.add_theme_constant_override("v_separation", TILE_GAP)
+	_content.add_child(grid)
 	for index in _squad_first_order():
-		tiles.append(_drome_tile(index))
-	_add_tile_rows(_content, tiles)
-
+		grid.add_child(_drome_tile(index))
+	_content.add_child(_primary_card(_selected))
 	_new_drome_section()
 
 
@@ -216,31 +227,43 @@ func _tile_style(highlight: bool, in_squad: bool) -> StyleBoxFlat:
 ## Minus (heraus). Antippen zeigt ihn oben in der grossen Box.
 func _drome_tile(index: int) -> Control:
 	var entry: RosterEntry = _entries()[index]
-	var panel := _tappable(_tile_style(index == _selected, entry.in_squad), func():
+	var tile := Tile.new("drome:%d" % index)
+	tile.custom_minimum_size = Vector2(0, TILE_EDGE)
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.selected = index == _selected
+	tile.glow = entry.in_squad
+	tile.accent = UiKit.GOOD if entry.in_squad and index != _selected else UiKit.ACCENT
+	tile.tooltip_text = entry.name
+	tile.on_tap = func():
 		_selected = index
-		_refresh())
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.tooltip_text = entry.name
-	var stack := _tile_stack(GameState.roster.build_for(entry), TILE_EDGE, entry.in_squad)
-	panel.add_child(stack)
+		_refresh()
+	tile.on_info = func():
+		_selected = index
+		_selected_slot = ""
+		_switch("umbau")
+	var stack := _tile_stack(GameState.roster.build_for(entry), TILE_EDGE - 30.0, entry.in_squad)
+	tile.add_picture(stack)
+	tile.add_caption(entry.name, UiKit.TEXT if entry.in_squad else UiKit.MUTED, 13)
 
 	var full := GameState.roster.squad_count() >= _squad_max()
 	var toggle := Button.new()
-	toggle.text = "-" if entry.in_squad else "+"
-	toggle.add_theme_font_size_override("font_size", 24)
-	toggle.custom_minimum_size = Vector2(40, 40)
+	toggle.text = "−" if entry.in_squad else "+"
+	toggle.add_theme_font_size_override("font_size", 22)
+	toggle.custom_minimum_size = Vector2(36, 36)
 	toggle.disabled = not entry.in_squad and full
 	toggle.tooltip_text = ("%s aus dem Squad" if entry.in_squad else "%s in den Squad") % entry.name
 	if toggle.disabled:
 		toggle.tooltip_text = "Squad voll (%d) -- erst einen herausnehmen" % _squad_max()
-	toggle.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	toggle.position = Vector2(-40, 0)
+	toggle.position = Vector2(stack.custom_minimum_size.x - 30.0, -4)
+	toggle.size = toggle.custom_minimum_size
+	toggle.mouse_filter = Control.MOUSE_FILTER_STOP
 	toggle.pressed.connect(func():
+		Accessibility.tap()
 		entry.in_squad = not entry.in_squad
 		_selected = index
 		_changed())
 	stack.add_child(toggle)
-	return panel
+	return tile
 
 
 ## Bild in der Mitte einer Kachel, ">>" oben links fuer Squad-Mitglieder.
@@ -279,7 +302,16 @@ func _primary_card(index: int) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	panel.add_child(row)
-	row.add_child(UiKit.drome_view(build, PRIMARY_EDGE))
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 8)
+	row.add_child(left)
+	left.add_child(UiKit.drome_view(build, PRIMARY_EDGE))
+	var umbau := UiKit.button("Umbau ▸")
+	umbau.custom_minimum_size = Vector2(PRIMARY_EDGE, 44)
+	umbau.pressed.connect(func():
+		_selected_slot = ""
+		_switch("umbau"))
+	left.add_child(umbau)
 	var info := _drome_info(entry, build)
 	row.add_child(info)
 	info.add_child(UiKit.label("im Squad" if entry.in_squad else "nicht im Squad",
@@ -556,7 +588,7 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 		_content.add_child(UiKit.label("Kein freies Teil passt in diesen DROME.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
-	_content.add_child(UiKit.label("Frei und passend -- antippen oder hochziehen",
+	_content.add_child(UiKit.label("Frei und passend  ·  tippen: einbauen  ·  Doppeltipp: Karte",
 		UiKit.SMALL, UiKit.MUTED))
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -598,29 +630,35 @@ func _drop_part(entry: RosterEntry, slot: String, data) -> void:
 ## Antippen oeffnet die Waffen-Karte; nach oben (oder unten) ziehen nimmt das
 ## Teil mit auf einen Halter. Waagerecht blaettert die Leiste.
 func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData) -> Control:
-	var panel := _tappable(_tile_style(false, false), func():
-		_open_card(entry, build, part, ""))
-	panel.custom_minimum_size = Vector2(STRIP_TILE, STRIP_TILE)
-	panel.tooltip_text = part.display_name
+	var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE - 20.0)
+	var tile := Tile.new("part:%s" % part.id, shape, part.display_name,
+		Vector2(STRIP_TILE, STRIP_TILE))
+	tile.tooltip_text = part.display_name
+	# Seit 14. Nov. 2026: einmal tippen baut sofort in den gewaehlten Halter
+	# ein, doppelt tippen oder lange druecken zeigt die Waffen-Karte.
+	tile.on_tap = func():
+		var slot := _target_slot(build, part)
+		if slot != "" and GameState.roster.assign(entry, slot, part.id):
+			Accessibility.vibrate(20, true)
+			_selected_slot = slot
+			_changed()
+		else:
+			_open_card(entry, build, part, "")
+	tile.on_info = func(): _open_card(entry, build, part, "")
 	var start := {"at": Vector2.ZERO}
-	panel.gui_input.connect(func(event: InputEvent):
+	tile.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed:
 			start["at"] = event.global_position)
-	panel.set_drag_forwarding(func(_at):
-		var moved: Vector2 = panel.get_global_mouse_position() - start["at"]
+	tile.set_drag_forwarding(func(_at):
+		var moved: Vector2 = tile.get_global_mouse_position() - start["at"]
 		if absf(moved.x) > absf(moved.y):
 			return null
 		var preview := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE)
 		preview.modulate = Color(1, 1, 1, 0.85)
-		panel.set_drag_preview(preview)
+		tile.set_drag_preview(preview)
 		return {"kind": "part", "part_id": part.id},
 		Callable(), Callable())
-	var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE)
-	shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	shape.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	shape.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(shape)
-	return panel
+	return tile
 
 
 ## Die Waffen-Karte. ``installed_in``: der Halter, in dem sie steckt (dann
