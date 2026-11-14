@@ -64,7 +64,9 @@
     {"bereich": "Einsatz", "thema": "Kampfkarte", "festlegung": "FTL-artig: feste Pfade mit Gabelungen statt freier Wahl je Reihe. Anfangs fast nach jedem Kampf eine Gabelung, später längere Korridore. Vorschau zeigt den nächsten Kampf.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
     {"bereich": "Einsatz", "thema": "Virusschaden", "festlegung": "Uhr je Kampf, ab 5:00 je Puls 10 % der Höchstwerte, erst Schild dann Integrität. Gleichzeitiger Fall = Niederlage. Ersetzt Overtime und Zeitlimit. Die letzten 30 s flackert das Bild als Glitch, immer schneller bis zum Pulstakt.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
     {"bereich": "Einsatz", "thema": "Beute bis Lootcaches", "festlegung": "Bis Schritt 4: Caches als Beute, aber noch nicht zu öffnen.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Einsatz", "thema": "Infinity-Einsatz", "festlegung": "Der Endlos-Modus heißt Infinity-Einsatz.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"}
+    {"bereich": "Einsatz", "thema": "Infinity-Einsatz", "festlegung": "Der Endlos-Modus heißt Infinity-Einsatz.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
+    {"bereich": "Story", "thema": "Umbenennung", "festlegung": "Die Hipstar Hookers heißen jetzt Hipstar Hackers.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Spieler"},
+    {"bereich": "Story", "thema": "Story-Leitfaden", "festlegung": "Dystopie mit Cybervirus, keine Hauptfigur (Beobachter), Drahtzieher + Gegenspieler, Prolog, Akt 1, zwei Wendepunkte (Mega Mechas, Hipstar Hackers), Akt 2 Sondertrupp, Akt 3. Ersetzt 'Die Liga und der Virus'.", "seit": "14. Nov. 2026", "status": "Leitfaden", "quelle": "docs/STORY_LEITFADEN.md"}
   ],
 
   "dromes": {
@@ -98,14 +100,14 @@
   },
 
   "fraktionen": [
-    {"name": "Neon Ninja's", "kurz": "Neon", "gebiet": "Neon City", "profil": "Kämpfer", "virus": "„Eine Prüfung. Wer besteht, ist würdig.“", "chassis_vorschlag": "Shinobi (Jäger) -- Hinterhalt: der erste Treffer auf ein neues Ziel +50 %", "boss": "Oni (Level 5), Shogun Kage (Level 10)", "status": "gebaut (Profil + Teams); Chassis Vorschlag"},
-    {"name": "Solar Sentients", "kurz": "Solar", "gebiet": "Parkanlage", "profil": "Rudel", "virus": "„Kein Feind – ein neuer Zweig.“ Sie nehmen ihn auf.", "chassis_vorschlag": "Spore (Rudel) -- Teilung: zerfällt beim Tod in zwei schwache Sporlinge", "boss": "--", "status": "gebaut (Profil + erste Teams); Chassis Vorschlag"},
-    {"name": "Mega Mechas", "kurz": "Mecha", "gebiet": "Factory 5", "profil": "Festung", "virus": "„Einsperren und verkaufen.“", "chassis_vorschlag": "Bastion (Geschütz) -- Verankert: läuft nicht, +2 Reichweite und Schildwall für Nachbarn", "boss": "--", "status": "gebaut (Profil + erste Teams); Chassis Vorschlag"},
-    {"name": "Hipstar Hookers", "kurz": "Hipstar", "gebiet": "Dachterrassen", "profil": "Trickser (Vorschlag)", "virus": "Haben ihn freigesetzt – aus Versehen, sagen sie.", "chassis_vorschlag": "Hook (Trickser) -- Greifhaken: jede Fähigkeit zieht ihr Ziel 2 Felder heran", "boss": "--", "status": "offen"}
+    {"name": "Neon Ninja's", "kurz": "Neon", "gebiet": "Neon City", "profil": "Kämpfer", "virus": "Stolz: nehmen Hinweise von außen schlecht an, entwickeln eine Eigendynamik. Starre Taktik, kein Zurückweichen. Lernregion.", "chassis_vorschlag": "Shinobi (Jäger) -- Hinterhalt: der erste Treffer auf ein neues Ziel +50 %", "boss": "Oni (Level 5), Shogun Kage (Level 10)", "status": "gebaut (Profil + Teams); Chassis Vorschlag"},
+    {"name": "Solar Sentients", "kurz": "Solar", "gebiet": "Parkanlage", "profil": "Rudel", "virus": "Wohl der ganzen Region. Alles Synergie -- das Netz, über das sich der Virus ausbreitet.", "chassis_vorschlag": "Spore (Rudel) -- Teilung: zerfällt beim Tod in zwei schwache Sporlinge", "boss": "--", "status": "gebaut (Profil + erste Teams); Chassis Vorschlag"},
+    {"name": "Mega Mechas", "kurz": "Mecha", "gebiet": "Factory 5", "profil": "Festung", "virus": "Verabscheuen Energietechnik, nur die Starken überleben -- und brechen trotzdem zusammen (Wendepunkt 1).", "chassis_vorschlag": "Bastion (Geschütz) -- Verankert: läuft nicht, +2 Reichweite und Schildwall für Nachbarn", "boss": "--", "status": "gebaut (Profil + erste Teams); Chassis Vorschlag"},
+    {"name": "Hipstar Hackers", "kurz": "Hipstar", "gebiet": "Dachterrassen", "profil": "Trickser (Vorschlag)", "virus": "Jeder Bug ist ein Feature: der Virus tarnt sich im Chaos, sie bemerken ihn zuletzt (Wendepunkt 2).", "chassis_vorschlag": "Hook (Trickser) -- Greifhaken: jede Fähigkeit zieht ihr Ziel 2 Felder heran", "boss": "--", "status": "offen"}
   ],
 
   "stages_zusatz": [
-    {"stage": 4, "id": "roof", "name": "Dachterrassen", "boden": "--", "fraktion": "Hipstar Hookers", "profil": "Trickser (Vorschlag)", "text": "Ziehen die Hinterreihe nach vorn, stellen Hologramm-Köder, stören den Takt.", "status": "geplant"}
+    {"stage": 4, "id": "roof", "name": "Dachterrassen", "boden": "--", "fraktion": "Hipstar Hackers", "profil": "Trickser (Vorschlag)", "text": "Ziehen die Hinterreihe nach vorn, stellen Hologramm-Köder, stören den Takt.", "status": "geplant"}
   ],
 
   "story_level": [
@@ -127,20 +129,28 @@
   ],
 
   "story": [
-    {"thema": "Aufhänger", "text": "„Die Liga und der Virus“: Neon City trägt seine Revierkämpfe in der DROME-Liga aus -- und ein Virus bringt die Liga gerade zum Kippen.", "status": "Vorschlag"},
-    {"thema": "Die Welt", "text": "Vier Fraktionen teilen sich die Stadt. Statt auf der Straße kämpfen sie in Arenen, mit DROMEs. Wer gewinnt, hält sein Revier.", "status": "Vorschlag"},
-    {"thema": "Der Spieler", "text": "Ein neuer Dromer (Mechaniker und Teamchef) mit vier gebrauchten Standard-DROMEs. Eine alte Mechanikerin bringt ihn durch die Zulassung (Level 1 und 2).", "status": "Vorschlag"},
-    {"thema": "Der Chaos-Virus", "text": "Befällt die Arena-Netze. Befallene DROMEs bauen sich selbst um und greifen alles an -- der Chaos-Kampf, der einzige Ort, an dem gewürfelt wird.", "status": "Vorschlag"},
-    {"thema": "Endlos-Modus", "text": "Das Chaos-Netz: die Simulation unter der Stadt, in der der Virus wohnt. Freigeschaltet, sobald Neon City bezwungen ist.", "status": "Vorschlag"},
-    {"thema": "Alternativen", "text": "Schrottplatz (aus Wracks die erste Mannschaft bauen) oder Meisterschaft (reine Sport-Geschichte ohne Virus).", "status": "Vorschlag"}
+    {"thema": "Grundidee", "text": "Dystopie: Roboter und Aufrüstung von Menschen halfen der Gesellschaft lange. Dann übernimmt ein Cybervirus, der sich vermehrt und anpasst, die Roboter. Ein Systemneustart hilft nicht.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Dilemma", "text": "Die einzige Waffe gegen Roboter sind wieder Roboter. Jede DROME kann selbst infiziert werden -- jeder Sieg hat seinen Preis.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Name", "text": "CyberDrome = Setting und Einheiten. DROME = Death Robot Omni Machine Executor (mit M, nicht Drone).", "status": "Leitfaden 14. Nov."},
+    {"thema": "Erzählperspektive", "text": "Keine personifizierte Hauptfigur, der Spieler ist kein Commander und spricht kaum. Beobachtende Sicht: das Tutorial wirkt wie ein Video. Erzählt wird über Commander und Fraktionsoberhäupter und über Missverständnisse, die sich aufklären. Nach dem ersten großen Twist: vom Zuschauer zu 'Ich gehöre zum Team'.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Geheimer Twist", "text": "Hängt mit der fehlenden Hauptfigur zusammen. Bewusst noch nicht festgehalten.", "status": "offen"},
+    {"thema": "Struktur der Welt", "text": "Wie Everspace 2: wirkt wie ein Krieg der Fraktionen, dahinter ein Drahtzieher; ein Gegenspieler verbindet die Einsichtigen. Regionen werden freigeschaltet, man springt zwischen ihnen. Schwierigkeit je Region in einem Rahmen, kein steiler Anstieg.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Prolog / Tutorial", "text": "„Die Welt, wie sie war“: video-artiger Einstieg, Roboter als Fortschritt zeigen, damit der Verlust wehtut. Erste Störungen wirken wie Pannen.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Akt 1", "text": "„Der vergiftete Brunnen“: Unfälle gehen immer mit Ressourcentransfers einher, die Fraktionen verdächtigen sich gegenseitig. Neon Ninja's blocken Hinweise ab, Solar Sentients werden über ihre Vernetzung getroffen. Leitfrage: Wer sabotiert hier wen?", "status": "Leitfaden 14. Nov."},
+    {"thema": "Wendepunkt 1", "text": "„Selbst die Starken fallen“: die Mega Mechas brechen trotz Abkehr von Energietechnik zusammen. Leitfrage: Ist das überhaupt ein Krieg zwischen Fraktionen?", "status": "Leitfaden 14. Nov."},
+    {"thema": "Wendepunkt 2", "text": "„Im Rauschen versteckt“: bei den Hipstar Hackers wird aufgedeckt, dass es ein Virus ist -- die Exploit-Experten haben ihn als Letzte bemerkt.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Akt 2", "text": "„Der Sondertrupp“: Einsichtige aus allen Fraktionen schließen sich ohne Fraktionsbindung zusammen, verbunden vom Gegenspieler. Fraktionsübergreifende Teams werden Kern des Spiels.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Akt 3", "text": "„Der Preis der Waffe“: je stärker die DROMEs, desto größer das Infektionsrisiko. Auflösung des geheimen Twists.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Fraktionsvarianten", "text": "Standard-DROMEs (Molok Tank, Vireo Allrounder, Nimbus, Strix) sind die ersten Militärformen. Fraktionsvarianten füllen Nischen. Fest: Solar-Molok teilt sich in zwei DROMEs, die sich wieder zusammensetzen können; Neon-Vireo mit mehr Energieschaden und Schild. Der Sondertrupp spiegelt das gemischte Team des Spielers.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Infinity-Einsatz", "text": "Story-Einbettung offen (früher: Chaos-Netz unter der Stadt).", "status": "offen"}
   ],
 
   "offene_punkte": [
-    {"punkt": "Aufhänger „Die Liga und der Virus“ übernehmen?", "quelle": "VORSCHLAG_STORY 1", "status": "offen"},
+    {"punkt": "Aufhänger „Die Liga und der Virus“ übernehmen? -> ersetzt durch den Story-Leitfaden (docs/STORY_LEITFADEN.md)", "quelle": "VORSCHLAG_STORY 1", "status": "entschieden"},
     {"punkt": "Level-Struktur Story-Modus bauen (10 Level Neon City, Level 1 mit 2 und Level 2 mit 3 DROMEs, je Level 3 Leben) -> Neon City hat 10 Einsätze (= Story-Level), Länge je Einsatz verschieden -- noch nicht gebaut", "quelle": "VORSCHLAG_STORY 2", "status": "entschieden"},
     {"punkt": "Wege zwischen den Reihen zurück? -> Kampfkarte mit festen Pfaden und Gabelungen (FTL-artig), anfangs viele Gabelungen, später weniger", "quelle": "VORSCHLAG_STORY 6", "status": "entschieden"},
     {"punkt": "Erstes Fraktions-Chassis, z. B. Shinobi (Jäger) -- braucht ein Bild aus der Werkstatt", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
-    {"punkt": "Hipstar Hookers = Trickser?", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
+    {"punkt": "Hipstar Hackers = Trickser?", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
     {"punkt": "Bosse am Ende der Story-Level (Oni, Shogun Kage)", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
     {"punkt": "Schwierigkeit: Normal Runde 8 63 %, Elite 41 % ohne Module -- so lassen oder Elite anziehen?", "quelle": "VORSCHLAG_STORY 5", "status": "offen"},
     {"punkt": "Aufstellung: erster Treffer nach 5,6 s statt 2,0 s -- zu lang? (deployment.inset 1 -> 3)", "quelle": "VORSCHLAG_STORY 6", "status": "offen"},
@@ -171,11 +181,20 @@
     {"punkt": "Heilregel für alle Support-Waffen: nächstes Ziel, außer ein anderes in Reichweite (+3 Felder) hat 30 % weniger Leben", "quelle": "Fragen 11, 14. Nov.", "status": "offen"},
     {"punkt": "Kampfkarte: Knoten breiter, Design polieren", "quelle": "Fragen 34, 14. Nov.", "status": "offen"},
     {"punkt": "Einsatzabschluss-Bonus nur beim ersten Bestehen eines Einsatzes; neuer Einsatz = neuer Seed", "quelle": "Fragen 42, 14. Nov.", "status": "offen"},
-    {"punkt": "Wellen-Modus als eigener Modus später? (lange aushalten, Leben bleibt)", "quelle": "Fragen 45, 14. Nov.", "status": "offen"}
+    {"punkt": "Wellen-Modus als eigener Modus später? (lange aushalten, Leben bleibt)", "quelle": "Fragen 45, 14. Nov.", "status": "offen"},
+    {"punkt": "Freie Regionen vs. feste Story-Beats: Beats an den Gesamtfortschritt koppeln statt an die Region?", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
+    {"punkt": "Drahtzieher und Gegenspieler: wer, wie eingeführt?", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
+    {"punkt": "Fraktionsoberhäupter / Commander: Namen, Persönlichkeiten, Missverständnisse", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
+    {"punkt": "Solar-Molok: Bedingungen fürs Wiedervereinen (beide überleben? Nähe? Zeit?)", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
+    {"punkt": "Fraktionsvarianten für Mega Mechas und Hipstar Hackers", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
+    {"punkt": "Weitere Standard-DROMEs neben Molok, Vireo, Nimbus, Strix", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
+    {"punkt": "Der geheime Twist (bewusst noch nicht festgehalten)", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
+    {"punkt": "Mega Mechas laut Leitfaden ohne Schilde -- heutiges Profil Festung (Schilde, Artillerie) anpassen?", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
+    {"punkt": "Story-Vermittlung: Porträts + Textboxen (Vorschlag in Sitzung 14. Nov.)", "quelle": "STORY_LEITFADEN 7", "status": "offen"}
   ],
 
   "glossar": [
-    {"begriff": "DROME", "erklaerung": "Eine Kampfeinheit. Besteht aus Chassis (mit Werten und Passive), Kopf, Kern, Antrieb (nur Optik) und Waffen im Halter."},
+    {"begriff": "DROME", "erklaerung": "Death Robot Omni Machine Executor. Eine Kampfeinheit. Besteht aus Chassis (mit Werten und Passive), Kopf, Kern, Antrieb (nur Optik) und Waffen im Halter."},
     {"begriff": "Squad", "erklaerung": "Spieler: die DROMEs, die in den Kampf gehen (max. 4). Gegner: mindestens ein DROME + Sentinels."},
     {"begriff": "Halter", "erklaerung": "Waffenplatz am Chassis. Form = Gewichtsklasse: Dreieck leicht, Viereck mittel, Fünfeck schwer."},
     {"begriff": "Takt", "erklaerung": "Auslösevoraussetzung einer Fähigkeit, z. B. „jeder 3. Angriff“."},
@@ -239,7 +258,7 @@
     {"cache": "Neon Cache", "fraktion": "Neon Ninja's", "gebiet": "Neon City", "preis_coin": 50, "status": "entschieden"},
     {"cache": "Solar Cache", "fraktion": "Solar Sentients", "gebiet": "Parkanlage", "preis_coin": 50, "status": "entschieden"},
     {"cache": "Mecha Cache", "fraktion": "Mega Mechas", "gebiet": "Factory 5", "preis_coin": 50, "status": "Vorschlag"},
-    {"cache": "Hipstar Cache", "fraktion": "Hipstar Hookers", "gebiet": "Dachterrassen", "preis_coin": 50, "status": "Vorschlag"}
+    {"cache": "Hipstar Cache", "fraktion": "Hipstar Hackers", "gebiet": "Dachterrassen", "preis_coin": 50, "status": "Vorschlag"}
   ],
 
   "cache_drops": [

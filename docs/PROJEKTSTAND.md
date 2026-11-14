@@ -425,7 +425,7 @@ Spielstand). Vorschlaege zu Story, Fraktionen, Klassen und Anstieg stehen in
   Ueberladung), Parkanlage / Solar Sentients = Rudel (Vireo, Nimbus,
   Blaster, Runenstab, Bumerang; Gabelung, Kettenreaktion, Zielsucher),
   Factory 5 / Mega Mechas = Festung (Molok, Strix; Hammer, Deflektor,
-  Ramme, Moerser; Rammbock, Brandmarke, Bollwerk). Hipstar Hookers offen.
+  Ramme, Moerser; Rammbock, Brandmarke, Bollwerk). Hipstar Hackers offen.
 * Wirkung: Gewichte beim Wuerfeln der Gegner (`EnemyGenerator.profile`,
   `_pick_weighted`) und bei ihren Modulen (`RunState._arm_enemies`,
   `module_weight`). Die Vorschau zeigt Fraktion, Profil und einen Satz.
