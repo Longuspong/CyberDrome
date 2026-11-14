@@ -1042,6 +1042,7 @@ def build_maps(ws):
         "Maps: Arenen zeichnen. Jede Zelle ist ein Feld. Buchstaben ins Feld, Umrisse gern zusätzlich als Rahmen.",
         "X = außerhalb / Wand (so entstehen nicht-rechteckige Arenen)   H = festes Hindernis (sperrt Laufwege, Schüsse gehen drüber)",
         "F = Frontline (Assault)   M = Mittellinie (Support)   B = Backline (Sniper)   leer = freies Feld",
+        "Ausrichtung: Spieler LINKS, Gegner RECHTS (für die Iso-Ansicht dreht das Spiel die Karte).",
         "Gegnerseite: leer lassen = gespiegelt zur Spielerseite (um die Mitte gedreht), oder selbst eintragen.",
         "Gelesen werden nur die Buchstaben -- Rahmen und Farben sind für dich. Name, Gebiet, Notiz: hellblau.",
         "Heute gebaut: 20 x 20, Hindernisse je Seed gewürfelt. Die Vorlagen sind 24 x 24, damit Platz für andere Formen ist.",
