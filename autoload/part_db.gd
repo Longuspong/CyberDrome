@@ -37,7 +37,7 @@ func load_library() -> void:
 
 	var root := DirAccess.open(PARTS_ROOT)
 	if root == null:
-		push_error("PartDB: %s nicht lesbar. Laeuft tools/bake_godot_assets.py?"
+		push_error("PartDB: %s nicht lesbar. Läuft tools/bake_godot_assets.py?"
 			% PARTS_ROOT)
 		return
 
@@ -49,7 +49,7 @@ func load_library() -> void:
 	for bucket in _by_type.values():
 		bucket.sort_custom(func(a, b): return a.code < b.code)
 
-	print("[PartDB] %d Teile aus %d Bausaetzen geladen: %s"
+	print("[PartDB] %d Teile aus %d Bausätzen geladen: %s"
 		% [parts.size(), sets.size(), ", ".join(sets.keys())])
 	for type in [PartData.Type.BODY, PartData.Type.CORE, PartData.Type.FEET,
 			PartData.Type.HEAD, PartData.Type.EQUIPMENT]:
@@ -129,4 +129,4 @@ func _type_label(type: PartData.Type) -> String:
 		PartData.Type.CORE: return "Kern"
 		PartData.Type.FEET: return "Antrieb"
 		PartData.Type.HEAD: return "Sensorik"
-		_: return "Ausruest."
+		_: return "Ausrüst."

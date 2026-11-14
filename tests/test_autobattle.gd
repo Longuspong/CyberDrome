@@ -76,7 +76,7 @@ func test_overtime_grows_with_each_cycle() -> void:
 	battle.time = start + 3.0 * battle.pulse_seconds()
 	var later := battle.overtime_damage(unit)
 	t.ok(first > 0, "ab dem Start-Zyklus Schaden (%d)" % first)
-	t.ok(later > first, "der Schaden waechst (%d -> %d)" % [first, later])
+	t.ok(later > first, "der Schaden wächst (%d -> %d)" % [first, later])
 	battle.free()
 
 
@@ -95,7 +95,7 @@ func test_mirror_battles_end_decisively() -> void:
 			draws += 1
 	t.note("Overtime: %d/%d unentschieden, im Schnitt %.1f s"
 		% [draws, count, float(total) / count])
-	t.ok(draws <= count / 10, "hoechstens 10%% Unentschieden (waren %d/%d)" % [draws, count])
+	t.ok(draws <= count / 10, "höchstens 10%% Unentschieden (waren %d/%d)" % [draws, count])
 
 
 ## Dasselbe Squad auf beiden Seiten. Jede Seite muss etwa die Haelfte der
@@ -113,6 +113,6 @@ func test_sides_are_fair_in_mirror_battles() -> void:
 	var share := float(player_wins) / maxf(1.0, float(decided))
 	t.note("Spiegel: Spielerseite %d, Gegnerseite %d (Anteil %.2f)"
 		% [player_wins, enemy_wins, share])
-	t.ok(decided >= FAIRNESS_SEEDS * 0.8, "genug entschiedene Kaempfe (%d)" % decided)
+	t.ok(decided >= FAIRNESS_SEEDS * 0.8, "genug entschiedene Kämpfe (%d)" % decided)
 	t.ok(absf(share - 0.5) <= 0.2,
 		"keine Seite klar bevorzugt (Anteil Spielerseite %.2f)" % share)

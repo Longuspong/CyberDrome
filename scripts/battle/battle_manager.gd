@@ -152,7 +152,7 @@ static func _region_for(rng: RandomNumberGenerator, region_id: StringName) -> Te
 		var fixed := TerrainDB.get_region(region_id)
 		if fixed != null:
 			return fixed
-		push_warning("BattleManager: unbekannte Region '%s', gewuerfelt" % region_id)
+		push_warning("BattleManager: unbekannte Region '%s', gewürfelt" % region_id)
 	return drawn
 
 ## Stellt eine Seite auf: nach Rolle gestaffelt und ueber die Breite der Zone
@@ -328,12 +328,12 @@ func _pulse_unit(unit: Unit) -> void:
 	var healed := unit.regenerate_hp()
 	if healed > 0:
 		EventBus.unit_healed.emit(unit, healed, unit)
-		EventBus.log_line("%s regeneriert %d Integritaet (Reparatur)."
+		EventBus.log_line("%s regeneriert %d Integrität (Reparatur)."
 			% [unit.display_name, healed])
 	var collapse := overtime_damage(unit)
 	if collapse > 0:
 		unit.hp = maxi(0, unit.hp - collapse)
-		EventBus.log_line("%s verliert %d Integritaet (Overtime)."
+		EventBus.log_line("%s verliert %d Integrität (Overtime)."
 			% [unit.display_name, collapse])
 		EventBus.unit_damaged.emit(unit, collapse, null)
 		if unit.hp <= 0:

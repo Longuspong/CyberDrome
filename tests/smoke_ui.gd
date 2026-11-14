@@ -37,7 +37,7 @@ func _process(_delta: float) -> bool:
 			gs.editing_index = 0
 			var umbau = load("res://scenes/hangar.tscn").instantiate()
 			root.add_child(umbau)
-			print("SMOKE: Hangar (Umbau) instanziiert fuer '%s'"
+			print("SMOKE: Hangar (Umbau) instanziiert für '%s'"
 				% gs.roster.entries[0].name)
 		9:
 			# Ziehen (10. Nov. 2026): die freie Plasmaklinge auf den Halter
@@ -54,7 +54,7 @@ func _process(_delta: float) -> bool:
 				hangar._drop_part(entry, slot, data)
 				print("SMOKE: Ziehen auf Halter -> %s" % gs.roster.build_for(entry).part_in(slot).display_name)
 			else:
-				print("SMOKE: Ziehen auf Halter nicht moeglich")
+				print("SMOKE: Ziehen auf Halter nicht möglich")
 		12:
 			# Lauf im Zwischenstopp: Lager mit Waffe, eine davon angetippt.
 			gs.start_run(4242)
@@ -87,7 +87,7 @@ func _process(_delta: float) -> bool:
 				var node = load("res://scenes/%s.tscn" % scene).instantiate()
 				node.name = "Probe_%s" % scene
 				root.add_child(node)
-			print("SMOKE: Titel, Spielstaende, Hauptmenue und Optionen instanziiert")
+			print("SMOKE: Titel, Spielstände, Hauptmenü und Optionen instanziiert")
 		18:
 			for scene in ["title", "saves", "main", "settings"]:
 				root.get_node("Probe_%s" % scene).free()

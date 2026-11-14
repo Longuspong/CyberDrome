@@ -73,7 +73,7 @@ func _draw() -> void:
 		_caption(font, at + Vector2(0, RADIUS + 20.0), caption(here[i]), CAPTION,
 			tint if chosen else Color(1, 1, 1, 0.75))
 	if not there.is_empty():
-		draw_string(font, Vector2(4, RADIUS * 2.0 + ROW_GAP + 56.0), "unten: was nach dieser Wahl kaeme",
+		draw_string(font, Vector2(4, RADIUS * 2.0 + ROW_GAP + 56.0), "unten: was nach dieser Wahl käme",
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.45))
 
 

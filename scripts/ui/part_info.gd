@@ -15,21 +15,21 @@ extends RefCounted
 ## Ein Satz je Teil: wozu ist es da? Fehlt ein Eintrag, entfaellt die Zeile.
 const ROLE := {
 	&"eq_pulse_blaster": "Leichte Allzweckwaffe auf mittlere Distanz. Halb Energieschaden -- gut gegen Schilde.",
-	&"eq_deflector": "Ein Energieschild zum Umschnallen: mehr Schild, der sich jeden Puls (alle 3 s) wieder auflaedt. Keine eigene Aktion.",
-	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integritaet zurueck.",
+	&"eq_deflector": "Ein Energieschild zum Umschnallen: mehr Schild, der sich jeden Puls (alle 3 s) wieder auflädt. Keine eigene Aktion.",
+	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integrität zurück.",
 	&"eq_rune_staff": "Nahkampfstab mit reinem Energieschaden. Trifft das Ziel und die vier geraden Nachbarfelder.",
-	&"eq_rail_lance": "Scharfschuetzenwaffe mit der groessten Reichweite.",
-	&"eq_bulwark_ram": "Rammkolben fuer die Frontlinie: der Rammstoss waechst mit der eigenen Integritaet und stoesst zurueck.",
-	&"eq_mortar": "Schwerer Schultermoerser: Flaeche aus der zweiten Reihe, trifft aber nicht auf kurze Distanz.",
-	&"eq_boomerang": "Wurfklinge fuer den Plaenkler: trifft hin und zurueck, wer laeuft, wirft haerter.",
+	&"eq_rail_lance": "Scharfschützenwaffe mit der größten Reichweite.",
+	&"eq_bulwark_ram": "Rammkolben für die Frontlinie: der Rammstoß wächst mit der eigenen Integrität und stößt zurück.",
+	&"eq_mortar": "Schwerer Schultermörser: Fläche aus der zweiten Reihe, trifft aber nicht auf kurze Distanz.",
+	&"eq_boomerang": "Wurfklinge für den Plänkler: trifft hin und zurück, wer läuft, wirft härter.",
 }
 
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
 ## SPD ist die Laufgeschwindigkeit, Faehigkeiten loesen nach ihrer Regel aus.
 const STAT_LABELS := [
-	["hp", "Integritaet"], ["shield", "Schild"],
-	["shield_pulse", "Schildpuls"], ["def", "Ruestung"], ["power", "Power"],
-	["spd", "Speed (Laufgeschwindigkeit)"], ["module_slots", "Modulplaetze je Halter"],
+	["hp", "Integrität"], ["shield", "Schild"],
+	["shield_pulse", "Schildpuls"], ["def", "Rüstung"], ["power", "Power"],
+	["spd", "Speed (Laufgeschwindigkeit)"], ["module_slots", "Modulplätze je Halter"],
 ]
 
 
@@ -76,9 +76,9 @@ static func lines(part: PartData) -> Array:
 static func traits(part: PartData) -> Array[String]:
 	var out: Array[String] = []
 	if part.hp_regen_pct > 0:
-		out.append("Repariert jeden Puls (alle 3 s) %d %% der Integritaet." % part.hp_regen_pct)
+		out.append("Repariert jeden Puls (alle 3 s) %d %% der Integrität." % part.hp_regen_pct)
 	if part.lure_radius > 0:
-		out.append("Lockt: Gegner im Umkreis %d greifen den Traeger an." % part.lure_radius)
+		out.append("Lockt: Gegner im Umkreis %d greifen den Träger an." % part.lure_radius)
 	match part.passive:
 		"hit_rush":
 			var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
@@ -87,11 +87,11 @@ static func traits(part: PartData) -> Array[String]:
 				int(round((float(rush.get("move_mult", 1.4)) - 1.0) * 100.0))])
 		"presence":
 			var p := Config.section("passives").get("presence", {}) as Dictionary
-			out.append("Praesenz: Gegner im Umkreis %d greifen ihn an; %d %% des Schadens an Verbuendeten im Umkreis %d faengt er ab." % [
+			out.append("Präsenz: Gegner im Umkreis %d greifen ihn an; %d %% des Schadens an Verbündeten im Umkreis %d fängt er ab." % [
 				int(p.get("lure_radius", 2)), int(round(float(p.get("guard_share", 0.3)) * 100.0)),
 				int(p.get("guard_radius", 3))])
 		"echo":
-			out.append("Echo: jede Faehigkeit wirkt zweimal, ihr Takt ist dafuer 50 % laenger.")
+			out.append("Echo: jede Fähigkeit wirkt zweimal, ihr Takt ist dafür 50 % länger.")
 		"steady":
 			var st := Config.section("passives").get("steady", {}) as Dictionary
 			out.append("Anlegen: nach %s s ohne Bewegung +%d %% Schaden und Reichweite." % [
@@ -112,16 +112,16 @@ static func action_lines(action: ActionData) -> Array[String]:
 	if action.is_move():
 		what = "springt bis %d Felder geradeaus" % action.range_tiles
 	elif action.power > 0:
-		what = "Staerke %d" % action.power
+		what = "Stärke %d" % action.power
 	elif action.heal > 0 or action.shield_gain > 0:
-		what = "Unterstuetzung"
+		what = "Unterstützung"
 	else:
 		what = action.effect_summary()
 	out.append("%s · %s" % [reach, what])
 
 	match action.targeting:
 		ActionData.Targeting.AOE_AROUND_TARGET:
-			out.append("Flaeche: trifft auch alle Felder im Umkreis %d um das Ziel." % action.aoe_radius)
+			out.append("Fläche: trifft auch alle Felder im Umkreis %d um das Ziel." % action.aoe_radius)
 		ActionData.Targeting.AOE_CROSS:
 			out.append("Kreuz: trifft das Ziel und die vier geraden Nachbarfelder.")
 	if action.power > 0:
@@ -130,7 +130,7 @@ static func action_lines(action: ActionData) -> Array[String]:
 		elif action.energy_fraction > 0.0:
 			out.append("%d %% Energieschaden -- gut gegen Schilde." % int(round(action.energy_fraction * 100.0)))
 		else:
-			out.append("Kinetischer Schaden -- stark gegen Integritaet, schwach gegen Schilde.")
+			out.append("Kinetischer Schaden -- stark gegen Integrität, schwach gegen Schilde.")
 	if action.shield_mult > 1.0:
 		out.append("Schildbrecher: macht %d %% Schaden an Schilden." % int(round(action.shield_mult * 100.0)))
 	if action.shots > 1:
@@ -138,30 +138,30 @@ static func action_lines(action: ActionData) -> Array[String]:
 	if action.gather:
 		out.append("Zieht die Gegner im Umkreis %d zum Ziel heran." % action.aoe_radius)
 	if action.delay > 0.0:
-		out.append("Danach schlaegt nach %s s eine Schockwelle zu." % ActionData._seconds(action.delay))
+		out.append("Danach schlägt nach %s s eine Schockwelle zu." % ActionData._seconds(action.delay))
 	if not action.status.is_empty():
 		out.append("Getroffene: %s." % action.status_text())
 	if action.heal > 0:
-		out.append("Repariert %d Integritaet beim Verbuendeten mit dem geringsten Anteil; ist niemand verletzt, schiesst er auf Gegner." % action.heal)
+		out.append("Repariert %d Integrität beim Verbündeten mit dem geringsten Anteil; ist niemand verletzt, schießt er auf Gegner." % action.heal)
 	if action.shield_gain > 0:
-		var who := "dem Traeger" if action.support == "self" \
-			else "dem am staerksten verletzten Verbuendeten"
-		out.append("Gibt %s %d Schild (auch ueber das Maximum)." % [who, action.shield_gain])
+		var who := "dem Träger" if action.support == "self" \
+			else "dem am stärksten verletzten Verbündeten"
+		out.append("Gibt %s %d Schild (auch über das Maximum)." % [who, action.shield_gain])
 	if action.min_range > 0:
 		out.append("Trifft erst ab %d Feldern Abstand." % action.min_range)
 	if action.hp_scaling > 0.0:
-		out.append("Dazu %d %% der eigenen maximalen Integritaet als Schaden." % int(round(action.hp_scaling * 100.0)))
+		out.append("Dazu %d %% der eigenen maximalen Integrität als Schaden." % int(round(action.hp_scaling * 100.0)))
 	if action.moving_bonus > 0.0:
-		out.append("+%d %% Schaden, wenn der Traeger gerade gelaufen ist." % int(round(action.moving_bonus * 100.0)))
+		out.append("+%d %% Schaden, wenn der Träger gerade gelaufen ist." % int(round(action.moving_bonus * 100.0)))
 	if action.push_tiles > 0:
-		out.append("Stoesst das Ziel %d Feld(er) weg." % action.push_tiles)
+		out.append("Stößt das Ziel %d Feld(er) weg." % action.push_tiles)
 	elif action.push_tiles < 0:
 		out.append("Zieht das Ziel %d Feld(er) heran." % absi(action.push_tiles))
 
 	# Wann sie kommt: Angriffe nach ihrem Intervall, Faehigkeiten nach ihrem
 	# Takt (so heisst die Ausloesevoraussetzung seit 7. Nov. 2026).
 	if action.is_attack():
-		out.append("Schiesst alle %s s." % ActionData._seconds(action.interval))
+		out.append("Schießt alle %s s." % ActionData._seconds(action.interval))
 	elif action.trigger_kind != "":
 		out.append("Takt: %s." % action.trigger_text())
 		if action.trigger_kind == "attacks":

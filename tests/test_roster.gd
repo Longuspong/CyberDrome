@@ -48,14 +48,14 @@ func test_a_part_cannot_be_in_two_dromes_at_once() -> void:
 	var used := roster.assigned_uids()
 	var seen := {}
 	for uid in used:
-		t.ok(not seen.has(uid), "uid %s steckt in hoechstens einem DROME" % uid)
+		t.ok(not seen.has(uid), "uid %s steckt in höchstens einem DROME" % uid)
 		seen[uid] = true
 
 	# Das freie Teil an einen DROME haengen -> es ist nicht mehr frei, und ein
 	# zweiter DROME bekommt kein zweites Exemplar desselben Teils. Frei liegen
 	# zum Start Drohnen-Pod und Plasmaklinge.
 	t.equal(roster.free_count(&"eq_drone_pod"), 1,
-		"der Drohnen-Pod liegt zunaechst frei")
+		"der Drohnen-Pod liegt zunächst frei")
 	var molok: RosterEntry = roster.entries[1]
 	var molok_slot: String = roster.build_for(molok).equip_slots()[1]
 	t.ok(roster.assign(molok, molok_slot, &"eq_drone_pod"), "erste Zuweisung greift")
@@ -90,7 +90,7 @@ func test_chassis_cannot_be_cleared() -> void:
 	var before := vireo.chassis_uid()
 	roster.clear_slot(vireo, "body")
 	t.equal(vireo.chassis_uid(), before,
-		"das Chassis ist die Identitaet und laesst sich nicht leeren")
+		"das Chassis ist die Identität und lässt sich nicht leeren")
 
 
 func test_new_drome_needs_a_free_chassis() -> void:
@@ -104,7 +104,7 @@ func test_new_drome_needs_a_free_chassis() -> void:
 	# Ein DROME aufloesen gibt sein Chassis frei -- dann geht ein neuer.
 	var freed_chassis: String = roster.entries[0].chassis_uid()
 	roster.disband(roster.entries[0])
-	t.equal(roster.entries.size(), 3, "der aufgeloeste DROME ist weg")
+	t.equal(roster.entries.size(), 3, "der aufgelöste DROME ist weg")
 	t.ok(roster.instance(freed_chassis) != null,
 		"seine Chassis-Instanz bleibt im Inventar")
 	var made := roster.new_drome(&"scout_body")
@@ -133,15 +133,15 @@ func test_derived_build_equals_a_direct_build() -> void:
 func test_roster_survives_saving_and_loading() -> void:
 	var roster := _fresh()
 	# Eine Aenderung, damit nicht nur der Startbestand geprueft wird.
-	roster.entries[0].name = "Spaeher-Eins"
+	roster.entries[0].name = "Späher-Eins"
 	roster.entries[2].in_squad = false
 
 	var restored := Roster.new()
-	t.ok(restored.load_dict(roster.to_dict()), "der v2-Stand laedt")
+	t.ok(restored.load_dict(roster.to_dict()), "der v2-Stand lädt")
 	t.equal(restored.entries.size(), roster.entries.size(), "gleiche DROME-Zahl")
 	t.equal(restored.all_instances().size(), roster.all_instances().size(),
 		"gleiche Instanzzahl")
-	t.equal(restored.entries[0].name, "Spaeher-Eins", "Namen ueberstehen den Rundlauf")
+	t.equal(restored.entries[0].name, "Späher-Eins", "Namen überstehen den Rundlauf")
 	t.equal(restored.squad_count(), 3, "die Squad-Auswahl ebenso")
 	# Und die abgeleiteten Werte sind unveraendert.
 	t.equal(restored.build_for(restored.entries[0]).stats(),

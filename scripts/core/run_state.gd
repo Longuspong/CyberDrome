@@ -938,7 +938,7 @@ func roll_loot(enemy_pool: Array) -> Array:
 		# Elite: ein Matrix-BIOS zur Wahl statt des Teils -- nie nach dem
 		# letzten Kampf, dort waere es wertlos (Module verfallen).
 		out.append({"kind": "bios", "rare": true, "title": "Matrix-BIOS",
-			"text": "Waehle eines von %d -- es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))})
+			"text": "Wähle eines von %d -- es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))})
 	elif rng.randf() < float(settings.get("part_chance", 0.5)):
 		var part := _loot_part(rng, enemy_pool)
 		if part != null:
@@ -951,7 +951,7 @@ func roll_loot(enemy_pool: Array) -> Array:
 	if tier != Tier.ELITE and lives < lives_max() \
 			and rng.randf() < float(settings.get("life_chance", cfg().get("life_chance", 0.35))):
 		out.append({"kind": "life", "title": "Notstrom",
-			"text": "Ein verlorenes Leben zurueck."})
+			"text": "Ein verlorenes Leben zurück."})
 	return out
 
 
@@ -1030,8 +1030,8 @@ static func _part_text(part: PartData) -> String:
 	var lines: Array[String] = []
 	for action in part.actions:
 		lines.append(action.display_name)
-	var kind: String = {"weapon": "Waffe", "shield": "Schild", "support": "Unterstuetzung"} \
-		.get(part.category, "Ausruestung")
+	var kind: String = {"weapon": "Waffe", "shield": "Schild", "support": "Unterstützung"} \
+		.get(part.category, "Ausrüstung")
 	return "%s%s" % [kind, (": " + ", ".join(lines)) if not lines.is_empty() else ""]
 
 
@@ -1109,11 +1109,11 @@ func module_options(index: int) -> Array:
 			if module.is_bios_item():
 				entry["detail"] = "ein BIOS steckt nicht im Halter"
 			elif second_bios:
-				entry["detail"] = "hoechstens ein BIOS-Rezept je DROME"
+				entry["detail"] = "höchstens ein BIOS-Rezept je DROME"
 			elif twice:
 				entry["detail"] = "%s steckt hier schon drin (Rezepte einmal je Halter)" % module.display_name
 			elif used >= room:
-				entry["detail"] = "Modulplaetze voll (%d/%d)" % [used, room]
+				entry["detail"] = "Modulplätze voll (%d/%d)" % [used, room]
 			elif weapon == null:
 				entry["detail"] = "Halter leer -- ruht, bis eine Waffe drin ist"
 			elif not entry["active"]:
@@ -1367,12 +1367,12 @@ func bios_options(index: int) -> Array:
 			if item.bios_kind != "chassis":
 				entry["detail"] = "im Rezeptbuch verschmelzen"
 			elif build.body() == null or build.body().id != item.bios_chassis:
-				entry["detail"] = "nur fuer %s" % item.display_name.trim_suffix("-BIOS")
+				entry["detail"] = "nur für %s" % item.display_name.trim_suffix("-BIOS")
 			elif build.chassis_bios:
 				entry["detail"] = "hat schon ein BIOS"
 			else:
 				entry["allowed"] = true
-				entry["detail"] = "+1 Modulplatz hier, Passive verstaerkt"
+				entry["detail"] = "+1 Modulplatz hier, Passive verstärkt"
 			out.append(entry)
 	return out
 

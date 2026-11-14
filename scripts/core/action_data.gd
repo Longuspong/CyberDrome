@@ -20,7 +20,7 @@ enum Category { ATTACK, ABILITY }
 enum Targeting { SINGLE, AOE_AROUND_TARGET, AOE_CROSS, DASH }
 
 const CATEGORY_NAMES := {"attack": Category.ATTACK, "ability": Category.ABILITY}
-const CATEGORY_LABEL := {Category.ATTACK: "Angriff", Category.ABILITY: "Faehigkeit"}
+const CATEGORY_LABEL := {Category.ATTACK: "Angriff", Category.ABILITY: "Fähigkeit"}
 const TARGETING_NAMES := {
 	"single": Targeting.SINGLE,
 	"aoe_around_target": Targeting.AOE_AROUND_TARGET,
@@ -227,7 +227,7 @@ func trigger_text() -> String:
 		"time":
 			return "alle %s s" % _seconds(trigger_every)
 		"adjacent":
-			return "wenn ein Gegner direkt daneben steht (hoechstens alle %s s)" \
+			return "wenn ein Gegner direkt daneben steht (höchstens alle %s s)" \
 				% _seconds(trigger_every)
 	return ""
 
@@ -240,13 +240,13 @@ func status_text() -> String:
 	match str(status.get("id", "")):
 		"slow":
 			var cut := int(round((1.0 - float(status.get("move_mult", 1.0))) * 100.0))
-			return "verlangsamt um %d %% fuer %s s" % [cut, seconds]
+			return "verlangsamt um %d %% für %s s" % [cut, seconds]
 		"stun":
-			return "betaeubt fuer %s s" % seconds
+			return "betäubt für %s s" % seconds
 		"vulnerable":
 			var more := int(round((float(status.get("damage_taken_mult", 1.0)) - 1.0) * 100.0))
-			return "verwundbar: nimmt %d %% mehr Schaden fuer %s s" % [more, seconds]
-	return "%s fuer %s s" % [str(status.get("id", "Effekt")), seconds]
+			return "verwundbar: nimmt %d %% mehr Schaden für %s s" % [more, seconds]
+	return "%s für %s s" % [str(status.get("id", "Effekt")), seconds]
 
 
 static func _seconds(value: float) -> String:
@@ -279,7 +279,7 @@ func effect_summary() -> String:
 	if gather:
 		parts.append("zieht zusammen")
 	if push_tiles > 0:
-		parts.append("stoesst %d" % push_tiles)
+		parts.append("stößt %d" % push_tiles)
 	elif push_tiles < 0:
 		parts.append("zieht %d heran" % absi(push_tiles))
 	if heal > 0:
@@ -304,13 +304,13 @@ func description_lines() -> Array[String]:
 	if is_move():
 		lines.append("Boost: bis %d Felder gerade" % range_tiles)
 	if power > 0:
-		lines.append("Staerke %d" % power)
+		lines.append("Stärke %d" % power)
 	if shots > 1:
 		lines.append("%d Treffer auf bis zu %d Gegner" % [shots, shots])
 	if shield_mult > 1.0:
 		lines.append("%d %% Schaden am Schild" % int(round(shield_mult * 100.0)))
 	if aoe_radius > 0:
-		lines.append("Flaeche: Radius %d um das Ziel" % aoe_radius)
+		lines.append("Fläche: Radius %d um das Ziel" % aoe_radius)
 	if gather:
 		lines.append("zieht die Gegner im Radius zum Ziel heran")
 	if delay > 0.0:
@@ -318,14 +318,14 @@ func description_lines() -> Array[String]:
 	if not status.is_empty():
 		lines.append(status_text())
 	if push_tiles > 0:
-		lines.append("stoesst %d Feld(er) zurueck" % push_tiles)
+		lines.append("stößt %d Feld(er) zurück" % push_tiles)
 	elif push_tiles < 0:
 		lines.append("zieht %d Feld(er) heran" % absi(push_tiles))
 	if heal > 0:
 		lines.append("repariert %d beim Verletztesten" % heal)
 	if shield_gain > 0:
 		lines.append("+%d Schild %s" % [shield_gain,
-			"fuer sich" if support == "self" else "fuer den Verletztesten"])
+			"für sich" if support == "self" else "für den Verletztesten"])
 	if source_part_name != "":
 		lines.append("aus: %s%s" % [source_part_name,
 			" (%s)" % source_part_code if source_part_code != "" else ""])

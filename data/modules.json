@@ -172,7 +172,7 @@
       }
     },
     "mod_amplifier": {
-      "name": "Verstaerker",
+      "name": "Verstärker",
       "short": "VS",
       "class": "tactic",
       "condition": "",
@@ -182,7 +182,7 @@
       }
     },
     "mod_bait": {
-      "name": "Koedersender",
+      "name": "Ködersender",
       "short": "KS",
       "class": "tactic",
       "condition": "",
@@ -227,7 +227,7 @@
       }
     },
     "mod_overvolt": {
-      "name": "Ueberspannung",
+      "name": "Überspannung",
       "short": "US",
       "class": "attack",
       "condition": "",
@@ -292,7 +292,7 @@
       }
     },
     "mod_overload": {
-      "name": "Ueberladung",
+      "name": "Überladung",
       "short": "UL",
       "class": "attack",
       "condition": "",
@@ -450,21 +450,21 @@
     }
   },
   "bios_kommentar": [
-    "Matrix-BIOS (MODULE_KONZEPT.md 6): spaete Schicht, nur aus Elite-Kaempfen (Wahl 1 aus 3,",
+    "Matrix-BIOS (MODULE_KONZEPT.md 6): späte Schicht, nur aus Elite-Kämpfen (Wahl 1 aus 3,",
     "statt des Teils, nie nach dem letzten Kampf). Ein BIOS liegt im Lager.",
-    "bios: die Gegenstaende. kind 'chassis': +1 Modulplatz (Molok: in einem Halter nach Wahl)",
-    "und eine verstaerkte Passive (DromeBuild.chassis_bios, Zahlen in rules). kind 'recipe':",
+    "bios: die Gegenstände. kind 'chassis': +1 Modulplatz (Molok: in einem Halter nach Wahl)",
+    "und eine verstärkte Passive (DromeBuild.chassis_bios, Zahlen in rules). kind 'recipe':",
     "verwandelt das Rezept 'recipe' im Rezeptbuch in 'result' (Rezept + BIOS oder",
-    "Zutat + Zutat + BIOS). Hoechstens ein BIOS-Rezept je DROME, nicht trennbar.",
+    "Zutat + Zutat + BIOS). Höchstens ein BIOS-Rezept je DROME, nicht trennbar.",
     "bios_recipes: die Ergebnisse -- Wirkung des Grundrezepts plus bonus:",
-    "  ready_after_ability  nach der Faehigkeit sofort wieder geladen",
-    "  field_shot_every     (kleinster Wert zaehlt) Feldschuss haeufiger",
+    "  ready_after_ability  nach der Fähigkeit sofort wieder geladen",
+    "  field_shot_every     (kleinster Wert zählt) Feldschuss häufiger",
     "  field_shot_marked    Feldschuss bevorzugt markierte Gegner",
     "  retaliation_max      Vergeltung bis zu so viele Ladungen",
     "  berserk              volle Vergeltung trifft dazu alle Gegner daneben",
     "  mark_hunt            stirbt ein markierter Gegner, springt die Markierung weiter",
-    "  gravity              das Wurzeln trifft dazu den naechsten Gegner am Ziel (Rw 2)",
-    "  knockback_every      jeder N-te Angriff stoesst das Ziel 1 Feld zurueck",
+    "  gravity              das Wurzeln trifft dazu den nächsten Gegner am Ziel (Rw 2)",
+    "  knockback_every      jeder N-te Angriff stößt das Ziel 1 Feld zurück",
     "  bonus_vs_unshielded  +Anteil Schaden gegen Gegner ohne Schild"
   ],
   "bios": {
@@ -480,21 +480,21 @@
       "short": "M+",
       "kind": "chassis",
       "chassis": "jugg_body",
-      "text": "+1 Modulplatz in einem Halter. Praesenz faengt 40 % statt 30 % ab und lockt 1 Feld weiter."
+      "text": "+1 Modulplatz in einem Halter. Präsenz fängt 40 % statt 30 % ab und lockt 1 Feld weiter."
     },
     "bios_nimbus": {
       "name": "Nimbus-BIOS",
       "short": "N+",
       "kind": "chassis",
       "chassis": "mage_body",
-      "text": "+1 Modulplatz. Jede Faehigkeit gibt Schild (6 x Power / 10), das Echo darf ein anderes Ziel waehlen."
+      "text": "+1 Modulplatz. Jede Fähigkeit gibt Schild (6 x Power / 10), das Echo darf ein anderes Ziel wählen."
     },
     "bios_strix": {
       "name": "Strix-BIOS",
       "short": "S+",
       "kind": "chassis",
       "chassis": "strix_body",
-      "text": "+1 Modulplatz. Anlegen schon nach 2,5 s und haelt einen Feldwechsel aus; Markierungen halten doppelt."
+      "text": "+1 Modulplatz. Anlegen schon nach 2,5 s und hält einen Feldwechsel aus; Markierungen halten doppelt."
     },
     "bios_metronome": {
       "name": "Taktgeber-BIOS",

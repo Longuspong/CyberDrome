@@ -53,7 +53,7 @@ func test_workshop_format_loads_as_a_playable_squad() -> void:
 	var builds: Array = []
 	for loadout in payload["squad"]:
 		var build := DromeBuild.from_loadout(loadout)
-		t.ok(build != null, "Loadout %s laesst sich laden" % loadout["name"])
+		t.ok(build != null, "Loadout %s lässt sich laden" % loadout["name"])
 		builds.append(build)
 
 	t.equal(builds.size(), 2, "beide DROMEs kommen an")
@@ -87,14 +87,14 @@ func test_the_squad_reaches_the_battle_with_the_same_parts() -> void:
 			var part := unit.build.part_in(slot)
 			var path: String = part.view("south").get("svg", "")
 			t.ok(ResourceLoader.exists(path),
-				"Textur fuer %s liegt vor: %s" % [part.id, path])
+				"Textur für %s liegt vor: %s" % [part.id, path])
 	battle.free()
 
 
 func test_a_loadout_survives_saving_and_loading() -> void:
 	var original := DromeBuild.from_loadout(_workshop_payload()["squad"][0])
 	var restored := DromeBuild.from_loadout(original.to_loadout())
-	t.equal(restored.slots, original.slots, "Slots ueberstehen den Rundlauf")
+	t.equal(restored.slots, original.slots, "Slots überstehen den Rundlauf")
 	t.equal(restored.stats(), original.stats(), "Stats ebenso")
 	t.equal(restored.display_name, original.display_name, "und der Name")
 
@@ -114,8 +114,8 @@ func test_unknown_parts_are_skipped_not_fatal() -> void:
 		},
 	}
 	var build := DromeBuild.from_loadout(loadout)
-	t.ok(build != null, "das Loadout laedt trotzdem")
-	t.ok(not build.slots.has("head"), "das unbekannte Teil wurde uebersprungen")
+	t.ok(build != null, "das Loadout lädt trotzdem")
+	t.ok(not build.slots.has("head"), "das unbekannte Teil wurde übersprungen")
 	t.ok(build.validate().has("Sensorik fehlt"),
 		"und die Validierung sagt, was fehlt")
 

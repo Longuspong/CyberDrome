@@ -7,8 +7,8 @@ func _ready() -> void:
 	var content := UiKit.page(self, "Optionen", "", 2)
 
 	var display := UiKit.card(content)
-	display.add_child(UiKit.heading("Schriftgroesse"))
-	display.add_child(UiKit.label("Vergroessert nur den Text -- das Layout bleibt, wie es ist.",
+	display.add_child(UiKit.heading("Schriftgröße"))
+	display.add_child(UiKit.label("Vergrößert nur den Text -- das Layout bleibt, wie es ist.",
 		UiKit.SMALL, UiKit.MUTED))
 	# Drei Knoepfe nebeneinander, der gewaehlte farbig. Radio-Punkte waren
 	# dunkel auf dunkel -- welcher nicht gewaehlt war, sah man kaum.
@@ -46,20 +46,20 @@ func _ready() -> void:
 	haptic.button_pressed = Accessibility.haptics
 	haptic.toggled.connect(Accessibility.set_haptics)
 	motion.add_child(haptic)
-	motion.add_child(UiKit.label("Kurzes Vibrieren bei schweren Treffern, Abschuessen, "
-		+ "Kampfende und beim Einbauen. Nur auf Geraeten, die es koennen.",
+	motion.add_child(UiKit.label("Kurzes Vibrieren bei schweren Treffern, Abschüssen, "
+		+ "Kampfende und beim Einbauen. Nur auf Geräten, die es können.",
 		UiKit.SMALL, UiKit.MUTED))
 
 	# Spielstand (10. Nov. 2026): wird jetzt gespeichert -- hier zuruecksetzen.
 	var save := UiKit.card(content)
 	save.add_child(UiKit.heading("Spielstand"))
-	save.add_child(UiKit.label("Spielstand %d  ·  Hangar, Level und ein laufender Lauf werden "
+	save.add_child(UiKit.label("Spielstand %d  ·  Hangar, Level und ein laufender Einsatz werden "
 		% GameState.slot + "automatisch gespeichert." if GameState.slot > 0
-		else "Kein Spielstand gewaehlt -- nichts wird gespeichert.", UiKit.SMALL, UiKit.MUTED))
+		else "Kein Spielstand gewählt -- nichts wird gespeichert.", UiKit.SMALL, UiKit.MUTED))
 	var switch := UiKit.button("Spielstand wechseln")
 	switch.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/saves.tscn"))
 	save.add_child(switch)
-	var reset := UiKit.button("Spielstand zuruecksetzen")
+	var reset := UiKit.button("Spielstand zurücksetzen")
 	reset.add_theme_color_override("font_color", UiKit.BAD)
 	var armed := {"on": false}
 	reset.pressed.connect(func():
@@ -68,7 +68,7 @@ func _ready() -> void:
 			reset.text = "Wirklich? Alles geht verloren -- nochmal tippen"
 			return
 		GameState.reset_progress()
-		reset.text = "Zurueckgesetzt"
+		reset.text = "Zurückgesetzt"
 		reset.disabled = true)
 	save.add_child(reset)
 
@@ -76,7 +76,7 @@ func _ready() -> void:
 	var test := UiKit.card(content)
 	test.add_child(UiKit.heading("Zum Testen"))
 	var unlock := CheckButton.new()
-	unlock.text = "Endlos-Modus freischalten"
+	unlock.text = "Infinity-Einsatz freischalten"
 	unlock.custom_minimum_size = Vector2(0, 48)
 	unlock.add_theme_font_size_override("font_size", UiKit.BODY)
 	unlock.button_pressed = bool(GameState.progress.get("unlock_all", false))
@@ -84,7 +84,7 @@ func _ready() -> void:
 		GameState.progress["unlock_all"] = on
 		GameState.save_progress())
 	test.add_child(unlock)
-	test.add_child(UiKit.label("Sonst wird der Endlos-Modus frei, sobald Neon City einmal "
+	test.add_child(UiKit.label("Sonst wird der Infinity-Einsatz frei, sobald Neon City einmal "
 		+ "gewonnen ist.", UiKit.SMALL, UiKit.MUTED))
 
 	var screen := UiKit.card(content)
@@ -93,5 +93,5 @@ func _ready() -> void:
 	fullscreen.pressed.connect(Accessibility.enter_fullscreen)
 	screen.add_child(fullscreen)
 	screen.add_child(UiKit.label("Blendet die Leisten des Browsers aus. Noch besser: "
-		+ "\"Zum Startbildschirm hinzufuegen\" -- dann startet das Spiel wie eine App.",
+		+ "\"Zum Startbildschirm hinzufügen\" -- dann startet das Spiel wie eine App.",
 		UiKit.SMALL, UiKit.MUTED))

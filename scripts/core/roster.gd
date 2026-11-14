@@ -369,7 +369,7 @@ func load_dict(data: Dictionary) -> bool:
 		if inst == null:
 			continue
 		if not PartDB.has_part(inst.part_id):
-			push_warning("Roster: unbekanntes Teil %s uebersprungen" % inst.part_id)
+			push_warning("Roster: unbekanntes Teil %s übersprungen" % inst.part_id)
 			continue
 		_instances[inst.uid] = inst
 		_bump_uid(inst.uid)

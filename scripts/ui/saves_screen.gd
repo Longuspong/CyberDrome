@@ -94,7 +94,7 @@ func _ready() -> void:
 	content.add_child(toast_panel)
 
 	var foot := Arcade.label("Jeder Slot hat seinen eigenen Hangar, seine Level und seinen "
-		+ "laufenden Lauf. Gespeichert wird automatisch.", 14, Arcade.MUTED)
+		+ "laufenden Einsatz. Gespeichert wird automatisch.", 14, Arcade.MUTED)
 	foot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(foot)
 
@@ -185,7 +185,7 @@ func _slot_card(which: int, info: Dictionary) -> Control:
 	if used:
 		text.add_child(_wrap(Arcade.label("%d DROMEs · %d im Squad · Ø Level %s" % [info["dromes"],
 			info["squad"], ("%.1f" % float(info["level"])).replace(".", ",")], 15, Arcade.TEXT)))
-		var state := "Lauf: %s" % info["run"] if str(info["run"]) != "" else "Kein Lauf"
+		var state := "Einsatz: %s" % info["run"] if str(info["run"]) != "" else "Kein Einsatz"
 		if bool(info["story_cleared"]):
 			state += " · Neon City bezwungen"
 		text.add_child(_wrap(Arcade.label(state, 15, Arcade.MUTED)))

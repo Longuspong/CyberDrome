@@ -68,7 +68,7 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String) -> Dicti
 		var entry: Dictionary = ordered[rank]
 		var path: String = entry["view"].get("svg", "")
 		if path == "" or not ResourceLoader.exists(path):
-			push_warning("DromeSprites: Textur fehlt fuer %s (%s)"
+			push_warning("DromeSprites: Textur fehlt für %s (%s)"
 				% [entry["slot"], path])
 			continue
 		var sprite := Sprite2D.new()
@@ -119,7 +119,7 @@ static func mount_offset(slot: String, view: Dictionary, sockets: Dictionary) ->
 		# Ohne Sockel oder ohne Gegenstueck gibt es nichts auszurichten. Das
 		# Teil bleibt sichtbar, statt zu verschwinden -- ein Bauteil an der
 		# falschen Stelle ist ein Hinweis, ein fehlendes ist ein Raetsel.
-		push_warning("DromeSprites: kein Ankerpaar fuer %s" % slot)
+		push_warning("DromeSprites: kein Ankerpaar für %s" % slot)
 		return Vector2.ZERO
 	return socket - mount
 

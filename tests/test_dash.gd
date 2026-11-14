@@ -33,7 +33,7 @@ func test_the_kit_actually_grants_a_dash() -> void:
 	var dash := _dash_action(unit)
 	t.ok(dash != null, "der Hologramm-Boost bringt eine Bewegungs-Aktion mit")
 	t.equal(dash.range_tiles, 3, "sie reicht drei Felder weit")
-	t.ok(dash.category == ActionData.Category.ABILITY, "und ist eine Faehigkeit")
+	t.ok(dash.category == ActionData.Category.ABILITY, "und ist eine Fähigkeit")
 	unit.free()
 
 
@@ -47,7 +47,7 @@ func test_open_ground_offers_three_tiles_in_each_direction() -> void:
 
 	var landings := resolver.dash_landings(unit, dash)
 	# Vier Richtungen x drei Felder = zwoelf Landefelder auf freiem Feld.
-	t.equal(landings.size(), 12, "freies Feld: zwoelf Landefelder")
+	t.equal(landings.size(), 12, "freies Feld: zwölf Landefelder")
 	for tile in [Vector2i(6, 5), Vector2i(7, 5), Vector2i(8, 5),
 			Vector2i(5, 2), Vector2i(2, 5)]:
 		t.ok(tile in landings, "%s ist erreichbar" % tile)
@@ -101,10 +101,10 @@ func test_target_blocker_names_the_reason() -> void:
 	var dash := _dash_action(unit)
 
 	t.equal(resolver.target_blocker(unit, Vector2i(8, 5), dash), "",
-		"ein gueltiges Landefeld hat keinen Grund")
+		"ein gültiges Landefeld hat keinen Grund")
 	t.equal(resolver.target_blocker(unit, Vector2i(7, 7), dash), "Nur in gerader Linie",
 		"eine Diagonale nennt den Grund")
-	t.equal(resolver.target_blocker(unit, Vector2i(9, 5), dash), "Zu weit fuer den Boost",
+	t.equal(resolver.target_blocker(unit, Vector2i(9, 5), dash), "Zu weit für den Boost",
 		"jenseits der Reichweite ebenso")
 	unit.free()
 

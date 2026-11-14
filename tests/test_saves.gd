@@ -43,7 +43,7 @@ func _clear() -> void:
 
 func test_before_a_slot_is_chosen_nothing_is_written() -> void:
 	var before := _begin()
-	t.equal(GameState.slot, 0, "noch kein Spielstand gewaehlt")
+	t.equal(GameState.slot, 0, "noch kein Spielstand gewählt")
 	t.equal(GameState.roster.entries.size(), 4, "trotzdem ein spielbarer Bestand")
 	GameState.save_roster()
 	for which in range(1, GameState.SLOT_COUNT + 1):
@@ -54,7 +54,7 @@ func test_before_a_slot_is_chosen_nothing_is_written() -> void:
 
 func test_three_slots_keep_their_own_hangar_run_and_progress() -> void:
 	var before := _begin()
-	t.equal(GameState.SLOT_COUNT, 3, "drei Spielstaende")
+	t.equal(GameState.SLOT_COUNT, 3, "drei Spielstände")
 
 	GameState.select_slot(1)
 	t.ok(GameState.slot_exists(1), "ein neuer Spielstand wird gleich angelegt")
@@ -109,15 +109,15 @@ func test_deleting_and_resetting_touch_only_one_slot() -> void:
 	GameState.save_roster()
 	GameState.start_run(99)
 	GameState.reset_progress()
-	t.equal(GameState.roster.entries[0].name, "Vireo", "zurueckgesetzt: frischer Hangar")
+	t.equal(GameState.roster.entries[0].name, "Vireo", "zurückgesetzt: frischer Hangar")
 	t.equal(GameState.run, null, "kein Lauf mehr")
 	t.ok(GameState.slot_exists(3), "der Spielstand selbst bleibt")
 	t.equal(GameState.slot_summary(3)["run"], "", "ohne laufenden Lauf")
 	GameState.delete_slot(3)
 	t.ok(not GameState.slot_exists(3), "geloescht")
-	t.equal(GameState.slot, 0, "danach ist keiner gewaehlt")
+	t.equal(GameState.slot, 0, "danach ist keiner gewählt")
 	GameState.select_slot(1)
-	t.equal(GameState.roster.entries[0].name, "Bleibt", "Spielstand 1 ist unberuehrt")
+	t.equal(GameState.roster.entries[0].name, "Bleibt", "Spielstand 1 ist unberührt")
 	_end(before)
 
 

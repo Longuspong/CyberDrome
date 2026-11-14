@@ -82,7 +82,7 @@ func test_every_module_has_its_own_symbol() -> void:
 		t.ok(icon != null, "%s hat ein Symbol (assets/modules/%s.svg)" % [module.display_name, module.id])
 		if icon != null:
 			t.ok(icon.get_width() >= 128, "%s ist fein gerastert (%d px)" % [module.display_name, icon.get_width()])
-		t.ok(not seen.has(module.short_name()), "%s: Kuerzel %s ist eindeutig" % [module.display_name, module.short_name()])
+		t.ok(not seen.has(module.short_name()), "%s: Kürzel %s ist eindeutig" % [module.display_name, module.short_name()])
 		seen[module.short_name()] = true
 
 
@@ -91,7 +91,7 @@ func test_a_recipe_sums_its_ingredients_and_adds_its_own_effect() -> void:
 	t.ok(gun != null and gun.is_recipe(), "Gunslinger ist ein Rezept")
 	t.ok(is_equal_approx(float(gun.effects["attack_speed"]), 0.08), "Schnellfeuer steckt drin")
 	t.ok(is_equal_approx(float(gun.effects["ricochet_chance"]), 0.2), "Doppellauf steckt drin")
-	t.equal(int(gun.effects["field_shot_every"]), 6, "dazu jeder 6. Angriff quer uebers Feld")
+	t.equal(int(gun.effects["field_shot_every"]), 6, "dazu jeder 6. Angriff quer übers Feld")
 
 
 func test_conditions_decide_whether_a_module_works() -> void:
@@ -104,7 +104,7 @@ func test_conditions_decide_whether_a_module_works() -> void:
 	t.ok(ModuleData.get_module(&"mod_heavy_edge").fits(PartDB.get_part(&"eq_rail_lance")),
 		"Wuchtkante seit dem Neuentwurf auch an der Lanze")
 	t.ok(ModuleData.get_module(&"mod_armor_plate").fits(PartDB.get_part(&"eq_rail_lance")),
-		"ohne Bedingung passt es ueberall")
+		"ohne Bedingung passt es überall")
 
 
 func test_the_molok_has_fewer_module_slots() -> void:
@@ -124,7 +124,7 @@ func test_attack_modules_change_a_copy_of_the_weapon() -> void:
 	var original: ActionData = PartDB.get_part(&"eq_pulse_blaster").actions[0]
 	t.equal(attack.power, int(round(original.power * 1.12)), "12 % mehr Schaden")
 	t.ok(is_equal_approx(attack.interval, original.interval / 1.08), "8 % schneller")
-	t.equal(original.power, 10, "das Teil in der PartDB bleibt unveraendert")
+	t.equal(original.power, 10, "das Teil in der PartDB bleibt unverändert")
 
 
 func test_a_resting_module_does_nothing() -> void:
@@ -158,9 +158,9 @@ func test_the_takt_chip_counts_each_attack_as_one_and_a_quarter() -> void:
 	var chip := Unit.create(_with(_vireo(), "equip_left", [&"mod_takt_chip"]), &"V", true)
 	chip.init_realtime(0.0)
 	t.equal(_abilities_in(chip, 12), 5, "mit Taktchip: 12 / 2,4 = 5")
-	t.equal(chip.takt_bars()[0]["segments"], 3, "die Takt-Leiste behaelt ihre Abschnitte")
+	t.equal(chip.takt_bars()[0]["segments"], 3, "die Takt-Leiste behält ihre Abschnitte")
 	var recipe := ModuleData.get_module(&"mod_takt_chip")
-	t.equal(recipe.from, [&"mod_rapid_fire", &"mod_amplifier"], "aus Schnellfeuer und Verstaerker")
+	t.equal(recipe.from, [&"mod_rapid_fire", &"mod_amplifier"], "aus Schnellfeuer und Verstärker")
 	t.ok(not recipe.effects.has("takt_time"), "kein Zeit-Takt mehr (9. Nov. 2026)")
 
 
@@ -169,7 +169,7 @@ func test_the_amplifier_strengthens_the_ability() -> void:
 	unit.init_realtime(0.0)
 	var ability: ActionData = unit.mounts[0]["ability"]
 	var original: ActionData = PartDB.get_part(&"eq_pulse_blaster").actions[1]
-	t.equal(ability.power, int(round(original.power * 1.2)), "Faehigkeit +20 %")
+	t.equal(ability.power, int(round(original.power * 1.2)), "Fähigkeit +20 %")
 	var pod := Unit.create(_with(_vireo(&"eq_drone_pod"), "equip_left", [&"mod_amplifier"]), &"V", true)
 	pod.init_realtime(0.0)
 	var field: ActionData = pod.mounts[0]["ability"]
@@ -182,11 +182,11 @@ func test_retaliation_charges_the_next_strike() -> void:
 	var molok: Unit = battle.units[0]
 	var blade: Unit = battle.units[1]
 	battle.resolver.execute(blade, molok.tile, blade.mounts[0]["attack"])
-	t.equal(molok.retaliation_stacks, 2, "ein Nahkampftreffer zaehlt doppelt")
+	t.equal(molok.retaliation_stacks, 2, "ein Nahkampftreffer zählt doppelt")
 	var before := blade.hp + blade.shield
 	var hammer: ActionData = molok.mounts[0]["attack"]
 	battle.brain._attack_modules(molok, molok.mounts[0], hammer, blade)
-	t.ok(blade.hp + blade.shield < before, "der naechste Angriff entlaedt die Vergeltung")
+	t.ok(blade.hp + blade.shield < before, "der nächste Angriff entlädt die Vergeltung")
 	t.equal(molok.retaliation_stacks, 0, "danach leer")
 	battle.free()
 
@@ -210,7 +210,7 @@ func test_whirlwind_hits_every_foe_next_to_the_bearer() -> void:
 func test_the_shackle_pulls_three_foes_next_to_the_bearer_and_stuns_them() -> void:
 	var chained := _with(_molok(), "equip_left", [&"mod_shackle"])
 	t.equal(ModuleData.get_module(&"mod_shackle").from,
-		[&"mod_armor_plate", &"mod_bait"], "Panzerplatte und Koedersender")
+		[&"mod_armor_plate", &"mod_bait"], "Panzerplatte und Ködersender")
 	var battle := _battle([chained], [_vireo(), _vireo(), _vireo(), _vireo()],
 		[Vector2i(10, 10), Vector2i(10, 13), Vector2i(13, 10), Vector2i(7, 10), Vector2i(16, 16)])
 	var molok: Unit = battle.units[0]
@@ -218,10 +218,10 @@ func test_the_shackle_pulls_three_foes_next_to_the_bearer_and_stuns_them() -> vo
 	for i in [1, 2, 3]:
 		var foe: Unit = battle.units[i]
 		t.ok(Grid.distance(foe.tile, molok.tile) <= 1, "Gegner %d steht jetzt daneben (%s)" % [i, foe.tile])
-		t.ok(foe.is_stunned(), "und ist betaeubt")
+		t.ok(foe.is_stunned(), "und ist betäubt")
 	var far: Unit = battle.units[4]
 	t.equal(far.tile, Vector2i(16, 16), "wer weiter weg steht, bleibt")
-	t.ok(not far.is_stunned(), "und ist nicht betaeubt")
+	t.ok(not far.is_stunned(), "und ist nicht betäubt")
 	battle.free()
 
 
@@ -242,7 +242,7 @@ func test_spikes_hurt_every_attacker_and_melee_more() -> void:
 	var gun_before := gunner.hp + gunner.shield
 	battle.resolver.execute(gunner, molok.tile, gunner.mounts[0]["attack"])
 	var far_loss := gun_before - (gunner.hp + gunner.shield)
-	t.ok(far_loss > 0, "der Fernkaempfer nimmt Schaden (%d)" % far_loss)
+	t.ok(far_loss > 0, "der Fernkämpfer nimmt Schaden (%d)" % far_loss)
 	var blade_before := blade.hp + blade.shield
 	battle.resolver.execute(blade, molok.tile, blade.mounts[0]["attack"])
 	var near_loss := blade_before - (blade.hp + blade.shield)
@@ -259,7 +259,7 @@ func test_splinter_spikes_go_past_the_shield() -> void:
 	var hp_before := blade.hp
 	battle.resolver.execute(blade, molok.tile, blade.mounts[0]["attack"])
 	t.equal(blade.shield, shield_before, "der Schild bleibt")
-	t.ok(blade.hp < hp_before, "die Integritaet sinkt")
+	t.ok(blade.hp < hp_before, "die Integrität sinkt")
 	battle.free()
 
 
@@ -289,8 +289,8 @@ func test_the_beacon_on_a_shield_gift_marks_the_nearest_foe() -> void:
 	var foe: Unit = battle.units[2]
 	battle.brain._after_ability(bearer, bearer.mounts[0]["ability"],
 		{"tile": ally.tile, "target": ally}, bearer.mounts[0]["fx"])
-	t.ok(ActionResolver.is_marked(foe), "Ersatzregel: der naechste Gegner in Rw 3")
-	t.ok(not ActionResolver.is_marked(ally), "nicht der Verbuendete")
+	t.ok(ActionResolver.is_marked(foe), "Ersatzregel: der nächste Gegner in Rw 3")
+	t.ok(not ActionResolver.is_marked(ally), "nicht der Verbündete")
 	battle.free()
 
 
@@ -328,7 +328,7 @@ func test_the_ram_adds_part_of_the_armor() -> void:
 	edge.init_realtime(0.0)
 	var a := ram.raw_damage(ram.mounts[0]["attack"])
 	var b := edge.raw_damage(edge.mounts[0]["attack"])
-	t.ok(a > b, "Rammbock trifft haerter als seine Zutaten (%d gegen %d)" % [a, b])
+	t.ok(a > b, "Rammbock trifft härter als seine Zutaten (%d gegen %d)" % [a, b])
 
 
 func test_overvolt_turns_kinetic_into_energy_while_the_shield_holds() -> void:
@@ -355,12 +355,12 @@ func test_overload_strengthens_the_next_attacks() -> void:
 	var foe: Unit = battle.units[1]
 	var mount: Dictionary = bearer.mounts[0]
 	mount["count"] = 2.0
-	t.ok(battle.brain._fire(bearer, mount, foe), "die Faehigkeit geht los")
+	t.ok(battle.brain._fire(bearer, mount, foe), "die Fähigkeit geht los")
 	t.equal(int(mount.get("overload", 0)), 3, "drei Angriffe aufgeladen")
 	battle.brain._fire(bearer, mount, foe)
 	t.equal(int(mount.get("overload", 0)), 2, "einer verbraucht")
 	t.ok((mount["overload_attack"] as ActionData).power > (mount["attack"] as ActionData).power,
-		"der aufgeladene Angriff ist staerker")
+		"der aufgeladene Angriff ist stärker")
 	battle.free()
 
 
@@ -407,7 +407,7 @@ func test_the_discharge_hits_foes_when_the_shield_breaks() -> void:
 	var near_before := near.hp + near.shield
 	battle.resolver.apply_damage(far, molok, 30, far.mounts[0]["attack"])
 	t.ok(near.hp + near.shield < near_before, "der Nachbar nimmt Schaden")
-	t.ok(near.is_stunned(), "und ist kurz betaeubt")
+	t.ok(near.is_stunned(), "und ist kurz betäubt")
 	t.ok(molok.burst_cooldown > 0.0, "dann Pause")
 	battle.free()
 
@@ -447,13 +447,13 @@ func test_the_bait_module_makes_the_target_attack_the_bearer() -> void:
 	var bearer: Unit = battle.units[0]
 	var foe: Unit = battle.units[2]
 	var ability: ActionData = bearer.mounts[0]["ability"]
-	t.ok(is_equal_approx(ability.taunt_seconds, 2.0), "die Faehigkeit lockt 2 s")
+	t.ok(is_equal_approx(ability.taunt_seconds, 2.0), "die Fähigkeit lockt 2 s")
 	var twice := Unit.create(_with(_vireo(), "equip_left", [&"mod_bait", &"mod_bait"]), &"V", true)
 	twice.init_realtime(0.0)
 	t.ok(is_equal_approx((twice.mounts[0]["ability"] as ActionData).taunt_seconds, 3.0),
 		"ein zweites Exemplar +1 s")
 	battle.brain._after_ability(bearer, ability, {"tile": foe.tile, "target": foe})
-	t.equal(battle.brain.lured_by(foe), bearer, "der Gegner greift den Traeger an")
+	t.equal(battle.brain.lured_by(foe), bearer, "der Gegner greift den Träger an")
 	foe.tick_statuses(ability.taunt_seconds + 0.1)
 	t.equal(battle.brain.lured_by(foe), null, "danach nicht mehr")
 	battle.free()
@@ -492,7 +492,7 @@ func test_a_module_goes_from_storage_into_a_holder_and_back() -> void:
 	var build: DromeBuild = run.squad[int(spot["drome"])]
 	t.equal(build.modules[spot["slot"]], [&"mod_armor_plate"], "steckt im Halter")
 	t.ok(run.remove_module(int(spot["drome"]), spot["slot"], 0), "herausgenommen")
-	t.equal(run.storage, [&"mod_armor_plate"], "zurueck im Lager")
+	t.equal(run.storage, [&"mod_armor_plate"], "zurück im Lager")
 	t.ok(not build.modules.has(spot["slot"]), "der Halter ist leer")
 
 
@@ -571,7 +571,7 @@ func test_the_shop_sells_modules_into_the_storage() -> void:
 	t.equal(run.storage, [first], "liegt im Lager")
 	t.ok(not run.buy(0), "nur einmal")
 	run.continue_run()
-	t.equal(run.shop_offers.size(), 0, "der Laden schliesst mit dem Stopp")
+	t.equal(run.shop_offers.size(), 0, "der Laden schließt mit dem Stopp")
 
 
 func test_the_shop_is_full_storage_aware_and_seeded() -> void:
@@ -612,15 +612,15 @@ func test_the_shop_can_be_rerolled_for_rising_credits() -> void:
 	run.shop_offers = run.roll_shop()
 	run.credits = 5
 	t.equal(run.reroll_price(), 2, "erster Wurf 2 Credits")
-	t.ok(run.reroll_shop(), "neu gewuerfelt")
+	t.ok(run.reroll_shop(), "neu gewürfelt")
 	t.equal(run.credits, 3, "bezahlt")
-	t.equal(run.reroll_price(), 3, "der naechste kostet mehr")
+	t.equal(run.reroll_price(), 3, "der nächste kostet mehr")
 	t.ok(run.reroll_shop(), "noch einmal")
 	t.equal(run.credits, 0, "bezahlt")
 	t.equal(run.reroll_blocker(), "zu wenig Credits", "dann ist Schluss")
 	t.ok(not run.reroll_shop(), "ohne Credits nicht")
 	run.continue_run()
-	t.equal(run.rerolls, 0, "im naechsten Zwischenstopp wieder guenstig")
+	t.equal(run.rerolls, 0, "im nächsten Zwischenstopp wieder günstig")
 
 
 func test_a_target_recipe_steers_the_shop() -> void:
@@ -657,7 +657,7 @@ func test_late_shops_sometimes_offer_a_recipe() -> void:
 				found = true
 		run.round = 2
 		for offer in run.roll_shop():
-			t.ok(not ModuleData.get_module(offer["module_id"]).is_recipe(), "frueh nur Grundmodule")
+			t.ok(not ModuleData.get_module(offer["module_id"]).is_recipe(), "früh nur Grundmodule")
 	t.ok(found, "ab Runde 5 gelegentlich ein fertiges Rezept")
 
 
@@ -669,7 +669,7 @@ func test_the_bios_catalog() -> void:
 	var chassis := ModuleData.bios_items().filter(func(i): return i.bios_kind == "chassis")
 	var recipe := ModuleData.bios_items().filter(func(i): return i.bios_kind == "recipe")
 	t.equal(chassis.size(), 4, "ein Chassis-BIOS je DROME")
-	t.ok(recipe.size() >= 6, "6-8 Rezept-BIOS fuer den Anfang (%d)" % recipe.size())
+	t.ok(recipe.size() >= 6, "6-8 Rezept-BIOS für den Anfang (%d)" % recipe.size())
 	for item in recipe:
 		var base := ModuleData.get_module(item.bios_recipe)
 		var result := ModuleData.get_module(item.bios_result)
@@ -678,7 +678,7 @@ func test_the_bios_catalog() -> void:
 		if base == null or result == null:
 			continue
 		for key in base.effects:
-			t.ok(result.effects.has(key), "%s behaelt %s" % [result.display_name, key])
+			t.ok(result.effects.has(key), "%s behält %s" % [result.display_name, key])
 		t.ok(not result.bonus.is_empty(), "%s bringt eine eigene Regel" % result.display_name)
 	var revolver := ModuleData.get_module(&"mod_revolver")
 	t.equal(int(revolver.effects["field_shot_every"]), 3, "Revolverheld: jeder 3. statt 5.")
@@ -717,7 +717,7 @@ func test_bios_offers_are_always_usable() -> void:
 		run.run_seed = seed_value
 		var offers := run.roll_bios_offers()
 		t.ok(not offers.has(&"bios_nimbus") and not offers.has(&"bios_strix"),
-			"keins fuer DROMEs ausserhalb des Squads")
+			"keins für DROMEs ausserhalb des Squads")
 		var now := offers.filter(func(id): return id in [&"bios_vireo", &"bios_molok"])
 		t.ok(not now.is_empty(), "mindestens eins sofort nutzbar")
 		for id in offers:
@@ -745,10 +745,10 @@ func test_choosing_and_installing_a_chassis_bios() -> void:
 	t.ok(not run.install_module(0, drome, left), "ein BIOS steckt nicht wie ein Modul")
 	t.ok(not run.install_bios(0, 0 if drome != 0 else 1, left), "nicht in einen anderen DROME")
 	t.ok(run.install_bios(0, drome, right), "eingebaut")
-	t.ok(build.chassis_bios, "der Molok traegt es")
-	t.equal(ModuleData.slots_for(build, right), 3, "+1 Modulplatz im gewaehlten Halter")
+	t.ok(build.chassis_bios, "der Molok trägt es")
+	t.equal(ModuleData.slots_for(build, right), 3, "+1 Modulplatz im gewählten Halter")
 	t.equal(ModuleData.slots_for(build, left), 2, "der andere bleibt")
-	t.ok(build.clone().chassis_bios, "die Kopie fuer den Kampf traegt es mit")
+	t.ok(build.clone().chassis_bios, "die Kopie für den Kampf trägt es mit")
 	run.storage.append(&"bios_molok")
 	t.ok(not run.install_bios(0, drome, left), "nur ein Chassis-BIOS je DROME")
 
@@ -801,7 +801,7 @@ func test_chassis_bios_strengthen_the_passives() -> void:
 	molok.chassis_bios = true
 	var m := Unit.create(molok, &"M", true)
 	var plain := Unit.create(_molok(), &"M", true)
-	t.equal(m.lure_radius(), plain.lure_radius() + 1, "Praesenz lockt 1 Feld weiter")
+	t.equal(m.lure_radius(), plain.lure_radius() + 1, "Präsenz lockt 1 Feld weiter")
 	m.free()
 	plain.free()
 
@@ -852,7 +852,7 @@ func test_the_new_weapons_exist_with_their_classes() -> void:
 		t.ok(part != null, "%s ist geladen" % entry[0])
 		if part != null:
 			t.equal(part.mount_class, entry[1], "%s ist %s" % [part.display_name, entry[1]])
-			t.equal(part.actions.size(), 2, "%s: Angriff und Faehigkeit" % part.display_name)
+			t.equal(part.actions.size(), 2, "%s: Angriff und Fähigkeit" % part.display_name)
 
 
 func test_the_bulwark_ram_scales_with_integrity() -> void:
@@ -861,12 +861,12 @@ func test_the_bulwark_ram_scales_with_integrity() -> void:
 	var unit := Unit.create(ram, &"M", true)
 	unit.init_realtime(0.0)
 	var slam: ActionData = unit.mounts[0]["ability"]
-	t.ok(slam.hp_scaling > 0.0, "der Rammstoss skaliert mit der Integritaet")
-	t.equal(slam.push_tiles, 1, "und stoesst zurueck")
+	t.ok(slam.hp_scaling > 0.0, "der Rammstoß skaliert mit der Integrität")
+	t.equal(slam.push_tiles, 1, "und stößt zurück")
 	var plain := slam.copy()
 	plain.hp_scaling = 0.0
 	t.ok(unit.raw_damage(slam) >= unit.raw_damage(plain) + int(unit.stat("hp_max") * 0.08) - 1,
-		"+8 %% der max. Integritaet (%d gegen %d)" % [unit.raw_damage(slam), unit.raw_damage(plain)])
+		"+8 %% der max. Integrität (%d gegen %d)" % [unit.raw_damage(slam), unit.raw_damage(plain)])
 	unit.free()
 
 
@@ -879,7 +879,7 @@ func test_the_mortar_cannot_hit_close_targets() -> void:
 	var attack: ActionData = mortar.mounts[0]["attack"]
 	t.equal(battle.resolver.target_blocker(mortar, battle.units[1].tile, attack), "Zu nah", "direkt daneben nicht")
 	t.equal(battle.resolver.target_blocker(mortar, battle.units[2].tile, attack), "", "auf Abstand schon")
-	t.ok(attack.aoe_radius >= 1 and attack.delay > 0.0, "Flaeche mit Verzoegerung")
+	t.ok(attack.aoe_radius >= 1 and attack.delay > 0.0, "Fläche mit Verzögerung")
 	battle.free()
 
 
@@ -887,7 +887,7 @@ func test_the_boomerang_hits_harder_on_the_move() -> void:
 	var unit := Unit.create(_vireo(&"eq_boomerang"), &"V", true)
 	unit.init_realtime(0.0)
 	var attack: ActionData = unit.mounts[0]["attack"]
-	t.equal(attack.shots, 2, "hin und zurueck: zwei Treffer")
+	t.equal(attack.shots, 2, "hin und zurück: zwei Treffer")
 	unit.still_time = 0.2
 	var moving := unit.raw_damage(attack)
 	unit.still_time = 5.0
@@ -924,7 +924,7 @@ func test_the_orbit_focus_roots_the_target_of_the_ability() -> void:
 	var before := foe.tile
 	foe.step_left = 0.0
 	battle.brain.update(foe, 0.05)
-	t.equal(foe.tile, before, "und laeuft nicht")
+	t.equal(foe.tile, before, "und läuft nicht")
 	foe.tick_statuses(2.1)
 	t.ok(not foe.is_rooted(), "nach 2 s vorbei")
 	battle.free()

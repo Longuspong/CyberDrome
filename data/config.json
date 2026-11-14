@@ -102,10 +102,10 @@
     "tiers": {
       "easy": {"power": 0.7, "count_offset": -1, "life_chance": 0.6, "credits": 6,
         "part_chance": 0.4, "loot_credits": 4,
-        "reward_text": "Gewuerfelt: Teil der Gegner oder Credits, oft Notstrom"},
+        "reward_text": "Gewürfelt: Teil der Gegner oder Credits, oft Notstrom"},
       "normal": {"power": 1.0, "count_offset": 0, "credits": 10,
         "part_chance": 0.6, "loot_credits": 6,
-        "reward_text": "Gewuerfelt: meist ein Teil der Gegner, sonst Credits"},
+        "reward_text": "Gewürfelt: meist ein Teil der Gegner, sonst Credits"},
       "elite": {"power": 1.3, "count_offset": 1, "credits": 16,
         "part_chance": 1.0, "drome_chance": 0.35,
         "reward_text": "Garantiert selten: mittleres/schweres Teil oder neuer DROME"}

@@ -372,7 +372,7 @@ func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) 
 	if every > 0 and int(mount["shots"]) % every == 0:
 		var extra := _field_shot_target(unit, target, bool(fx.get("field_shot_marked", false)))
 		if extra != null:
-			EventBus.log_line("%s trifft quer uebers Feld %s." % [unit.display_name, extra.display_name])
+			EventBus.log_line("%s trifft quer übers Feld %s." % [unit.display_name, extra.display_name])
 			battle.resolver.apply_damage(unit, extra, raw, attack)
 			EventBus.action_used.emit(unit, extra.tile, attack)
 	battle._check_victory()
@@ -715,7 +715,7 @@ func _use_gadgets(unit: Unit, target: Unit) -> bool:
 					if foe.is_alive():
 						foe.apply_status(&"decoy", decoy, {"stunned": true})
 				if not fooled.is_empty():
-					EventBus.log_line("%s laesst einen Koeder zurueck." % unit.display_name)
+					EventBus.log_line("%s lässt einen Köder zurück." % unit.display_name)
 				gadget["ready"] = ability.trigger_every
 				return true
 	return false

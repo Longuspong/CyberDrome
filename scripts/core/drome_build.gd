@@ -457,8 +457,8 @@ func structural_problems() -> Array[String]:
 		if part != null:
 			frame_sets[part.set_id] = true
 	if frame_sets.size() > 1:
-		problems.append("Rahmen ist keine Huelle: Kopf, Koerper und Fuesse "
-			+ "stammen aus verschiedenen Saetzen")
+		problems.append("Rahmen ist keine Huelle: Kopf, Körper und Füße "
+			+ "stammen aus verschiedenen Sätzen")
 
 	var chassis := body()
 	if chassis != null:
@@ -651,7 +651,7 @@ static func from_loadout(loadout: Dictionary) -> DromeBuild:
 		if part_id == null or str(part_id) == "":
 			continue
 		if not PartDB.has_part(StringName(part_id)):
-			push_warning("DromeBuild: unbekanntes Teil %s in Slot %s uebersprungen"
+			push_warning("DromeBuild: unbekanntes Teil %s in Slot %s übersprungen"
 				% [part_id, slot])
 			continue
 		build.slots[slot] = StringName(part_id)

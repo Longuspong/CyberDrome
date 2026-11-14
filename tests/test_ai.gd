@@ -48,7 +48,7 @@ func test_every_chassis_names_its_role() -> void:
 	t.equal(Unit.create(_vireo(), &"A", true).ai_role(), "skirmisher", "Vireo ist wendig")
 	t.equal(Unit.create(_molok(), &"B", true).ai_role(), "vanguard", "Molok ist Frontlinie")
 	t.equal(Unit.create(_nimbus(), &"C", true).ai_role(), "controller", "Nimbus ist Kontrolle")
-	t.equal(Unit.create(_strix(), &"D", true).ai_role(), "sniper", "Strix ist Scharfschuetze")
+	t.equal(Unit.create(_strix(), &"D", true).ai_role(), "sniper", "Strix ist Scharfschütze")
 
 
 func test_a_molok_with_a_cannon_never_backs_off() -> void:
@@ -67,7 +67,7 @@ func test_a_strix_holds_and_only_steps_away_from_contact() -> void:
 	var strix: Unit = battle.units[0]
 	var foe: Unit = battle.units[1]
 	t.equal(battle.brain.next_step(strix, foe), strix.tile,
-		"zwei Felder Abstand: der Strix haelt seine Stellung")
+		"zwei Felder Abstand: der Strix hält seine Stellung")
 	battle.free()
 
 	battle = _battle([_strix()], [_vireo()], [Vector2i(10, 10), Vector2i(10, 9)])
@@ -93,7 +93,7 @@ func test_a_controller_waits_until_the_frontline_fights() -> void:
 	molok.place_at(Vector2i(10, 5))
 	battle.grid.set_occupant(molok.tile, molok.unit_id)
 	t.ok(battle.brain.next_step(nimbus, foe) != nimbus.tile,
-		"sobald die Frontlinie trifft, rueckt der Nimbus nach")
+		"sobald die Frontlinie trifft, rückt der Nimbus nach")
 	battle.free()
 
 
@@ -106,7 +106,7 @@ func test_a_controller_follows_behind_the_frontline() -> void:
 	var molok: Unit = battle.units[1]
 	var foe: Unit = battle.units[2]
 	var step := battle.brain.next_step(nimbus, foe)
-	t.ok(step != nimbus.tile, "der Nimbus rueckt hinter dem Molok nach")
+	t.ok(step != nimbus.tile, "der Nimbus rückt hinter dem Molok nach")
 	t.ok(Grid.distance(step, foe.tile) > Grid.distance(molok.tile, foe.tile),
 		"und bleibt dabei hinter der Frontlinie (%s)" % step)
 	battle.free()
@@ -166,7 +166,7 @@ func test_an_unreachable_target_is_given_up_after_a_while() -> void:
 			mount["ready"] = 99.0
 		battle.brain.update(vireo, battle.step_seconds())
 	t.equal(vireo.target_id, near.unit_id,
-		"nach %.1f s ausser Reichweite nimmt er den erreichbaren Gegner" % limit)
+		"nach %.1f s außer Reichweite nimmt er den erreichbaren Gegner" % limit)
 	battle.free()
 
 
@@ -181,7 +181,7 @@ func test_allies_prefer_a_shared_target() -> void:
 	var right: Unit = battle.units[3]
 	b.target_id = left.unit_id
 	var picked := battle.brain.choose_target(a)
-	t.equal(picked, left, "der Gegner, den der Verbuendete schon angreift, wird gewaehlt")
+	t.equal(picked, left, "der Gegner, den der Verbündete schon angreift, wird gewählt")
 	b.target_id = right.unit_id
 	t.equal(battle.brain.choose_target(a), right, "und umgekehrt")
 	battle.free()
@@ -239,7 +239,7 @@ func test_the_vortex_gathers_then_strikes_then_slows() -> void:
 	var steps := int(ceil(vortex.delay / battle.step_seconds())) + 1
 	for i in steps:
 		battle.resolver.advance(battle.step_seconds())
-	t.ok(side.hp < hp_before, "nach %.1f s schlaegt die Schockwelle zu" % vortex.delay)
+	t.ok(side.hp < hp_before, "nach %.1f s schlägt die Schockwelle zu" % vortex.delay)
 	t.ok(center.hp < center.stat("hp_max"), "auch das Ziel in der Mitte")
 	t.ok(side.move_speed() < speed_before, "und die Getroffenen sind verlangsamt")
 	t.equal(nimbus.hp, nimbus.stat("hp_max"), "der Nimbus selbst bleibt heil")
@@ -255,7 +255,7 @@ func test_echo_lengthens_the_takt_and_casts_twice() -> void:
 	var vortex := _action(nimbus, &"act_rune_vortex")
 	var scatter := _action(vireo, &"act_pulse_double")
 	t.equal(nimbus.passive(), "echo", "der Nimbus hat Echo")
-	t.equal(vortex.trigger_kind, "attacks", "der Vortex loest nach Angriffen aus")
+	t.equal(vortex.trigger_kind, "attacks", "der Vortex löst nach Angriffen aus")
 	t.equal(vortex.range_tiles, 5, "mit Reichweite 5")
 	t.equal(battle.brain.trigger_every(nimbus, vortex), 4, "mit Echo jeder 4. statt jeder 3. Angriff")
 	t.equal(battle.brain.trigger_every(nimbus, scatter), 4,
@@ -326,7 +326,7 @@ func test_a_hit_makes_the_vireo_sprint() -> void:
 	t.equal(vireo.passive(), "hit_rush", "der Vireo hat die Sprint-Passive")
 	var before := vireo.move_speed()
 	battle.resolver.execute(vireo, foe.tile, _action(vireo, &"act_pulse"))
-	t.ok(vireo.move_speed() > before * 1.3, "nach dem Treffer laeuft er schneller (%.2f -> %.2f)"
+	t.ok(vireo.move_speed() > before * 1.3, "nach dem Treffer läuft er schneller (%.2f -> %.2f)"
 		% [before, vireo.move_speed()])
 	var seconds := float((Config.section("passives").get("hit_rush", {}) as Dictionary).get("seconds", 2.0))
 	vireo.tick_statuses(seconds + 0.1)
@@ -385,7 +385,7 @@ func test_the_neon_breaker_hits_shields_twice_as_hard() -> void:
 	var normal_hit := full - int(battle.resolver.resolve_damage(foe, plain.power, plain.energy_fraction)["shield_after"])
 	var breaker_hit := full - int(battle.resolver.resolve_damage(foe, breaker.power,
 		breaker.energy_fraction, breaker.shield_mult)["shield_after"])
-	t.ok(breaker_hit >= normal_hit * 2 - 1, "der Schildbrecher traegt doppelt so viel Schild ab (%d gegen %d)"
+	t.ok(breaker_hit >= normal_hit * 2 - 1, "der Schildbrecher trägt doppelt so viel Schild ab (%d gegen %d)"
 		% [breaker_hit, normal_hit])
 	battle.free()
 
@@ -404,8 +404,8 @@ func _hammer_molok() -> DromeBuild:
 func test_the_molok_is_a_tank_with_little_shield() -> void:
 	var stats := _hammer_molok().stats()
 	# 8. Nov. 2026: 250 Integritaet, 50 Schild, Ruestung 10 (+ Deflektor).
-	t.equal(stats["hp_max"], 270, "250 Integritaet + 20 vom Hammer")
-	t.ok(stats["def"] >= 10, "viel Ruestung (%d)" % stats["def"])
+	t.equal(stats["hp_max"], 270, "250 Integrität + 20 vom Hammer")
+	t.ok(stats["def"] >= 10, "viel Rüstung (%d)" % stats["def"])
 	t.ok(_hammer_molok().is_valid(), "Hammer und Deflektor sind baubar")
 
 
@@ -414,7 +414,7 @@ func test_the_hammer_stuns_and_a_stunned_drome_does_nothing() -> void:
 	var molok: Unit = battle.units[0]
 	var foe: Unit = battle.units[1]
 	battle.resolver.execute(molok, foe.tile, _action(molok, &"act_hammer_stun"))
-	t.ok(foe.is_stunned(), "der Betaeubungsschlag betaeubt")
+	t.ok(foe.is_stunned(), "der Betäubungsschlag betäubt")
 	var tile := foe.tile
 	for mount in foe.mounts:
 		mount["ready"] = 0.0
@@ -422,8 +422,8 @@ func test_the_hammer_stuns_and_a_stunned_drome_does_nothing() -> void:
 	var hp_before := molok.hp
 	foe.target_id = molok.unit_id
 	battle.brain.update(foe, battle.step_seconds())
-	t.equal(foe.tile, tile, "betaeubt laeuft er nicht")
-	t.equal(molok.hp + molok.shield, hp_before + shield_before, "und schiesst nicht")
+	t.equal(foe.tile, tile, "betäubt läuft er nicht")
+	t.equal(molok.hp + molok.shield, hp_before + shield_before, "und schießt nicht")
 	foe.tick_statuses(1.1)
 	t.ok(not foe.is_stunned(), "nach einer Sekunde ist es vorbei")
 	battle.free()
@@ -438,7 +438,7 @@ func test_presence_takes_a_share_of_the_damage_aimed_at_allies() -> void:
 	strix.shield = 0
 	molok.shield = 0
 	battle.resolver.apply_damage(foe, strix, 40, _action(foe, &"act_pulse"))
-	t.ok(molok.hp < molok.stat("hp_max"), "der Molok faengt einen Teil ab")
+	t.ok(molok.hp < molok.stat("hp_max"), "der Molok fängt einen Teil ab")
 	t.ok(strix.stat("hp_max") - strix.hp < 40, "der Strix nimmt weniger als den vollen Treffer")
 	battle.free()
 
@@ -451,13 +451,13 @@ func test_presence_lures_nearby_foes() -> void:
 	var molok: Unit = battle.units[0]
 	var foe: Unit = battle.units[2]
 	t.equal(battle.brain.lured_by(foe), molok, "zwei Felder vom Molok: gelockt")
-	t.equal(battle.brain.choose_target(foe), molok, "und waehlt ihn als Ziel")
+	t.equal(battle.brain.choose_target(foe), molok, "und wählt ihn als Ziel")
 	foe.target_id = battle.units[1].unit_id
 	foe.think_left = 0.0
 	for mount in foe.mounts:
 		mount["ready"] = 99.0
 	battle.brain.update(foe, battle.step_seconds())
-	t.equal(foe.target_id, molok.unit_id, "ein laufendes Ziel wird fuer den Locker aufgegeben")
+	t.equal(foe.target_id, molok.unit_id, "ein laufendes Ziel wird für den Locker aufgegeben")
 	battle.free()
 
 
@@ -469,7 +469,7 @@ func test_each_role_picks_by_its_own_rule() -> void:
 	var sniper: Unit = battle.units[1]
 	var near: Unit = battle.units[2]
 	var far: Unit = battle.units[3]
-	t.equal(battle.brain.choose_target(skirmisher), near, "der Vireo nimmt den naechsten")
+	t.equal(battle.brain.choose_target(skirmisher), near, "der Vireo nimmt den nächsten")
 	far.damage_dealt = 80
 	t.equal(battle.brain.choose_target(sniper), far, "der Strix den mit dem meisten Schaden in Reichweite")
 	battle.free()
@@ -493,7 +493,7 @@ func test_the_strix_steadies_after_standing_still() -> void:
 		lance.range_tiles + 2, "Reichweite 8 -> 10")
 	strix.place_at(Vector2i(3, 2))
 	strix.track_stillness(0.05)
-	t.ok(not strix.steady, "ein Schritt setzt zurueck")
+	t.ok(not strix.steady, "ein Schritt setzt zurück")
 	t.equal((strix.mounts[0]["attack"] as ActionData).range_tiles, lance.range_tiles,
 		"Reichweite wieder normal")
 	battle.free()

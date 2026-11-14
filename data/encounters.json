@@ -24,23 +24,23 @@
   },
   "sturm": {
    "name": "Sturm",
-   "hint": "Nahkaempfer, die sofort ranruecken. Hilft: eine feste Front, Stacheln, Abstand."
+   "hint": "Nahkämpfer, die sofort ranrücken. Hilft: eine feste Front, Stacheln, Abstand."
   },
   "schuetzen": {
-   "name": "Schuetzen",
+   "name": "Schützen",
    "hint": "Bleiben auf Abstand und schiessen. Hilft: schnell ran, Schild, Locken."
   },
   "bollwerk": {
    "name": "Bollwerk",
-   "hint": "Dicke Front mit Schild und Reparatur. Hilft: Energie gegen Schild, Feuer buendeln."
+   "hint": "Dicke Front mit Schild und Reparatur. Hilft: Energie gegen Schild, Feuer bündeln."
   },
   "kontrolle": {
    "name": "Kontrolle",
-   "hint": "Betaeuben, Locken, Flaechen. Hilft: verteilt aufstellen, den Wirker zuerst."
+   "hint": "Betäuben, Locken, Flächen. Hilft: verteilt aufstellen, den Wirker zuerst."
   },
   "gemischt": {
    "name": "Gemischt",
-   "hint": "Von allem etwas -- keine klare Schwaeche, keine klare Staerke."
+   "hint": "Von allem etwas -- keine klare Schwäche, keine klare Stärke."
   }
  },
  "training": [
@@ -85,7 +85,7 @@
    "id": "sparring_front",
    "name": "Sparring: Frontlinie",
    "type": "training",
-   "text": "Ein Molok vorn, dahinter ein Schuetze -- so sieht eine Aufstellung aus.",
+   "text": "Ein Molok vorn, dahinter ein Schütze -- so sieht eine Aufstellung aus.",
    "dromes": [
     {
      "name": "Trainer A",
@@ -123,7 +123,7 @@
    "id": "sparring_klingen",
    "name": "Sparring: Nahkampf",
    "type": "training",
-   "text": "Klingen, die ranwollen -- halte sie von deinen Schuetzen fern.",
+   "text": "Klingen, die ranwollen -- halte sie von deinen Schützen fern.",
    "dromes": [
     {
      "name": "Trainer A",
@@ -165,7 +165,7 @@
      "id": "klingentrupp",
      "name": "Klingentrupp",
      "type": "sturm",
-     "text": "Klingen voraus, der Hammer hinterher. Wer zuerst faellt, entscheidet.",
+     "text": "Klingen voraus, der Hammer hinterher. Wer zuerst fällt, entscheidet.",
      "dromes": [
       {
        "name": "Kiri",
@@ -284,7 +284,7 @@
      "id": "eisenfaust",
      "name": "Eisenfaust",
      "type": "bollwerk",
-     "text": "Zwei Moloks als Mauer, ein Mechaniker haelt sie am Laufen.",
+     "text": "Zwei Moloks als Mauer, ein Mechaniker hält sie am Laufen.",
      "dromes": [
       {
        "name": "Oni",
@@ -342,9 +342,9 @@
     },
     {
      "id": "schattenlaeufer",
-     "name": "Schattenlaeufer",
+     "name": "Schattenläufer",
      "type": "kontrolle",
-     "text": "Ein Klingenmeister mit Echo, ein Koeder, der dich festhaelt.",
+     "text": "Ein Klingenmeister mit Echo, ein Köder, der dich festhält.",
      "dromes": [
       {
        "name": "Kage",
@@ -526,7 +526,7 @@
      "tiers": [
       "elite"
      ],
-     "text": "Die Meister des Clans: eine Lanze, ein Wirker mit Echo, davor der Schildtraeger.",
+     "text": "Die Meister des Clans: eine Lanze, ein Wirker mit Echo, davor der Schildträger.",
      "dromes": [
       {
        "name": "Meister Yumi",
@@ -589,7 +589,7 @@
      "tiers": [
       "elite"
      ],
-     "text": "Vier Klingen, eine davon mit Echo. Wer sie rankommen laesst, verliert.",
+     "text": "Vier Klingen, eine davon mit Echo. Wer sie rankommen lässt, verliert.",
      "dromes": [
       {
        "name": "Meister Kage",
@@ -772,7 +772,7 @@
     },
     {
      "id": "lichtfaenger",
-     "name": "Lichtfaenger",
+     "name": "Lichtfänger",
      "type": "schuetzen",
      "text": "Blaster in Reihe, jeder Treffer springt weiter.",
      "dromes": [
@@ -801,7 +801,7 @@
        "recipe": "mod_seeker"
       },
       {
-       "name": "Bluete",
+       "name": "Blüte",
        "chassis": "mage_body",
        "weapons": [
         "eq_rune_staff"
@@ -837,7 +837,7 @@
      "text": "Zwei Wirker ziehen dich zusammen, der Rest erntet.",
      "dromes": [
       {
-       "name": "Bluete",
+       "name": "Blüte",
        "chassis": "mage_body",
        "weapons": [
         "eq_rune_staff"
@@ -861,7 +861,7 @@
        "recipe": "mod_fork"
       },
       {
-       "name": "Gaertner",
+       "name": "Gärtner",
        "chassis": "scout_body",
        "weapons": [
         "eq_drone_pod"
@@ -890,7 +890,7 @@
     },
     {
      "id": "mutterbluete",
-     "name": "Mutterbluete",
+     "name": "Mutterblüte",
      "type": "kontrolle",
      "tiers": [
       "elite"
@@ -898,7 +898,7 @@
      "text": "Zwei Wirker mit Echo und ihr Schwarm -- alles zieht sich um dich zusammen.",
      "dromes": [
       {
-       "name": "Mutterbluete",
+       "name": "Mutterblüte",
        "chassis": "mage_body",
        "weapons": [
         "eq_rune_staff"
@@ -935,7 +935,7 @@
        "recipe": "mod_gunslinger"
       },
       {
-       "name": "Gaertner",
+       "name": "Gärtner",
        "chassis": "scout_body",
        "weapons": [
         "eq_drone_pod"
@@ -1017,7 +1017,7 @@
      "id": "batterie",
      "name": "Batterie",
      "type": "schuetzen",
-     "text": "Moerser und Lanze hinten, davor ein Schildtraeger.",
+     "text": "Mörser und Lanze hinten, davor ein Schildträger.",
      "dromes": [
       {
        "name": "Rohr 1",
@@ -1078,7 +1078,7 @@
      "id": "walze",
      "name": "Walze",
      "type": "sturm",
-     "text": "Rammen in Reihe: jeder Stoss schiebt dich weiter zurueck.",
+     "text": "Rammen in Reihe: jeder Stoß schiebt dich weiter zurück.",
      "dromes": [
       {
        "name": "Block 2",
@@ -1144,7 +1144,7 @@
      "tiers": [
       "elite"
      ],
-     "text": "Moerser, Lanze und zwei Moloks mit vollem Schild. Die Fabrik laesst niemanden durch.",
+     "text": "Mörser, Lanze und zwei Moloks mit vollem Schild. Die Fabrik lässt niemanden durch.",
      "dromes": [
       {
        "name": "Rohr 1",

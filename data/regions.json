@@ -13,15 +13,15 @@
 
   "regions": [
     {"id": "city",   "name": "Neon City",   "floor": {"name": "Asphalt",    "svg": "asphalt.svg"},
-     "faction": {"name": "Neon Ninja's", "profile": "Kaempfer",
-                 "text": "Nahkaempfer, die dicht ranruecken: Klingen, Haemmer, Rammen.",
+     "faction": {"name": "Neon Ninja's", "profile": "Kämpfer",
+                 "text": "Nahkämpfer, die dicht ranrücken: Klingen, Hämmer, Rammen.",
                  "chassis": {"scout_body": 3, "jugg_body": 1, "mage_body": 0.5, "strix_body": 0.5},
                  "weapons": ["eq_plasma_blade", "eq_hammer", "eq_bulwark_ram", "eq_boomerang"],
                  "modules": ["mod_heavy_edge", "mod_spike_grid", "mod_bait", "mod_amplifier"],
                  "recipes": ["mod_whirlwind", "mod_brawler", "mod_overload"]}},
     {"id": "green",  "name": "Parkanlage",  "floor": {"name": "Wiese",      "svg": "meadow.svg"},
      "faction": {"name": "Solar Sentients", "profile": "Rudel",
-                 "text": "Viele leichte DROMEs, die sich gegenseitig verstaerken (Bio-/Virus-Cyber).",
+                 "text": "Viele leichte DROMEs, die sich gegenseitig verstärken (Bio-/Virus-Cyber).",
                  "chassis": {"scout_body": 3, "mage_body": 2, "jugg_body": 0.5, "strix_body": 0.5},
                  "weapons": ["eq_pulse_blaster", "eq_neon_blaster", "eq_rune_staff", "eq_boomerang"],
                  "modules": ["mod_twin_barrel", "mod_rapid_fire", "mod_amplifier", "mod_beacon"],

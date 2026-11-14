@@ -62,7 +62,7 @@ func _run() -> RunState:
 ## gerade zu entscheiden ist (Kampf starten, Belohnung waehlen), darunter der
 ## Squad. Die Entscheidung steht oben, weil sie der Grund ist, hier zu sein.
 func _build_ui() -> void:
-	var content := UiKit.page(self, "Lauf", "res://scenes/main.tscn", -1, true,
+	var content := UiKit.page(self, "Einsatz", "res://scenes/main.tscn", -1, true,
 		Ambience.Kind.CITY, 0.35)
 
 	var top := HBoxContainer.new()
@@ -142,9 +142,9 @@ func _refresh() -> void:
 		_show_setup()
 		return
 	if run.is_endless():
-		_header_round.text = "Endlos  ·  Runde %d" % run.round
+		_header_round.text = "Infinity  ·  Kampf %d" % run.round
 	else:
-		_header_round.text = "Runde %d von %d" % [mini(run.round, RunState.rounds_total()),
+		_header_round.text = "Kampf %d von %d" % [mini(run.round, RunState.rounds_total()),
 			RunState.rounds_total()]
 	_refresh_lives(run)
 	_refresh_squad(run)
@@ -182,7 +182,7 @@ func _refresh_squad(run: RunState) -> void:
 	for child in _squad_list.get_children():
 		child.queue_free()
 	var heading := Label.new()
-	heading.text = "Dein Lauf-Squad  ·  Kampfwert %d" % int(DromeBuild.squad_power(run.squad))
+	heading.text = "Dein Einsatz-Squad  ·  Kampfwert %d" % int(DromeBuild.squad_power(run.squad))
 	heading.add_theme_font_size_override("font_size", 20)
 	heading.modulate = COLOR_HEADING
 	_squad_list.add_child(heading)
@@ -209,26 +209,26 @@ func _drome_card(build: DromeBuild) -> Control:
 ## Vor dem Lauf: wer kommt mit? Vorgeschlagen ist der Hangar-Squad.
 func _show_setup() -> void:
 	var endless := GameState.next_run_mode == "endless"
-	_header_round.text = "Endlos-Modus" if endless else "Neon City"
-	_side.add_child(_label("Wer kommt mit? Vorgeschlagen ist dein Hangar-Squad. Im Lauf "
-		+ "bleiben die Waffen, wie sie sind -- staerker wirst du mit Modulen aus dem Laden.",
+	_header_round.text = "Infinity-Einsatz" if endless else "Neon City"
+	_side.add_child(_label("Wer kommt mit? Vorgeschlagen ist dein Hangar-Squad. Im Einsatz "
+		+ "bleiben die Waffen, wie sie sind -- stärker wirst du mit Modulen aus dem Laden.",
 		UiKit.SMALL, COLOR_MUTED))
 	var picker := SquadPicker.new()
 	_side.add_child(picker)
 	picker.setup(RunState.squad_max())
 	if endless:
-		_side.add_child(_label("Kein Ende, ein Leben: die erste Niederlage beendet den Lauf und "
-			+ "kostet die Beute. Nach jeder Runde kannst du aussteigen und sie behalten. "
+		_side.add_child(_label("Kein Ende, ein Leben: die erste Niederlage beendet den Einsatz und "
+			+ "kostet die Beute. Nach jedem Kampf kannst du aussteigen und sie behalten. "
 			+ "Ab und zu taucht ein Chaos-Kampf auf -- Gegner unbekannt, bessere Beute.",
 			UiKit.SMALL, COLOR_MUTED))
 	else:
-		_side.add_child(_label("%d Kaempfe, %d Leben. Die ersten %d sind Training gegen normale "
+		_side.add_child(_label("%d Kämpfe, %d Leben. Die ersten %d sind Training gegen normale "
 			% [RunState.rounds_total(), RunState.max_lives(),
 				int(RunState.cfg().get("training_rounds", 0))]
-			+ "DROMEs, danach kommen die Neon Ninja's. Vor jedem Kampf waehlst du: immer ein "
+			+ "DROMEs, danach kommen die Neon Ninja's. Vor jedem Kampf wählst du: immer ein "
 			+ "leichter Gegner, dazu zwei normale oder ein normaler und ein Elite.",
 			UiKit.SMALL, COLOR_MUTED))
-	var start := _big_button("Lauf starten")
+	var start := _big_button("Einsatz starten")
 	start.disabled = picker.chosen_count() < 1
 	picker.changed.connect(func(): start.disabled = picker.chosen_count() < 1)
 	start.pressed.connect(func():
@@ -238,7 +238,7 @@ func _show_setup() -> void:
 
 
 func _show_prepare(run: RunState) -> void:
-	_side.add_child(_label("Waehle deinen Gegner", 22, COLOR_HEADING))
+	_side.add_child(_label("Wähle deinen Gegner", 22, COLOR_HEADING))
 	# Die Knoten dieser Runde, darunter die Reihe, die danach kaeme.
 	var map := MapView.new(run)
 	map.picked.connect(func(index: int):
@@ -260,7 +260,7 @@ func _show_prepare(run: RunState) -> void:
 	var tier_color: Color = MapView.CHAOS_COLOR if chaos else MapView.COLOR.get(run.tier, Color.WHITE)
 	if chaos:
 		box.add_child(_label("CHAOS-Kampf", 20, tier_color))
-		box.add_child(_label("Der Virus wuerfelt alles: DROMEs, Waffen, Module. Gegner erst im "
+		box.add_child(_label("Der Virus würfelt alles: DROMEs, Waffen, Module. Gegner erst im "
 			+ "Kampf zu sehen.", 14, COLOR_MUTED))
 	else:
 		box.add_child(_label("%s  ·  %s" % [RunState.TIER_NAMES[run.tier], info["team"]], 20, tier_color))
@@ -300,7 +300,7 @@ func _show_prepare(run: RunState) -> void:
 	start.grab_focus.call_deferred()
 
 	var abandon := Button.new()
-	abandon.text = "Aussteigen und Beute behalten" if run.is_endless() else "Lauf aufgeben"
+	abandon.text = "Aussteigen und Beute behalten" if run.is_endless() else "Einsatz aufgeben"
 	abandon.flat = true
 	abandon.custom_minimum_size = Vector2(0, 44)
 	abandon.pressed.connect(func():
@@ -317,7 +317,7 @@ func _credit_line(run: RunState) -> String:
 		return "Credits: %d" % run.credits
 	var last: Dictionary = run.history[-1]
 	return "+%d Credits %s  ·  jetzt %d" % [int(last.get("credits", 0)),
-		"fuer den Sieg" if last["won"] else "Trostgeld", run.credits]
+		"für den Sieg" if last["won"] else "Trostgeld", run.credits]
 
 
 # ---------------------------------------------------------------------------
@@ -1052,16 +1052,16 @@ func _show_end(run: RunState) -> void:
 	var wins := run.wins()
 	if run.is_endless():
 		_side.add_child(_label("Ausgestiegen nach %d Siegen" % wins if won
-			else "Gefallen in Runde %d" % run.round, 28, COLOR_GOOD if won else COLOR_BAD))
+			else "Gefallen in Kampf %d" % run.round, 28, COLOR_GOOD if won else COLOR_BAD))
 		_side.add_child(_label("Die Beute kommt mit nach Hause." if won
-			else "Die Beute dieses Laufs ist verloren -- was zuhause liegt, ist sicher.", 16,
+			else "Die Beute dieses Einsatzes ist verloren -- was zuhause liegt, ist sicher.", 16,
 			COLOR_MUTED))
 	else:
-		_side.add_child(_label("Lauf gewonnen!" if won else "Lauf verloren.", 30,
+		_side.add_child(_label("Einsatz geschafft!" if won else "Einsatz gescheitert.", 30,
 			COLOR_GOOD if won else COLOR_BAD))
 		if won and GameState.just_unlocked_endless:
-			_side.add_child(_label("Neon City ist bezwungen -- der Endlos-Modus ist frei.", 18, COLOR_WARN))
-	_side.add_child(_label("%d von %d Kaempfen gewonnen." % [wins, run.history.size()], 18))
+			_side.add_child(_label("Neon City ist bezwungen -- der Infinity-Einsatz ist frei.", 18, COLOR_WARN))
+	_side.add_child(_label("%d von %d Kämpfen gewonnen." % [wins, run.history.size()], 18))
 	var line := ""
 	for entry in run.history:
 		line += "%s(%s) " % ["S" if entry["won"] else "N", "LNE"[int(entry.get("tier", 1))]]
@@ -1080,7 +1080,7 @@ func _show_end(run: RunState) -> void:
 		_side.add_child(_label("Nach Hause in den Hangar: %s" % ", ".join(parts),
 			16, COLOR_GOOD))
 
-	var again := _big_button("Neuer Lauf")
+	var again := _big_button("Neuer Einsatz")
 	again.pressed.connect(func():
 		GameState.deliver_run_home()
 		_delivered.clear()

@@ -328,7 +328,7 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 	# Level und EP (Leveling): "Level 2 · EP 6/9".
 	var step := Leveling.progress(entry.xp, Leveling.drome_table())
 	info.add_child(UiKit.label("Level %d · %s" % [entry.level,
-		"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Hoechstlevel"], UiKit.SMALL, UiKit.GOOD))
+		"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Höchstlevel"], UiKit.SMALL, UiKit.GOOD))
 	info.add_child(UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL,
 		UiKit.ACCENT))
 	# Werte als Balken (10. Nov. 2026) -- zwischen DROMEs vergleichbar.
@@ -343,7 +343,7 @@ func _new_drome_section() -> void:
 	var free := GameState.roster.free_chassis_types()
 	_content.add_child(UiKit.heading("Neuen DROME bauen"))
 	if free.is_empty():
-		_content.add_child(UiKit.label("Kein freies Chassis. Loese einen DROME auf oder "
+		_content.add_child(UiKit.label("Kein freies Chassis. Löse einen DROME auf oder "
 			+ "erbeute ein neues.", UiKit.SMALL, UiKit.MUTED))
 		return
 	var row := HBoxContainer.new()
@@ -434,8 +434,8 @@ func _show_umbau() -> void:
 	for line in problems:
 		_content.add_child(UiKit.label("Achtung: " + line, UiKit.SMALL, UiKit.BAD))
 
-	var scrap := UiKit.button("DROME aufloesen")
-	scrap.tooltip_text = "Seine Teile kehren ins Inventar zurueck."
+	var scrap := UiKit.button("DROME auflösen")
+	scrap.tooltip_text = "Seine Teile kehren ins Inventar zurück."
 	scrap.add_theme_color_override("font_color", UiKit.BAD)
 	scrap.pressed.connect(func():
 		GameState.roster.disband(entry)
@@ -681,7 +681,7 @@ func _open_card(entry: RosterEntry, build: DromeBuild, part: PartData,
 			return
 		var where := SlotRules.holder_label(build, slot)
 		if replaced != null:
-			box.add_child(UiKit.label("%s: ersetzt %s (zurueck in den Hangar)"
+			box.add_child(UiKit.label("%s: ersetzt %s (zurück in den Hangar)"
 				% [where, replaced.display_name], UiKit.SMALL, UiKit.WARN))
 		else:
 			box.add_child(UiKit.label("%s ist frei  ·  %d frei im Hangar"
@@ -746,4 +746,4 @@ func _loadout(build: DromeBuild) -> String:
 	var names: Array[String] = []
 	for part in build.equipment():
 		names.append(part.display_name)
-	return ", ".join(names) if not names.is_empty() else "ohne Ausruestung"
+	return ", ".join(names) if not names.is_empty() else "ohne Ausrüstung"

@@ -48,8 +48,8 @@ const MIN_TOUCH := 44
 ## zerbrochen aus. Jetzt bleibt das Layout, und nur der Text waechst.
 const SIZE_OPTIONS := [
 	{"label": "Normal", "factor": 1.0},
-	{"label": "Gross", "factor": 1.15},
-	{"label": "Sehr gross", "factor": 1.3},
+	{"label": "Groß", "factor": 1.15},
+	{"label": "Sehr groß", "factor": 1.3},
 ]
 const BASE_FONT := 18
 

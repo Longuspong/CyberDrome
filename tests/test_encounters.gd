@@ -31,17 +31,17 @@ func test_every_team_can_be_built() -> void:
 		t.ok((Encounters.data().get("types", {}) as Dictionary).has(str(entry.get("type", ""))),
 			"%s: Gegnertyp '%s' ist bekannt" % [id, entry.get("type", "")])
 		var dromes: Array = entry.get("dromes", [])
-		t.ok(dromes.size() >= RunState.squad_max(), "%s: genug DROMEs fuer ein volles Feld (%d)"
+		t.ok(dromes.size() >= RunState.squad_max(), "%s: genug DROMEs für ein volles Feld (%d)"
 			% [id, dromes.size()])
 		var builds := Encounters.build(entry, dromes.size())
-		t.equal(builds.size(), dromes.size(), "%s: jeder DROME laesst sich bauen" % id)
+		t.equal(builds.size(), dromes.size(), "%s: jeder DROME lässt sich bauen" % id)
 		var names := {}
 		for i in builds.size():
 			var build: DromeBuild = builds[i]
 			var label := "%s / %s" % [id, build.display_name]
 			t.ok(not names.has(build.display_name), "%s: Name einmalig im Team" % label)
 			names[build.display_name] = true
-			t.ok(build.is_valid(), "%s ist gueltig %s" % [label, build.validate()])
+			t.ok(build.is_valid(), "%s ist gültig %s" % [label, build.validate()])
 			t.equal(build.equipment().size(), (dromes[i].get("weapons", []) as Array).size(),
 				"%s: jede Waffe hat einen Halter" % label)
 			t.ok(not build.weapons().is_empty() or build.equipment().size() > 0, "%s ist bewaffnet" % label)
@@ -73,14 +73,14 @@ func test_modules_come_in_list_order_and_the_recipe_leads() -> void:
 	var entry := Encounters.team("klingentrupp")
 	var drome: Dictionary = entry["dromes"][0]
 	var build := Encounters.build_drome(drome)
-	t.equal(Encounters.modules_for(drome, build, 0, true), [], "ohne Plaetze keine Module")
+	t.equal(Encounters.modules_for(drome, build, 0, true), [], "ohne Plätze keine Module")
 	t.equal(Encounters.modules_for(drome, build, 1, false), [StringName(drome["modules"][0])],
 		"ein Platz: das erste der Liste")
 	var with_recipe := Encounters.modules_for(drome, build, 2, true)
-	t.equal(with_recipe[0], StringName(drome["recipe"]), "zwei Plaetze und spaet: das Rezept vorn")
+	t.equal(with_recipe[0], StringName(drome["recipe"]), "zwei Plätze und spät: das Rezept vorn")
 	t.equal(with_recipe.size(), 2, "und ein Grundmodul dazu")
 	t.equal(Encounters.modules_for(drome, build, 1, true), [StringName(drome["modules"][0])],
-		"ein Platz reicht nicht fuer ein Rezept")
+		"ein Platz reicht nicht für ein Rezept")
 
 
 func test_the_first_dromes_of_a_team_come_first() -> void:
