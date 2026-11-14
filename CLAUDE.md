@@ -28,10 +28,15 @@ Neuer Grafikstil **Arcade-Glitch** (Synthwave, Bungee + Chakra Petch, Gelb/
 Cyan/Magenta auf Nachtschwarz) mit neuem **Titelbildschirm** vor der
 Spielstand-Wahl: Entwuerfe in `docs/design/`, Werte im SPOT-Blatt Design.
 Titel und Spielstand-Wahl sind GEBAUT (13. Nov.), der Rest noch nicht.
-**Bauplan:** 1 Sentinels (+ neue Waffe Nano-Strahl), 2 Formationen, 3 Einsatz
-(Wellen, Virus), 4 Lootcaches, 5 Hangar-Shop, 6 Sentinel-Designs, 7 Arcade-Stil
-fuer die uebrigen Bildschirme (macht der Spieler gerade). Vor 1-3: SPOT-Blatt
-**Fragen** -- erst bauen, wenn der Spieler die Spalte Antwort gefuellt hat.
+**Bauplan:** 1 Sentinels, 2 Formationen, 3 Einsatz (Reinforcement, Virus,
+Kampfkarte), 4 Lootcaches, 5 Hangar-Shop, 6 Sentinel-Designs, 7 Arcade-Stil
+fuer die uebrigen Bildschirme (macht der Spieler). **Antworten des Spielers
+(14. Nov.) im SPOT-Blatt Fragen, Kurzfassung in den Eckpunkten** -- vor dem
+Bauen lesen. Wichtig: es gibt **keine Wellen**; gemeint ist ein
+**Reinforcement-Level**, das nach jedem Kampf steigt. Sentinels: feste Waffe,
+nur Auto-Angriff, Basic ohne Modul, Elite 1 festes Modul. Je Fraktion 6
+Formationen (Grundgedanke) in Leicht/Normal/Elite, max. 2 DROMEs. Kampfkarte
+FTL-artig mit festen Pfaden. Neue offene Punkte stehen im Blatt Offene Punkte.
 
 ## SPOT-Tabelle (Vorgabe des Spielers, 12. Nov. 2026)
 

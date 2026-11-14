@@ -3,7 +3,7 @@
   "code": "EQP-010",
   "set": "bot1",
   "type": "equipment",
-  "name": "Plasmaklinge",
+  "name": "Plasma-Klinge",
   "direction": "north",
   "svg": "eq_plasma_blade_north.svg",
   "view_box": [

@@ -1017,7 +1017,7 @@ def build_gegner_dromes(ws):
 
 
 def build_fragen(ws):
-    rows = [[i, f["schritt"], f["thema"], f["frage"], f["vorschlag"], "", ""]
+    rows = [[i, f["schritt"], f["thema"], f["frage"], f["vorschlag"], f.get("antwort", ""), f.get("notiz", "")]
             for i, f in enumerate(TEXTE["fragen"], 1)]
     notes = {"Antwort": "ok = Vorschlag übernehmen. Sonst deine Entscheidung in eigenen Worten.",
              "Vorschlag (Claude)": "Empfehlung von Claude -- nicht entschieden."}

@@ -3,7 +3,7 @@
   "code": "EQP-015",
   "set": "bot4",
   "type": "equipment",
-  "name": "Moerser",
+  "name": "Exo-Moerser",
   "direction": "north",
   "svg": "eq_mortar_north.svg",
   "view_box": [
