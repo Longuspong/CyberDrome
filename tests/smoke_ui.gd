@@ -37,7 +37,7 @@ func _process(_delta: float) -> bool:
 			gs.editing_index = 0
 			var umbau = load("res://scenes/hangar.tscn").instantiate()
 			root.add_child(umbau)
-			print("SMOKE: Hangar (Umbau) instanziiert fuer '%s'"
+			print("SMOKE: Hangar (Umbau) instanziiert für '%s'"
 				% gs.roster.entries[0].name)
 		9:
 			# Ziehen (10. Nov. 2026): die freie Plasmaklinge auf den Halter
@@ -54,7 +54,7 @@ func _process(_delta: float) -> bool:
 				hangar._drop_part(entry, slot, data)
 				print("SMOKE: Ziehen auf Halter -> %s" % gs.roster.build_for(entry).part_in(slot).display_name)
 			else:
-				print("SMOKE: Ziehen auf Halter nicht moeglich")
+				print("SMOKE: Ziehen auf Halter nicht möglich")
 		12:
 			# Lauf im Zwischenstopp: Lager mit Waffe, eine davon angetippt.
 			gs.start_run(4242)
@@ -83,13 +83,13 @@ func _process(_delta: float) -> bool:
 		16:
 			# Titel (13. Nov. 2026), Spielstand-Auswahl, Hauptmenue, Optionen (10. Nov. 2026).
 			root.get_node("RunStop").free()
-			for scene in ["title", "saves", "main", "settings"]:
+			for scene in ["title", "saves", "main", "settings", "shop"]:
 				var node = load("res://scenes/%s.tscn" % scene).instantiate()
 				node.name = "Probe_%s" % scene
 				root.add_child(node)
-			print("SMOKE: Titel, Spielstaende, Hauptmenue und Optionen instanziiert")
+			print("SMOKE: Titel, Spielstände, Hauptmenü und Optionen instanziiert")
 		18:
-			for scene in ["title", "saves", "main", "settings"]:
+			for scene in ["title", "saves", "main", "settings", "shop"]:
 				root.get_node("Probe_%s" % scene).free()
 			# Lauf vor dem Kampf: Story-Reihe, dann Endlos mit Chaos-Knoten.
 			gs.start_run(4242)
@@ -105,8 +105,9 @@ func _process(_delta: float) -> bool:
 				gs.start_run(seed_value, "endless")
 				gs.run.round = 3
 				gs.run._pick_default_node()
-				if gs.run.row().size() == 4:
-					gs.run.choose_node(3)
+				var chaos: Array = gs.run.available_nodes().filter(func(i): return gs.run.row()[i]["chaos"])
+				if not chaos.is_empty():
+					gs.run.choose_node(chaos[0])
 					break
 			prepare._refresh()
 			print("SMOKE: Endlos-Lauf mit Chaos-Knoten: %s" % gs.run.is_chaos())

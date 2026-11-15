@@ -10,12 +10,12 @@
 
   "eckpunkte": [
     {"bereich": "Spielprinzip", "thema": "Genre", "festlegung": "Autobattler in Echtzeit: alle DROMEs handeln gleichzeitig, keine Züge. Die KI steuert beide Seiten, der Spieler entscheidet über Aufbau, Squad und Auswahl.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md, PROJEKTSTAND 1"},
-    {"bereich": "Spielprinzip", "thema": "Simulation", "festlegung": "Feste Schritte von 0,05 s, deterministisch je Seed. Puls alle 3 s (Schild, Reparatur, heute noch Overtime). Heute gebaut: Zeitlimit 180 s, danach unentschieden -- wird vom Virusschaden abgelöst.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> realtime"},
+    {"bereich": "Spielprinzip", "thema": "Simulation", "festlegung": "Feste Schritte von 0,05 s, deterministisch je Seed. Puls alle 3 s (Reparatur, Virusschaden). Kein Zeitlimit mehr -- der Virusschaden beendet jeden Kampf.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> realtime"},
     {"bereich": "Spielprinzip", "thema": "Spieler steuert keine DROMEs", "festlegung": "Grundsätzlich Autobattler. Eingreifen (vermutlich: Gegner als Ziel Nr. 1 markieren) wird später besprochen -- nichts davon bauen.", "seit": "Nov. 2026", "status": "offen", "quelle": "CLAUDE.md Designpunkt 3"},
     {"bereich": "Plattform", "thema": "Mobile first", "festlegung": "Hochformat ist die Hauptansicht (ca. 400 CSS-Pixel breit), Querformat zweitrangig. PWA auf Vercel, Android-APK später.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
-    {"bereich": "Optik", "thema": "Arcade-Glitch-Stil", "festlegung": "Neuer Grafikstil: Synthwave-Arcade mit Glitch-Logo, Scanlines, Punktraster, Sonne über Gitterboden. Farben Nachtschwarz/Violett mit Gelb, Cyan, Magenta; Schriften Bungee und Chakra Petch. Details: Blatt Design, Entwürfe in docs/design/. Gebaut für Titel und Spielstand-Wahl (Baukasten scripts/ui/arcade.gd), die übrigen Bildschirme folgen.", "seit": "13. Nov. 2026", "status": "gebaut (Titel, Spielstand)", "quelle": "Entwürfe Titelbildschirm B, Spielstand wählen B"},
+    {"bereich": "Optik", "thema": "Arcade-Glitch-Stil", "festlegung": "Synthwave-Arcade mit Glitch-Logo, Scanlines, Punktraster, Sonne über Gitterboden. Farben Nachtschwarz/Violett mit Gelb, Cyan, Magenta; Schriften Bungee und Chakra Petch. Seit 14. Nov. 2026 auf allen Bildschirmen (UiKit im Arcade-Stil: abgeschrägte Ecken, harte Versatzschatten, gelbe Hauptknöpfe, schräge Etiketten).", "seit": "13. Nov. 2026", "status": "gebaut", "quelle": "Entwürfe Titelbildschirm B, Spielstand wählen B"},
     {"bereich": "Bedienung", "thema": "Titelbildschirm", "festlegung": "Neuer erster Bildschirm vor der Spielstand-Wahl: Glitch-Logo, Laufbänder, TAP-Knopf, irgendwo tippen startet. Danach Spielstand wählen im neuen Stil (Slots mit Weiterspielen / Neues Spiel / Löschen mit Nachfrage).", "seit": "13. Nov. 2026", "status": "gebaut", "quelle": "Entwürfe Titelbildschirm B, Spielstand wählen B"},
-    {"bereich": "Bedienung", "thema": "Navigation", "festlegung": "Erster Bildschirm: Titel (seit 13. Nov.), dann Wahl von drei Spielständen. Danach Tab-Leiste unten: Spielen, Hangar, Optionen. Hangar = Squad (Karussell, max. 4) + Umbau.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
+    {"bereich": "Bedienung", "thema": "Navigation", "festlegung": "Erster Bildschirm: Titel, dann Wahl von drei Spielständen. Danach Tab-Leiste unten: Spielen, Hangar, Shop. Optionen am Zahnrad oben rechts auf jeder Hauptseite (seit 15. Nov. 2026). Hangar = Squad + Umbau; Shop = Shop (Coins), Caches und Bauen (neue DROMEs).", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
     {"bereich": "Arena", "thema": "Spielfeld", "festlegung": "20 x 20 Felder, ohne Gelände-Regeln und ohne Sichtlinie.", "seit": "5. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
     {"bereich": "Arena", "thema": "Hindernisse", "festlegung": "Sperren nur Laufwege, Schüsse gehen darüber. Punktsymmetrisch je Seed, nie an den Aufstellungszonen.", "seit": "7. Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> obstacles"},
     {"bereich": "Arena", "thema": "Aufstellung", "festlegung": "Streifen 3 x 8 am Kartenrand (Spieler unten links, Gegner oben rechts), ohne Zutun nach Rolle gestaffelt. Spieler kann per Ziehen umstellen.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> deployment"},
@@ -42,32 +42,50 @@
     {"bereich": "Lauf", "thema": "Was bleibt", "festlegung": "Ausrüstung und Level von DROMEs (0-5) und Waffen (0-10) bleiben nach dem Lauf; Module verfallen.", "seit": "6. Nov. 2026", "status": "gebaut", "quelle": "NEUANFANG 6g"},
     {"bereich": "Modi", "thema": "Story- und Endlos-Modus", "festlegung": "Zwei Modi. Endlos: kein Ende, 1 Leben, nach jeder Runde aussteigen, Chaos-Knoten. Story: Level-Struktur noch nicht gebaut.", "seit": "7. Nov. 2026", "status": "entschieden", "quelle": "NEUANFANG 6h"},
     {"bereich": "Welt", "thema": "Gebiete", "festlegung": "Neon City, Parkanlage, Factory 5, Dachterrassen -- je Gebiet eine Fraktion mit Profil.", "seit": "8. Nov. 2026", "status": "entschieden", "quelle": "NEUANFANG 6i, data/regions.json"},
-    {"bereich": "Kampf", "thema": "Virusschaden", "festlegung": "Ein Kampf dauert höchstens 5 Minuten. Danach setzt Virusschaden ein: jeder Puls (alle 3 s) zieht jeder Einheit 10 % ihres effektiven Lebens (Schild + Integrität) ab -- totaler Schaden, absolut, an der Rüstung vorbei. Ersetzt Overtime und Zeitlimit. Werte: Blatt Einsatz.", "seit": "13. Nov. 2026", "status": "entschieden", "quelle": "Spieler, 13. Nov. 2026"},
-    {"bereich": "Einsatz", "thema": "Einsatz statt Lauf", "festlegung": "Ein Lauf heißt jetzt Einsatz und ist völlig anders als bisher: keine symmetrischen 4-gegen-4-Kämpfe mehr. Der Spieler bringt bis zu 4 DROMEs, der Gegner eine Squad aus DROME(s) + Sentinels. Shop und Module zwischen den Kämpfen bleiben.", "seit": "13. Nov. 2026", "status": "entschieden", "quelle": "GEGNERDESIGN 2, 4"},
-    {"bereich": "Einsatz", "thema": "Asymmetrische Kämpfe", "festlegung": "Spieler: wenige starke DROMEs. Gegner: mindestens ein prägender DROME (Elite-Kämpfer und Squad-Leader) + eine größere Zahl schwächerer Sentinels. Zusätzliche gegnerische DROMEs sind die stärkste Eskalationsstufe.", "seit": "12. Nov. 2026", "status": "entschieden", "quelle": "GEGNERDESIGN 4"},
-    {"bereich": "Gegner", "thema": "Sentinels", "festlegung": "Einfache Bots der Gegner. Ein Waffenslot mit echten Waffen, aber eigener, schwächerer Power-Wertung und eigenen Werten. Name: [Fraktion] [Archetyp] Sentinel, z. B. Neon Assault Sentinel. Werte: Blatt Sentinels.", "seit": "13. Nov. 2026", "status": "entschieden", "quelle": "Spieler, GEGNERDESIGN 3"},
+    {"bereich": "Kampf", "thema": "Virusschaden", "festlegung": "Ein Kampf dauert höchstens 5 Minuten. Danach setzt Virusschaden ein: jeder Puls (alle 3 s) zieht jeder Einheit 10 % ihres effektiven Lebens (Schild + Integrität) ab -- totaler Schaden, absolut, an der Rüstung vorbei. Ersetzt Overtime und Zeitlimit. Werte: Blatt Einsatz.", "seit": "13. Nov. 2026", "status": "abgelöst", "quelle": "Spieler, 13. Nov. 2026"},
+    {"bereich": "Einsatz", "thema": "Einsatz statt Lauf", "festlegung": "Ein Lauf heißt jetzt Einsatz und ist völlig anders als bisher: keine symmetrischen 4-gegen-4-Kämpfe mehr. Der Spieler bringt bis zu 4 DROMEs, der Gegner eine Squad aus DROME(s) + Sentinels. Shop und Module zwischen den Kämpfen bleiben.", "seit": "13. Nov. 2026", "status": "gebaut", "quelle": "GEGNERDESIGN 2, 4"},
+    {"bereich": "Einsatz", "thema": "Asymmetrische Kämpfe", "festlegung": "Spieler: wenige starke DROMEs. Gegner: mindestens ein prägender DROME (Elite-Kämpfer und Squad-Leader) + eine größere Zahl schwächerer Sentinels. Zusätzliche gegnerische DROMEs sind die stärkste Eskalationsstufe.", "seit": "12. Nov. 2026", "status": "gebaut", "quelle": "GEGNERDESIGN 4"},
+    {"bereich": "Gegner", "thema": "Sentinels", "festlegung": "Einfache Bots der Gegner. Ein Waffenslot mit echten Waffen, aber eigener, schwächerer Power-Wertung und eigenen Werten. Name: [Fraktion] [Archetyp] Sentinel, z. B. Neon Assault Sentinel. Werte: Blatt Sentinels.", "seit": "13. Nov. 2026", "status": "gebaut", "quelle": "Spieler, GEGNERDESIGN 3"},
     {"bereich": "Gegner", "thema": "Archetypen", "festlegung": "Assault, Sniper, Support -- je Fraktion eigene Ausprägung. Tank und Plänkler bleiben den DROMEs vorbehalten. Mage aus dem Brainstorming ist vorerst nicht dabei.", "seit": "13. Nov. 2026", "status": "entschieden", "quelle": "Spieler, GEGNERDESIGN 5"},
     {"bereich": "Gegner", "thema": "Varianten", "festlegung": "Basic, Elite, Specialist, Heavy, Boss. Eine höhere Stufe darf nicht nur mehr HP und Schaden bedeuten -- jede Variante bringt eine neue taktische Herausforderung.", "seit": "12. Nov. 2026", "status": "entschieden", "quelle": "GEGNERDESIGN 6"},
     {"bereich": "Gegner", "thema": "Die Waffe bestimmt das Verhalten", "festlegung": "Das Verhalten einer Einheit kommt aus ihrer Waffe und Identität, nicht aus einer eigenen KI je Gegner. Neue Gegner verwenden vorhandene Muster.", "seit": "12. Nov. 2026", "status": "entschieden", "quelle": "GEGNERDESIGN 8"},
     {"bereich": "Gegner", "thema": "Gleiches Regelsystem", "festlegung": "Gegner nutzen dieselben Regeln wie der Spieler: vordefinierte Grundausrüstung, stärkere Gegner tragen mehr Module, Elite besondere Kombinationen.", "seit": "12. Nov. 2026", "status": "entschieden", "quelle": "GEGNERDESIGN 9"},
-    {"bereich": "Beute", "thema": "Lootcaches", "festlegung": "Kämpfe droppen Lootcaches -- teils sicher (deterministisch), teils nur mit Glück, je nachdem, wann gewürfelt wird. Caches sind immer fraktionsabhängig (Neon City: Neon Cache, Parkanlage: Solar Cache ...). Was in einem Cache steckt, legt der Spieler fest: Blatt Lootcaches.", "seit": "13. Nov. 2026", "status": "entschieden", "quelle": "Spieler, 13. Nov. 2026"},
-    {"bereich": "Beute", "thema": "Platzhaltercoin", "festlegung": "Gibt es keinen Lootdrop, gibt es Platzhaltercoin (Arbeitsname) -- eine Währung neben den Credits. Damit kauft man im Hangar Upgrades und weitere Caches. Credits bleiben die Währung des Shops im Einsatz.", "seit": "13. Nov. 2026", "status": "entschieden", "quelle": "Spieler, 13. Nov. 2026"},
+    {"bereich": "Beute", "thema": "Lootcaches", "festlegung": "Kämpfe droppen Lootcaches -- teils sicher (deterministisch), teils nur mit Glück, je nachdem, wann gewürfelt wird. Caches sind immer fraktionsabhängig (Neon City: Neon Cache, Parkanlage: Solar Cache ...). Was in einem Cache steckt, legt der Spieler fest: Blatt Lootcaches. Gebaut (14. Nov.): Caches droppen nach den Regeln im Blatt Einsatz und landen im Hangar -- öffnen kommt mit dem Hangar-Shop.", "seit": "13. Nov. 2026", "status": "teils gebaut", "quelle": "Spieler, 13. Nov. 2026"},
+    {"bereich": "Beute", "thema": "Platzhaltercoin", "festlegung": "Gibt es keinen Lootdrop, gibt es Platzhaltercoin (Arbeitsname) -- eine Währung neben den Credits. Damit kauft man im Hangar Upgrades und weitere Caches. Credits bleiben die Währung des Shops im Einsatz. Gebaut (14. Nov.): Coins werden gesammelt und im Hangar angezeigt; Ausgeben folgt mit dem Hangar-Shop.", "seit": "13. Nov. 2026", "status": "teils gebaut", "quelle": "Spieler, 13. Nov. 2026"},
     {"bereich": "Start", "thema": "Startbestand", "festlegung": "Neuer Spielstand: jeder der vier Standard-DROMEs einmal in Standardausstattung, alle vier im Squad.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "PROJEKTSTAND Startbestand"},
-    {"bereich": "Gegner", "thema": "Sentinels", "festlegung": "Ein Sentinel ist fest definiert: feste Waffe, nur Auto-Angriff (keine Fähigkeit), keine Passive, kein Level. Fraktion nur an Ausrüstung und Aussehen erkennbar. Schwierigkeit über Fraktion, Rang (Basic, Elite, Heavy, Heavy Elite) und Anzahl.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Gegner", "thema": "Sentinel-Ränge", "festlegung": "Basic ohne Modul; Elite trägt 1 festgelegtes Modul/Rezeptmodul; Heavy ist nur widerstandsfähiger; Heavy Elite 2 Module. Specialist fällt weg, Bosse werden später von Hand gebaut.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Gegner", "thema": "Sentinel-Verhalten", "festlegung": "Keine Sonderregel bei der Zielwahl. Sentinels schützen sich nicht selbst -- Schaden vor Überleben. Assault mit Fokus auf die Flanke.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Gegner", "thema": "Sentinel-Darstellung", "festlegung": "Vorerst 60 % groß, Platzhalter: verkleinertes Chassis von Vireo (Assault), Strix (Sniper), Nimbus (Support); eigene Sprites folgen. Nur kleiner Lebensbalken, keine Namen.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Kampf", "thema": "Kampfende", "festlegung": "Gewonnen, wenn alle gegnerischen Einheiten gefallen sind.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Gegner", "thema": "Formationen", "festlegung": "Je Fraktion 6 Formationen mit eigenem Grundgedanken, je in Leicht, Normal, Elite. Das Reinforcement-Level steigt nach jedem Kampf. Leicht = deutlich leichter, Kern bleibt; Elite = High-Risk für Powerspikes. Höchstens 2 DROMEs je Formation. Kein Gegnertyp-Etikett.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Gegner", "thema": "Module der Gegner", "festlegung": "Elite-Sentinels: festgelegt. Gegner-DROMEs: passende Module per Seed gewürfelt, je 2 zu einem Rezept verschmolzen, insgesamt weniger als der Spieler.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Einsatz", "thema": "Einsatz", "festlegung": "Ein Einsatz = ein Story-Level; Neon City hat 10. Länge verschieden (erste 3-4 etwa 10 Kämpfe). Keine Wellen. Nach jedem Kampf alle DROMEs voll geheilt. 3 Leben, sonst gescheitert: Fortschritt bleibt, Module und Credits verfallen.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Einsatz", "thema": "Kampfkarte", "festlegung": "FTL-artig: feste Pfade mit Gabelungen statt freier Wahl je Reihe. Anfangs fast nach jedem Kampf eine Gabelung, später längere Korridore. Vorschau zeigt den nächsten Kampf.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Einsatz", "thema": "Virusschaden", "festlegung": "Uhr je Kampf, ab 5:00 je Puls 10 % der Höchstwerte, erst Schild dann Integrität. Gleichzeitiger Fall = Niederlage. Ersetzt Overtime und Zeitlimit. Die letzten 30 s flackert das Bild als Glitch, immer schneller bis zum Pulstakt.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Einsatz", "thema": "Beute bis Lootcaches", "festlegung": "Bis Schritt 4: Caches als Beute, aber noch nicht zu öffnen.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
-    {"bereich": "Einsatz", "thema": "Infinity-Einsatz", "festlegung": "Der Endlos-Modus heißt Infinity-Einsatz.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Blatt Fragen"},
+    {"bereich": "Gegner", "thema": "Sentinels", "festlegung": "Ein Sentinel ist fest definiert: feste Waffe, nur Auto-Angriff (keine Fähigkeit), keine Passive, kein Level. Fraktion nur an Ausrüstung und Aussehen erkennbar. Schwierigkeit über Fraktion, Rang (Basic, Elite, Heavy, Heavy Elite) und Anzahl.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Gegner", "thema": "Sentinel-Ränge", "festlegung": "Basic ohne Modul; Elite trägt 1 festgelegtes Modul/Rezeptmodul; Heavy ist nur widerstandsfähiger; Heavy Elite 2 Module. Specialist fällt weg, Bosse werden später von Hand gebaut.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Gegner", "thema": "Sentinel-Verhalten", "festlegung": "Keine Sonderregel bei der Zielwahl. Sentinels schützen sich nicht selbst -- Schaden vor Überleben. Assault mit Fokus auf die Flanke.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Gegner", "thema": "Sentinel-Darstellung", "festlegung": "Vorerst 60 % groß, Platzhalter: verkleinertes Chassis von Vireo (Assault), Strix (Sniper), Nimbus (Support); eigene Sprites folgen. Nur kleiner Lebensbalken, keine Namen.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Kampf", "thema": "Kampfende", "festlegung": "Gewonnen, wenn alle gegnerischen Einheiten gefallen sind.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Gegner", "thema": "Formationen", "festlegung": "Je Fraktion 6 Formationen mit eigenem Grundgedanken, je in Leicht, Normal, Elite. Das Reinforcement-Level steigt nach jedem Kampf. Leicht = deutlich leichter, Kern bleibt; Elite = High-Risk für Powerspikes. Höchstens 2 DROMEs je Formation. Kein Gegnertyp-Etikett.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Gegner", "thema": "Module der Gegner", "festlegung": "Elite-Sentinels: festgelegt. Gegner-DROMEs: passende Module per Seed gewürfelt, je 2 zu einem Rezept verschmolzen, insgesamt weniger als der Spieler.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Einsatz", "thema": "Einsatz", "festlegung": "Ein Einsatz = ein Story-Level; Neon City hat 10. Länge verschieden (erste 3-4 etwa 10 Kämpfe). Keine Wellen. Nach jedem Kampf alle DROMEs voll geheilt. 3 Leben, sonst gescheitert: Fortschritt bleibt, Module und Credits verfallen. Gebaut (14. Nov.): ein Einsatz Neon City mit 8 Kämpfen und 3 Leben; die zehn Story-Einsätze folgen.", "seit": "14. Nov. 2026", "status": "teils gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Einsatz", "thema": "Kampfkarte", "festlegung": "FTL-artig: feste Pfade mit Gabelungen statt freier Wahl je Reihe. Anfangs fast nach jedem Kampf eine Gabelung, später längere Korridore. Vorschau zeigt den nächsten Kampf.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Einsatz", "thema": "Virusschaden", "festlegung": "Uhr je Kampf, ab 5:00 je Puls 10 % der Höchstwerte, erst Schild dann Integrität. Gleichzeitiger Fall = Niederlage. Ersetzt Overtime und Zeitlimit. Die letzten 30 s flackert das Bild als Glitch, immer schneller bis zum Pulstakt.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Einsatz", "thema": "Beute bis Lootcaches", "festlegung": "Bis Schritt 4: Caches als Beute, aber noch nicht zu öffnen.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
+    {"bereich": "Einsatz", "thema": "Infinity-Einsatz", "festlegung": "Der Endlos-Modus heißt Infinity-Einsatz.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Blatt Fragen"},
     {"bereich": "Story", "thema": "Umbenennung", "festlegung": "Die Hipstar Hookers heißen jetzt Hipstar Hackers.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Spieler"},
     {"bereich": "Story", "thema": "Story-Leitfaden", "festlegung": "Dystopie mit Cybervirus, keine Hauptfigur (Beobachter), Drahtzieher + Gegenspieler, Prolog, Akt 1, zwei Wendepunkte (Mega Mechas, Hipstar Hackers), Akt 2 Sondertrupp, Akt 3. Ersetzt 'Die Liga und der Virus'.", "seit": "14. Nov. 2026", "status": "Leitfaden", "quelle": "docs/STORY_LEITFADEN.md"},
-    {"bereich": "Story", "thema": "Story-Vermittlung", "festlegung": "Szenen aus data/story.json, Dialogfenster mit Porträt und Textbox (Text tippt sich ein, Antippen weiter, Überspringen). Sprecher links/rechts abwechselnd, vorerst ein Porträt je Figur, Spieler ohne Porträt. Auslöser nach Gesamtfortschritt. Noch nicht gebaut.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Spieler"}
+    {"bereich": "Story", "thema": "Story-Vermittlung", "festlegung": "Szenen aus data/story.json, Dialogfenster mit Porträt und Textbox (Text tippt sich ein, Antippen weiter, Überspringen). Sprecher links/rechts abwechselnd, vorerst ein Porträt je Figur, Spieler ohne Porträt. Auslöser nach Gesamtfortschritt. Noch nicht gebaut.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Spieler"},
+    {"bereich": "Bedienung", "thema": "Kacheln und Popups", "festlegung": "Statt langer Karten: Kacheln mit Bild und Kurzname. Seit 15. Nov. 2026: tippen wählt die Kachel (gelber Rahmen), nochmal tippen öffnet das Popup mit allen Details, Doppeltipp handelt (ausrüsten, kaufen, einsetzen, zusammenfügen, Umbau). Lange drücken zeigt ebenfalls Details. Baukasten Tile + InfoPopup.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Bedienung", "thema": "Wischen mit Schwung", "festlegung": "Listen rollen am Finger mit Nachlauf, zeitbasiert gemessen und in Kommazahlen -- kein Ruckeln, kein Hängenbleiben. Ein Tipp in eine auslaufende Liste hält sie an.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Bedienung", "thema": "Zwischenstopp kompakt", "festlegung": "Fast ein Bildschirm: Chips für Credits, Beute, Erfahrung, Tasche und Einsatz-Beute; Laden als 3 Kacheln mit Preis-Knopf; Lager als Raster fester Plätze; Squad als Zeilen mit Haltern und Modulplätzen. Modul antippen, dann einen leuchtenden Platz -- oder hinziehen.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Bedienung", "thema": "Rezeptbuch als Raster", "festlegung": "Popup mit Filter (Alle / Bereit / Angefangen) und allen Rezepten als Kacheln. Zwei Punkte zeigen die Zutaten, Bereites leuchtet grün, das Ziel gelb. Antippen: Rezept mit Zusammenfügen und Als Ziel.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Bedienung", "thema": "Hangar gestrafft", "festlegung": "Squad: alle DROMEs als Kacheln (Doppeltipp öffnet den Umbau), darunter der gewählte kompakt, dann Beute (Caches, Coins). Umbau: Waffe antippen baut sie sofort ein, Doppeltipp zeigt die Waffen-Karte. Seit 15. Nov. 2026 stehen Beute und Bauen im Tab Shop.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Optik", "thema": "Umlaute in der Anzeige", "festlegung": "Die Anzeige schreibt echte Umlaute und ß (Kämpfe, Größe). Code-Kommentare bleiben ohne Umlaute.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Optik", "thema": "Begriffe", "festlegung": "Anzeige: Einsatz statt Lauf, Kampf statt Runde, Infinity-Einsatz statt Endlos-Modus. Im Code bleiben die Namen (RunState).", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Kampf", "thema": "Virus-Anzeige", "festlegung": "Die letzten 30 s vor dem Virus flackert das Bild als Glitch, immer schneller bis zum Pulstakt; danach je Viruspuls ein starker Glitch. Statuszeile: 'Virus in n s', dann 'VIRUS'.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Einsatz", "thema": "Reinforcement-Level", "festlegung": "Steigt nach jedem Kampf um 1, je gewähltem Elite-Kampf um 1 mehr. Infinity-Einsatz 0,6 je Kampf. Bestimmt die Stufe der Formation und die Module der Gegner-DROMEs (eines je 2 Level, ab zwei ein Rezept). Vorschlag von Claude (OP 29), gebaut.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Einsatz", "thema": "Kampfkarte gebaut", "festlegung": "Feste Wege wie bei FTL: bis Kampf 3 drei Knoten je Reihe, danach zwei (manchmal drei), der letzte Kampf ein einzelner Elite-Knoten. Bis Kampf 4 gabelt sich fast jeder Weg, danach meist Korridore. Breite Knoten mit Formationsname, die Karte zeigt drei Reihen.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Gegner", "thema": "Varianten Leicht/Normal/Elite", "festlegung": "Leicht: Reinforcement −2, nur Basic, ein Sentinel weniger, ein Modul weniger an den DROMEs. Elite: Reinforcement +3, die ersten drei Sentinels einen Rang höher, ein Modul mehr. Vorschlag gebaut.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Gegner", "thema": "Heilregel Support", "festlegung": "Alle Support-Waffen heilen das nächste Ziel, das Hilfe braucht -- außer ein anderes in Reichweite (+3 Felder) hat mehr als 30 Prozentpunkte weniger Integrität; dann das schwächste davon.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Gegner", "thema": "Alte Teams gelöscht", "festlegung": "Die symmetrischen Teams und Gegnertypen (data/encounters.json) sind entfernt; Formationen ersetzen sie vollständig.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Bedienung", "thema": "Popups blättern", "festlegung": "Jedes Popup zu einer Kachel lässt durch die Nachbarn blättern: Pfeile links und rechts mit Zähler (2 / 5) und Wischen nach links oder rechts. Gilt für Lager, Laden, BIOS, Module im Halter, Waffen, Rezepte, Gegner und DROMEs.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
+    {"bereich": "Hangar", "thema": "Verwerten statt Auflösen", "festlegung": "DROMEs werden verwertet: Chassis, Level und EP gehen verloren, die Waffen kommen frei in den Hangar. Dafür gibt es 1 Baukern, ein Fraktions-DROME gibt zusätzlich seinen Fraktionskern (Neon-Kern ...). Der letzte DROME lässt sich nicht verwerten.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
+    {"bereich": "Hangar", "thema": "DROMEs bauen", "festlegung": "3 Baukerne bauen einen Standard-DROME (Chassis frei wählbar, mit Kern, ohne Waffe). Ein Fraktionskern + 3 Baukerne bauen einen Fraktions-DROME mit den festen Werten aus dem Blatt Gegner-DROMEs (z. B. Neon Vireo). Baukerne später auch im Hangar-Shop. Werte: config.json -> crafting.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
+    {"bereich": "Hangar", "thema": "Tab Shop", "festlegung": "Der rechte Tab heißt Shop und hat drei Reiter: Shop (Baukerne und Caches für Platzhaltercoin, Preise aus dem Blatt Hangar-Shop), Caches (öffnen folgt) und Bauen (Material, neue Standard- und Fraktions-DROMEs).", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
+    {"bereich": "Beute", "thema": "Fraktions-DROMEs aus Bossen und Caches", "festlegung": "Bosse und Caches können entweder die Komponenten (Fraktionskern, Baukerne) oder direkt einen vollwertigen Fraktions-DROME geben.", "seit": "15. Nov. 2026", "status": "entschieden", "quelle": "Spieler"}
   ],
 
   "dromes": {
@@ -149,20 +167,20 @@
   "offene_punkte": [
     {"punkt": "Aufhänger „Die Liga und der Virus“ übernehmen? -> ersetzt durch den Story-Leitfaden (docs/STORY_LEITFADEN.md)", "quelle": "VORSCHLAG_STORY 1", "status": "entschieden"},
     {"punkt": "Level-Struktur Story-Modus bauen (10 Level Neon City, Level 1 mit 2 und Level 2 mit 3 DROMEs, je Level 3 Leben) -> Neon City hat 10 Einsätze (= Story-Level), Länge je Einsatz verschieden -- noch nicht gebaut", "quelle": "VORSCHLAG_STORY 2", "status": "entschieden"},
-    {"punkt": "Wege zwischen den Reihen zurück? -> Kampfkarte mit festen Pfaden und Gabelungen (FTL-artig), anfangs viele Gabelungen, später weniger", "quelle": "VORSCHLAG_STORY 6", "status": "entschieden"},
+    {"punkt": "Wege zwischen den Reihen zurück? -> Kampfkarte mit festen Pfaden und Gabelungen (FTL-artig), anfangs viele Gabelungen, später weniger", "quelle": "VORSCHLAG_STORY 6", "status": "gebaut"},
     {"punkt": "Erstes Fraktions-Chassis, z. B. Shinobi (Jäger) -- braucht ein Bild aus der Werkstatt", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
     {"punkt": "Hipstar Hackers = Trickser?", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
     {"punkt": "Bosse am Ende der Story-Level (Oni, Shogun Kage)", "quelle": "VORSCHLAG_STORY 3", "status": "offen"},
     {"punkt": "Schwierigkeit: Normal Runde 8 63 %, Elite 41 % ohne Module -- so lassen oder Elite anziehen?", "quelle": "VORSCHLAG_STORY 5", "status": "offen"},
     {"punkt": "Aufstellung: erster Treffer nach 5,6 s statt 2,0 s -- zu lang? (deployment.inset 1 -> 3)", "quelle": "VORSCHLAG_STORY 6", "status": "offen"},
-    {"punkt": "Umlaute in der Anzeige („Kaempfe“ -> „Kämpfe“)?", "quelle": "VORSCHLAG_STORY 6", "status": "offen"},
+    {"punkt": "Umlaute in der Anzeige („Kaempfe“ -> „Kämpfe“)? -> ja, gebaut 14. Nov. 2026", "quelle": "VORSCHLAG_STORY 6", "status": "entschieden"},
     {"punkt": "Endlos-Modus ausbauen: Sektoren je Fraktion, bessere Beute je Sektor -> heißt Infinity-Einsatz, Reinforcement steigt langsamer, Fraktionen wechseln, Chaos = gemischte Formationen; Polierung später", "quelle": "VORSCHLAG_STORY 5", "status": "entschieden"},
     {"punkt": "Eingreifen des Spielers (Gegner als Ziel Nr. 1 markieren?)", "quelle": "CLAUDE.md Designpunkt 3", "status": "offen"},
     {"punkt": "Klassen: sechs Rollen statt vier (Jäger, Stütze neu)?", "quelle": "VORSCHLAG_STORY 4", "status": "offen"},
     {"punkt": "Virusschaden: Bezug sind die Höchstwerte (Schild max + Integrität max) oder die aktuellen Werte? Vorschlag: Höchstwerte -- dann ist jede Einheit spätestens 30 s nach Minute 5 zerstört. -> Höchstwerte", "quelle": "Spieler 13. Nov.", "status": "entschieden"},
     {"punkt": "Virusschaden: trifft er zuerst den Schild und dann die Integrität, oder direkt die Integrität? -> erst Schild, dann Integrität", "quelle": "Spieler 13. Nov.", "status": "entschieden"},
     {"punkt": "Virusschaden: was gilt, wenn beide Seiten im selben Puls fallen (unentschieden, Niederlage?) -> Niederlage", "quelle": "Spieler 13. Nov.", "status": "entschieden"},
-    {"punkt": "Lootdrop: wann wird gewürfelt (nach jedem Kampf, nach jeder Welle, am Einsatzende)? Welche Drops sind sicher, welche Glück? Vorschlag im Blatt Einsatz.", "quelle": "Spieler 13. Nov.", "status": "offen"},
+    {"punkt": "Lootdrop: wann wird gewürfelt (nach jedem Kampf, nach jeder Welle, am Einsatzende)? Welche Drops sind sicher, welche Glück? Vorschlag im Blatt Einsatz. -> Vorschlag aus dem Blatt Einsatz übernommen und gebaut -- anpassbar in config.json run.loot", "quelle": "Spieler 13. Nov.", "status": "Vorschlag gebaut"},
     {"punkt": "Cache-Namen für Factory 5 (Mecha Cache?) und Dachterrassen (Hipstar Cache?)", "quelle": "Spieler 13. Nov.", "status": "offen"},
     {"punkt": "Platzhaltercoin: endgültiger Name; welche Upgrades gibt es im Hangar, was kosten sie?", "quelle": "Spieler 13. Nov.", "status": "offen"},
     {"punkt": "Sentinels: Halterklasse (leicht/mittel/schwer) und Modulplätze je Archetyp -> Waffe fest verbaut, kein Halter; Basic ohne Modul, Elite 1 festes Modul, Heavy Elite 2", "quelle": "Spieler 13. Nov.", "status": "entschieden"},
@@ -173,14 +191,14 @@
     {"punkt": "Wellen: alle Wellen mit denselben DROMEs ohne Shop dazwischen? Bleibt Schaden zwischen Wellen? -> es gibt keine Wellen -- gemeint war das Reinforcement-Level, das nach jedem Kampf steigt; nach jedem Kampf 100 % geheilt", "quelle": "GEGNERDESIGN 13.6", "status": "entschieden"},
     {"punkt": "Monetarisierung: Premium ohne Gacha oder Free-to-Play? (betrifft Coins und Caches)", "quelle": "GEGNERDESIGN 13.7", "status": "offen"},
     {"punkt": "Playtest-Ergebnisse (Bedienung, Änderung am Gesamtsetup) einarbeiten", "quelle": "GEGNERDESIGN 13.8", "status": "offen"},
-    {"punkt": "Arcade-Glitch-Stil auch für Hangar, Kampf, Einsatz und Optionen? Entwürfe fehlen noch.", "quelle": "Design 13. Nov.", "status": "offen"},
-    {"punkt": "Spielstand-Text „laufender Lauf / Lauf: Neon City, Runde 5“ auf Einsatz umstellen. -> Anzeige Einsatz/Kampf, Code-Namen bleiben", "quelle": "Design 13. Nov.", "status": "entschieden"},
-    {"punkt": "Reinforcement-Level: was steigt je Stufe genau (Sentinel-Zahl, Elite/Heavy, Module der Gegner-DROMEs), und wie hängt es an der Kampfnummer im Einsatz?", "quelle": "Fragen 27/44, 14. Nov.", "status": "offen"},
-    {"punkt": "Formationen: je Fraktion 6 Grundgedanken mit Leicht/Normal/Elite -- Vorschläge von Claude, Spieler bestätigt (Fraktionsidentität)", "quelle": "Fragen 27/37, 14. Nov.", "status": "offen"},
+    {"punkt": "Arcade-Glitch-Stil auch für Hangar, Kampf, Einsatz und Optionen? Entwürfe fehlen noch. -> alle Bildschirme im Arcade-Stil über UiKit (14. Nov. 2026); eigene Entwürfe können ihn weiter verfeinern", "quelle": "Design 13. Nov.", "status": "gebaut"},
+    {"punkt": "Spielstand-Text „laufender Lauf / Lauf: Neon City, Runde 5“ auf Einsatz umstellen. -> Anzeige Einsatz/Kampf, Code-Namen bleiben", "quelle": "Design 13. Nov.", "status": "gebaut"},
+    {"punkt": "Reinforcement-Level: was steigt je Stufe genau (Sentinel-Zahl, Elite/Heavy, Module der Gegner-DROMEs), und wie hängt es an der Kampfnummer im Einsatz? -> Kampf + 1 je Elite; Stufen der Formation nach Level; Module der DROMEs je 2 Level eines -- bitte prüfen", "quelle": "Fragen 27/44, 14. Nov.", "status": "Vorschlag gebaut"},
+    {"punkt": "Formationen: je Fraktion 6 Grundgedanken mit Leicht/Normal/Elite -- Vorschläge von Claude, Spieler bestätigt (Fraktionsidentität) -> 6 Neon-Formationen gebaut (Einführung Vireo, Neon Bullies, Neon-Squad, Dachschützen, Neon-Lazarett, Schattenrudel) -- bitte Fraktionsidentität bestätigen; Solar, Mecha, Hipstar fehlen noch", "quelle": "Fragen 27/37, 14. Nov.", "status": "Vorschlag gebaut"},
     {"punkt": "Neon Vireo / Neon Nimbus als eigene DROMEs (Werte, Passive, später spielbar); Transformation Vireo -> Neon Vireo in Einsatz 1, Kampf 6", "quelle": "Fragen 16/27, 14. Nov.", "status": "offen"},
     {"punkt": "Blatt Maps (angelegt 14. Nov., Spieler trägt ein): welche Felder sind Frontline, Mittellinie, Backline (Aufstellung: Assault vorne, Support Mitte, Sniper hinten)", "quelle": "Fragen 12, 14. Nov.", "status": "offen"},
-    {"punkt": "Heilregel für alle Support-Waffen: nächstes Ziel, außer ein anderes in Reichweite (+3 Felder) hat 30 % weniger Leben", "quelle": "Fragen 11, 14. Nov.", "status": "offen"},
-    {"punkt": "Kampfkarte: Knoten breiter, Design polieren", "quelle": "Fragen 34, 14. Nov.", "status": "offen"},
+    {"punkt": "Heilregel für alle Support-Waffen: nächstes Ziel, außer ein anderes in Reichweite (+3 Felder) hat 30 % weniger Leben -> gebaut 14. Nov. 2026", "quelle": "Fragen 11, 14. Nov.", "status": "gebaut"},
+    {"punkt": "Kampfkarte: Knoten breiter, Design polieren -> breite Knoten mit Namen, drei Reihen sichtbar (14. Nov. 2026)", "quelle": "Fragen 34, 14. Nov.", "status": "gebaut"},
     {"punkt": "Einsatzabschluss-Bonus nur beim ersten Bestehen eines Einsatzes; neuer Einsatz = neuer Seed", "quelle": "Fragen 42, 14. Nov.", "status": "offen"},
     {"punkt": "Wellen-Modus als eigener Modus später? (lange aushalten, Leben bleibt)", "quelle": "Fragen 45, 14. Nov.", "status": "offen"},
     {"punkt": "Freie Regionen vs. feste Story-Beats: Beats an den Gesamtfortschritt koppeln statt an die Region?", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
@@ -191,7 +209,15 @@
     {"punkt": "Weitere Standard-DROMEs neben Molok, Vireo, Nimbus, Strix", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
     {"punkt": "Der geheime Twist (bewusst noch nicht festgehalten)", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
     {"punkt": "Mega Mechas laut Leitfaden ohne Schilde -- heutiges Profil Festung (Schilde, Artillerie) anpassen?", "quelle": "STORY_LEITFADEN 7", "status": "offen"},
-    {"punkt": "Story-Vermittlung: Porträts + Textboxen -> Dialogfenster mit Porträt, Sprecher links/rechts abwechselnd, vorerst ein Porträt je Figur (noch nicht gebaut)", "quelle": "STORY_LEITFADEN 8", "status": "entschieden"}
+    {"punkt": "Story-Vermittlung: Porträts + Textboxen -> Dialogfenster mit Porträt, Sprecher links/rechts abwechselnd, vorerst ein Porträt je Figur (noch nicht gebaut)", "quelle": "STORY_LEITFADEN 8", "status": "entschieden"},
+    {"punkt": "Schwierigkeit mit Sentinels: Standard-Squad (Level 0) gewinnt Normal-Kämpfe bis Kampf 5 fast immer, Elite in Kampf 8 etwa 45-60 % (run_bench, 12 Läufe). Sentinel-Werte (Power 5) anziehen oder mehr Sentinels je Stufe?", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
+    {"punkt": "Formationen für Solar, Mecha und Hipstar (je 6 Grundgedanken) -- bis dahin leihen sich Parkanlage und Factory 5 die Neon-Formationen.", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
+    {"punkt": "Elite-Module der Sentinels: Vorschlag je Archetyp (Assault Wuchtkante/Panzerplatte, Sniper Schnellfeuer/Peilsender, Support Kondensator/Panzerplatte) -- im Blatt Sentinels anpassen.", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
+    {"punkt": "Beute bis Schritt 4: es droppen nur noch Caches und Coins (keine Teile/Credits mehr). Neue Waffen kommen damit erst mit dem Öffnen der Caches -- so gewollt?", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
+    {"punkt": "Story-Einsätze: heute ein Einsatz Neon City mit 8 Kämpfen; die zehn Einsätze mit eigener Länge und Squad-Größe folgen (OP 2).", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
+    {"punkt": "Namen: 'Baukern' und 'Fraktionskern' als Arbeitsnamen (Alternativen: Crafting-Kit, Fraktionsmodifikator)?", "quelle": "Sitzung 15. Nov. 2026", "status": "offen"},
+    {"punkt": "Fraktions-DROMEs des Spielers rechnen mit festen Werten -- DROME-Level wirken darauf heute nicht. Sollen sie leveln (z. B. Level-Bonus auf die festen Werte)?", "quelle": "Sitzung 15. Nov. 2026", "status": "offen"},
+    {"punkt": "Woher kommen Fraktionskerne außer durch Verwerten? (Caches, Boss, Hangar-Shop?) Heute hat der Spieler keinen Fraktions-DROME, also auch keinen Weg zum ersten Kern. -> aus Bossen und Caches: entweder die Komponenten oder gleich der ganze DROME", "quelle": "Sitzung 15. Nov. 2026", "status": "entschieden"}
   ],
 
   "glossar": [
@@ -222,9 +248,17 @@
     {"begriff": "Welle", "erklaerung": "Kampfabschnitt einer Begegnung; Gegner werden von Welle zu Welle stärker."},
     {"begriff": "Virusschaden", "erklaerung": "Ab Minute 5 je Puls 10 % von Schild + Integrität, absolut, an der Rüstung vorbei."},
     {"begriff": "Lootcache", "erklaerung": "Beutekiste, immer fraktionsabhängig (Neon Cache, Solar Cache ...). Inhalt legt der Spieler fest."},
-    {"begriff": "Platzhaltercoin", "erklaerung": "Arbeitsname: Währung neben Credits, wenn kein Cache droppt. Für Upgrades und Caches im Hangar."}
+    {"begriff": "Platzhaltercoin", "erklaerung": "Arbeitsname: Währung neben Credits, wenn kein Cache droppt. Für Upgrades und Caches im Hangar."},
+    {"begriff": "Verwerten", "erklaerung": "Einen DROME zerlegen (statt auflösen): gibt einen Baukern, bei Fraktions-DROMEs zusätzlich einen Fraktionskern. Waffen bleiben im Hangar."},
+    {"begriff": "Baukern", "erklaerung": "Baumaterial aus verwerteten DROMEs (Arbeitsname, auch 'Crafting-Kit'). 3 Baukerne = ein Standard-DROME."},
+    {"begriff": "Fraktionskern", "erklaerung": "Aus einem verwerteten Fraktions-DROME (Neon-Kern, Solar-Kern ...). Mit 3 Baukernen wird daraus ein Fraktions-DROME."}
   ],
-  "_kommentar_einsatz": ["Neues Spielprinzip (12./13. Nov. 2026, docs/GEGNERDESIGN.md): Einsatz, Virusschaden,", "Lootcaches, Platzhaltercoin, Sentinels, gegnerische DROMEs, Formationen. NOCH NICHT GEBAUT.", "Zahlen mit status Vorschlag sind Startwerte zum Ausbalancieren -- der Spieler aendert sie in der", "Excel (hellblaue Eingabefelder) und gibt die Datei zurueck; dann hier nachtragen."],
+  "_kommentar_einsatz": [
+    "Neues Spielprinzip (12./13. Nov. 2026, docs/GEGNERDESIGN.md): Einsatz, Virusschaden,",
+    "Lootcaches, Platzhaltercoin, Sentinels, gegnerische DROMEs, Formationen. Gebaut am 14. Nov. 2026 (ausser Caches oeffnen und Hangar-Shop).",
+    "Zahlen mit status Vorschlag sind Startwerte zum Ausbalancieren -- der Spieler aendert sie in der",
+    "Excel (hellblaue Eingabefelder) und gibt die Datei zurueck; dann hier nachtragen."
+  ],
 
   "virusschaden": [
     {"id": "start", "parameter": "Virusschaden beginnt nach (s)", "wert": 300, "status": "entschieden", "notiz": "5 Minuten Kampfzeit"},
@@ -236,14 +270,16 @@
   ],
 
   "einsatz": [
-    {"parameter": "Kämpfe je Einsatz", "wert": 8, "status": "Vorschlag", "notiz": "heute 8 Runden"},
-    {"parameter": "Leben je Einsatz", "wert": 3, "status": "Vorschlag", "notiz": "wie heute"},
+    {"parameter": "Kämpfe je Einsatz", "wert": 8, "status": "gebaut", "notiz": "ein Einsatz Neon City; zehn Story-Einsätze folgen"},
+    {"parameter": "Leben je Einsatz", "wert": 3, "status": "gebaut", "notiz": ""},
     {"parameter": "DROMEs des Spielers", "wert": "bis 4", "status": "entschieden", "notiz": "GEGNERDESIGN 4"},
-    {"parameter": "Gegner-Squad", "wert": "1+ DROME + Sentinels", "status": "entschieden", "notiz": "Formationen: Blatt Formationen"},
-    {"parameter": "Wellen je Kampf", "wert": "bis 4", "status": "Vorschlag", "notiz": "Beispiel Neon-Squad; Shop/Schaden zwischen Wellen offen"},
+    {"parameter": "Gegner-Squad", "wert": "1+ DROME + Sentinels", "status": "gebaut", "notiz": "Formationen: Blatt Formationen"},
+    {"parameter": "Wellen je Kampf", "wert": "keine", "status": "entschieden", "notiz": "gemeint war das Reinforcement-Level (Blatt Formationen)"},
     {"parameter": "Gebiet", "wert": "eine Fraktion je Einsatz", "status": "Vorschlag", "notiz": "bestimmt die Caches"},
-    {"parameter": "Shop zwischen den Kämpfen", "wert": "bleibt (Credits, Module)", "status": "entschieden", "notiz": "GEGNERDESIGN 9"},
-    {"parameter": "Beute", "wert": "Lootcache oder Platzhaltercoin", "status": "entschieden", "notiz": "Regeln unten, Inhalt: Blatt Lootcaches"}
+    {"parameter": "Shop zwischen den Kämpfen", "wert": "bleibt (Credits, Module)", "status": "gebaut", "notiz": "GEGNERDESIGN 9"},
+    {"parameter": "Beute", "wert": "Lootcache oder Platzhaltercoin", "status": "gebaut", "notiz": "Regeln unten, Inhalt: Blatt Lootcaches"},
+    {"parameter": "Kampfkarte", "wert": "feste Wege (FTL)", "status": "gebaut", "notiz": "config.json run.map: wide_until, forks_until, easy_share, elite_share"},
+    {"parameter": "Reinforcement-Level", "wert": "Kampf + 1 je Elite", "status": "Vorschlag gebaut", "notiz": "data/formations.json -> reinforcement"}
   ],
 
   "lootregeln": [
@@ -297,17 +333,21 @@
     {"cache": "Hipstar Cache", "art": "Platzhaltercoin", "gegenstand": "Platzhaltercoin", "menge": 15, "gewicht": 10, "status": "Vorschlag"},
     {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
     {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
-    {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"}
+    {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Neon Cache", "art": "Fraktionskern", "gegenstand": "Neon-Kern", "menge": 1, "gewicht": 3, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "Baukern", "gegenstand": "Baukern", "menge": 1, "gewicht": 8, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "DROME", "gegenstand": "Neon Vireo", "menge": 1, "gewicht": 1, "status": "Vorschlag"}
   ],
 
   "hangar_shop": [
-    {"angebot": "Neon Cache", "art": "Cache", "preis": 50, "wirkung": "ein Neon Cache", "status": "Vorschlag"},
-    {"angebot": "Solar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Solar Cache", "status": "Vorschlag"},
-    {"angebot": "Mecha Cache", "art": "Cache", "preis": 50, "wirkung": "ein Mecha Cache", "status": "Vorschlag"},
+    {"angebot": "Neon Cache", "art": "Cache", "preis": 50, "wirkung": "ein Neon Cache", "status": "gebaut"},
+    {"angebot": "Solar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Solar Cache", "status": "gebaut"},
+    {"angebot": "Mecha Cache", "art": "Cache", "preis": 50, "wirkung": "ein Mecha Cache", "status": "gebaut"},
     {"angebot": "Hipstar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Hipstar Cache", "status": "Vorschlag"},
     {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "welche Upgrades? -> Offene Punkte", "status": "offen"},
     {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
-    {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"}
+    {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
+    {"angebot": "Baukern", "art": "Upgrade", "preis": 20, "wirkung": "1 Baukern (3 = ein Standard-DROME)", "status": "gebaut"}
   ],
 
   "sentinel_archetypen": [
@@ -355,7 +395,9 @@
     {"formation": "Neon Bullies (neu)", "fraktion": "Neon", "welle": 1, "dromes": "", "assault": null, "sniper": null, "support": null, "variante": "", "module": "", "text": "alt: 2 Tanks + 2 Plänkler -- neue Fassung offen", "status": "offen"}
   ],
 
-  "_kommentar_design": ["Arcade-Glitch-Stil (13. Nov. 2026): Entwuerfe in docs/design/ (Titel, Spielstand). NOCH NICHT GEBAUT."],
+  "_kommentar_design": [
+    "Arcade-Glitch-Stil (13. Nov. 2026): Entwuerfe in docs/design/ (Titel, Spielstand). Seit 14. Nov. 2026 auf allen Bildschirmen gebaut."
+  ],
 
   "design_farben": [
     {"name": "Nachtschwarz", "hex": "#0a0618", "verwendung": "Hintergrund aller Bildschirme"},

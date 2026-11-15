@@ -30,63 +30,27 @@ const ICON_EDGE := 22.0
 ## weichen wuerde -- die Balken zeigen dann den Unterschied. Gibt die Ebene
 ## zurueck.
 static func open(host: Control, part: PartData, extra: Callable = Callable(),
-		buttons: Array = [], compare: PartData = null) -> CanvasLayer:
-	# Eigene Zeichenebene: die DROME-Bilder darunter sortieren ihre Teile mit
-	# z_index und laegen sonst ueber einer normalen Ueberlagerung.
-	var layer := CanvasLayer.new()
-	layer.layer = 20
-	host.add_child(layer)
-	var shade := ColorRect.new()
-	shade.color = Color(0, 0, 0, 0.6)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_STOP
-	layer.add_child(shade)
-	# Tipp neben die Kachel: schliessen.
-	shade.gui_input.connect(func(event: InputEvent):
-		if event is InputEventMouseButton and not event.pressed \
-				and event.button_index == MOUSE_BUTTON_LEFT:
-			layer.queue_free())
+		buttons: Array = [], compare: PartData = null) -> InfoPopup:
+	return InfoPopup.open(host, "", page(part, extra, buttons, compare))
 
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shade.add_child(center)
-	var panel := PanelContainer.new()
-	var style := UiKit.card_style(true)
-	style.bg_color = Color(UiKit.CARD, 1.0)
-	panel.add_theme_stylebox_override("panel", style)
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var width := minf(420.0, host.get_viewport_rect().size.x - 2.0 * UiKit.PAD)
-	panel.custom_minimum_size = Vector2(width, 0)
-	center.add_child(panel)
+
+## Die Waffen-Karte als Seite eines Popups (15. Nov. 2026): fuer InfoPopup.open
+## und open_pages, damit man durch mehrere Waffen blaettern kann.
+## ``buttons``: [{text, primary, disabled, on}].
+static func page(part: PartData, extra: Callable = Callable(), buttons: Array = [],
+		compare: PartData = null) -> Dictionary:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
-	panel.add_child(box)
-
-	var hint := UiKit.label("Symbol antippen: Erklaerung", UiKit.SMALL, UiKit.MUTED)
+	var hint := UiKit.label("Symbol antippen: Erklärung", UiKit.SMALL, UiKit.MUTED)
 	fill(box, part, hint, compare)
 	if extra.is_valid():
 		extra.call(box)
 	box.add_child(hint)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	box.add_child(row)
+	var actions: Array = []
 	for spec in buttons:
-		var button := UiKit.button(str(spec.get("text", "")), bool(spec.get("primary", false)))
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.disabled = bool(spec.get("disabled", false))
-		var on: Callable = spec.get("on", Callable())
-		button.pressed.connect(func():
-			layer.queue_free()
-			if on.is_valid():
-				on.call())
-		row.add_child(button)
-	var close := UiKit.button("Schliessen")
-	close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	close.pressed.connect(func(): layer.queue_free())
-	row.add_child(close)
-	return layer
+		actions.append({"text": str(spec.get("text", "")), "primary": bool(spec.get("primary", false)),
+			"disabled": bool(spec.get("disabled", false)), "call": spec.get("on", Callable())})
+	return {"title": "", "body": box, "actions": actions}
 
 
 ## Der Inhalt der Kachel ohne Ebene und Knoepfe -- auch fuer Tests.
@@ -137,7 +101,7 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label, compare: PartD
 	for ability in abilities:
 		box.add_child(HSeparator.new())
 		var head := _chip_row(box)
-		head.add_child(_chip("ability", "", hint, "Faehigkeit"))
+		head.add_child(_chip("ability", "", hint, "Fähigkeit"))
 		var name := UiKit.label(ability.display_name, UiKit.BODY, UiKit.ACCENT)
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		head.add_child(name)
@@ -201,7 +165,7 @@ static func attack_bars(attack: ActionData, other: ActionData, hint: Label) -> A
 	if attack.heal > 0:
 		rows.append(_bar_row("heal", "Reparatur", float(attack.heal), BAR_DAMAGE,
 			float(other.heal) if other != null else -1.0, "", hint,
-			"Repariert %d Integritaet" % attack.heal))
+			"Repariert %d Integrität" % attack.heal))
 	if attack.interval > 0.0:
 		# Der Balken zeigt Angriffe je Sekunde (laenger = schneller), der Text
 		# die Sekunden zwischen zwei Angriffen.
@@ -261,13 +225,13 @@ static func _bar_row(kind: String, name: String, value: float, scale: float, bef
 static func bonus_text(part: PartData) -> String:
 	var out: Array[String] = []
 	if part.hp != 0:
-		out.append("Integritaet %+d" % part.hp)
+		out.append("Integrität %+d" % part.hp)
 	if part.shield != 0:
 		out.append("Schild %+d" % part.shield)
 	if part.shield_pulse != 0:
 		out.append("Schildpuls %+d" % part.shield_pulse)
 	if part.def != 0:
-		out.append("Ruestung %+d" % part.def)
+		out.append("Rüstung %+d" % part.def)
 	if part.spd != 0:
 		out.append("Speed %+d" % part.spd)
 	if part.power != 0:
@@ -288,10 +252,10 @@ static func attack_chips(action: ActionData) -> Array:
 		if action.energy_fraction > 0.0 and action.energy_fraction < 1.0:
 			var e := int(round(action.power * action.energy_fraction))
 			what = "%d kinetisch + %d Energie" % [action.power - e, e]
-		out.append([type, value, "%s, Staerke %d%s" % [what, action.power,
+		out.append([type, value, "%s, Stärke %d%s" % [what, action.power,
 			(" -- %d Treffer" % action.shots) if action.shots > 1 else ""]])
 	if action.heal > 0:
-		out.append(["heal", str(action.heal), "Repariert %d Integritaet" % action.heal])
+		out.append(["heal", str(action.heal), "Repariert %d Integrität" % action.heal])
 	if action.shield_gain > 0:
 		out.append(["shield", "+%d" % action.shield_gain, "Gibt %d Schild" % action.shield_gain])
 	if action.is_attack():
@@ -302,7 +266,7 @@ static func attack_chips(action: ActionData) -> Array:
 			"Reichweite %d%s" % [action.range_tiles,
 				" (Nahkampf)" if action.range_tiles <= 1 else ""]])
 	if action.aoe_radius > 0:
-		out.append(["area", str(action.aoe_radius), "Flaeche: Umkreis %d" % action.aoe_radius])
+		out.append(["area", str(action.aoe_radius), "Fläche: Umkreis %d" % action.aoe_radius])
 	return out
 
 
@@ -332,14 +296,14 @@ static func short_text(action: ActionData) -> String:
 	if not action.status.is_empty():
 		parts.append(action.status_text())
 	if action.push_tiles > 0:
-		parts.append("stoesst %d Feld weg" % action.push_tiles)
+		parts.append("stößt %d Feld weg" % action.push_tiles)
 	elif action.push_tiles < 0:
 		parts.append("zieht %d Feld heran" % absi(action.push_tiles))
 	if action.heal > 0:
-		parts.append("beim Verbuendeten mit dem geringsten Anteil")
+		parts.append("beim Verbündeten mit dem geringsten Anteil")
 	if action.shield_gain > 0:
-		parts.append("fuer sich selbst, auch ueber das Maximum" if action.support == "self"
-			else "fuer den am staerksten verletzten Verbuendeten")
+		parts.append("für sich selbst, auch über das Maximum" if action.support == "self"
+			else "für den am stärksten verletzten Verbündeten")
 	if action.trigger_kind == "attacks":
 		parts.append("ersetzt diesen Angriff")
 	if parts.is_empty():

@@ -173,6 +173,10 @@ func _build_sprites() -> void:
 	# Gelegenheiten, dass der Bot im Kampf anders aussieht als beim Bauen.
 	_ensure_chrome()
 	_sprites = DromeSprites.assemble(_rig, build, facing)
+	# Sentinels kleiner (60 %, SPOT-Blatt Fragen 13), bis eigene Sprites kommen.
+	if build != null and build.sprite_scale != 1.0:
+		_rig.scale = Vector2.ONE * build.sprite_scale
+		_ring.scale = Vector2.ONE * maxf(0.7, build.sprite_scale)
 	_refresh_tint()
 
 
@@ -377,7 +381,7 @@ func init_realtime(pulse_offset: float) -> void:
 				attack = Leveling.level_action(action, part, level).with_modules(fx)
 				break
 		for action in part.actions:
-			if action.is_attack():
+			if action.is_attack() or build.auto_only:
 				continue
 			if action.trigger_kind == "attacks" and attack != null:
 				continue
@@ -402,7 +406,8 @@ func init_realtime(pulse_offset: float) -> void:
 		if attack == null:
 			continue
 		var ability: ActionData = null
-		for action in part.actions:
+		# Sentinels loesen nur den Auto-Angriff aus (SPOT-Blatt Fragen 2).
+		for action in ([] if build.auto_only else part.actions):
 			if not action.is_attack() and action.trigger_kind == "attacks":
 				ability = Leveling.level_action(action, part, level).with_modules(fx)
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
@@ -535,7 +540,7 @@ static func steady_rule() -> Dictionary:
 
 ## Die Passive des Chassis ("echo" ...). Leer = keine.
 func passive() -> String:
-	if build == null or build.body() == null:
+	if build == null or build.body() == null or build.is_sentinel():
 		return ""
 	return build.body().passive
 
@@ -568,9 +573,15 @@ func attack_speed_mult() -> float:
 
 ## Wie die KI diesen DROME fuehrt -- aus dem Chassis. Leer = nach Waffe.
 func ai_role() -> String:
+	if build != null and build.role_override != "":
+		return build.role_override
 	if build == null or build.body() == null:
 		return ""
 	return build.body().ai_role
+
+
+func is_sentinel() -> bool:
+	return build != null and build.is_sentinel()
 
 
 ## Gewurzelt (Orbit-Fokus): greift an, laeuft aber nicht.

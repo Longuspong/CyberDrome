@@ -48,14 +48,14 @@ func test_a_part_cannot_be_in_two_dromes_at_once() -> void:
 	var used := roster.assigned_uids()
 	var seen := {}
 	for uid in used:
-		t.ok(not seen.has(uid), "uid %s steckt in hoechstens einem DROME" % uid)
+		t.ok(not seen.has(uid), "uid %s steckt in höchstens einem DROME" % uid)
 		seen[uid] = true
 
 	# Das freie Teil an einen DROME haengen -> es ist nicht mehr frei, und ein
 	# zweiter DROME bekommt kein zweites Exemplar desselben Teils. Frei liegen
 	# zum Start Drohnen-Pod und Plasmaklinge.
 	t.equal(roster.free_count(&"eq_drone_pod"), 1,
-		"der Drohnen-Pod liegt zunaechst frei")
+		"der Drohnen-Pod liegt zunächst frei")
 	var molok: RosterEntry = roster.entries[1]
 	var molok_slot: String = roster.build_for(molok).equip_slots()[1]
 	t.ok(roster.assign(molok, molok_slot, &"eq_drone_pod"), "erste Zuweisung greift")
@@ -90,7 +90,7 @@ func test_chassis_cannot_be_cleared() -> void:
 	var before := vireo.chassis_uid()
 	roster.clear_slot(vireo, "body")
 	t.equal(vireo.chassis_uid(), before,
-		"das Chassis ist die Identitaet und laesst sich nicht leeren")
+		"das Chassis ist die Identität und lässt sich nicht leeren")
 
 
 func test_new_drome_needs_a_free_chassis() -> void:
@@ -104,12 +104,83 @@ func test_new_drome_needs_a_free_chassis() -> void:
 	# Ein DROME aufloesen gibt sein Chassis frei -- dann geht ein neuer.
 	var freed_chassis: String = roster.entries[0].chassis_uid()
 	roster.disband(roster.entries[0])
-	t.equal(roster.entries.size(), 3, "der aufgeloeste DROME ist weg")
+	t.equal(roster.entries.size(), 3, "der aufgelöste DROME ist weg")
 	t.ok(roster.instance(freed_chassis) != null,
 		"seine Chassis-Instanz bleibt im Inventar")
 	var made := roster.new_drome(&"scout_body")
 	t.ok(made != null, "mit freiem Chassis entsteht ein neuer DROME")
 	t.equal(roster.entries.size(), 4, "der Roster ist wieder bei vier")
+
+
+## Verwerten statt Aufloesen (15. Nov. 2026): Chassis und Kern verschwinden,
+## die Waffen kommen frei in den Hangar, dafuer gibt es einen Baukern.
+func test_salvaging_a_drome_gives_a_kit_and_frees_the_weapons() -> void:
+	var roster := _fresh()
+	var molok: RosterEntry = roster.entries[1]
+	var chassis := molok.chassis_uid()
+	var weapons: Array = []
+	for slot in molok.assignments:
+		if str(slot).begins_with("equip_"):
+			weapons.append(str(molok.assignments[slot]))
+	var free_before := roster.free_count(&"eq_hammer")
+	var got := roster.salvage(molok)
+	t.equal(got.get("kits", 0), 1, "ein Baukern")
+	t.equal(roster.kits(), 1, "liegt im Hangar")
+	t.equal(roster.entries.size(), 3, "der DROME ist weg")
+	t.ok(roster.instance(chassis) == null, "sein Chassis auch")
+	for uid in weapons:
+		t.ok(roster.instance(uid) != null, "die Waffe %s bleibt" % uid)
+	t.equal(roster.free_count(&"eq_hammer"), free_before + 1, "und ist frei")
+	var back := Roster.new()
+	t.ok(back.load_dict(roster.to_dict()), "Spielstand lädt")
+	t.equal(back.kits(), 1, "der Baukern übersteht das Speichern")
+
+
+func test_the_last_drome_cannot_be_salvaged() -> void:
+	var roster := _fresh()
+	while roster.entries.size() > 1:
+		roster.salvage(roster.entries[0])
+	t.ok(roster.salvage_blocker(roster.entries[0]) != "", "der letzte bleibt")
+	t.equal(roster.salvage(roster.entries[0]), {}, "und wird nicht verwertet")
+
+
+## Drei Baukerne bauen einen Standard-DROME, ein Fraktionskern dazu einen
+## Fraktions-DROME mit festen Werten.
+func test_kits_build_standard_and_faction_dromes() -> void:
+	var roster := _fresh()
+	t.equal(roster.craft_drome(&"strix_body"), null, "ohne Baukerne nichts")
+	roster.materials["baukern"] = 3
+	var made := roster.craft_drome(&"strix_body")
+	t.ok(made != null, "drei Baukerne: ein Strix")
+	t.equal(roster.kits(), 0, "die Baukerne sind verbraucht")
+	t.equal(roster.build_for(made).body().id, &"strix_body", "mit Strix-Chassis")
+	roster.materials["baukern"] = 3
+	t.equal(roster.craft_faction_drome("neon_vireo"), null, "ohne Neon-Kern kein Neon Vireo")
+	roster.materials["kern:neon"] = 1
+	var neon := roster.craft_faction_drome("neon_vireo")
+	t.ok(neon != null, "Neon-Kern + drei Baukerne: Neon Vireo")
+	t.equal(neon.variant, "neon_vireo", "als Fraktions-DROME")
+	t.equal(int(roster.build_for(neon).stats()["hp_max"]), 80, "mit den festen Werten")
+	t.equal(roster.faction_cores("neon"), 0, "der Kern ist verbraucht")
+	var got := roster.salvage(neon)
+	t.equal(got.get("faction", ""), "neon", "verwertet gibt er seinen Kern zurück")
+	t.equal(roster.faction_cores("neon"), 1, "einen Neon-Kern")
+
+
+## Hangar-Shop (15. Nov. 2026): Baukerne und Caches fuer Platzhaltercoin.
+func test_the_shop_sells_kits_and_caches_for_coins() -> void:
+	var roster := _fresh()
+	var offers := Roster.shop_offers()
+	var kit: Dictionary = offers.filter(func(o): return o["kind"] == "kit")[0]
+	var cache: Dictionary = offers.filter(func(o): return o["kind"] == "cache")[0]
+	t.ok(roster.offer_blocker(kit) != "", "ohne Coins kein Kauf")
+	t.ok(not roster.buy_offer(kit), "und nichts passiert")
+	roster.coins = int(kit["price"]) + int(cache["price"])
+	t.ok(roster.buy_offer(kit), "Baukern gekauft")
+	t.equal(roster.kits(), 1, "liegt im Hangar")
+	t.ok(roster.buy_offer(cache), "Cache gekauft")
+	t.equal(int(roster.caches.get(str(cache["cache"]), 0)), 1, "Cache im Hangar")
+	t.equal(roster.coins, 0, "die Coins sind ausgegeben")
 
 
 func test_derived_build_equals_a_direct_build() -> void:
@@ -133,15 +204,15 @@ func test_derived_build_equals_a_direct_build() -> void:
 func test_roster_survives_saving_and_loading() -> void:
 	var roster := _fresh()
 	# Eine Aenderung, damit nicht nur der Startbestand geprueft wird.
-	roster.entries[0].name = "Spaeher-Eins"
+	roster.entries[0].name = "Späher-Eins"
 	roster.entries[2].in_squad = false
 
 	var restored := Roster.new()
-	t.ok(restored.load_dict(roster.to_dict()), "der v2-Stand laedt")
+	t.ok(restored.load_dict(roster.to_dict()), "der v2-Stand lädt")
 	t.equal(restored.entries.size(), roster.entries.size(), "gleiche DROME-Zahl")
 	t.equal(restored.all_instances().size(), roster.all_instances().size(),
 		"gleiche Instanzzahl")
-	t.equal(restored.entries[0].name, "Spaeher-Eins", "Namen ueberstehen den Rundlauf")
+	t.equal(restored.entries[0].name, "Späher-Eins", "Namen überstehen den Rundlauf")
 	t.equal(restored.squad_count(), 3, "die Squad-Auswahl ebenso")
 	# Und die abgeleiteten Werte sind unveraendert.
 	t.equal(restored.build_for(restored.entries[0]).stats(),

@@ -65,9 +65,9 @@ func test_the_ring_never_offers_a_pointless_target() -> void:
 		t.ok(hits_foe, "%s zielt auf Gegner" % action.id)
 		if ally != null:
 			t.ok(not battle.resolver.is_meaningful_target(actor, ally, action),
-				"%s trifft keine Verbuendeten" % action.id)
+				"%s trifft keine Verbündeten" % action.id)
 		t.ok(not battle.resolver.is_meaningful_target(actor, actor, action),
-			"%s trifft nicht den Schuetzen selbst" % action.id)
+			"%s trifft nicht den Schützen selbst" % action.id)
 	battle.free()
 
 
@@ -112,7 +112,7 @@ func test_every_action_offers_a_readable_description() -> void:
 	for part in PartDB.parts.values():
 		for action in part.actions:
 			var lines: Array[String] = action.description_lines()
-			t.ok(lines.size() >= 3, "%s wird in mehr als einer Zeile erklaert"
+			t.ok(lines.size() >= 3, "%s wird in mehr als einer Zeile erklärt"
 				% action.id)
 			t.ok(action.headline().contains("Rw"),
 				"die Kurzform nennt die Reichweite: '%s'" % action.headline())
@@ -146,7 +146,7 @@ func test_holders_are_named_without_a_direction() -> void:
 	t.equal(names, ["Halter 1", "Halter 2"], "der Molok hat Halter 1 und 2")
 	var vireo := DromeBuild.create("Vireo", {"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core"})
-	t.equal(SlotRules.holder_label(vireo, vireo.equip_slots()[0]), "Halter", "ein einzelner heisst nur Halter")
+	t.equal(SlotRules.holder_label(vireo, vireo.equip_slots()[0]), "Halter", "ein einzelner heißt nur Halter")
 	for choice in SlotRules.slot_choices(molok, PartDB.get_part(&"eq_pulse_blaster")):
 		for word in ["links", "rechts"]:
 			t.ok(not str(choice["label"]).contains(word), "keine Richtung in '%s'" % choice["label"])
@@ -159,7 +159,7 @@ func test_every_mount_of_the_chassis_is_offered_with_its_verdict() -> void:
 		PartDB.get_part(&"eq_rail_lance"))
 	t.equal(choices.size(), 2, "beide Halter stehen zur Wahl")
 	t.equal(choices[0]["slot"], "equip_left", "Slot 1 ist der linke Arm")
-	t.equal(choices[0]["number"], 1, "und wird als 1 gezaehlt")
+	t.equal(choices[0]["number"], 1, "und wird als 1 gezählt")
 	t.ok(not choices[0]["allowed"], "der linke Arm nimmt das Gewehr nicht")
 	t.ok(not choices[1]["allowed"], "der rechte auch nicht")
 	t.ok(choices[1]["detail"].contains("mittel"),
@@ -173,8 +173,8 @@ func test_the_offer_says_what_a_mount_currently_holds() -> void:
 	build.slots["equip_left"] = &"eq_pulse_blaster"
 	var shield := Workshop.slot_choices(build, PartDB.get_part(&"eq_deflector"))
 	t.ok(shield[0]["detail"].contains("Puls-Blaster"),
-		"der belegte Halter nennt, was weichen wuerde: %s" % shield[0]["detail"])
-	t.equal(shield[1]["detail"], "frei", "der leere Halter heisst frei")
+		"der belegte Halter nennt, was weichen würde: %s" % shield[0]["detail"])
+	t.equal(shield[1]["detail"], "frei", "der leere Halter heißt frei")
 
 	var same := Workshop.slot_choices(build, PartDB.get_part(&"eq_pulse_blaster"))
 	t.equal(same[0]["detail"], "steckt schon drin",
@@ -196,7 +196,7 @@ func test_the_offer_never_disagrees_with_the_build_rule() -> void:
 	# Massgeblich ist chassis.accepts() -- dieselbe Regel, die den Aufbau beim
 	# Laden prueft. Die Liste ist eine Anzeige davon, keine zweite Regel.
 	for chassis in PartDB.of_type(PartData.Type.BODY):
-		var build := DromeBuild.create("PRUEF", {"body": chassis.id})
+		var build := DromeBuild.create("PRÜF", {"body": chassis.id})
 		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
 			var choices := Workshop.slot_choices(build, part)
 			t.equal(choices.size(), build.equip_slots().size(),
@@ -222,14 +222,14 @@ func test_socket_parts_ask_nothing() -> void:
 ## ihren Hoechstwerten und leeren sich an Ort und Stelle.
 func test_the_life_bar_splits_by_maximum() -> void:
 	var full: Dictionary = BattleView.UnitBadgePainter.split(200, 200, 100, 100)
-	t.ok(absf(full["hp_slot"] - 2.0 / 3.0) < 0.001, "200/100: zwei Drittel Integritaet")
+	t.ok(absf(full["hp_slot"] - 2.0 / 3.0) < 0.001, "200/100: zwei Drittel Integrität")
 	t.ok(absf(full["shield_slot"] - 1.0 / 3.0) < 0.001, "200/100: ein Drittel Schild")
 	var hurt: Dictionary = BattleView.UnitBadgePainter.split(100, 200, 0, 100)
-	t.ok(absf(hurt["hp_fill"] - 1.0 / 3.0) < 0.001, "halbe Integritaet fuellt ein Drittel")
+	t.ok(absf(hurt["hp_fill"] - 1.0 / 3.0) < 0.001, "halbe Integrität fuellt ein Drittel")
 	t.equal(hurt["shield_fill"], 0.0, "leerer Schild ist leer")
 	t.ok(absf(hurt["shield_slot"] - 1.0 / 3.0) < 0.001, "sein Platz bleibt aber")
 	var bare: Dictionary = BattleView.UnitBadgePainter.split(50, 50, 0, 0)
-	t.equal(bare["hp_slot"], 1.0, "ohne Schild gehoert der Balken der Integritaet")
+	t.equal(bare["hp_slot"], 1.0, "ohne Schild gehört der Balken der Integrität")
 
 
 func test_takt_bars_follow_the_ability_counter() -> void:
@@ -247,7 +247,7 @@ func test_takt_bars_follow_the_ability_counter() -> void:
 	t.equal(bars[0]["filled"], 0, "zu Beginn leer")
 	unit.mounts[0]["count"] = every - 1
 	bars = unit.takt_bars()
-	t.ok(bars[0]["ready"], "naechster Angriff ist die Faehigkeit")
+	t.ok(bars[0]["ready"], "nächster Angriff ist die Fähigkeit")
 	t.equal(bars[0]["filled"], every, "dann ganz gefuellt")
 	battle.free()
 
@@ -262,7 +262,7 @@ func test_every_takt_counts_attacks() -> void:
 	var unit: Unit = battle.living(true)[0]
 	var bars: Array = unit.takt_bars()
 	t.ok(bars.filter(func(b): return b["kind"] == "time").is_empty(), "keine Zeit-Leiste")
-	t.equal(bars.filter(func(b): return b["kind"] == "hits").size(), 1, "der Vortex zaehlt Angriffe")
+	t.equal(bars.filter(func(b): return b["kind"] == "hits").size(), 1, "der Vortex zählt Angriffe")
 	battle.free()
 
 
@@ -293,7 +293,7 @@ func test_overlapping_bars_move_up_or_hide_when_far() -> void:
 	t.ok(lifts[1] > 0.0, "der obere weicht nach oben aus")
 	t.equal(lifts[2], 0.0, "der freie bleibt")
 	var far: Array = BattleView.UnitBadgePainter.layout([a, b, c], 0)
-	t.equal(far[1], -1.0, "fern: verdeckter Balken entfaellt, der Ring reicht")
+	t.equal(far[1], -1.0, "fern: verdeckter Balken entfällt, der Ring reicht")
 
 
 func test_a_part_picture_never_leaves_its_shape() -> void:
@@ -304,9 +304,9 @@ func test_a_part_picture_never_leaves_its_shape() -> void:
 			var points := SlotShape.polygon(kind, Rect2(0, 0, edge, edge).grow(-3.0))
 			for aspect in [0.4, 1.0, 1.6, 2.5]:
 				var inner := SlotShape.inner_rect(points, aspect)
-				t.ok(inner.size.x > edge * 0.2, "%s %.0f: das Bild bleibt erkennbar gross (%.0f)"
+				t.ok(inner.size.x > edge * 0.2, "%s %.0f: das Bild bleibt erkennbar groß (%.0f)"
 					% [kind, edge, inner.size.x])
-				t.ok(absf(inner.size.x / inner.size.y - aspect) < 0.02, "%s: Seitenverhaeltnis bleibt" % kind)
+				t.ok(absf(inner.size.x / inner.size.y - aspect) < 0.02, "%s: Seitenverhältnis bleibt" % kind)
 				for corner in [inner.position, inner.position + Vector2(inner.size.x, 0),
 						inner.end, inner.position + Vector2(0, inner.size.y)]:
 					t.ok(Geometry2D.is_point_in_polygon(corner, points),
@@ -326,7 +326,7 @@ func test_the_weapon_card_shows_values_as_bars_to_compare() -> void:
 				bars.append(child)
 	t.equal(bars.map(func(b): return b.title), ["Schaden", "Tempo", "Reichweite"], "mit Namen")
 	t.ok(bars[0].compare >= 0.0, "der Schaden vergleicht mit der eingebauten Waffe")
-	t.ok(bars[1].value > bars[1].compare, "die Klinge ist schneller als der Blaster -- laengerer Balken")
+	t.ok(bars[1].value > bars[1].compare, "die Klinge ist schneller als der Blaster -- längerer Balken")
 	t.ok(bars[2].value < bars[2].compare, "und reicht weniger weit")
 	t.ok(bars[1].text.contains("s"), "das Tempo steht in Sekunden da (%s)" % bars[1].text)
 	var alone := WeaponCard.attack_bars(attack, null, null)

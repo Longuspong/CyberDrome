@@ -16,7 +16,15 @@ stehen dort in Abschnitt 6. **Story-Rahmen seit 14. Nov. 2026: `docs/STORY_LEITF
 (ersetzt den Aufhaenger "Die Liga und der Virus"; Hipstar Hookers heissen jetzt
 Hipstar Hackers).
 
-**Neues Spielprinzip (12./13. Nov. 2026, NOCH NICHT GEBAUT):**
+**Grosse Umsetzung 14. Nov. 2026 (GEBAUT, Details `docs/PROJEKTSTAND.md`):**
+Bedienung mit Kacheln + Popups (`Tile`, `InfoPopup`), Arcade-Stil auf allen
+Bildschirmen, Umlaute in der Anzeige, Virusschaden, Sentinels + Gegner-DROMEs +
+Formationen (`Formations`, `data/formations.json`, Reinforcement-Level),
+Kampfkarte mit festen Pfaden, Lootcaches + Platzhaltercoin (noch nicht zu
+oeffnen), Heilregel. Offen: Caches oeffnen + Hangar-Shop (Bauschritte 4/5),
+Formationen fuer Solar/Mecha/Hipstar, Story-Einsaetze, Balance.
+
+**Neues Spielprinzip (12./13. Nov. 2026, seit 14. Nov. groesstenteils gebaut):**
 `docs/GEGNERDESIGN.md` (Brainstorming) und die SPOT-Blaetter Einsatz,
 Lootcaches, Hangar-Shop, Sentinels, Gegner-DROMEs, Formationen. Kurz: Lauf
 heisst **Einsatz**, Gegner-Squads = DROME(s) + **Sentinels** (einfache Bots,
@@ -29,7 +37,7 @@ Werte dazu traegt der Spieler in der Excel ein (hellblaue Felder).
 Neuer Grafikstil **Arcade-Glitch** (Synthwave, Bungee + Chakra Petch, Gelb/
 Cyan/Magenta auf Nachtschwarz) mit neuem **Titelbildschirm** vor der
 Spielstand-Wahl: Entwuerfe in `docs/design/`, Werte im SPOT-Blatt Design.
-Titel und Spielstand-Wahl sind GEBAUT (13. Nov.), der Rest noch nicht.
+Titel und Spielstand-Wahl sind GEBAUT (13. Nov.), die uebrigen Bildschirme seit 14. Nov. ueber `UiKit`.
 **Bauplan:** 1 Sentinels, 2 Formationen, 3 Einsatz (Reinforcement, Virus,
 Kampfkarte), 4 Lootcaches, 5 Hangar-Shop, 6 Sentinel-Designs, 7 Arcade-Stil
 fuer die uebrigen Bildschirme (macht der Spieler). **Antworten des Spielers
@@ -118,8 +126,15 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   2026, irgendwo tippen), dann die Wahl des Spielstands (drei Stueck,
   `scenes/saves.tscn`, `GameState.select_slot`). Beide im Arcade-Glitch-Stil
   ueber den Baukasten `Arcade` (`scripts/ui/arcade.gd`, Schriften unter
-  `assets/fonts/`, OFL); die uebrigen Bildschirme nutzen noch `UiKit`.
-* Navigation: Tab-Leiste unten (Spielen, Hangar, Optionen). Der Hangar
+  `assets/fonts/`, OFL); die uebrigen Bildschirme ueber `UiKit`, das seit
+  14. Nov. 2026 dieselben Farben, Schriften und Formen nutzt. Listen und
+  Auswahl als Kacheln (`Tile`: tippen waehlt, nochmal tippen = Details,
+  Doppeltipp = Handlung; seit 15. Nov. 2026), Erklaerungen als blaetterbares
+  Popup (`InfoPopup.open_pages`). DROMEs werden verwertet, nicht aufgeloest
+  (Baukerne, Fraktionskerne, `Roster.salvage/craft_drome`).
+* Navigation: Tab-Leiste unten (Spielen, Hangar, Shop -- seit 15. Nov. 2026;
+  Optionen am Zahnrad oben rechts). Der Shop hat die Reiter Shop, Caches und
+  Bauen (neue DROMEs aus Baukernen). Der Hangar
   vereint Squad (Karussell, max. 4) und Umbau (ein Ausruestungsplatz je
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
@@ -137,7 +152,7 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   festen Schritten (0,05 s, deterministisch je Seed), die KI (`AIController`)
   steuert beide Seiten. **Gegner werden nicht gewuerfelt** (seit 10. Nov.
   2026, Vorgabe des Spielers): handverlesene Teams aus
-  `data/encounters.json` (`Encounters`), gewuerfelt wird nur im Chaos-Kampf
+  `data/formations.json` (`Formations`, seit 14. Nov.), gewuerfelt wird nur im Chaos-Kampf
   des Endlos-Modus. Jede Waffe hat ein Schussintervall, SPD ist die
   Laufgeschwindigkeit, MOV und Energie spielen keine Rolle mehr. Was frueher
   zu Zugbeginn lief (Schild, Reparatur, Overtime ...), laeuft je Puls (3 s).
@@ -181,8 +196,7 @@ Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
       Level 1 mit 2 und Level 2 mit 3 DROMEs als Training, ab Level 3 vier
       gegen vier; je Level 3 Leben, Fortschritt bleibt (Abschnitt 2,
       `NEUANFANG.md` 6h). Groesster offener Baustein, Teams sind da.
-- [ ] **Wege zwischen den Reihen** zurueck? Heute stehen alle Knoten zur
-      Wahl (immer ein Leichter, dazu zwei Normale oder Normal + Elite).
+- [x] ~~Wege zwischen den Reihen~~ -- Kampfkarte mit festen Pfaden, 14. Nov. 2026
 - [ ] **Erstes Fraktions-Chassis**, z. B. Shinobi (Jaeger) -- braucht ein
       Bild aus der Werkstatt (Abschnitt 3).
 - [ ] **Hipstar Hackers = Trickser?** (Abschnitt 3)
@@ -191,7 +205,7 @@ Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
       Module -- so lassen oder Elite-Teams anziehen? (Abschnitt 5)
 - [ ] **Aufstellung**: erster Treffer nach 5,6 s statt 2,0 s -- zu lang?
       Stellschraube `deployment.inset` in `data/config.json` (1 -> 3).
-- [ ] **Umlaute in der Anzeige** ("Kaempfe" -> "Kämpfe")? Die Schrift kann es.
+- [x] ~~Umlaute in der Anzeige~~ -- gebaut 14. Nov. 2026
 - [ ] **Endlos-Modus** ausbauen: Sektoren je Fraktion, bessere Beute je
       Sektor (Abschnitt 5; heute Platzhalter in `run.endless`).
 - [ ] Designpunkt 3 **Eingreifen des Spielers** (siehe oben) besprechen.

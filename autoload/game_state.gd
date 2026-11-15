@@ -225,7 +225,7 @@ func slot_summary(which: int) -> Dictionary:
 	var saved_run = _read_json(_slot_file(which, RUN_FILE)) \
 		if FileAccess.file_exists(_slot_file(which, RUN_FILE)) else null
 	if saved_run != null and int(saved_run.get("phase", 0)) not in [RunState.Phase.WON, RunState.Phase.LOST]:
-		out["run"] = "%s, Runde %d" % ["Endlos" if str(saved_run.get("mode", "story")) == "endless"
+		out["run"] = "%s, Kampf %d" % ["Infinity" if str(saved_run.get("mode", "story")) == "endless"
 			else "Neon City", int(saved_run.get("round", 1))]
 	var saved_progress = _read_json(_slot_file(which, PROGRESS_FILE)) \
 		if FileAccess.file_exists(_slot_file(which, PROGRESS_FILE)) else null
@@ -274,7 +274,7 @@ func load_roster() -> void:
 		else:
 			loaded = roster.migrate_v1(parsed)
 			if loaded:
-				print("[GameState] v1-Squad aus %s in den Roster ueberfuehrt" % path)
+				print("[GameState] v1-Squad aus %s in den Roster überführt" % path)
 	if not loaded:
 		roster = Roster.new()
 		roster.seed_starter()
@@ -349,7 +349,7 @@ func _migrate_legacy() -> void:
 			if data != null:
 				_write_json(_slot_file(1, pair[1]), data)
 		_write_json(save_root + META_FILE, {"last": 1})
-		print("[GameState] alter Spielstand nach Spielstand 1 ueberfuehrt")
+		print("[GameState] alter Spielstand nach Spielstand 1 überführt")
 	_remove(LEGACY_ROSTER_PATH)
 	_remove(LEGACY_RUN_PATH)
 
@@ -519,6 +519,17 @@ func deliver_run_home() -> Array:
 						entry.assignments[slot] = roster.add_instance(part.id)
 				delivered.append(item)
 	run.home_queue.clear()
+	# Lootcaches und Platzhaltercoin (14. Nov. 2026): am Ende nach Hause.
+	if run.is_over() and (not run.run_caches.is_empty() or run.run_coins > 0):
+		for key in run.run_caches:
+			roster.caches[key] = int(roster.caches.get(key, 0)) + int(run.run_caches[key])
+			delivered.append({"kind": "cache", "title": "%d× %s" % [int(run.run_caches[key]),
+				RunState.cache_name(StringName(key))]})
+		roster.coins += run.run_coins
+		if run.run_coins > 0:
+			delivered.append({"kind": "coins", "title": "%d %s" % [run.run_coins, RunState.coin_name()]})
+		run.run_caches.clear()
+		run.run_coins = 0
 	if not delivered.is_empty():
 		save_roster()
 	save_run()

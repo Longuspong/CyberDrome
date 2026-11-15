@@ -24,26 +24,39 @@ const GAP := 12
 const BUTTON_HEIGHT := 56
 const TAB_HEIGHT := 64
 const MAX_COLUMN := 640.0
-## Rundung der Ecken von Karten und Knoepfen.
-const RADIUS := 14
+## Rundung der Ecken von Karten und Knoepfen. Seit dem Arcade-Glitch-Stil
+## (14. Nov. 2026) abgeschraegt statt rund: siehe _corner().
+const RADIUS := 12
 
 # --- Farben ----------------------------------------------------------------
 
-const BG := Color(0.05, 0.06, 0.09)
-const CARD := Color(0.1, 0.12, 0.17)
-const CARD_LINE := Color(0.24, 0.28, 0.35)
-const ACCENT := Color(0.38, 0.8, 0.98)
-const HEADING := Color(0.62, 0.82, 0.96)
-const MUTED := Color(0.68, 0.73, 0.8)
-const GOOD := Color(0.46, 0.86, 0.52)
-const BAD := Color(1.0, 0.5, 0.46)
-const WARN := Color(1.0, 0.78, 0.4)
+# Seit 14. Nov. 2026 die Farben des Arcade-Glitch-Stils (SPOT-Blatt Design).
+const BG := Color("#0a0618")
+const CARD := Color("#1b0b3a")
+const CARD_LINE := Color("#4b3a82")
+const ACCENT := Color("#2ee3eb")
+## Hauptaktion: Arcade-Gelb, Schrift darauf Tiefviolett.
+const PRIMARY := Color("#ffe14d")
+const ON_PRIMARY := Color("#12082a")
+const HEADING := Color("#2ee3eb")
+const TEXT := Color("#e9dcff")
+const MUTED := Color("#c3b3e6")
+const GOOD := Color("#5cf2a2")
+const BAD := Color("#ff5c7c")
+const WARN := Color("#ffe14d")
+const MAGENTA := Color("#ff2bd6")
+
+## Optionen (15. Nov. 2026): kein Tab mehr, sondern das Zahnrad oben rechts
+## auf jeder Hauptseite. Der Zurueck-Pfeil der Optionen fuehrt auf die Seite,
+## von der man kam.
+const SETTINGS_SCENE := "res://scenes/settings.tscn"
+static var return_scene := "res://scenes/main.tscn"
 
 ## Die Hauptseiten der Tab-Leiste: Titel und Szene.
 const TABS := [
 	["Spielen", "res://scenes/main.tscn"],
 	["Hangar", "res://scenes/hangar.tscn"],
-	["Optionen", "res://scenes/settings.tscn"],
+	["Shop", "res://scenes/shop.tscn"],
 ]
 
 
@@ -60,8 +73,12 @@ static func page(root: Control, title: String, back: String = "", tab: int = -1,
 		darken: float = 0.0) -> VBoxContainer:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 
-	# Die Kulisse statt einer schwarzen Flaeche (Ambience).
-	root.add_child(Ambience.create(scenery, darken))
+	# Die Kulisse statt einer schwarzen Flaeche (Ambience); ohne eigene
+	# Kulisse der Arcade-Hintergrund (Punktraster, blasse Sonne).
+	if scenery == Ambience.Kind.PLAIN:
+		root.add_child(Arcade.Backdrop.new(false))
+	else:
+		root.add_child(Ambience.create(scenery, darken))
 
 	var frame := VBoxContainer.new()
 	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -91,6 +108,23 @@ static func page(root: Control, title: String, back: String = "", tab: int = -1,
 
 	if tab >= 0:
 		frame.add_child(tab_bar(root, tab))
+		return_scene = TABS[tab][1]
+		# Das Zahnrad oben rechts oeffnet die Optionen.
+		var gear := Arcade.GearButton.new()
+		gear.tooltip_text = "Optionen"
+		gear.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		gear.position = Vector2(-gear.custom_minimum_size.x - 10.0, 8.0)
+		gear.pressed.connect(func():
+			Accessibility.tap()
+			root.get_tree().change_scene_to_file(SETTINGS_SCENE))
+		root.add_child(gear)
+		var place := func():
+			gear.position = Vector2(root.size.x - gear.custom_minimum_size.x - 10.0,
+				8.0 + safe_insets(root)["top"])
+		root.resized.connect(place)
+		place.call_deferred()
+	# Feine Scanlines ueber allem (Arcade-Stil), ohne Eingaben zu schlucken.
+	root.add_child.call_deferred(Arcade.Scanlines.new(0.12))
 	return content
 
 
@@ -134,33 +168,30 @@ static func _keep_column(root: Control, margin: MarginContainer) -> void:
 static func header(root: Control, title: String, back: String = "") -> Control:
 	var bar := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.07, 0.09, 0.13)
-	style.border_color = CARD_LINE
-	style.border_width_bottom = 1
+	style.bg_color = Color(BG, 0.94)
+	style.border_color = Color(ACCENT, 0.45)
+	style.border_width_bottom = 2
 	style.content_margin_left = PAD
 	style.content_margin_right = PAD
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
 	bar.add_theme_stylebox_override("panel", style)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", GAP)
 	bar.add_child(row)
 	if back != "":
-		var back_button := Button.new()
-		back_button.text = "<"
-		back_button.flat = true
-		back_button.custom_minimum_size = Vector2(48, 48)
-		back_button.add_theme_font_size_override("font_size", H1)
+		var back_button := Arcade.BackButton.new()
+		back_button.tooltip_text = "Zurück"
 		back_button.pressed.connect(func(): root.get_tree().change_scene_to_file(back))
 		row.add_child(back_button)
-	var label := Label.new()
-	label.text = title
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.custom_minimum_size = Vector2(0, 48)
-	label.add_theme_font_size_override("font_size", H2)
-	label.modulate = HEADING
-	row.add_child(label)
+	if title != "":
+		var tag := Arcade.tilt(Arcade.tag(title.to_upper(), 15, 0.0), -2.0)
+		tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(tag)
+	var push := Control.new()
+	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	push.custom_minimum_size = Vector2(0, 44)
+	row.add_child(push)
 	return bar
 
 
@@ -168,35 +199,37 @@ static func header(root: Control, title: String, back: String = "") -> Control:
 static func tab_bar(root: Control, active: int) -> Control:
 	var bar := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.07, 0.09, 0.13)
-	style.border_color = CARD_LINE
-	style.border_width_top = 1
+	style.bg_color = Color(BG, 0.96)
+	style.border_color = Color(MAGENTA, 0.55)
+	style.border_width_top = 2
 	bar.add_theme_stylebox_override("panel", style)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 0)
 	bar.add_child(row)
 	for index in TABS.size():
 		var button := Button.new()
-		button.text = TABS[index][0]
+		button.text = str(TABS[index][0]).to_upper()
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size = Vector2(0, TAB_HEIGHT)
+		var on := index == active
+		button.add_theme_font_override("font", Arcade.font("display" if on else "bold", SMALL, 0.08))
 		button.add_theme_font_size_override("font_size", SMALL)
-		# Die aktive Seite: Akzentfarbe und ein Strich oben. Der Knopf darf
-		# dafuer nicht "flat" sein -- flache Knoepfe zeichnen ihren Stil nicht.
+		# Die aktive Seite: gelber Balken oben und gelbe Schrift. Der Knopf
+		# darf dafuer nicht "flat" sein -- flache Knoepfe zeichnen ihren Stil nicht.
 		var mark := StyleBoxFlat.new()
-		mark.bg_color = Color(0.1, 0.14, 0.2) if index == active else Color(0, 0, 0, 0)
-		mark.border_color = ACCENT if index == active else Color(0, 0, 0, 0)
-		mark.border_width_top = 3
+		mark.bg_color = Color(PRIMARY, 0.08) if on else Color(0, 0, 0, 0)
+		mark.border_color = PRIMARY if on else Color(0, 0, 0, 0)
+		mark.border_width_top = 4
 		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 			button.add_theme_stylebox_override(state, mark)
-		if index == active:
-			button.add_theme_color_override("font_color", ACCENT)
-			button.add_theme_color_override("font_hover_color", ACCENT)
-			button.add_theme_color_override("font_pressed_color", ACCENT)
-			button.add_theme_color_override("font_focus_color", ACCENT)
-		else:
+		var color := PRIMARY if on else MUTED
+		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			button.add_theme_color_override(state, color)
+		if not on:
 			var scene: String = TABS[index][1]
-			button.pressed.connect(func(): root.get_tree().change_scene_to_file(scene))
+			button.pressed.connect(func():
+				Accessibility.tap()
+				root.get_tree().change_scene_to_file(scene))
 		row.add_child(button)
 	return bar
 
@@ -212,50 +245,74 @@ static func label(text: String, size: int = BODY, color: Color = Color.WHITE) ->
 	return result
 
 
+## Ueberschrift im Arcade-Stil: Chakra Petch fett, gesperrt, in Grossbuchstaben.
 static func heading(text: String) -> Label:
-	return label(text, H2, HEADING)
+	var result := label(text.to_upper(), H2 - 2, HEADING)
+	result.add_theme_font_override("font", Arcade.font("bold", H2 - 2, 0.12))
+	return result
 
 
 ## Ein grosser Knopf ueber die ganze Breite. ``primary`` = die Hauptaktion
 ## der Seite, farbig hervorgehoben.
 static func button(text: String, primary: bool = false) -> Button:
 	var result := Button.new()
-	result.text = text
+	result.text = text.to_upper() if primary else text
 	result.custom_minimum_size = Vector2(0, BUTTON_HEIGHT)
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	result.add_theme_font_size_override("font_size", H2 if primary else BODY)
+	var size := 19 if primary else BODY
+	result.add_theme_font_override("font", Arcade.font("display" if primary else "bold", size,
+		0.05 if primary else 0.02))
+	result.add_theme_font_size_override("font_size", size)
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 		result.add_theme_stylebox_override(state, _button_style(state, primary))
 	if primary:
-		result.add_theme_color_override("font_color", Color(0.03, 0.06, 0.1))
-		result.add_theme_color_override("font_hover_color", Color(0.03, 0.06, 0.1))
-		result.add_theme_color_override("font_pressed_color", Color(0.03, 0.06, 0.1))
-		result.add_theme_color_override("font_focus_color", Color(0.03, 0.06, 0.1))
-		result.add_theme_color_override("font_hover_pressed_color", Color(0.03, 0.06, 0.1))
+		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color",
+				"font_hover_pressed_color"]:
+			result.add_theme_color_override(state, ON_PRIMARY)
+		result.add_theme_color_override("font_disabled_color", Color(ON_PRIMARY, 0.6))
+	result.pressed.connect(Accessibility.tap)
 	return result
+
+
+## Abgeschraegte Ecken oben links und unten rechts (Arcade-Formensprache).
+static func _corner(style: StyleBoxFlat, cut: int = RADIUS) -> void:
+	style.corner_detail = 1
+	style.corner_radius_top_left = cut
+	style.corner_radius_bottom_right = cut
+	style.corner_radius_top_right = 0
+	style.corner_radius_bottom_left = 0
+	style.anti_aliasing = true
 
 
 static func _button_style(state: String, primary: bool) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.set_corner_radius_all(RADIUS)
+	_corner(style)
 	style.set_content_margin_all(12)
 	if primary:
-		style.bg_color = ACCENT if state != "pressed" else ACCENT.darkened(0.2)
+		style.bg_color = PRIMARY if state != "pressed" else PRIMARY.darkened(0.18)
+		if state == "hover":
+			style.bg_color = PRIMARY.lightened(0.12)
 		if state == "disabled":
-			style.bg_color = Color(0.2, 0.24, 0.3)
+			style.bg_color = Color(PRIMARY, 0.35)
 		elif state != "focus":
-			# Die Hauptaktion leuchtet: ein weicher Schein in Akzentfarbe.
-			style.shadow_color = Color(ACCENT, 0.3)
-			style.shadow_size = 10
+			# Harter Versatzschatten in Magenta statt weichem Schein.
+			style.shadow_color = Color(MAGENTA, 0.75)
+			style.shadow_size = 0
+			style.shadow_offset = Vector2(5, 5)
 	else:
-		style.bg_color = Color(0.13, 0.16, 0.22) if state != "pressed" else Color(0.18, 0.24, 0.32)
+		style.bg_color = Color(CARD, 0.95) if state != "pressed" else Color(ACCENT, 0.22)
 		style.border_color = CARD_LINE if state != "hover" else ACCENT
-		style.set_border_width_all(1)
+		if state == "disabled":
+			style.bg_color = Color(CARD, 0.5)
+			style.border_color = Color(CARD_LINE, 0.5)
+		style.set_border_width_all(2)
 	if state == "focus":
 		style.draw_center = false
-		style.border_color = ACCENT
-		style.set_border_width_all(2)
+		style.shadow_size = 0
+		style.shadow_offset = Vector2.ZERO
+		style.border_color = Color("#fff3a8")
+		style.set_border_width_all(3)
 	return style
 
 
@@ -275,15 +332,15 @@ static func card_style(highlight: bool = false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	# Leicht durchscheinend: die Kulisse soll hinter den Karten zu ahnen
 	# sein, ohne die Schrift zu stoeren.
-	style.bg_color = Color(CARD, 0.92)
+	style.bg_color = Color(CARD, 0.9)
 	style.border_color = ACCENT if highlight else CARD_LINE
-	style.set_border_width_all(2 if highlight else 1)
-	style.set_corner_radius_all(RADIUS)
+	style.set_border_width_all(2)
+	_corner(style)
 	style.set_content_margin_all(14)
-	# Ein weicher Schatten hebt die Karte von der Kulisse ab.
-	style.shadow_color = Color(0, 0, 0, 0.35)
-	style.shadow_size = 6
-	style.shadow_offset = Vector2(0, 2)
+	# Harter Versatzschatten (Arcade): hervorgehobene Karten in Magenta.
+	style.shadow_color = Color(MAGENTA, 0.55) if highlight else Color(0, 0, 0, 0.45)
+	style.shadow_size = 0
+	style.shadow_offset = Vector2(5, 5)
 	return style
 
 
@@ -295,39 +352,43 @@ static func card_style(highlight: bool = false) -> StyleBoxFlat:
 static func theme(font_size: int) -> Theme:
 	var result := Theme.new()
 	result.default_font_size = font_size
+	# Chakra Petch fuer allen Text (Arcade-Stil, 14. Nov. 2026).
+	result.default_font = Arcade.font("medium")
+	result.set_color("font_color", "Label", TEXT)
+	result.set_font("font", "Button", Arcade.font("bold"))
 
 	var states := {
-		"normal": [Color(0.13, 0.16, 0.22, 0.96), CARD_LINE, 1],
-		"hover": [Color(0.15, 0.19, 0.26, 0.96), Color(0.36, 0.42, 0.52), 1],
-		"pressed": [Color(0.13, 0.24, 0.34, 0.98), ACCENT, 2],
-		"disabled": [Color(0.1, 0.12, 0.16, 0.6), Color(CARD_LINE, 0.5), 1],
+		"normal": [Color(CARD, 0.95), CARD_LINE, 2],
+		"hover": [Color(CARD.lightened(0.06), 0.96), ACCENT, 2],
+		"pressed": [Color(ACCENT, 0.22), ACCENT, 2],
+		"disabled": [Color(CARD, 0.5), Color(CARD_LINE, 0.5), 2],
 	}
 	for state in states:
 		var box := StyleBoxFlat.new()
 		box.bg_color = states[state][0]
 		box.border_color = states[state][1]
 		box.set_border_width_all(states[state][2])
-		box.set_corner_radius_all(RADIUS - 2)
+		_corner(box, RADIUS - 4)
 		box.set_content_margin_all(10)
 		result.set_stylebox(state, "Button", box)
 	var focus := StyleBoxFlat.new()
 	focus.draw_center = false
-	focus.border_color = Color(ACCENT, 0.7)
+	focus.border_color = Color("#fff3a8")
 	focus.set_border_width_all(2)
-	focus.set_corner_radius_all(RADIUS - 2)
+	_corner(focus, RADIUS - 4)
 	result.set_stylebox("focus", "Button", focus)
-	result.set_color("font_color", "Button", Color(0.9, 0.93, 0.98))
+	result.set_color("font_color", "Button", TEXT)
 	result.set_color("font_hover_color", "Button", Color.WHITE)
 	result.set_color("font_pressed_color", "Button", Color.WHITE)
 	result.set_color("font_focus_color", "Button", Color.WHITE)
-	result.set_color("font_disabled_color", "Button", Color(0.55, 0.6, 0.68))
+	result.set_color("font_disabled_color", "Button", Color(MUTED, 0.6))
 
 	for state in ["normal", "focus", "read_only"]:
 		var field := StyleBoxFlat.new()
-		field.bg_color = Color(0.06, 0.08, 0.12, 0.95)
+		field.bg_color = Color(BG, 0.95)
 		field.border_color = ACCENT if state == "focus" else CARD_LINE
 		field.set_border_width_all(2 if state == "focus" else 1)
-		field.set_corner_radius_all(RADIUS - 4)
+		_corner(field, RADIUS - 6)
 		field.set_content_margin_all(10)
 		result.set_stylebox(state, "LineEdit", field)
 

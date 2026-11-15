@@ -25,9 +25,9 @@ extends Control
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
 
 const PORTRAIT := 124.0
-const PRIMARY_EDGE := 140.0
-const TILE_EDGE := 104.0
-const TILE_COLUMNS := 3
+const PRIMARY_EDGE := 120.0
+const TILE_EDGE := 110.0
+const TILE_COLUMNS := 4
 const TILE_GAP := 10
 const SLOT_EDGE := 60.0
 const PART_EDGE := 92.0
@@ -156,19 +156,32 @@ func _changed() -> void:
 
 func _show_squad() -> void:
 	var count := GameState.roster.squad_count()
-	_content.add_child(UiKit.label("Squad  %d / %d" % [count, _squad_max()], UiKit.H2,
-		UiKit.GOOD if count > 0 else UiKit.BAD))
 	if _selected < 0 or _selected >= _entries().size():
 		_selected = _first_in_squad()
-	_content.add_child(_primary_card(_selected))
-
-	# Alle DROMEs genau einmal -- der Squad zuerst. Plus/Minus in der Kachel.
-	var tiles: Array = []
+	# Seit 14. Nov. 2026: erst alle DROMEs als Kacheln (einmal tippen
+	# waehlt, doppelt tippen oeffnet den Umbau), darunter der gewaehlte
+	# kompakt -- vorher stand er gross oben UND noch einmal als Kachel.
+	var head := HBoxContainer.new()
+	var title := UiKit.heading("Squad  %d / %d" % [count, _squad_max()])
+	title.modulate = UiKit.GOOD if count > 0 else UiKit.BAD
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	var hint := _quiet(UiKit.label("Doppeltipp: Umbau", 13, UiKit.MUTED)) as Label
+	hint.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(hint)
+	_content.add_child(head)
+	var grid := GridContainer.new()
+	grid.columns = TILE_COLUMNS
+	grid.add_theme_constant_override("h_separation", TILE_GAP)
+	grid.add_theme_constant_override("v_separation", TILE_GAP)
+	_content.add_child(grid)
 	for index in _squad_first_order():
-		tiles.append(_drome_tile(index))
-	_add_tile_rows(_content, tiles)
-
-	_new_drome_section()
+		grid.add_child(_drome_tile(index))
+	_content.add_child(_primary_card(_selected))
+	# Neue DROMEs, Beute und Shop stehen seit 15. Nov. 2026 im Tab Shop.
+	_content.add_child(UiKit.label("Neue DROMEs bauen, Caches und Shop: Tab Shop unten.",
+		UiKit.SMALL, UiKit.MUTED))
 
 
 ## Indizes aller DROMEs, die im Squad zuerst.
@@ -216,31 +229,75 @@ func _tile_style(highlight: bool, in_squad: bool) -> StyleBoxFlat:
 ## Minus (heraus). Antippen zeigt ihn oben in der grossen Box.
 func _drome_tile(index: int) -> Control:
 	var entry: RosterEntry = _entries()[index]
-	var panel := _tappable(_tile_style(index == _selected, entry.in_squad), func():
+	var tile := Tile.new("drome:%d" % index)
+	tile.custom_minimum_size = Vector2(0, TILE_EDGE)
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.selected = index == _selected
+	tile.glow = entry.in_squad
+	tile.accent = UiKit.GOOD if entry.in_squad and index != _selected else UiKit.ACCENT
+	tile.tooltip_text = entry.name
+	tile.managed = true
+	# 15. Nov. 2026: tippen waehlt, nochmal tippen zeigt die Karte des
+	# DROME (blaetterbar), Doppeltipp oeffnet den Umbau.
+	tile.on_select = func():
 		_selected = index
-		_refresh())
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.tooltip_text = entry.name
-	var stack := _tile_stack(GameState.roster.build_for(entry), TILE_EDGE, entry.in_squad)
-	panel.add_child(stack)
+		_refresh()
+	tile.on_info = func(): InfoPopup.open_pages(self, _drome_pages(), _squad_first_order().find(index))
+	tile.on_action = func():
+		_selected = index
+		_selected_slot = ""
+		_switch("umbau")
+	var stack := _tile_stack(GameState.roster.build_for(entry), TILE_EDGE - 30.0, entry.in_squad)
+	tile.add_picture(stack)
+	tile.add_caption(entry.name, UiKit.TEXT if entry.in_squad else UiKit.MUTED, 13)
 
 	var full := GameState.roster.squad_count() >= _squad_max()
 	var toggle := Button.new()
-	toggle.text = "-" if entry.in_squad else "+"
-	toggle.add_theme_font_size_override("font_size", 24)
-	toggle.custom_minimum_size = Vector2(40, 40)
+	toggle.text = "−" if entry.in_squad else "+"
+	toggle.add_theme_font_size_override("font_size", 22)
+	toggle.custom_minimum_size = Vector2(36, 36)
 	toggle.disabled = not entry.in_squad and full
 	toggle.tooltip_text = ("%s aus dem Squad" if entry.in_squad else "%s in den Squad") % entry.name
 	if toggle.disabled:
 		toggle.tooltip_text = "Squad voll (%d) -- erst einen herausnehmen" % _squad_max()
-	toggle.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	toggle.position = Vector2(-40, 0)
+	toggle.position = Vector2(stack.custom_minimum_size.x - 30.0, -4)
+	toggle.size = toggle.custom_minimum_size
+	toggle.mouse_filter = Control.MOUSE_FILTER_STOP
 	toggle.pressed.connect(func():
+		Accessibility.tap()
 		entry.in_squad = not entry.in_squad
 		_selected = index
 		_changed())
 	stack.add_child(toggle)
-	return panel
+	return tile
+
+
+## Die Karten aller DROMEs zum Blaettern (Reihenfolge wie die Kacheln).
+func _drome_pages() -> Array:
+	var pages: Array = []
+	for index in _squad_first_order():
+		var at: int = index
+		pages.append(func() -> Dictionary: return _drome_page(at))
+	return pages
+
+
+func _drome_page(index: int) -> Dictionary:
+	var entry: RosterEntry = _entries()[index]
+	var build := GameState.roster.build_for(entry)
+	var box := _drome_info(entry, build)
+	var full := GameState.roster.squad_count() >= _squad_max()
+	var actions: Array = [{"text": "Umbau", "primary": true, "call": func():
+		_selected = index
+		_selected_slot = ""
+		_switch("umbau")}]
+	actions.append({"text": "Aus dem Squad" if entry.in_squad else "In den Squad",
+		"disabled": not entry.in_squad and full, "why": "Squad voll", "call": func():
+			entry.in_squad = not entry.in_squad
+			_selected = index
+			_changed()})
+	actions.append({"text": "Verwerten", "call": func(): _confirm_salvage(entry)})
+	return {"title": "", "picture": UiKit.drome_view(build, 72), "body": box,
+		"actions": actions}
 
 
 ## Bild in der Mitte einer Kachel, ">>" oben links fuer Squad-Mitglieder.
@@ -279,7 +336,16 @@ func _primary_card(index: int) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	panel.add_child(row)
-	row.add_child(UiKit.drome_view(build, PRIMARY_EDGE))
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 8)
+	row.add_child(left)
+	left.add_child(UiKit.drome_view(build, PRIMARY_EDGE))
+	var umbau := UiKit.button("Umbau ▸")
+	umbau.custom_minimum_size = Vector2(PRIMARY_EDGE, 44)
+	umbau.pressed.connect(func():
+		_selected_slot = ""
+		_switch("umbau"))
+	left.add_child(umbau)
 	var info := _drome_info(entry, build)
 	row.add_child(info)
 	info.add_child(UiKit.label("im Squad" if entry.in_squad else "nicht im Squad",
@@ -296,7 +362,7 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 	# Level und EP (Leveling): "Level 2 · EP 6/9".
 	var step := Leveling.progress(entry.xp, Leveling.drome_table())
 	info.add_child(UiKit.label("Level %d · %s" % [entry.level,
-		"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Hoechstlevel"], UiKit.SMALL, UiKit.GOOD))
+		"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Höchstlevel"], UiKit.SMALL, UiKit.GOOD))
 	info.add_child(UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL,
 		UiKit.ACCENT))
 	# Werte als Balken (10. Nov. 2026) -- zwischen DROMEs vergleichbar.
@@ -307,35 +373,30 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 	return info
 
 
-func _new_drome_section() -> void:
-	var free := GameState.roster.free_chassis_types()
-	_content.add_child(UiKit.heading("Neuen DROME bauen"))
-	if free.is_empty():
-		_content.add_child(UiKit.label("Kein freies Chassis. Loese einen DROME auf oder "
-			+ "erbeute ein neues.", UiKit.SMALL, UiKit.MUTED))
-		return
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	_content.add_child(row)
-	for chassis_id in free:
-		var body := PartDB.get_part(chassis_id)
-		if body == null:
-			continue
-		var panel := _tappable(UiKit.card_style(), func():
-			var entry := GameState.roster.new_drome(chassis_id)
-			if entry == null:
+## Verwerten mit Nachfrage: was es gibt und was verloren geht.
+func _confirm_salvage(entry: RosterEntry) -> void:
+	var roster := GameState.roster
+	var blocker := roster.salvage_blocker(entry)
+	var gain := "1 %s" % Roster.kit_name()
+	if entry.variant != "":
+		var faction := str((Formations.data()["dromes"] as Dictionary).get(entry.variant, {}).get("faction", ""))
+		if faction != "":
+			gain += " und 1 %s" % Roster.core_name(faction)
+	InfoPopup.open(self, "%s verwerten?" % entry.name, {"picture":
+		UiKit.drome_view(roster.build_for(entry), 64), "lines": [
+			"Du bekommst %s." % gain,
+			["Die Waffen kommen frei in den Hangar. Chassis, Level und EP gehen verloren.",
+				UiKit.MUTED, UiKit.SMALL],
+			["%d %s bauen einen neuen Standard-DROME." % [Roster.kits_per_drome(), Roster.kit_name()],
+				UiKit.MUTED, UiKit.SMALL]],
+		"actions": [{"text": "Verwerten", "disabled": blocker != "", "why": blocker, "call": func():
+			var got := roster.salvage(entry)
+			if got.is_empty():
 				return
-			_selected = _entries().size() - 1
-			_tab = "umbau"
-			_changed())
-		var box := VBoxContainer.new()
-		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(box)
-		box.add_child(UiKit.chassis_view(body, 90))
-		var label := _quiet(UiKit.label(body.display_name.replace(" Chassis", ""), UiKit.SMALL))
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(label)
-		row.add_child(panel)
+			Accessibility.vibrate(60, true)
+			_selected = _first_in_squad()
+			_tab = "squad"
+			_changed()}, {"text": "Behalten", "primary": true}]})
 
 
 # ---------------------------------------------------------------------------
@@ -402,14 +463,11 @@ func _show_umbau() -> void:
 	for line in problems:
 		_content.add_child(UiKit.label("Achtung: " + line, UiKit.SMALL, UiKit.BAD))
 
-	var scrap := UiKit.button("DROME aufloesen")
-	scrap.tooltip_text = "Seine Teile kehren ins Inventar zurueck."
+	# 15. Nov. 2026: verwerten statt aufloesen (Wunsch des Spielers).
+	var scrap := UiKit.button("DROME verwerten")
+	scrap.tooltip_text = "Gibt einen %s; die Waffen kommen frei in den Hangar." % Roster.kit_name()
 	scrap.add_theme_color_override("font_color", UiKit.BAD)
-	scrap.pressed.connect(func():
-		GameState.roster.disband(entry)
-		_selected = _first_in_squad()
-		_tab = "squad"
-		_changed())
+	scrap.pressed.connect(func(): _confirm_salvage(entry))
 	_content.add_child(scrap)
 
 
@@ -556,7 +614,7 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 		_content.add_child(UiKit.label("Kein freies Teil passt in diesen DROME.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
-	_content.add_child(UiKit.label("Frei und passend -- antippen oder hochziehen",
+	_content.add_child(UiKit.label("Frei und passend  ·  Doppeltipp: einbauen  ·  nochmal tippen: Karte",
 		UiKit.SMALL, UiKit.MUTED))
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -564,8 +622,11 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", TILE_GAP)
 	scroll.add_child(row)
+	var pages: Array = []
 	for part in parts:
-		row.add_child(_part_tile(entry, build, part))
+		pages.append(func() -> Dictionary: return _card_page(entry, build, part, ""))
+	for k in parts.size():
+		row.add_child(_part_tile(entry, build, parts[k], pages, k))
 	_content.add_child(scroll)
 
 
@@ -597,30 +658,41 @@ func _drop_part(entry: RosterEntry, slot: String, data) -> void:
 ## Eine Teil-Kachel: die Form mit dem Bild, darunter wie viele frei sind.
 ## Antippen oeffnet die Waffen-Karte; nach oben (oder unten) ziehen nimmt das
 ## Teil mit auf einen Halter. Waagerecht blaettert die Leiste.
-func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData) -> Control:
-	var panel := _tappable(_tile_style(false, false), func():
-		_open_card(entry, build, part, ""))
-	panel.custom_minimum_size = Vector2(STRIP_TILE, STRIP_TILE)
-	panel.tooltip_text = part.display_name
+func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData, pages: Array = [],
+		page: int = 0) -> Control:
+	var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE - 20.0)
+	var tile := Tile.new("part:%s" % part.id, shape, part.display_name,
+		Vector2(STRIP_TILE, STRIP_TILE))
+	tile.tooltip_text = part.display_name
+	# Seit 15. Nov. 2026 (Wunsch des Spielers): tippen waehlt, nochmal tippen
+	# zeigt die Waffen-Karte (blaetterbar), Doppeltipp baut ein.
+	tile.on_action = func():
+		var slot := _target_slot(build, part)
+		if slot != "" and GameState.roster.assign(entry, slot, part.id):
+			Accessibility.vibrate(20, true)
+			_selected_slot = slot
+			_changed()
+		else:
+			_open_card(entry, build, part, "")
+	tile.on_info = func():
+		if pages.is_empty():
+			_open_card(entry, build, part, "")
+		else:
+			InfoPopup.open_pages(self, pages, page)
 	var start := {"at": Vector2.ZERO}
-	panel.gui_input.connect(func(event: InputEvent):
+	tile.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed:
 			start["at"] = event.global_position)
-	panel.set_drag_forwarding(func(_at):
-		var moved: Vector2 = panel.get_global_mouse_position() - start["at"]
+	tile.set_drag_forwarding(func(_at):
+		var moved: Vector2 = tile.get_global_mouse_position() - start["at"]
 		if absf(moved.x) > absf(moved.y):
 			return null
 		var preview := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE)
 		preview.modulate = Color(1, 1, 1, 0.85)
-		panel.set_drag_preview(preview)
+		tile.set_drag_preview(preview)
 		return {"kind": "part", "part_id": part.id},
 		Callable(), Callable())
-	var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE)
-	shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	shape.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	shape.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(shape)
-	return panel
+	return tile
 
 
 ## Die Waffen-Karte. ``installed_in``: der Halter, in dem sie steckt (dann
@@ -629,11 +701,15 @@ func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData) -> Contro
 ## die Waffe, die dort steckt, und der Wertaenderung am DROME).
 func _open_card(entry: RosterEntry, build: DromeBuild, part: PartData,
 		installed_in: String) -> void:
+	InfoPopup.open(self, "", _card_page(entry, build, part, installed_in))
+
+
+func _card_page(entry: RosterEntry, build: DromeBuild, part: PartData,
+		installed_in: String) -> Dictionary:
 	if installed_in != "":
-		WeaponCard.open(self, part, Callable(), [{"text": "Ausbauen", "on": func():
+		return WeaponCard.page(part, Callable(), [{"text": "Ausbauen", "on": func():
 			GameState.roster.clear_slot(entry, installed_in)
 			_changed()}])
-		return
 	var slot := _target_slot(build, part)
 	var replaced := build.part_in(slot) if slot != "" else null
 	var extra := func(box: VBoxContainer):
@@ -643,13 +719,13 @@ func _open_card(entry: RosterEntry, build: DromeBuild, part: PartData,
 			return
 		var where := SlotRules.holder_label(build, slot)
 		if replaced != null:
-			box.add_child(UiKit.label("%s: ersetzt %s (zurueck in den Hangar)"
+			box.add_child(UiKit.label("%s: ersetzt %s (zurück in den Hangar)"
 				% [where, replaced.display_name], UiKit.SMALL, UiKit.WARN))
 		else:
 			box.add_child(UiKit.label("%s ist frei  ·  %d frei im Hangar"
 				% [where, GameState.roster.free_count(part.id)], UiKit.SMALL, UiKit.MUTED))
 		_delta_lines(build, slot, part, box)
-	WeaponCard.open(self, part, extra, [{"text": "Einbauen", "primary": true,
+	return WeaponCard.page(part, extra, [{"text": "Einbauen", "primary": true,
 		"disabled": slot == "", "on": func():
 			if GameState.roster.assign(entry, slot, part.id):
 				Accessibility.vibrate(20, true)
@@ -708,4 +784,4 @@ func _loadout(build: DromeBuild) -> String:
 	var names: Array[String] = []
 	for part in build.equipment():
 		names.append(part.display_name)
-	return ", ".join(names) if not names.is_empty() else "ohne Ausruestung"
+	return ", ".join(names) if not names.is_empty() else "ohne Ausrüstung"

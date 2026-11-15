@@ -82,7 +82,7 @@
       },
       {
         "id": "act_rail_pierce",
-        "display_name": "Praezisionsschuss",
+        "display_name": "Präzisionsschuss",
         "category": "ability",
         "targeting": "single",
         "range_tiles": 8,

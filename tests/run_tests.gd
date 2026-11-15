@@ -28,7 +28,7 @@ const SUITES := [
 	"res://tests/test_run.gd",
 	"res://tests/test_modules.gd",
 	"res://tests/test_leveling.gd",
-	"res://tests/test_encounters.gd",
+	"res://tests/test_formations.gd",
 	"res://tests/test_saves.gd",
 	"res://tests/test_scripts_compile.gd",
 ]
@@ -41,7 +41,7 @@ func _initialize() -> void:
 	print("\n=== DROME Tests ===\n")
 	for path in SUITES:
 		if not ResourceLoader.exists(path):
-			print("  [uebersprungen] %s fehlt noch" % path)
+			print("  [übersprungen] %s fehlt noch" % path)
 			continue
 		var name: String = path.get_file().get_basename()
 		# Ein Suite-Script mit Syntaxfehler laedt nicht. Ohne diese Pruefung
@@ -52,7 +52,7 @@ func _initialize() -> void:
 		var suite = script.new() if script is GDScript and script.can_instantiate() else null
 		if suite == null:
 			_current = name
-			ok(false, "Suite laedt nicht (Syntaxfehler in %s?)" % path)
+			ok(false, "Suite lädt nicht (Syntaxfehler in %s?)" % path)
 			continue
 		suite.t = self
 		print("-- %s" % name)

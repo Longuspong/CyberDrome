@@ -82,7 +82,7 @@
       },
       {
         "id": "act_hammer_stun",
-        "display_name": "Betaeubungsschlag",
+        "display_name": "Betäubungsschlag",
         "category": "ability",
         "targeting": "single",
         "range_tiles": 1,

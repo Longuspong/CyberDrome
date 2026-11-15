@@ -140,7 +140,7 @@ func _fallback(display_name: String) -> DromeBuild:
 		"equip_left": &"eq_pulse_blaster",
 	})
 	if not build.is_valid():
-		push_error("EnemyGenerator: selbst der Notfall-Aufbau ist ungueltig: %s"
+		push_error("EnemyGenerator: selbst der Notfall-Aufbau ist ungültig: %s"
 			% ", ".join(build.validate()))
 	return build
 

@@ -51,7 +51,9 @@ var _play_bar: Control
 var _paused: bool = false
 var _over: bool = false
 var _accumulator: float = 0.0
-var _speed_index: int = 0
+## Das gewaehlte Tempo bleibt fuer den naechsten Kampf (14. Nov. 2026).
+static var _speed_memory: int = 0
+var _speed_index: int = _speed_memory
 
 var _follow := true
 var _touches: Dictionary = {}
@@ -77,6 +79,10 @@ var _log_panel: PanelContainer
 var _speed_button: Button
 var _pause_button: Button
 var _follow_button: Button
+## Glitch ueber dem Bild: Vorwarnung vor dem Virus und je Viruspuls.
+var _glitch: Arcade.GlitchOverlay
+## Kampfzeit des naechsten Warn-Flackerns (-1 = noch nicht gesetzt).
+var _next_flicker: float = -1.0
 
 
 func _ready() -> void:
@@ -90,6 +96,7 @@ func _ready() -> void:
 	EventBus.unit_damaged.connect(_on_unit_damaged)
 	EventBus.unit_healed.connect(_on_unit_healed)
 	EventBus.action_used.connect(_on_action_used)
+	EventBus.virus_pulsed.connect(_on_virus_pulse)
 	battle.battle_over.connect(_on_battle_over)
 
 	_start_battle()
@@ -105,7 +112,7 @@ func _start_battle() -> void:
 
 	battle.setup(GameState.battle_seed, builds, GameState.enemy_override,
 		GameState.battle_region)
-	battle.overtime_enabled = true
+	battle.virus_enabled = true
 	view.build_terrain(battle.grid)
 	# Die gemerkte Aufstellung des letzten Kampfs, wenn sie noch passt.
 	battle.apply_formation(GameState.formation)
@@ -191,8 +198,36 @@ func _process(delta: float) -> void:
 		if steps >= MAX_STEPS_PER_FRAME:
 			_accumulator = 0.0
 	_refresh_badges()
+	_virus_flicker()
 	if _follow and not _over and not _deploying:
 		_follow_fight(delta)
+
+
+func _virus_warn() -> float:
+	return float(Config.section("virus").get("warn_seconds", 30.0))
+
+
+## Die letzten Sekunden vor dem Virus flackert das Bild -- erst selten, dann
+## immer schneller, bis es beim Start im Takt der Viruspulse ankommt.
+func _virus_flicker() -> void:
+	if _glitch == null or _over or _deploying or battle.virus_in() <= 0.0:
+		return
+	var warn := _virus_warn()
+	var start := battle.virus_start()
+	if _next_flicker < 0.0:
+		_next_flicker = start - warn
+	if battle.time < _next_flicker:
+		return
+	var progress := clampf(1.0 - battle.virus_in() / warn, 0.0, 1.0)
+	_glitch.burst(0.35 + 0.55 * progress, 0.14 + 0.08 * progress)
+	_next_flicker = battle.time + lerpf(2.4 * battle.pulse_seconds(), battle.pulse_seconds(), progress)
+
+
+func _on_virus_pulse() -> void:
+	if _glitch != null:
+		_glitch.burst(1.0, 0.32)
+	_shake_camera(0.6)
+	Accessibility.vibrate(60)
 
 
 ## Kacheln und Statuszeile -- je Bild, das ist billig genug.
@@ -209,8 +244,15 @@ func _refresh_hud() -> void:
 	var seconds := int(battle.time)
 	_status.text = "%d:%02d  ·  %s" % [seconds / 60, seconds % 60,
 		battle.region.display_name if battle.region != null else ""]
-	if battle.in_overtime():
-		_status.text += "  ·  OVERTIME"
+	var until := battle.virus_in()
+	if until <= 0.0:
+		_status.text += "  ·  VIRUS"
+		_status.modulate = UiKit.MAGENTA
+	elif until <= _virus_warn():
+		_status.text += "  ·  Virus in %d s" % int(ceil(until))
+		_status.modulate = UiKit.WARN
+	else:
+		_status.modulate = Color.WHITE
 	if _paused:
 		_status.text += "  ·  Pause"
 
@@ -230,6 +272,7 @@ func _refresh_badges() -> void:
 			"id": unit.unit_id,
 			"statuses": unit.statuses.keys(),
 			"focus": unit.unit_id == _focus_id and Time.get_ticks_msec() < _focus_until,
+			"small": unit.is_sentinel(),
 		})
 	view.show_unit_badges(entries)
 
@@ -690,6 +733,11 @@ func _build_ui() -> void:
 	_ui = CanvasLayer.new()
 	_ui.layer = 2
 	add_child(_ui)
+	var glitch_layer := CanvasLayer.new()
+	glitch_layer.layer = 3
+	add_child(glitch_layer)
+	_glitch = Arcade.GlitchOverlay.new()
+	glitch_layer.add_child(_glitch)
 
 	var frame := VBoxContainer.new()
 	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -751,7 +799,7 @@ func _build_ui() -> void:
 	deploy.add_theme_constant_override("separation", 6)
 	_deploy_bar = deploy
 	bars.add_child(deploy)
-	var hint := UiKit.label("Zieh deine DROMEs auf ein gruenes Feld -- oder tippe "
+	var hint := UiKit.label("Zieh deine DROMEs auf ein grünes Feld -- oder tippe "
 		+ "erst die Figur an, dann das Feld.", UiKit.SMALL, UiKit.MUTED)
 	deploy.add_child(hint)
 	var start := UiKit.button("Kampf starten", true)
@@ -788,22 +836,26 @@ func _bar_button(text: String, on_press: Callable) -> Button:
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.custom_minimum_size = Vector2(0, 52)
 	button.add_theme_font_size_override("font_size", UiKit.SMALL)
+	button.add_theme_font_override("font", Arcade.font("bold", UiKit.SMALL, 0.08))
+	button.pressed.connect(Accessibility.tap)
 	button.pressed.connect(on_press)
 	return button
 
 
+## Leisten im Arcade-Stil: Nachtschwarz, Linie in Cyan (oben) bzw. Magenta.
 func _bar_style(raised: bool) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.07, 0.1, 0.94 if raised else 0.88)
-	style.border_color = UiKit.CARD_LINE
-	style.border_width_top = 1
-	style.border_width_bottom = 1
+	style.bg_color = Color(UiKit.BG, 0.95 if raised else 0.9)
+	style.border_color = Color(UiKit.MAGENTA if raised else UiKit.ACCENT, 0.5)
+	style.border_width_top = 2
+	style.border_width_bottom = 2
 	style.set_content_margin_all(10)
 	return style
 
 
 func _cycle_speed() -> void:
 	_speed_index = (_speed_index + 1) % SPEEDS.size()
+	_speed_memory = _speed_index
 	_apply_speed()
 
 
@@ -836,7 +888,8 @@ func _add_loot_section(box: VBoxContainer, outcome: BattleManager.Outcome) -> vo
 		return
 	var won := outcome == BattleManager.Outcome.VICTORY
 	box.add_child(UiKit.label("+%d Credits%s" % [GameState.run.battle_credits(won),
-		"  ·  Beute im Zwischenstopp" if won else ""], UiKit.BODY, UiKit.WARN))
+		"  ·  Cache oder Coins im Zwischenstopp" if won else "  ·  Trostpreis in Coins"],
+		UiKit.BODY, UiKit.WARN))
 
 
 func _show_result(outcome: BattleManager.Outcome) -> void:
@@ -877,29 +930,50 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 
 	var won := outcome == BattleManager.Outcome.VICTORY
 	Accessibility.vibrate(120 if won else 200, true)
-	box.add_child(UiKit.label(BattleManager.outcome_label(outcome), UiKit.H1,
-		UiKit.GOOD if won else (UiKit.BAD if outcome == BattleManager.Outcome.DEFEAT else UiKit.WARN)))
+	# Der Ausgang als Glitch-Schriftzug (Arcade-Stil, 14. Nov. 2026).
+	var logo := Arcade.GlitchLogo.new(BattleManager.outcome_label(outcome).to_upper(), 34, 3.6, [
+		[0.0, Vector2(-2, 0), Vector2(2, 0)],
+		[0.9, Vector2(-6, 2), Vector2(6, -2)],
+		[0.93, Vector2(4, -1), Vector2(-4, 1)]], 2.0)
+	var tilted := Arcade.tilt(logo, -3.0)
+	tilted.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(tilted)
+	var verdict := UiKit.label(("Alle Gegner ausgeschaltet" if won else ("Dein Squad ist gefallen"
+		if outcome == BattleManager.Outcome.DEFEAT else "Keiner hat gewonnen")).to_upper(), 14,
+		UiKit.GOOD if won else (UiKit.BAD if outcome == BattleManager.Outcome.DEFEAT else UiKit.WARN))
+	verdict.add_theme_font_override("font", Arcade.font("bold", 14, 0.2))
+	verdict.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(verdict)
 
 	var result := battle.build_result()
 	box.add_child(UiKit.label("%d s  ·  %s" % [
 		result["seconds"], result["region"]], UiKit.SMALL, UiKit.MUTED))
 
+	# Eine Zeile je Einheit (14. Nov. 2026 kompakt -- mit Sentinels werden
+	# es schnell zehn): Name, verursacht / erlitten, Leben.
+	var table := GridContainer.new()
+	table.columns = 3
+	table.add_theme_constant_override("h_separation", 10)
+	table.add_theme_constant_override("v_separation", 4)
+	box.add_child(table)
+	for text in ["", "Schaden / erlitten", "Leben"]:
+		table.add_child(UiKit.label(text, 12, UiKit.MUTED))
 	for row in result["units"]:
-		var line := VBoxContainer.new()
-		line.add_theme_constant_override("separation", 0)
-		var head := UiKit.row(row["name"], "%d / %d" % [row["hp"], row["hp_max"]],
-			Color.WHITE if row["alive"] else UiKit.MUTED)
-		(head.get_child(0) as Label).modulate = Teams.color(row["is_player"]) \
-			if row["alive"] else UiKit.MUTED
-		line.add_child(head)
-		line.add_child(UiKit.label("verursacht %d  ·  erlitten %d%s" % [row["dealt"], row["taken"],
-			"" if row["alive"] else "  ·  ausgefallen"], UiKit.SMALL, UiKit.MUTED))
-		box.add_child(line)
+		var name := UiKit.label(str(row["name"]), 15, Teams.color(row["is_player"])
+			if row["alive"] else UiKit.MUTED)
+		name.autowrap_mode = TextServer.AUTOWRAP_OFF
+		name.clip_text = true
+		name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		table.add_child(name)
+		table.add_child(UiKit.label("%d / %d" % [row["dealt"], row["taken"]], 15, UiKit.TEXT))
+		table.add_child(UiKit.label("%d / %d" % [row["hp"], row["hp_max"]] if row["alive"] else "aus",
+			15, UiKit.TEXT if row["alive"] else UiKit.BAD))
 
 	_add_loot_section(box, outcome)
 
 	if GameState.in_run_battle:
-		var onward := UiKit.button("Weiter im Lauf", true)
+		var onward := UiKit.button("Weiter im Einsatz", true)
 		var pool: Array = battle.enemy_equipment.duplicate()
 		# Wer hat wie viele Abschuesse -- fuer die EP der Waffen (Leveling).
 		var fighters: Array = []

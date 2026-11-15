@@ -46,7 +46,7 @@ def load(rel):
 CONFIG = load("data/config.json")
 MODULES = load("data/modules.json")
 REGIONS = load("data/regions.json")
-ENCOUNTERS = load("data/encounters.json")
+FORMATIONS = load("data/formations.json")
 TEXTE = load("docs/spot/inhalte.json")
 
 # ---------------------------------------------------------------------------
@@ -111,7 +111,6 @@ MOD_CLASS = {"attack": "Angriff", "defense": "Verteidigung", "tactic": "Taktik"}
 CONDITION = {"": "jede Waffe", "ranged": "nur Fernkampf (Rw ab 2)", "melee": "nur Nahkampf (Rw 1)"}
 ROLE_NAMES = {r["id"]: r["name"] for r in TEXTE["rollen"]}
 ROLE_RULE = {r["id"]: r["zielregel"] for r in TEXTE["rollen"]}
-TYPES = ENCOUNTERS["types"]
 RULES = MODULES["rules"]
 PASSIVES = CONFIG["passives"]
 
@@ -661,12 +660,12 @@ def build_fraktionen(ws):
                      ", ".join(part_name(w) for w in fac.get("weapons", [])) or "--",
                      ", ".join(module_name(m) for m in fac.get("modules", [])) or "--",
                      ", ".join(module_name(m) for m in fac.get("recipes", [])) or "--",
-                     len(ENCOUNTERS["factions"].get(reg["id"], {}).get("teams", [])) if reg else 0,
+                     len(FORMATIONS["formations"].get(reg["id"], [])) if reg else 0,
                      f["chassis_vorschlag"], f["boss"], f["status"]])
     notes = {"Chassis-Gewichte (Chaos)": "Gewicht je Chassis beim Wuerfeln (nur Chaos-Kampf / Generator).",
              "Haltung zum Virus": "Aus VORSCHLAG_STORY 1 -- noch nicht entschieden."}
     write_table(ws, ["Fraktion", "Gebiet", "Profil", "Spielstil", "Haltung zum Virus", "Chassis-Gewichte (Chaos)",
-                     "Bevorzugte Waffen", "Bevorzugte Module", "Bevorzugte Rezepte", "Teams", "Eigener DROME (Vorschlag)",
+                     "Bevorzugte Waffen", "Bevorzugte Module", "Bevorzugte Rezepte", "Formationen", "Eigener DROME (Vorschlag)",
                      "Bosse", "Status"], rows, [16, 14, 12, 40, 34, 32, 40, 36, 34, 7, 50, 24, 22], notes=notes)
 
 
@@ -699,61 +698,42 @@ def build_story(ws):
         ws.column_dimensions[get_column_letter(c)].width = max(w, ws.column_dimensions[get_column_letter(c)].width or 0)
 
 
-def build_gegnertypen(ws):
-    rows = [[t["name"], tid, t["hint"], "gebaut"] for tid, t in TYPES.items()]
-    write_table(ws, ["Gegnertyp", "ID", "Was er tut / was hilft", "Status"], rows, [14, 12, 90, 10])
+RANK_NAMES = {"basic": "Basic", "elite": "Elite", "heavy": "Heavy", "heavy_elite": "Heavy Elite"}
+ARCHE_NAMES = {"assault": "Assault", "sniper": "Sniper", "support": "Support"}
 
 
-def team_rows():
-    regions = {r["id"]: r for r in REGIONS["regions"]}
-    groups = [("Training", "--", t) for t in ENCOUNTERS["training"]]
-    for rid, f in ENCOUNTERS["factions"].items():
-        for t in f["teams"]:
-            groups.append((regions[rid]["faction"]["name"] if rid in regions else rid, regions.get(rid, {}).get("name", rid), t))
-    return groups
-
-
-def build_teams(ws):
-    rows = []
-    for fac, gebiet, t in team_rows():
-        tiers = ", ".join(TIER_NAMES[x] for x in t.get("tiers", ["easy", "normal", "elite"]))
-        rounds = f"{t.get('from_round', 1)} - {t.get('to_round', 'Ende')}"
-        for pos, d in enumerate(t["dromes"], 1):
-            rows.append([fac, gebiet, t["name"], t["id"], TYPES.get(t["type"], {}).get("name", t["type"]), tiers, rounds,
-                         pos, d["name"], drome_name(d["chassis"]), " + ".join(part_name(w) for w in d["weapons"]),
-                         ", ".join(module_name(m) for m in d.get("modules", [])) or "--",
-                         module_name(d["recipe"]) if d.get("recipe") else "--",
-                         t.get("text", "") if pos == 1 else ""])
-    notes = {"Pos.": "Treten N Gegner an, sind es die ersten N.",
-             "Module": "In dieser Reihenfolge kommen sie mit Runde und Stufe dazu (Blatt Lauf).",
-             "Rezept": "Ersetzt ab der Rezept-Runde das erste Modul, wenn 2 Plaetze frei sind."}
-    write_table(ws, ["Fraktion", "Gebiet", "Team", "Team-ID", "Gegnertyp", "Stufen", "Runden", "Pos.", "Einheit",
-                     "DROME", "Waffen", "Module", "Rezept", "Beschreibung"], rows,
-                [16, 12, 16, 16, 11, 20, 9, 6, 16, 9, 30, 32, 16, 50], notes=notes)
+def unit_name(uid):
+    """Name einer Einheit aus formations.json (Sentinel-Id oder DROME-Id, mit :rang)."""
+    base, _, rank = uid.partition(":")
+    if base in FORMATIONS["sentinels"]:
+        name = FORMATIONS["sentinels"][base]["name"]
+        return name.replace("Sentinel", RANK_NAMES.get(rank, "")).strip() if rank and rank != "basic" else name
+    return FORMATIONS["dromes"].get(base, {}).get("name", base)
 
 
 def build_einheiten(ws):
-    units = {}
-    order = []
-    for fac, gebiet, t in team_rows():
-        for d in t["dromes"]:
-            key = (fac, d["name"])
-            if key not in units:
-                units[key] = {"chassis": set(), "weapons": set(), "teams": []}
-                order.append(key)
-            u = units[key]
-            u["chassis"].add(drome_name(d["chassis"]))
-            u["weapons"].add(" + ".join(part_name(w) for w in d["weapons"]))
-            u["teams"].append(t["name"])
+    uses = {}
+    for region, forms in FORMATIONS["formations"].items():
+        for f in forms:
+            for step in f["steps"]:
+                for uid in step["dromes"] + step["sentinels"]:
+                    base = uid.split(":")[0]
+                    uses.setdefault(base, [])
+                    if f["name"] not in uses[base]:
+                        uses[base].append(f["name"])
     rows = []
-    for fac, name in order:
-        u = units[(fac, name)]
-        rows.append([name, fac, ", ".join(sorted(u["chassis"])), " / ".join(sorted(u["weapons"])),
-                     len(u["teams"]), ", ".join(dict.fromkeys(u["teams"])), "gebaut"])
+    for did, d in FORMATIONS["dromes"].items():
+        rows.append([d["name"], "DROME", drome_name(d["chassis"]), " + ".join(part_name(w) for w in d["weapons"]),
+                     "feste Werte" if d.get("stats") else "Standard-DROME", ", ".join(uses.get(did, [])) or "--",
+                     "gebaut"])
+    for sid, d in FORMATIONS["sentinels"].items():
+        rows.append([d["name"], "Sentinel " + ARCHE_NAMES.get(d["archetype"], d["archetype"]),
+                     drome_name(d["look"]) + " (60 %)", part_name(d["weapon"]), "feste Werte, nur Auto-Angriff",
+                     ", ".join(uses.get(sid, [])) or "--", "gebaut"])
     for b in TEXTE["bosse"]:
-        rows.append([b["name"] + " (Boss)", b["fraktion"], b["drome"].split(" ")[0], b["drome"], 0, "--", b["status"]])
-    write_table(ws, ["Einheit", "Fraktion", "DROME", "Waffen", "Einsaetze", "Teams", "Status"], rows,
-                [20, 16, 16, 50, 9, 50, 10])
+        rows.append([b["name"] + " (Boss)", "Boss", b["drome"].split(" ")[0], b["drome"], "--", "--", b["status"]])
+    write_table(ws, ["Einheit", "Art", "Aussehen", "Waffen", "Werte", "Formationen", "Status"], rows,
+                [24, 18, 18, 36, 26, 50, 10])
 
 
 def build_rollen(ws):
@@ -852,7 +832,7 @@ def build_glossar(ws):
 # ---------------------------------------------------------------------------
 
 VIRUS = {}  # id -> Zelle auf "Einsatz" (fuer Formeln)
-ART_NAMES = ["Waffe", "DROME", "Modul", "BIOS", "Credits", "Platzhaltercoin"]
+ART_NAMES = ["Waffe", "DROME", "Modul", "BIOS", "Baukern", "Fraktionskern", "Credits", "Platzhaltercoin"]
 
 
 def item_name(pid):
@@ -876,9 +856,11 @@ def add_list(ws, values, ref):
 
 def build_einsatz(ws):
     rows = []
+    built = {"start": CONFIG["virus"]["start_seconds"], "anteil": CONFIG["virus"]["pct_of_max"],
+             "puls": CONFIG["realtime"]["pulse"]}
     for v in TEXTE["virusschaden"]:
         VIRUS[v["id"]] = f"Einsatz!$C${len(rows) + 2}"
-        rows.append(["Virusschaden", v["parameter"], v["wert"], v["status"], v["notiz"]])
+        rows.append(["Virusschaden", v["parameter"], built.get(v["id"], v["wert"]), "gebaut", v["notiz"]])
     r = len(rows) + 2
     rows.append(["Virusschaden", "Spätestes Kampfende (s), Bezug Höchstwerte",
                  f"={VIRUS['start']}+ROUNDUP(1/{VIRUS['anteil']},0)*{VIRUS['puls']}", "Formel",
@@ -892,7 +874,7 @@ def build_einsatz(ws):
     ws.cell(row=r, column=1, value="Lootdrop: wann gibt es einen Cache?").font = SUB_FONT
     rows = []
     for i, l in enumerate(TEXTE["lootregeln"], r + 2):
-        rows.append([l["wann"], l["art"], l["chance"], l["anzahl"], f"=C{i}*D{i}", l["coins"], l["status"]])
+        rows.append([l["wann"], l["art"], l["chance"], l["anzahl"], f"=C{i}*D{i}", l["coins"], "gebaut"])
     notes = {"Art": "sicher = deterministisch, Glück = gewürfelt mit der Chance daneben.",
              "Platzhaltercoin ohne Cache": "So viele Coins gibt es, wenn kein Cache droppt."}
     last = write_table(ws, ["Wann", "Art", "Chance auf Cache", "Caches", "Erwartete Caches",
@@ -949,22 +931,26 @@ def build_sentinels(ws):
     weapons = [w["name"] for w in WEAPONS]
     headers = ["Sentinel", "Fraktion", "Archetyp", "Waffe", "Gewichtsklasse", "Speed", "Lauftempo (Felder/s)",
                "Integritaet", "Schild", "Integritaet + Schild", "Schildpuls", "Ruestung", "Power", "Modulplaetze",
-               "Schaden/s roh (Waffe x Power)", "Virusschaden je Puls", "Status"]
+               "Schaden/s roh (Waffe x Power)", "Virusschaden je Puls", "Module Elite / Heavy Elite", "Status"]
     rows = []
-    for i, s in enumerate(TEXTE["sentinels"], 2):
-        rows.append([f"{s['fraktion']} {s['archetyp']} Sentinel", s["fraktion"], s["archetyp"], part_name(s["waffe"]),
-                     f'=IFERROR(INDEX(Waffen!$D:$D,MATCH(D{i},Waffen!$B:$B,0)),"--")', s["speed"],
+    # Seit 14. Nov. 2026 aus data/formations.json (gebaut), nicht mehr aus inhalte.json.
+    for i, (sid, s) in enumerate(FORMATIONS["sentinels"].items(), 2):
+        st = s["stats"]
+        rows.append([s["name"], s["faction"], ARCHE_NAMES.get(s["archetype"], s["archetype"]), part_name(s["weapon"]),
+                     f'=IFERROR(INDEX(Waffen!$D:$D,MATCH(D{i},Waffen!$B:$B,0)),"--")', st["spd"],
                      f"=ROUND(MAX({REG['realtime.move_min']},{REG['realtime.move_base']}+F{i}*{REG['realtime.move_per_spd']}),2)",
-                     s["integritaet"], s["schild"], f"=H{i}+I{i}", s["schildpuls"], s["ruestung"], s["power"],
-                     s["modulplaetze"], f"=ROUND({weapon_dps(f'D{i}', f'M{i}')},1)",
-                     f"=ROUND(J{i}*{VIRUS['anteil']},1)", s["status"]])
+                     st["hp_max"], st["shield"], f"=H{i}+I{i}", st["shield_pulse"], st["def"], st["power"],
+                     st["module_slots"], f"=ROUND({weapon_dps(f'D{i}', f'M{i}')},1)",
+                     f"=ROUND(J{i}*{VIRUS['anteil']},1)",
+                     ", ".join(module_name(m) for m in s.get("elite_modules", [])), "gebaut"])
     notes = {"Power": "Eigene, schwächere Power-Wertung: Rohschaden = Waffenschaden x Power / 10 (DROMEs 6-15).",
              "Waffe": "Echte Waffe aus dem Blatt Waffen -- ein Waffenslot.",
              "Schaden/s roh (Waffe x Power)": "Schaden/s roh der Waffe (Blatt Waffen) x Power / 10, ohne Fähigkeit.",
-             "Virusschaden je Puls": "Ab Minute 5: Anteil (Blatt Einsatz) x (Integritaet + Schild)."}
+             "Virusschaden je Puls": "Ab Minute 5: Anteil (Blatt Einsatz) x (Integritaet + Schild).",
+             "Module Elite / Heavy Elite": "Vorschlag: Elite traegt das erste, Heavy Elite beide (nur wenn sie zur Waffe passen)."}
     inputs = ("Fraktion", "Archetyp", "Waffe", "Speed", "Integritaet", "Schild", "Schildpuls", "Ruestung", "Power",
               "Modulplaetze")
-    last = write_table(ws, headers, rows, [24, 10, 10, 20, 12, 7, 10, 10, 8, 10, 9, 8, 7, 10, 12, 11, 11],
+    last = write_table(ws, headers, rows, [24, 10, 10, 20, 12, 7, 10, 10, 8, 10, 9, 8, 7, 10, 12, 11, 30, 11],
                        notes=notes, inputs=inputs)
     add_list(ws, weapons, f"D2:D{last + 10}")
     add_list(ws, [a["archetyp"] for a in TEXTE["sentinel_archetypen"]], f"C2:C{last + 10}")
@@ -977,8 +963,10 @@ def build_sentinels(ws):
             "decken die DROMEs ab.").font = BODY_FONT
     r = last + 3
     ws.cell(row=r, column=1, value="Varianten (wirken auf die Basic-Werte oben)").font = SUB_FONT
-    rows = [[v["variante"], v["integritaet"], v["schild"], v["power"], v["ruestung"], v["speed"], v["module"],
-             v["herausforderung"], v["status"]] for v in TEXTE["sentinel_varianten"]]
+    texts = {v["variante"]: v for v in TEXTE["sentinel_varianten"]}
+    rows = [[r["name"], r["hp"], r["shield"], r["power"], r["def"], r["spd"], r["modules"],
+             texts.get(r["name"], {}).get("herausforderung", ""), "gebaut"] for r in FORMATIONS["ranks"].values()]
+    rows.append(["Specialist", "--", "--", "--", "--", "--", "--", "fällt weg (Blatt Fragen 5)", "fällt weg"])
     write_table(ws, ["Variante", "Integritaet x", "Schild x", "Power x", "Ruestung +", "Speed +", "Modulplaetze +",
                      "Neue Herausforderung", "Status"], rows, start_row=r + 1,
                 inputs=("Integritaet x", "Schild x", "Power x", "Ruestung +", "Speed +", "Modulplaetze +",
@@ -993,8 +981,15 @@ def build_gegner_dromes(ws):
                "Integritaet", "Schild", "Integritaet + Schild", "Schildpuls", "Ruestung", "Power", "Modulplaetze",
                "Schaden/s roh (Waffen x Power)", "Virusschaden je Puls", "Aufgabe in der Squad", "Status"]
     rows = []
-    for i, g in enumerate(TEXTE["gegner_dromes"], 2):
-        w = [part_name(x) for x in g["waffe"].split(" + ")] + [""]
+    tasks = {g["name"]: g.get("aufgabe", "") for g in TEXTE["gegner_dromes"]}
+    fixed = [(k, d) for k, d in FORMATIONS["dromes"].items() if d.get("stats")]
+    for i, (gid, d) in enumerate(fixed, 2):
+        st = d["stats"]
+        g = {"name": d["name"], "fraktion": d["name"].split(" ")[0], "chassis": d["chassis"],
+             "speed": st["spd"], "integritaet": st["hp_max"], "schild": st["shield"],
+             "schildpuls": st["shield_pulse"], "ruestung": st["def"], "power": st["power"],
+             "modulplaetze": st["module_slots"], "aufgabe": tasks.get(d["name"], ""), "status": "gebaut"}
+        w = [part_name(x) for x in d["weapons"]] + [""]
         role = PARTS[g["chassis"]]["stats"]["ai_role"]
         rows.append([g["name"], g["fraktion"], drome_name(g["chassis"]), ROLE_NAMES.get(role, role), w[0], w[1],
                      g["speed"],
@@ -1014,7 +1009,10 @@ def build_gegner_dromes(ws):
     add_list(ws, [f["kurz"] for f in TEXTE["fraktionen"]], f"B2:B{last + 10}")
     ws.cell(row=last + 2, column=1, value="Der gegnerische DROME ist der taktische Mittelpunkt: eigene Waffe und "
             "Passive, aktive Bedrohung, prägt die Spielweise der Squad. Ob besiegte DROMEs freigeschaltet "
-            "werden, ist bewusst offen.").font = BODY_FONT
+            "werden, ist bewusst offen. Standard-DROMEs in Formationen (Vireo, Molok, Nimbus, Strix) "
+            "rechnen mit den Werten des Chassis (Blatt DROMEs) und dem Gegner-Level (Blatt Lauf). "
+            "Module der Gegner-DROMEs würfelt der Seed: je 2 Reinforcement-Level eines, ab zwei wird ein "
+            "Paar zu einem passenden Rezept.").font = BODY_FONT
 
 
 def build_fragen(ws):
@@ -1094,22 +1092,38 @@ def build_maps(ws):
 
 def build_formationen(ws):
     rows = []
-    for i, f in enumerate(TEXTE["formationen"], 2):
-        rows.append([f["formation"], f["fraktion"], f["welle"], f["dromes"], f["assault"], f["sniper"], f["support"],
-                     f"=SUM(E{i}:G{i})",
-                     f'=H{i}+IF(D{i}="",0,LEN(D{i})-LEN(SUBSTITUTE(D{i},"+",""))+1)',
-                     f["variante"], f["module"], f["text"], f["status"]])
-    notes = {"DROMEs": "Namen aus Blatt Gegner-DROMEs, mehrere mit + verbinden.",
+    regions = {r["id"]: r["name"] for r in REGIONS["regions"]}
+    for i, (region, forms) in enumerate(FORMATIONS["formations"].items()):
+        for f in forms:
+            for n, step in enumerate(f["steps"]):
+                sentinels = step["sentinels"]
+                count = {a: sum(1 for x in sentinels if FORMATIONS["sentinels"][x.split(":")[0]]["archetype"] == a)
+                         for a in ARCHE_NAMES}
+                ranks = sorted({RANK_NAMES.get(x.split(":")[1], "") for x in sentinels if ":" in x})
+                rows.append([f["name"] if n == 0 else "", regions.get(region, region), step["from"],
+                             " + ".join(unit_name(d) for d in step["dromes"]),
+                             count["assault"], count["sniper"], count["support"], len(sentinels),
+                             len(sentinels) + len(step["dromes"]), ", ".join(ranks) or "Basic",
+                             ", ".join(unit_name(x) for x in sentinels),
+                             (f["idea"] + (" (Einführung)" if f.get("intro") else "")) if n == 0 else "",
+                             "Vorschlag gebaut"])
+    notes = {"ab Level": "Reinforcement-Level, ab dem diese Stufe gilt (steigt nach jedem Kampf, nach Elite schneller).",
              "Einheiten gesamt": "Sentinels + DROMEs. Der Spieler hat bis zu 4 DROMEs."}
-    inputs = ("Formation", "Fraktion", "Welle", "DROMEs", "Assault", "Sniper", "Support", "Variante", "Module",
-              "Steigerung")
-    last = write_table(ws, ["Formation", "Fraktion", "Welle", "DROMEs", "Assault", "Sniper", "Support",
-                            "Sentinels gesamt", "Einheiten gesamt", "Variante", "Module", "Steigerung", "Status"],
-                       rows, [20, 10, 7, 26, 8, 8, 8, 10, 10, 11, 22, 36, 11], notes=notes, inputs=inputs)
-    add_list(ws, [v["variante"] for v in TEXTE["sentinel_varianten"]], f"J2:J{last + 10}")
-    ws.cell(row=last + 2, column=1, value="Name und Zusammensetzung sollen schon vor dem Kampf zeigen, welche "
-            "Herausforderung wartet. Stellschrauben: Zahl der Gegner, Zahl der DROMEs (stärkste Eskalation), "
-            "Zusammensetzung, Module, Varianten, Synergien.").font = BODY_FONT
+    last = write_table(ws, ["Formation", "Gebiet", "ab Level", "DROMEs", "Assault", "Sniper", "Support",
+                            "Sentinels gesamt", "Einheiten gesamt", "Ränge", "Sentinels", "Grundgedanke", "Status"],
+                       rows, [20, 12, 8, 30, 8, 8, 8, 10, 10, 18, 70, 60, 14], notes=notes)
+    r = last + 2
+    ws.cell(row=r, column=1, value="Varianten: Leicht, Normal, Elite aus derselben Formation").font = SUB_FONT
+    v = FORMATIONS["variants"]
+    rows = [[TIER_NAMES[k], v[k].get("level_offset", 0), "ja" if v[k].get("basic_only") else "nein",
+             v[k].get("drop_sentinels", 0), v[k].get("promote", 0), v[k].get("drome_modules", 0)] for k in v]
+    last = write_table(ws, ["Variante", "Level +", "nur Basic", "Sentinels weniger", "Sentinels einen Rang höher",
+                            "Module der DROMEs +"], rows, start_row=r + 1)
+    rc = FORMATIONS["reinforcement"]
+    ws.cell(row=last + 2, column=1, value=f"Reinforcement-Level = Kampf + {rc['elite_bonus']} je gewähltem Elite; "
+            f"Infinity-Einsatz {rc['endless_rate']} je Kampf. Gegner-DROMEs: ein Modul je {rc['drome_modules_per']} "
+            "Level. Name und Zusammensetzung zeigen schon vor dem Kampf, welche Herausforderung wartet. "
+            "Quelle: data/formations.json.").font = BODY_FONT
 
 
 def build_design(ws):
@@ -1137,15 +1151,15 @@ def build_design(ws):
 SHEETS = [
     ("Uebersicht", "Wie die Tabelle gepflegt wird, Legende", build_uebersicht),
     ("Eckpunkte", "Alle festgehaltenen Entscheidungen mit Datum und Status", build_eckpunkte),
-    ("Fragen", "OFFEN: Detailfragen fuer die Schritte 1-3 (Sentinels, Heilstrahl, Formationen, Einsatz) -- Antwort ausfuellen", build_fragen),
-    ("Einsatz", "NEU (nicht gebaut): Einsatz, Virusschaden, wann ein Lootcache droppt", build_einsatz),
-    ("Lootcaches", "NEU (nicht gebaut): was in welchem Cache steckt -- vom Spieler festgelegt", build_lootcaches),
+    ("Fragen", "Beantwortet (14. Nov.): Detailfragen fuer die Schritte 1-3 -- umgesetzt am 14. Nov.", build_fragen),
+    ("Einsatz", "GEBAUT (14. Nov.): Einsatz, Virusschaden, Kampfkarte, wann ein Lootcache droppt", build_einsatz),
+    ("Lootcaches", "TEILS GEBAUT: Caches droppen und landen im Hangar; Inhalt und Oeffnen folgen", build_lootcaches),
     ("Hangar-Shop", "NEU (nicht gebaut): Upgrades und Caches fuer Platzhaltercoin", build_hangar),
-    ("Sentinels", "NEU (nicht gebaut): Gegner-Bots je Fraktion und Archetyp, Varianten", build_sentinels),
-    ("Gegner-DROMEs", "NEU (nicht gebaut): die DROMEs der Gegner-Squads", build_gegner_dromes),
-    ("Formationen", "NEU (nicht gebaut): Gegner-Squads Welle fuer Welle", build_formationen),
+    ("Sentinels", "GEBAUT (14. Nov.): Gegner-Bots je Fraktion und Archetyp, Raenge -- aus data/formations.json", build_sentinels),
+    ("Gegner-DROMEs", "GEBAUT (14. Nov.): die DROMEs der Gegner-Squads -- aus data/formations.json", build_gegner_dromes),
+    ("Formationen", "GEBAUT (14. Nov., Vorschlag Neon): Formationen je Reinforcement-Level, Varianten", build_formationen),
     ("Maps", "OFFEN: Arenen zeichnen -- Frontline, Mittellinie, Backline, Umrisse (quadratische Zellen)", build_maps),
-    ("Design", "NEU (nicht gebaut): Arcade-Glitch-Stil -- Farben, Schriften, Titel und Spielstand-Wahl", build_design),
+    ("Design", "GEBAUT (14. Nov.): Arcade-Glitch-Stil auf allen Bildschirmen -- Farben, Schriften, Formen", build_design),
     ("DROMEs", "Die DROMEs: Rolle, Identitaet, Werte, Passive, Level, BIOS, Bauteile", build_dromes),
     ("Waffen", "Alle Waffen: Angriff, Faehigkeit, Takt, Bonus-Wert (Passive), Besonderheit", build_waffen),
     ("Passiven", "Alle Passiven: DROMEs, Waffen-Bonus, Chassis-BIOS, Fraktions-Vorschlaege", build_passiven),
@@ -1156,9 +1170,7 @@ SHEETS = [
     ("Fraktionen", "Fraktionen, Profile, Besonderheiten, Vorschlaege", build_fraktionen),
     ("Stages", "Gebiete / Stages mit Fraktion und Boden", build_stages),
     ("Story", "Aufhaenger, Story-Level, Bosse (Vorschlaege)", build_story),
-    ("Gegnertypen", "Sturm, Schuetzen, Bollwerk, Kontrolle, Gemischt", build_gegnertypen),
-    ("Gegnerteams", "Heute gebaut (symmetrisch): alle Teams, je DROME eine Zeile -- abgeloest durch Formationen", build_teams),
-    ("Einheiten", "Heute gebaut: alle benannten Einheiten und wo sie auftreten", build_einheiten),
+    ("Einheiten", "Gebaut: alle Gegner-Einheiten (DROMEs und Sentinels) und in welchen Formationen sie auftreten", build_einheiten),
     ("Rollen", "KI-Rollen und Zielregeln", build_rollen),
     ("Lauf", "Heute gebaut: der Lauf Runde fuer Runde, Stufen und Beute -- abgeloest durch Einsatz", build_lauf),
     ("Level", "Level von DROMEs und Waffen", build_level),

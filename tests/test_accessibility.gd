@@ -30,13 +30,13 @@ func test_a_phone_in_landscape_stays_readable() -> void:
 	var window := Vector2(2400, 1080)
 	var factor: float = Accessibility.compute_scale(window, 2.625, 1.0)
 	var css := _stretch(window) * factor / 2.625
-	t.ok(factor > 1.4, "Querformat wird vergroessert (%.2f)" % factor)
+	t.ok(factor > 1.4, "Querformat wird vergrößert (%.2f)" % factor)
 	t.ok(css >= 0.85, "und bleibt lesbar (%.2f CSS-Pixel je Entwurfspixel)" % css)
 
 
 func test_a_desktop_window_stays_unscaled() -> void:
 	t.equal(Accessibility.compute_scale(Vector2(1600, 900), 1.0, 1.0), 1.0,
-		"Desktop bei Pixeldichte 1: keine Vergroesserung")
+		"Desktop bei Pixeldichte 1: keine Vergrösserung")
 
 
 func test_the_logical_area_never_gets_too_small() -> void:
@@ -54,7 +54,7 @@ func test_the_logical_area_never_gets_too_small() -> void:
 		var long_side := maxf(logical.x, logical.y)
 		t.ok(short_side >= Accessibility.MIN_SHORT_SIDE - 0.5
 			and long_side >= Accessibility.MIN_LONG_SIDE - 0.5,
-			"%s @%.2f x%.1f: logisch %s bleibt ueber dem Minimum"
+			"%s @%.2f x%.1f: logisch %s bleibt über dem Minimum"
 				% [case[0], case[1], case[2], logical])
 
 

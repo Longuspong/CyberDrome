@@ -85,7 +85,7 @@
       },
       {
         "id": "act_ram_slam",
-        "display_name": "Rammstoss",
+        "display_name": "Rammstoß",
         "category": "ability",
         "targeting": "single",
         "range_tiles": 1,

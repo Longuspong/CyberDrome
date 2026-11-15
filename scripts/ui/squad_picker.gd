@@ -112,7 +112,7 @@ static func loadout_text(build: DromeBuild) -> String:
 	var names: Array[String] = []
 	for part in build.equipment():
 		names.append(part.display_name)
-	var text := ", ".join(names) if not names.is_empty() else "ohne Ausruestung"
+	var text := ", ".join(names) if not names.is_empty() else "ohne Ausrüstung"
 	# Module (6i): bei Gegnern im Lauf sichtbar, damit man weiss, worauf man
 	# sich einlaesst.
 	var mods: Array[String] = []

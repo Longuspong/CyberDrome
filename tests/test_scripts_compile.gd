@@ -29,11 +29,11 @@ func test_every_script_compiles() -> void:
 	t.ok(scripts.size() > 30, "Skripte gefunden (%d)" % scripts.size())
 	for path in scripts:
 		var script = load(path)
-		t.ok(script is GDScript and script.can_instantiate(), "%s laedt" % path)
+		t.ok(script is GDScript and script.can_instantiate(), "%s lädt" % path)
 
 
 func test_every_scene_loads() -> void:
 	var scenes := _files("res://scenes", ".tscn")
 	t.ok(not scenes.is_empty(), "Szenen gefunden (%d)" % scenes.size())
 	for path in scenes:
-		t.ok(load(path) is PackedScene, "%s laedt" % path)
+		t.ok(load(path) is PackedScene, "%s lädt" % path)

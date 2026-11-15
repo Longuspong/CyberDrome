@@ -96,7 +96,7 @@ func test_placing_moves_and_swaps_within_the_zone() -> void:
 			break
 	t.ok(battle.place_unit(strix, free_tile), "auf ein freies Feld der Zone")
 	t.equal(strix.tile, free_tile, "der Strix steht dort")
-	t.equal(battle.grid.occupant(free_tile), strix.unit_id, "und das Gitter weiss es")
+	t.equal(battle.grid.occupant(free_tile), strix.unit_id, "und das Gitter weiß es")
 
 	var molok_tile := molok.tile
 	t.ok(battle.place_unit(strix, molok_tile), "auf einen eigenen DROME: tauschen")

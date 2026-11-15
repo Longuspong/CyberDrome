@@ -43,7 +43,7 @@ func test_a_battle_runs_to_a_conclusion() -> void:
 			"Kampf %d endet (nach %d s)" % [4000 + i, result["seconds"]])
 		var label := BattleManager.outcome_label(result["outcome"])
 		outcomes[label] = outcomes.get(label, 0) + 1
-	t.note("25 Kaempfe, im Schnitt %.0f s: %s"
+	t.note("25 Kämpfe, im Schnitt %.0f s: %s"
 		% [float(total) / 25.0, str(outcomes)])
 
 
@@ -95,7 +95,7 @@ func test_the_ai_does_not_drag_its_target_into_its_own_face() -> void:
 	# ein Angriffs-Aufbau ohnehin nicht braucht, hat die KI ihn jeden Zug
 	# gezogen und sich als Fernkaempfer selbst den Abstand genommen.
 	var battle := BattleManager.new()
-	battle.setup(9210, [_with_orbit_pull("SCHUETZE", &"eq_rail_lance"),
+	battle.setup(9210, [_with_orbit_pull("SCHÜTZE", &"eq_rail_lance"),
 		_with_orbit_pull("NAHKAMPF", &"eq_rune_staff")])
 	var controller := AIController.new(battle)
 	var sniper: Unit = battle.living(true)[0]
@@ -108,13 +108,13 @@ func test_the_ai_does_not_drag_its_target_into_its_own_face() -> void:
 		"der Sog zieht und richtet dabei keinen Schaden an")
 
 	t.ok(controller._shove_score(sniper, pull, brawler) < 0.0,
-		"wer weiter schiesst, will den Abstand behalten (%.1f)"
+		"wer weiter schießt, will den Abstand behalten (%.1f)"
 		% controller._shove_score(sniper, pull, brawler))
 	t.ok(controller._action_score(sniper, pull, brawler) <= 0.0,
 		"und zieht deshalb gar nicht -- _best_move() verwirft alles <= 0")
 
 	t.ok(controller._shove_score(brawler, pull, sniper) > 0.0,
-		"wer kuerzer schiesst, will ihn schliessen (%.1f)"
+		"wer kürzer schießt, will ihn schließen (%.1f)"
 		% controller._shove_score(brawler, pull, sniper))
 	battle.free()
 
@@ -129,7 +129,7 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 		"feet": &"jugg_feet", "core": &"jugg_core",
 		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"})
 	t.ok(bunker.is_valid(), "der Bunker ist baubar: %s" % ", ".join(bunker.validate()))
-	t.equal(bunker.stats()["def"], 14, "und kommt auf Ruestung 14 (Molok 10 + Schild 4)")
+	t.equal(bunker.stats()["def"], 14, "und kommt auf Rüstung 14 (Molok 10 + Schild 4)")
 
 	var grid := Grid.new(10, 10)
 	var shooter := Unit.create(_squad()[0], &"P0", true)
@@ -147,12 +147,12 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	var dealt := resolver.preview_damage(shooter, wall, blaster)
 
 	t.ok(dealt >= int(ceil(blaster.power * 0.5)),
-		"DEF nimmt hoechstens die Haelfte weg: %d von %d" % [dealt, blaster.power])
+		"DEF nimmt höchstens die Hälfte weg: %d von %d" % [dealt, blaster.power])
 	var hits := int(ceil(float(wall.stat("hp_max")) / float(dealt)))
 	t.ok(hits <= 45,
-		"und der Bunker faellt in absehbarer Zeit (%d Treffer)" % hits)
+		"und der Bunker fällt in absehbarer Zeit (%d Treffer)" % hits)
 	t.equal(resolver.apply_damage(shooter, wall, shooter.raw_damage(blaster), blaster), dealt,
-		"die Vorschau sagt genau das, was die Ausfuehrung tut")
+		"die Vorschau sagt genau das, was die Ausführung tut")
 
 	shooter.free()
 	wall.free()
@@ -199,9 +199,9 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	var siege := ActionData.from_meta({"id": "act_test_area", "category": "attack",
 		"targeting": "aoe_around_target", "range_tiles": 6, "aoe_radius": 1, "power": 20,
 		"interval": 2.0})
-	t.ok(siege != null and siege.aoe_radius > 0, "der Testschuss ist eine Flaeche")
+	t.ok(siege != null and siege.aoe_radius > 0, "der Testschuss ist eine Fläche")
 	t.ok(shooter.tile in resolver.affected_tiles(foe.tile, siege),
-		"und der Schuetze steht bei diesem Ziel wirklich in der eigenen Flaeche")
+		"und der Schütze steht bei diesem Ziel wirklich in der eigenen Fläche")
 
 	# Geprueft wird die Flaeche, nicht der Energieschild davor.
 	foe.shield = 0
@@ -209,11 +209,11 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	var expected := resolver.preview_damage(shooter, foe, siege)
 	t.ok(resolver.execute(shooter, foe.tile, siege), "der Schuss geht raus")
 
-	t.equal(shooter.hp, shooter.stat("hp_max"), "der Schuetze nimmt keinen eigenen Schaden")
-	t.equal(comrade.hp, comrade.stat("hp_max"), "der Verbuendete im Radius bleibt heil")
+	t.equal(shooter.hp, shooter.stat("hp_max"), "der Schütze nimmt keinen eigenen Schaden")
+	t.equal(comrade.hp, comrade.stat("hp_max"), "der Verbündete im Radius bleibt heil")
 	t.equal(foe.hp, foe.stat("hp_max") - expected, "das Ziel nimmt genau die Vorschau")
 	t.ok(second_foe.hp < second_foe.stat("hp_max"),
-		"der zweite Gegner im Radius wird mitgenommen -- die Flaeche bleibt eine Flaeche")
+		"der zweite Gegner im Radius wird mitgenommen -- die Fläche bleibt eine Fläche")
 
 	shooter.free()
 	comrade.free()
@@ -256,22 +256,22 @@ func test_the_drone_pod_repairs_the_most_hurt_ally() -> void:
 	t.ok(battle.resolver.execute(sani, heavy.tile, repair), "die Heilung geht raus")
 	var amount := ActionResolver.support_amount(sani, heavy, repair.heal)
 	t.equal(heavy.hp, before + amount,
-		"und repariert %d (Grundwert x Power + 3 %% der Integritaet des Ziels)" % amount)
+		"und repariert %d (Grundwert x Power + 3 %% der Integrität des Ziels)" % amount)
 
 	# Ueber die volle Integritaet hinaus wird die Heilung zu Schild -- aber
 	# nur bis zum normalen Maximum; ist beides voll, verpufft sie.
 	heavy.hp = heavy.stat("hp_max") - 1
 	heavy.shield = heavy.shield_max() - 3
 	battle.resolver.execute(sani, heavy.tile, repair)
-	t.equal(heavy.hp, heavy.stat("hp_max"), "Integritaet voll")
-	t.equal(heavy.shield, heavy.shield_max(), "der Rest fuellt den Schild, kein Ueberschild")
+	t.equal(heavy.hp, heavy.stat("hp_max"), "Integrität voll")
+	t.equal(heavy.shield, heavy.shield_max(), "der Rest fuellt den Schild, kein Überschild")
 	battle.resolver.execute(sani, heavy.tile, repair)
 	t.equal(heavy.shield, heavy.shield_max(), "beides voll: die Heilung geht ins Leere")
 
 	heavy.hp = heavy.stat("hp_max")
 	light.hp = light.stat("hp_max")
 	var foe_before := foe.shield + foe.hp
-	t.ok(battle.brain._fire(sani, sani.mounts[0], foe), "niemand verletzt: er schiesst")
+	t.ok(battle.brain._fire(sani, sani.mounts[0], foe), "niemand verletzt: er schießt")
 	t.ok(foe.shield + foe.hp < foe_before, "und trifft den Gegner")
 	battle.free()
 
@@ -287,12 +287,12 @@ func test_the_deflector_charges_its_own_shield() -> void:
 	var charge := _action_by_id(unit, &"act_deflector_charge")
 	t.ok(charge != null and charge.shield_gain > 0, "der Deflektor hat die Schildladung")
 	unit.shield = unit.shield_max()
-	t.ok(resolver.execute(unit, unit.tile, charge), "sie wirkt auf den Traeger")
+	t.ok(resolver.execute(unit, unit.tile, charge), "sie wirkt auf den Träger")
 	t.equal(unit.shield, unit.shield_max() + ActionResolver.support_amount(unit, unit, charge.shield_gain),
-		"auch ueber das Maximum")
+		"auch über das Maximum")
 	for _i in 6:
 		resolver.execute(unit, unit.tile, charge)
-	t.equal(unit.shield, ActionResolver.shield_cap(unit), "aber hoechstens Maximum + 50 %")
+	t.equal(unit.shield, ActionResolver.shield_cap(unit), "aber höchstens Maximum + 50 %")
 	t.equal(ActionResolver.shield_cap(unit), int(round(unit.shield_max() * 1.5)), "das ist der Deckel")
 	unit.free()
 
@@ -301,7 +301,7 @@ func test_the_deflector_charges_its_own_shield() -> void:
 ## Test unten nur, was zufaellig mitgewuerfelt wurde.
 func _ability_squad() -> Array:
 	return [
-		DromeBuild.create("KOEDER", {
+		DromeBuild.create("KÖDER", {
 			"body": &"jugg_body", "head": &"jugg_head",
 			"feet": &"jugg_feet", "core": &"jugg_core",
 			"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"}),
@@ -356,7 +356,7 @@ func test_every_ability_fires_by_itself() -> void:
 	# und Hammer kommen erst), kommt im Kampf niemand so nah. Sein Ausloeser
 	# wird in tests/test_dash.gd geprueft.
 	for id in [&"act_pulse_double", &"act_rune_vortex", &"act_rail_pierce"]:
-		t.ok(int(uses.get(id, 0)) > 0, "%s loest im Kampf aus (%d)" % [id, uses.get(id, 0)])
+		t.ok(int(uses.get(id, 0)) > 0, "%s löst im Kampf aus (%d)" % [id, uses.get(id, 0)])
 	t.note("Aktionen: %s" % str(uses))
 
 
@@ -390,7 +390,7 @@ func test_every_nth_attack_is_the_ability() -> void:
 						"%s kommt nach %d Angriffen (%s)" % [ability, every - 1, key])
 					since = 0
 					checked += 1
-	t.ok(checked > 3, "die Regel wurde oft genug geprueft (%d)" % checked)
+	t.ok(checked > 3, "die Regel wurde oft genug geprüft (%d)" % checked)
 
 
 func test_same_seed_gives_the_same_battle() -> void:
@@ -427,7 +427,7 @@ func test_region_choice_follows_the_alphabet_not_the_memory_layout() -> void:
 	for key in TerrainDB.regions:
 		ids.append(str(key))
 	ids.sort()
-	t.ok(ids.size() >= 2, "es gibt mehr als eine Region, sonst prueft das nichts")
+	t.ok(ids.size() >= 2, "es gibt mehr als eine Region, sonst prüft das nichts")
 
 	var seen := {}
 	for seed_value in range(40):
@@ -445,7 +445,7 @@ func test_region_choice_follows_the_alphabet_not_the_memory_layout() -> void:
 				ids.find(expected) + 1])
 		seen[expected] = true
 	t.equal(seen.size(), ids.size(),
-		"und ueber 40 Seeds kommt jede Region auch wirklich vor")
+		"und über 40 Seeds kommt jede Region auch wirklich vor")
 
 
 func test_enemy_power_matches_the_player_squad() -> void:
@@ -484,7 +484,7 @@ func test_shield_overflow_is_not_multiplied_onto_integrity() -> void:
 	var broken: Dictionary = resolver.resolve_damage(target, 12, 1.0, 2.0)
 	t.equal(int(broken["shield_after"]), 0, "der Schild ist weg")
 	t.ok(int(broken["hp"]) < bare,
-		"ein Rest Schild faengt etwas ab: %d < %d" % [broken["hp"], bare])
+		"ein Rest Schild fängt etwas ab: %d < %d" % [broken["hp"], bare])
 	target.shield = 0
 	var rest: int = resolver.resolve_damage(target, 10, 1.0, 2.0)["hp"]
 	t.ok(int(broken["hp"]) <= rest,
@@ -501,11 +501,11 @@ func test_shield_recharges_only_after_a_calm_spell() -> void:
 	var gained := 0
 	for i in 60:   # 3 s
 		gained += unit.recharge_shield(0.05)
-	t.equal(gained, 0, "in den ersten Sekunden nach einem Treffer laedt nichts")
+	t.equal(gained, 0, "in den ersten Sekunden nach einem Treffer lädt nichts")
 	for i in 60:   # weitere 3 s
 		gained += unit.recharge_shield(0.05)
 	t.ok(gained > 0 and unit.shield <= maximum,
-		"nach der Ruhezeit laedt er wieder (%d von %d)" % [unit.shield, maximum])
+		"nach der Ruhezeit lädt er wieder (%d von %d)" % [unit.shield, maximum])
 	unit.note_damage()
 	var before := unit.shield
 	unit.recharge_shield(0.05)

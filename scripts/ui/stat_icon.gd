@@ -25,21 +25,21 @@ extends Control
 ##   hp       Herz            Integritaet
 
 const EXPLAIN := {
-	"kinetic": "Kinetischer Schaden (Schwert): stark gegen Integritaet, schwach gegen Schilde.",
+	"kinetic": "Kinetischer Schaden (Schwert): stark gegen Integrität, schwach gegen Schilde.",
 	"energy": "Energieschaden (Kugel): stark gegen Schilde.",
 	"speed": "Angriffstempo: so oft greift die Waffe an.",
-	"range": "Reichweite in Feldern. 1 heisst Nahkampf.",
+	"range": "Reichweite in Feldern. 1 heißt Nahkampf.",
 	"attack": "Angriff: der normale Angriff der Waffe. Er kommt von selbst, sobald ein Ziel in Reichweite ist.",
-	"ability": "Faehigkeit: die besondere Aktion der Waffe. Sie kommt von selbst, wenn ihr Takt erreicht ist.",
-	"time": "Takt nach Zeit (Uhr): die Faehigkeit kommt nach dieser Zeit, auch ohne Angriff.",
-	"hits": "Takt nach Angriffen (Zahnrad): der so-vielte Angriff IST die Faehigkeit.",
+	"ability": "Fähigkeit: die besondere Aktion der Waffe. Sie kommt von selbst, wenn ihr Takt erreicht ist.",
+	"time": "Takt nach Zeit (Uhr): die Fähigkeit kommt nach dieser Zeit, auch ohne Angriff.",
+	"hits": "Takt nach Angriffen (Zahnrad): der so-vielte Angriff IST die Fähigkeit.",
 	"adjacent": "Takt: sobald ein Gegner direkt daneben steht.",
-	"heal": "Reparatur: stellt Integritaet beim Verbuendeten mit dem geringsten Anteil wieder her.",
-	"shield": "Schild: faengt Schaden ab, bevor er die Integritaet trifft.",
-	"area": "Flaeche: trifft auch alles im Umkreis um das Ziel.",
+	"heal": "Reparatur: stellt Integrität beim Verbündeten mit dem geringsten Anteil wieder her.",
+	"shield": "Schild: fängt Schaden ab, bevor er die Integrität trifft.",
+	"area": "Fläche: trifft auch alles im Umkreis um das Ziel.",
 	"def": "Panzerung (DEF): zieht von jedem Treffer etwas ab.",
-	"weight": "Gewicht: schwere Waffen bremsen den Traeger (weniger SPD).",
-	"hp": "Integritaet: faellt sie auf 0, ist der DROME zerstoert.",
+	"weight": "Gewicht: schwere Waffen bremsen den Träger (weniger SPD).",
+	"hp": "Integrität: fällt sie auf 0, ist der DROME zerstört.",
 }
 
 const COLORS := {

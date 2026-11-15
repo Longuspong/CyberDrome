@@ -23,15 +23,15 @@ func test_two_dromes_never_share_a_tile() -> void:
 	t.ok(grid.can_stand_on(Vector2i(2, 2), &"P0"), "das eigene Feld bleibt stehbar")
 	t.ok(not grid.can_stand_on(Vector2i(-1, 2)), "ausserhalb geht nichts")
 	grid.clear_occupant(Vector2i(2, 2))
-	t.ok(grid.can_stand_on(Vector2i(2, 2), &"E0"), "geraeumt ist es wieder frei")
+	t.ok(grid.can_stand_on(Vector2i(2, 2), &"E0"), "geräumt ist es wieder frei")
 
 
 func test_the_field_is_open_and_has_the_configured_size() -> void:
 	var region := TerrainDB.get_region(&"city")
 	var grid := MapGenerator.generate(region)
 	t.equal(grid.width, Config.get_int("grid_width", 20), "Breite aus der Konfiguration")
-	t.equal(grid.height, Config.get_int("grid_height", 20), "Hoehe aus der Konfiguration")
-	t.equal(grid.region, region, "die Region haengt am Gitter (Optik)")
+	t.equal(grid.height, Config.get_int("grid_height", 20), "Höhe aus der Konfiguration")
+	t.equal(grid.region, region, "die Region hängt am Gitter (Optik)")
 	var free := 0
 	for tile in grid.all_tiles():
 		if grid.can_stand_on(tile):
@@ -80,7 +80,7 @@ func test_obstacles_are_mirrored_and_keep_the_zones_free() -> void:
 		t.ok(not grid.obstacles.is_empty(), "Seed %d: es gibt Hindernisse" % seed_value)
 		for tile in grid.obstacles:
 			t.ok(grid.obstacles.has(MapGenerator.mirror(grid, tile)),
-				"Seed %d: %s hat sein Gegenstueck" % [seed_value, tile])
+				"Seed %d: %s hat sein Gegenstück" % [seed_value, tile])
 		for is_player in [true, false]:
 			for tile in MapGenerator.deployment_zone(grid, is_player):
 				t.ok(not grid.is_blocked(tile), "Seed %d: Zone frei bei %s" % [seed_value, tile])
@@ -90,6 +90,6 @@ func test_obstacles_block_walking_and_keep_the_field_connected() -> void:
 	var grid := _obstacle_grid(42)
 	var tile: Vector2i = grid.obstacles.keys()[0]
 	t.ok(not grid.can_stand_on(tile), "auf einem Hindernis steht niemand")
-	t.ok(MapGenerator._connected(grid), "alle freien Felder haengen zusammen")
+	t.ok(MapGenerator._connected(grid), "alle freien Felder hängen zusammen")
 	var again := _obstacle_grid(42)
 	t.equal(again.obstacles, grid.obstacles, "derselbe Seed, dieselben Hindernisse")

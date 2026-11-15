@@ -40,21 +40,28 @@ landen von dort in den Teil-JSONs unter `parts/`.
 * Unten: Tempo 1x/2x, Pause, Log, Folgen. Kamera folgt dem Geschehen,
   Ziehen und Zoomen per Finger.
 
-### Lauf (Roguelike)
+### Einsatz (Roguelike, Code-Name "Lauf")
 
 Acht Kaempfe, drei Leben, alles am Seed (`scripts/core/run_state.gd`, Werte
-unter `run` in `data/config.json`). Vor jedem Kampf drei Gegner zur Wahl
-(Leicht / Normal / Elite), nach dem Sieg Beute aus der Gegnerausruestung.
+unter `run` in `data/config.json`). Eine Kampfkarte mit festen Wegen (FTL-
+artig); Gegner sind Formationen aus DROMEs und Sentinels
+(`data/formations.json`), die mit dem Reinforcement-Level wachsen. Beute sind
+Lootcaches der Fraktion oder Platzhaltercoin. Ab Minute 5 trifft der
+Virusschaden jede Einheit.
 
 ### Mobile first (Hochformat)
 
 * **Entwurfsraum 450x800**: ein Entwurfspixel ist etwa ein CSS-Pixel.
 * **`scripts/ui/ui_kit.gd`**: Seitenrahmen, Karten, grosse Knoepfe, Tab-Leiste
-  unten (Spielen, Hangar, Optionen).
+  unten (Spielen, Hangar, Shop), Optionen am Zahnrad oben rechts.
 * **Hangar**: Reiter *Squad* (max. 4) und *Umbau* (Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern).
-* Wischen scrollt jede Liste, langes Druecken zeigt den Erklaertext.
-* Optionen: Schriftgroesse (nur Text), Animationen reduzieren, Vollbild.
+* Wischen scrollt jede Liste mit Schwung, langes Druecken zeigt den Erklaertext.
+* Kacheln (`Tile`): einmal tippen handelt, doppelt tippen oder lange druecken
+  oeffnet das Popup (`InfoPopup`). Stil: Arcade-Glitch (`scripts/ui/arcade.gd`).
+* Optionen (Zahnrad): Schriftgroesse (nur Text), Animationen reduzieren, Vollbild.
+* **Shop** (Tab): Baukerne und Caches fuer Platzhaltercoin, Caches, neue DROMEs
+  bauen (3 Baukerne; Fraktions-DROME mit Fraktionskern). DROMEs werden verwertet.
 
 ### PWA
 

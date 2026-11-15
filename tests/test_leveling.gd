@@ -22,8 +22,8 @@ func test_xp_tables_give_levels() -> void:
 	t.equal(Leveling.drome_table(), [100, 300, 600, 1000, 1500], "100, 200, 300 ... je Level")
 	var costs: Array = Leveling.weapon_cfg()["xp_per_level"]
 	t.ok(costs[4] < costs[5] and costs[7] < costs[8], "Waffen: 1-5 schnell, 6-8 mittel, 9-10 langsam")
-	t.equal(Leveling.drome_level_for(99999), Leveling.drome_max(), "nie ueber das Hoechstlevel")
-	t.equal(Leveling.weapon_level_for(99999), Leveling.weapon_max(), "Waffe hoechstens 10")
+	t.equal(Leveling.drome_level_for(99999), Leveling.drome_max(), "nie über das Höchstlevel")
+	t.equal(Leveling.weapon_level_for(99999), Leveling.weapon_max(), "Waffe höchstens 10")
 
 
 func test_a_level_ten_weapon_hits_seventy_percent_harder() -> void:
@@ -33,9 +33,9 @@ func test_a_level_ten_weapon_hits_seventy_percent_harder() -> void:
 	var top := Leveling.level_action(attack, part, 10)
 	t.equal(top.power, int(round(attack.power * 1.7)), "Angriff +70 %")
 	t.equal(Leveling.level_action(stun, part, 10).power, int(round(stun.power * 1.7)),
-		"die Faehigkeit waechst mit (Anteil des Waffenschadens)")
-	t.equal(attack.power, 16, "die PartDB bleibt unberuehrt")
-	t.equal(Leveling.level_action(attack, part, 0), attack, "Level 0 aendert nichts")
+		"die Fähigkeit wächst mit (Anteil des Waffenschadens)")
+	t.equal(attack.power, 16, "die PartDB bleibt unberührt")
+	t.equal(Leveling.level_action(attack, part, 0), attack, "Level 0 ändert nichts")
 
 
 func test_the_neon_blaster_grows_only_in_energy() -> void:
@@ -45,7 +45,7 @@ func test_the_neon_blaster_grows_only_in_energy() -> void:
 	var top := Leveling.level_action(attack, part, 10)
 	t.ok(abs(top.power * (1.0 - top.energy_fraction) - kinetic) < 0.6,
 		"der kinetische Anteil bleibt (%0.1f)" % (top.power * (1.0 - top.energy_fraction)))
-	t.ok(top.power > attack.power, "der Energieanteil waechst")
+	t.ok(top.power > attack.power, "der Energieanteil wächst")
 
 
 func test_the_weapon_bonus_grows_to_its_own_end_value() -> void:
@@ -56,7 +56,7 @@ func test_the_weapon_bonus_grows_to_its_own_end_value() -> void:
 	var molok := _molok()
 	var hp: int = molok.stats()["hp_max"]
 	molok.weapon_levels["equip_left"] = 10
-	t.equal(molok.stats()["hp_max"], hp + 20, "Hammer Integritaet 20 -> 40")
+	t.equal(molok.stats()["hp_max"], hp + 20, "Hammer Integrität 20 -> 40")
 
 
 func test_a_drome_level_raises_two_values_more_than_the_rest() -> void:
@@ -64,12 +64,12 @@ func test_a_drome_level_raises_two_values_more_than_the_rest() -> void:
 	var before := vireo.stats()
 	vireo.drome_level = 5
 	var after := vireo.stats()
-	t.equal(after["hp_max"] - before["hp_max"], 40, "Integritaet ist Hauptwert: 80 -> 120 (+50 %)")
+	t.equal(after["hp_max"] - before["hp_max"], 40, "Integrität ist Hauptwert: 80 -> 120 (+50 %)")
 	t.equal(after["shield_max"] - before["shield_max"], 25, "Schild ist Hauptwert: 50 -> 75")
 	t.equal(after["shield_pulse"], 8, "Schildpuls +20 %: 7 -> 8")
 	t.equal(after["spd"], before["spd"], "Speed steigt nie")
 	t.equal(after["power"], before["power"], "Power steigt nie")
-	t.equal(after["module_slots"], 6, "Modulplaetze 3 -> 6 (Level 1, 3, 5)")
+	t.equal(after["module_slots"], 6, "Modulplätze 3 -> 6 (Level 1, 3, 5)")
 	var molok := _molok()
 	molok.drome_level = 5
 	t.equal(molok.stats()["module_slots"], 4, "Molok 2 -> 4 (Level 2, 4)")
@@ -81,7 +81,7 @@ func test_levels_reach_the_battle() -> void:
 	var unit := Unit.create(build, &"P0", true)
 	unit.init_realtime(0.0)
 	var attack: ActionData = unit.mounts[0]["attack"]
-	t.equal(attack.power, int(round(10 * 1.7)), "der Blaster schiesst auf Level 10 mit 17")
+	t.equal(attack.power, int(round(10 * 1.7)), "der Blaster schießt auf Level 10 mit 17")
 	unit.free()
 
 
@@ -99,11 +99,11 @@ func test_the_roster_carries_levels_into_the_build() -> void:
 	t.equal(build.source_uid, entry.chassis_uid(), "mit Herkunft")
 	t.ok(build.weapon_levels.values().has(3), "die Waffe kommt auf Level 3")
 	var copy := build.clone()
-	t.equal(copy.weapon_levels, build.weapon_levels, "die Lauf-Kopie behaelt die Level")
+	t.equal(copy.weapon_levels, build.weapon_levels, "die Lauf-Kopie behält die Level")
 	var saved := RosterEntry.from_dict(entry.to_dict())
-	t.equal(saved.xp, entry.xp, "EP ueberstehen Speichern")
+	t.equal(saved.xp, entry.xp, "EP überstehen Speichern")
 	var inst := PartInstance.from_dict(roster.instance(uid).to_dict())
-	t.equal(inst.level, 3, "Waffenlevel uebersteht Speichern")
+	t.equal(inst.level, 3, "Waffenlevel übersteht Speichern")
 
 
 func test_run_xp_is_collected_and_credited_at_home_at_the_end() -> void:
@@ -125,9 +125,9 @@ func test_run_xp_is_collected_and_credited_at_home_at_the_end() -> void:
 	var owned := roster.instance(str(first.instance_uids[slot]))
 	t.equal(entry.xp, 0, "im Lauf noch nichts gutgeschrieben")
 	t.equal(int(run.pending_xp["dromes"][first.source_uid]), Leveling.drome_win_xp("elite", 1),
-		"der DROME sammelt EP fuer den Sieg")
+		"der DROME sammelt EP für den Sieg")
 	t.equal(int(run.pending_xp["weapons"][str(first.instance_uids[slot])]), 50 + 50,
-		"die Waffe: 200 Schaden x 0,25 + 2 Abschuesse x 25")
+		"die Waffe: 200 Schaden x 0,25 + 2 Abschüsse x 25")
 	run.collect_xp(fighters, false)
 	t.equal(int(run.pending_xp["dromes"][first.source_uid]), Leveling.drome_win_xp("elite", 1),
 		"eine Niederlage gibt dem DROME nichts")

@@ -360,7 +360,7 @@ func effect_lines(which: Dictionary = {}) -> Array[String]:
 	if which.is_empty() and gadget != &"":
 		var action := gadget_action(gadget)
 		if action != null:
-			lines.append("Faehigkeit %s (%s)" % [action.display_name, action.trigger_text()])
+			lines.append("Fähigkeit %s (%s)" % [action.display_name, action.trigger_text()])
 	for key in source:
 		var line := effect_text(str(key), source[key])
 		if line != "":
@@ -375,7 +375,7 @@ func bonus_lines() -> Array[String]:
 	if gadget != &"":
 		var action := gadget_action(gadget)
 		if action != null:
-			lines.append("Faehigkeit %s (%s)" % [action.display_name, action.trigger_text()])
+			lines.append("Fähigkeit %s (%s)" % [action.display_name, action.trigger_text()])
 	if not bonus.is_empty():
 		lines.append_array(effect_lines(bonus))
 	return lines
@@ -403,37 +403,37 @@ static func effect_text(key: String, value) -> String:
 		"thorns_melee":
 			return "Nahkampf-Angreifer %d mehr" % int(v)
 		"ability_power":
-			return "Faehigkeit +%d %% Wirkung" % _pct(v)
+			return "Fähigkeit +%d %% Wirkung" % _pct(v)
 		"mark":
-			return "Faehigkeit markiert ihr Ziel %s s (+%d %% Schaden von allen)" \
+			return "Fähigkeit markiert ihr Ziel %s s (+%d %% Schaden von allen)" \
 				% [_seconds(v), _pct(rule("mark_damage_taken", 0.1))]
 		"kinetic_to_energy":
 			return "solange der Schild steht: %d %% des kinetischen Schadens wird Energie" % _pct(v)
 		"takt_count":
-			return "Treffer-Takt: jeder Angriff zaehlt %s" % _seconds(v)
+			return "Treffer-Takt: jeder Angriff zählt %s" % _seconds(v)
 		"bonus_vs_marked":
 			return "+%d %% Schaden gegen markierte Ziele" % _pct(v)
 		"armor_to_damage":
 			return "Angriffe +%d %% der eigenen Panzerung als Schaden" % _pct(v)
 		"post_ability_power":
-			return "nach der Faehigkeit: naechste %d Angriffe +%d %% Schaden" \
+			return "nach der Fähigkeit: nächste %d Angriffe +%d %% Schaden" \
 				% [int(rule("overload_attacks", 3)), _pct(v)]
 		"thorns_true":
-			return "Stacheln gehen am Schild vorbei und koennen Zusatztreffer ausloesen" if value else ""
+			return "Stacheln gehen am Schild vorbei und können Zusatztreffer auslösen" if value else ""
 		"ability_fork":
-			return "Faehigkeit trifft dazu ein zweites Ziel mit %d %% Wirkung" % _pct(v)
+			return "Fähigkeit trifft dazu ein zweites Ziel mit %d %% Wirkung" % _pct(v)
 		"chain_jumps":
 			return "Zusatztreffer springen weiter (bis %d), bevorzugt auf Markierte" % int(v)
 		"ability_armor_aura":
-			return "Faehigkeit: alle in Rw %d +%d Panzerung fuer %s s" \
+			return "Fähigkeit: alle in Rw %d +%d Panzerung für %s s" \
 				% [int(rule("aura_range", 2)), int(v), _seconds(rule("aura_seconds", 4.0))]
 		"shield_break_burst":
-			return "bricht der Schild: %d Energieschaden an alle in Rw %d, kurz betaeubt" \
+			return "bricht der Schild: %d Energieschaden an alle in Rw %d, kurz betäubt" \
 				% [int(v), int(rule("burst_range", 2))]
 		"decoy":
-			return "Koeder lenkt die Nachbarn %s s ab" % _seconds(v)
+			return "Köder lenkt die Nachbarn %s s ab" % _seconds(v)
 		"mark_on_hit_taken":
-			return "wer den Traeger trifft, wird markiert" if value else ""
+			return "wer den Träger trifft, wird markiert" if value else ""
 		"field_shot_marked":
 			return "Feldschuss bevorzugt markierte Gegner" if value else ""
 		"retaliation_max":
@@ -443,33 +443,33 @@ static func effect_text(key: String, value) -> String:
 		"mark_hunt":
 			return "stirbt ein Markierter, springt die Markierung weiter" if value else ""
 		"gravity":
-			return "das Wurzeln trifft dazu den naechsten Gegner am Ziel" if value else ""
+			return "das Wurzeln trifft dazu den nächsten Gegner am Ziel" if value else ""
 		"root":
-			return "Faehigkeit wurzelt ihr Ziel %s s (greift an, bewegt sich nicht)" % _seconds(v)
+			return "Fähigkeit wurzelt ihr Ziel %s s (greift an, bewegt sich nicht)" % _seconds(v)
 		"knockback_every":
-			return "jeder %d. Angriff stoesst das Ziel 1 Feld zurueck" % int(v)
+			return "jeder %d. Angriff stößt das Ziel 1 Feld zurück" % int(v)
 		"bonus_vs_unshielded":
 			return "+%d %% Schaden gegen Gegner ohne Schild" % _pct(v)
 		"takt_cut":
-			return "Faehigkeit %d Angriff frueher" % int(v)
+			return "Fähigkeit %d Angriff früher" % int(v)
 		"takt_time":
-			return "Zeit-Takt %d %% kuerzer" % _pct(v)
+			return "Zeit-Takt %d %% kürzer" % _pct(v)
 		"status_time":
-			return "Statuseffekte %d %% laenger" % _pct(v)
+			return "Statuseffekte %d %% länger" % _pct(v)
 		"taunt":
-			return "Faehigkeit lockt ihr Ziel %s s auf den Traeger" % _seconds(1.0 + v)
+			return "Fähigkeit lockt ihr Ziel %s s auf den Träger" % _seconds(1.0 + v)
 		"field_shot_every":
 			return "jeder %d. Angriff trifft dazu einen Gegner irgendwo auf dem Feld" % int(v)
 		"shield_delay":
-			return "Schild laedt schon nach %s s Ruhe" % _seconds(v)
+			return "Schild lädt schon nach %s s Ruhe" % _seconds(v)
 		"ready_after_ability":
-			return "nach der Faehigkeit sofort wieder geladen" if value else ""
+			return "nach der Fähigkeit sofort wieder geladen" if value else ""
 		"retaliation":
-			return "Vergeltung: jeder Treffer am Traeger laedt den naechsten Angriff um %d %% auf (bis 3x, Nahkampf doppelt)" % _pct(v)
+			return "Vergeltung: jeder Treffer am Träger lädt den nächsten Angriff um %d %% auf (bis 3x, Nahkampf doppelt)" % _pct(v)
 		"shackle":
-			return "Fesselkette: Faehigkeit zieht bis zu %d Gegner (Rw 3) heran und betaeubt sie 1 s" % int(v)
+			return "Fesselkette: Fähigkeit zieht bis zu %d Gegner (Rw 3) heran und betäubt sie 1 s" % int(v)
 		"cleave":
-			return "Rundumschlag: trifft dazu alle Gegner direkt neben dem Traeger mit %d %% Schaden" % _pct(v)
+			return "Rundumschlag: trifft dazu alle Gegner direkt neben dem Träger mit %d %% Schaden" % _pct(v)
 	return ""
 
 

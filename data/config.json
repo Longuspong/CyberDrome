@@ -55,12 +55,29 @@
     "rounds": 8,
     "map": {
       "_kommentar": [
-        "Die Reihe der Runde (RunState.row): immer ein Leichter, dazu zwei Normale mit",
-        "verschiedenen Gegnertypen ODER ein Normaler und ein Elite. Elite kommt mit",
-        "elite_chance, je vorher gewaehltem Elite um elite_bonus oefter, hoechstens",
-        "elite_cap. chaos_credits: Credit-Faktor im Chaos-Kampf (nur Endlos-Modus)."
+        "Kampfkarte (14. Nov. 2026, FTL-artig, RunState.row/links): je Runde eine Reihe,",
+        "feste Wege zur naechsten. Bis wide_until drei Knoten, danach zwei (mit wide_chance",
+        "drei), der letzte Kampf ein einzelner Elite-Knoten. Bis forks_until gabelt sich",
+        "fast jeder Weg, danach mit late_fork_chance (Korridore). Stufe je Knoten:",
+        "easy_share Leicht, elite_share Elite (ab elite_from, nicht im Training), sonst",
+        "Normal. chaos_credits: Credit-Faktor im Chaos-Kampf (nur Infinity-Einsatz)."
       ],
-      "elite_chance": 0.35, "elite_bonus": 0.12, "elite_cap": 0.85, "chaos_credits": 1.5
+      "wide_until": 3, "wide_chance": 0.4, "forks_until": 4, "late_fork_chance": 0.25,
+      "easy_share": 0.3, "elite_share": 0.22, "elite_from": 3, "chaos_credits": 1.5
+    },
+    "loot": {
+      "_kommentar": [
+        "Lootcaches statt Teilen und Credits (14. Nov. 2026, SPOT-Blatt Einsatz, Vorschlag",
+        "uebernommen): nach einem Sieg mit cache_chance je Stufe ein Cache der Fraktion,",
+        "sonst coins Platzhaltercoin. Elite und Chaos sicher. Der letzte Kampf gibt",
+        "final_caches, ein geschaffter Einsatz zusaetzlich complete_caches, eine",
+        "Niederlage loss_coins. Caches sind noch nicht zu oeffnen (Hangar-Shop folgt)."
+      ],
+      "cache_chance": {"easy": 0.25, "normal": 0.5, "elite": 1.0},
+      "coins": {"easy": 5, "normal": 10, "elite": 0},
+      "final_caches": 2, "complete_caches": 1, "loss_coins": 3,
+      "cache_names": {"city": "Neon Cache", "green": "Solar Cache", "plant7": "Mecha Cache"},
+      "coin_name": "Platzhaltercoin"
     },
     "training_rounds": 2,
     "endless": {
@@ -102,10 +119,10 @@
     "tiers": {
       "easy": {"power": 0.7, "count_offset": -1, "life_chance": 0.6, "credits": 6,
         "part_chance": 0.4, "loot_credits": 4,
-        "reward_text": "Gewuerfelt: Teil der Gegner oder Credits, oft Notstrom"},
+        "reward_text": "Gewürfelt: Teil der Gegner oder Credits, oft Notstrom"},
       "normal": {"power": 1.0, "count_offset": 0, "credits": 10,
         "part_chance": 0.6, "loot_credits": 6,
-        "reward_text": "Gewuerfelt: meist ein Teil der Gegner, sonst Credits"},
+        "reward_text": "Gewürfelt: meist ein Teil der Gegner, sonst Credits"},
       "elite": {"power": 1.3, "count_offset": 1, "credits": 16,
         "part_chance": 1.0, "drome_chance": 0.35,
         "reward_text": "Garantiert selten: mittleres/schweres Teil oder neuer DROME"}
@@ -164,10 +181,46 @@
     }
   },
 
-  "overtime": {
-    "_kommentar": "Ab start_seconds verliert jeder DROME je Puls ceil(hp_max * pct_per_cycle * (Pulse seit Start + 1)).",
-    "start_seconds": 60.0,
-    "pct_per_cycle": 0.05
+  "virus": {
+    "_kommentar": [
+      "Virusschaden (14. Nov. 2026, SPOT-Blatt Einsatz, ersetzt Overtime und Zeitlimit):",
+      "ab start_seconds trifft jeder Puls ALLE Einheiten gleichzeitig mit",
+      "ceil((hp_max + shield_max) * pct_of_max) -- erst Schild, dann Integritaet,",
+      "an der Ruestung vorbei. Fallen beide Seiten im selben Puls: Niederlage.",
+      "warn_seconds: so lange vorher flackert das Bild (Glitch, immer schneller)."
+    ],
+    "start_seconds": 300.0,
+    "pct_of_max": 0.1,
+    "warn_seconds": 30.0
+  },
+
+  "hangar_shop": {
+    "_kommentar": [
+      "Hangar-Shop (15. Nov. 2026, Tab Shop): Angebote fuer Platzhaltercoin. Preise sind",
+      "der Vorschlag aus dem SPOT-Blatt Hangar-Shop. kind: kit (ein Baukern), cache (ein",
+      "Lootcache des Gebiets cache). Upgrades folgen mit Bauschritt 5."
+    ],
+    "offers": [
+      {"id": "kit", "kind": "kit", "price": 20},
+      {"id": "cache_city", "kind": "cache", "cache": "city", "price": 50},
+      {"id": "cache_green", "kind": "cache", "cache": "green", "price": 50},
+      {"id": "cache_plant7", "kind": "cache", "cache": "plant7", "price": 50}
+    ]
+  },
+
+  "crafting": {
+    "_kommentar": [
+      "DROMEs verwerten und bauen (15. Nov. 2026, Wunsch des Spielers): ein verwerteter",
+      "DROME gibt salvage_kits Baukern(e) -- ein Fraktions-DROME dazu einen Fraktionskern",
+      "seiner Fraktion. Waffen kommen frei in den Hangar, Level und EP gehen verloren.",
+      "kits_per_drome Baukerne bauen einen Standard-DROME (Chassis waehlbar),",
+      "ein Fraktionskern + kits_per_drome Baukerne einen Fraktions-DROME (Werte aus",
+      "data/formations.json -> dromes). Spaeter auch im Hangar-Shop."
+    ],
+    "salvage_kits": 1,
+    "kits_per_drome": 3,
+    "kit_name": "Baukern",
+    "faction_core_names": {"neon": "Neon-Kern", "solar": "Solar-Kern", "mecha": "Mecha-Kern", "hipstar": "Hipstar-Kern"}
   },
 
   "realtime": {
@@ -179,7 +232,6 @@
       "                  (8. Nov. 2026: alle drei um 30 % gesenkt, Wunsch des Spielers)",
       "pulse             Sekunden je Puls: Schild- und Integritaetsregeneration,",
       "                  Overtime",
-      "time_limit        harte Grenze, danach unentschieden",
       "think_interval    wie oft ein DROME prueft, ob ein sicherer Abschuss in Reichweite ist",
       "retarget_after    so lange darf das Ziel unerreichbar sein, dann wird neu gewaehlt",
       "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist",
@@ -191,7 +243,6 @@
     "move_per_spd": 0.084,
     "move_min": 0.84,
     "pulse": 3.0,
-    "time_limit": 180.0,
     "think_interval": 0.5,
     "retarget_after": 2.0,
     "kite_distance": 2

@@ -32,8 +32,15 @@ var _footer: VBoxContainer
 ## Zwischenstopp: der angetippte Lagerplatz (-1 = keiner).
 var _selected_storage: int = -1
 
-## Zwischenstopp: Rezeptbuch aufgeklappt?
+## Zwischenstopp: Rezeptbuch offen (Popup)? Filter im Rezeptbuch.
 var _recipes_open: bool = false
+var _recipe_filter: String = "alle"
+## Lagerplatz, der kurz aufleuchten soll (frisch gekauft); -1 = keiner.
+var _flash_storage: int = -1
+## Halter "drome:slot", der kurz aufleuchten soll (frisch eingesetzt).
+var _flash_holder: String = ""
+## Die Rezepte, die das Rezeptbuch gerade zeigt (Reihenfolge zum Blaettern).
+var _recipe_shown: Array = []
 
 ## Was am Ende des Laufs nach Hause ging -- fuer die Abschlussanzeige.
 var _delivered: Array = []
@@ -59,7 +66,7 @@ func _run() -> RunState:
 ## gerade zu entscheiden ist (Kampf starten, Belohnung waehlen), darunter der
 ## Squad. Die Entscheidung steht oben, weil sie der Grund ist, hier zu sein.
 func _build_ui() -> void:
-	var content := UiKit.page(self, "Lauf", "res://scenes/main.tscn", -1, true,
+	var content := UiKit.page(self, "Einsatz", "res://scenes/main.tscn", -1, true,
 		Ambience.Kind.CITY, 0.35)
 
 	var top := HBoxContainer.new()
@@ -139,9 +146,9 @@ func _refresh() -> void:
 		_show_setup()
 		return
 	if run.is_endless():
-		_header_round.text = "Endlos  ·  Runde %d" % run.round
+		_header_round.text = "Infinity  ·  Kampf %d" % run.round
 	else:
-		_header_round.text = "Runde %d von %d" % [mini(run.round, RunState.rounds_total()),
+		_header_round.text = "Kampf %d von %d" % [mini(run.round, RunState.rounds_total()),
 			RunState.rounds_total()]
 	_refresh_lives(run)
 	_refresh_squad(run)
@@ -179,7 +186,7 @@ func _refresh_squad(run: RunState) -> void:
 	for child in _squad_list.get_children():
 		child.queue_free()
 	var heading := Label.new()
-	heading.text = "Dein Lauf-Squad  ·  Kampfwert %d" % int(DromeBuild.squad_power(run.squad))
+	heading.text = "Dein Einsatz-Squad  ·  Kampfwert %d" % int(DromeBuild.squad_power(run.squad))
 	heading.add_theme_font_size_override("font_size", 20)
 	heading.modulate = COLOR_HEADING
 	_squad_list.add_child(heading)
@@ -206,26 +213,26 @@ func _drome_card(build: DromeBuild) -> Control:
 ## Vor dem Lauf: wer kommt mit? Vorgeschlagen ist der Hangar-Squad.
 func _show_setup() -> void:
 	var endless := GameState.next_run_mode == "endless"
-	_header_round.text = "Endlos-Modus" if endless else "Neon City"
-	_side.add_child(_label("Wer kommt mit? Vorgeschlagen ist dein Hangar-Squad. Im Lauf "
-		+ "bleiben die Waffen, wie sie sind -- staerker wirst du mit Modulen aus dem Laden.",
+	_header_round.text = "Infinity-Einsatz" if endless else "Neon City"
+	_side.add_child(_label("Wer kommt mit? Vorgeschlagen ist dein Hangar-Squad. Im Einsatz "
+		+ "bleiben die Waffen, wie sie sind -- stärker wirst du mit Modulen aus dem Laden.",
 		UiKit.SMALL, COLOR_MUTED))
 	var picker := SquadPicker.new()
 	_side.add_child(picker)
 	picker.setup(RunState.squad_max())
 	if endless:
-		_side.add_child(_label("Kein Ende, ein Leben: die erste Niederlage beendet den Lauf und "
-			+ "kostet die Beute. Nach jeder Runde kannst du aussteigen und sie behalten. "
+		_side.add_child(_label("Kein Ende, ein Leben: die erste Niederlage beendet den Einsatz und "
+			+ "kostet die Beute. Nach jedem Kampf kannst du aussteigen und sie behalten. "
 			+ "Ab und zu taucht ein Chaos-Kampf auf -- Gegner unbekannt, bessere Beute.",
 			UiKit.SMALL, COLOR_MUTED))
 	else:
-		_side.add_child(_label("%d Kaempfe, %d Leben. Die ersten %d sind Training gegen normale "
+		_side.add_child(_label("%d Kämpfe, %d Leben. Die ersten %d sind Training gegen normale "
 			% [RunState.rounds_total(), RunState.max_lives(),
 				int(RunState.cfg().get("training_rounds", 0))]
-			+ "DROMEs, danach kommen die Neon Ninja's. Vor jedem Kampf waehlst du: immer ein "
+			+ "DROMEs, danach kommen die Neon Ninja's. Vor jedem Kampf wählst du: immer ein "
 			+ "leichter Gegner, dazu zwei normale oder ein normaler und ein Elite.",
 			UiKit.SMALL, COLOR_MUTED))
-	var start := _big_button("Lauf starten")
+	var start := _big_button("Einsatz starten")
 	start.disabled = picker.chosen_count() < 1
 	picker.changed.connect(func(): start.disabled = picker.chosen_count() < 1)
 	start.pressed.connect(func():
@@ -235,8 +242,17 @@ func _show_setup() -> void:
 
 
 func _show_prepare(run: RunState) -> void:
-	_side.add_child(_label("Waehle deinen Gegner", 22, COLOR_HEADING))
-	# Die Knoten dieser Runde, darunter die Reihe, die danach kaeme.
+	var head := HBoxContainer.new()
+	var title := _label("WÄHLE DEINEN WEG", 14, COLOR_HEADING)
+	title.add_theme_font_override("font", Arcade.font("bold", 14, 0.14))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	if not run.is_chaos():
+		head.add_child(_chip("Reinforcement %d" % run.reinforcement(), UiKit.MAGENTA, Callable(),
+			"Steigt nach jedem Kampf, nach Elite-Kämpfen schneller. Je höher, desto "
+			+ "mehr und stärkere Gegner."))
+	_side.add_child(head)
+	# Die Kampfkarte mit festen Wegen (14. Nov. 2026).
 	var map := MapView.new(run)
 	map.picked.connect(func(index: int):
 		if run.choose_node(index):
@@ -253,41 +269,40 @@ func _show_prepare(run: RunState) -> void:
 	panel.add_child(box)
 	_side.add_child(panel)
 
-	# Wer: Stufe, Team und Gegnertyp -- der Typ sagt, was auf einen zukommt.
 	var tier_color: Color = MapView.CHAOS_COLOR if chaos else MapView.COLOR.get(run.tier, Color.WHITE)
 	if chaos:
-		box.add_child(_label("CHAOS-Kampf", 20, tier_color))
-		box.add_child(_label("Der Virus wuerfelt alles: DROMEs, Waffen, Module. Gegner erst im "
-			+ "Kampf zu sehen.", 14, COLOR_MUTED))
+		box.add_child(_label("CHAOS-KAMPF", 18, tier_color))
+		box.add_child(_label("Der Virus würfelt alles: DROMEs, Waffen, Module. Gegner erst im "
+			+ "Kampf zu sehen.", 13, COLOR_MUTED))
 	else:
-		box.add_child(_label("%s  ·  %s" % [RunState.TIER_NAMES[run.tier], info["team"]], 20, tier_color))
-		if str(info.get("type", "")) != "":
-			box.add_child(_label("Gegnertyp: %s" % info["type"], 16, COLOR_WARN))
+		var name := _label("%s  ·  %s" % [RunState.TIER_NAMES[run.tier], info["team"]], 18, tier_color)
+		name.add_theme_font_override("font", Arcade.font("bold", 18, 0.03))
+		box.add_child(name)
 		if str(info.get("team_text", "")) != "":
-			box.add_child(_label(str(info["team_text"]), 14))
-		if str(info.get("type_hint", "")) != "":
-			box.add_child(_label(str(info["type_hint"]), 14, COLOR_MUTED))
-	var where := str(info["region"])
-	if str(info.get("faction", "")) != "" and not chaos:
-		where += "  ·  %s" % info["faction"]
-	box.add_child(_label(where, 14, COLOR_MUTED))
+			box.add_child(_label(str(info["team_text"]), 13, COLOR_MUTED))
+		# Die Einheiten der Formation als Kacheln -- antippen zeigt die Werte.
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 6)
+		flow.add_theme_constant_override("v_separation", 6)
+		box.add_child(flow)
+		var foes: Array = info["enemy_builds"]
+		for k in foes.size():
+			flow.add_child(_enemy_tile(foes[k], k))
 
 	var own := float(info["own_power"])
 	var foe := float(info["enemy_power"])
 	var ratio := own / maxf(1.0, foe)
-	var verdict := "ueberlegen" if ratio >= 1.1 else ("ausgeglichen" if ratio >= 0.9 else "unterlegen")
+	var verdict := "überlegen" if ratio >= 1.1 else ("ausgeglichen" if ratio >= 0.9 else "unterlegen")
 	var color := COLOR_GOOD if ratio >= 1.1 else (COLOR_WARN if ratio >= 0.9 else COLOR_BAD)
+	var line := HBoxContainer.new()
+	box.add_child(line)
 	if chaos:
-		box.add_child(_label("Kampfwert: du %d  ·  Gegner ???" % int(own), 16, COLOR_WARN))
+		line.add_child(_flow_label("Kampfwert: du %d  ·  Gegner ???" % int(own), 14, COLOR_WARN))
 	else:
-		box.add_child(_label("Kampfwert: du %d  ·  Gegner %d  (%s)" % [int(own), int(foe), verdict],
-			16, color))
-	box.add_child(_label("Beute: %s" % info["reward_text"], 14,
+		line.add_child(_flow_label("Kampfwert: du %d · Gegner %d · %s" % [int(own), int(foe), verdict],
+			14, color))
+	box.add_child(_label("Beute: %s" % info["reward_text"], 13,
 		COLOR_WARN if run.tier == RunState.Tier.ELITE or chaos else COLOR_MUTED))
-
-	if not chaos:
-		for build in info["enemy_builds"]:
-			box.add_child(SquadPicker.drome_card(build))
 
 	var start := _big_button("Kampf starten")
 	start.pressed.connect(func():
@@ -297,15 +312,71 @@ func _show_prepare(run: RunState) -> void:
 	start.grab_focus.call_deferred()
 
 	var abandon := Button.new()
-	abandon.text = "Aussteigen und Beute behalten" if run.is_endless() else "Lauf aufgeben"
+	abandon.text = "Aussteigen und Beute behalten" if run.is_endless() else "Einsatz aufgeben"
 	abandon.flat = true
-	abandon.custom_minimum_size = Vector2(0, 44)
+	abandon.custom_minimum_size = Vector2(0, 40)
+	abandon.add_theme_color_override("font_color", COLOR_MUTED)
 	abandon.pressed.connect(func():
-		run.abandon()
-		GameState.deliver_run_home()
-		GameState.run = null
-		_refresh())
+		InfoPopup.open(self, "Einsatz aufgeben?", {"lines": ["Module und Credits verfallen. "
+			+ "Erfahrung und Beute in der Tasche nimmst du mit."],
+			"actions": [{"text": "Aufgeben", "call": func():
+				run.abandon()
+				GameState.deliver_run_home()
+				GameState.run = null
+				_refresh()}, {"text": "Weiterkämpfen", "primary": true}]}))
 	_side.add_child(abandon)
+
+
+## Eine Gegner-Kachel: DROMEs gross, Sentinels klein mit Rang-Kuerzel.
+## Antippen zeigt Werte, Waffe und Module.
+func _enemy_tile(build: DromeBuild, index: int) -> Control:
+	var sentinel := build.is_sentinel()
+	var edge := 40.0 if sentinel else 52.0
+	var tile := Tile.new("foe:%d:%s" % [index, build.display_name], UiKit.drome_view(build, edge),
+		"", Vector2(68 if sentinel else 76, 66 if sentinel else 74))
+	tile.accent = UiKit.BAD
+	tile.glow = not sentinel
+	var tag: String = {"elite": "E", "heavy": "H", "heavy_elite": "HE"}.get(build.rank, "")
+	var short: String = ({"assault": "Assault", "sniper": "Sniper", "support": "Support"}.get(build.archetype, "")
+		if sentinel else build.display_name.split(" ")[-1])
+	tile.add_caption("%s%s" % [short, (" " + tag) if tag != "" else ""],
+		COLOR_WARN if tag != "" else UiKit.TEXT, 10 if sentinel else 11)
+	var pages := _enemy_pages(GameState.run)
+	tile.on_info = func(): InfoPopup.open_pages(self, pages, index)
+	return tile
+
+
+func _enemy_pages(run: RunState) -> Array:
+	var pages: Array = []
+	for build in run.enemies():
+		pages.append(func() -> Dictionary: return _enemy_page(build))
+	return pages
+
+
+func _enemy_page(build: DromeBuild) -> Dictionary:
+	var stats := build.stats()
+	var lines: Array = []
+	if build.is_sentinel():
+		lines.append(["Sentinel · %s · %s" % [
+			{"assault": "Assault", "sniper": "Sniper", "support": "Support"}.get(build.archetype, ""),
+			{"basic": "Basic", "elite": "Elite", "heavy": "Heavy", "heavy_elite": "Heavy Elite"}.get(build.rank, "")],
+			COLOR_MUTED, UiKit.SMALL])
+		lines.append(["Nur Auto-Angriff, keine Passive.", COLOR_MUTED, UiKit.SMALL])
+	lines.append("Integrität %d  ·  Schild %d  ·  Rüstung %d" % [int(stats["hp_max"]),
+		int(stats["shield_max"]), int(stats["def"])])
+	lines.append("Speed %d  ·  Power %d  ·  Kampfwert %d" % [int(stats["spd"]), int(stats["power"]),
+		int(build.power_score())])
+	for part in build.equipment():
+		lines.append(["Waffe: %s" % part.display_name, COLOR_HEADING])
+	var names: Array = []
+	for slot in build.modules:
+		for module_id in build.modules[slot]:
+			var module := ModuleData.get_module(module_id)
+			if module != null:
+				names.append(module.display_name)
+	if not names.is_empty():
+		lines.append(["Module: %s" % ", ".join(names), COLOR_GOOD])
+	return {"title": build.display_name, "picture": UiKit.drome_view(build, 64), "lines": lines}
 
 
 ## "+10 Credits fuer den Sieg  ·  jetzt 24"
@@ -314,155 +385,206 @@ func _credit_line(run: RunState) -> String:
 		return "Credits: %d" % run.credits
 	var last: Dictionary = run.history[-1]
 	return "+%d Credits %s  ·  jetzt %d" % [int(last.get("credits", 0)),
-		"fuer den Sieg" if last["won"] else "Trostgeld", run.credits]
+		"für den Sieg" if last["won"] else "Trostgeld", run.credits]
 
 
 # ---------------------------------------------------------------------------
 # Zwischenstopp (NEUANFANG 7d)
 # ---------------------------------------------------------------------------
 
-## Nach jedem Kampf: oben Credits, dann das Lager als Kacheln, darunter der
-## Squad mit seinen Haltern. Bedienung wie besprochen: Waffe im Lager
-## antippen, dann den Halter antippen. Ohne Auswahl baut ein Halter seine
-## Waffe aus ins Lager. Umbauen kostet nichts.
+## Nach jedem Kampf (seit 14. Nov. 2026 ohne langes Scrollen, Wunsch des
+## Spielers): oben Credits und Chips (Beute, Erfahrung, Tasche), dann Laden,
+## Lager und Squad als Kacheln. Einmal tippen waehlt oder handelt, doppelt
+## tippen oder lange druecken erklaert (Tile, InfoPopup). Das Rezeptbuch
+## ist ein Popup mit Raster.
+##
+## Bedienung: Modul im Lager antippen, dann einen leuchtenden Platz an einem
+## Halter -- oder das Modul dorthin ziehen. Ein eingesetztes Modul antippen:
+## Popup mit "Zurueck ins Lager".
 func _show_stop(run: RunState) -> void:
 	if _selected_storage >= run.storage.size():
 		_selected_storage = -1
-	var last: Dictionary = run.history[-1] if not run.history.is_empty() else {}
-	_side.add_child(_label("Zwischenstopp", 22, COLOR_HEADING))
-	if not last.is_empty() and not last["won"]:
-		_side.add_child(_label("Niederlage -- ein Leben weniger.", 18, COLOR_BAD))
-	_side.add_child(_label(_credit_line(run), 18, COLOR_WARN))
-	if not run.last_loot.is_empty():
-		_side.add_child(_loot_section(run))
+	_side.add_child(_stop_status(run))
 	if not run.bios_offers.is_empty():
-		_side.add_child(_bios_section(run))
-	if not run.last_growth.is_empty():
-		_side.add_child(_growth_section(run))
-	_side.add_child(_shop_section(run))
+		_side.add_child(_bios_row(run))
+
+	# --- Laden ---
+	var reroll_block := run.reroll_blocker()
+	var reroll := _small_button("↻  %d ¢" % run.reroll_price())
+	reroll.tooltip_text = "Neu würfeln" + ("" if reroll_block == "" else ": " + reroll_block)
+	reroll.disabled = reroll_block != ""
+	reroll.pressed.connect(func():
+		run.reroll_shop()
+		_refresh())
+	var target := ModuleData.get_module(run.target_recipe)
+	_side.add_child(_section_head("Laden" + ("  ·  Ziel: %s" % target.display_name
+		if target != null else ""), reroll))
+	_side.add_child(_shop_row(run))
 
 	# --- Lager ---
-	_side.add_child(_label("Lager  %d / %d" % [run.storage.size(), RunState.storage_size()],
-		18, COLOR_HEADING))
-	if run.storage.is_empty():
-		_side.add_child(_label("Leer. Module aus dem Laden landen hier.",
-			16, COLOR_MUTED))
-	else:
-		var grid := GridContainer.new()
-		grid.columns = 4
-		grid.add_theme_constant_override("h_separation", 8)
-		grid.add_theme_constant_override("v_separation", 8)
-		_side.add_child(grid)
-		for index in run.storage.size():
-			grid.add_child(_storage_tile(run, index))
-	if run.is_module_at(_selected_storage):
-		_side.add_child(_module_card(run, _selected_storage))
-	_side.add_child(_recipe_section(run))
-	if not run.bag.is_empty():
-		_side.add_child(_bag_section(run))
+	var book := run.recipe_book()
+	var ready := book.filter(func(entry): return entry["ready"]).size()
+	var recipes := _small_button("Rezepte%s" % (("  ·  %d bereit" % ready) if ready > 0 else ""))
+	if ready > 0:
+		recipes.add_theme_color_override("font_color", COLOR_GOOD)
+	recipes.pressed.connect(func(): _open_recipes(run))
+	_side.add_child(_section_head("Lager  %d / %d" % [run.storage.size(), RunState.storage_size()],
+		recipes))
+	_side.add_child(_storage_grid(run))
+	if run.is_bios_at(_selected_storage):
+		_side.add_child(_label("BIOS: tippe einen leuchtenden Halter an.", UiKit.SMALL, COLOR_GOOD))
+	elif run.is_module_at(_selected_storage):
+		_side.add_child(_label("Leuchtenden Platz antippen  ·  nochmal tippen: Details  ·  Doppeltipp: ausrüsten",
+			UiKit.SMALL, COLOR_GOOD))
 
 	# --- Squad mit Haltern ---
-	_side.add_child(_label("Dein Lauf-Squad  ·  Kampfwert %d"
-		% int(DromeBuild.squad_power(run.squad)), 18, COLOR_HEADING))
-	var module_mode := run.is_module_at(_selected_storage)
-	if run.is_bios_at(_selected_storage):
-		_side.add_child(_label("Chassis-BIOS: tippe einen Halter des passenden DROME an. Rezept-BIOS: im Rezeptbuch verschmelzen.",
-			16, COLOR_MUTED))
-	elif module_mode:
-		_side.add_child(_label("Tippe einen Halter an, um das Modul einzusetzen.", 16, COLOR_MUTED))
-	else:
-		_side.add_child(_label("Modul im Halter antippen: zurueck ins Lager. Die Waffen bleiben im Lauf, wie sie sind.",
-			16, COLOR_MUTED))
+	_side.add_child(_section_head("Squad  ·  Kampfwert %d" % int(DromeBuild.squad_power(run.squad))))
 	var options: Array = []
 	if run.is_bios_at(_selected_storage):
 		options = run.bios_options(_selected_storage)
-	elif module_mode:
+	elif run.is_module_at(_selected_storage):
 		options = run.module_options(_selected_storage)
 	for drome in run.squad.size():
-		_side.add_child(_stop_drome_card(run, drome, options))
+		_side.add_child(_squad_row(run, drome, options))
 
-	var go := _big_button("Weiter zum naechsten Kampf")
+	var go := _big_button("Weiter zum nächsten Kampf")
 	go.pressed.connect(func():
 		_selected_storage = -1
+		InfoPopup.close_all(self)
 		run.continue_run()
 		_refresh())
-	_main_action(go)
-	# Endlos-Modus: nach jeder Runde aussteigen und die Beute behalten.
+	# Infinity-Einsatz: nach jedem Kampf aussteigen und die Beute behalten.
 	if run.is_endless():
-		var out := UiKit.button("Aussteigen und Beute behalten")
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		var out := UiKit.button("Aussteigen")
+		out.size_flags_stretch_ratio = 0.5
 		out.pressed.connect(func():
 			_selected_storage = -1
 			run.cash_out()
 			_refresh())
-		_side.add_child(out)
+		row.add_child(out)
+		row.add_child(go)
+		_main_action(row)
+	else:
+		_main_action(go)
+	if _recipes_open:
+		_open_recipes.call_deferred(run)
+
+
+## Kopfzeile eines Abschnitts: Etikett links, optional ein kleiner Knopf rechts.
+func _section_head(text: String, extra: Control = null) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var label := _label(text.to_upper(), 14, COLOR_HEADING)
+	label.add_theme_font_override("font", Arcade.font("bold", 14, 0.14))
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.size_flags_vertical = Control.SIZE_SHRINK_END
+	row.add_child(label)
+	if extra != null:
+		row.add_child(extra)
+	return row
+
+
+func _small_button(text: String) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(0, 40)
+	button.add_theme_font_size_override("font_size", 15)
+	button.pressed.connect(Accessibility.tap)
+	return button
+
+
+## Credits, Ausgang des Kampfs und Chips fuer Beute, Erfahrung und Tasche --
+## jeder Chip oeffnet sein Popup.
+func _stop_status(run: RunState) -> Control:
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 8)
+	flow.add_theme_constant_override("v_separation", 8)
+	var last: Dictionary = run.history[-1] if not run.history.is_empty() else {}
+	var lost: bool = not last.is_empty() and not bool(last["won"])
+	var credits := "¢ %d" % run.credits
+	if not last.is_empty():
+		credits += "   +%d" % int(last.get("credits", 0))
+	flow.add_child(_chip(credits, COLOR_WARN, Callable(), "Credits: Währung des Ladens. "
+		+ ("+%d für den Sieg." % int(last.get("credits", 0)) if not lost else "Trostgeld nach der Niederlage.")))
+	if lost:
+		flow.add_child(_chip("Niederlage  ·  −1 Leben", COLOR_BAD, Callable(), ""))
+	if not run.last_loot.is_empty():
+		flow.add_child(_chip("Beute ▸", COLOR_GOOD, func(): _loot_popup(run), ""))
+	var cache_total := 0
+	for key in run.run_caches:
+		cache_total += int(run.run_caches[key])
+	if cache_total > 0 or run.run_coins > 0:
+		flow.add_child(_chip("◆ %d  ·  ◈ %d" % [cache_total, run.run_coins], UiKit.MAGENTA,
+			func(): _caches_popup(run), ""))
+	if not run.last_growth.is_empty():
+		flow.add_child(_chip("Erfahrung ▸", COLOR_HEADING, func(): _growth_popup(run), ""))
+	if not run.bag.is_empty():
+		flow.add_child(_chip("Tasche %d ▸" % run.bag.size(), COLOR_MUTED, func(): _bag_popup(run), ""))
+	return flow
+
+
+## Kleiner Chip mit Rahmen in seiner Farbe. Mit ``on_tap`` ein Knopf.
+func _chip(text: String, color: Color, on_tap: Callable, tip: String) -> Control:
+	var button := Button.new()
+	button.text = text
+	button.tooltip_text = tip
+	button.custom_minimum_size = Vector2(0, 38)
+	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_font_override("font", Arcade.font("bold", 15, 0.04))
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color",
+			"font_disabled_color"]:
+		button.add_theme_color_override(state, color)
+	var box := Arcade.chamfer_box(Color(UiKit.BG, 0.85), 8, Color(color, 0.8), 2)
+	box.content_margin_left = 12
+	box.content_margin_right = 12
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		button.add_theme_stylebox_override(state, box)
+	if on_tap.is_valid():
+		button.pressed.connect(on_tap)
+	else:
+		button.mouse_filter = Control.MOUSE_FILTER_PASS
+		button.focus_mode = Control.FOCUS_NONE
+	return button
 
 
 ## Die gewuerfelte Beute des letzten Siegs (6i): was es gab und wo es
 ## gelandet ist. Gewaehlt wird nichts -- es ist schon verteilt.
-func _loot_section(run: RunState) -> Control:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(true))
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
-	box.add_child(_label("Beute", 18, COLOR_GOOD))
+func _loot_popup(run: RunState) -> void:
+	var lines: Array = []
 	for item in run.last_loot:
-		var where: String = {"lager": "  ->  Lager", "squad": "  ->  Lauf-Squad",
-			"tasche": "  ->  Tasche (nach dem Lauf in den Hangar)",
-			"home": "  ->  nach Hause (kein Platz)"}.get(str(item.get("where", "")), "")
-		box.add_child(_label("%s%s%s" % ["[Selten] " if item.get("rare", false) else "",
-			item["title"], where], 18, COLOR_WARN if item.get("rare", false) else Color.WHITE))
-		box.add_child(_label(str(item.get("text", "")), 16, COLOR_MUTED))
-	return panel
+		var where: String = {"lager": "  →  Lager", "squad": "  →  Squad",
+			"tasche": "  →  Tasche (nach dem Einsatz in den Hangar)",
+			"home": "  →  nach Hause", "caches": "  →  Einsatz-Beute",
+			"coins": "  →  Einsatz-Beute"}.get(str(item.get("where", "")), "")
+		lines.append(["%s%s%s" % ["[Selten] " if item.get("rare", false) else "", item["title"], where],
+			COLOR_WARN if item.get("rare", false) else Color.WHITE])
+		if str(item.get("text", "")) != "":
+			lines.append([str(item["text"]), COLOR_MUTED, UiKit.SMALL])
+	InfoPopup.open(self, "Beute", {"lines": lines})
 
 
-## Die BIOS-Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): eines von
-## drei kommt ins Lager, die anderen verfallen beim Weitergehen.
-func _bios_section(run: RunState) -> Control:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(true))
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	panel.add_child(box)
-	box.add_child(_label("Matrix-BIOS -- waehle eines", 18, ModuleData.CLASS_COLOR["bios"]))
-	box.add_child(_label("Die anderen verfallen, wenn du weitergehst.", 14, COLOR_MUTED))
-	var blocker := run.bios_blocker()
-	for index in run.bios_offers.size():
-		var item := ModuleData.get_module(run.bios_offers[index])
-		if item == null:
-			continue
-		var head := HBoxContainer.new()
-		head.add_theme_constant_override("separation", 10)
-		box.add_child(head)
-		head.add_child(ModuleChip.new(item, 44.0))
-		var title := VBoxContainer.new()
-		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		head.add_child(title)
-		title.add_child(_label(item.display_name, 18))
-		title.add_child(_label(item.headline(), 14, item.color()))
-		for line in item.effect_lines():
-			box.add_child(_label(line, 16))
-		var take := UiKit.button("Nehmen" if blocker == "" else blocker)
-		take.disabled = blocker != ""
-		take.pressed.connect(func():
-			if run.choose_bios(index):
-				Accessibility.vibrate(30, true)
-			_refresh())
-		box.add_child(take)
-	return panel
+## Was der Einsatz bisher an Caches und Platzhaltercoin gesammelt hat.
+func _caches_popup(run: RunState) -> void:
+	var lines: Array = [["Geht am Ende des Einsatzes in den Hangar -- auch wenn er scheitert.",
+		COLOR_MUTED, UiKit.SMALL]]
+	for key in run.run_caches:
+		lines.append(["◆  %d× %s" % [int(run.run_caches[key]), RunState.cache_name(StringName(key))],
+			UiKit.MAGENTA])
+	lines.append(["◈  %d %s" % [run.run_coins, RunState.coin_name()], COLOR_WARN])
+	lines.append(["Caches öffnen kommt mit dem Hangar-Shop.", COLOR_MUTED, UiKit.SMALL])
+	InfoPopup.open(self, "Einsatz-Beute", {"lines": lines})
 
 
 ## Erfahrung des letzten Kampfes (Leveling): je DROME und Waffe die neuen EP
-## und was der Lauf bisher gesammelt hat -- mit dem Level, das er nach dem
-## Lauf haette. Gutgeschrieben wird erst am Ende, zuhause.
-func _growth_section(run: RunState) -> Control:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(false))
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	panel.add_child(box)
-	box.add_child(_label("Erfahrung", 18, COLOR_HEADING))
-	box.add_child(_label("Wird am Ende des Laufs zuhause gutgeschrieben.", 14, COLOR_MUTED))
+## und was der Einsatz bisher gesammelt hat -- mit dem Level, das er danach
+## haette. Gutgeschrieben wird erst am Ende, zuhause.
+func _growth_popup(run: RunState) -> void:
+	var lines: Array = [["Wird am Ende des Einsatzes zuhause gutgeschrieben.", COLOR_MUTED, UiKit.SMALL]]
 	for row in run.last_growth:
 		var drome: bool = row["kind"] == "drome"
 		var have := 0
@@ -480,218 +602,238 @@ func _growth_section(run: RunState) -> Control:
 				level = owned.level
 		var after := Leveling.drome_level_for(have + total) if drome \
 			else Leveling.weapon_level_for(have + total)
-		var text := "%s  +%d EP  (Lauf %d)  ·  Lv %d%s" % [row["name"], int(row["gain"]), total,
-			level, (" -> %d" % after) if after > level else ""]
-		box.add_child(_label(text, 16 if drome else 14,
-			COLOR_GOOD if after > level else (Color.WHITE if drome else COLOR_MUTED)))
-	return panel
+		lines.append(["%s  +%d EP  ·  Lv %d%s" % [row["name"], int(row["gain"]), level,
+			(" → %d" % after) if after > level else ""],
+			COLOR_GOOD if after > level else (Color.WHITE if drome else COLOR_MUTED),
+			UiKit.BODY - 1 if drome else UiKit.SMALL])
+	InfoPopup.open(self, "Erfahrung", {"lines": lines})
 
 
-## Der Laden (6i): wenige Grundmodule fuer Credits, gekauft wird ins Lager.
-## Je Angebot Chip, Name, Wirkung, wofuer es Zutat ist, und der Kaufknopf --
-## gesperrt mit Grund (zu wenig Credits, Lager voll, verkauft).
-func _shop_section(run: RunState) -> Control:
+## Die Tasche (6h): Beute-Waffen dieses Einsatzes. Sie werden im Einsatz nicht
+## eingebaut und gehen am Ende in den Hangar.
+func _bag_popup(run: RunState) -> void:
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 8)
+	flow.add_theme_constant_override("v_separation", 8)
+	for id in run.bag:
+		var part := PartDB.get_part(id)
+		if part == null:
+			continue
+		flow.add_child(Tile.new("", SlotShape.new(part.mount_class, UiKit.part_texture(part), 44.0),
+			part.display_name, Vector2(84, 80)))
+	InfoPopup.open(self, "Tasche", {"body": flow, "lines": [["Beute-Waffen gehen nach dem "
+		+ "Einsatz in den Hangar. Im Einsatz bleiben die Waffen fest.", COLOR_MUTED, UiKit.SMALL]]})
+
+
+## Die BIOS-Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): drei Kacheln,
+## Antippen zeigt das BIOS mit "Nehmen".
+func _bios_row(run: RunState) -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
-	box.add_child(_label("Laden", 18, COLOR_HEADING))
-	var target := ModuleData.get_module(run.target_recipe)
-	if target != null:
-		box.add_child(_label("Ziel: %s -- seine fehlenden Zutaten kommen oefter." % target.display_name,
-			16, COLOR_GOOD))
-	var reroll_block := run.reroll_blocker()
-	var reroll := UiKit.button("Neu wuerfeln  %d Credits%s" % [run.reroll_price(),
-		"" if reroll_block == "" else " -- " + reroll_block])
-	reroll.disabled = reroll_block != ""
-	reroll.pressed.connect(func():
-		run.reroll_shop()
-		_refresh())
+	box.add_child(_section_head("Matrix-BIOS  ·  wähle eines"))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	box.add_child(row)
+	var blocker := run.bios_blocker()
+	for index in run.bios_offers.size():
+		var item := ModuleData.get_module(run.bios_offers[index])
+		if item == null:
+			continue
+		var tile := Tile.new("bios:%d" % index, ModuleChip.new(item, 44.0), item.display_name,
+			Vector2(0, 84))
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tile.accent = ModuleData.CLASS_COLOR["bios"]
+		tile.glow = true
+		var pages := _bios_pages(run, blocker)
+		tile.on_info = func(): InfoPopup.open_pages(self, pages, index)
+		tile.on_action = func():
+			if blocker == "" and run.choose_bios(index):
+				Accessibility.vibrate(30, true)
+			_refresh()
+		row.add_child(tile)
+	return box
+
+
+func _bios_pages(run: RunState, blocker: String) -> Array:
+	var pages: Array = []
+	for index in run.bios_offers.size():
+		var item := ModuleData.get_module(run.bios_offers[index])
+		if item == null:
+			continue
+		var at: int = index
+		pages.append(func() -> Dictionary:
+			return {"title": item.display_name, "subtitle": item.headline(),
+				"subtitle_color": item.color(), "picture": ModuleChip.new(item, 52.0),
+				"lines": item.effect_lines() + [["Die anderen verfallen, wenn du weitergehst.  ·  "
+					+ "Doppeltipp auf die Kachel: nehmen.", COLOR_MUTED, UiKit.SMALL]],
+				"actions": [{"text": "Nehmen", "primary": true, "disabled": blocker != "",
+					"why": blocker, "call": func():
+						if run.choose_bios(at):
+							Accessibility.vibrate(30, true)
+						_refresh()}]})
+	return pages
+
+
+## Der Laden (6i): drei Kacheln. Unten an jeder der Preis als Knopf -- er
+## kauft sofort. Die Kachel selbst oeffnet das Popup mit allem Weiteren.
+func _shop_row(run: RunState) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
 	if run.shop_offers.is_empty():
-		box.add_child(_label("Heute nichts im Angebot.", 16, COLOR_MUTED))
-		box.add_child(reroll)
-		return box
+		row.add_child(_label("Heute nichts im Angebot.", UiKit.SMALL, COLOR_MUTED))
+		return row
 	for index in run.shop_offers.size():
 		var offer: Dictionary = run.shop_offers[index]
 		var module := ModuleData.get_module(offer["module_id"])
 		if module == null:
 			continue
-		var panel := PanelContainer.new()
-		panel.add_theme_stylebox_override("panel", _panel_style(false))
-		var inner := VBoxContainer.new()
-		inner.add_theme_constant_override("separation", 4)
-		panel.add_child(inner)
-		var head := HBoxContainer.new()
-		head.add_theme_constant_override("separation", 10)
-		inner.add_child(head)
-		head.add_child(ModuleChip.new(module, 44.0))
-		var title := VBoxContainer.new()
-		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		head.add_child(title)
-		title.add_child(_label(module.display_name, 18))
-		title.add_child(_label(module.headline(), 16, module.color()))
-		_add_module_lines(inner, module)
-		var uses := _recipes_using(module)
-		if not uses.is_empty():
-			inner.add_child(_label("Zutat fuer: %s" % ", ".join(uses), 16, COLOR_MUTED))
 		var blocker := run.shop_blocker(index)
 		var price := RunState.shop_price(module)
-		var buy := UiKit.button("Verkauft" if offer["sold"]
-			else ("Kaufen  %d Credits" % price if blocker == ""
-			else "%d Credits -- %s" % [price, blocker]))
+		var holder := VBoxContainer.new()
+		holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		holder.add_theme_constant_override("separation", 0)
+		row.add_child(holder)
+		var tile := Tile.new("shop:%d:%s" % [index, module.id], ModuleChip.new(module, 40.0),
+			module.display_name, Vector2(0, 72))
+		tile.accent = module.color()
+		tile.dimmed = bool(offer["sold"])
+		tile.glow = run.target_recipe != &"" and _recipe_wants(run, module)
+		var pages := _shop_pages(run)
+		var page := index
+		tile.on_info = func(): InfoPopup.open_pages(self, pages, page)
+		tile.on_action = func(): _buy(run, page)
+		holder.add_child(tile)
+		var buy := Button.new()
+		buy.text = "verkauft" if offer["sold"] else "%d ¢" % price
+		buy.custom_minimum_size = Vector2(0, 40)
+		buy.add_theme_font_override("font", Arcade.font("display", 15, 0.04))
+		buy.add_theme_font_size_override("font_size", 15)
 		buy.disabled = blocker != ""
-		buy.pressed.connect(func():
-			if run.buy(index):
-				Accessibility.vibrate(20, true)
-				_selected_storage = -1
-			_refresh())
-		inner.add_child(buy)
-		box.add_child(panel)
-	box.add_child(reroll)
-	return box
+		buy.tooltip_text = blocker
+		var fill := UiKit.PRIMARY if blocker == "" else Color(UiKit.CARD_LINE, 0.6)
+		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+			var box := Arcade.chamfer_box(fill.darkened(0.15) if state == "pressed" else fill, 8)
+			box.content_margin_top = 4
+			box.content_margin_bottom = 4
+			buy.add_theme_stylebox_override(state, box)
+		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			buy.add_theme_color_override(state, UiKit.ON_PRIMARY)
+		buy.add_theme_color_override("font_disabled_color", Color(UiKit.TEXT, 0.6))
+		buy.pressed.connect(func(): _buy(run, index))
+		holder.add_child(buy)
+	return row
 
 
-## Die Tasche (6h): Beute-Waffen dieses Laufs. Sie werden im Lauf nicht
-## eingebaut und gehen am Ende in den Hangar.
-func _bag_section(run: RunState) -> Control:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
-	box.add_child(_label("Tasche  %d" % run.bag.size(), 18, COLOR_HEADING))
-	box.add_child(_label("Beute-Waffen gehen nach dem Lauf in den Hangar. Im Lauf bleiben die Waffen fest.",
-		16, COLOR_MUTED))
-	var flow := HFlowContainer.new()
-	flow.add_theme_constant_override("h_separation", 8)
-	box.add_child(flow)
-	for id in run.bag:
-		var part := PartDB.get_part(id)
-		if part == null:
-			continue
-		var tile := VBoxContainer.new()
-		var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), 48.0)
-		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		tile.add_child(shape)
-		tile.add_child(_tile_name(part.display_name))
-		flow.add_child(tile)
-	return box
-
-
-## Die Namen der Rezepte, in die dieses Modul als Zutat geht.
-func _recipes_using(module: ModuleData) -> Array:
-	var out: Array = []
-	for recipe in ModuleData.recipes():
-		if recipe.from.has(module.id):
-			out.append(recipe.display_name)
-	return out
-
-
-## Eine Lager-Kachel: Bild in der Form ihrer Klasse, Name darunter.
-func _storage_tile(run: RunState, index: int) -> Control:
-	var part := PartDB.get_part(run.storage[index])
-	var button := Button.new()
-	button.toggle_mode = true
-	button.button_pressed = index == _selected_storage
-	button.custom_minimum_size = Vector2(0, 96)
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.tooltip_text = part.display_name if part != null else ""
-	if index == _selected_storage:
-		button.add_theme_stylebox_override("normal", UiKit.card_style(true))
-		button.add_theme_stylebox_override("pressed", UiKit.card_style(true))
-	var box := VBoxContainer.new()
-	box.set_anchors_preset(Control.PRESET_FULL_RECT)
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(box)
-	var module := ModuleData.get_module(run.storage[index])
-	if module != null:
-		button.tooltip_text = "%s (%s)" % [module.display_name, module.headline()]
-		var chip := ModuleChip.new(module, 56.0)
-		chip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		box.add_child(chip)
-		box.add_child(_tile_name(module.display_name))
-	elif part != null:
-		var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), 56.0)
-		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		shape.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		box.add_child(shape)
-		var name := Label.new()
-		name.text = part.display_name
-		name.add_theme_font_size_override("font_size", 12)
-		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name.clip_text = true
-		name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		name.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		box.add_child(name)
-	# Ziehen auf einen Halter (Tippen bleibt); waagerecht startet den Zug.
-	var start := {"at": Vector2.ZERO}
-	button.gui_input.connect(func(event: InputEvent):
-		if event is InputEventMouseButton and event.pressed:
-			start["at"] = event.global_position)
-	button.set_drag_forwarding(func(_at):
-		if not run.is_module_at(index):
-			return null
-		var moved: Vector2 = button.get_global_mouse_position() - start["at"]
-		if absf(moved.y) > absf(moved.x):
-			return null
-		var preview := ModuleChip.new(ModuleData.get_module(run.storage[index]), 56.0)
-		button.set_drag_preview(preview)
-		return {"kind": "storage", "index": index},
-		Callable(), Callable())
-	button.pressed.connect(func():
-		_selected_storage = -1 if _selected_storage == index else index
-		_refresh())
-	return button
-
-
-func _tile_name(text: String) -> Label:
-	var name := Label.new()
-	name.text = text
-	name.add_theme_font_size_override("font_size", 12)
-	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name.clip_text = true
-	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	name.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return name
-
-
-## Die Karte zum angetippten Lager-Modul: Klasse, Bedingung, Wirkung,
-## Verkaufen. Nach Hause gibt es nicht -- Module verfallen am Ende.
-func _module_card(run: RunState, index: int) -> Control:
-	var module := ModuleData.get_module(run.storage[index])
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(true))
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	panel.add_child(box)
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 10)
-	box.add_child(head)
-	head.add_child(ModuleChip.new(module, 56.0))
-	var title := VBoxContainer.new()
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(title)
-	title.add_child(_label(module.display_name, 20))
-	title.add_child(_label(module.headline(), 16, module.color()))
-	_add_module_lines(box, module)
-	box.add_child(_label("BIOS gibt es nur in diesem Lauf." if module.is_bios_item()
-		else "Module gibt es nur in diesem Lauf.", 16, COLOR_MUTED))
-	var sell := UiKit.button("Verkaufen  +%d" % ModuleData.sell_value(module))
-	sell.pressed.connect(func():
-		run.sell(index)
+func _buy(run: RunState, index: int) -> void:
+	if run.buy(index):
+		Accessibility.vibrate(20, true)
 		_selected_storage = -1
-		_refresh())
-	box.add_child(sell)
-	return panel
+		_flash_storage = run.storage.size() - 1
+	_refresh()
 
 
-## Wirkung eines Moduls; beim Rezept die Summe und darunter der eigene Effekt.
-func _add_module_lines(box: Control, module: ModuleData) -> void:
+## Seiten zum Blaettern: alle Angebote des Ladens.
+func _shop_pages(run: RunState) -> Array:
+	var pages: Array = []
+	for index in run.shop_offers.size():
+		var module := ModuleData.get_module(run.shop_offers[index]["module_id"])
+		if module == null:
+			continue
+		var at: int = index
+		pages.append(func() -> Dictionary: return _module_page(run, module, -1, at))
+	return pages
+
+
+## Seiten zum Blaettern: alles im Lager.
+func _storage_pages(run: RunState) -> Array:
+	var pages: Array = []
+	for index in run.storage.size():
+		var at: int = index
+		pages.append(func() -> Dictionary:
+			var module := ModuleData.get_module(run.storage[at])
+			if module != null:
+				return _module_page(run, module, at)
+			var part := PartDB.get_part(run.storage[at])
+			return WeaponCard.page(part) if part != null else {"title": str(run.storage[at])})
+	return pages
+
+
+## Doppeltipp auf ein Lager-Modul: in den ersten Halter, der es nimmt.
+func _quick_install(run: RunState, index: int) -> void:
+	var bios := run.is_bios_at(index)
+	var options: Array = run.bios_options(index) if bios else run.module_options(index)
+	for entry in options:
+		if bool(entry.get("allowed", false)):
+			var drome := int(entry["drome"])
+			var slot := str(entry["slot"])
+			var done := run.install_bios(index, drome, slot) if bios \
+				else run.install_module(index, drome, slot)
+			if done:
+				Accessibility.vibrate(25, true)
+				_selected_storage = -1
+				_flash_holder = "%d:%s" % [drome, slot]
+			_refresh()
+			return
+	InfoPopup.open(self, "Kein freier Platz", {"lines": ["Kein Halter nimmt dieses Modul gerade. "
+		+ "Erst ein Modul zurück ins Lager nehmen."]})
+
+
+## Braucht das Zielrezept dieses Modul noch?
+func _recipe_wants(run: RunState, module: ModuleData) -> bool:
+	var target := ModuleData.get_module(run.target_recipe)
+	return target != null and target.from.has(module.id)
+
+
+## Popup zu einem Modul: Wirkung, Zutat fuer, und je nach Herkunft Kaufen
+## (shop_index) oder Verkaufen (storage_index).
+func _module_page(run: RunState, module: ModuleData, storage_index: int = -1,
+		shop_index: int = -1) -> Dictionary:
+	var lines := _module_lines(module)
+	var uses := _recipes_using(module)
+	if not uses.is_empty():
+		lines.append(["Zutat für: %s" % ", ".join(uses), COLOR_MUTED, UiKit.SMALL])
+	var actions: Array = []
+	if shop_index >= 0:
+		var offer: Dictionary = run.shop_offers[shop_index]
+		var blocker := run.shop_blocker(shop_index)
+		actions.append({"text": "Verkauft" if offer["sold"] else "Kaufen  %d ¢" % RunState.shop_price(module),
+			"primary": true, "disabled": blocker != "", "why": "" if offer["sold"] else blocker,
+			"call": func():
+				if run.buy(shop_index):
+					Accessibility.vibrate(20, true)
+					_selected_storage = -1
+					_flash_storage = run.storage.size() - 1
+				_refresh()})
+	elif storage_index >= 0:
+		lines.append([("BIOS" if module.is_bios_item() else "Module")
+			+ " gibt es nur in diesem Einsatz.", COLOR_MUTED, UiKit.SMALL])
+		actions.append({"text": "Verkaufen  +%d ¢" % ModuleData.sell_value(module), "call": func():
+			run.sell(storage_index)
+			_selected_storage = -1
+			_refresh()})
+		if run.is_module_at(storage_index) or run.is_bios_at(storage_index):
+			actions.append({"text": "Ausrüsten", "primary": true, "call": func():
+				_quick_install(run, storage_index)})
+	return {"title": module.display_name, "subtitle": module.headline(),
+		"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
+		"lines": lines, "actions": actions}
+
+
+## Wirkung eines Moduls als Zeilen; beim Rezept die Summe und darunter der
+## eigene Effekt.
+func _module_lines(module: ModuleData) -> Array:
+	var out: Array = []
 	if module.is_recipe():
 		var own := module.bonus_lines()
 		var summed := module.effect_lines(_without(module.effects, module.bonus))
 		if not summed.is_empty():
-			box.add_child(_label("Summe: %s" % ", ".join(summed), 16))
+			out.append("Summe: %s" % ", ".join(summed))
 		if not own.is_empty():
-			box.add_child(_label("Dazu: %s" % ", ".join(own), 16, COLOR_GOOD))
+			out.append(["Dazu: %s" % ", ".join(own), COLOR_GOOD])
 	else:
-		box.add_child(_label(", ".join(module.effect_lines()), 16))
+		for line in module.effect_lines():
+			out.append(line)
+	return out
 
 
 ## Die Wirkungen ohne den eigenen Effekt eines Rezepts (Zahlen abgezogen).
@@ -709,136 +851,262 @@ func _without(effects: Dictionary, bonus: Dictionary) -> Dictionary:
 	return out
 
 
-## Das Rezeptbuch (6g, 7e): aufklappbar, je Rezept die Zutaten -- gruen, was
-## im Lager liegt -- und "Zusammenfuegen", sobald alle da sind.
-func _recipe_section(run: RunState) -> Control:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	var book := run.recipe_book()
-	var ready := book.filter(func(entry): return entry["ready"]).size()
-	var toggle := UiKit.button("Rezeptbuch  %s%s" % ["(%d bereit)  " % ready if ready > 0 else "",
-		"zuklappen" if _recipes_open else "aufklappen"])
-	toggle.pressed.connect(func():
-		_recipes_open = not _recipes_open
-		_refresh())
-	box.add_child(toggle)
-	if not _recipes_open:
-		return box
-	box.add_child(_label("Zutaten aus dem Lager ergeben ein neues Modul: die Summe ihrer Werte und ein eigener Effekt.",
-		16, COLOR_MUTED))
-	for entry in book:
-		var module: ModuleData = entry["module"]
-		var panel := PanelContainer.new()
-		panel.add_theme_stylebox_override("panel", _panel_style(entry["ready"]))
-		var inner := VBoxContainer.new()
-		inner.add_theme_constant_override("separation", 4)
-		panel.add_child(inner)
-		var head := HBoxContainer.new()
-		head.add_theme_constant_override("separation", 10)
-		inner.add_child(head)
-		head.add_child(ModuleChip.new(module, 44.0))
-		var title := VBoxContainer.new()
-		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		head.add_child(title)
-		title.add_child(_label(module.display_name, 18))
-		title.add_child(_label(module.headline(), 16, module.color()))
-		var parts := HFlowContainer.new()
-		parts.add_theme_constant_override("h_separation", 6)
-		inner.add_child(parts)
-		for i in module.from.size():
-			var ingredient := ModuleData.get_module(module.from[i])
-			var have: bool = entry["have"][i]
-			parts.add_child(_flow_label("%s%s" % ["+ " if i > 0 else "",
-				ingredient.display_name if ingredient != null else str(module.from[i])],
-				16, COLOR_GOOD if have else COLOR_MUTED))
-		_add_module_lines(inner, module)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		inner.add_child(row)
-		var make := UiKit.button("Zusammenfuegen" if entry["ready"] else "Zutaten fehlen")
-		make.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		make.disabled = not entry["ready"]
-		make.pressed.connect(func():
-			if run.craft(module.id):
-				Accessibility.vibrate(40, true)
-				_selected_storage = -1
-			_refresh())
-		row.add_child(make)
-		if not module.is_bios_result:
-			var aimed := run.target_recipe == module.id
-			var aim := UiKit.button("Ziel aufheben" if aimed else "Als Ziel")
-			aim.tooltip_text = "Der Laden bietet die fehlenden Zutaten oefter an"
-			aim.pressed.connect(func():
-				run.set_target_recipe(module.id)
-				_refresh())
-			row.add_child(aim)
-		box.add_child(panel)
-	return box
+## Die Namen der Rezepte, in die dieses Modul als Zutat geht.
+func _recipes_using(module: ModuleData) -> Array:
+	var out: Array = []
+	for recipe in ModuleData.recipes():
+		if recipe.from.has(module.id):
+			out.append(recipe.display_name)
+	return out
 
 
-## Ein DROME im Zwischenstopp: Bild, Name, und je Halter ein Knopf. Mit
-## ausgewaehltem Modul heisst er "hier einsetzen" (oder sagt, warum nicht);
-## ohne Auswahl zeigt er nur die Waffe -- sie ist im Lauf fest.
-func _stop_drome_card(run: RunState, drome: int, options: Array) -> Control:
+## Das Lager als Raster aus festen Plaetzen: belegte als Kachel, freie
+## gestrichelt -- so sieht man auf einen Blick, wie viel Platz bleibt.
+func _storage_grid(run: RunState) -> Control:
+	var grid := GridContainer.new()
+	grid.columns = 4 if RunState.storage_size() <= 8 else 5
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	for index in RunState.storage_size():
+		if index < run.storage.size():
+			grid.add_child(_storage_tile(run, index))
+		else:
+			var free := Tile.new("", null, "", Vector2(0, 64))
+			free.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			free.empty = true
+			free.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			grid.add_child(free)
+	_flash_storage = -1
+	return grid
+
+
+## Eine Lager-Kachel: einmal tippen waehlt zum Einsetzen, doppelt tippen
+## oder lange druecken zeigt das Popup. Waagerecht ziehen setzt direkt ein.
+func _storage_tile(run: RunState, index: int) -> Control:
+	var id: StringName = run.storage[index]
+	var module := ModuleData.get_module(id)
+	var part := PartDB.get_part(id)
+	var tile: Tile
+	if module != null:
+		tile = Tile.new("store:%d:%s" % [index, id], ModuleChip.new(module, 36.0),
+			module.display_name, Vector2(0, 64))
+		tile.accent = module.color()
+		# 15. Nov. 2026: Tipp waehlt (die Halter leuchten), zweiter Tipp
+		# zeigt Details, Doppeltipp ruestet aus.
+		tile.on_select = func():
+			_selected_storage = index
+			_refresh()
+		tile.on_action = func(): _quick_install(run, index)
+	else:
+		tile = Tile.new("store:%d:%s" % [index, id],
+			SlotShape.new(part.mount_class if part != null else "light",
+				UiKit.part_texture(part), 36.0),
+			part.display_name if part != null else str(id), Vector2(0, 64))
+	var pages := _storage_pages(run)
+	tile.on_info = func(): InfoPopup.open_pages(self, pages, index)
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.managed = module != null
+	tile.selected = index == _selected_storage
+	if index == _flash_storage:
+		_flash(tile)
+	# Ziehen auf einen Halter (Tippen bleibt); waagerecht startet den Zug.
+	var start := {"at": Vector2.ZERO}
+	tile.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed:
+			start["at"] = event.global_position)
+	tile.set_drag_forwarding(func(_at):
+		if not run.is_module_at(index) and not run.is_bios_at(index):
+			return null
+		var moved: Vector2 = tile.get_global_mouse_position() - start["at"]
+		if absf(moved.y) > absf(moved.x):
+			return null
+		var preview := ModuleChip.new(ModuleData.get_module(run.storage[index]), 56.0)
+		tile.set_drag_preview(preview)
+		return {"kind": "storage", "index": index},
+		Callable(), Callable())
+	return tile
+
+
+## Kurzes Aufleuchten (frisch gekauft, eingesetzt).
+func _flash(control: Control) -> void:
+	if Accessibility.motion() <= 0.0:
+		return
+	control.modulate = Color(2.2, 2.2, 1.4)
+	var tween := control.create_tween()
+	tween.tween_property(control, "modulate", Color.WHITE, 0.45).set_trans(Tween.TRANS_QUAD)
+
+
+## Ein DROME im Zwischenstopp, kompakt in einer Zeile: Bild, Name und je
+## Halter die Waffe plus seine Modulplaetze. Mit gewaehltem Lager-Modul
+## leuchten die Plaetze, die es nehmen.
+func _squad_row(run: RunState, drome: int, options: Array) -> Control:
 	var build: DromeBuild = run.squad[drome]
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(false))
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	panel.add_child(box)
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 10)
-	box.add_child(head)
-	head.add_child(UiKit.drome_view(build, 56))
-	var title := VBoxContainer.new()
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(title)
-	title.add_child(_label("%s  ·  %d%s" % [build.display_name, int(build.power_score()),
-		"  ·  BIOS" if build.chassis_bios else ""], 18))
-	if build.equipment().is_empty():
-		title.add_child(_label("ohne Waffe -- kaempft nicht mit", 16, COLOR_BAD))
+	var style := UiKit.card_style(false)
+	style.set_content_margin_all(8)
+	panel.add_theme_stylebox_override("panel", style)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	panel.add_child(row)
+	var face := VBoxContainer.new()
+	face.add_theme_constant_override("separation", 0)
+	face.custom_minimum_size = Vector2(64, 0)
+	row.add_child(face)
+	var view := UiKit.drome_view(build, 40)
+	view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	face.add_child(view)
+	var name := _flow_label(build.display_name, 12)
+	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	face.add_child(name)
+	var power := _flow_label("KW %d%s" % [int(build.power_score()), " · BIOS" if build.chassis_bios else ""],
+		11, COLOR_MUTED)
+	power.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	face.add_child(power)
 
+	var holders := VBoxContainer.new()
+	holders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	holders.add_theme_constant_override("separation", 4)
+	row.add_child(holders)
+	if build.equipment().is_empty():
+		holders.add_child(_label("ohne Waffe -- kämpft nicht mit", UiKit.SMALL, COLOR_BAD))
+	var bios := run.is_bios_at(_selected_storage)
+	var picking := bios or run.is_module_at(_selected_storage)
 	for slot in build.equip_slots():
-		var part := build.part_in(slot)
-		var limit := SlotRules.slot_class(build.body(), slot)
-		var what := part.display_name if part != null else "leer"
-		var button := Button.new()
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.custom_minimum_size = Vector2(0, 56)
-		button.add_theme_font_size_override("font_size", 16)
-		var line := "%s (%s): %s" % [SlotRules.holder_label(build, slot),
-			SlotRules.class_label(limit), what]
-		var module_mode := run.is_module_at(_selected_storage)
-		if module_mode:
-			var choice: Dictionary = {}
-			for entry in options:
-				if int(entry["drome"]) == drome and entry["slot"] == slot:
-					choice = entry
-			var allowed := bool(choice.get("allowed", false))
-			button.disabled = not allowed
-			if allowed:
-				button.add_theme_stylebox_override("normal", UiKit.card_style(true))
-			var bios := run.is_bios_at(_selected_storage)
-			button.text = "%s\n%s" % [line, ("BIOS hier einbauen -- %s" if bios else "Modul hier einsetzen -- %s")
-				% choice.get("detail", "") if allowed else "geht nicht: %s" % choice.get("detail", "kein Platz")]
-			button.pressed.connect(func():
-				var done := run.install_bios(_selected_storage, drome, slot) if bios \
-					else run.install_module(_selected_storage, drome, slot)
-				if done:
-					Accessibility.vibrate(20, true)
-					_selected_storage = -1
-				_refresh())
-		else:
-			button.text = line
-			button.disabled = true
-		# Ziehen (10. Nov. 2026): ein Modul oder BIOS aus dem Lager hierher.
-		button.set_drag_forwarding(Callable(),
-			func(_at, data): return _can_drop_storage(run, drome, slot, data),
-			func(_at, data): _drop_storage(run, drome, slot, data))
-		box.add_child(button)
-		box.add_child(_module_row(run, drome, slot))
+		var choice: Dictionary = {}
+		for entry in options:
+			if int(entry["drome"]) == drome and entry["slot"] == slot:
+				choice = entry
+		var allowed := picking and bool(choice.get("allowed", false))
+		holders.add_child(_holder_row(run, drome, slot, picking, allowed, bios,
+			str(choice.get("detail", "kein Platz"))))
 	return panel
+
+
+## Ein Halter: Waffe als Form, dann die Modulplaetze. Leere Plaetze nehmen
+## das gewaehlte Modul; ein Modul antippen zeigt es mit "Zurueck ins Lager".
+func _holder_row(run: RunState, drome: int, slot: String, picking: bool, allowed: bool,
+		bios: bool, detail: String) -> Control:
+	var build: DromeBuild = run.squad[drome]
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var part := build.part_in(slot)
+	var weapon := Tile.new("weapon:%d:%s" % [drome, slot],
+		SlotShape.new(SlotRules.slot_class(build.body(), slot), UiKit.part_texture(part), 34.0),
+		"", Vector2(46, 46))
+	weapon.tooltip_text = part.display_name if part != null else "leer"
+	weapon.on_info = func():
+		if part != null:
+			InfoPopup.open_pages(self, _weapon_pages(run), _weapon_index(run, drome, slot))
+	if picking:
+		weapon.glow = allowed and bios
+		weapon.dimmed = not allowed
+		if bios and allowed:
+			weapon.on_tap = func(): _install(run, drome, slot)
+	row.add_child(weapon)
+
+	var installed := build.modules_in(slot)
+	var room := ModuleData.slots_for(build, slot)
+	for position in maxi(room, installed.size()):
+		var tile: Tile
+		if position < installed.size():
+			var module: ModuleData = installed[position]
+			var resting := module.blocker(part)
+			var chip := ModuleChip.new(module, 32.0)
+			chip.dim = resting != ""
+			tile = Tile.new("mod:%d:%s:%d" % [drome, slot, position], chip, "", Vector2(44, 46))
+			tile.accent = module.color()
+			var holder_pages := _installed_pages(run, drome, slot)
+			tile.on_info = func(): InfoPopup.open_pages(self, holder_pages, position)
+			# Doppeltipp: zurueck ins Lager.
+			tile.on_action = func():
+				if not run.storage_full() and run.remove_module(drome, slot, position):
+					Accessibility.vibrate(20, true)
+				_refresh()
+			if picking:
+				tile.dimmed = true
+		else:
+			tile = Tile.new("free:%d:%s:%d" % [drome, slot, position], null, "", Vector2(44, 46))
+			tile.empty = not (picking and allowed and not bios)
+			if picking and allowed and not bios:
+				tile.glow = true
+				tile.accent = COLOR_GOOD
+				tile.on_tap = func(): _install(run, drome, slot)
+			elif picking and not bios:
+				tile.on_tap = func():
+					InfoPopup.open(self, "Geht nicht", {"lines": [detail]})
+		row.add_child(tile)
+	var name := _flow_label(part.display_name if part != null else "leer", 12, COLOR_MUTED)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name.clip_text = true
+	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(name)
+	if _flash_holder == "%d:%s" % [drome, slot]:
+		_flash_holder = ""
+		_flash(row)
+	# Ziehen (10. Nov. 2026): ein Modul oder BIOS aus dem Lager hierher.
+	row.set_drag_forwarding(Callable(),
+		func(_at, data): return _can_drop_storage(run, drome, slot, data),
+		func(_at, data): _drop_storage(run, drome, slot, data))
+	return row
+
+
+func _install(run: RunState, drome: int, slot: String) -> void:
+	var done := run.install_bios(_selected_storage, drome, slot) if run.is_bios_at(_selected_storage) \
+		else run.install_module(_selected_storage, drome, slot)
+	if done:
+		Accessibility.vibrate(20, true)
+		_selected_storage = -1
+		_flash_holder = "%d:%s" % [drome, slot]
+	_refresh()
+
+
+## Seiten der Module eines Halters (Doppeltipp auf eines: zurueck ins Lager).
+func _installed_pages(run: RunState, drome: int, slot: String) -> Array:
+	var build: DromeBuild = run.squad[drome]
+	var weapon := build.part_in(slot)
+	var pages: Array = []
+	var installed := build.modules_in(slot)
+	for position in installed.size():
+		var module: ModuleData = installed[position]
+		var at: int = position
+		pages.append(func() -> Dictionary:
+			var lines := _module_lines(module)
+			var resting := module.blocker(weapon)
+			if resting != "":
+				lines.append(["ruht: %s" % resting, COLOR_BAD])
+			lines.append(["Doppeltipp auf das Modul: zurück ins Lager.", COLOR_MUTED, UiKit.SMALL])
+			return {"title": module.display_name, "subtitle": module.headline(),
+				"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
+				"lines": lines, "actions": [{"text": "Zurück ins Lager", "disabled": run.storage_full(),
+					"why": "Lager voll", "call": func():
+						run.remove_module(drome, slot, at)
+						_refresh()}]})
+	return pages
+
+
+## Alle Waffen des Einsatz-Squads zum Blaettern.
+func _weapon_pages(run: RunState) -> Array:
+	var pages: Array = []
+	for build in run.squad:
+		for slot in build.equip_slots():
+			var part: PartData = build.part_in(slot)
+			if part != null:
+				pages.append(func() -> Dictionary: return WeaponCard.page(part))
+	return pages
+
+
+func _weapon_index(run: RunState, drome: int, slot: String) -> int:
+	var at := 0
+	for d in run.squad.size():
+		var build: DromeBuild = run.squad[d]
+		for s2 in build.equip_slots():
+			if build.part_in(s2) == null:
+				continue
+			if d == drome and s2 == slot:
+				return at
+			at += 1
+	return 0
 
 
 ## Darf das gezogene Lager-Stueck in diesen Halter? Dieselben Regeln wie beim
@@ -862,51 +1130,143 @@ func _drop_storage(run: RunState, drome: int, slot: String, data) -> void:
 	if done:
 		Accessibility.vibrate(20, true)
 		_selected_storage = -1
+		_flash_holder = "%d:%s" % [drome, slot]
 	_refresh()
 
 
-## Die Module eines Halters als Chips mit Namen. Antippen nimmt eines zurueck
-## ins Lager; ruhende (Bedingung passt nicht zur Waffe) sind abgeblendet.
-func _module_row(run: RunState, drome: int, slot: String) -> Control:
-	var build: DromeBuild = run.squad[drome]
-	var row := HFlowContainer.new()
-	row.add_theme_constant_override("h_separation", 6)
-	row.add_theme_constant_override("v_separation", 6)
-	var installed := build.modules_in(slot)
-	var room := ModuleData.slots_for(build, slot)
-	row.add_child(_flow_label("Module %d/%d" % [installed.size(), room], 16, COLOR_MUTED))
-	var weapon := build.part_in(slot)
-	for position in installed.size():
-		var module: ModuleData = installed[position]
-		var resting := module.blocker(weapon)
-		var button := Button.new()
-		button.custom_minimum_size = Vector2(0, 48)
-		button.text = module.display_name
-		button.icon = null
-		button.add_theme_font_size_override("font_size", 14)
-		button.tooltip_text = "%s\n%s%s\nAntippen: zurueck ins Lager" % [module.display_name,
-			", ".join(module.effect_lines()), ("\nruht: " + resting) if resting != "" else ""]
-		if resting != "":
-			button.modulate = Color(1, 1, 1, 0.55)
-		var chip := ModuleChip.new(module, 36.0)
-		chip.dim = resting != ""
-		var holder := HBoxContainer.new()
-		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		holder.set_anchors_preset(Control.PRESET_FULL_RECT)
-		button.text = ""
-		var name := _label(module.display_name + (" (ruht)" if resting != "" else ""), 14)
-		name.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		name.autowrap_mode = TextServer.AUTOWRAP_OFF
-		holder.add_child(chip)
-		holder.add_child(name)
-		button.add_child(holder)
-		button.custom_minimum_size = Vector2(44.0 + name.get_minimum_size().x + 12.0, 48)
-		button.disabled = run.storage_full()
+# ---------------------------------------------------------------------------
+# Rezeptbuch (14. Nov. 2026 als Popup mit Raster)
+# ---------------------------------------------------------------------------
+
+## Das Rezeptbuch: oben ein Filter, darunter alle Rezepte als Kacheln.
+## Leuchtend = bereit, zwei Punkte zeigen die Zutaten (gruen = im Lager),
+## gelber Rahmen = Ziel. Antippen zeigt das Rezept mit Zusammenfuegen.
+func _open_recipes(run: RunState) -> void:
+	if run == null or run.phase != RunState.Phase.STOP:
+		return
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 10)
+	var filters := HBoxContainer.new()
+	filters.add_theme_constant_override("separation", 6)
+	body.add_child(filters)
+	var book := run.recipe_book()
+	for spec in [["alle", "Alle"], ["bereit", "Bereit"], ["angefangen", "Angefangen"]]:
+		var button := _small_button(spec[1])
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.toggle_mode = true
+		button.button_pressed = _recipe_filter == spec[0]
+		if _recipe_filter == spec[0]:
+			button.add_theme_stylebox_override("normal", UiKit.card_style(true))
+			button.add_theme_stylebox_override("pressed", UiKit.card_style(true))
+		var which: String = spec[0]
 		button.pressed.connect(func():
-			run.remove_module(drome, slot, position)
-			_refresh())
-		row.add_child(button)
-	return row
+			_recipe_filter = which
+			_open_recipes(run))
+		filters.add_child(button)
+	_recipe_shown.clear()
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	body.add_child(grid)
+	var shown := 0
+	for entry in book:
+		var have: Array = entry["have"]
+		if _recipe_filter == "bereit" and not entry["ready"]:
+			continue
+		if _recipe_filter == "angefangen" and not have.has(true):
+			continue
+		_recipe_shown.append((entry["module"] as ModuleData).id)
+		grid.add_child(_recipe_tile(run, entry))
+		shown += 1
+	if shown == 0:
+		body.add_child(_label("Nichts in dieser Auswahl.", UiKit.SMALL, COLOR_MUTED))
+	body.add_child(_label("Tippen wählt, nochmal tippen zeigt das Rezept, Doppeltipp fügt zusammen. "
+		+ "Zwei Zutaten aus dem Lager ergeben ein neues Modul: die Summe ihrer Werte und ein "
+		+ "eigener Effekt.", 13, COLOR_MUTED))
+	_recipes_open = true
+	var popup := InfoPopup.open(self, "Rezeptbuch", {"body": body})
+	popup.closed.connect(func(): _recipes_open = false)
+
+
+func _recipe_tile(run: RunState, entry: Dictionary) -> Control:
+	var module: ModuleData = entry["module"]
+	var tile := Tile.new("recipe:%s" % module.id, ModuleChip.new(module, 36.0),
+		module.display_name, Vector2(0, 82))
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.accent = COLOR_GOOD if entry["ready"] else (UiKit.PRIMARY if run.target_recipe == module.id
+		else module.color())
+	tile.glow = entry["ready"] or run.target_recipe == module.id
+	var dots := HBoxContainer.new()
+	dots.alignment = BoxContainer.ALIGNMENT_CENTER
+	dots.add_theme_constant_override("separation", 4)
+	for have in entry["have"]:
+		var dot := ColorRect.new()
+		dot.custom_minimum_size = Vector2(8, 8)
+		dot.color = COLOR_GOOD if have else Color(UiKit.MUTED, 0.35)
+		dots.add_child(dot)
+	tile.add_extra(dots)
+	if not entry["ready"] and not (entry["have"] as Array).has(true):
+		tile.modulate = Color(1, 1, 1, 0.6)
+	tile.on_info = func(): InfoPopup.open_pages(self, _recipe_pages(run), _recipe_shown.find(module.id))
+	# Doppeltipp: zusammenfuegen, wenn alle Zutaten da sind.
+	tile.on_action = func():
+		if entry["ready"] and run.craft(module.id):
+			Accessibility.vibrate(40, true)
+			_selected_storage = -1
+			_flash_storage = run.storage.size() - 1
+			_recipes_open = true
+			_refresh()
+	return tile
+
+
+## Seiten: die Rezepte, die gerade im Raster stehen (nach Filter).
+func _recipe_pages(run: RunState) -> Array:
+	var pages: Array = []
+	var book := run.recipe_book()
+	for module_id in _recipe_shown:
+		for entry in book:
+			if (entry["module"] as ModuleData).id == module_id:
+				pages.append(func() -> Dictionary: return _recipe_page(run, entry))
+				break
+	return pages
+
+
+func _recipe_page(run: RunState, entry: Dictionary) -> Dictionary:
+	var module: ModuleData = entry["module"]
+	var parts := HFlowContainer.new()
+	parts.add_theme_constant_override("h_separation", 8)
+	parts.add_theme_constant_override("v_separation", 6)
+	for i in module.from.size():
+		var ingredient := ModuleData.get_module(module.from[i])
+		var have: bool = entry["have"][i]
+		var piece := HBoxContainer.new()
+		piece.add_theme_constant_override("separation", 4)
+		if ingredient != null:
+			piece.add_child(ModuleChip.new(ingredient, 30.0))
+		piece.add_child(_flow_label("%s%s" % [ingredient.display_name if ingredient != null
+			else str(module.from[i]), "  ✓" if have else ""], 15, COLOR_GOOD if have else COLOR_MUTED))
+		parts.add_child(piece)
+	var lines: Array = [parts]
+	lines.append_array(_module_lines(module))
+	var actions: Array = [{"text": "Zusammenfügen", "primary": true, "disabled": not entry["ready"],
+		"why": "Zutaten fehlen", "call": func():
+			if run.craft(module.id):
+				Accessibility.vibrate(40, true)
+				_selected_storage = -1
+				_flash_storage = run.storage.size() - 1
+			_recipes_open = true
+			_refresh()}]
+	if not module.is_bios_result:
+		var aimed := run.target_recipe == module.id
+		actions.append({"text": "Ziel aufheben" if aimed else "Als Ziel", "call": func():
+			run.set_target_recipe(module.id)
+			_recipes_open = true
+			_refresh()})
+	actions.append({"text": "◂ Rezeptbuch", "call": func(): _open_recipes(run)})
+	return {"title": module.display_name, "subtitle": module.headline(),
+		"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
+		"lines": lines, "actions": actions}
 
 
 func _show_end(run: RunState) -> void:
@@ -916,16 +1276,16 @@ func _show_end(run: RunState) -> void:
 	var wins := run.wins()
 	if run.is_endless():
 		_side.add_child(_label("Ausgestiegen nach %d Siegen" % wins if won
-			else "Gefallen in Runde %d" % run.round, 28, COLOR_GOOD if won else COLOR_BAD))
+			else "Gefallen in Kampf %d" % run.round, 28, COLOR_GOOD if won else COLOR_BAD))
 		_side.add_child(_label("Die Beute kommt mit nach Hause." if won
-			else "Die Beute dieses Laufs ist verloren -- was zuhause liegt, ist sicher.", 16,
+			else "Die Beute dieses Einsatzes ist verloren -- was zuhause liegt, ist sicher.", 16,
 			COLOR_MUTED))
 	else:
-		_side.add_child(_label("Lauf gewonnen!" if won else "Lauf verloren.", 30,
+		_side.add_child(_label("Einsatz geschafft!" if won else "Einsatz gescheitert.", 30,
 			COLOR_GOOD if won else COLOR_BAD))
 		if won and GameState.just_unlocked_endless:
-			_side.add_child(_label("Neon City ist bezwungen -- der Endlos-Modus ist frei.", 18, COLOR_WARN))
-	_side.add_child(_label("%d von %d Kaempfen gewonnen." % [wins, run.history.size()], 18))
+			_side.add_child(_label("Neon City ist bezwungen -- der Infinity-Einsatz ist frei.", 18, COLOR_WARN))
+	_side.add_child(_label("%d von %d Kämpfen gewonnen." % [wins, run.history.size()], 18))
 	var line := ""
 	for entry in run.history:
 		line += "%s(%s) " % ["S" if entry["won"] else "N", "LNE"[int(entry.get("tier", 1))]]
@@ -938,13 +1298,17 @@ func _show_end(run: RunState) -> void:
 			int(row["level"]), "  ·  Aufstieg!" if up else ""],
 			16 if row["kind"] == "drome" else 14, COLOR_GOOD if up else COLOR_MUTED))
 
+	var gains: Array = _delivered.filter(func(item): return item.get("kind", "") in ["cache", "coins"]) \
+		.map(func(item): return str(item["title"]))
+	if not gains.is_empty():
+		_side.add_child(_label("In den Hangar: %s" % ", ".join(gains), 16, UiKit.MAGENTA))
 	var parts: Array = _delivered.filter(func(item): return item.get("kind", "") == "part") \
 		.map(func(item): return str(item["title"]))
 	if not parts.is_empty():
 		_side.add_child(_label("Nach Hause in den Hangar: %s" % ", ".join(parts),
 			16, COLOR_GOOD))
 
-	var again := _big_button("Neuer Lauf")
+	var again := _big_button("Neuer Einsatz")
 	again.pressed.connect(func():
 		GameState.deliver_run_home()
 		_delivered.clear()

@@ -16,8 +16,8 @@ const SCALE := {
 }
 
 const LABEL := {
-	"hp_max": "Integritaet", "shield_max": "Schild", "shield_pulse": "Schildpuls",
-	"spd": "Speed", "def": "Ruestung", "power": "Power", "power_score": "Kampfwert",
+	"hp_max": "Integrität", "shield_max": "Schild", "shield_pulse": "Schildpuls",
+	"spd": "Speed", "def": "Rüstung", "power": "Power", "power_score": "Kampfwert",
 }
 
 const BAR_COLOR := {

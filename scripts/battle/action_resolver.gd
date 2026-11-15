@@ -55,7 +55,7 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 			var taken := int(round(float(raw) * share))
 			if taken > 0:
 				raw -= taken
-				EventBus.log_line("%s faengt %d Schaden fuer %s ab."
+				EventBus.log_line("%s fängt %d Schaden für %s ab."
 					% [guard.display_name, taken, target.display_name])
 				apply_damage(source, guard, taken, action, false)
 	var frac := action.energy_fraction if action != null else 0.0
@@ -87,13 +87,13 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	var absorbed := shield_before - target.shield
 	var who := source.display_name if source else "?"
 	if absorbed > 0 and amount > 0:
-		EventBus.log_line("%s trifft %s: Schild -%d, Integritaet -%d."
+		EventBus.log_line("%s trifft %s: Schild -%d, Integrität -%d."
 			% [who, target.display_name, absorbed, amount])
 	elif absorbed > 0:
-		EventBus.log_line("%s trifft %s: Schild -%d (Integritaet unversehrt)."
+		EventBus.log_line("%s trifft %s: Schild -%d (Integrität unversehrt)."
 			% [who, target.display_name, absorbed])
 	else:
-		EventBus.log_line("%s trifft %s fuer %d Schaden."
+		EventBus.log_line("%s trifft %s für %d Schaden."
 			% [who, target.display_name, amount])
 
 	_on_hit(source, dealt)
@@ -427,10 +427,10 @@ func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
 		if source.tile.x != tile.x and source.tile.y != tile.y:
 			return "Nur in gerader Linie"
 		if Grid.distance(source.tile, tile) > action.range_tiles:
-			return "Zu weit fuer den Boost"
+			return "Zu weit für den Boost"
 		return "Weg blockiert"
 	if Grid.distance(source.tile, tile) > action.range_tiles:
-		return "Ausser Reichweite"
+		return "Außer Reichweite"
 	# Moerser: zu nah kann er nicht feuern.
 	if action.min_range > 0 and Grid.distance(source.tile, tile) < action.min_range:
 		return "Zu nah"
@@ -545,7 +545,7 @@ func support(source: Unit, target: Unit, action: ActionData) -> int:
 		target.shield = maxi(target.shield, mini(shield_cap(target), target.shield + gain))
 	charged = target.shield - before_shield
 	if healed > 0 or charged > 0:
-		EventBus.log_line("%s: %s +%d Integritaet, +%d Schild."
+		EventBus.log_line("%s: %s +%d Integrität, +%d Schild."
 			% [source.display_name, target.display_name, healed, charged])
 	return healed + charged
 
@@ -589,7 +589,7 @@ func advance(dt: float) -> bool:
 			continue
 		var source: Unit = entry["source"]
 		var action: ActionData = entry["action"]
-		EventBus.log_line("%s: %s schlaegt ein." % [source.display_name, action.display_name])
+		EventBus.log_line("%s: %s schlägt ein." % [source.display_name, action.display_name])
 		_apply_area(source, entry["tile"], action)
 		fired = true
 	delayed = keep

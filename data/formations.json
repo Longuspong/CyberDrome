@@ -1,0 +1,824 @@
+{
+ "_kommentar": [
+  "Sentinels, Gegner-DROMEs und Formationen (14. Nov. 2026, SPOT-Blaetter Sentinels,",
+  "Gegner-DROMEs, Formationen). Gelesen von scripts/core/formations.gd.",
+  "sentinels: Basic-Werte je Sentinel (feste Waffe, nur Auto-Angriff, keine Passive, kein Level).",
+  "  look: Chassis fuer die Platzhalter-Grafik (verkleinert, 60 %). elite_modules: die festen",
+  "  Module der Elite (1) und Heavy Elite (2) -- VORSCHLAG.",
+  "ranks: Faktoren auf die Basic-Werte (Blatt Sentinels, Varianten).",
+  "dromes: Gegner-DROMEs. Mit stats feste Werte (Blatt Gegner-DROMEs), ohne stats ein",
+  "  Standard-DROME des Chassis. Module wuerfelt der Seed nach dem Reinforcement-Level.",
+  "formations.<gebiet>: je Formation ein Grundgedanke (idea) und Stufen (steps) nach",
+  "  Reinforcement-Level: from = ab welchem Level. Sentinels als 'id' oder 'id:rang'.",
+  "  intro: darf in den ersten Kaempfen (run.training_rounds) kommen. VORSCHLAG von Claude --",
+  "  der Spieler bestaetigt die Fraktionsidentitaet (SPOT-Blatt Formationen).",
+  "variants: wie Leicht und Elite aus derselben Formation werden (level_offset aufs",
+  "  Reinforcement-Level, Ränge, Module der DROMEs)."
+ ],
+ "sentinels": {
+  "neon_assault": {
+   "name": "Neon Assault Sentinel",
+   "faction": "Neon",
+   "archetype": "assault",
+   "look": "scout_body",
+   "weapon": "eq_plasma_blade",
+   "stats": {
+    "spd": 10,
+    "hp_max": 60,
+    "shield": 20,
+    "shield_pulse": 5,
+    "def": 0,
+    "power": 5,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_heavy_edge",
+    "mod_armor_plate"
+   ]
+  },
+  "neon_sniper": {
+   "name": "Neon Sniper Sentinel",
+   "faction": "Neon",
+   "archetype": "sniper",
+   "look": "strix_body",
+   "weapon": "eq_rail_lance",
+   "stats": {
+    "spd": 8,
+    "hp_max": 45,
+    "shield": 15,
+    "shield_pulse": 5,
+    "def": 0,
+    "power": 5,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_rapid_fire",
+    "mod_beacon"
+   ]
+  },
+  "neon_support": {
+   "name": "Neon Support Sentinel",
+   "faction": "Neon",
+   "archetype": "support",
+   "look": "mage_body",
+   "weapon": "eq_drone_pod",
+   "stats": {
+    "spd": 10,
+    "hp_max": 40,
+    "shield": 30,
+    "shield_pulse": 8,
+    "def": 0,
+    "power": 5,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_capacitor",
+    "mod_armor_plate"
+   ]
+  },
+  "solar_assault": {
+   "name": "Solar Assault Sentinel",
+   "faction": "Solar",
+   "archetype": "assault",
+   "look": "scout_body",
+   "weapon": "eq_boomerang",
+   "stats": {
+    "spd": 10,
+    "hp_max": 60,
+    "shield": 20,
+    "shield_pulse": 2,
+    "def": 2,
+    "power": 5,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_heavy_edge",
+    "mod_armor_plate"
+   ]
+  },
+  "solar_sniper": {
+   "name": "Solar Sniper Sentinel",
+   "faction": "Solar",
+   "archetype": "sniper",
+   "look": "strix_body",
+   "weapon": "eq_mortar",
+   "stats": {
+    "spd": 8,
+    "hp_max": 45,
+    "shield": 15,
+    "shield_pulse": 2,
+    "def": 0,
+    "power": 5,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_rapid_fire",
+    "mod_beacon"
+   ]
+  },
+  "solar_support": {
+   "name": "Solar Support Sentinel",
+   "faction": "Solar",
+   "archetype": "support",
+   "look": "mage_body",
+   "weapon": "eq_drone_pod",
+   "stats": {
+    "spd": 10,
+    "hp_max": 40,
+    "shield": 30,
+    "shield_pulse": 5,
+    "def": 0,
+    "power": 5,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_capacitor",
+    "mod_armor_plate"
+   ]
+  },
+  "mecha_assault": {
+   "name": "Mecha Assault Sentinel",
+   "faction": "Mecha",
+   "archetype": "assault",
+   "look": "scout_body",
+   "weapon": "eq_hammer",
+   "stats": {
+    "spd": 8,
+    "hp_max": 80,
+    "shield": 0,
+    "shield_pulse": 0,
+    "def": 5,
+    "power": 4,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_heavy_edge",
+    "mod_armor_plate"
+   ]
+  },
+  "mecha_sniper": {
+   "name": "Mecha Sniper Sentinel",
+   "faction": "Mecha",
+   "archetype": "sniper",
+   "look": "strix_body",
+   "weapon": "eq_rail_lance",
+   "stats": {
+    "spd": 6,
+    "hp_max": 60,
+    "shield": 0,
+    "shield_pulse": 0,
+    "def": 3,
+    "power": 4,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_rapid_fire",
+    "mod_beacon"
+   ]
+  },
+  "mecha_support": {
+   "name": "Mecha Support Sentinel",
+   "faction": "Mecha",
+   "archetype": "support",
+   "look": "mage_body",
+   "weapon": "eq_drone_pod",
+   "stats": {
+    "spd": 8,
+    "hp_max": 70,
+    "shield": 0,
+    "shield_pulse": 0,
+    "def": 3,
+    "power": 4,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_capacitor",
+    "mod_armor_plate"
+   ]
+  },
+  "hipstar_assault": {
+   "name": "Hipstar Assault Sentinel",
+   "faction": "Hipstar",
+   "archetype": "assault",
+   "look": "scout_body",
+   "weapon": "eq_pulse_blaster",
+   "stats": {
+    "spd": 10,
+    "hp_max": 60,
+    "shield": 20,
+    "shield_pulse": 2,
+    "def": 2,
+    "power": 5,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_heavy_edge",
+    "mod_armor_plate"
+   ]
+  },
+  "hipstar_sniper": {
+   "name": "Hipstar Sniper Sentinel",
+   "faction": "Hipstar",
+   "archetype": "sniper",
+   "look": "strix_body",
+   "weapon": "eq_neon_blaster",
+   "stats": {
+    "spd": 8,
+    "hp_max": 45,
+    "shield": 15,
+    "shield_pulse": 2,
+    "def": 0,
+    "power": 5,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_rapid_fire",
+    "mod_beacon"
+   ]
+  },
+  "hipstar_support": {
+   "name": "Hipstar Support Sentinel",
+   "faction": "Hipstar",
+   "archetype": "support",
+   "look": "mage_body",
+   "weapon": "eq_drone_pod",
+   "stats": {
+    "spd": 10,
+    "hp_max": 40,
+    "shield": 30,
+    "shield_pulse": 5,
+    "def": 0,
+    "power": 5,
+    "module_slots": 0
+   },
+   "elite_modules": [
+    "mod_capacitor",
+    "mod_armor_plate"
+   ]
+  }
+ },
+ "ranks": {
+  "basic": {
+   "name": "Basic",
+   "hp": 1.0,
+   "shield": 1.0,
+   "power": 1.0,
+   "def": 0,
+   "spd": 0,
+   "modules": 0
+  },
+  "elite": {
+   "name": "Elite",
+   "hp": 1.2,
+   "shield": 1.2,
+   "power": 1.2,
+   "def": 1,
+   "spd": 0,
+   "modules": 1
+  },
+  "heavy": {
+   "name": "Heavy",
+   "hp": 1.8,
+   "shield": 1.2,
+   "power": 1.0,
+   "def": 2,
+   "spd": 0,
+   "modules": 0
+  },
+  "heavy_elite": {
+   "name": "Heavy Elite",
+   "hp": 2.0,
+   "shield": 1.4,
+   "power": 1.5,
+   "def": 3,
+   "spd": 0,
+   "modules": 2
+  }
+ },
+ "dromes": {
+  "neon_vireo": {
+   "name": "Neon Vireo",
+   "chassis": "scout_body",
+   "weapons": [
+    "eq_plasma_blade"
+   ],
+   "stats": {
+    "spd": 12,
+    "hp_max": 80,
+    "shield": 50,
+    "shield_pulse": 7,
+    "def": 2,
+    "power": 10,
+    "module_slots": 3
+   },
+   "faction": "neon"
+  },
+  "neon_nimbus": {
+   "name": "Neon Nimbus",
+   "chassis": "mage_body",
+   "weapons": [
+    "eq_rune_staff"
+   ],
+   "stats": {
+    "spd": 12,
+    "hp_max": 60,
+    "shield": 60,
+    "shield_pulse": 10,
+    "def": 0,
+    "power": 12,
+    "module_slots": 3
+   },
+   "faction": "neon"
+  },
+  "solar_nimbus": {
+   "name": "Solar Nimbus",
+   "chassis": "mage_body",
+   "weapons": [
+    "eq_rune_staff"
+   ],
+   "stats": {
+    "spd": 12,
+    "hp_max": 60,
+    "shield": 60,
+    "shield_pulse": 10,
+    "def": 0,
+    "power": 12,
+    "module_slots": 3
+   },
+   "faction": "solar"
+  },
+  "mecha_molok": {
+   "name": "Mecha Molok",
+   "chassis": "jugg_body",
+   "weapons": [
+    "eq_hammer",
+    "eq_deflector"
+   ],
+   "stats": {
+    "spd": 10,
+    "hp_max": 250,
+    "shield": 50,
+    "shield_pulse": 3,
+    "def": 10,
+    "power": 6,
+    "module_slots": 2
+   },
+   "faction": "mecha"
+  },
+  "mecha_strix": {
+   "name": "Mecha Strix",
+   "chassis": "strix_body",
+   "weapons": [
+    "eq_rail_lance"
+   ],
+   "stats": {
+    "spd": 7,
+    "hp_max": 100,
+    "shield": 30,
+    "shield_pulse": 5,
+    "def": 2,
+    "power": 15,
+    "module_slots": 3
+   },
+   "faction": "mecha"
+  },
+  "vireo": {
+   "name": "Vireo",
+   "chassis": "scout_body",
+   "weapons": [
+    "eq_pulse_blaster"
+   ]
+  },
+  "molok": {
+   "name": "Molok",
+   "chassis": "jugg_body",
+   "weapons": [
+    "eq_hammer",
+    "eq_deflector"
+   ]
+  },
+  "nimbus": {
+   "name": "Nimbus",
+   "chassis": "mage_body",
+   "weapons": [
+    "eq_rune_staff"
+   ]
+  },
+  "strix": {
+   "name": "Strix",
+   "chassis": "strix_body",
+   "weapons": [
+    "eq_rail_lance"
+   ]
+  }
+ },
+ "variants": {
+  "easy": {
+   "level_offset": -2,
+   "basic_only": true,
+   "drop_sentinels": 1,
+   "drome_modules": -1
+  },
+  "normal": {
+   "level_offset": 0
+  },
+  "elite": {
+   "level_offset": 3,
+   "promote": 3,
+   "drome_modules": 1
+  }
+ },
+ "reinforcement": {
+  "_kommentar": [
+   "Reinforcement-Level (OP 29, Vorschlag): steigt nach jedem Kampf um 1, je",
+   "gewaehltem Elite-Kampf um elite_bonus mehr. Infinity-Einsatz: endless_rate je Kampf.",
+   "Module der Gegner-DROMEs: drome_modules_per Level je Modul (ab 2 Modulen wird",
+   "ein Paar zu einem passenden Rezept verschmolzen)."
+  ],
+  "elite_bonus": 1,
+  "endless_rate": 0.6,
+  "drome_modules_per": 2
+ },
+ "formations": {
+  "city": [
+   {
+    "id": "neon_intro_vireo",
+    "name": "Einführung: Vireo",
+    "idea": "Ein einzelner Vireo mit zwei Klingen-Sentinels -- lerne, wie ein DROME eine Squad führt. Kein zweiter DROME.",
+    "intro": true,
+    "steps": [
+     {
+      "from": 1,
+      "dromes": [
+       "vireo"
+      ],
+      "sentinels": [
+       "neon_assault",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 3,
+      "dromes": [
+       "vireo"
+      ],
+      "sentinels": [
+       "neon_assault",
+       "neon_assault",
+       "neon_support"
+      ]
+     },
+     {
+      "from": 6,
+      "dromes": [
+       "vireo"
+      ],
+      "sentinels": [
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_support"
+      ]
+     },
+     {
+      "from": 8,
+      "dromes": [
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:elite",
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_support:elite"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "neon_bullies",
+    "name": "Neon Bullies",
+    "idea": "Bullien: eine Frontlinie ohne Backline. Erst Molok mit Assaults, verstärkt bis Molok und Vireo.",
+    "intro": true,
+    "steps": [
+     {
+      "from": 1,
+      "dromes": [
+       "molok"
+      ],
+      "sentinels": [
+       "neon_assault",
+       "neon_assault",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 4,
+      "dromes": [
+       "molok"
+      ],
+      "sentinels": [
+       "neon_assault:heavy",
+       "neon_assault",
+       "neon_assault",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 6,
+      "dromes": [
+       "molok",
+       "vireo"
+      ],
+      "sentinels": [
+       "neon_assault:heavy",
+       "neon_assault",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 8,
+      "dromes": [
+       "molok",
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:heavy",
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 10,
+      "dromes": [
+       "molok",
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:heavy_elite",
+       "neon_assault:heavy",
+       "neon_assault:elite",
+       "neon_assault:elite",
+       "neon_assault"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "neon_squad",
+    "name": "Neon-Squad",
+    "idea": "Die Grundformation der Neon Ninjas: ein Neon Vireo führt Assault, Sniper und Support. Später kommt ein Neon Nimbus dazu.",
+    "steps": [
+     {
+      "from": 1,
+      "dromes": [
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault",
+       "neon_sniper",
+       "neon_support"
+      ]
+     },
+     {
+      "from": 3,
+      "dromes": [
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault",
+       "neon_assault",
+       "neon_sniper",
+       "neon_support"
+      ]
+     },
+     {
+      "from": 5,
+      "dromes": [
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_sniper:elite",
+       "neon_support"
+      ]
+     },
+     {
+      "from": 7,
+      "dromes": [
+       "neon_vireo",
+       "neon_nimbus"
+      ],
+      "sentinels": [
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_assault",
+       "neon_sniper:elite",
+       "neon_support"
+      ]
+     },
+     {
+      "from": 9,
+      "dromes": [
+       "neon_vireo",
+       "neon_nimbus"
+      ],
+      "sentinels": [
+       "neon_assault:heavy",
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_sniper:elite",
+       "neon_sniper",
+       "neon_support:elite"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "neon_rooftop",
+    "name": "Dachschützen",
+    "idea": "Backline: Sniper-Sentinels auf Abstand, ein Neon Nimbus hält dir die Front vom Leib. Schnell ran!",
+    "steps": [
+     {
+      "from": 2,
+      "dromes": [
+       "neon_nimbus"
+      ],
+      "sentinels": [
+       "neon_sniper",
+       "neon_sniper",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 4,
+      "dromes": [
+       "neon_nimbus"
+      ],
+      "sentinels": [
+       "neon_sniper",
+       "neon_sniper",
+       "neon_sniper",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 6,
+      "dromes": [
+       "neon_nimbus"
+      ],
+      "sentinels": [
+       "neon_sniper:elite",
+       "neon_sniper",
+       "neon_sniper",
+       "neon_support",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 8,
+      "dromes": [
+       "neon_nimbus",
+       "strix"
+      ],
+      "sentinels": [
+       "neon_sniper:elite",
+       "neon_sniper:elite",
+       "neon_sniper",
+       "neon_assault:heavy"
+      ]
+     },
+     {
+      "from": 10,
+      "dromes": [
+       "neon_nimbus",
+       "strix"
+      ],
+      "sentinels": [
+       "neon_sniper:heavy_elite",
+       "neon_sniper:elite",
+       "neon_sniper:elite",
+       "neon_assault:heavy",
+       "neon_support:elite"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "neon_clinic",
+    "name": "Neon-Lazarett",
+    "idea": "Ausdauer: Supports heilen eine zähe Front. Wer nicht bündelt, kämpft ewig -- bis der Virus kommt.",
+    "steps": [
+     {
+      "from": 2,
+      "dromes": [
+       "neon_nimbus"
+      ],
+      "sentinels": [
+       "neon_support",
+       "neon_support",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 4,
+      "dromes": [
+       "neon_nimbus"
+      ],
+      "sentinels": [
+       "neon_support",
+       "neon_support",
+       "neon_assault:heavy",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 7,
+      "dromes": [
+       "neon_nimbus",
+       "molok"
+      ],
+      "sentinels": [
+       "neon_support:elite",
+       "neon_support",
+       "neon_assault:heavy",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 9,
+      "dromes": [
+       "neon_nimbus",
+       "molok"
+      ],
+      "sentinels": [
+       "neon_support:elite",
+       "neon_support:elite",
+       "neon_assault:heavy_elite",
+       "neon_assault:heavy",
+       "neon_sniper"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "neon_shadow_pack",
+    "name": "Schattenrudel",
+    "idea": "Flanke: schnelle Klingen, die um deine Front herum auf die Schützen gehen. Zum Schluss zwei Neon Vireos.",
+    "steps": [
+     {
+      "from": 3,
+      "dromes": [
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault",
+       "neon_assault",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 5,
+      "dromes": [
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_assault",
+       "neon_assault"
+      ]
+     },
+     {
+      "from": 8,
+      "dromes": [
+       "neon_vireo",
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:elite",
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_assault",
+       "neon_support"
+      ]
+     },
+     {
+      "from": 10,
+      "dromes": [
+       "neon_vireo",
+       "neon_vireo"
+      ],
+      "sentinels": [
+       "neon_assault:heavy_elite",
+       "neon_assault:elite",
+       "neon_assault:elite",
+       "neon_assault",
+       "neon_support:elite"
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}
