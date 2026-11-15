@@ -41,9 +41,15 @@ viertes Argument. Ersetzt sind bisher nur die fehlenden Zeichen (Popup-
 Schliessen und Blaettern, Kampf-Leiste, Story "Ueberspringen", Waehrungen in
 Hauptmenue, Shop und Einsatz, Rezept-Haken, Verlauf, Optionen-Ueberschriften).
 `tests/test_glyphs.gd` meldet jedes Zeichen in Skripten/Daten, das eine der
-Schriften nicht hat. **Offen:** die uebrigen Symbole aus der README
-(StatIcon, Tab-Leiste, Karte, Rollen, Modulklassen, Zustaende im Kampf,
-Credits einheitlich statt ¢) -- erst mit dem Spieler absprechen.
+Schriften nicht hat. **Rest am selben Tag umgesetzt** (Wunsch des Spielers):
+`StatIcon` zeichnet die SVGs (Waffen-Karte, Squad-Kacheln), Tab-Leiste,
+Stufen der Kampfkarte und Verlauf-Legende (Kreis/Raute/Stern, Chaos `unknown`),
+Rollen-Symbol im Hangar, Modulklassen im `ModuleChip`, Zustaende und
+Angelockt im Kampf, Credits ueberall als Symbol (kein ¢ mehr), ▶ in Knoepfen
+als `play` rechts, +/− im Hangar und in der Squad-Wahl, `>>` im Hangar als
+Doppelpfeil, Cache-Zeichen im Shop, Aufstieg/EP im Ergebnis. Als Text
+geblieben (Zeichen sind in den Schriften): × und − in Saetzen, Ø, →, ◆ im
+Titel-Laufband, Kuerzel KW/EP/SPD in Saetzen.
 
 ### Entwurf Einsatz-Bildschirme umgesetzt (15. Nov. 2026, Wunsch des Spielers)
 

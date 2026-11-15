@@ -279,9 +279,11 @@ static func tab_bar(root: Control, active: int) -> Control:
 	return bar
 
 
-## Ein Knopf der Tab-Leiste: gezeichnetes Symbol (Spielen = Dreieck, Hangar =
-## Halle, Shop = Sechseck-Coin) und Name darunter.
+## Ein Knopf der Tab-Leiste: UI-Symbol (Spielen = Dreieck, Hangar = Halle,
+## Shop = Sechseck-Coin; assets/ui_icons/tab_*.svg) und Name darunter.
 class TabButton extends Button:
+	const TAB_ICONS := ["tab_play", "tab_hangar", "tab_shop"]
+
 	var _icon := 0
 	var _on := false
 	var _name := ""
@@ -300,24 +302,11 @@ class TabButton extends Button:
 			draw_rect(Rect2(Vector2.ZERO, size), Color("#1d1040"))
 			draw_rect(Rect2(size.x * 0.12, 0, size.x * 0.76, 3), Arcade.CYAN)
 		var color := Arcade.CYAN if _on else Arcade.MUTED
-		var c := Vector2(size.x * 0.5, size.y * 0.36)
-		match _icon:
-			0:
-				draw_polyline(PackedVector2Array([c + Vector2(-6, -9), c + Vector2(9, 0),
-					c + Vector2(-6, 9), c + Vector2(-6, -9)]), color, 2.0, true)
-			1:
-				draw_polyline(PackedVector2Array([c + Vector2(-10, 8), c + Vector2(-10, -2),
-					c + Vector2(0, -9), c + Vector2(10, -2), c + Vector2(10, 8), c + Vector2(-10, 8)]),
-					color, 2.0, true)
-				draw_line(c + Vector2(-5, 2), c + Vector2(5, 2), color, 2.0)
-				draw_line(c + Vector2(-5, 5), c + Vector2(5, 5), color, 2.0)
-			_:
-				var pts := PackedVector2Array()
-				for i in 7:
-					var a := TAU * float(i) / 6.0
-					pts.append(c + Vector2(cos(a), sin(a)) * 10.0)
-				draw_polyline(pts, color, 2.0, true)
-				draw_rect(Rect2(c - Vector2(2.5, 5), Vector2(5, 10)), color, false, 2.0)
+		var icon := UiIcon.texture(str(TAB_ICONS[_icon]) if _icon < TAB_ICONS.size() else "tab_shop")
+		if icon != null:
+			var edge := 22.0
+			draw_texture_rect(icon, Rect2(Vector2((size.x - edge) * 0.5, size.y * 0.36 - edge * 0.5),
+				Vector2(edge, edge)), false, color)
 		var f := Arcade.font("bold", 12, 0.16)
 		var w := f.get_string_size(_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
 		draw_string(f, Vector2((size.x - w) * 0.5, size.y * 0.78), _name,

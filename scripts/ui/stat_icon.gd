@@ -4,9 +4,8 @@ extends Control
 ## Ein kleines gezeichnetes Symbol fuer wiederkehrende Begriffe -- Schaden,
 ## Angriffstempo, Takt, Schadensart (Wunsch des Spielers, 7. Nov. 2026).
 ##
-## Gezeichnet statt aus der Schrift: die Standardschrift hat weder Schwert
-## noch Uhr (bekannte Glyphen-Luecken, siehe PROJEKTSTAND 3). Jede Art hat
-## einen Klartext (EXPLAIN), den die Waffen-Karte beim Antippen zeigt.
+## Die Formen kommen seit 15. Nov. 2026 aus assets/ui_icons (UiIcon). Jede
+## Art hat einen Klartext (EXPLAIN), den die Waffen-Karte beim Antippen zeigt.
 ##
 ##   kinetic  Schwert         kinetischer Schaden
 ##   energy   Energiekugel    Energieschaden
@@ -66,83 +65,14 @@ static func explain(which: String) -> String:
 	return EXPLAIN.get(which, which)
 
 
+## Seit 15. Nov. 2026 das SVG gleichen Namens aus assets/ui_icons (weiss,
+## eingefaerbt mit COLORS) statt von Hand gezeichneter Formen.
 func _draw() -> void:
-	var r := minf(size.x, size.y) * 0.5
-	var c := size * 0.5
+	var edge := minf(size.x, size.y)
 	var col: Color = COLORS.get(kind, Color.WHITE)
-	var line := maxf(1.5, r * 0.18)
-	match kind:
-		"kinetic":
-			# Schwert schraeg: Klinge, Parierstange, Griff.
-			var tip := c + Vector2(r * 0.8, -r * 0.8)
-			var guard := c + Vector2(-r * 0.25, r * 0.25)
-			draw_line(guard, tip, col, line * 1.6)
-			draw_line(guard + Vector2(-r * 0.35, -r * 0.35), guard + Vector2(r * 0.35, r * 0.35),
-				col, line * 1.2)
-			draw_line(guard, c + Vector2(-r * 0.75, r * 0.75), Color(0.75, 0.5, 0.3), line * 1.4)
-		"energy":
-			draw_circle(c, r * 0.95, Color(col, 0.25))
-			draw_circle(c, r * 0.7, col)
-			draw_circle(c + Vector2(-r * 0.2, -r * 0.2), r * 0.25, Color(1, 1, 1, 0.85))
-		"speed":
-			for dx in [-0.45, 0.15]:
-				var o := c + Vector2(r * dx, 0)
-				draw_polyline(PackedVector2Array([o + Vector2(-r * 0.3, -r * 0.6), o + Vector2(r * 0.3, 0),
-					o + Vector2(-r * 0.3, r * 0.6)]), col, line * 1.3)
-		"range":
-			draw_line(c + Vector2(-r * 0.8, 0), c + Vector2(r * 0.8, 0), col, line)
-			draw_line(c + Vector2(-r * 0.8, -r * 0.5), c + Vector2(-r * 0.8, r * 0.5), col, line)
-			draw_colored_polygon(PackedVector2Array([c + Vector2(r * 0.9, 0),
-				c + Vector2(r * 0.4, -r * 0.4), c + Vector2(r * 0.4, r * 0.4)]), col)
-		"attack":
-			draw_arc(c, r * 0.6, 0, TAU, 24, col, line)
-			for d in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]:
-				draw_line(c + d * r * 0.35, c + d * r * 0.95, col, line)
-			draw_circle(c, line * 0.7, col)
-		"ability":
-			draw_colored_polygon(PackedVector2Array([c + Vector2(r * 0.15, -r * 0.95),
-				c + Vector2(-r * 0.55, r * 0.1), c + Vector2(-r * 0.05, r * 0.1),
-				c + Vector2(-r * 0.2, r * 0.95), c + Vector2(r * 0.55, -r * 0.15),
-				c + Vector2(r * 0.05, -r * 0.15)]), col)
-		"time":
-			draw_arc(c, r * 0.8, 0, TAU, 28, col, line)
-			draw_line(c, c + Vector2(0, -r * 0.55), col, line)
-			draw_line(c, c + Vector2(r * 0.4, 0), col, line)
-		"hits":
-			for i in 8:
-				var a := TAU * float(i) / 8.0
-				draw_line(c + Vector2.from_angle(a) * r * 0.5, c + Vector2.from_angle(a) * r * 0.95,
-					col, line * 1.6)
-			draw_circle(c, r * 0.62, col)
-			draw_circle(c, r * 0.25, Color(0.1, 0.12, 0.17))
-		"adjacent":
-			draw_circle(c + Vector2(-r * 0.45, 0), r * 0.35, Teams.color(true))
-			draw_circle(c + Vector2(r * 0.45, 0), r * 0.35, col)
-		"heal":
-			draw_rect(Rect2(c - Vector2(r * 0.25, r * 0.8), Vector2(r * 0.5, r * 1.6)), col)
-			draw_rect(Rect2(c - Vector2(r * 0.8, r * 0.25), Vector2(r * 1.6, r * 0.5)), col)
-		"shield", "def":
-			var pts := PackedVector2Array([c + Vector2(-r * 0.75, -r * 0.75),
-				c + Vector2(r * 0.75, -r * 0.75), c + Vector2(r * 0.75, r * 0.05),
-				c + Vector2(0, r * 0.9), c + Vector2(-r * 0.75, r * 0.05)])
-			if kind == "shield":
-				draw_colored_polygon(pts, Color(col, 0.35))
-			else:
-				draw_colored_polygon(pts, col)
-			pts.append(pts[0])
-			draw_polyline(pts, col, line)
-		"hp":
-			draw_circle(c + Vector2(-r * 0.38, -r * 0.2), r * 0.45, col)
-			draw_circle(c + Vector2(r * 0.38, -r * 0.2), r * 0.45, col)
-			draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.82, -r * 0.05),
-				c + Vector2(r * 0.82, -r * 0.05), c + Vector2(0, r * 0.85)]), col)
-		"weight":
-			draw_arc(c + Vector2(0, -r * 0.55), r * 0.25, 0, TAU, 16, col, line)
-			draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.45, -r * 0.3),
-				c + Vector2(r * 0.45, -r * 0.3), c + Vector2(r * 0.8, r * 0.85),
-				c + Vector2(-r * 0.8, r * 0.85)]), col)
-		"area":
-			for k in [0.3, 0.6, 0.9]:
-				draw_arc(c, r * k, 0, TAU, 24, Color(col, 1.1 - k), line)
-		_:
-			draw_circle(c, r * 0.5, col)
+	var texture := UiIcon.texture(kind)
+	if texture == null:
+		draw_circle(size * 0.5, edge * 0.25, col)
+		return
+	draw_texture_rect(texture, Rect2((size - Vector2(edge, edge)) * 0.5, Vector2(edge, edge)),
+		false, col)

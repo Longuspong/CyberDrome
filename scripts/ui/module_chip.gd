@@ -52,17 +52,14 @@ func _draw() -> void:
 		draw_texture_rect(picture, body.grow(-pad), false,
 			Color(1, 1, 1, 0.4) if dim else Color.WHITE)
 		return
-	# Klassenzeichen oben
+	# Klassenzeichen oben (assets/ui_icons/class_*.svg)
 	var mark := Vector2(body.get_center().x, body.position.y + body.size.y * 0.22)
 	var m := body.size.x * 0.12
-	match module.klass:
-		"attack":
-			draw_polyline(PackedVector2Array([mark + Vector2(-m, m * 0.6), mark + Vector2(0, -m * 0.4),
-				mark + Vector2(m, m * 0.6)]), color, 2.0, true)
-		"defense":
-			draw_arc(mark + Vector2(0, m * 0.6), m, PI, TAU, 10, color, 2.0, true)
-		_:
-			draw_circle(mark, m * 0.45, color)
+	var klass := UiIcon.texture("bios" if module.klass == "bios" else "class_" + module.klass)
+	if klass == null:
+		klass = UiIcon.texture("class_tactic")
+	if klass != null:
+		draw_texture_rect(klass, Rect2(mark - Vector2(m, m) * 1.4, Vector2(m, m) * 2.8), false, color)
 	var font := get_theme_default_font()
 	var font_size := int(maxf(11.0, side * 0.26))
 	var text := module.short_name()

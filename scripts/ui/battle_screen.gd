@@ -867,7 +867,8 @@ func _build_ui() -> void:
 		+ "dann das Feld. Danach kämpft dein Squad selbstständig.", 13, UiKit.MUTED)
 	hint_column.add_child(hint)
 	deploy.add_child(hint_card)
-	var start := UiKit.button("Los ▶", true)
+	var start := UiKit.button("Los", true)
+	UiIcon.on_button(start, "play", 18, UiKit.ON_PRIMARY, "right")
 	start.pressed.connect(_start_fight)
 	deploy.add_child(start)
 
@@ -1108,7 +1109,8 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 			15, UiKit.TEXT if row["alive"] else UiKit.BAD))
 
 	if in_run:
-		var onward := UiKit.button("Weiter ▶", true)
+		var onward := UiKit.button("Weiter", true)
+		UiIcon.on_button(onward, "play", 18, UiKit.ON_PRIMARY, "right")
 		onward.pressed.connect(func():
 			get_tree().change_scene_to_file("res://scenes/run.tscn"))
 		buttons.add_child(onward)

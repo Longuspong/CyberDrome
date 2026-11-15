@@ -129,10 +129,9 @@ func _card(item: Dictionary, chosen: bool, enabled: bool) -> Control:
 	var panel := drome_card(item["build"], chosen)
 	var row: HBoxContainer = panel.get_child(0)
 	var toggle := Button.new()
-	toggle.text = "-" if chosen else "+"
+	UiIcon.on_button(toggle, "minus" if chosen else "plus", 22, UiKit.TEXT, "center")
 	toggle.custom_minimum_size = Vector2(52, 52)
 	toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	toggle.add_theme_font_size_override("font_size", 28)
 	toggle.disabled = not enabled
 	toggle.tooltip_text = ("%s zuhause lassen" if chosen else "%s mitnehmen") % entry.name
 	if not enabled:

@@ -396,7 +396,8 @@ func _caches_section() -> void:
 	_content.add_child(note)
 	var have := int(roster.caches.get(_cache_pick, 0))
 	if have > 0:
-		var open := UiKit.button("%s öffnen ▶" % RunState.cache_name(StringName(_cache_pick)), true)
+		var open := UiKit.button("%s öffnen" % RunState.cache_name(StringName(_cache_pick)), true)
+		UiIcon.on_button(open, "play", 18, UiKit.ON_PRIMARY, "right")
 		open.pressed.connect(func():
 			var opener := CacheOpener.show_over(self, _cache_pick)
 			opener.finished.connect(_refresh))
@@ -537,9 +538,7 @@ func _cache_icon() -> Control:
 	icon.custom_minimum_size = Vector2(40, 34)
 	var style := Arcade.chamfer_box(Color(UiKit.MAGENTA, 0.25), 8, UiKit.MAGENTA, 2)
 	icon.add_theme_stylebox_override("panel", style)
-	var mark := UiKit.label("◆", 18, UiKit.PRIMARY)
-	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var mark := UiIcon.rect("cache", 20, UiKit.PRIMARY)
 	mark.set_anchors_preset(Control.PRESET_FULL_RECT)
 	icon.add_child(mark)
 	return icon

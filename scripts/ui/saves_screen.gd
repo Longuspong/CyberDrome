@@ -193,7 +193,8 @@ func _slot_card(which: int, info: Dictionary) -> Control:
 		text.add_child(_wrap(Arcade.label("Leer – startet mit den vier Standard-DROMEs.", 15,
 			Arcade.MUTED)))
 
-	var play := Arcade.button("Weiterspielen ▶" if used else "Neues Spiel +", used)
+	var play := Arcade.button("Weiterspielen" if used else "Neues Spiel", used)
+	UiIcon.on_button(play, "play" if used else "plus", 20, Arcade.DEEP if used else Arcade.YELLOW, "right")
 	play.pressed.connect(func():
 		_show(("LADE SLOT %02d" if used else "NEUES SPIEL IN SLOT %02d") % which)
 		Accessibility.vibrate(20)
