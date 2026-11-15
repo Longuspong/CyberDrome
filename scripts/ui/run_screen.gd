@@ -408,7 +408,8 @@ func _show_prepare(run: RunState) -> void:
 	loot_row.add_child(loot_text)
 	box.add_child(loot)
 
-	var start := _big_button("Kampf starten ▶")
+	var start := _big_button("Kampf starten")
+	UiIcon.on_button(start, "play", 18, UiKit.ON_PRIMARY, "right")
 	start.pressed.connect(func():
 		GameState.begin_run_battle()
 		get_tree().change_scene_to_file("res://scenes/battle.tscn"))
@@ -514,7 +515,7 @@ func _show_stop(run: RunState) -> void:
 
 	# --- Laden ---
 	var reroll_block := run.reroll_blocker()
-	var reroll := _small_button("%d ¢" % run.reroll_price())
+	var reroll := _small_button("%d Credits" % run.reroll_price())
 	UiIcon.on_button(reroll, "reroll", 18, Arcade.WHITE)
 	reroll.tooltip_text = "Neu würfeln" + ("" if reroll_block == "" else ": " + reroll_block)
 	reroll.disabled = reroll_block != ""
@@ -552,7 +553,8 @@ func _show_stop(run: RunState) -> void:
 	for drome in run.squad.size():
 		_side.add_child(_squad_row(run, drome, options))
 
-	var go := _big_button("Zur Karte ▶")
+	var go := _big_button("Zur Karte")
+	UiIcon.on_button(go, "play", 18, UiKit.ON_PRIMARY, "right")
 	go.pressed.connect(func():
 		_selected_storage = -1
 		InfoPopup.close_all(self)
@@ -576,6 +578,7 @@ func _show_stop(run: RunState) -> void:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
 		var book_button := UiKit.outline_button("Rezeptbuch", Arcade.CYAN)
+		UiIcon.on_button(book_button, "recipe", 18, Arcade.CYAN)
 		book_button.size_flags_stretch_ratio = 0.7
 		book_button.pressed.connect(func(): _open_recipes(run))
 		row.add_child(book_button)
@@ -838,7 +841,9 @@ func _shop_row(run: RunState) -> Control:
 		tile.on_action = func(): _buy(run, page)
 		holder.add_child(tile)
 		var buy := Button.new()
-		buy.text = "verkauft" if offer["sold"] else "%d ¢" % price
+		buy.text = "verkauft" if offer["sold"] else "%d" % price
+		if not offer["sold"]:
+			UiIcon.on_button(buy, "credits", 16, Color.WHITE)
 		buy.custom_minimum_size = Vector2(0, 40)
 		buy.add_theme_font_override("font", Arcade.font("display", 15, 0.04))
 		buy.add_theme_font_size_override("font_size", 15)
@@ -930,7 +935,8 @@ func _module_page(run: RunState, module: ModuleData, storage_index: int = -1,
 	if shop_index >= 0:
 		var offer: Dictionary = run.shop_offers[shop_index]
 		var blocker := run.shop_blocker(shop_index)
-		actions.append({"text": "Verkauft" if offer["sold"] else "Kaufen  %d ¢" % RunState.shop_price(module),
+		actions.append({"text": "Verkauft" if offer["sold"] else "Kaufen  %d" % RunState.shop_price(module),
+			"icon": "" if offer["sold"] else "credits",
 			"primary": true, "disabled": blocker != "", "why": "" if offer["sold"] else blocker,
 			"call": func():
 				if run.buy(shop_index):
@@ -941,7 +947,8 @@ func _module_page(run: RunState, module: ModuleData, storage_index: int = -1,
 	elif storage_index >= 0:
 		lines.append([("BIOS" if module.is_bios_item() else "Module")
 			+ " gibt es nur in diesem Einsatz.", COLOR_MUTED, UiKit.SMALL])
-		actions.append({"text": "Verkaufen  +%d ¢" % ModuleData.sell_value(module), "call": func():
+		actions.append({"text": "Verkaufen  +%d" % ModuleData.sell_value(module), "icon": "credits",
+			"call": func():
 			run.sell(storage_index)
 			_selected_storage = -1
 			_refresh()})
@@ -1405,7 +1412,7 @@ func _show_end(run: RunState) -> void:
 	chart_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chart_head.add_child(chart_title)
 	for k in 3:
-		chart_head.add_child(Arcade.label("■ " + RunState.TIER_NAMES[k].to_upper() + " ", 10,
+		chart_head.add_child(UiIcon.text(str(MapView.ICON[k]), RunState.TIER_NAMES[k].to_upper() + " ", 10,
 			MapView.COLOR[k], "bold", 0.08))
 	chart.add_child(RunChart.new(run))
 	var legend := HBoxContainer.new()
@@ -1457,7 +1464,8 @@ func _show_end(run: RunState) -> void:
 		GameState.run = null
 		get_tree().change_scene_to_file("res://scenes/hangar.tscn"))
 	buttons.add_child(hangar)
-	var again := _big_button("Neuer Einsatz ▶")
+	var again := _big_button("Neuer Einsatz")
+	UiIcon.on_button(again, "play", 18, UiKit.ON_PRIMARY, "right")
 	again.pressed.connect(func():
 		GameState.deliver_run_home()
 		_delivered.clear()
@@ -1511,7 +1519,7 @@ func _growth_line(row: Dictionary) -> Control:
 	top.add_child(name)
 	var level := int(row["level"])
 	var up := bool(row["up"])
-	top.add_child(Arcade.label(("LV %d → %d ▲" % [level - 1, level]) if up
+	top.add_child(UiIcon.text("level_up" if up else "xp", ("LV %d → %d" % [level - 1, level]) if up
 		else ("LV %d · +%d EP" % [level, int(row["gain"])]), 12,
 		Arcade.YELLOW if up else Arcade.MUTED, "bold", 0.08))
 	return box

@@ -59,11 +59,13 @@ func _ready() -> void:
 
 	# Ein laufender Lauf geht vor: er wird fortgesetzt, ein zweiter beginnt
 	# erst, wenn er zu Ende ist.
-	var story_text := "Einsatz starten ▶"
+	var story_text := "Einsatz starten"
 	if running and not endless_running:
 		story_text = "Einsatz fortsetzen · Kampf %d/%d" % [GameState.run.round, RunState.rounds_total()]
 	var story := UiKit.button(story_text, not endless_running)
 	story.custom_minimum_size = Vector2(0, 60)
+	if story_text == "Einsatz starten":
+		UiIcon.on_button(story, "play", 18, UiKit.ON_PRIMARY, "right")
 	story.disabled = endless_running
 	story.pressed.connect(func(): _open_run("story"))
 	content.add_child(story)
@@ -143,8 +145,8 @@ func _info_card(running: bool, region_name: String, region) -> Control:
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.add_theme_constant_override("separation", 2)
 	top.add_child(left)
-	left.add_child(Arcade.label("■ LAUFENDER EINSATZ" if running else "NÄCHSTES GEBIET", 12,
-		Arcade.CYAN, "bold", 0.2))
+	left.add_child(UiIcon.text("bullet_square" if running else "location",
+		"LAUFENDER EINSATZ" if running else "NÄCHSTES GEBIET", 12, Arcade.CYAN, "bold", 0.2))
 	left.add_child(Arcade.label(region_name.to_upper(), 22, Arcade.WHITE, "display"))
 	var faction_name: String = str(region.faction.get("name", "")) if region != null else ""
 	var line := RichTextLabel.new()

@@ -445,34 +445,28 @@ class UnitBadgePainter extends Node2D:
 		if entry.get("lured", false) and level != "far":
 			var at := Vector2(left - 7.0 * s, top + height * 0.5)
 			draw_circle(at, 5.0 * s, COLOR_OUTLINE)
-			draw_circle(at, 4.0 * s, COLOR_LURED)
-			draw_rect(Rect2(at + Vector2(-0.8, -2.8) * s, Vector2(1.6, 3.4) * s), COLOR_OUTLINE)
-			draw_rect(Rect2(at + Vector2(-0.8, 1.2) * s, Vector2(1.6, 1.4) * s), COLOR_OUTLINE)
+			_icon("lured", at, 5.0 * s, COLOR_LURED)
+
+	## UI-Symbol (assets/ui_icons) mittig auf ``at``, halbe Kante ``half``.
+	func _icon(name: String, at: Vector2, half: float, color: Color) -> void:
+		var texture := UiIcon.texture(name)
+		if texture == null:
+			draw_circle(at, half * 0.4, color)
+			return
+		draw_texture_rect(texture, Rect2(at - Vector2(half, half), Vector2(half, half) * 2.0), false, color)
 
 	## Kleine Zustands-Symbole rechts neben dem Balken (nur nah):
 	## betaeubt = gelber Stern, verlangsamt = blauer Pfeil nach unten,
-	## verwundbar = roter Riss, Sprint = gruener Pfeil nach vorn.
+	## verwundbar = roter Riss, Sprint = gruener Pfeil nach vorn
+	## (assets/ui_icons/<id>.svg, seit 15. Nov. 2026).
+	const STATUS_COLOR := {"stun": Color(1.0, 0.9, 0.3), "slow": Color(0.45, 0.7, 1.0),
+		"vulnerable": Color(1.0, 0.4, 0.35), "rush": Color(0.5, 0.95, 0.55)}
+
 	func _statuses(ids: Array, x: float, y: float, s: float) -> void:
 		for id in ids:
 			var c := Vector2(x + 4.0 * s, y)
 			draw_circle(c, 5.0 * s, COLOR_OUTLINE)
-			match str(id):
-				"stun":
-					for k in 4:
-						var a := TAU * float(k) / 8.0
-						var d := Vector2.from_angle(a) * 3.5 * s
-						draw_line(c - d, c + d, Color(1.0, 0.9, 0.3), 1.4 * s)
-				"slow":
-					draw_colored_polygon(PackedVector2Array([c + Vector2(-3, -2) * s,
-						c + Vector2(3, -2) * s, c + Vector2(0, 3) * s]), Color(0.45, 0.7, 1.0))
-				"vulnerable":
-					draw_polyline(PackedVector2Array([c + Vector2(-1, -4) * s, c + Vector2(1, -1) * s,
-						c + Vector2(-1, 1) * s, c + Vector2(1, 4) * s]), Color(1.0, 0.4, 0.35), 1.5 * s)
-				"rush":
-					draw_colored_polygon(PackedVector2Array([c + Vector2(-2, -3) * s,
-						c + Vector2(3, 0) * s, c + Vector2(-2, 3) * s]), Color(0.5, 0.95, 0.55))
-				_:
-					draw_circle(c, 2.0 * s, Color.WHITE)
+			_icon(str(id), c, 4.6 * s, STATUS_COLOR.get(str(id), Color.WHITE))
 			x += 11.0 * s
 
 	## Je Faehigkeit eine duenne Leiste unter dem Lebensbalken, gleich breit.

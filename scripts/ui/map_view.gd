@@ -10,13 +10,14 @@ extends Control
 ##
 ## Knoten sind breite Kacheln mit Stufen-Zeichen und dem Namen der Formation.
 ## Form UND Farbe je Stufe (lesbar ohne Farbsehen): Leicht Kreis gruen,
-## Normal Raute gelb, Elite Stern rot, Chaos Fragezeichen violett.
+## Normal Raute gelb, Elite Stern rot, Chaos Fragezeichen violett (SVGs aus
+## assets/ui_icons).
 
 signal picked(index: int)
 
 const COLOR := {0: Color("#5cf2a2"), 1: Color("#ffe14d"), 2: Color("#ff5c7c")}
 const CHAOS_COLOR := Color("#c58cff")
-const LETTER := {0: "L", 1: "N", 2: "E"}
+const ICON := {0: "tier_light", 1: "tier_normal", 2: "tier_elite"}
 const NODE_HEIGHT := 54.0
 const ROW_GAP := 40.0
 const ROWS := 3
@@ -104,28 +105,13 @@ func _draw_node(box: Rect2, data: Dictionary, reachable: bool, chosen: bool, ahe
 	outline.append(shape[0])
 	draw_polyline(outline, Color(UiKit.PRIMARY, 1.0) if chosen else Color(color, alpha),
 		3.0 if chosen else 2.0, true)
-	# Stufen-Zeichen links
+	# Stufen-Zeichen links (UI-Symbol, seit 15. Nov. 2026 statt Form + Buchstabe)
 	var r := minf(box.size.y * 0.32, 15.0)
 	var at := Vector2(box.position.x + r + 8.0, box.get_center().y)
 	var mark := Color(color, alpha)
-	match which:
-		0:
-			draw_arc(at, r * 0.8, 0.0, TAU, 24, mark, 2.5, true)
-		1:
-			draw_polyline(PackedVector2Array([at + Vector2(0, -r), at + Vector2(r, 0),
-				at + Vector2(0, r), at + Vector2(-r, 0), at + Vector2(0, -r)]), mark, 2.5, true)
-		_:
-			var pts := PackedVector2Array()
-			for k in 11:
-				var a := -PI / 2.0 + TAU * float(k) / 10.0
-				var rr := r * (1.0 if k % 2 == 0 else 0.48)
-				pts.append(at + Vector2(cos(a), sin(a)) * rr)
-			draw_polyline(pts, mark, 2.2, true)
-	var letter: String = "?" if chaos else str(LETTER.get(which, ""))
-	var fs := 12
-	var w := font.get_string_size(letter, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-	draw_string(font, at + Vector2(-w * 0.5, fs * 0.36), letter, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
-		Color(1, 1, 1, alpha))
+	var icon := UiIcon.texture("unknown" if chaos else str(ICON.get(which, "tier_elite")))
+	if icon != null:
+		draw_texture_rect(icon, Rect2(at - Vector2(r, r) * 1.15, Vector2(r, r) * 2.3), false, mark)
 	# Name der Formation, zweizeilig wenn noetig
 	var text := caption(data)
 	var left := at.x + r + 6.0

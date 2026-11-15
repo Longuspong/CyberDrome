@@ -172,9 +172,20 @@ const ROLE_TEXT := {"vanguard": "Vorhut · Tank", "skirmisher": "Plänkler · Na
 
 
 static func role_text(build: DromeBuild) -> String:
+	return ROLE_TEXT.get(role_key(build), "Allrounder")
+
+
+static func role_key(build: DromeBuild) -> String:
 	var body := build.body()
-	var role := build.role_override if build.role_override != "" else (body.ai_role if body != null else "")
-	return ROLE_TEXT.get(role, "Allrounder")
+	return build.role_override if build.role_override != "" else (body.ai_role if body != null else "")
+
+
+## Rolle als Symbol + Text (assets/ui_icons/role_*.svg, seit 15. Nov. 2026).
+static func role_label(build: DromeBuild, value: String, size: int) -> Control:
+	var icon := "role_" + role_key(build)
+	if not UiIcon.exists(icon):
+		return Arcade.label(value, size, Arcade.CYAN, "bold", 0.04)
+	return UiIcon.text(icon, value, size, Arcade.CYAN, "bold", 0.04)
 
 
 ## "#01": der wievielte DROME mit diesem Chassis.
@@ -257,8 +268,7 @@ func _drome_tile(index: int) -> Control:
 
 	var full := GameState.roster.squad_count() >= _squad_max()
 	var toggle := Button.new()
-	toggle.text = "−" if entry.in_squad else "+"
-	toggle.add_theme_font_size_override("font_size", 22)
+	UiIcon.on_button(toggle, "minus" if entry.in_squad else "plus", 18, UiKit.TEXT, "center")
 	toggle.custom_minimum_size = Vector2(36, 36)
 	toggle.disabled = not entry.in_squad and full
 	toggle.tooltip_text = ("%s aus dem Squad" if entry.in_squad else "%s in den Squad") % entry.name
@@ -304,7 +314,7 @@ func _drome_page(index: int) -> Dictionary:
 		"actions": actions}
 
 
-## Bild in der Mitte einer Kachel, ">>" oben links fuer Squad-Mitglieder.
+## Bild in der Mitte einer Kachel, Doppelpfeil oben links fuer Squad-Mitglieder.
 ## Ein schlichtes Control als Buehne, damit Ecken-Elemente darueber liegen.
 func _tile_stack(build: DromeBuild, edge: float, in_squad: bool) -> Control:
 	var stack := Control.new()
@@ -318,8 +328,9 @@ func _tile_stack(build: DromeBuild, edge: float, in_squad: bool) -> Control:
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(picture)
 	if in_squad:
-		var mark := _quiet(UiKit.label(">>", UiKit.SMALL, UiKit.GOOD))
-		mark.autowrap_mode = TextServer.AUTOWRAP_OFF
+		var mark := UiIcon.rect("double_chevron_right", 16, UiKit.GOOD)
+		mark.size = Vector2(16, 16)
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		mark.tooltip_text = "im Squad"
 		stack.add_child(mark)
 	return stack
@@ -370,7 +381,7 @@ func _primary_card(index: int) -> Control:
 	code.size_flags_vertical = Control.SIZE_SHRINK_END
 	name_row.add_child(code)
 	info.add_child(name_row)
-	info.add_child(Arcade.label(role_text(build), 15, Arcade.CYAN, "bold", 0.04))
+	info.add_child(role_label(build, role_text(build), 15))
 	var level_row := HBoxContainer.new()
 	level_row.add_theme_constant_override("separation", 8)
 	level_row.add_child(Arcade.label("LV %d" % entry.level, 14, Arcade.YELLOW, "display"))
@@ -572,8 +583,8 @@ func _show_umbau() -> void:
 	code.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	name_row.add_child(code)
 	names.add_child(name_row)
-	names.add_child(Arcade.label("%s · LV %d" % [role_text(build).get_slice(" · ", 0), entry.level],
-		14, Arcade.CYAN, "bold", 0.04))
+	names.add_child(role_label(build, "%s · LV %d" % [role_text(build).get_slice(" · ", 0), entry.level],
+		14))
 	var power := VBoxContainer.new()
 	power.add_theme_constant_override("separation", 0)
 	var power_title := Arcade.label("KAMPFWERT", 11, Arcade.MUTED, "bold", 0.2)

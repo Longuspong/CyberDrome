@@ -17,6 +17,15 @@ von Hand gezeichneten Formen in `StatIcon`, `BattleView._statuses`,
 * **Import:** 24 px sind fuer 16-52 px Anzeige zu grob gerastert; in der
   `.import` `svg/scale=4.0` setzen (wie bei `assets/modules`).
 
+## Stand (15. Nov. 2026)
+
+Alle Fundstellen unten sind umgesetzt (`UiIcon`, `StatIcon`, `MapView`,
+`UiKit.TabButton`, `ModuleChip`, `BattleView`). Als Text geblieben, weil die
+Schriften die Zeichen haben und sie mitten im Satz stehen: × und −, Ø, →,
+◆ im Titel-Laufband, Woerter und Kuerzel im Fliesstext (KW, EP, SPD, Power,
+Tasche, Lager, "−1 Leben"). Die
+Zeilennummern unten sind der Stand vor dem Umbau.
+
 ## Auffaelligkeiten beim Durchsuchen
 
 * **Credits** stehen mal als `◆` (Hauptmenue, Einsatz-Kopf), mal als `¢`
