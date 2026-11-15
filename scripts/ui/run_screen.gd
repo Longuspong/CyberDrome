@@ -503,7 +503,7 @@ func _credit_line(run: RunState) -> String:
 ## ist ein Popup mit Raster.
 ##
 ## Bedienung: Modul im Lager antippen, dann einen leuchtenden Platz an einem
-## Halter -- oder das Modul dorthin ziehen. Ein eingesetztes Modul antippen:
+## Halter -- oder Doppeltipp auf das Modul. Ein eingesetztes Modul antippen:
 ## Popup mit "Zurueck ins Lager".
 func _show_stop(run: RunState) -> void:
 	if _selected_storage >= run.storage.size():
@@ -1008,7 +1008,7 @@ func _storage_grid(run: RunState) -> Control:
 
 
 ## Eine Lager-Kachel: einmal tippen waehlt zum Einsetzen, doppelt tippen
-## oder lange druecken zeigt das Popup. Waagerecht ziehen setzt direkt ein.
+## oder lange druecken zeigt das Popup.
 func _storage_tile(run: RunState, index: int) -> Control:
 	var id: StringName = run.storage[index]
 	var module := ModuleData.get_module(id)

@@ -16,10 +16,10 @@ extends Control
 ##           des gewaehlten DROME -- sein Bild, darunter seine Halter als
 ##           Formen (Dreieck leicht, Viereck mittel, Fuenfeck schwer), rechts
 ##           die Werte. Darunter eine Leiste mit den Teilen, die frei sind
-##           und in diesen DROME passen (nichts Ausgegrautes). Eine Kachel
-##           nach oben auf einen Halter ziehen baut ein; antippen (Kachel
-##           oder Halter) oeffnet die Waffen-Karte (WeaponCard) mit Symbolen,
-##           Vergleichsbalken und "Einbauen" bzw. "Ausbauen".
+##           und in diesen DROME passen (nichts Ausgegrautes). Kacheln und
+##           Halter: tippen waehlt, nochmal tippen oeffnet die Waffen-Karte (WeaponCard) mit Symbolen,
+##           Vergleichsbalken und "Einbauen" bzw. "Ausbauen"; Doppeltipp baut
+##           ein (Kachel) bzw. aus (Halter).
 ##
 ## Regeln, Werte und Validierung kommen wie ueberall aus Roster, DromeBuild und
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
@@ -800,7 +800,7 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 	head.add_child(title)
 	head.add_child(Arcade.label("%d PASSEN" % parts.size(), 12, Arcade.MUTED, "bold", 0.16))
 	_content.add_child(head)
-	_content.add_child(UiKit.label("↑ Auf einen Halter ziehen oder doppelt tippen baut ein · nochmal tippen: Karte",
+	_content.add_child(UiKit.label("Doppelt tippen baut ein · nochmal tippen: Karte",
 		13, UiKit.MUTED))
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
