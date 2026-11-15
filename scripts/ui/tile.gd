@@ -179,7 +179,6 @@ func _gui_input(event: InputEvent) -> void:
 			var serial := _press_serial
 			get_tree().create_timer(LONG_PRESS).timeout.connect(func():
 				if is_instance_valid(self) and _pressing and serial == _press_serial \
-						and not get_viewport().gui_is_dragging() \
 						and not Accessibility.is_scrolling():
 					_long_fired = true
 					_pressing = false
@@ -200,37 +199,48 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _on_click() -> void:
+	var select := func():
+		if not managed:
+			_chosen_key = key
+			get_tree().call_group(GROUP, "refresh_choice")
+		var picked := on_select if on_select.is_valid() else on_tap
+		if picked.is_valid():
+			picked.call()
+		tapped.emit()
+	Tile.click(get_tree(), key, is_chosen(), select, _fire_info, on_action)
+
+
+## Die Tipp-Regel fuer alles, was wie eine Kachel bedient wird, aber anders
+## aussieht (Halter im Umbau): ``chosen`` sagt, ob schon gewaehlt; sonst
+## waehlt der Tipp (``select``). Auf gewaehlt: ``show`` (Details) -- mit
+## ``action`` erst nach DOUBLE_MS, denn ein Doppeltipp loest ``action`` aus.
+static func click(tree: SceneTree, tap_key: String, chosen: bool, select: Callable,
+		show: Callable, action: Callable) -> void:
 	var now := Time.get_ticks_msec()
-	var double := key != "" and _last_key == key and now - _last_ms < DOUBLE_MS
-	_last_key = "" if double else key
+	var double := tap_key != "" and _last_key == tap_key and now - _last_ms < DOUBLE_MS
+	_last_key = "" if double else tap_key
 	_last_ms = now
 	Accessibility.tap()
-	var action := on_action
 	if double and action.is_valid():
 		_info_serial += 1        # ein wartendes Popup faellt weg
 		Accessibility.vibrate(20)
 		action.call()
 		return
-	if not is_chosen():
-		if not managed:
-			_chosen_key = key
-			get_tree().call_group(GROUP, "refresh_choice")
-		var select := on_select if on_select.is_valid() else on_tap
+	if not chosen:
 		if select.is_valid():
 			select.call()
-		tapped.emit()
 		return
 	# Schon gewaehlt: Details. Mit Doppeltipp-Handlung kurz warten.
-	if not on_action.is_valid():
-		_fire_info()
+	if not action.is_valid():
+		_last_key = ""
+		if show.is_valid():
+			show.call()
 		return
 	_info_serial += 1
 	var serial := _info_serial
-	var show := on_info
-	get_tree().create_timer(DOUBLE_MS / 1000.0).timeout.connect(func():
+	tree.create_timer(DOUBLE_MS / 1000.0).timeout.connect(func():
 		if serial == _info_serial and show.is_valid():
 			_last_key = ""
-			Accessibility.vibrate(15)
 			show.call())
 
 

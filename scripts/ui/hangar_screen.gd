@@ -16,10 +16,10 @@ extends Control
 ##           des gewaehlten DROME -- sein Bild, darunter seine Halter als
 ##           Formen (Dreieck leicht, Viereck mittel, Fuenfeck schwer), rechts
 ##           die Werte. Darunter eine Leiste mit den Teilen, die frei sind
-##           und in diesen DROME passen (nichts Ausgegrautes). Eine Kachel
-##           nach oben auf einen Halter ziehen baut ein; antippen (Kachel
-##           oder Halter) oeffnet die Waffen-Karte (WeaponCard) mit Symbolen,
-##           Vergleichsbalken und "Einbauen" bzw. "Ausbauen".
+##           und in diesen DROME passen (nichts Ausgegrautes). Kacheln und
+##           Halter: tippen waehlt, nochmal tippen oeffnet die Waffen-Karte (WeaponCard) mit Symbolen,
+##           Vergleichsbalken und "Einbauen" bzw. "Ausbauen"; Doppeltipp baut
+##           ein (Kachel) bzw. aus (Halter).
 ##
 ## Regeln, Werte und Validierung kommen wie ueberall aus Roster, DromeBuild und
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
@@ -682,8 +682,8 @@ func _picker() -> Control:
 ## Die Halter als Formen: die Ausruestungshalter in ihrer Klassenform (den
 ## Kern-Halter gibt es seit 6g nicht mehr); darin die Waffe oder leer. Der
 ## gewaehlte Halter steht in einem hervorgehobenen Kasten; unter jedem Halter
-## seine Klasse. Antippen waehlt den Halter; steckt eine Waffe darin, oeffnet
-## sich ihre Karte mit "Ausbauen".
+## seine Klasse. Antippen waehlt den Halter, nochmal antippen oeffnet die
+## Karte der Waffe darin (mit "Ausbauen"), Doppeltipp baut sie aus.
 func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
@@ -701,15 +701,23 @@ func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 		else:
 			style.bg_color = Color(0, 0, 0, 0)
 			style.border_color = Color(0, 0, 0, 0)
-		var holder := _tappable(style, func():
+		# Seit 15. Nov. 2026 (Wunsch des Spielers) wie eine Kachel: tippen
+		# waehlt den Halter, nochmal tippen zeigt die Waffen-Karte,
+		# Doppeltipp baut die Waffe aus.
+		var select := func():
 			_selected_slot = slot
 			_refresh()
-			if part != null:
-				_open_card(entry, build, part, slot))
-		# Ziehen (10. Nov. 2026): eine Teil-Kachel auf den Halter fallen lassen.
-		holder.set_drag_forwarding(Callable(),
-			func(_at, data): return _can_drop_part(entry, build, slot, data),
-			func(_at, data): _drop_part(entry, slot, data))
+		var show := Callable()
+		var take_out := Callable()
+		if part != null:
+			show = func(): _open_card(entry, build, part, slot)
+			take_out = func():
+				_selected_slot = slot
+				GameState.roster.clear_slot(entry, slot)
+				_changed()
+		var holder := _tappable(style, func():
+			Tile.click(get_tree(), "holder:%s:%s" % [entry.name, slot],
+				slot == _selected_slot, select, show, take_out))
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 0)
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -759,7 +767,7 @@ func _slots_taking(build: DromeBuild, part: PartData) -> Array:
 	if part == null or GameState.roster.free_count(part.id) <= 0:
 		return out
 	for slot in build.equip_slots():
-		if _can_drop_part(null, build, slot, {"kind": "part", "part_id": part.id}):
+		if _part_fits(build, slot, part):
 			out.append(slot)
 	return out
 
@@ -775,8 +783,7 @@ func _target_slot(build: DromeBuild, part: PartData) -> String:
 
 ## Die Teile, die sich in diesen DROME einbauen lassen, als Leiste -- nur was
 ## frei ist UND passt, nichts Ausgegrautes (Wunsch des Spielers, 10. Nov.
-## 2026). Die Leiste laeuft waagerecht: wischen blaettert, eine Kachel nach
-## oben ziehen legt sie auf einen Halter.
+## 2026). Die Leiste laeuft waagerecht: wischen blaettert.
 func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 	var parts: Array = []
 	for part_id in GameState.roster.owned_part_ids(PartData.Type.EQUIPMENT):
@@ -793,7 +800,7 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 	head.add_child(title)
 	head.add_child(Arcade.label("%d PASSEN" % parts.size(), 12, Arcade.MUTED, "bold", 0.16))
 	_content.add_child(head)
-	_content.add_child(UiKit.label("↑ Auf einen Halter ziehen oder doppelt tippen baut ein · nochmal tippen: Karte",
+	_content.add_child(UiKit.label("Doppelt tippen baut ein · nochmal tippen: Karte",
 		13, UiKit.MUTED))
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -809,12 +816,9 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 	_content.add_child(scroll)
 
 
-## Darf ein gezogenes Teil auf diesen Halter? Dieselbe Pruefung wie beim
-## Einbauen ueber die Karte.
-func _can_drop_part(entry: RosterEntry, build: DromeBuild, slot: String, data) -> bool:
-	if not data is Dictionary or data.get("kind", "") != "part":
-		return false
-	var part := PartDB.get_part(data.get("part_id", &""))
+## Passt ``part`` in diesen Halter? Klasse, nicht schon dasselbe Teil darin,
+## frei im Hangar, und der Aufbau bleibt gueltig.
+func _part_fits(build: DromeBuild, slot: String, part: PartData) -> bool:
 	if part == null or not build.body().accepts(part, slot):
 		return false
 	var current := build.part_in(slot)
@@ -827,16 +831,20 @@ func _can_drop_part(entry: RosterEntry, build: DromeBuild, slot: String, data) -
 	return trial.is_valid()
 
 
-func _drop_part(entry: RosterEntry, slot: String, data) -> void:
-	if GameState.roster.assign(entry, slot, StringName(data.get("part_id", ""))):
-		Accessibility.vibrate(20, true)
-		_selected_slot = slot
-		_changed()
+## Baut ``part`` in den gewaehlten Halter ein (oder den ersten, der es
+## nimmt). false = passt nirgends.
+func _install_part(entry: RosterEntry, build: DromeBuild, part: PartData) -> bool:
+	var slot := _target_slot(build, part)
+	if slot == "" or not GameState.roster.assign(entry, slot, part.id):
+		return false
+	Accessibility.vibrate(20, true)
+	_selected_slot = slot
+	_changed()
+	return true
 
 
 ## Eine Teil-Kachel: die Form mit dem Bild, darunter wie viele frei sind.
-## Antippen oeffnet die Waffen-Karte; nach oben (oder unten) ziehen nimmt das
-## Teil mit auf einen Halter. Waagerecht blaettert die Leiste.
+## Tippen waehlt, nochmal tippen zeigt die Waffen-Karte, Doppeltipp baut ein.
 func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData, pages: Array = [],
 		page: int = 0) -> Control:
 	var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE - 20.0)
@@ -846,31 +854,13 @@ func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData, pages: Ar
 	# Seit 15. Nov. 2026 (Wunsch des Spielers): tippen waehlt, nochmal tippen
 	# zeigt die Waffen-Karte (blaetterbar), Doppeltipp baut ein.
 	tile.on_action = func():
-		var slot := _target_slot(build, part)
-		if slot != "" and GameState.roster.assign(entry, slot, part.id):
-			Accessibility.vibrate(20, true)
-			_selected_slot = slot
-			_changed()
-		else:
+		if not _install_part(entry, build, part):
 			_open_card(entry, build, part, "")
 	tile.on_info = func():
 		if pages.is_empty():
 			_open_card(entry, build, part, "")
 		else:
 			InfoPopup.open_pages(self, pages, page)
-	var start := {"at": Vector2.ZERO}
-	tile.gui_input.connect(func(event: InputEvent):
-		if event is InputEventMouseButton and event.pressed:
-			start["at"] = event.global_position)
-	tile.set_drag_forwarding(func(_at):
-		var moved: Vector2 = tile.get_global_mouse_position() - start["at"]
-		if absf(moved.x) > absf(moved.y):
-			return null
-		var preview := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE)
-		preview.modulate = Color(1, 1, 1, 0.85)
-		tile.set_drag_preview(preview)
-		return {"kind": "part", "part_id": part.id},
-		Callable(), Callable())
 	return tile
 
 

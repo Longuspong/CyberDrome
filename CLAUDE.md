@@ -86,7 +86,14 @@ Punkte). Sie wird **nicht von Hand** bearbeitet, sondern von
 
 ## Token sparen (Vorgabe des Spielers, 10. Nov. 2026)
 
-Die Sitzung vom 10. Nov. war gut, aber sehr teuer. Deshalb gilt:
+**Gilt nur, wenn die Sitzung auf Fable laeuft** (seit 15. Nov. 2026, Wunsch
+des Spielers). Mit anderen Modellen (Opus, Sonnet ...) entfallen diese Regeln:
+dann normal arbeiten, Themen duerfen in einer Sitzung weiterlaufen, Browser
+und Screenshots nach Bedarf. Im Zweifel das Modell mit `get_session`
+pruefen. Ausnahme fuer alle Modelle: PRs nicht beobachten (letzter Punkt
+unten) bleibt.
+
+Die Sitzung vom 10. Nov. war gut, aber sehr teuer. Deshalb gilt (nur Fable):
 
 * **Ein Thema je Sitzung.** Fuer jedes neue Thema eine frische Sitzung --
   je laenger eine Sitzung laeuft, desto teurer wird jeder Schritt. Nur
