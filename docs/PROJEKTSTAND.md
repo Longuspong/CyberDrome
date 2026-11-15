@@ -67,6 +67,9 @@ Vorlagen, Abgleich im README). Abgesprochen: **nur Optik**, Navigation bleibt
   results=SSN weiter=1`, `editing_index=0`, `caches=city:3`,
   `static=res://...gd:_tab:"caches"`, `cache_open=city[:auf]`, `karte=eq_hammer`,
   `story=links|rechts`. Bilder per `xvfb-run` ohne Web-Export.
+* **Neues App-Icon** vom Spieler (Pixel-"C" in Gelb/Cyan/Magenta):
+  `assets/icon/app_icon.png` (512 px) ist Projekt-Icon, Favicon und PWA-Icon.
+  Das alte erzeugte SVG und `tools/build_app_icon.py` sind entfernt.
 * Offene Punkte aus dem Entwurf (Erstabschluss-Bonus, Seltenheit, Hipstar,
   Lager 6/8, Mecha gesperrt, Endlos-Name, Kampf-Kacheln) im SPOT-Blatt.
 
