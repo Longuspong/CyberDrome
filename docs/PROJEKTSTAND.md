@@ -29,6 +29,22 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### UI-Symbole statt Sonderzeichen (15. Nov. 2026, Set des Spielers)
+
+Bungee und Chakra Petch kennen viele Sonderzeichen nicht (▸ ◈ ⬢ ✦ ✕ ✓ ◉ ▮ ↻
+◎ ○ ❚ ☰ ⏩); Godot zeichnete dann einen Kasten mit dem Zeichencode ("Umbau
+25B8"). Der Spieler hat 82 SVGs geliefert: `assets/ui_icons/` (weiss, 24 px,
+Import `svg/scale=4`, Fundstellen in der README dort). Baukasten `UiIcon`:
+`rect` (Bild), `text` (Symbol + Text), `on_button` (Symbol im Knopf, links/
+rechts/mittig/oben); InfoPopup-Aktionen nehmen `"icon"`, `Arcade.tag` ein
+viertes Argument. Ersetzt sind bisher nur die fehlenden Zeichen (Popup-
+Schliessen und Blaettern, Kampf-Leiste, Story "Ueberspringen", Waehrungen in
+Hauptmenue, Shop und Einsatz, Rezept-Haken, Verlauf, Optionen-Ueberschriften).
+`tests/test_glyphs.gd` meldet jedes Zeichen in Skripten/Daten, das eine der
+Schriften nicht hat. **Offen:** die uebrigen Symbole aus der README
+(StatIcon, Tab-Leiste, Karte, Rollen, Modulklassen, Zustaende im Kampf,
+Credits einheitlich statt ¢) -- erst mit dem Spieler absprechen.
+
 ### Entwurf Einsatz-Bildschirme umgesetzt (15. Nov. 2026, Wunsch des Spielers)
 
 24 Entwuerfe des Spielers (`docs/design/einsatz_arcade/`, Bilder und

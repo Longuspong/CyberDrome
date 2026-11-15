@@ -9,6 +9,7 @@ extends CanvasLayer
 ##         "subtitle": "Modul · Angriff", "subtitle_color": Color.RED,
 ##         "picture": ModuleChip.new(module, 56),
 ##         "lines": ["+8 % Angriffstempo", ["nur in diesem Einsatz", UiKit.MUTED]],
+##         (Aktionen nehmen optional "icon": Name aus assets/ui_icons)
 ##         "actions": [{"text": "Verkaufen +2", "call": func(): ...}],
 ##     })
 ##
@@ -152,13 +153,13 @@ func _build(title: String, options: Dictionary) -> void:
 		nav.add_theme_constant_override("separation", 6)
 		outer.add_child(nav)
 		outer.move_child(nav, 0)
-		nav.add_child(_arrow("◀", func(): _turn(pages, page - 1)))
+		nav.add_child(_arrow("play_left", func(): _turn(pages, page - 1)))
 		var count := UiKit.label("%d / %d" % [page + 1, pages.size()], UiKit.SMALL, UiKit.MUTED)
 		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		nav.add_child(count)
-		nav.add_child(_arrow("▶", func(): _turn(pages, page + 1)))
+		nav.add_child(_arrow("play", func(): _turn(pages, page + 1)))
 		# Wischen nach links/rechts blaettert.
 		var start := {"at": Vector2.ZERO, "down": false}
 		_panel.gui_input.connect(func(event: InputEvent):
@@ -173,12 +174,11 @@ func _build(title: String, options: Dictionary) -> void:
 						_turn(pages, page + (1 if moved.x < 0.0 else -1)))
 		_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	var x := Button.new()
-	x.text = "✕"
 	x.flat = true
+	x.tooltip_text = "Schließen"
 	x.custom_minimum_size = Vector2(44, 44)
 	x.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	x.add_theme_color_override("font_color", Arcade.YELLOW)
-	x.add_theme_font_size_override("font_size", 22)
+	UiIcon.on_button(x, "close", 20, Arcade.YELLOW, "center")
 	x.pressed.connect(close)
 	head.add_child(x)
 
@@ -213,7 +213,11 @@ func _build(title: String, options: Dictionary) -> void:
 		row.add_theme_constant_override("separation", 8)
 		outer.add_child(row)
 		for action in actions:
-			var button := UiKit.button(str(action.get("text", "")), bool(action.get("primary", false)))
+			var primary := bool(action.get("primary", false))
+			var button := UiKit.button(str(action.get("text", "")), primary)
+			if str(action.get("icon", "")) != "":
+				UiIcon.on_button(button, str(action["icon"]), 18,
+					UiKit.ON_PRIMARY if primary else UiKit.TEXT)
 			button.disabled = bool(action.get("disabled", false))
 			if str(action.get("why", "")) != "" and button.disabled:
 				button.text += "\n" + str(action["why"])
@@ -242,12 +246,10 @@ func _build(title: String, options: Dictionary) -> void:
 			.set_ease(Tween.EASE_OUT)
 
 
-func _arrow(text: String, on_press: Callable) -> Button:
+func _arrow(icon: String, on_press: Callable) -> Button:
 	var button := Button.new()
-	button.text = text
 	button.custom_minimum_size = Vector2(56, 40)
-	button.add_theme_color_override("font_color", Arcade.YELLOW)
-	button.add_theme_font_size_override("font_size", 18)
+	UiIcon.on_button(button, icon, 18, Arcade.YELLOW, "center")
 	button.pressed.connect(func():
 		Accessibility.tap()
 		on_press.call())

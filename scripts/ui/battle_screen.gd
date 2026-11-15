@@ -463,7 +463,7 @@ func _look_at_unit(unit: Unit) -> void:
 func _set_follow(on: bool) -> void:
 	_follow = on
 	if _follow_button != null:
-		_follow_button.text = "◎\nKAMERA" if on else "○\nKAMERA"
+		UiIcon.on_button(_follow_button, "camera_follow" if on else "camera_free", 20, Color.WHITE, "top")
 		_follow_button.modulate = UiKit.ACCENT if on else Color.WHITE
 
 
@@ -879,10 +879,10 @@ func _build_ui() -> void:
 	_speed_button = _bar_button("1×\nTEMPO", _cycle_speed)
 	buttons.add_child(_speed_button)
 	_apply_speed()
-	_pause_button = _bar_button("❚❚\nPAUSE", _toggle_pause)
+	_pause_button = _bar_button("PAUSE", _toggle_pause, "pause")
 	buttons.add_child(_pause_button)
-	buttons.add_child(_bar_button("☰\nPROTOKOLL", func(): _log_panel.visible = not _log_panel.visible))
-	_follow_button = _bar_button("◎\nKAMERA", func(): _set_follow(not _follow))
+	buttons.add_child(_bar_button("PROTOKOLL", func(): _log_panel.visible = not _log_panel.visible, "log"))
+	_follow_button = _bar_button("KAMERA", func(): _set_follow(not _follow), "camera_follow")
 	_follow_button.modulate = UiKit.ACCENT
 	buttons.add_child(_follow_button)
 
@@ -895,9 +895,12 @@ func _build_ui() -> void:
 	add_child(timer)
 
 
-func _bar_button(text: String, on_press: Callable) -> Button:
+## ``icon``: UI-Symbol ueber dem Text (assets/ui_icons).
+func _bar_button(text: String, on_press: Callable, icon: String = "") -> Button:
 	var button := Button.new()
 	button.text = text
+	if icon != "":
+		UiIcon.on_button(button, icon, 20, Color.WHITE, "top")
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.custom_minimum_size = Vector2(0, 58)
 	button.add_theme_font_size_override("font_size", 12)
@@ -939,7 +942,8 @@ func _exit_tree() -> void:
 func _toggle_pause() -> void:
 	_paused = not _paused
 	if _pause_button != null:
-		_pause_button.text = "▶\nWEITER" if _paused else "❚❚\nPAUSE"
+		_pause_button.text = "WEITER" if _paused else "PAUSE"
+		UiIcon.on_button(_pause_button, "play" if _paused else "pause", 20, Color.WHITE, "top")
 	_refresh_hud()
 
 

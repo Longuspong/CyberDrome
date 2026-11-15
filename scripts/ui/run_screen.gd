@@ -201,11 +201,11 @@ func _refresh_lives(run: RunState) -> void:
 	var hearts := Hearts.new(run.lives, run.lives_max())
 	hearts.tooltip_text = "Leben: %d von %d" % [run.lives, run.lives_max()]
 	_lives_box.add_child(_hud_cell("Leben", hearts))
-	_lives_box.add_child(_hud_cell("Credits", Arcade.label("◆ %d" % run.credits, 16, Arcade.CYAN, "display")))
+	_lives_box.add_child(_hud_cell("Credits", UiIcon.text("credits", "%d" % run.credits, 16, Arcade.CYAN, "display")))
 	var caches := 0
 	for key in run.run_caches:
 		caches += int(run.run_caches[key])
-	_lives_box.add_child(_hud_cell("Caches", Arcade.label("▮ %d" % caches, 16, Arcade.YELLOW, "display")))
+	_lives_box.add_child(_hud_cell("Caches", UiIcon.text("cache", "%d" % caches, 16, Arcade.YELLOW, "display")))
 	if not run.is_chaos():
 		var level := run.reinforcement()
 		var row := HBoxContainer.new()
@@ -514,7 +514,8 @@ func _show_stop(run: RunState) -> void:
 
 	# --- Laden ---
 	var reroll_block := run.reroll_blocker()
-	var reroll := _small_button("↻  %d ¢" % run.reroll_price())
+	var reroll := _small_button("%d ¢" % run.reroll_price())
+	UiIcon.on_button(reroll, "reroll", 18, Arcade.WHITE)
 	reroll.tooltip_text = "Neu würfeln" + ("" if reroll_block == "" else ": " + reroll_block)
 	reroll.disabled = reroll_block != ""
 	reroll.pressed.connect(func():
@@ -618,25 +619,26 @@ func _stop_status(run: RunState) -> Control:
 	flow.add_theme_constant_override("v_separation", 8)
 	var last: Dictionary = run.history[-1] if not run.history.is_empty() else {}
 	var lost: bool = not last.is_empty() and not bool(last["won"])
-	var credits := "¢ %d" % run.credits
+	var credits := "%d" % run.credits
 	if not last.is_empty():
 		credits += "   +%d" % int(last.get("credits", 0))
 	flow.add_child(_chip(credits, COLOR_WARN, Callable(), "Credits: Währung des Ladens. "
-		+ ("+%d für den Sieg." % int(last.get("credits", 0)) if not lost else "Trostgeld nach der Niederlage.")))
+		+ ("+%d für den Sieg." % int(last.get("credits", 0)) if not lost else "Trostgeld nach der Niederlage."),
+		"credits"))
 	if lost:
 		flow.add_child(_chip("Niederlage  ·  −1 Leben", COLOR_BAD, Callable(), ""))
 	if not run.last_loot.is_empty():
-		flow.add_child(_chip("Beute ▶", COLOR_GOOD, func(): _loot_popup(run), ""))
+		flow.add_child(_chip("Beute", COLOR_GOOD, func(): _loot_popup(run), "", "caret_right", true))
 	var cache_total := 0
 	for key in run.run_caches:
 		cache_total += int(run.run_caches[key])
 	if cache_total > 0 or run.run_coins > 0:
-		flow.add_child(_chip("◆ %d  ·  ◈ %d" % [cache_total, run.run_coins], UiKit.MAGENTA,
-			func(): _caches_popup(run), ""))
+		flow.add_child(_chip("%d Caches  ·  %d Coins" % [cache_total, run.run_coins], UiKit.MAGENTA,
+			func(): _caches_popup(run), "", "cache"))
 	if not run.last_growth.is_empty():
-		flow.add_child(_chip("Erfahrung ▶", COLOR_HEADING, func(): _growth_popup(run), ""))
+		flow.add_child(_chip("Erfahrung", COLOR_HEADING, func(): _growth_popup(run), "", "caret_right", true))
 	if not run.bag.is_empty():
-		flow.add_child(_chip("Tasche %d ▶" % run.bag.size(), COLOR_MUTED, func(): _bag_popup(run), ""))
+		flow.add_child(_chip("Tasche %d" % run.bag.size(), COLOR_MUTED, func(): _bag_popup(run), "", "caret_right", true))
 	return flow
 
 
@@ -656,9 +658,13 @@ func _tier_chip(text: String, color: Color) -> Control:
 
 
 ## Kleiner Chip mit Rahmen in seiner Farbe. Mit ``on_tap`` ein Knopf.
-func _chip(text: String, color: Color, on_tap: Callable, tip: String) -> Control:
+## ``icon``: UI-Symbol vor dem Text, mit ``after`` dahinter (Pfeil "mehr").
+func _chip(text: String, color: Color, on_tap: Callable, tip: String, icon: String = "",
+		after: bool = false) -> Control:
 	var button := Button.new()
 	button.text = text
+	if icon != "":
+		UiIcon.on_button(button, icon, 16, color, "right" if after else "left")
 	button.tooltip_text = tip
 	button.custom_minimum_size = Vector2(0, 38)
 	button.add_theme_font_size_override("font_size", 15)
@@ -700,9 +706,10 @@ func _caches_popup(run: RunState) -> void:
 	var lines: Array = [["Geht am Ende des Einsatzes in den Hangar -- auch wenn er scheitert.",
 		COLOR_MUTED, UiKit.SMALL]]
 	for key in run.run_caches:
-		lines.append(["◆  %d× %s" % [int(run.run_caches[key]), RunState.cache_name(StringName(key))],
-			UiKit.MAGENTA])
-	lines.append(["◈  %d %s" % [run.run_coins, RunState.coin_name()], COLOR_WARN])
+		lines.append(UiIcon.text("cache", "%d× %s" % [int(run.run_caches[key]),
+			RunState.cache_name(StringName(key))], UiKit.BODY - 1, UiKit.MAGENTA))
+	lines.append(UiIcon.text("coin", "%d %s" % [run.run_coins, RunState.coin_name()], UiKit.BODY - 1,
+		COLOR_WARN))
 	lines.append(["Caches öffnen kommt mit dem Hangar-Shop.", COLOR_MUTED, UiKit.SMALL])
 	InfoPopup.open(self, "Einsatz-Beute", {"lines": lines})
 
@@ -1327,8 +1334,10 @@ func _recipe_page(run: RunState, entry: Dictionary) -> Dictionary:
 		piece.add_theme_constant_override("separation", 4)
 		if ingredient != null:
 			piece.add_child(ModuleChip.new(ingredient, 30.0))
-		piece.add_child(_flow_label("%s%s" % [ingredient.display_name if ingredient != null
-			else str(module.from[i]), "  ✓" if have else ""], 15, COLOR_GOOD if have else COLOR_MUTED))
+		piece.add_child(_flow_label(ingredient.display_name if ingredient != null
+			else str(module.from[i]), 15, COLOR_GOOD if have else COLOR_MUTED))
+		if have:
+			piece.add_child(UiIcon.rect("check", 16, COLOR_GOOD))
 		parts.add_child(piece)
 	var lines: Array = [parts]
 	lines.append_array(_module_lines(module))
@@ -1346,7 +1355,7 @@ func _recipe_page(run: RunState, entry: Dictionary) -> Dictionary:
 			run.set_target_recipe(module.id)
 			_recipes_open = true
 			_refresh()})
-	actions.append({"text": "◀ Rezeptbuch", "call": func(): _open_recipes(run)})
+	actions.append({"text": "Rezeptbuch", "icon": "caret_left", "call": func(): _open_recipes(run)})
 	return {"title": module.display_name, "subtitle": module.headline(),
 		"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
 		"lines": lines, "actions": actions}
@@ -1399,7 +1408,11 @@ func _show_end(run: RunState) -> void:
 		chart_head.add_child(Arcade.label("■ " + RunState.TIER_NAMES[k].to_upper() + " ", 10,
 			MapView.COLOR[k], "bold", 0.08))
 	chart.add_child(RunChart.new(run))
-	chart.add_child(_label("✓ Sieg   ✕ Niederlage · −1 Leben", 13, COLOR_MUTED))
+	var legend := HBoxContainer.new()
+	legend.add_theme_constant_override("separation", 12)
+	legend.add_child(UiIcon.text("check", "Sieg", 13, COLOR_MUTED))
+	legend.add_child(UiIcon.text("cross", "Niederlage · −1 Leben", 13, COLOR_MUTED))
+	chart.add_child(legend)
 
 	# Was bleibt: Caches, Coins, Teile, Erfahrung.
 	var keep := UiKit.card(_side, true)

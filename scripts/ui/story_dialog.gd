@@ -70,7 +70,8 @@ func _ready() -> void:
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(hint)
-	var skip := UiKit.outline_button("Überspringen ⏩", Arcade.YELLOW)
+	var skip := UiKit.outline_button("Überspringen", Arcade.YELLOW)
+	UiIcon.on_button(skip, "skip", 16, Arcade.YELLOW, "right")
 	skip.custom_minimum_size = Vector2(0, 44)
 	skip.size_flags_horizontal = Control.SIZE_SHRINK_END
 	skip.add_theme_font_override("font", Arcade.font("bold", 13, 0.16))

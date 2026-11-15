@@ -167,7 +167,7 @@ func _card(parent: Control, title: String, tag: String = "") -> VBoxContainer:
 	box.add_theme_constant_override("separation", 10)
 	var head := HBoxContainer.new()
 	box.add_child(head)
-	var heading := Arcade.label("▶ " + title.to_upper(), 14, Arcade.CYAN, "bold", 0.2)
+	var heading := UiIcon.text("caret_right", title.to_upper(), 14, Arcade.CYAN, "bold", 0.2)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(heading)
 	if tag != "":

@@ -43,7 +43,7 @@ func _ready() -> void:
 	var push := Control.new()
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(push)
-	var place := Arcade.tilt(Arcade.tag("◉ " + region_name.to_upper(), 12, 0.0), 2.0)
+	var place := Arcade.tilt(Arcade.tag(region_name.to_upper(), 12, 0.0, "location"), 2.0)
 	place.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(place)
 	var gear_room := Control.new()
@@ -190,13 +190,13 @@ func _info_card(running: bool, region_name: String, region) -> Control:
 	wallet.add_theme_constant_override("separation", 8)
 	box.add_child(wallet)
 	if running:
-		wallet.add_child(_money("Credits", "◆ %d" % GameState.run.credits, Arcade.CYAN))
-	wallet.add_child(_money(RunState.coin_name(), "⬢ %s" % _thousands(GameState.roster.coins),
-		Arcade.YELLOW))
+		wallet.add_child(_money("Credits", "%d" % GameState.run.credits, Arcade.CYAN, "credits"))
+	wallet.add_child(_money(RunState.coin_name(), _thousands(GameState.roster.coins),
+		Arcade.YELLOW, "coin"))
 	return panel
 
 
-func _money(title: String, value: String, color: Color) -> Control:
+func _money(title: String, value: String, color: Color, icon: String) -> Control:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var style := StyleBoxFlat.new()
@@ -207,7 +207,7 @@ func _money(title: String, value: String, color: Color) -> Control:
 	column.add_theme_constant_override("separation", 2)
 	panel.add_child(column)
 	column.add_child(Arcade.label(title.to_upper(), 11, Arcade.MUTED, "bold", 0.18))
-	column.add_child(Arcade.label(value, 18, color, "display"))
+	column.add_child(UiIcon.text(icon, value, 18, color, "display"))
 	return panel
 
 
