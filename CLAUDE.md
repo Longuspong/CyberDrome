@@ -88,14 +88,14 @@ Punkte). Sie wird **nicht von Hand** bearbeitet, sondern von
 * Designfragen, die das Spiel selbst aendern (Regeln, Balancing, Layout-
   Muster), vorher kurz mit Empfehlung vorlegen.
 
-## Token sparen (Vorgabe des Spielers, 10. Nov. 2026)
+## Token sparen -- nur fuer Sitzungen mit Fable (Vorgabe des Spielers, 10. Nov. 2026)
 
 **Gilt nur, wenn die Sitzung auf Fable laeuft** (seit 15. Nov. 2026, Wunsch
 des Spielers). Mit anderen Modellen (Opus, Sonnet ...) entfallen diese Regeln:
 dann normal arbeiten, Themen duerfen in einer Sitzung weiterlaufen, Browser
 und Screenshots nach Bedarf. Im Zweifel das Modell mit `get_session`
-pruefen. Ausnahme fuer alle Modelle: PRs nicht beobachten (letzter Punkt
-unten) bleibt.
+pruefen. Das gilt auch fuers Beobachten von PRs: mit anderen Modellen den
+eigenen PR beobachten und rote CI selbst reparieren (seit 15. Nov. 2026).
 
 Die Sitzung vom 10. Nov. war gut, aber sehr teuer. Deshalb gilt (nur Fable):
 
@@ -108,7 +108,7 @@ Die Sitzung vom 10. Nov. war gut, aber sehr teuer. Deshalb gilt (nur Fable):
   kein Web-Export, keine Screenshots. Die Sichtpruefung macht der Spieler
   auf der Vercel-Vorschau. Wenn doch Browser: so wenige Builds wie moeglich,
   erst alle Aenderungen, dann einmal bauen.
-* **PR nicht beobachten.** Draft-PR oeffnen und aufhoeren -- kein
+* **PR nicht beobachten (nur Fable).** Draft-PR oeffnen und aufhoeren -- kein
   `subscribe_pr_activity`, keine Nachschau-Termine. Der Spieler meldet sich,
   wenn etwas rot ist. Nur auf ausdruecklichen Wunsch beobachten.
 * **Lange Messlaeufe sparsam.** `power_bench`, `run_bench`, Spiegelkaempfe
