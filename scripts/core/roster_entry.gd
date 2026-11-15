@@ -40,6 +40,10 @@ var in_squad: bool = false
 ## Erfahrung und Level des DROME (0-5; Leveling).
 var xp: int = 0
 var level: int = 0
+## Fraktions-DROME (15. Nov. 2026): Id aus data/formations.json -> dromes
+## (z. B. "neon_vireo"); leer = Standard-DROME. Gibt feste Werte und beim
+## Verwerten einen Fraktionskern.
+var variant: String = ""
 
 
 static func create(entry_name: String, chassis_uid: String) -> RosterEntry:
@@ -65,6 +69,7 @@ func to_dict() -> Dictionary:
 		"assignments": assignments.duplicate(),
 		"xp": xp,
 		"level": level,
+		"variant": variant,
 	}
 
 
@@ -79,6 +84,7 @@ static func from_dict(data: Dictionary) -> RosterEntry:
 	entry.in_squad = bool(data.get("in_squad", false))
 	entry.xp = int(data.get("xp", 0))
 	entry.level = int(data.get("level", 0))
+	entry.variant = str(data.get("variant", ""))
 	var raw = data.get("assignments", {})
 	if raw is Dictionary:
 		for slot in raw:

@@ -209,6 +209,27 @@ func _vault_row() -> Control:
 				["Öffnen kommt mit dem Hangar-Shop. Was drin ist, legst du in der SPOT-Tabelle "
 				+ "fest (Blatt Lootcaches).", UiKit.MUTED, UiKit.SMALL]]})
 		row.add_child(tile)
+	if roster.kits() > 0:
+		var kit := Tile.new("kits", UiKit.label("⬢", 28, UiKit.GOOD), "%d %s" % [roster.kits(),
+			Roster.kit_name()], Vector2(0, 84))
+		kit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		kit.on_info = func():
+			InfoPopup.open(self, Roster.kit_name(), {"lines": ["%d im Hangar." % roster.kits(),
+				["Aus verwerteten DROMEs. %d bauen einen Standard-DROME, mit einem Fraktionskern "
+				% Roster.kits_per_drome() + "einen Fraktions-DROME.", UiKit.MUTED, UiKit.SMALL]]})
+		row.add_child(kit)
+	for key in roster.materials:
+		if not str(key).begins_with("kern:"):
+			continue
+		var faction := str(key).substr(5)
+		var core := Tile.new("core:%s" % faction, UiKit.label("✦", 28, UiKit.MAGENTA), "%d %s" % [
+			int(roster.materials[key]), Roster.core_name(faction)], Vector2(0, 84))
+		core.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		core.on_info = func():
+			InfoPopup.open(self, Roster.core_name(faction), {"lines": ["Aus einem verwerteten "
+				+ "Fraktions-DROME. Mit %d %s wird daraus ein Fraktions-DROME." % [Roster.kits_per_drome(),
+				Roster.kit_name()]]})
+		row.add_child(core)
 	var coin := Tile.new("coins", UiKit.label("◈", 30, UiKit.WARN),
 		"%d %s" % [roster.coins, RunState.coin_name()], Vector2(0, 84))
 	coin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -286,10 +307,14 @@ func _drome_tile(index: int) -> Control:
 	tile.glow = entry.in_squad
 	tile.accent = UiKit.GOOD if entry.in_squad and index != _selected else UiKit.ACCENT
 	tile.tooltip_text = entry.name
-	tile.on_tap = func():
+	tile.managed = true
+	# 15. Nov. 2026: tippen waehlt, nochmal tippen zeigt die Karte des
+	# DROME (blaetterbar), Doppeltipp oeffnet den Umbau.
+	tile.on_select = func():
 		_selected = index
 		_refresh()
-	tile.on_info = func():
+	tile.on_info = func(): InfoPopup.open_pages(self, _drome_pages(), _squad_first_order().find(index))
+	tile.on_action = func():
 		_selected = index
 		_selected_slot = ""
 		_switch("umbau")
@@ -316,6 +341,34 @@ func _drome_tile(index: int) -> Control:
 		_changed())
 	stack.add_child(toggle)
 	return tile
+
+
+## Die Karten aller DROMEs zum Blaettern (Reihenfolge wie die Kacheln).
+func _drome_pages() -> Array:
+	var pages: Array = []
+	for index in _squad_first_order():
+		var at: int = index
+		pages.append(func() -> Dictionary: return _drome_page(at))
+	return pages
+
+
+func _drome_page(index: int) -> Dictionary:
+	var entry: RosterEntry = _entries()[index]
+	var build := GameState.roster.build_for(entry)
+	var box := _drome_info(entry, build)
+	var full := GameState.roster.squad_count() >= _squad_max()
+	var actions: Array = [{"text": "Umbau", "primary": true, "call": func():
+		_selected = index
+		_selected_slot = ""
+		_switch("umbau")}]
+	actions.append({"text": "Aus dem Squad" if entry.in_squad else "In den Squad",
+		"disabled": not entry.in_squad and full, "why": "Squad voll", "call": func():
+			entry.in_squad = not entry.in_squad
+			_selected = index
+			_changed()})
+	actions.append({"text": "Verwerten", "call": func(): _confirm_salvage(entry)})
+	return {"title": "", "picture": UiKit.drome_view(build, 72), "body": box,
+		"actions": actions}
 
 
 ## Bild in der Mitte einer Kachel, ">>" oben links fuer Squad-Mitglieder.
@@ -391,35 +444,141 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 	return info
 
 
+## Neue DROMEs (15. Nov. 2026): aus Baukernen. Ein Standard-DROME kostet
+## kits_per_drome Baukerne, ein Fraktions-DROME dazu einen Fraktionskern.
+## Freie Chassis aus alter Beute lassen sich weiter ohne Kosten bauen.
+## Kacheln wie ueberall: tippen waehlt, nochmal tippen zeigt, Doppeltipp baut.
 func _new_drome_section() -> void:
-	var free := GameState.roster.free_chassis_types()
+	var roster := GameState.roster
+	var need := Roster.kits_per_drome()
 	_content.add_child(UiKit.heading("Neuen DROME bauen"))
-	if free.is_empty():
-		_content.add_child(UiKit.label("Kein freies Chassis. Löse einen DROME auf oder "
-			+ "erbeute ein neues.", UiKit.SMALL, UiKit.MUTED))
-		return
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	_content.add_child(row)
-	for chassis_id in free:
-		var body := PartDB.get_part(chassis_id)
+	_content.add_child(UiKit.label("%s: %d / %d  ·  Doppeltipp baut" % [Roster.kit_name(), roster.kits(),
+		need], UiKit.SMALL, UiKit.GOOD if roster.kits() >= need else UiKit.MUTED))
+	var grid := GridContainer.new()
+	grid.columns = TILE_COLUMNS
+	grid.add_theme_constant_override("h_separation", TILE_GAP)
+	grid.add_theme_constant_override("v_separation", TILE_GAP)
+	_content.add_child(grid)
+	var specs := _build_specs()
+	var pages: Array = []
+	for spec in specs:
+		pages.append(func() -> Dictionary: return _build_page(spec))
+	for k in specs.size():
+		var spec: Dictionary = specs[k]
+		var body := PartDB.get_part(spec["chassis"])
 		if body == null:
 			continue
-		var panel := _tappable(UiKit.card_style(), func():
-			var entry := GameState.roster.new_drome(chassis_id)
-			if entry == null:
+		var tile := Tile.new("build:%s" % spec["id"], UiKit.chassis_view(body, 64), str(spec["name"]),
+			Vector2(0, 100))
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tile.glow = bool(spec["ready"])
+		tile.accent = UiKit.GOOD if spec["ready"] else UiKit.ACCENT
+		tile.dimmed = not bool(spec["ready"])
+		tile.add_caption(str(spec["cost"]), UiKit.WARN if spec["ready"] else UiKit.MUTED, 11)
+		var page: int = k
+		tile.on_info = func(): InfoPopup.open_pages(self, pages, page)
+		tile.on_action = func(): _build_drome(spec)
+		grid.add_child(tile)
+
+
+## Was sich bauen laesst: freie Chassis (kostenlos), die vier Standard-DROMEs
+## (Baukerne) und Fraktions-DROMEs, fuer deren Fraktion ein Kern da ist.
+func _build_specs() -> Array:
+	var roster := GameState.roster
+	var need := Roster.kits_per_drome()
+	var out: Array = []
+	for chassis_id in roster.free_chassis_types():
+		var body := PartDB.get_part(chassis_id)
+		out.append({"id": "free:%s" % chassis_id, "kind": "free", "chassis": chassis_id,
+			"name": body.display_name.replace(" Chassis", ""), "cost": "freies Chassis", "ready": true})
+	for row in Roster.STARTER_CHASSIS:
+		var body := PartDB.get_part(row["body"])
+		if body == null:
+			continue
+		out.append({"id": "std:%s" % row["body"], "kind": "standard", "chassis": row["body"],
+			"name": body.display_name.replace(" Chassis", ""), "cost": "%d %s" % [need, Roster.kit_name()],
+			"ready": roster.kits() >= need})
+	for variant in Roster.faction_variants():
+		var spec: Dictionary = Formations.data()["dromes"][variant]
+		var faction := str(spec.get("faction", ""))
+		if roster.faction_cores(faction) <= 0:
+			continue
+		out.append({"id": "fac:%s" % variant, "kind": "faction", "variant": variant,
+			"chassis": StringName(str(spec["chassis"])), "name": str(spec["name"]),
+			"cost": "%s + %d" % [Roster.core_name(faction), need],
+			"ready": roster.kits() >= need})
+	return out
+
+
+func _build_page(spec: Dictionary) -> Dictionary:
+	var roster := GameState.roster
+	var lines: Array = []
+	match str(spec["kind"]):
+		"free":
+			lines.append("Ein freies Chassis aus der Beute -- baut sich ohne Kosten.")
+		"standard":
+			lines.append("Standard-DROME aus %d %s (du hast %d). Chassis und Kern, ohne Waffe."
+				% [Roster.kits_per_drome(), Roster.kit_name(), roster.kits()])
+		"faction":
+			var data: Dictionary = Formations.data()["dromes"][spec["variant"]]
+			var st: Dictionary = data.get("stats", {})
+			lines.append("Fraktions-DROME: %s + %d %s. Feste Werte, ohne Waffe."
+				% [Roster.core_name(str(data["faction"])), Roster.kits_per_drome(), Roster.kit_name()])
+			lines.append(["Integrität %d · Schild %d · Speed %d · Rüstung %d · Power %d" % [
+				int(st.get("hp_max", 0)), int(st.get("shield", 0)), int(st.get("spd", 0)),
+				int(st.get("def", 0)), int(st.get("power", 0))], UiKit.HEADING])
+	lines.append(["Verwertete DROMEs geben Baukerne, Fraktions-DROMEs dazu ihren Kern. "
+		+ "Bald auch im Hangar-Shop.", UiKit.MUTED, UiKit.SMALL])
+	var body := PartDB.get_part(spec["chassis"])
+	return {"title": str(spec["name"]), "subtitle": str(spec["cost"]),
+		"picture": UiKit.chassis_view(body, 64) if body != null else null, "lines": lines,
+		"actions": [{"text": "Bauen", "primary": true, "disabled": not bool(spec["ready"]),
+			"why": "%s fehlen" % Roster.kit_name(), "call": func(): _build_drome(spec)}]}
+
+
+func _build_drome(spec: Dictionary) -> void:
+	if not bool(spec["ready"]):
+		InfoPopup.open(self, "Fehlt noch", {"lines": ["Dafür brauchst du %s." % spec["cost"]]})
+		return
+	var roster := GameState.roster
+	var entry: RosterEntry = null
+	match str(spec["kind"]):
+		"free": entry = roster.new_drome(spec["chassis"])
+		"standard": entry = roster.craft_drome(spec["chassis"])
+		"faction": entry = roster.craft_faction_drome(str(spec["variant"]))
+	if entry == null:
+		return
+	Accessibility.vibrate(40, true)
+	_selected = _entries().size() - 1
+	_selected_slot = ""
+	_tab = "umbau"
+	_changed()
+
+
+## Verwerten mit Nachfrage: was es gibt und was verloren geht.
+func _confirm_salvage(entry: RosterEntry) -> void:
+	var roster := GameState.roster
+	var blocker := roster.salvage_blocker(entry)
+	var gain := "1 %s" % Roster.kit_name()
+	if entry.variant != "":
+		var faction := str((Formations.data()["dromes"] as Dictionary).get(entry.variant, {}).get("faction", ""))
+		if faction != "":
+			gain += " und 1 %s" % Roster.core_name(faction)
+	InfoPopup.open(self, "%s verwerten?" % entry.name, {"picture":
+		UiKit.drome_view(roster.build_for(entry), 64), "lines": [
+			"Du bekommst %s." % gain,
+			["Die Waffen kommen frei in den Hangar. Chassis, Level und EP gehen verloren.",
+				UiKit.MUTED, UiKit.SMALL],
+			["%d %s bauen einen neuen Standard-DROME." % [Roster.kits_per_drome(), Roster.kit_name()],
+				UiKit.MUTED, UiKit.SMALL]],
+		"actions": [{"text": "Verwerten", "disabled": blocker != "", "why": blocker, "call": func():
+			var got := roster.salvage(entry)
+			if got.is_empty():
 				return
-			_selected = _entries().size() - 1
-			_tab = "umbau"
-			_changed())
-		var box := VBoxContainer.new()
-		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(box)
-		box.add_child(UiKit.chassis_view(body, 90))
-		var label := _quiet(UiKit.label(body.display_name.replace(" Chassis", ""), UiKit.SMALL))
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(label)
-		row.add_child(panel)
+			Accessibility.vibrate(60, true)
+			_selected = _first_in_squad()
+			_tab = "squad"
+			_changed()}, {"text": "Behalten", "primary": true}]})
 
 
 # ---------------------------------------------------------------------------
@@ -486,14 +645,11 @@ func _show_umbau() -> void:
 	for line in problems:
 		_content.add_child(UiKit.label("Achtung: " + line, UiKit.SMALL, UiKit.BAD))
 
-	var scrap := UiKit.button("DROME auflösen")
-	scrap.tooltip_text = "Seine Teile kehren ins Inventar zurück."
+	# 15. Nov. 2026: verwerten statt aufloesen (Wunsch des Spielers).
+	var scrap := UiKit.button("DROME verwerten")
+	scrap.tooltip_text = "Gibt einen %s; die Waffen kommen frei in den Hangar." % Roster.kit_name()
 	scrap.add_theme_color_override("font_color", UiKit.BAD)
-	scrap.pressed.connect(func():
-		GameState.roster.disband(entry)
-		_selected = _first_in_squad()
-		_tab = "squad"
-		_changed())
+	scrap.pressed.connect(func(): _confirm_salvage(entry))
 	_content.add_child(scrap)
 
 
@@ -640,7 +796,7 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 		_content.add_child(UiKit.label("Kein freies Teil passt in diesen DROME.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
-	_content.add_child(UiKit.label("Frei und passend  ·  tippen: einbauen  ·  Doppeltipp: Karte",
+	_content.add_child(UiKit.label("Frei und passend  ·  Doppeltipp: einbauen  ·  nochmal tippen: Karte",
 		UiKit.SMALL, UiKit.MUTED))
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -648,8 +804,11 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", TILE_GAP)
 	scroll.add_child(row)
+	var pages: Array = []
 	for part in parts:
-		row.add_child(_part_tile(entry, build, part))
+		pages.append(func() -> Dictionary: return _card_page(entry, build, part, ""))
+	for k in parts.size():
+		row.add_child(_part_tile(entry, build, parts[k], pages, k))
 	_content.add_child(scroll)
 
 
@@ -681,14 +840,15 @@ func _drop_part(entry: RosterEntry, slot: String, data) -> void:
 ## Eine Teil-Kachel: die Form mit dem Bild, darunter wie viele frei sind.
 ## Antippen oeffnet die Waffen-Karte; nach oben (oder unten) ziehen nimmt das
 ## Teil mit auf einen Halter. Waagerecht blaettert die Leiste.
-func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData) -> Control:
+func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData, pages: Array = [],
+		page: int = 0) -> Control:
 	var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), PART_EDGE - 20.0)
 	var tile := Tile.new("part:%s" % part.id, shape, part.display_name,
 		Vector2(STRIP_TILE, STRIP_TILE))
 	tile.tooltip_text = part.display_name
-	# Seit 14. Nov. 2026: einmal tippen baut sofort in den gewaehlten Halter
-	# ein, doppelt tippen oder lange druecken zeigt die Waffen-Karte.
-	tile.on_tap = func():
+	# Seit 15. Nov. 2026 (Wunsch des Spielers): tippen waehlt, nochmal tippen
+	# zeigt die Waffen-Karte (blaetterbar), Doppeltipp baut ein.
+	tile.on_action = func():
 		var slot := _target_slot(build, part)
 		if slot != "" and GameState.roster.assign(entry, slot, part.id):
 			Accessibility.vibrate(20, true)
@@ -696,7 +856,11 @@ func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData) -> Contro
 			_changed()
 		else:
 			_open_card(entry, build, part, "")
-	tile.on_info = func(): _open_card(entry, build, part, "")
+	tile.on_info = func():
+		if pages.is_empty():
+			_open_card(entry, build, part, "")
+		else:
+			InfoPopup.open_pages(self, pages, page)
 	var start := {"at": Vector2.ZERO}
 	tile.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed:
@@ -719,11 +883,15 @@ func _part_tile(entry: RosterEntry, build: DromeBuild, part: PartData) -> Contro
 ## die Waffe, die dort steckt, und der Wertaenderung am DROME).
 func _open_card(entry: RosterEntry, build: DromeBuild, part: PartData,
 		installed_in: String) -> void:
+	InfoPopup.open(self, "", _card_page(entry, build, part, installed_in))
+
+
+func _card_page(entry: RosterEntry, build: DromeBuild, part: PartData,
+		installed_in: String) -> Dictionary:
 	if installed_in != "":
-		WeaponCard.open(self, part, Callable(), [{"text": "Ausbauen", "on": func():
+		return WeaponCard.page(part, Callable(), [{"text": "Ausbauen", "on": func():
 			GameState.roster.clear_slot(entry, installed_in)
 			_changed()}])
-		return
 	var slot := _target_slot(build, part)
 	var replaced := build.part_in(slot) if slot != "" else null
 	var extra := func(box: VBoxContainer):
@@ -739,7 +907,7 @@ func _open_card(entry: RosterEntry, build: DromeBuild, part: PartData,
 			box.add_child(UiKit.label("%s ist frei  ·  %d frei im Hangar"
 				% [where, GameState.roster.free_count(part.id)], UiKit.SMALL, UiKit.MUTED))
 		_delta_lines(build, slot, part, box)
-	WeaponCard.open(self, part, extra, [{"text": "Einbauen", "primary": true,
+	return WeaponCard.page(part, extra, [{"text": "Einbauen", "primary": true,
 		"disabled": slot == "", "on": func():
 			if GameState.roster.assign(entry, slot, part.id):
 				Accessibility.vibrate(20, true)

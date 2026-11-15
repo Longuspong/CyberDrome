@@ -40,6 +40,8 @@ var _next_uid: int = 1
 var caches: Dictionary = {}
 ## Platzhaltercoin (Arbeitsname): Waehrung fuer den Hangar-Shop.
 var coins: int = 0
+## Baumaterial (15. Nov. 2026): "baukern" und "kern:<fraktion>" -> Anzahl.
+var materials: Dictionary = {}
 
 ## Die vier Standard-DROMEs mit ihrer VOLLEN Standard-Ausstattung -- der
 ## handgesetzte Startbestand (§10g/§12c). Reihenfolge = Reihenfolge im frischen
@@ -210,6 +212,12 @@ func build_for(entry: RosterEntry) -> DromeBuild:
 		build.apply_chassis(chassis_id)
 	build.drome_level = entry.level
 	build.source_uid = entry.chassis_uid()
+	# Fraktions-DROME: feste Werte aus data/formations.json.
+	if entry.variant != "":
+		var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(entry.variant, {})
+		for key in spec.get("stats", {}):
+			build.stat_override[key] = int(spec["stats"][key])
+		build.faction = str(spec.get("faction", ""))
 
 	for slot in entry.assignments:
 		if slot == "body":
@@ -281,6 +289,135 @@ func disband(entry: RosterEntry) -> void:
 	entries.erase(entry)
 
 
+# ---------------------------------------------------------------------------
+# Verwerten und Bauen (15. Nov. 2026, Wunsch des Spielers)
+# ---------------------------------------------------------------------------
+
+static func crafting_cfg() -> Dictionary:
+	return Config.section("crafting")
+
+
+static func kits_per_drome() -> int:
+	return int(crafting_cfg().get("kits_per_drome", 3))
+
+
+static func kit_name() -> String:
+	return str(crafting_cfg().get("kit_name", "Baukern"))
+
+
+static func core_name(faction: String) -> String:
+	return str((crafting_cfg().get("faction_core_names", {}) as Dictionary).get(faction,
+		"%s-Kern" % faction.capitalize()))
+
+
+func kits() -> int:
+	return int(materials.get("baukern", 0))
+
+
+func faction_cores(faction: String) -> int:
+	return int(materials.get("kern:" + faction, 0))
+
+
+func _add_material(key: String, amount: int) -> void:
+	materials[key] = maxi(0, int(materials.get(key, 0)) + amount)
+	if int(materials[key]) == 0:
+		materials.erase(key)
+
+
+## Warum dieser DROME nicht verwertet werden darf ("" = darf). Der letzte
+## bleibt: ohne DROME gaebe es kein Spiel und keine Baukerne.
+func salvage_blocker(entry: RosterEntry) -> String:
+	if not entries.has(entry):
+		return "nicht im Hangar"
+	if entries.size() <= 1:
+		return "der letzte DROME bleibt"
+	return ""
+
+
+## Verwertet einen DROME (statt ihn aufzuloesen): Chassis und Kern
+## verschwinden, die Waffen kommen frei in den Hangar, Level und EP gehen
+## verloren. Dafuer gibt es Baukerne, bei einem Fraktions-DROME zusaetzlich
+## einen Fraktionskern. Gibt zurueck, was es gab: {kits, faction}.
+func salvage(entry: RosterEntry) -> Dictionary:
+	if salvage_blocker(entry) != "":
+		return {}
+	for slot in ["body", "core"]:
+		var uid := str(entry.assignments.get(slot, ""))
+		if uid != "":
+			_instances.erase(uid)
+	entries.erase(entry)
+	var kits_gained := int(crafting_cfg().get("salvage_kits", 1))
+	_add_material("baukern", kits_gained)
+	var faction := ""
+	if entry.variant != "":
+		var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(entry.variant, {})
+		faction = str(spec.get("faction", ""))
+		if faction != "":
+			_add_material("kern:" + faction, 1)
+	return {"kits": kits_gained, "faction": faction}
+
+
+## Der Kern, der zu einem Standard-Chassis gehoert (Startbestand).
+static func core_for(chassis_id: StringName) -> StringName:
+	for row in STARTER_CHASSIS:
+		if row["body"] == chassis_id:
+			return row["core"]
+	return &""
+
+
+## Baut einen Standard-DROME aus kits_per_drome Baukernen: Chassis und Kern
+## neu, ohne Waffe. null, wenn die Baukerne fehlen.
+func craft_drome(chassis_id: StringName, entry_name: String = "") -> RosterEntry:
+	if kits() < kits_per_drome() or PartDB.get_part(chassis_id) == null:
+		return null
+	_add_material("baukern", -kits_per_drome())
+	var chassis_uid := add_instance(chassis_id)
+	var entry := RosterEntry.create(entry_name if entry_name != "" else _starter_name(chassis_id),
+		chassis_uid)
+	var core := core_for(chassis_id)
+	if core != &"":
+		entry.assignments["core"] = add_instance(core)
+	entries.append(entry)
+	return entry
+
+
+## Die Fraktions-DROMEs, die sich bauen liessen (alle mit festen Werten).
+static func faction_variants() -> Array:
+	var out: Array = []
+	var dromes: Dictionary = Formations.data().get("dromes", {})
+	for id in dromes:
+		if str(dromes[id].get("faction", "")) != "" and not (dromes[id].get("stats", {}) as Dictionary).is_empty():
+			out.append(str(id))
+	return out
+
+
+## Baut einen Fraktions-DROME: ein Fraktionskern + kits_per_drome Baukerne.
+## Werte, Name und Fraktion aus data/formations.json, ohne Waffe.
+func craft_faction_drome(variant_id: String) -> RosterEntry:
+	var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(variant_id, {})
+	var faction := str(spec.get("faction", ""))
+	if faction == "" or faction_cores(faction) < 1 or kits() < kits_per_drome():
+		return null
+	var chassis_id := StringName(str(spec.get("chassis", "")))
+	if PartDB.get_part(chassis_id) == null:
+		return null
+	_add_material("kern:" + faction, -1)
+	var entry := craft_drome_free(chassis_id, str(spec.get("name", variant_id)))
+	_add_material("baukern", -kits_per_drome())
+	entry.variant = variant_id
+	return entry
+
+
+## Chassis und Kern ohne Kosten (intern fuer craft_faction_drome).
+func craft_drome_free(chassis_id: StringName, entry_name: String) -> RosterEntry:
+	var entry := RosterEntry.create(entry_name, add_instance(chassis_id))
+	var core := core_for(chassis_id)
+	if core != &"":
+		entry.assignments["core"] = add_instance(core)
+	entries.append(entry)
+	return entry
+
+
 ## Die freien Chassis-Instanzen, nach denen die Garage fragt, wenn sie einen neuen
 ## DROME anbietet -- ein Eintrag je distinktem freien Chassis-TYP.
 func free_chassis_types() -> Array:
@@ -305,6 +442,7 @@ func seed_starter() -> void:
 	_next_uid = 1
 	caches = {}
 	coins = 0
+	materials = {}
 
 	for row in STARTER_CHASSIS:
 		var chassis_uid := add_instance(row["body"])
@@ -361,6 +499,7 @@ func to_dict() -> Dictionary:
 		"roster": roster,
 		"caches": caches.duplicate(),
 		"coins": coins,
+		"materials": materials.duplicate(),
 	}
 
 
@@ -377,6 +516,9 @@ func load_dict(data: Dictionary) -> bool:
 	for key in data.get("caches", {}):
 		caches[str(key)] = int(data["caches"][key])
 	coins = int(data.get("coins", 0))
+	materials = {}
+	for key in data.get("materials", {}):
+		materials[str(key)] = int(data["materials"][key])
 
 	for entry_data in data.get("inventory", []):
 		var inst := PartInstance.from_dict(entry_data)

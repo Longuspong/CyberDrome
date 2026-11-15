@@ -194,6 +194,21 @@
     "warn_seconds": 30.0
   },
 
+  "crafting": {
+    "_kommentar": [
+      "DROMEs verwerten und bauen (15. Nov. 2026, Wunsch des Spielers): ein verwerteter",
+      "DROME gibt salvage_kits Baukern(e) -- ein Fraktions-DROME dazu einen Fraktionskern",
+      "seiner Fraktion. Waffen kommen frei in den Hangar, Level und EP gehen verloren.",
+      "kits_per_drome Baukerne bauen einen Standard-DROME (Chassis waehlbar),",
+      "ein Fraktionskern + kits_per_drome Baukerne einen Fraktions-DROME (Werte aus",
+      "data/formations.json -> dromes). Spaeter auch im Hangar-Shop."
+    ],
+    "salvage_kits": 1,
+    "kits_per_drome": 3,
+    "kit_name": "Baukern",
+    "faction_core_names": {"neon": "Neon-Kern", "solar": "Solar-Kern", "mecha": "Mecha-Kern", "hipstar": "Hipstar-Kern"}
+  },
+
   "realtime": {
     "_kommentar": [
       "Echtzeit-Kampf (Nov. 2026). Alle DROMEs handeln gleichzeitig.",

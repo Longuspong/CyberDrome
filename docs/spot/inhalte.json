@@ -68,7 +68,7 @@
     {"bereich": "Story", "thema": "Umbenennung", "festlegung": "Die Hipstar Hookers heißen jetzt Hipstar Hackers.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Spieler"},
     {"bereich": "Story", "thema": "Story-Leitfaden", "festlegung": "Dystopie mit Cybervirus, keine Hauptfigur (Beobachter), Drahtzieher + Gegenspieler, Prolog, Akt 1, zwei Wendepunkte (Mega Mechas, Hipstar Hackers), Akt 2 Sondertrupp, Akt 3. Ersetzt 'Die Liga und der Virus'.", "seit": "14. Nov. 2026", "status": "Leitfaden", "quelle": "docs/STORY_LEITFADEN.md"},
     {"bereich": "Story", "thema": "Story-Vermittlung", "festlegung": "Szenen aus data/story.json, Dialogfenster mit Porträt und Textbox (Text tippt sich ein, Antippen weiter, Überspringen). Sprecher links/rechts abwechselnd, vorerst ein Porträt je Figur, Spieler ohne Porträt. Auslöser nach Gesamtfortschritt. Noch nicht gebaut.", "seit": "14. Nov. 2026", "status": "entschieden", "quelle": "Spieler"},
-    {"bereich": "Bedienung", "thema": "Kacheln und Popups", "festlegung": "Statt langer Karten: Kacheln mit Bild und Kurzname. Einmal tippen wählt oder handelt, doppelt tippen oder lange drücken öffnet ein Popup mit allen Details und den Handlungen (Kaufen, Verkaufen, Zusammenfügen ...). Baukasten Tile + InfoPopup.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Bedienung", "thema": "Kacheln und Popups", "festlegung": "Statt langer Karten: Kacheln mit Bild und Kurzname. Seit 15. Nov. 2026: tippen wählt die Kachel (gelber Rahmen), nochmal tippen öffnet das Popup mit allen Details, Doppeltipp handelt (ausrüsten, kaufen, einsetzen, zusammenfügen, Umbau). Lange drücken zeigt ebenfalls Details. Baukasten Tile + InfoPopup.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Bedienung", "thema": "Wischen mit Schwung", "festlegung": "Listen rollen am Finger mit Nachlauf, zeitbasiert gemessen und in Kommazahlen -- kein Ruckeln, kein Hängenbleiben. Ein Tipp in eine auslaufende Liste hält sie an.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Bedienung", "thema": "Zwischenstopp kompakt", "festlegung": "Fast ein Bildschirm: Chips für Credits, Beute, Erfahrung, Tasche und Einsatz-Beute; Laden als 3 Kacheln mit Preis-Knopf; Lager als Raster fester Plätze; Squad als Zeilen mit Haltern und Modulplätzen. Modul antippen, dann einen leuchtenden Platz -- oder hinziehen.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Bedienung", "thema": "Rezeptbuch als Raster", "festlegung": "Popup mit Filter (Alle / Bereit / Angefangen) und allen Rezepten als Kacheln. Zwei Punkte zeigen die Zutaten, Bereites leuchtet grün, das Ziel gelb. Antippen: Rezept mit Zusammenfügen und Als Ziel.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
@@ -80,7 +80,10 @@
     {"bereich": "Einsatz", "thema": "Kampfkarte gebaut", "festlegung": "Feste Wege wie bei FTL: bis Kampf 3 drei Knoten je Reihe, danach zwei (manchmal drei), der letzte Kampf ein einzelner Elite-Knoten. Bis Kampf 4 gabelt sich fast jeder Weg, danach meist Korridore. Breite Knoten mit Formationsname, die Karte zeigt drei Reihen.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Gegner", "thema": "Varianten Leicht/Normal/Elite", "festlegung": "Leicht: Reinforcement −2, nur Basic, ein Sentinel weniger, ein Modul weniger an den DROMEs. Elite: Reinforcement +3, die ersten drei Sentinels einen Rang höher, ein Modul mehr. Vorschlag gebaut.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Gegner", "thema": "Heilregel Support", "festlegung": "Alle Support-Waffen heilen das nächste Ziel, das Hilfe braucht -- außer ein anderes in Reichweite (+3 Felder) hat mehr als 30 Prozentpunkte weniger Integrität; dann das schwächste davon.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
-    {"bereich": "Gegner", "thema": "Alte Teams gelöscht", "festlegung": "Die symmetrischen Teams und Gegnertypen (data/encounters.json) sind entfernt; Formationen ersetzen sie vollständig.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"}
+    {"bereich": "Gegner", "thema": "Alte Teams gelöscht", "festlegung": "Die symmetrischen Teams und Gegnertypen (data/encounters.json) sind entfernt; Formationen ersetzen sie vollständig.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Bedienung", "thema": "Popups blättern", "festlegung": "Jedes Popup zu einer Kachel lässt durch die Nachbarn blättern: Pfeile links und rechts mit Zähler (2 / 5) und Wischen nach links oder rechts. Gilt für Lager, Laden, BIOS, Module im Halter, Waffen, Rezepte, Gegner und DROMEs.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
+    {"bereich": "Hangar", "thema": "Verwerten statt Auflösen", "festlegung": "DROMEs werden verwertet: Chassis, Level und EP gehen verloren, die Waffen kommen frei in den Hangar. Dafür gibt es 1 Baukern, ein Fraktions-DROME gibt zusätzlich seinen Fraktionskern (Neon-Kern ...). Der letzte DROME lässt sich nicht verwerten.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
+    {"bereich": "Hangar", "thema": "DROMEs bauen", "festlegung": "3 Baukerne bauen einen Standard-DROME (Chassis frei wählbar, mit Kern, ohne Waffe). Ein Fraktionskern + 3 Baukerne bauen einen Fraktions-DROME mit den festen Werten aus dem Blatt Gegner-DROMEs (z. B. Neon Vireo). Baukerne später auch im Hangar-Shop. Werte: config.json -> crafting.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"}
   ],
 
   "dromes": {
@@ -209,7 +212,10 @@
     {"punkt": "Formationen für Solar, Mecha und Hipstar (je 6 Grundgedanken) -- bis dahin leihen sich Parkanlage und Factory 5 die Neon-Formationen.", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
     {"punkt": "Elite-Module der Sentinels: Vorschlag je Archetyp (Assault Wuchtkante/Panzerplatte, Sniper Schnellfeuer/Peilsender, Support Kondensator/Panzerplatte) -- im Blatt Sentinels anpassen.", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
     {"punkt": "Beute bis Schritt 4: es droppen nur noch Caches und Coins (keine Teile/Credits mehr). Neue Waffen kommen damit erst mit dem Öffnen der Caches -- so gewollt?", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
-    {"punkt": "Story-Einsätze: heute ein Einsatz Neon City mit 8 Kämpfen; die zehn Einsätze mit eigener Länge und Squad-Größe folgen (OP 2).", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"}
+    {"punkt": "Story-Einsätze: heute ein Einsatz Neon City mit 8 Kämpfen; die zehn Einsätze mit eigener Länge und Squad-Größe folgen (OP 2).", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
+    {"punkt": "Namen: 'Baukern' und 'Fraktionskern' als Arbeitsnamen (Alternativen: Crafting-Kit, Fraktionsmodifikator)?", "quelle": "Sitzung 15. Nov. 2026", "status": "offen"},
+    {"punkt": "Fraktions-DROMEs des Spielers rechnen mit festen Werten -- DROME-Level wirken darauf heute nicht. Sollen sie leveln (z. B. Level-Bonus auf die festen Werte)?", "quelle": "Sitzung 15. Nov. 2026", "status": "offen"},
+    {"punkt": "Woher kommen Fraktionskerne außer durch Verwerten? (Caches, Boss, Hangar-Shop?) Heute hat der Spieler keinen Fraktions-DROME, also auch keinen Weg zum ersten Kern.", "quelle": "Sitzung 15. Nov. 2026", "status": "offen"}
   ],
 
   "glossar": [
@@ -240,7 +246,10 @@
     {"begriff": "Welle", "erklaerung": "Kampfabschnitt einer Begegnung; Gegner werden von Welle zu Welle stärker."},
     {"begriff": "Virusschaden", "erklaerung": "Ab Minute 5 je Puls 10 % von Schild + Integrität, absolut, an der Rüstung vorbei."},
     {"begriff": "Lootcache", "erklaerung": "Beutekiste, immer fraktionsabhängig (Neon Cache, Solar Cache ...). Inhalt legt der Spieler fest."},
-    {"begriff": "Platzhaltercoin", "erklaerung": "Arbeitsname: Währung neben Credits, wenn kein Cache droppt. Für Upgrades und Caches im Hangar."}
+    {"begriff": "Platzhaltercoin", "erklaerung": "Arbeitsname: Währung neben Credits, wenn kein Cache droppt. Für Upgrades und Caches im Hangar."},
+    {"begriff": "Verwerten", "erklaerung": "Einen DROME zerlegen (statt auflösen): gibt einen Baukern, bei Fraktions-DROMEs zusätzlich einen Fraktionskern. Waffen bleiben im Hangar."},
+    {"begriff": "Baukern", "erklaerung": "Baumaterial aus verwerteten DROMEs (Arbeitsname, auch 'Crafting-Kit'). 3 Baukerne = ein Standard-DROME."},
+    {"begriff": "Fraktionskern", "erklaerung": "Aus einem verwerteten Fraktions-DROME (Neon-Kern, Solar-Kern ...). Mit 3 Baukernen wird daraus ein Fraktions-DROME."}
   ],
   "_kommentar_einsatz": [
     "Neues Spielprinzip (12./13. Nov. 2026, docs/GEGNERDESIGN.md): Einsatz, Virusschaden,",
@@ -332,7 +341,8 @@
     {"angebot": "Hipstar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Hipstar Cache", "status": "Vorschlag"},
     {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "welche Upgrades? -> Offene Punkte", "status": "offen"},
     {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
-    {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"}
+    {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
+    {"angebot": "Baukern", "art": "Upgrade", "preis": 20, "wirkung": "1 Baukern (3 = ein Standard-DROME)", "status": "Vorschlag"}
   ],
 
   "sentinel_archetypen": [

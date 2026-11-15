@@ -310,7 +310,8 @@
     "def": 2,
     "power": 10,
     "module_slots": 3
-   }
+   },
+   "faction": "neon"
   },
   "neon_nimbus": {
    "name": "Neon Nimbus",
@@ -326,7 +327,8 @@
     "def": 0,
     "power": 12,
     "module_slots": 3
-   }
+   },
+   "faction": "neon"
   },
   "solar_nimbus": {
    "name": "Solar Nimbus",
@@ -342,7 +344,8 @@
     "def": 0,
     "power": 12,
     "module_slots": 3
-   }
+   },
+   "faction": "solar"
   },
   "mecha_molok": {
    "name": "Mecha Molok",
@@ -359,7 +362,8 @@
     "def": 10,
     "power": 6,
     "module_slots": 2
-   }
+   },
+   "faction": "mecha"
   },
   "mecha_strix": {
    "name": "Mecha Strix",
@@ -375,7 +379,8 @@
     "def": 2,
     "power": 15,
     "module_slots": 3
-   }
+   },
+   "faction": "mecha"
   },
   "vireo": {
    "name": "Vireo",

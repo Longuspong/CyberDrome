@@ -29,6 +29,20 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Bedienung umgedreht, Verwerten (15. Nov. 2026, Wunsch des Spielers)
+
+* **Kacheln**: tippen waehlt (gelber Rahmen), nochmal tippen zeigt das Popup,
+  Doppeltipp handelt (ausruesten, kaufen, einsetzen, zusammenfuegen, Umbau).
+  `Tile.on_select/on_info/on_action`; ohne ``managed`` merkt sich Tile die
+  Auswahl selbst. Mit Doppeltipp-Handlung wartet das Popup 320 ms.
+* **Popups blaettern**: `InfoPopup.open_pages(host, seiten, index)` -- Pfeile
+  mit Zaehler und Wischen. Die Waffen-Karte ist eine Seite (`WeaponCard.page`).
+* **Verwerten statt Aufloesen** (`Roster.salvage`): Baukern, bei
+  Fraktions-DROMEs (`RosterEntry.variant`) dazu der Fraktionskern; Waffen
+  bleiben. **Bauen**: 3 Baukerne = Standard-DROME (`craft_drome`),
+  Fraktionskern + 3 = Fraktions-DROME mit festen Werten
+  (`craft_faction_drome`). Werte in config `crafting`.
+
 ### Grosse Umsetzung (14. Nov. 2026, Wunsch des Spielers)
 
 Eine Sitzung, alles aus der abgesegneten Liste (Bedienung, Arcade-Stil,

@@ -24,6 +24,21 @@ var _panel: PanelContainer
 var _content: VBoxContainer
 
 
+## Blaetterbares Popup (15. Nov. 2026, Wunsch des Spielers): ``pages`` ist
+## eine Liste von Callables, die je Seite die Optionen liefern (mit "title");
+## ``index`` die erste. Pfeile links und rechts im Kopf und Wischen schalten
+## durch -- am Ende geht es vorn weiter.
+static func open_pages(host: Node, pages: Array, index: int, animate: bool = true) -> InfoPopup:
+	if pages.is_empty():
+		return null
+	index = posmod(index, pages.size())
+	var options: Dictionary = (pages[index] as Callable).call()
+	options["pages"] = pages
+	options["page"] = index
+	options["animate"] = animate
+	return open(host, str(options.get("title", "")), options)
+
+
 static func open(host: Node, title: String, options: Dictionary = {}) -> InfoPopup:
 	close_all(host)
 	var popup := InfoPopup.new()
@@ -94,12 +109,40 @@ func _build(title: String, options: Dictionary) -> void:
 	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	names.add_theme_constant_override("separation", 2)
 	head.add_child(names)
-	var heading := UiKit.label(title, 21, Arcade.WHITE)
-	heading.add_theme_font_override("font", Arcade.font("bold", 21, 0.04))
-	names.add_child(heading)
+	if title != "":
+		var heading := UiKit.label(title, 21, Arcade.WHITE)
+		heading.add_theme_font_override("font", Arcade.font("bold", 21, 0.04))
+		names.add_child(heading)
 	if str(options.get("subtitle", "")) != "":
 		names.add_child(UiKit.label(str(options["subtitle"]), UiKit.SMALL,
 			options.get("subtitle_color", UiKit.MUTED)))
+	var pages: Array = options.get("pages", [])
+	var page := int(options.get("page", 0))
+	if pages.size() > 1:
+		var nav := HBoxContainer.new()
+		nav.add_theme_constant_override("separation", 6)
+		outer.add_child(nav)
+		outer.move_child(nav, 0)
+		nav.add_child(_arrow("◀", func(): _turn(pages, page - 1)))
+		var count := UiKit.label("%d / %d" % [page + 1, pages.size()], UiKit.SMALL, UiKit.MUTED)
+		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		nav.add_child(count)
+		nav.add_child(_arrow("▶", func(): _turn(pages, page + 1)))
+		# Wischen nach links/rechts blaettert.
+		var start := {"at": Vector2.ZERO, "down": false}
+		_panel.gui_input.connect(func(event: InputEvent):
+			if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+				if event.pressed:
+					start["at"] = event.global_position
+					start["down"] = true
+				elif start["down"]:
+					start["down"] = false
+					var moved: Vector2 = event.global_position - start["at"]
+					if absf(moved.x) > 60.0 and absf(moved.x) > absf(moved.y) * 1.4:
+						_turn(pages, page + (1 if moved.x < 0.0 else -1)))
+		_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	var x := Button.new()
 	x.text = "✕"
 	x.flat = true
@@ -154,8 +197,8 @@ func _build(title: String, options: Dictionary) -> void:
 					call.call())
 			row.add_child(button)
 
-	# Kurzes Aufploppen (ausser bei "Bewegung reduzieren").
-	if Accessibility.motion() > 0.0:
+	# Kurzes Aufploppen (ausser bei "Bewegung reduzieren" und beim Blaettern).
+	if Accessibility.motion() > 0.0 and bool(options.get("animate", true)):
 		_panel.modulate = Color(1, 1, 1, 0)
 		_panel.scale = Vector2(0.94, 0.94)
 		_panel.resized.connect(func(): _panel.pivot_offset = _panel.size * 0.5)
@@ -163,6 +206,25 @@ func _build(title: String, options: Dictionary) -> void:
 		tween.tween_property(_panel, "modulate:a", 1.0, 0.12)
 		tween.tween_property(_panel, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK) \
 			.set_ease(Tween.EASE_OUT)
+
+
+func _arrow(text: String, on_press: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(56, 40)
+	button.add_theme_color_override("font_color", Arcade.YELLOW)
+	button.add_theme_font_size_override("font_size", 18)
+	button.pressed.connect(func():
+		Accessibility.tap()
+		on_press.call())
+	return button
+
+
+func _turn(pages: Array, index: int) -> void:
+	var host := get_parent()
+	if host == null:
+		return
+	InfoPopup.open_pages(host, pages, index, false)
 
 
 ## Der Inhaltsbereich -- fuer Popups, die sich selbst neu fuellen.

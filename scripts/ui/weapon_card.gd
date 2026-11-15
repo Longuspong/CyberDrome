@@ -30,63 +30,27 @@ const ICON_EDGE := 22.0
 ## weichen wuerde -- die Balken zeigen dann den Unterschied. Gibt die Ebene
 ## zurueck.
 static func open(host: Control, part: PartData, extra: Callable = Callable(),
-		buttons: Array = [], compare: PartData = null) -> CanvasLayer:
-	# Eigene Zeichenebene: die DROME-Bilder darunter sortieren ihre Teile mit
-	# z_index und laegen sonst ueber einer normalen Ueberlagerung.
-	var layer := CanvasLayer.new()
-	layer.layer = 20
-	host.add_child(layer)
-	var shade := ColorRect.new()
-	shade.color = Color(0, 0, 0, 0.6)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_STOP
-	layer.add_child(shade)
-	# Tipp neben die Kachel: schliessen.
-	shade.gui_input.connect(func(event: InputEvent):
-		if event is InputEventMouseButton and not event.pressed \
-				and event.button_index == MOUSE_BUTTON_LEFT:
-			layer.queue_free())
+		buttons: Array = [], compare: PartData = null) -> InfoPopup:
+	return InfoPopup.open(host, "", page(part, extra, buttons, compare))
 
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shade.add_child(center)
-	var panel := PanelContainer.new()
-	var style := UiKit.card_style(true)
-	style.bg_color = Color(UiKit.CARD, 1.0)
-	panel.add_theme_stylebox_override("panel", style)
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var width := minf(420.0, host.get_viewport_rect().size.x - 2.0 * UiKit.PAD)
-	panel.custom_minimum_size = Vector2(width, 0)
-	center.add_child(panel)
+
+## Die Waffen-Karte als Seite eines Popups (15. Nov. 2026): fuer InfoPopup.open
+## und open_pages, damit man durch mehrere Waffen blaettern kann.
+## ``buttons``: [{text, primary, disabled, on}].
+static func page(part: PartData, extra: Callable = Callable(), buttons: Array = [],
+		compare: PartData = null) -> Dictionary:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
-	panel.add_child(box)
-
 	var hint := UiKit.label("Symbol antippen: Erklärung", UiKit.SMALL, UiKit.MUTED)
 	fill(box, part, hint, compare)
 	if extra.is_valid():
 		extra.call(box)
 	box.add_child(hint)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	box.add_child(row)
+	var actions: Array = []
 	for spec in buttons:
-		var button := UiKit.button(str(spec.get("text", "")), bool(spec.get("primary", false)))
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.disabled = bool(spec.get("disabled", false))
-		var on: Callable = spec.get("on", Callable())
-		button.pressed.connect(func():
-			layer.queue_free()
-			if on.is_valid():
-				on.call())
-		row.add_child(button)
-	var close := UiKit.button("Schließen")
-	close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	close.pressed.connect(func(): layer.queue_free())
-	row.add_child(close)
-	return layer
+		actions.append({"text": str(spec.get("text", "")), "primary": bool(spec.get("primary", false)),
+			"disabled": bool(spec.get("disabled", false)), "call": spec.get("on", Callable())})
+	return {"title": "", "body": box, "actions": actions}
 
 
 ## Der Inhalt der Kachel ohne Ebene und Knoepfe -- auch fuer Tests.

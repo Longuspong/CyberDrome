@@ -128,7 +128,10 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   ueber den Baukasten `Arcade` (`scripts/ui/arcade.gd`, Schriften unter
   `assets/fonts/`, OFL); die uebrigen Bildschirme ueber `UiKit`, das seit
   14. Nov. 2026 dieselben Farben, Schriften und Formen nutzt. Listen und
-  Auswahl als Kacheln (`Tile`), Erklaerungen als Popup (`InfoPopup`).
+  Auswahl als Kacheln (`Tile`: tippen waehlt, nochmal tippen = Details,
+  Doppeltipp = Handlung; seit 15. Nov. 2026), Erklaerungen als blaetterbares
+  Popup (`InfoPopup.open_pages`). DROMEs werden verwertet, nicht aufgeloest
+  (Baukerne, Fraktionskerne, `Roster.salvage/craft_drome`).
 * Navigation: Tab-Leiste unten (Spielen, Hangar, Optionen). Der Hangar
   vereint Squad (Karussell, max. 4) und Umbau (ein Ausruestungsplatz je
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:

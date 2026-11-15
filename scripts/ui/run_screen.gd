@@ -39,6 +39,8 @@ var _recipe_filter: String = "alle"
 var _flash_storage: int = -1
 ## Halter "drome:slot", der kurz aufleuchten soll (frisch eingesetzt).
 var _flash_holder: String = ""
+## Die Rezepte, die das Rezeptbuch gerade zeigt (Reihenfolge zum Blaettern).
+var _recipe_shown: Array = []
 
 ## Was am Ende des Laufs nach Hause ging -- fuer die Abschlussanzeige.
 var _delivered: Array = []
@@ -339,11 +341,19 @@ func _enemy_tile(build: DromeBuild, index: int) -> Control:
 		if sentinel else build.display_name.split(" ")[-1])
 	tile.add_caption("%s%s" % [short, (" " + tag) if tag != "" else ""],
 		COLOR_WARN if tag != "" else UiKit.TEXT, 10 if sentinel else 11)
-	tile.on_info = func(): _enemy_popup(build)
+	var pages := _enemy_pages(GameState.run)
+	tile.on_info = func(): InfoPopup.open_pages(self, pages, index)
 	return tile
 
 
-func _enemy_popup(build: DromeBuild) -> void:
+func _enemy_pages(run: RunState) -> Array:
+	var pages: Array = []
+	for build in run.enemies():
+		pages.append(func() -> Dictionary: return _enemy_page(build))
+	return pages
+
+
+func _enemy_page(build: DromeBuild) -> Dictionary:
 	var stats := build.stats()
 	var lines: Array = []
 	if build.is_sentinel():
@@ -366,8 +376,7 @@ func _enemy_popup(build: DromeBuild) -> void:
 				names.append(module.display_name)
 	if not names.is_empty():
 		lines.append(["Module: %s" % ", ".join(names), COLOR_GOOD])
-	InfoPopup.open(self, build.display_name, {"picture": UiKit.drome_view(build, 64),
-		"lines": lines})
+	return {"title": build.display_name, "picture": UiKit.drome_view(build, 64), "lines": lines}
 
 
 ## "+10 Credits fuer den Sieg  ·  jetzt 24"
@@ -425,7 +434,7 @@ func _show_stop(run: RunState) -> void:
 	if run.is_bios_at(_selected_storage):
 		_side.add_child(_label("BIOS: tippe einen leuchtenden Halter an.", UiKit.SMALL, COLOR_GOOD))
 	elif run.is_module_at(_selected_storage):
-		_side.add_child(_label("Leuchtenden Platz antippen  ·  Doppeltipp: Details",
+		_side.add_child(_label("Leuchtenden Platz antippen  ·  nochmal tippen: Details  ·  Doppeltipp: ausrüsten",
 			UiKit.SMALL, COLOR_GOOD))
 
 	# --- Squad mit Haltern ---
@@ -635,18 +644,34 @@ func _bios_row(run: RunState) -> Control:
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tile.accent = ModuleData.CLASS_COLOR["bios"]
 		tile.glow = true
-		tile.on_info = func():
-			InfoPopup.open(self, item.display_name, {"subtitle": item.headline(),
-				"subtitle_color": item.color(), "picture": ModuleChip.new(item, 52.0),
-				"lines": item.effect_lines() + [["Die anderen verfallen, wenn du weitergehst.",
-					COLOR_MUTED, UiKit.SMALL]],
-				"actions": [{"text": "Nehmen", "primary": true, "disabled": blocker != "",
-					"why": blocker, "call": func():
-						if run.choose_bios(index):
-							Accessibility.vibrate(30, true)
-						_refresh()}]})
+		var pages := _bios_pages(run, blocker)
+		tile.on_info = func(): InfoPopup.open_pages(self, pages, index)
+		tile.on_action = func():
+			if blocker == "" and run.choose_bios(index):
+				Accessibility.vibrate(30, true)
+			_refresh()
 		row.add_child(tile)
 	return box
+
+
+func _bios_pages(run: RunState, blocker: String) -> Array:
+	var pages: Array = []
+	for index in run.bios_offers.size():
+		var item := ModuleData.get_module(run.bios_offers[index])
+		if item == null:
+			continue
+		var at: int = index
+		pages.append(func() -> Dictionary:
+			return {"title": item.display_name, "subtitle": item.headline(),
+				"subtitle_color": item.color(), "picture": ModuleChip.new(item, 52.0),
+				"lines": item.effect_lines() + [["Die anderen verfallen, wenn du weitergehst.  ·  "
+					+ "Doppeltipp auf die Kachel: nehmen.", COLOR_MUTED, UiKit.SMALL]],
+				"actions": [{"text": "Nehmen", "primary": true, "disabled": blocker != "",
+					"why": blocker, "call": func():
+						if run.choose_bios(at):
+							Accessibility.vibrate(30, true)
+						_refresh()}]})
+	return pages
 
 
 ## Der Laden (6i): drei Kacheln. Unten an jeder der Preis als Knopf -- er
@@ -673,7 +698,10 @@ func _shop_row(run: RunState) -> Control:
 		tile.accent = module.color()
 		tile.dimmed = bool(offer["sold"])
 		tile.glow = run.target_recipe != &"" and _recipe_wants(run, module)
-		tile.on_info = func(): _module_popup(run, module, -1, index)
+		var pages := _shop_pages(run)
+		var page := index
+		tile.on_info = func(): InfoPopup.open_pages(self, pages, page)
+		tile.on_action = func(): _buy(run, page)
 		holder.add_child(tile)
 		var buy := Button.new()
 		buy.text = "verkauft" if offer["sold"] else "%d ¢" % price
@@ -691,14 +719,63 @@ func _shop_row(run: RunState) -> Control:
 		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 			buy.add_theme_color_override(state, UiKit.ON_PRIMARY)
 		buy.add_theme_color_override("font_disabled_color", Color(UiKit.TEXT, 0.6))
-		buy.pressed.connect(func():
-			if run.buy(index):
-				Accessibility.vibrate(20, true)
-				_selected_storage = -1
-				_flash_storage = run.storage.size() - 1
-			_refresh())
+		buy.pressed.connect(func(): _buy(run, index))
 		holder.add_child(buy)
 	return row
+
+
+func _buy(run: RunState, index: int) -> void:
+	if run.buy(index):
+		Accessibility.vibrate(20, true)
+		_selected_storage = -1
+		_flash_storage = run.storage.size() - 1
+	_refresh()
+
+
+## Seiten zum Blaettern: alle Angebote des Ladens.
+func _shop_pages(run: RunState) -> Array:
+	var pages: Array = []
+	for index in run.shop_offers.size():
+		var module := ModuleData.get_module(run.shop_offers[index]["module_id"])
+		if module == null:
+			continue
+		var at: int = index
+		pages.append(func() -> Dictionary: return _module_page(run, module, -1, at))
+	return pages
+
+
+## Seiten zum Blaettern: alles im Lager.
+func _storage_pages(run: RunState) -> Array:
+	var pages: Array = []
+	for index in run.storage.size():
+		var at: int = index
+		pages.append(func() -> Dictionary:
+			var module := ModuleData.get_module(run.storage[at])
+			if module != null:
+				return _module_page(run, module, at)
+			var part := PartDB.get_part(run.storage[at])
+			return WeaponCard.page(part) if part != null else {"title": str(run.storage[at])})
+	return pages
+
+
+## Doppeltipp auf ein Lager-Modul: in den ersten Halter, der es nimmt.
+func _quick_install(run: RunState, index: int) -> void:
+	var bios := run.is_bios_at(index)
+	var options: Array = run.bios_options(index) if bios else run.module_options(index)
+	for entry in options:
+		if bool(entry.get("allowed", false)):
+			var drome := int(entry["drome"])
+			var slot := str(entry["slot"])
+			var done := run.install_bios(index, drome, slot) if bios \
+				else run.install_module(index, drome, slot)
+			if done:
+				Accessibility.vibrate(25, true)
+				_selected_storage = -1
+				_flash_holder = "%d:%s" % [drome, slot]
+			_refresh()
+			return
+	InfoPopup.open(self, "Kein freier Platz", {"lines": ["Kein Halter nimmt dieses Modul gerade. "
+		+ "Erst ein Modul zurück ins Lager nehmen."]})
 
 
 ## Braucht das Zielrezept dieses Modul noch?
@@ -709,8 +786,8 @@ func _recipe_wants(run: RunState, module: ModuleData) -> bool:
 
 ## Popup zu einem Modul: Wirkung, Zutat fuer, und je nach Herkunft Kaufen
 ## (shop_index) oder Verkaufen (storage_index).
-func _module_popup(run: RunState, module: ModuleData, storage_index: int = -1,
-		shop_index: int = -1) -> void:
+func _module_page(run: RunState, module: ModuleData, storage_index: int = -1,
+		shop_index: int = -1) -> Dictionary:
 	var lines := _module_lines(module)
 	var uses := _recipes_using(module)
 	if not uses.is_empty():
@@ -735,12 +812,11 @@ func _module_popup(run: RunState, module: ModuleData, storage_index: int = -1,
 			_selected_storage = -1
 			_refresh()})
 		if run.is_module_at(storage_index) or run.is_bios_at(storage_index):
-			actions.append({"text": "Einsetzen", "primary": true, "call": func():
-				_selected_storage = storage_index
-				_refresh()})
-	InfoPopup.open(self, module.display_name, {"subtitle": module.headline(),
+			actions.append({"text": "Ausrüsten", "primary": true, "call": func():
+				_quick_install(run, storage_index)})
+	return {"title": module.display_name, "subtitle": module.headline(),
 		"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
-		"lines": lines, "actions": actions})
+		"lines": lines, "actions": actions}
 
 
 ## Wirkung eines Moduls als Zeilen; beim Rezept die Summe und darunter der
@@ -815,19 +891,21 @@ func _storage_tile(run: RunState, index: int) -> Control:
 		tile = Tile.new("store:%d:%s" % [index, id], ModuleChip.new(module, 36.0),
 			module.display_name, Vector2(0, 64))
 		tile.accent = module.color()
-		tile.on_tap = func():
-			_selected_storage = -1 if _selected_storage == index else index
+		# 15. Nov. 2026: Tipp waehlt (die Halter leuchten), zweiter Tipp
+		# zeigt Details, Doppeltipp ruestet aus.
+		tile.on_select = func():
+			_selected_storage = index
 			_refresh()
-		tile.on_info = func(): _module_popup(run, module, index)
+		tile.on_action = func(): _quick_install(run, index)
 	else:
 		tile = Tile.new("store:%d:%s" % [index, id],
 			SlotShape.new(part.mount_class if part != null else "light",
 				UiKit.part_texture(part), 36.0),
 			part.display_name if part != null else str(id), Vector2(0, 64))
-		tile.on_info = func():
-			if part != null:
-				WeaponCard.open(self, part)
+	var pages := _storage_pages(run)
+	tile.on_info = func(): InfoPopup.open_pages(self, pages, index)
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.managed = module != null
 	tile.selected = index == _selected_storage
 	if index == _flash_storage:
 		_flash(tile)
@@ -918,7 +996,7 @@ func _holder_row(run: RunState, drome: int, slot: String, picking: bool, allowed
 	weapon.tooltip_text = part.display_name if part != null else "leer"
 	weapon.on_info = func():
 		if part != null:
-			WeaponCard.open(self, part)
+			InfoPopup.open_pages(self, _weapon_pages(run), _weapon_index(run, drome, slot))
 	if picking:
 		weapon.glow = allowed and bios
 		weapon.dimmed = not allowed
@@ -937,7 +1015,13 @@ func _holder_row(run: RunState, drome: int, slot: String, picking: bool, allowed
 			chip.dim = resting != ""
 			tile = Tile.new("mod:%d:%s:%d" % [drome, slot, position], chip, "", Vector2(44, 46))
 			tile.accent = module.color()
-			tile.on_info = func(): _installed_popup(run, drome, slot, position, module, resting)
+			var holder_pages := _installed_pages(run, drome, slot)
+			tile.on_info = func(): InfoPopup.open_pages(self, holder_pages, position)
+			# Doppeltipp: zurueck ins Lager.
+			tile.on_action = func():
+				if not run.storage_full() and run.remove_module(drome, slot, position):
+					Accessibility.vibrate(20, true)
+				_refresh()
 			if picking:
 				tile.dimmed = true
 		else:
@@ -977,18 +1061,52 @@ func _install(run: RunState, drome: int, slot: String) -> void:
 	_refresh()
 
 
-func _installed_popup(run: RunState, drome: int, slot: String, position: int,
-		module: ModuleData, resting: String) -> void:
-	var lines := _module_lines(module)
-	if resting != "":
-		lines.append(["ruht: %s" % resting, COLOR_BAD])
-	var full := run.storage_full()
-	InfoPopup.open(self, module.display_name, {"subtitle": module.headline(),
-		"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
-		"lines": lines, "actions": [{"text": "Zurück ins Lager", "disabled": full,
-			"why": "Lager voll", "call": func():
-				run.remove_module(drome, slot, position)
-				_refresh()}]})
+## Seiten der Module eines Halters (Doppeltipp auf eines: zurueck ins Lager).
+func _installed_pages(run: RunState, drome: int, slot: String) -> Array:
+	var build: DromeBuild = run.squad[drome]
+	var weapon := build.part_in(slot)
+	var pages: Array = []
+	var installed := build.modules_in(slot)
+	for position in installed.size():
+		var module: ModuleData = installed[position]
+		var at: int = position
+		pages.append(func() -> Dictionary:
+			var lines := _module_lines(module)
+			var resting := module.blocker(weapon)
+			if resting != "":
+				lines.append(["ruht: %s" % resting, COLOR_BAD])
+			lines.append(["Doppeltipp auf das Modul: zurück ins Lager.", COLOR_MUTED, UiKit.SMALL])
+			return {"title": module.display_name, "subtitle": module.headline(),
+				"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
+				"lines": lines, "actions": [{"text": "Zurück ins Lager", "disabled": run.storage_full(),
+					"why": "Lager voll", "call": func():
+						run.remove_module(drome, slot, at)
+						_refresh()}]})
+	return pages
+
+
+## Alle Waffen des Einsatz-Squads zum Blaettern.
+func _weapon_pages(run: RunState) -> Array:
+	var pages: Array = []
+	for build in run.squad:
+		for slot in build.equip_slots():
+			var part: PartData = build.part_in(slot)
+			if part != null:
+				pages.append(func() -> Dictionary: return WeaponCard.page(part))
+	return pages
+
+
+func _weapon_index(run: RunState, drome: int, slot: String) -> int:
+	var at := 0
+	for d in run.squad.size():
+		var build: DromeBuild = run.squad[d]
+		for s2 in build.equip_slots():
+			if build.part_in(s2) == null:
+				continue
+			if d == drome and s2 == slot:
+				return at
+			at += 1
+	return 0
 
 
 ## Darf das gezogene Lager-Stueck in diesen Halter? Dieselben Regeln wie beim
@@ -1045,6 +1163,7 @@ func _open_recipes(run: RunState) -> void:
 			_recipe_filter = which
 			_open_recipes(run))
 		filters.add_child(button)
+	_recipe_shown.clear()
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 6)
@@ -1057,12 +1176,14 @@ func _open_recipes(run: RunState) -> void:
 			continue
 		if _recipe_filter == "angefangen" and not have.has(true):
 			continue
+		_recipe_shown.append((entry["module"] as ModuleData).id)
 		grid.add_child(_recipe_tile(run, entry))
 		shown += 1
 	if shown == 0:
 		body.add_child(_label("Nichts in dieser Auswahl.", UiKit.SMALL, COLOR_MUTED))
-	body.add_child(_label("Zwei Zutaten aus dem Lager ergeben ein neues Modul: die Summe ihrer "
-		+ "Werte und ein eigener Effekt.", 13, COLOR_MUTED))
+	body.add_child(_label("Tippen wählt, nochmal tippen zeigt das Rezept, Doppeltipp fügt zusammen. "
+		+ "Zwei Zutaten aus dem Lager ergeben ein neues Modul: die Summe ihrer Werte und ein "
+		+ "eigener Effekt.", 13, COLOR_MUTED))
 	_recipes_open = true
 	var popup := InfoPopup.open(self, "Rezeptbuch", {"body": body})
 	popup.closed.connect(func(): _recipes_open = false)
@@ -1087,11 +1208,31 @@ func _recipe_tile(run: RunState, entry: Dictionary) -> Control:
 	tile.add_extra(dots)
 	if not entry["ready"] and not (entry["have"] as Array).has(true):
 		tile.modulate = Color(1, 1, 1, 0.6)
-	tile.on_info = func(): _recipe_popup(run, entry)
+	tile.on_info = func(): InfoPopup.open_pages(self, _recipe_pages(run), _recipe_shown.find(module.id))
+	# Doppeltipp: zusammenfuegen, wenn alle Zutaten da sind.
+	tile.on_action = func():
+		if entry["ready"] and run.craft(module.id):
+			Accessibility.vibrate(40, true)
+			_selected_storage = -1
+			_flash_storage = run.storage.size() - 1
+			_recipes_open = true
+			_refresh()
 	return tile
 
 
-func _recipe_popup(run: RunState, entry: Dictionary) -> void:
+## Seiten: die Rezepte, die gerade im Raster stehen (nach Filter).
+func _recipe_pages(run: RunState) -> Array:
+	var pages: Array = []
+	var book := run.recipe_book()
+	for module_id in _recipe_shown:
+		for entry in book:
+			if (entry["module"] as ModuleData).id == module_id:
+				pages.append(func() -> Dictionary: return _recipe_page(run, entry))
+				break
+	return pages
+
+
+func _recipe_page(run: RunState, entry: Dictionary) -> Dictionary:
 	var module: ModuleData = entry["module"]
 	var parts := HFlowContainer.new()
 	parts.add_theme_constant_override("h_separation", 8)
@@ -1123,9 +1264,9 @@ func _recipe_popup(run: RunState, entry: Dictionary) -> void:
 			_recipes_open = true
 			_refresh()})
 	actions.append({"text": "◂ Rezeptbuch", "call": func(): _open_recipes(run)})
-	InfoPopup.open(self, module.display_name, {"subtitle": module.headline(),
+	return {"title": module.display_name, "subtitle": module.headline(),
 		"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
-		"lines": lines, "actions": actions})
+		"lines": lines, "actions": actions}
 
 
 func _show_end(run: RunState) -> void:

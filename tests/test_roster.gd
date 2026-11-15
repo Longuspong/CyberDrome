@@ -112,6 +112,61 @@ func test_new_drome_needs_a_free_chassis() -> void:
 	t.equal(roster.entries.size(), 4, "der Roster ist wieder bei vier")
 
 
+## Verwerten statt Aufloesen (15. Nov. 2026): Chassis und Kern verschwinden,
+## die Waffen kommen frei in den Hangar, dafuer gibt es einen Baukern.
+func test_salvaging_a_drome_gives_a_kit_and_frees_the_weapons() -> void:
+	var roster := _fresh()
+	var molok: RosterEntry = roster.entries[1]
+	var chassis := molok.chassis_uid()
+	var weapons: Array = []
+	for slot in molok.assignments:
+		if str(slot).begins_with("equip_"):
+			weapons.append(str(molok.assignments[slot]))
+	var free_before := roster.free_count(&"eq_hammer")
+	var got := roster.salvage(molok)
+	t.equal(got.get("kits", 0), 1, "ein Baukern")
+	t.equal(roster.kits(), 1, "liegt im Hangar")
+	t.equal(roster.entries.size(), 3, "der DROME ist weg")
+	t.ok(roster.instance(chassis) == null, "sein Chassis auch")
+	for uid in weapons:
+		t.ok(roster.instance(uid) != null, "die Waffe %s bleibt" % uid)
+	t.equal(roster.free_count(&"eq_hammer"), free_before + 1, "und ist frei")
+	var back := Roster.new()
+	t.ok(back.load_dict(roster.to_dict()), "Spielstand lädt")
+	t.equal(back.kits(), 1, "der Baukern übersteht das Speichern")
+
+
+func test_the_last_drome_cannot_be_salvaged() -> void:
+	var roster := _fresh()
+	while roster.entries.size() > 1:
+		roster.salvage(roster.entries[0])
+	t.ok(roster.salvage_blocker(roster.entries[0]) != "", "der letzte bleibt")
+	t.equal(roster.salvage(roster.entries[0]), {}, "und wird nicht verwertet")
+
+
+## Drei Baukerne bauen einen Standard-DROME, ein Fraktionskern dazu einen
+## Fraktions-DROME mit festen Werten.
+func test_kits_build_standard_and_faction_dromes() -> void:
+	var roster := _fresh()
+	t.equal(roster.craft_drome(&"strix_body"), null, "ohne Baukerne nichts")
+	roster.materials["baukern"] = 3
+	var made := roster.craft_drome(&"strix_body")
+	t.ok(made != null, "drei Baukerne: ein Strix")
+	t.equal(roster.kits(), 0, "die Baukerne sind verbraucht")
+	t.equal(roster.build_for(made).body().id, &"strix_body", "mit Strix-Chassis")
+	roster.materials["baukern"] = 3
+	t.equal(roster.craft_faction_drome("neon_vireo"), null, "ohne Neon-Kern kein Neon Vireo")
+	roster.materials["kern:neon"] = 1
+	var neon := roster.craft_faction_drome("neon_vireo")
+	t.ok(neon != null, "Neon-Kern + drei Baukerne: Neon Vireo")
+	t.equal(neon.variant, "neon_vireo", "als Fraktions-DROME")
+	t.equal(int(roster.build_for(neon).stats()["hp_max"]), 80, "mit den festen Werten")
+	t.equal(roster.faction_cores("neon"), 0, "der Kern ist verbraucht")
+	var got := roster.salvage(neon)
+	t.equal(got.get("faction", ""), "neon", "verwertet gibt er seinen Kern zurück")
+	t.equal(roster.faction_cores("neon"), 1, "einen Neon-Kern")
+
+
 func test_derived_build_equals_a_direct_build() -> void:
 	# Der abgeleitete Build (uid -> Instanz -> Typ) muss GENAU dem entsprechen,
 	# den man direkt aus Typen baut -- sonst rechnete der Kampf mit anderen Werten
