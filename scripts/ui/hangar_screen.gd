@@ -682,8 +682,8 @@ func _picker() -> Control:
 ## Die Halter als Formen: die Ausruestungshalter in ihrer Klassenform (den
 ## Kern-Halter gibt es seit 6g nicht mehr); darin die Waffe oder leer. Der
 ## gewaehlte Halter steht in einem hervorgehobenen Kasten; unter jedem Halter
-## seine Klasse. Antippen waehlt den Halter; steckt eine Waffe darin, oeffnet
-## sich ihre Karte mit "Ausbauen".
+## seine Klasse. Antippen waehlt den Halter, nochmal antippen oeffnet die
+## Karte der Waffe darin (mit "Ausbauen"), Doppeltipp baut sie aus.
 func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
@@ -701,11 +701,23 @@ func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 		else:
 			style.bg_color = Color(0, 0, 0, 0)
 			style.border_color = Color(0, 0, 0, 0)
-		var holder := _tappable(style, func():
+		# Seit 15. Nov. 2026 (Wunsch des Spielers) wie eine Kachel: tippen
+		# waehlt den Halter, nochmal tippen zeigt die Waffen-Karte,
+		# Doppeltipp baut die Waffe aus.
+		var select := func():
 			_selected_slot = slot
 			_refresh()
-			if part != null:
-				_open_card(entry, build, part, slot))
+		var show := Callable()
+		var take_out := Callable()
+		if part != null:
+			show = func(): _open_card(entry, build, part, slot)
+			take_out = func():
+				_selected_slot = slot
+				GameState.roster.clear_slot(entry, slot)
+				_changed()
+		var holder := _tappable(style, func():
+			Tile.click(get_tree(), "holder:%s:%s" % [entry.name, slot],
+				slot == _selected_slot, select, show, take_out))
 		# Ziehen (10. Nov. 2026): eine Teil-Kachel auf den Halter fallen lassen.
 		holder.set_drag_forwarding(Callable(),
 			func(_at, data): return _can_drop_part(entry, build, slot, data),
