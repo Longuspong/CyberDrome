@@ -60,20 +60,20 @@ func _wallet() -> Control:
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 8)
 	flow.add_theme_constant_override("v_separation", 8)
-	flow.add_child(_chip("◈ %d %s" % [roster.coins, RunState.coin_name()], UiKit.WARN))
-	flow.add_child(_chip("⬢ %d %s" % [roster.kits(), Roster.kit_name()], UiKit.GOOD))
+	flow.add_child(_chip("%d %s" % [roster.coins, RunState.coin_name()], UiKit.WARN, "coin"))
+	flow.add_child(_chip("%d %s" % [roster.kits(), Roster.kit_name()], UiKit.GOOD, "kit"))
 	for key in roster.materials:
 		if str(key).begins_with("kern:"):
-			flow.add_child(_chip("✦ %d %s" % [int(roster.materials[key]),
-				Roster.core_name(str(key).substr(5))], UiKit.MAGENTA))
+			flow.add_child(_chip("%d %s" % [int(roster.materials[key]),
+				Roster.core_name(str(key).substr(5))], UiKit.MAGENTA, "material"))
 	var total := 0
 	for key in roster.caches:
 		total += int(roster.caches[key])
-	flow.add_child(_chip("◆ %d Caches" % total, UiKit.MAGENTA))
+	flow.add_child(_chip("%d Caches" % total, UiKit.MAGENTA, "cache"))
 	return flow
 
 
-func _chip(text: String, color: Color) -> Control:
+func _chip(text: String, color: Color, icon: String = "") -> Control:
 	var label := UiKit.label(text, 15, color)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	var panel := PanelContainer.new()
@@ -83,7 +83,14 @@ func _chip(text: String, color: Color) -> Control:
 	box.content_margin_top = 6
 	box.content_margin_bottom = 6
 	panel.add_theme_stylebox_override("panel", box)
-	panel.add_child(label)
+	if icon == "":
+		panel.add_child(label)
+		return panel
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.add_child(UiIcon.rect(icon, 16, color))
+	row.add_child(label)
+	panel.add_child(row)
 	return panel
 
 
@@ -113,7 +120,7 @@ func _offer_name(offer: Dictionary) -> String:
 
 func _offer_icon(offer: Dictionary) -> Control:
 	if str(offer.get("kind", "")) == "kit":
-		return UiKit.label("⬢", 30, UiKit.GOOD)
+		return UiIcon.rect("kit", 30, UiKit.GOOD)
 	return _cache_icon()
 
 
@@ -238,7 +245,9 @@ func _cache_offer_card(offer: Dictionary) -> Control:
 	box.add_child(_centered(Arcade.label(RunState.cache_name(StringName(kind)).to_upper(), 14,
 		Arcade.WHITE, "display")))
 	box.add_child(_centered(Arcade.label(_region_name(kind), 13, Arcade.MUTED)))
-	box.add_child(_centered(Arcade.label("⬢ %d" % int(offer.get("price", 0)), 15, Arcade.YELLOW, "display")))
+	var price := UiIcon.text("kit", "%d" % int(offer.get("price", 0)), 15, Arcade.YELLOW, "display")
+	price.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(price)
 	var buy := UiKit.button("Kaufen", true)
 	buy.custom_minimum_size = Vector2(0, 44)
 	buy.disabled = blocker != ""
@@ -271,7 +280,7 @@ func _kit_offer(offer: Dictionary) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	panel.add_child(row)
-	row.add_child(UiKit.label("⬢", 30, UiKit.GOOD))
+	row.add_child(UiIcon.rect("kit", 30, UiKit.GOOD))
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 0)
@@ -281,7 +290,8 @@ func _kit_offer(offer: Dictionary) -> Control:
 		GameState.roster.kits()], 12, Arcade.MUTED)
 	kit_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(kit_text)
-	var buy := UiKit.button("⬢ %d" % int(offer.get("price", 0)), true)
+	var buy := UiKit.button("%d" % int(offer.get("price", 0)), true)
+	UiIcon.on_button(buy, "kit", 18, UiKit.ON_PRIMARY)
 	buy.custom_minimum_size = Vector2(96, 44)
 	buy.size_flags_horizontal = Control.SIZE_SHRINK_END
 	buy.disabled = blocker != ""

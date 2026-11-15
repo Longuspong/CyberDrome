@@ -60,7 +60,8 @@ static func label(text: String, size: int, color: Color, kind: String = "medium"
 
 
 ## Schraeges Etikett auf Gelb (PLAYER 1 · READY, SAVE SELECT).
-static func tag(text: String, size: int, degrees: float) -> Control:
+## ``icon``: optional ein UI-Symbol (assets/ui_icons) vor dem Text.
+static func tag(text: String, size: int, degrees: float, icon: String = "") -> Control:
 	var panel := PanelContainer.new()
 	var box := StyleBoxFlat.new()
 	box.bg_color = YELLOW
@@ -69,7 +70,10 @@ static func tag(text: String, size: int, degrees: float) -> Control:
 	box.content_margin_top = 5
 	box.content_margin_bottom = 5
 	panel.add_theme_stylebox_override("panel", box)
-	panel.add_child(label(text, size, DEEP, "bold", 0.24))
+	if icon == "":
+		panel.add_child(label(text, size, DEEP, "bold", 0.24))
+	else:
+		panel.add_child(UiIcon.text(icon, text, size, DEEP, "bold", 0.24))
 	panel.rotation_degrees = degrees
 	panel.resized.connect(func(): panel.pivot_offset = panel.size * 0.5)
 	return panel

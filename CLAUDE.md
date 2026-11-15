@@ -24,6 +24,10 @@ als offene Punkte im SPOT. Cache oeffnen ist bis dahin eine Vorschau.
 Bilder ohne Web-Export: `xvfb-run ... tests/screenshot.gd -- <szene> <png> 90
 [run=story results=SS ...]` (Optionen im Kopf der Datei).
 
+**UI-Symbole (15. Nov. 2026):** Sonderzeichen, die die Schriften nicht haben,
+nie als Text -- stattdessen SVG aus `assets/ui_icons/` ueber `UiIcon`
+(`tests/test_glyphs.gd` prueft das).
+
 **Grosse Umsetzung 14. Nov. 2026 (GEBAUT, Details `docs/PROJEKTSTAND.md`):**
 Bedienung mit Kacheln + Popups (`Tile`, `InfoPopup`), Arcade-Stil auf allen
 Bildschirmen, Umlaute in der Anzeige, Virusschaden, Sentinels + Gegner-DROMEs +
