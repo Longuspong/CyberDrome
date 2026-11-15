@@ -46,11 +46,17 @@ const BAD := Color("#ff5c7c")
 const WARN := Color("#ffe14d")
 const MAGENTA := Color("#ff2bd6")
 
+## Optionen (15. Nov. 2026): kein Tab mehr, sondern das Zahnrad oben rechts
+## auf jeder Hauptseite. Der Zurueck-Pfeil der Optionen fuehrt auf die Seite,
+## von der man kam.
+const SETTINGS_SCENE := "res://scenes/settings.tscn"
+static var return_scene := "res://scenes/main.tscn"
+
 ## Die Hauptseiten der Tab-Leiste: Titel und Szene.
 const TABS := [
 	["Spielen", "res://scenes/main.tscn"],
 	["Hangar", "res://scenes/hangar.tscn"],
-	["Optionen", "res://scenes/settings.tscn"],
+	["Shop", "res://scenes/shop.tscn"],
 ]
 
 
@@ -102,6 +108,21 @@ static func page(root: Control, title: String, back: String = "", tab: int = -1,
 
 	if tab >= 0:
 		frame.add_child(tab_bar(root, tab))
+		return_scene = TABS[tab][1]
+		# Das Zahnrad oben rechts oeffnet die Optionen.
+		var gear := Arcade.GearButton.new()
+		gear.tooltip_text = "Optionen"
+		gear.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		gear.position = Vector2(-gear.custom_minimum_size.x - 10.0, 8.0)
+		gear.pressed.connect(func():
+			Accessibility.tap()
+			root.get_tree().change_scene_to_file(SETTINGS_SCENE))
+		root.add_child(gear)
+		var place := func():
+			gear.position = Vector2(root.size.x - gear.custom_minimum_size.x - 10.0,
+				8.0 + safe_insets(root)["top"])
+		root.resized.connect(place)
+		place.call_deferred()
 	# Feine Scanlines ueber allem (Arcade-Stil), ohne Eingaben zu schlucken.
 	root.add_child.call_deferred(Arcade.Scanlines.new(0.12))
 	return content

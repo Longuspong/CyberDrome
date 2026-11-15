@@ -832,7 +832,7 @@ def build_glossar(ws):
 # ---------------------------------------------------------------------------
 
 VIRUS = {}  # id -> Zelle auf "Einsatz" (fuer Formeln)
-ART_NAMES = ["Waffe", "DROME", "Modul", "BIOS", "Credits", "Platzhaltercoin"]
+ART_NAMES = ["Waffe", "DROME", "Modul", "BIOS", "Baukern", "Fraktionskern", "Credits", "Platzhaltercoin"]
 
 
 def item_name(pid):

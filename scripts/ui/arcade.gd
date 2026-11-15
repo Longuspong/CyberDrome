@@ -513,3 +513,27 @@ class GlitchOverlay extends Control:
 		# ein heller Riss
 		var cut := _rng.randf_range(0.0, size.y)
 		draw_rect(Rect2(Vector2(0, cut), Vector2(size.x, 2)), Color(Arcade.WHITE, 0.5 * fade))
+
+
+## Zahnrad (Optionen, 15. Nov. 2026): 44 x 44, gelb, gezeichnet -- die
+## Schriften haben kein Zahnrad-Zeichen.
+class GearButton extends Button:
+	func _init() -> void:
+		flat = true
+		custom_minimum_size = Vector2(44, 44)
+		size = custom_minimum_size
+		add_theme_stylebox_override("focus", Arcade.chamfer_box(Color.TRANSPARENT, 0, Arcade.YELLOW, 3))
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var color := Arcade.YELLOW if not is_pressed() else Arcade.YELLOW.darkened(0.25)
+		var teeth := 8
+		var outer := 13.0
+		var inner := 9.5
+		var pts := PackedVector2Array()
+		for i in teeth * 4:
+			var a := TAU * float(i) / float(teeth * 4)
+			var r := outer if (i % 4) in [1, 2] else inner
+			pts.append(c + Vector2(cos(a), sin(a)) * r)
+		draw_colored_polygon(pts, color)
+		draw_circle(c, 4.5, Arcade.NIGHT)

@@ -29,6 +29,17 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Tab Shop, Optionen am Zahnrad (15. Nov. 2026, Wunsch des Spielers)
+
+* Tab-Leiste: Spielen, Hangar, **Shop** (`scenes/shop.tscn`,
+  `shop_screen.gd`) mit den Reitern Shop (Baukerne, Caches fuer Coins;
+  config `hangar_shop`, `Roster.buy_offer`), Caches (oeffnen folgt) und
+  Bauen (Material, neue DROMEs -- aus dem Hangar umgezogen).
+* **Optionen** am Zahnrad oben rechts jeder Hauptseite (`Arcade.GearButton`,
+  `UiKit.SETTINGS_SCENE`); der Pfeil fuehrt zurueck (`UiKit.return_scene`).
+* Entschieden: Bosse und Caches geben Komponenten (Fraktionskern, Baukerne)
+  oder gleich einen ganzen Fraktions-DROME (Vorschlag im Blatt Lootcaches).
+
 ### Bedienung umgedreht, Verwerten (15. Nov. 2026, Wunsch des Spielers)
 
 * **Kacheln**: tippen waehlt (gelber Rahmen), nochmal tippen zeigt das Popup,

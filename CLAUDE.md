@@ -132,7 +132,9 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   Doppeltipp = Handlung; seit 15. Nov. 2026), Erklaerungen als blaetterbares
   Popup (`InfoPopup.open_pages`). DROMEs werden verwertet, nicht aufgeloest
   (Baukerne, Fraktionskerne, `Roster.salvage/craft_drome`).
-* Navigation: Tab-Leiste unten (Spielen, Hangar, Optionen). Der Hangar
+* Navigation: Tab-Leiste unten (Spielen, Hangar, Shop -- seit 15. Nov. 2026;
+  Optionen am Zahnrad oben rechts). Der Shop hat die Reiter Shop, Caches und
+  Bauen (neue DROMEs aus Baukernen). Der Hangar
   vereint Squad (Karussell, max. 4) und Umbau (ein Ausruestungsplatz je
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt

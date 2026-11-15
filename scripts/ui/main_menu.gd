@@ -8,7 +8,7 @@ extends Control
 ##   darunter eine Karte: naechstes Gebiet und dein Squad in einer Zeile
 ##   unten    die Hauptaktion "Neon City" (der Lauf), darunter der
 ##            Endlos-Modus (frei nach dem ersten Sieg in Neon City)
-##   Leiste   Spielen · Hangar · Optionen (UiKit.tab_bar)
+##   Leiste   Spielen · Hangar · Shop (UiKit.tab_bar); Optionen am Zahnrad oben rechts
 ##
 ## Der Daumen erreicht unten alles, was man hier tut; oben steht nur, was man
 ## ansieht.

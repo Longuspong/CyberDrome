@@ -83,13 +83,13 @@ func _process(_delta: float) -> bool:
 		16:
 			# Titel (13. Nov. 2026), Spielstand-Auswahl, Hauptmenue, Optionen (10. Nov. 2026).
 			root.get_node("RunStop").free()
-			for scene in ["title", "saves", "main", "settings"]:
+			for scene in ["title", "saves", "main", "settings", "shop"]:
 				var node = load("res://scenes/%s.tscn" % scene).instantiate()
 				node.name = "Probe_%s" % scene
 				root.add_child(node)
 			print("SMOKE: Titel, Spielstände, Hauptmenü und Optionen instanziiert")
 		18:
-			for scene in ["title", "saves", "main", "settings"]:
+			for scene in ["title", "saves", "main", "settings", "shop"]:
 				root.get_node("Probe_%s" % scene).free()
 			# Lauf vor dem Kampf: Story-Reihe, dann Endlos mit Chaos-Knoten.
 			gs.start_run(4242)

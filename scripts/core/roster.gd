@@ -418,6 +418,37 @@ func craft_drome_free(chassis_id: StringName, entry_name: String) -> RosterEntry
 	return entry
 
 
+# ---------------------------------------------------------------------------
+# Hangar-Shop (15. Nov. 2026): Baukerne und Caches fuer Platzhaltercoin
+# ---------------------------------------------------------------------------
+
+static func shop_offers() -> Array:
+	return (Config.section("hangar_shop").get("offers", []) as Array)
+
+
+## Warum ein Angebot nicht zu kaufen ist ("" = geht).
+func offer_blocker(offer: Dictionary) -> String:
+	if coins < int(offer.get("price", 0)):
+		return "zu wenig Coins"
+	return ""
+
+
+## Kauft ein Angebot: Coins weg, Baukern oder Cache dazu.
+func buy_offer(offer: Dictionary) -> bool:
+	if offer_blocker(offer) != "":
+		return false
+	match str(offer.get("kind", "")):
+		"kit":
+			_add_material("baukern", 1)
+		"cache":
+			var key := str(offer.get("cache", "city"))
+			caches[key] = int(caches.get(key, 0)) + 1
+		_:
+			return false
+	coins -= int(offer.get("price", 0))
+	return true
+
+
 ## Die freien Chassis-Instanzen, nach denen die Garage fragt, wenn sie einen neuen
 ## DROME anbietet -- ein Eintrag je distinktem freien Chassis-TYP.
 func free_chassis_types() -> Array:

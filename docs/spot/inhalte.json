@@ -15,7 +15,7 @@
     {"bereich": "Plattform", "thema": "Mobile first", "festlegung": "Hochformat ist die Hauptansicht (ca. 400 CSS-Pixel breit), Querformat zweitrangig. PWA auf Vercel, Android-APK später.", "seit": "Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
     {"bereich": "Optik", "thema": "Arcade-Glitch-Stil", "festlegung": "Synthwave-Arcade mit Glitch-Logo, Scanlines, Punktraster, Sonne über Gitterboden. Farben Nachtschwarz/Violett mit Gelb, Cyan, Magenta; Schriften Bungee und Chakra Petch. Seit 14. Nov. 2026 auf allen Bildschirmen (UiKit im Arcade-Stil: abgeschrägte Ecken, harte Versatzschatten, gelbe Hauptknöpfe, schräge Etiketten).", "seit": "13. Nov. 2026", "status": "gebaut", "quelle": "Entwürfe Titelbildschirm B, Spielstand wählen B"},
     {"bereich": "Bedienung", "thema": "Titelbildschirm", "festlegung": "Neuer erster Bildschirm vor der Spielstand-Wahl: Glitch-Logo, Laufbänder, TAP-Knopf, irgendwo tippen startet. Danach Spielstand wählen im neuen Stil (Slots mit Weiterspielen / Neues Spiel / Löschen mit Nachfrage).", "seit": "13. Nov. 2026", "status": "gebaut", "quelle": "Entwürfe Titelbildschirm B, Spielstand wählen B"},
-    {"bereich": "Bedienung", "thema": "Navigation", "festlegung": "Erster Bildschirm: Titel (seit 13. Nov.), dann Wahl von drei Spielständen. Danach Tab-Leiste unten: Spielen, Hangar, Optionen. Hangar = Squad (Karussell, max. 4) + Umbau.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
+    {"bereich": "Bedienung", "thema": "Navigation", "festlegung": "Erster Bildschirm: Titel, dann Wahl von drei Spielständen. Danach Tab-Leiste unten: Spielen, Hangar, Shop. Optionen am Zahnrad oben rechts auf jeder Hauptseite (seit 15. Nov. 2026). Hangar = Squad + Umbau; Shop = Shop (Coins), Caches und Bauen (neue DROMEs).", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
     {"bereich": "Arena", "thema": "Spielfeld", "festlegung": "20 x 20 Felder, ohne Gelände-Regeln und ohne Sichtlinie.", "seit": "5. Nov. 2026", "status": "gebaut", "quelle": "CLAUDE.md Ausrichtung"},
     {"bereich": "Arena", "thema": "Hindernisse", "festlegung": "Sperren nur Laufwege, Schüsse gehen darüber. Punktsymmetrisch je Seed, nie an den Aufstellungszonen.", "seit": "7. Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> obstacles"},
     {"bereich": "Arena", "thema": "Aufstellung", "festlegung": "Streifen 3 x 8 am Kartenrand (Spieler unten links, Gegner oben rechts), ohne Zutun nach Rolle gestaffelt. Spieler kann per Ziehen umstellen.", "seit": "10. Nov. 2026", "status": "gebaut", "quelle": "data/config.json -> deployment"},
@@ -72,7 +72,7 @@
     {"bereich": "Bedienung", "thema": "Wischen mit Schwung", "festlegung": "Listen rollen am Finger mit Nachlauf, zeitbasiert gemessen und in Kommazahlen -- kein Ruckeln, kein Hängenbleiben. Ein Tipp in eine auslaufende Liste hält sie an.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Bedienung", "thema": "Zwischenstopp kompakt", "festlegung": "Fast ein Bildschirm: Chips für Credits, Beute, Erfahrung, Tasche und Einsatz-Beute; Laden als 3 Kacheln mit Preis-Knopf; Lager als Raster fester Plätze; Squad als Zeilen mit Haltern und Modulplätzen. Modul antippen, dann einen leuchtenden Platz -- oder hinziehen.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Bedienung", "thema": "Rezeptbuch als Raster", "festlegung": "Popup mit Filter (Alle / Bereit / Angefangen) und allen Rezepten als Kacheln. Zwei Punkte zeigen die Zutaten, Bereites leuchtet grün, das Ziel gelb. Antippen: Rezept mit Zusammenfügen und Als Ziel.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
-    {"bereich": "Bedienung", "thema": "Hangar gestrafft", "festlegung": "Squad: alle DROMEs als Kacheln (Doppeltipp öffnet den Umbau), darunter der gewählte kompakt, dann Beute (Caches, Coins). Umbau: Waffe antippen baut sie sofort ein, Doppeltipp zeigt die Waffen-Karte.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
+    {"bereich": "Bedienung", "thema": "Hangar gestrafft", "festlegung": "Squad: alle DROMEs als Kacheln (Doppeltipp öffnet den Umbau), darunter der gewählte kompakt, dann Beute (Caches, Coins). Umbau: Waffe antippen baut sie sofort ein, Doppeltipp zeigt die Waffen-Karte. Seit 15. Nov. 2026 stehen Beute und Bauen im Tab Shop.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Optik", "thema": "Umlaute in der Anzeige", "festlegung": "Die Anzeige schreibt echte Umlaute und ß (Kämpfe, Größe). Code-Kommentare bleiben ohne Umlaute.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Optik", "thema": "Begriffe", "festlegung": "Anzeige: Einsatz statt Lauf, Kampf statt Runde, Infinity-Einsatz statt Endlos-Modus. Im Code bleiben die Namen (RunState).", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Kampf", "thema": "Virus-Anzeige", "festlegung": "Die letzten 30 s vor dem Virus flackert das Bild als Glitch, immer schneller bis zum Pulstakt; danach je Viruspuls ein starker Glitch. Statuszeile: 'Virus in n s', dann 'VIRUS'.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
@@ -83,7 +83,9 @@
     {"bereich": "Gegner", "thema": "Alte Teams gelöscht", "festlegung": "Die symmetrischen Teams und Gegnertypen (data/encounters.json) sind entfernt; Formationen ersetzen sie vollständig.", "seit": "14. Nov. 2026", "status": "gebaut", "quelle": "Sitzung 14. Nov. 2026"},
     {"bereich": "Bedienung", "thema": "Popups blättern", "festlegung": "Jedes Popup zu einer Kachel lässt durch die Nachbarn blättern: Pfeile links und rechts mit Zähler (2 / 5) und Wischen nach links oder rechts. Gilt für Lager, Laden, BIOS, Module im Halter, Waffen, Rezepte, Gegner und DROMEs.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
     {"bereich": "Hangar", "thema": "Verwerten statt Auflösen", "festlegung": "DROMEs werden verwertet: Chassis, Level und EP gehen verloren, die Waffen kommen frei in den Hangar. Dafür gibt es 1 Baukern, ein Fraktions-DROME gibt zusätzlich seinen Fraktionskern (Neon-Kern ...). Der letzte DROME lässt sich nicht verwerten.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
-    {"bereich": "Hangar", "thema": "DROMEs bauen", "festlegung": "3 Baukerne bauen einen Standard-DROME (Chassis frei wählbar, mit Kern, ohne Waffe). Ein Fraktionskern + 3 Baukerne bauen einen Fraktions-DROME mit den festen Werten aus dem Blatt Gegner-DROMEs (z. B. Neon Vireo). Baukerne später auch im Hangar-Shop. Werte: config.json -> crafting.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"}
+    {"bereich": "Hangar", "thema": "DROMEs bauen", "festlegung": "3 Baukerne bauen einen Standard-DROME (Chassis frei wählbar, mit Kern, ohne Waffe). Ein Fraktionskern + 3 Baukerne bauen einen Fraktions-DROME mit den festen Werten aus dem Blatt Gegner-DROMEs (z. B. Neon Vireo). Baukerne später auch im Hangar-Shop. Werte: config.json -> crafting.", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
+    {"bereich": "Hangar", "thema": "Tab Shop", "festlegung": "Der rechte Tab heißt Shop und hat drei Reiter: Shop (Baukerne und Caches für Platzhaltercoin, Preise aus dem Blatt Hangar-Shop), Caches (öffnen folgt) und Bauen (Material, neue Standard- und Fraktions-DROMEs).", "seit": "15. Nov. 2026", "status": "gebaut", "quelle": "Spieler"},
+    {"bereich": "Beute", "thema": "Fraktions-DROMEs aus Bossen und Caches", "festlegung": "Bosse und Caches können entweder die Komponenten (Fraktionskern, Baukerne) oder direkt einen vollwertigen Fraktions-DROME geben.", "seit": "15. Nov. 2026", "status": "entschieden", "quelle": "Spieler"}
   ],
 
   "dromes": {
@@ -215,7 +217,7 @@
     {"punkt": "Story-Einsätze: heute ein Einsatz Neon City mit 8 Kämpfen; die zehn Einsätze mit eigener Länge und Squad-Größe folgen (OP 2).", "quelle": "Sitzung 14. Nov. 2026", "status": "offen"},
     {"punkt": "Namen: 'Baukern' und 'Fraktionskern' als Arbeitsnamen (Alternativen: Crafting-Kit, Fraktionsmodifikator)?", "quelle": "Sitzung 15. Nov. 2026", "status": "offen"},
     {"punkt": "Fraktions-DROMEs des Spielers rechnen mit festen Werten -- DROME-Level wirken darauf heute nicht. Sollen sie leveln (z. B. Level-Bonus auf die festen Werte)?", "quelle": "Sitzung 15. Nov. 2026", "status": "offen"},
-    {"punkt": "Woher kommen Fraktionskerne außer durch Verwerten? (Caches, Boss, Hangar-Shop?) Heute hat der Spieler keinen Fraktions-DROME, also auch keinen Weg zum ersten Kern.", "quelle": "Sitzung 15. Nov. 2026", "status": "offen"}
+    {"punkt": "Woher kommen Fraktionskerne außer durch Verwerten? (Caches, Boss, Hangar-Shop?) Heute hat der Spieler keinen Fraktions-DROME, also auch keinen Weg zum ersten Kern. -> aus Bossen und Caches: entweder die Komponenten oder gleich der ganze DROME", "quelle": "Sitzung 15. Nov. 2026", "status": "entschieden"}
   ],
 
   "glossar": [
@@ -331,18 +333,21 @@
     {"cache": "Hipstar Cache", "art": "Platzhaltercoin", "gegenstand": "Platzhaltercoin", "menge": 15, "gewicht": 10, "status": "Vorschlag"},
     {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
     {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
-    {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"}
+    {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Neon Cache", "art": "Fraktionskern", "gegenstand": "Neon-Kern", "menge": 1, "gewicht": 3, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "Baukern", "gegenstand": "Baukern", "menge": 1, "gewicht": 8, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "DROME", "gegenstand": "Neon Vireo", "menge": 1, "gewicht": 1, "status": "Vorschlag"}
   ],
 
   "hangar_shop": [
-    {"angebot": "Neon Cache", "art": "Cache", "preis": 50, "wirkung": "ein Neon Cache", "status": "Vorschlag"},
-    {"angebot": "Solar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Solar Cache", "status": "Vorschlag"},
-    {"angebot": "Mecha Cache", "art": "Cache", "preis": 50, "wirkung": "ein Mecha Cache", "status": "Vorschlag"},
+    {"angebot": "Neon Cache", "art": "Cache", "preis": 50, "wirkung": "ein Neon Cache", "status": "gebaut"},
+    {"angebot": "Solar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Solar Cache", "status": "gebaut"},
+    {"angebot": "Mecha Cache", "art": "Cache", "preis": 50, "wirkung": "ein Mecha Cache", "status": "gebaut"},
     {"angebot": "Hipstar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Hipstar Cache", "status": "Vorschlag"},
     {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "welche Upgrades? -> Offene Punkte", "status": "offen"},
     {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
     {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
-    {"angebot": "Baukern", "art": "Upgrade", "preis": 20, "wirkung": "1 Baukern (3 = ein Standard-DROME)", "status": "Vorschlag"}
+    {"angebot": "Baukern", "art": "Upgrade", "preis": 20, "wirkung": "1 Baukern (3 = ein Standard-DROME)", "status": "gebaut"}
   ],
 
   "sentinel_archetypen": [

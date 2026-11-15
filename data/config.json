@@ -194,6 +194,20 @@
     "warn_seconds": 30.0
   },
 
+  "hangar_shop": {
+    "_kommentar": [
+      "Hangar-Shop (15. Nov. 2026, Tab Shop): Angebote fuer Platzhaltercoin. Preise sind",
+      "der Vorschlag aus dem SPOT-Blatt Hangar-Shop. kind: kit (ein Baukern), cache (ein",
+      "Lootcache des Gebiets cache). Upgrades folgen mit Bauschritt 5."
+    ],
+    "offers": [
+      {"id": "kit", "kind": "kit", "price": 20},
+      {"id": "cache_city", "kind": "cache", "cache": "city", "price": 50},
+      {"id": "cache_green", "kind": "cache", "cache": "green", "price": 50},
+      {"id": "cache_plant7", "kind": "cache", "cache": "plant7", "price": 50}
+    ]
+  },
+
   "crafting": {
     "_kommentar": [
       "DROMEs verwerten und bauen (15. Nov. 2026, Wunsch des Spielers): ein verwerteter",

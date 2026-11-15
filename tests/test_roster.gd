@@ -167,6 +167,22 @@ func test_kits_build_standard_and_faction_dromes() -> void:
 	t.equal(roster.faction_cores("neon"), 1, "einen Neon-Kern")
 
 
+## Hangar-Shop (15. Nov. 2026): Baukerne und Caches fuer Platzhaltercoin.
+func test_the_shop_sells_kits_and_caches_for_coins() -> void:
+	var roster := _fresh()
+	var offers := Roster.shop_offers()
+	var kit: Dictionary = offers.filter(func(o): return o["kind"] == "kit")[0]
+	var cache: Dictionary = offers.filter(func(o): return o["kind"] == "cache")[0]
+	t.ok(roster.offer_blocker(kit) != "", "ohne Coins kein Kauf")
+	t.ok(not roster.buy_offer(kit), "und nichts passiert")
+	roster.coins = int(kit["price"]) + int(cache["price"])
+	t.ok(roster.buy_offer(kit), "Baukern gekauft")
+	t.equal(roster.kits(), 1, "liegt im Hangar")
+	t.ok(roster.buy_offer(cache), "Cache gekauft")
+	t.equal(int(roster.caches.get(str(cache["cache"]), 0)), 1, "Cache im Hangar")
+	t.equal(roster.coins, 0, "die Coins sind ausgegeben")
+
+
 func test_derived_build_equals_a_direct_build() -> void:
 	# Der abgeleitete Build (uid -> Instanz -> Typ) muss GENAU dem entsprechen,
 	# den man direkt aus Typen baut -- sonst rechnete der Kampf mit anderen Werten

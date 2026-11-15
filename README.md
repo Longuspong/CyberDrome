@@ -53,13 +53,15 @@ Virusschaden jede Einheit.
 
 * **Entwurfsraum 450x800**: ein Entwurfspixel ist etwa ein CSS-Pixel.
 * **`scripts/ui/ui_kit.gd`**: Seitenrahmen, Karten, grosse Knoepfe, Tab-Leiste
-  unten (Spielen, Hangar, Optionen).
+  unten (Spielen, Hangar, Shop), Optionen am Zahnrad oben rechts.
 * **Hangar**: Reiter *Squad* (max. 4) und *Umbau* (Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern).
 * Wischen scrollt jede Liste mit Schwung, langes Druecken zeigt den Erklaertext.
 * Kacheln (`Tile`): einmal tippen handelt, doppelt tippen oder lange druecken
   oeffnet das Popup (`InfoPopup`). Stil: Arcade-Glitch (`scripts/ui/arcade.gd`).
-* Optionen: Schriftgroesse (nur Text), Animationen reduzieren, Vollbild.
+* Optionen (Zahnrad): Schriftgroesse (nur Text), Animationen reduzieren, Vollbild.
+* **Shop** (Tab): Baukerne und Caches fuer Platzhaltercoin, Caches, neue DROMEs
+  bauen (3 Baukerne; Fraktions-DROME mit Fraktionskern). DROMEs werden verwertet.
 
 ### PWA
 

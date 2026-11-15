@@ -1,10 +1,11 @@
 extends Control
 
-## Optionen: Anzeigegroesse, Bewegung, Vollbild -- eine eigene Seite in der
-## Tab-Leiste. Die Werte haelt das Autoload ``Accessibility``.
+## Optionen: Anzeigegroesse, Bewegung, Vollbild. Seit 15. Nov. 2026 kein Tab
+## mehr: das Zahnrad oben rechts oeffnet die Seite, der Pfeil fuehrt zurueck
+## (UiKit.return_scene). Die Werte haelt das Autoload ``Accessibility``.
 
 func _ready() -> void:
-	var content := UiKit.page(self, "Optionen", "", 2)
+	var content := UiKit.page(self, "Optionen", UiKit.return_scene, -1)
 
 	var display := UiKit.card(content)
 	display.add_child(UiKit.heading("Schriftgröße"))
