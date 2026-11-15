@@ -626,7 +626,7 @@ func _stop_status(run: RunState) -> Control:
 	if lost:
 		flow.add_child(_chip("Niederlage  ·  −1 Leben", COLOR_BAD, Callable(), ""))
 	if not run.last_loot.is_empty():
-		flow.add_child(_chip("Beute ▸", COLOR_GOOD, func(): _loot_popup(run), ""))
+		flow.add_child(_chip("Beute ▶", COLOR_GOOD, func(): _loot_popup(run), ""))
 	var cache_total := 0
 	for key in run.run_caches:
 		cache_total += int(run.run_caches[key])
@@ -634,9 +634,9 @@ func _stop_status(run: RunState) -> Control:
 		flow.add_child(_chip("◆ %d  ·  ◈ %d" % [cache_total, run.run_coins], UiKit.MAGENTA,
 			func(): _caches_popup(run), ""))
 	if not run.last_growth.is_empty():
-		flow.add_child(_chip("Erfahrung ▸", COLOR_HEADING, func(): _growth_popup(run), ""))
+		flow.add_child(_chip("Erfahrung ▶", COLOR_HEADING, func(): _growth_popup(run), ""))
 	if not run.bag.is_empty():
-		flow.add_child(_chip("Tasche %d ▸" % run.bag.size(), COLOR_MUTED, func(): _bag_popup(run), ""))
+		flow.add_child(_chip("Tasche %d ▶" % run.bag.size(), COLOR_MUTED, func(): _bag_popup(run), ""))
 	return flow
 
 
@@ -1346,7 +1346,7 @@ func _recipe_page(run: RunState, entry: Dictionary) -> Dictionary:
 			run.set_target_recipe(module.id)
 			_recipes_open = true
 			_refresh()})
-	actions.append({"text": "◂ Rezeptbuch", "call": func(): _open_recipes(run)})
+	actions.append({"text": "◀ Rezeptbuch", "call": func(): _open_recipes(run)})
 	return {"title": module.display_name, "subtitle": module.headline(),
 		"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
 		"lines": lines, "actions": actions}
