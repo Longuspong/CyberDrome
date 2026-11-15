@@ -179,7 +179,6 @@ func _gui_input(event: InputEvent) -> void:
 			var serial := _press_serial
 			get_tree().create_timer(LONG_PRESS).timeout.connect(func():
 				if is_instance_valid(self) and _pressing and serial == _press_serial \
-						and not get_viewport().gui_is_dragging() \
 						and not Accessibility.is_scrolling():
 					_long_fired = true
 					_pressing = false

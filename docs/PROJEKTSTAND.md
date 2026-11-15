@@ -514,9 +514,11 @@ Spielstand). Vorschlaege zu Story, Fraktionen, Klassen und Anstieg stehen in
   (`SlotRules.holder_label`).
 * **Vergleichsbalken:** `StatBar` statt nackter Zahlen im Hangar, beim
   Waffentausch vorher -> nachher in einem Balken.
-* **Ziehen auf Halter:** Hangar (Teil-Kachel auf Halter) und Zwischenstopp
-  (Modul/BIOS aus dem Lager); nur waagerecht startet ein Zug. Im Browser
-  mit Touch noch nicht vom Spieler getestet.
+* ~~**Ziehen auf Halter**~~ -- **seit 15. Nov. 2026 entfernt** (Wunsch des
+  Spielers): kein Drag & Drop mehr in den Menues. Hangar und Zwischenstopp
+  laufen nur noch ueber Kacheln (tippen waehlt, nochmal tippen = Details,
+  Doppeltipp = einbauen/ausbauen). Die Halter im Umbau werden ebenso bedient
+  (`Tile.click`). Die Aufstellung vor dem Kampf (Figur ziehen) bleibt.
 * **Spielstand:** `save_enabled` an; Hangar in `user://roster.json`, Lauf in
   `user://run.json` (`RunState.to_dict/from_dict`, `DromeBuild.to_save`),
   nach jeder Aenderung geschrieben. "Lauf fortsetzen" im Hauptmenue,
