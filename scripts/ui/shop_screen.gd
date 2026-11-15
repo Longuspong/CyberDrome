@@ -18,46 +18,36 @@ const TILE_COLUMNS := 4
 const TILE_GAP := 10
 
 static var _tab := "shop"
+## Gewaehlter Cache im Reiter Caches (Entwurf: antippen waehlt, Knopf oeffnet).
+static var _cache_pick := "city"
+
+## Die vier Caches im Entwurf; "hip" (Hipstar, Dachterrassen) gibt es im Spiel
+## noch nicht und steht gesperrt da.
+const CACHE_KINDS := ["city", "green", "plant7", "hip"]
 
 var _content: VBoxContainer
 var _tabs: HBoxContainer
 
 
 func _ready() -> void:
-	_content = UiKit.page(self, "Shop", "", 2, true, Ambience.Kind.HANGAR)
-	# Die Reiter fest ueber dem rollenden Inhalt (zwischen Kopf und Liste).
-	var margin := _content.get_parent().get_parent() as Control
-	var frame := margin.get_parent()
-	var holder := MarginContainer.new()
-	for side in ["margin_left", "margin_right"]:
-		holder.add_theme_constant_override(side, UiKit.PAD)
-	holder.add_theme_constant_override("margin_top", 10)
-	_tabs = HBoxContainer.new()
-	_tabs.add_theme_constant_override("separation", 6)
-	holder.add_child(_tabs)
-	frame.add_child(holder)
-	frame.move_child(holder, margin.get_index())
+	_content = UiKit.page(self, "Shop", "", 2, true)
+	# Die Reiter als Segmentknopf oben rechts in der Kopfzeile (Entwurf 15. Nov.).
+	_tabs = UiKit.header_slot(self)
 	_refresh()
 
 
 func _refresh() -> void:
 	for child in _tabs.get_children():
 		child.queue_free()
-	for spec in [["shop", "Shop"], ["caches", "Caches"], ["bauen", "Bauen"]]:
-		var button := UiKit.button(spec[1])
-		button.custom_minimum_size = Vector2(0, 48)
-		if _tab == spec[0]:
-			button.add_theme_stylebox_override("normal", UiKit.card_style(true))
-			button.add_theme_color_override("font_color", UiKit.ACCENT)
-		var which: String = spec[0]
-		button.pressed.connect(func():
-			_tab = which
+	_tabs.add_child(UiKit.segmented([["shop", "Shop"], ["caches", "Caches"], ["bauen", "Bauen"]],
+		_tab, func(id):
+			_tab = id
 			Tile.clear_choice()
-			_refresh())
-		_tabs.add_child(button)
+			_refresh()))
 	for child in _content.get_children():
 		child.queue_free()
-	_content.add_child(_wallet())
+	if _tab == "bauen":
+		_content.add_child(_wallet())
 	match _tab:
 		"shop": _shop_section()
 		"caches": _caches_section()
@@ -128,28 +118,183 @@ func _offer_icon(offer: Dictionary) -> Control:
 
 
 func _shop_section() -> void:
-	_content.add_child(UiKit.heading("Angebote"))
-	_content.add_child(UiKit.label("Doppeltipp kauft  ·  nochmal tippen: Details", UiKit.SMALL,
-		UiKit.MUTED))
+	# Entwurf 15. Nov. 2026: Bestand oben, Caches als Karten mit KAUFEN,
+	# darunter Baukerne und die Upgrades (folgen).
+	_content.add_child(_stock_card())
+	var head := HBoxContainer.new()
+	var title := Arcade.label("CACHES", 15, Arcade.CYAN, "bold", 0.2)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	var link := Button.new()
+	link.flat = true
+	link.text = "ZUM CACHE-LAGER ›"
+	link.custom_minimum_size = Vector2(0, 34)
+	link.add_theme_font_override("font", Arcade.font("bold", 12, 0.12))
+	link.add_theme_font_size_override("font_size", 12)
+	link.add_theme_color_override("font_color", Arcade.YELLOW)
+	link.pressed.connect(func():
+		_tab = "caches"
+		_refresh())
+	head.add_child(link)
+	_content.add_child(head)
 	var offers := Roster.shop_offers()
-	var pages: Array = []
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", TILE_GAP)
+	grid.add_theme_constant_override("v_separation", TILE_GAP)
+	_content.add_child(grid)
+	var shown := {}
 	for offer in offers:
-		pages.append(func() -> Dictionary: return _offer_page(offer))
-	var grid := _grid()
-	for k in offers.size():
-		var offer: Dictionary = offers[k]
-		var blocker := GameState.roster.offer_blocker(offer)
-		var tile := Tile.new("offer:%s" % offer.get("id", k), _offer_icon(offer), _offer_name(offer),
-			Vector2(0, 96))
-		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tile.add_caption("%d ◈" % int(offer.get("price", 0)), UiKit.WARN if blocker == "" else UiKit.MUTED, 12)
-		tile.dimmed = blocker != ""
-		var page: int = k
-		tile.on_info = func(): InfoPopup.open_pages(self, pages, page)
-		tile.on_action = func(): _buy(offer)
-		grid.add_child(tile)
-	_content.add_child(UiKit.label("Upgrades folgen mit dem Ausbau des Hangar-Shops.", UiKit.SMALL,
-		UiKit.MUTED))
+		if str(offer.get("kind", "")) == "cache":
+			shown[str(offer.get("cache", ""))] = true
+			grid.add_child(_cache_offer_card(offer))
+	for kind in CACHE_KINDS:
+		if not shown.has(kind):
+			grid.add_child(_locked_card(kind))
+	for offer in offers:
+		if str(offer.get("kind", "")) == "kit":
+			_content.add_child(_kit_offer(offer))
+	var upgrades := HBoxContainer.new()
+	var up_title := Arcade.label("UPGRADES", 15, Arcade.CYAN, "bold", 0.2)
+	up_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	upgrades.add_child(up_title)
+	upgrades.add_child(Arcade.label("INHALTE FOLGEN", 12, Arcade.MUTED, "bold", 0.16))
+	_content.add_child(upgrades)
+	var soon := Arcade.Card.new(Arcade.EMPTY_LINE, Color.TRANSPARENT, true)
+	soon.add_child(UiKit.label("Upgrades kommen mit dem Ausbau des Hangar-Shops (Bauschritt 5).",
+		14, UiKit.MUTED))
+	_content.add_child(soon)
+
+
+## Der Bestand an Platzhaltercoin (Entwurf: Sechseck-Coin, grosse Zahl).
+func _stock_card() -> Control:
+	var panel := PanelContainer.new()
+	var style := UiKit.card_style(true)
+	style.border_color = Arcade.YELLOW
+	panel.add_theme_stylebox_override("panel", style)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	panel.add_child(row)
+	row.add_child(CoinIcon.new(52.0))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	row.add_child(column)
+	column.add_child(Arcade.label("BESTAND", 11, Arcade.MUTED, "bold", 0.2))
+	column.add_child(Arcade.label(str(GameState.roster.coins), 28, Arcade.YELLOW, "display"))
+	column.add_child(Arcade.label("%s (Arbeitsname)" % RunState.coin_name(), 13, Arcade.MUTED))
+	return panel
+
+
+## Eine Karte mit Rahmen in ``line``; ``on_tap`` beim Antippen.
+func _framed(line: Color, chosen: bool, on_tap: Callable = Callable()) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(Arcade.VIOLET, 0.94)
+	style.border_color = Arcade.YELLOW if chosen else line
+	style.set_border_width_all(3 if chosen else 2)
+	style.set_content_margin_all(8)
+	panel.add_theme_stylebox_override("panel", style)
+	if on_tap.is_valid():
+		panel.gui_input.connect(func(event: InputEvent):
+			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+				Accessibility.tap()
+				on_tap.call())
+	return panel
+
+
+## Kleines Etikett oben links ("IM LAGER ×3").
+func _badge(text: String, color: Color) -> Control:
+	var panel := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = color
+	box.content_margin_left = 5
+	box.content_margin_right = 5
+	panel.add_theme_stylebox_override("panel", box)
+	panel.add_child(Arcade.label(text, 10, Arcade.NIGHT, "bold", 0.1))
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	return panel
+
+
+func _region_name(kind: String) -> String:
+	if kind == "hip":
+		return "Dachterrassen"
+	var region := TerrainDB.get_region(StringName(kind))
+	return region.display_name if region != null else ""
+
+
+func _cache_offer_card(offer: Dictionary) -> Control:
+	var kind := str(offer.get("cache", "city"))
+	var blocker := GameState.roster.offer_blocker(offer)
+	var panel := _framed(CacheArt.color(kind), false)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	panel.add_child(box)
+	var have := int(GameState.roster.caches.get(kind, 0))
+	box.add_child(_badge("IM LAGER ×%d" % have, CacheArt.color(kind)) if have > 0 else Control.new())
+	var art := CacheArt.new(kind, 64.0)
+	art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(art)
+	box.add_child(_centered(Arcade.label(RunState.cache_name(StringName(kind)).to_upper(), 14,
+		Arcade.WHITE, "display")))
+	box.add_child(_centered(Arcade.label(_region_name(kind), 13, Arcade.MUTED)))
+	box.add_child(_centered(Arcade.label("⬢ %d" % int(offer.get("price", 0)), 15, Arcade.YELLOW, "display")))
+	var buy := UiKit.button("Kaufen", true)
+	buy.custom_minimum_size = Vector2(0, 44)
+	buy.disabled = blocker != ""
+	buy.tooltip_text = blocker
+	buy.pressed.connect(func(): _buy(offer))
+	box.add_child(buy)
+	return panel
+
+
+func _locked_card(kind: String) -> Control:
+	var card := Arcade.Card.new(Arcade.EMPTY_LINE, Color.TRANSPARENT, true)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	card.add_child(box)
+	var art := CacheArt.new(kind, 56.0)
+	art.locked = true
+	art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(art)
+	box.add_child(_centered(Arcade.label(RunState.cache_name(StringName(kind)).to_upper()
+		if kind != "hip" else "HIPSTAR CACHE", 13, Arcade.MUTED, "display")))
+	box.add_child(_centered(Arcade.label("%s erreichen" % _region_name(kind), 12, Arcade.MUTED)))
+	box.add_child(_centered(Arcade.label("GESPERRT", 12, Arcade.MUTED, "bold", 0.2)))
+	return card
+
+
+func _kit_offer(offer: Dictionary) -> Control:
+	var blocker := GameState.roster.offer_blocker(offer)
+	var panel := _framed(UiKit.GOOD, false)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+	row.add_child(UiKit.label("⬢", 30, UiKit.GOOD))
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 0)
+	row.add_child(column)
+	column.add_child(Arcade.label(Roster.kit_name().to_upper(), 14, Arcade.WHITE, "display"))
+	var kit_text := Arcade.label("%d bauen einen Standard-DROME · du hast %d" % [Roster.kits_per_drome(),
+		GameState.roster.kits()], 12, Arcade.MUTED)
+	kit_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(kit_text)
+	var buy := UiKit.button("⬢ %d" % int(offer.get("price", 0)), true)
+	buy.custom_minimum_size = Vector2(96, 44)
+	buy.size_flags_horizontal = Control.SIZE_SHRINK_END
+	buy.disabled = blocker != ""
+	buy.tooltip_text = blocker
+	buy.pressed.connect(func(): _buy(offer))
+	row.add_child(buy)
+	return panel
+
+
+func _centered(label: Label) -> Label:
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.clip_text = true
+	return label
 
 
 func _offer_page(offer: Dictionary) -> Dictionary:
@@ -178,28 +323,74 @@ func _buy(offer: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 
 func _caches_section() -> void:
+	# Entwurf 15. Nov. 2026: alle vier Sorten als Karten (leere gestrichelt),
+	# antippen waehlt, der Knopf unten oeffnet.
 	var roster := GameState.roster
-	_content.add_child(UiKit.heading("Deine Caches"))
-	var keys: Array = roster.caches.keys().filter(func(k): return int(roster.caches[k]) > 0)
-	keys.sort()
-	if keys.is_empty():
-		_content.add_child(UiKit.label("Noch keine Caches. Sie droppen im Einsatz oder kommen aus "
-			+ "dem Shop.", UiKit.SMALL, UiKit.MUTED))
-		return
-	var pages: Array = []
-	for key in keys:
-		pages.append(func() -> Dictionary: return _cache_page(str(key)))
-	var grid := _grid()
-	for k in keys.size():
-		var key: String = keys[k]
-		var tile := Tile.new("cache:%s" % key, _cache_icon(), "%d× %s" % [int(roster.caches[key]),
-			RunState.cache_name(StringName(key))], Vector2(0, 96))
-		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tile.accent = UiKit.MAGENTA
-		tile.glow = true
-		var page: int = k
-		tile.on_info = func(): InfoPopup.open_pages(self, pages, page)
-		grid.add_child(tile)
+	var total := 0
+	for key in roster.caches:
+		total += int(roster.caches[key])
+	var head := HBoxContainer.new()
+	var title := Arcade.label("LOOTCACHES", 15, Arcade.CYAN, "bold", 0.2)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	head.add_child(Arcade.label("%d UNGEÖFFNET" % total, 12, Arcade.MUTED, "bold", 0.16))
+	_content.add_child(head)
+	_content.add_child(UiKit.label("Im Einsatz gesammelt, hier geöffnet. Je Fraktion eine eigene Sorte.",
+		14, UiKit.MUTED))
+	if int(roster.caches.get(_cache_pick, 0)) <= 0:
+		for kind in CACHE_KINDS:
+			if int(roster.caches.get(kind, 0)) > 0:
+				_cache_pick = kind
+				break
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", TILE_GAP)
+	grid.add_theme_constant_override("v_separation", TILE_GAP)
+	_content.add_child(grid)
+	for kind in CACHE_KINDS:
+		var count := int(roster.caches.get(kind, 0))
+		var panel: Control
+		if count > 0:
+			var chosen: bool = kind == _cache_pick
+			var pick: String = kind
+			var framed := _framed(CacheArt.color(kind), chosen, func():
+				if _cache_pick == pick:
+					InfoPopup.open(self, RunState.cache_name(StringName(pick)), _cache_page(pick))
+				_cache_pick = pick
+				_refresh())
+			panel = framed
+		else:
+			panel = Arcade.Card.new(Arcade.EMPTY_LINE, Color.TRANSPARENT, true)
+			panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 4)
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(box)
+		var count_label := Arcade.label("×%d" % count, 14, Arcade.YELLOW if count > 0 else Arcade.MUTED,
+			"display")
+		count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		box.add_child(count_label)
+		var art := CacheArt.new(kind, 80.0)
+		art.locked = count <= 0
+		art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		box.add_child(art)
+		var name := RunState.cache_name(StringName(kind)) if kind != "hip" else "Hipstar Cache"
+		box.add_child(_centered(Arcade.label(name.to_upper(), 14,
+			Arcade.WHITE if count > 0 else Arcade.MUTED, "display")))
+		box.add_child(_centered(Arcade.label(_region_name(kind) if count > 0 else "Noch keiner", 13,
+			Arcade.MUTED)))
+		grid.add_child(panel)
+	var note := Arcade.Card.new(Color("#3a1a6e"), Color.TRANSPARENT, true)
+	note.add_child(UiKit.label("Caches findest du im Einsatz -- jeder Kampf hat eine Chance auf den "
+		+ "Cache seiner Fraktion. Oder du kaufst sie im Shop.", 14, UiKit.TEXT))
+	_content.add_child(note)
+	var have := int(roster.caches.get(_cache_pick, 0))
+	if have > 0:
+		var open := UiKit.button("%s öffnen ▶" % RunState.cache_name(StringName(_cache_pick)), true)
+		open.pressed.connect(func():
+			var opener := CacheOpener.show_over(self, _cache_pick)
+			opener.finished.connect(_refresh))
+		_content.add_child(open)
 
 
 func _cache_page(key: String) -> Dictionary:
@@ -208,8 +399,9 @@ func _cache_page(key: String) -> Dictionary:
 			["Caches enthalten Teile, Module, Komponenten (Baukerne, Fraktionskerne) oder "
 			+ "gleich ganze DROMEs -- was genau, legst du im SPOT-Blatt Lootcaches fest.",
 			UiKit.MUTED, UiKit.SMALL]],
-		"actions": [{"text": "Öffnen", "primary": true, "disabled": true,
-			"why": "kommt mit Bauschritt 4"}]}
+		"actions": [{"text": "Öffnen (Vorschau)", "primary": true, "call": func():
+			var opener := CacheOpener.show_over(self, key)
+			opener.finished.connect(_refresh)}]}
 
 
 # ---------------------------------------------------------------------------
@@ -343,3 +535,24 @@ func _cache_icon() -> Control:
 	return icon
 
 
+
+
+## Sechseck-Coin (Platzhaltercoin) in Gelb.
+class CoinIcon extends Control:
+	func _init(edge: float) -> void:
+		custom_minimum_size = Vector2(edge, edge)
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := minf(size.x, size.y) * 0.48
+		var outer := PackedVector2Array()
+		var inner := PackedVector2Array()
+		for i in 6:
+			var a := TAU * float(i) / 6.0
+			outer.append(c + Vector2(cos(a), sin(a)) * r)
+			inner.append(c + Vector2(cos(a), sin(a)) * r * 0.62)
+		draw_colored_polygon(outer, Arcade.YELLOW)
+		draw_colored_polygon(inner, Arcade.NIGHT)
+		draw_rect(Rect2(c - Vector2(r * 0.14, r * 0.34), Vector2(r * 0.28, r * 0.68)), Arcade.YELLOW)

@@ -109,20 +109,26 @@ static func page(root: Control, title: String, back: String = "", tab: int = -1,
 	if tab >= 0:
 		frame.add_child(tab_bar(root, tab))
 		return_scene = TABS[tab][1]
-		# Das Zahnrad oben rechts oeffnet die Optionen.
+		# Das Zahnrad oben rechts oeffnet die Optionen -- in der Kopfzeile,
+		# wenn es eine gibt, sonst frei ueber der Seite.
 		var gear := Arcade.GearButton.new()
 		gear.tooltip_text = "Optionen"
-		gear.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-		gear.position = Vector2(-gear.custom_minimum_size.x - 10.0, 8.0)
 		gear.pressed.connect(func():
 			Accessibility.tap()
 			root.get_tree().change_scene_to_file(SETTINGS_SCENE))
-		root.add_child(gear)
-		var place := func():
-			gear.position = Vector2(root.size.x - gear.custom_minimum_size.x - 10.0,
-				8.0 + safe_insets(root)["top"])
-		root.resized.connect(place)
-		place.call_deferred()
+		var row: HBoxContainer = root.get_meta("header_row") if root.has_meta("header_row") else null
+		if row != null:
+			gear.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			row.add_child(gear)
+		else:
+			gear.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+			gear.position = Vector2(-gear.custom_minimum_size.x - 10.0, 8.0)
+			root.add_child(gear)
+			var place := func():
+				gear.position = Vector2(root.size.x - gear.custom_minimum_size.x - 10.0,
+					8.0 + safe_insets(root)["top"])
+			root.resized.connect(place)
+			place.call_deferred()
 	# Feine Scanlines ueber allem (Arcade-Stil), ohne Eingaben zu schlucken.
 	root.add_child.call_deferred(Arcade.Scanlines.new(0.12))
 	return content
@@ -165,19 +171,20 @@ static func _keep_column(root: Control, margin: MarginContainer) -> void:
 	root.get_viewport().size_changed.connect(apply)
 
 
+## Kopfzeile im Entwurf vom 15. Nov. 2026 (docs/design/einsatz_arcade):
+## Glitch-Titel in Bungee, leicht gedreht, links; rechts ein freier Platz
+## (header_slot, z. B. fuer die Reiter) und das Zahnrad.
 static func header(root: Control, title: String, back: String = "") -> Control:
 	var bar := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(BG, 0.94)
-	style.border_color = Color(ACCENT, 0.45)
-	style.border_width_bottom = 2
-	style.content_margin_left = PAD
+	style.bg_color = Color(BG, 0.0)
+	style.content_margin_left = PAD + 4
 	style.content_margin_right = PAD
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
+	style.content_margin_top = 10
+	style.content_margin_bottom = 4
 	bar.add_theme_stylebox_override("panel", style)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", GAP)
+	row.add_theme_constant_override("separation", 10)
 	bar.add_child(row)
 	if back != "":
 		var back_button := Arcade.BackButton.new()
@@ -185,46 +192,84 @@ static func header(root: Control, title: String, back: String = "") -> Control:
 		back_button.pressed.connect(func(): root.get_tree().change_scene_to_file(back))
 		row.add_child(back_button)
 	if title != "":
-		var tag := Arcade.tilt(Arcade.tag(title.to_upper(), 15, 0.0), -2.0)
+		var logo := Arcade.GlitchLogo.new(title.to_upper(), 24, 4.0, [
+			[0.0, Vector2(-1.5, 0), Vector2(1.5, 0)],
+			[0.92, Vector2(-4, 1), Vector2(4, -1)],
+			[0.94, Vector2(3, -1), Vector2(-3, 1)]], 1.5)
+		var tag := Arcade.tilt(logo, -4.0)
 		tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(tag)
 	var push := Control.new()
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	push.custom_minimum_size = Vector2(0, 44)
+	push.custom_minimum_size = Vector2(0, 46)
 	row.add_child(push)
+	var slot := HBoxContainer.new()
+	slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(slot)
+	root.set_meta("header_row", row)
+	root.set_meta("header_slot", slot)
 	return bar
 
 
-## Die Leiste unten: drei Hauptseiten, die aktive hervorgehoben.
+## Der freie Platz rechts in der Kopfzeile (null ohne Kopfzeile).
+static func header_slot(root: Control) -> HBoxContainer:
+	return root.get_meta("header_slot") if root.has_meta("header_slot") else null
+
+
+## Reiter als Segmentknopf (Entwurf Hangar): violette Schiene, der aktive
+## Reiter cyan gefuellt. ``options`` = [[id, Text], ...]; on_pick(id).
+static func segmented(options: Array, active: String, on_pick: Callable) -> Control:
+	var rail := PanelContainer.new()
+	var box := Arcade.chamfer_box(Color("#3a1a6e"), 10)
+	box.set_content_margin_all(2)
+	rail.add_theme_stylebox_override("panel", box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 0)
+	rail.add_child(row)
+	var spacing := 0.2 if options.size() <= 2 else 0.04
+	for option in options:
+		var on: bool = option[0] == active
+		var button := Button.new()
+		button.text = str(option[1]).to_upper()
+		button.custom_minimum_size = Vector2(0, 44)
+		var font_size := 13 if options.size() <= 2 else 12
+		button.add_theme_font_override("font", Arcade.font("bold", font_size, spacing))
+		button.add_theme_font_size_override("font_size", font_size)
+		var fill := Arcade.chamfer_box(Arcade.CYAN if on else Arcade.DEEP, 9)
+		fill.content_margin_left = 14 if options.size() <= 2 else 7
+		fill.content_margin_right = fill.content_margin_left
+		for state in ["normal", "hover", "pressed", "disabled"]:
+			button.add_theme_stylebox_override(state, fill)
+		button.add_theme_stylebox_override("focus",
+			Arcade.chamfer_box(Color.TRANSPARENT, 9, Color("#fff3a8"), 2))
+		var color := Arcade.NIGHT if on else MUTED
+		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			button.add_theme_color_override(state, color if not (state == "font_hover_color" and not on) else TEXT)
+		var id: String = option[0]
+		button.pressed.connect(func():
+			Accessibility.tap()
+			on_pick.call(id))
+		row.add_child(button)
+	return rail
+
+
+## Die Leiste unten (Entwurf): Symbol ueber dem Namen, die aktive Seite cyan
+## mit Strich oben und etwas hellerem Grund.
 static func tab_bar(root: Control, active: int) -> Control:
 	var bar := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(BG, 0.96)
-	style.border_color = Color(MAGENTA, 0.55)
-	style.border_width_top = 2
+	style.bg_color = Color("#120a26")
+	style.border_color = Color("#2a1650")
+	style.border_width_top = 1
 	bar.add_theme_stylebox_override("panel", style)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 0)
 	bar.add_child(row)
 	for index in TABS.size():
-		var button := Button.new()
-		button.text = str(TABS[index][0]).to_upper()
+		var on := index == active
+		var button := TabButton.new(str(TABS[index][0]).to_upper(), index, on)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size = Vector2(0, TAB_HEIGHT)
-		var on := index == active
-		button.add_theme_font_override("font", Arcade.font("display" if on else "bold", SMALL, 0.08))
-		button.add_theme_font_size_override("font_size", SMALL)
-		# Die aktive Seite: gelber Balken oben und gelbe Schrift. Der Knopf
-		# darf dafuer nicht "flat" sein -- flache Knoepfe zeichnen ihren Stil nicht.
-		var mark := StyleBoxFlat.new()
-		mark.bg_color = Color(PRIMARY, 0.08) if on else Color(0, 0, 0, 0)
-		mark.border_color = PRIMARY if on else Color(0, 0, 0, 0)
-		mark.border_width_top = 4
-		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-			button.add_theme_stylebox_override(state, mark)
-		var color := PRIMARY if on else MUTED
-		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-			button.add_theme_color_override(state, color)
 		if not on:
 			var scene: String = TABS[index][1]
 			button.pressed.connect(func():
@@ -232,6 +277,51 @@ static func tab_bar(root: Control, active: int) -> Control:
 				root.get_tree().change_scene_to_file(scene))
 		row.add_child(button)
 	return bar
+
+
+## Ein Knopf der Tab-Leiste: gezeichnetes Symbol (Spielen = Dreieck, Hangar =
+## Halle, Shop = Sechseck-Coin) und Name darunter.
+class TabButton extends Button:
+	var _icon := 0
+	var _on := false
+	var _name := ""
+
+	func _init(title: String, icon: int, on: bool) -> void:
+		_name = title
+		_icon = icon
+		_on = on
+		flat = true
+		tooltip_text = title.capitalize()
+		add_theme_stylebox_override("focus",
+			Arcade.chamfer_box(Color.TRANSPARENT, 0, Color("#fff3a8"), 2))
+
+	func _draw() -> void:
+		if _on:
+			draw_rect(Rect2(Vector2.ZERO, size), Color("#1d1040"))
+			draw_rect(Rect2(size.x * 0.12, 0, size.x * 0.76, 3), Arcade.CYAN)
+		var color := Arcade.CYAN if _on else Arcade.MUTED
+		var c := Vector2(size.x * 0.5, size.y * 0.36)
+		match _icon:
+			0:
+				draw_polyline(PackedVector2Array([c + Vector2(-6, -9), c + Vector2(9, 0),
+					c + Vector2(-6, 9), c + Vector2(-6, -9)]), color, 2.0, true)
+			1:
+				draw_polyline(PackedVector2Array([c + Vector2(-10, 8), c + Vector2(-10, -2),
+					c + Vector2(0, -9), c + Vector2(10, -2), c + Vector2(10, 8), c + Vector2(-10, 8)]),
+					color, 2.0, true)
+				draw_line(c + Vector2(-5, 2), c + Vector2(5, 2), color, 2.0)
+				draw_line(c + Vector2(-5, 5), c + Vector2(5, 5), color, 2.0)
+			_:
+				var pts := PackedVector2Array()
+				for i in 7:
+					var a := TAU * float(i) / 6.0
+					pts.append(c + Vector2(cos(a), sin(a)) * 10.0)
+				draw_polyline(pts, color, 2.0, true)
+				draw_rect(Rect2(c - Vector2(2.5, 5), Vector2(5, 10)), color, false, 2.0)
+		var f := Arcade.font("bold", 12, 0.16)
+		var w := f.get_string_size(_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+		draw_string(f, Vector2((size.x - w) * 0.5, size.y * 0.78), _name,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, color)
 
 
 # --- Bausteine -------------------------------------------------------------
@@ -275,6 +365,29 @@ static func button(text: String, primary: bool = false) -> Button:
 	return result
 
 
+## Zweitknopf im Entwurf (ZUM HANGAR, REZEPTBUCH): Rahmen und Schrift in
+## ``color``, dunkler Grund, Grossbuchstaben.
+static func outline_button(text: String, color: Color = PRIMARY) -> Button:
+	var result := Button.new()
+	result.text = text.to_upper()
+	result.custom_minimum_size = Vector2(0, BUTTON_HEIGHT)
+	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	result.add_theme_font_override("font", Arcade.font("display", 16, 0.04))
+	result.add_theme_font_size_override("font_size", 16)
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(color, 0.18) if state == "pressed" else Color(BG, 0.92)
+		box.border_color = Color("#fff3a8") if state == "focus" else color
+		box.set_border_width_all(3 if state == "focus" else 2)
+		box.draw_center = state != "focus"
+		box.set_content_margin_all(10)
+		result.add_theme_stylebox_override(state, box)
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		result.add_theme_color_override(state, color)
+	result.pressed.connect(Accessibility.tap)
+	return result
+
+
 ## Abgeschraegte Ecken oben links und unten rechts (Arcade-Formensprache).
 static func _corner(style: StyleBoxFlat, cut: int = RADIUS) -> void:
 	style.corner_detail = 1
@@ -298,7 +411,7 @@ static func _button_style(state: String, primary: bool) -> StyleBoxFlat:
 		elif state != "focus":
 			# Harter Versatzschatten in Magenta statt weichem Schein.
 			style.shadow_color = Color(MAGENTA, 0.75)
-			style.shadow_size = 0
+			style.shadow_size = 1
 			style.shadow_offset = Vector2(5, 5)
 	else:
 		style.bg_color = Color(CARD, 0.95) if state != "pressed" else Color(ACCENT, 0.22)
@@ -332,15 +445,16 @@ static func card_style(highlight: bool = false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	# Leicht durchscheinend: die Kulisse soll hinter den Karten zu ahnen
 	# sein, ohne die Schrift zu stoeren.
-	style.bg_color = Color(CARD, 0.9)
+	style.bg_color = Color(CARD, 0.94)
 	style.border_color = ACCENT if highlight else CARD_LINE
 	style.set_border_width_all(2)
-	_corner(style)
+	_corner(style, 0)
 	style.set_content_margin_all(14)
-	# Harter Versatzschatten (Arcade): hervorgehobene Karten in Magenta.
-	style.shadow_color = Color(MAGENTA, 0.55) if highlight else Color(0, 0, 0, 0.45)
-	style.shadow_size = 0
-	style.shadow_offset = Vector2(5, 5)
+	# Harter Versatzschatten (Entwurf 15. Nov.): 6 px, hervorgehoben Magenta.
+	style.shadow_color = MAGENTA if highlight else Color("#2a0f55")
+	# shadow_size 0 zeichnet gar keinen Schatten; 1 ist fast hart.
+	style.shadow_size = 1
+	style.shadow_offset = Vector2(6, 6)
 	return style
 
 

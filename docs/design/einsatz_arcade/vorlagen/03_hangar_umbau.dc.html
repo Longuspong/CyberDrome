@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<title>Hangar Umbau</title>
+<script src="2db37356-7384-40e1-9cae-95476dbb3db6"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#0a0618}
+a{color:#ffe14d}a:hover{color:#fff3a8}
+@keyframes cdGlitchA{0%,90%,100%{transform:translate(-2px,0)}91%{transform:translate(-5px,2px)}93%{transform:translate(3px,-1px)}}
+@keyframes cdGlitchB{0%,90%,100%{transform:translate(2px,0)}91%{transform:translate(5px,-2px)}93%{transform:translate(-3px,1px)}}
+@keyframes cdBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes cdUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes cdFade{from{opacity:0}to{opacity:1}}
+.cd-ga{animation:cdGlitchA 4s steps(1) infinite}
+.cd-gb{animation:cdGlitchB 4s steps(1) infinite}
+.cd-blink{animation:cdBlink 1s steps(1) infinite}
+.cd-up{animation:cdUp .22s ease-out both}
+.cd-fade{animation:cdFade .2s ease-out both}
+.cd-btn{cursor:pointer;font-family:inherit}
+.cd-btn:focus-visible{outline:3px solid #ffe14d;outline-offset:3px}
+.cd-row{scrollbar-width:none}
+.cd-row::-webkit-scrollbar{display:none}
+@media (prefers-reduced-motion: reduce){.cd-ga,.cd-gb,.cd-blink,.cd-up,.cd-fade{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 450px; height: 800px; overflow: hidden; background: #0a0618; font-family: 'Chakra Petch', system-ui, sans-serif; color: #e9dcff">
+
+<svg aria-hidden="true" width="450" height="800" sc-camel-view-box="0 0 450 800" style="position: absolute; inset: 0; display: block">
+<defs>
+<pattern id="cdUbDots" width="14" height="14" sc-camel-pattern-units="userSpaceOnUse">
+<circle cx="7" cy="7" r="1.6" fill="#ff3dbb" fill-opacity="0.22"></circle>
+</pattern>
+</defs>
+<rect x="0" y="0" width="450" height="800" fill="url(#cdUbDots)"></rect>
+</svg>
+
+<div style="position: absolute; left: 0; right: 0; top: 0; bottom: 64px; box-sizing: border-box; padding: 12px 20px 16px; display: flex; flex-direction: column; gap: 12px">
+
+<header style="display: flex; align-items: center; justify-content: space-between; height: 44px; flex-shrink: 0">
+<div style="position: relative; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 24px; line-height: 1; transform: rotate(-4deg)">
+<span aria-hidden="true" class="cd-ga" style="position: absolute; inset: 0; color: #2ee3eb; mix-blend-mode: screen">HANGAR</span>
+<span aria-hidden="true" class="cd-gb" style="position: absolute; inset: 0; color: #ff2bd6; mix-blend-mode: screen">HANGAR</span>
+<h1 style="position: relative; margin: 0; font-size: inherit; font-weight: 400; color: #fff7fe">HANGAR</h1>
+</div>
+<div role="tablist" aria-label="Hangar-Bereiche" style="display: flex; padding: 2px; background: #3a1a6e; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)">
+<a href="Hangar.dc.html" role="tab" aria-selected="false" class="cd-btn" style="height: 44px; box-sizing: border-box; padding: 0 16px; display: flex; align-items: center; text-decoration: none; background: #12082a; color: #c3b3e6; font-size: 13px; font-weight: 700; letter-spacing: 0.2em; clip-path: polygon(9px 0, 100% 0, 100% 100%, 0 100%, 0 9px)">SQUAD</a>
+<button type="button" role="tab" aria-selected="true" class="cd-btn" style="height: 44px; padding: 0 16px; border: 0; background: #2ee3eb; color: #0a0618; font-size: 13px; font-weight: 700; letter-spacing: 0.2em; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%)">UMBAU</button>
+</div>
+</header>
+
+<div class="cd-row" role="tablist" aria-label="DROME wählen" style="display: flex; gap: 8px; overflow-x: auto; margin-right: -20px; padding-right: 20px; flex-shrink: 0">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+<button type="button" role="tab" class="cd-btn" aria-selected="{{c.selected}}" sc-camel-on-click="{{c.pick}}" style="flex-shrink: 0; width: 96px; height: 56px; box-sizing: border-box; padding: 6px 8px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; border: {{c.border}}; background: {{c.bg}}; text-align: left; clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px)">
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 14px; line-height: 1.1; color: {{c.nameColor}}">{{c.name}}</span>
+<span style="font-size: 13px; font-weight: 600; color: {{c.subColor}}">LV {{c.level}} · {{c.code}}</span>
+</button>
+</sc-for>
+</div>
+
+<section aria-label="DROME-Karte" style="display: flex; flex-direction: column; gap: 12px; padding: 14px; background: #1b0b3a; border: 2px solid #2ee3eb; box-shadow: 6px 6px 0 #ff2bd6; margin-right: 6px; flex-shrink: 0">
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<h2 style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-weight: 400; font-size: 22px; line-height: 1.05; color: #fff7fe">{{d.name}} <span style="font-family: 'Chakra Petch', sans-serif; font-size: 14px; font-weight: 700; color: #c3b3e6">{{d.code}}</span></h2>
+<p style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; color: #2ee3eb">{{d.role}} · LV {{d.level}}</p>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">KAMPFWERT</span>
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 22px; line-height: 1; color: #ffe14d">{{d.cw}}</span>
+</div>
+</div>
+
+<div style="display: flex; gap: 12px; align-items: stretch">
+<div style="width: 96px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #2ee3eb; text-align: center">HALTER</p>
+<sc-for list="{{d.holders}}" as="h" hint-placeholder-count="2">
+<button type="button" class="cd-btn" sc-camel-on-click="{{h.tap}}" sc-camel-on-drag-over="{{h.over}}" sc-camel-on-drag-enter="{{h.over}}" sc-camel-on-drop="{{h.drop}}" aria-label="{{h.aria}}" style="width: 96px; border: 0; background: transparent; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: {{h.opacity}}; color: #e9dcff">
+<span style="position: relative; width: 60px; height: 60px; display: block">
+<sc-if value="{{h.isTri}}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="60" height="60" sc-camel-view-box="0 0 60 60" style="position: absolute; inset: 0"><polygon points="30,4 57,55 3,55" style="fill: {{h.fill}}; stroke: {{h.stroke}}; stroke-width: 2.5; stroke-dasharray: {{h.dash}}; stroke-linejoin: miter"></polygon></svg></sc-if>
+<sc-if value="{{h.isSq}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="60" height="60" sc-camel-view-box="0 0 60 60" style="position: absolute; inset: 0"><polygon points="6,6 54,6 54,54 6,54" style="fill: {{h.fill}}; stroke: {{h.stroke}}; stroke-width: 2.5; stroke-dasharray: {{h.dash}}; stroke-linejoin: miter"></polygon></svg></sc-if>
+<sc-if value="{{h.isPent}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="60" height="60" sc-camel-view-box="0 0 60 60" style="position: absolute; inset: 0"><polygon points="30,3 57,23 47,57 13,57 3,23" style="fill: {{h.fill}}; stroke: {{h.stroke}}; stroke-width: 2.5; stroke-dasharray: {{h.dash}}; stroke-linejoin: miter"></polygon></svg></sc-if>
+<span aria-hidden="true" style="position: absolute; left: 0; right: 0; top: {{h.innerTop}}; text-align: center; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 12px; line-height: 16px; color: {{h.innerColor}}">{{h.innerText}}</span>
+</span>
+<span style="font-size: 13px; font-weight: 600; line-height: 1.2; text-align: center; color: {{h.nameColor}}">{{h.name}}</span>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: #c3b3e6">{{h.clsLabel}}</span>
+</button>
+</sc-for>
+</div>
+
+<div role="img" aria-label="Bild: {{d.name}}" style="position: relative; width: 104px; flex-shrink: 0; min-height: 190px; background: #12082a; clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); display: flex; align-items: flex-end; justify-content: center">
+<span aria-hidden="true" style="position: absolute; left: 8px; right: 8px; bottom: 14px; height: 10px; background: #ff2bd6; opacity: 0.25; border-radius: 50%"></span>
+<span aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 18px; height: 2px; background: #2ee3eb; opacity: 0.6"></span>
+<sc-if value="{{d.isVireo}}" hint-placeholder-val="{{ true }}">
+<svg aria-hidden="true" width="92" height="115" sc-camel-view-box="0 0 80 100" style="position: relative; margin-bottom: 10px"><g transform="translate(-51,-160)"><g fill="#0a0618" stroke="#ff2bd6" stroke-width="2" stroke-linejoin="miter"><polygon points="78,188 94,188 96,202 76,202"></polygon><polygon points="72,206 100,206 96,228 76,228"></polygon><polygon points="100,210 120,216 118,221 98,216"></polygon><polygon points="72,210 62,226 66,228 76,214"></polygon><polygon points="76,230 84,230 80,250 72,250"></polygon><polygon points="88,230 96,230 100,250 92,250"></polygon></g><rect x="80" y="193" width="12" height="3" fill="#ffe14d"></rect></g></svg>
+</sc-if>
+<sc-if value="{{d.isMolok}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="92" height="115" sc-camel-view-box="0 0 80 100" style="position: relative; margin-bottom: 10px"><g transform="translate(-125,-160)"><g fill="#0a0618" stroke="#ff2bd6" stroke-width="2" stroke-linejoin="miter"><rect x="126" y="178" width="12" height="30"></rect><rect x="192" y="178" width="12" height="30"></rect><rect x="129" y="168" width="6" height="10"></rect><rect x="195" y="168" width="6" height="10"></rect><rect x="155" y="166" width="20" height="14"></rect><polygon points="136,182 194,182 190,222 140,222"></polygon><rect x="144" y="224" width="16" height="26"></rect><rect x="170" y="224" width="16" height="26"></rect></g><rect x="158" y="171" width="14" height="3" fill="#ffe14d"></rect></g></svg>
+</sc-if>
+<sc-if value="{{d.isNimbus}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="92" height="115" sc-camel-view-box="0 0 80 100" style="position: relative; margin-bottom: 10px"><g transform="translate(-205,-160)"><circle cx="245" cy="178" r="15" fill="none" stroke="#2ee3eb" stroke-width="2" stroke-dasharray="5 4"></circle><g fill="#0a0618" stroke="#ff2bd6" stroke-width="2" stroke-linejoin="miter"><circle cx="245" cy="178" r="8"></circle><polygon points="232,190 258,190 262,220 228,220"></polygon><polygon points="232,222 242,222 240,250 230,250"></polygon><polygon points="248,222 258,222 260,250 250,250"></polygon></g><circle cx="218" cy="204" r="5" fill="#2ee3eb" fill-opacity="0.8"></circle><circle cx="272" cy="204" r="5" fill="#2ee3eb" fill-opacity="0.8"></circle><rect x="240" y="176" width="10" height="3" fill="#ffe14d"></rect></g></svg>
+</sc-if>
+<sc-if value="{{d.isStrix}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="92" height="115" sc-camel-view-box="0 0 80 100" style="position: relative; margin-bottom: 10px"><g transform="translate(-296,-158)"><g fill="#0a0618" stroke="#ff2bd6" stroke-width="2" stroke-linejoin="miter"><polygon points="318,162 332,162 330,176 320,176"></polygon><polygon points="316,180 334,180 332,218 318,218"></polygon><polygon points="304,198 372,180 373,184 305,202"></polygon><polygon points="318,220 324,220 320,250 314,250"></polygon><polygon points="326,220 332,220 336,250 330,250"></polygon></g><circle cx="327" cy="169" r="2.5" fill="#ffe14d"></circle></g></svg>
+</sc-if>
+</div>
+
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<p style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #2ee3eb">WERTE</p>
+<sc-for list="{{d.stats}}" as="s" hint-placeholder-count="7">
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 4px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: #c3b3e6">{{s.label}}</span>
+<span style="font-size: 14px; font-weight: 700; color: #e9dcff">{{s.txt}}</span>
+</div>
+<span aria-hidden="true" style="height: 4px; background: #12082a; display: flex"><span style="width: {{s.w}}; height: 100%; background: {{s.color}}"></span></span>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px; flex-shrink: 0">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">FREIE WAFFEN</h2>
+<span style="font-size: 13px; font-weight: 700; letter-spacing: 0.12em; color: #c3b3e6">{{fitCount}} PASSEN</span>
+</div>
+<p style="margin: 0; display: flex; align-items: center; gap: 6px; font-size: 14px; color: #c3b3e6">
+<svg aria-hidden="true" width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="#ffe14d" stroke-width="2.8" stroke-linecap="square" stroke-linejoin="miter"><path d="M12 20V5M5 11l7-7 7 7"></path></svg>
+Kachel auf einen Halter ziehen baut sie ein.</p>
+</div>
+
+<div class="cd-row" style="display: flex; gap: 12px; overflow-x: auto; margin-right: -20px; padding: 2px 20px 8px 0; flex-shrink: 0">
+<sc-for list="{{fit}}" as="w" hint-placeholder-count="4">
+<button type="button" class="cd-btn" draggable="true" sc-camel-on-drag-start="{{w.dragStart}}" sc-camel-on-drag-end="{{w.dragEnd}}" sc-camel-on-click="{{w.open}}" aria-label="{{w.aria}}" style="flex-shrink: 0; width: 124px; height: 132px; box-sizing: border-box; padding: 10px; border: 2px solid #3a1a6e; background: #1b0b3a; box-shadow: 6px 6px 0 #3a1a6e; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; color: #e9dcff; opacity: {{w.opacity}}; cursor: grab">
+<span style="display: flex; align-items: center; gap: 6px; width: 100%">
+<sc-if value="{{w.isTri}}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="20" height="20" sc-camel-view-box="0 0 22 22"><polygon points="11,2 20,19 2,19" fill="none" stroke="#ffe14d" stroke-width="2.4" stroke-linejoin="miter"></polygon></svg></sc-if>
+<sc-if value="{{w.isSq}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="20" height="20" sc-camel-view-box="0 0 22 22"><polygon points="3,3 19,3 19,19 3,19" fill="none" stroke="#ffe14d" stroke-width="2.4" stroke-linejoin="miter"></polygon></svg></sc-if>
+<sc-if value="{{w.isPent}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="20" height="20" sc-camel-view-box="0 0 22 22"><polygon points="11,2 20,9 16.5,20 5.5,20 2,9" fill="none" stroke="#ffe14d" stroke-width="2.4" stroke-linejoin="miter"></polygon></svg></sc-if>
+<span style="padding: 1px 4px; border: 1px solid {{w.typeColor}}; color: {{w.typeColor}}; font-size: 11px; font-weight: 700; letter-spacing: 0.1em">{{w.typeShort}}</span>
+<svg aria-hidden="true" width="14" height="14" sc-camel-view-box="0 0 14 14" style="margin-left: auto"><g fill="#6a5a96"><rect x="3" y="2" width="3" height="3"></rect><rect x="8" y="2" width="3" height="3"></rect><rect x="3" y="6" width="3" height="3"></rect><rect x="8" y="6" width="3" height="3"></rect><rect x="3" y="10" width="3" height="3"></rect><rect x="8" y="10" width="3" height="3"></rect></g></svg>
+</span>
+<span style="font-size: 15px; font-weight: 700; line-height: 1.15; color: #fff7fe">{{w.name}}</span>
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 13px; color: #ffe14d">LV {{w.lv}}</span>
+<span style="margin-top: auto; font-size: 14px; font-weight: 600; color: #c3b3e6">SCH {{w.dmg}} <span style="font-weight: 700; color: {{w.dColor}}">{{w.delta}}</span></span>
+</button>
+</sc-for>
+</div>
+</div>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<p role="status" style="position: absolute; left: 20px; right: 26px; bottom: 80px; margin: 0; padding: 12px 14px; background: #0a0618; border: 2px solid #2ee3eb; color: #2ee3eb; font-weight: 700; font-size: 15px; letter-spacing: 0.12em; z-index: 4">{{toast}}<span class="cd-blink">_</span></p>
+</sc-if>
+
+<nav aria-label="Hauptnavigation" style="position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: grid; grid-template-columns: 1fr 1fr 1fr; background: #12082a; border-top: 2px solid #3a1a6e">
+<a href="Main.dc.html" class="cd-btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: #c3b3e6">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="miter"><polygon points="7,4 19,12 7,20"></polygon></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em">SPIELEN</span>
+</a>
+<button type="button" class="cd-btn" aria-current="page" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: rgba(46, 227, 235, 0.08); color: #2ee3eb">
+<span aria-hidden="true" style="position: absolute; left: 18px; right: 18px; top: -2px; height: 3px; background: #2ee3eb"></span>
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" stroke-linejoin="miter"><path d="M3 11L12 4l9 7v9H3z"></path><path d="M7 20v-6h10v6"></path><path d="M7 17h10"></path></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em">HANGAR</span>
+</button>
+<button type="button" class="cd-btn" sc-camel-on-click="{{toOptions}}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: #c3b3e6">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"><path d="M3 7h18M3 17h18"></path><rect x="7" y="4" width="5" height="6" fill="#12082a"></rect><rect x="13" y="14" width="5" height="6" fill="#12082a"></rect></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em">OPTIONEN</span>
+</button>
+</nav>
+
+<sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; z-index: 5">
+<button type="button" class="cd-fade" aria-label="Waffen-Karte schließen" sc-camel-on-click="{{closeSheet}}" style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(10, 6, 24, 0.8); cursor: pointer"></button>
+<section role="dialog" aria-modal="true" aria-label="Waffen-Karte: {{sh.name}}" class="cd-up" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 8px 20px 20px; background: #12082a; border-top: 2px solid #2ee3eb; box-shadow: 0 -6px 0 #ff2bd6; display: flex; flex-direction: column; gap: 10px">
+<span aria-hidden="true" style="align-self: center; width: 44px; height: 4px; background: #6a5a96"></span>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 44px">
+<p style="margin: 0; padding: 4px 9px; background: #ffe14d; color: #12082a; font-weight: 700; font-size: 12px; letter-spacing: 0.22em; transform: rotate(-3deg)">WAFFEN-KARTE</p>
+<button type="button" class="cd-btn" sc-camel-on-click="{{closeSheet}}" aria-label="Schließen" style="width: 44px; height: 44px; border: 0; background: transparent; color: #ffe14d; display: flex; align-items: center; justify-content: center; padding: 0">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+</button>
+</div>
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 10px">
+<h2 style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-weight: 400; font-size: 26px; line-height: 1; color: #fff7fe">{{sh.name}}</h2>
+<div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0">
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; color: #ffe14d">LV {{sh.lv}}/10</span>
+<span aria-hidden="true" style="display: flex; gap: 2px">
+<sc-for list="{{sh.lvPips}}" as="p" hint-placeholder-count="10"><span style="width: 7px; height: 8px; background: {{p.bg}}"></span></sc-for>
+</span>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<span style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: #1b0b3a; border: 2px solid #3a1a6e; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; color: #e9dcff">
+<sc-if value="{{sh.isTri}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="16" height="16" sc-camel-view-box="0 0 22 22"><polygon points="11,2 20,19 2,19" fill="none" stroke="#ffe14d" stroke-width="2.6" stroke-linejoin="miter"></polygon></svg></sc-if>
+<sc-if value="{{sh.isSq}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="16" height="16" sc-camel-view-box="0 0 22 22"><polygon points="3,3 19,3 19,19 3,19" fill="none" stroke="#ffe14d" stroke-width="2.6" stroke-linejoin="miter"></polygon></svg></sc-if>
+<sc-if value="{{sh.isPent}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="16" height="16" sc-camel-view-box="0 0 22 22"><polygon points="11,2 20,9 16.5,20 5.5,20 2,9" fill="none" stroke="#ffe14d" stroke-width="2.6" stroke-linejoin="miter"></polygon></svg></sc-if>
+{{sh.clsText}}</span>
+<span style="display: flex; align-items: center; padding: 4px 8px; border: 2px solid {{sh.typeColor}}; color: {{sh.typeColor}}; font-size: 13px; font-weight: 700; letter-spacing: 0.12em">{{sh.typeText}}</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 12px; background: #1b0b3a">
+<p style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: #2ee3eb">{{sh.cmpLabel}}</p>
+<sc-if value="{{sh.hasCmp}}" hint-placeholder-val="{{ true }}">
+<p aria-hidden="true" style="margin: 0; display: flex; gap: 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: #c3b3e6">
+<span style="display: flex; align-items: center; gap: 5px"><span style="width: 14px; height: 6px; background: #e9dcff"></span>DIESE</span>
+<span style="display: flex; align-items: center; gap: 5px"><span style="width: 14px; height: 6px; background: #6a5a96"></span>EINGEBAUT</span>
+</p>
+</sc-if>
+<sc-for list="{{sh.rows}}" as="r" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: #c3b3e6">{{r.label}}</span>
+<span style="font-size: 15px; font-weight: 700; color: #fff7fe">{{r.txt}} <span style="font-size: 14px; color: {{r.dColor}}">{{r.delta}}</span></span>
+</div>
+<span aria-hidden="true" style="height: 6px; background: #0a0618; display: flex"><span style="width: {{r.newW}}; height: 100%; background: {{r.newColor}}"></span></span>
+<sc-if value="{{r.hasCmp}}" hint-placeholder-val="{{ true }}">
+<span aria-hidden="true" style="height: 6px; background: #0a0618; display: flex"><span style="width: {{r.oldW}}; height: 100%; background: #6a5a96"></span></span>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: #1b0b3a">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #2ee3eb">FÄHIGKEIT</span>
+<span style="display: flex; align-items: center; gap: 6px">
+<span aria-hidden="true" style="display: flex; gap: 3px">
+<sc-for list="{{sh.taktPips}}" as="p" hint-placeholder-count="3"><span style="width: 10px; height: 10px; box-sizing: border-box; background: {{p.bg}}; border: {{p.border}}"></span></sc-for>
+</span>
+<span style="padding: 2px 6px; background: #ffe14d; color: #12082a; font-size: 12px; font-weight: 700; letter-spacing: 0.12em">{{sh.taktText}}</span>
+</span>
+</div>
+<p style="margin: 0; font-size: 15px; font-weight: 600; color: #e9dcff">{{sh.ab}}</p>
+<div style="border-top: 2px dashed #3a1a6e"></div>
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">BONUS</span>
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; color: #ffe14d">{{sh.bonus}}</span>
+</div>
+</div>
+
+<sc-if value="{{sh.canInstall}}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; height: 54px; margin-right: 6px">
+<div aria-hidden="true" style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #ff2bd6; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)"></div>
+<button type="button" class="cd-btn" sc-camel-on-click="{{sh.act}}" style="position: relative; width: 100%; height: 54px; border: 0; background: #ffe14d; color: #12082a; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 20px; letter-spacing: 0.06em">EINBAUEN</button>
+</div>
+</sc-if>
+<sc-if value="{{sh.canRemove}}" hint-placeholder-val="{{ false }}">
+<button type="button" class="cd-btn" sc-camel-on-click="{{sh.act}}" style="width: 100%; height: 54px; border: 2px solid #ff8ce8; background: transparent; color: #ff8ce8; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 20px; letter-spacing: 0.06em">AUSBAUEN</button>
+</sc-if>
+<p style="margin: 0; font-size: 14px; line-height: 1.4; color: #c3b3e6">{{sh.note}}</p>
+</section>
+</div>
+</sc-if>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; z-index: 6; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.16) 3px)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;sheetOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;$preview&quot;:{&quot;width&quot;:450,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const open = !!(props && props.sheetOpen);
+this.state = {
+sel: 1,
+drag: null,
+toast: '',
+sheet: open ? { wid: 'f2' } : null,
+weapons: {
+k1: { id: 'k1', name: 'Klingenarm', cls: 'tri', type: 'kin', lv: 4, dmg: 22, int: 0.7, rng: 1, takt: 3, ab: 'Doppelschnitt: trifft das Ziel zweimal.', bonus: '+6 % Speed' },
+k2: { id: 'k2', name: 'Schwere Kanone', cls: 'pent', type: 'kin', lv: 3, dmg: 64, int: 2.2, rng: 6, takt: 4, ab: 'Rückstoß: stößt das Ziel zurück.', bonus: '+8 % Rüstung' },
+k3: { id: 'k3', name: 'Schildramme', cls: 'sq', type: 'kin', lv: 2, dmg: 20, int: 1.0, rng: 1, takt: 2, ab: 'Lädt den eigenen Schild um 5 % auf.', bonus: '+5 % Schild' },
+k4: { id: 'k4', name: 'Pulsprojektor', cls: 'sq', type: 'en', lv: 2, dmg: 24, int: 1.1, rng: 5, takt: 2, ab: 'Verlangsamt das Ziel für 2 s.', bonus: '+10 % Schildpuls' },
+k5: { id: 'k5', name: 'Langläufer', cls: 'pent', type: 'kin', lv: 3, dmg: 70, int: 2.6, rng: 9, takt: 3, ab: 'Durchschuss: trifft auch die Einheit dahinter.', bonus: '+8 % Power' },
+k6: { id: 'k6', name: 'Klingenarm', cls: 'tri', type: 'kin', lv: 1, dmg: 16, int: 0.7, rng: 1, takt: 3, ab: 'Doppelschnitt: trifft das Ziel zweimal.', bonus: '+2 % Speed' },
+k7: { id: 'k7', name: 'Kurzläufer', cls: 'tri', type: 'kin', lv: 0, dmg: 20, int: 1.0, rng: 5, takt: 4, ab: 'Kopfschuss: doppelter Schaden.', bonus: '+3 % Power' },
+f1: { id: 'f1', name: 'Nadelwerfer', cls: 'tri', type: 'kin', lv: 2, dmg: 18, int: 0.6, rng: 4, takt: 3, ab: 'Blutung: 3 s Schaden über Zeit.', bonus: '+10 % Speed' },
+f2: { id: 'f2', name: 'Ionenklinge', cls: 'tri', type: 'en', lv: 5, dmg: 26, int: 0.8, rng: 1, takt: 3, ab: 'Schildbruch: zerstört 30 % des gegnerischen Schilds.', bonus: '+8 % Power' },
+f3: { id: 'f3', name: 'Plasmawerfer', cls: 'sq', type: 'en', lv: 3, dmg: 34, int: 1.2, rng: 4, takt: 4, ab: 'Flächenbrand: trifft alle Einheiten im Umkreis.', bonus: '+5 % Schildpuls' },
+f4: { id: 'f4', name: 'Bolzenkanone', cls: 'sq', type: 'kin', lv: 4, dmg: 40, int: 1.4, rng: 5, takt: 2, ab: 'Rückstoß: stößt das Ziel zurück.', bonus: '+6 % Rüstung' },
+f5: { id: 'f5', name: 'Railgun', cls: 'pent', type: 'en', lv: 6, dmg: 88, int: 2.8, rng: 9, takt: 3, ab: 'Durchschuss: trifft auch die Einheit dahinter.', bonus: '+12 % Power' },
+f6: { id: 'f6', name: 'Hammerwerk', cls: 'pent', type: 'kin', lv: 2, dmg: 72, int: 2.4, rng: 1, takt: 4, ab: 'Betäubung: Ziel setzt 1 s aus.', bonus: '+10 % Integrität' },
+f7: { id: 'f7', name: 'Funkenwerfer', cls: 'tri', type: 'en', lv: 1, dmg: 14, int: 0.5, rng: 3, takt: 2, ab: 'Kettenblitz: springt auf ein zweites Ziel.', bonus: '+4 % Schild' }
+},
+drones: [
+{ id: 1, type: 'vireo', name: 'VIREO', code: '#01', role: 'Plänkler', level: 3, base: 370, st: [85, 40, 30, 55, 25, 60], mods: 1, holders: [{ cls: 'tri', w: 'k1' }, { cls: 'sq', w: null }] },
+{ id: 2, type: 'molok', name: 'MOLOK', code: '#01', role: 'Vorhut · Tank', level: 2, base: 279, st: [25, 90, 70, 35, 85, 45], mods: 2, holders: [{ cls: 'pent', w: 'k2' }, { cls: 'sq', w: 'k3' }] },
+{ id: 3, type: 'nimbus', name: 'NIMBUS', code: '#01', role: 'Kontrolle', level: 1, base: 262, st: [50, 45, 60, 80, 30, 70], mods: 3, holders: [{ cls: 'sq', w: 'k4' }, { cls: 'tri', w: null }] },
+{ id: 4, type: 'strix', name: 'STRIX', code: '#01', role: 'Scharfschütze', level: 2, base: 266, st: [40, 35, 35, 40, 20, 95], mods: 1, holders: [{ cls: 'pent', w: 'k5' }] },
+{ id: 5, type: 'vireo', name: 'VIREO', code: '#02', role: 'Plänkler', level: 1, base: 219, st: [80, 35, 25, 50, 20, 45], mods: 1, holders: [{ cls: 'tri', w: 'k6' }] },
+{ id: 6, type: 'strix', name: 'STRIX', code: '#02', role: 'Scharfschütze', level: 0, base: 178, st: [35, 30, 30, 35, 15, 80], mods: 1, holders: [{ cls: 'tri', w: 'k7' }] }
+]
+};
+}
+renderVals() {
+const s = this.state;
+const W = s.weapons;
+const CLS = { tri: { label: 'LEICHT', shape: 'DREIECK' }, sq: { label: 'MITTEL', shape: 'VIERECK' }, pent: { label: 'SCHWER', shape: 'FÜNFECK' } };
+const nf = (n, d) => Number(n).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+const contrib = (id) => id ? W[id].dmg + W[id].lv * 5 : 0;
+const cwOf = (dr) => dr.base + dr.holders.reduce((a, h) => a + contrib(h.w), 0);
+const sd = s.drones.find((x) => x.id === s.sel) || s.drones[0];
+const installed = new Set();
+s.drones.forEach((dr) => dr.holders.forEach((h) => { if (h.w) installed.add(h.w); }));
+const dragW = s.drag ? W[s.drag] : null;
+const targetIdx = (w) => {
+const empty = sd.holders.findIndex((h) => h.cls === w.cls && !h.w);
+return empty >= 0 ? empty : sd.holders.findIndex((h) => h.cls === w.cls);
+};
+const cmpOf = (w) => { const i = targetIdx(w); return i >= 0 && sd.holders[i].w ? W[sd.holders[i].w] : null; };
+const install = (wid, idx) => {
+const before = cwOf(sd);
+const drones = s.drones.map((dr) => dr.id !== sd.id ? dr : { ...dr, holders: dr.holders.map((h, i) => i === idx ? { ...h, w: wid } : h) });
+const after = cwOf(drones.find((x) => x.id === sd.id));
+this.setState({ drones, drag: null, sheet: null, toast: W[wid].name.toUpperCase() + ' EINGEBAUT · KW ' + before + ' → ' + after });
+};
+const uninstall = (idx) => {
+const wid = sd.holders[idx].w;
+const drones = s.drones.map((dr) => dr.id !== sd.id ? dr : { ...dr, holders: dr.holders.map((h, i) => i === idx ? { ...h, w: null } : h) });
+this.setState({ drones, sheet: null, toast: W[wid].name.toUpperCase() + ' AUSGEBAUT · ZURÜCK IN DER LEISTE' });
+};
+
+const chips = s.drones.map((dr) => {
+const on = dr.id === sd.id;
+return { ...dr, selected: on ? 'true' : 'false',
+border: on ? '2px solid #2ee3eb' : '2px solid #3a1a6e',
+bg: on ? 'rgba(46, 227, 235, 0.14)' : '#12082a',
+nameColor: on ? '#2ee3eb' : '#fff7fe', subColor: on ? '#e9dcff' : '#c3b3e6',
+pick: () => this.setState({ sel: dr.id, sheet: null, toast: '' }) };
+});
+
+const holders = sd.holders.map((h, i) => {
+const w = h.w ? W[h.w] : null;
+const match = dragW && dragW.cls === h.cls;
+const miss = dragW && dragW.cls !== h.cls;
+return {
+isTri: h.cls === 'tri', isSq: h.cls === 'sq', isPent: h.cls === 'pent',
+fill: match ? 'rgba(46, 227, 235, 0.2)' : (w ? '#ffe14d' : 'transparent'),
+stroke: match ? '#2ee3eb' : (w ? '#ffe14d' : '#6a5a96'),
+dash: match ? 'none' : (w ? 'none' : '6 5'),
+innerTop: h.cls === 'tri' ? '30px' : (h.cls === 'pent' ? '23px' : '22px'),
+innerText: match ? (w ? 'TAUSCH' : 'HIER') : (w ? 'LV' + w.lv : '+'),
+innerColor: match ? '#2ee3eb' : (w ? '#12082a' : '#6a5a96'),
+opacity: miss ? '0.35' : '1',
+name: w ? w.name : 'LEER',
+nameColor: w ? '#fff7fe' : '#c3b3e6',
+clsLabel: CLS[h.cls].label,
+aria: 'Halter ' + (i + 1) + ', ' + CLS[h.cls].label.toLowerCase() + ': ' + (w ? w.name + ', Level ' + w.lv : 'leer'),
+tap: () => w ? this.setState({ sheet: { wid: w.id }, toast: '' }) : this.setState({ toast: 'HALTER LEER · WAFFE HIERHER ZIEHEN' }),
+over: (e) => { if (s.drag) e.preventDefault(); },
+drop: (e) => {
+e.preventDefault();
+let id = s.drag;
+if (!id) { try { id = e.dataTransfer.getData('text/plain'); } catch (_) {} }
+if (!id || !W[id]) return;
+if (W[id].cls !== h.cls) { this.setState({ drag: null, toast: 'PASST NICHT · ' + CLS[h.cls].shape + ' BRAUCHT ' + CLS[h.cls].label }); return; }
+install(id, i);
+}
+};
+});
+
+const labels = ['SPEED', 'INTEGRITÄT', 'SCHILD', 'SCHILDPULS', 'RÜSTUNG', 'POWER'];
+const stats = labels.map((l, i) => ({ label: l, txt: String(sd.st[i]), w: sd.st[i] + '%', color: '#2ee3eb' }));
+stats.push({ label: 'MODULPLÄTZE', txt: sd.mods + ' / 3', w: Math.round(sd.mods / 3 * 100) + '%', color: '#ffe14d' });
+
+const classes = sd.holders.map((h) => h.cls);
+const fit = Object.values(W).filter((w) => !installed.has(w.id) && classes.includes(w.cls)).map((w) => {
+const c = cmpOf(w);
+const dd = c ? w.dmg - c.dmg : 0;
+return { ...w,
+isTri: w.cls === 'tri', isSq: w.cls === 'sq', isPent: w.cls === 'pent',
+typeShort: w.type === 'en' ? 'ENERGIE' : 'KINETISCH',
+typeColor: w.type === 'en' ? '#2ee3eb' : '#ff6a3d',
+delta: c ? (dd > 0 ? '+' + dd : (dd < 0 ? '−' + Math.abs(dd) : '±0')) : 'FREI',
+dColor: c ? (dd > 0 ? '#2ee3eb' : (dd < 0 ? '#ff8ce8' : '#e9dcff')) : '#ffe14d',
+opacity: s.drag === w.id ? '0.45' : '1',
+aria: w.name + ', ' + CLS[w.cls].label.toLowerCase() + ', Level ' + w.lv + '. Antippen öffnet die Waffen-Karte, ziehen baut ein.',
+open: () => this.setState({ sheet: { wid: w.id }, toast: '' }),
+dragStart: (e) => { try { e.dataTransfer.setData('text/plain', w.id); e.dataTransfer.effectAllowed = 'move'; } catch (_) {} this.setState({ drag: w.id, toast: '' }); },
+dragEnd: () => this.setState({ drag: null })
+};
+});
+
+let sh = { lvPips: [], rows: [], taktPips: [] };
+const sheetOpen = !!(s.sheet && W[s.sheet.wid]);
+if (sheetOpen) {
+const w = W[s.sheet.wid];
+const ownIdx = sd.holders.findIndex((h) => h.w === w.id);
+const isInst = ownIdx >= 0;
+const tIdx = isInst ? ownIdx : targetIdx(w);
+const c = isInst ? null : cmpOf(w);
+const hasCmp = !!c;
+const pct = (v, m) => Math.min(100, Math.round(v / m * 100)) + '%';
+const defs = [
+{ label: 'SCHADEN', key: 'dmg', max: 100, dec: 0, unit: '', higher: true },
+{ label: 'INTERVALL', key: 'int', max: 3, dec: 1, unit: ' s', higher: false },
+{ label: 'REICHWEITE', key: 'rng', max: 10, dec: 0, unit: '', higher: true }
+];
+const rows = defs.map((r) => {
+const v = w[r.key];
+let delta = '', dColor = '#e9dcff', newColor = '#2ee3eb';
+if (hasCmp) {
+const d = Math.round((v - c[r.key]) * 10) / 10;
+if (d === 0) { delta = '±0'; dColor = '#e9dcff'; newColor = '#e9dcff'; }
+else {
+const good = r.higher ? d > 0 : d < 0;
+delta = (d > 0 ? '+' : '−') + nf(Math.abs(d), r.dec) + r.unit;
+dColor = good ? '#2ee3eb' : '#ff8ce8'; newColor = dColor;
+}
+}
+return { label: r.label, txt: nf(v, r.dec) + r.unit, delta, dColor, newColor, hasCmp,
+newW: pct(v, r.max), oldW: hasCmp ? pct(c[r.key], r.max) : '0%' };
+});
+sh = {
+name: w.name, lv: w.lv,
+lvPips: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => ({ bg: i <= w.lv ? '#ffe14d' : '#3a1a6e' })),
+isTri: w.cls === 'tri', isSq: w.cls === 'sq', isPent: w.cls === 'pent',
+clsText: CLS[w.cls].label + ' · ' + CLS[w.cls].shape,
+typeText: w.type === 'en' ? 'ENERGIE' : 'KINETISCH',
+typeColor: w.type === 'en' ? '#2ee3eb' : '#ff6a3d',
+hasCmp, rows,
+cmpLabel: isInst ? 'EINGEBAUT IN ' + sd.name + ' ' + sd.code + ' · HALTER ' + (ownIdx + 1)
+: (hasCmp ? 'VERGLEICH MIT ' + c.name.toUpperCase() : 'HALTER FREI · KEIN VERGLEICH'),
+taktPips: Array.from({ length: w.takt }, (_, i) => i === w.takt - 1 ? { bg: '#ffe14d', border: '2px solid #ffe14d' } : { bg: 'transparent', border: '2px solid #6a5a96' }),
+taktText: 'JEDER ' + w.takt + '. ANGRIFF',
+ab: w.ab, bonus: w.bonus,
+canInstall: !isInst && tIdx >= 0,
+canRemove: isInst,
+note: isInst ? 'Die Waffe kommt zurück in die Leiste freier Waffen.'
+: (hasCmp ? 'Ersetzt ' + c.name + ' in ' + sd.name + ' ' + sd.code + '. ' + c.name + ' kommt zurück in die Leiste.'
+: (tIdx >= 0 ? 'Baut in den freien ' + ({ tri: 'leichten', sq: 'mittleren', pent: 'schweren' })[w.cls] + ' Halter von ' + sd.name + ' ' + sd.code + ' ein.' : 'Kein passender Halter.')),
+act: () => isInst ? uninstall(ownIdx) : install(w.id, tIdx)
+};
+}
+
+return {
+chips,
+d: { ...sd, cw: cwOf(sd), holders, stats,
+isVireo: sd.type === 'vireo', isMolok: sd.type === 'molok', isNimbus: sd.type === 'nimbus', isStrix: sd.type === 'strix' },
+fit, fitCount: fit.length,
+sheetOpen, sh,
+toast: s.toast,
+closeSheet: () => this.setState({ sheet: null }),
+toOptions: () => this.setState({ toast: 'OPTIONEN · FOLGT' })
+};
+}
+}
+</script>
+
+
+</body></html>

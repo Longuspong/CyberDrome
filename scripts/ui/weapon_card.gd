@@ -50,7 +50,7 @@ static func page(part: PartData, extra: Callable = Callable(), buttons: Array = 
 	for spec in buttons:
 		actions.append({"text": str(spec.get("text", "")), "primary": bool(spec.get("primary", false)),
 			"disabled": bool(spec.get("disabled", false)), "call": spec.get("on", Callable())})
-	return {"title": "", "body": box, "actions": actions}
+	return {"title": "", "body": box, "actions": actions, "sheet": true, "kicker": "Waffen-Karte"}
 
 
 ## Der Inhalt der Kachel ohne Ebene und Knoepfe -- auch fuer Tests.
@@ -65,9 +65,9 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label, compare: PartD
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 4)
 	top.add_child(right)
-	right.add_child(UiKit.label(part.display_name, UiKit.H2))
-	right.add_child(UiKit.label(SlotRules.class_label(part.mount_class), UiKit.SMALL,
-		_class_color(part.mount_class)))
+	right.add_child(Arcade.label(part.display_name.to_upper(), 22, Arcade.WHITE, "display"))
+	right.add_child(Arcade.label(SlotRules.class_label(part.mount_class).to_upper(), 12,
+		_class_color(part.mount_class), "bold", 0.16))
 
 	var attack: ActionData = null
 	var abilities: Array = []
@@ -102,7 +102,8 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label, compare: PartD
 		box.add_child(HSeparator.new())
 		var head := _chip_row(box)
 		head.add_child(_chip("ability", "", hint, "Fähigkeit"))
-		var name := UiKit.label(ability.display_name, UiKit.BODY, UiKit.ACCENT)
+		var name := Arcade.label("FÄHIGKEIT · " + ability.display_name.to_upper(), 13, Arcade.CYAN,
+			"bold", 0.12)
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		head.add_child(name)
 		var takt := takt_chip(ability)

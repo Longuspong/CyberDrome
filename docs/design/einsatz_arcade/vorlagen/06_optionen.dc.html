@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<title>Optionen</title>
+<script src="82db18de-006a-4caf-ad13-855743b87cfa"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#0a0618}
+a{color:#ffe14d}a:hover{color:#fff3a8}
+@keyframes cdGlitchA{0%,90%,100%{transform:translate(-2px,0)}91%{transform:translate(-5px,2px)}93%{transform:translate(3px,-1px)}}
+@keyframes cdGlitchB{0%,90%,100%{transform:translate(2px,0)}91%{transform:translate(5px,-2px)}93%{transform:translate(-3px,1px)}}
+@keyframes cdBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.cd-ga{animation:cdGlitchA 4s steps(1) infinite}
+.cd-gb{animation:cdGlitchB 4s steps(1) infinite}
+.cd-blink{animation:cdBlink 1s steps(1) infinite}
+.cd-still .cd-ga,.cd-still .cd-gb,.cd-still .cd-blink{animation:none}
+.cd-knob{transition:transform .15s steps(3)}
+.cd-still .cd-knob{transition:none}
+.cd-btn{cursor:pointer;font-family:inherit}
+.cd-btn:focus-visible{outline:3px solid #ffe14d;outline-offset:3px}
+.cd-row{scrollbar-width:none}
+.cd-row::-webkit-scrollbar{display:none}
+@media (prefers-reduced-motion: reduce){.cd-ga,.cd-gb,.cd-blink{animation:none}.cd-knob{transition:none}}
+</style>
+</helmet>
+<div class="{{rootCls}}" style="position: relative; width: 450px; height: 800px; overflow: hidden; background: #0a0618; font-family: 'Chakra Petch', system-ui, sans-serif; color: #e9dcff">
+
+<svg aria-hidden="true" width="450" height="800" sc-camel-view-box="0 0 450 800" style="position: absolute; inset: 0; display: block">
+<defs>
+<pattern id="cdOpDots" width="14" height="14" sc-camel-pattern-units="userSpaceOnUse">
+<circle cx="7" cy="7" r="1.6" fill="#ff3dbb" fill-opacity="0.22"></circle>
+</pattern>
+</defs>
+<rect x="0" y="0" width="450" height="800" fill="url(#cdOpDots)"></rect>
+</svg>
+
+<div class="cd-row" style="position: absolute; left: 0; right: 0; top: 0; bottom: 64px; overflow-y: auto; box-sizing: border-box; padding: 12px 20px 22px; display: flex; flex-direction: column; gap: 14px">
+
+<header style="display: flex; align-items: center; justify-content: space-between; height: 44px; flex-shrink: 0">
+<div style="position: relative; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 24px; line-height: 1; transform: rotate(-4deg)">
+<span aria-hidden="true" class="cd-ga" style="position: absolute; inset: 0; color: #2ee3eb; mix-blend-mode: screen">OPTIONEN</span>
+<span aria-hidden="true" class="cd-gb" style="position: absolute; inset: 0; color: #ff2bd6; mix-blend-mode: screen">OPTIONEN</span>
+<h1 style="position: relative; margin: 0; font-size: inherit; font-weight: 400; color: #fff7fe">OPTIONEN</h1>
+</div>
+<p style="margin: 0; padding: 5px 10px; background: #ffe14d; color: #12082a; font-weight: 700; font-size: {{fsLabel}}; letter-spacing: 0.22em; transform: rotate(2deg)">SETUP</p>
+</header>
+
+<section aria-labelledby="cdOpAnz" style="display: flex; flex-direction: column; gap: 12px; padding: 14px; background: #1b0b3a; border: 2px solid #3a1a6e; box-shadow: 6px 6px 0 #3a1a6e; margin-right: 6px; flex-shrink: 0">
+<h2 id="cdOpAnz" style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: {{fsLabel}}; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">
+<svg aria-hidden="true" width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M4 20L10 4h1l6 16M6.5 14h8"></path><path d="M17 9h5M19.5 6.5v5"></path></svg>
+ANZEIGE</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-size: {{fsBody}}; font-weight: 700; color: #fff7fe">Schriftgröße</p>
+<div role="radiogroup" aria-label="Schriftgröße" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{sizes}}" as="z" hint-placeholder-count="3">
+<button type="button" role="radio" class="cd-btn" aria-checked="{{z.checked}}" sc-camel-on-click="{{z.pick}}" style="height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 2px solid {{z.border}}; background: {{z.bg}}; color: {{z.color}}">
+<span aria-hidden="true" style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: {{z.glyph}}; line-height: 1">A</span>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.1em">{{z.label}}</span>
+</button>
+</sc-for>
+</div>
+<p style="margin: 0; padding: 10px 12px; background: #12082a; font-size: {{fsBody}}; line-height: 1.4; color: #e9dcff">Vorschau: So groß stehen Texte im Spiel. Knöpfe und Layout bleiben gleich.</p>
+</div>
+</section>
+
+<section aria-labelledby="cdOpBew" style="display: flex; flex-direction: column; gap: 4px; padding: 14px; background: #1b0b3a; border: 2px solid #3a1a6e; box-shadow: 6px 6px 0 #3a1a6e; margin-right: 6px; flex-shrink: 0">
+<h2 id="cdOpBew" style="margin: 0 0 6px; display: flex; align-items: center; gap: 8px; font-size: {{fsLabel}}; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">
+<svg aria-hidden="true" width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M3 12h4l3-7 4 14 3-7h4"></path></svg>
+BEWEGUNG</h2>
+<sc-for list="{{motionRows}}" as="r" hint-placeholder-count="2">
+<button type="button" role="switch" class="cd-btn" aria-checked="{{r.checked}}" sc-camel-on-click="{{r.toggle}}" style="min-height: 60px; display: flex; align-items: center; gap: 12px; padding: 6px 0; border: 0; border-top: {{r.divider}}; background: transparent; color: #e9dcff; text-align: left">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: {{fsBody}}; font-weight: 700; color: #fff7fe">{{r.label}}</span>
+<span style="font-size: {{fsSmall}}; color: #c3b3e6">{{r.hint}}</span>
+</span>
+<span aria-hidden="true" style="position: relative; width: 56px; height: 30px; flex-shrink: 0; box-sizing: border-box; background: {{r.track}}; border: 2px solid {{r.trackBorder}}">
+<span class="cd-knob" style="position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; background: {{r.knob}}; transform: translateX({{r.knobX}})"></span>
+</span>
+<span aria-hidden="true" style="width: 28px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: {{r.stateColor}}">{{r.stateText}}</span>
+</button>
+</sc-for>
+</section>
+
+<section aria-labelledby="cdOpBild" style="display: flex; flex-direction: column; gap: 4px; padding: 14px; background: #1b0b3a; border: 2px solid #3a1a6e; box-shadow: 6px 6px 0 #3a1a6e; margin-right: 6px; flex-shrink: 0">
+<h2 id="cdOpBild" style="margin: 0 0 6px; display: flex; align-items: center; gap: 8px; font-size: {{fsLabel}}; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">
+<svg aria-hidden="true" width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"></path></svg>
+BILDSCHIRM</h2>
+<sc-for list="{{screenRows}}" as="r" hint-placeholder-count="1">
+<button type="button" role="switch" class="cd-btn" aria-checked="{{r.checked}}" sc-camel-on-click="{{r.toggle}}" style="min-height: 60px; display: flex; align-items: center; gap: 12px; padding: 6px 0; border: 0; background: transparent; color: #e9dcff; text-align: left">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: {{fsBody}}; font-weight: 700; color: #fff7fe">{{r.label}}</span>
+<span style="font-size: {{fsSmall}}; color: #c3b3e6">{{r.hint}}</span>
+</span>
+<span aria-hidden="true" style="position: relative; width: 56px; height: 30px; flex-shrink: 0; box-sizing: border-box; background: {{r.track}}; border: 2px solid {{r.trackBorder}}">
+<span class="cd-knob" style="position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; background: {{r.knob}}; transform: translateX({{r.knobX}})"></span>
+</span>
+<span aria-hidden="true" style="width: 28px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: {{r.stateColor}}">{{r.stateText}}</span>
+</button>
+</sc-for>
+</section>
+
+<section aria-labelledby="cdOpSave" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; background: #1b0b3a; border: 2px solid #3a1a6e; box-shadow: 6px 6px 0 #3a1a6e; margin-right: 6px; flex-shrink: 0">
+<h2 id="cdOpSave" style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: {{fsLabel}}; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">
+<svg aria-hidden="true" width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M4 4h13l3 3v13H4z"></path><path d="M8 4v5h8V4M8 20v-6h8v6"></path></svg>
+SPIELSTAND</h2>
+<button type="button" class="cd-btn" sc-camel-on-click="{{toSaves}}" style="min-height: 64px; display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 2px solid #2ee3eb; background: #12082a; color: #e9dcff; text-align: left">
+<span aria-hidden="true" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #2ee3eb; color: #0a0618; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 18px">01</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: {{fsBody}}; font-weight: 700; color: #fff7fe">Slot 01 · Spielstand wechseln</span>
+<span style="font-size: {{fsSmall}}; color: #c3b3e6">Öffnet die Spielstand-Wahl</span>
+</span>
+<svg aria-hidden="true" width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="#ffe14d" stroke-width="2.8" stroke-linecap="square" stroke-linejoin="miter" style="flex-shrink: 0"><path d="M9 4l8 8-8 8"></path></svg>
+</button>
+</section>
+
+<section aria-labelledby="cdOpTest" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; background: #12082a; border: 2px dashed #ff6a3d; margin-right: 6px; flex-shrink: 0">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<h2 id="cdOpTest" style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: {{fsLabel}}; font-weight: 700; letter-spacing: 0.22em; color: #ff6a3d">
+<svg aria-hidden="true" width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M8 3h8M10 3v6l-5 10h14l-5-10V3"></path><path d="M7.5 14h9"></path></svg>
+ZUM TESTEN</h2>
+<span style="padding: 1px 6px; border: 2px solid #ff6a3d; color: #ff6a3d; font-size: 11px; font-weight: 700; letter-spacing: 0.16em">DEBUG</span>
+</div>
+<p style="margin: 0; font-size: {{fsSmall}}; line-height: 1.4; color: #c3b3e6">Nur für Testversionen. Schaltet den Infinity-Einsatz frei, ohne Neon City zu bezwingen.</p>
+<sc-if value="{{infLocked}}" hint-placeholder-val="{{ true }}">
+<button type="button" class="cd-btn" sc-camel-on-click="{{unlock}}" style="height: 50px; display: flex; align-items: center; justify-content: center; gap: 10px; border: 2px solid #ff6a3d; background: transparent; color: #ff6a3d; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; letter-spacing: 0.04em">
+<svg aria-hidden="true" width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><rect x="5" y="11" width="14" height="10"></rect><path d="M8 11V8a4 4 0 0 1 8 0"></path></svg>
+INFINITY-EINSATZ FREISCHALTEN</button>
+</sc-if>
+<sc-if value="{{infOpen}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: center; gap: 10px">
+<p style="margin: 0; flex-grow: 1; display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 12px; background: #ff6a3d; color: #0a0618; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 14px">
+<svg aria-hidden="true" width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="square"><path d="M4 12l5 5L20 6"></path></svg>FREIGESCHALTET</p>
+<button type="button" class="cd-btn" sc-camel-on-click="{{relock}}" style="height: 50px; padding: 0 12px; border: 2px solid #6a5a96; background: transparent; color: #c3b3e6; font-size: 12px; font-weight: 700; letter-spacing: 0.12em">ZURÜCKSETZEN</button>
+</div>
+</sc-if>
+</section>
+
+<p style="margin: 0; text-align: center; font-size: {{fsSmall}}; color: #c3b3e6; flex-shrink: 0">CYBERDROME · Version [0.0.0]</p>
+</div>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<p role="status" style="position: absolute; left: 20px; right: 26px; bottom: 80px; margin: 0; padding: 12px 14px; background: #0a0618; border: 2px solid #2ee3eb; color: #2ee3eb; font-weight: 700; font-size: 15px; letter-spacing: 0.1em; z-index: 5">{{toast}}<span class="cd-blink">_</span></p>
+</sc-if>
+
+<nav aria-label="Hauptnavigation" style="position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: grid; grid-template-columns: 1fr 1fr 1fr; background: #12082a; border-top: 2px solid #3a1a6e">
+<a href="Main.dc.html" class="cd-btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: #c3b3e6">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="miter"><polygon points="7,4 19,12 7,20"></polygon></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em">SPIELEN</span>
+</a>
+<a href="Hangar.dc.html" class="cd-btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: #c3b3e6">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" stroke-linejoin="miter"><path d="M3 11L12 4l9 7v9H3z"></path><path d="M7 20v-6h10v6"></path><path d="M7 17h10"></path></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em">HANGAR</span>
+</a>
+<button type="button" class="cd-btn" aria-current="page" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: rgba(46, 227, 235, 0.08); color: #2ee3eb">
+<span aria-hidden="true" style="position: absolute; left: 18px; right: 18px; top: -2px; height: 3px; background: #2ee3eb"></span>
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"><path d="M3 7h18M3 17h18"></path><rect x="7" y="4" width="5" height="6" fill="#12082a"></rect><rect x="13" y="14" width="5" height="6" fill="#12082a"></rect></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em">OPTIONEN</span>
+</button>
+</nav>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; z-index: 10; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.16) 3px)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:450,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { size: 0, reduce: false, vibe: true, full: true, inf: false, toast: '' };
+}
+renderVals() {
+const s = this.state;
+const k = [1, 1.15, 1.3][s.size];
+const px = (n) => Math.round(n * k) + 'px';
+const sw = (on) => ({
+checked: on ? 'true' : 'false', track: on ? '#2ee3eb' : '#12082a', trackBorder: on ? '#2ee3eb' : '#6a5a96',
+knob: on ? '#0a0618' : '#6a5a96', knobX: on ? '26px' : '0px', stateText: on ? 'AN' : 'AUS', stateColor: on ? '#2ee3eb' : '#c3b3e6'
+});
+const sizes = [['STANDARD', '16px'], ['GROSS', '21px'], ['SEHR GROSS', '26px']].map(([label, glyph], i) => {
+const on = s.size === i;
+return { label, glyph, checked: on ? 'true' : 'false', border: on ? '#2ee3eb' : '#3a1a6e', bg: on ? 'rgba(46, 227, 235, 0.14)' : '#12082a', color: on ? '#2ee3eb' : '#e9dcff',
+pick: () => this.setState({ size: i }) };
+});
+return {
+fsBody: px(15), fsSmall: px(14), fsLabel: px(13),
+sizes,
+rootCls: s.reduce ? 'cd-still' : '',
+motionRows: [
+{ label: 'Bewegung reduzieren', hint: 'Kein Glitch, kein Flackern, keine Wackler.', divider: '0', ...sw(s.reduce), toggle: () => this.setState({ reduce: !s.reduce }) },
+{ label: 'Vibration', hint: 'Kurzes Rütteln bei Treffern und Caches.', divider: '2px dashed #3a1a6e', ...sw(s.vibe), toggle: () => this.setState({ vibe: !s.vibe }) }
+],
+screenRows: [
+{ label: 'Vollbild', hint: 'Blendet die Leisten des Geräts aus.', ...sw(s.full), toggle: () => this.setState({ full: !s.full }) }
+],
+infLocked: !s.inf, infOpen: s.inf,
+unlock: () => this.setState({ inf: true, toast: 'INFINITY-EINSATZ FREIGESCHALTET' }),
+relock: () => this.setState({ inf: false, toast: 'ZURÜCKGESETZT' }),
+toSaves: () => this.setState({ toast: '→ SPIELSTAND-WAHL' }),
+toast: s.toast
+};
+}
+}
+</script>
+
+
+</body></html>

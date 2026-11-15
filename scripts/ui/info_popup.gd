@@ -78,24 +78,48 @@ func _build(title: String, options: Dictionary) -> void:
 			close())
 	root.add_child(shade)
 
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(center)
-
+	# "sheet": Blatt von unten ueber die ganze Breite (Entwurf Waffen-Karte,
+	# 15. Nov. 2026), sonst mittig.
+	var sheet := bool(options.get("sheet", false))
+	var view := get_viewport().get_visible_rect().size
 	_panel = PanelContainer.new()
 	var style := UiKit.card_style(true)
 	style.bg_color = Color(UiKit.CARD, 0.98)
 	style.set_content_margin_all(16)
-	_panel.add_theme_stylebox_override("panel", style)
-	center.add_child(_panel)
-
-	var view := get_viewport().get_visible_rect().size
 	var width := minf(MAX_WIDTH, view.x - 28.0)
+	if sheet:
+		style = StyleBoxFlat.new()
+		style.bg_color = Color("#160930")
+		style.border_color = Arcade.MAGENTA
+		style.border_width_top = 3
+		style.set_content_margin_all(18)
+		style.content_margin_top = 14
+		width = minf(UiKit.MAX_COLUMN, view.x)
+		var bottom := VBoxContainer.new()
+		bottom.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bottom.alignment = BoxContainer.ALIGNMENT_END
+		bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(bottom)
+		_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		bottom.add_child(_panel)
+	else:
+		var center := CenterContainer.new()
+		center.set_anchors_preset(Control.PRESET_FULL_RECT)
+		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(center)
+		center.add_child(_panel)
+	_panel.add_theme_stylebox_override("panel", style)
+
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 10)
-	outer.custom_minimum_size = Vector2(width - 32.0, 0)
+	outer.custom_minimum_size = Vector2(width - (36.0 if sheet else 32.0), 0)
 	_panel.add_child(outer)
+	if sheet:
+		var handle := ColorRect.new()
+		handle.color = Color("#4b3a82")
+		handle.custom_minimum_size = Vector2(44, 4)
+		handle.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		outer.add_child(handle)
 
 	# Kopf: Bild, Titel, Untertitel, X
 	var head := HBoxContainer.new()
@@ -109,9 +133,14 @@ func _build(title: String, options: Dictionary) -> void:
 	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	names.add_theme_constant_override("separation", 2)
 	head.add_child(names)
+	if str(options.get("kicker", "")) != "":
+		var kicker := Arcade.tilt(Arcade.tag(str(options["kicker"]).to_upper(), 12, 0.0), -3.0)
+		kicker.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		names.add_child(kicker)
 	if title != "":
-		var heading := UiKit.label(title, 21, Arcade.WHITE)
-		heading.add_theme_font_override("font", Arcade.font("bold", 21, 0.04))
+		# Titel in Bungee wie die Kopfzeilen (Entwurf 15. Nov. 2026).
+		var heading := UiKit.label(title.to_upper(), 22, Arcade.WHITE)
+		heading.add_theme_font_override("font", Arcade.font("display"))
 		names.add_child(heading)
 	if str(options.get("subtitle", "")) != "":
 		names.add_child(UiKit.label(str(options["subtitle"]), UiKit.SMALL,
@@ -198,7 +227,12 @@ func _build(title: String, options: Dictionary) -> void:
 			row.add_child(button)
 
 	# Kurzes Aufploppen (ausser bei "Bewegung reduzieren" und beim Blaettern).
-	if Accessibility.motion() > 0.0 and bool(options.get("animate", true)):
+	if sheet and Accessibility.motion() > 0.0 and bool(options.get("animate", true)):
+		_panel.modulate = Color(1, 1, 1, 0)
+		# Nur einblenden: die Lage setzt der Container, ein Schieben wuerde
+		# sich mit ihm streiten.
+		create_tween().tween_property(_panel, "modulate:a", 1.0, 0.14)
+	elif Accessibility.motion() > 0.0 and bool(options.get("animate", true)):
 		_panel.modulate = Color(1, 1, 1, 0)
 		_panel.scale = Vector2(0.94, 0.94)
 		_panel.resized.connect(func(): _panel.pivot_offset = _panel.size * 0.5)

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<title>Story-Dialog rechts</title>
+<script src="b665c860-787a-4d31-8bbb-f6cf9431c884"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#0a0618}
+a{color:#ffe14d}a:hover{color:#fff3a8}
+@keyframes cdBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes cdNudge{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+@keyframes cdSlideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes cdSlideR{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.cd-blink{animation:cdBlink 1s steps(1) infinite}
+.cd-nudge{animation:cdNudge .8s steps(2) infinite}
+.cd-slide-l{animation:cdSlideL .25s ease-out both}
+.cd-slide-r{animation:cdSlideR .25s ease-out both}
+.cd-btn{cursor:pointer;font-family:inherit}
+.cd-btn:focus-visible{outline:3px solid #ffe14d;outline-offset:3px}
+@media (prefers-reduced-motion: reduce){.cd-blink,.cd-nudge,.cd-slide-l,.cd-slide-r{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 450px; height: 800px; overflow: hidden; background: #0a0618; font-family: 'Chakra Petch', system-ui, sans-serif; color: #e9dcff">
+
+<svg aria-hidden="true" width="450" height="800" sc-camel-view-box="0 0 450 800" style="position: absolute; inset: 0; display: block">
+<defs>
+<pattern id="cdDlDots" width="14" height="14" sc-camel-pattern-units="userSpaceOnUse"><circle cx="7" cy="7" r="1.6" fill="#ff3dbb" fill-opacity="0.22"></circle></pattern>
+</defs>
+<rect x="0" y="0" width="450" height="800" fill="url(#cdDlDots)"></rect>
+<text x="20" y="44" font-family="Bungee, sans-serif" font-size="22" fill="#fff7fe">CYBERDROME</text>
+<rect x="330" y="24" width="100" height="26" fill="#ffe14d"></rect>
+<polygon points="34,68 430,68 430,354 416,368 20,368 20,82" fill="#12082a" stroke="#2ee3eb" stroke-width="2"></polygon>
+<polygon points="124,286 130,130 168,130 172,286" fill="#1b0b3a" stroke="#2ee3eb" stroke-width="2"></polygon>
+<polygon points="278,286 282,130 320,130 326,286" fill="#1b0b3a" stroke="#2ee3eb" stroke-width="2"></polygon>
+<rect x="170" y="176" width="110" height="110" fill="#1b0b3a" stroke="#2ee3eb" stroke-width="2"></rect>
+<path d="M188 286V214Q225 186 262 214V286Z" fill="#0a0618" stroke="#ff2bd6" stroke-width="2.5"></path>
+<polygon points="60,314 390,314 412,334 38,334" fill="#1b0b3a" stroke="#ffe14d" stroke-width="2"></polygon>
+<rect x="20" y="382" width="404" height="170" fill="#1b0b3a" stroke="#2ee3eb" stroke-width="2"></rect>
+<rect x="20" y="640" width="404" height="54" fill="#ffe14d"></rect>
+<rect x="0" y="736" width="450" height="64" fill="#12082a"></rect>
+</svg>
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(10, 6, 24, 0.78)"></div>
+
+<sc-if value="{{active}}" hint-placeholder-val="{{ true }}">
+<button type="button" class="cd-btn" sc-camel-on-click="{{advance}}" aria-label="{{tapLabel}}" style="position: absolute; inset: 0; border: 0; padding: 0; background: transparent; color: #e9dcff; text-align: left">
+
+<sc-if value="{{l.hasPortrait}}" hint-placeholder-val="{{ true }}">
+<span class="{{l.slide}}" style="position: absolute; left: {{l.pLeft}}; top: 352px; width: 176px; height: 210px; display: block">
+<span aria-hidden="true" style="position: absolute; inset: 0; background: #12082a; border: 2px solid {{l.color}}; clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px)"></span>
+<span aria-hidden="true" style="position: absolute; left: 2px; right: 2px; top: 2px; bottom: 0; background: {{l.glow}}"></span>
+<span role="img" aria-label="Porträt: {{l.name}}" style="position: absolute; left: 8px; right: 8px; bottom: 0; height: 190px; display: flex; align-items: flex-end; justify-content: center; transform: scaleX({{l.flip}})">
+<sc-if value="{{l.isNeon}}" hint-placeholder-val="{{ true }}">
+<svg aria-hidden="true" width="160" height="180" sc-camel-view-box="0 0 160 180"><g fill="#0a0618" stroke="#ff2bd6" stroke-width="3" stroke-linejoin="miter"><path d="M8 180Q18 122 80 118Q142 122 152 180Z"></path><path d="M46 116Q38 40 80 32Q122 40 114 116Z"></path><path d="M110 98l34 18-5 9-34-14z"></path></g><rect x="50" y="68" width="60" height="12" fill="#ff2bd6"></rect><rect x="58" y="71" width="12" height="5" fill="#fff7fe"></rect><rect x="90" y="71" width="12" height="5" fill="#fff7fe"></rect><path d="M66 140h18M75 140v18M66 150h18M92 138v22M92 138h12" fill="none" stroke="#2ee3eb" stroke-width="3" stroke-linecap="square"></path></svg>
+</sc-if>
+<sc-if value="{{l.isSolar}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="160" height="180" sc-camel-view-box="0 0 160 180"><circle cx="80" cy="72" r="48" fill="none" stroke="#ffcf4d" stroke-width="2.5" stroke-dasharray="6 6"></circle><g fill="#0a0618" stroke="#7ee081" stroke-width="3"><path d="M10 180Q20 120 80 116Q140 120 150 180Z"></path><circle cx="80" cy="74" r="34"></circle></g><path d="M80 40q-22-24-34-2q16 12 34 2zM80 40q22-24 34-2q-16 12-34 2zM80 40q0-26 0-30" fill="#7ee081" stroke="#7ee081" stroke-width="2"></path><circle cx="68" cy="76" r="4" fill="#ffcf4d"></circle><circle cx="92" cy="76" r="4" fill="#ffcf4d"></circle><path d="M40 150q20-12 40 0q20 12 40 0" fill="none" stroke="#ffcf4d" stroke-width="2.5"></path></svg>
+</sc-if>
+<sc-if value="{{l.isMecha}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="160" height="180" sc-camel-view-box="0 0 160 180"><g fill="#0a0618" stroke="#ff6a3d" stroke-width="3.5" stroke-linejoin="miter"><polygon points="4,180 16,124 144,124 156,180"></polygon><rect x="44" y="44" width="72" height="70"></rect><rect x="30" y="60" width="14" height="36"></rect><rect x="116" y="60" width="14" height="36"></rect></g><line x1="100" y1="44" x2="112" y2="16" stroke="#8d84a8" stroke-width="3"></line><circle cx="112" cy="14" r="5" fill="#ff6a3d"></circle><rect x="52" y="64" width="56" height="12" fill="#ff6a3d"></rect><g stroke="#8d84a8" stroke-width="3"><line x1="58" y1="94" x2="58" y2="106"></line><line x1="70" y1="94" x2="70" y2="106"></line><line x1="82" y1="94" x2="82" y2="106"></line><line x1="94" y1="94" x2="94" y2="106"></line></g><g fill="#8d84a8"><circle cx="30" cy="140" r="4"></circle><circle cx="130" cy="140" r="4"></circle><circle cx="50" cy="50" r="3"></circle><circle cx="110" cy="50" r="3"></circle></g><rect x="20" y="156" width="120" height="10" fill="#ffe14d"></rect></svg>
+</sc-if>
+<sc-if value="{{l.isHipstar}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="160" height="180" sc-camel-view-box="0 0 160 180"><g fill="#0a0618" stroke="#ff8ce8" stroke-width="3"><path d="M10 180Q18 122 80 118Q142 122 150 180Z"></path><circle cx="80" cy="78" r="32"></circle><path d="M46 70Q48 32 80 32Q112 32 114 70Z"></path></g><path d="M40 78Q40 24 80 24Q120 24 120 78" fill="none" stroke="#2ee3eb" stroke-width="4"></path><rect x="34" y="68" width="14" height="28" fill="#2ee3eb"></rect><rect x="112" y="68" width="14" height="28" fill="#2ee3eb"></rect><rect x="56" y="74" width="48" height="10" fill="#2ee3eb"></rect><g fill="#ff8ce8"><rect x="132" y="30" width="8" height="8"></rect><rect x="140" y="20" width="6" height="6" fill="#2ee3eb"></rect><rect x="14" y="110" width="8" height="8"></rect></g><rect x="64" y="140" width="32" height="18" fill="none" stroke="#ff8ce8" stroke-width="2.5"></rect><text x="80" y="153" text-anchor="middle" font-family="'Chakra Petch', monospace" font-size="11" font-weight="700" fill="#ff8ce8">&gt;_</text><rect x="96" y="40" width="10" height="8" fill="#0a0618"></rect></svg>
+</sc-if>
+</span>
+</span>
+</sc-if>
+
+<span style="position: absolute; left: 20px; right: 26px; top: 562px; height: 200px; box-sizing: border-box; padding: 26px 18px 18px; display: block; background: #12082a; border: 2px solid {{l.color}}; box-shadow: 6px 6px 0 #3a1a6e">
+<span aria-live="polite" style="display: block; font-size: 17px; font-weight: 600; line-height: 1.5; color: #e9dcff; white-space: pre-wrap; font-style: {{l.style}}">{{typed}}<span aria-hidden="true" style="color: transparent">{{rest}}</span></span>
+<sc-if value="{{done}}" hint-placeholder-val="{{ true }}">
+<span aria-hidden="true" class="cd-blink" style="position: absolute; right: 14px; bottom: 10px; font-size: 18px; color: #ffe14d">▼</span>
+</sc-if>
+<span aria-hidden="true" style="position: absolute; left: 18px; bottom: 12px; display: flex; gap: 4px">
+<sc-for list="{{progress}}" as="p" hint-placeholder-count="5"><span style="width: 10px; height: 4px; background: {{p.bg}}"></span></sc-for>
+</span>
+</span>
+
+<span style="position: absolute; top: 540px; left: {{l.plateLeft}}; right: {{l.plateRight}}; display: flex; flex-direction: column; gap: 1px; padding: 5px 12px 6px; background: #0a0618; border: 2px solid {{l.color}}; transform: rotate({{l.tilt}})">
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 17px; line-height: 1.05; color: {{l.color}}">{{l.name}}</span>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: #c3b3e6">{{l.faction}}</span>
+</span>
+</button>
+
+<button type="button" class="cd-btn" sc-camel-on-click="{{skip}}" style="position: absolute; right: 14px; top: 12px; height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 2px solid #ffe14d; background: #0a0618; color: #ffe14d; font-size: 13px; font-weight: 700; letter-spacing: 0.16em; z-index: 4">
+ÜBERSPRINGEN
+<svg aria-hidden="true" width="16" height="16" sc-camel-view-box="0 0 24 24" fill="currentColor"><polygon points="3,4 12,12 3,20"></polygon><polygon points="12,4 21,12 12,20"></polygon></svg>
+</button>
+<p aria-hidden="true" style="position: absolute; left: 20px; top: 24px; margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; color: #c3b3e6; z-index: 4">ANTIPPEN · WEITER</p>
+</sc-if>
+
+<sc-if value="{{ended}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: 20px; right: 26px; top: 340px; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 20px; background: #12082a; border: 2px dashed #6a5a96">
+<p style="margin: 0; font-size: 15px; color: #c3b3e6">Dialog beendet – der Bildschirm dahinter ist wieder bedienbar.</p>
+<button type="button" class="cd-btn" sc-camel-on-click="{{replay}}" style="height: 48px; padding: 0 18px; border: 2px solid #ffe14d; background: transparent; color: #ffe14d; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px">NOCHMAL ABSPIELEN</button>
+</div>
+</sc-if>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; z-index: 10; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.16) 3px)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;start&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1,&quot;min&quot;:0,&quot;max&quot;:4},&quot;$preview&quot;:{&quot;width&quot;:450,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const start = Math.max(0, Math.min(4, (props && props.start) || 1));
+this.lines = [
+{ who: 'neon', name: 'KAGE-9', text: 'Du hast es also durch Neon City geschafft. Nicht schlecht für ein Squad aus Schrottteilen.' },
+{ who: 'solar', name: 'SOLA', text: 'Lass den Neuen in Ruhe, Kage. Die Parkanlage wartet – und dort kommt niemand ohne Prüfung durch.' },
+{ who: 'player', name: 'DU', text: '… Verstanden.' },
+{ who: 'mecha', name: 'BOLZ', text: 'Prüfung? In Factory 5 prüfen wir mit dem Hammer. Bring Ersatzteile mit.' },
+{ who: 'hipstar', name: 'PIXA', text: 'Leute, eure Funkkanäle hab ich längst gehackt. Wir sehen uns auf den Dachterrassen.' }
+];
+this.state = { i: start, shown: 0, ended: false };
+}
+componentDidMount() {
+let reduce = false;
+try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
+this.reduce = reduce;
+this.timer = setInterval(() => {
+const s = this.state;
+if (s.ended) return;
+const len = this.lines[s.i].text.length;
+if (s.shown >= len) return;
+this.setState({ shown: this.reduce ? len : Math.min(len, s.shown + 2) });
+}, 40);
+}
+componentWillUnmount() { clearInterval(this.timer); }
+renderVals() {
+const s = this.state;
+const F = {
+neon: { faction: "NEON NINJA'S", color: '#ff2bd6', glow: 'radial-gradient(circle at 50% 70%, rgba(255, 43, 214, 0.35), rgba(18, 8, 42, 0) 70%)' },
+solar: { faction: 'SOLAR SENTIENTS', color: '#7ee081', glow: 'radial-gradient(circle at 50% 70%, rgba(126, 224, 129, 0.3), rgba(18, 8, 42, 0) 70%)' },
+mecha: { faction: 'MEGA MECHAS', color: '#ff6a3d', glow: 'radial-gradient(circle at 50% 70%, rgba(255, 106, 61, 0.32), rgba(18, 8, 42, 0) 70%)' },
+hipstar: { faction: 'HIPSTAR HACKERS', color: '#ff8ce8', glow: 'radial-gradient(circle at 50% 70%, rgba(255, 140, 232, 0.32), rgba(18, 8, 42, 0) 70%)' },
+player: { faction: 'DEIN SQUAD', color: '#2ee3eb', glow: 'none' }
+};
+const line = this.lines[s.i];
+const f = F[line.who];
+const sides = this.lines.map((x) => x.who);
+let npcIdx = 0;
+for (let k = 0; k < s.i; k++) if (this.lines[k].who !== 'player') npcIdx++;
+const isPlayer = line.who === 'player';
+const left = !isPlayer && npcIdx % 2 === 0;
+const len = line.text.length;
+const done = s.shown >= len;
+const l = {
+...f, name: line.name, hasPortrait: !isPlayer,
+isNeon: line.who === 'neon', isSolar: line.who === 'solar', isMecha: line.who === 'mecha', isHipstar: line.who === 'hipstar',
+pLeft: left ? '20px' : '254px', flip: left ? '1' : '-1',
+plateLeft: isPlayer ? '150px' : (left ? '34px' : 'auto'), plateRight: isPlayer ? 'auto' : (left ? 'auto' : '40px'),
+tilt: left ? '-2deg' : (isPlayer ? '0deg' : '2deg'),
+slide: left ? 'cd-slide-l' : 'cd-slide-r',
+style: isPlayer ? 'italic' : 'normal'
+};
+return {
+active: !s.ended, ended: s.ended, l, done,
+typed: line.text.slice(0, s.shown), rest: line.text.slice(s.shown),
+tapLabel: done ? (s.i < this.lines.length - 1 ? 'Nächste Zeile' : 'Dialog beenden') : 'Ganzen Text zeigen',
+progress: this.lines.map((_, k) => ({ bg: k < s.i ? '#c3b3e6' : (k === s.i ? f.color : '#3a1a6e') })),
+advance: () => {
+const st = this.state;
+const L = this.lines[st.i].text.length;
+if (st.shown < L) { this.setState({ shown: L }); return; }
+if (st.i < this.lines.length - 1) this.setState({ i: st.i + 1, shown: 0 });
+else this.setState({ ended: true });
+},
+skip: () => this.setState({ ended: true }),
+replay: () => this.setState({ i: 0, shown: 0, ended: false })
+};
+}
+}
+</script>
+
+
+</body></html>

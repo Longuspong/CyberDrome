@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<title>Zwischenstopp Rezeptbuch</title>
+<script src="8fc8af2e-3f08-445c-9a43-45e726d1ce91"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#0a0618}
+a{color:#ffe14d}a:hover{color:#fff3a8}
+@keyframes cdBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes cdGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,225,77,0)}50%{box-shadow:0 0 0 4px rgba(255,225,77,.35)}}
+@keyframes cdIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.cd-blink{animation:cdBlink 1s steps(1) infinite}
+.cd-glow{animation:cdGlow 1.2s ease-in-out infinite}
+.cd-in{animation:cdIn .22s ease-out both}
+.cd-btn{cursor:pointer;font-family:inherit}
+.cd-btn:focus-visible{outline:3px solid #ffe14d;outline-offset:3px}
+.cd-row{scrollbar-width:none}
+.cd-row::-webkit-scrollbar{display:none}
+@media (prefers-reduced-motion: reduce){.cd-blink,.cd-glow,.cd-in{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 450px; height: 800px; overflow: hidden; background: #0a0618; font-family: 'Chakra Petch', system-ui, sans-serif; color: #e9dcff">
+
+<svg aria-hidden="true" width="450" height="800" sc-camel-view-box="0 0 450 800" style="position: absolute; inset: 0; display: block">
+<defs>
+<pattern id="cdStDots" width="14" height="14" sc-camel-pattern-units="userSpaceOnUse">
+<circle cx="7" cy="7" r="1.6" fill="#ff3dbb" fill-opacity="0.22"></circle>
+</pattern>
+</defs>
+<rect x="0" y="0" width="450" height="800" fill="url(#cdStDots)"></rect>
+</svg>
+
+<div style="position: absolute; inset: 0; box-sizing: border-box; padding: 10px 20px 16px; display: flex; flex-direction: column; gap: 10px">
+
+<header style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0">
+<div style="display: flex; align-items: center; justify-content: space-between; min-height: 34px">
+<p style="margin: 0; padding: 5px 10px; background: #ffe14d; color: #12082a; font-weight: 700; font-size: 13px; letter-spacing: 0.24em; transform: rotate(-3deg)">ZWISCHENSTOPP</p>
+<p style="margin: 0; display: flex; align-items: baseline; gap: 8px; padding: 4px 10px; background: #1b0b3a; border: 2px solid #2ee3eb"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.18em; color: #c3b3e6">KAMPF</span><span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 16px; color: #2ee3eb">3/8</span></p>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<span role="img" aria-label="3 von 3 Leben" style="display: flex; align-items: center; gap: 3px; height: 30px; padding: 0 8px; background: #1b0b3a; border: 2px solid #3a1a6e">
+<svg aria-hidden="true" width="15" height="13" sc-camel-view-box="0 0 18 16"><path d="M2 0h5v2h4V0h5v2h2v6h-2v2h-2v2h-2v2h-2v2H8v-2H6v-2H4v-2H2V8H0V2h2z" fill="#ff2bd6"></path></svg>
+<svg aria-hidden="true" width="15" height="13" sc-camel-view-box="0 0 18 16"><path d="M2 0h5v2h4V0h5v2h2v6h-2v2h-2v2h-2v2h-2v2H8v-2H6v-2H4v-2H2V8H0V2h2z" fill="#ff2bd6"></path></svg>
+<svg aria-hidden="true" width="15" height="13" sc-camel-view-box="0 0 18 16"><path d="M2 0h5v2h4V0h5v2h2v6h-2v2h-2v2h-2v2h-2v2H8v-2H6v-2H4v-2H2V8H0V2h2z" fill="#ff2bd6"></path></svg>
+</span>
+<span aria-label="{{credits}} Credits" style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 9px; background: #1b0b3a; border: 2px solid #3a1a6e; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; color: #2ee3eb"><svg aria-hidden="true" width="11" height="11" sc-camel-view-box="0 0 14 14"><polygon points="7,0 14,7 7,14 0,7" fill="#2ee3eb"></polygon></svg>{{credits}}</span>
+<span aria-label="3 Caches gesammelt" style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 9px; background: #1b0b3a; border: 2px solid #3a1a6e; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; color: #ffe14d"><svg aria-hidden="true" width="17" height="15" sc-camel-view-box="0 0 18 16"><rect x="1" y="4" width="16" height="11" fill="#ffe14d"></rect><rect x="0" y="1" width="18" height="4" fill="#ff6a3d"></rect><rect x="7" y="1" width="4" height="14" fill="#12082a"></rect></svg>3</span>
+<span role="img" aria-label="Verstärkung Stufe 4 von 5" style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 9px; background: #1b0b3a; border: 2px solid #3a1a6e">
+<span aria-hidden="true" style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #c3b3e6">VERSTÄRKUNG</span>
+<span aria-hidden="true" style="display: flex; align-items: flex-end; gap: 2px; height: 14px"><span style="width: 4px; height: 5px; background: #ff6a3d"></span><span style="width: 4px; height: 8px; background: #ff6a3d"></span><span style="width: 4px; height: 11px; background: #ff6a3d"></span><span style="width: 4px; height: 14px; background: #ff6a3d"></span><span style="width: 4px; height: 14px; box-sizing: border-box; border: 1px dashed #6a5a96"></span></span>
+<span aria-hidden="true" style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; color: #ff6a3d">4</span>
+</span>
+</div>
+</header>
+
+<section aria-label="Laden" style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">LADEN</h2>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #c3b3e6">1× TIPPEN KAUFEN · 2× DETAILS</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-right: 6px">
+<sc-for list="{{shop}}" as="m" hint-placeholder-count="2">
+<button type="button" class="cd-btn" sc-camel-on-click="{{m.tap}}" aria-label="{{m.aria}}" style="position: relative; height: 96px; box-sizing: border-box; padding: 8px 10px; display: flex; flex-direction: column; align-items: stretch; gap: 4px; background: #1b0b3a; border: {{m.border}}; box-shadow: {{m.shadow}}; opacity: {{m.opacity}}; text-align: left; color: #e9dcff">
+<span style="display: flex; align-items: center; gap: 8px">
+<span aria-hidden="true" style="width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{m.color}}; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 12px; color: #0a0618">{{m.abbr}}</span>
+<span style="display: flex; flex-direction: column; min-width: 0">
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 13px; line-height: 1.1; color: #fff7fe">{{m.name}}</span>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: {{m.color}}">{{m.cat}}</span>
+</span>
+</span>
+<span style="font-size: 14px; line-height: 1.2; color: #c3b3e6; padding-right: 64px">{{m.short}}</span>
+<span style="position: absolute; right: 8px; bottom: 8px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: {{m.priceBg}}; color: {{m.priceColor}}; border: {{m.priceBorder}}; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 14px">{{m.priceText}}</span>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="Lager" style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">LAGER <span style="color: #c3b3e6; letter-spacing: 0.1em">{{lagerUsed}}/6</span></h2>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #c3b3e6">TIPPEN ODER ZIEHEN ↓</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; margin-right: 6px">
+<sc-for list="{{lager}}" as="l" hint-placeholder-count="6">
+<button type="button" class="cd-btn {{l.cls}}" draggable="{{l.drag}}" sc-camel-on-drag-start="{{l.dragStart}}" sc-camel-on-click="{{l.tap}}" aria-label="{{l.aria}}" aria-pressed="{{l.pressed}}" style="height: 62px; box-sizing: border-box; padding: 4px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: {{l.bg}}; border: {{l.border}}; color: #e9dcff">
+<sc-if value="{{l.has}}" hint-placeholder-val="{{ false }}">
+<span aria-hidden="true" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: {{l.color}}; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 11px; color: #0a0618">{{l.abbr}}</span>
+<span aria-hidden="true" style="max-width: 100%; font-size: 11px; font-weight: 700; color: #fff7fe; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{l.name}}</span>
+</sc-if>
+<sc-if value="{{l.empty}}" hint-placeholder-val="{{ true }}">
+<span aria-hidden="true" style="font-size: 18px; color: #6a5a96">+</span>
+</sc-if>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="Squad" style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">SQUAD</h2>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #c3b3e6">2 MODULE IM SELBEN DROME = REZEPT</span>
+</div>
+<sc-for list="{{squad}}" as="d" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 10px; height: 66px; box-sizing: border-box; padding: 6px 8px; background: #1b0b3a; border: {{d.border}}; box-shadow: {{d.shadow}}; margin-right: 6px">
+<span role="img" aria-label="{{d.name}}" style="width: 42px; height: 52px; flex-shrink: 0; display: flex; align-items: flex-end; justify-content: center; background: #12082a">
+<sc-if value="{{d.isVireo}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="38" height="48" sc-camel-view-box="0 0 80 100"><g transform="translate(-51,-160)"><g fill="#0a0618" stroke="#ff2bd6" stroke-width="3" stroke-linejoin="miter"><polygon points="78,188 94,188 96,202 76,202"></polygon><polygon points="72,206 100,206 96,228 76,228"></polygon><polygon points="100,210 120,216 118,221 98,216"></polygon><polygon points="72,210 62,226 66,228 76,214"></polygon><polygon points="76,230 84,230 80,250 72,250"></polygon><polygon points="88,230 96,230 100,250 92,250"></polygon></g><rect x="80" y="193" width="12" height="3" fill="#ffe14d"></rect></g></svg></sc-if>
+<sc-if value="{{d.isMolok}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="38" height="48" sc-camel-view-box="0 0 80 100"><g transform="translate(-125,-160)"><g fill="#0a0618" stroke="#ff2bd6" stroke-width="3" stroke-linejoin="miter"><rect x="126" y="178" width="12" height="30"></rect><rect x="192" y="178" width="12" height="30"></rect><rect x="129" y="168" width="6" height="10"></rect><rect x="195" y="168" width="6" height="10"></rect><rect x="155" y="166" width="20" height="14"></rect><polygon points="136,182 194,182 190,222 140,222"></polygon><rect x="144" y="224" width="16" height="26"></rect><rect x="170" y="224" width="16" height="26"></rect></g><rect x="158" y="171" width="14" height="3" fill="#ffe14d"></rect></g></svg></sc-if>
+<sc-if value="{{d.isNimbus}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="38" height="48" sc-camel-view-box="0 0 80 100"><g transform="translate(-205,-160)"><circle cx="245" cy="178" r="15" fill="none" stroke="#2ee3eb" stroke-width="2" stroke-dasharray="5 4"></circle><g fill="#0a0618" stroke="#ff2bd6" stroke-width="3" stroke-linejoin="miter"><circle cx="245" cy="178" r="8"></circle><polygon points="232,190 258,190 262,220 228,220"></polygon><polygon points="232,222 242,222 240,250 230,250"></polygon><polygon points="248,222 258,222 260,250 250,250"></polygon></g><rect x="240" y="176" width="10" height="3" fill="#ffe14d"></rect></g></svg></sc-if>
+<sc-if value="{{d.isStrix}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="38" height="48" sc-camel-view-box="0 0 80 100"><g transform="translate(-296,-158)"><g fill="#0a0618" stroke="#ff2bd6" stroke-width="3" stroke-linejoin="miter"><polygon points="318,162 332,162 330,176 320,176"></polygon><polygon points="316,180 334,180 332,218 318,218"></polygon><polygon points="304,198 372,180 373,184 305,202"></polygon><polygon points="318,220 324,220 320,250 314,250"></polygon><polygon points="326,220 332,220 336,250 330,250"></polygon></g><circle cx="327" cy="169" r="2.5" fill="#ffe14d"></circle></g></svg></sc-if>
+</span>
+<span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 14px; line-height: 1.1; color: #fff7fe">{{d.name}} <span style="font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 700; color: #c3b3e6">LV {{d.level}}</span></span>
+<span style="display: flex; align-items: center; gap: 5px; font-size: 14px; color: #c3b3e6; white-space: nowrap; overflow: hidden">
+<sc-if value="{{d.wTri}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="12" height="12" sc-camel-view-box="0 0 22 22" style="flex-shrink: 0"><polygon points="11,2 20,19 2,19" fill="none" stroke="#ffe14d" stroke-width="3"></polygon></svg></sc-if>
+<sc-if value="{{d.wSq}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="12" height="12" sc-camel-view-box="0 0 22 22" style="flex-shrink: 0"><polygon points="3,3 19,3 19,19 3,19" fill="none" stroke="#ffe14d" stroke-width="3"></polygon></svg></sc-if>
+<sc-if value="{{d.wPent}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="12" height="12" sc-camel-view-box="0 0 22 22" style="flex-shrink: 0"><polygon points="11,2 20,9 16.5,20 5.5,20 2,9" fill="none" stroke="#ffe14d" stroke-width="3"></polygon></svg></sc-if>
+<span style="overflow: hidden; text-overflow: ellipsis">{{d.weapon}}</span>
+</span>
+<sc-if value="{{d.hasRecipe}}" hint-placeholder-val="{{ false }}">
+<span style="align-self: flex-start; padding: 1px 6px; background: #ffe14d; color: #12082a; font-size: 11px; font-weight: 700; letter-spacing: 0.1em">REZEPT · {{d.recipe}}</span>
+</sc-if>
+</span>
+<span style="display: flex; gap: 5px; flex-shrink: 0">
+<sc-for list="{{d.slots}}" as="sl" hint-placeholder-count="2">
+<button type="button" class="cd-btn {{sl.cls}}" sc-camel-on-click="{{sl.tap}}" sc-camel-on-drag-over="{{sl.over}}" sc-camel-on-drag-enter="{{sl.over}}" sc-camel-on-drop="{{sl.drop}}" aria-label="{{sl.aria}}" style="width: 46px; height: 46px; box-sizing: border-box; padding: 0; display: flex; align-items: center; justify-content: center; background: {{sl.bg}}; border: {{sl.border}}; color: #6a5a96">
+<sc-if value="{{sl.has}}" hint-placeholder-val="{{ false }}">
+<span aria-hidden="true" style="width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: {{sl.color}}; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 11px; color: #0a0618">{{sl.abbr}}</span>
+</sc-if>
+<sc-if value="{{sl.empty}}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="font-size: 18px; color: {{sl.plusColor}}">+</span></sc-if>
+</button>
+</sc-for>
+</span>
+</div>
+</sc-for>
+</section>
+
+<div style="margin-top: auto; display: flex; gap: 12px; flex-shrink: 0">
+<button type="button" class="cd-btn" sc-camel-on-click="{{openBook}}" style="width: 150px; height: 54px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 8px; border: 2px solid #2ee3eb; background: #12082a; color: #2ee3eb; font-size: 14px; font-weight: 700; letter-spacing: 0.14em">
+<svg aria-hidden="true" width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" stroke-linejoin="miter"><path d="M4 4h7v16H4zM13 4h7v16h-7z"></path><path d="M6.5 8h2M15.5 8h2"></path></svg>
+REZEPTBUCH</button>
+<div style="position: relative; flex-grow: 1; height: 54px; margin-right: 6px">
+<div aria-hidden="true" style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #ff2bd6; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)"></div>
+<a href="Map.dc.html" class="cd-btn" style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 54px; text-decoration: none; background: #ffe14d; color: #12082a; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 18px; letter-spacing: 0.04em">ZUR KARTE ▶</a>
+</div>
+</div>
+</div>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<p role="status" style="position: absolute; left: 20px; right: 26px; bottom: 84px; margin: 0; padding: 12px 14px; background: #0a0618; border: 2px solid #2ee3eb; color: #2ee3eb; font-weight: 700; font-size: 15px; letter-spacing: 0.1em; z-index: 15">{{toast}}<span class="cd-blink">_</span></p>
+</sc-if>
+
+<sc-if value="{{detailOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; z-index: 20">
+<button type="button" aria-label="Details schließen" sc-camel-on-click="{{closeDetail}}" style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(10, 6, 24, 0.8); cursor: pointer"></button>
+<section role="dialog" aria-modal="true" aria-label="Modul: {{dt.name}}" class="cd-in" style="position: absolute; left: 36px; right: 42px; top: 190px; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #12082a; border: 2px solid {{dt.color}}; box-shadow: 6px 6px 0 #ff2bd6">
+<div style="display: flex; align-items: center; gap: 12px">
+<span aria-hidden="true" style="width: 56px; height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{dt.color}}; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 17px; color: #0a0618">{{dt.abbr}}</span>
+<div style="display: flex; flex-direction: column; gap: 3px">
+<h2 style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-weight: 400; font-size: 20px; line-height: 1; color: #fff7fe">{{dt.name}}</h2>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: {{dt.color}}">MODUL · {{dt.cat}}</span>
+</div>
+</div>
+<p style="margin: 0; font-size: 15px; line-height: 1.4; color: #e9dcff">{{dt.effect}}</p>
+<p style="margin: 0; font-size: 14px; color: #c3b3e6">Hält nur für diesen Einsatz.</p>
+<div style="display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 2px dashed #3a1a6e">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em; color: #2ee3eb">REZEPTE MIT DIESEM MODUL</span>
+<sc-for list="{{dt.recipes}}" as="r" hint-placeholder-count="3">
+<p style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #e9dcff">
+<span aria-hidden="true" style="width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{r.pColor}}; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 8px; color: #0a0618">{{r.pAbbr}}</span>
++ {{r.partner}} → <span style="font-weight: 700; color: #ffe14d">{{r.name}}</span></p>
+</sc-for>
+</div>
+<button type="button" class="cd-btn" sc-camel-on-click="{{closeDetail}}" style="height: 48px; border: 2px solid #ffe14d; background: transparent; color: #ffe14d; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 16px; letter-spacing: 0.06em">SCHLIESSEN</button>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{bookOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; z-index: 20">
+<button type="button" aria-label="Rezeptbuch schließen" sc-camel-on-click="{{closeBook}}" style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(10, 6, 24, 0.82); cursor: pointer"></button>
+<section role="dialog" aria-modal="true" aria-label="Rezeptbuch" class="cd-in" style="position: absolute; left: 14px; right: 20px; top: 36px; bottom: 36px; box-sizing: border-box; padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; background: #12082a; border: 2px solid #2ee3eb; box-shadow: 6px 6px 0 #ff2bd6">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h2 style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-weight: 400; font-size: 22px; line-height: 1; color: #fff7fe">REZEPTBUCH</h2>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: #c3b3e6">{{startedCount}} BEGONNEN · {{readyCount}} BEREIT</span>
+</div>
+<button type="button" class="cd-btn" sc-camel-on-click="{{closeBook}}" aria-label="Schließen" style="width: 44px; height: 44px; border: 0; background: transparent; color: #ffe14d; display: flex; align-items: center; justify-content: center; padding: 0">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+</button>
+</div>
+<div class="cd-row" role="tablist" aria-label="Filter" style="display: flex; gap: 6px; overflow-x: auto; flex-shrink: 0">
+<sc-for list="{{filters}}" as="fl" hint-placeholder-count="5">
+<button type="button" role="tab" class="cd-btn" aria-selected="{{fl.selected}}" sc-camel-on-click="{{fl.pick}}" style="height: 44px; flex-shrink: 0; padding: 0 12px; border: 2px solid {{fl.border}}; background: {{fl.bg}}; color: {{fl.color}}; font-size: 12px; font-weight: 700; letter-spacing: 0.14em">{{fl.label}}</button>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 14px; color: #c3b3e6">Zwei Module im selben DROME ergeben das Rezept.</p>
+<div class="cd-row" style="flex-grow: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-content: start; padding: 2px 6px 6px 2px">
+<sc-for list="{{recipes}}" as="r" hint-placeholder-count="8">
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #1b0b3a; border: 2px solid {{r.border}}; box-shadow: {{r.shadow}}; opacity: {{r.opacity}}">
+<div style="display: flex; align-items: center; gap: 5px">
+<span aria-hidden="true" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: {{r.aBg}}; outline: {{r.aOutline}}; outline-offset: -2px; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 10px; color: {{r.aText}}">{{r.aAbbr}}</span>
+<span aria-hidden="true" style="font-weight: 700; color: #c3b3e6">+</span>
+<span aria-hidden="true" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: {{r.bBg}}; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 10px; color: {{r.bText}}">{{r.bAbbr}}</span>
+<sc-if value="{{r.hasStatus}}" hint-placeholder-val="{{ false }}"><span style="margin-left: auto; padding: 1px 5px; background: {{r.statusBg}}; color: #0a0618; font-size: 10px; font-weight: 700; letter-spacing: 0.08em">{{r.status}}</span></sc-if>
+</div>
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 14px; line-height: 1.1; color: {{r.catColor}}">{{r.name}}</span>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: #c3b3e6">{{r.combo}}</span>
+<span style="font-size: 14px; line-height: 1.3; color: #e9dcff">{{r.effect}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+</div>
+</sc-if>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; z-index: 30; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.16) 3px)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;book&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true},&quot;$preview&quot;:{&quot;width&quot;:450,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const book = !(props && props.book === false);
+this.state = {
+credits: 185, picked: null, detail: null, book, filter: 'all', toast: '',
+shop: [{ mod: 'NF', price: 60, sold: false }, { mod: 'FK', price: 75, sold: false }],
+lager: ['ZS', null, null, null, null, null],
+slots: { vireo: [null], molok: ['MF', null], nimbus: [null, null, null], strix: [null] }
+};
+this.lastKey = null; this.lastT = 0;
+}
+componentWillUnmount() { clearTimeout(this.tt); }
+tap(key, single, dbl) {
+const now = Date.now();
+if (this.lastKey === key && now - this.lastT < 320) { clearTimeout(this.tt); this.lastKey = null; dbl(); return; }
+this.lastKey = key; this.lastT = now; clearTimeout(this.tt);
+this.tt = setTimeout(() => { this.lastKey = null; single(); }, 260);
+}
+renderVals() {
+const s = this.state;
+const CAT = { atk: ['ANGRIFF', '#ff6a3d'], def: ['ABWEHR', '#2ee3eb'], tkt: ['TAKT', '#ffe14d'] };
+const M = {
+UL: { name: 'Überladung', abbr: 'ÜL', cat: 'atk', short: '+15 % Power', effect: '+15 % Power für den Rest des Einsatzes.' },
+FK: { name: 'Funkenkern', abbr: 'FK', cat: 'atk', short: 'Extra Energieschaden', effect: 'Jeder Angriff macht zusätzlich Energieschaden.' },
+MF: { name: 'Magnetfeld', abbr: 'MF', cat: 'def', short: '+20 % Schild', effect: '+20 % Schild, Schildpuls unverändert.' },
+NF: { name: 'Nanoflicken', abbr: 'NF', cat: 'def', short: 'Repariert je Puls', effect: 'Integrität regeneriert 1 % je Puls (3 s).' },
+KR: { name: 'Kühlrippe', abbr: 'KR', cat: 'tkt', short: 'Intervall −10 %', effect: 'Waffenintervall −10 %.' },
+ZS: { name: 'Zielsucher', abbr: 'ZS', cat: 'tkt', short: '+2 Reichweite', effect: '+2 Reichweite für alle Waffen dieses DROME.' }
+};
+const RC = [
+{ a: 'UL', b: 'FK', name: 'Plasmasturm', cat: 'atk', effect: 'Jeder 3. Angriff trifft alle Gegner im Umkreis.' },
+{ a: 'ZS', b: 'FK', name: 'Kettenblitz', cat: 'atk', effect: 'Treffer springen auf ein zweites Ziel.' },
+{ a: 'NF', b: 'UL', name: 'Adrenalin', cat: 'atk', effect: 'Unter 30 % Integrität +30 % Power.' },
+{ a: 'MF', b: 'NF', name: 'Bollwerk', cat: 'def', effect: 'Schild lädt doppelt so schnell.' },
+{ a: 'MF', b: 'FK', name: 'Ionenschild', cat: 'def', effect: 'Nahkampf-Treffer am Schild verursachen Energieschaden.' },
+{ a: 'ZS', b: 'MF', name: 'Abfangnetz', cat: 'def', effect: 'Fängt jeden 4. gegnerischen Schuss ab.' },
+{ a: 'KR', b: 'UL', name: 'Dauerfeuer', cat: 'tkt', effect: 'Intervall −25 %, solange Schild über 0.' },
+{ a: 'ZS', b: 'KR', name: 'Präzisionstakt', cat: 'tkt', effect: 'Fähigkeit schon einen Angriff früher.' }
+];
+const DR = [
+{ id: 'vireo', name: 'VIREO', level: 3, weapon: 'Klingenarm', w: 'tri' },
+{ id: 'molok', name: 'MOLOK', level: 2, weapon: 'Schwere Kanone · Schildramme', w: 'pent' },
+{ id: 'nimbus', name: 'NIMBUS', level: 1, weapon: 'Pulsprojektor', w: 'sq' },
+{ id: 'strix', name: 'STRIX', level: 2, weapon: 'Langläufer', w: 'pent' }
+];
+const mi = (id) => ({ ...M[id], color: CAT[M[id].cat][1], catLabel: CAT[M[id].cat][0] });
+const say = (t) => this.setState({ toast: t });
+const owned = new Set();
+s.lager.forEach((x) => { if (x) owned.add(x); });
+Object.values(s.slots).forEach((arr) => arr.forEach((x) => { if (x) owned.add(x); }));
+const recipeIn = (arr) => { const set = arr.filter(Boolean); const r = RC.find((c) => set.includes(c.a) && set.includes(c.b)); return r ? r.name : ''; };
+const openDetail = (id) => this.setState({ detail: id, toast: '' });
+
+const buy = (i) => {
+const st = this.state, it = st.shop[i];
+if (it.sold) return say('SCHON GEKAUFT');
+if (st.credits < it.price) return say('ZU WENIG CREDITS');
+const free = st.lager.indexOf(null);
+if (free < 0) return say('LAGER VOLL');
+this.setState({ credits: st.credits - it.price, shop: st.shop.map((x, k) => k === i ? { ...x, sold: true } : x),
+lager: st.lager.map((x, k) => k === free ? it.mod : x), toast: M[it.mod].name.toUpperCase() + ' GEKAUFT · −' + it.price + ' ◆' });
+};
+const pick = (i) => {
+const st = this.state;
+if (!st.lager[i]) return say(st.picked != null ? 'ERST EINEN MODULPLATZ WÄHLEN' : 'LEERER PLATZ');
+this.setState({ picked: st.picked === i ? null : i, toast: st.picked === i ? '' : 'TIPPE EINEN FREIEN MODULPLATZ' });
+};
+const install = (li, d, k) => {
+const st = this.state, mod = st.lager[li];
+if (!mod) return;
+if (st.slots[d][k]) return say('PLATZ BELEGT');
+const arr = st.slots[d].map((x, j) => j === k ? mod : x);
+const r = recipeIn(arr);
+this.setState({ picked: null, lager: st.lager.map((x, j) => j === li ? null : x), slots: { ...st.slots, [d]: arr },
+toast: r ? 'REZEPT AKTIV · ' + r.toUpperCase() : M[mod].name.toUpperCase() + ' EINGEBAUT' });
+};
+const slotAct = (d, k) => {
+const st = this.state, cur = st.slots[d][k];
+if (st.picked != null) return install(st.picked, d, k);
+if (!cur) return say('ERST EIN MODUL IM LAGER ANTIPPEN');
+const free = st.lager.indexOf(null);
+if (free < 0) return say('LAGER VOLL');
+this.setState({ slots: { ...st.slots, [d]: st.slots[d].map((x, j) => j === k ? null : x) }, lager: st.lager.map((x, j) => j === free ? cur : x), toast: M[cur].name.toUpperCase() + ' ZURÜCK INS LAGER' });
+};
+
+const shop = s.shop.map((it, i) => {
+const m = mi(it.mod), afford = s.credits >= it.price;
+return { ...m, cat: m.catLabel,
+border: it.sold ? '2px dashed #6a5a96' : '2px solid ' + m.color, shadow: it.sold ? 'none' : '6px 6px 0 #3a1a6e', opacity: it.sold ? '0.5' : '1',
+priceText: it.sold ? 'GEKAUFT' : '◆ ' + it.price,
+priceBg: it.sold ? 'transparent' : (afford ? '#ffe14d' : 'transparent'), priceColor: it.sold ? '#c3b3e6' : (afford ? '#12082a' : '#ff8ce8'),
+priceBorder: it.sold ? '0' : (afford ? '0' : '2px solid #ff8ce8'),
+aria: m.name + ', ' + it.price + ' Credits. Einmal tippen kauft, zweimal zeigt Details.',
+tap: () => this.tap('shop' + i, () => buy(i), () => openDetail(it.mod)) };
+});
+const lager = s.lager.map((id, i) => {
+const has = !!id, m = has ? mi(id) : null, sel = s.picked === i;
+return { has, empty: !has, abbr: has ? m.abbr : '', name: has ? m.name : '', color: has ? m.color : 'transparent',
+bg: sel ? 'rgba(255, 225, 77, 0.16)' : (has ? '#1b0b3a' : 'transparent'),
+border: sel ? '2px solid #ffe14d' : (has ? '2px solid ' + m.color : '2px dashed #6a5a96'),
+cls: sel ? 'cd-glow' : '', pressed: sel ? 'true' : 'false', drag: has ? 'true' : 'false',
+aria: has ? m.name + ' im Lager. Einmal tippen wählt aus, zweimal zeigt Details.' : 'Leerer Lagerplatz',
+dragStart: (e) => { if (!has) return; try { e.dataTransfer.setData('text/plain', String(i)); } catch (_) {} this.setState({ picked: i }); },
+tap: () => has ? this.tap('lager' + i, () => pick(i), () => openDetail(id)) : pick(i) };
+});
+const squad = DR.map((d) => {
+const arr = s.slots[d.id], r = recipeIn(arr);
+return { ...d, isVireo: d.id === 'vireo', isMolok: d.id === 'molok', isNimbus: d.id === 'nimbus', isStrix: d.id === 'strix',
+wTri: d.w === 'tri', wSq: d.w === 'sq', wPent: d.w === 'pent', hasRecipe: !!r, recipe: r.toUpperCase(),
+border: r ? '2px solid #ffe14d' : '2px solid #3a1a6e', shadow: r ? '6px 6px 0 #ff2bd6' : 'none',
+slots: arr.map((id, k) => {
+const has = !!id, m = has ? mi(id) : null, target = !has && s.picked != null;
+return { has, empty: !has, abbr: has ? m.abbr : '', color: has ? m.color : 'transparent',
+bg: target ? 'rgba(46, 227, 235, 0.16)' : (has ? '#12082a' : 'transparent'),
+border: target ? '2px solid #2ee3eb' : (has ? '2px solid ' + m.color : '2px dashed #6a5a96'),
+plusColor: target ? '#2ee3eb' : '#6a5a96', cls: target ? 'cd-glow' : '',
+aria: d.name + ' Modulplatz ' + (k + 1) + ': ' + (has ? m.name : 'leer'),
+tap: () => has ? this.tap(d.id + k, () => slotAct(d.id, k), () => openDetail(id)) : slotAct(d.id, k),
+over: (e) => { if (this.state.picked != null) e.preventDefault(); },
+drop: (e) => { e.preventDefault(); const st = this.state; let li = st.picked; if (li == null) { try { li = parseInt(e.dataTransfer.getData('text/plain'), 10); } catch (_) {} } if (li != null && !isNaN(li)) install(li, d.id, k); } };
+}) };
+});
+
+let dt = { recipes: [] };
+if (s.detail) {
+const m = mi(s.detail);
+dt = { ...m, cat: m.catLabel, recipes: RC.filter((c) => c.a === s.detail || c.b === s.detail).map((c) => {
+const p = c.a === s.detail ? c.b : c.a, pm = mi(p);
+return { partner: pm.name, pAbbr: pm.abbr, pColor: pm.color, name: c.name };
+}) };
+}
+let started = 0, ready = 0;
+const all = RC.map((c) => {
+const ha = owned.has(c.a), hb = owned.has(c.b), st = ha && hb ? 'ready' : (ha || hb ? 'started' : 'none');
+if (st === 'ready') ready++; if (st === 'started') started++;
+const ma = mi(c.a), mb = mi(c.b);
+return { ...c, st, catColor: CAT[c.cat][1], combo: ma.name + ' + ' + mb.name,
+aAbbr: ma.abbr, bAbbr: mb.abbr,
+aBg: ha ? ma.color : '#12082a', aText: ha ? '#0a0618' : ma.color, aOutline: '0',
+bBg: hb ? mb.color : '#12082a', bText: hb ? '#0a0618' : mb.color,
+border: st === 'ready' ? '#ffe14d' : (st === 'started' ? '#2ee3eb' : '#3a1a6e'),
+shadow: st === 'ready' ? '6px 6px 0 #ff2bd6' : (st === 'started' ? '6px 6px 0 #3a1a6e' : 'none'),
+opacity: st === 'none' ? '0.6' : '1',
+hasStatus: st !== 'none', status: st === 'ready' ? 'BEREIT' : 'BEGONNEN', statusBg: st === 'ready' ? '#ffe14d' : '#2ee3eb' };
+});
+const order = { ready: 0, started: 1, none: 2 };
+const recipes = all.filter((r) => s.filter === 'all' ? true : (s.filter === 'started' ? r.st !== 'none' : r.cat === s.filter)).sort((x, y) => order[x.st] - order[y.st]);
+const filters = [['all', 'ALLE'], ['started', 'BEGONNEN'], ['atk', 'ANGRIFF'], ['def', 'ABWEHR'], ['tkt', 'TAKT']].map(([k, l]) => {
+const on = s.filter === k;
+return { label: l, selected: on ? 'true' : 'false', border: on ? '#2ee3eb' : '#3a1a6e', bg: on ? '#2ee3eb' : '#1b0b3a', color: on ? '#0a0618' : '#e9dcff', pick: () => this.setState({ filter: k }) };
+});
+
+return {
+credits: s.credits, shop, lager, squad, lagerUsed: s.lager.filter(Boolean).length,
+toast: s.toast, detailOpen: !!s.detail, dt, closeDetail: () => this.setState({ detail: null }),
+bookOpen: s.book, openBook: () => this.setState({ book: true, toast: '' }), closeBook: () => this.setState({ book: false }),
+filters, recipes, startedCount: started, readyCount: ready
+};
+}
+}
+</script>
+
+
+</body></html>

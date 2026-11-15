@@ -723,3 +723,15 @@ func test_a_chaos_fight_only_shows_up_in_the_endless_run() -> void:
 		t.ok(build.is_valid() and not build.weapons().is_empty(), "%s ist kampftauglich" % build.display_name)
 	t.equal(found.enemies().map(func(b): return b.to_save()),
 		_through_json(found).enemies().map(func(b): return b.to_save()), "dieselben nach dem Laden")
+
+
+func test_the_loot_text_follows_the_cache_rules() -> void:
+	# Die Kampfkarte nennt die Beute aus run.loot (Caches seit 14. Nov. 2026),
+	# nicht mehr den alten Text "Teil der Gegner".
+	var run := RunState.start(4711, RunState.standard_squad())
+	var easy := run.loot_text(RunState.Tier.EASY)
+	var elite := run.loot_text(RunState.Tier.ELITE)
+	t.ok(easy.contains(RunState.cache_name(run.region_id)), "Leicht nennt den Cache: %s" % easy)
+	t.ok(easy.contains("%"), "Leicht nennt die Chance: %s" % easy)
+	t.ok(elite.ends_with("sicher"), "Elite: Cache sicher (%s)" % elite)
+	t.ok(not str(run.preview()["reward_text"]).contains("Teil"), "kein alter Beutetext mehr")

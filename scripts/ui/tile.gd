@@ -161,7 +161,7 @@ func _restyle() -> void:
 		style.bg_color = Color(UiKit.CARD, 0.94)
 		style.border_color = (UiKit.PRIMARY if chosen else (accent if glow else UiKit.CARD_LINE))
 		style.set_border_width_all(3 if chosen else 2)
-		style.shadow_size = 0
+		style.shadow_size = 1
 		style.shadow_offset = Vector2(4, 4)
 		style.shadow_color = Color(UiKit.MAGENTA, 0.7) if chosen else (
 			Color(accent, 0.35) if glow else Color(0, 0, 0, 0.4))
