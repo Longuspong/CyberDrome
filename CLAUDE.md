@@ -88,7 +88,7 @@ Punkte). Sie wird **nicht von Hand** bearbeitet, sondern von
 * Designfragen, die das Spiel selbst aendern (Regeln, Balancing, Layout-
   Muster), vorher kurz mit Empfehlung vorlegen.
 
-## Token sparen (Vorgabe des Spielers, 10. Nov. 2026)
+## Token sparen -- nur fuer Sitzungen mit Fable (Vorgabe des Spielers, 10. Nov. 2026)
 
 **Gilt nur, wenn die Sitzung auf Fable laeuft** (seit 15. Nov. 2026, Wunsch
 des Spielers). Mit anderen Modellen (Opus, Sonnet ...) entfallen diese Regeln:
