@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<title>Einsatz gescheitert</title>
+<script src="cc779a72-960f-4bac-8343-d29b84f6fb5c"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#0a0618}
+a{color:#ffe14d}a:hover{color:#fff3a8}
+@keyframes cdGlitchA{0%,86%,100%{transform:translate(-3px,0);clip-path:inset(0 0 0 0)}87%{transform:translate(-8px,2px);clip-path:inset(10% 0 55% 0)}89%{transform:translate(6px,-2px);clip-path:inset(60% 0 8% 0)}91%{transform:translate(-4px,0);clip-path:inset(30% 0 40% 0)}}
+@keyframes cdGlitchB{0%,86%,100%{transform:translate(3px,0);clip-path:inset(0 0 0 0)}87%{transform:translate(8px,-2px);clip-path:inset(50% 0 20% 0)}89%{transform:translate(-6px,3px);clip-path:inset(5% 0 70% 0)}91%{transform:translate(5px,0);clip-path:inset(70% 0 5% 0)}}
+@keyframes cdFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes cdSpin{to{transform:rotate(360deg)}}
+@keyframes cdPop{0%{transform:scale(.6) rotate(-3deg);opacity:0}70%{transform:scale(1.06) rotate(-3deg);opacity:1}100%{transform:scale(1) rotate(-3deg)}}
+.cd-ga{animation:cdGlitchA 3.2s steps(1) infinite}
+.cd-gb{animation:cdGlitchB 3.2s steps(1) infinite}
+.cd-fill{transform-origin:0 50%;animation:cdFill .7s ease-out both}
+.cd-spin{transform-origin:50% 50%;animation:cdSpin 12s linear infinite}
+.cd-pop{animation:cdPop .45s ease-out both}
+.cd-btn{cursor:pointer;font-family:inherit}
+.cd-btn:focus-visible{outline:3px solid #ffe14d;outline-offset:3px}
+.cd-row{scrollbar-width:none}
+.cd-row::-webkit-scrollbar{display:none}
+@media (prefers-reduced-motion: reduce){.cd-ga,.cd-gb,.cd-fill,.cd-spin,.cd-pop{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 450px; height: 800px; overflow: hidden; background: #0a0618; font-family: 'Chakra Petch', system-ui, sans-serif; color: #e9dcff">
+
+<svg aria-hidden="true" width="450" height="800" sc-camel-view-box="0 0 450 800" style="position: absolute; inset: 0; display: block">
+<defs>
+<pattern id="cdReDots" width="14" height="14" sc-camel-pattern-units="userSpaceOnUse">
+<circle cx="7" cy="7" r="1.6" fill="#ff3dbb" fill-opacity="0.22"></circle>
+</pattern>
+</defs>
+<rect x="0" y="0" width="450" height="800" fill="url(#cdReDots)"></rect>
+</svg>
+
+<div class="cd-row" style="position: absolute; left: 0; right: 0; top: 0; bottom: 92px; overflow-y: auto; box-sizing: border-box; padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px">
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0">
+<p style="margin: 0; padding: 5px 10px; background: #ffe14d; color: #12082a; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; transform: rotate(2deg)">NEON CITY · NEON NINJA'S</p>
+<div style="position: relative; font-family: Bungee, 'Chakra Petch', sans-serif; line-height: 1; text-align: center; transform: rotate(-4deg); margin: 10px 0 6px">
+<span aria-hidden="true" class="cd-ga" style="position: absolute; inset: 0; color: #2ee3eb; mix-blend-mode: screen"><span style="display: block; font-size: 26px">EINSATZ</span><span style="display: block; font-size: {{titleSize}}">{{word}}</span></span>
+<span aria-hidden="true" class="cd-gb" style="position: absolute; inset: 0; color: #ff2bd6; mix-blend-mode: screen"><span style="display: block; font-size: 26px">EINSATZ</span><span style="display: block; font-size: {{titleSize}}">{{word}}</span></span>
+<h1 style="position: relative; margin: 0; font-weight: 400; color: {{titleColor}}; text-shadow: 0 5px 0 #12082a"><span style="display: block; font-size: 26px">EINSATZ</span><span style="display: block; font-size: {{titleSize}}">{{word}}</span></h1>
+</div>
+<p style="margin: 0; font-size: 15px; font-weight: 600; color: #c3b3e6">{{summary}}</p>
+</div>
+
+<sc-if value="{{showBonus}}" hint-placeholder-val="{{ true }}">
+<section class="cd-pop" aria-label="Erstabschluss-Bonus" style="position: relative; display: flex; align-items: center; gap: 14px; padding: 14px; background: #ffe14d; color: #12082a; box-shadow: 6px 6px 0 #ff2bd6; margin-right: 6px; overflow: hidden; flex-shrink: 0">
+<svg aria-hidden="true" class="cd-spin" width="70" height="70" sc-camel-view-box="0 0 70 70" style="flex-shrink: 0"><polygon points="35,2 42,24 66,20 48,36 62,56 39,48 32,68 26,47 4,54 20,36 4,18 27,24" fill="#ff2bd6"></polygon><circle cx="35" cy="35" r="11" fill="#12082a"></circle></svg>
+<div style="display: flex; flex-direction: column; gap: 3px">
+<h2 style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-weight: 400; font-size: 19px; line-height: 1.05">ERSTABSCHLUSS-BONUS</h2>
+<p style="margin: 0; font-size: 15px; font-weight: 700">+50 Platzhaltercoin</p>
+<p style="margin: 0; font-size: 15px; font-weight: 700">Endlos-Modus freigeschaltet</p>
+</div>
+</section>
+</sc-if>
+
+<section aria-label="Verlauf" style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: #1b0b3a; border: 2px solid #3a1a6e; margin-right: 6px; flex-shrink: 0">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">VERLAUF</h2>
+<span style="display: flex; gap: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em"><span style="color: #2ee3eb">■ LEICHT</span><span style="color: #ff6a3d">■ NORMAL</span><span style="color: #ff2bd6">■ ELITE</span></span>
+</div>
+<div role="img" aria-label="{{mapAria}}" style="position: relative; height: 120px">
+<sc-for list="{{dots}}" as="o" hint-placeholder-count="10">
+<span aria-hidden="true" style="position: absolute; left: {{o.left}}; top: {{o.top}}; width: 8px; height: 8px; background: #3a1a6e"></span>
+</sc-for>
+<sc-for list="{{edges}}" as="e" hint-placeholder-count="7">
+<span aria-hidden="true" style="position: absolute; left: {{e.left}}; top: {{e.top}}; width: {{e.len}}; height: 3px; transform-origin: 0 50%; transform: rotate({{e.angle}}); background: {{e.bg}}"></span>
+</sc-for>
+<sc-for list="{{path}}" as="p" hint-placeholder-count="8">
+<span aria-hidden="true" style="position: absolute; left: {{p.left}}; top: {{p.top}}; width: 32px; height: 26px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: {{p.bg}}; border: 2px solid {{p.color}}; opacity: {{p.opacity}}">
+<sc-if value="{{p.win}}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" sc-camel-view-box="0 0 24 24" fill="none" style="stroke: {{p.color}}" stroke-width="4" stroke-linecap="square"><path d="M4 12l5 5L20 6"></path></svg></sc-if>
+<sc-if value="{{p.loss}}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" sc-camel-view-box="0 0 24 24" fill="none" stroke="#ff8ce8" stroke-width="4" stroke-linecap="square"><path d="M5 5l14 14M19 5L5 19"></path></svg></sc-if>
+<sc-if value="{{p.open}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; font-weight: 700; color: #6a5a96">?</span></sc-if>
+</span>
+</sc-for>
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="8">
+<span aria-hidden="true" style="position: absolute; left: {{c.left}}; bottom: 0; width: 32px; text-align: center; font-size: 11px; font-weight: 700; color: #c3b3e6">K{{c.n}}</span>
+</sc-for>
+</div>
+<p style="margin: 0; display: flex; gap: 14px; font-size: 14px; color: #c3b3e6"><span><span style="color: #2ee3eb; font-weight: 700">✓</span> Sieg</span><span><span style="color: #ff8ce8; font-weight: 700">✕</span> Niederlage · −1 Leben</span></p>
+</section>
+
+<section aria-label="Was bleibt" style="display: flex; flex-direction: column; gap: 12px; padding: 14px; background: #1b0b3a; border: 2px solid #2ee3eb; box-shadow: 6px 6px 0 #ff2bd6; margin-right: 6px; flex-shrink: 0">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">WAS BLEIBT</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #12082a">
+<svg aria-hidden="true" width="40" height="34" sc-camel-view-box="0 0 110 88" style="flex-shrink: 0"><polygon points="14,38 96,38 92,80 18,80" fill="#12082a" stroke="#ff2bd6" stroke-width="5"></polygon><polygon points="8,22 102,22 98,40 12,40" fill="#0a0618" stroke="#2ee3eb" stroke-width="5"></polygon><path d="M40 50h14M47 50v14M40 58h14M60 48v18M60 48h11" fill="none" stroke="#ff2bd6" stroke-width="5"></path></svg>
+<span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: #c3b3e6">NEON CACHE</span><span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 20px; line-height: 1; color: #fff7fe">×{{caches}}</span></span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #12082a">
+<svg aria-hidden="true" width="34" height="34" sc-camel-view-box="0 0 80 80" style="flex-shrink: 0"><polygon points="20,4 60,4 78,40 60,76 20,76 2,40" fill="#ffe14d"></polygon><rect x="32" y="26" width="16" height="28" fill="#12082a"></rect></svg>
+<span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: #c3b3e6">PLATZHALTERCOIN</span><span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 20px; line-height: 1; color: #ffe14d">+{{coins}}</span></span>
+</div>
+</div>
+<p style="margin: -4px 0 0; font-size: 14px; color: #c3b3e6">{{coinNote}}</p>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 2px dashed #3a1a6e">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">DROMEs</span>
+<sc-for list="{{dromes}}" as="x" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 14px; color: #fff7fe">{{x.name}}</span>
+<span style="padding: 1px 6px; background: {{x.tagBg}}; color: {{x.tagColor}}; font-size: 12px; font-weight: 700; letter-spacing: 0.08em">{{x.tag}}</span>
+</div>
+<span role="img" aria-label="{{x.aria}}" style="position: relative; height: 8px; display: flex; background: #0a0618">
+<span style="width: {{x.oldW}}; background: #2ee3eb; opacity: 0.55"></span>
+<span class="cd-fill" style="width: {{x.gainW}}; background: #ffe14d; animation-delay: {{x.delay}}"></span>
+</span>
+</div>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 2px dashed #3a1a6e">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">WAFFEN</span>
+<sc-for list="{{weapons}}" as="x" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: #fff7fe">
+<sc-if value="{{x.tri}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="13" height="13" sc-camel-view-box="0 0 22 22"><polygon points="11,2 20,19 2,19" fill="none" stroke="#ffe14d" stroke-width="3"></polygon></svg></sc-if>
+<sc-if value="{{x.sq}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="13" height="13" sc-camel-view-box="0 0 22 22"><polygon points="3,3 19,3 19,19 3,19" fill="none" stroke="#ffe14d" stroke-width="3"></polygon></svg></sc-if>
+<sc-if value="{{x.pent}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="13" height="13" sc-camel-view-box="0 0 22 22"><polygon points="11,2 20,9 16.5,20 5.5,20 2,9" fill="none" stroke="#ffe14d" stroke-width="3"></polygon></svg></sc-if>
+{{x.name}}</span>
+<span style="padding: 1px 6px; background: {{x.tagBg}}; color: {{x.tagColor}}; font-size: 12px; font-weight: 700; letter-spacing: 0.08em">{{x.tag}}</span>
+</div>
+<span role="img" aria-label="{{x.aria}}" style="position: relative; height: 6px; display: flex; background: #0a0618">
+<span style="width: {{x.oldW}}; background: #2ee3eb; opacity: 0.55"></span>
+<span class="cd-fill" style="width: {{x.gainW}}; background: #ffe14d; animation-delay: {{x.delay}}"></span>
+</span>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="Was verfällt" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; background: #12082a; border: 2px dashed #6a5a96; margin-right: 6px; flex-shrink: 0">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.22em; color: #ff8ce8">WAS VERFÄLLT</h2>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: #c3b3e6">NUR FÜR DEN EINSATZ</span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; opacity: 0.55">
+<span style="display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border: 2px solid #3a1a6e; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 16px; color: #c3b3e6; text-decoration: line-through; text-decoration-color: #ff8ce8; text-decoration-thickness: 3px">
+<svg aria-hidden="true" width="11" height="11" sc-camel-view-box="0 0 14 14"><polygon points="7,0 14,7 7,14 0,7" fill="#c3b3e6"></polygon></svg>{{credits}} CREDITS</span>
+<sc-for list="{{mods}}" as="m" hint-placeholder-count="4">
+<span style="position: relative; display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 8px 0 4px; border: 2px solid #3a1a6e; font-size: 14px; font-weight: 700; color: #c3b3e6; text-decoration: line-through; text-decoration-color: #ff8ce8; text-decoration-thickness: 2px">
+<span aria-hidden="true" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: #6a5a96; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 9px; color: #0a0618">{{m.abbr}}</span>{{m.name}}</span>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 14px; color: #c3b3e6">Credits und Module gelten nur innerhalb eines Einsatzes.</p>
+</section>
+</div>
+
+<div style="position: absolute; left: 20px; right: 26px; bottom: 20px; display: flex; gap: 12px">
+<a href="Hangar.dc.html" class="cd-btn" style="flex: 1 1 0; height: 54px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; text-decoration: none; border: 2px solid #ffe14d; background: #12082a; color: #ffe14d; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 16px; letter-spacing: 0.04em">ZUM HANGAR</a>
+<div style="position: relative; flex: 1.3 1 0; height: 54px">
+<div aria-hidden="true" style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #ff2bd6; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)"></div>
+<a href="Map.dc.html" class="cd-btn" style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 54px; text-decoration: none; background: #ffe14d; color: #12082a; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 16px; letter-spacing: 0.04em">NEUER EINSATZ ▶</a>
+</div>
+</div>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.16) 3px)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;outcome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;abgeschlossen&quot;,&quot;gescheitert&quot;],&quot;default&quot;:&quot;gescheitert&quot;},&quot;first&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true},&quot;$preview&quot;:{&quot;width&quot;:450,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+renderVals() {
+const win = (this.props.outcome ?? 'gescheitert') !== 'gescheitert';
+const first = win && (this.props.first ?? true);
+const TIER = { L: '#2ee3eb', N: '#ff6a3d', E: '#ff2bd6' };
+const N = [
+['n1a', 1, 120, 'L'], ['n1b', 1, 290, 'L'], ['n2a', 2, 70, 'L'], ['n2b', 2, 205, 'N'], ['n2c', 2, 340, 'L'],
+['n3a', 3, 70, 'N'], ['n3b', 3, 205, 'L'], ['n3c', 3, 340, 'N'], ['n4a', 4, 120, 'N'], ['n4b', 4, 290, 'E'],
+['n5a', 5, 120, 'N'], ['n5b', 5, 290, 'N'], ['n6a', 6, 120, 'E'], ['n6b', 6, 290, 'L'], ['n7a', 7, 120, 'N'], ['n7b', 7, 290, 'N'], ['n8', 8, 205, 'E']
+].map(([id, row, lane, tier]) => ({ id, row, lane, tier, cx: (row - 1) * 49 + 16, cy: 6 + (lane - 70) / 270 * 62 + 13 }));
+const route = win
+? [['n1a', 'W'], ['n2b', 'W'], ['n3c', 'W'], ['n4b', 'L'], ['n5b', 'W'], ['n6b', 'W'], ['n7b', 'W'], ['n8', 'W']]
+: [['n1a', 'W'], ['n2b', 'W'], ['n3c', 'W'], ['n4b', 'L'], ['n5b', 'W'], ['n6b', 'L'], ['n7b', 'L'], ['n8', '?']];
+const byId = (id) => N.find((n) => n.id === id);
+const onRoute = new Set(route.map(([id]) => id));
+const dots = N.filter((n) => !onRoute.has(n.id)).map((n) => ({ left: (n.cx - 4) + 'px', top: (n.cy - 4) + 'px' }));
+const edges = [];
+for (let i = 1; i < route.length; i++) {
+const a = byId(route[i - 1][0]), b = byId(route[i][0]);
+const dx = b.cx - a.cx, dy = b.cy - a.cy;
+edges.push({ left: a.cx + 'px', top: (a.cy - 1.5) + 'px', len: Math.hypot(dx, dy) + 'px', angle: (Math.atan2(dy, dx) * 180 / Math.PI) + 'deg',
+bg: route[i][1] === '?' ? 'repeating-linear-gradient(90deg, #6a5a96 0 5px, transparent 5px 9px)' : '#2ee3eb' });
+}
+const path = route.map(([id, r]) => {
+const n = byId(id);
+return { left: (n.cx - 16) + 'px', top: (n.cy - 13) + 'px', color: r === '?' ? '#6a5a96' : TIER[n.tier],
+bg: r === 'L' ? 'rgba(255, 140, 232, 0.16)' : '#12082a', opacity: r === '?' ? '0.6' : '1',
+win: r === 'W', loss: r === 'L', open: r === '?' };
+});
+const cols = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({ n, left: ((n - 1) * 49) + 'px' }));
+const wins = route.filter(([, r]) => r === 'W').length, losses = route.filter(([, r]) => r === 'L').length;
+const played = wins + losses;
+
+const bar = (x, i, max) => {
+const sum = x.old + x.gain, up = sum >= 100;
+return { ...x, oldW: x.old + '%', gainW: (Math.min(100, sum) - x.old) + '%', delay: (0.3 + i * 0.12).toFixed(2) + 's',
+tag: up ? 'LV ' + x.lv + ' → ' + (x.lv + 1) + ' ▲' : 'LV ' + x.lv + ' · ' + Math.min(99, sum) + ' %',
+tagBg: up ? '#ffe14d' : 'transparent', tagColor: up ? '#12082a' : '#c3b3e6',
+aria: x.name + ': Level ' + x.lv + (up ? ', Aufstieg auf ' + (x.lv + 1) : ', ' + sum + ' Prozent zum nächsten Level') + ' von ' + max };
+};
+const dromes = (win
+? [{ name: 'VIREO', lv: 3, old: 60, gain: 40 }, { name: 'MOLOK', lv: 2, old: 30, gain: 40 }, { name: 'NIMBUS', lv: 1, old: 75, gain: 25 }, { name: 'STRIX', lv: 2, old: 20, gain: 35 }]
+: [{ name: 'VIREO', lv: 3, old: 60, gain: 25 }, { name: 'MOLOK', lv: 2, old: 30, gain: 20 }, { name: 'NIMBUS', lv: 1, old: 75, gain: 25 }, { name: 'STRIX', lv: 2, old: 20, gain: 15 }]
+).map((x, i) => bar(x, i, 5));
+const weapons = (win
+? [{ name: 'Klingenarm', w: 'tri', lv: 4, old: 70, gain: 30 }, { name: 'Langläufer', w: 'pent', lv: 3, old: 10, gain: 45 }, { name: 'Pulsprojektor', w: 'sq', lv: 2, old: 80, gain: 20 }]
+: [{ name: 'Klingenarm', w: 'tri', lv: 4, old: 70, gain: 15 }, { name: 'Langläufer', w: 'pent', lv: 3, old: 10, gain: 20 }, { name: 'Pulsprojektor', w: 'sq', lv: 2, old: 80, gain: 10 }]
+).map((x, i) => ({ ...bar(x, i + 4, 10), tri: x.w === 'tri', sq: x.w === 'sq', pent: x.w === 'pent' }));
+
+const baseCoins = win ? 45 : 25;
+return {
+word: win ? 'ABGESCHLOSSEN' : 'GESCHEITERT',
+titleSize: win ? '34px' : '42px',
+titleColor: win ? '#fff7fe' : '#ff8ce8',
+summary: played + ' Kämpfe · ' + wins + ' Siege · ' + losses + ' Niederlagen · Leben ' + (3 - losses < 0 ? 0 : 3 - losses) + '/3',
+showBonus: first,
+mapAria: 'Gegangener Weg: ' + route.map(([id, r], i) => 'Kampf ' + (i + 1) + ' ' + (r === 'W' ? 'Sieg' : r === 'L' ? 'Niederlage' : 'nicht erreicht')).join(', '),
+dots, edges, path, cols,
+caches: win ? 4 : 2,
+coins: baseCoins + (first ? 50 : 0),
+coinNote: first ? baseCoins + ' aus Kämpfen ohne Cache · +50 Erstabschluss' : baseCoins + ' aus Kämpfen ohne Cache',
+dromes, weapons,
+credits: win ? 140 : 65,
+mods: [['ÜL', 'Überladung'], ['MF', 'Magnetfeld'], ['ZS', 'Zielsucher'], ['NF', 'Nanoflicken']].map(([abbr, name]) => ({ abbr, name }))
+};
+}
+}
+</script>
+
+
+</body></html>

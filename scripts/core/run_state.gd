@@ -594,7 +594,7 @@ func preview(index: int = -1) -> Dictionary:
 	conditions["enemy_builds"] = foes
 	conditions["enemy_power"] = DromeBuild.squad_power(foes)
 	conditions["own_power"] = DromeBuild.squad_power(squad)
-	conditions["reward_text"] = str(tier_cfg(which).get("reward_text", ""))
+	conditions["reward_text"] = loot_text(which)
 	conditions["chaos"] = chaos
 	var entry := Formations.formation(str(info.get("team", "")))
 	conditions["team"] = str(entry.get("name", ""))
@@ -603,13 +603,27 @@ func preview(index: int = -1) -> Dictionary:
 	conditions["type_hint"] = ""
 	conditions["reinforcement"] = reinforcement()
 	if chaos:
-		conditions["reward_text"] = "Chaos: Beute wie bei Elite, mehr Credits -- Gegner unbekannt"
+		conditions["reward_text"] = "%s sicher, mehr Credits -- Gegner unbekannt" % cache_name(region_id)
 	var own_faction := faction()
 	var training := is_training() and not chaos
 	conditions["faction"] = "" if training else str(own_faction.get("name", ""))
 	conditions["profile"] = "" if training else str(own_faction.get("profile", ""))
 	conditions["faction_text"] = "" if training else str(own_faction.get("text", ""))
 	return conditions
+
+
+## Die Beute einer Stufe in Worten, aus run.loot (seit 14. Nov. 2026 Caches
+## statt Teilen): "Neon Cache 50 % · sonst 10 Platzhaltercoin".
+func loot_text(which: int) -> String:
+	var key: String = TIER_KEYS[clampi(which, 0, 2)]
+	var chance := float((loot_cfg().get("cache_chance", {}) as Dictionary).get(key, 0.0))
+	var coins := int((loot_cfg().get("coins", {}) as Dictionary).get(key, 0))
+	var name := cache_name(region_id)
+	if chance >= 1.0:
+		return "%s sicher" % name
+	if chance <= 0.0:
+		return "%d %s" % [coins, coin_name()]
+	return "%s %d %% · sonst %d %s" % [name, int(round(chance * 100.0)), coins, coin_name()]
 
 
 ## Waehlt den ersten Knoten mit dieser Stufe (kein Chaos-Knoten). false, wenn

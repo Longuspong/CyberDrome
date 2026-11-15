@@ -29,6 +29,47 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Entwurf Einsatz-Bildschirme umgesetzt (15. Nov. 2026, Wunsch des Spielers)
+
+24 Entwuerfe des Spielers (`docs/design/einsatz_arcade/`, Bilder und
+Vorlagen, Abgleich im README). Abgesprochen: **nur Optik**, Navigation bleibt
+(Tab Shop, Zahnrad), Credits nur im laufenden Einsatz auf der Startseite.
+
+* **Bausteine** (`UiKit`): Kopfzeile mit Glitch-Titel, `header_slot` rechts
+  daneben, Reiter als `segmented` (Hangar, Shop), Tab-Leiste mit Symbolen
+  (`TabButton`), Karten mit 6-px-Schatten (`shadow_size` 1 -- 0 zeichnet in
+  Godot gar keinen), `outline_button`. `InfoPopup` mit Titel in Bungee,
+  `kicker` (gelbes Etikett) und `sheet` (Blatt von unten, Waffen-Karte).
+* **Startseite**: Buehne im Rahmen mit Etikett DEIN SQUAD, Gebietskarte mit
+  Fortschritt je Kampf (laufender Einsatz), Squad-Kaestchen, Coins (Credits
+  nur im Einsatz), Infinity-Einsatz gesperrt als gestrichelter Kasten.
+* **Hangar**: Squad mit grosser Karte oben (Rolle, Level, Kampfwert, Werte
+  zweispaltig, Waffe), Raster 3 Spalten darunter. Umbau mit Text-Kacheln,
+  Halter links / Bild / Werte rechts, Name per Tipp umbenennen.
+* **Einsatz** (`run_screen.gd`): Glitch-Titel und Leiste Leben (Herzen),
+  Credits, Caches, Verstaerkung. Kampfkarte mit Stufen-Etikett, Anfuehrer und
+  Beute-Zeile (`RunState.loot_text`, aus run.loot statt dem alten Text).
+  Zwischenstopp mit Rezeptbuch + Zur Karte unten. Ende mit Glitch-Schriftzug,
+  Verlauf als Kette (`RunChart`), Was bleibt, DROME-Level, Zum Hangar.
+* **Kampf**: CanvasLayer bekommt das Theme (vorher Godot-Schrift!), Kopf mit
+  Ort, Uhr, Virus-Vorwarnung, Gegnerzahl; Aufstellung mit Hinweis-Karte und
+  LOS; Leiste Tempo/Pause/Protokoll/Kamera. Ergebnis traegt den Kampf **gleich
+  ein** (`finish_run_battle` beim Anzeigen) und zeigt Zeit, Abschuesse,
+  Credits und die Beute; "Weiter" wechselt nur die Seite.
+* **Shop/Caches**: Bestand, Cache-Karten mit KAUFEN, Hipstar gesperrt,
+  Baukerne, Upgrades folgen. Caches-Lager mit allen vier Sorten
+  (`CacheArt`), **Cache oeffnen** (`CacheOpener`) als Vorschau -- verbraucht
+  nichts, bis die Inhalte entschieden sind.
+* **Optionen** nach Entwurf (Karten, Schalter mit AN/AUS, Spielstand-Kachel,
+  Debug). **Story-Dialog** (`StoryDialog.play`) als Baustein, noch nicht
+  angebunden.
+* `tests/screenshot.gd` kann jetzt Zustaende vorbereiten: `run=story
+  results=SSN weiter=1`, `editing_index=0`, `caches=city:3`,
+  `static=res://...gd:_tab:"caches"`, `cache_open=city[:auf]`, `karte=eq_hammer`,
+  `story=links|rechts`. Bilder per `xvfb-run` ohne Web-Export.
+* Offene Punkte aus dem Entwurf (Erstabschluss-Bonus, Seltenheit, Hipstar,
+  Lager 6/8, Mecha gesperrt, Endlos-Name, Kampf-Kacheln) im SPOT-Blatt.
+
 ### Tab Shop, Optionen am Zahnrad (15. Nov. 2026, Wunsch des Spielers)
 
 * Tab-Leiste: Spielen, Hangar, **Shop** (`scenes/shop.tscn`,

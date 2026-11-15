@@ -46,11 +46,8 @@ func _add_tile(unit: Unit) -> void:
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.clip_contents = true
 	panel.tooltip_text = "%s  ·  SPD %d" % [unit.display_name, unit.spd()]
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(UiKit.CARD, 0.92)
-	style.border_color = UiKit.CARD_LINE
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
+	# Entwurf 15. Nov. 2026: Cyan-Rahmen, Name in Bungee oben.
+	var style := Arcade.chamfer_box(Color(UiKit.CARD, 0.94), 6, Arcade.CYAN, 2)
 	style.content_margin_left = 4
 	style.content_margin_right = 4
 	style.content_margin_top = 3
@@ -67,13 +64,17 @@ func _add_tile(unit: Unit) -> void:
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(box)
 
+	var name := Arcade.label(unit.display_name.to_upper(), 12, Arcade.WHITE, "display")
+	name.clip_text = true
+	name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(name)
 	var head_row := HBoxContainer.new()
 	head_row.add_theme_constant_override("separation", 3)
 	head_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(head_row)
 	var head := TextureRect.new()
 	head.texture = UiKit.part_texture(unit.build.part_in("head") if unit.build else null)
-	head.custom_minimum_size = Vector2(HEAD_EDGE, HEAD_EDGE)
+	head.custom_minimum_size = Vector2(HEAD_EDGE * 0.7, HEAD_EDGE * 0.7)
 	head.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	head.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -64,6 +64,10 @@ var _pinch_zoom := 1.0
 # UI
 var _ui: CanvasLayer
 var _status: Label
+var _clock: Label
+var _foes: Label
+var _where: Label
+var _round_label: Label
 var _squad_tiles: SquadTiles
 var _top_box: VBoxContainer
 var _side_panel: PanelContainer
@@ -237,24 +241,40 @@ func _refresh_hud() -> void:
 		_squad_tiles.refresh(battle.units)
 	if _over:
 		return
+	var region := battle.region.display_name if battle.region != null else ""
+	_where.text = region.to_upper()
+	var run := GameState.run if GameState.in_run_battle else null
+	_round_label.text = ("KAMPF %d/%d" % [run.round, RunState.rounds_total()]) if run != null \
+		and not run.is_endless() else ("KAMPF %d" % run.round if run != null else "")
+	var foes_alive := 0
+	var foes_total := 0
+	for unit in battle.units:
+		if not unit.is_player:
+			foes_total += 1
+			if unit.is_alive():
+				foes_alive += 1
+	_foes.text = "%d/%d" % [foes_alive, foes_total]
 	if _deploying:
-		_status.text = "Aufstellung  ·  %s" % (battle.region.display_name
-			if battle.region != null else "")
+		_clock.text = "00:00"
+		_clock.add_theme_color_override("font_color", Arcade.MUTED)
+		_status.text = "AUFSTELLUNG"
+		_status.add_theme_color_override("font_color", Arcade.YELLOW)
 		return
 	var seconds := int(battle.time)
-	_status.text = "%d:%02d  ·  %s" % [seconds / 60, seconds % 60,
-		battle.region.display_name if battle.region != null else ""]
+	_clock.text = "%02d:%02d" % [seconds / 60, seconds % 60]
 	var until := battle.virus_in()
+	var color := Arcade.WHITE
+	_status.text = ""
 	if until <= 0.0:
-		_status.text += "  ·  VIRUS"
-		_status.modulate = UiKit.MAGENTA
+		_status.text = "VIRUS −%d %%" % int(round(float(Config.section("virus").get("pct_of_max", 0.1)) * 100.0))
+		color = Arcade.MAGENTA
 	elif until <= _virus_warn():
-		_status.text += "  ·  Virus in %d s" % int(ceil(until))
-		_status.modulate = UiKit.WARN
-	else:
-		_status.modulate = Color.WHITE
+		_status.text = "VIRUS IN %d S" % int(ceil(until))
+		color = Arcade.MAGENTA
+	_clock.add_theme_color_override("font_color", color)
+	_status.add_theme_color_override("font_color", Arcade.MAGENTA)
 	if _paused:
-		_status.text += "  ·  Pause"
+		_status.text = ("%s · PAUSE" % _status.text) if _status.text != "" else "PAUSE"
 
 
 func _refresh_badges() -> void:
@@ -443,7 +463,7 @@ func _look_at_unit(unit: Unit) -> void:
 func _set_follow(on: bool) -> void:
 	_follow = on
 	if _follow_button != null:
-		_follow_button.text = "Folgt" if on else "Folgen"
+		_follow_button.text = "◎\nKAMERA" if on else "○\nKAMERA"
 		_follow_button.modulate = UiKit.ACCENT if on else Color.WHITE
 
 
@@ -743,6 +763,9 @@ func _build_ui() -> void:
 	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_theme_constant_override("separation", 0)
+	# Eine CanvasLayer erbt das Theme der Wurzel nicht -- ohne das stuende im
+	# Kampf die Godot-Schrift statt Chakra Petch.
+	frame.theme = get_tree().root.theme
 	_ui.add_child(frame)
 
 	var top := PanelContainer.new()
@@ -751,13 +774,42 @@ func _build_ui() -> void:
 	var top_box := VBoxContainer.new()
 	top_box.add_theme_constant_override("separation", 4)
 	top.add_child(top_box)
+	# Kopf (Entwurf 15. Nov. 2026): links Ort und Kampf, Mitte die Uhr in
+	# Bungee (Virus: Magenta mit "VIRUS IN n S"), rechts die Gegner.
+	var head := HBoxContainer.new()
+	top_box.add_child(head)
+	var where := VBoxContainer.new()
+	where.add_theme_constant_override("separation", 0)
+	where.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(where)
+	_where = Arcade.label("", 11, Arcade.MUTED, "bold", 0.16)
+	where.add_child(_where)
+	_round_label = Arcade.label("", 11, Arcade.MUTED, "bold", 0.16)
+	where.add_child(_round_label)
+	var clock_box := VBoxContainer.new()
+	clock_box.add_theme_constant_override("separation", 0)
+	clock_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(clock_box)
+	_clock = Arcade.label("00:00", 26, Arcade.WHITE, "display")
+	_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	clock_box.add_child(_clock)
+	_status = Arcade.label("", 11, Arcade.MAGENTA, "bold", 0.16)
+	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status.clip_text = true
+	clock_box.add_child(_status)
+	var foes := VBoxContainer.new()
+	foes.add_theme_constant_override("separation", 0)
+	foes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(foes)
+	var foes_title := Arcade.label("GEGNER", 11, Arcade.MUTED, "bold", 0.16)
+	foes_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	foes.add_child(foes_title)
+	_foes = Arcade.label("", 20, Arcade.MAGENTA, "display")
+	_foes.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	foes.add_child(_foes)
 	_squad_tiles = SquadTiles.new()
 	top_box.add_child(_squad_tiles)
 	_top_box = top_box
-	_status = UiKit.label("", UiKit.SMALL)
-	_status.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_status.clip_text = true
-	top_box.add_child(_status)
 
 	var middle := Control.new()
 	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -799,10 +851,23 @@ func _build_ui() -> void:
 	deploy.add_theme_constant_override("separation", 6)
 	_deploy_bar = deploy
 	bars.add_child(deploy)
-	var hint := UiKit.label("Zieh deine DROMEs auf ein grünes Feld -- oder tippe "
-		+ "erst die Figur an, dann das Feld.", UiKit.SMALL, UiKit.MUTED)
-	deploy.add_child(hint)
-	var start := UiKit.button("Kampf starten", true)
+	# Entwurf: Hinweis-Karte, darunter "Danach kaempft dein Squad selbststaendig."
+	var hint_card := PanelContainer.new()
+	var hint_box := StyleBoxFlat.new()
+	hint_box.bg_color = Color(Arcade.VIOLET, 0.95)
+	hint_box.border_color = Arcade.CYAN
+	hint_box.set_border_width_all(2)
+	hint_box.set_content_margin_all(10)
+	hint_card.add_theme_stylebox_override("panel", hint_box)
+	var hint_column := VBoxContainer.new()
+	hint_column.add_theme_constant_override("separation", 0)
+	hint_card.add_child(hint_column)
+	hint_column.add_child(Arcade.label("Ziehe deine DROMEs in Position", 15, Arcade.WHITE, "bold"))
+	var hint := UiKit.label("Nur innerhalb der markierten Zone -- oder erst die Figur antippen, "
+		+ "dann das Feld. Danach kämpft dein Squad selbstständig.", 13, UiKit.MUTED)
+	hint_column.add_child(hint)
+	deploy.add_child(hint_card)
+	var start := UiKit.button("Los ▶", true)
 	start.pressed.connect(_start_fight)
 	deploy.add_child(start)
 
@@ -811,13 +876,13 @@ func _build_ui() -> void:
 	_play_bar = buttons
 	buttons.visible = false
 	bars.add_child(buttons)
-	_speed_button = _bar_button("Tempo 1x", _cycle_speed)
+	_speed_button = _bar_button("1×\nTEMPO", _cycle_speed)
 	buttons.add_child(_speed_button)
 	_apply_speed()
-	_pause_button = _bar_button("Pause", _toggle_pause)
+	_pause_button = _bar_button("❚❚\nPAUSE", _toggle_pause)
 	buttons.add_child(_pause_button)
-	buttons.add_child(_bar_button("Log", func(): _log_panel.visible = not _log_panel.visible))
-	_follow_button = _bar_button("Folgt", func(): _set_follow(not _follow))
+	buttons.add_child(_bar_button("☰\nPROTOKOLL", func(): _log_panel.visible = not _log_panel.visible))
+	_follow_button = _bar_button("◎\nKAMERA", func(): _set_follow(not _follow))
 	_follow_button.modulate = UiKit.ACCENT
 	buttons.add_child(_follow_button)
 
@@ -834,9 +899,9 @@ func _bar_button(text: String, on_press: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.custom_minimum_size = Vector2(0, 52)
-	button.add_theme_font_size_override("font_size", UiKit.SMALL)
-	button.add_theme_font_override("font", Arcade.font("bold", UiKit.SMALL, 0.08))
+	button.custom_minimum_size = Vector2(0, 58)
+	button.add_theme_font_size_override("font_size", 12)
+	button.add_theme_font_override("font", Arcade.font("bold", 12, 0.12))
 	button.pressed.connect(Accessibility.tap)
 	button.pressed.connect(on_press)
 	return button
@@ -862,7 +927,7 @@ func _cycle_speed() -> void:
 func _apply_speed() -> void:
 	Engine.time_scale = SPEEDS[_speed_index]
 	if _speed_button != null:
-		_speed_button.text = "Tempo %dx" % int(SPEEDS[_speed_index])
+		_speed_button.text = "%d×\nTEMPO" % int(SPEEDS[_speed_index])
 
 
 ## Das Tempo ist global (Engine.time_scale) und darf den Kampf nicht
@@ -874,7 +939,7 @@ func _exit_tree() -> void:
 func _toggle_pause() -> void:
 	_paused = not _paused
 	if _pause_button != null:
-		_pause_button.text = "Weiter" if _paused else "Pause"
+		_pause_button.text = "▶\nWEITER" if _paused else "❚❚\nPAUSE"
 	_refresh_hud()
 
 
@@ -882,14 +947,48 @@ func _toggle_pause() -> void:
 # Ergebnis
 # ---------------------------------------------------------------------------
 
-## Im Lauf: die Credits des Kampfes; die Beute zeigt der Zwischenstopp.
-func _add_loot_section(box: VBoxContainer, outcome: BattleManager.Outcome) -> void:
-	if not GameState.in_run_battle or GameState.run == null:
-		return
-	var won := outcome == BattleManager.Outcome.VICTORY
-	box.add_child(UiKit.label("+%d Credits%s" % [GameState.run.battle_credits(won),
-		"  ·  Cache oder Coins im Zwischenstopp" if won else "  ·  Trostpreis in Coins"],
-		UiKit.BODY, UiKit.WARN))
+func _result_cell(title: String, value: String, color: Color) -> Control:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", Arcade.chamfer_box(Arcade.DEEP, 8, Color("#3a1a6e"), 2))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	panel.add_child(column)
+	column.add_child(Arcade.label(title.to_upper(), 11, Arcade.MUTED, "bold", 0.16))
+	column.add_child(Arcade.label(value, 20, color, "display"))
+	return panel
+
+
+## Die Beute dieses Kampfs (schon eingetragen): ein Cache, Coins -- oder bei
+## einer Niederlage ein Leben weniger.
+func _loot_card(run: RunState, won: bool) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiKit.card_style(true))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 4)
+	panel.add_child(column)
+	column.add_child(Arcade.label("BEUTE" if won else "NIEDERLAGE", 13,
+		Arcade.CYAN if won else Arcade.MAGENTA, "bold", 0.2))
+	if not won:
+		column.add_child(Arcade.label("−1 LEBEN", 20, Arcade.MAGENTA, "display"))
+		column.add_child(UiKit.label("Der Einsatz geht mit %d Leben weiter." % run.lives
+			if run.lives > 0 else "Keine Leben mehr -- der Einsatz ist vorbei.", 14, UiKit.MUTED))
+	for item in run.last_loot:
+		var kind := str(item.get("kind", ""))
+		if kind == "cache":
+			column.add_child(Arcade.label(RunState.cache_name(StringName(str(item.get("cache", "city"))))
+				.to_upper() + (" ×%d" % int(item.get("count", 1)) if int(item.get("count", 1)) > 1 else ""),
+				20, Arcade.WHITE, "display"))
+			column.add_child(UiKit.label("Geschlossen. Kommt zu deinen gesammelten Caches.", 14,
+				UiKit.MUTED))
+		else:
+			column.add_child(Arcade.label(str(item.get("title", "")).to_upper(), 18, Arcade.YELLOW,
+				"display"))
+			if str(item.get("text", "")) != "":
+				column.add_child(UiKit.label(str(item["text"]), 13, UiKit.MUTED))
+	if won and run.last_loot.is_empty():
+		column.add_child(UiKit.label("Diesmal keine Beute.", 14, UiKit.MUTED))
+	return panel
 
 
 func _show_result(outcome: BattleManager.Outcome) -> void:
@@ -930,24 +1029,58 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 
 	var won := outcome == BattleManager.Outcome.VICTORY
 	Accessibility.vibrate(120 if won else 200, true)
-	# Der Ausgang als Glitch-Schriftzug (Arcade-Stil, 14. Nov. 2026).
-	var logo := Arcade.GlitchLogo.new(BattleManager.outcome_label(outcome).to_upper(), 34, 3.6, [
+	var result := battle.build_result()
+	# Im Einsatz wird das Ergebnis gleich eingetragen (Entwurf 15. Nov. 2026:
+	# die Beute steht schon hier) -- "Weiter" wechselt nur noch die Seite.
+	var in_run := GameState.in_run_battle and GameState.run != null
+	var run: RunState = GameState.run if in_run else null
+	var where := str(result["region"]).to_upper()
+	var credits := 0
+	if in_run:
+		where = "%s · KAMPF %d/%d" % [where, run.round, RunState.rounds_total()] if not run.is_endless() \
+			else "%s · KAMPF %d" % [where, run.round]
+		credits = run.battle_credits(won)
+		var pool: Array = battle.enemy_equipment.duplicate()
+		# Wer hat wie viele Abschuesse -- fuer die EP der Waffen (Leveling).
+		var fighters: Array = []
+		for unit in battle.units:
+			if unit.is_player and unit.build != null:
+				var weapons := {}
+				for slot in unit.build.equip_slots():
+					weapons[slot] = unit.weapon_record(slot)
+				fighters.append({"source_uid": unit.build.source_uid, "weapons": weapons})
+		GameState.finish_run_battle(outcome, pool, fighters)
+	var tag := Arcade.tilt(Arcade.tag(where, 12, 0.0), 2.0)
+	tag.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(tag)
+	# Der Ausgang als grosser Glitch-Schriftzug.
+	var logo := Arcade.GlitchLogo.new(BattleManager.outcome_label(outcome).to_upper(),
+		54 if won else 38, 3.6, [
 		[0.0, Vector2(-2, 0), Vector2(2, 0)],
 		[0.9, Vector2(-6, 2), Vector2(6, -2)],
 		[0.93, Vector2(4, -1), Vector2(-4, 1)]], 2.0)
 	var tilted := Arcade.tilt(logo, -3.0)
 	tilted.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(tilted)
-	var verdict := UiKit.label(("Alle Gegner ausgeschaltet" if won else ("Dein Squad ist gefallen"
-		if outcome == BattleManager.Outcome.DEFEAT else "Keiner hat gewonnen")).to_upper(), 14,
-		UiKit.GOOD if won else (UiKit.BAD if outcome == BattleManager.Outcome.DEFEAT else UiKit.WARN))
-	verdict.add_theme_font_override("font", Arcade.font("bold", 14, 0.2))
-	verdict.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(verdict)
+	var kills := 0
+	var foes := 0
+	for row in result["units"]:
+		if not row["is_player"]:
+			foes += 1
+			if not row["alive"]:
+				kills += 1
+	var stats := HBoxContainer.new()
+	stats.add_theme_constant_override("separation", 8)
+	box.add_child(stats)
+	var seconds := int(result["seconds"])
+	stats.add_child(_result_cell("Zeit", "%02d:%02d" % [seconds / 60, seconds % 60], Arcade.WHITE))
+	stats.add_child(_result_cell("Abschüsse", "%d/%d" % [kills, foes], Arcade.WHITE))
+	if in_run:
+		stats.add_child(_result_cell("Credits", "+%d" % credits, UiKit.GOOD))
+		box.add_child(_loot_card(run, won))
 
-	var result := battle.build_result()
-	box.add_child(UiKit.label("%d s  ·  %s" % [
-		result["seconds"], result["region"]], UiKit.SMALL, UiKit.MUTED))
+	var details := Arcade.label("KAMPFBERICHT", 12, Arcade.CYAN, "bold", 0.2)
+	box.add_child(details)
 
 	# Eine Zeile je Einheit (14. Nov. 2026 kompakt -- mit Sentinels werden
 	# es schnell zehn): Name, verursacht / erlitten, Leben.
@@ -970,21 +1103,9 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		table.add_child(UiKit.label("%d / %d" % [row["hp"], row["hp_max"]] if row["alive"] else "aus",
 			15, UiKit.TEXT if row["alive"] else UiKit.BAD))
 
-	_add_loot_section(box, outcome)
-
-	if GameState.in_run_battle:
-		var onward := UiKit.button("Weiter im Einsatz", true)
-		var pool: Array = battle.enemy_equipment.duplicate()
-		# Wer hat wie viele Abschuesse -- fuer die EP der Waffen (Leveling).
-		var fighters: Array = []
-		for unit in battle.units:
-			if unit.is_player and unit.build != null:
-				var weapons := {}
-				for slot in unit.build.equip_slots():
-					weapons[slot] = unit.weapon_record(slot)
-				fighters.append({"source_uid": unit.build.source_uid, "weapons": weapons})
+	if in_run:
+		var onward := UiKit.button("Weiter ▶", true)
 		onward.pressed.connect(func():
-			GameState.finish_run_battle(outcome, pool, fighters)
 			get_tree().change_scene_to_file("res://scenes/run.tscn"))
 		buttons.add_child(onward)
 		onward.grab_focus.call_deferred()

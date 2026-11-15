@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<title>Hangar Shop</title>
+<script src="22f4cce8-a1c7-44cc-be30-a8e9773f18a8"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#0a0618}
+a{color:#ffe14d}a:hover{color:#fff3a8}
+@keyframes cdGlitchA{0%,90%,100%{transform:translate(-2px,0)}91%{transform:translate(-5px,2px)}93%{transform:translate(3px,-1px)}}
+@keyframes cdGlitchB{0%,90%,100%{transform:translate(2px,0)}91%{transform:translate(5px,-2px)}93%{transform:translate(-3px,1px)}}
+@keyframes cdBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes cdBump{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
+.cd-ga{animation:cdGlitchA 4s steps(1) infinite}
+.cd-gb{animation:cdGlitchB 4s steps(1) infinite}
+.cd-blink{animation:cdBlink 1s steps(1) infinite}
+.cd-bump{animation:cdBump .35s ease-out both}
+.cd-btn{cursor:pointer;font-family:inherit}
+.cd-btn:focus-visible{outline:3px solid #ffe14d;outline-offset:3px}
+.cd-row{scrollbar-width:none}
+.cd-row::-webkit-scrollbar{display:none}
+@media (prefers-reduced-motion: reduce){.cd-ga,.cd-gb,.cd-blink,.cd-bump{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 450px; height: 800px; overflow: hidden; background: #0a0618; font-family: 'Chakra Petch', system-ui, sans-serif; color: #e9dcff">
+
+<svg aria-hidden="true" width="450" height="800" sc-camel-view-box="0 0 450 800" style="position: absolute; inset: 0; display: block">
+<defs>
+<pattern id="cdShDots" width="14" height="14" sc-camel-pattern-units="userSpaceOnUse">
+<circle cx="7" cy="7" r="1.6" fill="#ff3dbb" fill-opacity="0.22"></circle>
+</pattern>
+</defs>
+<rect x="0" y="0" width="450" height="800" fill="url(#cdShDots)"></rect>
+</svg>
+
+<div class="cd-row" style="position: absolute; left: 0; right: 0; top: 0; bottom: 64px; overflow-y: auto; box-sizing: border-box; padding: 12px 20px 20px; display: flex; flex-direction: column; gap: 12px">
+
+<header style="display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; flex-shrink: 0">
+<div style="position: relative; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 20px; line-height: 1; transform: rotate(-4deg)">
+<span aria-hidden="true" class="cd-ga" style="position: absolute; inset: 0; color: #2ee3eb; mix-blend-mode: screen">HANGAR</span>
+<span aria-hidden="true" class="cd-gb" style="position: absolute; inset: 0; color: #ff2bd6; mix-blend-mode: screen">HANGAR</span>
+<h1 style="position: relative; margin: 0; font-size: inherit; font-weight: 400; color: #fff7fe">HANGAR</h1>
+</div>
+<div role="tablist" aria-label="Hangar-Bereiche" style="display: flex; padding: 2px; gap: 2px; background: #3a1a6e; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)">
+<a href="Hangar.dc.html" role="tab" aria-selected="false" class="cd-btn" style="height: 44px; box-sizing: border-box; padding: 0 7px; display: flex; align-items: center; text-decoration: none; background: #12082a; color: #c3b3e6; font-size: 12px; font-weight: 700; letter-spacing: 0.06em">SQUAD</a>
+<a href="Umbau.dc.html" role="tab" aria-selected="false" class="cd-btn" style="height: 44px; box-sizing: border-box; padding: 0 7px; display: flex; align-items: center; text-decoration: none; background: #12082a; color: #c3b3e6; font-size: 12px; font-weight: 700; letter-spacing: 0.06em">UMBAU</a>
+<a href="CacheStore.dc.html" role="tab" aria-selected="false" class="cd-btn" style="height: 44px; box-sizing: border-box; padding: 0 7px; display: flex; align-items: center; text-decoration: none; background: #12082a; color: #c3b3e6; font-size: 12px; font-weight: 700; letter-spacing: 0.06em">CACHES</a>
+<button type="button" role="tab" aria-selected="true" class="cd-btn" style="height: 44px; padding: 0 8px; border: 0; background: #2ee3eb; color: #0a0618; font-size: 12px; font-weight: 700; letter-spacing: 0.06em">SHOP</button>
+</div>
+</header>
+
+<section aria-label="Bestand" style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: #1b0b3a; border: 2px solid #ffe14d; box-shadow: 6px 6px 0 #ff2bd6; margin-right: 6px; flex-shrink: 0">
+<svg aria-hidden="true" width="50" height="50" sc-camel-view-box="0 0 80 80" style="flex-shrink: 0"><polygon points="20,4 60,4 78,40 60,76 20,76 2,40" fill="#ffe14d"></polygon><polygon points="26,16 54,16 66,40 54,64 26,64 14,40" fill="none" stroke="#12082a" stroke-width="4"></polygon><rect x="32" y="26" width="16" height="28" fill="#12082a"></rect></svg>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">BESTAND</span>
+<span class="{{bumpCls}}" aria-live="polite" style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 32px; line-height: 1; color: #ffe14d">{{coins}}</span>
+<span style="font-size: 14px; font-weight: 600; color: #c3b3e6">Platzhaltercoin <span style="font-size: 12px; color: #6a5a96; letter-spacing: 0.1em">(ARBEITSNAME)</span></span>
+</div>
+</section>
+
+<div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; flex-shrink: 0">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">CACHES</h2>
+<a href="CacheStore.dc.html" style="font-size: 13px; font-weight: 700; letter-spacing: 0.12em; color: #ffe14d">ZUM CACHE-LAGER ›</a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; margin-right: 6px; flex-shrink: 0">
+<sc-for list="{{caches}}" as="c" hint-placeholder-count="4">
+<div style="position: relative; box-sizing: border-box; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; background: {{c.bg}}; border: {{c.border}}; box-shadow: {{c.shadow}}; text-align: center">
+<span aria-hidden="true" style="height: 64px; display: flex; align-items: center; justify-content: center; opacity: {{c.artOpacity}}">
+<svg width="80" height="64" sc-camel-view-box="0 0 110 88">
+<ellipse cx="55" cy="83" rx="44" ry="5" style="fill: {{c.accent}}; opacity: 0.35"></ellipse>
+<polygon points="14,38 96,38 92,80 18,80" style="fill: #12082a; stroke: {{c.accent}}; stroke-width: 4; stroke-dasharray: {{c.dash}}"></polygon>
+<polygon points="8,22 102,22 98,40 12,40" style="fill: #0a0618; stroke: {{c.accent2}}; stroke-width: 4; stroke-dasharray: {{c.dash}}"></polygon>
+<sc-if value="{{c.isNeon}}" hint-placeholder-val="{{ true }}"><path d="M40 50h14M47 50v14M40 58h14M60 48v18M60 48h11M60 56h9M66 56v10" fill="none" stroke="#ff2bd6" stroke-width="4" stroke-linecap="square"></path></sc-if>
+<sc-if value="{{c.isSolar}}" hint-placeholder-val="{{ false }}"><g><circle cx="55" cy="58" r="10" fill="#ffcf4d"></circle><path d="M55 10q14 -8 22 0q-10 10 -22 0z" fill="#7ee081"></path></g></sc-if>
+<sc-if value="{{c.locked}}" hint-placeholder-val="{{ false }}"><g><rect x="41" y="50" width="28" height="22" fill="#0a0618" stroke="#c3b3e6" stroke-width="4"></rect><path d="M47 50v-6a8 8 0 0 1 16 0v6" fill="none" stroke="#c3b3e6" stroke-width="4"></path></g></sc-if>
+</svg>
+</span>
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; line-height: 1.1; color: {{c.nameColor}}">{{c.name}}</span>
+<span style="font-size: 14px; font-weight: 600; color: #c3b3e6">{{c.sub}}</span>
+<sc-if value="{{c.open}}" hint-placeholder-val="{{ true }}">
+<span style="display: flex; align-items: center; gap: 6px; margin-top: 2px; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 16px; color: #ffe14d"><svg aria-hidden="true" width="14" height="14" sc-camel-view-box="0 0 80 80"><polygon points="20,4 60,4 78,40 60,76 20,76 2,40" fill="#ffe14d"></polygon></svg>{{c.price}}</span>
+<button type="button" class="cd-btn" sc-camel-on-click="{{c.buy}}" aria-disabled="{{c.short}}" aria-label="{{c.aria}}" style="align-self: stretch; height: 44px; margin-top: 4px; border: {{c.btnBorder}}; background: {{c.btnBg}}; color: {{c.btnColor}}; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; letter-spacing: 0.04em; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)">{{c.btnLabel}}</button>
+</sc-if>
+<sc-if value="{{c.locked}}" hint-placeholder-val="{{ false }}">
+<span style="align-self: stretch; height: 44px; margin-top: 26px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px dashed #6a5a96; color: #c3b3e6; font-size: 13px; font-weight: 700; letter-spacing: 0.1em">GESPERRT</span>
+</sc-if>
+<sc-if value="{{c.hasOwned}}" hint-placeholder-val="{{ false }}">
+<span style="position: absolute; left: -2px; top: -2px; padding: 2px 6px; background: #2ee3eb; color: #0a0618; font-size: 11px; font-weight: 700; letter-spacing: 0.1em">IM LAGER ×{{c.owned}}</span>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; flex-shrink: 0">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">UPGRADES</h2>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: #c3b3e6">INHALTE FOLGEN</span>
+</div>
+<sc-for list="{{ups}}" as="u" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #1b0b3a; border: 2px solid #3a1a6e; margin-right: 6px; flex-shrink: 0">
+<span aria-hidden="true" style="width: 46px; height: 46px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px dashed #2ee3eb; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 20px; color: #2ee3eb">{{u.letter}}</span>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; color: #fff7fe">{{u.name}}</span>
+<span role="img" aria-label="Stufe {{u.lv}} von 5" style="display: flex; gap: 2px"><sc-for list="{{u.pips}}" as="p" hint-placeholder-count="5"><span style="width: 8px; height: 8px; box-sizing: border-box; background: {{p.bg}}; border: {{p.border}}"></span></sc-for></span>
+<span style="font-size: 12px; font-weight: 700; color: #c3b3e6">{{u.lv}}/5</span>
+</div>
+<span style="font-size: 14px; color: #c3b3e6">{{u.effect}}</span>
+</div>
+<button type="button" class="cd-btn" sc-camel-on-click="{{u.buy}}" aria-disabled="{{u.short}}" aria-label="{{u.aria}}" style="width: 96px; height: 48px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border: {{u.btnBorder}}; background: {{u.btnBg}}; color: {{u.btnColor}}; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)">
+<span style="display: flex; align-items: center; gap: 4px; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 15px; line-height: 1"><svg aria-hidden="true" width="11" height="11" sc-camel-view-box="0 0 80 80"><polygon points="20,4 60,4 78,40 60,76 20,76 2,40" style="fill: {{u.btnColor}}"></polygon></svg>{{u.price}}</span>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em">{{u.btnLabel}}</span>
+</button>
+</div>
+</sc-for>
+</div>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<p role="status" style="position: absolute; left: 20px; right: 26px; bottom: 80px; margin: 0; padding: 12px 14px; background: #0a0618; border: 2px solid #2ee3eb; color: #2ee3eb; font-weight: 700; font-size: 15px; letter-spacing: 0.1em; z-index: 5">{{toast}}<span class="cd-blink">_</span></p>
+</sc-if>
+
+<nav aria-label="Hauptnavigation" style="position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: grid; grid-template-columns: 1fr 1fr 1fr; background: #12082a; border-top: 2px solid #3a1a6e">
+<a href="Main.dc.html" class="cd-btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: #c3b3e6">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="miter"><polygon points="7,4 19,12 7,20"></polygon></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em">SPIELEN</span>
+</a>
+<button type="button" class="cd-btn" aria-current="page" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: rgba(46, 227, 235, 0.08); color: #2ee3eb">
+<span aria-hidden="true" style="position: absolute; left: 18px; right: 18px; top: -2px; height: 3px; background: #2ee3eb"></span>
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" stroke-linejoin="miter"><path d="M3 11L12 4l9 7v9H3z"></path><path d="M7 20v-6h10v6"></path><path d="M7 17h10"></path></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em">HANGAR</span>
+</button>
+<button type="button" class="cd-btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: #c3b3e6">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"><path d="M3 7h18M3 17h18"></path><rect x="7" y="4" width="5" height="6" fill="#12082a"></rect><rect x="13" y="14" width="5" height="6" fill="#12082a"></rect></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.18em">OPTIONEN</span>
+</button>
+</nav>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; z-index: 10; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.16) 3px)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;coins&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:95},&quot;$preview&quot;:{&quot;width&quot;:450,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = {
+coins: (props && props.coins != null) ? props.coins : 95, bump: 0, toast: '',
+owned: { neon: 3, solar: 1, mecha: 0, hipstar: 0 },
+ups: [{ id: 'A', lv: 1, base: 40 }, { id: 'B', lv: 1, base: 70 }, { id: 'C', lv: 1, base: 115 }]
+};
+}
+renderVals() {
+const s = this.state;
+const fmt = (n) => Number(n).toLocaleString('de-DE');
+const C = [
+{ k: 'neon', name: 'NEON CACHE', area: 'Neon City', accent: '#ff2bd6', accent2: '#2ee3eb', open: true },
+{ k: 'solar', name: 'SOLAR CACHE', area: 'Parkanlage', accent: '#7ee081', accent2: '#ffcf4d', open: true },
+{ k: 'mecha', name: 'MECHA CACHE', area: 'Factory 5', accent: '#6a5a96', accent2: '#6a5a96', open: false },
+{ k: 'hipstar', name: 'HIPSTAR CACHE', area: 'Dachterrassen', accent: '#6a5a96', accent2: '#6a5a96', open: false }
+];
+const PRICE = 50;
+const btn = (ok, missing) => ({
+btnBg: ok ? '#ffe14d' : 'transparent', btnColor: ok ? '#12082a' : '#c3b3e6',
+btnBorder: ok ? '0' : '2px dashed #6a5a96', btnLabel: ok ? 'KAUFEN' : 'FEHLEN ' + missing, short: ok ? 'false' : 'true'
+});
+const caches = C.map((c) => {
+const ok = s.coins >= PRICE, n = s.owned[c.k];
+return { ...c, locked: !c.open, isNeon: c.k === 'neon', isSolar: c.k === 'solar',
+price: PRICE, owned: n, hasOwned: c.open && n > 0,
+sub: c.open ? c.area : c.area + ' erreichen',
+nameColor: c.open ? '#fff7fe' : '#c3b3e6',
+bg: c.open ? '#1b0b3a' : '#12082a',
+border: c.open ? '2px solid ' + c.accent : '2px dashed #6a5a96',
+shadow: c.open ? '6px 6px 0 #3a1a6e' : 'none',
+dash: c.open ? 'none' : '6 5', artOpacity: c.open ? '1' : '0.7',
+...btn(ok, PRICE - s.coins),
+aria: c.name + ', ' + PRICE + ' Platzhaltercoin' + (ok ? ', kaufen' : ', es fehlen ' + (PRICE - s.coins)),
+buy: () => {
+if (!c.open) return;
+if (s.coins < PRICE) { this.setState({ toast: 'ES FEHLEN ' + (PRICE - s.coins) + ' COINS' }); return; }
+const owned = { ...s.owned, [c.k]: n + 1 };
+this.setState({ coins: s.coins - PRICE, bump: s.bump + 1, owned, toast: c.name + ' GEKAUFT · IM CACHE-LAGER ×' + (n + 1) });
+} };
+});
+const ups = s.ups.map((u) => {
+const price = Math.round(u.base * Math.pow(1.5, u.lv - 1) / 5) * 5;
+const max = u.lv >= 5, ok = !max && s.coins >= price;
+const b = max ? { btnBg: 'transparent', btnColor: '#2ee3eb', btnBorder: '2px solid #2ee3eb', btnLabel: 'MAXIMAL', short: 'true' } : btn(ok, price - s.coins);
+return { letter: u.id, name: 'UPGRADE ' + u.id, lv: u.lv, price: max ? '—' : price, ...b,
+effect: 'Kurze Wirkung (Platzhalter) · Stufe ' + Math.min(5, u.lv + 1) + ' als Nächstes',
+pips: [1, 2, 3, 4, 5].map((i) => i <= u.lv ? { bg: '#2ee3eb', border: '1px solid #2ee3eb' } : { bg: 'transparent', border: '1px solid #6a5a96' }),
+aria: 'Upgrade ' + u.id + ', Stufe ' + u.lv + ' von 5, ' + price + ' Platzhaltercoin' + (ok ? '' : ', es fehlen ' + (price - s.coins)),
+buy: () => {
+if (max) return;
+if (s.coins < price) { this.setState({ toast: 'ES FEHLEN ' + (price - s.coins) + ' COINS' }); return; }
+this.setState({ coins: s.coins - price, bump: s.bump + 1, ups: s.ups.map((x) => x.id === u.id ? { ...x, lv: x.lv + 1 } : x), toast: 'UPGRADE ' + u.id + ' · STUFE ' + (u.lv + 1) + '/5' });
+} };
+});
+return { coins: fmt(s.coins), bumpCls: s.bump % 2 ? 'cd-bump' : '', caches, ups, toast: s.toast };
+}
+}
+</script>
+
+
+</body></html>

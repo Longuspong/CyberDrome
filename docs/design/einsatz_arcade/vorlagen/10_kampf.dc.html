@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<title>Kampf läuft</title>
+<script src="ffd1802c-94a1-4612-b7ee-76ae82b3c187"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#0a0618}
+a{color:#ffe14d}a:hover{color:#fff3a8}
+@keyframes cdGlitchA{0%,86%,100%{transform:translate(-3px,0);clip-path:inset(0 0 0 0)}87%{transform:translate(-8px,2px);clip-path:inset(10% 0 55% 0)}89%{transform:translate(6px,-2px);clip-path:inset(60% 0 8% 0)}91%{transform:translate(-4px,0);clip-path:inset(30% 0 40% 0)}}
+@keyframes cdGlitchB{0%,86%,100%{transform:translate(3px,0);clip-path:inset(0 0 0 0)}87%{transform:translate(8px,-2px);clip-path:inset(50% 0 20% 0)}89%{transform:translate(-6px,3px);clip-path:inset(5% 0 70% 0)}91%{transform:translate(5px,0);clip-path:inset(70% 0 5% 0)}}
+@keyframes cdBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes cdZone{0%,100%{opacity:.35}50%{opacity:.8}}
+@keyframes cdMarch{from{background-position:0 0}to{background-position:24px 0}}
+@keyframes cdVFlick{0%,68%,100%{opacity:0;transform:none}70%{opacity:1;transform:translateX(-7px)}74%{opacity:.7;transform:translateX(6px)}78%{opacity:0;transform:none}}
+@keyframes cdVPulse{0%{opacity:1;transform:translateX(-10px)}15%{opacity:1;transform:translateX(8px)}30%{opacity:.8;transform:translateX(-4px)}60%{opacity:.4;transform:none}100%{opacity:0}}
+@keyframes cdIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.cd-ga{animation:cdGlitchA 3.2s steps(1) infinite}
+.cd-gb{animation:cdGlitchB 3.2s steps(1) infinite}
+.cd-blink{animation:cdBlink 1s steps(1) infinite}
+.cd-zone{animation:cdZone 1.6s ease-in-out infinite}
+.cd-march{animation:cdMarch .5s linear infinite}
+.cd-vflick{opacity:0;animation-name:cdVFlick;animation-timing-function:steps(1);animation-iteration-count:infinite}
+.cd-vpulse{opacity:0;animation:cdVPulse .7s steps(4) 1 both}
+.cd-in{animation:cdIn .3s ease-out both}
+.cd-btn{cursor:pointer;font-family:inherit}
+.cd-btn:focus-visible{outline:3px solid #ffe14d;outline-offset:3px}
+@media (prefers-reduced-motion: reduce){.cd-ga,.cd-gb,.cd-blink,.cd-zone,.cd-march,.cd-vflick,.cd-vpulse,.cd-in{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 450px; height: 800px; overflow: hidden; background: #0a0618; font-family: 'Chakra Petch', system-ui, sans-serif; color: #e9dcff">
+
+<svg aria-hidden="true" width="450" height="800" sc-camel-view-box="0 0 450 800" style="position: absolute; inset: 0; display: block">
+<defs>
+<pattern id="cdBtDots" width="14" height="14" sc-camel-pattern-units="userSpaceOnUse">
+<circle cx="7" cy="7" r="1.6" fill="#ff3dbb" fill-opacity="0.22"></circle>
+</pattern>
+<linearGradient id="cdBtSun" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#ffe14d"></stop>
+<stop offset="0.55" stop-color="#ff6a3d"></stop>
+<stop offset="1" stop-color="#ff2bd6"></stop>
+</linearGradient>
+<clipPath id="cdBtSunCut">
+<rect x="0" y="0" width="450" height="232"></rect>
+<rect x="0" y="236" width="450" height="8"></rect>
+<rect x="0" y="248" width="450" height="5"></rect>
+</clipPath>
+</defs>
+<rect x="0" y="0" width="450" height="800" fill="url(#cdBtDots)"></rect>
+<circle cx="398" cy="262" r="64" fill="url(#cdBtSun)" fill-opacity="0.3" clip-path="url(#cdBtSunCut)"></circle>
+<g fill="#12082a">
+<rect x="0" y="214" width="26" height="48"></rect><rect x="30" y="196" width="22" height="66"></rect><rect x="56" y="226" width="30" height="36"></rect>
+<rect x="364" y="220" width="24" height="42"></rect><rect x="392" y="202" width="26" height="60"></rect><rect x="422" y="230" width="28" height="32"></rect>
+</g>
+<line x1="0" y1="262" x2="450" y2="262" stroke="#2ee3eb" stroke-opacity="0.35" stroke-width="2"></line>
+<polygon points="15,430 225,570 225,586 15,446" fill="#1b0b3a"></polygon>
+<polygon points="225,570 435,430 435,446 225,586" fill="#3a1a6e"></polygon>
+<polygon points="225,290 435,430 225,570 15,430" fill="#12082a"></polygon>
+<path d="{{gridD}}" fill="none" stroke="#2ee3eb" stroke-opacity="0.16" stroke-width="1"></path>
+<polygon points="225,290 435,430 225,570 15,430" fill="none" stroke="#2ee3eb" stroke-opacity="0.7" stroke-width="2"></polygon>
+</svg>
+
+<sc-if value="{{isSetup}}" hint-placeholder-val="{{ true }}">
+<svg aria-hidden="true" width="450" height="800" sc-camel-view-box="0 0 450 800" style="position: absolute; inset: 0; display: block; pointer-events: none">
+<polygon class="cd-zone" points="57,402 267,542 225,570 15,430" fill="#2ee3eb" fill-opacity="0.22" stroke="#2ee3eb" stroke-width="2.5"></polygon>
+<polygon points="225,290 435,430 393,458 183,318" fill="#ff2bd6" fill-opacity="0.1" stroke="#ff2bd6" stroke-width="2" stroke-dasharray="6 5"></polygon>
+</svg>
+<p style="position: absolute; left: 22px; top: 498px; margin: 0; padding: 3px 8px; background: #2ee3eb; color: #0a0618; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; transform: rotate(-3deg)">DEINE ZONE</p>
+<p style="position: absolute; right: 22px; top: 300px; margin: 0; padding: 3px 8px; border: 2px dashed #ff2bd6; color: #ff8ce8; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; transform: rotate(2deg)">GEGNER</p>
+</sc-if>
+<p style="position: absolute; left: 0; right: 0; top: 596px; margin: 0; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">ARENA 20 × 20 · PLATZHALTER</p>
+
+<div sc-camel-on-pointer-move="{{moveDrag}}" sc-camel-on-pointer-up="{{endDrag}}" sc-camel-on-pointer-cancel="{{endDrag}}" style="position: absolute; left: 0; top: 0; width: 450px; height: 800px; touch-action: none">
+<sc-for list="{{tracers}}" as="tr" hint-placeholder-count="2">
+<span aria-hidden="true" class="cd-march" style="position: absolute; left: {{tr.left}}; top: {{tr.top}}; width: {{tr.len}}; height: 2px; transform-origin: 0 50%; transform: rotate({{tr.angle}}); background: {{tr.bg}}; z-index: 900"></span>
+</sc-for>
+<sc-for list="{{units}}" as="u" hint-placeholder-count="10">
+<button type="button" class="cd-btn" disabled="{{u.locked}}" aria-label="{{u.aria}}" sc-camel-on-pointer-down="{{u.down}}" style="position: absolute; left: {{u.left}}; top: {{u.top}}; width: {{u.w}}; height: {{u.h}}; padding: 0; border: 0; background: transparent; z-index: {{u.z}}; cursor: {{u.cursor}}; touch-action: none; outline: {{u.outline}}; outline-offset: 2px">
+<span aria-hidden="true" style="position: absolute; left: 10%; right: 10%; bottom: -3px; height: 8px; border-radius: 50%; background: {{u.baseColor}}; opacity: 0.45"></span>
+<sc-if value="{{u.isVireo}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="100%" height="100%" sc-camel-view-box="0 0 80 100" style="position: relative; display: block"><g transform="translate(-51,-160)"><g style="fill: #0a0618; stroke: {{u.stroke}}; stroke-width: 3; stroke-linejoin: miter"><polygon points="78,188 94,188 96,202 76,202"></polygon><polygon points="72,206 100,206 96,228 76,228"></polygon><polygon points="100,210 120,216 118,221 98,216"></polygon><polygon points="72,210 62,226 66,228 76,214"></polygon><polygon points="76,230 84,230 80,250 72,250"></polygon><polygon points="88,230 96,230 100,250 92,250"></polygon></g><rect x="80" y="193" width="12" height="3" style="fill: {{u.visor}}"></rect></g></svg>
+</sc-if>
+<sc-if value="{{u.isMolok}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="100%" height="100%" sc-camel-view-box="0 0 80 100" style="position: relative; display: block"><g transform="translate(-125,-160)"><g style="fill: #0a0618; stroke: {{u.stroke}}; stroke-width: 3; stroke-linejoin: miter"><rect x="126" y="178" width="12" height="30"></rect><rect x="192" y="178" width="12" height="30"></rect><rect x="129" y="168" width="6" height="10"></rect><rect x="195" y="168" width="6" height="10"></rect><rect x="155" y="166" width="20" height="14"></rect><polygon points="136,182 194,182 190,222 140,222"></polygon><rect x="144" y="224" width="16" height="26"></rect><rect x="170" y="224" width="16" height="26"></rect></g><rect x="158" y="171" width="14" height="3" style="fill: {{u.visor}}"></rect></g></svg>
+</sc-if>
+<sc-if value="{{u.isNimbus}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="100%" height="100%" sc-camel-view-box="0 0 80 100" style="position: relative; display: block"><g transform="translate(-205,-160)"><circle cx="245" cy="178" r="15" fill="none" style="stroke: {{u.stroke}}" stroke-width="2" stroke-dasharray="5 4"></circle><g style="fill: #0a0618; stroke: {{u.stroke}}; stroke-width: 3; stroke-linejoin: miter"><circle cx="245" cy="178" r="8"></circle><polygon points="232,190 258,190 262,220 228,220"></polygon><polygon points="232,222 242,222 240,250 230,250"></polygon><polygon points="248,222 258,222 260,250 250,250"></polygon></g><rect x="240" y="176" width="10" height="3" style="fill: {{u.visor}}"></rect></g></svg>
+</sc-if>
+<sc-if value="{{u.isStrix}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="100%" height="100%" sc-camel-view-box="0 0 80 100" style="position: relative; display: block"><g transform="translate(-296,-158)"><g style="fill: #0a0618; stroke: {{u.stroke}}; stroke-width: 3; stroke-linejoin: miter"><polygon points="318,162 332,162 330,176 320,176"></polygon><polygon points="316,180 334,180 332,218 318,218"></polygon><polygon points="304,198 372,180 373,184 305,202"></polygon><polygon points="318,220 324,220 320,250 314,250"></polygon><polygon points="326,220 332,220 336,250 330,250"></polygon></g><circle cx="327" cy="169" r="2.5" style="fill: {{u.visor}}"></circle></g></svg>
+</sc-if>
+<sc-if value="{{u.isSentinel}}" hint-placeholder-val="{{ true }}">
+<svg aria-hidden="true" width="100%" height="100%" sc-camel-view-box="0 0 40 50" style="position: relative; display: block"><g style="fill: #0a0618; stroke: {{u.stroke}}; stroke-width: 2.5; stroke-linejoin: miter"><line x1="20" y1="13" x2="20" y2="5"></line><polygon points="10,14 30,14 36,26 30,38 10,38 4,26"></polygon><rect x="11" y="38" width="6" height="10"></rect><rect x="23" y="38" width="6" height="10"></rect></g><rect x="13" y="23" width="14" height="4" fill="#ff6a3d"></rect></svg>
+</sc-if>
+<sc-if value="{{u.isWreck}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="100%" height="100%" sc-camel-view-box="0 0 40 50" style="position: relative; display: block"><g fill="#1b0b3a" stroke="#6a5a96" stroke-width="2"><polygon points="6,40 18,34 22,44 10,48"></polygon><polygon points="22,36 34,38 32,46 24,46"></polygon></g><path d="M12 22l16 16M28 22L12 38" stroke="#6a5a96" stroke-width="3"></path></svg>
+</sc-if>
+<sc-if value="{{u.hasBars}}" hint-placeholder-val="{{ true }}">
+<span aria-hidden="true" style="position: absolute; left: 50%; top: {{u.barTop}}; transform: translateX(-50%); width: {{u.barW}}; display: flex; flex-direction: column; gap: 1px; padding: 1px; background: rgba(10, 6, 24, 0.85)">
+<sc-if value="{{u.hasShield}}" hint-placeholder-val="{{ true }}"><span style="height: 3px; display: flex; background: #12082a"><span style="width: {{u.shW}}; background: #2ee3eb"></span></span></sc-if>
+<span style="height: {{u.hpH}}; display: flex; background: #12082a"><span style="width: {{u.hpW}}; background: {{u.hpColor}}"></span></span>
+</span>
+</sc-if>
+</button>
+</sc-for>
+</div>
+
+<sc-if value="{{isSetup}}" hint-placeholder-val="{{ true }}">
+<header style="position: absolute; left: 20px; right: 20px; top: 12px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; height: 44px">
+<p style="margin: 0; padding: 5px 10px; background: #ffe14d; color: #12082a; font-weight: 700; font-size: 13px; letter-spacing: 0.24em; transform: rotate(-3deg)">AUFSTELLUNG</p>
+<p style="margin: 0; display: flex; align-items: baseline; gap: 8px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">GEGNER</span><span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 20px; color: #ff2bd6">6</span></p>
+</div>
+<h1 style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-weight: 400; font-size: 20px; line-height: 1; color: #fff7fe">NEON CITY · KAMPF 3/8</h1>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #1b0b3a; border: 2px solid #2ee3eb; box-shadow: 6px 6px 0 #3a1a6e; margin-right: 6px">
+<svg aria-hidden="true" width="26" height="26" sc-camel-view-box="0 0 24 24" fill="none" stroke="#2ee3eb" stroke-width="2.4" stroke-linecap="square" stroke-linejoin="miter" style="flex-shrink: 0"><path d="M9 11V4h3v7M12 9V3h3v8M15 10V5h3v9a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-4 2-1 3 3v-6h3"></path></svg>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<p style="margin: 0; font-size: 16px; font-weight: 700; color: #fff7fe">Ziehe deine DROMEs in Position</p>
+<p style="margin: 0; font-size: 14px; color: #c3b3e6">Nur innerhalb der markierten Zone.</p>
+</div>
+</div>
+</header>
+<p style="position: absolute; left: 20px; right: 20px; bottom: 86px; margin: 0; text-align: center; font-size: 14px; color: #c3b3e6">Danach kämpft dein Squad selbstständig.</p>
+<div style="position: absolute; left: 20px; right: 26px; bottom: 20px; height: 54px">
+<div aria-hidden="true" style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #ff2bd6; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)"></div>
+<button type="button" class="cd-btn" sc-camel-on-click="{{go}}" style="position: relative; width: 100%; height: 54px; border: 0; background: #ffe14d; color: #12082a; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 22px; letter-spacing: 0.08em">LOS ▶</button>
+</div>
+</sc-if>
+
+<sc-if value="{{isLive}}" hint-placeholder-val="{{ false }}">
+<header style="position: absolute; left: 0; right: 0; top: 0; box-sizing: border-box; padding: 8px 20px 10px; display: flex; flex-direction: column; gap: 8px; background: rgba(10, 6, 24, 0.92); border-bottom: 2px solid #3a1a6e">
+<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 48px">
+<p style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: #c3b3e6">NEON CITY<br>KAMPF 3/8</p>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px">
+<p role="timer" aria-label="Kampfzeit {{clock}}" style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 28px; line-height: 1; color: {{clockColor}}; text-shadow: {{clockShadow}}">{{clock}}</p>
+<sc-if value="{{warn}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: #ff2bd6">VIRUS IN {{warnLeft}} S</span>
+</sc-if>
+<sc-if value="{{virus}}" hint-placeholder-val="{{ false }}">
+<span style="display: flex; align-items: center; gap: 6px">
+<span style="padding: 1px 7px; background: #ff2bd6; color: #0a0618; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; transform: rotate(-3deg)">VIRUS</span>
+<span aria-hidden="true" style="display: flex; gap: 2px"><sc-for list="{{pulsePips}}" as="pp" hint-placeholder-count="3"><span style="width: 8px; height: 8px; background: {{pp.bg}}"></span></sc-for></span>
+</span>
+</sc-if>
+</div>
+<p style="margin: 0; justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 1px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">GEGNER</span><span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 20px; line-height: 1; color: #ff2bd6">{{foesLeft}}/6</span></p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{tiles}}" as="t" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 3px; padding: 6px; background: #1b0b3a; border: 2px solid {{t.border}}">
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 12px; line-height: 1.1; color: #fff7fe">{{t.name}}</span>
+<span role="img" aria-label="Integrität {{t.hp}} Prozent" style="height: 5px; display: flex; background: #0a0618"><span style="width: {{t.hpW}}; background: #ffe14d"></span></span>
+<span role="img" aria-label="Schild {{t.sh}} Prozent" style="height: 3px; display: flex; background: #0a0618"><span style="width: {{t.shW}}; background: #2ee3eb"></span></span>
+<span style="display: flex; align-items: center; gap: 4px; margin-top: 2px">
+<span aria-hidden="true" style="display: flex; gap: 2px"><sc-for list="{{t.pips}}" as="p" hint-placeholder-count="3"><span style="width: 7px; height: 7px; box-sizing: border-box; background: {{p.bg}}; border: {{p.border}}"></span></sc-for></span>
+<span style="font-size: 12px; font-weight: 700; color: {{t.taktColor}}">{{t.cnt}}/{{t.takt}}</span>
+</span>
+<span style="font-size: 12px; font-weight: 600; line-height: 1.1; color: #c3b3e6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{t.ab}}</span>
+</div>
+</sc-for>
+</div>
+</header>
+
+<sc-if value="{{paused}}" hint-placeholder-val="{{ false }}">
+<p style="position: absolute; left: 50%; top: 404px; transform: translateX(-50%) rotate(-3deg); margin: 0; padding: 8px 16px; background: #ffe14d; color: #12082a; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 22px; letter-spacing: 0.1em; z-index: 1000">PAUSE</p>
+</sc-if>
+
+<sc-if value="{{logOpen}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Kampfprotokoll" style="position: absolute; left: 20px; right: 20px; bottom: 92px; box-sizing: border-box; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: #12082a; border: 2px solid #2ee3eb; z-index: 1000">
+<p style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #2ee3eb">PROTOKOLL</p>
+<p style="margin: 0; font-size: 14px; color: #e9dcff"><span style="color: #c3b3e6">03:08</span> Strix · Durchschuss trifft 2 Ziele</p>
+<p style="margin: 0; font-size: 14px; color: #e9dcff"><span style="color: #c3b3e6">03:04</span> Neon Assault Sentinel zerstört</p>
+<p style="margin: 0; font-size: 14px; color: #e9dcff"><span style="color: #c3b3e6">02:57</span> Molok · Rückstoß auf Neon Nimbus</p>
+<p style="margin: 0; font-size: 14px; color: #e9dcff"><span style="color: #c3b3e6">02:51</span> Nimbus · Verlangsamen (3 Ziele)</p>
+</section>
+</sc-if>
+
+<nav aria-label="Kampfsteuerung" style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; box-sizing: border-box; padding: 8px 12px 10px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; background: #12082a; border-top: 2px solid #3a1a6e; z-index: 1001">
+<button type="button" class="cd-btn" sc-camel-on-click="{{toggleTempo}}" aria-label="Tempo {{tempoLabel}}, umschalten" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 2px solid {{tempoBorder}}; background: {{tempoBg}}; color: {{tempoColor}}">
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 20px; line-height: 22px">{{tempoLabel}}</span>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em">TEMPO</span>
+</button>
+<button type="button" class="cd-btn" sc-camel-on-click="{{togglePause}}" aria-pressed="{{pausedStr}}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 2px solid {{pauseBorder}}; background: {{pauseBg}}; color: {{pauseColor}}">
+<sc-if value="{{paused}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="currentColor"><polygon points="7,4 20,12 7,20"></polygon></svg></sc-if>
+<sc-if value="{{running}}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16"></rect><rect x="14" y="4" width="5" height="16"></rect></svg></sc-if>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em">{{pauseLabel}}</span>
+</button>
+<button type="button" class="cd-btn" sc-camel-on-click="{{toggleLog}}" aria-pressed="{{logStr}}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 2px solid {{logBorder}}; background: {{logBg}}; color: {{logColor}}">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"></path></svg>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em">PROTOKOLL</span>
+</button>
+<button type="button" class="cd-btn" sc-camel-on-click="{{toggleCam}}" aria-pressed="{{camStr}}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 2px solid {{camBorder}}; background: {{camBg}}; color: {{camColor}}">
+<svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"></path><circle cx="12" cy="12" r="3"></circle></svg>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em">KAMERA</span>
+</button>
+</nav>
+
+<sc-if value="{{warn}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" class="cd-vflick" style="position: absolute; inset: 0; pointer-events: none; z-index: 1100; animation-duration: {{flickDur}}">
+<span style="position: absolute; inset: 0; background: rgba(255, 43, 214, 0.1)"></span>
+<span style="position: absolute; left: 0; right: 0; top: 214px; height: 10px; background: #ff2bd6; opacity: 0.55"></span>
+<span style="position: absolute; left: 60px; right: -20px; top: 372px; height: 18px; background: #2ee3eb; opacity: 0.35; transform: translateX(14px)"></span>
+<span style="position: absolute; left: -30px; right: 90px; top: 498px; height: 6px; background: #ff2bd6; opacity: 0.7"></span>
+<span style="position: absolute; left: 0; right: 0; top: 610px; height: 3px; background: #fff7fe; opacity: 0.5"></span>
+</div>
+</sc-if>
+<sc-if value="{{pulseFx}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" class="cd-vpulse" style="position: absolute; inset: 0; pointer-events: none; z-index: 1100">
+<span style="position: absolute; inset: 0; background: rgba(255, 43, 214, 0.18)"></span>
+<span style="position: absolute; left: 0; right: 0; top: 168px; height: 22px; background: #ff2bd6; opacity: 0.6"></span>
+<span style="position: absolute; left: -40px; right: 40px; top: 330px; height: 12px; background: #2ee3eb; opacity: 0.5"></span>
+<span style="position: absolute; left: 30px; right: -30px; top: 452px; height: 28px; background: #ff2bd6; opacity: 0.45"></span>
+<span style="position: absolute; left: 0; right: 0; top: 560px; height: 8px; background: #2ee3eb; opacity: 0.6"></span>
+<p style="position: absolute; left: 50%; top: 404px; transform: translateX(-50%) rotate(-4deg); margin: 0; padding: 4px 12px; background: #0a0618; border: 2px solid #ff2bd6; color: #ff2bd6; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 18px; white-space: nowrap">VIRUS −10 %</p>
+</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{isResult}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; z-index: 1200; background: rgba(10, 6, 24, 0.86); box-sizing: border-box; padding: 56px 20px 20px; display: flex; flex-direction: column; align-items: stretch; gap: 16px">
+<p style="margin: 0; align-self: center; padding: 5px 10px; background: #ffe14d; color: #12082a; font-weight: 700; font-size: 13px; letter-spacing: 0.24em; transform: rotate(2deg)">NEON CITY · KAMPF 3/8</p>
+<div style="position: relative; align-self: center; font-family: Bungee, 'Chakra Petch', sans-serif; font-size: {{resSize}}; line-height: 1; transform: rotate(-5deg); margin: 10px 0 14px">
+<span aria-hidden="true" class="cd-ga" style="position: absolute; inset: 0; color: #2ee3eb; mix-blend-mode: screen">{{resWord}}</span>
+<span aria-hidden="true" class="cd-gb" style="position: absolute; inset: 0; color: #ff2bd6; mix-blend-mode: screen">{{resWord}}</span>
+<h1 style="position: relative; margin: 0; font-size: inherit; font-weight: 400; line-height: inherit; color: {{resColor}}; text-shadow: 0 6px 0 #12082a">{{resWord}}</h1>
+</div>
+<div class="cd-in" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-right: 6px">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #1b0b3a; border: 2px solid #3a1a6e">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">ZEIT</span>
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 22px; line-height: 1; color: #fff7fe">{{resTime}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #1b0b3a; border: 2px solid #3a1a6e">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">ABSCHÜSSE</span>
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 22px; line-height: 1; color: #fff7fe">{{resKills}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #1b0b3a; border: 2px solid #3a1a6e">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #c3b3e6">CREDITS</span>
+<span style="font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 22px; line-height: 1; color: #2ee3eb">{{resCredits}}</span>
+</div>
+</div>
+
+<p style="margin: 6px 0 0; font-size: 15px; font-weight: 700; letter-spacing: 0.22em; color: #2ee3eb">{{lootTitle}}</p>
+<sc-if value="{{showCache}}" hint-placeholder-val="{{ true }}">
+<div class="cd-in" style="display: flex; align-items: center; gap: 16px; padding: 16px; background: #1b0b3a; border: 2px solid #2ee3eb; box-shadow: 6px 6px 0 #ff2bd6; margin-right: 6px; animation-delay: .15s">
+<svg role="img" aria-label="Neon Cache, geschlossene Kiste" width="104" height="88" sc-camel-view-box="0 0 104 88" style="flex-shrink: 0">
+<ellipse cx="52" cy="82" rx="46" ry="6" fill="#ff2bd6" fill-opacity="0.35"></ellipse>
+<polygon points="6,34 98,34 92,80 12,80" fill="#12082a" stroke="#2ee3eb" stroke-width="3" stroke-linejoin="miter"></polygon>
+<polygon points="2,16 102,16 98,36 6,36" fill="#1b0b3a" stroke="#2ee3eb" stroke-width="3" stroke-linejoin="miter"></polygon>
+<rect x="44" y="16" width="16" height="64" fill="#ffe14d"></rect>
+<rect x="40" y="30" width="24" height="16" fill="#0a0618" stroke="#ffe14d" stroke-width="3"></rect>
+<rect x="49" y="35" width="6" height="6" fill="#ff2bd6"></rect>
+<line x1="12" y1="52" x2="38" y2="52" stroke="#ff2bd6" stroke-width="3"></line>
+<line x1="66" y1="52" x2="92" y2="52" stroke="#ff2bd6" stroke-width="3"></line>
+</svg>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-weight: 400; font-size: 24px; line-height: 1; color: #fff7fe">NEON CACHE</h2>
+<p style="margin: 0; font-size: 15px; color: #c3b3e6">Geschlossen. Kommt zu deinen gesammelten Caches.</p>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{showCoins}}" hint-placeholder-val="{{ false }}">
+<div class="cd-in" style="display: flex; align-items: center; gap: 16px; padding: 16px; background: #1b0b3a; border: 2px solid #ffe14d; box-shadow: 6px 6px 0 #3a1a6e; margin-right: 6px; animation-delay: .15s">
+<svg aria-hidden="true" width="80" height="80" sc-camel-view-box="0 0 80 80" style="flex-shrink: 0"><polygon points="20,4 60,4 78,40 60,76 20,76 2,40" fill="#ffe14d"></polygon><polygon points="26,16 54,16 66,40 54,64 26,64 14,40" fill="none" stroke="#12082a" stroke-width="4"></polygon><rect x="32" y="26" width="16" height="28" fill="#12082a"></rect></svg>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-weight: 400; font-size: 26px; line-height: 1.05; color: #ffe14d">+10<br><span style="font-size: 17px">PLATZHALTERCOIN</span></h2>
+<p style="margin: 0; font-size: 15px; color: #c3b3e6">Kein Cache diesmal.</p>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{showLoss}}" hint-placeholder-val="{{ false }}">
+<div class="cd-in" style="display: flex; align-items: center; gap: 16px; padding: 16px; background: #1b0b3a; border: 2px solid #ff8ce8; margin-right: 6px; animation-delay: .15s">
+<span role="img" aria-label="2 von 3 Leben übrig" style="display: flex; gap: 6px; flex-shrink: 0">
+<svg aria-hidden="true" width="27" height="24" sc-camel-view-box="0 0 18 16"><path d="M2 0h5v2h4V0h5v2h2v6h-2v2h-2v2h-2v2h-2v2H8v-2H6v-2H4v-2H2V8H0V2h2z" fill="#ff2bd6"></path></svg>
+<svg aria-hidden="true" width="27" height="24" sc-camel-view-box="0 0 18 16"><path d="M2 0h5v2h4V0h5v2h2v6h-2v2h-2v2h-2v2h-2v2H8v-2H6v-2H4v-2H2V8H0V2h2z" fill="#ff2bd6"></path></svg>
+<svg aria-hidden="true" width="27" height="24" sc-camel-view-box="0 0 18 16"><path d="M2 0h5v2h4V0h5v2h2v6h-2v2h-2v2h-2v2h-2v2H8v-2H6v-2H4v-2H2V8H0V2h2z" fill="none" stroke="#6a5a96" stroke-width="1.5" stroke-dasharray="2 2"></path></svg>
+</span>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-family: Bungee, 'Chakra Petch', sans-serif; font-weight: 400; font-size: 22px; line-height: 1; color: #ff8ce8">−1 LEBEN</h2>
+<p style="margin: 0; font-size: 15px; color: #c3b3e6">Keine Beute. Der Einsatz geht mit 2 Leben weiter.</p>
+</div>
+</div>
+</sc-if>
+
+<div style="margin-top: auto; position: relative; height: 54px; margin-right: 6px">
+<div aria-hidden="true" style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #ff2bd6; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)"></div>
+<a href="Map.dc.html" class="cd-btn" style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 54px; text-decoration: none; background: #ffe14d; color: #12082a; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); font-family: Bungee, 'Chakra Petch', sans-serif; font-size: 22px; letter-spacing: 0.06em">WEITER ▶</a>
+</div>
+</div>
+</sc-if>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; z-index: 1300; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.16) 3px)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;phase&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;setup&quot;,&quot;fight&quot;,&quot;virus&quot;,&quot;result&quot;],&quot;default&quot;:&quot;fight&quot;},&quot;outcome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sieg&quot;,&quot;niederlage&quot;],&quot;default&quot;:&quot;sieg&quot;},&quot;loot&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;cache&quot;,&quot;coins&quot;],&quot;default&quot;:&quot;cache&quot;},&quot;$preview&quot;:{&quot;width&quot;:450,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const phase = (props && props.phase) || 'fight';
+const placed = phase === 'setup';
+this.state = {
+phase, t: phase === 'virus' ? 284 : (phase === 'fight' ? 192 : 0),
+tempo: 1, paused: false, logOpen: false, cam: true, drag: null, pulseAt: -1,
+own: [
+{ id: 'vireo', name: 'VIREO', i: placed ? 5 : 9, j: placed ? 17 : 11, hp: 72, sh: 40, takt: 3, cnt: 2, ab: 'Doppelschnitt' },
+{ id: 'molok', name: 'MOLOK', i: placed ? 9 : 8, j: placed ? 17 : 13, hp: 88, sh: 65, takt: 4, cnt: 1, ab: 'Rückstoß' },
+{ id: 'nimbus', name: 'NIMBUS', i: placed ? 12 : 11, j: placed ? 18 : 15, hp: 54, sh: 20, takt: 2, cnt: 1, ab: 'Verlangsamen' },
+{ id: 'strix', name: 'STRIX', i: placed ? 15 : 15, j: placed ? 18 : 17, hp: 91, sh: 80, takt: 3, cnt: 0, ab: 'Durchschuss' }
+],
+foes: placed ? [
+{ id: 'lead', type: 'nimbus', i: 10, j: 2, hp: 100, sh: 100 },
+{ id: 's1', type: 'sentinel', i: 7, j: 1, hp: 100 }, { id: 's2', type: 'sentinel', i: 6, j: 3, hp: 100 },
+{ id: 's3', type: 'sentinel', i: 13, j: 2, hp: 100 }, { id: 's4', type: 'sentinel', i: 15, j: 3, hp: 100 },
+{ id: 's5', type: 'sentinel', i: 12, j: 0, hp: 100 }
+] : [
+{ id: 'lead', type: 'nimbus', i: 10, j: 6, hp: 63, sh: 30 },
+{ id: 's1', type: 'sentinel', i: 8, j: 7, hp: 45 }, { id: 's2', type: 'sentinel', i: 6, j: 9, hp: 30 },
+{ id: 's3', type: 'sentinel', i: 12, j: 8, hp: 80 }, { id: 's4', type: 'sentinel', i: 16, j: 3, hp: 70 },
+{ id: 's5', type: 'wreck', i: 11, j: 10, hp: 0 }
+]
+};
+this.acc = 0;
+}
+componentDidMount() {
+this.timer = setInterval(() => {
+const s = this.state;
+if (!(s.phase === 'fight' || s.phase === 'virus') || s.paused) return;
+this.acc += 0.25 * s.tempo;
+let steps = 0;
+while (this.acc >= 1) { this.acc -= 1; steps++; }
+for (let k = 0; k < steps; k++) this.step();
+}, 250);
+}
+componentWillUnmount() { clearInterval(this.timer); }
+step() {
+this.setState((s) => {
+const t = s.t + 1;
+const pulse = t >= 300 && (t - 300) % 3 === 0;
+const dmg = (x) => Math.max(0, x - 10);
+const own = s.own.map((u) => ({ ...u, cnt: u.cnt >= u.takt ? 0 : u.cnt + 1, hp: pulse ? dmg(u.hp) : u.hp, sh: pulse ? dmg(u.sh) : u.sh }));
+const foes = s.foes.map((f) => f.type === 'wreck' ? f : { ...f, hp: pulse ? dmg(f.hp) : f.hp, sh: pulse && f.sh != null ? dmg(f.sh) : f.sh });
+return { t, own, foes, pulseAt: pulse ? t : s.pulseAt };
+});
+}
+renderVals() {
+const s = this.state;
+const iso = (i, j) => ({ x: 225 + (i - j) * 10.5, y: 290 + (i + j) * 7 });
+let gridD = '';
+for (let k = 0; k <= 20; k++) {
+const a = iso(k, 0), b = iso(k, 20), c = iso(0, k), d = iso(20, k);
+gridD += 'M' + a.x + ' ' + a.y + 'L' + b.x + ' ' + b.y + 'M' + c.x + ' ' + c.y + 'L' + d.x + ' ' + d.y;
+}
+const isSetup = s.phase === 'setup';
+const isLive = s.phase === 'fight' || s.phase === 'virus';
+const isResult = s.phase === 'result';
+const foot = (u) => iso(u.i + 0.5, u.j + 0.5);
+const pct = (v) => Math.max(0, Math.min(100, v)) + '%';
+const units = [];
+s.own.forEach((u) => {
+const p = foot(u);
+units.push({
+z: Math.round(p.y), left: (p.x - 20) + 'px', top: (p.y - 46) + 'px', w: '40px', h: '50px',
+isVireo: u.id === 'vireo', isMolok: u.id === 'molok', isNimbus: u.id === 'nimbus', isStrix: u.id === 'strix',
+stroke: '#2ee3eb', visor: '#ffe14d', baseColor: '#2ee3eb',
+hasBars: true, hasShield: true, barTop: '-11px', barW: '38px', hpH: '4px',
+hpW: pct(u.hp), shW: pct(u.sh), hpColor: '#ffe14d',
+locked: !isSetup, cursor: isSetup ? 'grab' : 'default',
+outline: s.drag === u.id ? '2px dashed #ffe14d' : '0 solid transparent',
+aria: isSetup ? u.name + ' verschieben' : u.name,
+down: (e) => {
+if (!isSetup) return;
+try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+this.setState({ drag: u.id });
+}
+});
+});
+s.foes.forEach((f) => {
+const p = foot(f);
+const big = f.type !== 'sentinel' && f.type !== 'wreck';
+units.push({
+z: Math.round(p.y), left: (p.x - (big ? 20 : 12)) + 'px', top: (p.y - (big ? 46 : 28)) + 'px', w: big ? '40px' : '24px', h: big ? '50px' : '30px',
+isVireo: f.type === 'vireo', isMolok: f.type === 'molok', isNimbus: f.type === 'nimbus', isStrix: f.type === 'strix',
+isSentinel: f.type === 'sentinel', isWreck: f.type === 'wreck',
+stroke: '#ff2bd6', visor: '#ff6a3d', baseColor: f.type === 'wreck' ? 'transparent' : '#ff2bd6',
+hasBars: f.type !== 'wreck', hasShield: big, barTop: big ? '-11px' : '-8px', barW: big ? '38px' : '24px', hpH: big ? '4px' : '3px',
+hpW: pct(f.hp), shW: pct(f.sh || 0), hpColor: '#ff2bd6',
+locked: true, cursor: 'default', outline: '0 solid transparent',
+aria: big ? 'Gegnerischer Anführer' : (f.type === 'wreck' ? 'Zerstörter Sentinel' : 'Gegnerischer Sentinel'),
+down: () => {}
+});
+});
+units.sort((a, b) => a.z - b.z);
+
+const line = (a, b, bg) => {
+const p1 = iso(a.i + 0.5, a.j + 0.5), p2 = iso(b.i + 0.5, b.j + 0.5);
+const x1 = p1.x, y1 = p1.y - 24, dx = p2.x - x1, dy = (p2.y - 24) - y1;
+return { left: x1 + 'px', top: y1 + 'px', len: Math.hypot(dx, dy) + 'px', angle: (Math.atan2(dy, dx) * 180 / Math.PI) + 'deg', bg };
+};
+const tracers = [];
+if (isLive) {
+const strix = s.own.find((u) => u.id === 'strix'), molok = s.own.find((u) => u.id === 'molok');
+const lead = s.foes.find((f) => f.id === 'lead'), s4 = s.foes.find((f) => f.id === 's4');
+tracers.push(line(strix, lead, 'repeating-linear-gradient(90deg, #2ee3eb 0 8px, transparent 8px 12px)'));
+tracers.push(line(s4, molok, 'repeating-linear-gradient(90deg, #ff2bd6 0 8px, transparent 8px 12px)'));
+}
+
+const mm = Math.floor(s.t / 60), ss = s.t % 60;
+const clock = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+const warn = isLive && s.t >= 270 && s.t < 300;
+const virus = isLive && s.t >= 300;
+const sincePulse = virus ? (s.t - 300) % 3 : 0;
+const tiles = s.own.map((u) => ({
+name: u.name, hp: u.hp, sh: u.sh, hpW: pct(u.hp), shW: pct(u.sh), takt: u.takt, cnt: u.cnt, ab: u.ab,
+border: u.cnt >= u.takt ? '#ffe14d' : '#2ee3eb',
+taktColor: u.cnt >= u.takt ? '#ffe14d' : '#e9dcff',
+pips: Array.from({ length: u.takt }, (_, k) => k < u.cnt ? { bg: '#ffe14d', border: '1px solid #ffe14d' } : { bg: 'transparent', border: '1px solid #6a5a96' })
+}));
+const on = (b) => ({ border: b ? '#2ee3eb' : '#3a1a6e', bg: b ? 'rgba(46, 227, 235, 0.14)' : '#1b0b3a', color: b ? '#2ee3eb' : '#e9dcff' });
+const tp = on(s.tempo === 2), pz = on(s.paused), lg = on(s.logOpen), cm = on(s.cam);
+
+const outcome = this.props.outcome ?? 'sieg';
+const lootMode = this.props.loot ?? 'cache';
+const win = outcome !== 'niederlage';
+
+return {
+gridD, isSetup, isLive, isResult, units, tracers,
+moveDrag: (e) => {
+if (!s.drag) return;
+const r = e.currentTarget.getBoundingClientRect();
+const k = r.width / 450;
+const x = (e.clientX - r.left) / k, y = (e.clientY - r.top) / k + 20;
+const dx = x - 225, dy = y - 290;
+let i = Math.round((dy / 7 + dx / 10.5) / 2 - 0.5), j = Math.round((dy / 7 - dx / 10.5) / 2 - 0.5);
+i = Math.max(0, Math.min(19, i)); j = Math.max(16, Math.min(19, j));
+if (s.own.some((u) => u.id !== s.drag && u.i === i && u.j === j)) return;
+const cur = s.own.find((u) => u.id === s.drag);
+if (cur && cur.i === i && cur.j === j) return;
+this.setState({ own: s.own.map((u) => u.id === s.drag ? { ...u, i, j } : u) });
+},
+endDrag: () => { if (s.drag) this.setState({ drag: null }); },
+go: () => { this.acc = 0; this.setState({ phase: 'fight', t: 0, drag: null }); },
+clock, warn, virus,
+warnLeft: 300 - s.t,
+clockColor: (warn || virus) ? '#ff2bd6' : '#fff7fe',
+clockShadow: (warn || virus) ? '2px 0 0 #2ee3eb' : 'none',
+flickDur: (0.35 + (300 - s.t) / 30 * 1.65).toFixed(2) + 's',
+pulseFx: virus && s.pulseAt === s.t,
+pulsePips: [0, 1, 2].map((k) => ({ bg: k <= sincePulse ? '#ff2bd6' : '#3a1a6e' })),
+foesLeft: s.foes.filter((f) => f.type !== 'wreck').length,
+tiles,
+paused: s.paused, running: !s.paused, pausedStr: s.paused ? 'true' : 'false', pauseLabel: s.paused ? 'WEITER' : 'PAUSE',
+pauseBorder: pz.border, pauseBg: pz.bg, pauseColor: pz.color,
+tempoLabel: s.tempo + '×', tempoBorder: tp.border, tempoBg: tp.bg, tempoColor: tp.color,
+logOpen: s.logOpen, logStr: s.logOpen ? 'true' : 'false', logBorder: lg.border, logBg: lg.bg, logColor: lg.color,
+camStr: s.cam ? 'true' : 'false', camBorder: cm.border, camBg: cm.bg, camColor: cm.color,
+toggleTempo: () => this.setState({ tempo: s.tempo === 1 ? 2 : 1 }),
+togglePause: () => this.setState({ paused: !s.paused }),
+toggleLog: () => this.setState({ logOpen: !s.logOpen }),
+toggleCam: () => this.setState({ cam: !s.cam }),
+resWord: win ? 'SIEG' : 'NIEDERLAGE',
+resSize: win ? '88px' : '42px',
+resColor: win ? '#fff7fe' : '#ff8ce8',
+resTime: win ? '04:12' : '05:21',
+resKills: win ? '6/6' : '3/6',
+resCredits: win ? '+35' : '+10',
+lootTitle: win ? 'BEUTE' : 'FOLGEN',
+showCache: win && lootMode === 'cache',
+showCoins: win && lootMode === 'coins',
+showLoss: !win
+};
+}
+}
+</script>
+
+
+</body></html>

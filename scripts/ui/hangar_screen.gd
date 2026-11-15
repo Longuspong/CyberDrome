@@ -26,8 +26,8 @@ extends Control
 
 const PORTRAIT := 124.0
 const PRIMARY_EDGE := 120.0
-const TILE_EDGE := 110.0
-const TILE_COLUMNS := 4
+const TILE_EDGE := 128.0
+const TILE_COLUMNS := 3
 const TILE_GAP := 10
 const SLOT_EDGE := 60.0
 const PART_EDGE := 92.0
@@ -44,8 +44,7 @@ var _selected_slot := ""
 var _content: VBoxContainer
 ## Der feste Bereich ueber dem scrollbaren Inhalt (nur im Umbau gefuellt).
 var _fixed: VBoxContainer
-var _tab_squad: Button
-var _tab_umbau: Button
+var _tab_slot: HBoxContainer
 
 
 func _ready() -> void:
@@ -55,7 +54,7 @@ func _ready() -> void:
 		GameState.editing_index = -1
 	elif GameState.roster.entries.size() > 0:
 		_selected = _first_in_squad()
-	_content = UiKit.page(self, "Hangar", "", 1, true, Ambience.Kind.HANGAR)
+	_content = UiKit.page(self, "Hangar", "", 1, true)
 	_build_tabs()
 	_refresh()
 
@@ -83,15 +82,9 @@ func _build_tabs() -> void:
 	# Die Reiter stehen ueber dem scrollbaren Inhalt, damit sie beim Scrollen
 	# erreichbar bleiben.
 	var frame := _content.get_parent().get_parent().get_parent() as VBoxContainer
-	var bar := HBoxContainer.new()
-	bar.add_theme_constant_override("separation", 6)
-	var holder := MarginContainer.new()
-	for side in ["left", "right"]:
-		holder.add_theme_constant_override("margin_" + side, UiKit.PAD)
-	holder.add_theme_constant_override("margin_top", 8)
-	holder.add_child(bar)
-	frame.add_child(holder)
-	frame.move_child(holder, 1)
+	# Die Reiter sitzen seit dem Entwurf vom 15. Nov. als Segmentknopf oben
+	# rechts in der Kopfzeile (UiKit.header_slot).
+	_tab_slot = UiKit.header_slot(self)
 	# Darunter ein Bereich, der nicht mitscrollt: im Umbau stehen dort die
 	# DROME-Auswahl und der DROME mit seinen Haltern. Wer ein Teil nach oben
 	# auf einen Halter zieht, verschiebt so nicht mehr die ganze Seite.
@@ -103,23 +96,7 @@ func _build_tabs() -> void:
 	_fixed.add_theme_constant_override("separation", 8)
 	fixed_holder.add_child(_fixed)
 	frame.add_child(fixed_holder)
-	frame.move_child(fixed_holder, 2)
-	_tab_squad = _tab_button("Squad")
-	_tab_squad.pressed.connect(func(): _switch("squad"))
-	bar.add_child(_tab_squad)
-	_tab_umbau = _tab_button("Umbau")
-	_tab_umbau.pressed.connect(func(): _switch("umbau"))
-	bar.add_child(_tab_umbau)
-
-
-func _tab_button(text: String) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.toggle_mode = true
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.custom_minimum_size = Vector2(0, 48)
-	button.add_theme_font_size_override("font_size", UiKit.BODY)
-	return button
+	frame.move_child(fixed_holder, 1)
 
 
 func _switch(tab: String) -> void:
@@ -131,8 +108,11 @@ func _switch(tab: String) -> void:
 
 
 func _refresh() -> void:
-	_tab_squad.button_pressed = _tab == "squad"
-	_tab_umbau.button_pressed = _tab == "umbau"
+	if _tab_slot != null:
+		for child in _tab_slot.get_children():
+			child.queue_free()
+		_tab_slot.add_child(UiKit.segmented([["squad", "Squad"], ["umbau", "Umbau"]], _tab,
+			func(id): _switch(id)))
 	for child in _content.get_children():
 		child.queue_free()
 	for child in _fixed.get_children():
@@ -158,19 +138,22 @@ func _show_squad() -> void:
 	var count := GameState.roster.squad_count()
 	if _selected < 0 or _selected >= _entries().size():
 		_selected = _first_in_squad()
-	# Seit 14. Nov. 2026: erst alle DROMEs als Kacheln (einmal tippen
-	# waehlt, doppelt tippen oeffnet den Umbau), darunter der gewaehlte
-	# kompakt -- vorher stand er gross oben UND noch einmal als Kachel.
+	# Entwurf 15. Nov. 2026: oben der gewaehlte DROME gross, darunter alle
+	# DROMEs als Kacheln (3 Spalten). Tippen waehlt, nochmal tippen zeigt die
+	# Karte, Doppeltipp oeffnet den Umbau.
+	_content.add_child(_primary_card(_selected))
 	var head := HBoxContainer.new()
-	var title := UiKit.heading("Squad  %d / %d" % [count, _squad_max()])
-	title.modulate = UiKit.GOOD if count > 0 else UiKit.BAD
+	var title := Arcade.label("ALLE DROMEs", 15, Arcade.CYAN, "bold", 0.2)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
-	var hint := _quiet(UiKit.label("Doppeltipp: Umbau", 13, UiKit.MUTED)) as Label
-	hint.autowrap_mode = TextServer.AUTOWRAP_OFF
-	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	head.add_child(hint)
+	head.add_child(Arcade.label("SQUAD", 12, Arcade.MUTED, "bold", 0.2))
+	var number := Arcade.label(" %d/%d " % [count, _squad_max()], 18,
+		Arcade.YELLOW if count > 0 else UiKit.BAD, "display")
+	head.add_child(number)
+	head.add_child(HangarPips.new(count, _squad_max(), Arcade.CYAN))
 	_content.add_child(head)
+	_content.add_child(_quiet(UiKit.label("Antippen zeigt Details · Doppeltipp: Umbau · + nimmt auf, − nimmt heraus.",
+		13, UiKit.MUTED)))
 	var grid := GridContainer.new()
 	grid.columns = TILE_COLUMNS
 	grid.add_theme_constant_override("h_separation", TILE_GAP)
@@ -178,10 +161,31 @@ func _show_squad() -> void:
 	_content.add_child(grid)
 	for index in _squad_first_order():
 		grid.add_child(_drome_tile(index))
-	_content.add_child(_primary_card(_selected))
 	# Neue DROMEs, Beute und Shop stehen seit 15. Nov. 2026 im Tab Shop.
 	_content.add_child(UiKit.label("Neue DROMEs bauen, Caches und Shop: Tab Shop unten.",
 		UiKit.SMALL, UiKit.MUTED))
+
+
+## Rolle in Worten (Entwurf), aus der KI-Rolle des Chassis.
+const ROLE_TEXT := {"vanguard": "Vorhut · Tank", "skirmisher": "Plänkler · Nahkampf",
+	"controller": "Kontrolle · Fähigkeiten", "sniper": "Scharfschütze"}
+
+
+static func role_text(build: DromeBuild) -> String:
+	var body := build.body()
+	var role := build.role_override if build.role_override != "" else (body.ai_role if body != null else "")
+	return ROLE_TEXT.get(role, "Allrounder")
+
+
+## "#01": der wievielte DROME mit diesem Chassis.
+func _code(index: int) -> String:
+	var body := GameState.roster.build_for(_entries()[index]).body()
+	var n := 0
+	for i in index + 1:
+		var other := GameState.roster.build_for(_entries()[i]).body()
+		if other != null and body != null and other.id == body.id:
+			n += 1
+	return "#%02d" % maxi(1, n)
 
 
 ## Indizes aller DROMEs, die im Squad zuerst.
@@ -321,35 +325,159 @@ func _tile_stack(build: DromeBuild, edge: float, in_squad: bool) -> Control:
 	return stack
 
 
-## Die grosse Box: Bild und Angaben des gewaehlten DROME.
+## Die grosse Box (Entwurf): Bild, Etikett, Name, Rolle, Level, Kampfwert,
+## Werte in zwei Spalten, Modulplaetze und die Waffe.
 func _primary_card(index: int) -> Control:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", UiKit.card_style(index >= 0))
 	if index < 0:
-		var empty := UiKit.label("Noch kein DROME. Unten einen bauen.",
+		var empty := UiKit.label("Noch kein DROME. Im Tab Shop einen bauen.",
 			UiKit.BODY, UiKit.MUTED)
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		panel.add_child(empty)
 		return panel
 	var entry: RosterEntry = _entries()[index]
 	var build := GameState.roster.build_for(entry)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	panel.add_child(column)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	panel.add_child(row)
-	var left := VBoxContainer.new()
-	left.add_theme_constant_override("separation", 8)
-	row.add_child(left)
-	left.add_child(UiKit.drome_view(build, PRIMARY_EDGE))
-	var umbau := UiKit.button("Umbau ▸")
-	umbau.custom_minimum_size = Vector2(PRIMARY_EDGE, 44)
-	umbau.pressed.connect(func():
-		_selected_slot = ""
-		_switch("umbau"))
-	left.add_child(umbau)
-	var info := _drome_info(entry, build)
+	row.add_theme_constant_override("separation", 14)
+	column.add_child(row)
+	var frame := PanelContainer.new()
+	frame.add_theme_stylebox_override("panel", Arcade.chamfer_box(Arcade.DEEP, 12))
+	frame.custom_minimum_size = Vector2(112, 124)
+	var center := CenterContainer.new()
+	frame.add_child(center)
+	center.add_child(UiKit.drome_view(build, 100))
+	frame.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.pressed and event.double_click:
+			_selected_slot = ""
+			_switch("umbau"))
+	row.add_child(frame)
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 3)
 	row.add_child(info)
-	info.add_child(UiKit.label("im Squad" if entry.in_squad else "nicht im Squad",
-		UiKit.SMALL, UiKit.GOOD if entry.in_squad else UiKit.MUTED))
+	var chip := _chip("IM SQUAD" if entry.in_squad else "RESERVE", entry.in_squad)
+	var tilted := Arcade.tilt(chip, -2.0)
+	tilted.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	info.add_child(tilted)
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 6)
+	name_row.add_child(Arcade.label(entry.name.to_upper(), 24, Arcade.WHITE, "display"))
+	var code := Arcade.label(_code(index), 14, Arcade.MUTED, "bold")
+	code.size_flags_vertical = Control.SIZE_SHRINK_END
+	name_row.add_child(code)
+	info.add_child(name_row)
+	info.add_child(Arcade.label(role_text(build), 15, Arcade.CYAN, "bold", 0.04))
+	var level_row := HBoxContainer.new()
+	level_row.add_theme_constant_override("separation", 8)
+	level_row.add_child(Arcade.label("LV %d" % entry.level, 14, Arcade.YELLOW, "display"))
+	var top_level := Leveling.drome_table().size()
+	level_row.add_child(HangarPips.new(entry.level, maxi(5, top_level), Arcade.YELLOW))
+	info.add_child(level_row)
+	var power_row := HBoxContainer.new()
+	power_row.add_theme_constant_override("separation", 8)
+	var power_label := Arcade.label("KAMPFWERT", 12, Arcade.MUTED, "bold", 0.2)
+	power_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	power_row.add_child(power_label)
+	power_row.add_child(Arcade.label(str(int(build.power_score())), 24, Arcade.YELLOW, "display"))
+	info.add_child(power_row)
+
+	column.add_child(stat_grid(build))
+	column.add_child(Arcade.label("WAFFE" if build.equipment().size() <= 1 else "WAFFEN", 12,
+		Arcade.CYAN, "bold", 0.2))
+	for part in build.equipment():
+		column.add_child(weapon_line(part, _weapon_level(entry, part)))
+	if build.equipment().is_empty():
+		column.add_child(Arcade.label("ohne Waffe", 14, Arcade.MUTED))
+	return panel
+
+
+## Level des Waffen-Exemplars, das ``part`` in diesem DROME ist (-1 = keins).
+func _weapon_level(entry: RosterEntry, part: PartData) -> int:
+	for slot in entry.assignments:
+		var instance := GameState.roster.instance(str(entry.assignments[slot]))
+		if instance != null and instance.part_id == part.id:
+			return instance.level
+	return -1
+
+
+## Kleines Etikett (IM SQUAD cyan gefuellt, sonst Rahmen).
+static func _chip(text: String, on: bool) -> Control:
+	var panel := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = Arcade.CYAN if on else Color(0, 0, 0, 0)
+	box.border_color = Arcade.CYAN if on else Arcade.EMPTY_LINE
+	box.set_border_width_all(1)
+	box.content_margin_left = 6
+	box.content_margin_right = 6
+	box.content_margin_top = 1
+	box.content_margin_bottom = 1
+	panel.add_theme_stylebox_override("panel", box)
+	panel.add_child(Arcade.label(text, 11, Arcade.NIGHT if on else Arcade.MUTED, "bold", 0.14))
+	return panel
+
+
+## Die Werte in zwei Spalten (Entwurf): Name, schmaler Balken, Zahl.
+static func stat_grid(build: DromeBuild, compare: Dictionary = {}) -> Control:
+	var stats := build.stats()
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 6)
+	for key in ["spd", "hp_max", "shield_max", "shield_pulse", "def", "power"]:
+		var value := float(stats.get(key, 0))
+		grid.add_child(StatCell.new(str(StatBar.LABEL[key]).to_upper(), value,
+			value / float(StatBar.SCALE[key]), float(compare.get(key, value)) - value))
+	var slots := int(stats.get("module_slots", 0))
+	var used := 0
+	for slot in build.equip_slots():
+		used += build.module_count(slot)
+	var mod_row := HBoxContainer.new()
+	mod_row.add_theme_constant_override("separation", 6)
+	var mod_label := Arcade.label("MODULPLÄTZE", 11, Arcade.MUTED, "bold", 0.12)
+	mod_label.custom_minimum_size = Vector2(92, 0)
+	mod_row.add_child(mod_label)
+	mod_row.add_child(HangarPips.new(used, maxi(slots, 1), Arcade.CYAN, true))
+	mod_row.add_child(Arcade.label(str(slots), 14, Arcade.TEXT, "bold"))
+	grid.add_child(mod_row)
+	return grid
+
+
+## Eine Waffen-Zeile: Halterform, Name, LV-Etikett, Faehigkeit in Kurzform.
+static func weapon_line(part: PartData, level: int = -1) -> Control:
+	var panel := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = Arcade.DEEP
+	box.set_content_margin_all(8)
+	panel.add_theme_stylebox_override("panel", box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+	var shape := SlotShape.new(part.mount_class, null, 26.0)
+	shape.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(shape)
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 0)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(text)
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 8)
+	top.add_child(Arcade.label(part.display_name, 15, Arcade.WHITE, "bold"))
+	if level >= 0:
+		top.add_child(_chip("LV %d" % level, false))
+	text.add_child(top)
+	for item in part.actions:
+		var action := item as ActionData
+		if action.trigger_kind != "":
+			var takt: String = action.trigger_text()
+			var line := Arcade.label("%s: %s" % [takt.substr(0, 1).to_upper() + takt.substr(1),
+				action.display_name], 13, Arcade.TEXT)
+			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			text.add_child(line)
+			break
 	return panel
 
 
@@ -419,42 +547,64 @@ func _show_umbau() -> void:
 	# --- fest: Auswahl und der DROME mit seinen Haltern --------------------
 	_fixed.add_child(_picker())
 
-	# Bild und Halter links, die Werte rechts -- in einer Karte, sonst laufen
-	# die Streifen der Kulisse durch die Zahlen. Die Halter stehen direkt
-	# unter dem Bild (10. Nov. 2026, Wunsch des Spielers): vorher lagen sie
-	# zwischen DROME und Teilen und schoben die Teile nach unten.
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 12)
+	# Entwurf 15. Nov. 2026: Kopf mit Name, Rolle und Kampfwert; darunter
+	# drei Spalten -- Halter links, Bild in der Mitte, Werte rechts.
 	var card := UiKit.card(_fixed)
 	(card.get_parent() as PanelContainer).add_theme_stylebox_override("panel", _head_style())
+	var top := HBoxContainer.new()
+	card.add_child(top)
+	var names := VBoxContainer.new()
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names.add_theme_constant_override("separation", 0)
+	top.add_child(names)
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 6)
+	var name_button := Button.new()
+	name_button.flat = true
+	name_button.text = entry.name.to_upper()
+	name_button.tooltip_text = "Umbenennen"
+	name_button.add_theme_font_override("font", Arcade.font("display"))
+	name_button.add_theme_font_size_override("font_size", 22)
+	name_button.add_theme_color_override("font_color", Arcade.WHITE)
+	name_button.pressed.connect(func(): _rename(entry))
+	name_row.add_child(name_button)
+	var code := Arcade.label(_code(_selected), 13, Arcade.MUTED, "bold")
+	code.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	name_row.add_child(code)
+	names.add_child(name_row)
+	names.add_child(Arcade.label("%s · LV %d" % [role_text(build).get_slice(" · ", 0), entry.level],
+		14, Arcade.CYAN, "bold", 0.04))
+	var power := VBoxContainer.new()
+	power.add_theme_constant_override("separation", 0)
+	var power_title := Arcade.label("KAMPFWERT", 11, Arcade.MUTED, "bold", 0.2)
+	power_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	power.add_child(power_title)
+	var power_value := Arcade.label(str(int(build.power_score())), 22, Arcade.YELLOW, "display")
+	power_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	power.add_child(power_value)
+	top.add_child(power)
+
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 8)
 	card.add_child(head)
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 2)
 	head.add_child(left)
-	var portrait := UiKit.drome_view(build, PORTRAIT)
-	portrait.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	left.add_child(portrait)
+	left.add_child(Arcade.label("HALTER", 11, Arcade.CYAN, "bold", 0.2))
 	left.add_child(_slots(entry, build))
+	var portrait := UiKit.drome_view(build, 104)
+	portrait.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(portrait)
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.add_theme_constant_override("separation", 2)
+	info.add_theme_constant_override("separation", 3)
 	head.add_child(info)
-	var name_field := LineEdit.new()
-	name_field.text = entry.name
-	name_field.custom_minimum_size = Vector2(0, 40)
-	name_field.add_theme_font_size_override("font_size", UiKit.BODY)
-	name_field.text_submitted.connect(func(text):
-		entry.name = text
-		_changed())
-	name_field.focus_exited.connect(func():
-		if name_field.text != entry.name:
-			entry.name = name_field.text
-			GameState.save_roster())
-	info.add_child(name_field)
+	info.add_child(Arcade.label("WERTE", 11, Arcade.CYAN, "bold", 0.2))
 	var stats := build.stats()
-	for key in ["hp_max", "shield_max", "spd", "def", "power"]:
-		info.add_child(StatBar.make(key, float(stats.get(key, 0))))
-	info.add_child(StatBar.make("power_score", build.power_score()))
+	for key in ["spd", "hp_max", "shield_max", "shield_pulse", "def", "power"]:
+		var value := float(stats.get(key, 0))
+		info.add_child(StatCell.new(str(StatBar.LABEL[key]).to_upper(), value,
+			value / float(StatBar.SCALE[key])))
 
 	# --- darunter: was sich einbauen laesst --------------------------------
 	_parts_strip(entry, build)
@@ -471,6 +621,27 @@ func _show_umbau() -> void:
 	_content.add_child(scrap)
 
 
+## Umbenennen im Popup (der Name ist im Umbau ein Knopf, Entwurf 15. Nov.).
+func _rename(entry: RosterEntry) -> void:
+	var field := LineEdit.new()
+	field.text = entry.name
+	field.custom_minimum_size = Vector2(0, 44)
+	field.max_length = 16
+	var popup: InfoPopup
+	var save := func():
+		var text := field.text.strip_edges()
+		if text != "" and text != entry.name:
+			entry.name = text
+			_changed()
+	field.text_submitted.connect(func(_t):
+		save.call()
+		if popup != null:
+			popup.close())
+	popup = InfoPopup.open(self, "Umbenennen", {"body": field,
+		"actions": [{"text": "Speichern", "primary": true, "call": save}]})
+	field.grab_focus.call_deferred()
+
+
 ## Die Karte des DROME im Umbau: etwas knapperer Innenabstand, damit oben
 ## nicht mehr Platz verloren geht als noetig.
 func _head_style() -> StyleBoxFlat:
@@ -483,7 +654,7 @@ func _head_style() -> StyleBoxFlat:
 func _picker() -> Control:
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.custom_minimum_size = Vector2(0, 96)
+	scroll.custom_minimum_size = Vector2(0, 62)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	scroll.add_child(row)
@@ -495,13 +666,15 @@ func _picker() -> Control:
 			_refresh())
 		var box := VBoxContainer.new()
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_theme_constant_override("separation", 0)
+		box.custom_minimum_size = Vector2(72, 0)
 		panel.add_child(box)
-		box.add_child(_tile_stack(GameState.roster.build_for(entry), 56, entry.in_squad))
-		var label := _quiet(UiKit.label(entry.name, UiKit.SMALL,
-			Color.WHITE if entry.in_squad else UiKit.MUTED))
-		label.autowrap_mode = TextServer.AUTOWRAP_OFF
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(label)
+		# Entwurf: Name und "LV n · #01" statt Bild -- spart Hoehe.
+		box.add_child(_quiet(Arcade.label(entry.name.to_upper(), 14,
+			Arcade.CYAN if index == _selected else (Arcade.WHITE if entry.in_squad else Arcade.MUTED),
+			"display")))
+		box.add_child(_quiet(Arcade.label("LV %d · %s" % [entry.level, _code(index)], 12,
+			Arcade.MUTED, "medium")))
 		row.add_child(panel)
 	return scroll
 
@@ -512,7 +685,7 @@ func _picker() -> Control:
 ## seine Klasse. Antippen waehlt den Halter; steckt eine Waffe darin, oeffnet
 ## sich ihre Karte mit "Ausbauen".
 func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
-	var row := HBoxContainer.new()
+	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var chassis := build.body()
@@ -614,8 +787,14 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 		_content.add_child(UiKit.label("Kein freies Teil passt in diesen DROME.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
-	_content.add_child(UiKit.label("Frei und passend  ·  Doppeltipp: einbauen  ·  nochmal tippen: Karte",
-		UiKit.SMALL, UiKit.MUTED))
+	var head := HBoxContainer.new()
+	var title := Arcade.label("FREIE WAFFEN", 15, Arcade.CYAN, "bold", 0.2)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	head.add_child(Arcade.label("%d PASSEN" % parts.size(), 12, Arcade.MUTED, "bold", 0.16))
+	_content.add_child(head)
+	_content.add_child(UiKit.label("↑ Auf einen Halter ziehen oder doppelt tippen baut ein · nochmal tippen: Karte",
+		13, UiKit.MUTED))
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.custom_minimum_size = Vector2(0, STRIP_TILE + 8.0)
@@ -785,3 +964,66 @@ func _loadout(build: DromeBuild) -> String:
 	for part in build.equipment():
 		names.append(part.display_name)
 	return ", ".join(names) if not names.is_empty() else "ohne Ausrüstung"
+
+
+## Kaestchen-Reihe (Squad 4/4, Level, Modulplaetze); ``hollow``: freie Plaetze
+## als Rahmen.
+class HangarPips extends Control:
+	var _have := 0
+	var _max := 4
+	var _color := Arcade.CYAN
+	var _hollow := false
+
+	func _init(have: int, most: int, color: Color, hollow: bool = false) -> void:
+		_have = have
+		_max = most
+		_color = color
+		_hollow = hollow
+		custom_minimum_size = Vector2(most * 12, 14)
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var y := (size.y - 9.0) * 0.5
+		for i in _max:
+			var r := Rect2(i * 12, y, 9, 9)
+			if i < _have:
+				draw_rect(r, _color)
+			elif _hollow:
+				draw_rect(r, Arcade.EMPTY_LINE, false, 1.5)
+			else:
+				draw_rect(r, Color("#3a1a6e"))
+
+
+## Eine Wert-Zelle: NAME, Balken, Zahl (Entwurf Hangar). ``delta`` != 0
+## haengt +n / -n an.
+class StatCell extends HBoxContainer:
+	func _init(title: String, value: float, fraction: float, delta: float = 0.0) -> void:
+		add_theme_constant_override("separation", 6)
+		var name := Arcade.label(title, 11, Arcade.MUTED, "bold", 0.06)
+		name.custom_minimum_size = Vector2(84, 0)
+		add_child(name)
+		var bar := _Bar.new(fraction)
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		add_child(bar)
+		var shown := str(int(round(value)))
+		var number := Arcade.label(shown, 14, Arcade.TEXT, "bold")
+		number.custom_minimum_size = Vector2(28, 0)
+		number.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		add_child(number)
+		if absf(delta) >= 0.5:
+			add_child(Arcade.label(("%+d" % int(round(-delta))), 12,
+				UiKit.GOOD if delta < 0 else UiKit.BAD, "bold"))
+
+	class _Bar extends Control:
+		var _f := 0.0
+
+		func _init(fraction: float) -> void:
+			_f = clampf(fraction, 0.0, 1.0)
+			custom_minimum_size = Vector2(24, 12)
+			mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		func _draw() -> void:
+			var y := size.y * 0.5 - 3
+			draw_rect(Rect2(0, y, size.x, 6), Color("#2a1650"))
+			draw_rect(Rect2(0, y, size.x * _f, 6), Arcade.CYAN)

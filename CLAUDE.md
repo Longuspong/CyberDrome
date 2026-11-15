@@ -16,6 +16,14 @@ stehen dort in Abschnitt 6. **Story-Rahmen seit 14. Nov. 2026: `docs/STORY_LEITF
 (ersetzt den Aufhaenger "Die Liga und der Virus"; Hipstar Hookers heissen jetzt
 Hipstar Hackers).
 
+**Entwurf Einsatz-Bildschirme 15. Nov. 2026 (GEBAUT):** 24 Entwuerfe unter
+`docs/design/einsatz_arcade/` gelten fuer die Optik aller Bildschirme
+(Kopfzeile mit Glitch-Titel + Segment-Reiter, Tab-Leiste mit Symbolen,
+`CacheArt`/`CacheOpener`, `StoryDialog`). Nur Optik -- neue Regeln daraus stehen
+als offene Punkte im SPOT. Cache oeffnen ist bis dahin eine Vorschau.
+Bilder ohne Web-Export: `xvfb-run ... tests/screenshot.gd -- <szene> <png> 90
+[run=story results=SS ...]` (Optionen im Kopf der Datei).
+
 **Grosse Umsetzung 14. Nov. 2026 (GEBAUT, Details `docs/PROJEKTSTAND.md`):**
 Bedienung mit Kacheln + Popups (`Tile`, `InfoPopup`), Arcade-Stil auf allen
 Bildschirmen, Umlaute in der Anzeige, Virusschaden, Sentinels + Gegner-DROMEs +

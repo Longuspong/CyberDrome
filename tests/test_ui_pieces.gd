@@ -336,3 +336,36 @@ func test_the_weapon_card_shows_values_as_bars_to_compare() -> void:
 				t.ok(child.compare < 0.0, "ohne Vergleichswaffe kein Vergleich")
 	for row in rows + alone:
 		row.free()
+
+
+func test_cache_opening_is_only_a_preview() -> void:
+	# Was ein Cache enthaelt, ist noch nicht entschieden (Wunsch des Spielers,
+	# 15. Nov. 2026): Oeffnen zeigt nur die Optik und verbraucht nichts.
+	var host := Control.new()
+	var before := int(GameState.roster.caches.get("city", 0))
+	GameState.roster.caches["city"] = before + 1
+	var opener := CacheOpener.new()
+	opener._kind = "city"
+	host.add_child(opener)
+	opener._ready()
+	opener._open()
+	t.equal(int(GameState.roster.caches.get("city", 0)), before + 1, "Cache bleibt im Lager")
+	GameState.roster.caches["city"] = before
+	host.free()
+
+
+func test_a_story_dialog_walks_through_its_lines() -> void:
+	var host := Control.new()
+	var dialog := StoryDialog.new()
+	dialog._lines = [{"name": "A", "text": "Hallo"}, {"name": "B", "text": "Tschuess", "side": "right"}]
+	host.add_child(dialog)
+	dialog._ready()
+	var ended := {"done": false}
+	dialog.finished.connect(func(): ended["done"] = true)
+	var tap := InputEventMouseButton.new()
+	tap.pressed = true
+	tap.button_index = MOUSE_BUTTON_LEFT
+	for i in 4:
+		dialog._gui_input(tap)
+	t.ok(ended["done"], "vier Tipps: zwei Zeilen zeigen, zwei weiter -- dann zu Ende")
+	host.free()

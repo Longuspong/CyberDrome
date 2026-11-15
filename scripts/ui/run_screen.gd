@@ -24,6 +24,7 @@ const COLOR_WARN := Color(1.0, 0.78, 0.4)
 
 var _header_round: Label
 var _lives_box: HBoxContainer
+var _title_holder: HBoxContainer
 var _squad_list: VBoxContainer
 var _side: VBoxContainer
 ## Fester Platz am unteren Rand fuer die Hauptaktion der Phase.
@@ -66,19 +67,23 @@ func _run() -> RunState:
 ## gerade zu entscheiden ist (Kampf starten, Belohnung waehlen), darunter der
 ## Squad. Die Entscheidung steht oben, weil sie der Grund ist, hier zu sein.
 func _build_ui() -> void:
-	var content := UiKit.page(self, "Einsatz", "res://scenes/main.tscn", -1, true,
-		Ambience.Kind.CITY, 0.35)
+	var content := UiKit.page(self, "", "res://scenes/main.tscn", -1, true)
 
-	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", UiKit.GAP)
-	content.add_child(top)
-	_header_round = UiKit.label("", UiKit.H2)
-	_header_round.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_header_round.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(_header_round)
+	# Kopf (Entwurf 15. Nov. 2026): Glitch-Titel "NEON CITY · KAMPF 3/8" in
+	# der Kopfzeile, darunter die Leiste Leben, Credits, Caches, Verstaerkung.
+	_title_holder = HBoxContainer.new()
+	var row: HBoxContainer = get_meta("header_row") if has_meta("header_row") else null
+	if row != null:
+		row.add_child(_title_holder)
+		row.move_child(_title_holder, 1)
+	else:
+		content.add_child(_title_holder)
+	_header_round = Label.new()
+	_header_round.visible = false
+	content.add_child(_header_round)
 	_lives_box = HBoxContainer.new()
 	_lives_box.add_theme_constant_override("separation", 6)
-	top.add_child(_lives_box)
+	content.add_child(_lives_box)
 
 	_side = VBoxContainer.new()
 	_side.add_theme_constant_override("separation", UiKit.GAP)
@@ -140,16 +145,24 @@ func _refresh() -> void:
 	_lives_box.visible = run != null
 	# Im Zwischenstopp steht der Squad mit seinen Haltern oben -- dort wird
 	# eingebaut. Die Liste unten waere doppelt.
-	_squad_list.visible = run != null and run.phase != RunState.Phase.STOP
+	_squad_list.visible = run != null and run.phase == RunState.Phase.PREPARE
 	if run == null:
 		_header_round.text = "Aufstellung"
+		_set_title("Infinity-Einsatz" if GameState.next_run_mode == "endless" else "Neon City")
 		_show_setup()
 		return
 	if run.is_endless():
-		_header_round.text = "Infinity  ·  Kampf %d" % run.round
+		_header_round.text = "Infinity · Kampf %d" % run.round
 	else:
-		_header_round.text = "Kampf %d von %d" % [mini(run.round, RunState.rounds_total()),
+		_header_round.text = "%s · Kampf %d/%d" % [_region_name(run), mini(run.round, RunState.rounds_total()),
 			RunState.rounds_total()]
+	if run.phase == RunState.Phase.STOP:
+		_set_title("Zwischenstopp")
+	elif run.phase == RunState.Phase.PREPARE:
+		_set_title(_header_round.text)
+	else:
+		_set_title("")
+	_lives_box.visible = run.phase in [RunState.Phase.PREPARE, RunState.Phase.STOP]
 	_refresh_lives(run)
 	_refresh_squad(run)
 	match run.phase:
@@ -158,28 +171,102 @@ func _refresh() -> void:
 		_: _show_end(run)
 
 
-## Leben als Kaestchen UND als Zahl -- die Farbe allein darf die Information
-## nicht tragen.
+## Der Glitch-Titel in der Kopfzeile (leer = keiner).
+func _set_title(text: String) -> void:
+	for child in _title_holder.get_children():
+		child.queue_free()
+	if text == "":
+		return
+	var logo := Arcade.GlitchLogo.new(text.to_upper(), 17, 4.0, [
+		[0.0, Vector2(-1.5, 0), Vector2(1.5, 0)],
+		[0.92, Vector2(-4, 1), Vector2(4, -1)],
+		[0.94, Vector2(3, -1), Vector2(-3, 1)]], 1.5)
+	var tilted := Arcade.tilt(logo, -2.0)
+	tilted.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_title_holder.add_child(tilted)
+
+
+func _region_name(run: RunState) -> String:
+	var region := TerrainDB.get_region(run.region_id)
+	return region.display_name if region != null else "Neon City"
+
+
+## Die Leiste unter dem Titel (Entwurf): LEBEN als Herzen, CREDITS,
+## CACHES dieses Einsatzes und die VERSTAERKUNG. Herzen UND Zahl im Tooltip --
+## die Farbe allein traegt die Information nicht.
 func _refresh_lives(run: RunState) -> void:
 	for child in _lives_box.get_children():
 		child.queue_free()
-	var label := Label.new()
-	label.text = "%d / %d" % [run.lives, RunState.max_lives()]
-	label.add_theme_font_size_override("font_size", 20)
-	label.tooltip_text = "Leben: so viele Niederlagen bleiben"
-	_lives_box.add_child(label)
-	for i in RunState.max_lives():
-		var pip := Panel.new()
-		pip.custom_minimum_size = Vector2(22, 22)
-		# Sonst zieht die Kopfzeile die Kreise auf die Hoehe des Menue-Knopfs.
-		pip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		var style := StyleBoxFlat.new()
-		style.set_corner_radius_all(11)
-		style.bg_color = COLOR_GOOD if i < run.lives else Color(0.2, 0.22, 0.28)
-		style.border_color = Color(0.85, 0.88, 0.93)
-		style.set_border_width_all(2)
-		pip.add_theme_stylebox_override("panel", style)
-		_lives_box.add_child(pip)
+	_lives_box.add_theme_constant_override("separation", 4)
+	var hearts := Hearts.new(run.lives, run.lives_max())
+	hearts.tooltip_text = "Leben: %d von %d" % [run.lives, run.lives_max()]
+	_lives_box.add_child(_hud_cell("Leben", hearts))
+	_lives_box.add_child(_hud_cell("Credits", Arcade.label("◆ %d" % run.credits, 16, Arcade.CYAN, "display")))
+	var caches := 0
+	for key in run.run_caches:
+		caches += int(run.run_caches[key])
+	_lives_box.add_child(_hud_cell("Caches", Arcade.label("▮ %d" % caches, 16, Arcade.YELLOW, "display")))
+	if not run.is_chaos():
+		var level := run.reinforcement()
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.add_child(Bars.new(level))
+		row.add_child(Arcade.label(str(level), 16, Arcade.ORANGE, "display"))
+		var cell := _hud_cell("Verstärkung", row)
+		cell.tooltip_text = "Verstärkung (Reinforcement): steigt nach jedem Kampf, nach Elite " \
+			+ "schneller. Je höher, desto mehr und stärkere Gegner."
+		_lives_box.add_child(cell)
+
+
+func _hud_cell(title: String, value: Control) -> Control:
+	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 2)
+	box.add_child(Arcade.label(title.to_upper(), 11, Arcade.MUTED, "bold", 0.16))
+	box.add_child(value)
+	return box
+
+
+## Herzen fuer die Leben: voll magenta, verloren als Umriss.
+class Hearts extends Control:
+	var _have := 3
+	var _max := 3
+
+	func _init(have: int, most: int) -> void:
+		_have = have
+		_max = maxi(most, have)
+		custom_minimum_size = Vector2(_max * 22, 20)
+		mouse_filter = Control.MOUSE_FILTER_PASS
+
+	func _draw() -> void:
+		for i in _max:
+			var c := Vector2(10 + i * 22, 10)
+			var pts := PackedVector2Array()
+			for k in 24:
+				var t := TAU * float(k) / 24.0
+				pts.append(c + Vector2(16 * pow(sin(t), 3), -(13 * cos(t) - 5 * cos(2 * t)
+					- 2 * cos(3 * t) - cos(4 * t))) * 0.55)
+			if i < _have:
+				draw_colored_polygon(pts, Arcade.MAGENTA)
+			else:
+				pts.append(pts[0])
+				draw_polyline(pts, Arcade.EMPTY_LINE, 1.5, true)
+
+
+## Signalbalken fuer die Verstaerkung (1-5 Balken steigend).
+class Bars extends Control:
+	var _level := 0
+
+	func _init(level: int) -> void:
+		_level = level
+		custom_minimum_size = Vector2(30, 18)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	func _draw() -> void:
+		for i in 5:
+			var h := 4.0 + i * 3.0
+			draw_rect(Rect2(i * 6, size.y - h, 4, h), Arcade.ORANGE if i < _level else Color("#3a1a6e"))
 
 
 func _refresh_squad(run: RunState) -> void:
@@ -242,16 +329,6 @@ func _show_setup() -> void:
 
 
 func _show_prepare(run: RunState) -> void:
-	var head := HBoxContainer.new()
-	var title := _label("WÄHLE DEINEN WEG", 14, COLOR_HEADING)
-	title.add_theme_font_override("font", Arcade.font("bold", 14, 0.14))
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(title)
-	if not run.is_chaos():
-		head.add_child(_chip("Reinforcement %d" % run.reinforcement(), UiKit.MAGENTA, Callable(),
-			"Steigt nach jedem Kampf, nach Elite-Kämpfen schneller. Je höher, desto "
-			+ "mehr und stärkere Gegner."))
-	_side.add_child(head)
 	# Die Kampfkarte mit festen Wegen (14. Nov. 2026).
 	var map := MapView.new(run)
 	map.picked.connect(func(index: int):
@@ -270,14 +347,31 @@ func _show_prepare(run: RunState) -> void:
 	_side.add_child(panel)
 
 	var tier_color: Color = MapView.CHAOS_COLOR if chaos else MapView.COLOR.get(run.tier, Color.WHITE)
+	var panel_style := _panel_style(true)
+	panel_style.border_color = tier_color
+	panel.add_theme_stylebox_override("panel", panel_style)
+	var foes: Array = info["enemy_builds"]
+	var chips := HBoxContainer.new()
+	chips.add_theme_constant_override("separation", 8)
+	box.add_child(chips)
+	chips.add_child(_tier_chip("Chaos" if chaos else RunState.TIER_NAMES[run.tier], tier_color))
+	if run.is_training() and not chaos:
+		chips.add_child(_tier_chip("Training", Arcade.CYAN))
+	chips.add_child(Arcade.label("KAMPF %d · %d GEGEN %s" % [run.round, run.squad.size(),
+		"?" if chaos else str(foes.size())], 12, Arcade.MUTED, "bold", 0.14))
 	if chaos:
-		box.add_child(_label("CHAOS-KAMPF", 18, tier_color))
+		box.add_child(Arcade.label("CHAOS-KAMPF", 20, Arcade.WHITE, "display"))
 		box.add_child(_label("Der Virus würfelt alles: DROMEs, Waffen, Module. Gegner erst im "
 			+ "Kampf zu sehen.", 13, COLOR_MUTED))
 	else:
-		var name := _label("%s  ·  %s" % [RunState.TIER_NAMES[run.tier], info["team"]], 18, tier_color)
-		name.add_theme_font_override("font", Arcade.font("bold", 18, 0.03))
-		box.add_child(name)
+		box.add_child(Arcade.label(str(info["team"]).to_upper(), 20, Arcade.WHITE, "display"))
+		var leader := ""
+		for foe in foes:
+			if not foe.is_sentinel():
+				leader = foe.display_name
+				break
+		if leader != "":
+			box.add_child(_label("Anführer: %s" % leader.to_upper(), 14, Arcade.TEXT))
 		if str(info.get("team_text", "")) != "":
 			box.add_child(_label(str(info["team_text"]), 13, COLOR_MUTED))
 		# Die Einheiten der Formation als Kacheln -- antippen zeigt die Werte.
@@ -285,7 +379,6 @@ func _show_prepare(run: RunState) -> void:
 		flow.add_theme_constant_override("h_separation", 6)
 		flow.add_theme_constant_override("v_separation", 6)
 		box.add_child(flow)
-		var foes: Array = info["enemy_builds"]
 		for k in foes.size():
 			flow.add_child(_enemy_tile(foes[k], k))
 
@@ -301,10 +394,21 @@ func _show_prepare(run: RunState) -> void:
 	else:
 		line.add_child(_flow_label("Kampfwert: du %d · Gegner %d · %s" % [int(own), int(foe), verdict],
 			14, color))
-	box.add_child(_label("Beute: %s" % info["reward_text"], 13,
-		COLOR_WARN if run.tier == RunState.Tier.ELITE or chaos else COLOR_MUTED))
+	var loot := PanelContainer.new()
+	var loot_box := StyleBoxFlat.new()
+	loot_box.bg_color = Arcade.DEEP
+	loot_box.set_content_margin_all(8)
+	loot.add_theme_stylebox_override("panel", loot_box)
+	var loot_row := HBoxContainer.new()
+	loot_row.add_theme_constant_override("separation", 8)
+	loot.add_child(loot_row)
+	loot_row.add_child(Arcade.label("BEUTE", 12, Arcade.YELLOW, "bold", 0.16))
+	var loot_text := _label(str(info["reward_text"]), 14, Arcade.TEXT)
+	loot_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	loot_row.add_child(loot_text)
+	box.add_child(loot)
 
-	var start := _big_button("Kampf starten")
+	var start := _big_button("Kampf starten ▶")
 	start.pressed.connect(func():
 		GameState.begin_run_battle()
 		get_tree().change_scene_to_file("res://scenes/battle.tscn"))
@@ -447,7 +551,7 @@ func _show_stop(run: RunState) -> void:
 	for drome in run.squad.size():
 		_side.add_child(_squad_row(run, drome, options))
 
-	var go := _big_button("Weiter zum nächsten Kampf")
+	var go := _big_button("Zur Karte ▶")
 	go.pressed.connect(func():
 		_selected_storage = -1
 		InfoPopup.close_all(self)
@@ -467,7 +571,15 @@ func _show_stop(run: RunState) -> void:
 		row.add_child(go)
 		_main_action(row)
 	else:
-		_main_action(go)
+		# Entwurf: links das Rezeptbuch, rechts weiter zur Karte.
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var book_button := UiKit.outline_button("Rezeptbuch", Arcade.CYAN)
+		book_button.size_flags_stretch_ratio = 0.7
+		book_button.pressed.connect(func(): _open_recipes(run))
+		row.add_child(book_button)
+		row.add_child(go)
+		_main_action(row)
 	if _recipes_open:
 		_open_recipes.call_deferred(run)
 
@@ -526,6 +638,21 @@ func _stop_status(run: RunState) -> Control:
 	if not run.bag.is_empty():
 		flow.add_child(_chip("Tasche %d ▸" % run.bag.size(), COLOR_MUTED, func(): _bag_popup(run), ""))
 	return flow
+
+
+## Stufen-Etikett (LEICHT / NORMAL / ELITE) in der Farbe der Stufe.
+func _tier_chip(text: String, color: Color) -> Control:
+	var panel := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = color
+	box.content_margin_left = 6
+	box.content_margin_right = 6
+	box.content_margin_top = 1
+	box.content_margin_bottom = 1
+	panel.add_theme_stylebox_override("panel", box)
+	panel.add_child(Arcade.label(text.to_upper(), 11, Arcade.NIGHT, "bold", 0.14))
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return panel
 
 
 ## Kleiner Chip mit Rahmen in seiner Farbe. Mit ``on_tap`` ein Knopf.
@@ -1274,48 +1401,195 @@ func _show_end(run: RunState) -> void:
 	_delivered.append_array(GameState.deliver_run_home())
 	var won := run.phase == RunState.Phase.WON
 	var wins := run.wins()
+	var losses := run.history.size() - wins
+	# Entwurf 15. Nov. 2026: Etikett, grosser Glitch-Schriftzug, Zahlen.
+	var tag := Arcade.tilt(Arcade.tag("%s · %s" % [_region_name(run).to_upper(),
+		str(run.faction().get("name", "")).to_upper()], 12, 0.0), 2.0)
+	tag.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_side.add_child(tag)
+	var title := ""
 	if run.is_endless():
-		_side.add_child(_label("Ausgestiegen nach %d Siegen" % wins if won
-			else "Gefallen in Kampf %d" % run.round, 28, COLOR_GOOD if won else COLOR_BAD))
-		_side.add_child(_label("Die Beute kommt mit nach Hause." if won
-			else "Die Beute dieses Einsatzes ist verloren -- was zuhause liegt, ist sicher.", 16,
-			COLOR_MUTED))
+		title = "Ausgestiegen" if won else "Gefallen"
 	else:
-		_side.add_child(_label("Einsatz geschafft!" if won else "Einsatz gescheitert.", 30,
-			COLOR_GOOD if won else COLOR_BAD))
+		title = "Einsatz\nabgeschlossen" if won else "Einsatz\ngescheitert"
+	var logo := Arcade.GlitchLogo.new(title.to_upper(), 28, 3.6, [
+		[0.0, Vector2(-2, 0), Vector2(2, 0)],
+		[0.9, Vector2(-6, 2), Vector2(6, -2)],
+		[0.93, Vector2(4, -1), Vector2(-4, 1)]], 2.0)
+	var big := Arcade.tilt(logo, -3.0)
+	big.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_side.add_child(big)
+	var summary := _label("%d Kämpfe · %d Siege · %d Niederlagen · Leben %d/%d" % [run.history.size(),
+		wins, losses, maxi(run.lives, 0), run.lives_max()], 15, Arcade.TEXT)
+	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_side.add_child(summary)
+	if not run.is_endless():
 		if won and GameState.just_unlocked_endless:
-			_side.add_child(_label("Neon City ist bezwungen -- der Infinity-Einsatz ist frei.", 18, COLOR_WARN))
-	_side.add_child(_label("%d von %d Kämpfen gewonnen." % [wins, run.history.size()], 18))
-	var line := ""
-	for entry in run.history:
-		line += "%s(%s) " % ["S" if entry["won"] else "N", "LNE"[int(entry.get("tier", 1))]]
-	_side.add_child(_label("Verlauf: %s (S = Sieg, N = Niederlage; in Klammern die Stufe)" % line.strip_edges(), 16, COLOR_MUTED))
+			_side.add_child(_bonus_banner("Neon City bezwungen", "Infinity-Einsatz freigeschaltet"))
+	else:
+		_side.add_child(_label("Die Beute kommt mit nach Hause." if won
+			else "Die Beute dieses Einsatzes ist verloren -- was zuhause liegt, ist sicher.", 14,
+			COLOR_MUTED))
 
-	# Die EP des Laufs, jetzt zuhause gutgeschrieben (Leveling).
-	for row in run.final_growth:
-		var up: bool = row["up"]
-		_side.add_child(_label("%s  +%d EP  ·  Level %d%s" % [row["name"], int(row["gain"]),
-			int(row["level"]), "  ·  Aufstieg!" if up else ""],
-			16 if row["kind"] == "drome" else 14, COLOR_GOOD if up else COLOR_MUTED))
+	# Verlauf als Kette: je Kampf ein Kaestchen in der Farbe der Stufe,
+	# Haken = Sieg, Kreuz = Niederlage.
+	var chart := UiKit.card(_side, false)
+	var chart_head := HBoxContainer.new()
+	chart.add_child(chart_head)
+	var chart_title := Arcade.label("VERLAUF", 14, Arcade.CYAN, "bold", 0.2)
+	chart_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chart_head.add_child(chart_title)
+	for k in 3:
+		chart_head.add_child(Arcade.label("■ " + RunState.TIER_NAMES[k].to_upper() + " ", 10,
+			MapView.COLOR[k], "bold", 0.08))
+	chart.add_child(RunChart.new(run))
+	chart.add_child(_label("✓ Sieg   ✕ Niederlage · −1 Leben", 13, COLOR_MUTED))
 
-	var gains: Array = _delivered.filter(func(item): return item.get("kind", "") in ["cache", "coins"]) \
-		.map(func(item): return str(item["title"]))
-	if not gains.is_empty():
-		_side.add_child(_label("In den Hangar: %s" % ", ".join(gains), 16, UiKit.MAGENTA))
+	# Was bleibt: Caches, Coins, Teile, Erfahrung.
+	var keep := UiKit.card(_side, true)
+	keep.add_child(Arcade.label("WAS BLEIBT", 14, Arcade.CYAN, "bold", 0.2))
+	var wallet := HBoxContainer.new()
+	wallet.add_theme_constant_override("separation", 8)
+	keep.add_child(wallet)
+	var caches := 0
+	var coins := 0
+	for item in _delivered:
+		match str(item.get("kind", "")):
+			"cache": caches += int(item.get("amount", 1))
+			"coins": coins += int(item.get("amount", 0))
+	wallet.add_child(_keep_cell(RunState.cache_name(run.region_id), "× %d" % caches, Arcade.MAGENTA))
+	wallet.add_child(_keep_cell(RunState.coin_name(), "+%d" % coins, Arcade.YELLOW))
 	var parts: Array = _delivered.filter(func(item): return item.get("kind", "") == "part") \
 		.map(func(item): return str(item["title"]))
 	if not parts.is_empty():
-		_side.add_child(_label("Nach Hause in den Hangar: %s" % ", ".join(parts),
-			16, COLOR_GOOD))
+		keep.add_child(_label("Teile in den Hangar: %s" % ", ".join(parts), 13, COLOR_GOOD))
+	# Die EP des Laufs, jetzt zuhause gutgeschrieben (Leveling).
+	var drome_rows: Array = run.final_growth.filter(func(row): return row["kind"] == "drome")
+	if not drome_rows.is_empty():
+		var rule := ColorRect.new()
+		rule.color = Color("#3a1a6e")
+		rule.custom_minimum_size = Vector2(0, 1)
+		keep.add_child(rule)
+		keep.add_child(Arcade.label("DROMEs", 12, Arcade.MUTED, "bold", 0.2))
+		for row in drome_rows:
+			keep.add_child(_growth_line(row))
+	for row in run.final_growth:
+		if row["kind"] != "drome" and bool(row["up"]):
+			keep.add_child(_label("%s · Level %d · Aufstieg!" % [row["name"], int(row["level"])], 13,
+				COLOR_GOOD))
 
-	var again := _big_button("Neuer Einsatz")
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 10)
+	var hangar := UiKit.outline_button("Zum Hangar")
+	hangar.size_flags_stretch_ratio = 0.8
+	hangar.pressed.connect(func():
+		GameState.deliver_run_home()
+		_delivered.clear()
+		GameState.run = null
+		get_tree().change_scene_to_file("res://scenes/hangar.tscn"))
+	buttons.add_child(hangar)
+	var again := _big_button("Neuer Einsatz ▶")
 	again.pressed.connect(func():
 		GameState.deliver_run_home()
 		_delivered.clear()
 		GameState.run = null
 		_refresh())
-	_main_action(again)
+	buttons.add_child(again)
+	_main_action(buttons)
 	again.grab_focus.call_deferred()
+
+
+func _bonus_banner(title: String, text: String) -> Control:
+	var panel := PanelContainer.new()
+	var box := Arcade.chamfer_box(Arcade.YELLOW, 10)
+	box.set_content_margin_all(12)
+	box.shadow_color = Arcade.MAGENTA
+	box.shadow_size = 1
+	box.shadow_offset = Vector2(6, 6)
+	panel.add_theme_stylebox_override("panel", box)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	panel.add_child(column)
+	column.add_child(Arcade.label(title.to_upper(), 16, Arcade.DEEP, "display"))
+	column.add_child(Arcade.label(text, 14, Arcade.DEEP, "bold"))
+	return Arcade.tilt(panel, -2.0)
+
+
+func _keep_cell(title: String, value: String, color: Color) -> Control:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var style := StyleBoxFlat.new()
+	style.bg_color = Arcade.DEEP
+	style.set_content_margin_all(10)
+	panel.add_theme_stylebox_override("panel", style)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	panel.add_child(column)
+	column.add_child(Arcade.label(title.to_upper(), 11, Arcade.MUTED, "bold", 0.14))
+	column.add_child(Arcade.label(value, 20, color, "display"))
+	return panel
+
+
+## Eine DROME-Zeile im Abschluss: Name, Level (bei Aufstieg "LV 1 → 2 ▲"),
+## darunter der EP-Balken.
+func _growth_line(row: Dictionary) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 2)
+	var top := HBoxContainer.new()
+	box.add_child(top)
+	var name := Arcade.label(str(row["name"]).to_upper(), 14, Arcade.WHITE, "display")
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(name)
+	var level := int(row["level"])
+	var up := bool(row["up"])
+	top.add_child(Arcade.label(("LV %d → %d ▲" % [level - 1, level]) if up
+		else ("LV %d · +%d EP" % [level, int(row["gain"])]), 12,
+		Arcade.YELLOW if up else Arcade.MUTED, "bold", 0.08))
+	return box
+
+
+## Der Verlauf des Einsatzes als Kette (Entwurf): Kaestchen je Kampf, hoch
+## nach Stufe versetzt, mit Haken oder Kreuz; offene Kaempfe als Punkte.
+class RunChart extends Control:
+	var _run: RunState
+
+	func _init(run: RunState) -> void:
+		_run = run
+		custom_minimum_size = Vector2(0, 120)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var total := maxi(RunState.rounds_total(), _run.history.size()) if not _run.is_endless() \
+			else maxi(_run.history.size(), 1)
+		var step := size.x / float(total)
+		var font := Arcade.font("bold")
+		var last := Vector2.ZERO
+		for i in total:
+			var x := step * (i + 0.5)
+			var label := "K%d" % (i + 1)
+			var w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			draw_string(font, Vector2(x - w * 0.5, size.y - 2), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
+				Arcade.MUTED)
+			if i >= _run.history.size():
+				draw_rect(Rect2(x - 3, 40, 6, 6), Color("#3a1a6e"))
+				continue
+			var entry: Dictionary = _run.history[i]
+			var tier := int(entry.get("tier", 1))
+			var y := 74.0 - tier * 26.0
+			var center := Vector2(x, y)
+			if i > 0:
+				draw_line(last, center, Arcade.CYAN, 2.0)
+			last = center
+			var color: Color = MapView.COLOR.get(tier, Color.WHITE)
+			var r := Rect2(center - Vector2(10, 10), Vector2(20, 20))
+			draw_rect(r, Arcade.NIGHT)
+			draw_rect(r, color, false, 2.0)
+			if bool(entry["won"]):
+				draw_polyline(PackedVector2Array([center + Vector2(-5, 0), center + Vector2(-1, 4),
+					center + Vector2(6, -4)]), color, 2.0)
+			else:
+				draw_line(center + Vector2(-5, -5), center + Vector2(5, 5), Arcade.MAGENTA, 2.0)
+				draw_line(center + Vector2(5, -5), center + Vector2(-5, 5), Arcade.MAGENTA, 2.0)
 
 
 # ---------------------------------------------------------------------------
