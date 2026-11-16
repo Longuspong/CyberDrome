@@ -29,8 +29,7 @@ func setup(units: Array) -> void:
 	add_theme_constant_override("h_separation", 4)
 	add_theme_constant_override("v_separation", 4)
 	columns = maxi(1, units.size())
-	for child in get_children():
-		child.queue_free()
+	UiKit.clear(self)
 	_tiles.clear()
 	for unit in units:
 		_add_tile(unit)

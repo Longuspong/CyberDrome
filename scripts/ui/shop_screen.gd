@@ -37,15 +37,13 @@ func _ready() -> void:
 
 
 func _refresh() -> void:
-	for child in _tabs.get_children():
-		child.queue_free()
+	UiKit.clear(_tabs)
 	_tabs.add_child(UiKit.segmented([["shop", "Shop"], ["caches", "Caches"], ["bauen", "Bauen"]],
 		_tab, func(id):
 			_tab = id
 			Tile.clear_choice()
 			_refresh()))
-	for child in _content.get_children():
-		child.queue_free()
+	UiKit.clear(_content)
 	if _tab == "bauen":
 		_content.add_child(_wallet())
 	match _tab:
@@ -528,7 +526,7 @@ func _build_drome(spec: Dictionary) -> void:
 	GameState.refresh_squad()
 	# Gleich in den Umbau des neuen DROME -- er hat noch keine Waffe.
 	GameState.editing_index = GameState.roster.entries.size() - 1
-	get_tree().change_scene_to_file("res://scenes/hangar.tscn")
+	Fader.go("res://scenes/hangar.tscn")
 
 
 

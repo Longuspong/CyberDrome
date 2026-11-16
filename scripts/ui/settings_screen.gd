@@ -84,7 +84,7 @@ func _ready() -> void:
 	switch.add_theme_stylebox_override("normal", Arcade.chamfer_box(Arcade.DEEP, 8, Arcade.CYAN, 2))
 	switch.add_theme_stylebox_override("hover", Arcade.chamfer_box(Color("#1d1040"), 8, Arcade.CYAN, 2))
 	switch.add_theme_stylebox_override("pressed", Arcade.chamfer_box(Color(Arcade.CYAN, 0.2), 8, Arcade.CYAN, 2))
-	switch.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/saves.tscn"))
+	switch.pressed.connect(func(): Fader.go("res://scenes/saves.tscn"))
 	var switch_row := HBoxContainer.new()
 	switch_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	switch_row.offset_left = 10

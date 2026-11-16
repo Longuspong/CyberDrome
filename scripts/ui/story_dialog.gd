@@ -136,8 +136,7 @@ func _show_line() -> void:
 	var speaker := _portrait.get_parent().get_parent() as HBoxContainer
 	speaker.alignment = BoxContainer.ALIGNMENT_END if right else BoxContainer.ALIGNMENT_BEGIN
 	(_portrait as Portrait).setup(color, str(line.get("look", "ninja")))
-	for child in _name_box.get_children():
-		child.queue_free()
+	UiKit.clear(_name_box)
 	var plate := PanelContainer.new()
 	var plate_box := StyleBoxFlat.new()
 	plate_box.bg_color = Arcade.NIGHT
@@ -159,8 +158,7 @@ func _show_line() -> void:
 	card_box.set_border_width_all(2)
 	card_box.set_content_margin_all(18)
 	_card.add_theme_stylebox_override("panel", card_box)
-	for child in _progress.get_children():
-		child.queue_free()
+	UiKit.clear(_progress)
 	for k in _lines.size():
 		var dash := ColorRect.new()
 		dash.custom_minimum_size = Vector2(14, 3)

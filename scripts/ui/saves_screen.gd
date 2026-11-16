@@ -40,7 +40,7 @@ func _ready() -> void:
 	head.custom_minimum_size = Vector2(0, 44)
 	content.add_child(head)
 	var back := Arcade.BackButton.new()
-	back.pressed.connect(func(): get_tree().change_scene_to_file(TITLE))
+	back.pressed.connect(func(): Fader.go(TITLE))
 	head.add_child(back)
 	var push := Control.new()
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -120,8 +120,7 @@ func _layout() -> void:
 
 
 func _refresh(first: bool = false) -> void:
-	for child in _list.get_children():
-		child.queue_free()
+	UiKit.clear(_list)
 	for which in range(1, GameState.SLOT_COUNT + 1):
 		var card := _slot_card(which, GameState.slot_summary(which))
 		_list.add_child(card)
@@ -199,7 +198,7 @@ func _slot_card(which: int, info: Dictionary) -> Control:
 		_show(("LADE SLOT %02d" if used else "NEUES SPIEL IN SLOT %02d") % which)
 		Accessibility.vibrate(20)
 		GameState.select_slot(which)
-		get_tree().change_scene_to_file.call_deferred("res://scenes/main.tscn"))
+		Fader.go("res://scenes/main.tscn"))
 	box.add_child(play)
 
 	if used:

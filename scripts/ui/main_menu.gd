@@ -319,7 +319,7 @@ class Pips extends Control:
 
 func _open_run(mode: String) -> void:
 	GameState.next_run_mode = mode
-	get_tree().change_scene_to_file("res://scenes/run.tscn")
+	Fader.go("res://scenes/run.tscn")
 
 
 func _refresh_status() -> void:

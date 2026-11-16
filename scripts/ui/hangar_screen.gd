@@ -109,14 +109,11 @@ func _switch(tab: String) -> void:
 
 func _refresh() -> void:
 	if _tab_slot != null:
-		for child in _tab_slot.get_children():
-			child.queue_free()
+		UiKit.clear(_tab_slot)
 		_tab_slot.add_child(UiKit.segmented([["squad", "Squad"], ["umbau", "Umbau"]], _tab,
 			func(id): _switch(id)))
-	for child in _content.get_children():
-		child.queue_free()
-	for child in _fixed.get_children():
-		child.queue_free()
+	UiKit.clear(_content)
+	UiKit.clear(_fixed)
 	(_fixed.get_parent() as Control).visible = _tab == "umbau"
 	if _tab == "squad":
 		_show_squad()

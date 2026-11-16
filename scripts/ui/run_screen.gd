@@ -38,8 +38,10 @@ var _recipes_open: bool = false
 var _recipe_filter: String = "alle"
 ## Lagerplatz, der kurz aufleuchten soll (frisch gekauft); -1 = keiner.
 var _flash_storage: int = -1
-## Halter "drome:slot", der kurz aufleuchten soll (frisch eingesetzt).
+## DROME (Index als Text), dessen Karte kurz aufleuchten soll (frisch eingesetzt).
 var _flash_holder: String = ""
+## Hoehe der Lager-Kacheln (eine Zeile, ohne Namen).
+const STORE_EDGE := 46.0
 ## Die Rezepte, die das Rezeptbuch gerade zeigt (Reihenfolge zum Blaettern).
 var _recipe_shown: Array = []
 
@@ -136,11 +138,9 @@ func _refresh() -> void:
 	# Jede Aenderung im Lauf geht gleich in den Spielstand (10. Nov. 2026).
 	GameState.save_run()
 	var run := _run()
-	for child in _side.get_children():
-		child.queue_free()
+	UiKit.clear(_side)
 	if _footer != null:
-		for child in _footer.get_children():
-			child.queue_free()
+		UiKit.clear(_footer)
 		(_footer.get_parent() as Control).visible = false
 	_lives_box.visible = run != null
 	# Im Zwischenstopp steht der Squad mit seinen Haltern oben -- dort wird
@@ -173,8 +173,7 @@ func _refresh() -> void:
 
 ## Der Glitch-Titel in der Kopfzeile (leer = keiner).
 func _set_title(text: String) -> void:
-	for child in _title_holder.get_children():
-		child.queue_free()
+	UiKit.clear(_title_holder)
 	if text == "":
 		return
 	var logo := Arcade.GlitchLogo.new(text.to_upper(), 17, 4.0, [
@@ -195,13 +194,17 @@ func _region_name(run: RunState) -> String:
 ## CACHES dieses Einsatzes und die VERSTAERKUNG. Herzen UND Zahl im Tooltip --
 ## die Farbe allein traegt die Information nicht.
 func _refresh_lives(run: RunState) -> void:
-	for child in _lives_box.get_children():
-		child.queue_free()
+	UiKit.clear(_lives_box)
 	_lives_box.add_theme_constant_override("separation", 4)
 	var hearts := Hearts.new(run.lives, run.lives_max())
 	hearts.tooltip_text = "Leben: %d von %d" % [run.lives, run.lives_max()]
 	_lives_box.add_child(_hud_cell("Leben", hearts))
-	_lives_box.add_child(_hud_cell("Credits", UiIcon.text("credits", "%d" % run.credits, 16, Arcade.CYAN, "display")))
+	var credits := UiIcon.text("credits", "%d" % run.credits, 16, Arcade.CYAN, "display")
+	if run.phase == RunState.Phase.STOP and not run.history.is_empty():
+		var gain := int(run.history[-1].get("credits", 0))
+		if gain > 0:
+			credits.add_child(Arcade.label("+%d" % gain, 13, COLOR_GOOD, "bold"))
+	_lives_box.add_child(_hud_cell("Credits", credits))
 	var caches := 0
 	for key in run.run_caches:
 		caches += int(run.run_caches[key])
@@ -270,8 +273,7 @@ class Bars extends Control:
 
 
 func _refresh_squad(run: RunState) -> void:
-	for child in _squad_list.get_children():
-		child.queue_free()
+	UiKit.clear(_squad_list)
 	var heading := Label.new()
 	heading.text = "Dein Einsatz-Squad  ·  Kampfwert %d" % int(DromeBuild.squad_power(run.squad))
 	heading.add_theme_font_size_override("font_size", 20)
@@ -412,7 +414,7 @@ func _show_prepare(run: RunState) -> void:
 	UiIcon.on_button(start, "play", 18, UiKit.ON_PRIMARY, "right")
 	start.pressed.connect(func():
 		GameState.begin_run_battle()
-		get_tree().change_scene_to_file("res://scenes/battle.tscn"))
+		Fader.go("res://scenes/battle.tscn"))
 	_main_action(start)
 	start.grab_focus.call_deferred()
 
@@ -503,9 +505,10 @@ func _credit_line(run: RunState) -> String:
 ## tippen oder lange druecken erklaert (Tile, InfoPopup). Das Rezeptbuch
 ## ist ein Popup mit Raster.
 ##
-## Bedienung: Modul im Lager antippen, dann einen leuchtenden Platz an einem
-## Halter -- oder Doppeltipp auf das Modul. Ein eingesetztes Modul antippen:
-## Popup mit "Zurueck ins Lager".
+## Bedienung (16. Nov. 2026): Modul im Lager antippen, dann einen leuchtenden
+## DROME -- oder Doppeltipp auf das Modul. Die Reihenfolge der Module ist
+## egal, deshalb wird nicht auf einzelne Plaetze gezielt. Einen DROME ohne
+## Auswahl antippen: Waffe und Module zum Blaettern, mit "Zurueck ins Lager".
 func _show_stop(run: RunState) -> void:
 	if _selected_storage >= run.storage.size():
 		_selected_storage = -1
@@ -528,20 +531,32 @@ func _show_stop(run: RunState) -> void:
 	_side.add_child(_shop_row(run))
 
 	# --- Lager ---
+	# Das Rezeptbuch steht unten in der Fusszeile; nur im Infinity-Einsatz
+	# (dort steht unten "Aussteigen") hier oben.
 	var book := run.recipe_book()
 	var ready := book.filter(func(entry): return entry["ready"]).size()
-	var recipes := _small_button("Rezepte%s" % (("  ·  %d bereit" % ready) if ready > 0 else ""))
-	if ready > 0:
-		recipes.add_theme_color_override("font_color", COLOR_GOOD)
-	recipes.pressed.connect(func(): _open_recipes(run))
+	var recipes: Button = null
+	if run.is_endless():
+		recipes = _small_button("Rezepte%s" % (("  ·  %d bereit" % ready) if ready > 0 else ""))
+		if ready > 0:
+			recipes.add_theme_color_override("font_color", COLOR_GOOD)
+		recipes.pressed.connect(func(): _open_recipes(run))
 	_side.add_child(_section_head("Lager  %d / %d" % [run.storage.size(), RunState.storage_size()],
 		recipes))
 	_side.add_child(_storage_grid(run))
-	if run.is_bios_at(_selected_storage):
-		_side.add_child(_label("BIOS: tippe einen leuchtenden Halter an.", UiKit.SMALL, COLOR_GOOD))
-	elif run.is_module_at(_selected_storage):
-		_side.add_child(_label("Leuchtenden Platz antippen  ·  nochmal tippen: Details  ·  Doppeltipp: ausrüsten",
-			UiKit.SMALL, COLOR_GOOD))
+	# Der Hinweis steht immer da (eine Zeile) -- ein auftauchender Hinweis
+	# schob vorher den Squad nach unten.
+	var hint := "Modul wählen, dann DROME antippen"
+	var hint_color := COLOR_MUTED
+	if run.is_bios_at(_selected_storage) or run.is_module_at(_selected_storage):
+		var picked := ModuleData.get_module(run.storage[_selected_storage])
+		hint = "%s: leuchtenden DROME antippen" % (picked.display_name if picked != null else "Modul")
+		hint_color = COLOR_GOOD
+	var hint_label := _label(hint, UiKit.SMALL, hint_color)
+	hint_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hint_label.clip_text = true
+	hint_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_side.add_child(hint_label)
 
 	# --- Squad mit Haltern ---
 	_side.add_child(_section_head("Squad  ·  Kampfwert %d" % int(DromeBuild.squad_power(run.squad))))
@@ -550,8 +565,13 @@ func _show_stop(run: RunState) -> void:
 		options = run.bios_options(_selected_storage)
 	elif run.is_module_at(_selected_storage):
 		options = run.module_options(_selected_storage)
+	var squad := GridContainer.new()
+	squad.columns = 2
+	squad.add_theme_constant_override("h_separation", 8)
+	squad.add_theme_constant_override("v_separation", 8)
 	for drome in run.squad.size():
-		_side.add_child(_squad_row(run, drome, options))
+		squad.add_child(_stop_card(run, drome, options))
+	_side.add_child(squad)
 
 	var go := _big_button("Zur Karte")
 	UiIcon.on_button(go, "play", 18, UiKit.ON_PRIMARY, "right")
@@ -577,8 +597,9 @@ func _show_stop(run: RunState) -> void:
 		# Entwurf: links das Rezeptbuch, rechts weiter zur Karte.
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
-		var book_button := UiKit.outline_button("Rezeptbuch", Arcade.CYAN)
-		UiIcon.on_button(book_button, "recipe", 18, Arcade.CYAN)
+		var book_button := UiKit.outline_button("Rezepte%s" % ((" · %d" % ready) if ready > 0 else ""),
+			COLOR_GOOD if ready > 0 else Arcade.CYAN)
+		UiIcon.on_button(book_button, "recipe", 18, COLOR_GOOD if ready > 0 else Arcade.CYAN)
 		book_button.size_flags_stretch_ratio = 0.7
 		book_button.pressed.connect(func(): _open_recipes(run))
 		row.add_child(book_button)
@@ -622,12 +643,8 @@ func _stop_status(run: RunState) -> Control:
 	flow.add_theme_constant_override("v_separation", 8)
 	var last: Dictionary = run.history[-1] if not run.history.is_empty() else {}
 	var lost: bool = not last.is_empty() and not bool(last["won"])
-	var credits := "%d" % run.credits
-	if not last.is_empty():
-		credits += "   +%d" % int(last.get("credits", 0))
-	flow.add_child(_chip(credits, COLOR_WARN, Callable(), "Credits: Währung des Ladens. "
-		+ ("+%d für den Sieg." % int(last.get("credits", 0)) if not lost else "Trostgeld nach der Niederlage."),
-		"credits"))
+	# Die Credits stehen oben in der Leiste (mit dem Zuwachs) -- hier nicht
+	# noch einmal (16. Nov. 2026).
 	if lost:
 		flow.add_child(_chip("Niederlage  ·  −1 Leben", COLOR_BAD, Callable(), ""))
 	if not run.last_loot.is_empty():
@@ -830,8 +847,8 @@ func _shop_row(run: RunState) -> Control:
 		holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		holder.add_theme_constant_override("separation", 0)
 		row.add_child(holder)
-		var tile := Tile.new("shop:%d:%s" % [index, module.id], ModuleChip.new(module, 40.0),
-			module.display_name, Vector2(0, 72))
+		var tile := Tile.new("shop:%d:%s" % [index, module.id], ModuleChip.new(module, 32.0),
+			module.display_name, Vector2(0, 62))
 		tile.accent = module.color()
 		tile.dimmed = bool(offer["sold"])
 		tile.glow = run.target_recipe != &"" and _recipe_wants(run, module)
@@ -840,27 +857,43 @@ func _shop_row(run: RunState) -> Control:
 		tile.on_info = func(): InfoPopup.open_pages(self, pages, page)
 		tile.on_action = func(): _buy(run, page)
 		holder.add_child(tile)
-		var buy := Button.new()
-		buy.text = "verkauft" if offer["sold"] else "%d" % price
-		if not offer["sold"]:
-			UiIcon.on_button(buy, "credits", 16, Color.WHITE)
-		buy.custom_minimum_size = Vector2(0, 40)
-		buy.add_theme_font_override("font", Arcade.font("display", 15, 0.04))
-		buy.add_theme_font_size_override("font_size", 15)
-		buy.disabled = blocker != ""
-		buy.tooltip_text = blocker
-		var fill := UiKit.PRIMARY if blocker == "" else Color(UiKit.CARD_LINE, 0.6)
-		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-			var box := Arcade.chamfer_box(fill.darkened(0.15) if state == "pressed" else fill, 8)
-			box.content_margin_top = 4
-			box.content_margin_bottom = 4
-			buy.add_theme_stylebox_override(state, box)
-		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-			buy.add_theme_color_override(state, UiKit.ON_PRIMARY)
-		buy.add_theme_color_override("font_disabled_color", Color(UiKit.TEXT, 0.6))
+		var buy := _price_button(price, bool(offer["sold"]), blocker)
 		buy.pressed.connect(func(): _buy(run, index))
 		holder.add_child(buy)
 	return row
+
+
+## Preis-Knopf im Laden (16. Nov. 2026, vorher schlecht lesbar: weisses
+## Symbol ganz links auf Gelb, Zahl allein in der Mitte). Jetzt stehen Symbol
+## und Zahl zusammen in der Mitte, dunkel auf Gelb und gross; ohne genug
+## Credits grau mit der Zahl in Rot, verkauft als "VERKAUFT".
+func _price_button(price: int, sold: bool, blocker: String) -> Button:
+	var buy := Button.new()
+	buy.custom_minimum_size = Vector2(0, 40)
+	buy.disabled = sold or blocker != ""
+	buy.tooltip_text = blocker
+	var fill := UiKit.PRIMARY if not buy.disabled else Color("#241640")
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var box := Arcade.chamfer_box(fill.darkened(0.15) if state == "pressed" else fill, 8,
+			Color(UiKit.CARD_LINE, 0.9) if buy.disabled else Color.TRANSPARENT, 1 if buy.disabled else 0)
+		box.set_content_margin_all(2)
+		buy.add_theme_stylebox_override(state, box)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 5)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	buy.add_child(row)
+	if sold:
+		row.add_child(Arcade.label("VERKAUFT", 13, COLOR_MUTED, "bold", 0.12))
+		return buy
+	var ink := UiKit.ON_PRIMARY if not buy.disabled \
+		else (COLOR_BAD if blocker == "zu wenig Credits" else COLOR_MUTED)
+	row.add_child(UiIcon.rect("credits", 18, ink))
+	var number := Arcade.label(str(price), 20, ink, "display")
+	number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(number)
+	return buy
 
 
 func _buy(run: RunState, index: int) -> void:
@@ -910,7 +943,7 @@ func _quick_install(run: RunState, index: int) -> void:
 			if done:
 				Accessibility.vibrate(25, true)
 				_selected_storage = -1
-				_flash_holder = "%d:%s" % [drome, slot]
+				_flash_holder = str(drome)
 			_refresh()
 			return
 	InfoPopup.open(self, "Kein freier Platz", {"lines": ["Kein Halter nimmt dieses Modul gerade. "
@@ -1005,14 +1038,17 @@ func _recipes_using(module: ModuleData) -> Array:
 ## gestrichelt -- so sieht man auf einen Blick, wie viel Platz bleibt.
 func _storage_grid(run: RunState) -> Control:
 	var grid := GridContainer.new()
-	grid.columns = 4 if RunState.storage_size() <= 8 else 5
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
+	# Eine Zeile mit kleinen Kacheln (16. Nov. 2026), damit der Zwischenstopp
+	# auf einen Bildschirm passt; der Name steht im Popup und im Hinweis.
+	grid.columns = RunState.storage_size() if RunState.storage_size() <= 8 \
+		else ceili(RunState.storage_size() / 2.0)
+	grid.add_theme_constant_override("h_separation", 5)
+	grid.add_theme_constant_override("v_separation", 5)
 	for index in RunState.storage_size():
 		if index < run.storage.size():
 			grid.add_child(_storage_tile(run, index))
 		else:
-			var free := Tile.new("", null, "", Vector2(0, 64))
+			var free := Tile.new("", null, "", Vector2(0, STORE_EDGE))
 			free.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			free.empty = true
 			free.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1029,8 +1065,8 @@ func _storage_tile(run: RunState, index: int) -> Control:
 	var part := PartDB.get_part(id)
 	var tile: Tile
 	if module != null:
-		tile = Tile.new("store:%d:%s" % [index, id], ModuleChip.new(module, 36.0),
-			module.display_name, Vector2(0, 64))
+		tile = Tile.new("store:%d:%s" % [index, id], ModuleChip.new(module, 30.0),
+			"", Vector2(0, STORE_EDGE))
 		tile.accent = module.color()
 		# 15. Nov. 2026: Tipp waehlt (die Halter leuchten), zweiter Tipp
 		# zeigt Details, Doppeltipp ruestet aus.
@@ -1041,8 +1077,8 @@ func _storage_tile(run: RunState, index: int) -> Control:
 	else:
 		tile = Tile.new("store:%d:%s" % [index, id],
 			SlotShape.new(part.mount_class if part != null else "light",
-				UiKit.part_texture(part), 36.0),
-			part.display_name if part != null else str(id), Vector2(0, 64))
+				UiKit.part_texture(part), 30.0),
+			"", Vector2(0, STORE_EDGE))
 	var pages := _storage_pages(run)
 	tile.on_info = func(): InfoPopup.open_pages(self, pages, index)
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1062,116 +1098,129 @@ func _flash(control: Control) -> void:
 	tween.tween_property(control, "modulate", Color.WHITE, 0.45).set_trans(Tween.TRANS_QUAD)
 
 
-## Ein DROME im Zwischenstopp, kompakt in einer Zeile: Bild, Name und je
-## Halter die Waffe plus seine Modulplaetze. Mit gewaehltem Lager-Modul
-## leuchten die Plaetze, die es nehmen.
-func _squad_row(run: RunState, drome: int, options: Array) -> Control:
+## Ein DROME im Zwischenstopp als Karte im 2x2-Raster (16. Nov. 2026,
+## Wunsch des Spielers: die Reihenfolge der Module ist egal, also kein
+## Zielen auf einzelne Plaetze mehr -- dafuer passt alles auf einen
+## Bildschirm). Oben Bild, Name und Kampfwert, darunter je Halter die Waffe
+## und ihre Modulplaetze. Mit gewaehltem Lager-Modul leuchtet die Karte, wenn
+## es dort hineinpasst; antippen setzt es in den ersten passenden Halter.
+## Ohne Auswahl zeigt der Tipp Waffe und Module (dort: zurueck ins Lager).
+func _stop_card(run: RunState, drome: int, options: Array) -> Control:
 	var build: DromeBuild = run.squad[drome]
-	var panel := PanelContainer.new()
-	var style := UiKit.card_style(false)
-	style.set_content_margin_all(8)
-	panel.add_theme_stylebox_override("panel", style)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	panel.add_child(row)
-	var face := VBoxContainer.new()
-	face.add_theme_constant_override("separation", 0)
-	face.custom_minimum_size = Vector2(64, 0)
-	row.add_child(face)
-	var view := UiKit.drome_view(build, 40)
-	view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	face.add_child(view)
-	var name := _flow_label(build.display_name, 12)
-	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	face.add_child(name)
-	var power := _flow_label("KW %d%s" % [int(build.power_score()), " · BIOS" if build.chassis_bios else ""],
-		11, COLOR_MUTED)
-	power.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	face.add_child(power)
-
-	var holders := VBoxContainer.new()
-	holders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	holders.add_theme_constant_override("separation", 4)
-	row.add_child(holders)
-	if build.equipment().is_empty():
-		holders.add_child(_label("ohne Waffe -- kämpft nicht mit", UiKit.SMALL, COLOR_BAD))
 	var bios := run.is_bios_at(_selected_storage)
 	var picking := bios or run.is_module_at(_selected_storage)
+	var choice := _best_option(options, drome)
+	var allowed := picking and not choice.is_empty()
+	var card := Tile.new("drome:%d" % drome, null, "", Vector2(0, 0))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.managed = true
+	card.accent = COLOR_GOOD
+	card.glow = allowed
+	card.dimmed = picking and not allowed
+	var why := _why_not(options, drome)
+	card.on_select = func():
+		if allowed:
+			_install(run, drome, str(choice["slot"]))
+		elif picking:
+			InfoPopup.open(self, "Passt hier nicht", {"lines": [why]})
+		else:
+			var pages := _drome_pages(run, drome)
+			if not pages.is_empty():
+				InfoPopup.open_pages(self, pages, 0)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 6)
+	box.add_child(head)
+	var view := UiKit.drome_view(build, 30)
+	head.add_child(view)
+	var names := VBoxContainer.new()
+	names.add_theme_constant_override("separation", -2)
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(names)
+	var name := Arcade.label(build.display_name.to_upper(), 13, UiKit.TEXT, "bold", 0.06)
+	name.clip_text = true
+	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	names.add_child(name)
+	names.add_child(Arcade.label("KW %d%s" % [int(build.power_score()),
+		"  ·  BIOS" if build.chassis_bios else ""], 11, COLOR_MUTED, "medium"))
+
+	if build.equipment().is_empty():
+		box.add_child(_label("ohne Waffe", UiKit.SMALL, COLOR_BAD))
 	for slot in build.equip_slots():
-		var choice: Dictionary = {}
-		for entry in options:
-			if int(entry["drome"]) == drome and entry["slot"] == slot:
-				choice = entry
-		var allowed := picking and bool(choice.get("allowed", false))
-		holders.add_child(_holder_row(run, drome, slot, picking, allowed, bios,
-			str(choice.get("detail", "kein Platz"))))
-	return panel
+		box.add_child(_holder_strip(build, slot))
+	card.add_extra(box)
+	if _flash_holder == str(drome):
+		_flash_holder = ""
+		_flash(card)
+	return card
 
 
-## Ein Halter: Waffe als Form, dann die Modulplaetze. Leere Plaetze nehmen
-## das gewaehlte Modul; ein Modul antippen zeigt es mit "Zurueck ins Lager".
-func _holder_row(run: RunState, drome: int, slot: String, picking: bool, allowed: bool,
-		bios: bool, detail: String) -> Control:
-	var build: DromeBuild = run.squad[drome]
+## Eine Zeile der Karte: Waffe als Halterform, dann die Modulplaetze
+## (belegt als Chip, frei als gestricheltes Kaestchen).
+func _holder_strip(build: DromeBuild, slot: String) -> Control:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	row.add_theme_constant_override("separation", 3)
 	var part := build.part_in(slot)
-	var holder_shape := SlotShape.new(SlotRules.slot_class(build.body(), slot),
-		UiKit.part_texture(part), 34.0)
-	holder_shape.reach = SlotRules.slot_reach(build.body(), slot)
-	var weapon := Tile.new("weapon:%d:%s" % [drome, slot], holder_shape, "", Vector2(46, 46))
-	weapon.tooltip_text = part.display_name if part != null else "leer"
-	weapon.on_info = func():
-		if part != null:
-			InfoPopup.open_pages(self, _weapon_pages(run), _weapon_index(run, drome, slot))
-	if picking:
-		weapon.glow = allowed and bios
-		weapon.dimmed = not allowed
-		if bios and allowed:
-			weapon.on_tap = func(): _install(run, drome, slot)
-	row.add_child(weapon)
-
+	var shape := SlotShape.new(SlotRules.slot_class(build.body(), slot), UiKit.part_texture(part), 30.0)
+	shape.reach = SlotRules.slot_reach(build.body(), slot)
+	row.add_child(shape)
 	var installed := build.modules_in(slot)
 	var room := ModuleData.slots_for(build, slot)
 	for position in maxi(room, installed.size()):
-		var tile: Tile
 		if position < installed.size():
 			var module: ModuleData = installed[position]
-			var resting := module.blocker(part)
-			var chip := ModuleChip.new(module, 32.0)
-			chip.dim = resting != ""
-			tile = Tile.new("mod:%d:%s:%d" % [drome, slot, position], chip, "", Vector2(44, 46))
-			tile.accent = module.color()
-			var holder_pages := _installed_pages(run, drome, slot)
-			tile.on_info = func(): InfoPopup.open_pages(self, holder_pages, position)
-			# Doppeltipp: zurueck ins Lager.
-			tile.on_action = func():
-				if not run.storage_full() and run.remove_module(drome, slot, position):
-					Accessibility.vibrate(20, true)
-				_refresh()
-			if picking:
-				tile.dimmed = true
+			var chip := ModuleChip.new(module, 28.0)
+			chip.dim = module.blocker(part) != ""
+			chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			row.add_child(chip)
 		else:
-			tile = Tile.new("free:%d:%s:%d" % [drome, slot, position], null, "", Vector2(44, 46))
-			tile.empty = not (picking and allowed and not bios)
-			if picking and allowed and not bios:
-				tile.glow = true
-				tile.accent = COLOR_GOOD
-				tile.on_tap = func(): _install(run, drome, slot)
-			elif picking and not bios:
-				tile.on_tap = func():
-					InfoPopup.open(self, "Geht nicht", {"lines": [detail]})
-		row.add_child(tile)
-	var name := _flow_label(part.display_name if part != null else "leer", 12, COLOR_MUTED)
-	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name.clip_text = true
-	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(name)
-	if _flash_holder == "%d:%s" % [drome, slot]:
-		_flash_holder = ""
-		_flash(row)
+			row.add_child(FreeSlot.new())
 	return row
+
+
+## Freier Modulplatz: gestricheltes Kaestchen.
+class FreeSlot extends Control:
+	func _init() -> void:
+		custom_minimum_size = Vector2(28, 28)
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var r := Rect2(Vector2(2, 2), size - Vector2(4, 4))
+		var color := Color(Arcade.EMPTY_LINE, 0.8)
+		var corners := [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]
+		for i in 4:
+			var a: Vector2 = corners[i]
+			var b: Vector2 = corners[(i + 1) % 4]
+			draw_dashed_line(a, b, color, 1.0, 3.0)
+
+
+## Der beste Halter fuer das gewaehlte Modul in diesem DROME: erlaubt und
+## moeglichst einer, an dem es auch wirkt (Molok mit zwei Haltern).
+func _best_option(options: Array, drome: int) -> Dictionary:
+	var fallback: Dictionary = {}
+	for entry in options:
+		if int(entry["drome"]) != drome or not bool(entry.get("allowed", false)):
+			continue
+		if bool(entry.get("active", true)):
+			return entry
+		if fallback.is_empty():
+			fallback = entry
+	return fallback
+
+
+## Warum das gewaehlte Modul in keinen Halter dieses DROME passt.
+func _why_not(options: Array, drome: int) -> String:
+	var reasons: Array = []
+	for entry in options:
+		if int(entry["drome"]) == drome:
+			var text := str(entry.get("detail", ""))
+			if text != "" and text not in reasons:
+				reasons.append(text)
+	return "\n".join(reasons) if not reasons.is_empty() else "kein Platz"
 
 
 func _install(run: RunState, drome: int, slot: String) -> void:
@@ -1180,11 +1229,23 @@ func _install(run: RunState, drome: int, slot: String) -> void:
 	if done:
 		Accessibility.vibrate(20, true)
 		_selected_storage = -1
-		_flash_holder = "%d:%s" % [drome, slot]
+		_flash_holder = str(drome)
 	_refresh()
 
 
-## Seiten der Module eines Halters (Doppeltipp auf eines: zurueck ins Lager).
+## Waffen und Module eines DROME zum Blaettern (Tipp auf die Karte).
+func _drome_pages(run: RunState, drome: int) -> Array:
+	var build: DromeBuild = run.squad[drome]
+	var pages: Array = []
+	for slot in build.equip_slots():
+		var part: PartData = build.part_in(slot)
+		if part != null:
+			pages.append(func() -> Dictionary: return WeaponCard.page(part))
+		pages.append_array(_installed_pages(run, drome, slot))
+	return pages
+
+
+## Seiten der Module eines Halters (mit "Zurueck ins Lager").
 func _installed_pages(run: RunState, drome: int, slot: String) -> Array:
 	var build: DromeBuild = run.squad[drome]
 	var weapon := build.part_in(slot)
@@ -1198,7 +1259,6 @@ func _installed_pages(run: RunState, drome: int, slot: String) -> Array:
 			var resting := module.blocker(weapon)
 			if resting != "":
 				lines.append(["ruht: %s" % resting, COLOR_BAD])
-			lines.append(["Doppeltipp auf das Modul: zurück ins Lager.", COLOR_MUTED, UiKit.SMALL])
 			return {"title": module.display_name, "subtitle": module.headline(),
 				"subtitle_color": module.color(), "picture": ModuleChip.new(module, 52.0),
 				"lines": lines, "actions": [{"text": "Zurück ins Lager", "disabled": run.storage_full(),
@@ -1206,30 +1266,6 @@ func _installed_pages(run: RunState, drome: int, slot: String) -> Array:
 						run.remove_module(drome, slot, at)
 						_refresh()}]})
 	return pages
-
-
-## Alle Waffen des Einsatz-Squads zum Blaettern.
-func _weapon_pages(run: RunState) -> Array:
-	var pages: Array = []
-	for build in run.squad:
-		for slot in build.equip_slots():
-			var part: PartData = build.part_in(slot)
-			if part != null:
-				pages.append(func() -> Dictionary: return WeaponCard.page(part))
-	return pages
-
-
-func _weapon_index(run: RunState, drome: int, slot: String) -> int:
-	var at := 0
-	for d in run.squad.size():
-		var build: DromeBuild = run.squad[d]
-		for s2 in build.equip_slots():
-			if build.part_in(s2) == null:
-				continue
-			if d == drome and s2 == slot:
-				return at
-			at += 1
-	return 0
 
 
 # ---------------------------------------------------------------------------
@@ -1463,7 +1499,7 @@ func _show_end(run: RunState) -> void:
 		GameState.deliver_run_home()
 		_delivered.clear()
 		GameState.run = null
-		get_tree().change_scene_to_file("res://scenes/hangar.tscn"))
+		Fader.go("res://scenes/hangar.tscn"))
 	buttons.add_child(hangar)
 	var again := _big_button("Neuer Einsatz")
 	UiIcon.on_button(again, "play", 18, UiKit.ON_PRIMARY, "right")

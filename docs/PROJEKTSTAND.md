@@ -120,6 +120,31 @@ Vorlagen, Abgleich im README). Abgesprochen: **nur Optik**, Navigation bleibt
   Fraktionskern + 3 = Fraktions-DROME mit festen Werten
   (`craft_faction_drome`). Werte in config `crafting`.
 
+### Aufraeum-Runde Bedienung (16. Nov. 2026, Wunsch des Spielers)
+
+"Fuehlt sich schwammig an" -- gebaut:
+
+* **Titel ruckelte**: `Arcade.Backdrop` zeichnete jedes Bild ~1800 Punkte
+  und 300 Sonnenstreifen neu, nur fuer das Wippen der Sonne. Jetzt Lagen
+  (`BackdropLayer`), die nur bei Groessenaenderung zeichnen; die Sonne wird
+  verschoben. Die Laufbaender laufen damit ruhig.
+* **Bildschirmwechsel mit Blende**: Autoload `Fader` (`autoload/scene_fader.gd`),
+  alle Wechsel ueber `Fader.go(pfad)`; 0,12 s ab, 0,22 s auf, sperrt Eingaben
+  waehrenddessen, bei "Bewegung reduzieren" harter Schnitt.
+* **Scrollen**: Godots eigenes Touch-Ziehen im ScrollContainer kaempfte mit
+  `Accessibility._scroll_input`, sobald man in eine Luecke tippte -- jetzt
+  abgeschaltet (riesige `scroll_deadzone`), nachgebildete Mausbewegungen
+  waehrend des Wischens verschluckt. Neuaufbauten leeren ueber
+  `UiKit.clear` (alte Kinder sofort unsichtbar) -- vorher lagen alt und neu
+  ein Bild lang uebereinander, die Seite sprang (Modul waehlen).
+* **Zwischenstopp auf einem Bildschirm**: Squad als 2x2-Karten, DROME
+  antippen setzt das gewaehlte Modul in den ersten passenden Halter
+  (Reihenfolge egal); Lager in einer Zeile ohne Namen, feste Hinweiszeile,
+  Credits-Chip weg (Zuwachs steht oben bei den Credits), Preis-Knoepfe dunkel
+  auf Gelb mit Symbol und Zahl mittig, ohne Geld grau mit roter Zahl.
+* **Sentinels schwebten**: sie wurden um die linke obere Bildecke statt um
+  die Fuesse verkleinert (`Unit._scale_about_feet`).
+
 ### Grosse Umsetzung (14. Nov. 2026, Wunsch des Spielers)
 
 Eine Sitzung, alles aus der abgesegneten Liste (Bedienung, Arcade-Stil,
