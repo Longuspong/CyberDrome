@@ -49,6 +49,9 @@ var slot_rules: Dictionary = {}
 ## Nur body: "humanoid" (Waffenarm) oder "nonhumanoid" (Strix-Eule mit Lafette),
 ## docs/DROME_DESIGNREGELN.md Abschnitt 1.
 var body_kind: String = "humanoid"
+## Nur Chassis: welche Waffen-Variante an ihm haengt ("heavy" am Molok,
+## "lafette" am Strix, sonst leer = Grundform). Waffen in Posen, 16. Nov. 2026.
+var weapon_variant: String = ""
 
 ## Nahkampf bis 2 Felder, Fernkampf ab 3 (16. Nov. 2026). Der Generator
 ## schreibt daraus das Tag "melee" oder "ranged" an jede Ausruestung.
@@ -115,6 +118,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.category = meta.get("category", "weapon")
 	part.slot_rules = meta.get("slot_rules", {})
 	part.body_kind = meta.get("body_kind", "humanoid")
+	part.weapon_variant = str(meta.get("weapon_variant", ""))
 
 	var stats: Dictionary = meta.get("stats", {})
 	part.hp = stats.get("hp", 0)
@@ -155,7 +159,25 @@ func add_view(meta: Dictionary, dir_path: String) -> void:
 	var glow := svg.replace(".svg", "_glow.svg")
 	# Jedes Teil hat eine Kontur in seiner Signalfarbe (docs/DROME_DESIGNREGELN.md).
 	var rim := svg.replace(".svg", "_rim.svg")
+	# Waffen-Varianten (Molok-Armmass, Strix-Lafette): eigene Bilder und Anker.
+	var variants := {}
+	var variant_meta: Dictionary = meta.get("variants", {})
+	for vname in variant_meta:
+		var entry: Dictionary = variant_meta[vname]
+		var vsvg := dir_path.path_join(entry.get("svg", ""))
+		var vanchors := {}
+		for a in entry.get("anchors", []):
+			vanchors[a.get("name", "")] = Vector2(a.get("x", 0.0), a.get("y", 0.0))
+		var vglow := vsvg.replace(".svg", "_glow.svg")
+		var vrim := vsvg.replace(".svg", "_rim.svg")
+		variants[vname] = {
+			"svg": vsvg,
+			"glow": vglow if ResourceLoader.exists(vglow) else "",
+			"rim": vrim if ResourceLoader.exists(vrim) else "",
+			"anchors": vanchors,
+		}
 	views[meta.get("direction", "south")] = {
+		"variants": variants,
 		"svg": svg,
 		"glow": glow if ResourceLoader.exists(glow) else "",
 		"rim": rim if ResourceLoader.exists(rim) else "",
@@ -167,6 +189,22 @@ func add_view(meta: Dictionary, dir_path: String) -> void:
 
 func view(direction: String) -> Dictionary:
 	return views.get(direction, views.get("south", {}))
+
+
+## Die Ansicht fuer ein bestimmtes Chassis: hat das Teil die Variante, die das
+## Chassis verlangt (``weapon_variant``), gelten deren Bild und Anker, sonst
+## die Grundform.
+func view_for(direction: String, variant: String) -> Dictionary:
+	var base := view(direction)
+	if variant == "":
+		return base
+	var v: Dictionary = base.get("variants", {}).get(variant, {})
+	if v.is_empty():
+		return base
+	var merged := base.duplicate()
+	for key in v:
+		merged[key] = v[key]
+	return merged
 
 
 ## Die Ausruestungsslots eines Chassis sind seine equip_*-Anker -- ausser

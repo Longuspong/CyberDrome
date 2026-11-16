@@ -174,6 +174,19 @@ def main() -> int:
         # Jedes Teil hat eine Kontur in seiner Signalfarbe (Kontur je Teil).
         emit(OUT_DIR / meta["set"] / svg_path.name.replace(".svg", "_rim.svg"),
              rim_svg(baked, meta.get("color_scheme", {})))
+        # Waffen in Posen: Varianten (Molok, Strix-Lafette) backen wie das Teil.
+        for variant in meta.get("variants", {}).values():
+            vpath = meta_path.parent / variant["svg"]
+            if not vpath.exists():
+                raise SystemExit(f"{meta_path}: verweist auf fehlendes {variant['svg']}")
+            vbaked, _ = bake_svg(vpath.read_text(encoding="utf-8"),
+                                 meta.get("color_scheme", {}))
+            emit(OUT_DIR / meta["set"] / vpath.name, vbaked)
+            if "neon" in meta.get("tags", []):
+                emit(OUT_DIR / meta["set"] / vpath.name.replace(".svg", "_glow.svg"),
+                     glow_svg(vbaked, meta.get("color_scheme", {})))
+            emit(OUT_DIR / meta["set"] / vpath.name.replace(".svg", "_rim.svg"),
+                 rim_svg(vbaked, meta.get("color_scheme", {})))
         emit(OUT_DIR / meta["set"] / meta_path.name,
              json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
 

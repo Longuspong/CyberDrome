@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_deflector" data-type="equipment" data-direction="east">
+  <title>Deflektor-Schild (east)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung east.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M73.45 68.94 L81.09 74.34 L81.09 72.05 L73.45 66.65 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M73.45 66.65 L81.09 72.05 L81.56 71.71 L73.93 66.31 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M56.84 70.46 L76.7 84.5 L76.7 73.81 L56.84 59.77 Z" fill="#3a4670"/>
+  <path d="M81.09 74.34 L81.56 74.0 L81.56 71.71 L81.09 72.05 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M56.84 59.77 L76.7 73.81 L83.38 69.08 L63.52 55.04 Z" fill="#6477bb"/>
+  <path d="M66.29 74.0 L73.93 79.4 L73.93 77.11 L66.29 71.71 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M57.13 62.62 L64.76 68.02 L64.76 51.22 L57.13 45.82 Z" fill="#7d8bb0"/>
+  <path d="M66.29 71.71 L73.93 77.11 L74.41 76.77 L66.77 71.37 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M64.76 68.02 L70.87 63.7 L70.87 46.9 L64.76 51.22 Z" fill="#20273f"/>
+  <path d="M76.7 84.5 L83.38 79.78 L83.38 69.08 L76.7 73.81 Z" fill="#20273f"/>
+  <path d="M73.93 79.4 L74.41 79.06 L74.41 76.77 L73.93 77.11 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M57.13 45.82 L64.76 51.22 L70.87 46.9 L63.24 41.5 Z" fill="#7d8bb0"/>
+  <path d="M84.08 86.85 L90.81 82.1 L90.81 80.57 L84.08 85.32 Z" fill="#3a4670"/>
+  <path d="M83.47 84.89 L84.08 85.32 L90.81 80.57 L90.19 80.14 Z" fill="#6477bb"/>
+  <path d="M82.86 88.38 L90.81 82.76 L90.81 74.82 L82.86 80.44 Z" fill="#20273f"/>
+  <path d="M76.14 83.63 L82.86 88.38 L82.86 80.44 L76.14 75.68 Z" fill="#20273f"/>
+  <path d="M76.14 75.68 L82.86 80.44 L90.81 74.82 L84.08 70.07 Z" fill="#3a4670"/>
+  <path d="M83.47 86.42 L84.08 86.85 L84.08 85.32 L83.47 84.89 Z" fill="#6477bb"/>
+  <path d="M94.32 82.8 L92.33 80.77 L88.36 83.58 L86.38 88.42 L88.36 90.45 L92.33 87.65 Z" fill="#20273f"/>
+  <path d="M92.94 84.21 L91.8 83.03 L89.51 84.65 L88.36 87.45 L89.51 88.62 L91.8 87.0 Z" fill="#5affff" stroke="none"/>
+  <path d="M84.08 83.49 L90.81 78.74 L90.81 77.21 L84.08 81.96 Z" fill="#3a4670"/>
+  <path d="M83.47 81.53 L84.08 81.96 L90.81 77.21 L90.19 76.78 Z" fill="#6477bb"/>
+  <path d="M75.84 113.57 L101.8 95.21 L101.8 50.91 L75.84 69.27 Z" fill="#20273f"/>
+  <path d="M79.66 108.89 L99.51 94.85 L99.51 56.67 L79.66 70.71 Z" fill="#20273f"/>
+  <path d="M83.47 83.06 L84.08 83.49 L84.08 81.96 L83.47 81.53 Z" fill="#6477bb"/>
+  <path d="M78.89 108.35 L79.66 108.89 L79.66 70.71 L78.89 70.17 Z" fill="#20273f"/>
+  <path d="M81.79 80.75 L98.59 68.87 L98.59 66.73 L81.79 78.61 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M72.78 111.41 L75.84 113.57 L75.84 69.27 L72.78 67.11 Z" fill="#3a4670"/>
+  <path d="M81.18 78.18 L81.79 78.61 L98.59 66.73 L97.98 66.3 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M81.18 80.32 L81.79 80.75 L81.79 78.61 L81.18 78.18 Z" fill="#2de2e6" stroke="none"/>
+  <path d="M78.89 70.17 L79.66 70.71 L99.51 56.67 L98.75 56.13 Z" fill="#3a4670"/>
+  <path d="M72.78 67.11 L75.84 69.27 L101.8 50.91 L98.75 48.75 Z" fill="#6477bb"/>
+  <path d="M72.3 64.4 L76.12 67.1 L103.04 48.06 L99.22 45.36 Z" fill="#6477bb"/>
+  <path d="M76.12 70.15 L103.04 51.12 L103.04 48.06 L76.12 67.1 Z" fill="#3a4670"/>
+  <path d="M72.3 67.45 L76.12 70.15 L76.12 67.1 L72.3 64.4 Z" fill="#6477bb"/>
+</g>
+</svg>

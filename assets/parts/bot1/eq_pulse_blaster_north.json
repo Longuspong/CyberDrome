@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 80.04,
-      "y": 47.91
+      "x": 92.73,
+      "y": 31.29
     }
   ],
   "color_scheme": {
@@ -41,6 +41,38 @@
   ],
   "mount_class": "light",
   "category": "weapon",
+  "variants": {
+    "heavy": {
+      "svg": "eq_pulse_blaster_heavy_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 109.97,
+          "y": 22.25
+        }
+      ]
+    },
+    "lafette": {
+      "svg": "eq_pulse_blaster_lafette_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 37.77
+        },
+        {
+          "name": "muzzle",
+          "x": 80.32,
+          "y": 21.26
+        }
+      ]
+    }
+  },
   "stats": {
     "hp": 0,
     "spd": 2,

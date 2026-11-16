@@ -17,12 +17,12 @@
     {
       "name": "mount",
       "x": 64.0,
-      "y": 49.22
+      "y": 46.36
     },
     {
-      "name": "head",
-      "x": 86.72,
-      "y": 74.84
+      "name": "muzzle",
+      "x": 81.9,
+      "y": 51.38
     }
   ],
   "color_scheme": {
@@ -42,6 +42,23 @@
   ],
   "mount_class": "medium",
   "category": "weapon",
+  "variants": {
+    "heavy": {
+      "svg": "eq_hammer_heavy_east.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 92.64,
+          "y": 54.39
+        }
+      ]
+    }
+  },
   "stats": {
     "hp": 20,
     "spd": 0,

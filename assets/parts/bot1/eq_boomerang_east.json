@@ -20,9 +20,9 @@
       "y": 46.36
     },
     {
-      "name": "tip",
-      "x": 67.63,
-      "y": 78.91
+      "name": "muzzle",
+      "x": 88.1,
+      "y": 64.84
     }
   ],
   "color_scheme": {
@@ -42,6 +42,23 @@
   ],
   "mount_class": "light",
   "category": "weapon",
+  "variants": {
+    "heavy": {
+      "svg": "eq_boomerang_heavy_east.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 102.57,
+          "y": 75.92
+        }
+      ]
+    }
+  },
   "stats": {
     "hp": 0,
     "spd": 1,

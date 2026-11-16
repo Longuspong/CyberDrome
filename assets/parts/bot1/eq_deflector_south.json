@@ -18,6 +18,11 @@
       "name": "mount",
       "x": 64.0,
       "y": 46.36
+    },
+    {
+      "name": "muzzle",
+      "x": 47.34,
+      "y": 71.03
     }
   ],
   "color_scheme": {
@@ -36,6 +41,23 @@
   ],
   "mount_class": "medium",
   "category": "shield",
+  "variants": {
+    "heavy": {
+      "svg": "eq_deflector_heavy_south.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 37.35,
+          "y": 85.83
+        }
+      ]
+    }
+  },
   "stats": {
     "hp": 0,
     "spd": 0,

@@ -32,7 +32,7 @@ gespiegelt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt
 den Arm mit), sichtbare Passive, Kontur je Teil, Bewegung, lesbare
 Faehigkeiten, Fraktions-Paletten. Entwurfs-Skripte unter
 `docs/design/drome_entwurf/`. **Stand und Plan der Umsetzung (Haken):
-`docs/DROME_UMSETZUNG.md`** -- dort weitermachen (Vireo, Nimbus, Molok gebaut, naechster Schritt: Waffen in Posen).
+`docs/DROME_UMSETZUNG.md`** -- dort weitermachen (Chassis und Waffen-Posen gebaut, naechster Schritt: Bewegung).
 
 **UI-Symbole (15. Nov. 2026):** Sonderzeichen, die die Schriften nicht haben,
 nie als Text -- stattdessen SVG aus `assets/ui_icons/` ueber `UiIcon`

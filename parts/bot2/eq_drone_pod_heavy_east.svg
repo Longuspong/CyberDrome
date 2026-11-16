@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_drone_pod" data-type="equipment" data-direction="east">
+  <title>E-Schraubenschluessel (east)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung east.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M78.28 92.97 L83.47 96.64 L88.67 92.97 L83.47 89.3 Z" fill="var(--c-plate)"/>
+  <path d="M73.45 68.94 L81.09 74.34 L81.09 72.05 L73.45 66.65 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M83.47 99.7 L88.67 96.02 L88.67 92.97 L83.47 96.64 Z" fill="var(--c-plate-dark)"/>
+  <path d="M78.28 96.02 L83.47 99.7 L83.47 96.64 L78.28 92.97 Z" fill="var(--c-plate-dark)"/>
+  <path d="M73.45 66.65 L81.09 72.05 L81.56 71.71 L73.93 66.31 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M78.59 89.61 L83.47 93.06 L88.36 89.61 L83.47 86.15 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M56.84 70.46 L76.7 84.5 L76.7 73.81 L56.84 59.77 Z" fill="var(--c-plate)"/>
+  <path d="M81.09 74.34 L81.56 74.0 L81.56 71.71 L81.09 72.05 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M83.47 94.9 L88.36 91.44 L88.36 89.61 L83.47 93.06 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M78.59 91.44 L83.47 94.9 L83.47 93.06 L78.59 89.61 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M56.84 59.77 L76.7 73.81 L83.38 69.08 L63.52 55.04 Z" fill="var(--c-plate-light)"/>
+  <path d="M66.29 74.0 L73.93 79.4 L73.93 77.11 L66.29 71.71 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M57.13 62.62 L64.76 68.02 L64.76 51.22 L57.13 45.82 Z" fill="var(--c-metal)"/>
+  <path d="M66.29 71.71 L73.93 77.11 L74.41 76.77 L66.77 71.37 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M64.76 68.02 L70.87 63.7 L70.87 46.9 L64.76 51.22 Z" fill="var(--c-plate-dark)"/>
+  <path d="M76.7 84.5 L83.38 79.78 L83.38 69.08 L76.7 73.81 Z" fill="var(--c-plate-dark)"/>
+  <path d="M73.93 79.4 L74.41 79.06 L74.41 76.77 L73.93 77.11 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M57.13 45.82 L64.76 51.22 L70.87 46.9 L63.24 41.5 Z" fill="var(--c-metal)"/>
+  <path d="M84.08 86.85 L90.81 82.1 L90.81 80.57 L84.08 85.32 Z" fill="var(--c-plate)"/>
+  <path d="M83.47 84.89 L84.08 85.32 L90.81 80.57 L90.19 80.14 Z" fill="var(--c-plate-light)"/>
+  <path d="M82.86 88.38 L90.81 82.76 L90.81 74.82 L82.86 80.44 Z" fill="var(--c-plate-dark)"/>
+  <path d="M76.14 83.63 L82.86 88.38 L82.86 80.44 L76.14 75.68 Z" fill="var(--c-plate-dark)"/>
+  <path d="M76.14 75.68 L82.86 80.44 L90.81 74.82 L84.08 70.07 Z" fill="var(--c-plate)"/>
+  <path d="M83.47 86.42 L84.08 86.85 L84.08 85.32 L83.47 84.89 Z" fill="var(--c-plate-light)"/>
+  <path d="M84.08 83.49 L90.81 78.74 L90.81 77.21 L84.08 81.96 Z" fill="var(--c-plate)"/>
+  <path d="M83.47 95.56 L87.14 92.97 L87.14 57.84 L83.47 60.43 Z" fill="var(--c-plate-dark)"/>
+  <path d="M79.81 92.97 L83.47 95.56 L83.47 60.43 L79.81 57.84 Z" fill="var(--c-plate)"/>
+  <path d="M83.47 81.53 L84.08 81.96 L90.81 77.21 L90.19 76.78 Z" fill="var(--c-plate-light)"/>
+  <path d="M78.59 72.5 L83.47 75.96 L88.36 72.5 L83.47 69.05 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M83.47 77.79 L88.36 74.34 L88.36 72.5 L83.47 75.96 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M78.59 74.34 L83.47 77.79 L83.47 75.96 L78.59 72.5 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M83.47 83.06 L84.08 83.49 L84.08 81.96 L83.47 81.53 Z" fill="var(--c-plate-light)"/>
+  <path d="M78.59 68.23 L83.47 71.68 L88.36 68.23 L83.47 64.77 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M83.47 73.51 L88.36 70.06 L88.36 68.23 L83.47 71.68 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M78.59 70.06 L83.47 73.51 L83.47 71.68 L78.59 68.23 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M79.81 57.84 L83.47 60.43 L87.14 57.84 L83.47 55.25 Z" fill="var(--c-plate-light)"/>
+  <path d="M72.32 56.57 L79.66 61.75 L94.62 51.17 L87.29 45.98 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M73.09 54.32 L79.81 59.07 L93.86 49.14 L87.14 44.39 Z" fill="var(--c-metal)"/>
+  <path d="M79.81 65.18 L93.86 55.25 L93.86 49.14 L79.81 59.07 Z" fill="var(--c-plate-dark)"/>
+  <path d="M79.66 63.59 L94.62 53.0 L94.62 51.17 L79.66 61.75 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M83.47 47.41 L89.58 51.73 L89.58 42.57 L83.47 38.25 Z" fill="var(--c-metal)"/>
+  <path d="M89.58 51.73 L93.55 48.92 L93.55 39.76 L89.58 42.57 Z" fill="var(--c-plate-dark)"/>
+  <path d="M73.09 60.43 L79.81 65.18 L79.81 59.07 L73.09 54.32 Z" fill="var(--c-metal)"/>
+  <path d="M83.47 38.25 L89.58 42.57 L93.55 39.76 L87.44 35.44 Z" fill="var(--c-metal)"/>
+  <path d="M79.5 51.73 L83.47 54.54 L83.47 49.96 L79.5 47.15 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M83.47 54.54 L87.44 51.73 L87.44 47.15 L83.47 49.96 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M72.32 58.4 L79.66 63.59 L79.66 61.75 L72.32 56.57 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M79.5 47.15 L83.47 49.96 L87.44 47.15 L83.47 44.34 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M93.25 41.93 L93.14 41.48 L92.85 41.25 L92.4 41.26 L91.87 41.53 L91.35 42.01 L90.9 42.62 L90.6 43.28 L90.5 43.88 L90.6 44.33 L90.9 44.57 L91.35 44.55 L91.87 44.28 L92.4 43.8 L92.85 43.19 L93.14 42.53 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M73.39 54.54 L79.5 58.86 L79.5 49.69 L73.39 45.37 Z" fill="var(--c-metal)"/>
+  <path d="M79.5 58.86 L83.47 56.05 L83.47 46.89 L79.5 49.69 Z" fill="var(--c-plate-dark)"/>
+  <path d="M73.39 45.37 L79.5 49.69 L83.47 46.89 L77.36 42.57 Z" fill="var(--c-metal)"/>
+  <path d="M83.17 49.06 L83.06 48.61 L82.77 48.37 L82.32 48.39 L81.79 48.66 L81.27 49.14 L80.82 49.75 L80.52 50.41 L80.42 51.01 L80.52 51.46 L80.82 51.69 L81.27 51.68 L81.79 51.41 L82.32 50.93 L82.77 50.32 L83.06 49.66 Z" fill="var(--c-glow)" stroke="none"/>
+</g>
+</svg>

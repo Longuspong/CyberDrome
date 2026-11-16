@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_hammer" data-type="equipment" data-direction="south">
+  <title>Hammer (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#100a0e" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M46.91 74.34 L54.55 68.94 L54.55 66.65 L46.91 72.05 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M54.07 66.31 L46.44 71.71 L46.91 72.05 L54.55 66.65 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M44.53 88.2 L39.94 91.44 L44.53 94.68 L49.11 91.44 Z" fill="#5a4050"/>
+  <path d="M44.53 97.13 L49.11 93.89 L49.11 91.44 L44.53 94.68 Z" fill="#32242d"/>
+  <path d="M39.94 93.89 L44.53 97.13 L44.53 94.68 L39.94 91.44 Z" fill="#32242d"/>
+  <path d="M51.3 84.5 L71.16 70.46 L71.16 59.77 L51.3 73.81 Z" fill="#32242d"/>
+  <path d="M46.44 74.0 L46.91 74.34 L46.91 72.05 L46.44 71.71 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M64.48 55.04 L44.62 69.08 L51.3 73.81 L71.16 59.77 Z" fill="#986e88"/>
+  <path d="M54.07 79.4 L61.71 74.0 L61.71 71.71 L54.07 77.11 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M63.24 68.02 L70.87 62.62 L70.87 45.82 L63.24 51.22 Z" fill="#32242d"/>
+  <path d="M61.23 71.37 L53.59 76.77 L54.07 77.11 L61.71 71.71 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M57.13 63.7 L63.24 68.02 L63.24 51.22 L57.13 46.9 Z" fill="#9a8796"/>
+  <path d="M44.62 79.78 L51.3 84.5 L51.3 73.81 L44.62 69.08 Z" fill="#5a4050"/>
+  <path d="M53.59 79.06 L54.07 79.4 L54.07 77.11 L53.59 76.77 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M64.76 41.5 L57.13 46.9 L63.24 51.22 L70.87 45.82 Z" fill="#9a8796"/>
+  <path d="M37.19 82.1 L43.92 86.85 L43.92 85.32 L37.19 80.57 Z" fill="#986e88"/>
+  <path d="M37.81 80.14 L37.19 80.57 L43.92 85.32 L44.53 84.89 Z" fill="#986e88"/>
+  <path d="M37.19 82.76 L45.14 88.38 L45.14 80.44 L37.19 74.82 Z" fill="#32242d"/>
+  <path d="M45.14 88.38 L51.86 83.63 L51.86 75.68 L45.14 80.44 Z" fill="#32242d"/>
+  <path d="M43.92 70.07 L37.19 74.82 L45.14 80.44 L51.86 75.68 Z" fill="#5a4050"/>
+  <path d="M43.92 86.85 L44.53 86.42 L44.53 84.89 L43.92 85.32 Z" fill="#5a4050"/>
+  <path d="M37.19 78.74 L43.92 83.49 L43.92 81.96 L37.19 77.21 Z" fill="#986e88"/>
+  <path d="M37.81 76.78 L37.19 77.21 L43.92 81.96 L44.53 81.53 Z" fill="#986e88"/>
+  <path d="M41.78 91.44 L44.53 93.39 L44.53 55.2 L41.78 53.26 Z" fill="#9a8796"/>
+  <path d="M44.53 93.39 L47.28 91.44 L47.28 53.26 L44.53 55.2 Z" fill="#32242d"/>
+  <path d="M43.92 83.49 L44.53 83.06 L44.53 81.53 L43.92 81.96 Z" fill="#5a4050"/>
+  <path d="M44.53 51.31 L41.78 53.26 L44.53 55.2 L47.28 53.26 Z" fill="#9a8796"/>
+  <path d="M45.29 35.94 L29.1 47.38 L43.76 57.75 L59.95 46.3 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M43.76 65.05 L59.04 54.25 L59.04 40.5 L43.76 51.3 Z" fill="#32242d"/>
+  <path d="M45.29 30.78 L30.02 41.58 L43.76 51.3 L59.04 40.5 Z" fill="#986e88"/>
+  <path d="M43.76 59.89 L59.95 48.44 L59.95 46.3 L43.76 57.75 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M30.02 55.33 L43.76 65.05 L43.76 51.3 L30.02 41.58 Z" fill="#5a4050"/>
+  <path d="M29.1 49.52 L43.76 59.89 L43.76 57.75 L29.1 47.38 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M30.32 54.98 L41.01 62.54 L41.01 53.37 L30.32 45.81 Z" fill="#32242d"/>
+  <path d="M37.96 56.23 L37.76 55.09 L37.2 53.85 L36.36 52.7 L35.36 51.8 L34.37 51.29 L33.53 51.26 L32.96 51.7 L32.77 52.56 L32.96 53.69 L33.53 54.93 L34.37 56.09 L35.36 56.99 L36.36 57.49 L37.2 57.53 L37.76 57.08 Z" fill="#ffb76a" stroke="none"/>
+  <path d="M31.54 44.95 L30.32 45.81 L41.01 53.37 L42.24 52.51 Z" fill="#5a4050"/>
+  <path d="M41.01 62.54 L42.24 61.67 L42.24 52.51 L41.01 53.37 Z" fill="#32242d"/>
+</g>
+</svg>

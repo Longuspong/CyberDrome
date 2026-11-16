@@ -17,12 +17,12 @@
     {
       "name": "mount",
       "x": 64.0,
-      "y": 51.13
+      "y": 46.36
     },
     {
       "name": "muzzle",
-      "x": 71.25,
-      "y": 32.64
+      "x": 76.17,
+      "y": 26.4
     }
   ],
   "color_scheme": {
@@ -43,6 +43,38 @@
   ],
   "mount_class": "light",
   "category": "weapon",
+  "variants": {
+    "heavy": {
+      "svg": "eq_rune_staff_heavy_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 83.47,
+          "y": 14.42
+        }
+      ]
+    },
+    "lafette": {
+      "svg": "eq_rune_staff_lafette_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 37.77
+        },
+        {
+          "name": "muzzle",
+          "x": 79.27,
+          "y": 23.15
+        }
+      ]
+    }
+  },
   "stats": {
     "hp": 0,
     "spd": 0,

@@ -64,6 +64,7 @@
     "heavy"
   ],
   "body_kind": "humanoid",
+  "weapon_variant": "heavy",
   "slot_z": {
     "head": 60.5,
     "feet": 33,

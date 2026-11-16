@@ -1946,6 +1946,276 @@ EQ_RAIL_LANCE = [
 ]
 
 # ===========================================================================
+# Waffen in Posen (DROME-Designregeln, Schritt 4; Entwurf v4.py und v6.py)
+#
+# Die Waffe bringt den Arm in ihrer Pose mit, der Arm haengt nie gerade:
+# Fernkampf gestreckt, Nahkampf angewinkelt mit Griff und Knauf, Stab und
+# Werkzeug senkrecht mit Wicklung, Schild angewinkelt vor dem Koerper.
+#
+# Jede Pose ist um den Schulteranker (0, 0, ARM_Z) gebaut und SYMMETRISCH zur
+# Armebene (l = 0) -- dasselbe Teil passt an den linken und an den rechten Arm
+# des Molok, ohne Spiegeln. ``k`` ist das Armmass: 1.0 fuer Vireo und Nimbus,
+# HEAVY_K fuer den Molok (Variante "heavy"). Fuer die Strix-Lafette gibt es
+# eine eigene Variante ohne Arm, um den Lafettenanker (0, 0, LAFETTE_Z).
+# ===========================================================================
+
+ARM_Z = 52
+HEAVY_K = 1.6
+LAFETTE_Z = 61
+
+
+def _arm_extended(k=1.0):
+    """Fernkampf: Oberarm kurz, Unterarm gestreckt nach vorn. (Formen, Hand)."""
+    t, zs = 2.2 * k, ARM_Z
+    shapes = [
+        B((-2.5 * k, 2.5 * k), (-t, t), (zs - 7 * k, zs), "metal"),
+        B((-2 * k, 15 * k), (-t - 0.3, t + 0.3), (zs - 8.5 * k, zs - 2 * k), "plate"),
+        B((8.5 * k, 14.5 * k), (-t - 0.4, t + 0.4), (zs - 4 * k, zs - 3 * k), "accent"),
+    ]
+    return shapes, (15 * k, 0, zs - 5.5 * k)
+
+
+def _arm_raised(k=1.0):
+    """Nahkampf/Stab/Schild: Oberarm runter, Unterarm nach vorn, Faust."""
+    t, zs = 2.0 * k, ARM_Z
+    hf, hz = 12.75 * k, zs - 12.5 * k
+    shapes = [
+        B((-2.5 * k, 2.5 * k), (-t, t), (zs - 11 * k, zs), "metal"),
+        B((-2.5 * k, 10.5 * k), (-t - 0.3, t + 0.3), (zs - 16 * k, zs - 9 * k), "plate"),
+        B((4 * k, 9 * k), (-t - 0.8, -t - 0.3), (zs - 13.5 * k, zs - 12 * k), "accent"),
+        B((4 * k, 9 * k), (t + 0.3, t + 0.8), (zs - 13.5 * k, zs - 12 * k), "accent"),
+        # Faust: umschliesst den Griff, der oben und unten herausschaut
+        B((hf - 2.2 * k, hf + 2.2 * k), (-2.6 * k, 2.6 * k), (hz - 2.6 * k, hz + 2.6 * k), "dark"),
+        B((hf + 2.2 * k, hf + 2.6 * k), (-2.2 * k, 2.2 * k), (hz - 1.6 * k, hz - 0.6 * k), "light"),
+        B((hf + 2.2 * k, hf + 2.6 * k), (-2.2 * k, 2.2 * k), (hz + 0.6 * k, hz + 1.6 * k), "light"),
+    ]
+    return shapes, (hf, 0, hz)
+
+
+def _head_blaster(h, k, neon=False):
+    f, l, z = h
+    s = [
+        B((f, f + 5 * k), (l - 3 * k, l + 3 * k), (z - 3.5 * k, z + 3.5 * k), "plate"),
+        B((f + 5 * k, f + 13 * k), (l - 2 * k, l + 2 * k), (z - 2.3 * k, z + 2.3 * k), "plate"),
+        B((f + 5 * k, f + 13 * k), (l - 2.2 * k, l + 2.2 * k), (z + 2.3 * k, z + 3 * k), "light"),
+        B((f + 13 * k, f + 15 * k), (l - 1.8 * k, l + 1.8 * k), (z - 2 * k, z + 2 * k), "dark"),
+        D(f + 15.1 * k, l, z, 1.4 * k, "glow"),
+        B((f + 1 * k, f + 4 * k), (l - 3.5 * k, l - 3 * k), (z - 1 * k, z + 1 * k), "accent"),
+        B((f + 1 * k, f + 4 * k), (l + 3 * k, l + 3.5 * k), (z - 1 * k, z + 1 * k), "accent"),
+    ]
+    if neon:   # Variante: dieselbe Form, Neonroehren am Lauf, Ring vor der Muendung
+        s += [
+            B((f + 5.5 * k, f + 12.5 * k), (l + 2.0 * k, l + 2.7 * k), (z - 1.2 * k, z + 1.2 * k), "glow"),
+            B((f + 5.5 * k, f + 12.5 * k), (l - 2.7 * k, l - 2.0 * k), (z - 1.2 * k, z + 1.2 * k), "glow"),
+            L((l, z), [(2.5 * k, f + 13.4 * k), (2.5 * k, f + 14.2 * k)], "glow", axis="f",
+              caps=False, segments=14),
+        ]
+    return s, (f + 15.1 * k, l, z)
+
+
+def _head_blade(h, k):
+    f, l, z = h
+    # Die Klinge waechst am Molok nicht voll mit -- sonst ragt sie aus dem
+    # 128er Rahmen. Griff und Parierstange tragen das Armmass.
+    kb = min(k, 1.3)
+    return [
+        B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 6 * k, z + 4.4 * k), "metal"),
+        B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 7.8 * k, z - 6 * k), "dark"),
+        B((f - 0.7 * k, f + 0.7 * k), (l - 0.7 * k, l + 0.7 * k), (z - 8.6 * k, z - 7.8 * k), "glow"),
+        B((f - 2.0 * k, f + 2.0 * k), (l - 5 * k, l + 5 * k), (z + 4.4 * k, z + 6.0 * k), "plate"),
+        B((f - 2.1 * k, f + 2.1 * k), (l - 5.4 * k, l - 4.2 * k), (z + 4.2 * k, z + 6.4 * k), "accent"),
+        B((f - 2.1 * k, f + 2.1 * k), (l + 4.2 * k, l + 5.4 * k), (z + 4.2 * k, z + 6.4 * k), "accent"),
+        B((f - 1.3 * k, f + 1.3 * k), (l - 1.4 * k, l + 1.4 * k), (z + 6.0 * k, z + 9.0 * k), "metal"),
+        B((f - 0.7 * k, f + 0.7 * k), (l - 1.1 * k, l + 1.1 * k), (z + 9.0 * k, z + 9.0 * k + 23 * kb), "glow"),
+        B((f - 0.5 * k, f + 0.5 * k), (l - 0.6 * k, l + 0.6 * k), (z + 9.0 * k + 23 * kb, z + 9.0 * k + 27 * kb), "glow"),
+        B((f + 0.7 * k, f + 1.1 * k), (l - 0.9 * k, l + 0.9 * k), (z + 9.0 * k, z + 9.0 * k + 22 * kb), "accent"),
+    ], (f, l, z + 9.0 * k + 27 * kb)
+
+
+def _head_hammer(h, k):
+    f, l, z = h
+    return [
+        B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 8 * k, z + 17 * k), "metal"),
+        B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 9.6 * k, z - 8 * k), "dark"),
+        B((f - 5 * k, f + 5 * k), (l - 4.5 * k, l + 4.5 * k), (z + 16 * k, z + 25 * k), "plate"),
+        B((f - 5.3 * k, f + 5.3 * k), (l - 4.8 * k, l + 4.8 * k), (z + 19.8 * k, z + 21.2 * k), "accent"),
+        B((f + 5 * k, f + 5.8 * k), (l - 3.5 * k, l + 3.5 * k), (z + 17.5 * k, z + 23.5 * k), "dark"),
+        D(f + 6 * k, l, z + 20.5 * k, 1.7 * k, "glow"),
+    ], (f + 6 * k, l, z + 20.5 * k)
+
+
+def _head_ram(h, k):
+    f, l, z = h
+    return [
+        B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 5 * k, z + 5 * k), "metal"),
+        B((f - 1.5 * k, f + 2.6 * k), (l - 1.5 * k, l + 1.5 * k), (z - 6.4 * k, z - 5 * k), "dark"),
+        B((f - 1.5 * k, f + 2.6 * k), (l - 1.5 * k, l + 1.5 * k), (z + 5 * k, z + 6.4 * k), "dark"),
+        B((f + 2.6 * k, f + 11 * k), (l - 2.4 * k, l + 2.4 * k), (z - 2.6 * k, z + 2.6 * k), "metal"),
+        B((f + 2.6 * k, f + 9 * k), (l - 1.0 * k, l + 1.0 * k), (z + 2.6 * k, z + 4.4 * k), "dark"),
+        B((f + 2.6 * k, f + 9 * k), (l - 1.0 * k, l + 1.0 * k), (z - 4.4 * k, z - 2.6 * k), "dark"),
+        B((f + 4 * k, f + 5 * k), (l - 3.2 * k, l + 3.2 * k), (z - 3.4 * k, z + 3.4 * k), "light"),
+        B((f + 11 * k, f + 14 * k), (l - 6 * k, l + 6 * k), (z - 7 * k, z + 7 * k), "plate"),
+        B((f + 11 * k, f + 14 * k), (l - 6.3 * k, l + 6.3 * k), (z - 0.6 * k, z + 0.6 * k), "accent"),
+        B((f + 14 * k, f + 14.7 * k), (l - 5 * k, l + 5 * k), (z - 6 * k, z + 6 * k), "dark"),
+        B((f + 14.7 * k, f + 15.4 * k), (l - 1.6 * k, l + 1.6 * k), (z - 1.6 * k, z + 1.6 * k), "glow"),
+    ], (f + 15.4 * k, l, z)
+
+
+def _head_boomerang(h, k):
+    """Wurfbereit: Griff durch die Faust, ein Schenkel nach oben, einer nach
+    vorn -- ein "L" in der Armebene, damit es an beiden Armen gleich sitzt."""
+    f, l, z = h
+    return [
+        B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 5 * k, z + 4 * k), "metal"),
+        B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 6.6 * k, z - 5 * k), "dark"),
+        B((f - 2.2 * k, f + 2.2 * k), (l - 2.2 * k, l + 2.2 * k), (z + 4 * k, z + 7 * k), "plate"),
+        B((f - 2.3 * k, f + 2.3 * k), (l - 2.3 * k, l + 2.3 * k), (z + 5 * k, z + 5.8 * k), "accent"),
+        B((f - 0.6 * k, f + 0.6 * k), (l - 1.3 * k, l + 1.3 * k), (z + 7 * k, z + 19 * k), "glow"),
+        B((f + 0.6 * k, f + 1.0 * k), (l - 1.3 * k, l + 1.3 * k), (z + 7 * k, z + 18 * k), "accent"),
+        B((f - 0.9 * k, f + 0.9 * k), (l - 1.8 * k, l + 1.8 * k), (z + 19 * k, z + 21 * k), "plate"),
+        B((f + 2.2 * k, f + 6.5 * k), (l - 1.3 * k, l + 1.3 * k), (z + 5.5 * k, z + 8.5 * k), "glow"),
+        B((f + 6.5 * k, f + 10.5 * k), (l - 1.3 * k, l + 1.3 * k), (z + 8 * k, z + 11 * k), "glow"),
+        B((f + 2.2 * k, f + 10.5 * k), (l - 1.5 * k, l + 1.5 * k), (z + 7.6 * k, z + 8.4 * k), "accent"),
+        B((f + 10.5 * k, f + 12.5 * k), (l - 1.8 * k, l + 1.8 * k), (z + 9.5 * k, z + 12 * k), "plate"),
+    ], (f + 12.5 * k, l, z + 11 * k)
+
+
+def _head_staff(h, k):
+    f, l, z = h
+    return [
+        L((f, l), [(2.0 * k, z - 20 * k), (2.0 * k, z - 18 * k)], "dark", segments=10),
+        L((f, l), [(1.4 * k, z - 18 * k), (1.4 * k, z + 20 * k)], "metal", segments=10),
+        L((f, l), [(1.9 * k, z - 4.4 * k), (1.9 * k, z - 3.0 * k)], "accent", caps=False, segments=10),
+        L((f, l), [(1.9 * k, z + 3.0 * k), (1.9 * k, z + 4.4 * k)], "accent", caps=False, segments=10),
+        L((f, l), [(2.3 * k, z - 9 * k), (2.3 * k, z - 7.6 * k)], "accent", caps=False, segments=10),
+        L((f, l), [(2.6 * k, z + 18.6 * k), (3.4 * k, z + 20.4 * k), (3.4 * k, z + 21.4 * k)], "plate", segments=12),
+        B((f - 0.7 * k, f + 0.7 * k), (l - 4.4 * k, l - 3.2 * k), (z + 20.4 * k, z + 28.6 * k), "metal"),
+        B((f - 0.7 * k, f + 0.7 * k), (l + 3.2 * k, l + 4.4 * k), (z + 20.4 * k, z + 28.6 * k), "metal"),
+        B((f - 0.8 * k, f + 0.8 * k), (l - 4.6 * k, l - 3.0 * k), (z + 28.6 * k, z + 29.6 * k), "accent"),
+        B((f - 0.8 * k, f + 0.8 * k), (l + 3.0 * k, l + 4.6 * k), (z + 28.6 * k, z + 29.6 * k), "accent"),
+        L((f, l), [(0, z + 21.6 * k), (2.2 * k, z + 22.6 * k), (3.0 * k, z + 24.4 * k),
+                   (2.2 * k, z + 26.2 * k), (0, z + 27.2 * k)], "glow"),
+        L((f, l), [(4.9 * k, z + 23.8 * k), (4.9 * k, z + 24.9 * k)], "accent", caps=False, segments=18),
+    ], (f, l, z + 24.4 * k)
+
+
+def _head_wrench(h, k):
+    f, l, z = h
+    return [
+        B((f - 1.2 * k, f + 1.2 * k), (l - 1.2 * k, l + 1.2 * k), (z - 9 * k, z + 14 * k), "plate"),
+        B((f - 1.7 * k, f + 1.7 * k), (l - 1.7 * k, l + 1.7 * k), (z - 11 * k, z - 9 * k), "dark"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z - 8 * k, z - 6.8 * k), "accent"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 3.2 * k, z + 4.4 * k), "accent"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 6.0 * k, z + 7.2 * k), "accent"),
+        B((f - 2.2 * k, f + 2.2 * k), (l - 4.6 * k, l + 4.6 * k), (z + 14 * k, z + 18 * k), "metal"),
+        B((f - 2.4 * k, f + 2.4 * k), (l - 4.9 * k, l + 4.9 * k), (z + 15.4 * k, z + 16.6 * k), "accent"),
+        B((f - 2.0 * k, f + 2.0 * k), (l - 4.6 * k, l - 2.0 * k), (z + 18 * k, z + 24 * k), "metal"),
+        B((f - 2.0 * k, f + 2.0 * k), (l + 2.0 * k, l + 4.6 * k), (z + 18 * k, z + 24 * k), "metal"),
+        B((f - 1.3 * k, f + 1.3 * k), (l - 1.3 * k, l + 1.3 * k), (z + 18 * k, z + 21 * k), "glow"),
+        D(f + 2.2 * k, l - 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
+        D(f + 2.2 * k, l + 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
+    ], (f, l, z + 21 * k)
+
+
+def _head_shield(h, k):
+    """Schild angewinkelt vor dem Koerper, mittig auf der Faust."""
+    f, l, z = h
+    a, b = l - 8.5 * k, l + 8.5 * k
+    return [
+        B((f + 1.5 * k, f + 3.5 * k), (a, b), (z - 14 * k, z + 15 * k), "plate"),
+        B((f + 1.5 * k, f + 4 * k), (a - 0.5, b + 0.5), (z + 15 * k, z + 17 * k), "light"),
+        B((f + 3.5 * k, f + 4 * k), (a + 2 * k, b - 2 * k), (z - 12 * k, z + 13 * k), "dark"),
+        B((f + 4 * k, f + 4.4 * k), (a + 3 * k, b - 3 * k), (z + 6 * k, z + 7.4 * k), "accent"),
+        D(f + 4.5 * k, l, z - 1 * k, 2.6 * k, "dark", 6),
+        D(f + 4.7 * k, l, z - 1 * k, 1.5 * k, "glow", 6),
+    ], (f + 4.7 * k, l, z - 1 * k)
+
+
+def posed(pose, head, k=1.0, **kw):
+    """Arm in der Pose plus Waffenkopf in der Hand: (Formen, Wirkpunkt)."""
+    arm, hand = (_arm_extended if pose == "ext" else _arm_raised)(k)
+    shapes, point = head(hand, k, **kw)
+    return arm + shapes, point
+
+
+def lafette_blaster(neon=False):
+    """Fernwaffe ohne Arm: liegt laengs auf der Schulter, Wiege statt Hand."""
+    z = LAFETTE_Z
+    s = [
+        B((-6, 4), (-2, 2), (z, z + 2.5), "plate"),                  # Wiege
+        B((-4, 5), (-3, 3), (z + 2.5, z + 8), "plate"),              # Gehaeuse
+        B((5, 15), (-2, 2), (z + 3, z + 7.4), "plate"),              # Lauf
+        B((5, 15), (-2.2, 2.2), (z + 7.4, z + 8.1), "light"),
+        B((15, 17), (-1.8, 1.8), (z + 3.2, z + 7.2), "dark"),
+        D(17.1, 0, z + 5.2, 1.4, "glow"),
+        B((-3, 4), (3, 3.5), (z + 4, z + 6), "accent"),
+        B((-3, 4), (-3.5, -3), (z + 4, z + 6), "accent"),
+    ]
+    if neon:
+        s += [
+            B((5.5, 14.5), (2.0, 2.7), (z + 4.2, z + 6.2), "glow"),
+            B((5.5, 14.5), (-2.7, -2.0), (z + 4.2, z + 6.2), "glow"),
+            L((0, z + 5.2), [(2.5, 15.4), (2.5, 16.2)], "glow", axis="f", caps=False, segments=14),
+        ]
+    return s, (17.1, 0, z + 5.2)
+
+
+def lafette_staff():
+    """Runenstab auf der Lafette: liegt nach vorn, Kugel in der Fassung vorn."""
+    z = LAFETTE_Z + 4
+    return [
+        B((-6, 4), (-2, 2), (LAFETTE_Z, LAFETTE_Z + 2.5), "plate"),
+        L((0, z), [(1.4, -10), (1.4, 12)], "metal", axis="f", segments=10),
+        L((0, z), [(2.0, -11.5), (2.0, -10)], "dark", axis="f", segments=10),
+        L((0, z), [(1.9, -2), (1.9, -0.6)], "accent", axis="f", caps=False, segments=10),
+        L((0, z), [(3.4, 12), (3.4, 13)], "plate", axis="f", segments=12),
+        L((0, z), [(0, 13.2), (2.2, 14.2), (3.0, 16), (2.2, 17.8), (0, 18.8)], "glow", axis="f"),
+        L((0, z), [(4.6, 15.4), (4.6, 16.6)], "accent", axis="f", caps=False, segments=18),
+    ], (16, 0, z)
+
+
+def lafette_wrench():
+    """E-Schluessel auf der Lafette: liegt nach vorn, Maul vorn."""
+    z = LAFETTE_Z + 4
+    return [
+        B((-6, 4), (-2, 2), (LAFETTE_Z, LAFETTE_Z + 2.5), "plate"),
+        B((-8, 9), (-1.2, 1.2), (z - 1.2, z + 1.2), "plate"),
+        B((-6, -4.6), (-1.6, 1.6), (z - 1.6, z + 1.6), "accent"),
+        B((2, 3.4), (-1.6, 1.6), (z - 1.6, z + 1.6), "accent"),
+        B((9, 13), (-4.6, 4.6), (z - 2.2, z + 2.2), "metal"),
+        B((9, 13), (-4.9, 4.9), (z - 0.6, z + 0.6), "accent"),
+        B((13, 19), (-4.6, -2.0), (z - 2.0, z + 2.0), "metal"),
+        B((13, 19), (2.0, 4.6), (z - 2.0, z + 2.0), "metal"),
+        B((13, 16), (-1.3, 1.3), (z - 1.3, z + 1.3), "glow"),
+    ], (16, 0, z)
+
+
+def weapon_set(pose, head, lafette=None, **kw):
+    """Grundform (k 1), Molok-Variante und, fuer Fernwaffen, die Lafette."""
+    shapes, point = posed(pose, head, 1.0, **kw)
+    heavy, heavy_point = posed(pose, head, HEAVY_K, **kw)
+    variants = {"heavy": {"shapes": heavy, "anchors": {"mount": (0, 0, ARM_Z),
+                                                       "muzzle": heavy_point}}}
+    if lafette is not None:
+        laf, laf_point = lafette
+        variants["lafette"] = {"shapes": laf, "anchors": {"mount": (0, 0, LAFETTE_Z),
+                                                          "muzzle": laf_point}}
+    return {"shapes": shapes, "variants": variants,
+            "anchors": {"mount": (0, 0, ARM_Z), "muzzle": point}}
+
+
+W_PULSE = weapon_set("ext", _head_blaster, lafette=lafette_blaster())
+W_NEON = weapon_set("ext", _head_blaster, lafette=lafette_blaster(neon=True), neon=True)
+W_BLADE = weapon_set("up", _head_blade)
+W_BOOMERANG = weapon_set("up", _head_boomerang)
+W_SHIELD = weapon_set("up", _head_shield)
+W_HAMMER = weapon_set("up", _head_hammer)
+W_RAM = weapon_set("up", _head_ram)
+W_WRENCH = weapon_set("up", _head_wrench, lafette=lafette_wrench())
+W_STAFF = weapon_set("up", _head_staff, lafette=lafette_staff())
+
+
+# ===========================================================================
 # Teile-Spezifikation
 #
 # Anker werden in bot-lokalen Koordinaten angegeben und pro Richtung mit
@@ -2006,9 +2276,8 @@ SETS = [
             },
             {
                 "id": "eq_pulse_blaster", "code": "EQP-001", "type": "equipment", "name": "Puls-Blaster",
-                "tags": ["weapon", "ranged"], "shapes": EQ_BLASTER,
+                "tags": ["weapon", "ranged"], **W_PULSE,
                 "mount_class": "light", "category": "weapon",
-                "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
             },
             {
                 # Neon-Variante (Neon City): gleiche Form, eigene Faehigkeit,
@@ -2016,33 +2285,29 @@ SETS = [
                 # Variante darf sie die Silhouette des Blasters teilen.
                 "id": "eq_neon_blaster", "code": "EQP-011", "type": "equipment",
                 "name": "Neon-Blaster", "tags": ["weapon", "ranged", "neon"],
-                "shapes": EQ_BLASTER, "variant_of": "eq_pulse_blaster",
+                **W_NEON, "variant_of": "eq_pulse_blaster",
                 "palette": NEON_EQUIPMENT,
                 "mount_class": "light", "category": "weapon",
-                "anchors": {"mount": (0, 0, 52), "muzzle": (16.8, 0, 38.5)},
             },
             {
                 "id": "eq_plasma_blade", "code": "EQP-010", "type": "equipment",
                 "name": "Plasmaklinge", "tags": ["weapon", "melee"],
-                "shapes": EQ_PLASMA_BLADE,
+                **W_BLADE,
                 "mount_class": "light", "category": "weapon",
-                "anchors": {"mount": (0, 0, 52), "tip": (27, 0, 36)},
             },
             {
                 "id": "eq_boomerang", "code": "EQP-013", "type": "equipment",
                 "name": "Klingenbumerang", "tags": ["weapon", "melee", "thrown"],
-                "shapes": EQ_BOOMERANG,
+                **W_BOOMERANG,
                 "mount_class": "light", "category": "weapon",
-                "anchors": {"mount": (0, 0, 52), "tip": (15.4, -11.6, 37)},
             },
             {
                 "id": "eq_deflector", "code": "EQP-002", "type": "equipment", "name": "Deflektor-Schild",
-                "tags": ["defense"], "shapes": EQ_SHIELD,
+                "tags": ["defense"], **W_SHIELD,
                 # Ein Schild ist sperrig, nicht schwer -- "medium" haelt es von
                 # den Schulter- und Jochlagern fern, ohne es an einem
                 # Standardarm einzuschraenken.
                 "mount_class": "medium", "category": "shield",
-                "anchors": {"mount": (0, 0, 52)},
             },
         ],
     },
@@ -2056,6 +2321,9 @@ SETS = [
             {
                 "id": "jugg_body", "code": "CHS-002", "type": "body", "name": "Molok Chassis",
                 "tags": ["heavy"], "shapes": JUGG_BODY,
+                # Waffen in Posen: der Molok traegt dieselben Waffen, nur
+                # groesser gebaut (Armmass 1,6, Spieler 16. Nov. 2026).
+                "weapon_variant": "heavy",
                 "anchors": {
                     "mount": (0, 0, MOUNT_Z),
                     "head": (0, 0, 60.5),
@@ -2098,25 +2366,22 @@ SETS = [
             {
                 "id": "eq_hammer", "code": "EQP-012", "type": "equipment",
                 "name": "Hammer", "tags": ["weapon", "melee", "heavy"],
-                "shapes": EQ_HAMMER,
+                **W_HAMMER,
                 "mount_class": "medium", "category": "weapon",
-                "anchors": {"mount": (0, 0, 49), "head": (23.8, 0, 39)},
             },
             {
                 "id": "eq_bulwark_ram", "code": "EQP-014", "type": "equipment",
                 "name": "Bollwerk-Ramme", "tags": ["weapon", "melee", "heavy"],
-                "shapes": EQ_BULWARK_RAM,
+                **W_RAM,
                 "mount_class": "medium", "category": "weapon",
-                "anchors": {"mount": (0, 0, 49), "head": (20.6, 0, 39)},
             },
             {
                 # Frueher fest auf der Molok-Schulter ("slots"); seit es die
                 # Schulter als Halter nicht mehr gibt, ein Gadget wie die anderen.
                 "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment",
                 "name": "E-Schraubenschluessel",
-                "tags": ["support", "tool"], "shapes": EQ_DRONE_POD,
+                "tags": ["support", "tool"], **W_WRENCH,
                 "mount_class": "light", "category": "support",
-                "anchors": {"mount": (0, 0, 49)},
             },
         ],
     },
@@ -2167,9 +2432,8 @@ SETS = [
             {
                 "id": "eq_rune_staff", "code": "EQP-005", "type": "equipment",
                 "name": "Runenstab", "tags": ["weapon", "arcane", "round"],
-                "shapes": EQ_RUNE_STAFF,
+                **W_STAFF,
                 "mount_class": "light", "category": "weapon",
-                "anchors": {"mount": (0, 0, 47), "muzzle": (7.6, 0, 61.0)},
             },
         ],
     },
@@ -2200,6 +2464,8 @@ SETS = [
                                                 "categories": ["weapon", "support"],
                                                 "reach": "ranged"}},
                 "body_kind": "nonhumanoid",
+                # Fernwaffen liegen auf der Lafette statt in einer Hand.
+                "weapon_variant": "lafette",
             },
             {
                 "id": "strix_head", "code": "HED-004", "type": "head",
@@ -2350,12 +2616,35 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
             + [reach_kind(pid)]
     if part["type"] == "body":
         meta["body_kind"] = part.get("body_kind", "humanoid")
+        if part.get("weapon_variant"):
+            meta["weapon_variant"] = part["weapon_variant"]
         meta["slot_z"] = slot_draw_order(part, direction)
         if "slot_rules" in part:
             meta["slot_rules"] = part["slot_rules"]
     if part["type"].startswith("equipment"):
         meta["mount_class"] = part.get("mount_class", DEFAULT_MOUNT_CLASS)
         meta["category"] = part.get("category", DEFAULT_CATEGORY)
+        # Waffen in Posen: eigene Bilder fuer den Molok (Armmass) und fuer die
+        # Strix-Lafette. Welche gilt, sagt das Chassis (weapon_variant).
+        variants = {}
+        for vname, vspec in part.get("variants", {}).items():
+            vstem = f"{pid}_{vname}_{direction}"
+            vsvg = SVG_TEMPLATE.format(
+                pid=pid, ptype=part["type"], direction=direction,
+                name=part.get("name", pid), body=render(vspec["shapes"], direction),
+                note=svg_comment_body(SVG_NOTE.format(direction=direction)),
+            )
+            ElementTree.fromstring(vsvg)
+            (set_dir / f"{vstem}.svg").write_text(vsvg, encoding="utf-8")
+            variants[vname] = {
+                "svg": f"{vstem}.svg",
+                "anchors": [
+                    {"name": name, **dict(zip(("x", "y"), project(local, direction)))}
+                    for name, local in vspec["anchors"].items()
+                ],
+            }
+        if variants:
+            meta["variants"] = variants
     if "slots" in part:
         meta["slots"] = part["slots"]
     # Spielwerte. Richtungsunabhaengig, deshalb in allen vier JSONs identisch --
