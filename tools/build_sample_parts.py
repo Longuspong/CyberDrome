@@ -1430,11 +1430,6 @@ JUGG_BODY = [
     B((-9, 9), (-25, -13), (56, 70), "plate"),
     B((-9.5, 9.5), (-25.5, -12.5), (70, 73), "light"),
     B((9, 9.6), (-23, -15), (62, 65), "accent"),
-    # -- Auspuffstapel -----------------------------------------------------
-    L((-9.5, 8), [(2.4, 58), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
-    L((-9.5, -8), [(2.4, 58), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
-    L((-9.5, 8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
-    L((-9.5, -8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
 ]
 
 # Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
@@ -1452,6 +1447,12 @@ JUGG_HEAD = [
     L((-9.5, 0), [(3.0, 62.5), (3.0, 65)], "metal", segments=12),
     L((-9.5, 0), [(2.6, 65), (2.6, 69), (1.6, 70.6), (0, 71.2)], "glow", segments=14),
     L((-9.5, 0), [(3.2, 67.2), (3.2, 67.9)], "accent", caps=False, segments=14),
+    # Auspuffstapel links und rechts davon -- aus demselben Grund im Kopfteil:
+    # von hinten stehen sie vor dem Kopf. Sie beginnen auf dem Deck (z 62.5).
+    L((-9.5, 8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
+    L((-9.5, -8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
+    L((-9.5, 8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
+    L((-9.5, -8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
 ]
 
 # Standbeine, nicht "Sprintbeine in gross".
