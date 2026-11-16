@@ -1409,50 +1409,44 @@ EQ_SHIELD = [
 #     Auspuffstapel dahinter. Der Rahmen wirkt dadurch geduckt und hat keinen
 #     sichtbaren Hals -- die Vireo-Silhouette hat beides umgekehrt.
 JUGG_BODY = [
-    # -- Huefte mit Panzerschuerze ----------------------------------------
+    # Umbau 16. Nov. 2026 nach den DROME-Designregeln (Entwurf v4.py,
+    # new_dromes.py M_BODY): Schultern HOEHER, der Kopf sitzt tief dazwischen,
+    # ein Frontpanzer vor der Brust und das Lockfeuer auf dem Ruecken (Passive
+    # Praesenz). Arme gibt es am Rumpf keine mehr: beide Unterarme kommen mit
+    # den Waffen an die Schulteranker.
+    # -- Huefte und Torso als Keil ---------------------------------------
     B((-7, 7), (-11, 11), (31, 38), "metal"),
-    B((-6.5, 7), (11, 15), (26, 39), "plate"),
-    B((-6.5, 7), (-15, -11), (26, 39), "plate"),
-    B((7, 9.5), (-8.5, 8.5), (25, 37), "plate"),
-    B((9.5, 10.1), (-5, 5), (28, 30), "accent"),
-    B((-7.5, -7), (-9, 9), (27, 37), "dark"),
-    # -- Torso als Keil: unten schmal, oben breit -------------------------
-    B((-7, 8), (-10, 10), (38, 46), "plate"),
-    B((-8, 9.5), (-13, 13), (46, 55), "plate"),
-    B((-8.5, 10), (-15, 15), (55, 61), "plate"),
-    # Das Deck ist SCHMALER als der Torso darunter. Der Molok hat keinen Hals
-    # -- aber ohne irgendeine Luecke verschwindet der Kopf zwischen den
-    # Pauldrons. Statt eines Halses macht hier die Einkerbung zwischen Deck
-    # und Pauldron den Kopf als eigenes Volumen lesbar.
-    B((-7.5, 9), (-11.5, 11.5), (61, 64), "light"),
-    # Brustpanzer mit Kernsockel. Der Sockel sitzt auf Brustmitte und ist hoch
-    # genug fuer das ganze Fusionskreuz -- der alte reichte nur bis z=54, und
-    # das Kreuz hing unten ueber die Kante hinaus ins Leere.
-    B((10, 10.8), (-11, 11), (46, 59), "dark"),
-    B((10.8, 11.4), (-8, 8), (56.8, 58.4), "accent"),
-    B((10.8, 11.5), (-7, 7), (46.6, 56.2), "dark"),
-    # -- Auspuffstapel: zwei stehende Rohre ueber Schulterhoehe ------------
-    L((-9.5, 10.5), [(2.6, 55), (2.6, 72), (3.3, 72), (3.3, 74)], "metal", segments=12),
-    L((-9.5, -10.5), [(2.6, 55), (2.6, 72), (3.3, 72), (3.3, 74)], "metal", segments=12),
-    L((-9.5, 10.5), [(3.4, 64), (3.4, 65.5)], "accent", caps=False, segments=12),
-    L((-9.5, -10.5), [(3.4, 64), (3.4, 65.5)], "accent", caps=False, segments=12),
-    # -- Pauldrons: sitzen HOCH und flankieren den Kopf --------------------
-    B((-8, 8), (15, 26), (52, 66), "plate"),
-    B((-8.5, 8.5), (14.5, 26.5), (66, 69), "light"),
-    B((-8, 8), (-26, -15), (52, 66), "plate"),
-    B((-8.5, 8.5), (-26.5, -14.5), (66, 69), "light"),
-    B((8, 8.6), (17.5, 23.5), (59, 62), "accent"),
-    B((8, 8.6), (-23.5, -17.5), (59, 62), "accent"),
+    B((-8, 9), (-12, 12), (38, 48), "plate"),
+    B((-9, 10.5), (-14, 14), (48, 60), "plate"),
+    B((-8, 9.5), (-13, 13), (60, 62.5), "light"),
+    # -- Frontpanzer mit Kernsockel ----------------------------------------
+    B((10.5, 11.5), (-10, 10), (42, 58), "dark"),
+    B((11.5, 12), (-8, 8), (44, 45.4), "accent"),
+    B((11.5, 12), (-8, 8), (56, 57.4), "accent"),
+    # -- Schultern hoeher als der Kopf -------------------------------------
+    B((-9, 9), (13, 25), (56, 70), "plate"),
+    B((-9.5, 9.5), (12.5, 25.5), (70, 73), "light"),
+    B((9, 9.6), (15, 23), (62, 65), "accent"),
+    B((-9, 9), (-25, -13), (56, 70), "plate"),
+    B((-9.5, 9.5), (-25.5, -12.5), (70, 73), "light"),
+    B((9, 9.6), (-23, -15), (62, 65), "accent"),
+    # -- Auspuffstapel -----------------------------------------------------
+    L((-9.5, 8), [(2.4, 58), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
+    L((-9.5, -8), [(2.4, 58), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
+    L((-9.5, 8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
+    L((-9.5, -8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
+    # -- Lockfeuer zwischen den Auspuffen (Passive Praesenz) ---------------
+    L((-9.5, 0), [(3.0, 60), (3.0, 64)], "metal", segments=12),
+    L((-9.5, 0), [(2.6, 64), (2.6, 68), (1.6, 69.6), (0, 70.2)], "glow", segments=14),
+    L((-9.5, 0), [(3.2, 66.2), (3.2, 66.9)], "accent", caps=False, segments=14),
 ]
 
+# Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
 JUGG_HEAD = [
-    B((-8, 8.5), (-10, 10), (64, 74), "plate"),
-    B((-8.5, 9), (-10.5, 10.5), (74, 76.5), "light"),
-    B((8.5, 9.2), (-8, 8), (66.5, 71), "visor"),
-    B((-8.6, -8), (-6, 6), (67, 68.5), "light"),
-    B((-8.6, -8), (-6, 6), (70, 71.5), "light"),
-    B((-5, 5), (10, 13), (68, 74), "metal"),             # Seitensensoren
-    B((-5, 5), (-13, -10), (68, 74), "metal"),
+    B((-5, 7), (-7, 7), (61, 68), "plate"),
+    B((-5.5, 7.5), (-7.5, 7.5), (68, 70), "light"),
+    B((7, 7.6), (-5, 5), (63.5, 65.6), "visor"),
+    B((7, 8.2), (-7, 7), (60.5, 62.5), "metal"),         # Kinnschutz
 ]
 
 # Standbeine, nicht "Sprintbeine in gross".
@@ -1507,9 +1501,9 @@ JUGG_CORE = [
     # Sechseck statt Kreis: der Molok bekommt eine geschraubte Industrieplatte.
     # Zwei runde Kerne (Vireo, Nimbus) sind genug -- ab dem dritten faengt der
     # Silhouetten-Test an, sie miteinander zu verwechseln.
-    D(11.2, 0, 51.4, 4.7, "dark", 6),
-    B((11.5, 11.8), (-3.4, 3.4), (49.8, 53.0), "glow"),
-    B((11.5, 11.8), (-1.9, 1.9), (47.6, 55.2), "glow"),
+    D(11.7, 0, 50.7, 4.4, "dark", 6),
+    B((12.0, 12.3), (-3.2, 3.2), (49.2, 52.2), "glow"),
+    B((12.0, 12.3), (-1.8, 1.8), (47.2, 54.2), "glow"),
 ]
 
 # Belagerungskanone -- ausdruecklich KEIN vergroesserter Blaster.
@@ -2058,11 +2052,12 @@ SETS = [
                 "tags": ["heavy"], "shapes": JUGG_BODY,
                 "anchors": {
                     "mount": (0, 0, MOUNT_Z),
-                    "head": (0, 0, 64),
+                    "head": (0, 0, 60.5),
                     "feet": (0, 0, 33),
-                    "core": (11.0, 0, 51.4),
-                    "equip_left": (0, 26.5, 49),
-                    "equip_right": (0, -26.5, 49),
+                    "core": (11.5, 0, 50.7),
+                    # Zwei Schulteranker: beide Unterarme kommen mit der Waffe
+                    "equip_left": (0, 19, 57),
+                    "equip_right": (0, -19, 57),
                     # Auf dem Rueckendeck zwischen den Auspuffstapeln.
                     "equip_shoulder": (-7, 0, 63),
                 },
@@ -2082,7 +2077,7 @@ SETS = [
             {
                 "id": "jugg_head", "code": "HED-002", "type": "head", "name": "Molok Bunkerkopf",
                 "tags": ["heavy", "armored"], "shapes": JUGG_HEAD,
-                "anchors": {"mount": (0, 0, 64), "sensor": (9.2, 0, 68.7)},
+                "anchors": {"mount": (0, 0, 60.5), "sensor": (7.6, 0, 64.5)},
             },
             {
                 "id": "jugg_feet", "code": "LEG-002", "type": "feet", "name": "Molok Standbeine",
@@ -2092,7 +2087,7 @@ SETS = [
             {
                 "id": "jugg_core", "code": "COR-002", "type": "core", "name": "Molok Fusionskern",
                 "tags": ["core", "fusion"], "shapes": JUGG_CORE,
-                "anchors": {"mount": (11.0, 0, 51.4)},
+                "anchors": {"mount": (11.5, 0, 50.7)},
             },
             {
                 "id": "eq_hammer", "code": "EQP-012", "type": "equipment",

@@ -51,12 +51,14 @@ Quelle: `v4.py` (`NIMBUS`, `N_ORB_ARM`, `N_HALO`).
 - [x] Waffenarm (rechte Hand, `+l`) kommt mit der Waffe; Anker bleibt
       `(0, 13.8, 47)`, bis Schritt 4 hängen die alten Waffenarme
 
-### 3. Chassis Molok
+### 3. Chassis Molok -- erledigt (16. Nov.)
 Quelle: `v4.py` (`MOLOK`, `M_ARM`) und `v2.py` (`M_BEACON`).
-- [ ] Kopf tief zwischen den Schultern, Schultern höher, Frontpanzer
-- [ ] **Zwei Schulteranker** (`(0, ±19, 57)`), beide Unterarme kommen mit
-      den Waffen; `equip_shoulder` bleibt Optik
-- [ ] **Lockfeuer** auf dem Rücken (Passive Präsenz)
+- [x] Kopf tief zwischen den Schultern (Kopf-Anker `z 60.5`), Schultern
+      höher, Frontpanzer mit Kernsockel
+- [x] **Zwei Schulteranker** (`(0, ±19, 57)`), beide Unterarme kommen mit
+      den Waffen; `equip_shoulder` bleibt Optik. Bis Schritt 4 hängen die
+      alten, kleinen Waffenarme (Armmaß 1,6 kommt mit den Posen)
+- [x] **Lockfeuer** auf dem Rücken zwischen den Auspuffen (Passive Präsenz)
 
 ### 4. Waffen in ihre Posen (11 Waffen × 4 Richtungen)
 Quelle: `v4.py` (`arm_extended`, `arm_raised`, `blaster`, `blade`,
