@@ -95,4 +95,4 @@ func _start() -> void:
 		return
 	_leaving = true
 	Accessibility.vibrate(20)
-	get_tree().change_scene_to_file.call_deferred(NEXT)
+	Fader.go(NEXT)

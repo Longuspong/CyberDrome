@@ -164,7 +164,7 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
 * Navigation: Tab-Leiste unten (Spielen, Hangar, Shop -- seit 15. Nov. 2026;
   Optionen am Zahnrad oben rechts). Der Shop hat die Reiter Shop, Caches und
   Bauen (neue DROMEs aus Baukernen). Der Hangar
-  vereint Squad (Karussell, max. 4) und Umbau (ein Ausruestungsplatz je
+  vereint Squad (Karussell, max. 3 seit 16. Nov. 2026) und Umbau (ein Ausruestungsplatz je
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
   nach oben in groessere Halter, schwer nur in schwer).

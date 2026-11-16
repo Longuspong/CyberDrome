@@ -174,10 +174,18 @@ func _build_sprites() -> void:
 	_ensure_chrome()
 	_sprites = DromeSprites.assemble(_rig, build, facing)
 	# Sentinels kleiner (60 %, SPOT-Blatt Fragen 13), bis eigene Sprites kommen.
+	# Skaliert um die Fuesse (SPRITE_ORIGIN = Feldmitte), nicht um die linke
+	# obere Bildecke -- sonst hingen sie ueber ihrem Feld in der Luft (bis
+	# 16. Nov. 2026: "die Sentinels schweben").
 	if build != null and build.sprite_scale != 1.0:
-		_rig.scale = Vector2.ONE * build.sprite_scale
-		_ring.scale = Vector2.ONE * maxf(0.7, build.sprite_scale)
+		_scale_about_feet(_rig, build.sprite_scale)
+		_scale_about_feet(_ring, maxf(0.7, build.sprite_scale))
 	_refresh_tint()
+
+
+static func _scale_about_feet(node: Node2D, factor: float) -> void:
+	node.scale = Vector2.ONE * factor
+	node.position = IsoView.SPRITE_ORIGIN * (1.0 - factor)
 
 
 ## Beim Richtungswechsel werden alle Teile auf ihre Variante fuer diese

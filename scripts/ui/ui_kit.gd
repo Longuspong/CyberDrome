@@ -115,7 +115,7 @@ static func page(root: Control, title: String, back: String = "", tab: int = -1,
 		gear.tooltip_text = "Optionen"
 		gear.pressed.connect(func():
 			Accessibility.tap()
-			root.get_tree().change_scene_to_file(SETTINGS_SCENE))
+			Fader.go(SETTINGS_SCENE))
 		var row: HBoxContainer = root.get_meta("header_row") if root.has_meta("header_row") else null
 		if row != null:
 			gear.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -189,7 +189,7 @@ static func header(root: Control, title: String, back: String = "") -> Control:
 	if back != "":
 		var back_button := Arcade.BackButton.new()
 		back_button.tooltip_text = "Zurück"
-		back_button.pressed.connect(func(): root.get_tree().change_scene_to_file(back))
+		back_button.pressed.connect(func(): Fader.go(back))
 		row.add_child(back_button)
 	if title != "":
 		var logo := Arcade.GlitchLogo.new(title.to_upper(), 24, 4.0, [
@@ -274,7 +274,7 @@ static func tab_bar(root: Control, active: int) -> Control:
 			var scene: String = TABS[index][1]
 			button.pressed.connect(func():
 				Accessibility.tap()
-				root.get_tree().change_scene_to_file(scene))
+				Fader.go(scene))
 		row.add_child(button)
 	return bar
 
@@ -329,6 +329,18 @@ static func heading(text: String) -> Label:
 	var result := label(text.to_upper(), H2 - 2, HEADING)
 	result.add_theme_font_override("font", Arcade.font("bold", H2 - 2, 0.12))
 	return result
+
+
+## Leert ``node`` fuer einen Neuaufbau. Die alten Kinder werden sofort
+## unsichtbar und erst am Ende des Bilds freigegeben: vorher hingen sie bis
+## dahin noch sichtbar im Container, alt und neu lagen fuer ein Bild
+## uebereinander, die Seite wurde doppelt so lang und die Liste sprang
+## (16. Nov. 2026, "Scrollen wirkt komisch, wenn ein Modul gewaehlt wird").
+static func clear(node: Node) -> void:
+	for child in node.get_children():
+		if child is CanvasItem:
+			(child as CanvasItem).visible = false
+		child.queue_free()
 
 
 ## Ein grosser Knopf ueber die ganze Breite. ``primary`` = die Hauptaktion

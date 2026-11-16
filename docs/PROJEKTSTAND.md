@@ -120,6 +120,53 @@ Vorlagen, Abgleich im README). Abgesprochen: **nur Optik**, Navigation bleibt
   Fraktionskern + 3 = Fraktions-DROME mit festen Werten
   (`craft_faction_drome`). Werte in config `crafting`.
 
+### Squad aus drei + Zwischenstopp nach Entwurf (16. Nov. 2026, Spieler)
+
+* **Squad aus drei DROMEs** (`run.squad_max`, `squad_size_max` = 3):
+  Hangar, Einsatz und neue Spielstaende; `Roster.trim_squad` kuerzt alte
+  Staende. Gegner unveraendert -- Elite wird schwerer (offener Punkt im SPOT).
+* **Zwischenstopp** (`run_screen.gd` `_show_stop`): eine Kopfzeile (Zurueck,
+  Leben, Credits, Beute-Knopf mit Blaetter-Popup), Laden (3 Module + schmal
+  Neu wuerfeln), Lager in zwei Reihen, drei DROME-Kaesten (Kopf oben, je
+  Waffe ein Feld mit ihren Plaetzen; zwei Waffen = breiterer Kasten).
+* **Ziehen** (`Tile.on_drag/can_drop/on_drop`, Godot-Drag mit eigener
+  Vorschau ueber dem Finger): Ziele leuchten, Ziel unter dem Finger zeigt
+  das Modul im freien Platz (`FreeSlot.show_ghost`), Modul auf Modul =
+  Rezept (`RunState.pair_result`, Hinweis-Schild). Ziehbare Kacheln stehen
+  in der Gruppe `cyberdrome_drag_source`; dort scrollt `Accessibility` nicht.
+  Doppeltipp setzt nicht mehr automatisch ein ("Auswaehlen" im Popup).
+* **Startseite**: statt der Arena mit dem Squad (`HomeStage`, bleibt im Code)
+  eine Boss-Karte (Shogun Kage, `MainMenu._boss_card`) mit dem Bild des
+  Spielers (`assets/story/boss_shogun_kage.jpg`, fuellt die Karte, links buendig); Inhalt noch Platzhalter.
+  `GameState.battle_ready_builds` zaehlt nur noch den Squad (zeigte "4/3").
+* Der Bildschirm nach "Einsatz starten" heisst **Aufstellung**
+  (`_show_setup`, `SquadPicker`) -- der Spieler will ihn ueberarbeiten.
+
+### Aufraeum-Runde Bedienung (16. Nov. 2026, Wunsch des Spielers)
+
+"Fuehlt sich schwammig an" -- gebaut:
+
+* **Titel ruckelte**: `Arcade.Backdrop` zeichnete jedes Bild ~1800 Punkte
+  und 300 Sonnenstreifen neu, nur fuer das Wippen der Sonne. Jetzt Lagen
+  (`BackdropLayer`), die nur bei Groessenaenderung zeichnen; die Sonne wird
+  verschoben. Die Laufbaender laufen damit ruhig.
+* **Bildschirmwechsel mit Blende**: Autoload `Fader` (`autoload/scene_fader.gd`),
+  alle Wechsel ueber `Fader.go(pfad)`; 0,12 s ab, 0,22 s auf, sperrt Eingaben
+  waehrenddessen, bei "Bewegung reduzieren" harter Schnitt.
+* **Scrollen**: Godots eigenes Touch-Ziehen im ScrollContainer kaempfte mit
+  `Accessibility._scroll_input`, sobald man in eine Luecke tippte -- jetzt
+  abgeschaltet (riesige `scroll_deadzone`), nachgebildete Mausbewegungen
+  waehrend des Wischens verschluckt. Neuaufbauten leeren ueber
+  `UiKit.clear` (alte Kinder sofort unsichtbar) -- vorher lagen alt und neu
+  ein Bild lang uebereinander, die Seite sprang (Modul waehlen).
+* **Zwischenstopp auf einem Bildschirm**: Squad als 2x2-Karten, DROME
+  antippen setzt das gewaehlte Modul in den ersten passenden Halter
+  (Reihenfolge egal); Lager in einer Zeile ohne Namen, feste Hinweiszeile,
+  Credits-Chip weg (Zuwachs steht oben bei den Credits), Preis-Knoepfe dunkel
+  auf Gelb mit Symbol und Zahl mittig, ohne Geld grau mit roter Zahl.
+* **Sentinels schwebten**: sie wurden um die linke obere Bildecke statt um
+  die Fuesse verkleinert (`Unit._scale_about_feet`).
+
 ### Grosse Umsetzung (14. Nov. 2026, Wunsch des Spielers)
 
 Eine Sitzung, alles aus der abgesegneten Liste (Bedienung, Arcade-Stil,

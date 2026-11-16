@@ -538,6 +538,18 @@ func test_recipes_combine_in_the_storage() -> void:
 	t.equal(run.storage, [&"mod_bait", &"mod_gunslinger"], "Zutaten weg, Ergebnis im Lager")
 
 
+## Modul auf Modul ziehen (16. Nov. 2026): pair_result nennt das Rezept.
+func test_dragging_one_module_onto_another_names_the_recipe() -> void:
+	var run := _stop_run()
+	run.storage.append_array([&"mod_rapid_fire", &"mod_bait", &"mod_twin_barrel"])
+	var gun := run.pair_result(0, 2)
+	t.ok(gun != null and gun.id == &"mod_gunslinger", "Schnellfeuer + Doppellauf = Gunslinger")
+	t.ok(run.pair_result(2, 0) == gun, "in beide Richtungen")
+	t.ok(run.pair_result(0, 1) == null, "Schnellfeuer + Köder ergibt nichts")
+	t.ok(run.pair_result(0, 0) == null, "nicht mit sich selbst")
+	t.ok(run.pair_result(0, 9) == null, "leerer Platz ergibt nichts")
+
+
 func test_modules_sell_but_never_go_home() -> void:
 	var run := _stop_run()
 	run.storage.append(&"mod_bait")

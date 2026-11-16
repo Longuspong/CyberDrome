@@ -35,6 +35,7 @@ static var _chosen_key := ""
 static var _info_serial := 0
 
 const GROUP := "cyberdrome_tiles"
+const DRAG_GROUP := "cyberdrome_drag_source"
 
 var key: String = ""
 ## Alter Name fuer on_select (bleibt, damit bestehende Aufrufer laufen).
@@ -42,6 +43,14 @@ var on_tap: Callable
 var on_select: Callable
 var on_info: Callable
 var on_action: Callable
+## Ziehen und Ablegen (16. Nov. 2026, Zwischenstopp): ``on_drag`` liefert
+## die Zugdaten (und setzt selbst die Vorschau), ``can_drop``(daten) -> bool
+## und ``on_drop``(daten) machen die Kachel zum Ziel. Eine Kachel mit
+## ``on_drag`` steht in der Gruppe DRAG_GROUP -- dort scrollt ein Wischer
+## nicht (Accessibility), er zieht.
+var on_drag: Callable
+var can_drop: Callable
+var on_drop: Callable
 ## Die Auswahl fuehrt der Bildschirm (``selected``), nicht Tile selbst.
 var managed: bool = false
 var selected: bool = false:
@@ -132,6 +141,27 @@ func is_chosen() -> bool:
 
 func _enter_tree() -> void:
 	add_to_group(GROUP)
+	if on_drag.is_valid():
+		add_to_group(DRAG_GROUP)
+
+
+func _get_drag_data(_at: Vector2) -> Variant:
+	if not on_drag.is_valid():
+		return null
+	# Ein laufender Zug ist kein langes Druecken und kein Tipp mehr.
+	_pressing = false
+	_long_fired = true
+	_info_serial += 1
+	return on_drag.call()
+
+
+func _can_drop_data(_at: Vector2, data: Variant) -> bool:
+	return can_drop.is_valid() and bool(can_drop.call(data))
+
+
+func _drop_data(_at: Vector2, data: Variant) -> void:
+	if on_drop.is_valid():
+		on_drop.call(data)
 
 
 ## Wird nach einer selbst gefuehrten Auswahl an alle Kacheln geschickt.

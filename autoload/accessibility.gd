@@ -233,6 +233,13 @@ func _system_prefers_reduced_motion() -> bool:
 # ---------------------------------------------------------------------------
 
 func _on_node_added(node: Node) -> void:
+	# Auf dem Touchscreen scrollt nur noch _scroll_input (16. Nov. 2026).
+	# Godots eigenes Ziehen im ScrollContainer sprang an, sobald man in eine
+	# Luecke zwischen Kacheln tippte, und setzte die Leiste auf SEINEN Wert --
+	# zwei Mechanismen schoben dieselbe Liste, sie ruckelte und sprang. Eine
+	# riesige Totzone schaltet sein Ziehen ab; das Mausrad bleibt.
+	if node is ScrollContainer and DisplayServer.is_touchscreen_available():
+		(node as ScrollContainer).scroll_deadzone = 100000
 	if node is Control:
 		# Aufgeschoben: viele Bildschirme setzen ihre Schriftgroesse erst NACH
 		# add_child. Ein Frame spaeter steht sie fest.
@@ -366,6 +373,12 @@ func _input(event: InputEvent) -> void:
 ## Loslassen verschluckt -- sonst loeste das Ende eines Wischers den Knopf aus,
 ## auf dem er angefangen hat. Beim Loslassen laeuft die Liste mit Schwung aus.
 func _scroll_input(event: InputEvent) -> bool:
+	# Die aus dem Wischer nachgebildeten Mausbewegungen gehoeren waehrend des
+	# Scrollens niemandem -- sonst zieht ein ScrollContainer oder eine Kachel
+	# darunter mit.
+	if _scroll_dragging and event is InputEventMouseMotion:
+		get_viewport().set_input_as_handled()
+		return true
 	if event is InputEventScreenTouch:
 		if event.pressed and event.index == 0:
 			# Ein Tippen in eine auslaufende Liste haelt sie nur an.
@@ -373,7 +386,10 @@ func _scroll_input(event: InputEvent) -> bool:
 				_swallow_release = true
 			_scroll_coasting = false
 			_scroll_velocity = Vector2.ZERO
-			_scroll_target = _scroll_container_at(event.position)
+			# Auf einer ziehbaren Kachel (Modul im Lager) zieht der Finger
+			# das Teil -- die Liste bleibt stehen (16. Nov. 2026).
+			_scroll_target = null if _on_drag_source(event.position) \
+				else _scroll_container_at(event.position)
 			_scroll_dragging = false
 			_scroll_travel = Vector2.ZERO
 		elif not event.pressed and _scroll_dragging:
@@ -405,6 +421,15 @@ func _scroll_input(event: InputEvent) -> bool:
 			_scroll_by(-event.relative)
 			_scroll_sample(-event.relative)
 			get_viewport().set_input_as_handled()
+			return true
+	return false
+
+
+## Liegt unter ``at`` eine ziehbare Kachel (Gruppe Tile.DRAG_GROUP)?
+func _on_drag_source(at: Vector2) -> bool:
+	for node in get_tree().get_nodes_in_group("cyberdrome_drag_source"):
+		var control := node as Control
+		if control != null and control.is_visible_in_tree() and control.get_global_rect().has_point(at):
 			return true
 	return false
 

@@ -76,10 +76,16 @@ func _process(_delta: float) -> bool:
 			stop._selected_storage = gs.run.storage.size() - 1
 			stop._refresh()
 			print("SMOKE: Zwischenstopp mit Modulen und Rezeptbuch, Lager %d" % gs.run.storage.size())
-			# Modul gewaehlt, dann Halter angetippt: eingesetzt.
+			# Modul gewaehlt, dann eine Waffe (Waffenfeld) angetippt: eingesetzt.
 			var before: int = gs.run.storage.size()
 			stop._selected_storage = gs.run.storage.find(&"mod_rapid_fire")
-			stop._install(gs.run, 1, gs.run.squad[1].equip_slots()[0])
+			stop._refresh()
+			var card = null
+			for tile in stop.find_children("*", "Tile", true, false):
+				if tile.key.begins_with("holder:1:") and tile.is_visible_in_tree() and card == null:
+					card = tile
+			if card != null and card.glow:
+				card.on_select.call()
 			if gs.run.storage.size() < before:
 				print("SMOKE: Modul per Tippen eingesetzt, Lager %d" % gs.run.storage.size())
 		16:

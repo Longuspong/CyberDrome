@@ -164,22 +164,39 @@ static func moving() -> bool:
 ## Punktraster, Synthwave-Sonne mit Schlitzen, Berge und Gitterboden.
 ## title = true: grosse Sonne mittig (Titel); false: kleine, blasse Sonne
 ## unten (Menues). Gezeichnet in Entwurfsmassen, hoch skaliert und mittig.
+##
+## Seit 16. Nov. 2026 wird nichts mehr je Bild neu gezeichnet: Raster, Sonne
+## und Berge liegen in eigenen Lagen, die nur bei Groessenaenderung neu
+## zeichnen; das Wippen der Sonne verschiebt nur ihre Lage. Vorher zeichnete
+## der Titel jedes Bild ~1800 Punkte und 300 Sonnenstreifen neu -- auf dem
+## Handy kostete das Bilder, und die Laufbaender ruckelten.
 class Backdrop extends Control:
 	var title := true
 	var _time := 0.0
+	var _sun: BackdropLayer
+	var _front: BackdropLayer
 
 	func _init(is_title: bool = true) -> void:
 		title = is_title
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		set_anchors_preset(Control.PRESET_FULL_RECT)
+		if title:
+			_sun = BackdropLayer.new(self, "sun")
+			add_child(_sun)
+			_front = BackdropLayer.new(self, "front")
+			add_child(_front)
 
 	func _ready() -> void:
 		set_process(title and Arcade.moving())
-		resized.connect(queue_redraw)
+		resized.connect(func():
+			queue_redraw()
+			if _sun != null:
+				_sun.queue_redraw()
+				_front.queue_redraw())
 
 	func _process(delta: float) -> void:
-		_time += delta
-		queue_redraw()
+		_time = fmod(_time + delta, 5.0)
+		_sun.position.y = -3.0 * cos(_time * TAU / 5.0) * size.y / Arcade.DESIGN.y
 
 	## Entwurfs-Koordinate -> Bildschirm (gleichmaessig nach der Hoehe skaliert,
 	## waagerecht mittig).
@@ -200,15 +217,16 @@ class Backdrop extends Control:
 				draw_circle(Vector2(x, y), 1.6 * s, dot)
 				x += step
 			y += step
-		if title:
-			_draw_title(s)
-		else:
-			_draw_menu(s)
+		if not title:
+			_draw_menu(self, s)
 
-	func _draw_title(s: float) -> void:
-		var bob := -3.0 - 3.0 * cos(_time * TAU / 5.0) if _time > 0.0 else 0.0
-		var cuts := [[304, 318], [324, 336], [342, 351], [357, 364], [370, 375]]
-		_sun(Vector2(225, 300 + bob), 150.0, 1.0, 300.0 + bob, cuts, bob, s)
+	## Zeichnet eine Lage des Titels (sun / front) auf ``canvas``.
+	func draw_layer(canvas: CanvasItem, part: String) -> void:
+		var s := size.y / Arcade.DESIGN.y
+		if part == "sun":
+			var cuts := [[304, 318], [324, 336], [342, 351], [357, 364], [370, 375]]
+			_sun_stripes(canvas, Vector2(225, 297), 150.0, 1.0, 297.0, cuts, s)
+			return
 		var hills := PackedVector2Array()
 		hills.append(Vector2(0, 420 * s))
 		for point in [[0, 420], [70, 330], [120, 372], [190, 300], [250, 360], [310, 312],
@@ -216,24 +234,24 @@ class Backdrop extends Control:
 			hills.append(_p(point[0], point[1]))
 		hills.append(Vector2(size.x, 340 * s))
 		hills.append(Vector2(size.x, 420 * s))
-		draw_colored_polygon(hills, Color("#1b0b3a"))
-		draw_rect(Rect2(0, 420 * s, size.x, size.y - 420 * s), Arcade.DEEP)
-		_grid(420, [[420, 0.75], [436, 0.375], [462, 0.34], [502, 0.3], [562, 0.26], [650, 0.22]],
+		canvas.draw_colored_polygon(hills, Color("#1b0b3a"))
+		canvas.draw_rect(Rect2(0, 420 * s, size.x, size.y - 420 * s), Arcade.DEEP)
+		_grid(canvas, 420, [[420, 0.75], [436, 0.375], [462, 0.34], [502, 0.3], [562, 0.26], [650, 0.22]],
 			[-500, -200, 80, 370, 650, 950], 0.3, 2.0, s)
 
-	func _draw_menu(s: float) -> void:
+	func _draw_menu(canvas: CanvasItem, s: float) -> void:
 		var top := size.y - 52.0 * s  # Horizont 52 px ueber dem unteren Rand
 		var shift := top / s - 748.0
-		_sun(Vector2(225, 760 + shift), 130.0, 0.35, 700.0 + shift,
-			[[704 + shift, 716 + shift], [722 + shift, 731 + shift], [737 + shift, 743 + shift]], 0.0, s)
-		draw_rect(Rect2(0, top, size.x, size.y - top), Arcade.DEEP)
-		_grid(748 + shift, [[748 + shift, 0.45], [760 + shift, 0.3], [780 + shift, 0.25]],
+		_sun_stripes(canvas, Vector2(225, 760 + shift), 130.0, 0.35, 700.0 + shift,
+			[[704 + shift, 716 + shift], [722 + shift, 731 + shift], [737 + shift, 743 + shift]], s)
+		canvas.draw_rect(Rect2(0, top, size.x, size.y - top), Arcade.DEEP)
+		_grid(canvas, 748 + shift, [[748 + shift, 0.45], [760 + shift, 0.3], [780 + shift, 0.25]],
 			[-200, 100, 350, 650], 0.3, 1.5, s, 800 + shift)
 
 	## Sonne als waagerechte Streifen: Verlauf gelb -> orange -> magenta,
 	## unterhalb von solid_until nur in den Schlitzen (cuts) sichtbar.
-	func _sun(center: Vector2, radius: float, alpha: float, solid_until: float,
-			cuts: Array, _bob: float, s: float) -> void:
+	func _sun_stripes(canvas: CanvasItem, center: Vector2, radius: float, alpha: float,
+			solid_until: float, cuts: Array, s: float) -> void:
 		var row := 1.0
 		var y := center.y - radius
 		while y < center.y + radius:
@@ -250,16 +268,31 @@ class Backdrop extends Control:
 					else Arcade.ORANGE.lerp(Arcade.MAGENTA, (t - 0.55) / 0.45)
 				color.a = alpha
 				var a := _p(center.x - half, mid - row * 0.5)
-				draw_rect(Rect2(a.x, a.y, half * 2.0 * s, row * s + 0.5), color)
+				canvas.draw_rect(Rect2(a.x, a.y, half * 2.0 * s, row * s + 0.5), color)
 			y += row
 
-	func _grid(horizon: float, rows: Array, ends: Array, ray_alpha: float, width: float,
-			s: float, bottom: float = 800.0) -> void:
+	func _grid(canvas: CanvasItem, horizon: float, rows: Array, ends: Array, ray_alpha: float,
+			width: float, s: float, bottom: float = 800.0) -> void:
 		for line in rows:
 			var yy: float = line[0] * s
-			draw_line(Vector2(0, yy), Vector2(size.x, yy), Color(Arcade.CYAN, line[1]), width * s)
+			canvas.draw_line(Vector2(0, yy), Vector2(size.x, yy), Color(Arcade.CYAN, line[1]), width * s)
 		for end_x in ends:
-			draw_line(_p(225, horizon), _p(end_x, bottom), Color(Arcade.CYAN, ray_alpha), width * s)
+			canvas.draw_line(_p(225, horizon), _p(end_x, bottom), Color(Arcade.CYAN, ray_alpha), width * s)
+
+
+## Eine Lage des Titel-Hintergrunds (zeichnet nur bei Groessenaenderung).
+class BackdropLayer extends Control:
+	var _backdrop: Backdrop
+	var _part := ""
+
+	func _init(backdrop: Backdrop, part: String) -> void:
+		_backdrop = backdrop
+		_part = part
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	func _draw() -> void:
+		_backdrop.draw_layer(self, _part)
 
 
 ## Feine dunkle Querlinien ueber allem (alle 3 px).

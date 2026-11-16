@@ -1112,7 +1112,7 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		var onward := UiKit.button("Weiter", true)
 		UiIcon.on_button(onward, "play", 18, UiKit.ON_PRIMARY, "right")
 		onward.pressed.connect(func():
-			get_tree().change_scene_to_file("res://scenes/run.tscn"))
+			Fader.go("res://scenes/run.tscn"))
 		buttons.add_child(onward)
 		onward.grab_focus.call_deferred()
 		return
@@ -1120,11 +1120,11 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	var back := UiKit.button("Zum Hangar", true)
 	back.pressed.connect(func():
 		GameState.battle_seed = 0
-		get_tree().change_scene_to_file("res://scenes/hangar.tscn"))
+		Fader.go("res://scenes/hangar.tscn"))
 	buttons.add_child(back)
 
 	var menu := UiKit.button("Zur Startseite")
 	menu.pressed.connect(func():
 		GameState.battle_seed = 0
-		get_tree().change_scene_to_file("res://scenes/main.tscn"))
+		Fader.go("res://scenes/main.tscn"))
 	buttons.add_child(menu)

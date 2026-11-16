@@ -60,8 +60,7 @@ func _set_chosen(entry: RosterEntry, chosen: bool) -> void:
 
 
 func _rebuild() -> void:
-	for child in get_children():
-		child.queue_free()
+	UiKit.clear(self)
 
 	if _items.is_empty():
 		add_child(UiKit.label("Keine kampftauglichen DROMEs. Bau im Hangar welche zusammen.",

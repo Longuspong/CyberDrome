@@ -18,9 +18,9 @@ func _run_with_tier(which: int, base_seed: int, round_value: int = 3, mode: Stri
 	return null
 
 
-func test_a_run_without_a_squad_starts_with_the_four_standard_dromes() -> void:
+func test_a_run_without_a_squad_starts_with_three_standard_dromes() -> void:
 	var run := RunState.start(11)
-	t.equal(run.squad.size(), 4, "vier Standard-DROMEs")
+	t.equal(run.squad.size(), 3, "drei Standard-DROMEs (Squad aus drei)")
 	t.equal(run.lives, RunState.max_lives(), "volle Leben")
 	for build in run.squad:
 		t.ok(build.is_valid(), "%s ist gültig" % build.display_name)
@@ -107,7 +107,7 @@ func test_a_new_drome_comes_in_the_drome_rounds() -> void:
 	var full := RunState.start(32)
 	full.round = run.round
 	full.record_result(BattleManager.Outcome.VICTORY, [])
-	t.equal(full.squad.size(), 4, "voller Squad bleibt voll")
+	t.equal(full.squad.size(), 3, "voller Squad bleibt voll")
 	t.equal(full.home_queue.size(), 1, "der DROME geht nach Hause")
 	t.equal(full.last_loot[0]["where"], "home", "mit Ort")
 

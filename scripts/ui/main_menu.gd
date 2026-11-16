@@ -3,8 +3,8 @@ extends Control
 ## Die Startseite -- mobile first, Hochformat (neu 9. Nov. 2026).
 ##
 ##   oben     der Name des Spiels als Neonschrift, darunter der Ort
-##   Mitte    die Buehne (HomeStage): das Tor der Arena von Neon City bei
-##            Nacht, davor DEIN Squad auf dem Podest
+##   Mitte    die Boss-Karte (Platzhalter seit 16. Nov. 2026; vorher die
+##            Arena mit dem Squad, HomeStage)
 ##   darunter eine Karte: naechstes Gebiet und dein Squad in einer Zeile
 ##   unten    die Hauptaktion "Neon City" (der Lauf), darunter der
 ##            Endlos-Modus (frei nach dem ersten Sieg in Neon City)
@@ -16,7 +16,6 @@ extends Control
 var _status: Label
 var _endless: Button
 
-var _stage: HomeStage
 
 
 func _ready() -> void:
@@ -50,7 +49,7 @@ func _ready() -> void:
 	gear_room.custom_minimum_size = Vector2(46, 0)
 	head.add_child(gear_room)
 
-	content.add_child(_stage_card())
+	content.add_child(_boss_card())
 	content.add_child(_info_card(running, region_name, region))
 
 	_status = UiKit.label("", UiKit.SMALL)
@@ -86,13 +85,17 @@ func _ready() -> void:
 	story.grab_focus.call_deferred()
 
 
-## Die Buehne im Rahmen: Arena bei Nacht mit dem Squad, oben das Etikett
-## DEIN SQUAD, unten die Namen.
-func _stage_card() -> Control:
-	var squad: Array = GameState.battle_ready_builds()
+## Die Boss-Karte (16. Nov. 2026, Wunsch des Spielers: die Arena mit dem
+## Squad kam weg). Das Bild des Spielers fuellt die Karte (links die Figur),
+## rechts auf der dunklen Flaeche Name, Fraktion und ein Satz. Inhalt noch
+## Platzhalter, bis Story und Bosse entschieden sind (VORSCHLAG_STORY.md).
+const BOSS_ART := "res://assets/story/boss_shogun_kage.jpg"
+
+
+func _boss_card() -> Control:
 	var wrap := Control.new()
 	wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	wrap.custom_minimum_size = Vector2(0, 240)
+	wrap.custom_minimum_size = Vector2(0, 230)
 	var panel := PanelContainer.new()
 	var box := UiKit.card_style(true)
 	box.set_content_margin_all(2)
@@ -100,32 +103,69 @@ func _stage_card() -> Control:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel.offset_top = 12
 	panel.offset_right = -6
+	panel.clip_contents = true
 	wrap.add_child(panel)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 0)
-	panel.add_child(column)
-	_stage = HomeStage.new()
-	_stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(_stage)
-	_stage.show_squad(squad)
-	var names := HBoxContainer.new()
-	names.alignment = BoxContainer.ALIGNMENT_CENTER
-	names.add_theme_constant_override("separation", 18)
-	var strip := PanelContainer.new()
-	var strip_box := StyleBoxFlat.new()
-	strip_box.bg_color = Color("#1d0f45")
-	strip_box.border_color = Arcade.YELLOW
-	strip_box.border_width_top = 2
-	strip_box.content_margin_top = 4
-	strip_box.content_margin_bottom = 4
-	strip.add_theme_stylebox_override("panel", strip_box)
-	strip.add_child(names)
-	column.add_child(strip)
-	for build in squad:
-		names.add_child(Arcade.label(str(build.display_name).to_upper(), 12, Arcade.TEXT, "bold", 0.16))
-	if squad.is_empty():
-		names.add_child(Arcade.label("KEIN SQUAD", 12, Arcade.MUTED, "bold", 0.16))
-	var tag := Arcade.tag("DEIN SQUAD · %d/%d" % [squad.size(), RunState.squad_max()], 12, -3.0)
+	# Das Bild fuellt die Karte (Wunsch des Spielers, 16. Nov. 2026: so
+	# besser als Bild oben und Text darunter); der Text liegt unten rechts
+	# auf der dunklen Flaeche, ein Verlauf unten haelt ihn lesbar.
+	var stage := Control.new()
+	stage.clip_contents = true
+	panel.add_child(stage)
+	var art := TextureRect.new()
+	art.texture = load(BOSS_ART)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_SCALE
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(art)
+	# Fuellt die Karte, aber links buendig: abgeschnitten wird rechts (dort
+	# ist das Bild leer und dunkel), nie die Figur links.
+	var place := func():
+		var ratio: float = art.texture.get_width() / float(art.texture.get_height()) \
+			if art.texture != null else 1.6
+		var height := maxf(stage.size.y, stage.size.x / ratio)
+		art.size = Vector2(height * ratio, height)
+		art.position = Vector2(0, (stage.size.y - height) * 0.5)
+	stage.resized.connect(place)
+	var shade := TextureRect.new()
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(Arcade.NIGHT, 0.0))
+	gradient.set_color(1, Color(Arcade.NIGHT, 0.9))
+	var fade := GradientTexture2D.new()
+	fade.gradient = gradient
+	fade.fill_from = Vector2(0.5, 0.45)
+	fade.fill_to = Vector2(0.5, 1.0)
+	shade.texture = fade
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(shade)
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 2)
+	text.alignment = BoxContainer.ALIGNMENT_END
+	text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	text.anchor_left = 0.46
+	text.offset_right = -12
+	text.offset_bottom = -12
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(text)
+	var name := Arcade.label("SHOGUN KAGE", 20, Arcade.WHITE, "display")
+	name.add_theme_color_override("font_shadow_color", Arcade.NIGHT)
+	name.add_theme_constant_override("shadow_offset_y", 3)
+	text.add_child(name)
+	# Umbrechen statt abschneiden ("Neon Ninja'" am Rand, 16. Nov. 2026).
+	var faction := Arcade.label("Anführer der Neon Ninja's", 13, Arcade.ROSE, "bold", 0.04)
+	faction.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	faction.add_theme_color_override("font_shadow_color", Arcade.NIGHT)
+	faction.add_theme_constant_override("shadow_offset_y", 2)
+	text.add_child(faction)
+	var line := Arcade.label("Wartet am Ende von Neon City. Wer ihn schlägt, öffnet den Infinity-Einsatz.",
+		13, Arcade.TEXT, "medium")
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	line.add_theme_color_override("font_shadow_color", Arcade.NIGHT)
+	line.add_theme_constant_override("shadow_offset_y", 2)
+	text.add_child(line)
+	var tag := Arcade.tag("BOSS · NEON CITY", 12, -3.0)
 	tag.position = Vector2(12, 0)
 	wrap.add_child(tag)
 	return wrap
@@ -319,7 +359,7 @@ class Pips extends Control:
 
 func _open_run(mode: String) -> void:
 	GameState.next_run_mode = mode
-	get_tree().change_scene_to_file("res://scenes/run.tscn")
+	Fader.go("res://scenes/run.tscn")
 
 
 func _refresh_status() -> void:
