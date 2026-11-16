@@ -68,8 +68,9 @@ Quelle: `v4.py` (`arm_extended`, `arm_raised`, `blaster`, `blade`,
       Schulter liegend) -- Vorschlag: der Generator schreibt für jede
       Fernwaffe einen zweiten Satz `*_lafette_*.svg`, `DromeSprites` wählt
       nach `body_kind`
-- [ ] Größe am Molok -- Vorschlag: ein Armmaß je Chassis (`arm_scale`,
-      Molok 1,6) und je Waffe ein Satz für „normal“ und „schwer gebaut“
+- [ ] Größe am Molok -- entschieden (16. Nov.): dieselbe Waffe, nur größer
+      gebaut über ein Armmaß je Chassis (`arm_scale`, Molok 1,6); kein
+      eigener schwerer Satz
 - [ ] Silhouetten-Prüfung (`check_silhouettes`) für die neuen Formen grün
 
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
@@ -107,18 +108,19 @@ bleibt.
 
 ### 8. Auf Claude Design noch offen (vor den passenden Schritten)
 - [x] Eule: Linsen größer (Board 16, `v6.py` `LENS_BIG`: Ø 6,8 statt 4,6,
-      Lichtpunkt, Gesichtsplatte breiter) -- wartet auf Freigabe
+      Lichtpunkt, Gesichtsplatte breiter) -- freigegeben 16. Nov.
 - [x] Restliche Waffen in Pose (Boards 14/15, `v6.py`): Neon-Blaster
       gestreckt, Bumerang wurfbereit, Ramme stößt vor, E-Schlüssel senkrecht,
       Deflektor an Vireo/Nimbus, Molok mit Armmaß 1,6; Puls- und Neon-Blaster
-      auf der Lafette (Mörser, Lanze wie im Spiel) -- wartet auf Freigabe
+      auf der Lafette (Mörser, Lanze wie im Spiel) -- freigegeben 16. Nov.
 - [ ] Die übrigen 10 Fähigkeiten als Animation
 
 ## Offene Fragen an den Spieler
 
 1. Runenstab und E-Schraubenschlüssel am Strix sehen albern aus -- später
    eigene Lafetten-Form? (Spieler: „kümmern wir uns später drum“)
-2. Molok-Waffen: zweiter, größerer Satz je Waffe (Vorschlag) oder dieselbe
-   Waffe kleiner am großen Arm?
+2. ~~Molok-Waffen~~ -- entschieden 16. Nov.: dieselbe Waffe mit Armmaß 1,6
+   (Board 14), kein zweiter Satz.
 3. Beine für die Laufanimation trennen (mehr Teile) oder nur Wippen?
-4. Bumerang zählt für Module jetzt als Nahkampf -- so lassen?
+4. ~~Bumerang als Nahkampf~~ -- entschieden 16. Nov.: bleibt Nahkampf, Pose
+   angewinkelt und wurfbereit (Board 14).
