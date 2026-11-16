@@ -1412,7 +1412,7 @@ JUGG_BODY = [
     # Umbau 16. Nov. 2026 nach den DROME-Designregeln (Entwurf v4.py,
     # new_dromes.py M_BODY): Schultern HOEHER, der Kopf sitzt tief dazwischen,
     # ein Frontpanzer vor der Brust und das Lockfeuer auf dem Ruecken (Passive
-    # Praesenz). Arme gibt es am Rumpf keine mehr: beide Unterarme kommen mit
+    # Praesenz, sitzt am Kopf). Arme gibt es am Rumpf keine mehr: beide Unterarme kommen mit
     # den Waffen an die Schulteranker.
     # -- Huefte und Torso als Keil ---------------------------------------
     B((-7, 7), (-11, 11), (31, 38), "metal"),
@@ -1435,10 +1435,6 @@ JUGG_BODY = [
     L((-9.5, -8), [(2.4, 58), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
     L((-9.5, 8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
     L((-9.5, -8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
-    # -- Lockfeuer zwischen den Auspuffen (Passive Praesenz) ---------------
-    L((-9.5, 0), [(3.0, 60), (3.0, 64)], "metal", segments=12),
-    L((-9.5, 0), [(2.6, 64), (2.6, 68), (1.6, 69.6), (0, 70.2)], "glow", segments=14),
-    L((-9.5, 0), [(3.2, 66.2), (3.2, 66.9)], "accent", caps=False, segments=14),
 ]
 
 # Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
@@ -1447,6 +1443,15 @@ JUGG_HEAD = [
     B((-5.5, 7.5), (-7.5, 7.5), (68, 70), "light"),
     B((7, 7.6), (-5, 5), (63.5, 65.6), "visor"),
     B((7, 8.2), (-7, 7), (60.5, 62.5), "metal"),         # Kinnschutz
+    # Lockfeuer direkt hinter dem Kopf (Passive Praesenz). Es gehoert zum
+    # Kopf und nicht zum Rumpf: Kopf und Rumpf sind getrennte Sprites, der
+    # Kopf liegt immer oben -- von hinten verdeckte er sonst das Feuer, das
+    # dann vor ihm stehen muesste. Im selben Teil sortiert die Tiefe richtig.
+    # Es steht auf dem Ruecken des Decks (ab z 62.5), damit es von vorn nicht
+    # ueber den Rumpf gemalt wird.
+    L((-9.5, 0), [(3.0, 62.5), (3.0, 65)], "metal", segments=12),
+    L((-9.5, 0), [(2.6, 65), (2.6, 69), (1.6, 70.6), (0, 71.2)], "glow", segments=14),
+    L((-9.5, 0), [(3.2, 67.2), (3.2, 67.9)], "accent", caps=False, segments=14),
 ]
 
 # Standbeine, nicht "Sprintbeine in gross".
