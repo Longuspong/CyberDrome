@@ -260,23 +260,26 @@ def make_palette(hull, mech, neon, visor, ember, rings, line) -> dict:
     }
 
 
+# Rumpf und Mechanik seit 16. Nov. 2026 etwa 40 % heller (docs/DROME_DESIGNREGELN.md,
+# Abschnitt 5): vorher #1c..#3d auf Nachtschwarz -- in Spielgroesse blieben nur
+# die Leuchtpunkte. Signalfarben (neon, visor, ember, rings) bleiben.
 DEFAULT_PALETTE = make_palette(
-    hull="#28304a", mech="#5b6785", neon="#2de2e6", visor="#7cf9ff",
+    hull="#3a4670", mech="#7d8bb0", neon="#2de2e6", visor="#7cf9ff",
     ember="#ff2d95", rings="#2de2e6", line="#080b13",
 )
 
 JUGG_PALETTE = make_palette(
-    hull="#3d2b35", mech="#7d6b78", neon="#ff8a3d", visor="#ffb057",
+    hull="#5a4050", mech="#9a8796", neon="#ff8a3d", visor="#ffb057",
     ember="#ffd447", rings="#ff8a3d", line="#100a0e",
 )
 
 MAGE_PALETTE = make_palette(
-    hull="#2f2450", mech="#6f5f97", neon="#b06bff", visor="#d6b8ff",
+    hull="#463673", mech="#8f7fbd", neon="#b06bff", visor="#d6b8ff",
     ember="#7cf9ff", rings="#ff5ec7", line="#0d0818",
 )
 
 STRIX_PALETTE = make_palette(
-    hull="#1c3330", mech="#557d71", neon="#6dff9f", visor="#c2ffd7",
+    hull="#2a4e48", mech="#74a394", neon="#6dff9f", visor="#c2ffd7",
     ember="#6dff9f", rings="#2fbf8c", line="#060f0d",
 )
 
@@ -330,7 +333,25 @@ DEFAULT_MOUNT_CLASS = "light"
 DEFAULT_CATEGORY = "weapon"
 
 
-def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
+# Nahkampf und Fernkampf (16. Nov. 2026, docs/DROME_DESIGNREGELN.md): die
+# Grundattacke entscheidet -- bis 2 Felder Nahkampf, ab 3 Felder Fernkampf.
+# Der Generator schreibt daraus das Tag "melee" oder "ranged" an jede
+# Ausruestung; ein Halter kann mit ``"reach"`` nur eine der beiden annehmen
+# (die Lafette des Strix: nur Fernkampf).
+RANGED_FROM = 3
+REACH_KINDS = ("melee", "ranged")
+BODY_KINDS = ("humanoid", "nonhumanoid")
+
+
+def reach_kind(part_id: str) -> str:
+    """'ranged' ab RANGED_FROM Feldern Reichweite der Grundattacke, sonst 'melee'."""
+    actions = part_stats(part_id).get("actions", [])
+    reach = int(actions[0].get("range_tiles", 1)) if actions else 1
+    return "ranged" if reach >= RANGED_FROM else "melee"
+
+
+def fits_rule(mount_class: str, category: str, rule: dict | None,
+              reach: str | None = None) -> bool:
     """Darf ein Ausruestungsteil in einen Slot mit dieser Regel?"""
     if not rule:
         return True
@@ -338,6 +359,8 @@ def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
         return False
     limit = rule.get("max_class", MOUNT_CLASSES[-1])
     if MOUNT_CLASSES.index(mount_class) > MOUNT_CLASSES.index(limit):
+        return False
+    if rule.get("reach") and reach and reach != rule["reach"]:
         return False
     allowed = rule.get("categories")
     return not allowed or category in allowed
@@ -1779,160 +1802,126 @@ EQ_HOLO_BOOST = [
 
 
 # ===========================================================================
-# LR-Strix // Marksman  (parts/bot4) -- EIN Ausruestungsanker
+# LR-Strix // Marksman  (parts/bot4) -- die EULE (16. Nov. 2026)
 #
-# Der Gegenentwurf zum Juggernaut auf der Slot-Seite. Molok kauft sich seine
-# drei Slots mit Masse und Langsamkeit; Strix macht das Gegenteil und hat
-# genau EINEN -- zentral auf der Mittelachse, dafuer voll belastbar. Das ist
-# eine Balancing-Achse, die ohne eine einzige Zahl auskommt: eine Waffe, dafuer
-# die schwerste im Spiel.
-#
-# Damit man das ansieht, traegt der Rahmen kein Armpaar, sondern ein JOCH vor
-# der Brust, und dahinter einen Gegengewichts-Ausleger, der nach hinten-oben
-# ueber den Kopf hinauslaeuft. Beides liegt auf der Silhouette -- man erkennt
-# einen Strix an der schraegen Rueckenlinie, bevor man die Waffe sieht.
+# Seit den DROME-Designregeln (docs/DROME_DESIGNREGELN.md) ist der Strix
+# nicht-humanoid: kein Waffenarm, sondern eine LAFETTE auf der linken
+# Schulter, die nur Fernkampf nimmt. Die Silhouette ist bewusst das
+# Gegenteil des Vireo -- tief und breit statt aufrecht und schmal:
+# geduckter Rumpf, Fluegel-Mantel bis fast zum Boden, Kapuze mit zwei
+# grossen Linsen und Federohren, Beine mit dem Knie nach hinten.
+# Entwurf: docs/design/drome_entwurf/new_dromes.py (Strix A "Eule").
 #
 # Hoehenprofil in Entwurfseinheiten:
-#   Beine 0..34   Torso 34..60   Joch 48..57   Ausleger 46..70   Kopf 63..78
+#   Beine 0..32   Huefte 30..36   Rumpf 36..54   Mantel 20..59
+#   Kapuze 49..67   Lafette 58..61 (Waffe darauf ab 61)
 # ===========================================================================
 
+
+def _mirror_l(shapes):
+    """Spiegelt Formen an l = 0 (fuer Beinpaare und Fluegel)."""
+    out = []
+    for s in shapes:
+        if s[0] == "box":
+            _, f, l, z, mat = s
+            out.append(("box", f, (-l[1], -l[0]), z, mat))
+        elif s[0] == "disc":
+            _, f, lc, zc, r, mat, seg = s
+            out.append(("disc", f, -lc, zc, r, mat, seg))
+        else:
+            _, c, prof, mat, axis, seg, caps = s
+            if axis == "z":
+                out.append(("lathe", (c[0], -c[1]), prof, mat, axis, seg, caps))
+            elif axis == "f":
+                out.append(("lathe", (-c[0], c[1]), prof, mat, axis, seg, caps))
+            else:
+                out.append(("lathe", c, tuple((r, -p) for r, p in reversed(prof)),
+                            mat, axis, seg, caps))
+    return out
+
+
 STRIX_BODY = [
-    # -- Huefte -----------------------------------------------------------
-    B((-5, 5), (-7, 7), (34, 40), "metal"),
-    # -- Torso: schmal und hoch. Breite gehoert dem Juggernaut. ------------
-    B((-5.5, 6), (-7.5, 7.5), (40, 58), "plate"),
-    B((-6, 6.5), (-8, 8), (58, 60.5), "light"),
-    B((6, 6.6), (-5.5, 5.5), (43, 57), "dark"),
-    # -- Gegengewichts-Ausleger -------------------------------------------
-    # Laeuft nach hinten-oben ueber den Kopf hinaus und ist das Merkmal, an
-    # dem dieser Rahmen auch als reine Schattenform erkennbar bleibt.
-    B((-9, -5), (-4, 4), (46, 62), "plate"),
-    B((-14, -8.5), (-3.5, 3.5), (59, 68), "plate"),
-    B((-14.5, -8), (-4, 4), (68, 70), "light"),
-    B((-14.6, -14), (-2.5, 2.5), (61, 66), "accent"),
-    # Kuehlrippen ueber und unter dem Kernschacht: sie rahmen ihn ein, statt
-    # die Flaeche zu belegen, auf der er sitzt.
-    B((-9.6, -9), (-3, 3), (46.6, 48.1), "light"),
-    B((-9.6, -9), (-3, 3), (56.4, 57.9), "light"),
-    # -- Waffenjoch vor der Brust: ein Lager statt zweier Arme -------------
-    B((5.5, 10), (-9.5, -6.5), (47, 54), "metal"),
-    B((5.5, 10), (6.5, 9.5), (47, 54), "metal"),
-    B((5, 10.5), (-10, 10), (54, 56.5), "metal"),
-    B((10.5, 11.1), (-8, -6.5), (48, 53), "accent"),
-    B((10.5, 11.1), (6.5, 8), (48, 53), "accent"),
-    # -- Hals --------------------------------------------------------------
-    B((-3, 3), (-3.5, 3.5), (60.5, 63), "metal"),
+    # -- Huefte und geduckter Rumpf, nach oben nach vorn versetzt -----------
+    B((-6, 4), (-6, 6), (30, 36), "metal"),
+    B((-7, 5), (-8, 8), (36, 44), "plate"),
+    B((-5, 8), (-9, 9), (44, 52), "plate"),
+    B((-4, 8.5), (-8, 8), (52, 54), "light"),
+    # -- Fluegel-Mantel: drei Stufen, nach unten breiter -------------------
+    B((-12, 5), (9, 13), (44, 56), "plate"),
+    B((-12.5, 5.5), (8.5, 13.5), (56, 59), "light"),
+    B((-13, 3), (10, 15), (32, 44), "plate"),
+    B((-14, 0), (11, 17), (20, 32), "plate"),
+    B((-14, 0), (17, 17.5), (24, 25.3), "accent"),
+    B((-13, 3), (15, 15.5), (36, 37.3), "accent"),
+    B((-12, 5), (13, 13.5), (48, 49.3), "accent"),
+    B((-12, 5), (-13, -9), (44, 56), "plate"),
+    B((-12.5, 5.5), (-13.5, -8.5), (56, 59), "light"),
+    B((-13, 3), (-15, -10), (32, 44), "plate"),
+    B((-14, 0), (-17, -11), (20, 32), "plate"),
+    # -- Lafette auf der linken Schulter (equip_center) ---------------------
+    B((-6, 4), (8.5, 12.5), (58, 61), "metal"),
+    B((3.9, 4.4), (9.5, 11.5), (59, 60), "accent"),
 ]
 
-# Aufklaerer-Kopf mit EINEM langen Okular statt eines breiten Visierbands --
-# ein Fernrohr liest sich anders als ein Sichtschlitz, und genau das ist der
-# Unterschied zwischen "sieht viel" und "sieht weit".
 STRIX_HEAD = [
-    B((-5, 5), (-4.5, 4.5), (63, 71), "plate"),
-    B((-5.5, 5.5), (-5, 5), (71, 73), "light"),
-    B((5, 9.5), (-2.2, 2.2), (65.8, 70.2), "metal"),
-    D(9.8, 0, 68, 2.0, "visor"),
-    # Rueckenfinne mit Antennenband
-    B((-6.5, -5), (-1.2, 1.2), (66, 78), "metal"),
-    B((-6.8, -5.2), (-1.7, 1.7), (72, 75.5), "accent"),
-    # Seitliche Windmesser
-    B((-3, 3), (4.5, 6), (67.5, 69), "metal"),
-    B((-3, 3), (-6, -4.5), (67.5, 69), "metal"),
+    # Kapuze, nach vorn ueber die Brust gezogen
+    B((3, 13), (-7.5, 7.5), (49, 60), "plate"),
+    B((2.5, 13.5), (-8, 8), (60, 62), "light"),
+    # Federohren
+    B((2, 6), (3, 6), (62, 67), "plate"),
+    B((2, 6), (-6, -3), (62, 67), "plate"),
+    B((5, 6.3), (3.5, 5.5), (63, 66), "accent"),
+    B((5, 6.3), (-5.5, -3.5), (63, 66), "accent"),
+    # Gesicht: dunkle Platte, zwei grosse Linsen, Schnabel
+    B((13, 13.6), (-5.2, 5.2), (51, 59), "dark"),
+    D(13.7, 2.6, 55.5, 2.3, "dark"),
+    D(13.8, 2.6, 55.5, 1.5, "visor"),
+    D(13.7, -2.6, 55.5, 2.3, "dark"),
+    D(13.8, -2.6, 55.5, 1.5, "visor"),
+    B((13.6, 14.6), (-0.8, 0.8), (51.5, 54), "metal"),
 ]
 
-# Digitigrade Beine: der Knick zeigt nach HINTEN. Vireo rennt auf geraden
-# Stelzen, Molok steht auf Ferse und Sporn -- Strix federt. Drei Beinformen,
-# drei Bewegungsprofile, in der Silhouette unterscheidbar.
-STRIX_FEET = [
-    B((-4, 4), (3.5, 8), (23, 34), "plate"),
-    B((-4, 4), (-8, -3.5), (23, 34), "plate"),
-    # Sprunggelenk
-    L((-1.5, 5.75), [(2.6, 20.5), (2.6, 23.5)], "metal", segments=12),
-    L((-1.5, -5.75), [(2.6, 20.5), (2.6, 23.5)], "metal", segments=12),
-    # Unterschenkel, nach hinten geknickt
-    B((-9, -1), (4.2, 7.3), (13, 21), "plate"),
-    B((-9, -1), (-7.3, -4.2), (13, 21), "plate"),
-    B((-9.3, -8.7), (4.6, 6.9), (15, 19), "accent"),
-    B((-9.3, -8.7), (-6.9, -4.6), (15, 19), "accent"),
-    # Mittelfuss laeuft von hinten-oben nach vorn-unten
-    B((-9, 2), (4.4, 7.1), (7, 13.5), "metal"),
-    B((-9, 2), (-7.1, -4.4), (7, 13.5), "metal"),
-    # Schmale Standklaue: kleine Aufstandsflaeche, dafuer eine lange Zehe
-    B((-3, 9), (4, 7.5), (0, 5), "plate"),
-    B((-3, 9), (-7.5, -4), (0, 5), "plate"),
-    B((9, 13), (4.6, 6.9), (0, 2), "dark"),
-    B((9, 13), (-6.9, -4.6), (0, 2), "dark"),
+_STRIX_LEG = [
+    B((-6, 0), (3.5, 7.5), (22, 32), "plate"),                       # Oberschenkel
+    L((-3, 5.5), [(2.6, 18), (2.6, 24)], "metal", segments=12),       # Knie
+    B((-9, -4), (4, 7), (10, 22), "plate"),                          # nach hinten
+    B((-8.5, -4.5), (4.2, 6.8), (5, 10), "metal"),                   # Ferse
+    B((-6, 6), (3.5, 7.5), (0, 5), "plate"),                         # Fuss
+    B((6, 9.5), (3.6, 5), (0, 2), "dark"),                           # Krallen
+    B((6, 9.5), (6, 7.4), (0, 2), "dark"),
+    B((-10.5, -7), (4.8, 6.2), (0, 2), "dark"),
+    B((-9.3, -8.8), (4.4, 6.6), (14, 18), "accent"),
 ]
+STRIX_FEET = _STRIX_LEG + _mirror_l(_STRIX_LEG)
 
-# Kernschacht statt Kernscheibe: ein senkrechter Leuchtspalt, eingelassen in
-# den Gegengewichts-Ausleger. Ein Kern wird ueber die Glut gelesen, nicht ueber
-# die Form -- aber wenn schon drei runde Kerne existieren, ist der vierte
-# besser eckig.
-#
-# Warum am RUECKEN: die Brust dieses Rahmens gehoert dem Waffenjoch, und die
-# Schienen-Lanze liegt genau davor. Ein Kern dort waere im bestueckten Bot aus
-# Sued und Ost verdeckt -- also aus den beiden Richtungen, in denen man ihn
-# sehen wuerde. Der Ausleger ist die einzige grosse freie Flaeche des Rahmens.
-#
-# Die Tiefen sind der eigentliche Entwurf: das Gehaeuse liegt hinter der
-# Aussenflaeche des Auslegers (-9.0), nur der Leuchtspalt kommt eine
-# Fingerbreite heraus. Zwischen den Kuehlrippen liest sich das als Schacht.
+# Zielrechner am Ruecken -- buendig auf der Rueckenplatte (f = -7).
 STRIX_CORE = [
-    B((-9.0, -8.4), (-1.7, 1.7), (48.0, 55.2), "dark"),
-    B((-9.25, -9.0), (-1.1, 1.1), (48.6, 54.6), "glow"),
-    B((-9.2, -9.0), (-3.0, -1.9), (48.6, 54.6), "accent"),
-    B((-9.2, -9.0), (1.9, 3.0), (48.6, 54.6), "accent"),
+    B((-7.6, -7.0), (-2, 2), (38, 43), "dark"),
+    B((-7.8, -7.6), (-1.2, 1.2), (38.6, 42.4), "glow"),
+    B((-7.75, -7.6), (-2.0, -1.4), (38.6, 42.4), "accent"),
+    B((-7.75, -7.6), (1.4, 2.0), (38.6, 42.4), "accent"),
 ]
 
-# Schienen-Lanze -- die schwerste Waffe im Bestand und der Gegenpol zur
-# Belagerungskanone: dort gedrungen und breit, hier ueberlang und duenn. Zwei
-# parallele Schienen mit Energiespalt statt eines Rohrs, ein weit vorn
-# sitzender Zielblock, eine Stabilisatorgabel. Aus der Silhouette faellt
-# "grosse Reichweite, ein Schuss" ab, ohne dass ein Tooltip es sagen muss.
-# Moerser (EQP-015): das Rohr steht STEIL nach oben -- die Silhouette sagt
-# "Bogenschuss", im Gegensatz zur waagerechten Lanze. Breiter Sockel am Arm,
-# Ladeschacht hinten, Muendung mit Leuchtring.
+# Waffen der Lafette: um ihren eigenen Anker (0, 0, 61) gebaut, liegen auf
+# der Schulter statt in einer Hand.
 EQ_MORTAR = [
-    # Halterung am Anker, dann ein Ausleger zur Seite: der Halter des Strix
-    # sitzt mittig, ein senkrechtes Rohr dort verschwaende im Torso.
-    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Halterung am Anker
-    B((-2.5, 2.5), (4, 11), (48, 52), "metal"),          # Ausleger zur Seite
-    B((-5, 5), (9, 17), (40, 49), "plate"),              # Sockel auf der Schulter
-    B((-5.6, -5), (10.5, 15.5), (42, 47), "dark"),       # Ladeschacht hinten
-    L((1.5, 13), [(3.8, 49), (4.0, 62), (3.6, 67)], "metal", segments=14),   # Rohr
-    L((1.5, 13), [(4.6, 64.0), (4.6, 65.4)], "accent", caps=False, segments=14),
-    L((1.5, 13), [(2.6, 67.0), (2.6, 67.6)], "glow", segments=14),          # Muendung
-    B((5, 5.6), (11, 15), (43, 45), "accent"),
+    B((-5, 3), (-2.5, 2.5), (61, 64), "metal"),                      # Sockel
+    L((-1, 0), [(3.6, 64), (3.9, 78), (3.4, 82)], "metal", segments=14),   # Rohr
+    L((-1, 0), [(4.4, 78.5), (4.4, 80)], "accent", caps=False, segments=14),
+    L((-1, 0), [(2.4, 82), (2.4, 82.6)], "glow", segments=12),       # Muendung
+    B((-6, -5), (-1.5, 1.5), (62, 66), "dark"),                      # Ladeschacht
+    B((3, 3.5), (-1.5, 1.5), (62, 63.5), "accent"),
 ]
 
 EQ_RAIL_LANCE = [
-    # Wiegenlager -- sitzt im Joch des Chassis, nicht an einem Arm
-    B((-4, 3), (-5, 5), (47.5, 54.5), "metal"),
-    B((-6, -1), (-5.5, 5.5), (45, 56), "plate"),
-    # Kondensatorbank, liegend
-    L((-3, 50.5), [(4.4, -6.2), (4.8, -5.2), (4.8, 5.2), (4.4, 6.2)],
-      "dark", axis="l", segments=12),
-    L((-3, 50.5), [(5.1, -2.6), (5.1, -1.6)], "accent", axis="l",
-      caps=False, segments=12),
-    L((-3, 50.5), [(5.1, 1.6), (5.1, 2.6)], "accent", axis="l",
-      caps=False, segments=12),
-    # Zwei Schienen mit Energiespalt: eine Linie, kein Rohr
-    B((3, 26), (-2.7, -1.2), (49.4, 52.4), "metal"),
-    B((3, 26), (1.2, 2.7), (49.4, 52.4), "metal"),
-    B((5, 25), (-1.1, 1.1), (50.3, 51.5), "accent"),
-    B((26, 29), (-2.9, 2.9), (49.1, 52.7), "dark"),
-    D(29.3, 0, 50.9, 1.7, "glow"),
-    # Zielblock weit vorn obenauf
-    B((7, 18), (-2.3, 2.3), (52.4, 55.4), "dark"),
-    B((7.5, 17.5), (-2.7, 2.7), (55.4, 56.5), "light"),
-    D(18.3, 0, 53.9, 1.5, "visor"),
-    # Stabilisatorgabel nach vorn-unten
-    B((11, 13), (-6.8, -2.8), (41, 49.4), "metal"),
-    B((11, 13), (2.8, 6.8), (41, 49.4), "metal"),
-    B((9.5, 15), (-7.8, -5.8), (39.5, 41.5), "dark"),
-    B((9.5, 15), (5.8, 7.8), (39.5, 41.5), "dark"),
+    B((-6, 4), (-2, 2), (61, 63.5), "plate"),                        # Wiege
+    B((-16, 26), (-1, 1), (61.5, 64.5), "metal"),                    # Schiene
+    B((-12, 24), (-0.8, 0.8), (64.5, 65.3), "accent"),               # Energiespalt
+    L((0, 63), [(2.4, 8), (2.4, 10)], "dark", axis="f", segments=12),     # Spulen
+    L((0, 63), [(2.4, 15), (2.4, 17)], "dark", axis="f", segments=12),
+    B((26, 30), (-1.5, 1.5), (60.8, 65.2), "dark"),                  # Muendung
+    D(30.2, 0, 63, 1.4, "glow"),
 ]
-
 
 # ===========================================================================
 # Teile-Spezifikation
@@ -2170,39 +2159,41 @@ SETS = [
         "parts": [
             {
                 "id": "strix_body", "code": "CHS-004", "type": "body",
-                "name": "Strix Chassis", "tags": ["marksman", "light", "sniper"],
+                "name": "Strix Chassis", "tags": ["marksman", "owl", "sniper"],
                 "shapes": STRIX_BODY,
                 "anchors": {
                     "mount": (0, 0, MOUNT_Z),
-                    "head": (0, 0, 63),
-                    "feet": (0, 0, 34),
+                    "head": (8, 0, 49),
+                    "feet": (0, 0, 30),
                     # Am Ruecken statt an der Brust -- siehe STRIX_CORE.
-                    "core": (-9.0, 0, 51.6),
-                    # Genau ein Anker -- und er sitzt auf der Mittelachse im
-                    # Joch, nicht seitlich am Arm.
-                    "equip_center": (6, 0, 51),
+                    "core": (-7.3, 0, 40.5),
+                    # Die Lafette: auf der linken Schulter, nicht an einem Arm.
+                    "equip_center": (-1, 10.5, 61),
                 },
-                # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin.
+                # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin --
+                # aber als Lafette nur Fernkampf (16. Nov. 2026).
                 "slot_rules": {"equip_center": {"max_class": "heavy",
-                                                "categories": ["weapon", "support"]}},
+                                                "categories": ["weapon", "support"],
+                                                "reach": "ranged"}},
+                "body_kind": "nonhumanoid",
             },
             {
                 "id": "strix_head", "code": "HED-004", "type": "head",
-                "name": "Strix Okularkopf", "tags": ["marksman", "sensor", "optics"],
+                "name": "Strix Eulenkapuze", "tags": ["marksman", "sensor", "optics"],
                 "shapes": STRIX_HEAD,
-                "anchors": {"mount": (0, 0, 63), "sensor": (9.8, 0, 68)},
+                "anchors": {"mount": (8, 0, 49), "sensor": (13.8, 0, 55.5)},
             },
             {
                 "id": "strix_feet", "code": "LEG-004", "type": "feet",
                 "name": "Strix Federbeine", "tags": ["marksman", "digitigrad"],
                 "shapes": STRIX_FEET,
-                "anchors": {"mount": (0, 0, 34), "ground": (2, 0, 0)},
+                "anchors": {"mount": (0, 0, 30), "ground": (0, 0, 0)},
             },
             {
                 "id": "strix_core", "code": "COR-004", "type": "core",
                 "name": "Strix Zielrechner", "tags": ["core", "optics"],
                 "shapes": STRIX_CORE,
-                "anchors": {"mount": (-9.0, 0, 51.6)},
+                "anchors": {"mount": (-7.3, 0, 40.5)},
             },
             {
                 "id": "eq_rail_lance", "code": "EQP-007", "type": "equipment",
@@ -2211,14 +2202,14 @@ SETS = [
                 # Schwer wie die Belagerungskanone -- an einen Sprinterarm
                 # kommt sie damit ebenso wenig.
                 "mount_class": "heavy", "category": "weapon",
-                "anchors": {"mount": (0, 0, 51), "muzzle": (29.3, 0, 50.9)},
+                "anchors": {"mount": (0, 0, 61), "muzzle": (30.2, 0, 63)},
             },
             {
                 "id": "eq_mortar", "code": "EQP-015", "type": "equipment",
                 "name": "Moerser", "tags": ["weapon", "heavy", "artillery"],
                 "shapes": EQ_MORTAR,
                 "mount_class": "heavy", "category": "weapon",
-                "anchors": {"mount": (0, 0, 51), "muzzle": (1.5, 13, 67.6)},
+                "anchors": {"mount": (0, 0, 61), "muzzle": (-1, 0, 82.6)},
             },
         ],
     },
@@ -2329,7 +2320,12 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
                                       part["type"]),
         "tags": part.get("tags", []),
     }
+    if part["type"].startswith("equipment"):
+        # Nah oder fern ergibt sich aus der Reichweite, nicht aus der Hand.
+        meta["tags"] = [t for t in meta["tags"] if t not in REACH_KINDS] \
+            + [reach_kind(pid)]
     if part["type"] == "body":
+        meta["body_kind"] = part.get("body_kind", "humanoid")
         meta["slot_z"] = slot_draw_order(part, direction)
         if "slot_rules" in part:
             meta["slot_rules"] = part["slot_rules"]
@@ -2414,6 +2410,11 @@ def check_slot_rules() -> None:
                     if category not in EQUIP_CATEGORIES:
                         raise SystemExit(f"{where}/{slot}: unbekannte "
                                          f"Bauart {category!r}")
+                if rule.get("reach") and rule["reach"] not in REACH_KINDS:
+                    raise SystemExit(f"{where}/{slot}: unbekannte "
+                                     f"Reichweite {rule['reach']!r}")
+            if part.get("body_kind", "humanoid") not in BODY_KINDS:
+                raise SystemExit(f"{where}: unbekannte Koerperart")
         elif part["type"].startswith("equipment"):
             if part.get("mount_class", DEFAULT_MOUNT_CLASS) not in MOUNT_CLASSES:
                 raise SystemExit(f"{where}: unbekannte Montageklasse")
@@ -2594,7 +2595,8 @@ def check_stats() -> None:
                 if p in chosen:
                     continue
                 if fits_rule(p.get("mount_class", DEFAULT_MOUNT_CLASS),
-                             p.get("category", DEFAULT_CATEGORY), rules.get(slot)):
+                             p.get("category", DEFAULT_CATEGORY), rules.get(slot),
+                             reach_kind(p["id"])):
                     chosen.append(p)
                     break
 
@@ -2640,7 +2642,8 @@ def print_slot_matrix() -> None:
             allowed = [
                 eq_part["code"] for _eq_spec, eq_part in equipment
                 if fits_rule(eq_part.get("mount_class", DEFAULT_MOUNT_CLASS),
-                             eq_part.get("category", DEFAULT_CATEGORY), rule)
+                             eq_part.get("category", DEFAULT_CATEGORY), rule,
+                             reach_kind(eq_part["id"]))
                 and slot in eq_part.get("slots", [slot])
             ]
             print(f"  {spec['id']}/{slot:<14} bis {limit:<7}"

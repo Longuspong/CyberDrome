@@ -11,17 +11,17 @@
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
   -->
 <g stroke="#060f0d" stroke-width="0.9" stroke-linejoin="round">
-  <path d="M52.35 53.79 L53.4 54.53 L53.4 48.81 L52.35 48.06 Z" fill="#2fbf8c" stroke="none"/>
-  <path d="M53.4 54.53 L53.59 54.4 L53.59 48.67 L53.4 48.81 Z" fill="#2fbf8c" stroke="none"/>
-  <path d="M53.79 55.11 L57.03 57.4 L57.03 50.53 L53.79 48.23 Z" fill="#101d1b"/>
-  <path d="M54.12 55.11 L56.22 56.59 L56.22 50.87 L54.12 49.38 Z" fill="#6dff9f" stroke="none"/>
-  <path d="M53.4 48.81 L53.59 48.67 L52.54 47.93 L52.35 48.06 Z" fill="#2fbf8c" stroke="none"/>
-  <path d="M56.22 56.59 L56.46 56.42 L56.46 50.7 L56.22 50.87 Z" fill="#6dff9f" stroke="none"/>
-  <path d="M57.03 57.4 L57.6 57.0 L57.6 50.12 L57.03 50.53 Z" fill="#101d1b"/>
-  <path d="M57.03 57.1 L58.08 57.84 L58.08 52.11 L57.03 51.37 Z" fill="#2fbf8c" stroke="none"/>
-  <path d="M58.08 57.84 L58.27 57.71 L58.27 51.98 L58.08 52.11 Z" fill="#2fbf8c" stroke="none"/>
-  <path d="M56.22 50.87 L56.46 50.7 L54.36 49.21 L54.12 49.38 Z" fill="#6dff9f" stroke="none"/>
-  <path d="M57.03 50.53 L57.6 50.12 L54.36 47.83 L53.79 48.23 Z" fill="#1c3330"/>
-  <path d="M58.08 52.11 L58.27 51.98 L57.22 51.24 L57.03 51.37 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M54.69 63.03 L55.27 63.44 L55.27 59.81 L54.69 59.41 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M55.27 63.44 L55.41 63.34 L55.41 59.71 L55.27 59.81 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M54.84 63.51 L58.65 66.21 L58.65 61.43 L54.84 58.73 Z" fill="#182c28"/>
+  <path d="M55.41 63.61 L57.7 65.23 L57.7 61.6 L55.41 59.98 Z" fill="#6dff9f" stroke="none"/>
+  <path d="M55.27 59.81 L55.41 59.71 L54.84 59.31 L54.69 59.41 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M57.7 65.23 L57.89 65.09 L57.89 61.47 L57.7 61.6 Z" fill="#6dff9f" stroke="none"/>
+  <path d="M58.65 66.21 L59.23 65.8 L59.23 61.03 L58.65 61.43 Z" fill="#182c28"/>
+  <path d="M57.94 65.33 L58.51 65.73 L58.51 62.11 L57.94 61.7 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M57.7 61.6 L57.89 61.47 L55.6 59.85 L55.41 59.98 Z" fill="#6dff9f" stroke="none"/>
+  <path d="M58.51 65.73 L58.65 65.63 L58.65 62.01 L58.51 62.11 Z" fill="#2fbf8c" stroke="none"/>
+  <path d="M58.65 61.43 L59.23 61.03 L55.41 58.33 L54.84 58.73 Z" fill="#2a4e48"/>
+  <path d="M58.51 62.11 L58.65 62.01 L58.08 61.6 L57.94 61.7 Z" fill="#2fbf8c" stroke="none"/>
 </g>
 </svg>

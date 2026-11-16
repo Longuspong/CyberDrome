@@ -93,6 +93,27 @@ def glow_svg(baked: str, color_scheme: dict) -> str:
             + "\n".join(paths) + "\n</svg>\n")
 
 
+RIM_STROKE = 3.2
+FILL_ATTR = re.compile(r'fill="#[0-9a-fA-F]{6}"')
+
+
+def rim_svg(baked: str, color_scheme: dict) -> str:
+    """
+    Die Kontur eines Teils in seiner Signalfarbe (docs/DROME_DESIGNREGELN.md,
+    Abschnitt 5): alle Flaechen einmal in der Akzentfarbe, mit dickem Strich.
+    Die Engine legt die Konturen ALLER Teile eines DROME unter alle Teile
+    (DromeSprites) -- so bleibt nur der Aussenrand sichtbar, und jede Kontur
+    geht mit ihrem Teil mit, wenn es sich bewegt.
+    """
+    color = color_scheme.get("accent", MISSING_COLOR)
+    out = FILL_ATTR.sub(f'fill="{color}"', baked)
+    out = out.replace('stroke="none"', "")
+    out = re.sub(r'stroke="#[0-9a-fA-F]{6}"', f'stroke="{color}"', out)
+    out = re.sub(r'stroke-width="[0-9.]+"', f'stroke-width="{RIM_STROKE}"', out)
+    out = re.sub(r'<title>.*?</title>', "", out, flags=re.S)
+    return out
+
+
 def iter_parts():
     """Alle Teil-JSONs mit ihrem SVG, sortiert und ohne set.json."""
     for meta_path in sorted(PARTS_DIR.glob("*/*.json")):
@@ -150,6 +171,9 @@ def main() -> int:
         if "neon" in meta.get("tags", []):
             emit(OUT_DIR / meta["set"] / svg_path.name.replace(".svg", "_glow.svg"),
                  glow_svg(baked, meta.get("color_scheme", {})))
+        # Jedes Teil hat eine Kontur in seiner Signalfarbe (Kontur je Teil).
+        emit(OUT_DIR / meta["set"] / svg_path.name.replace(".svg", "_rim.svg"),
+             rim_svg(baked, meta.get("color_scheme", {})))
         emit(OUT_DIR / meta["set"] / meta_path.name,
              json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
 

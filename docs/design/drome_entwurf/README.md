@@ -1,0 +1,24 @@
+# DROME-Entwürfe (Claude Design, 15./16. Nov. 2026)
+
+Skripte, mit denen die Bilder der „DROME Design-Studie“ gebaut wurden. Sie
+nutzen den echten Generator (`tools/build_sample_parts.py`: Quader `B`,
+Scheiben `D`, Drehkörper `L`, `render`) und schreiben SVGs in einen Ordner
+nach Wahl. **Nur Entwurf** -- nichts davon landet in `parts/`; die Regeln
+dazu stehen in `docs/DROME_DESIGNREGELN.md`.
+
+```bash
+python3 docs/design/drome_entwurf/v4.py /tmp/drome_v4      # Posen (Runde 4)
+python3 docs/design/drome_entwurf/v5.py /tmp/drome_anim    # Ebenen für Bewegung
+python3 docs/design/drome_entwurf/skins.py /tmp/drome_skin # Fraktions-Skins
+```
+
+| Datei | Inhalt |
+|---|---|
+| `new_dromes.py` | Runde 2: Paletten (heller), Kontur in Signalfarbe (`rim`), Vireo/Molok/Nimbus neu, Strix A „Eule“ und B „Reiher“, Hilfen `shift`/`mirror`/`sym` |
+| `v2.py` | Runde 3: ein Anker (Molok zwei), Passive am freien Arm, Lockfeuer, Anker leer |
+| `v4.py` | Runde 4: Posen -- die Waffe bringt den Arm mit (`arm_extended`, `arm_raised`), Waffenköpfe Blaster/Klinge/Hammer/Stab/Schild, Eule mit Lafette; Griffe mit Knauf, Parierstange, Griffwicklung |
+| `v5.py` | Runde 5: DROMEs in Ebenen (Beine, Rumpf, Kopf, Waffe, Passive) samt **Kontur je Teil** für die Bewegung |
+| `skins.py` | Fraktions-Paletten auf den neuen Formen (Mechas mit Absperrstreifen als SVG-Muster) |
+
+Hinweis: `new_dromes.py` und `v2.py` schreiben schon beim Import in den
+übergebenen Ordner -- es sind Entwurfs-Skripte, keine Bibliothek.

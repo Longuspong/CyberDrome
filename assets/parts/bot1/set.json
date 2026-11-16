@@ -1,34 +1,34 @@
 {
   "id": "bot1",
   "name": "RX-Vireo // Scout",
-  "description": "Leichte Aufklärer-DROME. Zwei Ausrüstungsanker.",
+  "description": "Leichte Aufklaerer-DROME. Zwei Ausruestungsanker.",
   "palette": {
     "body": {
-      "hull": "#28304a",
-      "mech": "#5b6785",
+      "hull": "#3a4670",
+      "mech": "#7d8bb0",
       "neon": "#2de2e6",
       "line": "#080b13"
     },
     "feet": {
-      "hull": "#28304a",
-      "mech": "#5b6785",
+      "hull": "#3a4670",
+      "mech": "#7d8bb0",
       "neon": "#2de2e6",
       "line": "#080b13"
     },
     "equipment": {
-      "hull": "#28304a",
-      "mech": "#5b6785",
+      "hull": "#3a4670",
+      "mech": "#7d8bb0",
       "neon": "#2de2e6",
       "line": "#080b13"
     },
     "head": {
-      "hull": "#28304a",
-      "mech": "#5b6785",
+      "hull": "#3a4670",
+      "mech": "#7d8bb0",
       "visor": "#7cf9ff",
       "line": "#080b13"
     },
     "core": {
-      "case": "#28304a",
+      "case": "#3a4670",
       "ember": "#ff2d95",
       "rings": "#2de2e6",
       "line": "#080b13"

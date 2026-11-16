@@ -16,15 +16,15 @@
   "anchors": [
     {
       "name": "mount",
-      "x": 72.59,
-      "y": 52.82
+      "x": 70.97,
+      "y": 62.27
     }
   ],
   "color_scheme": {
-    "plate": "#1c3330",
-    "plate_light": "#335954",
-    "plate_dark": "#101d1b",
-    "metal": "#335954",
+    "plate": "#2a4e48",
+    "plate_light": "#4a847b",
+    "plate_dark": "#182c28",
+    "metal": "#4a847b",
     "glow": "#6dff9f",
     "visor": "#9affcc",
     "accent": "#2fbf8c",

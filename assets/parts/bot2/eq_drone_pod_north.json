@@ -3,7 +3,7 @@
   "code": "EQP-004",
   "set": "bot2",
   "type": "equipment",
-  "name": "E-Schraubenschlüssel",
+  "name": "E-Schraubenschluessel",
   "direction": "north",
   "svg": "eq_drone_pod_north.svg",
   "view_box": [
@@ -21,10 +21,10 @@
     }
   ],
   "color_scheme": {
-    "plate": "#3d2b35",
-    "plate_light": "#694c5c",
-    "plate_dark": "#22181e",
-    "metal": "#7d6b78",
+    "plate": "#5a4050",
+    "plate_light": "#986e88",
+    "plate_dark": "#32242d",
+    "metal": "#9a8796",
     "accent": "#ff8a3d",
     "glow": "#ffb76a",
     "visor": "#ffb76a",
@@ -32,7 +32,8 @@
   },
   "tags": [
     "support",
-    "tool"
+    "tool",
+    "ranged"
   ],
   "mount_class": "light",
   "category": "support",
@@ -72,7 +73,10 @@
         "shield_gain": 0,
         "support": "ally",
         "damage_pct": 0.0,
-        "base_action": ""
+        "base_action": "",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.0
       },
       {
         "id": "act_drone_guard",
@@ -99,7 +103,10 @@
         "shield_gain": 15,
         "support": "ally",
         "damage_pct": 0.0,
-        "base_action": ""
+        "base_action": "",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.0
       }
     ]
   }

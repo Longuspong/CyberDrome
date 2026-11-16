@@ -3,7 +3,7 @@
   "code": "EQP-010",
   "set": "bot1",
   "type": "equipment",
-  "name": "Plasma-Klinge",
+  "name": "Plasmaklinge",
   "direction": "south",
   "svg": "eq_plasma_blade_south.svg",
   "view_box": [
@@ -26,10 +26,10 @@
     }
   ],
   "color_scheme": {
-    "plate": "#28304a",
-    "plate_light": "#47547e",
-    "plate_dark": "#161b29",
-    "metal": "#5b6785",
+    "plate": "#3a4670",
+    "plate_light": "#6477bb",
+    "plate_dark": "#20273f",
+    "metal": "#7d8bb0",
     "accent": "#2de2e6",
     "glow": "#5affff",
     "visor": "#5affff",
@@ -77,7 +77,10 @@
         "shield_gain": 0,
         "support": "",
         "damage_pct": 0.0,
-        "base_action": ""
+        "base_action": "",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.0
       },
       {
         "id": "act_plasma_rend",
@@ -108,7 +111,10 @@
         "shield_gain": 0,
         "support": "",
         "damage_pct": 1.5,
-        "base_action": "act_plasma_slash"
+        "base_action": "act_plasma_slash",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.0
       }
     ]
   }

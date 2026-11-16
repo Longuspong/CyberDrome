@@ -17,19 +17,19 @@
     {
       "name": "mount",
       "x": 64.0,
-      "y": 47.32
+      "y": 37.77
     },
     {
       "name": "muzzle",
-      "x": 91.97,
-      "y": 67.19
+      "x": 92.83,
+      "y": 56.25
     }
   ],
   "color_scheme": {
-    "plate": "#1c3330",
-    "plate_light": "#335954",
-    "plate_dark": "#101d1b",
-    "metal": "#557d71",
+    "plate": "#2a4e48",
+    "plate_light": "#4a847b",
+    "plate_dark": "#182c28",
+    "metal": "#74a394",
     "accent": "#6dff9f",
     "glow": "#9affcc",
     "visor": "#9affcc",
@@ -38,7 +38,8 @@
   "tags": [
     "weapon",
     "heavy",
-    "sniper"
+    "sniper",
+    "ranged"
   ],
   "mount_class": "heavy",
   "category": "weapon",
@@ -78,11 +79,14 @@
         "shield_gain": 0,
         "support": "",
         "damage_pct": 0.0,
-        "base_action": ""
+        "base_action": "",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.0
       },
       {
         "id": "act_rail_pierce",
-        "display_name": "Präzisionsschuss",
+        "display_name": "Praezisionsschuss",
         "category": "ability",
         "targeting": "single",
         "range_tiles": 8,
@@ -105,7 +109,10 @@
         "shield_gain": 0,
         "support": "",
         "damage_pct": 1.2,
-        "base_action": "act_raillance"
+        "base_action": "act_raillance",
+        "hp_scaling": 0.0,
+        "min_range": 0,
+        "moving_bonus": 0.0
       }
     ]
   }

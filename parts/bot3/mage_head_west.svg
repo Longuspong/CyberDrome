@@ -13,8 +13,8 @@
 <g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
   <path d="M49.87 28.55 L51.25 25.54 L53.88 22.98 L57.5 21.12 L61.76 20.14 L66.24 20.14 L70.5 21.12 L74.12 22.98 L76.75 25.54 L78.13 28.55 L78.13 31.72 L76.75 34.73 L74.12 37.29 L70.5 39.15 L66.24 40.13 L61.76 40.13 L57.5 39.15 L53.88 37.29 L51.25 34.73 L49.87 31.72 Z" fill="none"/>
   <path d="M66.24 20.14 L61.76 20.14 L62.01 20.7 L65.99 20.7 Z" fill="var(--c-plate-light)" stroke="var(--c-plate-light)" stroke-width="0.4"/>
-  <path d="M61.76 20.14 L57.5 21.12 L58.24 21.57 L62.01 20.7 Z" fill="var(--c-plate-light)" stroke="var(--c-plate-light)" stroke-width="0.4"/>
   <path d="M70.5 21.12 L66.24 20.14 L65.99 20.7 L69.76 21.57 Z" fill="var(--c-plate-light)" stroke="var(--c-plate-light)" stroke-width="0.4"/>
+  <path d="M61.76 20.14 L57.5 21.12 L58.24 21.57 L62.01 20.7 Z" fill="var(--c-plate-light)" stroke="var(--c-plate-light)" stroke-width="0.4"/>
   <path d="M74.12 22.98 L70.5 21.12 L69.76 21.57 L72.97 23.22 Z" fill="var(--c-plate-light)" stroke="var(--c-plate-light)" stroke-width="0.4"/>
   <path d="M57.5 21.12 L53.88 22.98 L55.03 23.22 L58.24 21.57 Z" fill="var(--c-plate-light)" stroke="var(--c-plate-light)" stroke-width="0.4"/>
   <path d="M53.88 22.98 L51.25 25.54 L52.69 25.49 L55.03 23.22 Z" fill="var(--c-plate-light)" stroke="var(--c-plate-light)" stroke-width="0.4"/>

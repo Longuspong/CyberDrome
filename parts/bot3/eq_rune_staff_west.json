@@ -26,10 +26,10 @@
     }
   ],
   "color_scheme": {
-    "plate": "#2f2450",
-    "plate_light": "#524088",
-    "plate_dark": "#1a142d",
-    "metal": "#6f5f97",
+    "plate": "#463673",
+    "plate_light": "#775dc0",
+    "plate_dark": "#271e40",
+    "metal": "#8f7fbd",
     "accent": "#b06bff",
     "glow": "#dd98ff",
     "visor": "#dd98ff",
@@ -38,7 +38,8 @@
   "tags": [
     "weapon",
     "arcane",
-    "round"
+    "round",
+    "ranged"
   ],
   "mount_class": "light",
   "category": "weapon",

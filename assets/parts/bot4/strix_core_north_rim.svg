@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="strix_core" data-type="core" data-direction="north">
+  
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#2fbf8c" stroke-width="3.2" stroke-linejoin="round">
+  <path d="M54.69 63.03 L55.27 63.44 L55.27 59.81 L54.69 59.41 Z" fill="#2fbf8c" />
+  <path d="M55.27 63.44 L55.41 63.34 L55.41 59.71 L55.27 59.81 Z" fill="#2fbf8c" />
+  <path d="M54.84 63.51 L58.65 66.21 L58.65 61.43 L54.84 58.73 Z" fill="#2fbf8c"/>
+  <path d="M55.41 63.61 L57.7 65.23 L57.7 61.6 L55.41 59.98 Z" fill="#2fbf8c" />
+  <path d="M55.27 59.81 L55.41 59.71 L54.84 59.31 L54.69 59.41 Z" fill="#2fbf8c" />
+  <path d="M57.7 65.23 L57.89 65.09 L57.89 61.47 L57.7 61.6 Z" fill="#2fbf8c" />
+  <path d="M58.65 66.21 L59.23 65.8 L59.23 61.03 L58.65 61.43 Z" fill="#2fbf8c"/>
+  <path d="M57.94 65.33 L58.51 65.73 L58.51 62.11 L57.94 61.7 Z" fill="#2fbf8c" />
+  <path d="M57.7 61.6 L57.89 61.47 L55.6 59.85 L55.41 59.98 Z" fill="#2fbf8c" />
+  <path d="M58.51 65.73 L58.65 65.63 L58.65 62.01 L58.51 62.11 Z" fill="#2fbf8c" />
+  <path d="M58.65 61.43 L59.23 61.03 L55.41 58.33 L54.84 58.73 Z" fill="#2fbf8c"/>
+  <path d="M58.51 62.11 L58.65 62.01 L58.08 61.6 L57.94 61.7 Z" fill="#2fbf8c" />
+</g>
+</svg>

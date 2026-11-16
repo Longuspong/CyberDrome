@@ -82,9 +82,24 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String) -> Dicti
 		# Elternknoten, keine Texturkoordinate -- die Skalierung des Sprites
 		# geht ihn deshalb nichts an.
 		IsoView.fit_sprite(sprite)
-		sprite.z_index = rank
+		# rank + 1: Ebene 0 gehoert den Konturen (siehe unten).
+		sprite.z_index = rank + 1
 		parent.add_child(sprite)
 		sprites[entry["slot"]] = sprite
+		# Kontur je Teil (docs/DROME_DESIGNREGELN.md, Abschnitt 5): als Kind des
+		# Teils, damit sie jede Bewegung und jede Einfaerbung mitmacht. Der
+		# z_index hebt den Rang des Teils wieder auf -- alle Konturen liegen
+		# auf Ebene 0 unter allen Teilen, so bleibt nur der Aussenrand sichtbar.
+		# Nicht negativ: in Hangar-Kacheln laege die Kontur sonst hinter dem
+		# Hintergrund der Kachel.
+		var rim_path: String = entry["view"].get("rim", "")
+		if rim_path != "" and ResourceLoader.exists(rim_path):
+			var rim := Sprite2D.new()
+			rim.name = "Kontur"
+			rim.texture = load(rim_path)
+			rim.centered = false
+			rim.z_index = -rank - 1
+			sprite.add_child(rim)
 		var glow_path: String = entry["view"].get("glow", "")
 		if glow_path != "" and ResourceLoader.exists(glow_path):
 			sprite.add_child(NeonGlow.create(load(glow_path), sprite.texture))
