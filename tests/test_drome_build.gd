@@ -252,6 +252,32 @@ func test_slot_rules_are_enforced() -> void:
 		"und keinen Schild")
 
 
+## Nahkampf bis 2 Felder, Fernkampf ab 3 (16. Nov. 2026) -- und die Lafette
+## des Strix nimmt nur Fernkampf (docs/DROME_DESIGNREGELN.md).
+func test_reach_decides_melee_or_ranged() -> void:
+	t.equal(PartDB.get_part(&"eq_boomerang").reach_kind(), "melee", "Bumerang (2 Felder) ist Nahkampf")
+	t.equal(PartDB.get_part(&"eq_deflector").reach_kind(), "melee", "Deflektor ist Nahkampf")
+	t.equal(PartDB.get_part(&"eq_rune_staff").reach_kind(), "ranged", "Runenstab (3) ist Fernkampf")
+	t.equal(PartDB.get_part(&"eq_drone_pod").reach_kind(), "ranged", "E-Schraubenschlüssel ist Fernkampf")
+	t.equal(PartDB.get_part(&"eq_rail_lance").reach_kind(), "ranged", "Lanze ist Fernkampf")
+	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+		t.ok(part.tags.has("melee") != part.tags.has("ranged"),
+			"%s trägt genau eins: melee oder ranged" % part.id)
+
+
+func test_the_strix_mount_takes_only_ranged() -> void:
+	var strix := PartDB.get_part(&"strix_body")
+	t.equal(strix.body_kind, "nonhumanoid", "der Strix ist nicht-humanoid")
+	t.equal(PartDB.get_part(&"scout_body").body_kind, "humanoid", "der Vireo ist humanoid")
+	t.equal(SlotRules.slot_reach(strix, "equip_center"), "ranged", "die Lafette nimmt nur Fernkampf")
+	t.ok(strix.accepts(PartDB.get_part(&"eq_rail_lance"), "equip_center"), "Lanze passt")
+	t.ok(strix.accepts(PartDB.get_part(&"eq_rune_staff"), "equip_center"), "Runenstab passt")
+	t.ok(not strix.accepts(PartDB.get_part(&"eq_plasma_blade"), "equip_center"), "Plasmaklinge nicht")
+	t.ok(not strix.accepts(PartDB.get_part(&"eq_boomerang"), "equip_center"), "Bumerang (2 Felder) nicht")
+	t.equal(SlotRules.rejection(PartDB.get_part(&"eq_hammer"), strix.slot_rules["equip_center"], "heavy"),
+		"nur Fernkampf", "der Grund steht dabei")
+
+
 func test_equip_slots_come_from_anchors() -> void:
 	t.equal(PartDB.get_part(&"scout_body").equip_slots().size(), 1, "Vireo: 1 Platz")
 	t.equal(PartDB.get_part(&"jugg_body").equip_slots().size(), 2, "Molok: 2 Plätze")

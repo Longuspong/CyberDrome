@@ -738,6 +738,7 @@ func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		holder.add_child(box)
 		var shape := SlotShape.new(kind, UiKit.part_texture(part), SLOT_EDGE)
+		shape.reach = SlotRules.slot_reach(build.body(), slot)
 		shape.highlight = chosen
 		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		box.add_child(shape)

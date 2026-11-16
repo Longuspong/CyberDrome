@@ -305,9 +305,11 @@ func blocker(part: PartData) -> String:
 	var reach := attack_range(part)
 	if reach <= 0:
 		return "die Waffe greift nicht an"
-	if condition == "ranged" and reach < 2:
+	# Nahkampf bis 2 Felder, Fernkampf ab 3 (16. Nov. 2026) -- dieselbe Grenze
+	# wie die Halter (PartData.RANGED_FROM).
+	if condition == "ranged" and reach < PartData.RANGED_FROM:
 		return CONDITION_LABEL["ranged"]
-	if condition == "melee" and reach > 1:
+	if condition == "melee" and reach >= PartData.RANGED_FROM:
 		return CONDITION_LABEL["melee"]
 	return ""
 

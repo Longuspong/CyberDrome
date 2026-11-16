@@ -60,6 +60,7 @@
     "mage",
     "support"
   ],
+  "body_kind": "humanoid",
   "slot_z": {
     "head": 61,
     "feet": 27,

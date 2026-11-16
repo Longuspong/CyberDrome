@@ -24,7 +24,8 @@ als offene Punkte im SPOT. Cache oeffnen ist bis dahin eine Vorschau.
 Bilder ohne Web-Export: `xvfb-run ... tests/screenshot.gd -- <szene> <png> 90
 [run=story results=SS ...]` (Optionen im Kopf der Datei).
 
-**DROME-Designregeln (16. Nov. 2026, abgesegnet; gebaut: Licht + Kontur je Teil):**
+**DROME-Designregeln (16. Nov. 2026, abgesegnet; gebaut: Licht + Kontur je Teil,
+Koerperart, Nah/Fern-Tags, Strix-Lafette, Halter-Symbole):**
 `docs/DROME_DESIGNREGELN.md` -- Koerperarten (humanoid / Strix als Eule mit
 Lafette, nur Fernkampf), ein Waffenarm je Chassis (Molok zwei, nie
 gespiegelt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt

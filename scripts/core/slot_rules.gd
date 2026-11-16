@@ -62,6 +62,22 @@ static func slot_class(chassis: PartData, slot: String) -> String:
 	return rule.get("max_class", PartData.MOUNT_CLASSES[-1])
 
 
+## Ob ein Halter nur Fern- oder nur Nahkampf nimmt ("ranged", "melee" oder "").
+## Die Lafette des Strix nimmt nur Fernkampf (docs/DROME_DESIGNREGELN.md).
+static func slot_reach(chassis: PartData, slot: String) -> String:
+	if chassis == null:
+		return ""
+	var rule: Dictionary = chassis.slot_rules.get(slot, {})
+	return str(rule.get("reach", ""))
+
+
+static func reach_label(reach: String) -> String:
+	match reach:
+		"ranged": return "Fernkampf"
+		"melee": return "Nahkampf"
+		_: return reach
+
+
 ## Welche Halter dieses Chassis fuer dieses Teil hat -- alle, auch die, die es
 ## nicht nehmen, mit dem Grund daneben.
 static func slot_choices(build: DromeBuild, part: PartData) -> Array:
@@ -104,6 +120,9 @@ static func rejection(part: PartData, rule: Dictionary, limit: String) -> String
 	if PartData.MOUNT_CLASSES.find(part.mount_class) \
 			> PartData.MOUNT_CLASSES.find(limit):
 		return "nimmt nur bis %s" % class_label(limit)
+	var reach: String = str(rule.get("reach", ""))
+	if reach != "" and part.reach_kind() != reach:
+		return "nur %s" % reach_label(reach)
 	var allowed = rule.get("categories")
 	if allowed is Array and not allowed.is_empty() and part.category not in allowed:
 		var names: Array[String] = []

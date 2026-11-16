@@ -125,6 +125,24 @@ func test_assemble_places_every_sprite_on_its_socket() -> void:
 	root.free()
 
 
+## Kontur je Teil (docs/DROME_DESIGNREGELN.md, Abschnitt 5): jedes Teil
+## traegt seine Kontur als Kind, alle Konturen liegen auf Ebene 0 unter allen
+## Teilen (ab 1) -- so geht sie mit dem Teil mit und zeigt nur den Aussenrand.
+func test_every_part_carries_its_rim_below_all_parts() -> void:
+	var root := Node2D.new()
+	for chassis: PartData in _bodies():
+		var sprites := DromeSprites.assemble(root, _stock(chassis), "south")
+		for slot in sprites:
+			var sprite: Sprite2D = sprites[slot]
+			var rim := sprite.get_node_or_null("Kontur") as Sprite2D
+			t.ok(rim != null, "%s/%s hat eine Kontur" % [chassis.id, slot])
+			if rim == null:
+				continue
+			t.ok(sprite.z_index >= 1, "%s/%s liegt über den Konturen" % [chassis.id, slot])
+			t.equal(sprite.z_index + rim.z_index, 0, "%s/%s: Kontur auf Ebene 0" % [chassis.id, slot])
+	root.free()
+
+
 func test_turning_does_not_move_equipment_relative_to_its_socket() -> void:
 	# Die Formulierung des Spielers: "der Orbit-Fokus wechselt den Platz".
 	# Gemessen heisst das: der Abstand zwischen Teil und Sockel darf sich

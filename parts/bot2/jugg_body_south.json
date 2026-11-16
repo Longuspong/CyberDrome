@@ -63,6 +63,7 @@
   "tags": [
     "heavy"
   ],
+  "body_kind": "humanoid",
   "slot_z": {
     "head": 64,
     "feet": 33,

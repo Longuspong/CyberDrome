@@ -333,7 +333,25 @@ DEFAULT_MOUNT_CLASS = "light"
 DEFAULT_CATEGORY = "weapon"
 
 
-def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
+# Nahkampf und Fernkampf (16. Nov. 2026, docs/DROME_DESIGNREGELN.md): die
+# Grundattacke entscheidet -- bis 2 Felder Nahkampf, ab 3 Felder Fernkampf.
+# Der Generator schreibt daraus das Tag "melee" oder "ranged" an jede
+# Ausruestung; ein Halter kann mit ``"reach"`` nur eine der beiden annehmen
+# (die Lafette des Strix: nur Fernkampf).
+RANGED_FROM = 3
+REACH_KINDS = ("melee", "ranged")
+BODY_KINDS = ("humanoid", "nonhumanoid")
+
+
+def reach_kind(part_id: str) -> str:
+    """'ranged' ab RANGED_FROM Feldern Reichweite der Grundattacke, sonst 'melee'."""
+    actions = part_stats(part_id).get("actions", [])
+    reach = int(actions[0].get("range_tiles", 1)) if actions else 1
+    return "ranged" if reach >= RANGED_FROM else "melee"
+
+
+def fits_rule(mount_class: str, category: str, rule: dict | None,
+              reach: str | None = None) -> bool:
     """Darf ein Ausruestungsteil in einen Slot mit dieser Regel?"""
     if not rule:
         return True
@@ -341,6 +359,8 @@ def fits_rule(mount_class: str, category: str, rule: dict | None) -> bool:
         return False
     limit = rule.get("max_class", MOUNT_CLASSES[-1])
     if MOUNT_CLASSES.index(mount_class) > MOUNT_CLASSES.index(limit):
+        return False
+    if rule.get("reach") and reach and reach != rule["reach"]:
         return False
     allowed = rule.get("categories")
     return not allowed or category in allowed
@@ -2185,9 +2205,12 @@ SETS = [
                     # Joch, nicht seitlich am Arm.
                     "equip_center": (6, 0, 51),
                 },
-                # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin.
+                # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin --
+                # aber als Lafette nur Fernkampf (16. Nov. 2026).
                 "slot_rules": {"equip_center": {"max_class": "heavy",
-                                                "categories": ["weapon", "support"]}},
+                                                "categories": ["weapon", "support"],
+                                                "reach": "ranged"}},
+                "body_kind": "nonhumanoid",
             },
             {
                 "id": "strix_head", "code": "HED-004", "type": "head",
@@ -2332,7 +2355,12 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
                                       part["type"]),
         "tags": part.get("tags", []),
     }
+    if part["type"].startswith("equipment"):
+        # Nah oder fern ergibt sich aus der Reichweite, nicht aus der Hand.
+        meta["tags"] = [t for t in meta["tags"] if t not in REACH_KINDS] \
+            + [reach_kind(pid)]
     if part["type"] == "body":
+        meta["body_kind"] = part.get("body_kind", "humanoid")
         meta["slot_z"] = slot_draw_order(part, direction)
         if "slot_rules" in part:
             meta["slot_rules"] = part["slot_rules"]
@@ -2417,6 +2445,11 @@ def check_slot_rules() -> None:
                     if category not in EQUIP_CATEGORIES:
                         raise SystemExit(f"{where}/{slot}: unbekannte "
                                          f"Bauart {category!r}")
+                if rule.get("reach") and rule["reach"] not in REACH_KINDS:
+                    raise SystemExit(f"{where}/{slot}: unbekannte "
+                                     f"Reichweite {rule['reach']!r}")
+            if part.get("body_kind", "humanoid") not in BODY_KINDS:
+                raise SystemExit(f"{where}: unbekannte Koerperart")
         elif part["type"].startswith("equipment"):
             if part.get("mount_class", DEFAULT_MOUNT_CLASS) not in MOUNT_CLASSES:
                 raise SystemExit(f"{where}: unbekannte Montageklasse")
@@ -2597,7 +2630,8 @@ def check_stats() -> None:
                 if p in chosen:
                     continue
                 if fits_rule(p.get("mount_class", DEFAULT_MOUNT_CLASS),
-                             p.get("category", DEFAULT_CATEGORY), rules.get(slot)):
+                             p.get("category", DEFAULT_CATEGORY), rules.get(slot),
+                             reach_kind(p["id"])):
                     chosen.append(p)
                     break
 
@@ -2643,7 +2677,8 @@ def print_slot_matrix() -> None:
             allowed = [
                 eq_part["code"] for _eq_spec, eq_part in equipment
                 if fits_rule(eq_part.get("mount_class", DEFAULT_MOUNT_CLASS),
-                             eq_part.get("category", DEFAULT_CATEGORY), rule)
+                             eq_part.get("category", DEFAULT_CATEGORY), rule,
+                             reach_kind(eq_part["id"]))
                 and slot in eq_part.get("slots", [slot])
             ]
             print(f"  {spec['id']}/{slot:<14} bis {limit:<7}"

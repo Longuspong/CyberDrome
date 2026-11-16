@@ -59,6 +59,7 @@
     "light",
     "scout"
   ],
+  "body_kind": "humanoid",
   "slot_z": {
     "head": 66,
     "feet": 36,

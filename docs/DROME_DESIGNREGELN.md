@@ -120,6 +120,10 @@ zeichnet, ist offen (sonst als Geometrie).
    vorn lesbar bleiben (Ellbogen nach außen, Klinge über den Kopf).
 4. Ins Repo, je ein PR: **Licht + Kontur (gebaut 16. Nov.: Paletten im
    Generator heller, `tools/bake_godot_assets.py` backt je Teil ein
-   `*_rim.svg`, `DromeSprites` legt sie als Kind des Teils auf Ebene 0)**; Regeln im Generator (Körperart,
-   Lafette, Tests); Chassis (Strix, Vireo, Nimbus, Molok); Waffen in ihre
+   `*_rim.svg`, `DromeSprites` legt sie als Kind des Teils auf Ebene 0)**;
+   **Regeln im Generator (gebaut 16. Nov.: `body_kind` am Chassis,
+   Tag `melee`/`ranged` aus der Reichweite der Grundattacke, Halterregel
+   `reach` -- Strix-Lafette `ranged`; `PartData.accepts`/`reach_kind`,
+   `SlotRules.slot_reach`, Fadenkreuz/Schwert in `SlotShape`; die
+   Modulbedingungen nutzen dieselbe Grenze ab 3 Feldern)**; Chassis (Strix, Vireo, Nimbus, Molok); Waffen in ihre
    Posen; Bewegung im Teile-Rig (`unit.gd`); Effekte je Fähigkeit.

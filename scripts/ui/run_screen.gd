@@ -1116,9 +1116,10 @@ func _holder_row(run: RunState, drome: int, slot: String, picking: bool, allowed
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	var part := build.part_in(slot)
-	var weapon := Tile.new("weapon:%d:%s" % [drome, slot],
-		SlotShape.new(SlotRules.slot_class(build.body(), slot), UiKit.part_texture(part), 34.0),
-		"", Vector2(46, 46))
+	var holder_shape := SlotShape.new(SlotRules.slot_class(build.body(), slot),
+		UiKit.part_texture(part), 34.0)
+	holder_shape.reach = SlotRules.slot_reach(build.body(), slot)
+	var weapon := Tile.new("weapon:%d:%s" % [drome, slot], holder_shape, "", Vector2(46, 46))
 	weapon.tooltip_text = part.display_name if part != null else "leer"
 	weapon.on_info = func():
 		if part != null:

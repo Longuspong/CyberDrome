@@ -34,6 +34,13 @@ var dim: bool = false:
 		dim = value
 		queue_redraw()
 var accent: Color = Color(0.38, 0.8, 0.98)
+## "ranged" = nur Fernkampf (Fadenkreuz im Hintergrund), "melee" = nur
+## Nahkampf (Schwert), "" = alles. Die Form zeigt weiter das Gewicht
+## (docs/DROME_DESIGNREGELN.md, Abschnitt 2).
+var reach: String = "":
+	set(value):
+		reach = value
+		queue_redraw()
 
 
 func _init(kind: String = "light", picture: Texture2D = null, edge: float = 56.0) -> void:
@@ -47,6 +54,8 @@ func _draw() -> void:
 	var points := polygon(shape, Rect2(Vector2.ZERO, size).grow(-3.0))
 	var alpha := 0.45 if dim else 1.0
 	draw_colored_polygon(points, Color(FILL if texture != null else FILL_EMPTY, alpha))
+	if reach != "":
+		_draw_reach(points, alpha)
 	if texture != null:
 		# Das Bild bleibt IN der Form (Wunsch des Spielers, 10. Nov. 2026):
 		# vorher ragte ein Blaster ueber die Kanten seines Dreiecks.
@@ -57,6 +66,24 @@ func _draw() -> void:
 	outline.append(points[0])
 	draw_polyline(outline, Color(accent if highlight else LINE, alpha),
 		3.0 if highlight else 2.0, true)
+
+
+## Fadenkreuz oder Schwert hinter dem Bild, gedaempft -- es sagt nur, was der
+## Halter annimmt, und soll das Teil darin nicht ueberdecken.
+func _draw_reach(points: PackedVector2Array, alpha: float) -> void:
+	var box := inner_rect(points, 1.0)
+	var c := box.get_center()
+	var r := box.size.x * 0.5
+	var color := Color(LINE, 0.5 * alpha)
+	var width := maxf(1.5, size.x * 0.035)
+	if reach == "ranged":
+		draw_arc(c, r * 0.62, 0.0, TAU, 28, color, width, true)
+		draw_line(c + Vector2(0, -r), c + Vector2(0, r), color, width, true)
+		draw_line(c + Vector2(-r, 0), c + Vector2(r, 0), color, width, true)
+	elif reach == "melee":
+		draw_line(c + Vector2(0, -r), c + Vector2(0, r * 0.45), color, width * 1.4, true)
+		draw_line(c + Vector2(-r * 0.4, r * 0.45), c + Vector2(r * 0.4, r * 0.45), color, width, true)
+		draw_line(c + Vector2(0, r * 0.45), c + Vector2(0, r * 0.85), color, width, true)
 
 
 ## Wie viel Luft zwischen Bild und Rand der Form bleibt (Anteil des Bildes).

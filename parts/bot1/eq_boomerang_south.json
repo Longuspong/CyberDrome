@@ -37,8 +37,8 @@
   },
   "tags": [
     "weapon",
-    "melee",
-    "thrown"
+    "thrown",
+    "melee"
   ],
   "mount_class": "light",
   "category": "weapon",

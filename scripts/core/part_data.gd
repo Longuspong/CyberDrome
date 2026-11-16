@@ -46,6 +46,13 @@ var category: String = "weapon"     ## weapon | shield | support
 
 ## Nur body: welcher Ausruestungsslot was annimmt
 var slot_rules: Dictionary = {}
+## Nur body: "humanoid" (Waffenarm) oder "nonhumanoid" (Strix-Eule mit Lafette),
+## docs/DROME_DESIGNREGELN.md Abschnitt 1.
+var body_kind: String = "humanoid"
+
+## Nahkampf bis 2 Felder, Fernkampf ab 3 (16. Nov. 2026). Der Generator
+## schreibt daraus das Tag "melee" oder "ranged" an jede Ausruestung.
+const RANGED_FROM := 3
 
 ## Spielwerte. Flach, additiv, ohne Grundwerte irgendwo sonst.
 var hp: int = 0
@@ -107,6 +114,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.mount_class = meta.get("mount_class", "light")
 	part.category = meta.get("category", "weapon")
 	part.slot_rules = meta.get("slot_rules", {})
+	part.body_kind = meta.get("body_kind", "humanoid")
 
 	var stats: Dictionary = meta.get("stats", {})
 	part.hp = stats.get("hp", 0)
@@ -179,6 +187,19 @@ func equip_slots() -> Array[String]:
 	return slots
 
 
+## "ranged" oder "melee" -- nach dem Tag des Generators, sonst nach der
+## Reichweite der Grundattacke (fuer Teile ohne Tag).
+func reach_kind() -> String:
+	if tags.has("ranged"):
+		return "ranged"
+	if tags.has("melee"):
+		return "melee"
+	for action in actions:
+		if action != null and action.is_attack():
+			return "ranged" if action.range_tiles >= RANGED_FROM else "melee"
+	return "melee"
+
+
 ## Darf dieses Ausruestungsteil in diesen Slot dieses Chassis?
 ## Spiegelt fits_rule() aus tools/build_sample_parts.py -- die Werkstatt prueft
 ## das beim Bauen, aber ein Loadout kann von Hand entstehen oder aus einem
@@ -193,6 +214,10 @@ func accepts(equipment: PartData, slot: String) -> bool:
 		return true
 	var limit: String = rule.get("max_class", MOUNT_CLASSES[-1])
 	if MOUNT_CLASSES.find(equipment.mount_class) > MOUNT_CLASSES.find(limit):
+		return false
+	# Lafette (Strix): nur Fernkampf. Spiegelt fits_rule() im Generator.
+	var reach: String = rule.get("reach", "")
+	if reach != "" and equipment.reach_kind() != reach:
 		return false
 	var allowed = rule.get("categories")
 	if allowed == null or (allowed is Array and allowed.is_empty()):

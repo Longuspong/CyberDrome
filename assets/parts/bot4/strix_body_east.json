@@ -55,6 +55,7 @@
     "light",
     "sniper"
   ],
+  "body_kind": "nonhumanoid",
   "slot_z": {
     "head": 63,
     "feet": 34,
@@ -67,7 +68,8 @@
       "categories": [
         "weapon",
         "support"
-      ]
+      ],
+      "reach": "ranged"
     }
   },
   "stats": {

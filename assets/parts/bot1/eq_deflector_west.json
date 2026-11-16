@@ -31,7 +31,8 @@
     "outline": "#080b13"
   },
   "tags": [
-    "defense"
+    "defense",
+    "melee"
   ],
   "mount_class": "medium",
   "category": "shield",
