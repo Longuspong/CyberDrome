@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 39.9,
-      "y": 30.75
+      "x": 38.94,
+      "y": 31.42
     }
   ],
   "color_scheme": {
@@ -53,8 +53,23 @@
         },
         {
           "name": "muzzle",
-          "x": 25.43,
-          "y": 21.38
+          "x": 23.91,
+          "y": 22.46
+        }
+      ]
+    },
+    "heavy_right": {
+      "svg": "eq_boomerang_heavy_right_west.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 26.96,
+          "y": 20.3
         }
       ]
     }

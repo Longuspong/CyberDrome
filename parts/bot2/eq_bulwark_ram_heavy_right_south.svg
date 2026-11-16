@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_bulwark_ram" data-type="equipment" data-direction="south">
+  <title>Bollwerk-Ramme (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M46.91 74.34 L54.55 68.94 L54.55 66.65 L46.91 72.05 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.07 66.31 L46.44 71.71 L46.91 72.05 L54.55 66.65 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M51.3 84.5 L71.16 70.46 L71.16 59.77 L51.3 73.81 Z" fill="var(--c-plate-dark)"/>
+  <path d="M46.44 74.0 L46.91 74.34 L46.91 72.05 L46.44 71.71 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M43.0 82.54 L36.74 86.97 L41.32 90.21 L47.58 85.78 Z" fill="var(--c-plate)"/>
+  <path d="M64.48 55.04 L44.62 69.08 L51.3 73.81 L71.16 59.77 Z" fill="var(--c-plate-light)"/>
+  <path d="M41.32 92.35 L47.58 87.92 L47.58 85.78 L41.32 90.21 Z" fill="var(--c-plate-dark)"/>
+  <path d="M36.74 89.11 L41.32 92.35 L41.32 90.21 L36.74 86.97 Z" fill="var(--c-plate-dark)"/>
+  <path d="M63.24 68.02 L70.87 62.62 L70.87 45.82 L63.24 51.22 Z" fill="var(--c-plate-dark)"/>
+  <path d="M57.13 63.7 L63.24 68.02 L63.24 51.22 L57.13 46.9 Z" fill="var(--c-metal)"/>
+  <path d="M44.62 79.78 L51.3 84.5 L51.3 73.81 L44.62 69.08 Z" fill="var(--c-plate)"/>
+  <path d="M64.76 41.5 L57.13 46.9 L63.24 51.22 L70.87 45.82 Z" fill="var(--c-metal)"/>
+  <path d="M43.0 87.72 L45.75 85.78 L45.75 70.51 L43.0 72.45 Z" fill="var(--c-plate-dark)"/>
+  <path d="M40.25 85.78 L43.0 87.72 L43.0 72.45 L40.25 70.51 Z" fill="var(--c-metal)"/>
+  <path d="M35.67 81.02 L42.39 85.77 L42.39 84.24 L35.67 79.49 Z" fill="var(--c-plate-light)"/>
+  <path d="M36.28 79.06 L35.67 79.49 L42.39 84.24 L43.0 83.81 Z" fill="var(--c-plate-light)"/>
+  <path d="M35.67 81.68 L43.61 87.3 L43.61 79.36 L35.67 73.74 Z" fill="var(--c-plate-dark)"/>
+  <path d="M43.61 87.3 L50.33 82.55 L50.33 74.6 L43.61 79.36 Z" fill="var(--c-plate-dark)"/>
+  <path d="M42.39 68.99 L35.67 73.74 L43.61 79.36 L50.33 74.6 Z" fill="var(--c-plate)"/>
+  <path d="M37.5 83.84 L27.73 90.75 L30.78 92.91 L40.56 86.0 Z" fill="var(--c-plate)"/>
+  <path d="M30.78 95.66 L40.56 88.75 L40.56 86.0 L30.78 92.91 Z" fill="var(--c-plate-dark)"/>
+  <path d="M42.39 85.77 L43.0 85.34 L43.0 83.81 L42.39 84.24 Z" fill="var(--c-plate)"/>
+  <path d="M35.67 77.66 L42.39 82.41 L42.39 80.88 L35.67 76.13 Z" fill="var(--c-plate-light)"/>
+  <path d="M36.28 75.7 L35.67 76.13 L42.39 80.88 L43.0 80.45 Z" fill="var(--c-plate-light)"/>
+  <path d="M30.47 85.28 L40.25 92.19 L40.25 81.81 L30.47 74.89 Z" fill="var(--c-plate-light)"/>
+  <path d="M43.0 68.56 L40.25 70.51 L43.0 72.45 L45.75 70.51 Z" fill="var(--c-metal)"/>
+  <path d="M27.73 93.5 L30.78 95.66 L30.78 92.91 L27.73 90.75 Z" fill="var(--c-plate-dark)"/>
+  <path d="M42.39 82.41 L43.0 81.98 L43.0 80.45 L42.39 80.88 Z" fill="var(--c-plate)"/>
+  <path d="M43.0 65.13 L36.74 69.56 L41.32 72.8 L47.58 68.37 Z" fill="var(--c-plate)"/>
+  <path d="M40.25 92.19 L41.78 91.11 L41.78 80.73 L40.25 81.81 Z" fill="var(--c-plate)"/>
+  <path d="M41.32 74.93 L47.58 70.51 L47.58 68.37 L41.32 72.8 Z" fill="var(--c-plate-dark)"/>
+  <path d="M32.0 73.81 L30.47 74.89 L40.25 81.81 L41.78 80.73 Z" fill="var(--c-plate-light)"/>
+  <path d="M36.74 71.69 L41.32 74.93 L41.32 72.8 L36.74 69.56 Z" fill="var(--c-plate-dark)"/>
+  <path d="M29.86 96.59 L42.69 87.51 L42.69 79.57 L29.86 88.64 Z" fill="var(--c-plate-dark)"/>
+  <path d="M35.36 74.39 L22.53 83.46 L29.86 88.64 L42.69 79.57 Z" fill="var(--c-metal)"/>
+  <path d="M37.5 73.15 L27.73 80.06 L30.78 82.22 L40.56 75.31 Z" fill="var(--c-plate)"/>
+  <path d="M30.78 84.97 L40.56 78.06 L40.56 75.31 L30.78 82.22 Z" fill="var(--c-plate-dark)"/>
+  <path d="M22.53 91.4 L29.86 96.59 L29.86 88.64 L22.53 83.46 Z" fill="var(--c-metal)"/>
+  <path d="M27.73 82.81 L30.78 84.97 L30.78 82.22 L27.73 80.06 Z" fill="var(--c-plate-dark)"/>
+  <path d="M16.58 82.3 L11.99 85.54 L31.24 99.15 L35.82 95.91 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M12.45 97.47 L30.78 110.43 L30.78 89.05 L12.45 76.09 Z" fill="var(--c-plate)"/>
+  <path d="M11.99 87.38 L31.24 100.98 L31.24 99.15 L11.99 85.54 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M12.91 97.78 L28.18 108.58 L28.18 90.25 L12.91 79.45 Z" fill="var(--c-plate-dark)"/>
+  <path d="M17.03 95.49 L21.92 98.95 L21.92 94.06 L17.03 90.6 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M21.92 98.95 L22.99 98.19 L22.99 93.3 L21.92 94.06 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M18.1 89.85 L17.03 90.6 L21.92 94.06 L22.99 93.3 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M30.78 110.43 L35.36 107.19 L35.36 85.81 L30.78 89.05 Z" fill="var(--c-plate-dark)"/>
+  <path d="M31.24 100.98 L35.82 97.74 L35.82 95.91 L31.24 99.15 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M28.18 108.58 L29.25 107.83 L29.25 89.5 L28.18 90.25 Z" fill="var(--c-plate-dark)"/>
+  <path d="M17.03 72.85 L12.45 76.09 L30.78 89.05 L35.36 85.81 Z" fill="var(--c-plate-light)"/>
+  <path d="M13.98 78.7 L12.91 79.45 L28.18 90.25 L29.25 89.5 Z" fill="var(--c-plate)"/>
+</g>
+</svg>

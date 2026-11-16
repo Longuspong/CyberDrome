@@ -198,7 +198,11 @@ func view_for(direction: String, variant: String) -> Dictionary:
 	var base := view(direction)
 	if variant == "":
 		return base
-	var v: Dictionary = base.get("variants", {}).get(variant, {})
+	var all_variants: Dictionary = base.get("variants", {})
+	var v: Dictionary = all_variants.get(variant, {})
+	# "heavy_right" ohne eigene Fassung: die linke tut es auch.
+	if v.is_empty() and variant.ends_with("_right"):
+		v = all_variants.get(variant.trim_suffix("_right"), {})
 	if v.is_empty():
 		return base
 	var merged := base.duplicate()

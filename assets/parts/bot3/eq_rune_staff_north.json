@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 76.17,
-      "y": 26.4
+      "x": 75.22,
+      "y": 25.72
     }
   ],
   "color_scheme": {
@@ -54,8 +54,23 @@
         },
         {
           "name": "muzzle",
-          "x": 83.47,
-          "y": 14.42
+          "x": 81.95,
+          "y": 13.34
+        }
+      ]
+    },
+    "heavy_right": {
+      "svg": "eq_rune_staff_heavy_right_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 85.0,
+          "y": 15.5
         }
       ]
     },

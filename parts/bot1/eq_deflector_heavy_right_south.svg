@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_deflector" data-type="equipment" data-direction="south">
+  <title>Deflektor-Schild (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M46.91 74.34 L54.55 68.94 L54.55 66.65 L46.91 72.05 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.07 66.31 L46.44 71.71 L46.91 72.05 L54.55 66.65 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M51.3 84.5 L71.16 70.46 L71.16 59.77 L51.3 73.81 Z" fill="var(--c-plate-dark)"/>
+  <path d="M46.44 74.0 L46.91 74.34 L46.91 72.05 L46.44 71.71 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M64.48 55.04 L44.62 69.08 L51.3 73.81 L71.16 59.77 Z" fill="var(--c-plate-light)"/>
+  <path d="M63.24 68.02 L70.87 62.62 L70.87 45.82 L63.24 51.22 Z" fill="var(--c-plate-dark)"/>
+  <path d="M57.13 63.7 L63.24 68.02 L63.24 51.22 L57.13 46.9 Z" fill="var(--c-metal)"/>
+  <path d="M44.62 79.78 L51.3 84.5 L51.3 73.81 L44.62 69.08 Z" fill="var(--c-plate)"/>
+  <path d="M64.76 41.5 L57.13 46.9 L63.24 51.22 L70.87 45.82 Z" fill="var(--c-metal)"/>
+  <path d="M35.67 81.02 L42.39 85.77 L42.39 84.24 L35.67 79.49 Z" fill="var(--c-plate-light)"/>
+  <path d="M36.28 79.06 L35.67 79.49 L42.39 84.24 L43.0 83.81 Z" fill="var(--c-plate-light)"/>
+  <path d="M35.67 81.68 L43.61 87.3 L43.61 79.36 L35.67 73.74 Z" fill="var(--c-plate-dark)"/>
+  <path d="M43.61 87.3 L50.33 82.55 L50.33 74.6 L43.61 79.36 Z" fill="var(--c-plate-dark)"/>
+  <path d="M42.39 68.99 L35.67 73.74 L43.61 79.36 L50.33 74.6 Z" fill="var(--c-plate)"/>
+  <path d="M42.39 85.77 L43.0 85.34 L43.0 83.81 L42.39 84.24 Z" fill="var(--c-plate)"/>
+  <path d="M40.1 87.34 L38.11 82.5 L34.14 79.69 L32.15 81.72 L34.14 86.57 L38.11 89.37 Z" fill="var(--c-plate-dark)"/>
+  <path d="M38.11 86.37 L36.97 83.57 L34.67 81.95 L33.53 83.13 L34.67 85.92 L36.97 87.54 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M35.67 77.66 L42.39 82.41 L42.39 80.88 L35.67 76.13 Z" fill="var(--c-plate-light)"/>
+  <path d="M36.28 75.7 L35.67 76.13 L42.39 80.88 L43.0 80.45 Z" fill="var(--c-plate-light)"/>
+  <path d="M42.39 82.41 L43.0 81.98 L43.0 80.45 L42.39 80.88 Z" fill="var(--c-plate)"/>
+  <path d="M28.49 96.83 L54.45 115.19 L54.45 70.89 L28.49 52.53 Z" fill="var(--c-plate)"/>
+  <path d="M30.78 96.47 L50.64 110.51 L50.64 72.33 L30.78 58.29 Z" fill="var(--c-plate-dark)"/>
+  <path d="M50.64 110.51 L51.4 109.97 L51.4 71.79 L50.64 72.33 Z" fill="var(--c-plate-dark)"/>
+  <path d="M31.7 70.49 L48.5 82.37 L48.5 80.23 L31.7 68.35 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.45 115.19 L57.51 113.03 L57.51 68.73 L54.45 70.89 Z" fill="var(--c-plate-dark)"/>
+  <path d="M32.31 67.92 L31.7 68.35 L48.5 80.23 L49.11 79.8 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M48.5 82.37 L49.11 81.94 L49.11 79.8 L48.5 80.23 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M31.54 57.75 L30.78 58.29 L50.64 72.33 L51.4 71.79 Z" fill="var(--c-plate)"/>
+  <path d="M31.54 50.37 L28.49 52.53 L54.45 70.89 L57.51 68.73 Z" fill="var(--c-plate-light)"/>
+  <path d="M31.07 46.98 L27.25 49.68 L54.17 68.72 L57.99 66.02 Z" fill="var(--c-plate-light)"/>
+  <path d="M27.25 52.74 L54.17 71.77 L54.17 68.72 L27.25 49.68 Z" fill="var(--c-plate-light)"/>
+  <path d="M54.17 71.77 L57.99 69.07 L57.99 66.02 L54.17 68.72 Z" fill="var(--c-plate)"/>
+</g>
+</svg>

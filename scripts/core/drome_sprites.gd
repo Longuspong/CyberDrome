@@ -62,7 +62,11 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String) -> Dicti
 			continue
 		# Waffen in Posen: am Molok die groesser gebaute Variante, am Strix
 		# die Lafette -- sonst die Grundform.
-		var view := part.view_for(facing, weapon_variant) \
+		# Der rechte Molok-Arm hat eine eigene, gespiegelt gebaute Fassung.
+		var variant := weapon_variant
+		if variant != "" and slot == "equip_right":
+			variant += "_right"
+		var view := part.view_for(facing, variant) \
 			if str(slot).begins_with("equip_") else part.view(facing)
 		var depth: float = float(view.get("z_index", 50)) if slot == "body" \
 			else float(slot_z.get(slot, 20))

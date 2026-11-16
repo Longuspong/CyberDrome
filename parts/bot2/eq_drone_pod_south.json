@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 51.83,
-      "y": 46.85
+      "x": 52.78,
+      "y": 47.53
     }
   ],
   "color_scheme": {
@@ -53,8 +53,23 @@
         },
         {
           "name": "muzzle",
-          "x": 44.53,
-          "y": 47.15
+          "x": 46.05,
+          "y": 48.23
+        }
+      ]
+    },
+    "heavy_right": {
+      "svg": "eq_drone_pod_heavy_right_south.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 43.0,
+          "y": 46.07
         }
       ]
     },

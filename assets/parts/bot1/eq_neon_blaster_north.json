@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 92.73,
-      "y": 31.29
+      "x": 87.96,
+      "y": 27.92
     }
   ],
   "color_scheme": {
@@ -53,8 +53,23 @@
         },
         {
           "name": "muzzle",
-          "x": 109.97,
-          "y": 22.25
+          "x": 102.34,
+          "y": 16.85
+        }
+      ]
+    },
+    "heavy_right": {
+      "svg": "eq_neon_blaster_heavy_right_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 117.61,
+          "y": 27.65
         }
       ]
     },

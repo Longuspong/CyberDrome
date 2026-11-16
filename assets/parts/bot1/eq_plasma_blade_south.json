@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 51.83,
-      "y": 32.53
+      "x": 52.78,
+      "y": 33.21
     }
   ],
   "color_scheme": {
@@ -52,8 +52,23 @@
         },
         {
           "name": "muzzle",
-          "x": 44.53,
-          "y": 31.97
+          "x": 46.05,
+          "y": 33.05
+        }
+      ]
+    },
+    "heavy_right": {
+      "svg": "eq_plasma_blade_heavy_right_south.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 43.0,
+          "y": 30.89
         }
       ]
     }

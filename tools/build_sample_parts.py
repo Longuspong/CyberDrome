@@ -1965,31 +1965,33 @@ LAFETTE_Z = 61
 
 
 def _arm_extended(k=1.0):
-    """Fernkampf: Oberarm kurz, Unterarm gestreckt nach vorn. (Formen, Hand)."""
+    """Fernkampf: Oberarm kurz, Ellbogen nach aussen (+l), Unterarm gestreckt
+    nach vorn -- so laeuft der Arm neben dem Rumpf und nicht quer davor."""
     t, zs = 2.2 * k, ARM_Z
+    lo = 5 * k                                           # Ellbogen nach aussen
     shapes = [
-        B((-2.5 * k, 2.5 * k), (-t, t), (zs - 7 * k, zs), "metal"),
-        B((-2 * k, 15 * k), (-t - 0.3, t + 0.3), (zs - 8.5 * k, zs - 2 * k), "plate"),
-        B((8.5 * k, 14.5 * k), (-t - 0.4, t + 0.4), (zs - 4 * k, zs - 3 * k), "accent"),
+        B((-2.5 * k, 2.5 * k), (-t, lo + t), (zs - 7 * k, zs - 1 * k), "metal"),
+        B((-2 * k, 15 * k), (lo - t - 0.3, lo + t + 0.3), (zs - 8.5 * k, zs - 2 * k), "plate"),
+        B((8.5 * k, 14.5 * k), (lo - t - 0.4, lo + t + 0.4), (zs - 4 * k, zs - 3 * k), "accent"),
     ]
-    return shapes, (15 * k, 0, zs - 5.5 * k)
+    return shapes, (15 * k, lo, zs - 5.5 * k)
 
 
 def _arm_raised(k=1.0):
-    """Nahkampf/Stab/Schild: Oberarm runter, Unterarm nach vorn, Faust."""
+    """Nahkampf/Stab/Schild: Oberarm runter, Unterarm nach vorn, Faust leicht
+    nach aussen versetzt."""
     t, zs = 2.0 * k, ARM_Z
-    hf, hz = 12.75 * k, zs - 12.5 * k
+    hf, hl, hz = 12.75 * k, 1.0 * k, zs - 12.5 * k
     shapes = [
         B((-2.5 * k, 2.5 * k), (-t, t), (zs - 11 * k, zs), "metal"),
         B((-2.5 * k, 10.5 * k), (-t - 0.3, t + 0.3), (zs - 16 * k, zs - 9 * k), "plate"),
-        B((4 * k, 9 * k), (-t - 0.8, -t - 0.3), (zs - 13.5 * k, zs - 12 * k), "accent"),
         B((4 * k, 9 * k), (t + 0.3, t + 0.8), (zs - 13.5 * k, zs - 12 * k), "accent"),
         # Faust: umschliesst den Griff, der oben und unten herausschaut
-        B((hf - 2.2 * k, hf + 2.2 * k), (-2.6 * k, 2.6 * k), (hz - 2.6 * k, hz + 2.6 * k), "dark"),
-        B((hf + 2.2 * k, hf + 2.6 * k), (-2.2 * k, 2.2 * k), (hz - 1.6 * k, hz - 0.6 * k), "light"),
-        B((hf + 2.2 * k, hf + 2.6 * k), (-2.2 * k, 2.2 * k), (hz + 0.6 * k, hz + 1.6 * k), "light"),
+        B((hf - 2.2 * k, hf + 2.2 * k), (hl - 2.6 * k, hl + 2.6 * k), (hz - 2.6 * k, hz + 2.6 * k), "dark"),
+        B((hf + 2.2 * k, hf + 2.6 * k), (hl - 2.2 * k, hl + 2.2 * k), (hz - 1.6 * k, hz - 0.6 * k), "light"),
+        B((hf + 2.2 * k, hf + 2.6 * k), (hl - 2.2 * k, hl + 2.2 * k), (hz + 0.6 * k, hz + 1.6 * k), "light"),
     ]
-    return shapes, (hf, 0, hz)
+    return shapes, (hf, hl, hz)
 
 
 def _head_blaster(h, k, neon=False):
@@ -2118,9 +2120,9 @@ def _head_wrench(h, k):
 
 
 def _head_shield(h, k):
-    """Schild angewinkelt vor dem Koerper, mittig auf der Faust."""
+    """Schild angewinkelt vor dem Koerper, zur Koerpermitte hin versetzt."""
     f, l, z = h
-    a, b = l - 8.5 * k, l + 8.5 * k
+    a, b = l - 11 * k, l + 6 * k                         # reicht zur Koerpermitte
     return [
         B((f + 1.5 * k, f + 3.5 * k), (a, b), (z - 14 * k, z + 15 * k), "plate"),
         B((f + 1.5 * k, f + 4 * k), (a - 0.5, b + 0.5), (z + 15 * k, z + 17 * k), "light"),
@@ -2191,11 +2193,24 @@ def lafette_wrench():
 
 
 def weapon_set(pose, head, lafette=None, **kw):
-    """Grundform (k 1), Molok-Variante und, fuer Fernwaffen, die Lafette."""
+    """Grundform (k 1, linker Arm), Molok-Varianten fuer beide Arme und, fuer
+    Fernwaffen, die Lafette.
+
+    Die Posen sind fuer den LINKEN Arm (+l) gebaut: der Ellbogen geht nach
+    aussen, der Schild zur Koerpermitte. Fuer den rechten Molok-Arm gibt es
+    dieselbe Waffe in 3D an der Armebene gespiegelt ("heavy_right") -- das
+    ist kein gespiegeltes Bild, der Generator rendert sie neu, Licht und
+    Schatten stimmen also.
+    """
     shapes, point = posed(pose, head, 1.0, **kw)
     heavy, heavy_point = posed(pose, head, HEAVY_K, **kw)
-    variants = {"heavy": {"shapes": heavy, "anchors": {"mount": (0, 0, ARM_Z),
-                                                       "muzzle": heavy_point}}}
+    hp_r = (heavy_point[0], -heavy_point[1], heavy_point[2])
+    variants = {
+        "heavy": {"shapes": heavy, "anchors": {"mount": (0, 0, ARM_Z),
+                                               "muzzle": heavy_point}},
+        "heavy_right": {"shapes": _mirror_l(heavy),
+                        "anchors": {"mount": (0, 0, ARM_Z), "muzzle": hp_r}},
+    }
     if lafette is not None:
         laf, laf_point = lafette
         variants["lafette"] = {"shapes": laf, "anchors": {"mount": (0, 0, LAFETTE_Z),
