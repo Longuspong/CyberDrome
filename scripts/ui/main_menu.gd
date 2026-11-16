@@ -86,42 +86,73 @@ func _ready() -> void:
 
 
 ## Die Boss-Karte (16. Nov. 2026, Wunsch des Spielers: die Arena mit dem
-## Squad kam weg). PLATZHALTER, bis Story-Karten und Bosse entschieden sind
-## (VORSCHLAG_STORY.md, Bosse): der Boss am Ende von Neon City als Portraet
-## im StoryDialog-Stil, Name, Fraktion und ein Satz.
+## Squad kam weg). Das Bild des Spielers fuellt die Karte (links die Figur),
+## rechts auf der dunklen Flaeche Name, Fraktion und ein Satz. Inhalt noch
+## Platzhalter, bis Story und Bosse entschieden sind (VORSCHLAG_STORY.md).
+const BOSS_ART := "res://assets/story/boss_shogun_kage.jpg"
+
+
 func _boss_card() -> Control:
 	var wrap := Control.new()
 	wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	wrap.custom_minimum_size = Vector2(0, 220)
+	wrap.custom_minimum_size = Vector2(0, 230)
 	var panel := PanelContainer.new()
 	var box := UiKit.card_style(true)
-	box.set_content_margin_all(14)
-	box.content_margin_top = 26
+	box.set_content_margin_all(2)
 	panel.add_theme_stylebox_override("panel", box)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel.offset_top = 12
 	panel.offset_right = -6
+	panel.clip_contents = true
 	wrap.add_child(panel)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	panel.add_child(row)
-	var portrait := StoryDialog.Portrait.new()
-	portrait.custom_minimum_size = Vector2(140, 180)
-	portrait.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	portrait.setup(Arcade.MAGENTA, "ninja")
-	row.add_child(portrait)
-	var text := VBoxContainer.new()
-	text.add_theme_constant_override("separation", 6)
-	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(text)
-	text.add_child(Arcade.label("SHOGUN KAGE", 22, Arcade.WHITE, "display"))
-	text.add_child(Arcade.label("Anführer der Neon Ninja's", 14, Arcade.MAGENTA, "bold", 0.04))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	panel.add_child(column)
+	# Das Bild in voller Breite und ganzem Seitenverhaeltnis (16:10) -- so
+	# bleibt die Figur links ganz zu sehen; Name und Fraktion stehen rechts
+	# auf der dunklen Flaeche des Bilds, der Satz darunter.
+	var art := TextureRect.new()
+	art.texture = load(BOSS_ART)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.clip_contents = true
+	column.add_child(art)
+	# Hoehe aus der Breite (16:10), damit nichts beschnitten wird.
+	var fit := func():
+		var ratio: float = art.texture.get_width() / float(art.texture.get_height()) \
+			if art.texture != null else 1.6
+		art.custom_minimum_size = Vector2(0, round(column.size.x / ratio))
+	column.resized.connect(fit)
+	fit.call_deferred()
+	var title := VBoxContainer.new()
+	title.add_theme_constant_override("separation", 0)
+	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title.anchor_left = 0.62
+	title.offset_top = 14
+	title.offset_right = -10
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.add_child(title)
+	var name := Arcade.label("SHOGUN\nKAGE", 22, Arcade.WHITE, "display")
+	name.add_theme_constant_override("line_spacing", -4)
+	name.add_theme_color_override("font_shadow_color", Arcade.NIGHT)
+	name.add_theme_constant_override("shadow_offset_y", 3)
+	title.add_child(name)
+	var faction := Arcade.label("Anführer der\nNeon Ninja's", 13, Arcade.ROSE, "bold", 0.04)
+	title.add_child(faction)
+	var below := MarginContainer.new()
+	for side in ["left", "right"]:
+		below.add_theme_constant_override("margin_" + side, 12)
+	below.add_theme_constant_override("margin_top", 8)
+	below.add_theme_constant_override("margin_bottom", 10)
+	below.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(below)
 	var line := Arcade.label("Wartet am Ende von Neon City. Wer ihn schlägt, öffnet den Infinity-Einsatz.",
 		14, Arcade.TEXT, "medium")
 	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.add_child(line)
-	text.add_child(Arcade.label("VORSCHAU · STORY FOLGT", 11, Arcade.MUTED, "bold", 0.16))
+	line.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	below.add_child(line)
 	var tag := Arcade.tag("BOSS · NEON CITY", 12, -3.0)
 	tag.position = Vector2(12, 0)
 	wrap.add_child(tag)
