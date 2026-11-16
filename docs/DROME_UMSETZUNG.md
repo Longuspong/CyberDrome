@@ -30,16 +30,18 @@ keinem Schritt -- nur Form, Licht und Bewegung.
 
 ## Offen -- in dieser Reihenfolge
 
-### 1. Chassis Vireo
+### 1. Chassis Vireo -- erledigt (16. Nov.)
 Quelle: `v4.py` (`VIREO`, `V_BOOSTER`, `V_PASSIVE_ARM`) bzw. `new_dromes.py`
 (`V_BODY`, `V_LEG`).
-- [ ] Rumpf: V-Torso, schlanke Taille, Schultern; **großer Rücken-Booster mit
+- [x] Rumpf: V-Torso, schlanke Taille, Schultern; **großer Rücken-Booster mit
       Flügeln** und Düsen (Passive Sprint)
-- [ ] Kopf: Helm mit Visier, Kamm statt Antenne, **zwei Helm-Booster**
-- [ ] Passiv-Arm (rechts, `-l`) liegt am Körper an -- fester Teil des Rumpfs
-- [ ] Waffenarm kommt weiter mit der Waffe; Anker `equip_left` an der
+- [x] Kopf: Helm mit Visier, Kamm statt Antenne, **zwei Helm-Booster**
+      (Kopf-Anker jetzt `z 65`)
+- [x] Passiv-Arm (rechts, `-l`) liegt am Körper an -- fester Teil des Rumpfs
+- [x] Waffenarm kommt weiter mit der Waffe; Anker `equip_left` an der
       Schulter (`(0, 14.5, 54)`), bis Schritt 4 hängen die alten Waffenarme
-- [ ] Beine schlanker, Knieschutz, spitze Füße
+- [x] Beine schlanker, Knieschutz, spitze Füße
+- Kern sitzt eine Stufe höher (`z 51`), im Sockel der neuen Brustplatte
 
 ### 2. Chassis Nimbus
 Quelle: `v4.py` (`NIMBUS`, `N_ORB_ARM`, `N_HALO`).
