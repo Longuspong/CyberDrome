@@ -102,7 +102,7 @@ Zuerst der Runenstab-Vortex, dann alle übrigen nach demselben Muster.
 |---|---|---|---|
 | Neon Ninja's | fast schwarz `#1a1820` / `#423c52` | Neonrot `#ff2a55`, Orange `#ff9a3d`, Weiß | Neonrot |
 | Solar Sentients | Laubgrün `#3f7a3a` / Rinde `#8a6440` | Blütenrosa `#ff6fae`, Pollengelb `#fff27a` | Rosa |
-| Mega Mechas | Maschinenrot `#a8232c` / Schwarz `#1d1d20` | gelb-schwarze Absperrstreifen, Gelb `#ffcc00` | Gelb |
+| Mega Mechas | sattes Maschinenrot `#a3121c` / Schwarz `#232325` | **matt**: gelb-schwarze Absperrstreifen `#d4a017`, kaum Glühen (`#b8860b`) | gedecktes Gelb `#8a6a12` |
 | Hipstar Hackers | Violett `#2a1446` / Cyan `#3ad6e0` | Magenta `#ff2bd6`, Cyan `#2ee3eb` | Magenta |
 
 Die Streifen der Mechas sind im Entwurf ein SVG-Muster; ob Godot es sauber

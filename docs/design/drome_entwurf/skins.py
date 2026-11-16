@@ -7,8 +7,8 @@ import v4
 g = n.g
 
 HAZARD = ('<defs><pattern id="hz" patternUnits="userSpaceOnUse" width="3.2" height="3.2" '
-          'patternTransform="rotate(45)"><rect width="1.6" height="3.2" fill="#ffcc00"/>'
-          '<rect x="1.6" width="1.6" height="3.2" fill="#141414"/></pattern></defs>')
+          'patternTransform="rotate(45)"><rect width="1.6" height="3.2" fill="#d4a017"/>'
+          '<rect x="1.6" width="1.6" height="3.2" fill="#1a1a1a"/></pattern></defs>')
 
 FR = {
     # dunkles Schwarz, helle Neon-Akzente (Rot, Orange, Weiss)
@@ -17,9 +17,9 @@ FR = {
     # biologisch, bluehend: Laub, Rinde, Bluetenrosa, Pollen
     "solar": dict(plate="#3f7a3a", plate_light="#86c95e", plate_dark="#1d4222", metal="#8a6440",
                   accent="#ff6fae", glow="#fff27a", visor="#ffc4e2", outline="#0b1d0d", rim="#ff6fae"),
-    # Maschinenrot, Schwarz, gelb-schwarze Absperrstreifen
-    "mecha": dict(plate="#a8232c", plate_light="#d9453f", plate_dark="#4a0e14", metal="#1d1d20",
-                  accent="url(#hz)", glow="#ffcc00", visor="#ffcc00", outline="#0a0a0a", rim="#ffcc00"),
+    # Maschinenrot satt und matt, Schwarz, Absperrstreifen in mattem Gelb
+    "mecha": dict(plate="#a3121c", plate_light="#c4252a", plate_dark="#55070d", metal="#232325",
+                  accent="url(#hz)", glow="#b8860b", visor="#c9971a", outline="#0a0a0a", rim="#8a6a12"),
     # bleibt wie gehabt
     "hacker": dict(plate="#2a1446", plate_light="#5a2e8a", plate_dark="#150826", metal="#3ad6e0",
                    accent="#ff2bd6", glow="#2ee3eb", visor="#ffe14d", outline="#06020e", rim="#ff2bd6"),
