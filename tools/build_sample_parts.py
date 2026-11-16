@@ -1201,88 +1201,121 @@ def render(shapes, facing):
 # ===========================================================================
 # RX-Vireo // Scout  (parts/bot1)
 #
-# Silhouette geht vor Detail: wenige grosse Volumen mit sichtbaren Luecken
-# dazwischen. Der Hals trennt Kopf und Schultern, die Schulterpanzer stehen
-# seitlich vom Torso ab, die Arme haengen herunter statt in die Kamera zu
-# zeigen -- eine nach vorn gerichtete Waffe verschmilzt in der Iso-Ansicht
-# sonst mit Torso und Beinen.
+# Chassis nach den DROME-Designregeln (16. Nov. 2026, Entwurf
+# docs/design/drome_entwurf/v4.py): V-Torso mit schlanker Taille, Helm mit
+# Visier und Kamm. Die Passive Sprint ist sichtbar: grosser Ruecken-Booster
+# mit Fluegeln und Duesen, dazu zwei Helm-Booster. Der freie Arm (rechts, -l)
+# liegt am Koerper an und gehoert zum Rumpf; der Waffenarm kommt mit der
+# Waffe und haengt an der Schulter (equip_left).
 #
 # Hoehenprofil in Entwurfseinheiten:
-#   Fuesse 0..7   Beine 7..36   Hueften 34..41   Torso 41..62
-#   Schultern 52..64   Hals 62..66   Kopf 66..78   Antenne bis 89
+#   Fuesse 0..6   Beine 6..35   Huefte 34..39   Taille 39..45   Torso 45..62
+#   Schultern 54..64   Hals 62..65   Kopf 65..77   Kamm bis 81
 # ===========================================================================
 
+def _mirror_l(shapes):
+    """Spiegelt Formen an l = 0 (fuer Beinpaare und Fluegel)."""
+    out = []
+    for s in shapes:
+        if s[0] == "box":
+            _, f, l, z, mat = s
+            out.append(("box", f, (-l[1], -l[0]), z, mat))
+        elif s[0] == "disc":
+            _, f, lc, zc, r, mat, seg = s
+            out.append(("disc", f, -lc, zc, r, mat, seg))
+        else:
+            _, c, prof, mat, axis, seg, caps = s
+            if axis == "z":
+                out.append(("lathe", (c[0], -c[1]), prof, mat, axis, seg, caps))
+            elif axis == "f":
+                out.append(("lathe", (-c[0], c[1]), prof, mat, axis, seg, caps))
+            else:
+                out.append(("lathe", c, tuple((r, -p) for r, p in reversed(prof)),
+                            mat, axis, seg, caps))
+    return out
+
+
+_SCOUT_LEG = [
+    B((-3.5, 3.5), (3.5, 8), (24, 35), "plate"),         # Oberschenkel
+    B((-4, 4), (3, 8.5), (20, 24), "metal"),             # Knie
+    B((3.5, 5.5), (3.8, 7.7), (19, 27), "light"),        # Knieschutz
+    B((-3, 3.5), (3.8, 7.7), (6, 20), "plate"),          # Schienbein
+    B((-6, 7), (3.5, 8), (0, 6), "plate"),               # Fuss
+    B((7, 10.5), (4.2, 7.3), (0, 3.5), "dark"),          # spitze Kappe
+    B((-8.5, -6), (4.5, 7), (1, 5), "metal"),            # Ferse
+    B((7, 7.5), (4.5, 7), (3.5, 5), "accent"),
+]
+
 SCOUT_BODY = [
-    # -- Hueftblock -------------------------------------------------------
-    B((-6.5, 6.5), (-10, 10), (34, 41), "metal"),
-    # -- Torso in zwei Stufen, nach oben breiter --------------------------
-    B((-6.5, 7.5), (-9, 9), (41, 49), "plate"),
-    B((-7, 8), (-11, 11), (49, 60), "plate"),
-    B((-6.5, 7.5), (-10, 10), (60, 62.5), "light"),      # Brustdach
-    # Brustpanel, Kernsockel, Neon -- erhaben auf der Frontflaeche.
-    # Der Sockel ist groesser als der Kern, der spaeter hineingeht: er muss ihn
-    # bis in die aeussersten Energiestreifen tragen, sonst haengt der Kern an
-    # seinem Rand ueber der Kante.
-    B((8, 8.6), (-7, 7), (43, 58), "dark"),
-    B((8.6, 9.1), (-6, 6), (55.4, 57.4), "accent"),
-    B((8.6, 9.2), (-6.5, 6.5), (43.4, 54.6), "dark"),
-    # Rueckseite: Kuehlrippen, verschwinden sobald der Bot herschaut
-    B((-7.6, -7), (-8, 8), (44, 58), "dark"),
-    B((-8.1, -7.6), (-6, 6), (46, 47.5), "light"),
-    B((-8.1, -7.6), (-6, 6), (50, 51.5), "light"),
-    B((-8.1, -7.6), (-6, 6), (54, 55.5), "light"),
-    # -- Schulterpanzer, deutlich vom Torso abgesetzt ---------------------
-    B((-6.5, 6.5), (11.5, 19), (52, 62), "plate"),
-    B((-7, 7), (11, 19.5), (62, 64.5), "light"),
-    B((-6.5, 6.5), (-19, -11.5), (52, 62), "plate"),
-    B((-7, 7), (-19.5, -11), (62, 64.5), "light"),
-    B((6.5, 7.1), (13, 17.5), (56, 58), "accent"),
-    B((6.5, 7.1), (-17.5, -13), (56, 58), "accent"),
-    # -- Hals: die Luecke, die den Kopf lesbar macht ----------------------
-    B((-3.5, 3.5), (-4, 4), (62.5, 66), "metal"),
-    # -- Freier Arm am rechten Anker (9. Nov. 2026, Wunsch des Spielers) ---
-    # Seit es nur EINEN Halter gibt, blieb rechts eine Luecke unter dem
-    # Schulterpanzer. Der Arm traegt keine Waffe: Oberarm, Unterarm, Faust,
-    # gebaut wie der Arm am Blaster, damit beide Seiten zusammenpassen.
-    B((-3, 3), (-23.5, -15.5), (45, 54), "metal"),       # Oberarm
-    B((-3.5, 4), (-23, -16), (34, 46), "plate"),         # Unterarm
-    B((-3, 4.5), (-22.5, -16.5), (29.5, 34), "dark"),    # Faust
-    B((4, 4.6), (-21.5, -17.5), (39, 41), "accent"),     # Leuchtstreifen
+    # -- Huefte, schlanke Taille, V-Torso ----------------------------------
+    B((-5, 5), (-8.5, 8.5), (34, 39), "metal"),
+    B((-4.5, 5), (-6, 6), (39, 45), "dark"),
+    B((-6, 7), (-9, 9), (45, 52), "plate"),
+    B((-6.5, 8), (-11, 11), (52, 60), "plate"),
+    B((-6, 7.5), (-10, 10), (60, 62), "light"),          # Brustdach
+    # Brustplatte mit Kernsockel -- der Sockel traegt den Kern bis in seine
+    # aeussersten Energiestreifen.
+    B((8, 8.6), (-6.5, 6.5), (45.5, 59), "dark"),
+    B((8.6, 9.2), (-6.2, 6.2), (45.8, 56), "dark"),
+    B((8.6, 9.1), (-6, -1.2), (56.4, 57.8), "accent"),
+    B((8.6, 9.1), (1.2, 6), (56.4, 57.8), "accent"),
+    # -- Schultern ---------------------------------------------------------
+    B((-5.5, 5.5), (11, 17), (54, 62), "plate"),
+    B((-6, 6), (10.5, 17.5), (62, 64), "light"),
+    B((5.5, 6), (12, 16), (57, 59), "accent"),
+    B((-5.5, 5.5), (-17, -11), (54, 62), "plate"),
+    B((-6, 6), (-17.5, -10.5), (62, 64), "light"),
+    B((5.5, 6), (-16, -12), (57, 59), "accent"),
+    # -- Hals --------------------------------------------------------------
+    B((-2.5, 2.5), (-3, 3), (62, 65), "metal"),
+    # -- Freier Arm (-l): liegt am Koerper an, traegt nie eine Waffe -------
+    B((-2.5, 2.5), (-16.5, -12.5), (45, 54), "metal"),   # Oberarm
+    B((-3, 3), (-15.5, -11.5), (34, 45), "plate"),       # Unterarm
+    B((-2.5, 3.5), (-15, -12), (29.5, 34), "dark"),      # Faust
+    B((3, 3.5), (-14.5, -12.5), (39, 41), "accent"),
+    # -- Passive Sprint: Ruecken-Booster mit Fluegeln und Duesen -----------
+    B((-13, -7), (-6.5, 6.5), (44, 62), "plate"),
+    B((-13.5, -6.5), (-7, 7), (62, 64), "light"),
+    L((-12, 4), [(2.4, 40), (2.8, 44)], "metal", segments=12),
+    L((-12, -4), [(2.4, 40), (2.8, 44)], "metal", segments=12),
+    L((-12, 4), [(1.9, 36.5), (1.9, 40)], "glow", segments=10),
+    L((-12, -4), [(1.9, 36.5), (1.9, 40)], "glow", segments=10),
+    B((-12, -8), (6.5, 13), (55, 57), "light"),          # Fluegel
+    B((-12, -8), (-13, -6.5), (55, 57), "light"),
+    B((-12.2, -11.6), (7, 12.5), (55.5, 56.5), "accent"),
+    B((-12.2, -11.6), (-12.5, -7), (55.5, 56.5), "accent"),
+    B((-13.6, -13), (-3, 3), (48, 58), "accent"),
 ]
 
 SCOUT_HEAD = [
-    B((-6.5, 6.5), (-7.5, 7.5), (66, 76), "plate"),
-    B((-7, 7), (-8, 8), (76, 78), "light"),              # Helmdach
-    B((6.5, 7.1), (-5.5, 5.5), (68.5, 73), "visor"),
-    B((-7.1, -6.5), (-4, 4), (69, 70.5), "light"),       # Nackenrippen
-    B((-7.1, -6.5), (-4, 4), (72, 73.5), "light"),
-    B((-1, 1), (4, 5.5), (78, 86), "metal"),             # Antenne
-    B((-2, 2), (3, 6.5), (86, 89), "glow"),
+    B((-5, 5.5), (-5.5, 5.5), (65, 74), "plate"),        # Helm
+    B((-5.5, 5), (-6, 6), (74, 76), "light"),            # Helmdach
+    B((5.5, 7), (-4.5, 4.5), (65.5, 71.5), "dark"),      # Visierrahmen
+    B((7, 7.5), (-4, 4), (68.2, 70.4), "visor"),
+    B((-4, 2), (5.5, 6.8), (67, 75), "metal"),           # Wangen
+    B((-4, 2), (-6.8, -5.5), (67, 75), "metal"),
+    B((-1, 2), (5.6, 7), (75, 77), "accent"),
+    B((-1, 2), (-7, -5.6), (75, 77), "accent"),
+    B((-6, 4), (-0.8, 0.8), (76, 81), "accent"),         # Kamm
+    # Helm-Booster (Passive Sprint)
+    B((-7.5, -4.5), (2.5, 5), (68, 76), "metal"),
+    B((-7.5, -4.5), (-5, -2.5), (68, 76), "metal"),
+    B((-7.6, -4.4), (2.4, 5.1), (66, 68), "glow"),
+    B((-7.6, -4.4), (-5.1, -2.4), (66, 68), "glow"),
 ]
 
-SCOUT_FEET = [
-    B((-4.5, 4.5), (4, 9), (25, 36), "plate"),           # Oberschenkel
-    B((-4.5, 4.5), (-9, -4), (25, 36), "plate"),
-    B((-5, 5), (3, 9.5), (20, 25), "metal"),             # Kniegelenke
-    B((-5, 5), (-9.5, -3), (20, 25), "metal"),
-    B((-4, 4), (4, 8.5), (7, 22), "plate"),              # Unterschenkel
-    B((-4, 4), (-8.5, -4), (7, 22), "plate"),
-    B((-7, 9), (3, 10), (0, 7), "plate"),                # Fuesse
-    B((-7, 9), (-10, -3), (0, 7), "plate"),
-    B((9, 9.5), (4, 9), (2, 3.5), "accent"),
-    B((9, 9.5), (-9, -4), (2, 3.5), "accent"),
-]
+SCOUT_FEET = _SCOUT_LEG + _mirror_l(_SCOUT_LEG)
 
 # Impulskern: eine Scheibe, buendig im Kernsockel der Brustplatte (Front 9.2).
 # Scheiben haben keine Tiefe -- deshalb bleibt hier nur zu pruefen, dass die
 # vier Energiestreifen nicht ueber den Sockel hinausragen.
 SCOUT_CORE = [
-    D(9.3, 0, 49, 4.4, "dark"),
-    D(9.45, 0, 49, 2.6, "glow"),
-    B((9.45, 9.6), (-0.5, 0.5), (52.6, 54.0), "accent"),
-    B((9.45, 9.6), (-0.5, 0.5), (44.0, 45.4), "accent"),
-    B((9.45, 9.6), (-5.9, -4.7), (48.5, 49.5), "accent"),
-    B((9.45, 9.6), (4.7, 5.9), (48.5, 49.5), "accent"),
+    D(9.3, 0, 51, 4.4, "dark"),
+    D(9.45, 0, 51, 2.6, "glow"),
+    B((9.45, 9.6), (-0.5, 0.5), (54.6, 55.8), "accent"),
+    B((9.45, 9.6), (-0.5, 0.5), (46.2, 47.4), "accent"),
+    B((9.45, 9.6), (-5.9, -4.7), (50.5, 51.5), "accent"),
+    B((9.45, 9.6), (4.7, 5.9), (50.5, 51.5), "accent"),
 ]
 
 # --- Ausruestung ------------------------------------------------------------
@@ -1818,28 +1851,6 @@ EQ_HOLO_BOOST = [
 # ===========================================================================
 
 
-def _mirror_l(shapes):
-    """Spiegelt Formen an l = 0 (fuer Beinpaare und Fluegel)."""
-    out = []
-    for s in shapes:
-        if s[0] == "box":
-            _, f, l, z, mat = s
-            out.append(("box", f, (-l[1], -l[0]), z, mat))
-        elif s[0] == "disc":
-            _, f, lc, zc, r, mat, seg = s
-            out.append(("disc", f, -lc, zc, r, mat, seg))
-        else:
-            _, c, prof, mat, axis, seg, caps = s
-            if axis == "z":
-                out.append(("lathe", (c[0], -c[1]), prof, mat, axis, seg, caps))
-            elif axis == "f":
-                out.append(("lathe", (-c[0], c[1]), prof, mat, axis, seg, caps))
-            else:
-                out.append(("lathe", c, tuple((r, -p) for r, p in reversed(prof)),
-                            mat, axis, seg, caps))
-    return out
-
-
 STRIX_BODY = [
     # -- Huefte und geduckter Rumpf, nach oben nach vorn versetzt -----------
     B((-6, 4), (-6, 6), (30, 36), "metal"),
@@ -1947,11 +1958,12 @@ SETS = [
                 "tags": ["light", "scout"], "shapes": SCOUT_BODY,
                 "anchors": {
                     "mount": (0, 0, MOUNT_Z),    # projiziert exakt auf (64, 64)
-                    "head": (0, 0, 66),
+                    "head": (0, 0, 65),
                     "feet": (0, 0, 36),
-                    "core": (8.8, 0, 49),
-                    "equip_left": (0, 19.5, 52),
-                    "equip_right": (0, -19.5, 52),
+                    "core": (8.8, 0, 51),
+                    # Waffenarm haengt an der Schulter (DROME-Designregeln)
+                    "equip_left": (0, 14.5, 54),
+                    "equip_right": (0, -14.5, 54),
                 },
                 # Ein Sprinter traegt keine Artillerie. Die Grenze steht hier
                 # und nicht in einer Balancing-Tabelle, weil sie sonst erst im
@@ -1969,7 +1981,7 @@ SETS = [
             {
                 "id": "scout_head", "code": "HED-001", "type": "head", "name": "Vireo Sensorkopf",
                 "tags": ["light", "sensor"], "shapes": SCOUT_HEAD,
-                "anchors": {"mount": (0, 0, 66), "sensor": (7.1, 0, 70.7)},
+                "anchors": {"mount": (0, 0, 65), "sensor": (7.5, 0, 69.3)},
             },
             {
                 "id": "scout_feet", "code": "LEG-001", "type": "feet", "name": "Vireo Sprintbeine",
@@ -1979,7 +1991,7 @@ SETS = [
             {
                 "id": "scout_core", "code": "COR-001", "type": "core", "name": "Vireo Impulskern",
                 "tags": ["core", "energy"], "shapes": SCOUT_CORE,
-                "anchors": {"mount": (8.8, 0, 49)},
+                "anchors": {"mount": (8.8, 0, 51)},
             },
             {
                 "id": "eq_pulse_blaster", "code": "EQP-001", "type": "equipment", "name": "Puls-Blaster",
