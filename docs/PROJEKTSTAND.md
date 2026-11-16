@@ -137,7 +137,7 @@ Vorlagen, Abgleich im README). Abgesprochen: **nur Optik**, Navigation bleibt
   Doppeltipp setzt nicht mehr automatisch ein ("Auswaehlen" im Popup).
 * **Startseite**: statt der Arena mit dem Squad (`HomeStage`, bleibt im Code)
   eine Boss-Karte (Shogun Kage, `MainMenu._boss_card`) mit dem Bild des
-  Spielers (`assets/story/boss_shogun_kage.jpg`); Inhalt noch Platzhalter.
+  Spielers (`assets/story/boss_shogun_kage.jpg`, fuellt die Karte, links buendig); Inhalt noch Platzhalter.
   `GameState.battle_ready_builds` zaehlt nur noch den Squad (zeigte "4/3").
 * Der Bildschirm nach "Einsatz starten" heisst **Aufstellung**
   (`_show_setup`, `SquadPicker`) -- der Spieler will ihn ueberarbeiten.

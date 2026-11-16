@@ -105,54 +105,66 @@ func _boss_card() -> Control:
 	panel.offset_right = -6
 	panel.clip_contents = true
 	wrap.add_child(panel)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 0)
-	panel.add_child(column)
-	# Das Bild in voller Breite und ganzem Seitenverhaeltnis (16:10) -- so
-	# bleibt die Figur links ganz zu sehen; Name und Fraktion stehen rechts
-	# auf der dunklen Flaeche des Bilds, der Satz darunter.
+	# Das Bild fuellt die Karte (Wunsch des Spielers, 16. Nov. 2026: so
+	# besser als Bild oben und Text darunter); der Text liegt unten rechts
+	# auf der dunklen Flaeche, ein Verlauf unten haelt ihn lesbar.
+	var stage := Control.new()
+	stage.clip_contents = true
+	panel.add_child(stage)
 	var art := TextureRect.new()
 	art.texture = load(BOSS_ART)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	art.stretch_mode = TextureRect.STRETCH_SCALE
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art.clip_contents = true
-	column.add_child(art)
-	# Hoehe aus der Breite (16:10), damit nichts beschnitten wird.
-	var fit := func():
+	stage.add_child(art)
+	# Fuellt die Karte, aber links buendig: abgeschnitten wird rechts (dort
+	# ist das Bild leer und dunkel), nie die Figur links.
+	var place := func():
 		var ratio: float = art.texture.get_width() / float(art.texture.get_height()) \
 			if art.texture != null else 1.6
-		art.custom_minimum_size = Vector2(0, round(column.size.x / ratio))
-	column.resized.connect(fit)
-	fit.call_deferred()
-	var title := VBoxContainer.new()
-	title.add_theme_constant_override("separation", 0)
-	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	title.anchor_left = 0.62
-	title.offset_top = 14
-	title.offset_right = -10
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art.add_child(title)
-	var name := Arcade.label("SHOGUN\nKAGE", 22, Arcade.WHITE, "display")
-	name.add_theme_constant_override("line_spacing", -4)
+		var height := maxf(stage.size.y, stage.size.x / ratio)
+		art.size = Vector2(height * ratio, height)
+		art.position = Vector2(0, (stage.size.y - height) * 0.5)
+	stage.resized.connect(place)
+	var shade := TextureRect.new()
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(Arcade.NIGHT, 0.0))
+	gradient.set_color(1, Color(Arcade.NIGHT, 0.9))
+	var fade := GradientTexture2D.new()
+	fade.gradient = gradient
+	fade.fill_from = Vector2(0.5, 0.45)
+	fade.fill_to = Vector2(0.5, 1.0)
+	shade.texture = fade
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(shade)
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 2)
+	text.alignment = BoxContainer.ALIGNMENT_END
+	text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	text.anchor_left = 0.46
+	text.offset_right = -12
+	text.offset_bottom = -12
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(text)
+	var name := Arcade.label("SHOGUN KAGE", 20, Arcade.WHITE, "display")
 	name.add_theme_color_override("font_shadow_color", Arcade.NIGHT)
 	name.add_theme_constant_override("shadow_offset_y", 3)
-	title.add_child(name)
-	var faction := Arcade.label("Anführer der\nNeon Ninja's", 13, Arcade.ROSE, "bold", 0.04)
-	title.add_child(faction)
-	var below := MarginContainer.new()
-	for side in ["left", "right"]:
-		below.add_theme_constant_override("margin_" + side, 12)
-	below.add_theme_constant_override("margin_top", 8)
-	below.add_theme_constant_override("margin_bottom", 10)
-	below.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(below)
+	text.add_child(name)
+	# Umbrechen statt abschneiden ("Neon Ninja'" am Rand, 16. Nov. 2026).
+	var faction := Arcade.label("Anführer der Neon Ninja's", 13, Arcade.ROSE, "bold", 0.04)
+	faction.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	faction.add_theme_color_override("font_shadow_color", Arcade.NIGHT)
+	faction.add_theme_constant_override("shadow_offset_y", 2)
+	text.add_child(faction)
 	var line := Arcade.label("Wartet am Ende von Neon City. Wer ihn schlägt, öffnet den Infinity-Einsatz.",
-		14, Arcade.TEXT, "medium")
+		13, Arcade.TEXT, "medium")
 	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	line.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	below.add_child(line)
+	line.add_theme_color_override("font_shadow_color", Arcade.NIGHT)
+	line.add_theme_constant_override("shadow_offset_y", 2)
+	text.add_child(line)
 	var tag := Arcade.tag("BOSS · NEON CITY", 12, -3.0)
 	tag.position = Vector2(12, 0)
 	wrap.add_child(tag)
