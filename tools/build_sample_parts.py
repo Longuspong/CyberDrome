@@ -1726,14 +1726,18 @@ MAGE_BODY = [
     L((0, -13.8), [(5.3, 49.2), (5.3, 50.0)], "accent", caps=False, segments=16),
     # -- Hals: die Luecke, die den Helm lesbar macht ----------------------
     L((0, 0), [(3.6, 58.2), (3.8, 61)], "metal", segments=12),
-    # -- Freier Arm am rechten Schulterorb (9. Nov. 2026, Wunsch des Spielers)
-    # Gerundet wie der Arm am Runenstab; die offene Hand haelt einen kleinen
-    # Arkanfunken -- der Magier zaubert mit beiden Haenden.
+    # -- Freier Arm (-l): Passive Echo (16. Nov. 2026, DROME-Designregeln) --
+    # Oberarm haengt, der Unterarm steht 90 Grad nach vorn, darueber schwebt
+    # die Energiekugel mit einem Ring -- die sichtbare Passive. Der Arm
+    # traegt nie eine Waffe; der Waffenarm (+l) kommt mit der Waffe.
     L((0, -13.8), [(3.4, 41), (3.8, 47), (3.4, 50)], "metal", segments=12),   # Oberarm
-    L((1.0, -13.8), [(3.0, 31), (3.6, 40)], "plate", segments=12),            # Unterarm
-    L((1.0, -13.8), [(4.2, 29), (4.2, 31.6)], "dark", segments=12),           # Hand
-    L((1.0, -13.8), [(3.9, 34.4), (3.9, 35.2)], "accent", caps=False, segments=12),
-    L((3.4, -13.8), [(0, 23.2), (1.6, 24.4), (2.1, 26.0), (1.6, 27.6), (0, 28.8)], "glow"),
+    L((-13.8, 40), [(2.6, -1), (3.0, 10)], "plate", axis="f", segments=12),   # Unterarm
+    L((-13.8, 40), [(3.2, 3.5), (3.2, 4.4)], "accent", axis="f", caps=False, segments=12),
+    L((-13.8, 40), [(3.4, 10), (3.4, 12.4)], "dark", axis="f", segments=12),  # Hand
+    L((16.2, -13.8), [(0, 42.2), (2.6, 43.2), (3.6, 46), (2.6, 48.8), (0, 49.8)], "glow", segments=14),
+    L((16.2, -13.8), [(5.0, 45.6), (5.6, 45.6), (5.6, 46.4), (5.0, 46.4), (5.0, 45.6)],
+      "accent", segments=20),                                                  # Ring
+    L((19.5, -10.5), [(0, 51), (1.2, 51.5), (1.6, 52.6), (1.2, 53.7), (0, 54.2)], "accent", segments=10),
 ]
 
 # Flacher Helm.
@@ -1753,6 +1757,13 @@ MAGE_HEAD = [
     L((0, 0), [(10.6, 69.0), (9.4, 69.6)], "light", segments=20),  # Krempe oben
     L((0, 0), [(9.4, 69.6), (7.8, 71.0), (4.4, 72.3), (0, 72.7)], "plate"),
     L((0, 0), [(3.8, 72.2), (3.8, 72.9)], "accent", caps=False, segments=14),
+    # Leuchtring hinter dem Kopf (16. Nov. 2026): steht senkrecht hinter der
+    # Krempe und ragt rundum ueber sie hinaus, drei Funken darauf.
+    L((0, 70), [(12.6, -7.0), (13.6, -7.0), (13.6, -6.4), (12.6, -6.4), (12.6, -7.0)],
+      "glow", axis="f", segments=32),
+    B((-7.3, -6.1), (-1, 1), (82.6, 85.4), "glow"),
+    B((-7.3, -6.1), (12, 14.4), (68.8, 71.2), "glow"),
+    B((-7.3, -6.1), (-14.4, -12), (68.8, 71.2), "glow"),
 ]
 
 # Fahrbarer Untersatz statt Beinen.

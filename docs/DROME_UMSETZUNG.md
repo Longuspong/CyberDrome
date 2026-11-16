@@ -43,12 +43,13 @@ Quelle: `v4.py` (`VIREO`, `V_BOOSTER`, `V_PASSIVE_ARM`) bzw. `new_dromes.py`
 - [x] Beine schlanker, Knieschutz, spitze Füße
 - Kern sitzt eine Stufe höher (`z 51`), im Sockel der neuen Brustplatte
 
-### 2. Chassis Nimbus
+### 2. Chassis Nimbus -- erledigt (16. Nov.)
 Quelle: `v4.py` (`NIMBUS`, `N_ORB_ARM`, `N_HALO`).
-- [ ] Rumpf, Hut und Rad bleiben; **Orb-Arm**: Unterarm 90° nach vorn mit
-      Energiekugel, Ring um die Kugel (Passive Echo)
-- [ ] **Leuchtring hinter dem Kopf** (Leuchtelement) als Teil des Kopfes
-- [ ] Waffenarm (rechte Hand, `+l`) kommt mit der Waffe
+- [x] Rumpf, Hut und Rad bleiben; **Orb-Arm**: Unterarm 90° nach vorn mit
+      Energiekugel, Ring um die Kugel (Passive Echo) -- fester Teil des Rumpfs
+- [x] **Leuchtring hinter dem Kopf** (Leuchtelement) als Teil des Kopfes
+- [x] Waffenarm (rechte Hand, `+l`) kommt mit der Waffe; Anker bleibt
+      `(0, 13.8, 47)`, bis Schritt 4 hängen die alten Waffenarme
 
 ### 3. Chassis Molok
 Quelle: `v4.py` (`MOLOK`, `M_ARM`) und `v2.py` (`M_BEACON`).
