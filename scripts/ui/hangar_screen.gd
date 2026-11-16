@@ -283,6 +283,10 @@ func _drome_tile(index: int) -> Control:
 		_selected = index
 		_changed())
 	stack.add_child(toggle)
+	# Erst im Baum steht das Theme mit icon_max_width fest. Davor rechnet der
+	# Knopf mit dem vollen Symbolbild (96 px) und behielte diese Groesse --
+	# der "-"-Kasten lag dann ueber halber Kachelbreite (16. Nov. 2026).
+	toggle.set_deferred("size", toggle.custom_minimum_size)
 	return tile
 
 
