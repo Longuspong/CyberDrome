@@ -21,23 +21,23 @@
     },
     {
       "name": "head",
-      "x": 64.0,
-      "y": 35.86
+      "x": 56.36,
+      "y": 54.62
     },
     {
       "name": "feet",
       "x": 64.0,
-      "y": 63.54
+      "y": 67.36
     },
     {
       "name": "core",
-      "x": 72.59,
-      "y": 40.67
+      "x": 70.97,
+      "y": 52.41
     },
     {
       "name": "equip_center",
-      "x": 58.27,
-      "y": 51.37
+      "x": 74.98,
+      "y": 44.18
     }
   ],
   "color_scheme": {
@@ -52,15 +52,15 @@
   },
   "tags": [
     "marksman",
-    "light",
+    "owl",
     "sniper"
   ],
   "body_kind": "nonhumanoid",
   "slot_z": {
-    "head": 63,
-    "feet": 34,
-    "core": 42.6,
-    "equip_center": 57
+    "head": 57,
+    "feet": 30,
+    "core": 33.2,
+    "equip_center": 70.5
   },
   "slot_rules": {
     "equip_center": {

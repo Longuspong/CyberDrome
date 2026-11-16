@@ -125,5 +125,7 @@ zeichnet, ist offen (sonst als Geometrie).
    Tag `melee`/`ranged` aus der Reichweite der Grundattacke, Halterregel
    `reach` -- Strix-Lafette `ranged`; `PartData.accepts`/`reach_kind`,
    `SlotRules.slot_reach`, Fadenkreuz/Schwert in `SlotShape`; die
-   Modulbedingungen nutzen dieselbe Grenze ab 3 Feldern)**; Chassis (Strix, Vireo, Nimbus, Molok); Waffen in ihre
+   Modulbedingungen nutzen dieselbe Grenze ab 3 Feldern)**; Chassis (**Strix als Eule gebaut 16. Nov.**: Rumpf mit Flügelmantel
+   und Lafette, Eulenkapuze, Beine mit Knie nach hinten, Kern am Rücken,
+   Lanze und Mörser auf der Lafette; Vireo, Nimbus, Molok offen); Waffen in ihre
    Posen; Bewegung im Teile-Rig (`unit.gd`); Effekte je Fähigkeit.

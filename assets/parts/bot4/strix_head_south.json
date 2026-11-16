@@ -3,7 +3,7 @@
   "code": "HED-004",
   "set": "bot4",
   "type": "head",
-  "name": "Strix Okularkopf",
+  "name": "Strix Eulenkapuze",
   "direction": "south",
   "svg": "strix_head_south.svg",
   "view_box": [
@@ -16,13 +16,13 @@
   "anchors": [
     {
       "name": "mount",
-      "x": 64.0,
-      "y": 35.86
+      "x": 56.36,
+      "y": 54.62
     },
     {
       "name": "sensor",
-      "x": 54.64,
-      "y": 37.7
+      "x": 50.83,
+      "y": 52.34
     }
   ],
   "color_scheme": {
