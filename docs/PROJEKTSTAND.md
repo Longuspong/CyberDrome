@@ -135,6 +135,9 @@ Vorlagen, Abgleich im README). Abgesprochen: **nur Optik**, Navigation bleibt
   Rezept (`RunState.pair_result`, Hinweis-Schild). Ziehbare Kacheln stehen
   in der Gruppe `cyberdrome_drag_source`; dort scrollt `Accessibility` nicht.
   Doppeltipp setzt nicht mehr automatisch ein ("Auswaehlen" im Popup).
+* **Startseite**: statt der Arena mit dem Squad (`HomeStage`, bleibt im Code)
+  eine Boss-Karte als Platzhalter (Shogun Kage, `MainMenu._boss_card`).
+  `GameState.battle_ready_builds` zaehlt nur noch den Squad (zeigte "4/3").
 * Der Bildschirm nach "Einsatz starten" heisst **Aufstellung**
   (`_show_setup`, `SquadPicker`) -- der Spieler will ihn ueberarbeiten.
 

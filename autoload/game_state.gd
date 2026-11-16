@@ -397,11 +397,14 @@ func squad_is_valid() -> bool:
 # Kampfbereit
 # ---------------------------------------------------------------------------
 
-## Alle kampftauglichen DROMEs des Rosters -- die Grundgesamtheit, aus der die
-## Aufstellung vor dem Lauf schoepft.
+## Die kampftauglichen DROMEs des Squads (Startseite).
 func battle_ready_builds() -> Array:
 	var builds: Array = []
+	# Nur der Squad (16. Nov. 2026) -- vorher zaehlte jeder einsatzbereite
+	# DROME im Hangar, die Startseite zeigte "4/3".
 	for entry in roster.entries:
+		if not entry.in_squad:
+			continue
 		var build := roster.build_for(entry)
 		if build.is_valid():
 			builds.append(build)

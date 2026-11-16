@@ -3,8 +3,8 @@ extends Control
 ## Die Startseite -- mobile first, Hochformat (neu 9. Nov. 2026).
 ##
 ##   oben     der Name des Spiels als Neonschrift, darunter der Ort
-##   Mitte    die Buehne (HomeStage): das Tor der Arena von Neon City bei
-##            Nacht, davor DEIN Squad auf dem Podest
+##   Mitte    die Boss-Karte (Platzhalter seit 16. Nov. 2026; vorher die
+##            Arena mit dem Squad, HomeStage)
 ##   darunter eine Karte: naechstes Gebiet und dein Squad in einer Zeile
 ##   unten    die Hauptaktion "Neon City" (der Lauf), darunter der
 ##            Endlos-Modus (frei nach dem ersten Sieg in Neon City)
@@ -16,7 +16,6 @@ extends Control
 var _status: Label
 var _endless: Button
 
-var _stage: HomeStage
 
 
 func _ready() -> void:
@@ -50,7 +49,7 @@ func _ready() -> void:
 	gear_room.custom_minimum_size = Vector2(46, 0)
 	head.add_child(gear_room)
 
-	content.add_child(_stage_card())
+	content.add_child(_boss_card())
 	content.add_child(_info_card(running, region_name, region))
 
 	_status = UiKit.label("", UiKit.SMALL)
@@ -86,46 +85,44 @@ func _ready() -> void:
 	story.grab_focus.call_deferred()
 
 
-## Die Buehne im Rahmen: Arena bei Nacht mit dem Squad, oben das Etikett
-## DEIN SQUAD, unten die Namen.
-func _stage_card() -> Control:
-	var squad: Array = GameState.battle_ready_builds()
+## Die Boss-Karte (16. Nov. 2026, Wunsch des Spielers: die Arena mit dem
+## Squad kam weg). PLATZHALTER, bis Story-Karten und Bosse entschieden sind
+## (VORSCHLAG_STORY.md, Bosse): der Boss am Ende von Neon City als Portraet
+## im StoryDialog-Stil, Name, Fraktion und ein Satz.
+func _boss_card() -> Control:
 	var wrap := Control.new()
 	wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	wrap.custom_minimum_size = Vector2(0, 240)
+	wrap.custom_minimum_size = Vector2(0, 220)
 	var panel := PanelContainer.new()
 	var box := UiKit.card_style(true)
-	box.set_content_margin_all(2)
+	box.set_content_margin_all(14)
+	box.content_margin_top = 26
 	panel.add_theme_stylebox_override("panel", box)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel.offset_top = 12
 	panel.offset_right = -6
 	wrap.add_child(panel)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 0)
-	panel.add_child(column)
-	_stage = HomeStage.new()
-	_stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(_stage)
-	_stage.show_squad(squad)
-	var names := HBoxContainer.new()
-	names.alignment = BoxContainer.ALIGNMENT_CENTER
-	names.add_theme_constant_override("separation", 18)
-	var strip := PanelContainer.new()
-	var strip_box := StyleBoxFlat.new()
-	strip_box.bg_color = Color("#1d0f45")
-	strip_box.border_color = Arcade.YELLOW
-	strip_box.border_width_top = 2
-	strip_box.content_margin_top = 4
-	strip_box.content_margin_bottom = 4
-	strip.add_theme_stylebox_override("panel", strip_box)
-	strip.add_child(names)
-	column.add_child(strip)
-	for build in squad:
-		names.add_child(Arcade.label(str(build.display_name).to_upper(), 12, Arcade.TEXT, "bold", 0.16))
-	if squad.is_empty():
-		names.add_child(Arcade.label("KEIN SQUAD", 12, Arcade.MUTED, "bold", 0.16))
-	var tag := Arcade.tag("DEIN SQUAD · %d/%d" % [squad.size(), RunState.squad_max()], 12, -3.0)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	panel.add_child(row)
+	var portrait := StoryDialog.Portrait.new()
+	portrait.custom_minimum_size = Vector2(140, 180)
+	portrait.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	portrait.setup(Arcade.MAGENTA, "ninja")
+	row.add_child(portrait)
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 6)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(text)
+	text.add_child(Arcade.label("SHOGUN KAGE", 22, Arcade.WHITE, "display"))
+	text.add_child(Arcade.label("Anführer der Neon Ninja's", 14, Arcade.MAGENTA, "bold", 0.04))
+	var line := Arcade.label("Wartet am Ende von Neon City. Wer ihn schlägt, öffnet den Infinity-Einsatz.",
+		14, Arcade.TEXT, "medium")
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.add_child(line)
+	text.add_child(Arcade.label("VORSCHAU · STORY FOLGT", 11, Arcade.MUTED, "bold", 0.16))
+	var tag := Arcade.tag("BOSS · NEON CITY", 12, -3.0)
 	tag.position = Vector2(12, 0)
 	wrap.add_child(tag)
 	return wrap
