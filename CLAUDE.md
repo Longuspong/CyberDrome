@@ -24,6 +24,14 @@ als offene Punkte im SPOT. Cache oeffnen ist bis dahin eine Vorschau.
 Bilder ohne Web-Export: `xvfb-run ... tests/screenshot.gd -- <szene> <png> 90
 [run=story results=SS ...]` (Optionen im Kopf der Datei).
 
+**DROME-Designregeln (16. Nov. 2026, abgesegnet, NICHT gebaut):**
+`docs/DROME_DESIGNREGELN.md` -- Koerperarten (humanoid / Strix als Eule mit
+Lafette, nur Fernkampf), ein Waffenarm je Chassis (Molok zwei, nie
+gespiegelt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt
+den Arm mit), sichtbare Passive, Kontur je Teil, Bewegung, lesbare
+Faehigkeiten, Fraktions-Paletten. Entwurfs-Skripte unter
+`docs/design/drome_entwurf/`; Umsetzung je ein PR (Abschnitt 9 dort).
+
 **UI-Symbole (15. Nov. 2026):** Sonderzeichen, die die Schriften nicht haben,
 nie als Text -- stattdessen SVG aus `assets/ui_icons/` ueber `UiIcon`
 (`tests/test_glyphs.gd` prueft das).
