@@ -106,9 +106,12 @@ bleibt.
       Geometrie
 
 ### 8. Auf Claude Design noch offen (vor den passenden Schritten)
-- [ ] Eule: Linsen größer, Feinschliff
-- [ ] Restliche Waffen in Pose zeigen (Neon-Blaster, Bumerang, Ramme,
-      Schlüssel, Deflektor an Vireo/Nimbus, alle Fernwaffen auf der Lafette)
+- [x] Eule: Linsen größer (Board 16, `v6.py` `LENS_BIG`: Ø 6,8 statt 4,6,
+      Lichtpunkt, Gesichtsplatte breiter) -- wartet auf Freigabe
+- [x] Restliche Waffen in Pose (Boards 14/15, `v6.py`): Neon-Blaster
+      gestreckt, Bumerang wurfbereit, Ramme stößt vor, E-Schlüssel senkrecht,
+      Deflektor an Vireo/Nimbus, Molok mit Armmaß 1,6; Puls- und Neon-Blaster
+      auf der Lafette (Mörser, Lanze wie im Spiel) -- wartet auf Freigabe
 - [ ] Die übrigen 10 Fähigkeiten als Animation
 
 ## Offene Fragen an den Spieler
