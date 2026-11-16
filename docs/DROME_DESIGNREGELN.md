@@ -110,22 +110,9 @@ zeichnet, ist offen (sonst als Geometrie).
 
 ## 9. Reihenfolge
 
-1. Regeln (dieses Blatt) und Entwürfe auf Claude Design -- **erledigt**
-   (Formen, Posen, Griffe, Bewegung, Vortex, Fraktions-Skins).
-2. Offen auf Claude Design: Eule ausarbeiten, restliche Waffen in Pose
-   (Neon-Blaster, Bumerang, Ramme, E-Schraubenschlüssel, Deflektor an
-   Vireo/Nimbus), die übrigen 10 Fähigkeiten animieren.
-3. Entschieden (16. Nov.): Hangar, Kacheln, Shop und Startseite zeigen
-   die DROMEs weiter **von vorn** (south). Die Posen müssen also auch von
-   vorn lesbar bleiben (Ellbogen nach außen, Klinge über den Kopf).
-4. Ins Repo, je ein PR: **Licht + Kontur (gebaut 16. Nov.: Paletten im
-   Generator heller, `tools/bake_godot_assets.py` backt je Teil ein
-   `*_rim.svg`, `DromeSprites` legt sie als Kind des Teils auf Ebene 0)**;
-   **Regeln im Generator (gebaut 16. Nov.: `body_kind` am Chassis,
-   Tag `melee`/`ranged` aus der Reichweite der Grundattacke, Halterregel
-   `reach` -- Strix-Lafette `ranged`; `PartData.accepts`/`reach_kind`,
-   `SlotRules.slot_reach`, Fadenkreuz/Schwert in `SlotShape`; die
-   Modulbedingungen nutzen dieselbe Grenze ab 3 Feldern)**; Chassis (**Strix als Eule gebaut 16. Nov.**: Rumpf mit Flügelmantel
-   und Lafette, Eulenkapuze, Beine mit Knie nach hinten, Kern am Rücken,
-   Lanze und Mörser auf der Lafette; Vireo, Nimbus, Molok offen); Waffen in ihre
-   Posen; Bewegung im Teile-Rig (`unit.gd`); Effekte je Fähigkeit.
+Stand, Haken und der Plan für alles, was noch fehlt, stehen in
+**`docs/DROME_UMSETZUNG.md`** (seit 16. Nov. 2026). Kurz: gebaut sind Licht +
+Kontur je Teil, die Generator-Regeln (Körperart, Nah/Fern, Lafette,
+Halter-Symbole) und der Strix als Eule; offen sind Vireo, Nimbus, Molok, die
+Waffen in ihren Posen, die Bewegung, die lesbaren Fähigkeiten und die
+Fraktions-Paletten.

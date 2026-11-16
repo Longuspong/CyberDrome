@@ -31,7 +31,8 @@ Lafette, nur Fernkampf), ein Waffenarm je Chassis (Molok zwei, nie
 gespiegelt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt
 den Arm mit), sichtbare Passive, Kontur je Teil, Bewegung, lesbare
 Faehigkeiten, Fraktions-Paletten. Entwurfs-Skripte unter
-`docs/design/drome_entwurf/`; Umsetzung je ein PR (Abschnitt 9 dort).
+`docs/design/drome_entwurf/`. **Stand und Plan der Umsetzung (Haken):
+`docs/DROME_UMSETZUNG.md`** -- dort weitermachen (naechster Schritt: Vireo).
 
 **UI-Symbole (15. Nov. 2026):** Sonderzeichen, die die Schriften nicht haben,
 nie als Text -- stattdessen SVG aus `assets/ui_icons/` ueber `UiIcon`
