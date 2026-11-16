@@ -331,8 +331,6 @@ static func heading(text: String) -> Label:
 	return result
 
 
-## Ein grosser Knopf ueber die ganze Breite. ``primary`` = die Hauptaktion
-## der Seite, farbig hervorgehoben.
 ## Leert ``node`` fuer einen Neuaufbau. Die alten Kinder werden sofort
 ## unsichtbar und erst am Ende des Bilds freigegeben: vorher hingen sie bis
 ## dahin noch sichtbar im Container, alt und neu lagen fuer ein Bild
@@ -345,6 +343,8 @@ static func clear(node: Node) -> void:
 		child.queue_free()
 
 
+## Ein grosser Knopf ueber die ganze Breite. ``primary`` = die Hauptaktion
+## der Seite, farbig hervorgehoben.
 static func button(text: String, primary: bool = false) -> Button:
 	var result := Button.new()
 	result.text = text.to_upper() if primary else text

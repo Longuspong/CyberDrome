@@ -29,7 +29,9 @@ func test_starter_stock_matches_the_design() -> void:
 		t.equal(roster.total_count(part_id), 1,
 			"genau eine %s im Bestand" % part_id)
 	# Ein neuer Spielstand zieht mit jedem Standard-DROME einmal ins Gefecht.
-	t.equal(roster.squad_count(), 4, "alle vier DROMEs im Start-Squad")
+	# Seit 16. Nov. 2026 ein Squad aus drei: der vierte bleibt im Hangar.
+	t.equal(roster.squad_count(), 3, "drei DROMEs im Start-Squad")
+	t.ok(not roster.entries[3].in_squad, "der vierte wartet im Hangar")
 
 
 func test_each_starter_drome_is_battle_ready() -> void:
@@ -213,7 +215,13 @@ func test_roster_survives_saving_and_loading() -> void:
 	t.equal(restored.all_instances().size(), roster.all_instances().size(),
 		"gleiche Instanzzahl")
 	t.equal(restored.entries[0].name, "Späher-Eins", "Namen überstehen den Rundlauf")
-	t.equal(restored.squad_count(), 3, "die Squad-Auswahl ebenso")
+	t.equal(restored.squad_count(), 2, "die Squad-Auswahl ebenso")
+	# Ein alter Stand mit vier im Squad wird auf drei gekuerzt.
+	for entry in roster.entries:
+		entry.in_squad = true
+	var old := Roster.new()
+	old.load_dict(roster.to_dict())
+	t.equal(old.squad_count(), 3, "alter Stand: vier im Squad -> drei")
 	# Und die abgeleiteten Werte sind unveraendert.
 	t.equal(restored.build_for(restored.entries[0]).stats(),
 		roster.build_for(roster.entries[0]).stats(), "gleiche Werte nach dem Laden")

@@ -120,6 +120,24 @@ Vorlagen, Abgleich im README). Abgesprochen: **nur Optik**, Navigation bleibt
   Fraktionskern + 3 = Fraktions-DROME mit festen Werten
   (`craft_faction_drome`). Werte in config `crafting`.
 
+### Squad aus drei + Zwischenstopp nach Entwurf (16. Nov. 2026, Spieler)
+
+* **Squad aus drei DROMEs** (`run.squad_max`, `squad_size_max` = 3):
+  Hangar, Einsatz und neue Spielstaende; `Roster.trim_squad` kuerzt alte
+  Staende. Gegner unveraendert -- Elite wird schwerer (offener Punkt im SPOT).
+* **Zwischenstopp** (`run_screen.gd` `_show_stop`): eine Kopfzeile (Zurueck,
+  Leben, Credits, Beute-Knopf mit Blaetter-Popup), Laden (3 Module + schmal
+  Neu wuerfeln), Lager in zwei Reihen, drei DROME-Kaesten (Kopf oben, je
+  Waffe ein Feld mit ihren Plaetzen; zwei Waffen = breiterer Kasten).
+* **Ziehen** (`Tile.on_drag/can_drop/on_drop`, Godot-Drag mit eigener
+  Vorschau ueber dem Finger): Ziele leuchten, Ziel unter dem Finger zeigt
+  das Modul im freien Platz (`FreeSlot.show_ghost`), Modul auf Modul =
+  Rezept (`RunState.pair_result`, Hinweis-Schild). Ziehbare Kacheln stehen
+  in der Gruppe `cyberdrome_drag_source`; dort scrollt `Accessibility` nicht.
+  Doppeltipp setzt nicht mehr automatisch ein ("Auswaehlen" im Popup).
+* Der Bildschirm nach "Einsatz starten" heisst **Aufstellung**
+  (`_show_setup`, `SquadPicker`) -- der Spieler will ihn ueberarbeiten.
+
 ### Aufraeum-Runde Bedienung (16. Nov. 2026, Wunsch des Spielers)
 
 "Fuehlt sich schwammig an" -- gebaut:

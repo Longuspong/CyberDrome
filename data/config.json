@@ -17,7 +17,7 @@
   "save_enabled": true,
 
   "squad_size": 2,
-  "squad_size_max": 4,
+  "squad_size_max": 3,
 
   "grid_width": 20,
   "grid_height": 20,
@@ -97,7 +97,7 @@
     "power_growth": 0.06,
     "enemy_offsets": [-1, -1, 0, 0, 0, 0, 0, 0],
     "new_drome_rounds": [2, 5],
-    "squad_max": 4,
+    "squad_max": 3,
     "life_chance": 0.35,
     "storage_size": 8,
     "loss_credits": 4,

@@ -486,6 +486,7 @@ func seed_starter() -> void:
 			_seed_equip(entry, part_id)
 		entry.in_squad = true
 		entries.append(entry)
+	trim_squad()
 
 	for part_id in STARTER_LOOSE_EQUIPMENT:
 		add_instance(part_id)
@@ -571,7 +572,22 @@ func load_dict(data: Dictionary) -> bool:
 			if not _instances.has(str(entry.assignments[slot])):
 				entry.assignments.erase(slot)
 		entries.append(entry)
+	trim_squad()
 	return true
+
+
+## Der Squad ist seit 16. Nov. 2026 hoechstens drei DROMEs gross (Vorgabe des
+## Spielers; run.squad_max). Ein aelterer Spielstand mit vier im Squad behaelt
+## die ersten drei, der vierte bleibt im Hangar.
+func trim_squad(limit: int = -1) -> void:
+	if limit < 0:
+		limit = RunState.squad_max()
+	var kept := 0
+	for entry in entries:
+		if entry.in_squad:
+			kept += 1
+			if kept > limit:
+				entry.in_squad = false
 
 
 ## Setzt den uid-Zaehler hinter eine geladene uid, damit ``add_instance`` nie

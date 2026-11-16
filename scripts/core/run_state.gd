@@ -1331,6 +1331,27 @@ func recipe_book() -> Array:
 	return out
 
 
+## Was entsteht, wenn man Lagerplatz ``a`` auf ``b`` zieht (16. Nov. 2026):
+## das Rezept aus genau diesen beiden Grundmodulen, oder beim Rezept-BIOS
+## das verschmolzene Rezept (BIOS + sein Rezept). Sonst null.
+func pair_result(a: int, b: int) -> ModuleData:
+	if a == b or a < 0 or b < 0 or a >= storage.size() or b >= storage.size():
+		return null
+	var x: StringName = storage[a]
+	var y: StringName = storage[b]
+	for recipe in ModuleData.recipes():
+		if recipe.is_bios_result or recipe.from.size() != 2:
+			continue
+		if (recipe.from[0] == x and recipe.from[1] == y) or (recipe.from[0] == y and recipe.from[1] == x):
+			return recipe
+	for pair in [[x, y], [y, x]]:
+		var item := ModuleData.get_module(pair[0])
+		if item != null and item.is_bios_item() and item.bios_kind == "recipe" \
+				and item.bios_recipe == pair[1]:
+			return ModuleData.get_module(item.bios_result)
+	return null
+
+
 ## Fuegt ein Rezept zusammen: die Zutaten verschwinden aus dem Lager, das
 ## Ergebnis nimmt einen Platz ein.
 func craft(recipe_id: StringName) -> bool:

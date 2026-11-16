@@ -35,7 +35,7 @@ func _ready() -> void:
 		_rain.append(Vector3(rng.randf(), rng.randf(), rng.randf_range(0.6, 1.0)))
 
 
-## Der Squad, der auf dem Podest steht (GameState.squad). Hoechstens vier.
+## Der Squad, der auf dem Podest steht (GameState.squad). Hoechstens drei (seit 16. Nov. 2026).
 func show_squad(builds: Array) -> void:
 	_squad = builds.slice(0, 4)
 	for rig in _rigs:

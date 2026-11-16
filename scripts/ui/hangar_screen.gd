@@ -71,7 +71,7 @@ func _first_in_squad() -> int:
 
 
 func _squad_max() -> int:
-	return Config.get_int("squad_size_max", 4)
+	return RunState.squad_max()
 
 
 # ---------------------------------------------------------------------------

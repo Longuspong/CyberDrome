@@ -386,7 +386,10 @@ func _scroll_input(event: InputEvent) -> bool:
 				_swallow_release = true
 			_scroll_coasting = false
 			_scroll_velocity = Vector2.ZERO
-			_scroll_target = _scroll_container_at(event.position)
+			# Auf einer ziehbaren Kachel (Modul im Lager) zieht der Finger
+			# das Teil -- die Liste bleibt stehen (16. Nov. 2026).
+			_scroll_target = null if _on_drag_source(event.position) \
+				else _scroll_container_at(event.position)
 			_scroll_dragging = false
 			_scroll_travel = Vector2.ZERO
 		elif not event.pressed and _scroll_dragging:
@@ -418,6 +421,15 @@ func _scroll_input(event: InputEvent) -> bool:
 			_scroll_by(-event.relative)
 			_scroll_sample(-event.relative)
 			get_viewport().set_input_as_handled()
+			return true
+	return false
+
+
+## Liegt unter ``at`` eine ziehbare Kachel (Gruppe Tile.DRAG_GROUP)?
+func _on_drag_source(at: Vector2) -> bool:
+	for node in get_tree().get_nodes_in_group("cyberdrome_drag_source"):
+		var control := node as Control
+		if control != null and control.is_visible_in_tree() and control.get_global_rect().has_point(at):
 			return true
 	return false
 
