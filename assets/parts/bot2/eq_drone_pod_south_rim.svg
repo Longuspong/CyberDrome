@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_drone_pod" data-type="equipment" data-direction="south">
+  
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#ff8a3d" stroke-width="3.2" stroke-linejoin="round">
+  <path d="M55.89 61.3 L64.48 67.37 L64.48 57.83 L55.89 51.75 Z" fill="#ff8a3d"/>
+  <path d="M64.48 67.37 L72.11 61.97 L72.11 52.43 L64.48 57.83 Z" fill="#ff8a3d"/>
+  <path d="M63.52 46.35 L55.89 51.75 L64.48 57.83 L72.11 52.43 Z" fill="#ff8a3d"/>
+  <path d="M56.36 68.3 L61.14 64.93 L61.14 60.63 L56.36 64.01 Z" fill="#ff8a3d"/>
+  <path d="M57.32 57.93 L52.54 61.31 L56.36 64.01 L61.14 60.63 Z" fill="#ff8a3d"/>
+  <path d="M52.54 65.6 L56.36 68.3 L56.36 64.01 L52.54 61.31 Z" fill="#ff8a3d"/>
+  <path d="M49.3 72.28 L62.66 62.83 L62.66 59.49 L49.3 68.94 Z" fill="#ff8a3d"/>
+  <path d="M59.61 57.33 L46.24 66.78 L49.3 68.94 L62.66 59.49 Z" fill="#ff8a3d"/>
+  <path d="M56.36 52.37 L64.95 58.44 L64.95 50.81 L56.36 44.73 Z" fill="#ff8a3d"/>
+  <path d="M63.05 40.01 L56.36 44.73 L64.95 50.81 L71.64 46.08 Z" fill="#ff8a3d"/>
+  <path d="M64.95 58.44 L71.64 53.72 L71.64 46.08 L64.95 50.81 Z" fill="#ff8a3d"/>
+  <path d="M46.24 70.12 L49.3 72.28 L49.3 68.94 L46.24 66.78 Z" fill="#ff8a3d"/>
+  <path d="M42.71 64.76 L38.89 67.46 L49.01 74.61 L52.83 71.91 Z" fill="#ff8a3d" />
+  <path d="M39.18 73.39 L48.73 80.14 L48.73 70.59 L39.18 63.84 Z" fill="#ff8a3d"/>
+  <path d="M38.89 69.37 L49.01 76.52 L49.01 74.61 L38.89 67.46 Z" fill="#ff8a3d" />
+  <path d="M36.13 79.33 L41.85 75.28 L41.85 65.73 L36.13 69.78 Z" fill="#ff8a3d"/>
+  <path d="M33.45 77.44 L36.13 79.33 L36.13 69.78 L33.45 67.89 Z" fill="#ff8a3d"/>
+  <path d="M35.55 74.42 L35.48 74.0 L35.27 73.55 L34.96 73.12 L34.6 72.79 L34.23 72.61 L33.92 72.59 L33.72 72.76 L33.64 73.07 L33.72 73.49 L33.92 73.94 L34.23 74.37 L34.6 74.7 L34.96 74.89 L35.27 74.9 L35.48 74.74 Z" fill="#ff8a3d" />
+  <path d="M42.43 76.58 L45.29 74.56 L45.29 71.31 L42.43 73.34 Z" fill="#ff8a3d" />
+  <path d="M48.73 80.14 L52.54 77.44 L52.54 67.89 L48.73 70.59 Z" fill="#ff8a3d"/>
+  <path d="M43.0 61.14 L39.18 63.84 L48.73 70.59 L52.54 67.89 Z" fill="#ff8a3d"/>
+  <path d="M39.75 74.69 L42.43 76.58 L42.43 73.34 L39.75 71.45 Z" fill="#ff8a3d" />
+  <path d="M42.62 69.42 L39.75 71.45 L42.43 73.34 L45.29 71.31 Z" fill="#ff8a3d" />
+  <path d="M49.01 76.52 L52.83 73.82 L52.83 71.91 L49.01 74.61 Z" fill="#ff8a3d" />
+  <path d="M39.18 63.84 L33.45 67.89 L36.13 69.78 L41.85 65.73 Z" fill="#ff8a3d"/>
+  <path d="M43.0 84.19 L48.73 80.14 L48.73 70.59 L43.0 74.64 Z" fill="#ff8a3d"/>
+  <path d="M40.33 82.3 L43.0 84.19 L43.0 74.64 L40.33 72.75 Z" fill="#ff8a3d"/>
+  <path d="M42.43 79.28 L42.35 78.86 L42.15 78.41 L41.84 77.98 L41.47 77.65 L41.11 77.47 L40.8 77.45 L40.59 77.62 L40.52 77.93 L40.59 78.35 L40.8 78.8 L41.11 79.23 L41.47 79.56 L41.84 79.75 L42.15 79.76 L42.35 79.6 Z" fill="#ff8a3d" />
+  <path d="M46.05 68.7 L40.33 72.75 L43.0 74.64 L48.73 70.59 Z" fill="#ff8a3d"/>
+</g>
+</svg>

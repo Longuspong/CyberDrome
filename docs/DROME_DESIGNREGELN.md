@@ -115,8 +115,11 @@ zeichnet, ist offen (sonst als Geometrie).
 2. Offen auf Claude Design: Eule ausarbeiten, restliche Waffen in Pose
    (Neon-Blaster, Bumerang, Ramme, E-Schraubenschlüssel, Deflektor an
    Vireo/Nimbus), die übrigen 10 Fähigkeiten animieren.
-3. Offene Entscheidung: Hangar und Kacheln schräg (Ost) statt von vorn?
-   Empfehlung: schräg, von vorn verschmilzt die Waffe mit dem Körper.
-4. Ins Repo, je ein PR: Licht + Kontur; Regeln im Generator (Körperart,
+3. Entschieden (16. Nov.): Hangar, Kacheln, Shop und Startseite zeigen
+   die DROMEs weiter **von vorn** (south). Die Posen müssen also auch von
+   vorn lesbar bleiben (Ellbogen nach außen, Klinge über den Kopf).
+4. Ins Repo, je ein PR: **Licht + Kontur (gebaut 16. Nov.: Paletten im
+   Generator heller, `tools/bake_godot_assets.py` backt je Teil ein
+   `*_rim.svg`, `DromeSprites` legt sie als Kind des Teils auf Ebene 0)**; Regeln im Generator (Körperart,
    Lafette, Tests); Chassis (Strix, Vireo, Nimbus, Molok); Waffen in ihre
    Posen; Bewegung im Teile-Rig (`unit.gd`); Effekte je Fähigkeit.

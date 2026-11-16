@@ -231,7 +231,7 @@
     {"punkt": "Mecha Cache im Shop: Entwurf gesperrt bis Factory 5 erreicht, Spiel heute frei kaufbar. Sperren?", "quelle": "Entwurf 15. Nov. 2026", "status": "offen"},
     {"punkt": "Name des Endlos-Modus: Entwurf ENDLOS-MODUS, Spiel seit 14. Nov. Infinity-Einsatz. Das Spiel bleibt vorerst bei Infinity-Einsatz.", "quelle": "Entwurf 15. Nov. 2026", "status": "offen"},
     {"punkt": "Kampf-Kacheln oben: Entwurf mit Name, Balken und Takt-Text in kleiner Schrift; am 7. Nov. waren Mindestschrift 16 und Symbol + Zahl abgesprochen. Gebaut: Name dazu, Zahlen bleiben. So lassen?", "quelle": "Entwurf 15. Nov. 2026", "status": "offen"},
-    {"punkt": "Hangar und Kacheln schräg (Ost) statt von vorn zeigen? Von vorn verschmilzt eine Waffe in Pose mit dem Körper. Empfehlung: schräg.", "quelle": "DROME-Designregeln 16. Nov. 2026", "status": "offen"},
+    {"punkt": "Hangar und Kacheln schräg (Ost) statt von vorn zeigen? -- Entschieden 16. Nov.: bleibt von vorn (south); Posen müssen auch von vorn lesbar sein.", "quelle": "DROME-Designregeln 16. Nov. 2026", "status": "entschieden"},
     {"punkt": "DROME-Designregeln umsetzen (je ein PR): Licht + Kontur je Teil; Generator-Regeln (Körperart, Lafette, Nah/Fern-Tags, Halter-Symbole); Chassis Strix (Eule), Vireo, Nimbus, Molok; Waffen in Posen; Bewegung im Teile-Rig; Effekte je Fähigkeit.", "quelle": "DROME-Designregeln 16. Nov. 2026", "status": "offen"},
     {"punkt": "Runenstab und E-Schraubenschlüssel am Strix (Fernkampf, aber optisch unpassend) -- später lösen.", "quelle": "DROME-Designregeln 16. Nov. 2026", "status": "offen"}
   ],

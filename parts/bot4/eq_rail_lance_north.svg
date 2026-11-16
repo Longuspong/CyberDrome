@@ -68,8 +68,8 @@
   <path d="M63.52 50.31 L68.3 46.93 L57.8 39.51 L53.02 42.88 Z" fill="var(--c-plate-light)"/>
   <path d="M70.69 53.53 L69.15 56.16 L67.05 58.2 L64.95 59.13 L63.42 58.68 L62.85 56.97 L63.42 54.47 L64.95 51.85 L67.05 49.8 L69.15 48.88 L70.69 49.33 L71.25 51.03 Z" fill="var(--c-plate-dark)" stroke="var(--c-plate-dark)" stroke-width="0.4"/>
   <path d="M63.81 50.98 L62.13 53.84 L52.2 46.82 L53.88 43.96 Z" fill="var(--c-plate)" stroke="var(--c-plate)" stroke-width="0.4"/>
-  <path d="M59.4 52.12 L58.75 55.02 L57.8 54.34 L58.45 51.45 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
   <path d="M63.62 46.7 L61.18 49.08 L60.23 48.4 L62.66 46.03 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M59.4 52.12 L58.75 55.02 L57.8 54.34 L58.45 51.45 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
   <path d="M69.15 48.88 L67.05 49.8 L66.1 48.75 L68.39 47.74 Z" fill="var(--c-plate)" stroke="var(--c-plate)" stroke-width="0.4"/>
   <path d="M62.85 56.97 L63.42 58.68 L62.13 58.42 L61.52 56.57 Z" fill="var(--c-plate-dark)" stroke="var(--c-plate-dark)" stroke-width="0.4"/>
   <path d="M61.18 49.08 L59.4 52.12 L58.45 51.45 L60.23 48.4 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>

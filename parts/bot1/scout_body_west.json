@@ -46,10 +46,10 @@
     }
   ],
   "color_scheme": {
-    "plate": "#28304a",
-    "plate_light": "#47547e",
-    "plate_dark": "#161b29",
-    "metal": "#5b6785",
+    "plate": "#3a4670",
+    "plate_light": "#6477bb",
+    "plate_dark": "#20273f",
+    "metal": "#7d8bb0",
     "accent": "#2de2e6",
     "glow": "#5affff",
     "visor": "#5affff",

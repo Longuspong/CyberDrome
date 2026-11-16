@@ -260,23 +260,26 @@ def make_palette(hull, mech, neon, visor, ember, rings, line) -> dict:
     }
 
 
+# Rumpf und Mechanik seit 16. Nov. 2026 etwa 40 % heller (docs/DROME_DESIGNREGELN.md,
+# Abschnitt 5): vorher #1c..#3d auf Nachtschwarz -- in Spielgroesse blieben nur
+# die Leuchtpunkte. Signalfarben (neon, visor, ember, rings) bleiben.
 DEFAULT_PALETTE = make_palette(
-    hull="#28304a", mech="#5b6785", neon="#2de2e6", visor="#7cf9ff",
+    hull="#3a4670", mech="#7d8bb0", neon="#2de2e6", visor="#7cf9ff",
     ember="#ff2d95", rings="#2de2e6", line="#080b13",
 )
 
 JUGG_PALETTE = make_palette(
-    hull="#3d2b35", mech="#7d6b78", neon="#ff8a3d", visor="#ffb057",
+    hull="#5a4050", mech="#9a8796", neon="#ff8a3d", visor="#ffb057",
     ember="#ffd447", rings="#ff8a3d", line="#100a0e",
 )
 
 MAGE_PALETTE = make_palette(
-    hull="#2f2450", mech="#6f5f97", neon="#b06bff", visor="#d6b8ff",
+    hull="#463673", mech="#8f7fbd", neon="#b06bff", visor="#d6b8ff",
     ember="#7cf9ff", rings="#ff5ec7", line="#0d0818",
 )
 
 STRIX_PALETTE = make_palette(
-    hull="#1c3330", mech="#557d71", neon="#6dff9f", visor="#c2ffd7",
+    hull="#2a4e48", mech="#74a394", neon="#6dff9f", visor="#c2ffd7",
     ember="#6dff9f", rings="#2fbf8c", line="#060f0d",
 )
 

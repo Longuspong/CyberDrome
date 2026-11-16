@@ -145,9 +145,12 @@ func add_view(meta: Dictionary, dir_path: String) -> void:
 	var svg := dir_path.path_join(meta.get("svg", ""))
 	# Neon-Teile haben eine eigene Leuchtebene (tools/bake_godot_assets.py).
 	var glow := svg.replace(".svg", "_glow.svg")
+	# Jedes Teil hat eine Kontur in seiner Signalfarbe (docs/DROME_DESIGNREGELN.md).
+	var rim := svg.replace(".svg", "_rim.svg")
 	views[meta.get("direction", "south")] = {
 		"svg": svg,
 		"glow": glow if ResourceLoader.exists(glow) else "",
+		"rim": rim if ResourceLoader.exists(rim) else "",
 		"anchors": anchors,
 		"slot_z": meta.get("slot_z", {}),
 		"z_index": meta.get("z_index", 20.0),

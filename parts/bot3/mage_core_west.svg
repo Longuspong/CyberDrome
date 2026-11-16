@@ -13,8 +13,8 @@
 <g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
   <path d="M50.38 49.82 L49.93 49.26 L49.64 49.06 L50.09 49.62 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
   <path d="M53.9 42.48 L54.78 42.31 L54.49 42.11 L53.61 42.28 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
-  <path d="M54.38 41.1 L55.6 40.86 L55.22 40.59 L54.0 40.83 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
   <path d="M49.47 51.33 L48.85 50.55 L48.46 50.28 L49.09 51.06 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M54.38 41.1 L55.6 40.86 L55.22 40.59 L54.0 40.83 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
   <path d="M52.93 43.02 L53.9 42.48 L53.61 42.28 L52.64 42.82 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
   <path d="M49.93 49.26 L49.78 48.4 L49.49 48.19 L49.64 49.06 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
   <path d="M49.78 48.4 L49.93 47.31 L49.64 47.11 L49.49 48.19 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
