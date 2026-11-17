@@ -2238,6 +2238,9 @@ def _head_wrench(h, k):
 def _head_shield(h, k):
     """Schild angewinkelt vor dem Koerper, zur Koerpermitte hin versetzt."""
     f, l, z = h
+    # Am Molok waechst der Schild nur bis 1,25 mit (wie im Entwurf) --
+    # mit vollem Waffenmass reichte er vom Knie bis an die Schulter.
+    k = min(k, 1.25)
     a, b = l - 16 * k, l + 3 * k                         # deckt die Koerpermitte
     return [
         B((f + 1.5 * k, f + 3.5 * k), (a, b), (z - 14 * k, z + 15 * k), "plate"),
@@ -2702,9 +2705,10 @@ def slot_draw_order(part: dict, direction: str) -> dict:
         for pose, (_shapes, hand) in poses.items():
             if pose == "hold":
                 order[f"{slot}@{pose}"] = round(order[slot] - 0.05, 2)
-            elif pose == "guard":
-                order[f"{slot}@{pose}"] = round(order[slot] + 0.05, 2)
             else:
+                # zielen und Schild: gemessen, wo das Geraet wirklich ist --
+                # vor der Hand. Am Schulteranker gemessen lag der Kern auf
+                # der Brust ueber dem Schild, obwohl der Schild davor haengt.
                 ahead = (hand[0] + 4, hand[1] * WEAPON_DEPTH_INWARD, TORSO_REF[2])
                 order[f"{slot}@{pose}"] = round(closeness(to_world(ahead, direction)), 1)
     return order

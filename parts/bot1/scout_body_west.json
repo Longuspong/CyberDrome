@@ -68,7 +68,7 @@
     "equip_right": 34.2,
     "equip_left@hold": 45.75,
     "equip_left@aim": 34.2,
-    "equip_left@guard": 45.85
+    "equip_left@guard": 39.5
   },
   "slot_rules": {
     "equip_left": {

@@ -74,10 +74,10 @@
     "equip_shoulder": 56,
     "equip_left@hold": 67.55,
     "equip_left@aim": 76.2,
-    "equip_left@guard": 67.65,
+    "equip_left@guard": 78.5,
     "equip_right@hold": 52.35,
     "equip_right@aim": 61.0,
-    "equip_right@guard": 52.45
+    "equip_right@guard": 62.5
   },
   "slot_rules": {
     "equip_left": {

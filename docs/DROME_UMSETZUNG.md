@@ -122,7 +122,9 @@ Fernwaffen, Hände nur an Armen, die nie etwas tragen, Lafette ohne Griff.
       **Schulter seines Chassis** mit (`side_shapes`) -- sonst lag der
       Oberarm als eigenes Sprite vor der Schulterplatte. Schild wieder vor
       der Faust, eigene Tiefe `guard` (= halten, Schild vor dem Arm).
-      Neue SVGs mit `set_import_scale.py` auf 4-fache Rasterung gestellt
+      Neue SVGs mit `set_import_scale.py` auf 4-fache Rasterung gestellt.
+      Schild am Molok nur bis Maß 1,25 und seine Tiefe dort gemessen, wo er
+      hängt (vor der Hand) -- sonst lag der Brustkern über dem Schild
 - [x] **Waffenfarben unabhängig vom DROME**: Tabelle `WEAPON_COLORS` in
       `build_sample_parts.py`, eine Palette je Waffe (Startwerte = bisherige
       Bausatzfarben). Neue Farben: offen, Spieler entscheidet
