@@ -3,6 +3,8 @@
 Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 `docs/GAME_DESIGN.md`, Bedienung und Struktur in `README.md`.
 
+**Ganz zuerst (seit 17. Nov. 2026): `docs/UEBERGABE_3D.md`** -- 3D-DROMEs, Leistungstest, Hexboden-Entwurf und die vereinbarten naechsten Schritte (gedrehter Quader im Generator, Neon/Kontur in 3D, Hexfeld als Designfrage, Kampf als eine 3D-Szene mit Bewegung).
+
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
 als Handy testet. **Dann `docs/NEUANFANG.md`** -- der Neuentwurf des

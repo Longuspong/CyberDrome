@@ -29,5 +29,7 @@ python3 docs/design/drome_entwurf/skins.py /tmp/drome_skin # Fraktions-Skins
 | `v10_hexboden.py` | Runde 10 (17. Nov.): Hexboden aus Sechseck-Platten (Drehkörper mit 6 Segmenten): Beton, Gitter, Leuchtfuge, Warnstreifen, Zonen; Pfeiler und Kisten; Plan für ein Hexfeld Radius 5. Gerendert als eine 3D-Szene mit DROMEs (Leinwand-Seite „Hexboden (3D)“) |
 | `skins.py` | Fraktions-Paletten auf den neuen Formen (Mechas mit Absperrstreifen als SVG-Muster) |
 
+Rendern der .m3d-Entwürfe (v8–v10) mit dem Spiel-Renderer: `godot/render_main.gd` mit `godot/render_shogun.gd` bzw. `godot/render_hex.gd` (Aufruf im Kopf von `render_main.gd`).
+
 Hinweis: `new_dromes.py` und `v2.py` schreiben schon beim Import in den
 übergebenen Ordner -- es sind Entwurfs-Skripte, keine Bibliothek.
