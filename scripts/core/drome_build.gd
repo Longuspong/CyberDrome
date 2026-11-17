@@ -445,7 +445,18 @@ func all_module_effects() -> Dictionary:
 
 
 func module_count(slot: String) -> int:
-	return (modules.get(slot, []) as Array).size()
+	return (modules.get(slot, []) as Array).filter(func(id): return str(id) != "").size()
+
+
+## Die Modulplaetze eines Halters der Reihe nach: ModuleData oder null fuer
+## einen freien Platz (seit 17. Nov. 2026 merkt sich ein Halter, WO ein Modul
+## sitzt -- der Spieler zieht es auf ein bestimmtes Kaestchen; leere Plaetze
+## stehen in ``modules`` als "").
+func module_layout(slot: String) -> Array:
+	var out: Array = []
+	for module_id in modules.get(slot, []):
+		out.append(ModuleData.get_module(module_id) if str(module_id) != "" else null)
+	return out
 
 
 # ---------------------------------------------------------------------------

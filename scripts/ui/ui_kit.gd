@@ -557,7 +557,12 @@ static var _crops: Dictionary = {}
 static func part_texture(part: PartData, facing: String = "south") -> Texture2D:
 	if part == null:
 		return null
-	var path := str(part.view(facing).get("svg", ""))
+	return _cropped(str(part.view(facing).get("svg", "")))
+
+
+## Ein Bild auf seinen sichtbaren Teil zugeschnitten (gemerkt); null, wenn es
+## fehlt oder leer ist.
+static func _cropped(path: String) -> Texture2D:
 	if path == "" or not ResourceLoader.exists(path):
 		return null
 	if _crops.has(path):
@@ -574,8 +579,29 @@ static func part_texture(part: PartData, facing: String = "south") -> Texture2D:
 			atlas.atlas = texture
 			atlas.region = Rect2(used)
 			result = atlas
+		else:
+			# Leeres Teil (z. B. jugg_head seit 17. Nov. 2026: der Kopf steckt
+			# im Rumpf) -- kein Bild, damit der Aufrufer ausweichen kann.
+			result = null
 	_crops[path] = result
 	return result
+
+
+## Das Gesicht eines DROMEs fuer Kacheln: der Kopf. Zeichnet das Chassis
+## keinen eigenen Kopf (Molok: Kopf im Rumpf), das Portraet aus
+## assets/portraits/<kopf-id>.svg, notfalls der Rumpf.
+static func portrait_texture(build: DromeBuild) -> Texture2D:
+	if build == null:
+		return null
+	var head_part := build.part_in("head")
+	var head := part_texture(head_part)
+	if head != null:
+		return head
+	if head_part != null:
+		var portrait := _cropped("res://assets/portraits/%s.svg" % head_part.id)
+		if portrait != null:
+			return portrait
+	return part_texture(build.body())
 
 
 ## Ein DROME als Bild: der GANZE Bot (Koerper, Kopf, Fuesse, Kern, Ausruestung)

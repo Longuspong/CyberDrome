@@ -42,6 +42,9 @@ var _flash_storage: int = -1
 var _flash_holder: String = ""
 ## Hoehe der Lager-Kacheln (zwei Reihen, ohne Namen).
 const STORE_EDGE := 52.0
+## Module sind im Lager und im Waffenhalter gleich gross (Wunsch des Spielers,
+## 17. Nov. 2026; mehr passt nicht, sonst sprengen drei Plaetze die Kachel).
+const MODULE_EDGE := 30.0
 ## Zwischenstopp: die Waffenfelder und Lager-Kacheln des aktuellen Aufbaus
 ## (fuer Leuchten und Ziehen ohne Neuaufbau), die Hinweiszeile.
 var _holders: Array = []
@@ -51,6 +54,8 @@ var _hint: Label
 ## unter dem Finger und das Hinweis-Schild.
 var _drag_index: int = -1
 var _dropped: bool = false
+## Wird gerade ein Modul aus einem Halter gezogen: {drome, slot, position, chip}.
+var _holder_drag: Dictionary = {}
 var _hover_key: String = ""
 var _pointer := Vector2.ZERO
 var _tip: PanelContainer
@@ -816,8 +821,54 @@ func _bios_row(run: RunState) -> Control:
 			if blocker == "" and run.choose_bios(index):
 				Accessibility.vibrate(30, true)
 			_refresh()
+		# Ziehen (17. Nov. 2026): aufs Lager = nehmen, auf die passende Waffe =
+		# nehmen und gleich einbauen.
+		tile.on_drag = func() -> Variant: return _start_bios_drag(run, index, item, blocker)
 		row.add_child(tile)
 	return box
+
+
+func _start_bios_drag(run: RunState, index: int, item: ModuleData, blocker: String) -> Variant:
+	if blocker != "":
+		return null
+	InfoPopup.close_all(self)
+	_dropped = false
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var card := PanelContainer.new()
+	var box := Arcade.chamfer_box(Color(UiKit.CARD, 0.96), 10, ModuleData.CLASS_COLOR["bios"], 3)
+	box.set_content_margin_all(6)
+	card.add_theme_stylebox_override("panel", box)
+	card.add_child(ModuleChip.new(item, 56.0))
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.position = Vector2(-34, -104)
+	holder.add_child(card)
+	set_drag_preview(holder)
+	Accessibility.vibrate(12)
+	return {"kind": "bios_offer", "index": index}
+
+
+## Passt das angebotene BIOS ``offer`` in diesen DROME (Chassis, noch keins)?
+func _offer_fits(run: RunState, offer: int, drome: int) -> bool:
+	if run.bios_blocker() != "" or offer < 0 or offer >= run.bios_offers.size():
+		return false
+	var item := ModuleData.get_module(run.bios_offers[offer])
+	var build: DromeBuild = run.squad[drome]
+	return item != null and item.bios_kind == "chassis" and build.body() != null \
+		and build.body().id == item.bios_chassis and not build.chassis_bios
+
+
+## Ein gezogenes BIOS-Angebot ablegen: nehmen, und auf einer Waffe gleich
+## einbauen (passt es doch nicht, liegt es im Lager).
+func _drop_offer(run: RunState, data: Dictionary, drome: int = -1, slot: String = "") -> void:
+	if run.choose_bios(int(data["index"])):
+		Accessibility.vibrate(30, true)
+		var at := run.storage.size() - 1
+		if drome >= 0 and run.install_bios(at, drome, slot):
+			_flash_holder = "%d:%s" % [drome, slot]
+		else:
+			_flash_storage = at
+	_refresh()
 
 
 func _bios_pages(run: RunState, blocker: String) -> Array:
@@ -1062,6 +1113,19 @@ func _storage_grid(run: RunState) -> Control:
 			free.empty = true
 			free.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			grid.add_child(free)
+	# Das ganze Lager nimmt ein Modul zurueck, das aus einem Halter gezogen wird.
+	grid.mouse_filter = Control.MOUSE_FILTER_STOP
+	grid.set_drag_forwarding(Callable(),
+		func(_at: Vector2, data: Variant) -> bool:
+			if data is Dictionary and data.get("kind") == "bios_offer":
+				return run.bios_blocker() == ""
+			return data is Dictionary and data.get("kind") == "holder" and _can_return(run),
+		func(_at: Vector2, data: Variant) -> void:
+			_dropped = true
+			if data.get("kind") == "bios_offer":
+				_drop_offer(run, data)
+			else:
+				_return_module(run, data))
 	_flash_storage = -1
 	return grid
 
@@ -1075,7 +1139,7 @@ func _storage_tile(run: RunState, index: int) -> Control:
 	var part := PartDB.get_part(id)
 	var tile: Tile
 	if module != null:
-		tile = Tile.new("store:%d:%s" % [index, id], ModuleChip.new(module, 36.0), "",
+		tile = Tile.new("store:%d:%s" % [index, id], ModuleChip.new(module, MODULE_EDGE), "",
 			Vector2(0, STORE_EDGE))
 		tile.accent = module.color()
 		tile.on_select = func():
@@ -1083,10 +1147,19 @@ func _storage_tile(run: RunState, index: int) -> Control:
 			_refresh()
 		tile.on_drag = func() -> Variant: return _start_drag(run, index)
 		tile.can_drop = func(data) -> bool:
+			if data is Dictionary and data.get("kind") == "holder":
+				return _can_return(run)
+			if data is Dictionary and data.get("kind") == "bios_offer":
+				return run.bios_blocker() == ""
 			return data is Dictionary and run.pair_result(int(data.get("index", -1)), index) != null
 		tile.on_drop = func(data):
 			_dropped = true
-			_craft_pair(run, int(data["index"]), index)
+			if data.get("kind") == "holder":
+				_return_module(run, data)
+			elif data.get("kind") == "bios_offer":
+				_drop_offer(run, data)
+			else:
+				_craft_pair(run, int(data["index"]), index)
 	else:
 		tile = Tile.new("store:%d:%s" % [index, id],
 			SlotShape.new(part.mount_class if part != null else "light",
@@ -1130,7 +1203,7 @@ func _drome_box(run: RunState, drome: int) -> Control:
 	panel.add_child(box)
 
 	var head := TextureRect.new()
-	head.texture = UiKit.part_texture(build.part_in("head"))
+	head.texture = UiKit.portrait_texture(build)
 	head.custom_minimum_size = Vector2(44, 44)
 	head.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	head.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -1175,30 +1248,44 @@ func _holder_tile(run: RunState, drome: int, slot: String) -> Tile:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 3)
 	box.add_child(row)
-	var installed := build.modules_in(slot)
+	var layout := build.module_layout(slot)
 	var room := ModuleData.slots_for(build, slot)
 	var first_free: FreeSlot = null
-	for position in maxi(room, installed.size()):
-		if position < installed.size():
-			var module: ModuleData = installed[position]
-			var chip := ModuleChip.new(module, 28.0)
+	# Freie Kaestchen mit ihrem Platz: gezogen wird auf das unter dem Finger.
+	var frees: Array = []
+	# Eingesetzte Module mit Platz: sie lassen sich wieder herausziehen.
+	var placed: Array = []
+	for position in maxi(room, layout.size()):
+		var module: ModuleData = layout[position] if position < layout.size() else null
+		if module != null:
+			var chip := ModuleChip.new(module, MODULE_EDGE)
 			chip.dim = module.blocker(part) != ""
 			chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			row.add_child(chip)
-		else:
+			placed.append([chip, position, module])
+		elif position < room:
 			var free := FreeSlot.new()
 			row.add_child(free)
+			frees.append([free, position])
 			if first_free == null:
 				first_free = free
 	tile.add_extra(box)
 	tile.on_select = func(): _tap_holder(run, drome, slot)
+	tile.on_drag = func() -> Variant: return _start_holder_drag(run, drome, slot, placed)
 	tile.can_drop = func(data) -> bool:
-		return data is Dictionary and _holder_allows(run, int(data.get("index", -1)), drome, slot)
+		if not (data is Dictionary) or data.get("kind") == "holder":
+			return false
+		if data.get("kind") == "bios_offer":
+			return _offer_fits(run, int(data["index"]), drome)
+		return _holder_allows(run, int(data.get("index", -1)), drome, slot)
 	tile.on_drop = func(data):
 		_dropped = true
-		_install_at(run, int(data["index"]), drome, slot)
+		if data.get("kind") == "bios_offer":
+			_drop_offer(run, data, drome, slot)
+			return
+		_install_at(run, int(data["index"]), drome, slot, _free_under(frees, _pointer)[1])
 	_holders.append({"tile": tile, "drome": drome, "slot": slot, "free": first_free,
-		"allowed": false, "detail": ""})
+		"frees": frees, "allowed": false, "detail": ""})
 	if _flash_holder == "%d:%s" % [drome, slot]:
 		_flash_holder = ""
 		_flash(tile)
@@ -1241,7 +1328,7 @@ class FreeSlot extends Control:
 	var _ghost: Control
 
 	func _init() -> void:
-		custom_minimum_size = Vector2(28, 28)
+		custom_minimum_size = Vector2(MODULE_EDGE, MODULE_EDGE)
 		size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -1249,7 +1336,7 @@ class FreeSlot extends Control:
 		hide_ghost()
 		if module == null:
 			return
-		_ghost = ModuleChip.new(module, 28.0)
+		_ghost = ModuleChip.new(module, MODULE_EDGE)
 		_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_ghost.modulate = Color(1, 1, 1, 0.75)
 		add_child(_ghost)
@@ -1272,10 +1359,32 @@ class FreeSlot extends Control:
 			draw_dashed_line(a, b, color, width, 3.0)
 
 
-## Setzt Lagerplatz ``index`` in diese Waffe.
-func _install_at(run: RunState, index: int, drome: int, slot: String) -> void:
+## Das freie Kaestchen unter ``at`` als [FreeSlot, Platz]; liegt der Finger
+## auf keinem, das erste freie (bzw. [null, -1] ohne freie).
+static func _free_under(frees: Array, at: Vector2) -> Array:
+	if frees.is_empty():
+		return [null, -1]
+	var nearest: Array = frees[0]
+	var best := INF
+	for entry in frees:
+		var rect := (entry[0] as Control).get_global_rect()
+		if rect.grow(4.0).has_point(at):
+			return entry
+		# Daneben: das naechste Kaestchen in der Zeile, wenn der Finger in
+		# ihrer Hoehe liegt -- sonst bleibt es beim ersten freien.
+		if at.y >= rect.position.y - 12.0 and at.y <= rect.end.y + 12.0:
+			var d := absf(rect.get_center().x - at.x)
+			if d < best:
+				best = d
+				nearest = entry
+	return nearest
+
+
+## Setzt Lagerplatz ``index`` in diese Waffe (auf Platz ``position``, wenn
+## frei; -1 = erster freier).
+func _install_at(run: RunState, index: int, drome: int, slot: String, position: int = -1) -> void:
 	var done := run.install_bios(index, drome, slot) if run.is_bios_at(index) \
-		else run.install_module(index, drome, slot)
+		else run.install_module(index, drome, slot, position)
 	if done:
 		Accessibility.vibrate(25, true)
 		_selected_storage = -1
@@ -1365,7 +1474,9 @@ func _process(_delta: float) -> void:
 	var target: Dictionary = {}
 	for h in _holders:
 		if (h["tile"] as Control).get_global_rect().has_point(at):
-			key = "h:%d:%s" % [h["drome"], h["slot"]]
+			# Der Platz gehoert zum Schluessel: wandert der Finger ueber ein
+			# anderes freies Kaestchen, wandert die Vorschau mit.
+			key = "h:%d:%s:%d" % [h["drome"], h["slot"], int(_free_under(h["frees"], at)[1])]
 			target = h
 	if key == "":
 		for s in _stores:
@@ -1382,8 +1493,9 @@ func _process(_delta: float) -> void:
 	if target.has("slot"):
 		if target["allowed"]:
 			tile.selected = true
-			if target["free"] != null:
-				(target["free"] as FreeSlot).show_ghost(ModuleData.get_module(run.storage[_drag_index]))
+			var spot: Variant = _free_under(target["frees"], at)[0]
+			if spot != null:
+				(spot as FreeSlot).show_ghost(ModuleData.get_module(run.storage[_drag_index]))
 			Accessibility.vibrate(8)
 		else:
 			_show_tip(tile, str(target["detail"]), COLOR_BAD)
@@ -1400,8 +1512,8 @@ func _process(_delta: float) -> void:
 func _clear_hover() -> void:
 	for h in _holders:
 		(h["tile"] as Tile).selected = false
-		if h["free"] != null:
-			(h["free"] as FreeSlot).hide_ghost()
+		for entry in h["frees"]:
+			(entry[0] as FreeSlot).hide_ghost()
 	for s in _stores:
 		(s["tile"] as Tile).selected = int(s["index"]) == _selected_storage and _drag_index < 0
 	if _tip != null:
@@ -1419,6 +1531,63 @@ func _input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END and _drag_index >= 0:
 		_end_drag()
+	if what == NOTIFICATION_DRAG_END and not _holder_drag.is_empty():
+		_holder_drag = {}
+		if _tip != null:
+			_tip.visible = false
+		if not _dropped:
+			_refresh()
+		_dropped = false
+
+
+## Ein eingesetztes Modul greifen (17. Nov. 2026): das Modul, das dem Finger
+## am naechsten liegt, laesst sich ins Lager zurueckziehen.
+func _start_holder_drag(run: RunState, drome: int, slot: String, placed: Array) -> Variant:
+	if placed.is_empty() or run.phase != RunState.Phase.STOP:
+		return null
+	var best: Array = []
+	var gap := INF
+	for entry in placed:
+		var d := (entry[0] as Control).get_global_rect().get_center().distance_to(_pointer)
+		if d < gap:
+			gap = d
+			best = entry
+	if best.is_empty() or gap > MODULE_EDGE * 1.6:
+		return null
+	InfoPopup.close_all(self)
+	var chip: Control = best[0]
+	var module: ModuleData = best[2]
+	_dropped = false
+	_holder_drag = {"drome": drome, "slot": slot, "position": int(best[1]), "chip": chip}
+	chip.modulate = Color(1, 1, 1, 0.25)
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var card := PanelContainer.new()
+	var box := Arcade.chamfer_box(Color(UiKit.CARD, 0.96), 10, Arcade.CYAN, 3)
+	box.set_content_margin_all(6)
+	card.add_theme_stylebox_override("panel", box)
+	card.add_child(ModuleChip.new(module, 56.0))
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.position = Vector2(-34, -104)
+	holder.add_child(card)
+	set_drag_preview(holder)
+	if run.storage_full():
+		_show_tip(chip, "Lager voll", COLOR_BAD)
+	Accessibility.vibrate(12)
+	return {"kind": "holder", "drome": drome, "slot": slot, "position": int(best[1])}
+
+
+func _can_return(run: RunState) -> bool:
+	return run.phase == RunState.Phase.STOP and not run.storage_full()
+
+
+## Ein aus dem Halter gezogenes Modul zurueck ins Lager.
+func _return_module(run: RunState, data: Dictionary) -> void:
+	if run.remove_module(int(data["drome"]), str(data["slot"]), int(data["position"])):
+		Accessibility.vibrate(25, true)
+		_flash_storage = run.storage.size() - 1
+	_holder_drag = {}
+	_refresh()
 
 
 func _end_drag() -> void:
@@ -1488,9 +1657,11 @@ func _installed_pages(run: RunState, drome: int, slot: String) -> Array:
 	var build: DromeBuild = run.squad[drome]
 	var weapon := build.part_in(slot)
 	var pages: Array = []
-	var installed := build.modules_in(slot)
-	for position in installed.size():
-		var module: ModuleData = installed[position]
+	var layout := build.module_layout(slot)
+	for position in layout.size():
+		var module: ModuleData = layout[position]
+		if module == null:
+			continue
 		var at: int = position
 		pages.append(func() -> Dictionary:
 			var lines := _module_lines(module)
