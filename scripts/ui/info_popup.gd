@@ -117,7 +117,7 @@ func _build(title: String, options: Dictionary) -> void:
 	_panel.add_child(outer)
 	if sheet:
 		var handle := ColorRect.new()
-		handle.color = Color("#4b3a82")
+		handle.color = UiKit.CARD_LINE
 		handle.custom_minimum_size = Vector2(44, 4)
 		handle.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		outer.add_child(handle)

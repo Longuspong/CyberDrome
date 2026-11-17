@@ -84,6 +84,12 @@ Punkte). Sie wird **nicht von Hand** bearbeitet, sondern von
   nachtragen, dann `python3 tools/build_spot.py` und die xlsx mit einchecken.
 * Die CI (`.github/workflows/spot.yml`) prueft mit `--check`, dass die
   Tabelle aktuell ist.
+* **Design-System** (seit 17. Nov. 2026): Artefakt „CyberDrome Arcade-Glitch“
+  (https://claude.ai/artifact/M5RC8KNDTr5psmKSuJpdS2) mit Tokens, Brand-Book,
+  Komponenten und Symbolen -- ebenfalls ein Spiegel. Seine Tokens erzeugt
+  `build_spot.py` aus `design_farben` + `design_tokens` in `inhalte.json`
+  nach `docs/design/tokens.json` (CI prueft mit). Farben im Spiel aendern =
+  dort nachtragen, neu bauen und `tokens.json` ins Design-System uebernehmen.
 * Heute ein Spiegel: der Spieler trifft darin Designentscheidungen und gibt
   sie als Export zum Umsetzen. Vision des Spielers: spaeter ein
   Balance-Werkzeug (Werte in der Excel aendern -> ins Spiel uebernehmen).
