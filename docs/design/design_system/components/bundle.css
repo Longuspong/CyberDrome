@@ -1,0 +1,229 @@
+/* CyberDrome Arcade-Glitch -- Web-Nachbau der Bausteine aus Arcade und UiKit.
+   Alle Werte kommen aus tokens.css (var(--name)). */
+
+.cd-screen { background: var(--night); color: var(--text); font-family: var(--font-sans); font-weight: 500; }
+
+/* --- Abgeschraegte Ecke oben links + unten rechts ------------------------ */
+.cd-chamfer { --cut: var(--chamfer-md);
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+
+/* --- Knopf ----------------------------------------------------------------- */
+.cd-btn { all: unset; box-sizing: border-box; display: inline-flex; cursor: pointer; position: relative; min-height: var(--button-height); }
+.cd-btn__face { --cut: var(--chamfer-md); position: relative; isolation: isolate; flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 0 22px; min-height: inherit; box-sizing: border-box;
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.cd-btn--primary { filter: drop-shadow(5px 5px 0 color-mix(in srgb, var(--magenta) 75%, transparent)); }
+.cd-btn--primary .cd-btn__face { background: var(--yellow); color: var(--deep); font-family: var(--font-display); font-size: 19px; letter-spacing: 0.05em; text-transform: uppercase; }
+.cd-btn--primary:hover .cd-btn__face { background: color-mix(in srgb, var(--yellow) 85%, var(--white)); }
+.cd-btn--primary:active .cd-btn__face { background: color-mix(in srgb, var(--yellow) 82%, var(--night)); }
+.cd-btn--secondary .cd-btn__face { background: var(--card-line); color: var(--text); font-weight: 700; font-size: 18px; letter-spacing: 0.02em; }
+.cd-btn--secondary .cd-btn__face::before { content: ""; position: absolute; inset: 2px; z-index: -1; background: var(--violet);
+  --c: calc(var(--chamfer-md) - 1px);
+  clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c)); }
+.cd-btn--secondary:hover .cd-btn__face { background: var(--cyan); }
+.cd-btn--outline .cd-btn__face { --cut: 0px; background: var(--night); color: var(--btn-color, var(--yellow)); border: 2px solid var(--btn-color, var(--yellow));
+  font-family: var(--font-display); font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; }
+.cd-btn--outline:active .cd-btn__face { background: color-mix(in srgb, var(--btn-color, var(--yellow)) 18%, var(--night)); }
+.cd-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.cd-btn[disabled] { opacity: 0.45; cursor: default; filter: none; }
+.cd-btn--text { min-height: var(--tap-min); padding: 0 8px; color: var(--rose); font-weight: 700; font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase; align-items: center; }
+
+/* --- Symbol: weisse SVG als Maske, Farbe ueber background ---------------- */
+.cd-icon { display: inline-block; width: 22px; height: 22px; flex: none; background: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+
+/* --- Etikett ----------------------------------------------------------------- */
+.cd-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--yellow); color: var(--deep); padding: 5px 12px;
+  font-family: var(--font-sans); font-weight: 700; font-size: 13px; letter-spacing: 0.24em; text-transform: uppercase; transform: rotate(var(--tilt, -3deg)); }
+.cd-tag--cyan { background: var(--cyan); color: var(--night); }
+
+/* --- Karte ------------------------------------------------------------------- */
+.cd-card { background: color-mix(in srgb, var(--violet) calc(var(--card-alpha) * 100%), transparent); border: 2px solid var(--card-line); box-shadow: 6px 6px 0 0 var(--card-shadow); padding: var(--space-card); display: flex; flex-direction: column; gap: 6px; }
+.cd-card--hi { border-color: var(--cyan); box-shadow: 6px 6px 0 0 var(--magenta); }
+.cd-card--empty { background: transparent; border: 2px dashed var(--empty-line); box-shadow: none; color: var(--empty-num); align-items: center; justify-content: center; }
+
+/* --- Zwischentitel ---------------------------------------------------------- */
+.cd-heading { color: var(--cyan); font-weight: 700; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; }
+.cd-muted { color: var(--muted); }
+.cd-name { font-family: var(--font-display); color: var(--white); font-size: 22px; line-height: 26px; }
+.cd-num { font-family: var(--font-display); color: var(--yellow); }
+
+/* --- Segmentknopf ----------------------------------------------------------- */
+.cd-seg { --cut: var(--chamfer-sm); display: inline-flex; padding: 2px; background: var(--rail);
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.cd-seg__item { all: unset; --cut: var(--chamfer-xs); min-height: var(--tap-min); padding: 0 14px; display: flex; align-items: center; cursor: pointer;
+  background: var(--deep); color: var(--muted); font-weight: 700; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase;
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.cd-seg__item:hover { color: var(--text); }
+.cd-seg__item[aria-selected="true"] { background: var(--cyan); color: var(--night); }
+.cd-seg__item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+/* --- Tab-Leiste ------------------------------------------------------------- */
+.cd-tabbar { display: flex; background: var(--tab-bar); border-top: 1px solid var(--tab-line); height: var(--tab-height); }
+.cd-tab { all: unset; flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
+  color: var(--muted); font-weight: 700; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; }
+.cd-tab[aria-current="page"] { background: var(--tab-on); color: var(--cyan); }
+.cd-tab[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 12%; right: 12%; height: 3px; background: var(--cyan); }
+.cd-tab:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+/* --- Wertbalken ------------------------------------------------------------- */
+.cd-stat { display: grid; grid-template-columns: 7.5em 1fr minmax(2.5em, auto); align-items: center; gap: 10px; font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+.cd-stat__track { height: 8px; background: var(--deep); }
+.cd-stat__fill { height: 100%; background: var(--cyan); }
+.cd-stat__value { text-align: right; font-size: 15px; white-space: nowrap; }
+
+/* --- Glitch-Titel ----------------------------------------------------------- */
+.cd-glitch { position: relative; display: inline-block; font-family: var(--font-display); color: var(--white); line-height: 1; transform: rotate(var(--tilt, -2deg)); }
+.cd-glitch::before, .cd-glitch::after { content: attr(data-text); position: absolute; inset: 0; mix-blend-mode: screen; pointer-events: none; }
+.cd-glitch::before { color: var(--cyan); transform: translate(-3px, 0); }
+.cd-glitch::after { color: var(--magenta); transform: translate(3px, 1px); }
+.cd-glitch > span { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .cd-glitch--live::before { animation: cd-jump 3.6s steps(1) infinite; }
+  .cd-glitch--live::after { animation: cd-jump 3.6s steps(1) infinite reverse; }
+}
+@keyframes cd-jump { 0%, 94% { clip-path: none; } 95% { clip-path: inset(20% 0 55% 0); transform: translate(-6px, 0); } 97% { clip-path: inset(60% 0 10% 0); transform: translate(5px, 0); } }
+
+/* --- Kachel ------------------------------------------------------------------ */
+.cd-tile { position: relative; background: color-mix(in srgb, var(--violet) calc(var(--card-alpha) * 100%), transparent); border: 2px solid var(--card-line); padding: 34px 10px 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+.cd-tile[aria-selected="true"] { border-color: var(--yellow); box-shadow: 0 0 0 2px var(--night), 0 0 0 4px var(--yellow); }
+.cd-tile .cd-tag { position: absolute; top: 6px; left: 6px; font-size: 11px; padding: 3px 8px; letter-spacing: 0.16em; }
+.cd-tile__name { font-family: var(--font-display); font-size: 16px; color: var(--white); }
+.cd-tile__sub { font-size: 13px; color: var(--muted); }
+.cd-tile__action { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 2px solid var(--cyan); color: var(--cyan); display: grid; place-items: center; }
+
+/* --- Kulisse (Arcade.Backdrop) --------------------------------------------- */
+.cd-backdrop { position: relative; overflow: hidden; background: var(--night); }
+.cd-backdrop::before { content: ""; position: absolute; inset: 0; opacity: var(--dots-alpha);
+  background: radial-gradient(circle, var(--dots) 1.6px, transparent 1.8px) 0 0 / 14px 14px; }
+.cd-backdrop > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cd-scanlines { position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, var(--scanline-alpha)) 2px 3px); }
+
+/* --- Popup / Blatt von unten (InfoPopup, WeaponCard) ----------------------- */
+.cd-scrim { position: absolute; inset: 0; background: var(--scrim); }
+.cd-sheet { position: relative; background: var(--popup); border-top: 3px solid var(--magenta); padding: 10px var(--space-pad) var(--space-pad); display: flex; flex-direction: column; gap: 12px; }
+.cd-sheet__handle { width: 44px; height: 4px; background: var(--card-line); align-self: center; }
+.cd-sheet__close { all: unset; position: absolute; top: 14px; right: 12px; width: 44px; height: 44px; display: grid; place-items: center; color: var(--yellow); cursor: pointer; }
+.cd-sheet__close:focus-visible { outline: 3px solid var(--focus); }
+.cd-popup { position: relative; max-width: 420px; background: color-mix(in srgb, var(--violet) 98%, transparent); border: 2px solid var(--cyan); box-shadow: 6px 6px 0 0 var(--magenta); padding: var(--space-card) var(--space-pad); display: flex; flex-direction: column; gap: 10px; }
+.cd-popup__title { font-family: var(--font-display); font-size: 22px; color: var(--white); }
+.cd-pages { display: flex; gap: 6px; }
+.cd-pages i { width: 14px; height: 4px; background: var(--rail); }
+.cd-pages i[aria-current="true"] { background: var(--cyan); }
+.cd-chip { display: inline-flex; align-items: center; gap: 6px; border: 2px solid var(--card-line); padding: 4px 10px; font-weight: 700; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); }
+.cd-chip--cyan { border-color: var(--cyan); color: var(--cyan); }
+.cd-panel { background: var(--violet); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.cd-level { display: flex; gap: 3px; }
+.cd-level i { width: 7px; height: 7px; background: var(--rail); }
+.cd-level i.on { background: var(--yellow); }
+
+/* --- Story-Dialog ------------------------------------------------------------ */
+.cd-story { position: relative; display: flex; flex-direction: column; }
+.cd-story__speaker { width: 172px; height: 190px; border: 2px solid var(--speaker, var(--magenta)); background: var(--night); position: relative; z-index: 1; }
+.cd-story--right .cd-story__speaker { align-self: flex-end; }
+.cd-story__plate { position: absolute; left: 12px; bottom: -22px; background: var(--night); border: 2px solid var(--speaker, var(--magenta)); padding: 4px 10px; transform: rotate(-3deg); }
+.cd-story--right .cd-story__plate { left: auto; right: 12px; transform: rotate(2deg); }
+.cd-story__name { font-family: var(--font-display); font-size: 16px; color: var(--speaker, var(--magenta)); display: block; }
+.cd-story__faction { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); }
+.cd-story__box { margin-top: -2px; border: 2px solid var(--speaker, var(--magenta)); background: var(--popup); box-shadow: 6px 6px 0 0 var(--card-shadow); padding: 34px 18px 14px; font-size: 17px; line-height: 26px; color: var(--text); }
+.cd-story__box .cd-pages { margin-top: 14px; }
+.cd-story__box .cd-pages i[aria-current="true"] { background: var(--speaker, var(--magenta)); }
+
+/* --- Lootcache (CacheArt, CacheOpener) ------------------------------------- */
+.cd-cache { --cache-a: var(--magenta); --cache-b: var(--cyan); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 10px 6px 14px; }
+.cd-cache__art { display: flex; justify-content: center; }
+.cd-cache__art svg { max-width: 100%; height: auto; overflow: visible; }
+.cd-cache__name { position: relative; display: inline-block; font-family: var(--font-display); font-size: 22px; line-height: 1; transform: rotate(-4deg); white-space: nowrap; }
+.cd-cache__name > span { display: block; }
+.cd-cache__ga, .cd-cache__gb { position: absolute; inset: 0; mix-blend-mode: screen; }
+.cd-cache__ga { color: var(--cache-b); transform: translate(-2px, 0); }
+.cd-cache__gb { color: var(--cache-a); transform: translate(2px, 1px); }
+.cd-cache__ink { position: relative; color: var(--white); }
+.cd-cache__sub { font-size: 13px; font-weight: 700; color: var(--muted); }
+.cd-cache--locked svg * { fill: none !important; stroke: var(--empty-line) !important; stroke-dasharray: 5 4; }
+.cd-cache--locked .cd-cache__name { opacity: .5; }
+@media (prefers-reduced-motion: no-preference) {
+  .cd-cache__art svg { animation: cd-bob 3.2s ease-in-out infinite; }
+  .cd-cache__ga { animation: cd-ga 3.8s steps(1) infinite; }
+  .cd-cache__gb { animation: cd-gb 3.8s steps(1) infinite; }
+  .cd-blink { animation: cd-blink 1s steps(1) infinite; }
+  .cd-pix { animation: cd-pix 2.4s steps(1) infinite; }
+}
+@keyframes cd-bob { 50% { transform: translateY(-6px); } }
+@keyframes cd-ga { 0%, 86%, 100% { transform: translate(-2px, 0); clip-path: none; } 87% { transform: translate(-7px, 2px); clip-path: inset(10% 0 55% 0); } 89% { transform: translate(5px, -2px); clip-path: inset(60% 0 8% 0); } }
+@keyframes cd-gb { 0%, 86%, 100% { transform: translate(2px, 1px); clip-path: none; } 87% { transform: translate(7px, -2px); clip-path: inset(50% 0 20% 0); } 89% { transform: translate(-5px, 3px); clip-path: inset(5% 0 70% 0); } }
+@keyframes cd-blink { 50% { opacity: 0; } }
+@keyframes cd-pix { 40% { opacity: 0; } 60% { opacity: 1; } 80% { opacity: .2; } }
+.cd-tap { all: unset; cursor: pointer; width: 84px; height: 74px; background: var(--yellow); color: var(--deep); display: grid; place-items: center;
+  font-family: var(--font-display); font-size: 18px; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
+@media (prefers-reduced-motion: no-preference) { .cd-tap--live { animation: cd-pulse 1.4s ease-in-out infinite; } }
+@keyframes cd-pulse { 50% { transform: scale(1.06); } }
+
+/* --- Kampfkarte (MapView) -------------------------------------------------- */
+.cd-node { --tier: var(--tier-light); position: relative; width: 150px; padding: 8px 10px; background: color-mix(in srgb, var(--violet) 95%, transparent);
+  outline: 2px solid var(--tier); outline-offset: -2px; display: flex; flex-direction: column; gap: 2px; }
+.cd-node__tier { display: flex; align-items: center; gap: 4px; color: var(--tier); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+.cd-node__tier b { margin-left: auto; color: var(--muted); }
+.cd-node__name { font-weight: 700; font-size: 15px; color: var(--text); }
+.cd-node--normal { --tier: var(--tier-normal); } .cd-node--elite { --tier: var(--tier-elite); } .cd-node--chaos { --tier: var(--tier-chaos); }
+.cd-node--chosen { outline-color: var(--yellow); outline-width: 3px; box-shadow: 4px 4px 0 0 color-mix(in srgb, var(--tier) 80%, transparent); }
+.cd-node--far { opacity: 0.55; }
+.cd-node--locked { opacity: 0.28; }
+
+/* --- Modul-Chip (ModuleChip) ------------------------------------------------ */
+.cd-chip-mod { --mod: var(--module-tactic); display: inline-block; vertical-align: middle; position: relative; width: 48px; height: 48px; flex: none; }
+.cd-chip-mod::before { content: ""; position: absolute; inset: 0 2px; opacity: 1;
+  background: linear-gradient(var(--mod), var(--mod)) 0 25% / 100% 2px no-repeat, linear-gradient(var(--mod), var(--mod)) 0 50% / 100% 2px no-repeat, linear-gradient(var(--mod), var(--mod)) 0 75% / 100% 2px no-repeat; }
+.cd-chip-mod__body { position: absolute; inset: 16%; background: var(--module-fill); border: 2px solid var(--mod); display: grid; place-items: center; overflow: hidden; }
+.cd-chip-mod--recipe .cd-chip-mod__body { box-shadow: inset 0 0 0 2px var(--module-fill), inset 0 0 0 3.5px var(--mod); }
+.cd-chip-mod__body img { width: 80%; height: 80%; }
+.cd-chip-mod__short { font-family: var(--font-sans); font-weight: 700; font-size: 12px; color: var(--white); line-height: 1; }
+.cd-chip-mod--dim { filter: brightness(0.45) saturate(0.7); }
+.cd-chip-mod--attack { --mod: var(--module-attack); } .cd-chip-mod--defense { --mod: var(--module-defense); }
+.cd-chip-mod--tactic { --mod: var(--module-tactic); } .cd-chip-mod--bios { --mod: var(--module-bios); }
+
+/* --- Kopfzeile (UiKit.header) ------------------------------------------------ */
+.cd-header { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 0 var(--space-pad); }
+.cd-header__back, .cd-header__gear { all: unset; width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; flex: none; }
+.cd-header__back { color: var(--yellow); margin-left: -10px; }
+.cd-header__gear { color: var(--muted); }
+.cd-header__back:focus-visible, .cd-header__gear:focus-visible { outline: 2px solid var(--focus); }
+.cd-header__title { flex: 1; min-width: 0; }
+.cd-statrow { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; padding: 0 var(--space-pad); }
+.cd-statrow__label { font-weight: 700; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.cd-statrow__value { display: flex; align-items: center; gap: 4px; font-family: var(--font-display); font-size: 17px; }
+
+/* --- Kampf-Anzeigen (BattleScreen, BattleView) --------------------------------- */
+.cd-battlebar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; padding: 10px var(--space-pad) 8px; }
+.cd-battlebar__where { font-weight: 700; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.cd-battlebar__clock { font-family: var(--font-display); font-size: 28px; line-height: 1; color: var(--white); text-align: center; }
+.cd-battlebar__state { font-weight: 700; font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; text-align: center; color: var(--yellow); }
+.cd-battlebar--virus .cd-battlebar__clock { color: var(--magenta); }
+.cd-battlebar--virus .cd-battlebar__state { color: var(--magenta); }
+.cd-battlebar__foes { text-align: right; }
+.cd-battlebar__foes b { display: block; font-family: var(--font-display); font-size: 20px; font-weight: 400; color: var(--magenta); }
+.cd-squadcard { --cut: 10px; background: var(--violet); border: 2px solid var(--cyan); padding: 6px 8px 8px; display: flex; flex-direction: column; gap: 4px; }
+.cd-squadcard--down { border-color: var(--card-line); opacity: .55; }
+.cd-squadcard__name { font-family: var(--font-display); font-size: 15px; color: var(--white); }
+.cd-squadcard__row { display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; color: var(--text); }
+.cd-meter { height: 5px; background: rgba(10, 13, 20, 0.9); }
+.cd-meter > i { display: block; height: 100%; }
+.cd-unitbar { --hp: var(--hp-player); --sh: var(--shield-player); width: 54px; display: flex; flex-direction: column; gap: 2px; }
+.cd-unitbar--enemy { --hp: var(--hp-enemy); --sh: var(--shield-enemy); }
+.cd-unitbar__bar { display: flex; height: 6px; outline: 1px solid rgba(0, 0, 0, 0.9); background: rgba(10, 13, 20, 0.9); }
+.cd-unitbar--enemy .cd-unitbar__bar { clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+.cd-unitbar__hp { background: var(--hp); } .cd-unitbar__sh { background: var(--sh); border-left: 1px solid #000; }
+.cd-unitbar--low .cd-unitbar__bar { outline: 2px solid var(--danger); }
+.cd-takt { display: flex; gap: 2px; }
+.cd-takt i { flex: 1; height: 3px; background: rgba(10, 13, 20, 0.9); }
+.cd-takt i.on { background: var(--takt); }
+.cd-takt--ready i { background: var(--takt-ready); }
+
+/* --- Ergebnis (Kampf / Einsatz) --------------------------------------------- */
+.cd-result { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.cd-result__title { font-size: 72px; }
+.cd-result__stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.cd-result__stat { border: 2px solid var(--card-line); background: var(--violet); padding: 8px 10px; }
+.cd-result__stat span { display: block; font-weight: 700; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.cd-result__stat b { font-family: var(--font-display); font-weight: 400; font-size: 20px; color: var(--white); }
