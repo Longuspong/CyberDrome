@@ -234,3 +234,30 @@ func test_turning_reuses_the_3d_view() -> void:
 	var turn := root.get_node("Ansicht3D/Drome/Ausrichtung") as Node3D
 	t.ok(turn.basis.is_equal_approx(DromeModel.facing_basis("east")), "Modell schaut nach Osten")
 	root.free()
+
+
+func test_rim_per_part_and_neon_layer() -> void:
+	# 17. Nov. 2026: Kontur je Teil (Signalebene) und Neon-Leuchten in 3D.
+	var root := Node2D.new()
+	var build := _stock(PartDB.get_part(&"scout_body"))
+	var slot: String = PartDB.get_part(&"scout_body").equip_slots()[0]
+	build.slots[slot] = &"eq_neon_blaster"
+	var sprites := DromeSprites.assemble(root, build, "south")
+	var signal_view := root.get_node_or_null("Signal3D") as SubViewport
+	t.ok(signal_view != null, "Signalebene da")
+	t.ok(root.get_node_or_null("Neon3D") != null, "Leuchtebene da (Neon-Blaster)")
+	t.ok(sprites["drome"].get_node_or_null("Neon") is NeonGlow, "Leuchten liegt auf dem Bild")
+	var view := root.get_node("Ansicht3D") as SubViewport
+	t.ok(signal_view.world_3d == view.world_3d, "Signalebene sieht dieselbe 3D-Welt")
+	var weapon := root.get_node_or_null("Ansicht3D/Drome/Ausrichtung/" + slot) as MeshInstance3D
+	t.ok(weapon != null, "Waffe als eigener Block")
+	if weapon != null:
+		var sig := weapon.get_node("Signal") as MeshInstance3D
+		var model := DromeModel.model_of(PartDB.get_part(&"eq_neon_blaster"))
+		t.ok(sig.layers == DromeModel.LAYER_SIGNAL, "Signal nur auf seiner Ebene")
+		t.ok((sig.material_override as StandardMaterial3D).albedo_color.is_equal_approx(
+			Color.html(model["colors"]["accent"])), "Waffe traegt ihre eigene Signalfarbe")
+	# Ohne Neon-Teil keine Leuchtebene.
+	DromeSprites.assemble(root, _stock(PartDB.get_part(&"jugg_body")), "south")
+	t.ok(root.get_node_or_null("Neon3D") == null, "ohne Neon kein Leuchten")
+	root.free()

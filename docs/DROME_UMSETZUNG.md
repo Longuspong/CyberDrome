@@ -182,6 +182,32 @@ um) und `side_shapes`; im Entwurf `new_dromes.shift/mirror`. Ungedreht ist er
 bitgleich mit `B`. Erster Einsatz: `docs/design/drome_entwurf/v11_shogun.py`
 (Katana, V-Hörner, Umhang glatt statt in Stufen; 180 statt 280 Formen).
 
+### 4e. Kontur je Teil, Neon-Leuchten, Zerfallen in 3D -- erledigt (17. Nov.)
+
+Was beim 3D-Umbau verloren ging, ist zurück:
+
+* **Drei Ansichten einer 3D-Welt** (`DromeSprites.assemble`): `Ansicht3D`
+  (das Bild), `Signal3D` (jedes Teil einfarbig in seiner Signalfarbe,
+  Ebene `DromeModel.LAYER_SIGNAL`) und nur mit Neon-Teilen `Neon3D`
+  (Röhren = Material glow/accent der Neon-Teile in ihrer Farbe, der Rest
+  schwarz als Verdecker, `LAYER_NEON`). Jeder Block bekommt dazu Kinder
+  „Signal“ und „Neon“ – sie gehen mit, wenn sich der Block bewegt.
+  `DromeSprites.redraw(parent, always)` zeichnet alle drei neu.
+* **Kontur je Teil**: `drome_outline.gdshader` nimmt die Farbe des Rings aus
+  der Signalebene, vom nächstgelegenen Teil. Der Neon-Blaster hat wieder
+  seinen magenta Rand, Nimbus-Orbs ihren hellen. Wie früher nur der
+  Außenrand (die SVG-Konturen lagen unter allen Teilen).
+* **Neon-Leuchten**: `NeonGlow.create_3d` legt die Leuchtebene mit Lichthof
+  (`assets/shaders/neon_halo.gdshader`, additiv) über das Bild; Pulsieren
+  und Flackern wie bisher. Der Generator markiert Neon-Teile im Modell
+  (`"neon": true`).
+* **Zerfallen**: `Unit._death_3d` lässt jeden Block (Füße, Rumpf, Kern, Kopf,
+  Waffe, Waffenarm) in eigener Richtung wegspringen, um seine Mitte kippen
+  und auf den Boden fallen; dann verblasst das Bild.
+* Blicktests: `docs/design/drome_entwurf/godot/render_kontur.gd` (alle
+  Bausätze in vier Richtungen + Neon-Blaster) und `render_zerfall.gd`
+  (Zeitpunkt über `Engine.time_scale`, Aufruf im Dateikopf).
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive

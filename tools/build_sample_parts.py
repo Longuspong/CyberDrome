@@ -2896,6 +2896,8 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
         model["variants"] = variants
     if part.get("pose"):
         model["pose"] = part["pose"]
+    if "neon" in part.get("tags", []):
+        model["neon"] = True       # Leuchtroehren (glow/accent) leuchten im Spiel
     (set_dir / f"{pid}.m3d").write_text(
         json.dumps(model, ensure_ascii=False, separators=(",", ":")) + "\n",
         encoding="utf-8")

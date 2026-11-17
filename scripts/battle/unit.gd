@@ -351,6 +351,10 @@ func play_death() -> void:
 	var total := DEATH_TIME_CALM if calm else DEATH_TIME
 	DromeSprites.tint(_sprites, Teams.HIT_FLASH)
 	_flashing = true
+	var turn := _rig.get_node_or_null("Ansicht3D/Drome/Ausrichtung") as Node3D
+	if turn != null:
+		_death_3d(turn, total, calm)
+		return
 	var parts: Array = []
 	for child in _rig.get_children():
 		if child is Sprite2D:
@@ -388,6 +392,68 @@ func play_death() -> void:
 	var done := create_tween()
 	done.tween_interval(total)
 	done.tween_callback(func(): visible = false)
+
+
+## Zerfallen des 3D-DROME (17. Nov. 2026): jeder Block (Fuesse, Rumpf, Kern,
+## Kopf, Waffe, Waffenarm) springt ein Stueck vom Koerper weg, kippt und
+## faellt auf den Boden; am Ende verblasst das ganze Bild. Koordinaten unter
+## "Ausrichtung" sind bot-lokal (f, l, z) in Weltmetern.
+func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
+	var sprite := _rig.get_node_or_null("Drome") as Sprite2D
+	DromeSprites.redraw(_rig, true)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(str(unit_id))
+	if not calm:
+		var unit_m := 1.0 / DromeModel.SCALE      # ein Entwurfspunkt in Metern
+		# Jeder Block bekommt seine eigene Richtung (goldener Winkel), dazu
+		# ein Zug weg von der Koerpermitte -- so streuen die Teile rundum.
+		var base := rng.randf() * TAU
+		var index := 0
+		for block in turn.get_children():
+			if not block is MeshInstance3D:
+				continue
+			var inst := block as MeshInstance3D
+			var box := inst.get_aabb()
+			var mid := inst.position + box.get_center()
+			var away := Vector2.from_angle(base + index * 2.39996) + Vector2(mid.x, mid.y) * 0.08
+			away = away.normalized()
+			index += 1
+			var reach := rng.randf_range(12.0, 22.0) * unit_m
+			var start := inst.position
+			var pivot := box.get_center()          # gedreht wird um die Blockmitte
+			var hop := start + Vector3(away.x, away.y, 0) * reach * 0.35 \
+				+ Vector3(0, 0, rng.randf_range(4.0, 10.0) * unit_m)
+			# Landen: die Blockmitte knapp ueber dem Boden (z = 0) -- liegt.
+			var land := start + Vector3(away.x, away.y, 0) * reach
+			land.z = minf(box.size.z, box.size.x) * 0.4 - pivot.z
+			var axis := Vector3(-away.y, away.x, 0).normalized()
+			var angle := rng.randf_range(0.6, 1.4) * (1.0 if rng.randf() < 0.5 else -1.0)
+			create_tween().tween_method(func(t: float) -> void:
+				var p: Vector3
+				if t < 1.0 / 3.0:
+					var u := t * 3.0
+					p = start.lerp(hop, 1.0 - (1.0 - u) * (1.0 - u))
+				else:
+					var u := (t - 1.0 / 3.0) * 1.5
+					p = hop.lerp(land, u * u)
+				var turn_b := Basis(axis, angle * t)
+				inst.transform = Transform3D(turn_b, p + pivot - turn_b * pivot),
+				0.0, 1.0, total * 0.75)
+	if sprite != null:
+		create_tween().tween_property(sprite, "modulate:a", 0.0,
+			total if calm else total * 0.35).set_delay(0.0 if calm else total * 0.65)
+	if _ring != null:
+		create_tween().tween_property(_ring, "modulate:a", 0.0, total * 0.6)
+	var flash := create_tween()
+	flash.tween_interval(0.08)
+	flash.tween_callback(func():
+		_flashing = false
+		_refresh_tint())
+	var done := create_tween()
+	done.tween_interval(total)
+	done.tween_callback(func():
+		DromeSprites.redraw(_rig)
+		visible = false)
 
 
 ## Der Bodenring: eine flache Ellipse in Fraktionsfarbe unter den Fuessen.

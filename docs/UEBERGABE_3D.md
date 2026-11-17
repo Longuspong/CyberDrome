@@ -41,7 +41,8 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
    `_shape_polygons` (Silhouetten-Prüfung), `_mirror_l`; im Entwurf
    `new_dromes.shift`. Danach am Shogun (`v9_shogun.py`) Katana, Hörner und
    Umhang glatt statt in Stufen (`slope`, `slope_l` ersetzen).
-2. **Verlorenes aus dem 3D-Umbau nachholen**: Neon-Leuchten (`NeonGlow`) am
+2. **ERLEDIGT (17. Nov.)** -- siehe `DROME_UMSETZUNG.md` 4e. Ursprünglicher Plan:
+   **Verlorenes aus dem 3D-Umbau nachholen**: Neon-Leuchten (`NeonGlow`) am
    3D-DROME (z. B. zweiter Durchgang nur mit glow/accent-Flächen als
    Leuchtebene) und Kontur je Teil (heute eine Kontur in Chassisfarbe; der
    Neon-Blaster hätte gern seinen magenta Rand). Beim Zerstören fällt der

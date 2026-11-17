@@ -48,6 +48,16 @@ static var _models: Dictionary = {}     # Pfad -> geparstes Modell
 static var _meshes: Dictionary = {}     # Schluessel -> ArrayMesh
 static var _materials: Dictionary = {}  # Farben -> Material
 static var _edge := 1.0                 # Kantenbreite des laufenden Aufbaus
+static var _neon_build := false         # baut der laufende Aufbau eine Leuchtebene?
+
+## Render-Ebenen (17. Nov. 2026): das Bild selbst, die Signalfarbe je Teil
+## (fuer die Kontur je Teil, drome_outline.gdshader) und die Leuchtroehren
+## der Neon-Teile (NeonGlow). Jede Ebene sieht eine eigene Kamera.
+const LAYER_IMAGE := 1
+const LAYER_SIGNAL := 2
+const LAYER_NEON := 4
+## Materialien, die in der Leuchtebene leuchten (wie glow_svg im Backen).
+const NEON_MATS := ["glow", "accent"]
 
 
 ## Das Modell eines Teils, oder {} wenn es (noch) keins gibt.
@@ -82,6 +92,7 @@ static func make_camera() -> Camera3D:
 	cam.size = 128.0 / SCALE
 	cam.near = 0.1
 	cam.far = 1000.0
+	cam.cull_mask = LAYER_IMAGE
 	var right := Vector3(COS45, 0, COS45)
 	var up := Vector3(0.5, COS45, -0.5)
 	var back := Vector3(-0.5, COS45, 0.5)
@@ -111,6 +122,11 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256)
 	var weapon_variant := chassis.weapon_variant if chassis != null else ""
 	root.set_meta("accent", _color(body_model.get("colors", {}).get("accent", "#2de2e6")))
 	root.set_meta("line", _color(body_model.get("colors", {}).get("outline", "#080b13")))
+	_neon_build = false
+	for slot in SLOT_ORDER:
+		if bool(model_of(build.part_in(slot)).get("neon", false)):
+			_neon_build = true
+	root.set_meta("neon", _neon_build)
 
 	for slot in SLOT_ORDER:
 		var part := build.part_in(slot)
@@ -136,14 +152,14 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256)
 		if not arm.is_empty():
 			var arm_mount := _vec(arm.get("anchors", {}).get("mount", [0, 0, 0]))
 			_add_block(turn, "%s_arm" % slot, "%s|arm_%s_%s" % [chassis.id, slot, pose],
-				arm, body_model.get("colors", {}), socket - arm_mount)
+				arm, body_model.get("colors", {}), socket - arm_mount, false)
 			socket = _vec(arm.get("anchors", {}).get("hand", [0, 0, 0]))
 		var key := str(part.id) if block == model \
 			else "%s|%s" % [part.id, _variant_name(model, block)]
 		# Der Rumpf bleibt liegen: sein "mount" ist nur der Bezugspunkt fuer die
 		# Bildmitte, kein Sockel.
 		_add_block(turn, slot, key, block, colors,
-			Vector3.ZERO if slot == "body" else socket - mount)
+			Vector3.ZERO if slot == "body" else socket - mount, bool(model.get("neon", false)))
 	return root
 
 
@@ -156,7 +172,7 @@ static func _variant_name(model: Dictionary, block: Dictionary) -> String:
 
 
 static func _add_block(parent: Node3D, node_name: String, key: String,
-		block: Dictionary, colors: Dictionary, offset: Vector3) -> void:
+		block: Dictionary, colors: Dictionary, offset: Vector3, neon: bool) -> void:
 	var mesh := _mesh_for(key, block, colors)
 	if mesh == null:
 		return
@@ -164,8 +180,47 @@ static func _add_block(parent: Node3D, node_name: String, key: String,
 	inst.name = node_name
 	inst.mesh = mesh
 	inst.position = offset
+	inst.layers = LAYER_IMAGE
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(inst)
+	# Signalfarbe: dasselbe Mesh einfarbig in der Signalfarbe des Teils. Als
+	# Kind, damit es jede Bewegung des Blocks mitmacht (Zerfallen, Schritt 5).
+	var signal_inst := MeshInstance3D.new()
+	signal_inst.name = "Signal"
+	signal_inst.mesh = mesh
+	signal_inst.layers = LAYER_SIGNAL
+	signal_inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	signal_inst.material_override = _flat_material(_color(colors.get("accent", "#2de2e6")))
+	inst.add_child(signal_inst)
+	if not _neon_build:
+		return
+	# Leuchtebene: Roehren der Neon-Teile in ihrer Farbe, alles andere schwarz
+	# -- schwarz verdeckt nur (additiv gemischt leuchtet es nicht).
+	var neon_inst := MeshInstance3D.new()
+	neon_inst.name = "Neon"
+	neon_inst.mesh = mesh
+	neon_inst.layers = LAYER_NEON
+	neon_inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for i in mesh.get_surface_count():
+		var mat := str(mesh.surface_get_name(i))
+		var lit := Color.BLACK
+		if neon and mat in NEON_MATS:
+			lit = _color(colors.get(mat, "#ff00ff"))
+		neon_inst.set_surface_override_material(i, _flat_material(lit))
+	inst.add_child(neon_inst)
+
+
+## Einfarbiges Material ohne Licht (Signal- und Leuchtebene).
+static func _flat_material(color: Color) -> StandardMaterial3D:
+	var key := "flat|%s" % color.to_html()
+	if _materials.has(key):
+		return _materials[key]
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.albedo_color = color
+	_materials[key] = m
+	return m
 
 
 ## Ein Mesh je Block: eine Flaeche je Material, dazu die Huellen.
@@ -185,6 +240,7 @@ static func _mesh_for(key: String, block: Dictionary, colors: Dictionary) -> Arr
 		var st: SurfaceTool = by_mat[mat]
 		st.commit(mesh)
 		mesh.surface_set_material(mesh.get_surface_count() - 1, _face_material(mat, colors))
+		mesh.surface_set_name(mesh.get_surface_count() - 1, mat)
 	var hulls: Array = block.get("hulls", [])
 	if not hulls.is_empty():
 		var hs := SurfaceTool.new()
@@ -193,6 +249,7 @@ static func _mesh_for(key: String, block: Dictionary, colors: Dictionary) -> Arr
 			_add_face(hs, "seam", _vec(hull[0]), hull[1])
 		hs.commit(mesh)
 		mesh.surface_set_material(mesh.get_surface_count() - 1, _hull_material(colors))
+		mesh.surface_set_name(mesh.get_surface_count() - 1, "hull")
 	if mesh.get_surface_count() == 0:
 		mesh = null
 	_meshes[cache_key] = mesh
