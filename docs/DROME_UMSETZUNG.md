@@ -91,6 +91,24 @@ Armebene gebaut -- dasselbe Bild passt an beide Molok-Arme, ohne Spiegeln.
 - [x] Molok-Klinge wächst nur bis 1,3 mit (sonst ragt sie aus dem Rahmen)
 - [x] Silhouetten-Prüfung grün (engstes Paar Hammer/Schlüssel 0,66)
 
+### 4b. Arme und Waffen trennen -- entschieden (17. Nov.), offen
+Befund nach Schritt 4: Der Arm gehört heute zur Waffe. Er wird in der
+Waffen-Palette gemalt (Molok-Arme blaugrau/türkis statt Chassisfarbe), für
+alle Chassis gleich gebaut und nur skaliert (setzt beim Molok nicht sauber
+unter der Schulterplatte an), und Arm + Waffe sind ein Sprite (die Tiefe
+lässt sich nicht für beide richtig setzen). Spieler: „ja“, in einer eigenen
+Design-Sitzung.
+- [ ] Arm gehört zum **Chassis**: Chassisfarbe, je Chassis gebaut, drei
+      Haltungen (gestreckt / angewinkelt / Deckung), Hand-Anker
+- [ ] Waffe ist nur das **Gerät in der Hand** (mit Griff, Knauf ...), sitzt
+      am Hand-Anker; sie bestimmt nur die Haltung des Arms
+- [ ] Arm und Waffe als **eigene Sprites** mit eigener Tiefe; Schild seitlich
+      vor dem Körper, nie dahinter (muss nicht mittig sein)
+- [ ] Molok: eigene Arme statt Armmaß 1,6; `heavy`/`heavy_right` und
+      `WEAPON_DEPTH_*` danach prüfen bzw. ersetzen; Lafette bleibt
+- [ ] Erleichtert Schritt 5: Arm dreht an der Schulter, Waffe folgt am
+      Hand-Anker
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
