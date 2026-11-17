@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="scout_body" data-type="body" data-direction="south">
+  
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#2de2e6" stroke-width="3.2" stroke-linejoin="round">
+  <path d="M70.01 78.15 L82.42 69.38 L82.42 62.7 L70.01 71.47 Z" fill="#2de2e6"/>
+  <path d="M78.03 59.59 L65.62 68.37 L70.01 71.47 L82.42 62.7 Z" fill="#2de2e6"/>
+  <path d="M77.36 67.78 L82.14 64.4 L82.14 53.9 L77.36 57.28 Z" fill="#2de2e6"/>
+  <path d="M71.92 75.09 L76.7 71.72 L76.7 70.28 L71.92 73.66 Z" fill="#2de2e6" />
+  <path d="M73.55 65.08 L77.36 67.78 L77.36 57.28 L73.55 54.58 Z" fill="#2de2e6"/>
+  <path d="M76.22 69.95 L71.45 73.32 L71.92 73.66 L76.7 70.28 Z" fill="#2de2e6" />
+  <path d="M65.62 75.05 L70.01 78.15 L70.01 71.47 L65.62 68.37 Z" fill="#2de2e6"/>
+  <path d="M71.45 74.75 L71.92 75.09 L71.92 73.66 L71.45 73.32 Z" fill="#2de2e6" />
+  <path d="M78.32 51.2 L73.55 54.58 L77.36 57.28 L82.14 53.9 Z" fill="#2de2e6"/>
+  <path d="M62.04 77.25 L66.24 80.22 L66.24 79.27 L62.04 76.3 Z" fill="#2de2e6"/>
+  <path d="M62.42 76.03 L62.04 76.3 L66.24 79.27 L66.63 79.0 Z" fill="#2de2e6"/>
+  <path d="M62.04 77.67 L67.01 81.18 L67.01 76.21 L62.04 72.7 Z" fill="#2de2e6"/>
+  <path d="M67.01 81.18 L71.21 78.21 L71.21 73.24 L67.01 76.21 Z" fill="#2de2e6"/>
+  <path d="M66.24 69.73 L62.04 72.7 L67.01 76.21 L71.21 73.24 Z" fill="#2de2e6"/>
+  <path d="M66.24 80.22 L66.63 79.95 L66.63 79.0 L66.24 79.27 Z" fill="#2de2e6"/>
+  <path d="M62.04 75.15 L66.24 78.12 L66.24 77.17 L62.04 74.2 Z" fill="#2de2e6"/>
+  <path d="M62.42 73.93 L62.04 74.2 L66.24 77.17 L66.63 76.9 Z" fill="#2de2e6"/>
+  <path d="M66.24 78.12 L66.63 77.85 L66.63 76.9 L66.24 77.17 Z" fill="#2de2e6"/>
+</g>
+</svg>

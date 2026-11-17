@@ -1271,8 +1271,12 @@ SCOUT_BODY = [
     # -- Freier Arm (-l): liegt am Koerper an, traegt nie eine Waffe -------
     B((-2.5, 2.5), (-16.5, -12.5), (45, 54), "metal"),   # Oberarm
     B((-3, 3), (-15.5, -11.5), (34, 45), "plate"),       # Unterarm
-    B((-2.5, 3.5), (-15, -12), (29.5, 34), "dark"),      # Faust
     B((3, 3.5), (-14.5, -12.5), (39, 41), "accent"),
+    # Hand (nur dieser Arm hat eine: er traegt nie etwas)
+    B((-2.2, 1.0), (-15.2, -12.2), (29.8, 34), "dark"),   # Handruecken
+    B((1.0, 3.0), (-15.0, -12.4), (31.7, 33.2), "plate"), # Finger
+    B((1.0, 3.0), (-15.0, -12.4), (30.0, 31.5), "light"),
+    B((-0.8, 2.0), (-12.4, -11.3), (31.5, 33.6), "plate"), # Daumen
     # -- Passive Sprint: Ruecken-Booster mit Fluegeln und Duesen -----------
     B((-13, -7), (-6.5, 6.5), (44, 62), "plate"),
     B((-13.5, -6.5), (-7, 7), (62, 64), "light"),
@@ -1952,63 +1956,112 @@ EQ_RAIL_LANCE = [
 # ===========================================================================
 # Waffen in Posen (DROME-Designregeln, Schritt 4; Entwurf v4.py und v6.py)
 #
-# Die Waffe bringt den Arm in ihrer Pose mit, der Arm haengt nie gerade:
-# Fernkampf gestreckt, Nahkampf angewinkelt mit Griff und Knauf, Stab und
-# Werkzeug senkrecht mit Wicklung, Schild angewinkelt vor dem Koerper.
+# Arme und Waffen getrennt (Schritt 4b, 17. Nov. 2026): Der Arm gehoert zum
+# CHASSIS (Chassisfarbe, je Chassis gebaut), die Waffe ist nur das Geraet am
+# Hand-Anker. Zwei Haltungen je Arm:
 #
-# Jede Pose ist um den Schulteranker (0, 0, ARM_Z) gebaut und SYMMETRISCH zur
-# Armebene (l = 0) -- dasselbe Teil passt an den linken und an den rechten Arm
-# des Molok, ohne Spiegeln. ``k`` ist das Armmass: 1.0 fuer Vireo und Nimbus,
-# HEAVY_K fuer den Molok (Variante "heavy"). Fuer die Strix-Lafette gibt es
-# eine eigene Variante ohne Arm, um den Lafettenanker (0, 0, LAFETTE_Z).
+#   * "hold"  -- halten: Oberarm haengt, Unterarm nach vorn, Faust um den
+#                Griff (Klinge, Hammer, Stab, Schluessel, Bumerang, Schild)
+#   * "aim"   -- zielen: Arm endet in einer Manschette, die Waffe sitzt
+#                direkt daran (Blaster, Ramme). Vireo und Nimbus strecken den
+#                ganzen Arm, der Molok schiesst angewinkelt aus der Huefte.
+#
+# Haende haben nur Arme, die nie etwas tragen (Vireo rechts).
+#
+# Waffen sind um ihren Griffpunkt (0, 0, ARM_Z) gebaut und SYMMETRISCH zur
+# Armebene (l = 0) bzw. fuer den rechten Molok-Arm in 3D gespiegelt. ``k`` ist
+# das Waffenmass: 1.0 fuer Vireo und Nimbus, HEAVY_K fuer den Molok (Variante
+# "heavy"). Fuer die Strix-Lafette gibt es eine eigene Variante ohne Arm, um
+# den Lafettenanker (0, 0, LAFETTE_Z).
 # ===========================================================================
 
 ARM_Z = 52
 HEAVY_K = 1.6
 LAFETTE_Z = 61
+POSES = ("hold", "aim")
 
 
-def _arm_extended(k=1.0):
-    """Fernkampf: Oberarm kurz, Ellbogen nach aussen (+l), Unterarm gestreckt
-    nach vorn -- so laeuft der Arm neben dem Rumpf und nicht quer davor."""
-    t, zs = 2.2 * k, ARM_Z
-    lo = 5 * k                                           # Ellbogen nach aussen
-    shapes = [
-        B((-2.5 * k, 2.5 * k), (-t, lo + t), (zs - 7 * k, zs - 1 * k), "metal"),
-        B((-2 * k, 15 * k), (lo - t - 0.3, lo + t + 0.3), (zs - 8.5 * k, zs - 2 * k), "plate"),
-        B((8.5 * k, 14.5 * k), (lo - t - 0.4, lo + t + 0.4), (zs - 4 * k, zs - 3 * k), "accent"),
-    ]
-    return shapes, (15 * k, lo, zs - 5.5 * k)
-
-
-def _arm_raised(k=1.0):
-    """Nahkampf/Stab/Schild: Oberarm runter, Unterarm nach vorn, Faust leicht
-    nach aussen versetzt."""
-    t, zs = 2.0 * k, ARM_Z
-    hf, hl, hz = 12.75 * k, 1.0 * k, zs - 12.5 * k
-    shapes = [
-        B((-2.5 * k, 2.5 * k), (-t, t), (zs - 11 * k, zs), "metal"),
-        B((-2.5 * k, 10.5 * k), (-t - 0.3, t + 0.3), (zs - 16 * k, zs - 9 * k), "plate"),
-        B((4 * k, 9 * k), (t + 0.3, t + 0.8), (zs - 13.5 * k, zs - 12 * k), "accent"),
-        # Faust: umschliesst den Griff, der oben und unten herausschaut
+def _fist(hf, hl, hz, k=1.0):
+    """Faust-Block um den Griff, zwei helle Fugen = Knoechel."""
+    return [
         B((hf - 2.2 * k, hf + 2.2 * k), (hl - 2.6 * k, hl + 2.6 * k), (hz - 2.6 * k, hz + 2.6 * k), "dark"),
         B((hf + 2.2 * k, hf + 2.6 * k), (hl - 2.2 * k, hl + 2.2 * k), (hz - 1.6 * k, hz - 0.6 * k), "light"),
         B((hf + 2.2 * k, hf + 2.6 * k), (hl - 2.2 * k, hl + 2.2 * k), (hz + 0.6 * k, hz + 1.6 * k), "light"),
     ]
-    return shapes, (hf, hl, hz)
 
 
-def _arm_guard(k=1.0):
-    """Schild: Oberarm runter, Unterarm KURZ nach vorn -- der Schild sitzt
-    direkt vor der Brust und deckt den Koerper, statt weit davor zu haengen."""
-    t, zs = 2.0 * k, ARM_Z
-    hf, hl, hz = 6.5 * k, 1.0 * k, zs - 12.5 * k
+def _cuff(hf, hl, hz, k=1.0):
+    """Manschette: Ring am Handgelenk, die Waffe sitzt direkt davor."""
+    return [L((hl, hz), [(2.9 * k, hf - 1.6 * k), (2.9 * k, hf)], "accent",
+              axis="f", segments=12)]
+
+
+def arm_hold(shoulder, k=1.0):
+    """Halten (linker Arm, +l): Oberarm runter, Unterarm nach vorn, Faust
+    leicht nach aussen versetzt. Gibt (Formen, Handpunkt)."""
+    f0, l0, zs = shoulder
+    t = 2.0 * k
+    hf, hl, hz = f0 + 12.75 * k, l0 + 1.0 * k, zs - 12.5 * k
     shapes = [
-        B((-2.5 * k, 2.5 * k), (-t, t), (zs - 11 * k, zs), "metal"),
-        B((-2.5 * k, 5.5 * k), (-t - 0.3, t + 0.3), (zs - 16 * k, zs - 9 * k), "plate"),
-        B((hf - 2.2 * k, hf + 1.5 * k), (hl - 2.6 * k, hl + 2.6 * k), (hz - 2.6 * k, hz + 2.6 * k), "dark"),
-    ]
+        B((f0 - 2.5 * k, f0 + 2.5 * k), (l0 - t, l0 + t), (zs - 11 * k, zs), "metal"),
+        B((f0 - 2.5 * k, f0 + 10.5 * k), (l0 - t - 0.3, l0 + t + 0.3), (zs - 16 * k, zs - 9 * k), "plate"),
+        B((f0 + 4 * k, f0 + 9 * k), (l0 + t + 0.3, l0 + t + 0.8), (zs - 13.5 * k, zs - 12 * k), "accent"),
+    ] + _fist(hf, hl, hz, k)
     return shapes, (hf, hl, hz)
+
+
+def arm_aim(shoulder, k=1.0):
+    """Zielen (Vireo, Nimbus): ganzer Arm gestreckt nach vorn, auf
+    Schulterhoehe, am Ende die Manschette."""
+    f0, l0, zs = shoulder
+    t = 2.1 * k
+    zc = zs - 4.5 * k
+    hf = f0 + 17.6 * k
+    shapes = [
+        B((f0 - 2.5 * k, f0 + 2.5 * k), (l0 - t, l0 + t), (zs - 7 * k, zs - 1), "metal"),   # Gelenk
+        B((f0 + 1 * k, f0 + 9 * k), (l0 - t, l0 + t), (zc - 2.0 * k, zc + 2.0 * k), "metal"),
+        B((f0 + 8 * k, hf - 1.6 * k), (l0 - t - 0.3, l0 + t + 0.3), (zc - 2.6 * k, zc + 2.6 * k), "plate"),
+        B((f0 + 11 * k, f0 + 15 * k), (l0 + t + 0.3, l0 + t + 0.8), (zc - 0.8 * k, zc + 0.8 * k), "accent"),
+    ] + _cuff(hf, l0, zc, k)
+    return shapes, (hf, l0, zc)
+
+
+def molok_arm(shoulder, pose):
+    """Eigener Molok-Arm: setzt UNTER der Schulterplatte an, dicker Oberarm,
+    Unterarm angewinkelt nach vorn auf Hufthoehe -- halten mit grosser Faust,
+    zielen aus der Huefte mit Manschette."""
+    f0, l0, zs = shoulder
+    hz = zs - 18
+    shapes = [
+        B((f0 - 3.5, f0 + 3.5), (l0 - 3.5, l0 + 3.5), (hz + 3, zs), "metal"),          # Oberarm
+        B((f0 - 4, f0 + 4), (l0 - 4, l0 + 4), (hz + 1, hz + 5), "dark"),               # Ellbogen
+        B((f0 - 3, f0 + 13), (l0 - 4, l0 + 4), (hz - 4, hz + 4), "plate"),             # Unterarm
+        B((f0 - 3, f0 + 13), (l0 - 4.2, l0 + 4.2), (hz + 4, hz + 5), "light"),
+        B((f0 + 3, f0 + 10), (l0 + 4.2, l0 + 4.7), (hz - 1.5, hz + 1.5), "accent"),
+    ]
+    if pose == "hold":
+        hf, hl = f0 + 16.5, l0 + 1.0
+        return shapes + _fist(hf, hl, hz, HEAVY_K * 0.85), (hf, hl, hz)
+    hf = f0 + 14.6
+    return shapes + _cuff(hf, l0, hz, HEAVY_K), (hf, l0, hz)
+
+
+def arm_set(shoulder, build, mirror=False):
+    """Beide Haltungen eines Arms: {pose: (Formen, Handpunkt)}. ``build``
+    baut den LINKEN Arm; der rechte wird in 3D an l = 0 gespiegelt."""
+    res = {}
+    for pose in POSES:
+        if mirror:
+            left = (shoulder[0], -shoulder[1], shoulder[2])
+            shapes, hand = build(left, pose)
+            res[pose] = (_mirror_l(shapes), (hand[0], -hand[1], hand[2]))
+        else:
+            res[pose] = build(shoulder, pose)
+    return res
+
+
+def light_arm(shoulder, pose):
+    return (arm_hold if pose == "hold" else arm_aim)(shoulder)
 
 
 def _head_blaster(h, k, neon=False):
@@ -2064,20 +2117,19 @@ def _head_hammer(h, k):
 
 
 def _head_ram(h, k):
+    """Ramme an der Manschette: Kolben mit Hydraulik, breite Rammplatte --
+    stoesst nach vorn."""
     f, l, z = h
     return [
-        B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 5 * k, z + 5 * k), "metal"),
-        B((f - 1.5 * k, f + 2.6 * k), (l - 1.5 * k, l + 1.5 * k), (z - 6.4 * k, z - 5 * k), "dark"),
-        B((f - 1.5 * k, f + 2.6 * k), (l - 1.5 * k, l + 1.5 * k), (z + 5 * k, z + 6.4 * k), "dark"),
-        B((f + 2.6 * k, f + 11 * k), (l - 2.4 * k, l + 2.4 * k), (z - 2.6 * k, z + 2.6 * k), "metal"),
-        B((f + 2.6 * k, f + 9 * k), (l - 1.0 * k, l + 1.0 * k), (z + 2.6 * k, z + 4.4 * k), "dark"),
-        B((f + 2.6 * k, f + 9 * k), (l - 1.0 * k, l + 1.0 * k), (z - 4.4 * k, z - 2.6 * k), "dark"),
-        B((f + 4 * k, f + 5 * k), (l - 3.2 * k, l + 3.2 * k), (z - 3.4 * k, z + 3.4 * k), "light"),
-        B((f + 11 * k, f + 14 * k), (l - 6 * k, l + 6 * k), (z - 7 * k, z + 7 * k), "plate"),
-        B((f + 11 * k, f + 14 * k), (l - 6.3 * k, l + 6.3 * k), (z - 0.6 * k, z + 0.6 * k), "accent"),
-        B((f + 14 * k, f + 14.7 * k), (l - 5 * k, l + 5 * k), (z - 6 * k, z + 6 * k), "dark"),
-        B((f + 14.7 * k, f + 15.4 * k), (l - 1.6 * k, l + 1.6 * k), (z - 1.6 * k, z + 1.6 * k), "glow"),
-    ], (f + 15.4 * k, l, z)
+        B((f, f + 8.4 * k), (l - 2.4 * k, l + 2.4 * k), (z - 2.6 * k, z + 2.6 * k), "metal"),
+        B((f, f + 6.4 * k), (l - 1.0 * k, l + 1.0 * k), (z + 2.6 * k, z + 4.4 * k), "dark"),
+        B((f, f + 6.4 * k), (l - 1.0 * k, l + 1.0 * k), (z - 4.4 * k, z - 2.6 * k), "dark"),
+        B((f + 1.4 * k, f + 2.4 * k), (l - 3.2 * k, l + 3.2 * k), (z - 3.4 * k, z + 3.4 * k), "light"),
+        B((f + 8.4 * k, f + 11.4 * k), (l - 6 * k, l + 6 * k), (z - 7 * k, z + 7 * k), "plate"),
+        B((f + 8.4 * k, f + 11.4 * k), (l - 6.3 * k, l + 6.3 * k), (z - 0.6 * k, z + 0.6 * k), "accent"),
+        B((f + 11.4 * k, f + 12.1 * k), (l - 5 * k, l + 5 * k), (z - 6 * k, z + 6 * k), "dark"),
+        B((f + 12.1 * k, f + 12.8 * k), (l - 1.6 * k, l + 1.6 * k), (z - 1.6 * k, z + 1.6 * k), "glow"),
+    ], (f + 12.8 * k, l, z)
 
 
 def _head_boomerang(h, k):
@@ -2139,6 +2191,7 @@ def _head_wrench(h, k):
 def _head_shield(h, k):
     """Schild angewinkelt vor dem Koerper, zur Koerpermitte hin versetzt."""
     f, l, z = h
+    f -= 6.5 * k                                         # vor die Brust, nicht weit davor
     a, b = l - 16 * k, l + 3 * k                         # deckt die Koerpermitte
     return [
         B((f + 1.5 * k, f + 3.5 * k), (a, b), (z - 14 * k, z + 15 * k), "plate"),
@@ -2148,13 +2201,6 @@ def _head_shield(h, k):
         D(f + 4.5 * k, l, z - 1 * k, 2.6 * k, "dark", 6),
         D(f + 4.7 * k, l, z - 1 * k, 1.5 * k, "glow", 6),
     ], (f + 4.7 * k, l, z - 1 * k)
-
-
-def posed(pose, head, k=1.0, **kw):
-    """Arm in der Pose plus Waffenkopf in der Hand: (Formen, Wirkpunkt)."""
-    arm, hand = {"ext": _arm_extended, "up": _arm_raised, "guard": _arm_guard}[pose](k)
-    shapes, point = head(hand, k, **kw)
-    return arm + shapes, point
 
 
 def lafette_blaster(neon=False):
@@ -2180,71 +2226,65 @@ def lafette_blaster(neon=False):
 
 
 def lafette_staff():
-    """Runenstab auf der Lafette: liegt nach vorn, Kugel in der Fassung vorn."""
-    z = LAFETTE_Z + 4
+    """Runenstab auf der Lafette: ohne Griff, nur die Kugel in ihrer Fassung
+    auf einem kurzen Sockel (Spieler 17. Nov. 2026)."""
+    z = LAFETTE_Z
+    base = z + 5
+    head, point = _head_staff((0, 0, base - 18.6), 1.0)
     return [
-        B((-6, 4), (-2, 2), (LAFETTE_Z, LAFETTE_Z + 2.5), "plate"),
-        L((0, z), [(1.4, -10), (1.4, 12)], "metal", axis="f", segments=10),
-        L((0, z), [(2.0, -11.5), (2.0, -10)], "dark", axis="f", segments=10),
-        L((0, z), [(1.9, -2), (1.9, -0.6)], "accent", axis="f", caps=False, segments=10),
-        L((0, z), [(3.4, 12), (3.4, 13)], "plate", axis="f", segments=12),
-        L((0, z), [(0, 13.2), (2.2, 14.2), (3.0, 16), (2.2, 17.8), (0, 18.8)], "glow", axis="f"),
-        L((0, z), [(4.6, 15.4), (4.6, 16.6)], "accent", axis="f", caps=False, segments=18),
-    ], (16, 0, z)
+        B((-3, 3), (-2.6, 2.6), (z, z + 2), "plate"),
+        L((0, 0), [(1.6, z + 2), (1.6, base)], "metal", segments=10),
+    ] + head[5:], point
 
 
 def lafette_wrench():
-    """E-Schluessel auf der Lafette: liegt nach vorn, Maul vorn."""
-    z = LAFETTE_Z + 4
+    """E-Schluessel auf der Lafette: ohne Griff, nur der Kopf mit dem Maul
+    nach oben auf einem kurzen Sockel."""
+    z = LAFETTE_Z
+    base = z + 5
+    head, point = _head_wrench((0, 0, base - 14), 1.0)
     return [
-        B((-6, 4), (-2, 2), (LAFETTE_Z, LAFETTE_Z + 2.5), "plate"),
-        B((-8, 9), (-1.2, 1.2), (z - 1.2, z + 1.2), "plate"),
-        B((-6, -4.6), (-1.6, 1.6), (z - 1.6, z + 1.6), "accent"),
-        B((2, 3.4), (-1.6, 1.6), (z - 1.6, z + 1.6), "accent"),
-        B((9, 13), (-4.6, 4.6), (z - 2.2, z + 2.2), "metal"),
-        B((9, 13), (-4.9, 4.9), (z - 0.6, z + 0.6), "accent"),
-        B((13, 19), (-4.6, -2.0), (z - 2.0, z + 2.0), "metal"),
-        B((13, 19), (2.0, 4.6), (z - 2.0, z + 2.0), "metal"),
-        B((13, 16), (-1.3, 1.3), (z - 1.3, z + 1.3), "glow"),
-    ], (16, 0, z)
+        B((-3, 3), (-2.6, 2.6), (z, z + 2), "plate"),
+        B((-1.2, 1.2), (-1.2, 1.2), (z + 2, base), "plate"),
+    ] + head[5:], point
 
 
 def weapon_set(pose, head, lafette=None, **kw):
-    """Grundform (k 1, linker Arm), Molok-Varianten fuer beide Arme und, fuer
-    Fernwaffen, die Lafette.
+    """Nur das Geraet in der Hand, um den Griffpunkt (0, 0, ARM_Z) gebaut:
+    Grundform (k 1, linker Arm), Molok-Varianten fuer beide Arme und, fuer
+    Fernwaffen, die Lafette. ``pose`` sagt, welche Haltung des Chassis-Arms
+    die Waffe braucht.
 
-    Die Posen sind fuer den LINKEN Arm (+l) gebaut: der Ellbogen geht nach
-    aussen, der Schild zur Koerpermitte. Fuer den rechten Molok-Arm gibt es
-    dieselbe Waffe in 3D an der Armebene gespiegelt ("heavy_right") -- das
-    ist kein gespiegeltes Bild, der Generator rendert sie neu, Licht und
-    Schatten stimmen also.
+    Fuer den rechten Molok-Arm gibt es dieselbe Waffe in 3D an der Armebene
+    gespiegelt ("heavy_right") -- kein gespiegeltes Bild, der Generator
+    rendert sie neu, Licht und Schatten stimmen also.
     """
-    shapes, point = posed(pose, head, 1.0, **kw)
-    heavy, heavy_point = posed(pose, head, HEAVY_K, **kw)
+    grip = (0, 0, ARM_Z)
+    shapes, point = head(grip, 1.0, **kw)
+    heavy, heavy_point = head(grip, HEAVY_K, **kw)
     hp_r = (heavy_point[0], -heavy_point[1], heavy_point[2])
     variants = {
-        "heavy": {"shapes": heavy, "anchors": {"mount": (0, 0, ARM_Z),
-                                               "muzzle": heavy_point}},
+        "heavy": {"shapes": heavy, "anchors": {"mount": grip, "muzzle": heavy_point}},
         "heavy_right": {"shapes": _mirror_l(heavy),
-                        "anchors": {"mount": (0, 0, ARM_Z), "muzzle": hp_r}},
+                        "anchors": {"mount": grip, "muzzle": hp_r}},
     }
     if lafette is not None:
         laf, laf_point = lafette
         variants["lafette"] = {"shapes": laf, "anchors": {"mount": (0, 0, LAFETTE_Z),
                                                           "muzzle": laf_point}}
-    return {"shapes": shapes, "variants": variants,
-            "anchors": {"mount": (0, 0, ARM_Z), "muzzle": point}}
+    return {"shapes": shapes, "variants": variants, "pose": pose,
+            "anchors": {"mount": grip, "muzzle": point}}
 
 
-W_PULSE = weapon_set("ext", _head_blaster, lafette=lafette_blaster())
-W_NEON = weapon_set("ext", _head_blaster, lafette=lafette_blaster(neon=True), neon=True)
-W_BLADE = weapon_set("up", _head_blade)
-W_BOOMERANG = weapon_set("up", _head_boomerang)
-W_SHIELD = weapon_set("guard", _head_shield)
-W_HAMMER = weapon_set("up", _head_hammer)
-W_RAM = weapon_set("up", _head_ram)
-W_WRENCH = weapon_set("up", _head_wrench, lafette=lafette_wrench())
-W_STAFF = weapon_set("up", _head_staff, lafette=lafette_staff())
+W_PULSE = weapon_set("aim", _head_blaster, lafette=lafette_blaster())
+W_NEON = weapon_set("aim", _head_blaster, lafette=lafette_blaster(neon=True), neon=True)
+W_BLADE = weapon_set("hold", _head_blade)
+W_BOOMERANG = weapon_set("hold", _head_boomerang)
+W_SHIELD = weapon_set("hold", _head_shield)
+W_HAMMER = weapon_set("hold", _head_hammer)
+W_RAM = weapon_set("aim", _head_ram)
+W_WRENCH = weapon_set("hold", _head_wrench, lafette=lafette_wrench())
+W_STAFF = weapon_set("hold", _head_staff, lafette=lafette_staff())
 
 
 # ===========================================================================
@@ -2278,6 +2318,8 @@ SETS = [
                     "equip_left": (0, 14.5, 54),
                     "equip_right": (0, -14.5, 54),
                 },
+                # Der Waffenarm gehoert zum Chassis (Schritt 4b).
+                "arms": {"equip_left": arm_set((0, 14.5, 54), light_arm)},
                 # Ein Sprinter traegt keine Artillerie. Die Grenze steht hier
                 # und nicht in einer Balancing-Tabelle, weil sie sonst erst im
                 # Kampf auffaellt -- und weil ein Vireo mit Belagerungskanone
@@ -2367,6 +2409,9 @@ SETS = [
                     # Auf dem Rueckendeck zwischen den Auspuffstapeln.
                     "equip_shoulder": (-7, 0, 63),
                 },
+                # Eigene Molok-Arme unter den Schulterplatten (Schritt 4b).
+                "arms": {"equip_left": arm_set((0, 19, 57), molok_arm),
+                         "equip_right": arm_set((0, -19, 57), molok_arm, mirror=True)},
                 # Der Schulteranker ist KEIN dritter Arm. Er sitzt hinter dem
                 # Kopf auf der Schulterbruecke, hat keinen Gegenhalt und nichts,
                 # woran sich ein Schild abstuetzen koennte -- dort gehoert
@@ -2437,6 +2482,7 @@ SETS = [
                     "equip_left": (0, 13.8, 47),
                     "equip_right": (0, -13.8, 47),
                 },
+                "arms": {"equip_left": arm_set((0, 13.8, 47), light_arm)},
                 "slot_rules": {
                     "equip_left": {"max_class": "medium",
                                    "categories": ["weapon", "support"]},
@@ -2598,6 +2644,17 @@ def slot_draw_order(part: dict, direction: str) -> dict:
             local = (local[0] + WEAPON_DEPTH_AHEAD, local[1] * WEAPON_DEPTH_INWARD,
                      TORSO_REF[2])
         order[name] = round(closeness(to_world(local, direction)), 1)
+    # Arm und Waffe sind eigene Sprites (Schritt 4b). Gehalten liegt die
+    # Waffe knapp HINTER ihrem Arm -- die Faust umschliesst den Griff. Beim
+    # Zielen sitzt sie vor der Manschette und wird dort gemessen, wo sie ist:
+    # vorn vor der Hand (von hinten gesehen liegt sie dann hinter dem Arm).
+    for slot, poses in part.get("arms", {}).items():
+        for pose, (_shapes, hand) in poses.items():
+            if pose == "hold":
+                order[f"{slot}@{pose}"] = round(order[slot] - 0.05, 2)
+            else:
+                ahead = (hand[0] + 4, hand[1] * WEAPON_DEPTH_INWARD, TORSO_REF[2])
+                order[f"{slot}@{pose}"] = round(closeness(to_world(ahead, direction)), 1)
     return order
 
 
@@ -2673,27 +2730,36 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
     if part["type"].startswith("equipment"):
         meta["mount_class"] = part.get("mount_class", DEFAULT_MOUNT_CLASS)
         meta["category"] = part.get("category", DEFAULT_CATEGORY)
-        # Waffen in Posen: eigene Bilder fuer den Molok (Armmass) und fuer die
-        # Strix-Lafette. Welche gilt, sagt das Chassis (weapon_variant).
-        variants = {}
-        for vname, vspec in part.get("variants", {}).items():
-            vstem = f"{pid}_{vname}_{direction}"
-            vsvg = SVG_TEMPLATE.format(
-                pid=pid, ptype=part["type"], direction=direction,
-                name=part.get("name", pid), body=render(vspec["shapes"], direction),
-                note=svg_comment_body(SVG_NOTE.format(direction=direction)),
-            )
-            ElementTree.fromstring(vsvg)
-            (set_dir / f"{vstem}.svg").write_text(vsvg, encoding="utf-8")
-            variants[vname] = {
-                "svg": f"{vstem}.svg",
-                "anchors": [
-                    {"name": name, **dict(zip(("x", "y"), project(local, direction)))}
-                    for name, local in vspec["anchors"].items()
-                ],
+        if part.get("pose"):
+            meta["pose"] = part["pose"]
+    # Varianten: Waffen fuer den Molok (Waffenmass) und die Strix-Lafette,
+    # am Chassis die Arme je Slot und Haltung ("arm_<slot>_<pose>").
+    vspecs = dict(part.get("variants", {}))
+    for slot, poses in part.get("arms", {}).items():
+        for pose, (shapes, hand) in poses.items():
+            vspecs[f"arm_{slot}_{pose}"] = {
+                "shapes": shapes,
+                "anchors": {"mount": part["anchors"][slot], "hand": hand},
             }
-        if variants:
-            meta["variants"] = variants
+    variants = {}
+    for vname, vspec in vspecs.items():
+        vstem = f"{pid}_{vname}_{direction}"
+        vsvg = SVG_TEMPLATE.format(
+            pid=pid, ptype=part["type"], direction=direction,
+            name=part.get("name", pid), body=render(vspec["shapes"], direction),
+            note=svg_comment_body(SVG_NOTE.format(direction=direction)),
+        )
+        ElementTree.fromstring(vsvg)
+        (set_dir / f"{vstem}.svg").write_text(vsvg, encoding="utf-8")
+        variants[vname] = {
+            "svg": f"{vstem}.svg",
+            "anchors": [
+                {"name": name, **dict(zip(("x", "y"), project(local, direction)))}
+                for name, local in vspec["anchors"].items()
+            ],
+        }
+    if variants:
+        meta["variants"] = variants
     if "slots" in part:
         meta["slots"] = part["slots"]
     # Spielwerte. Richtungsunabhaengig, deshalb in allen vier JSONs identisch --

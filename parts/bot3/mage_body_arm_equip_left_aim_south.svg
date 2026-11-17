@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="mage_body" data-type="body" data-direction="south">
+  <title>Nimbus Chassis (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M76.79 70.24 L81.56 66.86 L81.56 61.13 L76.79 64.51 Z" fill="var(--c-plate-dark)"/>
+  <path d="M72.78 67.4 L76.79 70.24 L76.79 64.51 L72.78 61.67 Z" fill="var(--c-metal)"/>
+  <path d="M77.56 58.3 L72.78 61.67 L76.79 64.51 L81.56 61.13 Z" fill="var(--c-metal)"/>
+  <path d="M74.21 62.09 L66.58 67.49 L70.59 70.33 L78.22 64.93 Z" fill="var(--c-metal)"/>
+  <path d="M70.59 74.15 L78.22 68.75 L78.22 64.93 L70.59 70.33 Z" fill="var(--c-plate-dark)"/>
+  <path d="M66.58 71.31 L70.59 74.15 L70.59 70.33 L66.58 67.49 Z" fill="var(--c-metal)"/>
+  <path d="M64.19 79.65 L71.83 74.25 L71.83 69.28 L64.19 74.68 Z" fill="var(--c-plate-dark)"/>
+  <path d="M67.25 66.04 L59.61 71.44 L64.19 74.68 L71.83 69.28 Z" fill="var(--c-plate-light)"/>
+  <path d="M65.62 77.59 L69.44 74.89 L69.44 73.36 L65.62 76.06 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M59.61 76.41 L64.19 79.65 L64.19 74.68 L59.61 71.44 Z" fill="var(--c-plate)"/>
+  <path d="M68.96 73.03 L65.15 75.73 L65.62 76.06 L69.44 73.36 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M63.14 78.58 L62.77 76.94 L61.76 75.21 L60.37 73.86 L58.99 73.25 L57.98 73.55 L57.6 74.67 L57.98 76.31 L58.99 78.04 L60.37 79.39 L61.76 80.0 L62.77 79.7 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M65.15 77.25 L65.62 77.59 L65.62 76.06 L65.15 75.73 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M61.9 72.78 L60.52 72.17 L58.99 73.25 L60.37 73.86 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M64.3 78.62 L64.67 77.5 L63.14 78.58 L62.77 79.7 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M64.67 77.5 L64.3 75.86 L62.77 76.94 L63.14 78.58 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M63.28 74.13 L61.9 72.78 L60.37 73.86 L61.76 75.21 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M64.3 75.86 L63.28 74.13 L61.76 75.21 L62.77 76.94 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+</g>
+</svg>

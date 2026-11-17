@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="mage_body" data-type="body" data-direction="south">
+  <title>Nimbus Chassis (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M69.35 84.36 L81.76 75.59 L81.76 68.91 L69.35 77.68 Z" fill="var(--c-plate-dark)"/>
+  <path d="M77.36 65.8 L64.95 74.58 L69.35 77.68 L81.76 68.91 Z" fill="var(--c-plate-light)"/>
+  <path d="M76.7 73.99 L81.47 70.61 L81.47 60.11 L76.7 63.49 Z" fill="var(--c-plate-dark)"/>
+  <path d="M71.25 81.3 L76.03 77.93 L76.03 76.49 L71.25 79.87 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M72.88 71.29 L76.7 73.99 L76.7 63.49 L72.88 60.79 Z" fill="var(--c-metal)"/>
+  <path d="M75.55 76.16 L70.78 79.53 L71.25 79.87 L76.03 76.49 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M64.95 81.26 L69.35 84.36 L69.35 77.68 L64.95 74.58 Z" fill="var(--c-plate)"/>
+  <path d="M70.78 80.96 L71.25 81.3 L71.25 79.87 L70.78 79.53 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M77.65 57.41 L72.88 60.79 L76.7 63.49 L81.47 60.11 Z" fill="var(--c-metal)"/>
+  <path d="M61.37 83.46 L65.58 86.43 L65.58 85.48 L61.37 82.51 Z" fill="var(--c-plate-light)"/>
+  <path d="M61.76 82.24 L61.37 82.51 L65.58 85.48 L65.96 85.21 Z" fill="var(--c-plate-light)"/>
+  <path d="M61.37 83.87 L66.34 87.38 L66.34 82.42 L61.37 78.91 Z" fill="var(--c-plate-dark)"/>
+  <path d="M66.34 87.38 L70.54 84.41 L70.54 79.45 L66.34 82.42 Z" fill="var(--c-plate-dark)"/>
+  <path d="M65.58 75.94 L61.37 78.91 L66.34 82.42 L70.54 79.45 Z" fill="var(--c-plate)"/>
+  <path d="M65.58 86.43 L65.96 86.16 L65.96 85.21 L65.58 85.48 Z" fill="var(--c-plate)"/>
+  <path d="M61.37 81.36 L65.58 84.33 L65.58 83.38 L61.37 80.41 Z" fill="var(--c-plate-light)"/>
+  <path d="M61.76 80.14 L61.37 80.41 L65.58 83.38 L65.96 83.11 Z" fill="var(--c-plate-light)"/>
+  <path d="M65.58 84.33 L65.96 84.06 L65.96 83.11 L65.58 83.38 Z" fill="var(--c-plate)"/>
+</g>
+</svg>

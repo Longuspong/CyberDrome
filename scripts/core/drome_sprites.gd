@@ -40,11 +40,14 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String) -> Dicti
 	var slot_z: Dictionary = {}
 	var sockets: Dictionary = {}
 	var weapon_variant := ""
+	var arm_views: Dictionary = {}
 	if chassis != null:
 		weapon_variant = chassis.weapon_variant
 		var chassis_view := chassis.view(facing)
 		slot_z = chassis_view.get("slot_z", {})
 		sockets = chassis_view.get("anchors", {})
+		# Arme gehoeren zum Chassis (Schritt 4b): "arm_<slot>_<haltung>".
+		arm_views = chassis_view.get("variants", {})
 
 	# Die Tiefe des Ankers IST die Zeichenreihenfolge. Damit stimmt die
 	# Ueberdeckung in allen vier Richtungen von selbst: in der Nordansicht
@@ -70,7 +73,19 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String) -> Dicti
 			if str(slot).begins_with("equip_") else part.view(facing)
 		var depth: float = float(view.get("z_index", 50)) if slot == "body" \
 			else float(slot_z.get(slot, 20))
-		ordered.append({"slot": slot, "part": part, "view": view, "depth": depth})
+		var entry := {"slot": slot, "part": part, "view": view, "depth": depth}
+		# Waffe mit Haltung: der Arm des Chassis als eigenes Sprite, die
+		# Waffe sitzt mit ihrem Griff an seinem Hand-Anker und hat eine
+		# eigene Tiefe (gehalten knapp hinter der Faust, zielend davor).
+		var arm: Dictionary = arm_views.get("arm_%s_%s" % [slot, part.pose], {}) \
+			if part.pose != "" else {}
+		if not arm.is_empty():
+			var arm_depth: float = float(slot_z.get(slot, 20))
+			ordered.append({"slot": "%s_arm" % slot, "part": chassis, "view": arm,
+				"depth": arm_depth, "socket": sockets.get(slot)})
+			entry["socket"] = arm.get("anchors", {}).get("hand")
+			entry["depth"] = float(slot_z.get("%s@%s" % [slot, part.pose], arm_depth))
+		ordered.append(entry)
 	ordered.sort_custom(func(a, b): return a["depth"] < b["depth"])
 
 	for rank in ordered.size():
@@ -83,7 +98,11 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String) -> Dicti
 		var sprite := Sprite2D.new()
 		sprite.texture = load(path)
 		sprite.centered = false
-		sprite.position = mount_offset(entry["slot"], entry["view"], sockets)
+		if entry.has("socket") and entry["socket"] != null \
+				and entry["view"].get("anchors", {}).has("mount"):
+			sprite.position = entry["socket"] - entry["view"]["anchors"]["mount"]
+		else:
+			sprite.position = mount_offset(entry["slot"], entry["view"], sockets)
 		# Die Textur ist feiner gerastert als der Entwurfsraum (siehe
 		# tools/set_import_scale.py). Hier wird sie darauf zurueckgerechnet --
 		# sonst stuende ein DROME viermal zu gross neben seinem Feld.

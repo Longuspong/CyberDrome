@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 50.87,
-      "y": 30.32
+      "x": 64.0,
+      "y": 26.31
     }
   ],
   "color_scheme": {
@@ -42,6 +42,7 @@
   ],
   "mount_class": "light",
   "category": "support",
+  "pose": "hold",
   "variants": {
     "heavy": {
       "svg": "eq_drone_pod_heavy_west.svg",
@@ -53,8 +54,8 @@
         },
         {
           "name": "muzzle",
-          "x": 43.0,
-          "y": 20.69
+          "x": 64.0,
+          "y": 14.29
         }
       ]
     },
@@ -68,8 +69,8 @@
         },
         {
           "name": "muzzle",
-          "x": 46.05,
-          "y": 18.53
+          "x": 64.0,
+          "y": 14.29
         }
       ]
     },
@@ -83,8 +84,8 @@
         },
         {
           "name": "muzzle",
-          "x": 48.73,
-          "y": 23.15
+          "x": 64.0,
+          "y": 26.31
         }
       ]
     }

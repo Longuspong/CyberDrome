@@ -52,6 +52,9 @@ var body_kind: String = "humanoid"
 ## Nur Chassis: welche Waffen-Variante an ihm haengt ("heavy" am Molok,
 ## "lafette" am Strix, sonst leer = Grundform). Waffen in Posen, 16. Nov. 2026.
 var weapon_variant: String = ""
+## Waffen: welche Haltung des Chassis-Arms sie brauchen ("hold" halten,
+## "aim" zielen; leer = kein Arm, z. B. Strix-Waffen). Schritt 4b.
+var pose: String = ""
 
 ## Nahkampf bis 2 Felder, Fernkampf ab 3 (16. Nov. 2026). Der Generator
 ## schreibt daraus das Tag "melee" oder "ranged" an jede Ausruestung.
@@ -119,6 +122,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.slot_rules = meta.get("slot_rules", {})
 	part.body_kind = meta.get("body_kind", "humanoid")
 	part.weapon_variant = str(meta.get("weapon_variant", ""))
+	part.pose = str(meta.get("pose", ""))
 
 	var stats: Dictionary = meta.get("stats", {})
 	part.hp = stats.get("hp", 0)

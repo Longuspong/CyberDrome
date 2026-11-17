@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 89.92,
-      "y": 38.62
+      "x": 76.22,
+      "y": 37.72
     }
   ],
   "color_scheme": {
@@ -42,6 +42,7 @@
   ],
   "mount_class": "medium",
   "category": "weapon",
+  "pose": "aim",
   "variants": {
     "heavy": {
       "svg": "eq_bulwark_ram_heavy_north.svg",
@@ -53,8 +54,8 @@
         },
         {
           "name": "muzzle",
-          "x": 105.47,
-          "y": 33.97
+          "x": 83.55,
+          "y": 32.54
         }
       ]
     },
@@ -68,8 +69,8 @@
         },
         {
           "name": "muzzle",
-          "x": 108.52,
-          "y": 36.13
+          "x": 83.55,
+          "y": 32.54
         }
       ]
     }

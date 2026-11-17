@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="scout_body" data-type="body" data-direction="north">
+  <title>Vireo Chassis (north)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M63.03 27.85 L64.05 29.58 L65.43 30.93 L66.82 31.54 L67.83 31.24 L68.2 30.12 L67.83 28.47 L66.82 26.74 L65.43 25.39 L64.05 24.78 L63.03 25.08 L62.66 26.2 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M58.37 30.68 L62.19 27.98 L62.19 26.45 L58.37 29.15 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M58.37 29.15 L62.19 26.45 L61.71 26.11 L57.89 28.81 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M64.05 24.78 L65.43 25.39 L66.96 24.31 L65.58 23.7 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M68.2 30.12 L67.83 31.24 L69.36 30.16 L69.73 29.04 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M57.89 30.34 L58.37 30.68 L58.37 29.15 L57.89 28.81 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M65.43 25.39 L66.82 26.74 L68.34 25.66 L66.96 24.31 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M67.83 28.47 L68.2 30.12 L69.73 29.04 L69.36 27.39 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M66.82 26.74 L67.83 28.47 L69.36 27.39 L68.34 25.66 Z" fill="var(--c-accent)" stroke="var(--c-accent)" stroke-width="0.4"/>
+  <path d="M60.09 37.66 L67.72 32.26 L67.72 27.3 L60.09 32.7 Z" fill="var(--c-plate-dark)"/>
+  <path d="M60.09 32.7 L67.72 27.3 L63.14 24.06 L55.5 29.46 Z" fill="var(--c-plate-light)"/>
+  <path d="M55.5 34.42 L60.09 37.66 L60.09 32.7 L55.5 29.46 Z" fill="var(--c-plate)"/>
+  <path d="M53.12 37.79 L60.75 32.39 L56.75 29.56 L49.11 34.96 Z" fill="var(--c-metal)"/>
+  <path d="M53.12 41.61 L60.75 36.21 L60.75 32.39 L53.12 37.79 Z" fill="var(--c-plate-dark)"/>
+  <path d="M49.11 38.78 L53.12 41.61 L53.12 37.79 L49.11 34.96 Z" fill="var(--c-metal)"/>
+  <path d="M49.78 44.45 L54.55 41.08 L54.55 35.35 L49.78 38.72 Z" fill="var(--c-plate-dark)"/>
+  <path d="M45.77 41.62 L49.78 44.45 L49.78 38.72 L45.77 35.89 Z" fill="var(--c-metal)"/>
+  <path d="M49.78 38.72 L54.55 35.35 L50.54 32.51 L45.77 35.89 Z" fill="var(--c-metal)"/>
+</g>
+</svg>

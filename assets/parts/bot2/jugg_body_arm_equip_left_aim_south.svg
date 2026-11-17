@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="jugg_body" data-type="body" data-direction="south">
+  <title>Molok Chassis (south)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung south.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#100a0e" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M82.14 61.42 L74.5 66.82 L82.14 72.22 L89.77 66.82 Z" fill="#5a4050"/>
+  <path d="M74.5 70.64 L82.14 76.04 L82.14 72.22 L74.5 66.82 Z" fill="#32242d"/>
+  <path d="M82.14 76.04 L89.77 70.64 L89.77 66.82 L82.14 72.22 Z" fill="#32242d"/>
+  <path d="M73.55 86.89 L88.82 76.09 L88.82 68.45 L73.55 79.25 Z" fill="#32242d"/>
+  <path d="M81.18 63.05 L65.91 73.85 L73.55 79.25 L88.82 68.45 Z" fill="#986e88"/>
+  <path d="M80.99 61.96 L65.72 72.76 L73.74 78.43 L89.01 67.63 Z" fill="#986e88"/>
+  <path d="M77.08 82.95 L83.76 78.23 L83.76 75.36 L77.08 80.09 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M83.28 75.02 L76.6 79.75 L77.08 80.09 L83.76 75.36 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M65.91 81.49 L73.55 86.89 L73.55 79.25 L65.91 73.85 Z" fill="#5a4050"/>
+  <path d="M73.74 79.39 L89.01 68.59 L89.01 67.63 L73.74 78.43 Z" fill="#5a4050"/>
+  <path d="M75.46 68.73 L82.14 73.46 L82.14 59.14 L75.46 54.41 Z" fill="#9a8796"/>
+  <path d="M82.14 73.46 L88.82 68.73 L88.82 54.41 L82.14 59.14 Z" fill="#32242d"/>
+  <path d="M76.6 82.61 L77.08 82.95 L77.08 80.09 L76.6 79.75 Z" fill="#ff8a3d" stroke="none"/>
+  <path d="M72.63 84.58 L72.04 81.95 L70.41 79.18 L68.2 77.02 L65.99 76.05 L64.36 76.52 L63.77 78.32 L64.36 80.95 L65.99 83.72 L68.2 85.88 L70.41 86.85 L72.04 86.38 Z" fill="#ff8a3d" stroke="#ff8a3d" stroke-width="0.4"/>
+  <path d="M70.64 75.29 L68.43 74.32 L65.99 76.05 L68.2 77.02 Z" fill="#ff8a3d" stroke="#ff8a3d" stroke-width="0.4"/>
+  <path d="M74.48 84.65 L75.07 82.85 L72.63 84.58 L72.04 86.38 Z" fill="#ff8a3d" stroke="#ff8a3d" stroke-width="0.4"/>
+  <path d="M65.72 73.72 L73.74 79.39 L73.74 78.43 L65.72 72.76 Z" fill="#986e88"/>
+  <path d="M82.14 49.69 L75.46 54.41 L82.14 59.14 L88.82 54.41 Z" fill="#9a8796"/>
+  <path d="M75.07 82.85 L74.48 80.22 L72.04 81.95 L72.63 84.58 Z" fill="#ff8a3d" stroke="#ff8a3d" stroke-width="0.4"/>
+  <path d="M72.86 77.45 L70.64 75.29 L68.2 77.02 L70.41 79.18 Z" fill="#ff8a3d" stroke="#ff8a3d" stroke-width="0.4"/>
+  <path d="M74.48 80.22 L72.86 77.45 L70.41 79.18 L72.04 81.95 Z" fill="#ff8a3d" stroke="#ff8a3d" stroke-width="0.4"/>
+</g>
+</svg>

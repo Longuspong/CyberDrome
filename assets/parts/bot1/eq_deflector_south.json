@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 54.26,
-      "y": 67.48
+      "x": 65.72,
+      "y": 46.1
     }
   ],
   "color_scheme": {
@@ -41,6 +41,7 @@
   ],
   "mount_class": "medium",
   "category": "shield",
+  "pose": "hold",
   "variants": {
     "heavy": {
       "svg": "eq_deflector_heavy_south.svg",
@@ -52,8 +53,8 @@
         },
         {
           "name": "muzzle",
-          "x": 48.42,
-          "y": 80.16
+          "x": 66.75,
+          "y": 45.94
         }
       ]
     },
@@ -67,8 +68,8 @@
         },
         {
           "name": "muzzle",
-          "x": 45.37,
-          "y": 78.0
+          "x": 66.75,
+          "y": 45.94
         }
       ]
     }

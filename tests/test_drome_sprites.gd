@@ -116,10 +116,29 @@ func test_assemble_places_every_sprite_on_its_socket() -> void:
 			var sprites := DromeSprites.assemble(root, build, direction)
 			var sockets: Dictionary = chassis.view(direction).get("anchors", {})
 			t.ok(sprites.has("body"), "%s %s: der Body ist da" % [chassis.id, direction])
+			var variants: Dictionary = chassis.view(direction).get("variants", {})
 			for slot in sprites:
-				if slot == "body":
+				if slot == "body" or str(slot).ends_with("_arm"):
 					continue
-				var mount: Vector2 = build.part_in(slot).view(direction)["anchors"]["mount"]
+				var part := build.part_in(slot)
+				var variant := chassis.weapon_variant
+				if variant != "" and slot == "equip_right":
+					variant += "_right"
+				var view := part.view_for(direction, variant) \
+					if str(slot).begins_with("equip_") else part.view(direction)
+				var mount: Vector2 = view["anchors"]["mount"]
+				# Arme gehoeren zum Chassis (Schritt 4b): der Arm sitzt am
+				# Sockel, die Waffe mit ihrem Griff an der Hand des Arms.
+				var arm: Dictionary = variants.get("arm_%s_%s" % [slot, part.pose], {})
+				if part.pose != "" and not arm.is_empty():
+					t.ok(sprites.has("%s_arm" % slot),
+						"%s/%s %s hat seinen Arm" % [chassis.id, slot, direction])
+					var arm_mount: Vector2 = arm["anchors"]["mount"]
+					t.equal(sprites["%s_arm" % slot].position + arm_mount, sockets[slot],
+						"%s/%s %s: Arm sitzt am Sockel" % [chassis.id, slot, direction])
+					t.equal(sprites[slot].position + mount, arm["anchors"]["hand"],
+						"%s/%s %s: Waffe sitzt in der Hand" % [chassis.id, slot, direction])
+					continue
 				t.equal(sprites[slot].position + mount, sockets[slot],
 					"%s/%s %s sitzt am Sockel" % [chassis.id, slot, direction])
 	root.free()

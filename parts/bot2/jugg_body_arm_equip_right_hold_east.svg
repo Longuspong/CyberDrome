@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="jugg_body" data-type="body" data-direction="east">
+  <title>Molok Chassis (east)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung east.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M38.23 66.82 L45.86 72.22 L53.5 66.82 L45.86 61.42 Z" fill="var(--c-plate)"/>
+  <path d="M45.86 76.04 L53.5 70.64 L53.5 66.82 L45.86 72.22 Z" fill="var(--c-plate-dark)"/>
+  <path d="M38.23 70.64 L45.86 76.04 L45.86 72.22 L38.23 66.82 Z" fill="var(--c-plate-dark)"/>
+  <path d="M39.18 76.09 L54.45 86.89 L54.45 79.25 L39.18 68.45 Z" fill="var(--c-plate)"/>
+  <path d="M39.18 68.45 L54.45 79.25 L62.09 73.85 L46.82 63.05 Z" fill="var(--c-plate-light)"/>
+  <path d="M38.99 67.63 L54.26 78.43 L62.28 72.76 L47.01 61.96 Z" fill="var(--c-plate-light)"/>
+  <path d="M44.24 78.23 L50.92 82.95 L50.92 80.09 L44.24 75.36 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M44.24 75.36 L50.92 80.09 L51.4 79.75 L44.72 75.02 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.45 86.89 L62.09 81.49 L62.09 73.85 L54.45 79.25 Z" fill="var(--c-plate-dark)"/>
+  <path d="M38.99 68.59 L54.26 79.39 L54.26 78.43 L38.99 67.63 Z" fill="var(--c-plate-light)"/>
+  <path d="M45.86 73.46 L52.54 68.73 L52.54 54.41 L45.86 59.14 Z" fill="var(--c-plate-dark)"/>
+  <path d="M39.18 68.73 L45.86 73.46 L45.86 59.14 L39.18 54.41 Z" fill="var(--c-metal)"/>
+  <path d="M50.92 82.95 L51.4 82.61 L51.4 79.75 L50.92 80.09 Z" fill="var(--c-accent)" stroke="none"/>
+  <path d="M54.26 79.39 L62.28 73.72 L62.28 72.76 L54.26 78.43 Z" fill="var(--c-plate)"/>
+  <path d="M39.18 54.41 L45.86 59.14 L52.54 54.41 L45.86 49.69 Z" fill="var(--c-metal)"/>
+  <path d="M61.18 89.89 L66.89 85.85 L66.89 84.55 L61.18 88.59 Z" fill="var(--c-plate)"/>
+  <path d="M60.66 88.23 L61.18 88.59 L66.89 84.55 L66.37 84.19 Z" fill="var(--c-plate-light)"/>
+  <path d="M60.14 91.19 L66.89 86.42 L66.89 79.67 L60.14 84.44 Z" fill="var(--c-plate-dark)"/>
+  <path d="M54.43 87.15 L60.14 91.19 L60.14 84.44 L54.43 80.4 Z" fill="var(--c-plate-dark)"/>
+  <path d="M54.43 80.4 L60.14 84.44 L66.89 79.67 L61.18 75.63 Z" fill="var(--c-plate)"/>
+  <path d="M60.66 89.52 L61.18 89.89 L61.18 88.59 L60.66 88.23 Z" fill="var(--c-plate-light)"/>
+  <path d="M61.18 87.04 L66.89 83.0 L66.89 81.7 L61.18 85.74 Z" fill="var(--c-plate)"/>
+  <path d="M60.66 85.37 L61.18 85.74 L66.89 81.7 L66.37 81.33 Z" fill="var(--c-plate-light)"/>
+  <path d="M60.66 86.67 L61.18 87.04 L61.18 85.74 L60.66 85.37 Z" fill="var(--c-plate-light)"/>
+</g>
+</svg>

@@ -91,23 +91,31 @@ Armebene gebaut -- dasselbe Bild passt an beide Molok-Arme, ohne Spiegeln.
 - [x] Molok-Klinge wächst nur bis 1,3 mit (sonst ragt sie aus dem Rahmen)
 - [x] Silhouetten-Prüfung grün (engstes Paar Hammer/Schlüssel 0,66)
 
-### 4b. Arme und Waffen trennen -- entschieden (17. Nov.), offen
-Befund nach Schritt 4: Der Arm gehört heute zur Waffe. Er wird in der
-Waffen-Palette gemalt (Molok-Arme blaugrau/türkis statt Chassisfarbe), für
-alle Chassis gleich gebaut und nur skaliert (setzt beim Molok nicht sauber
-unter der Schulterplatte an), und Arm + Waffe sind ein Sprite (die Tiefe
-lässt sich nicht für beide richtig setzen). Spieler: „ja“, in einer eigenen
-Design-Sitzung.
-- [ ] Arm gehört zum **Chassis**: Chassisfarbe, je Chassis gebaut, drei
-      Haltungen (gestreckt / angewinkelt / Deckung), Hand-Anker
-- [ ] Waffe ist nur das **Gerät in der Hand** (mit Griff, Knauf ...), sitzt
-      am Hand-Anker; sie bestimmt nur die Haltung des Arms
-- [ ] Arm und Waffe als **eigene Sprites** mit eigener Tiefe; Schild seitlich
-      vor dem Körper, nie dahinter (muss nicht mittig sein)
-- [ ] Molok: eigene Arme statt Armmaß 1,6; `heavy`/`heavy_right` und
-      `WEAPON_DEPTH_*` danach prüfen bzw. ersetzen; Lafette bleibt
-- [ ] Erleichtert Schritt 5: Arm dreht an der Schulter, Waffe folgt am
-      Hand-Anker
+### 4b. Arme und Waffen trennen -- erledigt (17. Nov.)
+Entwurf: `v7.py`, Leinwand „Offene Designpunkte“, Seite „Arme & Waffen (4b)“.
+Entschieden (Spieler 17. Nov.): zwei Haltungen, Manschette statt Hand an
+Fernwaffen, Hände nur an Armen, die nie etwas tragen, Lafette ohne Griff.
+- [x] Arm gehört zum **Chassis**: Chassisfarbe, je Chassis gebaut, als
+      Variante des Rumpfs `arm_<slot>_<haltung>` mit Anker `hand`
+      (`arm_set`, `light_arm`, `molok_arm` in `build_sample_parts.py`)
+- [x] **Zwei Haltungen**: `hold` (halten -- Klinge, Hammer, Stab, Schlüssel,
+      Bumerang, Schild; Faust um den Griff) und `aim` (zielen -- Blaster,
+      Ramme; Arm endet in einer **Manschette**). Vireo und Nimbus strecken
+      beim Zielen den ganzen Arm, der Molok schießt aus der Hüfte. Die Waffe
+      sagt per `pose`, welche Haltung sie braucht
+- [x] Waffe ist nur das **Gerät**, um den Griffpunkt gebaut (`mount`), sitzt
+      am Hand-Anker des Arms; `heavy`/`heavy_right` (Waffenmaß 1,6) bleiben
+- [x] Arm und Waffe als **eigene Sprites** mit eigener Tiefe
+      (`slot_z["<slot>@<haltung>"]`): gehalten knapp hinter der Faust,
+      zielend vor der Manschette gemessen; `DromeSprites` setzt beide
+- [x] Schild in „halten“, vor die Brust gerückt, deckt die Körpermitte --
+      von hinten verdeckt ihn der Rumpf
+- [x] **Molok**: eigene Arme unter den Schulterplatten (dicker Oberarm,
+      Ellbogen, Unterarm auf Hüfthöhe, große Faust bzw. Manschette)
+- [x] **Hand** nur am Vireo-Passivarm (Handrücken, Finger, Daumen); der
+      Nimbus-Orb-Arm hält seine Kugel
+- [x] **Strix-Lafette**: Runenstab nur als Kugel mit Fassung, Schlüssel nur
+      als Kopf, jeweils auf kurzem Sockel (Frage 1 erledigt)
 
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
@@ -117,7 +125,9 @@ Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Laufen**: Wippen; Nimbus kippt nach vorn, Eule hüpft. Beine im
       Wechsel brauchen getrennte Bein-Sprites -- Vorschlag: `feet` in
       `feet_left`/`feet_right` teilen, erst wenn das Wippen allein nicht reicht
-- [ ] **Angriff** nach Waffenart: Nahkampf dreht die Waffe um den
+      (entschieden 17. Nov.: zuerst nur Wippen)
+- [ ] **Angriff** nach Waffenart (Arm und Waffe sind seit 4b eigene
+      Sprites, Schlüssel `<slot>_arm` und `<slot>`): Nahkampf dreht die Waffe um den
       Schulteranker (ausholen, zuschlagen), Fernkampf Rückstoß + Mündungsblitz
       am `muzzle`-Anker, Schild stößt vor; ersetzt den heutigen Ruck des
       ganzen DROME (`play_attack`)
@@ -154,10 +164,11 @@ bleibt.
 
 ## Offene Fragen an den Spieler
 
-1. Runenstab und E-Schraubenschlüssel am Strix sehen albern aus -- später
-   eigene Lafetten-Form? (Spieler: „kümmern wir uns später drum“)
+1. ~~Runenstab und E-Schraubenschlüssel am Strix~~ -- entschieden 17. Nov.:
+   auf der Lafette ohne Griff, nur Kugel bzw. Schlüsselkopf (4b).
 2. ~~Molok-Waffen~~ -- entschieden 16. Nov.: dieselbe Waffe mit Armmaß 1,6
    (Board 14), kein zweiter Satz.
-3. Beine für die Laufanimation trennen (mehr Teile) oder nur Wippen?
+3. ~~Beine trennen oder nur Wippen?~~ -- entschieden 17. Nov.: erst nur
+   Wippen; Beine erst trennen, wenn das zu steif aussieht.
 4. ~~Bumerang als Nahkampf~~ -- entschieden 16. Nov.: bleibt Nahkampf, Pose
    angewinkelt und wurfbereit (Board 14).
