@@ -56,6 +56,7 @@
     "sniper"
   ],
   "body_kind": "nonhumanoid",
+  "weapon_variant": "lafette",
   "slot_z": {
     "head": 41,
     "feet": 30,

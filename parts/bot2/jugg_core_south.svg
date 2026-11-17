@@ -11,12 +11,12 @@
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
   -->
 <g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
-  <path d="M57.8 57.67 L55.55 52.19 L51.07 49.02 L48.82 51.32 L51.07 56.79 L55.55 59.97 Z" fill="var(--c-plate-dark)"/>
-  <path d="M49.49 54.13 L55.98 58.72 L55.98 55.67 L49.49 51.08 Z" fill="var(--c-glow)" stroke="none"/>
-  <path d="M50.92 57.24 L54.55 59.81 L54.55 52.55 L50.92 49.99 Z" fill="var(--c-glow)" stroke="none"/>
-  <path d="M49.78 50.87 L49.49 51.08 L55.98 55.67 L56.27 55.46 Z" fill="var(--c-glow)" stroke="none"/>
-  <path d="M54.55 59.81 L54.84 59.61 L54.84 52.35 L54.55 52.55 Z" fill="var(--c-glow)" stroke="none"/>
-  <path d="M55.98 58.72 L56.27 58.52 L56.27 55.46 L55.98 55.67 Z" fill="var(--c-glow)" stroke="none"/>
-  <path d="M51.21 49.79 L50.92 49.99 L54.55 52.55 L54.84 52.35 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M57.03 58.47 L54.93 53.35 L50.73 50.38 L48.63 52.53 L50.73 57.65 L54.93 60.62 Z" fill="var(--c-plate-dark)"/>
+  <path d="M49.2 55.18 L55.31 59.5 L55.31 56.63 L49.2 52.31 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M50.54 58.03 L53.98 60.46 L53.98 53.78 L50.54 51.35 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M49.49 52.11 L49.2 52.31 L55.31 56.63 L55.6 56.43 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M53.98 60.46 L54.26 60.26 L54.26 53.58 L53.98 53.78 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M55.31 59.5 L55.6 59.29 L55.6 56.43 L55.31 56.63 Z" fill="var(--c-glow)" stroke="none"/>
+  <path d="M50.83 51.15 L50.54 51.35 L53.98 53.78 L54.26 53.58 Z" fill="var(--c-glow)" stroke="none"/>
 </g>
 </svg>

@@ -1,9 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <!-- Leuchtebene, erzeugt von tools/bake_godot_assets.py -->
-  <path d="M64.48 48.34 L73.07 54.42 L73.07 52.99 L64.48 46.91 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
-  <path d="M73.64 52.58 L65.05 46.51 L64.48 46.91 L73.07 52.99 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
-  <path d="M73.07 54.42 L73.64 54.01 L73.64 52.58 L73.07 52.99 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
-  <path d="M53.4 56.17 L62.0 62.25 L62.0 60.82 L53.4 54.74 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
-  <path d="M62.57 60.41 L53.98 54.34 L53.4 54.74 L62.0 60.82 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
-  <path d="M62.0 62.25 L62.57 61.84 L62.57 60.41 L62.0 60.82 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M30.63 38.73 L29.97 38.37 L29.2 37.83 L29.86 38.19 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M32.65 33.11 L33.6 32.9 L32.84 32.36 L31.88 32.57 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M29.97 38.37 L29.73 37.5 L28.97 36.96 L29.2 37.83 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M31.59 33.87 L32.65 33.11 L31.88 32.57 L30.82 33.33 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M34.88 36.22 L41.57 40.94 L41.57 38.65 L34.88 33.93 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M29.73 37.5 L29.97 36.3 L29.2 35.76 L28.97 36.96 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M30.63 35.0 L31.59 33.87 L30.82 33.33 L29.86 34.46 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M29.97 36.3 L30.63 35.0 L29.86 34.46 L29.2 35.76 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M42.24 38.18 L35.55 33.46 L34.88 33.93 L41.57 38.65 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M41.57 40.94 L42.24 40.47 L42.24 38.18 L41.57 38.65 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M30.4 39.39 L37.08 44.12 L37.08 41.83 L30.4 37.1 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M43.95 41.09 L46.82 43.12 L46.82 41.21 L43.95 39.18 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M37.75 41.35 L31.07 36.63 L30.4 37.1 L37.08 41.83 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M47.29 40.87 L44.43 38.84 L43.95 39.18 L46.82 41.21 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M46.82 43.12 L47.29 42.78 L47.29 40.87 L46.82 41.21 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M37.08 44.12 L37.75 43.64 L37.75 41.35 L37.08 41.83 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M37.75 45.48 L40.61 47.5 L40.61 45.59 L37.75 43.57 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M41.09 45.26 L38.23 43.23 L37.75 43.57 L40.61 45.59 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M40.61 47.5 L41.09 47.17 L41.09 45.26 L40.61 45.59 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M53.59 45.11 L47.87 41.06 L42.9 44.57 L48.63 48.62 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M42.9 45.52 L48.63 49.57 L48.63 48.62 L42.9 44.57 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M48.63 49.57 L53.59 46.06 L53.59 45.11 L48.63 48.62 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
 </svg>

@@ -17,7 +17,12 @@
     {
       "name": "mount",
       "x": 64.0,
-      "y": 49.22
+      "y": 46.36
+    },
+    {
+      "name": "muzzle",
+      "x": 50.87,
+      "y": 30.32
     }
   ],
   "color_scheme": {
@@ -37,6 +42,53 @@
   ],
   "mount_class": "light",
   "category": "support",
+  "variants": {
+    "heavy": {
+      "svg": "eq_drone_pod_heavy_west.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 43.0,
+          "y": 20.69
+        }
+      ]
+    },
+    "heavy_right": {
+      "svg": "eq_drone_pod_heavy_right_west.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 46.05,
+          "y": 18.53
+        }
+      ]
+    },
+    "lafette": {
+      "svg": "eq_drone_pod_lafette_west.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 37.77
+        },
+        {
+          "name": "muzzle",
+          "x": 48.73,
+          "y": 23.15
+        }
+      ]
+    }
+  },
   "stats": {
     "hp": 10,
     "spd": 0,

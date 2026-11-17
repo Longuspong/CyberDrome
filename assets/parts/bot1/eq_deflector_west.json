@@ -18,6 +18,11 @@
       "name": "mount",
       "x": 64.0,
       "y": 46.36
+    },
+    {
+      "name": "muzzle",
+      "x": 46.39,
+      "y": 48.14
     }
   ],
   "color_scheme": {
@@ -36,6 +41,38 @@
   ],
   "mount_class": "medium",
   "category": "shield",
+  "variants": {
+    "heavy": {
+      "svg": "eq_deflector_heavy_west.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 35.82,
+          "y": 49.21
+        }
+      ]
+    },
+    "heavy_right": {
+      "svg": "eq_deflector_heavy_right_west.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 38.88,
+          "y": 47.05
+        }
+      ]
+    }
+  },
   "stats": {
     "hp": 0,
     "spd": 0,

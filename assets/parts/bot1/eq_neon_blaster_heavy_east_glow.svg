@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Leuchtebene, erzeugt von tools/bake_godot_assets.py -->
+  <path d="M80.88 57.37 L90.04 63.85 L97.53 58.56 L88.36 52.08 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M100.66 64.93 L105.24 68.17 L105.24 65.11 L100.66 61.87 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M100.66 61.87 L105.24 65.11 L106.0 64.57 L101.42 61.33 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M105.24 68.17 L106.0 67.63 L106.0 64.57 L105.24 65.11 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M80.88 58.9 L90.04 65.38 L90.04 63.85 L80.88 57.37 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M90.04 65.38 L97.53 60.08 L97.53 58.56 L90.04 63.85 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M90.73 71.95 L95.31 75.19 L95.31 72.13 L90.73 68.89 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M90.73 68.89 L95.31 72.13 L96.07 71.59 L91.49 68.35 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M106.0 71.17 L116.69 78.73 L116.69 75.07 L106.0 67.51 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M95.31 75.19 L96.07 74.65 L96.07 71.59 L95.31 72.13 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M106.0 67.51 L116.69 75.07 L117.76 74.31 L107.07 66.75 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M116.69 78.73 L117.76 77.98 L117.76 74.31 L116.69 75.07 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M98.82 76.25 L109.52 83.81 L109.52 80.14 L98.82 72.58 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M98.82 72.58 L109.52 80.14 L110.58 79.39 L99.89 71.83 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M111.57 84.12 L112.63 84.7 L113.85 85.57 L112.8 84.99 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M109.52 83.81 L110.58 83.05 L110.58 79.39 L109.52 80.14 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M117.39 75.36 L115.86 75.71 L117.09 76.57 L118.62 76.23 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M119.75 80.36 L119.59 79.65 L119.12 79.29 L118.43 79.32 L117.61 79.73 L116.79 80.47 L116.1 81.43 L115.63 82.45 L115.47 83.38 L115.63 84.08 L116.1 84.45 L116.79 84.42 L117.61 84.01 L118.43 83.27 L119.12 82.31 L119.59 81.29 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M111.2 82.73 L111.57 84.12 L112.8 84.99 L112.42 83.6 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M115.86 75.71 L114.16 76.91 L115.39 77.78 L117.09 76.57 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M111.57 80.81 L111.2 82.73 L112.42 83.6 L112.8 81.67 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M114.16 76.91 L112.63 78.73 L113.85 79.6 L115.39 77.78 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M112.63 78.73 L111.57 80.81 L112.8 81.67 L113.85 79.6 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="2.6" stroke-linejoin="round"/>
+</svg>

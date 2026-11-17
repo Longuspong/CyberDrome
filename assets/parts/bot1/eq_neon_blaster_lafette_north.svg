@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     data-part-id="eq_neon_blaster" data-type="equipment" data-direction="north">
+  <title>Neon-Blaster (north)</title>
+  <!--
+    Isometrische Ansicht, Kamera 45 Grad von oben, Blickrichtung north.
+    Bodenfeld: Raute 76 x 54 px um den Mittelpunkt (64, 96).
+    Projektion:  x = 64 + cos(45)*(px - py)*SCALE
+                 y = 96 - (0.5*(px + py) + cos(45)*pz)*SCALE
+    Erzeugt von tools/build_sample_parts.py aus einer bot-lokalen Quader-
+    Definition, nicht von Hand bearbeiten, sondern dort aendern.
+    Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
+  -->
+<g stroke="#05020a" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M80.85 24.97 L80.19 25.33 L80.95 24.79 L81.61 24.43 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="0.4"/>
+  <path d="M76.6 23.38 L80.04 25.81 L80.04 21.99 L76.6 19.56 Z" fill="#0b0614"/>
+  <path d="M77.21 19.49 L78.17 19.71 L78.93 19.17 L77.98 18.95 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="0.4"/>
+  <path d="M80.04 25.81 L81.95 24.46 L81.95 20.64 L80.04 21.99 Z" fill="#0b0614"/>
+  <path d="M80.04 21.99 L81.95 20.64 L78.51 18.21 L76.6 19.56 Z" fill="#140b24"/>
+  <path d="M81.09 24.1 L80.85 24.97 L81.61 24.43 L81.85 23.56 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="0.4"/>
+  <path d="M78.17 19.71 L79.23 20.46 L80.0 19.92 L78.93 19.17 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="0.4"/>
+  <path d="M80.85 22.9 L81.09 24.1 L81.85 23.56 L81.61 22.36 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="0.4"/>
+  <path d="M79.23 20.46 L80.19 21.6 L80.95 21.06 L80.0 19.92 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="0.4"/>
+  <path d="M80.19 21.6 L80.85 22.9 L81.61 22.36 L80.95 21.06 Z" fill="#ff58ff" stroke="#ff58ff" stroke-width="0.4"/>
+  <path d="M67.34 28.7 L75.93 22.62 L75.93 20.71 L67.34 26.79 Z" fill="#ff58ff" stroke="none"/>
+  <path d="M67.34 26.79 L75.93 20.71 L75.26 20.24 L66.67 26.32 Z" fill="#ff58ff" stroke="none"/>
+  <path d="M70.68 32.88 L80.23 26.13 L80.23 21.93 L70.68 28.68 Z" fill="#0b0614"/>
+  <path d="M66.67 28.23 L67.34 28.7 L67.34 26.79 L66.67 26.32 Z" fill="#ff58ff" stroke="none"/>
+  <path d="M70.68 28.68 L80.23 21.93 L76.41 19.23 L66.86 25.98 Z" fill="#261840"/>
+  <path d="M71.83 31.87 L80.42 25.8 L80.42 23.89 L71.83 29.96 Z" fill="#ff58ff" stroke="none"/>
+  <path d="M70.87 28.15 L80.42 21.4 L76.22 18.43 L66.67 25.18 Z" fill="#261840"/>
+  <path d="M71.83 29.96 L80.42 23.89 L79.75 23.41 L71.16 29.49 Z" fill="#ff58ff" stroke="none"/>
+  <path d="M70.87 28.82 L80.42 22.07 L80.42 21.4 L70.87 28.15 Z" fill="#140b24"/>
+  <path d="M66.86 30.18 L70.68 32.88 L70.68 28.68 L66.86 25.98 Z" fill="#140b24"/>
+  <path d="M58.27 33.95 L64.95 29.23 L64.95 27.32 L58.27 32.04 Z" fill="#ff2bd6" stroke="none"/>
+  <path d="M71.16 31.4 L71.83 31.87 L71.83 29.96 L71.16 29.49 Z" fill="#ff58ff" stroke="none"/>
+  <path d="M58.27 32.04 L64.95 27.32 L64.48 26.98 L57.8 31.7 Z" fill="#ff2bd6" stroke="none"/>
+  <path d="M66.67 25.85 L70.87 28.82 L70.87 28.15 L66.67 25.18 Z" fill="#261840"/>
+  <path d="M60.18 40.78 L69.73 34.03 L65.91 31.33 L56.36 38.08 Z" fill="#261840"/>
+  <path d="M60.18 43.17 L69.73 36.42 L69.73 34.03 L60.18 40.78 Z" fill="#0b0614"/>
+  <path d="M57.8 33.61 L58.27 33.95 L58.27 32.04 L57.8 31.7 Z" fill="#ff2bd6" stroke="none"/>
+  <path d="M56.36 40.47 L60.18 43.17 L60.18 40.78 L56.36 38.08 Z" fill="#140b24"/>
+  <path d="M63.05 34.86 L71.64 28.78 L65.91 24.73 L57.32 30.81 Z" fill="#261840"/>
+  <path d="M63.05 40.11 L71.64 34.03 L71.64 28.78 L63.05 34.86 Z" fill="#0b0614"/>
+  <path d="M64.48 38.34 L71.16 33.61 L71.16 31.7 L64.48 36.43 Z" fill="#ff2bd6" stroke="none"/>
+  <path d="M64.48 36.43 L71.16 31.7 L70.68 31.37 L64.0 36.09 Z" fill="#ff2bd6" stroke="none"/>
+  <path d="M57.32 36.06 L63.05 40.11 L63.05 34.86 L57.32 30.81 Z" fill="#140b24"/>
+  <path d="M64.0 38.0 L64.48 38.34 L64.48 36.43 L64.0 36.09 Z" fill="#ff2bd6" stroke="none"/>
+</g>
+</svg>

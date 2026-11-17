@@ -17,12 +17,12 @@
     {
       "name": "mount",
       "x": 64.0,
-      "y": 49.22
+      "y": 46.36
     },
     {
-      "name": "head",
-      "x": 44.34,
-      "y": 44.87
+      "name": "muzzle",
+      "x": 36.17,
+      "y": 39.97
     }
   ],
   "color_scheme": {
@@ -42,6 +42,38 @@
   ],
   "mount_class": "medium",
   "category": "weapon",
+  "variants": {
+    "heavy": {
+      "svg": "eq_bulwark_ram_heavy_west.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 19.48,
+          "y": 36.13
+        }
+      ]
+    },
+    "heavy_right": {
+      "svg": "eq_bulwark_ram_heavy_right_west.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 22.53,
+          "y": 33.97
+        }
+      ]
+    }
+  },
   "stats": {
     "hp": 20,
     "spd": 0,

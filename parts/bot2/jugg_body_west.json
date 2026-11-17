@@ -22,7 +22,7 @@
     {
       "name": "head",
       "x": 64.0,
-      "y": 34.91
+      "y": 38.25
     },
     {
       "name": "feet",
@@ -31,18 +31,18 @@
     },
     {
       "name": "core",
-      "x": 53.5,
-      "y": 39.51
+      "x": 53.02,
+      "y": 39.84
     },
     {
       "name": "equip_left",
-      "x": 38.7,
-      "y": 67.11
+      "x": 45.86,
+      "y": 54.41
     },
     {
       "name": "equip_right",
-      "x": 89.3,
-      "y": 31.34
+      "x": 82.14,
+      "y": 28.76
     },
     {
       "name": "equip_shoulder",
@@ -64,12 +64,13 @@
     "heavy"
   ],
   "body_kind": "humanoid",
+  "weapon_variant": "heavy",
   "slot_z": {
-    "head": 64,
+    "head": 60.5,
     "feet": 33,
-    "core": 40.4,
-    "equip_left": 75.5,
-    "equip_right": 22.5,
+    "core": 39.2,
+    "equip_left": 76,
+    "equip_right": 38,
     "equip_shoulder": 70
   },
   "slot_rules": {

@@ -20,9 +20,9 @@
       "y": 46.36
     },
     {
-      "name": "tip",
-      "x": 89.77,
-      "y": 79.86
+      "name": "muzzle",
+      "x": 77.13,
+      "y": 31.86
     }
   ],
   "color_scheme": {
@@ -41,6 +41,38 @@
   ],
   "mount_class": "light",
   "category": "weapon",
+  "variants": {
+    "heavy": {
+      "svg": "eq_plasma_blade_heavy_east.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 85.0,
+          "y": 30.89
+        }
+      ]
+    },
+    "heavy_right": {
+      "svg": "eq_plasma_blade_heavy_right_east.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 64.0,
+          "y": 46.36
+        },
+        {
+          "name": "muzzle",
+          "x": 81.95,
+          "y": 33.05
+        }
+      ]
+    }
+  },
   "stats": {
     "hp": 0,
     "spd": 0,

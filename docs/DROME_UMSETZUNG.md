@@ -51,30 +51,36 @@ Quelle: `v4.py` (`NIMBUS`, `N_ORB_ARM`, `N_HALO`).
 - [x] Waffenarm (rechte Hand, `+l`) kommt mit der Waffe; Anker bleibt
       `(0, 13.8, 47)`, bis Schritt 4 hängen die alten Waffenarme
 
-### 3. Chassis Molok
+### 3. Chassis Molok -- erledigt (16. Nov.)
 Quelle: `v4.py` (`MOLOK`, `M_ARM`) und `v2.py` (`M_BEACON`).
-- [ ] Kopf tief zwischen den Schultern, Schultern höher, Frontpanzer
-- [ ] **Zwei Schulteranker** (`(0, ±19, 57)`), beide Unterarme kommen mit
-      den Waffen; `equip_shoulder` bleibt Optik
-- [ ] **Lockfeuer** auf dem Rücken (Passive Präsenz)
+- [x] Kopf tief zwischen den Schultern (Kopf-Anker `z 60.5`), Schultern
+      höher, Frontpanzer mit Kernsockel
+- [x] **Zwei Schulteranker** (`(0, ±19, 57)`), beide Unterarme kommen mit
+      den Waffen; `equip_shoulder` bleibt Optik. Bis Schritt 4 hängen die
+      alten, kleinen Waffenarme (Armmaß 1,6 kommt mit den Posen)
+- [x] **Lockfeuer** auf dem Rücken zwischen den Auspuffen (Passive Präsenz)
 
-### 4. Waffen in ihre Posen (11 Waffen × 4 Richtungen)
-Quelle: `v4.py` (`arm_extended`, `arm_raised`, `blaster`, `blade`,
-`hammer`, `staff`, `shield`). Regel: Der Waffenarm hängt nie gerade.
-- [ ] Fernkampf gestreckt, Waffe statt Hand: Puls-Blaster, Neon-Blaster
-- [ ] Nahkampf angewinkelt, Waffe nach oben, **mit Griff, Knauf,
-      Parierstange**: Plasmaklinge, Hammer, Bollwerk-Ramme, Klingenbumerang
-- [ ] Stab/Werkzeug senkrecht mit Griffwicklung: Runenstab,
+### 4. Waffen in ihre Posen -- erledigt (16. Nov.)
+Quelle: `v4.py`/`v6.py`; gebaut in `tools/build_sample_parts.py` (Abschnitt
+„Waffen in Posen“: `_arm_extended`, `_arm_raised`, `_head_*`, `weapon_set`).
+Regel: Der Waffenarm hängt nie gerade. Jede Pose ist symmetrisch zur
+Armebene gebaut -- dasselbe Bild passt an beide Molok-Arme, ohne Spiegeln.
+- [x] Fernkampf gestreckt, Waffe statt Hand: Puls-Blaster, Neon-Blaster
+      (mit Neonröhren und Mündungsring)
+- [x] Nahkampf angewinkelt, Waffe nach oben, **mit Griff, Knauf,
+      Parierstange**: Plasmaklinge, Hammer, Bollwerk-Ramme (stößt vor),
+      Klingenbumerang (wurfbereit, „L“ nach oben und vorn)
+- [x] Stab/Werkzeug senkrecht mit Griffwicklung: Runenstab,
       E-Schraubenschlüssel
-- [ ] Schild angewinkelt vor dem Körper: Deflektor
-- [ ] **Lafetten-Variante** für Fernkampfwaffen am Strix (ohne Arm, auf der
-      Schulter liegend) -- Vorschlag: der Generator schreibt für jede
-      Fernwaffe einen zweiten Satz `*_lafette_*.svg`, `DromeSprites` wählt
-      nach `body_kind`
-- [ ] Größe am Molok -- entschieden (16. Nov.): dieselbe Waffe, nur größer
-      gebaut über ein Armmaß je Chassis (`arm_scale`, Molok 1,6); kein
-      eigener schwerer Satz
-- [ ] Silhouetten-Prüfung (`check_silhouettes`) für die neuen Formen grün
+- [x] Schild angewinkelt vor dem Körper, mittig auf der Faust: Deflektor
+- [x] **Varianten** je Waffe: `heavy` (Armmaß 1,6, Molok) und `lafette`
+      (Fernwaffen ohne Arm auf der Strix-Schulter: Puls-/Neon-Blaster,
+      Runenstab und Schlüssel liegend -- Form vorläufig, siehe Frage 1).
+      Das Chassis sagt per `weapon_variant`, welche gilt; der Generator
+      schreibt `*_heavy_*.svg`/`*_lafette_*.svg`, `PartData.view_for` und
+      `DromeSprites` wählen sie
+- [x] Molok-Klinge wächst nur bis 1,3 mit (sonst ragt sie aus dem Rahmen)
+- [x] Silhouetten-Prüfung grün (engstes Paar Hammer/Schlüssel 0,66)
 
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
