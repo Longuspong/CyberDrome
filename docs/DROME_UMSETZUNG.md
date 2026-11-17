@@ -148,6 +148,13 @@ die sich mit Einzelbildern nicht lösen ließen (eine Tiefe je Bild).
   DROME als Ganzes statt in Teilen. `slot_z` und die Arm-SVGs werden noch
   erzeugt, das Spiel braucht sie für DROMEs nicht mehr
 
+**Leistungstest** (17. Nov.): Optionen > Zum Testen > „Leistungstest“
+(`scenes/bench.tscn`). Misst Bilder pro Sekunde für 3 bis 48 DROMEs in drei
+Arten: ruhend (wie heute), einzeln (jede 3D-Ansicht rendert jedes Bild neu --
+Schritt 5 ohne Umbau) und eine gemeinsame 3D-Szene. Der Spieler misst auf
+dem Handy (PWA) und später in der App; die Zahlen entscheiden, ob Schritt 5
+mit Einzelansichten geht oder eine gemeinsame Szene braucht.
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
