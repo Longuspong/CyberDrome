@@ -476,7 +476,22 @@
     {"name": "Cache Deckel", "token": "cache-lid", "hex": "#2a1046", "verwendung": "Deckel von Neon und Hipstar Cache."},
     {"name": "Solar-Cache Füllung", "token": "cache-solar-fill", "hex": "#0f2a1c", "verwendung": "Kuppel und Schale des Solar Cache (Linien `good`, Sonne `yellow`)."},
     {"name": "Mecha-Cache Rumpf", "token": "cache-mecha-fill", "hex": "#2a2540", "verwendung": "Rumpf des Mecha Cache."},
-    {"name": "Mecha-Cache Deckel", "token": "cache-mecha-lid", "hex": "#3a3458", "verwendung": "Deckel des Mecha Cache."}
+    {"name": "Mecha-Cache Deckel", "token": "cache-mecha-lid", "hex": "#3a3458", "verwendung": "Deckel des Mecha Cache."},
+    {"name": "Modul Angriff", "token": "module-attack", "hex": "#ff7366", "verwendung": "Modulklasse Angriff: Rand des Modul-Chips (ModuleData.CLASS_COLOR), Zeichen Spitze (class_attack)."},
+    {"name": "Modul Abwehr", "token": "module-defense", "hex": "#66b3ff", "verwendung": "Modulklasse Abwehr: Rand des Modul-Chips, Zeichen Bogen (class_defense)."},
+    {"name": "Modul Taktik", "token": "module-tactic", "hex": "#ffd159", "verwendung": "Modulklasse Taktik: Rand des Modul-Chips, Zeichen Punkt (class_tactic)."},
+    {"name": "Modul BIOS", "token": "module-bios", "hex": "#c78cff", "verwendung": "Matrix-BIOS: Rand des Chips, Zeichen bios."},
+    {"name": "Modul-Chip Grund", "token": "module-fill", "hex": "#141a24", "verwendung": "Dunkle Flaeche im Modul-Chip."},
+    {"name": "Team Spieler", "token": "team-player", "hex": "#4db8f2", "verwendung": "Kampf: Ring, Namen und Schussspuren des eigenen Squads (Teams.PLAYER)."},
+    {"name": "Team Gegner", "token": "team-enemy", "hex": "#f26b61", "verwendung": "Kampf: Ring, Namen und Schussspuren der Gegner (Teams.ENEMY)."},
+    {"name": "Integrität Spieler", "token": "hp-player", "hex": "#5cdb6b", "verwendung": "Kampf: Integritaetsbalken und Herz des eigenen Squads (Teams.PLAYER_HP)."},
+    {"name": "Schild Spieler", "token": "shield-player", "hex": "#599eff", "verwendung": "Kampf: Schildbalken des eigenen Squads (Teams.PLAYER_SHIELD)."},
+    {"name": "Integrität Gegner", "token": "hp-enemy", "hex": "#eb4242", "verwendung": "Kampf: Integritaetsbalken der Gegner; Balkenenden abgeschraegt (Form statt nur Farbe)."},
+    {"name": "Schild Gegner", "token": "shield-enemy", "hex": "#b366fa", "verwendung": "Kampf: Schildbalken der Gegner."},
+    {"name": "Takt", "token": "takt", "hex": "#ffd159", "verwendung": "Kampf: Takt-Leiste unter dem Balken -- gezaehlte Angriffe bis zur Faehigkeit."},
+    {"name": "Takt bereit", "token": "takt-ready", "hex": "#ffffd9", "verwendung": "Kampf: Takt-Leiste voll, der naechste Angriff ist die Faehigkeit."},
+    {"name": "Gefahr", "token": "danger", "hex": "#ff4033", "verwendung": "Kampf: pulsierender Rand um den Balken unter 25 % Integritaet."},
+    {"name": "Gelockt", "token": "lured", "hex": "#ff9e26", "verwendung": "Kampf: Markierung eines gelockten DROMEs (Koeder, Molok)."}
   ],
 
   "design_schriften": [
