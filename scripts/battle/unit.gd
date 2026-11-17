@@ -183,6 +183,15 @@ func _build_sprites() -> void:
 	_refresh_tint()
 
 
+## Die Ruhelage der Figur: bei kleineren Einheiten (Sentinels) liegt sie um
+## die Fuesse verschoben, nicht bei null. Rueckstoss und Erschuetterung kehren
+## hierher zurueck -- bis 17. Nov. 2026 kehrten sie nach (0, 0) zurueck, und
+## ein Sentinel schwebte nach dem ersten Schuss wieder ueber seinem Feld.
+func _rig_home() -> Vector2:
+	var factor := build.sprite_scale if build != null else 1.0
+	return IsoView.SPRITE_ORIGIN * (1.0 - factor)
+
+
 static func _scale_about_feet(node: Node2D, factor: float) -> void:
 	node.scale = Vector2.ONE * factor
 	node.position = IsoView.SPRITE_ORIGIN * (1.0 - factor)
@@ -277,9 +286,10 @@ func play_attack(toward: Vector2i) -> void:
 	var push := Vector2.ZERO if delta == Vector2.ZERO \
 		else delta.normalized() * RECOIL_DISTANCE
 	var tween := create_tween()
-	tween.tween_property(_rig, "position", push, RECOIL_TIME) \
+	var home := _rig_home()
+	tween.tween_property(_rig, "position", home + push, RECOIL_TIME) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_rig, "position", Vector2.ZERO, RECOIL_TIME * 2.2) \
+	tween.tween_property(_rig, "position", home, RECOIL_TIME * 2.2) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
@@ -289,15 +299,16 @@ func play_attack(toward: Vector2i) -> void:
 func play_hit() -> void:
 	if _rig == null:
 		return
+	var home := _rig_home()
 	var tween := create_tween()
 	var steps := 5
 	for i in steps:
 		var decay := 1.0 - float(i) / float(steps)
 		var side := 1.0 if i % 2 == 0 else -1.0
 		tween.tween_property(_rig, "position",
-			Vector2(SHAKE_AMPLITUDE * decay * side, 0.0),
+			home + Vector2(SHAKE_AMPLITUDE * decay * side, 0.0),
 			SHAKE_TIME / float(steps)).set_trans(Tween.TRANS_SINE)
-	tween.tween_property(_rig, "position", Vector2.ZERO, SHAKE_TIME / float(steps))
+	tween.tween_property(_rig, "position", home, SHAKE_TIME / float(steps))
 
 	_flashing = true
 	DromeSprites.tint(_sprites, Teams.HIT_FLASH)

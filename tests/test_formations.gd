@@ -32,6 +32,21 @@ func test_every_formation_builds_at_every_level_and_tier() -> void:
 							t.ok(ModuleData.get_module(module_id) != null, "Modul %s gibt es" % module_id)
 
 
+## Sentinels stehen auf ihrem Feld -- auch nach Schuss und Treffer: die
+## Figur kehrt in ihre Ruhelage um die Fuesse zurueck, nicht nach (0, 0)
+## (bis 17. Nov. 2026 schwebten sie nach dem ersten Rueckstoss).
+func test_a_small_unit_returns_to_its_feet() -> void:
+	var unit := Unit.create(Formations.build_sentinel("neon_assault"), &"probe", false)
+	unit._build_sprites()
+	var rig: Node2D = unit._rig
+	t.ok(rig.position.length() > 1.0, "kleiner gezeichnet, also nach unten versetzt")
+	t.ok(rig.position.is_equal_approx(unit._rig_home()), "die Ruhelage ist genau dieser Versatz")
+	var big := Unit.create(DromeBuild.create("Vireo", {}), &"gross", true)
+	t.equal(big._rig_home(), Vector2.ZERO, "volle Groesse: Ruhelage bei null")
+	unit.free()
+	big.free()
+
+
 func test_sentinels_follow_the_rules() -> void:
 	var sentinel := Formations.build_sentinel("neon_assault")
 	t.ok(sentinel.is_sentinel(), "ein Sentinel")
