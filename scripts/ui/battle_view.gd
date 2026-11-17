@@ -348,7 +348,7 @@ class UnitBadgePainter extends Node2D:
 	static func split(hp: int, hp_max: int, shield: int, shield_max: int) -> Dictionary:
 		var total := float(maxi(0, hp_max) + maxi(0, shield_max))
 		if total <= 0.0:
-			return {"hp_slot": 0.0, "hp_fill": 0.0, "shield_slot": 0.0, "shield_fill": 0.0}
+			return {"hp_slot": 0.0, "hp_fill": 0.0, "shield_slot": 0.0, "shield_fill": 0.0, "over": 0.0}
 		var hp_slot := float(maxi(0, hp_max)) / total
 		var shield_slot := 1.0 - hp_slot
 		return {
@@ -357,7 +357,20 @@ class UnitBadgePainter extends Node2D:
 			"shield_slot": shield_slot,
 			"shield_fill": shield_slot * (clampf(float(shield) / float(shield_max), 0.0, 1.0)
 				if shield_max > 0 else 0.0),
+			"over": overshield(shield, shield_max),
 		}
+
+	## Wie weit der Ueberschild gefuellt ist, 0..1: der Schild ueber dem
+	## Maximum, gemessen an dem, was Schildgaben hoechstens drauflegen
+	## (combat.support.overshield, 50 % des Maximums).
+	static func overshield(shield: int, shield_max: int) -> float:
+		if shield_max <= 0 or shield <= shield_max:
+			return 0.0
+		var share := float((Config.section("combat").get("support", {}) as Dictionary)
+			.get("overshield", 0.5))
+		if share <= 0.0:
+			return 0.0
+		return clampf(float(shield - shield_max) / (float(shield_max) * share), 0.0, 1.0)
 
 	## Der nachlaufende Anteil: steht nach einem Treffer kurz, dann laeuft er
 	## dem echten Wert nach. Heilung springt sofort.
@@ -425,18 +438,40 @@ class UnitBadgePainter extends Node2D:
 		if parts["hp_slot"] > 0.0 and parts["shield_slot"] > 0.0:
 			draw_rect(Rect2(Vector2(shield_left - 0.5 * s, top),
 				Vector2(1.0 * s, height)), COLOR_OUTLINE)
-		# Gegner: abgeschraegte Enden (Form statt nur Farbe).
-		if not mine:
-			var cut := height + pad
-			var bottom := top + height + pad
-			draw_colored_polygon(PackedVector2Array([Vector2(left - pad, bottom),
-				Vector2(left - pad, bottom - cut), Vector2(left - pad + cut, bottom)]), outline)
-			draw_colored_polygon(PackedVector2Array([Vector2(left + width + pad, top - pad),
-				Vector2(left + width + pad - cut, top - pad),
-				Vector2(left + width + pad, top - pad + cut)]), outline)
+		# Abgeschraegt oben rechts und unten links (Arcade-Form, seit 17. Nov.
+		# 2026 fuer alle Balken; die Teams trennen Farbe und Helligkeit).
+		var cut := height + pad
+		var bottom := top + height + pad
+		draw_colored_polygon(PackedVector2Array([Vector2(left - pad, bottom),
+			Vector2(left - pad, bottom - cut), Vector2(left - pad + cut, bottom)]), outline)
+		draw_colored_polygon(PackedVector2Array([Vector2(left + width + pad, top - pad),
+			Vector2(left + width + pad - cut, top - pad),
+			Vector2(left + width + pad, top - pad + cut)]), outline)
+		# Ueberschild: Rahmen um den Schildteil, links immer ganz, oben und
+		# unten so weit, wie er gefuellt ist; voll = rundum (folgt der Schraege).
+		var over: float = parts["over"]
+		var below := top + height + pad
+		if over > 0.0 and parts["shield_slot"] > 0.0:
+			below += 1.6 * s
+			var line := 1.6 * s
+			# Aussen um den Balken (ueber dem dunklen Rand), damit die
+			# Schildfuellung frei bleibt.
+			var x0 := shield_left
+			var x1 := left + width + pad + line * 0.5
+			var y0 := top - pad - line * 0.5
+			var y1 := top + height + pad + line * 0.5
+			var reach := x0 + (x1 - x0) * over
+			var corner := cut + line * 0.5
+			if over >= 0.999:
+				draw_polyline(PackedVector2Array([Vector2(x0, y0), Vector2(x1 - corner, y0),
+					Vector2(x1, y0 + corner), Vector2(x1, y1), Vector2(x0, y1), Vector2(x0, y0)]),
+					Teams.OVERSHIELD, line)
+			else:
+				draw_polyline(PackedVector2Array([Vector2(minf(reach, x1 - corner), y0),
+					Vector2(x0, y0), Vector2(x0, y1), Vector2(reach, y1)]), Teams.OVERSHIELD, line)
 
 		if level != "far":
-			_takt(entry.get("takt", []), left, top + height + pad, width, s)
+			_takt(entry.get("takt", []), left, below, width, s)
 		if level == "near":
 			_statuses(entry.get("statuses", []), left + width + 5.0 * s, top + height * 0.5, s)
 

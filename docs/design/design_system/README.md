@@ -73,7 +73,7 @@ Bedienung: Kachel antippen waehlt, nochmal tippen zeigt Details (Popup, blaetter
 
 - **Kopfzeile** (Header) auf jedem Bildschirm; im Einsatz mit Statuszeile Leben `magenta`, Credits `cyan`, Caches `yellow`, Verstaerkung `orange`.
 - **Module** (ModuleChip): Chip mit Beinchen, Rand in der Klassenfarbe (`module-attack`, `module-defense`, `module-tactic`, `module-bios`); Rezepte mit doppeltem Rand.
-- **Kampf** (BattleHud): eigenes Squad `hp-player`/`shield-player`, Gegner `hp-enemy`/`shield-enemy` mit abgeschraegten Balkenenden; Takt-Leiste in `takt`; Virus-Warnung in `magenta`.
+- **Kampf** (BattleHud): eigenes Squad `hp-player` (Gruen) / `shield-player` (Hellblau), Gegner `hp-enemy` (Rot) / `shield-enemy` (Violett); alle Balken oben rechts und unten links abgeschraegt; Ueberschild als heller Rahmen in `overshield`; Takt-Leiste in `takt`; Virus-Warnung in `magenta`.
 - **Ergebnis** (ResultScreen): Etikett, riesiger Glitch-Titel, drei Kennzahlen, Beute, ein Hauptknopf.
 
 - **Kampfkarte** (MapNode): Stufen Leicht `tier-light` (Cyan), Normal `tier-normal` (Orange), Elite `tier-elite` (Magenta), Chaos `tier-chaos` -- immer mit Symbol `tier_*` und Wort. Gelb bleibt der Auswahl.

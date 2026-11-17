@@ -119,6 +119,12 @@ func _bar(parent: Control, color: Color) -> ProgressBar:
 	track.bg_color = Color(0.03, 0.04, 0.06)
 	var fill := StyleBoxFlat.new()
 	fill.bg_color = color
+	# Abgeschraegt oben rechts und unten links wie die Balken im Kampf.
+	for box in [track, fill]:
+		box.corner_detail = 1
+		box.corner_radius_top_right = int(BAR_HEIGHT)
+		box.corner_radius_bottom_left = int(BAR_HEIGHT)
+		box.anti_aliasing = true
 	bar.add_theme_stylebox_override("background", track)
 	bar.add_theme_stylebox_override("fill", fill)
 	parent.add_child(bar)

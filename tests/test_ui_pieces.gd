@@ -232,6 +232,20 @@ func test_the_life_bar_splits_by_maximum() -> void:
 	t.equal(bare["hp_slot"], 1.0, "ohne Schild gehört der Balken der Integrität")
 
 
+## Ueberschild (17. Nov. 2026): Schild ueber dem Maximum zeigt sich als Rahmen,
+## gefuellt nach dem Anteil an den hoechstens moeglichen +50 %.
+func test_overshield_fills_the_frame() -> void:
+	var painter = BattleView.UnitBadgePainter
+	t.equal(painter.overshield(100, 100), 0.0, "voller Schild ist noch kein Ueberschild")
+	t.equal(painter.overshield(40, 100), 0.0, "halber Schild auch nicht")
+	t.ok(absf(painter.overshield(125, 100) - 0.5) < 0.001, "+25 von +50 = halber Rahmen")
+	t.equal(painter.overshield(150, 100), 1.0, "+50 = ganzer Rahmen")
+	t.equal(painter.overshield(10, 0), 0.0, "ohne Schild kein Rahmen")
+	t.ok(absf(painter.split(100, 100, 150, 100)["over"] - 1.0) < 0.001, "split reicht ihn weiter")
+	t.equal(painter.split(100, 100, 150, 100)["shield_fill"], painter.split(100, 100, 100, 100)["shield_fill"],
+		"der Schildbalken selbst bleibt beim Maximum voll")
+
+
 func test_takt_bars_follow_the_ability_counter() -> void:
 	# Die Leiste unter dem Lebensbalken: jeder N-te Angriff = N Abschnitte,
 	# gefuellt je Angriff; beim letzten ist sie "bereit".

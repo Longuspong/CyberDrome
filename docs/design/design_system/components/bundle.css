@@ -207,14 +207,17 @@
 .cd-squadcard--down { border-color: var(--card-line); opacity: .55; }
 .cd-squadcard__name { font-family: var(--font-display); font-size: 15px; color: var(--white); }
 .cd-squadcard__row { display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; color: var(--text); }
-.cd-meter { height: 5px; background: rgba(10, 13, 20, 0.9); }
+.cd-meter { height: 5px; background: rgba(10, 13, 20, 0.9); clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px)); }
 .cd-meter > i { display: block; height: 100%; }
 .cd-unitbar { --hp: var(--hp-player); --sh: var(--shield-player); width: 54px; display: flex; flex-direction: column; gap: 2px; }
 .cd-unitbar--enemy { --hp: var(--hp-enemy); --sh: var(--shield-enemy); }
 .cd-unitbar__bar { display: flex; height: 6px; outline: 1px solid rgba(0, 0, 0, 0.9); background: rgba(10, 13, 20, 0.9); }
-.cd-unitbar--enemy .cd-unitbar__bar { clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+.cd-unitbar__bar { clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+.cd-unitbar__wrap { position: relative; }
+.cd-unitbar__over { position: absolute; top: -3px; bottom: -3px; border: 2px solid var(--overshield); border-right: 0; pointer-events: none; }
+.cd-unitbar__over--full { border-right: 2px solid var(--overshield); clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%); }
 .cd-unitbar__hp { background: var(--hp); } .cd-unitbar__sh { background: var(--sh); border-left: 1px solid #000; }
-.cd-unitbar--low .cd-unitbar__bar { outline: 2px solid var(--danger); }
+.cd-unitbar--low .cd-unitbar__wrap { filter: drop-shadow(1.5px 0 0 var(--danger)) drop-shadow(-1.5px 0 0 var(--danger)) drop-shadow(0 1.5px 0 var(--danger)) drop-shadow(0 -1.5px 0 var(--danger)); }
 .cd-takt { display: flex; gap: 2px; }
 .cd-takt i { flex: 1; height: 3px; background: rgba(10, 13, 20, 0.9); }
 .cd-takt i.on { background: var(--takt); }

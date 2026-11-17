@@ -55,13 +55,19 @@ static func tint(is_player: bool) -> Color:
 
 
 ## Der Lebensbalken ueber der Figur und in den Kacheln (Wunsch des Spielers,
-## Nov. 2026): eigene Integritaet gruen, eigener Schild blau; beim Gegner
-## Integritaet rot, Schild violett. Feste Farben, kein Umfaerben bei wenig
-## Leben -- die Laenge sagt das schon.
-const PLAYER_HP := Color(0.36, 0.86, 0.42)
-const PLAYER_SHIELD := Color(0.35, 0.62, 1.0)
-const ENEMY_HP := Color(0.92, 0.26, 0.26)
-const ENEMY_SHIELD := Color(0.70, 0.40, 0.98)
+## 17. Nov. 2026): eigene Integritaet lebendiges Cyber-Gruen, eigener Schild
+## Hellblau; beim Gegner Integritaet sattes Rot, Schild dunkleres Violett.
+## Lesbarkeit zuerst: Gruen und Rot unterscheiden sich auch in der
+## Helligkeit (3,6:1), damit sie bei Rot-Gruen-Schwaeche getrennt bleiben;
+## alle vier heben sich mindestens 3,9:1 vom Balkengrund ab. Feste Farben,
+## kein Umfaerben bei wenig Leben -- die Laenge sagt das schon.
+const PLAYER_HP := Color("#39ff88")
+const PLAYER_SHIELD := Color("#7cc8ff")
+const ENEMY_HP := Color("#e01a2e")
+const ENEMY_SHIELD := Color("#8a46f0")
+## Ueberschild (Schild ueber dem Maximum, bis +50 %): heller, fast weisser
+## Rahmen um den Schildteil, von links so weit, wie der Ueberschild reicht.
+const OVERSHIELD := Color("#efe3ff")
 
 
 static func hp_color(is_player: bool) -> Color:
