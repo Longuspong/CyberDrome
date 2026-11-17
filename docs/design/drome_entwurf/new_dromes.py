@@ -2,7 +2,7 @@
 import re, sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "tools"))
 import build_sample_parts as g
-B, D, L = g.B, g.D, g.L
+B, D, L, O = g.B, g.D, g.L, g.O
 OUT = pathlib.Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
 
 
@@ -12,6 +12,8 @@ def shift(shapes, df=0, dl=0, dz=0):
         if s[0] == "box":
             _, f, l, z, m = s
             res.append(("box", (f[0]+df, f[1]+df), (l[0]+dl, l[1]+dl), (z[0]+dz, z[1]+dz), m))
+        elif s[0] == "obox":
+            res.append(g.shift_obox(s, df, dl, dz))
         elif s[0] == "disc":
             _, f, lc, zc, r, m, seg = s
             res.append(("disc", f+df, lc+dl, zc+dz, r, m, seg))
@@ -32,6 +34,8 @@ def mirror(shapes):
         if s[0] == "box":
             _, f, l, z, m = s
             res.append(("box", f, (-l[1], -l[0]), z, m))
+        elif s[0] == "obox":
+            res.append(g.mirror_obox(s))
         elif s[0] == "disc":
             _, f, lc, zc, r, m, seg = s
             res.append(("disc", f, -lc, zc, r, m, seg))

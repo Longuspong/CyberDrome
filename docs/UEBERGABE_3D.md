@@ -33,7 +33,8 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
 
 ## Nächste Schritte (vom Spieler gewollt, in dieser Reihenfolge)
 
-1. **Generator: gedrehter Quader** (Spieler: „dafür“). Neuer Baustein,
+1. **ERLEDIGT (17. Nov.)** -- `g.O`/`g.OB`, Shogun in `v11_shogun.py`, siehe
+   `DROME_UMSETZUNG.md` 4d. Ursprünglicher Plan: **Generator: gedrehter Quader** (Spieler: „dafür“). Neuer Baustein,
    z. B. `("obox", mitte(f,l,z), groesse(df,dl,dz), drehung(gier,nick,roll), mat)`:
    acht Ecken drehen, sechs Flächen mit gedrehten Normalen ausgeben. Stellen
    im Generator: `render` (SVG), `model_faces` (3D), `_shape_faces`/

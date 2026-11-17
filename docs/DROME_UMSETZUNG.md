@@ -169,6 +169,19 @@ Die Grenze von ~45 setzt der Browser. Einzelansichten tragen bis ~12 bewegte
 DROMEs, die gemeinsame Szene auch 48. Folgerung: Bewegung (Schritt 5) und
 ein Hexboden gehören in EINE 3D-Szene für den Kampf.
 
+### 4d. Gedrehter Quader im Generator -- erledigt (17. Nov.)
+
+Neuer Baustein in `tools/build_sample_parts.py`:
+`O(mitte, groesse, (gier, nick, roll), mat)` -- ein Quader, der sich drehen
+darf (gier um z, nick um l -- positiv kippt die Vorderseite nach unten --,
+roll um f; Reihenfolge roll, nick, gier). Bequemer: `OB(p0, p1, breite,
+hoehe, mat, roll=0)` legt einen Balken von Punkt zu Punkt. Läuft durch SVG
+(`render`), 3D (`model_faces`, Flächenart „box“ mit Kante), Silhouetten- und
+Sitzprüfung (`_shape_faces`), Spiegeln (`mirror_obox`, gier/roll kehren sich
+um) und `side_shapes`; im Entwurf `new_dromes.shift/mirror`. Ungedreht ist er
+bitgleich mit `B`. Erster Einsatz: `docs/design/drome_entwurf/v11_shogun.py`
+(Katana, V-Hörner, Umhang glatt statt in Stufen; 180 statt 280 Formen).
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
