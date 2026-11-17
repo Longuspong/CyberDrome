@@ -43,7 +43,7 @@ func show_squad(builds: Array) -> void:
 	_rigs.clear()
 	for build in _squad:
 		var rig := Node2D.new()
-		DromeSprites.assemble(rig, build, "south")
+		DromeSprites.assemble(rig, build, "south", 512)
 		add_child(rig)
 		_rigs.append(rig)
 	_layout()

@@ -32,7 +32,7 @@ gespiegelt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt
 den Arm mit), sichtbare Passive, Kontur je Teil, Bewegung, lesbare
 Faehigkeiten, Fraktions-Paletten. Entwurfs-Skripte unter
 `docs/design/drome_entwurf/`. **Stand und Plan der Umsetzung (Haken):
-`docs/DROME_UMSETZUNG.md`** -- dort weitermachen (Chassis, Waffen-Posen und 4b Arme am Chassis gebaut -- zwei Haltungen halten/zielen, Manschette, Molok-Arme; naechster Schritt: 5 Bewegung).
+`docs/DROME_UMSETZUNG.md`** -- dort weitermachen (Chassis, Waffen-Posen und 4b Arme am Chassis gebaut -- zwei Haltungen halten/zielen, Manschette, Molok-Arme; **seit 17. Nov. 2026 echtes 3D**: Generator schreibt je Teil ein Modell `<id>.m3d`, `DromeModel` rendert den ganzen DROME per SubViewport mit Iso-Kamera; naechster Schritt: 5 Bewegung in 3D).
 
 **UI-Symbole (15. Nov. 2026):** Sonderzeichen, die die Schriften nicht haben,
 nie als Text -- stattdessen SVG aus `assets/ui_icons/` ueber `UiIcon`

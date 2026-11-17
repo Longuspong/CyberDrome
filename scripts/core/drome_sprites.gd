@@ -21,118 +21,84 @@ const SLOT_ORDER := ["feet", "body", "core", "equip_left", "equip_center",
 	"equip_right", "equip_shoulder", "head"]
 
 
-## Haengt die Sprites unter ``parent``. Gibt slot -> Sprite2D zurueck.
+const OUTLINE_SHADER := preload("res://assets/shaders/drome_outline.gdshader")
+
+## Aufloesung der 3D-Ansicht in Pixeln fuer 128 Entwurfspunkte. 256 reicht
+## fuer den Kampf (Kamerazoom 0.62 auf dem Handy), der Hangar gibt mehr mit.
+const DEFAULT_RESOLUTION := 256
+
+
+## Haengt den DROME unter ``parent``. Gibt {"drome": Sprite2D} zurueck.
 ##
-## Vorhandene Kinder werden vorher entfernt -- ein Richtungswechsel baut neu
-## auf, statt Texturen zu tauschen: mit der Richtung aendert sich auch die
-## Zeichenreihenfolge, und die haengt am Sprite, nicht an der Textur.
-static func assemble(parent: Node2D, build: DromeBuild, facing: String) -> Dictionary:
+## Seit 17. Nov. 2026 ein echtes 3D-Modell (DromeModel): ein SubViewport mit
+## der Iso-Kamera rendert den ganzen DROME in einem Durchgang mit
+## Tiefenpuffer, ein Sprite2D zeigt das Bild im 128er Entwurfsraum -- an
+## derselben Stelle wie vorher die Einzelbilder (Bodenmitte auf (64, 96)).
+## Gerendert wird einmal je Aufbau (UPDATE_ONCE); ein Richtungswechsel baut
+## neu auf.
+##
+## Vorhandene Kinder (Sprites, 3D-Ansichten) werden vorher entfernt.
+static func assemble(parent: Node2D, build: DromeBuild, facing: String,
+		resolution: int = DEFAULT_RESOLUTION) -> Dictionary:
+	# Nur gedreht (Kampf: jeder Schritt kann die Richtung wechseln)? Dann
+	# bleibt die 3D-Ansicht, das Modell dreht sich und wird neu gezeichnet.
+	var old_view := parent.get_node_or_null("Ansicht3D") as SubViewport
+	var old_sprite := parent.get_node_or_null("Drome") as Sprite2D
+	if old_view != null and old_sprite != null and build != null \
+			and old_view.get_meta("build", null) == build \
+			and old_view.get_meta("signature", "") == _signature(build) \
+			and old_view.size == Vector2i(resolution, resolution):
+		var turn := old_view.get_node_or_null("Drome/Ausrichtung") as Node3D
+		if turn != null:
+			turn.basis = DromeModel.facing_basis(facing)
+			old_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+			return {"drome": old_sprite}
 	for child in parent.get_children():
-		if child is Sprite2D:
+		if child is Sprite2D or child is SubViewport:
 			parent.remove_child(child)
 			child.queue_free()
 
 	var sprites := {}
-	if build == null:
+	if build == null or build.body() == null:
 		return sprites
 
-	var chassis := build.body()
-	var slot_z: Dictionary = {}
-	var sockets: Dictionary = {}
-	var weapon_variant := ""
-	var arm_views: Dictionary = {}
-	if chassis != null:
-		weapon_variant = chassis.weapon_variant
-		var chassis_view := chassis.view(facing)
-		slot_z = chassis_view.get("slot_z", {})
-		sockets = chassis_view.get("anchors", {})
-		# Arme gehoeren zum Chassis (Schritt 4b): "arm_<slot>_<haltung>".
-		arm_views = chassis_view.get("variants", {})
+	var view := SubViewport.new()
+	view.name = "Ansicht3D"
+	view.size = Vector2i(resolution, resolution)
+	view.transparent_bg = true
+	view.own_world_3d = true
+	view.msaa_3d = Viewport.MSAA_4X
+	view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	view.set_meta("build", build)
+	view.set_meta("signature", _signature(build))
+	var model := DromeModel.build_node(build, facing, resolution)
+	view.add_child(DromeModel.make_camera())
+	view.add_child(model)
+	parent.add_child(view)
 
-	# Die Tiefe des Ankers IST die Zeichenreihenfolge. Damit stimmt die
-	# Ueberdeckung in allen vier Richtungen von selbst: in der Nordansicht
-	# rutscht die Ausruestung hinter den Koerper, ein Schulterpod vor den Kopf.
-	#
-	# Die Rohwerte sind Kameratiefen (32 bis 72) und taugen NICHT direkt als
-	# z_index: Kindknoten rechnen relativ zum Elternknoten, und ein Aufschlag
-	# von 70 wuerde das Bauteil in die Tiefenstufe einer ganz anderen Feldreihe
-	# schieben -- der Kopf laege dann vor einem Betonpfeiler drei Felder weiter
-	# vorn. Gebraucht wird nur die REIHENFOLGE, also wird auf 0..n normalisiert.
-	var ordered: Array = []
-	for slot in SLOT_ORDER:
-		var part := build.part_in(slot)
-		if part == null:
-			continue
-		# Waffen in Posen: am Molok die groesser gebaute Variante, am Strix
-		# die Lafette -- sonst die Grundform.
-		# Der rechte Molok-Arm hat eine eigene, gespiegelt gebaute Fassung.
-		var variant := weapon_variant
-		if variant != "" and slot == "equip_right":
-			variant += "_right"
-		var view := part.view_for(facing, variant) \
-			if str(slot).begins_with("equip_") else part.view(facing)
-		var depth: float = float(view.get("z_index", 50)) if slot == "body" \
-			else float(slot_z.get(slot, 20))
-		var entry := {"slot": slot, "part": part, "view": view, "depth": depth}
-		# Waffe mit Haltung: der Arm des Chassis als eigenes Sprite, die
-		# Waffe sitzt mit ihrem Griff an seinem Hand-Anker und hat eine
-		# eigene Tiefe (gehalten knapp hinter der Faust, zielend davor).
-		var arm: Dictionary = arm_views.get("arm_%s_%s" % [slot, part.pose], {}) \
-			if part.pose != "" else {}
-		if not arm.is_empty():
-			var arm_depth: float = float(slot_z.get(slot, 20))
-			ordered.append({"slot": "%s_arm" % slot, "part": chassis, "view": arm,
-				"depth": arm_depth, "socket": sockets.get(slot)})
-			entry["socket"] = arm.get("anchors", {}).get("hand")
-			entry["depth"] = float(slot_z.get("%s@%s" % [slot, part.pose], arm_depth))
-		ordered.append(entry)
-	ordered.sort_custom(func(a, b): return a["depth"] < b["depth"])
-
-	for rank in ordered.size():
-		var entry: Dictionary = ordered[rank]
-		var path: String = entry["view"].get("svg", "")
-		if path == "" or not ResourceLoader.exists(path):
-			push_warning("DromeSprites: Textur fehlt für %s (%s)"
-				% [entry["slot"], path])
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = load(path)
-		sprite.centered = false
-		if entry.has("socket") and entry["socket"] != null \
-				and entry["view"].get("anchors", {}).has("mount"):
-			sprite.position = entry["socket"] - entry["view"]["anchors"]["mount"]
-		else:
-			sprite.position = mount_offset(entry["slot"], entry["view"], sockets)
-		# Die Textur ist feiner gerastert als der Entwurfsraum (siehe
-		# tools/set_import_scale.py). Hier wird sie darauf zurueckgerechnet --
-		# sonst stuende ein DROME viermal zu gross neben seinem Feld.
-		# Der Versatz oben zaehlt im Entwurfsraum und ist eine Position im
-		# Elternknoten, keine Texturkoordinate -- die Skalierung des Sprites
-		# geht ihn deshalb nichts an.
-		IsoView.fit_sprite(sprite)
-		# rank + 1: Ebene 0 gehoert den Konturen (siehe unten).
-		sprite.z_index = rank + 1
-		parent.add_child(sprite)
-		sprites[entry["slot"]] = sprite
-		# Kontur je Teil (docs/DROME_DESIGNREGELN.md, Abschnitt 5): als Kind des
-		# Teils, damit sie jede Bewegung und jede Einfaerbung mitmacht. Der
-		# z_index hebt den Rang des Teils wieder auf -- alle Konturen liegen
-		# auf Ebene 0 unter allen Teilen, so bleibt nur der Aussenrand sichtbar.
-		# Nicht negativ: in Hangar-Kacheln laege die Kontur sonst hinter dem
-		# Hintergrund der Kachel.
-		var rim_path: String = entry["view"].get("rim", "")
-		if rim_path != "" and ResourceLoader.exists(rim_path):
-			var rim := Sprite2D.new()
-			rim.name = "Kontur"
-			rim.texture = load(rim_path)
-			rim.centered = false
-			rim.z_index = -rank - 1
-			sprite.add_child(rim)
-		var glow_path: String = entry["view"].get("glow", "")
-		if glow_path != "" and ResourceLoader.exists(glow_path):
-			sprite.add_child(NeonGlow.create(load(glow_path), sprite.texture))
-
+	var sprite := Sprite2D.new()
+	sprite.name = "Drome"
+	sprite.texture = view.get_texture()
+	sprite.centered = false
+	IsoView.fit_sprite(sprite)
+	sprite.z_index = 1
+	var outline := ShaderMaterial.new()
+	outline.shader = OUTLINE_SHADER
+	outline.set_shader_parameter("line_color", model.get_meta("line", Color(0.03, 0.04, 0.07)))
+	outline.set_shader_parameter("rim_color", model.get_meta("accent", Color(0.18, 0.89, 0.9)))
+	# Strich 0.9 und Kontur 3.2 Entwurfspunkte wie im SVG (rim_svg), je zur
+	# Haelfte ausserhalb der Flaeche.
+	outline.set_shader_parameter("line_px", 0.45 * resolution / 128.0)
+	outline.set_shader_parameter("rim_px", 1.6 * resolution / 128.0)
+	sprite.material = outline
+	parent.add_child(sprite)
+	sprites["drome"] = sprite
 	return sprites
+
+
+## Was im Aufbau steckt -- aendert es sich (Umbau), wird neu gebaut.
+static func _signature(build: DromeBuild) -> String:
+	return str(build.slots)
 
 
 ## Wohin ein Teil im Entwurfsraum des Bodys muss: von seinem eigenen "mount"

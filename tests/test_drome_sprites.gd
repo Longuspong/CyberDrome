@@ -106,60 +106,104 @@ func test_the_body_stays_where_its_graphic_puts_it() -> void:
 # ... und der Zusammenbau, der sie anwendet
 # ---------------------------------------------------------------------------
 
-func test_assemble_places_every_sprite_on_its_socket() -> void:
-	# Dieselbe Rechnung, aber am fertigen Baum: assemble() muss die
-	# Verschiebung auch wirklich an den Sprite schreiben.
-	var root := Node2D.new()
-	for chassis: PartData in _bodies():
-		var build := _stock(chassis)
-		for direction in DIRECTIONS:
-			var sprites := DromeSprites.assemble(root, build, direction)
-			var sockets: Dictionary = chassis.view(direction).get("anchors", {})
-			t.ok(sprites.has("body"), "%s %s: der Body ist da" % [chassis.id, direction])
-			var variants: Dictionary = chassis.view(direction).get("variants", {})
-			for slot in sprites:
-				if slot == "body" or str(slot).ends_with("_arm"):
-					continue
-				var part := build.part_in(slot)
-				var variant := chassis.weapon_variant
-				if variant != "" and slot == "equip_right":
-					variant += "_right"
-				var view := part.view_for(direction, variant) \
-					if str(slot).begins_with("equip_") else part.view(direction)
-				var mount: Vector2 = view["anchors"]["mount"]
-				# Arme gehoeren zum Chassis (Schritt 4b): der Arm sitzt am
-				# Sockel, die Waffe mit ihrem Griff an der Hand des Arms.
-				var arm: Dictionary = variants.get("arm_%s_%s" % [slot, part.pose], {})
-				if part.pose != "" and not arm.is_empty():
-					t.ok(sprites.has("%s_arm" % slot),
-						"%s/%s %s hat seinen Arm" % [chassis.id, slot, direction])
-					var arm_mount: Vector2 = arm["anchors"]["mount"]
-					t.equal(sprites["%s_arm" % slot].position + arm_mount, sockets[slot],
-						"%s/%s %s: Arm sitzt am Sockel" % [chassis.id, slot, direction])
-					t.equal(sprites[slot].position + mount, arm["anchors"]["hand"],
-						"%s/%s %s: Waffe sitzt in der Hand" % [chassis.id, slot, direction])
-					continue
-				t.equal(sprites[slot].position + mount, sockets[slot],
-					"%s/%s %s sitzt am Sockel" % [chassis.id, slot, direction])
-	root.free()
-
-
-## Kontur je Teil (docs/DROME_DESIGNREGELN.md, Abschnitt 5): jedes Teil
-## traegt seine Kontur als Kind, alle Konturen liegen auf Ebene 0 unter allen
-## Teilen (ab 1) -- so geht sie mit dem Teil mit und zeigt nur den Aussenrand.
-func test_every_part_carries_its_rim_below_all_parts() -> void:
+func test_assemble_builds_one_3d_view() -> void:
+	# Seit 17. Nov. 2026 ein echtes 3D-Modell: EIN Sprite mit dem Bild einer
+	# 3D-Ansicht statt eines Stapels flacher Teile.
 	var root := Node2D.new()
 	for chassis: PartData in _bodies():
 		var sprites := DromeSprites.assemble(root, _stock(chassis), "south")
-		for slot in sprites:
-			var sprite: Sprite2D = sprites[slot]
-			var rim := sprite.get_node_or_null("Kontur") as Sprite2D
-			t.ok(rim != null, "%s/%s hat eine Kontur" % [chassis.id, slot])
-			if rim == null:
-				continue
-			t.ok(sprite.z_index >= 1, "%s/%s liegt über den Konturen" % [chassis.id, slot])
-			t.equal(sprite.z_index + rim.z_index, 0, "%s/%s: Kontur auf Ebene 0" % [chassis.id, slot])
+		t.equal(sprites.keys(), ["drome"], "%s: ein Bild je DROME" % chassis.id)
+		var view := root.get_node_or_null("Ansicht3D") as SubViewport
+		t.ok(view != null, "%s: 3D-Ansicht da" % chassis.id)
+		if view == null:
+			continue
+		t.ok(sprites["drome"].texture is ViewportTexture, "%s: Bild aus der 3D-Ansicht" % chassis.id)
+		t.ok(sprites["drome"].material is ShaderMaterial, "%s: mit Kontur" % chassis.id)
+		var cam: Camera3D = null
+		for child in view.get_children():
+			if child is Camera3D:
+				cam = child
+		t.ok(cam != null and cam.projection == Camera3D.PROJECTION_ORTHOGONAL,
+			"%s: Iso-Kamera" % chassis.id)
 	root.free()
+
+
+func test_every_part_has_a_3d_model() -> void:
+	for type in [PartData.Type.BODY, PartData.Type.HEAD, PartData.Type.FEET,
+			PartData.Type.CORE, PartData.Type.EQUIPMENT]:
+		for part: PartData in PartDB.of_type(type):
+			var model := DromeModel.model_of(part)
+			t.ok(not model.is_empty(), "%s hat ein 3D-Modell" % part.id)
+			if part.type != PartData.Type.HEAD:
+				t.ok(not model.get("faces", []).is_empty(), "%s hat Flaechen" % part.id)
+
+
+## Die Kamera bildet exakt so ab wie ``to_screen`` im Generator: dieselbe
+## Stelle im 128er Entwurfsraum wie vorher die SVG-Teile.
+func test_camera_matches_the_svg_projection() -> void:
+	var cam := DromeModel.make_camera()
+	var inv := cam.transform.affine_inverse()
+	var points := [Vector3(0, 0, 0), Vector3(10, 0, 0), Vector3(0, 10, 0),
+		Vector3(0, 0, 50), Vector3(7, -12, 33)]
+	for facing in DIRECTIONS:
+		var basis := DromeModel.facing_basis(facing)
+		var fl: Array = DromeModel.FACINGS[facing]
+		for p: Vector3 in points:
+			var local := inv * (basis * p)
+			var got := Vector2(64.0 + local.x * DromeModel.SCALE, 64.0 - local.y * DromeModel.SCALE)
+			var f: Vector2 = fl[0]
+			var l: Vector2 = fl[1]
+			var px := p.x * f.x + p.y * l.x
+			var py := p.x * f.y + p.y * l.y
+			var want := Vector2(64.0 + 0.70710678 * (px - py) * 1.35,
+				96.0 - (0.5 * (px + py) + 0.70710678 * p.z) * 1.35)
+			t.ok(got.distance_to(want) < 0.01, "%s %s: %s statt %s" % [facing, p, got, want])
+	cam.free()
+
+
+## Im Modell: Rahmenteile auf ihrem Sockel, der Arm an der Schulter, die
+## Waffe mit dem Griff in der Hand (Schritt 4b).
+func test_model_puts_arm_on_socket_and_weapon_in_hand() -> void:
+	for chassis: PartData in _bodies():
+		var build := _stock(chassis)
+		var node := DromeModel.build_node(build, "south")
+		var turn := node.get_node("Ausrichtung")
+		var body_model := DromeModel.model_of(chassis)
+		var anchors: Dictionary = body_model.get("anchors", {})
+		var variants: Dictionary = body_model.get("variants", {})
+		t.ok(turn.get_node_or_null("body") != null, "%s: Rumpf im Modell" % chassis.id)
+		if turn.get_node_or_null("body") != null:
+			t.equal(turn.get_node("body").position, Vector3.ZERO, "%s: Rumpf bleibt liegen" % chassis.id)
+		for slot in chassis.equip_slots():
+			var part := build.part_in(slot)
+			var model := DromeModel.model_of(part)
+			var arm: Dictionary = variants.get("arm_%s_%s" % [slot, model.get("pose", "")], {})
+			if arm.is_empty():
+				continue
+			var arm_node := turn.get_node_or_null("%s_arm" % slot) as Node3D
+			var weapon := turn.get_node_or_null(slot) as Node3D
+			t.ok(arm_node != null and weapon != null, "%s/%s: Arm und Waffe da" % [chassis.id, slot])
+			if arm_node == null or weapon == null:
+				continue
+			var socket := DromeModel._vec(anchors[slot])
+			t.ok(arm_node.position.distance_to(
+				socket - DromeModel._vec(arm["anchors"]["mount"])) < 0.001,
+				"%s/%s: Arm am Sockel" % [chassis.id, slot])
+			var hand := DromeModel._vec(arm["anchors"]["hand"])
+			var grip := weapon.position + DromeModel._vec(
+				_block_for(chassis, slot, model)["anchors"]["mount"])
+			t.ok(grip.distance_to(hand) < 0.001, "%s/%s: Griff in der Hand" % [chassis.id, slot])
+		node.free()
+
+
+func _block_for(chassis: PartData, slot: String, model: Dictionary) -> Dictionary:
+	if chassis.weapon_variant == "":
+		return model
+	var variants: Dictionary = model.get("variants", {})
+	var name := chassis.weapon_variant + ("_right" if slot == "equip_right" else "")
+	if not variants.has(name):
+		name = chassis.weapon_variant
+	return variants.get(name, model)
 
 
 func test_turning_does_not_move_equipment_relative_to_its_socket() -> void:
@@ -178,3 +222,15 @@ func test_turning_does_not_move_equipment_relative_to_its_socket() -> void:
 	for direction in seen:
 		t.equal(seen[direction], Vector2.ZERO,
 			"Orbit-Fokus %s: kein Abstand zum Sockel" % direction)
+
+
+## Drehen baut nicht neu: dieselbe 3D-Ansicht, nur das Modell dreht sich.
+func test_turning_reuses_the_3d_view() -> void:
+	var root := Node2D.new()
+	var build := _stock(PartDB.get_part(&"scout_body"))
+	var first := DromeSprites.assemble(root, build, "south")
+	var second := DromeSprites.assemble(root, build, "east")
+	t.ok(first["drome"] == second["drome"], "Drehen behaelt das Bild")
+	var turn := root.get_node("Ansicht3D/Drome/Ausrichtung") as Node3D
+	t.ok(turn.basis.is_equal_approx(DromeModel.facing_basis("east")), "Modell schaut nach Osten")
+	root.free()

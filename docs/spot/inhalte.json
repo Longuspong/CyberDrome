@@ -244,7 +244,8 @@
     {"punkt": "Hangar und Kacheln schräg (Ost) statt von vorn zeigen? -- Entschieden 16. Nov.: bleibt von vorn (south); Posen müssen auch von vorn lesbar sein.", "quelle": "DROME-Designregeln 16. Nov. 2026", "status": "entschieden"},
     {"punkt": "DROME-Designregeln umsetzen (je ein PR): Licht + Kontur je Teil; Generator-Regeln (Körperart, Lafette, Nah/Fern-Tags, Halter-Symbole); Chassis Strix (Eule), Vireo, Nimbus, Molok; Waffen in Posen; Bewegung im Teile-Rig; Effekte je Fähigkeit.", "quelle": "DROME-Designregeln 16. Nov. 2026", "status": "offen"},
     {"punkt": "Runenstab und E-Schraubenschlüssel am Strix (Fernkampf, aber optisch unpassend) -> auf der Lafette ohne Griff: nur Kugel bzw. Schlüsselkopf (17. Nov. 2026, gebaut)", "quelle": "DROME-Designregeln 16. Nov. 2026", "status": "gebaut"},
-    {"punkt": "Arme und Waffen trennen (Schritt 4b) -> Arm gehört zum Chassis, zwei Haltungen (halten / zielen), Manschette an Fernwaffen, Hände nur an Armen ohne Waffe, eigene Molok-Arme; Beine vorerst nur wippen", "quelle": "Sitzung 17. Nov. 2026", "status": "gebaut"}
+    {"punkt": "Arme und Waffen trennen (Schritt 4b) -> Arm gehört zum Chassis, zwei Haltungen (halten / zielen), Manschette an Fernwaffen, Hände nur an Armen ohne Waffe, eigene Molok-Arme; Beine vorerst nur wippen", "quelle": "Sitzung 17. Nov. 2026", "status": "gebaut"},
+    {"punkt": "DROMEs als Stapel flacher SVG-Bilder überlappen falsch (eine Tiefe je Bild) -> echtes 3D: Generator schreibt je Teil ein Modell, das Spiel rendert den ganzen DROME mit Tiefenpuffer und Iso-Kamera; Kontur vorerst in Chassisfarbe, Neon-Leuchten am DROME fehlt noch", "quelle": "Spieler 17. Nov. 2026", "status": "gebaut"}
   ],
 
   "glossar": [

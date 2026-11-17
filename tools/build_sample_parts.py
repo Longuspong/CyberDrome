@@ -2722,6 +2722,96 @@ WEAPON_DEPTH_AHEAD = 10
 WEAPON_DEPTH_INWARD = 0.4
 
 
+# ===========================================================================
+# 3D-Modelle (17. Nov. 2026, Wunsch des Spielers: "ein echter 3D-Generator")
+#
+# Neben den SVGs schreibt der Generator je Teil EIN Modell, unabhaengig von
+# der Blickrichtung: alle Flaechen in bot-lokalen Koordinaten (f, l, z) mit
+# Normale und Material. Das Spiel baut daraus Meshes und rendert den GANZEN
+# DROME in einem Durchgang mit Tiefenpuffer -- die Verdeckung stimmt dann
+# zwischen allen Teilen, nicht nur innerhalb eines Bildes.
+#
+# Flaechenarten (``kind``):
+#   "box"   Quader-Flaeche: dunkle Kante ringsum (wie der Strich im SVG)
+#   "disc"  Scheibe: dunkle Kante am Rand
+#   "seam"  Facette eines Drehkoerpers: keine Kante (Strich in Eigenfarbe)
+# Drehkoerper bekommen zusaetzlich eine Huelle ("hull") fuer ihre
+# Aussenkontur -- im Spiel als nach aussen geschobene Rueckseite gezeichnet.
+# ===========================================================================
+
+HULL_GROW = 0.45      # halbe Strichbreite (0.9) in Entwurfseinheiten
+
+
+def _r(v):
+    return round(v, 3)
+
+
+def model_faces(shapes):
+    """Formen -> (Flaechen, Huellen) fuer das 3D-Modell."""
+    faces, hulls = [], []
+    for shape in shapes:
+        if shape[0] == "box":
+            _, f, l, z, mat = shape
+            for normal, points in _box_faces(f, l, z):
+                faces.append([mat, "box", list(normal), [[_r(c) for c in p] for p in points]])
+        elif shape[0] == "disc":
+            _, f, lc, zc, radius, mat, segments = shape
+            points = [[_r(f), _r(lc + radius * math.cos(2 * math.pi * i / segments)),
+                       _r(zc + radius * math.sin(2 * math.pi * i / segments))]
+                      for i in range(segments)]
+            faces.append([mat, "disc", [1, 0, 0], points])
+        elif shape[0] == "lathe":
+            _, center, profile, mat, axis, segments, caps = shape
+            for normal, points in _lathe_faces(center, profile, axis, segments, caps):
+                faces.append([mat, "seam", [_r(c) for c in normal],
+                              [[_r(c) for c in p] for p in points]])
+            if MATERIALS[mat][3]:
+                grown = [(r + HULL_GROW if r > 0 else 0.0, t) for r, t in profile]
+                if grown[0][0] == 0.0:
+                    grown[0] = (0.0, grown[0][1] - HULL_GROW)
+                if grown[-1][0] == 0.0:
+                    grown[-1] = (0.0, grown[-1][1] + HULL_GROW)
+                closed = profile[0] == profile[-1]
+                for normal, points in _lathe_faces(center, grown, axis, segments,
+                                                   caps and not closed):
+                    hulls.append([[_r(c) for c in normal],
+                                  [[_r(c) for c in p] for p in points]])
+        else:
+            raise ValueError(f"Unbekanntes Primitiv: {shape[0]}")
+    return faces, hulls
+
+
+def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
+    """Das 3D-Modell eines Teils: ``<id>.m3d`` (JSON)."""
+    pid = part["id"]
+
+    def block(shapes, anchors):
+        faces, hulls = model_faces(shapes)
+        return {"faces": faces, "hulls": hulls,
+                "anchors": {k: [_r(c) for c in v] for k, v in anchors.items()}}
+
+    model = {
+        "id": pid, "type": part["type"],
+        "colors": resolve_roles(WEAPON_COLORS.get(pid, part.get(
+            "palette", palette[palette_type(part["type"])])), part["type"]),
+        **block(part["shapes"], part["anchors"]),
+    }
+    variants = {}
+    for vname, vspec in part.get("variants", {}).items():
+        variants[vname] = block(vspec["shapes"], vspec["anchors"])
+    for slot, poses in part.get("arms", {}).items():
+        for pose, (shapes, hand) in poses.items():
+            variants[f"arm_{slot}_{pose}"] = block(
+                shapes, {"mount": part["anchors"][slot], "hand": hand})
+    if variants:
+        model["variants"] = variants
+    if part.get("pose"):
+        model["pose"] = part["pose"]
+    (set_dir / f"{pid}.m3d").write_text(
+        json.dumps(model, ensure_ascii=False, separators=(",", ":")) + "\n",
+        encoding="utf-8")
+
+
 def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
                palette: dict) -> None:
     pid = part["id"]
@@ -2845,6 +2935,7 @@ def main() -> None:
         for part in spec["parts"]:
             for direction in DIRECTIONS:
                 write_part(set_dir, spec["id"], part, direction, spec["palette"])
+            write_model(set_dir, part, spec["palette"])
 
         print(f"[ok] {spec['dir']}: {len(list(set_dir.glob('*.svg')))} SVGs geschrieben")
 

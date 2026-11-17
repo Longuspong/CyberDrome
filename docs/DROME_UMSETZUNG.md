@@ -129,6 +129,25 @@ Fernwaffen, Hände nur an Armen, die nie etwas tragen, Lafette ohne Griff.
       `build_sample_parts.py`, eine Palette je Waffe (Startwerte = bisherige
       Bausatzfarben). Neue Farben: offen, Spieler entscheidet
 
+### 4c. Echtes 3D -- erledigt (17. Nov.)
+Spieler: „wir müssen einen echten 3D-Generator machen“ -- nach Überlappungen,
+die sich mit Einzelbildern nicht lösen ließen (eine Tiefe je Bild).
+- [x] Generator schreibt je Teil ein Modell `<id>.m3d` (Flächen in bot-lokalen
+      Koordinaten mit Normale, Material, Art; Varianten; Arme; 3D-Anker;
+      Farben). `bake_godot_assets.py` kopiert es, Export-Filter nimmt es mit
+- [x] `DromeModel` baut daraus Meshes (eine Fläche je Material), dreht nach
+      Blickrichtung; Iso-Kamera bildet exakt wie `to_screen` ab (Test)
+- [x] Shader: drei Töne je Material wie `_shade`, dunkle Kanten an Quadern
+      und Scheiben, Drehkörper mit Außenkontur (Hülle); Kontur in
+      Signalfarbe um den ganzen DROME (`drome_outline.gdshader`)
+- [x] `DromeSprites.assemble` rendert den DROME per SubViewport (einmal je
+      Aufbau, Drehen dreht nur das Modell) und zeigt ihn als ein Sprite --
+      Kampf, Hangar und Podest unverändert angebunden
+- Bekannt: die Kontur hat jetzt die Farbe des Chassis (vorher je Teil), das
+  Neon-Leuchten (NeonGlow) fehlt am DROME vorerst; beim Zerstören fällt der
+  DROME als Ganzes statt in Teilen. `slot_z` und die Arm-SVGs werden noch
+  erzeugt, das Spiel braucht sie für DROMEs nicht mehr
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
@@ -138,8 +157,9 @@ Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
       Wechsel brauchen getrennte Bein-Sprites -- Vorschlag: `feet` in
       `feet_left`/`feet_right` teilen, erst wenn das Wippen allein nicht reicht
       (entschieden 17. Nov.: zuerst nur Wippen)
-- [ ] **Angriff** nach Waffenart (Arm und Waffe sind seit 4b eigene
-      Sprites, Schlüssel `<slot>_arm` und `<slot>`): Nahkampf dreht die Waffe um den
+- [ ] **Angriff** nach Waffenart (seit 4c in 3D: Arm und Waffe sind eigene
+      Knoten `<slot>_arm` und `<slot>` unter `Ausrichtung`, die Ansicht dann
+      auf UPDATE_ALWAYS stellen): Nahkampf dreht die Waffe um den
       Schulteranker (ausholen, zuschlagen), Fernkampf Rückstoß + Mündungsblitz
       am `muzzle`-Anker, Schild stößt vor; ersetzt den heutigen Ruck des
       ganzen DROME (`play_attack`)
