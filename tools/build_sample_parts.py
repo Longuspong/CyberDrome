@@ -1895,13 +1895,16 @@ STRIX_HEAD = [
     B((2, 6), (-6, -3), (62, 67), "plate"),
     B((5, 6.3), (3.5, 5.5), (63, 66), "accent"),
     B((5, 6.3), (-5.5, -3.5), (63, 66), "accent"),
-    # Gesicht: dunkle Platte, zwei grosse Linsen, Schnabel
-    B((13, 13.6), (-5.2, 5.2), (51, 59), "dark"),
-    D(13.7, 2.6, 55.5, 2.3, "dark"),
-    D(13.8, 2.6, 55.5, 1.5, "visor"),
-    D(13.7, -2.6, 55.5, 2.3, "dark"),
-    D(13.8, -2.6, 55.5, 1.5, "visor"),
-    B((13.6, 14.6), (-0.8, 0.8), (51.5, 54), "metal"),
+    # Gesicht: dunkle Platte, zwei grosse Linsen mit Lichtpunkt, Schnabel
+    # (Linsen vergroessert 17. Nov. 2026, Board 16 / v6.py LENS_BIG)
+    B((13, 13.6), (-7.0, 7.0), (50.5, 59.5), "dark"),
+    D(13.7, 3.5, 55.5, 3.4, "dark"),
+    D(13.8, 3.5, 55.5, 2.4, "visor"),
+    D(13.9, 3.5, 55.5, 0.9, "glow"),
+    D(13.7, -3.5, 55.5, 3.4, "dark"),
+    D(13.8, -3.5, 55.5, 2.4, "visor"),
+    D(13.9, -3.5, 55.5, 0.9, "glow"),
+    B((13.6, 14.6), (-0.8, 0.8), (50.5, 53), "metal"),
 ]
 
 _STRIX_LEG = [

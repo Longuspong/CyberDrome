@@ -144,7 +144,8 @@ bleibt.
 
 ### 8. Auf Claude Design noch offen (vor den passenden Schritten)
 - [x] Eule: Linsen größer (Board 16, `v6.py` `LENS_BIG`: Ø 6,8 statt 4,6,
-      Lichtpunkt, Gesichtsplatte breiter) -- freigegeben 16. Nov.
+      Lichtpunkt, Gesichtsplatte breiter) -- freigegeben 16. Nov., im Spiel
+      seit 17. Nov. (`STRIX_HEAD`)
 - [x] Restliche Waffen in Pose (Boards 14/15, `v6.py`): Neon-Blaster
       gestreckt, Bumerang wurfbereit, Ramme stößt vor, E-Schlüssel senkrecht,
       Deflektor an Vireo/Nimbus, Molok mit Armmaß 1,6; Puls- und Neon-Blaster
