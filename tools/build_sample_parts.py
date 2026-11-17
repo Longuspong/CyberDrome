@@ -1430,30 +1430,31 @@ JUGG_BODY = [
     B((-9, 9), (-25, -13), (56, 70), "plate"),
     B((-9.5, 9.5), (-25.5, -12.5), (70, 73), "light"),
     B((9, 9.6), (-23, -15), (62, 65), "accent"),
-]
-
-# Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
-JUGG_HEAD = [
+    # -- Bunkerkopf, tief zwischen den Schultern (gehoert zum Rumpf) ------
     B((-5, 7), (-7, 7), (61, 68), "plate"),
     B((-5.5, 7.5), (-7.5, 7.5), (68, 70), "light"),
     B((7, 7.6), (-5, 5), (63.5, 65.6), "visor"),
     B((7, 8.2), (-7, 7), (60.5, 62.5), "metal"),         # Kinnschutz
-    # Lockfeuer direkt hinter dem Kopf (Passive Praesenz). Es gehoert zum
-    # Kopf und nicht zum Rumpf: Kopf und Rumpf sind getrennte Sprites, der
-    # Kopf liegt immer oben -- von hinten verdeckte er sonst das Feuer, das
-    # dann vor ihm stehen muesste. Im selben Teil sortiert die Tiefe richtig.
-    # Es steht auf dem Ruecken des Decks (ab z 62.5), damit es von vorn nicht
-    # ueber den Rumpf gemalt wird.
+    # Lockfeuer direkt hinter dem Kopf (Passive Praesenz)
     L((-9.5, 0), [(3.0, 62.5), (3.0, 65)], "metal", segments=12),
     L((-9.5, 0), [(2.6, 65), (2.6, 69), (1.6, 70.6), (0, 71.2)], "glow", segments=14),
     L((-9.5, 0), [(3.2, 67.2), (3.2, 67.9)], "accent", caps=False, segments=14),
-    # Auspuffstapel links und rechts davon -- aus demselben Grund im Kopfteil:
-    # von hinten stehen sie vor dem Kopf. Sie beginnen auf dem Deck (z 62.5).
+    # Auspuffstapel links und rechts davon
     L((-9.5, 8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
     L((-9.5, -8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
     L((-9.5, 8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
     L((-9.5, -8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
 ]
+
+# Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
+# Der Molok-Kopf ist Teil des Rumpfs (17. Nov. 2026, Wunsch des Spielers).
+# Er sitzt tief zwischen Schultern, die HOEHER sind als er -- von hinten muss
+# die nahe Schulter ihn teilweise verdecken, von vorn verdeckt er Auspuffe und
+# Lockfeuer. Als eigenes Sprite laege er immer oben und klebte ueber der
+# Schulter; nur in EINEM Teil sortiert die Tiefe alle Flaechen richtig. Das
+# Kopfteil bleibt als Platzhalter ohne Formen (der Bauplan verlangt eins).
+JUGG_HEAD = []
+
 
 # Standbeine, nicht "Sprintbeine in gross".
 #
@@ -2857,6 +2858,8 @@ def check_silhouettes() -> None:
     for spec, part in all_parts():
         if part.get("variant_of"):
             continue    # Varianten teilen die Form ihrer Grundwaffe mit Absicht
+        if not part["shapes"]:
+            continue    # Platzhalter ohne Formen (Molok-Kopf sitzt im Rumpf)
         key = "equipment" if part["type"].startswith("equipment") else part["type"]
         by_type.setdefault(key, []).append(
             (f"{spec['id']}/{part['id']}", silhouette(part["shapes"])))

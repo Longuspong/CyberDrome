@@ -59,6 +59,10 @@ Quelle: `v4.py` (`MOLOK`, `M_ARM`) und `v2.py` (`M_BEACON`).
       den Waffen; `equip_shoulder` bleibt Optik. Bis Schritt 4 hängen die
       alten, kleinen Waffenarme (Armmaß 1,6 kommt mit den Posen)
 - [x] **Lockfeuer** auf dem Rücken zwischen den Auspuffen (Passive Präsenz)
+- [x] Kopf, Auspuffe und Lockfeuer gehören zum **Rumpf** (17. Nov.): der Kopf
+      sitzt tiefer als die Schultern, von hinten muss die nahe Schulter ihn
+      verdecken -- als eigenes Sprite lag er immer oben. Das Kopfteil
+      `jugg_head` bleibt als leerer Platzhalter
 
 ### 4. Waffen in ihre Posen -- erledigt (16. Nov.)
 Quelle: `v4.py`/`v6.py`; gebaut in `tools/build_sample_parts.py` (Abschnitt
