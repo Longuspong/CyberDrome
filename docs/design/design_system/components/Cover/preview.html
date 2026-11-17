@@ -1,0 +1,37 @@
+<!-- @dsCard height=300 -->
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: var(--night); }
+  .cover { position: relative; width: 960px; height: 300px; background: var(--night); overflow: hidden; }
+  svg { position: absolute; left: 0; top: 0; }
+  .yellow { fill: var(--yellow); } .magenta { fill: var(--magenta); } .cyan { fill: var(--cyan); }
+  .rose { fill: var(--rose); } .slit { fill: var(--night); }
+  .text { position: absolute; left: 24px; bottom: 30px; max-width: 912px; }
+  .name { font-family: var(--font-display); font-size: 46px; line-height: .95; color: var(--white); margin: 0; }
+  .tag { font-family: var(--font-sans); font-weight: 500; font-size: 14px; line-height: 20px; color: var(--muted); margin: 12px 0 0; }
+</style></head>
+<body>
+<div class="cover">
+<svg width="960" height="160" viewBox="0 0 960 160">
+  <!--
+    blocks: yellow 300x112, magenta 176x112, cyan 112x112, rose 304x112 -- the arcade identity colours, yellow largest, rose as the one tint
+    arrangement: flush top band of unequal slabs, gap space-gap (12), every slab chamfered top-left + bottom-right by chamfer-lg (14)
+    pattern: synthwave sun slits -- night stripes cut across the lower half of all slabs, getting thicker downward ("Sonne ... unten in Streifen geschnitten")
+    scales: gap space-gap 12, inset space-pad 16 / 24, chamfer-lg 14, slit heights 2/3/4/6/8
+  -->
+  <polygon class="yellow"  points="38,24 324,24 324,122 310,136 24,136 24,38"/>
+  <polygon class="magenta" points="350,24 512,24 512,122 498,136 336,136 336,38"/>
+  <polygon class="cyan"    points="538,24 636,24 636,122 622,136 524,136 524,38"/>
+  <polygon class="rose"    points="662,24 936,24 936,122 922,136 648,136 648,38"/>
+  <rect class="slit" x="0" y="86"  width="960" height="2"/>
+  <rect class="slit" x="0" y="96"  width="960" height="3"/>
+  <rect class="slit" x="0" y="107" width="960" height="4"/>
+  <rect class="slit" x="0" y="118" width="960" height="6"/>
+</svg>
+<div class="text">
+  <p class="name">CyberDrome Arcade-Glitch</p>
+  <p class="tag">Synthwave-Nacht, harte Kanten, ein flackerndes Logo -- der Stil jedes Bildschirms.</p>
+</div>
+</div>
+</body></html>

@@ -90,6 +90,8 @@ Punkte). Sie wird **nicht von Hand** bearbeitet, sondern von
   `build_spot.py` aus `design_farben` + `design_tokens` in `inhalte.json`
   nach `docs/design/tokens.json` (CI prueft mit). Farben im Spiel aendern =
   dort nachtragen, neu bauen und `tokens.json` ins Design-System uebernehmen.
+  Brand-Book und Komponenten liegen als Sicherung unter
+  `docs/design/design_system/` (Anleitung dort in `LIESMICH.md`).
 * Heute ein Spiegel: der Spieler trifft darin Designentscheidungen und gibt
   sie als Export zum Umsetzen. Vision des Spielers: spaeter ein
   Balance-Werkzeug (Werte in der Excel aendern -> ins Spiel uebernehmen).

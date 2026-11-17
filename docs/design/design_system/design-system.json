@@ -1,0 +1,1001 @@
+{
+ "v": 3,
+ "layout": "files",
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-17T06:34:36Z"
+ },
+ "title": "CyberDrome Arcade-Glitch",
+ "namespace": "CyberDrome",
+ "libraries": [],
+ "sections": {},
+ "groups": [
+  "Icons",
+  "Modules",
+  "Screens",
+  "App"
+ ],
+ "assetGroups": {
+  "Icons": {
+   "name": "Icons",
+   "tile": "xs",
+   "order": [
+    "ability.svg",
+    "adjacent.svg",
+    "area.svg",
+    "arrow_down.svg",
+    "arrow_left.svg",
+    "arrow_right.svg",
+    "arrow_up.svg",
+    "attack.svg",
+    "average.svg",
+    "bag.svg",
+    "bios.svg",
+    "bullet_square.svg",
+    "cache.svg",
+    "camera_follow.svg",
+    "camera_free.svg",
+    "caret_down.svg",
+    "caret_left.svg",
+    "caret_right.svg",
+    "check.svg",
+    "chevron_down.svg",
+    "chevron_left.svg",
+    "chevron_right.svg",
+    "chevron_up.svg",
+    "class_attack.svg",
+    "class_defense.svg",
+    "class_tactic.svg",
+    "close.svg",
+    "coin.svg",
+    "credits.svg",
+    "cross.svg",
+    "def.svg",
+    "double_chevron_right.svg",
+    "energy.svg",
+    "fast_forward.svg",
+    "heal.svg",
+    "hits.svg",
+    "hp.svg",
+    "kinetic.svg",
+    "kit.svg",
+    "level_up.svg",
+    "life.svg",
+    "location.svg",
+    "log.svg",
+    "loot.svg",
+    "lured.svg",
+    "material.svg",
+    "minus.svg",
+    "move_speed.svg",
+    "pause.svg",
+    "play.svg",
+    "play_left.svg",
+    "plus.svg",
+    "power.svg",
+    "power_score.svg",
+    "range.svg",
+    "recipe.svg",
+    "reroll.svg",
+    "role_controller.svg",
+    "role_skirmisher.svg",
+    "role_sniper.svg",
+    "role_vanguard.svg",
+    "rush.svg",
+    "settings.svg",
+    "shield.svg",
+    "skip.svg",
+    "slow.svg",
+    "speed.svg",
+    "storage.svg",
+    "stun.svg",
+    "tab_hangar.svg",
+    "tab_play.svg",
+    "tab_shop.svg",
+    "tier_elite.svg",
+    "tier_light.svg",
+    "tier_normal.svg",
+    "time.svg",
+    "times.svg",
+    "unknown.svg",
+    "virus.svg",
+    "vulnerable.svg",
+    "weight.svg",
+    "xp.svg"
+   ],
+   "files": {
+    "ability.svg": {
+     "name": "ability.svg",
+     "blob": "2b59c514f6350ae7d12b9acff4b430b5",
+     "size": 312,
+     "type": "image/svg+xml"
+    },
+    "adjacent.svg": {
+     "name": "adjacent.svg",
+     "blob": "55960ee44240d79d399fc394a5d3fc47",
+     "size": 293,
+     "type": "image/svg+xml"
+    },
+    "area.svg": {
+     "name": "area.svg",
+     "blob": "35255643a54aa2ed2f4eebe56ae2732c",
+     "size": 384,
+     "type": "image/svg+xml"
+    },
+    "arrow_down.svg": {
+     "name": "arrow_down.svg",
+     "blob": "2c6f85a37aad5fd2672b02be91b8e6c1",
+     "size": 250,
+     "type": "image/svg+xml"
+    },
+    "arrow_left.svg": {
+     "name": "arrow_left.svg",
+     "blob": "88becb66280c2a16ef03f8a9754226ef",
+     "size": 249,
+     "type": "image/svg+xml"
+    },
+    "arrow_right.svg": {
+     "name": "arrow_right.svg",
+     "blob": "767c80c00ab0a89cc0f71c107dee0fcb",
+     "size": 250,
+     "type": "image/svg+xml"
+    },
+    "arrow_up.svg": {
+     "name": "arrow_up.svg",
+     "blob": "ecd7177d92f9dd62131ae4c6aa555a37",
+     "size": 249,
+     "type": "image/svg+xml"
+    },
+    "attack.svg": {
+     "name": "attack.svg",
+     "blob": "953cb278c2756915a374e8cb49f06921",
+     "size": 342,
+     "type": "image/svg+xml"
+    },
+    "average.svg": {
+     "name": "average.svg",
+     "blob": "ca5cb5ea9b09065cf0360c398b07fc65",
+     "size": 250,
+     "type": "image/svg+xml"
+    },
+    "bag.svg": {
+     "name": "bag.svg",
+     "blob": "b231d5c60dd4e6d35342f315f55790b7",
+     "size": 258,
+     "type": "image/svg+xml"
+    },
+    "bios.svg": {
+     "name": "bios.svg",
+     "blob": "d3ff449bde4efebbc0f90bdaaec3e339",
+     "size": 398,
+     "type": "image/svg+xml"
+    },
+    "bullet_square.svg": {
+     "name": "bullet_square.svg",
+     "blob": "519cff540cd78f64da8c8adc651f81f4",
+     "size": 289,
+     "type": "image/svg+xml"
+    },
+    "cache.svg": {
+     "name": "cache.svg",
+     "blob": "deb2db2140f576a6112f5b76d8909229",
+     "size": 356,
+     "type": "image/svg+xml"
+    },
+    "camera_follow.svg": {
+     "name": "camera_follow.svg",
+     "blob": "58ab83d802349c2a4d781916febc6157",
+     "size": 309,
+     "type": "image/svg+xml"
+    },
+    "camera_free.svg": {
+     "name": "camera_free.svg",
+     "blob": "1b2d2637eb4ec3afb38164214a29f2af",
+     "size": 278,
+     "type": "image/svg+xml"
+    },
+    "caret_down.svg": {
+     "name": "caret_down.svg",
+     "blob": "2ddc10ac5dd80383de1dc9b5b4c1b67d",
+     "size": 276,
+     "type": "image/svg+xml"
+    },
+    "caret_left.svg": {
+     "name": "caret_left.svg",
+     "blob": "bfe0dff42f556b737be9a3a55c657ee2",
+     "size": 277,
+     "type": "image/svg+xml"
+    },
+    "caret_right.svg": {
+     "name": "caret_right.svg",
+     "blob": "915ffb7857fcc289ea889e1b252e2f4a",
+     "size": 276,
+     "type": "image/svg+xml"
+    },
+    "check.svg": {
+     "name": "check.svg",
+     "blob": "900c70b73213358c48ae832e1d8fc12b",
+     "size": 253,
+     "type": "image/svg+xml"
+    },
+    "chevron_down.svg": {
+     "name": "chevron_down.svg",
+     "blob": "f3c374446b7bc58bd9c259d61ce13fb9",
+     "size": 247,
+     "type": "image/svg+xml"
+    },
+    "chevron_left.svg": {
+     "name": "chevron_left.svg",
+     "blob": "729e95425ce46bec8457471e2a9aa578",
+     "size": 248,
+     "type": "image/svg+xml"
+    },
+    "chevron_right.svg": {
+     "name": "chevron_right.svg",
+     "blob": "248c617c59b7775d08ba015b28989f58",
+     "size": 247,
+     "type": "image/svg+xml"
+    },
+    "chevron_up.svg": {
+     "name": "chevron_up.svg",
+     "blob": "6feee2812e75a55e0fcf10320c581bce",
+     "size": 248,
+     "type": "image/svg+xml"
+    },
+    "class_attack.svg": {
+     "name": "class_attack.svg",
+     "blob": "560b5fa44abba351fa6afa4447085189",
+     "size": 242,
+     "type": "image/svg+xml"
+    },
+    "class_defense.svg": {
+     "name": "class_defense.svg",
+     "blob": "d77db6c5367e740411c49c59a023c15a",
+     "size": 255,
+     "type": "image/svg+xml"
+    },
+    "class_tactic.svg": {
+     "name": "class_tactic.svg",
+     "blob": "47e9f6b2bf1d4c8507c056bf8bbac7d6",
+     "size": 307,
+     "type": "image/svg+xml"
+    },
+    "close.svg": {
+     "name": "close.svg",
+     "blob": "423cfa959afb65e372b565e46ef7472b",
+     "size": 246,
+     "type": "image/svg+xml"
+    },
+    "coin.svg": {
+     "name": "coin.svg",
+     "blob": "6d364a4cd9d4dfda714b343478583627",
+     "size": 343,
+     "type": "image/svg+xml"
+    },
+    "credits.svg": {
+     "name": "credits.svg",
+     "blob": "f671bfc104584e6cd78a8c12aedcb7f7",
+     "size": 303,
+     "type": "image/svg+xml"
+    },
+    "cross.svg": {
+     "name": "cross.svg",
+     "blob": "3e9cbd248b4ffa68a92ac8891194a90a",
+     "size": 246,
+     "type": "image/svg+xml"
+    },
+    "def.svg": {
+     "name": "def.svg",
+     "blob": "8504404423110acb840c221b128b6a3c",
+     "size": 515,
+     "type": "image/svg+xml"
+    },
+    "double_chevron_right.svg": {
+     "name": "double_chevron_right.svg",
+     "blob": "ed8bc01a242dcc6656cc32942cfa506f",
+     "size": 303,
+     "type": "image/svg+xml"
+    },
+    "energy.svg": {
+     "name": "energy.svg",
+     "blob": "2bea484eb2432cf1b3e78d83fc7dcab5",
+     "size": 380,
+     "type": "image/svg+xml"
+    },
+    "fast_forward.svg": {
+     "name": "fast_forward.svg",
+     "blob": "c99ea6b8fd5c032f1267911f187575ad",
+     "size": 359,
+     "type": "image/svg+xml"
+    },
+    "heal.svg": {
+     "name": "heal.svg",
+     "blob": "146f3ae7cb7f534e52f71aca7b6ebd7d",
+     "size": 375,
+     "type": "image/svg+xml"
+    },
+    "hits.svg": {
+     "name": "hits.svg",
+     "blob": "6bc48559190e7569bac5754105d2e068",
+     "size": 598,
+     "type": "image/svg+xml"
+    },
+    "hp.svg": {
+     "name": "hp.svg",
+     "blob": "7e4d13e1b435c56341794c761cfd2161",
+     "size": 324,
+     "type": "image/svg+xml"
+    },
+    "kinetic.svg": {
+     "name": "kinetic.svg",
+     "blob": "5120df1bcbd8f98f5b707943a8cfb040",
+     "size": 390,
+     "type": "image/svg+xml"
+    },
+    "kit.svg": {
+     "name": "kit.svg",
+     "blob": "9f533af374c1dfc535681938968f46d0",
+     "size": 279,
+     "type": "image/svg+xml"
+    },
+    "level_up.svg": {
+     "name": "level_up.svg",
+     "blob": "37fa83c18cc500d6d5790c69beb9778e",
+     "size": 306,
+     "type": "image/svg+xml"
+    },
+    "life.svg": {
+     "name": "life.svg",
+     "blob": "f1dd0fb60d68b45943d22ec26f1d2d05",
+     "size": 363,
+     "type": "image/svg+xml"
+    },
+    "location.svg": {
+     "name": "location.svg",
+     "blob": "adaa9b03d3ca64ffcfeae953fd80f388",
+     "size": 330,
+     "type": "image/svg+xml"
+    },
+    "log.svg": {
+     "name": "log.svg",
+     "blob": "df0a724147aeb2469d36d4c139847d38",
+     "size": 448,
+     "type": "image/svg+xml"
+    },
+    "loot.svg": {
+     "name": "loot.svg",
+     "blob": "0e8b4003544a7f512e6c73678704cf9f",
+     "size": 313,
+     "type": "image/svg+xml"
+    },
+    "lured.svg": {
+     "name": "lured.svg",
+     "blob": "76431cd0c89fdd43095c20493e2c11dc",
+     "size": 359,
+     "type": "image/svg+xml"
+    },
+    "material.svg": {
+     "name": "material.svg",
+     "blob": "5df8294f21d8f0c48afca3dc42b4cd79",
+     "size": 469,
+     "type": "image/svg+xml"
+    },
+    "minus.svg": {
+     "name": "minus.svg",
+     "blob": "999c0e5f65ebcac1a2ea553ba1ad2dbc",
+     "size": 234,
+     "type": "image/svg+xml"
+    },
+    "move_speed.svg": {
+     "name": "move_speed.svg",
+     "blob": "e912f601c9baa7c052946eb987062a7a",
+     "size": 306,
+     "type": "image/svg+xml"
+    },
+    "pause.svg": {
+     "name": "pause.svg",
+     "blob": "4269affc9c9fd980c041550b2989fed9",
+     "size": 336,
+     "type": "image/svg+xml"
+    },
+    "play.svg": {
+     "name": "play.svg",
+     "blob": "c105fdd31210377713bb004b1657756e",
+     "size": 276,
+     "type": "image/svg+xml"
+    },
+    "play_left.svg": {
+     "name": "play_left.svg",
+     "blob": "105d2febb90079ab23d1413e92f10dcf",
+     "size": 277,
+     "type": "image/svg+xml"
+    },
+    "plus.svg": {
+     "name": "plus.svg",
+     "blob": "172bb3bc06f72a306cf11f4e60b7557d",
+     "size": 242,
+     "type": "image/svg+xml"
+    },
+    "power.svg": {
+     "name": "power.svg",
+     "blob": "605eb47ea565b5775f3a073a2848ac88",
+     "size": 350,
+     "type": "image/svg+xml"
+    },
+    "power_score.svg": {
+     "name": "power_score.svg",
+     "blob": "73001e295b28e4bd53e1ecca25a61243",
+     "size": 315,
+     "type": "image/svg+xml"
+    },
+    "range.svg": {
+     "name": "range.svg",
+     "blob": "2e4f0f00d2f6901300c7a94299cb49ed",
+     "size": 309,
+     "type": "image/svg+xml"
+    },
+    "recipe.svg": {
+     "name": "recipe.svg",
+     "blob": "359f59adee74a4b69b8dac36b2a47d79",
+     "size": 333,
+     "type": "image/svg+xml"
+    },
+    "reroll.svg": {
+     "name": "reroll.svg",
+     "blob": "7626239d364d7c806072efa7242c2977",
+     "size": 325,
+     "type": "image/svg+xml"
+    },
+    "role_controller.svg": {
+     "name": "role_controller.svg",
+     "blob": "d306c3b9952b00c4db45d8dc5e8eb3f0",
+     "size": 365,
+     "type": "image/svg+xml"
+    },
+    "role_skirmisher.svg": {
+     "name": "role_skirmisher.svg",
+     "blob": "01a8f7381b666df8f556464d18bf7eaf",
+     "size": 298,
+     "type": "image/svg+xml"
+    },
+    "role_sniper.svg": {
+     "name": "role_sniper.svg",
+     "blob": "c9ad23da9a54a1f0e7f1b78db47136c1",
+     "size": 369,
+     "type": "image/svg+xml"
+    },
+    "role_vanguard.svg": {
+     "name": "role_vanguard.svg",
+     "blob": "61d5844f68cb9b41bd6f81b7df17fc89",
+     "size": 318,
+     "type": "image/svg+xml"
+    },
+    "rush.svg": {
+     "name": "rush.svg",
+     "blob": "859bda6c6ee49cfc429d9a271f0d8bdc",
+     "size": 324,
+     "type": "image/svg+xml"
+    },
+    "settings.svg": {
+     "name": "settings.svg",
+     "blob": "bfac4f392b51a2556b5d0d14ac90a33b",
+     "size": 680,
+     "type": "image/svg+xml"
+    },
+    "shield.svg": {
+     "name": "shield.svg",
+     "blob": "12053e837b19e8701a132c83c22bd1f7",
+     "size": 390,
+     "type": "image/svg+xml"
+    },
+    "skip.svg": {
+     "name": "skip.svg",
+     "blob": "d378b05b25d5d0141988589d7becbd31",
+     "size": 434,
+     "type": "image/svg+xml"
+    },
+    "slow.svg": {
+     "name": "slow.svg",
+     "blob": "16fd4e2c1743ec8b717bcd292e111e70",
+     "size": 314,
+     "type": "image/svg+xml"
+    },
+    "speed.svg": {
+     "name": "speed.svg",
+     "blob": "309c459a07e7fe152c78fc3c8a2f3dc0",
+     "size": 348,
+     "type": "image/svg+xml"
+    },
+    "storage.svg": {
+     "name": "storage.svg",
+     "blob": "b7bc18982064ee656383594f5f3542e9",
+     "size": 265,
+     "type": "image/svg+xml"
+    },
+    "stun.svg": {
+     "name": "stun.svg",
+     "blob": "66ed14fc3edce37b9a2627e36fd62ea8",
+     "size": 471,
+     "type": "image/svg+xml"
+    },
+    "tab_hangar.svg": {
+     "name": "tab_hangar.svg",
+     "blob": "4257782294ca230793da78701e8cc27f",
+     "size": 272,
+     "type": "image/svg+xml"
+    },
+    "tab_play.svg": {
+     "name": "tab_play.svg",
+     "blob": "74c21f9ff2e60320d4cadbe45a689f82",
+     "size": 247,
+     "type": "image/svg+xml"
+    },
+    "tab_shop.svg": {
+     "name": "tab_shop.svg",
+     "blob": "e5758991aaec6ed4defdd7be3cf161de",
+     "size": 322,
+     "type": "image/svg+xml"
+    },
+    "tier_elite.svg": {
+     "name": "tier_elite.svg",
+     "blob": "fe5039d547b60468cb18a517a43b88b9",
+     "size": 325,
+     "type": "image/svg+xml"
+    },
+    "tier_light.svg": {
+     "name": "tier_light.svg",
+     "blob": "8ef02f809987478e2b97f0bee9aca45c",
+     "size": 247,
+     "type": "image/svg+xml"
+    },
+    "tier_normal.svg": {
+     "name": "tier_normal.svg",
+     "blob": "22ad4ec967a96fab52fda104be38310c",
+     "size": 260,
+     "type": "image/svg+xml"
+    },
+    "time.svg": {
+     "name": "time.svg",
+     "blob": "d53f1a9bb7328f0cea5df4774ea03e34",
+     "size": 297,
+     "type": "image/svg+xml"
+    },
+    "times.svg": {
+     "name": "times.svg",
+     "blob": "7812a668bcee929890b4491d93dc6174",
+     "size": 246,
+     "type": "image/svg+xml"
+    },
+    "unknown.svg": {
+     "name": "unknown.svg",
+     "blob": "80028975ac951bf908da5681043e3280",
+     "size": 364,
+     "type": "image/svg+xml"
+    },
+    "virus.svg": {
+     "name": "virus.svg",
+     "blob": "fd6a24fc3f408f4f6fbf9c80aa7f100f",
+     "size": 1318,
+     "type": "image/svg+xml"
+    },
+    "vulnerable.svg": {
+     "name": "vulnerable.svg",
+     "blob": "1cb5492d76159faea7f9a234e8d99b8d",
+     "size": 336,
+     "type": "image/svg+xml"
+    },
+    "weight.svg": {
+     "name": "weight.svg",
+     "blob": "164c2015ed965f18a15ec72924f98428",
+     "size": 319,
+     "type": "image/svg+xml"
+    },
+    "xp.svg": {
+     "name": "xp.svg",
+     "blob": "8c2ddd12c11f6614caf0bbae213e2b0d",
+     "size": 411,
+     "type": "image/svg+xml"
+    }
+   }
+  },
+  "Screens": {
+   "name": "Screens",
+   "tile": "l",
+   "order": [
+    "00_startseite.webp",
+    "01_startseite_einsatz.webp",
+    "02_hangar_squad.webp",
+    "03_hangar_umbau.webp",
+    "04_waffenkarte.webp",
+    "05_kampfkarte.webp",
+    "06_optionen.webp",
+    "07_dialog_links.webp",
+    "08_dialog_rechts.webp",
+    "09_aufstellung.webp",
+    "10_kampf.webp",
+    "11_kampf_virus.webp",
+    "12_kampf_ergebnis.webp",
+    "13_zwischenstopp.webp",
+    "14_rezeptbuch.webp",
+    "15_einsatz_geschafft.webp",
+    "16_einsatz_gescheitert.webp",
+    "17_caches_lager.webp",
+    "18_neon_cache.webp",
+    "19_neon_cache_offen.webp",
+    "20_solar_cache.webp",
+    "21_mecha_cache.webp",
+    "22_hipstar_cache.webp",
+    "23_shop.webp"
+   ],
+   "files": {
+    "00_startseite.webp": {
+     "name": "00_startseite.webp",
+     "blob": "fde1008c28bfa2a8491e9d7643c61df5",
+     "size": 40780,
+     "type": "image/webp"
+    },
+    "01_startseite_einsatz.webp": {
+     "name": "01_startseite_einsatz.webp",
+     "blob": "2e97ffc1a090d4521388c784f93e3504",
+     "size": 41490,
+     "type": "image/webp"
+    },
+    "02_hangar_squad.webp": {
+     "name": "02_hangar_squad.webp",
+     "blob": "610418a9585e2b8a44f3be267afe1652",
+     "size": 37334,
+     "type": "image/webp"
+    },
+    "03_hangar_umbau.webp": {
+     "name": "03_hangar_umbau.webp",
+     "blob": "b7d53220c8a92201107e3e73e6df999e",
+     "size": 35418,
+     "type": "image/webp"
+    },
+    "04_waffenkarte.webp": {
+     "name": "04_waffenkarte.webp",
+     "blob": "a24dea7166a8f8f448ae1323ea8195ed",
+     "size": 25124,
+     "type": "image/webp"
+    },
+    "05_kampfkarte.webp": {
+     "name": "05_kampfkarte.webp",
+     "blob": "ca04b988e3443d098442d16103244053",
+     "size": 41398,
+     "type": "image/webp"
+    },
+    "06_optionen.webp": {
+     "name": "06_optionen.webp",
+     "blob": "25aa1927bdf6c18a3770b3c9f52de446",
+     "size": 28532,
+     "type": "image/webp"
+    },
+    "07_dialog_links.webp": {
+     "name": "07_dialog_links.webp",
+     "blob": "6a400c1ba13ae6fc3d6baf4820341c49",
+     "size": 14398,
+     "type": "image/webp"
+    },
+    "08_dialog_rechts.webp": {
+     "name": "08_dialog_rechts.webp",
+     "blob": "201b977ed0a044a4162f479d1bbd44bc",
+     "size": 15680,
+     "type": "image/webp"
+    },
+    "09_aufstellung.webp": {
+     "name": "09_aufstellung.webp",
+     "blob": "3d5545141ce804e0a8f9d2ea5c32f9eb",
+     "size": 38802,
+     "type": "image/webp"
+    },
+    "10_kampf.webp": {
+     "name": "10_kampf.webp",
+     "blob": "342a26b174b08cfa38effa4a622c68b0",
+     "size": 35094,
+     "type": "image/webp"
+    },
+    "11_kampf_virus.webp": {
+     "name": "11_kampf_virus.webp",
+     "blob": "149b5978866ef2fd6320b9f7c39063a6",
+     "size": 35634,
+     "type": "image/webp"
+    },
+    "12_kampf_ergebnis.webp": {
+     "name": "12_kampf_ergebnis.webp",
+     "blob": "4d654560d642a2f5553b20c828c5aba4",
+     "size": 18586,
+     "type": "image/webp"
+    },
+    "13_zwischenstopp.webp": {
+     "name": "13_zwischenstopp.webp",
+     "blob": "ca9e46f2acc1ae6d7c5dc9e554c3d067",
+     "size": 39058,
+     "type": "image/webp"
+    },
+    "14_rezeptbuch.webp": {
+     "name": "14_rezeptbuch.webp",
+     "blob": "0e7b0cb7b50876bf68444a2269f7357d",
+     "size": 36954,
+     "type": "image/webp"
+    },
+    "15_einsatz_geschafft.webp": {
+     "name": "15_einsatz_geschafft.webp",
+     "blob": "43c4abf78f3f829b6d4b287cb922389f",
+     "size": 40056,
+     "type": "image/webp"
+    },
+    "16_einsatz_gescheitert.webp": {
+     "name": "16_einsatz_gescheitert.webp",
+     "blob": "bb08439d4aedb30dc29f59de47aac962",
+     "size": 33172,
+     "type": "image/webp"
+    },
+    "17_caches_lager.webp": {
+     "name": "17_caches_lager.webp",
+     "blob": "703ba3c20808be328139cca96e5b6d62",
+     "size": 36182,
+     "type": "image/webp"
+    },
+    "18_neon_cache.webp": {
+     "name": "18_neon_cache.webp",
+     "blob": "08b8cfd9b3a5d90e5b352d393685a174",
+     "size": 29102,
+     "type": "image/webp"
+    },
+    "19_neon_cache_offen.webp": {
+     "name": "19_neon_cache_offen.webp",
+     "blob": "e05e2ddea56a5d52b077da469b360a60",
+     "size": 38606,
+     "type": "image/webp"
+    },
+    "20_solar_cache.webp": {
+     "name": "20_solar_cache.webp",
+     "blob": "6d22d5e057c6ce1c4d7cd324dc6dbe22",
+     "size": 31746,
+     "type": "image/webp"
+    },
+    "21_mecha_cache.webp": {
+     "name": "21_mecha_cache.webp",
+     "blob": "4cd4cbb38898051863e589ab6fc30979",
+     "size": 29696,
+     "type": "image/webp"
+    },
+    "22_hipstar_cache.webp": {
+     "name": "22_hipstar_cache.webp",
+     "blob": "d593ae59386972751997748debd80fe5",
+     "size": 27966,
+     "type": "image/webp"
+    },
+    "23_shop.webp": {
+     "name": "23_shop.webp",
+     "blob": "9411d7a900bcf9b1e0bc85b55b57a54c",
+     "size": 36682,
+     "type": "image/webp"
+    }
+   }
+  },
+  "App": {
+   "name": "App",
+   "tile": "s",
+   "order": [
+    "app_icon.png"
+   ],
+   "files": {
+    "app_icon.png": {
+     "name": "app_icon.png",
+     "blob": "6a7d3623337c880a6d1b8cb81aff6cb9",
+     "size": 9101,
+     "type": "image/png"
+    }
+   }
+  },
+  "Modules": {
+   "name": "Modules",
+   "tile": "s",
+   "order": [
+    "mod_amplifier.svg",
+    "mod_armor_plate.svg",
+    "mod_bait.svg",
+    "mod_beacon.svg",
+    "mod_brand.svg",
+    "mod_brawler.svg",
+    "mod_bulwark.svg",
+    "mod_capacitor.svg",
+    "mod_chain_reaction.svg",
+    "mod_discharge.svg",
+    "mod_fork.svg",
+    "mod_guard_pulse.svg",
+    "mod_gunslinger.svg",
+    "mod_heavy_edge.svg",
+    "mod_holo.svg",
+    "mod_orbit.svg",
+    "mod_overload.svg",
+    "mod_overvolt.svg",
+    "mod_ram.svg",
+    "mod_rapid_fire.svg",
+    "mod_seeker.svg",
+    "mod_shackle.svg",
+    "mod_spike_grid.svg",
+    "mod_splinter.svg",
+    "mod_takt_chip.svg",
+    "mod_twin_barrel.svg",
+    "mod_whirlwind.svg"
+   ],
+   "files": {
+    "mod_amplifier.svg": {
+     "name": "mod_amplifier.svg",
+     "blob": "41662b29d84602c0faad4bcb177389bc",
+     "size": 367,
+     "type": "image/svg+xml"
+    },
+    "mod_armor_plate.svg": {
+     "name": "mod_armor_plate.svg",
+     "blob": "5b279580be454be59e5dd67b3dcbf7ec",
+     "size": 502,
+     "type": "image/svg+xml"
+    },
+    "mod_bait.svg": {
+     "name": "mod_bait.svg",
+     "blob": "732f7b7e767325571c4c3cc3ad582dec",
+     "size": 451,
+     "type": "image/svg+xml"
+    },
+    "mod_beacon.svg": {
+     "name": "mod_beacon.svg",
+     "blob": "f35d6893966694bf4d8238c1ef64428e",
+     "size": 375,
+     "type": "image/svg+xml"
+    },
+    "mod_brand.svg": {
+     "name": "mod_brand.svg",
+     "blob": "6b308a096cfee3f4268902d41fa6fa27",
+     "size": 346,
+     "type": "image/svg+xml"
+    },
+    "mod_brawler.svg": {
+     "name": "mod_brawler.svg",
+     "blob": "7c495137fa9fa7a310253eb1d654eb4c",
+     "size": 374,
+     "type": "image/svg+xml"
+    },
+    "mod_bulwark.svg": {
+     "name": "mod_bulwark.svg",
+     "blob": "ee57ab7734c36844d7a7cce963f0f9a6",
+     "size": 364,
+     "type": "image/svg+xml"
+    },
+    "mod_capacitor.svg": {
+     "name": "mod_capacitor.svg",
+     "blob": "f7220ddb4950c7f87cf3f79205d05665",
+     "size": 346,
+     "type": "image/svg+xml"
+    },
+    "mod_chain_reaction.svg": {
+     "name": "mod_chain_reaction.svg",
+     "blob": "c551808d6b79629d78bb9b1dba17cea8",
+     "size": 362,
+     "type": "image/svg+xml"
+    },
+    "mod_discharge.svg": {
+     "name": "mod_discharge.svg",
+     "blob": "12a2f1749d91e8f192b177fede300cc4",
+     "size": 323,
+     "type": "image/svg+xml"
+    },
+    "mod_fork.svg": {
+     "name": "mod_fork.svg",
+     "blob": "859bbee3e9c1fdcd5207cfee8103d2bc",
+     "size": 381,
+     "type": "image/svg+xml"
+    },
+    "mod_guard_pulse.svg": {
+     "name": "mod_guard_pulse.svg",
+     "blob": "eb3e4526db6966afb5b3029cc5af98a5",
+     "size": 410,
+     "type": "image/svg+xml"
+    },
+    "mod_gunslinger.svg": {
+     "name": "mod_gunslinger.svg",
+     "blob": "bacfecf53055701744480c2f00f58fb1",
+     "size": 360,
+     "type": "image/svg+xml"
+    },
+    "mod_heavy_edge.svg": {
+     "name": "mod_heavy_edge.svg",
+     "blob": "4feab64efb51f3d3b9479c69a32211c4",
+     "size": 360,
+     "type": "image/svg+xml"
+    },
+    "mod_holo.svg": {
+     "name": "mod_holo.svg",
+     "blob": "89f14b67881e581b14e7d6ac2d982ecc",
+     "size": 371,
+     "type": "image/svg+xml"
+    },
+    "mod_orbit.svg": {
+     "name": "mod_orbit.svg",
+     "blob": "365cec546d5d8d77c0aa0004785ef345",
+     "size": 387,
+     "type": "image/svg+xml"
+    },
+    "mod_overload.svg": {
+     "name": "mod_overload.svg",
+     "blob": "5f92696ecd0b0c7b0910bf59321bc176",
+     "size": 336,
+     "type": "image/svg+xml"
+    },
+    "mod_overvolt.svg": {
+     "name": "mod_overvolt.svg",
+     "blob": "d5d7919e77923ee3d082a37668dc9655",
+     "size": 333,
+     "type": "image/svg+xml"
+    },
+    "mod_ram.svg": {
+     "name": "mod_ram.svg",
+     "blob": "d1ad2c340f28a77376240114a1710e84",
+     "size": 332,
+     "type": "image/svg+xml"
+    },
+    "mod_rapid_fire.svg": {
+     "name": "mod_rapid_fire.svg",
+     "blob": "ee22085c217fde8f19e55bf4d1caec91",
+     "size": 308,
+     "type": "image/svg+xml"
+    },
+    "mod_seeker.svg": {
+     "name": "mod_seeker.svg",
+     "blob": "d8a83dfe2aef8f411c12948cabf73073",
+     "size": 307,
+     "type": "image/svg+xml"
+    },
+    "mod_shackle.svg": {
+     "name": "mod_shackle.svg",
+     "blob": "60d2a89291d201c4f8c5be7b0c4e3b71",
+     "size": 423,
+     "type": "image/svg+xml"
+    },
+    "mod_spike_grid.svg": {
+     "name": "mod_spike_grid.svg",
+     "blob": "4242dde5e5109f50e2fe048ddf0d7b9b",
+     "size": 314,
+     "type": "image/svg+xml"
+    },
+    "mod_splinter.svg": {
+     "name": "mod_splinter.svg",
+     "blob": "72da56f8bde2c42f02a7d65d0a5c014d",
+     "size": 356,
+     "type": "image/svg+xml"
+    },
+    "mod_takt_chip.svg": {
+     "name": "mod_takt_chip.svg",
+     "blob": "7ba2d891fe79326ee200fa94b1cdacde",
+     "size": 318,
+     "type": "image/svg+xml"
+    },
+    "mod_twin_barrel.svg": {
+     "name": "mod_twin_barrel.svg",
+     "blob": "33c2d81f0077a4a3cf873d4e47f6f6b4",
+     "size": 438,
+     "type": "image/svg+xml"
+    },
+    "mod_whirlwind.svg": {
+     "name": "mod_whirlwind.svg",
+     "blob": "632f05dacfb3c9d83ce5e369117e54ff",
+     "size": 345,
+     "type": "image/svg+xml"
+    }
+   }
+  }
+ },
+ "blobs": {},
+ "docs": {
+  "readme": "project/README.md",
+  "sections": []
+ },
+ "lastChange": {
+  "by": "Claude",
+  "at": "2026-11-17T07:36:45Z",
+  "via": "Claude Code · GitHub longuspong/cyberdrome",
+  "note": "Tokens aus der SPOT (docs/design/tokens.json), Stufenfarben, hellere Kartenrahmen, OFL; neu: ModuleChip, Header, BattleHud, ResultScreen, Modul-Symbole"
+ }
+}
