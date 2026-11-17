@@ -374,7 +374,7 @@ func _on_unit_healed(unit: Unit, amount: int, _source) -> void:
 
 
 func _on_unit_died(unit: Unit) -> void:
-	unit.visible = false
+	unit.play_death()
 	Accessibility.vibrate(70 if unit.is_player else 35, true)
 	_refresh_hud()
 
@@ -402,7 +402,11 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	view.show_unit_badges([])
 	_status.text = "%s nach %d s  ·  Seed %d" % [
 		BattleManager.outcome_label(outcome), int(battle.time), battle.battle_seed]
-	_show_result(outcome)
+	# Erst den letzten DROME zerfallen sehen, dann das Ergebnis (17. Nov. 2026).
+	var wait := (Unit.DEATH_TIME_CALM if Accessibility.reduce_motion else Unit.DEATH_TIME) + 0.4
+	get_tree().create_timer(wait).timeout.connect(func():
+		if is_instance_valid(self) and is_inside_tree():
+			_show_result(outcome))
 
 
 # ---------------------------------------------------------------------------
@@ -1094,8 +1098,15 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 	table.add_theme_constant_override("h_separation", 10)
 	table.add_theme_constant_override("v_separation", 4)
 	box.add_child(table)
+	# Zahlen-Spalten brechen nie um: mit Umbruch schrumpfte die Spalte auf ein
+	# Zeichen Breite, und "814 / 360" stand senkrecht (17. Nov. 2026).
+	var cell := func(text: String, size: int, color: Color) -> Label:
+		var label := UiKit.label(text, size, color)
+		label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		return label
 	for text in ["", "Schaden / erlitten", "Leben"]:
-		table.add_child(UiKit.label(text, 12, UiKit.MUTED))
+		table.add_child(cell.call(text, 12, UiKit.MUTED))
 	for row in result["units"]:
 		var name := UiKit.label(str(row["name"]), 15, Teams.color(row["is_player"])
 			if row["alive"] else UiKit.MUTED)
@@ -1104,8 +1115,8 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		table.add_child(name)
-		table.add_child(UiKit.label("%d / %d" % [row["dealt"], row["taken"]], 15, UiKit.TEXT))
-		table.add_child(UiKit.label("%d / %d" % [row["hp"], row["hp_max"]] if row["alive"] else "aus",
+		table.add_child(cell.call("%d / %d" % [row["dealt"], row["taken"]], 15, UiKit.TEXT))
+		table.add_child(cell.call("%d / %d" % [row["hp"], row["hp_max"]] if row["alive"] else "aus",
 			15, UiKit.TEXT if row["alive"] else UiKit.BAD))
 
 	if in_run:

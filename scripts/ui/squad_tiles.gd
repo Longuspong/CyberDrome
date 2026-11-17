@@ -72,7 +72,7 @@ func _add_tile(unit: Unit) -> void:
 	head_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(head_row)
 	var head := TextureRect.new()
-	head.texture = UiKit.part_texture(unit.build.part_in("head") if unit.build else null)
+	head.texture = UiKit.portrait_texture(unit.build)
 	head.custom_minimum_size = Vector2(HEAD_EDGE * 0.7, HEAD_EDGE * 0.7)
 	head.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	head.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

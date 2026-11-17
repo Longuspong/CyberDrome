@@ -1130,7 +1130,7 @@ func _drome_box(run: RunState, drome: int) -> Control:
 	panel.add_child(box)
 
 	var head := TextureRect.new()
-	head.texture = UiKit.part_texture(build.part_in("head"))
+	head.texture = UiKit.portrait_texture(build)
 	head.custom_minimum_size = Vector2(44, 44)
 	head.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	head.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -1175,19 +1175,22 @@ func _holder_tile(run: RunState, drome: int, slot: String) -> Tile:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 3)
 	box.add_child(row)
-	var installed := build.modules_in(slot)
+	var layout := build.module_layout(slot)
 	var room := ModuleData.slots_for(build, slot)
 	var first_free: FreeSlot = null
-	for position in maxi(room, installed.size()):
-		if position < installed.size():
-			var module: ModuleData = installed[position]
+	# Freie Kaestchen mit ihrem Platz: gezogen wird auf das unter dem Finger.
+	var frees: Array = []
+	for position in maxi(room, layout.size()):
+		var module: ModuleData = layout[position] if position < layout.size() else null
+		if module != null:
 			var chip := ModuleChip.new(module, 28.0)
 			chip.dim = module.blocker(part) != ""
 			chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			row.add_child(chip)
-		else:
+		elif position < room:
 			var free := FreeSlot.new()
 			row.add_child(free)
+			frees.append([free, position])
 			if first_free == null:
 				first_free = free
 	tile.add_extra(box)
@@ -1196,9 +1199,9 @@ func _holder_tile(run: RunState, drome: int, slot: String) -> Tile:
 		return data is Dictionary and _holder_allows(run, int(data.get("index", -1)), drome, slot)
 	tile.on_drop = func(data):
 		_dropped = true
-		_install_at(run, int(data["index"]), drome, slot)
+		_install_at(run, int(data["index"]), drome, slot, _free_under(frees, _pointer)[1])
 	_holders.append({"tile": tile, "drome": drome, "slot": slot, "free": first_free,
-		"allowed": false, "detail": ""})
+		"frees": frees, "allowed": false, "detail": ""})
 	if _flash_holder == "%d:%s" % [drome, slot]:
 		_flash_holder = ""
 		_flash(tile)
@@ -1272,10 +1275,32 @@ class FreeSlot extends Control:
 			draw_dashed_line(a, b, color, width, 3.0)
 
 
-## Setzt Lagerplatz ``index`` in diese Waffe.
-func _install_at(run: RunState, index: int, drome: int, slot: String) -> void:
+## Das freie Kaestchen unter ``at`` als [FreeSlot, Platz]; liegt der Finger
+## auf keinem, das erste freie (bzw. [null, -1] ohne freie).
+static func _free_under(frees: Array, at: Vector2) -> Array:
+	if frees.is_empty():
+		return [null, -1]
+	var nearest: Array = frees[0]
+	var best := INF
+	for entry in frees:
+		var rect := (entry[0] as Control).get_global_rect()
+		if rect.grow(4.0).has_point(at):
+			return entry
+		# Daneben: das naechste Kaestchen in der Zeile, wenn der Finger in
+		# ihrer Hoehe liegt -- sonst bleibt es beim ersten freien.
+		if at.y >= rect.position.y - 12.0 and at.y <= rect.end.y + 12.0:
+			var d := absf(rect.get_center().x - at.x)
+			if d < best:
+				best = d
+				nearest = entry
+	return nearest
+
+
+## Setzt Lagerplatz ``index`` in diese Waffe (auf Platz ``position``, wenn
+## frei; -1 = erster freier).
+func _install_at(run: RunState, index: int, drome: int, slot: String, position: int = -1) -> void:
 	var done := run.install_bios(index, drome, slot) if run.is_bios_at(index) \
-		else run.install_module(index, drome, slot)
+		else run.install_module(index, drome, slot, position)
 	if done:
 		Accessibility.vibrate(25, true)
 		_selected_storage = -1
@@ -1365,7 +1390,9 @@ func _process(_delta: float) -> void:
 	var target: Dictionary = {}
 	for h in _holders:
 		if (h["tile"] as Control).get_global_rect().has_point(at):
-			key = "h:%d:%s" % [h["drome"], h["slot"]]
+			# Der Platz gehoert zum Schluessel: wandert der Finger ueber ein
+			# anderes freies Kaestchen, wandert die Vorschau mit.
+			key = "h:%d:%s:%d" % [h["drome"], h["slot"], int(_free_under(h["frees"], at)[1])]
 			target = h
 	if key == "":
 		for s in _stores:
@@ -1382,8 +1409,9 @@ func _process(_delta: float) -> void:
 	if target.has("slot"):
 		if target["allowed"]:
 			tile.selected = true
-			if target["free"] != null:
-				(target["free"] as FreeSlot).show_ghost(ModuleData.get_module(run.storage[_drag_index]))
+			var spot: Variant = _free_under(target["frees"], at)[0]
+			if spot != null:
+				(spot as FreeSlot).show_ghost(ModuleData.get_module(run.storage[_drag_index]))
 			Accessibility.vibrate(8)
 		else:
 			_show_tip(tile, str(target["detail"]), COLOR_BAD)
@@ -1400,8 +1428,8 @@ func _process(_delta: float) -> void:
 func _clear_hover() -> void:
 	for h in _holders:
 		(h["tile"] as Tile).selected = false
-		if h["free"] != null:
-			(h["free"] as FreeSlot).hide_ghost()
+		for entry in h["frees"]:
+			(entry[0] as FreeSlot).hide_ghost()
 	for s in _stores:
 		(s["tile"] as Tile).selected = int(s["index"]) == _selected_storage and _drag_index < 0
 	if _tip != null:
@@ -1488,9 +1516,11 @@ func _installed_pages(run: RunState, drome: int, slot: String) -> Array:
 	var build: DromeBuild = run.squad[drome]
 	var weapon := build.part_in(slot)
 	var pages: Array = []
-	var installed := build.modules_in(slot)
-	for position in installed.size():
-		var module: ModuleData = installed[position]
+	var layout := build.module_layout(slot)
+	for position in layout.size():
+		var module: ModuleData = layout[position]
+		if module == null:
+			continue
 		var at: int = position
 		pages.append(func() -> Dictionary:
 			var lines := _module_lines(module)

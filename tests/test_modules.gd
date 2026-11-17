@@ -496,6 +496,41 @@ func test_a_module_goes_from_storage_into_a_holder_and_back() -> void:
 	t.ok(not build.modules.has(spot["slot"]), "der Halter ist leer")
 
 
+## Seit 17. Nov. 2026: ein Modul landet auf dem Platz, auf den es gezogen
+## wird; freie Plaetze dazwischen bleiben frei, Herausnehmen schiebt nichts.
+func test_a_module_lands_on_the_slot_it_is_dropped_on() -> void:
+	var run := _stop_run()
+	var drome := -1
+	var slot := ""
+	for i in run.squad.size():
+		for s in run.squad[i].equip_slots():
+			if drome < 0 and ModuleData.slots_for(run.squad[i], s) >= 3:
+				drome = i
+				slot = s
+	t.ok(drome >= 0, "ein Halter mit drei Modulplaetzen")
+	var build: DromeBuild = run.squad[drome]
+	run.storage.append(&"mod_armor_plate")
+	run.storage.append(&"mod_capacitor")
+	run.storage.append(&"mod_spike_grid")
+	t.ok(run.install_module(0, drome, slot, 2), "auf den dritten Platz")
+	t.equal(build.module_count(slot), 1, "ein Modul gezaehlt")
+	var layout := build.module_layout(slot)
+	t.ok(layout.size() == 3 and layout[0] == null and layout[1] == null
+		and layout[2].id == &"mod_armor_plate", "Plaetze 1 und 2 bleiben frei")
+	t.ok(run.install_module(0, drome, slot, 2), "belegter Platz: weicht aus")
+	t.equal(build.module_layout(slot)[0].id, &"mod_capacitor", "auf den ersten freien")
+	t.ok(run.install_module(0, drome, slot), "ohne Platz: erster freier")
+	t.equal(build.module_layout(slot)[1].id, &"mod_spike_grid", "Platz 2")
+	t.ok(run.remove_module(drome, slot, 1), "mittleres heraus")
+	t.equal(build.module_layout(slot)[2].id, &"mod_armor_plate", "das dritte rutscht nicht nach")
+	t.equal(build.module_count(slot), 2, "zwei gezaehlt")
+	t.ok(not run.remove_module(drome, slot, 1), "ein freier Platz gibt nichts her")
+	t.ok(run.remove_module(drome, slot, 2), "drittes heraus")
+	t.equal(build.module_layout(slot).size(), 1, "freie Plaetze am Ende fallen weg")
+	t.ok(run.remove_module(drome, slot, 0), "erstes heraus")
+	t.ok(not build.modules.has(slot), "der Halter ist leer")
+
+
 func test_a_holder_takes_only_as_many_modules_as_it_has_slots() -> void:
 	var run := _stop_run()
 	var drome := -1

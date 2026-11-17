@@ -322,6 +322,63 @@ func play_heal() -> void:
 		_refresh_tint())
 
 
+## Wie lange das Zerfallen dauert -- der Kampfbildschirm wartet so lange,
+## bevor das Ergebnis kommt (Wunsch des Spielers, 17. Nov. 2026).
+const DEATH_TIME := 1.1
+const DEATH_TIME_CALM := 0.35
+
+
+## Zerstoert: kurzer heller Blitz, dann fallen die Bauteile auseinander --
+## jedes fliegt ein Stueck zur Seite, kippt, faellt auf den Boden und
+## verblasst; der Bodenring erlischt. Bei "Bewegung reduzieren" blendet die
+## Figur nur aus. Am Ende ist die Einheit unsichtbar wie bisher.
+func play_death() -> void:
+	if _rig == null:
+		visible = false
+		return
+	var calm := Accessibility.reduce_motion
+	var total := DEATH_TIME_CALM if calm else DEATH_TIME
+	DromeSprites.tint(_sprites, Teams.HIT_FLASH)
+	_flashing = true
+	var parts: Array = []
+	for child in _rig.get_children():
+		if child is Sprite2D:
+			parts.append(child)
+	# Gleiche Zufallsfolge je Einheit: sieht jedes Mal gleich aus, wirkt aber
+	# nicht schematisch.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(str(unit_id))
+	var center := IsoView.SPRITE_ORIGIN + Vector2(0, -28)
+	for sprite: Sprite2D in parts:
+		var tween := create_tween().set_parallel(true)
+		if calm:
+			tween.tween_property(sprite, "modulate:a", 0.0, total)
+			continue
+		var start := sprite.position
+		var away: Vector2 = (sprite.position + sprite.offset - center)
+		var side := signf(away.x) if absf(away.x) > 2.0 else (1.0 if rng.randf() < 0.5 else -1.0)
+		var land := start + Vector2(side * rng.randf_range(10.0, 26.0),
+			rng.randf_range(14.0, 30.0))
+		var hop := start + Vector2(side * rng.randf_range(4.0, 10.0), -rng.randf_range(8.0, 18.0))
+		var spin := side * rng.randf_range(0.5, 1.4)
+		tween.tween_property(sprite, "position", hop, total * 0.25) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(sprite, "position", land, total * 0.5) \
+			.set_delay(total * 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(sprite, "rotation", spin, total * 0.75)
+		tween.tween_property(sprite, "modulate:a", 0.0, total * 0.35).set_delay(total * 0.65)
+	if _ring != null:
+		create_tween().tween_property(_ring, "modulate:a", 0.0, total * 0.6)
+	var flash := create_tween()
+	flash.tween_interval(0.08)
+	flash.tween_callback(func():
+		_flashing = false
+		_refresh_tint())
+	var done := create_tween()
+	done.tween_interval(total)
+	done.tween_callback(func(): visible = false)
+
+
 ## Der Bodenring: eine flache Ellipse in Fraktionsfarbe unter den Fuessen.
 class UnitRing extends Node2D:
 	const RADIUS_X := 30.0

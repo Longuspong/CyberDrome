@@ -1253,8 +1253,9 @@ func module_options(index: int) -> Array:
 
 
 ## Setzt das Modul aus Lagerplatz ``index`` in den Waffenhalter ``slot`` von
-## DROME ``drome``.
-func install_module(index: int, drome: int, slot: String) -> bool:
+## DROME ``drome`` -- auf Platz ``position`` (das Kaestchen unter dem Finger),
+## sonst bzw. wenn der belegt ist auf den ersten freien.
+func install_module(index: int, drome: int, slot: String, position: int = -1) -> bool:
 	if phase != Phase.STOP or not is_module_at(index) or drome < 0 or drome >= squad.size():
 		return false
 	var build: DromeBuild = squad[drome]
@@ -1266,10 +1267,30 @@ func install_module(index: int, drome: int, slot: String) -> bool:
 	if _recipe_twice(build, slot, module):
 		return false
 	var list: Array = build.modules.get(slot, [])
-	list.append(storage[index])
+	var room := ModuleData.slots_for(build, slot)
+	var at := position if position >= 0 and position < room else -1
+	if at >= 0 and at < list.size() and str(list[at]) != "":
+		at = -1
+	if at < 0:
+		at = list.find(&"")
+		if at < 0:
+			at = list.size()
+	while list.size() <= at:
+		list.append(&"")
+	list[at] = storage[index]
 	build.modules[slot] = list
 	storage.remove_at(index)
 	return true
+
+
+## Freie Plaetze am Ende weg; ein ganz leerer Halter verliert den Eintrag.
+static func _tidy_modules(build: DromeBuild, slot: String, list: Array) -> void:
+	while not list.is_empty() and str(list.back()) == "":
+		list.pop_back()
+	if list.is_empty():
+		build.modules.erase(slot)
+	else:
+		build.modules[slot] = list
 
 
 ## Steckt dieses Rezept schon in diesem Halter -- selbst oder als Teil eines
@@ -1288,20 +1309,18 @@ func _recipe_twice(build: DromeBuild, slot: String, module: ModuleData) -> bool:
 	return false
 
 
-## Nimmt das ``position``-te Modul aus dem Halter zurueck ins Lager.
+## Nimmt das Modul auf Platz ``position`` aus dem Halter zurueck ins Lager;
+## der Platz bleibt frei, die anderen rutschen nicht nach.
 func remove_module(drome: int, slot: String, position: int) -> bool:
 	if phase != Phase.STOP or storage_full() or drome < 0 or drome >= squad.size():
 		return false
 	var build: DromeBuild = squad[drome]
 	var list: Array = build.modules.get(slot, [])
-	if position < 0 or position >= list.size():
+	if position < 0 or position >= list.size() or str(list[position]) == "":
 		return false
 	storage.append(list[position])
-	list.remove_at(position)
-	if list.is_empty():
-		build.modules.erase(slot)
-	else:
-		build.modules[slot] = list
+	list[position] = &""
+	_tidy_modules(build, slot, list)
 	return true
 
 
@@ -1688,7 +1707,7 @@ func _owned_modules() -> Array:
 	var owned: Array = storage.filter(func(id): return ModuleData.is_module(id))
 	for build in squad:
 		for slot in build.modules:
-			owned.append_array(build.modules[slot])
+			owned.append_array((build.modules[slot] as Array).filter(func(id): return str(id) != ""))
 	return owned
 
 

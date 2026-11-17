@@ -574,8 +574,21 @@ static func part_texture(part: PartData, facing: String = "south") -> Texture2D:
 			atlas.atlas = texture
 			atlas.region = Rect2(used)
 			result = atlas
+		else:
+			# Leeres Teil (z. B. jugg_head seit 17. Nov. 2026: der Kopf steckt
+			# im Rumpf) -- kein Bild, damit der Aufrufer ausweichen kann.
+			result = null
 	_crops[path] = result
 	return result
+
+
+## Das Gesicht eines DROMEs fuer Kacheln: der Kopf, und wenn das Chassis
+## keinen eigenen Kopf zeichnet (Molok: Kopf im Rumpf), der Rumpf.
+static func portrait_texture(build: DromeBuild) -> Texture2D:
+	if build == null:
+		return null
+	var head := part_texture(build.part_in("head"))
+	return head if head != null else part_texture(build.body())
 
 
 ## Ein DROME als Bild: der GANZE Bot (Koerper, Kopf, Fuesse, Kern, Ausruestung)
