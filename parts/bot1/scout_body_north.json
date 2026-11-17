@@ -65,7 +65,10 @@
     "feet": 36,
     "core": 42.2,
     "equip_left": 34.2,
-    "equip_right": 45.8
+    "equip_right": 45.8,
+    "equip_left@hold": 34.15,
+    "equip_left@aim": 22.6,
+    "equip_left@guard": 27.1
   },
   "slot_rules": {
     "equip_left": {
@@ -77,6 +80,53 @@
     },
     "equip_right": {
       "off": true
+    }
+  },
+  "variants": {
+    "arm_equip_left_hold": {
+      "svg": "scout_body_arm_equip_left_hold_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 50.16,
+          "y": 34.66
+        },
+        {
+          "name": "hand",
+          "x": 61.37,
+          "y": 37.32
+        }
+      ]
+    },
+    "arm_equip_left_aim": {
+      "svg": "scout_body_arm_equip_left_aim_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 50.16,
+          "y": 34.66
+        },
+        {
+          "name": "hand",
+          "x": 66.96,
+          "y": 27.08
+        }
+      ]
+    },
+    "arm_equip_left_guard": {
+      "svg": "scout_body_arm_equip_left_guard_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 50.16,
+          "y": 34.66
+        },
+        {
+          "name": "hand",
+          "x": 61.37,
+          "y": 37.32
+        }
+      ]
     }
   },
   "stats": {

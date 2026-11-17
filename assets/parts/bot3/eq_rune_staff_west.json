@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 50.87,
-      "y": 27.07
+      "x": 64.0,
+      "y": 23.07
     }
   ],
   "color_scheme": {
@@ -43,6 +43,7 @@
   ],
   "mount_class": "light",
   "category": "weapon",
+  "pose": "hold",
   "variants": {
     "heavy": {
       "svg": "eq_rune_staff_heavy_west.svg",
@@ -54,8 +55,8 @@
         },
         {
           "name": "muzzle",
-          "x": 43.0,
-          "y": 15.5
+          "x": 64.0,
+          "y": 9.09
         }
       ]
     },
@@ -69,8 +70,8 @@
         },
         {
           "name": "muzzle",
-          "x": 46.05,
-          "y": 13.34
+          "x": 64.0,
+          "y": 9.09
         }
       ]
     },
@@ -84,8 +85,8 @@
         },
         {
           "name": "muzzle",
-          "x": 48.73,
-          "y": 23.15
+          "x": 64.0,
+          "y": 27.46
         }
       ]
     }

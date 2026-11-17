@@ -3,6 +3,8 @@
 Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 `docs/GAME_DESIGN.md`, Bedienung und Struktur in `README.md`.
 
+**Ganz zuerst (seit 17. Nov. 2026): `docs/UEBERGABE_3D.md`** -- 3D-DROMEs, Leistungstest, Hexboden-Entwurf und die vereinbarten naechsten Schritte (gedrehter Quader im Generator, Neon/Kontur in 3D, Hexfeld als Designfrage, Kampf als eine 3D-Szene mit Bewegung).
+
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
 als Handy testet. **Dann `docs/NEUANFANG.md`** -- der Neuentwurf des
@@ -32,7 +34,7 @@ gespiegelt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt
 den Arm mit), sichtbare Passive, Kontur je Teil, Bewegung, lesbare
 Faehigkeiten, Fraktions-Paletten. Entwurfs-Skripte unter
 `docs/design/drome_entwurf/`. **Stand und Plan der Umsetzung (Haken):
-`docs/DROME_UMSETZUNG.md`** -- dort weitermachen (Chassis und Waffen-Posen gebaut, naechster Schritt: 4b Arme und Waffen trennen, dann Bewegung).
+`docs/DROME_UMSETZUNG.md`** -- dort weitermachen (Chassis, Waffen-Posen und 4b Arme am Chassis gebaut -- zwei Haltungen halten/zielen, Manschette, Molok-Arme; **seit 17. Nov. 2026 echtes 3D**: Generator schreibt je Teil ein Modell `<id>.m3d`, `DromeModel` rendert den ganzen DROME per SubViewport mit Iso-Kamera; naechster Schritt: 5 Bewegung in 3D).
 
 **UI-Symbole (15. Nov. 2026):** Sonderzeichen, die die Schriften nicht haben,
 nie als Text -- stattdessen SVG aus `assets/ui_icons/` ueber `UiIcon`

@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 77.13,
-      "y": 31.86
+      "x": 64.0,
+      "y": 12.0
     }
   ],
   "color_scheme": {
@@ -41,6 +41,7 @@
   ],
   "mount_class": "light",
   "category": "weapon",
+  "pose": "hold",
   "variants": {
     "heavy": {
       "svg": "eq_plasma_blade_heavy_east.svg",
@@ -52,8 +53,8 @@
         },
         {
           "name": "muzzle",
-          "x": 85.0,
-          "y": 30.89
+          "x": 64.0,
+          "y": -0.89
         }
       ]
     },
@@ -67,8 +68,8 @@
         },
         {
           "name": "muzzle",
-          "x": 81.95,
-          "y": 33.05
+          "x": 64.0,
+          "y": -0.89
         }
       ]
     }

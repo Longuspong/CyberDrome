@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 45.15,
-      "y": 26.74
+      "x": 58.27,
+      "y": 22.74
     }
   ],
   "color_scheme": {
@@ -42,6 +42,7 @@
   ],
   "mount_class": "medium",
   "category": "weapon",
+  "pose": "hold",
   "variants": {
     "heavy": {
       "svg": "eq_hammer_heavy_west.svg",
@@ -53,8 +54,8 @@
         },
         {
           "name": "muzzle",
-          "x": 33.83,
-          "y": 14.97
+          "x": 54.84,
+          "y": 8.57
         }
       ]
     },
@@ -68,8 +69,8 @@
         },
         {
           "name": "muzzle",
-          "x": 36.89,
-          "y": 12.81
+          "x": 54.84,
+          "y": 8.57
         }
       ]
     }

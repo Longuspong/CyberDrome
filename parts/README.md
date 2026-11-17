@@ -439,6 +439,33 @@ deutlich besser.
 
 ---
 
+### Arme gehoeren zum Chassis (Schritt 4b, 17. Nov. 2026)
+
+Eine Waffe ist nur das **Geraet in der Hand**: ihr `mount` ist der
+Griffpunkt, nicht die Schulter. Den Arm bringt das Chassis mit, als Variante
+des Rumpfs `arm_<slot>_<haltung>` (Chassisfarbe) mit den Ankern `mount`
+(= Schultersockel) und `hand`. Die Waffe sagt per `pose`, welche Haltung sie
+braucht: `hold` (halten, Faust um den Griff) oder `aim` (zielen, Manschette).
+Zusammengesetzt wird so:
+
+```
+arm.position    = body.anker[slot]    - arm.anker["mount"]
+waffe.position  = arm.anker["hand"]   - waffe.anker["mount"]
+```
+
+Die Tiefe des Arms ist `slot_z[slot]`, die der Waffe `slot_z["<slot>@<haltung>"]`.
+Waffen ohne `pose` (Strix-Lafette) sitzen wie bisher direkt am Sockel.
+
+### 3D-Modelle (`<id>.m3d`, seit 17. Nov. 2026)
+
+Neben den vier SVGs schreibt der Generator je Teil ein Modell als JSON:
+`faces` (`[Material, Art, Normale, Punkte]`, bot-lokal f/l/z; Art `box` mit
+Kante, `disc` mit Randkante, `seam` ohne), `hulls` (Aussenkontur der
+Drehkoerper), `anchors` (3D), `variants` (Waffenmass, Lafette, am Chassis
+die Arme `arm_<slot>_<haltung>`), `colors` (die acht Rollen), `pose`. Das
+Spiel rendert den ganzen DROME daraus in 3D (`DromeModel`); zusammengesetzt
+wird mit denselben Regeln wie oben, nur in 3D statt in Bildpunkten.
+
 ## 6a. Lesbarkeitsregel: keine zwei Funktionen mit derselben Silhouette
 
 > **Zwei Teile mit unterschiedlicher Spielfunktion muessen sich an der

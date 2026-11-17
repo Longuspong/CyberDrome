@@ -616,7 +616,10 @@ static func drome_view(build: DromeBuild, edge: float, facing: String = "south")
 	var scale := edge / 112.0
 	rig.scale = Vector2(scale, scale)
 	rig.position = Vector2(edge * 0.5, edge * 0.92) - IsoView.SPRITE_ORIGIN * scale
-	DromeSprites.assemble(rig, build, facing)
+	# Aufloesung der 3D-Ansicht nach Bildgroesse (zweifach fuer scharfe
+	# Handy-Bildschirme), in 64er Stufen, damit gleiche Groessen gleich bleiben.
+	var resolution := clampi(int(ceil(128.0 * scale * 2.0 / 64.0)) * 64, 256, 768)
+	DromeSprites.assemble(rig, build, facing, resolution)
 	holder.add_child(rig)
 	return holder
 

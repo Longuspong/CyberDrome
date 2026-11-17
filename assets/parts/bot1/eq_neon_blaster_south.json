@@ -21,8 +21,8 @@
     },
     {
       "name": "muzzle",
-      "x": 40.04,
-      "y": 75.3
+      "x": 49.59,
+      "y": 56.55
     }
   ],
   "color_scheme": {
@@ -42,6 +42,7 @@
   ],
   "mount_class": "light",
   "category": "weapon",
+  "pose": "aim",
   "variants": {
     "heavy": {
       "svg": "eq_neon_blaster_heavy_south.svg",
@@ -53,8 +54,8 @@
         },
         {
           "name": "muzzle",
-          "x": 25.66,
-          "y": 92.67
+          "x": 40.94,
+          "y": 62.67
         }
       ]
     },
@@ -68,8 +69,8 @@
         },
         {
           "name": "muzzle",
-          "x": 10.39,
-          "y": 81.87
+          "x": 40.94,
+          "y": 62.67
         }
       ]
     },

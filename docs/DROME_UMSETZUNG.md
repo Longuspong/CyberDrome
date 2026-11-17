@@ -7,7 +7,9 @@ die Entwurfs-Skripte unter `docs/design/drome_entwurf/`.
 
 **Arbeitsweise:** je Schritt ein eigener Commit (oder PR), danach immer
 `python3 tools/build_sample_parts.py`, `python3 tools/bake_godot_assets.py`,
-bei neuen SVG-Dateien `godot --headless --path . --import`, dann
+bei neuen SVG-Dateien `python3 tools/set_import_scale.py` und
+`godot --headless --path . --import` (sonst rastert Godot sie grob -- 17. Nov.
+waren die neuen Arme deshalb unscharf), dann
 `run_tests.gd`, `smoke_ui.gd`, `build_spot.py --check` und ein Screenshot von
 Hangar und Kampf (`tests/screenshot.gd`). Werte der DROMEs ändern sich in
 keinem Schritt -- nur Form, Licht und Bewegung.
@@ -91,23 +93,81 @@ Armebene gebaut -- dasselbe Bild passt an beide Molok-Arme, ohne Spiegeln.
 - [x] Molok-Klinge wächst nur bis 1,3 mit (sonst ragt sie aus dem Rahmen)
 - [x] Silhouetten-Prüfung grün (engstes Paar Hammer/Schlüssel 0,66)
 
-### 4b. Arme und Waffen trennen -- entschieden (17. Nov.), offen
-Befund nach Schritt 4: Der Arm gehört heute zur Waffe. Er wird in der
-Waffen-Palette gemalt (Molok-Arme blaugrau/türkis statt Chassisfarbe), für
-alle Chassis gleich gebaut und nur skaliert (setzt beim Molok nicht sauber
-unter der Schulterplatte an), und Arm + Waffe sind ein Sprite (die Tiefe
-lässt sich nicht für beide richtig setzen). Spieler: „ja“, in einer eigenen
-Design-Sitzung.
-- [ ] Arm gehört zum **Chassis**: Chassisfarbe, je Chassis gebaut, drei
-      Haltungen (gestreckt / angewinkelt / Deckung), Hand-Anker
-- [ ] Waffe ist nur das **Gerät in der Hand** (mit Griff, Knauf ...), sitzt
-      am Hand-Anker; sie bestimmt nur die Haltung des Arms
-- [ ] Arm und Waffe als **eigene Sprites** mit eigener Tiefe; Schild seitlich
-      vor dem Körper, nie dahinter (muss nicht mittig sein)
-- [ ] Molok: eigene Arme statt Armmaß 1,6; `heavy`/`heavy_right` und
-      `WEAPON_DEPTH_*` danach prüfen bzw. ersetzen; Lafette bleibt
-- [ ] Erleichtert Schritt 5: Arm dreht an der Schulter, Waffe folgt am
-      Hand-Anker
+### 4b. Arme und Waffen trennen -- erledigt (17. Nov.)
+Entwurf: `v7.py`, Leinwand „Offene Designpunkte“, Seite „Arme & Waffen (4b)“.
+Entschieden (Spieler 17. Nov.): zwei Haltungen, Manschette statt Hand an
+Fernwaffen, Hände nur an Armen, die nie etwas tragen, Lafette ohne Griff.
+- [x] Arm gehört zum **Chassis**: Chassisfarbe, je Chassis gebaut, als
+      Variante des Rumpfs `arm_<slot>_<haltung>` mit Anker `hand`
+      (`arm_set`, `light_arm`, `molok_arm` in `build_sample_parts.py`)
+- [x] **Zwei Haltungen**: `hold` (halten -- Klinge, Hammer, Stab, Schlüssel,
+      Bumerang, Schild; Faust um den Griff) und `aim` (zielen -- Blaster,
+      Ramme; Arm endet in einer **Manschette**). Vireo und Nimbus strecken
+      beim Zielen den ganzen Arm, der Molok schießt aus der Hüfte. Die Waffe
+      sagt per `pose`, welche Haltung sie braucht
+- [x] Waffe ist nur das **Gerät**, um den Griffpunkt gebaut (`mount`), sitzt
+      am Hand-Anker des Arms; `heavy`/`heavy_right` (Waffenmaß 1,6) bleiben
+- [x] Arm und Waffe als **eigene Sprites** mit eigener Tiefe
+      (`slot_z["<slot>@<haltung>"]`): gehalten knapp hinter der Faust,
+      zielend vor der Manschette gemessen; `DromeSprites` setzt beide
+- [x] Schild in „halten“, vor die Brust gerückt, deckt die Körpermitte --
+      von hinten verdeckt ihn der Rumpf
+- [x] **Molok**: eigene Arme unter den Schulterplatten (dicker Oberarm,
+      Ellbogen, Unterarm auf Hüfthöhe, große Faust bzw. Manschette)
+- [x] **Hand** nur am Vireo-Passivarm (Handrücken, Finger, Daumen); der
+      Nimbus-Orb-Arm hält seine Kugel
+- [x] **Strix-Lafette**: Runenstab nur als Kugel mit Fassung, Schlüssel nur
+      als Kopf, jeweils auf kurzem Sockel (Frage 1 erledigt)
+- [x] Nachgebessert (17. Nov., Rückmeldung Spieler): das Arm-Bild bringt die
+      **Schulter seines Chassis** mit (`side_shapes`) -- sonst lag der
+      Oberarm als eigenes Sprite vor der Schulterplatte. Schild wieder vor
+      der Faust, eigene Tiefe `guard` (= halten, Schild vor dem Arm).
+      Neue SVGs mit `set_import_scale.py` auf 4-fache Rasterung gestellt.
+      Schild am Molok nur bis Maß 1,25 und seine Tiefe dort gemessen, wo er
+      hängt (vor der Hand) -- sonst lag der Brustkern über dem Schild
+- [x] **Waffenfarben unabhängig vom DROME**: Tabelle `WEAPON_COLORS` in
+      `build_sample_parts.py`, eine Palette je Waffe (Startwerte = bisherige
+      Bausatzfarben). Neue Farben: offen, Spieler entscheidet
+
+### 4c. Echtes 3D -- erledigt (17. Nov.)
+Spieler: „wir müssen einen echten 3D-Generator machen“ -- nach Überlappungen,
+die sich mit Einzelbildern nicht lösen ließen (eine Tiefe je Bild).
+- [x] Generator schreibt je Teil ein Modell `<id>.m3d` (Flächen in bot-lokalen
+      Koordinaten mit Normale, Material, Art; Varianten; Arme; 3D-Anker;
+      Farben). `bake_godot_assets.py` kopiert es, Export-Filter nimmt es mit
+- [x] `DromeModel` baut daraus Meshes (eine Fläche je Material), dreht nach
+      Blickrichtung; Iso-Kamera bildet exakt wie `to_screen` ab (Test)
+- [x] Shader: drei Töne je Material wie `_shade`, dunkle Kanten an Quadern
+      und Scheiben, Drehkörper mit Außenkontur (Hülle); Kontur in
+      Signalfarbe um den ganzen DROME (`drome_outline.gdshader`)
+- [x] `DromeSprites.assemble` rendert den DROME per SubViewport (einmal je
+      Aufbau, Drehen dreht nur das Modell) und zeigt ihn als ein Sprite --
+      Kampf, Hangar und Podest unverändert angebunden
+- Bekannt: die Kontur hat jetzt die Farbe des Chassis (vorher je Teil), das
+  Neon-Leuchten (NeonGlow) fehlt am DROME vorerst; beim Zerstören fällt der
+  DROME als Ganzes statt in Teilen. `slot_z` und die Arm-SVGs werden noch
+  erzeugt, das Spiel braucht sie für DROMEs nicht mehr
+
+**Leistungstest** (17. Nov.): Optionen > Zum Testen > „Leistungstest“
+(`scenes/bench.tscn`). Misst Bilder pro Sekunde für 3 bis 48 DROMEs in drei
+Arten: ruhend (wie heute), einzeln (jede 3D-Ansicht rendert jedes Bild neu --
+Schritt 5 ohne Umbau) und eine gemeinsame 3D-Szene. Der Spieler misst auf
+dem Handy (PWA) und später in der App; die Zahlen entscheiden, ob Schritt 5
+mit Einzelansichten geht oder eine gemeinsame Szene braucht.
+
+Messung des Spielers (17. Nov., Handy, PWA, WebGL, Bilder/s):
+
+| DROMEs | ruhend | einzeln | eine Szene |
+|---|---|---|---|
+| 3 | 46 | 39 | 41 |
+| 6 | 45 | 39 | 42 |
+| 12 | 44 | 38 | 42 |
+| 24 | 45 | 29 | 41 |
+| 48 | 44 | 25 | 38 |
+
+Die Grenze von ~45 setzt der Browser. Einzelansichten tragen bis ~12 bewegte
+DROMEs, die gemeinsame Szene auch 48. Folgerung: Bewegung (Schritt 5) und
+ein Hexboden gehören in EINE 3D-Szene für den Kampf.
 
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
@@ -117,7 +177,10 @@ Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Laufen**: Wippen; Nimbus kippt nach vorn, Eule hüpft. Beine im
       Wechsel brauchen getrennte Bein-Sprites -- Vorschlag: `feet` in
       `feet_left`/`feet_right` teilen, erst wenn das Wippen allein nicht reicht
-- [ ] **Angriff** nach Waffenart: Nahkampf dreht die Waffe um den
+      (entschieden 17. Nov.: zuerst nur Wippen)
+- [ ] **Angriff** nach Waffenart (seit 4c in 3D: Arm und Waffe sind eigene
+      Knoten `<slot>_arm` und `<slot>` unter `Ausrichtung`, die Ansicht dann
+      auf UPDATE_ALWAYS stellen): Nahkampf dreht die Waffe um den
       Schulteranker (ausholen, zuschlagen), Fernkampf Rückstoß + Mündungsblitz
       am `muzzle`-Anker, Schild stößt vor; ersetzt den heutigen Ruck des
       ganzen DROME (`play_attack`)
@@ -154,10 +217,11 @@ bleibt.
 
 ## Offene Fragen an den Spieler
 
-1. Runenstab und E-Schraubenschlüssel am Strix sehen albern aus -- später
-   eigene Lafetten-Form? (Spieler: „kümmern wir uns später drum“)
+1. ~~Runenstab und E-Schraubenschlüssel am Strix~~ -- entschieden 17. Nov.:
+   auf der Lafette ohne Griff, nur Kugel bzw. Schlüsselkopf (4b).
 2. ~~Molok-Waffen~~ -- entschieden 16. Nov.: dieselbe Waffe mit Armmaß 1,6
    (Board 14), kein zweiter Satz.
-3. Beine für die Laufanimation trennen (mehr Teile) oder nur Wippen?
+3. ~~Beine trennen oder nur Wippen?~~ -- entschieden 17. Nov.: erst nur
+   Wippen; Beine erst trennen, wenn das zu steif aussieht.
 4. ~~Bumerang als Nahkampf~~ -- entschieden 16. Nov.: bleibt Nahkampf, Pose
    angewinkelt und wurfbereit (Board 14).

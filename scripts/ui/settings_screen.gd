@@ -155,6 +155,14 @@ func _ready() -> void:
 			get_tree().reload_current_scene.call_deferred())
 		unlock_row.add_child(undo)
 
+	# Leistungstest: wie viele 3D-DROMEs schafft dieses Geraet (17. Nov. 2026)
+	var bench := UiKit.outline_button("Leistungstest (3D-DROMEs)", Arcade.CYAN)
+	bench.custom_minimum_size = Vector2(0, 48)
+	bench.add_theme_font_size_override("font_size", 13)
+	bench.pressed.connect(func():
+		get_tree().change_scene_to_file.call_deferred("res://scenes/bench.tscn"))
+	test.add_child(bench)
+
 	var version := Arcade.label("CYBERDROME · Version %s" % str(ProjectSettings.get_setting(
 		"application/config/version", "0.0.0")), 12, Arcade.MUTED, "bold", 0.16)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

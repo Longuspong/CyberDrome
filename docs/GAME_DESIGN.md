@@ -20,7 +20,7 @@ Asset-Produktion nicht wieder an unbedachtem Umfang scheitert.
 | Engine | Godot |
 | Plattformen | Android (Mobile) und Desktop |
 | Perspektive | **Isometrisch**, Kamera 45 Grad von oben auf ein gedrehtes Gitter |
-| Grafikstil | **SVG, modular** – ausdruecklich *kein* Pixelart |
+| Grafikstil | **modular, aus 3D-Formen generiert** (DROMEs seit 17. Nov. 2026 in echtem 3D gerendert, Einzelteile weiter als SVG) – ausdruecklich *kein* Pixelart |
 
 ## 2. Warum SVG statt Pixelart
 
@@ -55,6 +55,17 @@ Daraus folgen die drei Regeln, die alles andere bestimmen:
 
 Die Grenze der Skalierbarkeit ist damit nicht mehr die Zeichenarbeit, sondern
 die Rendering-Kosten auf Android (siehe `docs/GODOT_INTEGRATION.md`).
+
+**Seit 17. Nov. 2026 (Entscheidung des Spielers): echtes 3D fuer DROMEs.**
+Ein DROME als Stapel flacher SVG-Bilder hatte nur EINE Tiefe je Bild --
+Teile, die sich durchdringen (Schild vor dem Arm, Oberarm unter der
+Schulter), liessen sich so nie richtig sortieren. Der Generator schreibt
+deshalb je Teil zusaetzlich ein 3D-Modell (`<id>.m3d`, dieselben Quader,
+Scheiben und Drehkoerper), das Spiel setzt den DROME daraus zusammen und
+rendert ihn mit Tiefenpuffer und einer Iso-Kamera, die exakt wie die
+SVG-Projektion abbildet (`DromeModel`, `DromeSprites`). Die drei Regeln oben
+gelten weiter: Teile werden zur Laufzeit kombiniert, Farbe bleibt Parameter,
+vier Richtungen. Die SVGs bleiben fuer Einzelteil-Bilder (Karten, Symbole).
 
 ## 3. Die DROME
 

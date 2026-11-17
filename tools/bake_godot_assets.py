@@ -190,6 +190,11 @@ def main() -> int:
         emit(OUT_DIR / meta["set"] / meta_path.name,
              json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
 
+    # 3D-Modelle (17. Nov. 2026): unveraendert mit, die Farben stehen darin.
+    for model_path in sorted(PARTS_DIR.glob("*/*.m3d")):
+        emit(OUT_DIR / model_path.parent.name / model_path.name,
+             model_path.read_text(encoding="utf-8"))
+
     if all_missing:
         print("\nFehlende Farbrollen (mit Magenta gefuellt):", file=sys.stderr)
         for where, roles in sorted(all_missing.items()):
