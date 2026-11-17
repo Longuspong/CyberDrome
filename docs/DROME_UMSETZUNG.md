@@ -155,6 +155,20 @@ Schritt 5 ohne Umbau) und eine gemeinsame 3D-Szene. Der Spieler misst auf
 dem Handy (PWA) und später in der App; die Zahlen entscheiden, ob Schritt 5
 mit Einzelansichten geht oder eine gemeinsame Szene braucht.
 
+Messung des Spielers (17. Nov., Handy, PWA, WebGL, Bilder/s):
+
+| DROMEs | ruhend | einzeln | eine Szene |
+|---|---|---|---|
+| 3 | 46 | 39 | 41 |
+| 6 | 45 | 39 | 42 |
+| 12 | 44 | 38 | 42 |
+| 24 | 45 | 29 | 41 |
+| 48 | 44 | 25 | 38 |
+
+Die Grenze von ~45 setzt der Browser. Einzelansichten tragen bis ~12 bewegte
+DROMEs, die gemeinsame Szene auch 48. Folgerung: Bewegung (Schritt 5) und
+ein Hexboden gehören in EINE 3D-Szene für den Kampf.
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
