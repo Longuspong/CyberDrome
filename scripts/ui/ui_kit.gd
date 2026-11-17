@@ -33,7 +33,10 @@ const RADIUS := 12
 # Seit 14. Nov. 2026 die Farben des Arcade-Glitch-Stils (SPOT-Blatt Design).
 const BG := Color("#0a0618")
 const CARD := Color("#1b0b3a")
-const CARD_LINE := Color("#4b3a82")
+## Rahmen von Karten und Zweitknoepfen. Seit 17. Nov. 2026 heller (vorher
+## #4b3a82, nur 2,1:1 auf BG): mindestens 3:1 auf BG und CARD, damit Rahmen
+## als Bedienelement erkennbar sind (WCAG 1.4.11).
+const CARD_LINE := Color("#6e5ab4")
 const ACCENT := Color("#2ee3eb")
 ## Hauptaktion: Arcade-Gelb, Schrift darauf Tiefviolett.
 const PRIMARY := Color("#ffe14d")

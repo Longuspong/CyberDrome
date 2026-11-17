@@ -9,13 +9,16 @@ extends Control
 ## hervorgehoben.
 ##
 ## Knoten sind breite Kacheln mit Stufen-Zeichen und dem Namen der Formation.
-## Form UND Farbe je Stufe (lesbar ohne Farbsehen): Leicht Kreis gruen,
-## Normal Raute gelb, Elite Stern rot, Chaos Fragezeichen violett (SVGs aus
-## assets/ui_icons).
+## Form UND Farbe je Stufe (lesbar ohne Farbsehen): Leicht Kreis cyan,
+## Normal Raute orange, Elite Stern magenta, Chaos Fragezeichen violett (SVGs
+## aus assets/ui_icons). Seit 17. Nov. 2026 die Farben aus dem Entwurf
+## (Vorlage 05): kalt -> warm -> heiss, alle aus der Arcade-Palette. Gelb
+## bleibt der Auswahl vorbehalten, Gruen/Rot den Bedeutungen gut/schlecht.
+## Der gewaehlte Knoten wirft seinen Schatten in der Stufenfarbe.
 
 signal picked(index: int)
 
-const COLOR := {0: Color("#5cf2a2"), 1: Color("#ffe14d"), 2: Color("#ff5c7c")}
+const COLOR := {0: Color("#2ee3eb"), 1: Color("#ff6a3d"), 2: Color("#ff2bd6")}
 const CHAOS_COLOR := Color("#c58cff")
 const ICON := {0: "tier_light", 1: "tier_normal", 2: "tier_elite"}
 const NODE_HEIGHT := 54.0
@@ -99,7 +102,7 @@ func _draw_node(box: Rect2, data: Dictionary, reachable: bool, chosen: bool, ahe
 		var shadow := PackedVector2Array()
 		for p in shape:
 			shadow.append(p + Vector2(4, 4))
-		draw_colored_polygon(shadow, Color(UiKit.MAGENTA, 0.8))
+		draw_colored_polygon(shadow, Color(color, 0.8))
 	draw_colored_polygon(shape, Color(UiKit.CARD, 0.95 * maxf(alpha, 0.6)))
 	var outline := shape.duplicate()
 	outline.append(shape[0])

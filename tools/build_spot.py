@@ -12,7 +12,12 @@ selbst liest -- so kann die Tabelle nie vom Spiel abweichen:
   data/encounters.json   Gegnertypen, Gegnerteams, Einheiten
   docs/spot/inhalte.json Texte, die nicht in den Spieldaten stehen
                          (Eckpunkte, Identitaeten, Story, Bosse, offene Punkte,
-                         Entwurf: Einsatz, Lootcaches, Sentinels, Formationen)
+                         Entwurf: Einsatz, Lootcaches, Sentinels, Formationen,
+                         Design-Farben und Design-Tokens)
+
+Daneben entsteht docs/design/tokens.json: die Design-Tokens (Farben aus
+design_farben, alles andere aus design_tokens) fuer das Design-System
+"CyberDrome Arcade-Glitch". Auch sie prueft --check.
 
 Aufruf:
   python3 tools/build_spot.py           # Tabelle neu schreiben
@@ -36,6 +41,7 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "spot", "CyberDrome_SPOT.xlsx")
+TOKENS_OUT = os.path.join(ROOT, "docs", "design", "tokens.json")
 
 
 def load(rel):
@@ -1126,11 +1132,38 @@ def build_formationen(ws):
             "Quelle: data/formations.json.").font = BODY_FONT
 
 
+def color_value(f):
+    """Wert eines Farb-Tokens: Verweis ({token}), rgba() mit Deckkraft oder Hex."""
+    if f.get("alias"):
+        return "{%s}" % f["alias"]
+    if "alpha" in f:
+        h = f["hex"].lstrip("#")
+        return "rgba(%d, %d, %d, %s)" % (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), f["alpha"])
+    return f["hex"]
+
+
+def design_tokens():
+    """Die Design-Tokens fuer das Design-System (docs/design/tokens.json)."""
+    t = TEXTE["design_tokens"]
+    out = {"name": t["name"], "version": 1,
+           "meta": {"source": "SPOT", "paths": {"tokens": ["docs/spot/inhalte.json"]},
+                    "note": "Erzeugt von tools/build_spot.py -- nicht von Hand bearbeiten."},
+           "color": {"themes": t["themes"],
+                     "tokens": [{"name": f["token"], "value": color_value(f), "usage": f["verwendung"]}
+                                for f in TEXTE["design_farben"]]}}
+    for key, val in t.items():
+        if key not in ("_kommentar", "name", "themes"):
+            out[key] = val
+    return json.dumps(out, ensure_ascii=False, indent=1) + "\n"
+
+
 def build_design(ws):
-    rows = [[f["name"], f["hex"], "", f["verwendung"], "entschieden"] for f in TEXTE["design_farben"]]
-    last = write_table(ws, ["Farbe", "Hex", "Muster", "Verwendung", "Status"], rows, [20, 11, 9, 80, 12])
+    rows = [[f["name"], f["token"], f["hex"] + (" %d %%" % round(f["alpha"] * 100) if "alpha" in f else ""), "",
+             f["verwendung"] + (" (= %s)" % f["alias"] if f.get("alias") else ""), "entschieden"]
+            for f in TEXTE["design_farben"]]
+    last = write_table(ws, ["Farbe", "Token", "Hex", "Muster", "Verwendung", "Status"], rows, [20, 16, 11, 9, 80, 12])
     for i, f in enumerate(TEXTE["design_farben"], 2):
-        ws.cell(row=i, column=3).fill = PatternFill("solid", fgColor=f["hex"].lstrip("#").upper())
+        ws.cell(row=i, column=4).fill = PatternFill("solid", fgColor=f["hex"].lstrip("#").upper())
     r = last + 2
     ws.cell(row=r, column=1, value="Schriften").font = SUB_FONT
     rows = [[f["schrift"], f["einsatz"], f["groessen"], f["quelle"]] for f in TEXTE["design_schriften"]]
@@ -1146,6 +1179,8 @@ def build_design(ws):
     ws.cell(row=last + 2, column=1, value="Entwuerfe (450 x 800, Hochformat): docs/design/titel_arcade/TitleArcade.dc.html, "
             "docs/design/spielstand_arcade/SavesArcade.dc.html -- Ordner ausliefern (python3 -m http.server) "
             "und im Browser oeffnen. Noch nicht gebaut.").font = BODY_FONT
+    ws.cell(row=last + 3, column=1, value="Design-Tokens: docs/design/tokens.json (aus dieser Tabelle erzeugt) -- "
+            "Quelle des Design-Systems CyberDrome Arcade-Glitch.").font = BODY_FONT
 
 
 SHEETS = [
@@ -1221,10 +1256,17 @@ def main():
             print("VERALTET: docs/spot/CyberDrome_SPOT.xlsx passt nicht zu den Daten -- "
                   "bitte python3 tools/build_spot.py ausfuehren und einchecken")
             return 1
-        print("SPOT-Tabelle ist aktuell.")
+        current = open(TOKENS_OUT, encoding="utf-8").read() if os.path.exists(TOKENS_OUT) else ""
+        if current != design_tokens():
+            print("VERALTET: docs/design/tokens.json passt nicht zu docs/spot/inhalte.json -- "
+                  "bitte python3 tools/build_spot.py ausfuehren und einchecken")
+            return 1
+        print("SPOT-Tabelle und Design-Tokens sind aktuell.")
         return 0
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     wb.save(OUT)
+    with open(TOKENS_OUT, "w", encoding="utf-8") as f:
+        f.write(design_tokens())
     print(f"geschrieben: {os.path.relpath(OUT, ROOT)} ({len(wb.worksheets)} Blaetter)")
     return 0
 
