@@ -47,7 +47,10 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
    Leuchtebene) und Kontur je Teil (heute eine Kontur in Chassisfarbe; der
    Neon-Blaster hätte gern seinen magenta Rand). Beim Zerstören fällt der
    DROME als Ganzes -- in 3D wieder in Teile zerlegen.
-3. **Hexfeld als Designfrage** (Spieler: „generell dafür“): auf der Leinwand
+3. **ENTSCHIEDEN und GEBAUT (17. Nov.)**: 9 x 17, Reichweiten 1:1, Reihen
+   waagerecht -- Logik und 2D-Kampfbild, siehe `PROJEKTSTAND.md`. Offen:
+   Elite auf dem Hexfeld schwerer (Messung dort). Ursprünglicher Plan:
+   **Hexfeld als Designfrage** (Spieler: „generell dafür“): auf der Leinwand
    mit Bildern vorlegen, dann entscheiden lassen -- Feldgröße und -form
    (Sechseck Radius 5 = 91 Felder, oder hochkant fürs Handy), Reichweiten in
    Hexschritten (Nahkampf bis 2 / Fernkampf ab 3 übertragen?),

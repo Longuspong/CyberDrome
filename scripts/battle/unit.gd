@@ -19,7 +19,7 @@ var build: DromeBuild
 var is_player: bool = false
 
 var tile: Vector2i = Vector2i.ZERO
-var facing: String = "south"
+var facing: String = FACING_ENEMY
 
 ## Laufzeitwerte. Die Maxima stehen im Build, hier steht der aktuelle Stand.
 var hp: int = 0
@@ -248,11 +248,19 @@ func visual_anchor() -> Vector2:
 	return position + IsoView.SPRITE_ORIGIN
 
 
-## Blickrichtung aus einem Schritt im Gitter.
-static func facing_for(step: Vector2i) -> String:
-	if absi(step.x) >= absi(step.y):
-		return "east" if step.x > 0 else "west"
-	return "south" if step.y > 0 else "north"
+## Blickrichtung auf dem Hexfeld (17. Nov. 2026): ein Winkel im Bild,
+## "deg<grad>" (0 = rechts, gegen den Uhrzeigersinn), siehe
+## DromeModel.facing_basis. Zu Beginn schaut der Spieler nach oben, der
+## Gegner nach unten; danach in eine der sechs Hexrichtungen.
+const FACING_PLAYER := "deg90"
+const FACING_ENEMY := "deg270"
+
+
+static func facing_toward(from: Vector2i, to: Vector2i) -> String:
+	var dir := Grid.direction_toward(from, to)
+	if dir < 0:
+		return FACING_PLAYER
+	return "deg%d" % int(Grid.direction_angle(dir))
 
 
 ## Fraktionsfarbstich und Trefferblende treffen sich hier -- und nur hier.

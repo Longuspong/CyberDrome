@@ -76,11 +76,31 @@ static func model_of(part: PartData) -> Dictionary:
 
 
 ## Basis der Blickrichtung: bot-lokal (f, l, z) -> Godot-Welt.
+##
+## Neben den vier Iso-Richtungen (Hangar, Podest) gibt es seit dem Hexfeld
+## (17. Nov. 2026) Winkel im Bild: "deg<grad>", 0 = nach rechts, 90 = nach
+## oben, gegen den Uhrzeigersinn -- gemessen auf dem Boden, der im Kampf so
+## liegt, dass die Hexreihen waagerecht laufen. Die alten Namen entsprechen
+## south 225, east 315, north 45, west 135.
 static func facing_basis(facing: String) -> Basis:
+	if facing.begins_with("deg"):
+		return angle_basis(float(facing.substr(3)))
 	var fl: Array = FACINGS.get(facing, FACINGS["south"])
 	var f: Vector2 = fl[0]
 	var l: Vector2 = fl[1]
 	return Basis(Vector3(f.x, 0, -f.y), Vector3(l.x, 0, -l.y), Vector3(0, 1, 0))
+
+
+## Blick in Bildwinkel ``degrees`` (siehe facing_basis). Bildrechts auf dem
+## Boden ist (1, 0, 1)/sqrt2, Bildoben (1, 0, -1)/sqrt2 -- so liegen die
+## Achsen der Iso-Kamera.
+static func angle_basis(degrees: float) -> Basis:
+	var right := Vector3(COS45, 0, COS45)
+	var up := Vector3(COS45, 0, -COS45)
+	var a := deg_to_rad(degrees)
+	var forward := right * cos(a) + up * sin(a)
+	var left := right * cos(a + PI * 0.5) + up * sin(a + PI * 0.5)
+	return Basis(forward, left, Vector3(0, 1, 0))
 
 
 ## Die Iso-Kamera, die genau wie ``to_screen`` im Generator projiziert.

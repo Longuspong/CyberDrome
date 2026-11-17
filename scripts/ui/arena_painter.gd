@@ -102,9 +102,11 @@ static func draw_art(item: CanvasItem, region_id: String, name: String) -> bool:
 	return true
 
 
-## Punkt auf einem Feld: u, v von -0,5 bis 0,5 entlang der Gitterachsen.
+## Punkt auf einem Feld: u, v von -0,5 bis 0,5 -- u nach rechts, v nach
+## vorn (unten), beide in Feldbreiten auf dem Boden (seit dem Hexfeld; vorher
+## entlang der Rautenachsen).
 static func at(tile: Vector2i, u: float, v: float) -> Vector2:
-	return IsoView.map_to_local(tile) + Vector2((u - v) * TW * 0.5, (u + v) * TH * 0.5)
+	return IsoView.map_to_local(tile) + Vector2(u * TW, v * TW * IsoView.DEPTH_SQUASH)
 
 
 ## Ein flacher Kreis auf dem Boden (im Bild eine Ellipse).
@@ -142,9 +144,8 @@ class Floor extends Node2D:
 		var w := grid.width
 		var h := grid.height
 		var a := ArenaPainter.APRON
-		if ArenaPainter.art(region_id, "floor_" + ArenaPainter.FLOOR_BASE[0]) != null:
-			_draw_art_floor(s, w, h, a)
-			return
+		# Bildkacheln (Rauten) passen nicht aufs Hexfeld -- bis Platten aus dem
+		# 3D-Generator kommen (Schritt 4), wird der Boden gezeichnet.
 		# Randstreifen und Sockel zuerst -- von hinten nach vorn.
 		for y in range(-a, h + a):
 			for x in range(-a, w + a):
@@ -157,30 +158,14 @@ class Floor extends Node2D:
 		_plinth(s, w, h, a)
 		for tile in grid.all_tiles():
 			_tile(tile, s)
-		# Feine helle Fugen statt der harten schwarzen Umrisse.
+		# Feine helle Fugen statt der harten schwarzen Umrisse: je Feld die drei
+		# oberen Kanten (oben links, oben rechts, rechts) -- so jede Fuge einmal.
 		var seam := Color(1, 1, 1, 0.07)
 		for tile in grid.all_tiles():
 			var c := IsoView.tile_corners(tile)
+			draw_line(c[5], c[0], seam, 1.0)
 			draw_line(c[0], c[1], seam, 1.0)
-			draw_line(c[0], c[3], seam, 1.0)
-		_border(s, w, h)
-
-	## Boden aus Bildkacheln: Randstreifen abgedunkelt, im Feld Platten mit
-	## gelegentlichen Akzenten. Der Zufall haengt am Feld.
-	func _draw_art_floor(s: Dictionary, w: int, h: int, a: int) -> void:
-		for y in range(-a, h + a):
-			for x in range(-a, w + a):
-				var tile := Vector2i(x, y)
-				var rng := ArenaPainter.tile_rng(tile, 1)
-				var inside := grid.in_bounds(tile)
-				var name: String = ArenaPainter.FLOOR_BASE[rng.randi() % ArenaPainter.FLOOR_BASE.size()]
-				if inside and rng.randf() < ArenaPainter.FLOOR_ACCENT_CHANCE:
-					name = ArenaPainter.FLOOR_ACCENT[rng.randi() % ArenaPainter.FLOOR_ACCENT.size()]
-				var tex := ArenaPainter.art(region_id, "floor_" + name)
-				var center := IsoView.map_to_local(tile)
-				var rect := Rect2(center - Vector2(TW, TH) * 0.5, Vector2(TW, TH))
-				draw_texture_rect(tex, rect, false, ArenaPainter.FLOOR_TINT if inside else ArenaPainter.APRON_TINT)
-		_plinth(s, w, h, a)
+			draw_line(c[1], c[2], seam, 1.0)
 		_border(s, w, h)
 
 	func _tile(tile: Vector2i, s: Dictionary) -> void:
@@ -196,10 +181,10 @@ class Floor extends Node2D:
 
 	func _city_decal(tile: Vector2i, rng: RandomNumberGenerator, roll: float) -> void:
 		# Mittelstreifen quer ueber das Feld, Risse, Pfuetzen, Gullis.
-		if (tile.x + tile.y) == grid.width - 1 and tile.x % 2 == 0:
+		if tile.y == grid.height / 2 and tile.x % 2 == 0:
 			draw_colored_polygon(PackedVector2Array([
-				ArenaPainter.at(tile, -0.32, 0.27), ArenaPainter.at(tile, 0.27, -0.32),
-				ArenaPainter.at(tile, 0.32, -0.27), ArenaPainter.at(tile, -0.27, 0.32)]),
+				ArenaPainter.at(tile, -0.3, -0.04), ArenaPainter.at(tile, 0.3, -0.04),
+				ArenaPainter.at(tile, 0.3, 0.04), ArenaPainter.at(tile, -0.3, 0.04)]),
 				Color(0.95, 0.8, 0.3, 0.45))
 		if roll < 0.14:
 			var p := ArenaPainter.at(tile, rng.randf_range(-0.3, 0.3), rng.randf_range(-0.3, 0.3))
@@ -265,30 +250,29 @@ class Floor extends Node2D:
 					ArenaPainter.at(tile, u + 0.1, 0.12), ArenaPainter.at(tile, u, 0.12)]),
 					Color(1.0, 0.75, 0.15, 0.55) if k % 2 == 0 else Color(0.05, 0.05, 0.05, 0.55))
 
-	## Der Sockel unter den beiden Vorderkanten des Randstreifens.
+	## Der Sockel unter der Vorderkante des Randstreifens (die beiden unteren
+	## Kanten jedes Sechsecks der vordersten Reihe).
 	func _plinth(s: Dictionary, w: int, h: int, a: int) -> void:
 		var down := Vector2(0, ArenaPainter.PLINTH)
 		var base: Color = s["plinth"]
-		for y in range(-a, h + a):
-			var tile := Vector2i(w + a - 1, y)
-			var c := IsoView.tile_corners(tile)
-			draw_colored_polygon(PackedVector2Array([c[1], c[2], c[2] + down, c[1] + down]),
-				ArenaPainter.shade(base, -0.2))
 		for x in range(-a, w + a):
-			var tile := Vector2i(x, h + a - 1)
-			var c := IsoView.tile_corners(tile)
-			draw_colored_polygon(PackedVector2Array([c[3], c[2], c[2] + down, c[3] + down]), base)
+			var c := IsoView.tile_corners(Vector2i(x, h + a - 1))
+			draw_colored_polygon(PackedVector2Array([c[2], c[3], c[3] + down, c[2] + down]),
+				ArenaPainter.shade(base, -0.2))
+			draw_colored_polygon(PackedVector2Array([c[3], c[4], c[4] + down, c[3] + down]), base)
 
-	## Die Zierlinie um das Spielfeld -- zeigt, wo gekaempft wird.
-	func _border(s: Dictionary, w: int, h: int) -> void:
-		var top := IsoView.tile_corners(Vector2i(0, 0))[0]
-		var right := IsoView.tile_corners(Vector2i(w - 1, 0))[1]
-		var bottom := IsoView.tile_corners(Vector2i(w - 1, h - 1))[2]
-		var left := IsoView.tile_corners(Vector2i(0, h - 1))[3]
-		var ring := PackedVector2Array([top, right, bottom, left, top])
+	## Die Zierlinie um das Spielfeld -- zeigt, wo gekaempft wird: jede Kante
+	## eines Feldes, hinter der kein Feld mehr liegt.
+	func _border(s: Dictionary, _w: int, _h: int) -> void:
 		var trim: Color = s["trim"]
-		draw_polyline(ring, Color(trim, 0.18), 7.0)
-		draw_polyline(ring, Color(trim, 0.85), 2.0)
+		for pass_width in [7.0, 2.0]:
+			var color := Color(trim, 0.18) if pass_width > 3.0 else Color(trim, 0.85)
+			for tile in grid.all_tiles():
+				var c := IsoView.tile_corners(tile)
+				for i in 6:
+					if grid.in_bounds(Grid.neighbor(tile, IsoView.EDGE_DIR[i])):
+						continue
+					draw_line(c[i], c[(i + 1) % 6], color, pass_width, true)
 
 
 # ---------------------------------------------------------------------------
@@ -507,7 +491,7 @@ class Lights extends Node2D:
 			var radius: float = spot[2]
 			for k in 6:
 				var r := radius * (1.0 - float(k) / 6.0)
-				draw_set_transform(pos, 0.0, Vector2(1.0, TH / TW))
+				draw_set_transform(pos, 0.0, Vector2(1.0, IsoView.DEPTH_SQUASH))
 				draw_circle(Vector2.ZERO, r, Color(color, 0.05))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
@@ -547,12 +531,15 @@ static func build(world: Node2D, grid: Grid, depth_of: Callable) -> Array:
 	var kinds: Array = settings.get("props", {}).get(region_id,
 		settings.get("kinds", {}).get(region_id, ["crate"]))
 	var lamp_art := art(region_id, "lamp") != null
+	# Hexfeld: hinten (oben) eine Reihe, an den Seiten in Abstaenden, vorn
+	# nur die Ecken.
 	var spots: Array = []
-	for i in range(1, grid.width, 4):
-		spots.append([Vector2i(i, -2), "lamp" if (i / 4) % 2 == 0 else "deco"])
+	for i in range(0, grid.width, 3):
+		spots.append([Vector2i(i, -2), "lamp" if (i / 3) % 2 == 0 else "deco"])
+	for i in range(2, grid.height, 4):
 		spots.append([Vector2i(-2, i), "deco" if (i / 4) % 2 == 0 else "lamp"])
+		spots.append([Vector2i(grid.width + 1, i), "lamp" if (i / 4) % 2 == 0 else "deco"])
 	spots.append([Vector2i(grid.width + 1, grid.height + 1), "lamp"])
-	spots.append([Vector2i(grid.width + 1, -2), "lamp"])
 	spots.append([Vector2i(-2, grid.height + 1), "lamp"])
 	for index in spots.size():
 		var tile: Vector2i = spots[index][0]

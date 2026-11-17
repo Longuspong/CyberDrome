@@ -1,7 +1,7 @@
 # CyberDrome
 
 **Autobattler in Echtzeit** im Cyberpunk-/Neon-Setting, **isometrisch**
-(Kamera 45 Grad von oben auf ein gedrehtes 20x20-Gitter). Engine: **Godot
+(Kamera 45 Grad von oben auf ein Hexfeld 9 x 17, seit 17. Nov. 2026). Engine: **Godot
 4.7**, Ziel: Handy im Hochformat (PWA auf Vercel), Android spaeter.
 
 Gespielt wird mit **DROMEs** -- *Death Robot Omni Machine Executor* --,

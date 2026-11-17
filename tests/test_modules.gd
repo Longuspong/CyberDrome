@@ -23,6 +23,11 @@ func _with(build: DromeBuild, slot: String, ids: Array) -> DromeBuild:
 func _battle(players: Array, enemies: Array, tiles: Array) -> BattleManager:
 	var battle := BattleManager.new()
 	battle.setup(4711, players, enemies)
+	# Gestellte Lagen: ein grosses, leeres Hexfeld (20 x 20), damit die Felder
+	# der Tests unabhaengig von der Spielfeldgroesse gueltig sind.
+	battle.grid.width = 20
+	battle.grid.height = 20
+	battle.grid.obstacles.clear()
 	for unit in battle.units:
 		battle.grid.clear_occupant(unit.tile)
 	for i in battle.units.size():

@@ -693,7 +693,7 @@ func _aim(unit: Unit, action: ActionData, target: Unit) -> Dictionary:
 
 func _execute(unit: Unit, tile: Vector2i, action: ActionData, target: Unit) -> void:
 	if tile != unit.tile:
-		unit.set_facing(Unit.facing_for(tile - unit.tile))
+		unit.set_facing(Unit.facing_toward(unit.tile, tile))
 	if battle.resolver.execute(unit, tile, action):
 		EventBus.action_used.emit(unit, tile, action)
 		battle._check_victory()
@@ -857,8 +857,7 @@ func _kite_step(unit: Unit, target: Unit, limit: int = -1) -> Vector2i:
 		return unit.tile
 	var best: Array[Vector2i] = [unit.tile]
 	var best_gap := here
-	for dir in Grid.directions():
-		var tile: Vector2i = unit.tile + dir
+	for tile in Grid.neighbors(unit.tile):
 		if not battle.grid.can_stand_on(tile, unit.unit_id):
 			continue
 		var gap := _nearest_foe(unit, tile)
@@ -921,7 +920,9 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 	var reach := unit.attack_range()
 	var frontier: Array[Vector2i] = []
 	var dist := {}
-	for x in range(target.tile.x - reach, target.tile.x + reach + 1):
+	# Ein Hexkreis mit Radius reach passt in dieses Rechteck (versetzte Reihen:
+	# eine Spalte Luft je Seite).
+	for x in range(target.tile.x - reach - 1, target.tile.x + reach + 2):
 		for y in range(target.tile.y - reach, target.tile.y + reach + 1):
 			var tile := Vector2i(x, y)
 			if not grid.in_bounds(tile) or Grid.distance(tile, target.tile) > reach:
@@ -939,8 +940,7 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 	while not frontier.is_empty():
 		var tile: Vector2i = frontier.pop_front()
 		var here: int = dist[tile]
-		for dir in Grid.directions():
-			var prev: Vector2i = tile + dir
+		for prev in Grid.neighbors(tile):
 			if dist.has(prev):
 				continue
 			if prev != unit.tile and not grid.can_stand_on(prev, unit.unit_id):
@@ -951,8 +951,7 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 
 	var best: Array[Vector2i] = []
 	var best_cost := 1 << 30
-	for dir in Grid.directions():
-		var nxt: Vector2i = unit.tile + dir
+	for nxt in Grid.neighbors(unit.tile):
 		if not dist.has(nxt) or not grid.can_stand_on(nxt, unit.unit_id):
 			continue
 		var cost: int = int(dist[nxt])
@@ -969,7 +968,7 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 ## Einen Schritt beginnen. Das Feld gilt sofort (es ist damit belegt), die
 ## Figur gleitet in der Schrittzeit hinterher.
 func _walk(unit: Unit, next: Vector2i) -> void:
-	unit.set_facing(Unit.facing_for(next - unit.tile))
+	unit.set_facing(Unit.facing_toward(unit.tile, next))
 	# Die Schrittzeit steht VOR dem Versetzen fest: move_unit meldet den
 	# Schritt (unit_moved), und die Szene liest daran ab, wie lange die Figur
 	# gleitet.

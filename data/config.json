@@ -19,8 +19,8 @@
   "squad_size": 2,
   "squad_size_max": 3,
 
-  "grid_width": 20,
-  "grid_height": 20,
+  "grid_width": 9,
+  "grid_height": 17,
 
   "run": {
     "_kommentar": [
@@ -274,14 +274,14 @@
   "deployment": {
     "_kommentar": [
       "Aufstellung (MapGenerator.deployment_zone): ein Streifen am Kartenrand,",
-      "Spieler an der Kante unten links, Gegner oben rechts. rows Reihen tief,",
+      "Spieler an der Kante unten, Gegner oben (Hexfeld 9 x 17, 17. Nov. 2026). rows Reihen tief,",
       "columns Felder breit (mittig), inset Felder Abstand zum Rand. Ohne Zutun",
       "stehen die DROMEs nach Rolle gestaffelt und ueber die Breite verteilt.",
-      "Bis 10. Nov. 2026 ein 3 x 5-Block, 5 Felder von der Ecke eingerueckt."
+      "Bis 10. Nov. 2026 ein 3 x 5-Block, 5 Felder von der Ecke eingerueckt; bis 17. Nov. 3 x 8 mit inset 1 auf 20 x 20."
     ],
     "rows": 3,
-    "columns": 8,
-    "inset": 1
+    "columns": 7,
+    "inset": 0
   },
 
   "obstacles": {

@@ -88,6 +88,9 @@ func _process(_delta: float) -> bool:
 				var opener = load("res://scripts/ui/cache_opener.gd").show_over(current_scene, bits[0])
 				if bits.size() > 1:
 					opener.call_deferred("_open")
+			# kampf=los: im Kampfbildschirm die Aufstellung beenden, der Kampf laeuft.
+			if str(extra) == "kampf=los" and current_scene.has_method("_start_fight"):
+				current_scene.call("_start_fight")
 			# karte=eq_hammer: die Waffen-Karte dieses Teils ueber der Szene.
 			if str(extra).begins_with("karte="):
 				var part = root.get_node("PartDB").get_part(StringName(str(extra).substr(6)))
