@@ -65,8 +65,8 @@
     "head": 61,
     "feet": 27,
     "core": 32.6,
-    "equip_left": 33.2,
-    "equip_right": 60.8
+    "equip_left": 34.5,
+    "equip_right": 45.5
   },
   "slot_rules": {
     "equip_left": {
