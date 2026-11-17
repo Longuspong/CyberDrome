@@ -74,8 +74,10 @@
     "equip_shoulder": 70,
     "equip_left@hold": 32.35,
     "equip_left@aim": 23.8,
+    "equip_left@guard": 32.45,
     "equip_right@hold": 47.55,
-    "equip_right@aim": 39.0
+    "equip_right@aim": 39.0,
+    "equip_right@guard": 47.65
   },
   "slot_rules": {
     "equip_left": {
@@ -119,6 +121,21 @@
         }
       ]
     },
+    "arm_equip_left_guard": {
+      "svg": "jugg_body_arm_equip_left_guard_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 45.86,
+          "y": 28.76
+        },
+        {
+          "name": "hand",
+          "x": 60.66,
+          "y": 34.13
+        }
+      ]
+    },
     "arm_equip_right_hold": {
       "svg": "jugg_body_arm_equip_right_hold_north.svg",
       "anchors": [
@@ -146,6 +163,21 @@
           "name": "hand",
           "x": 96.07,
           "y": 61.74
+        }
+      ]
+    },
+    "arm_equip_right_guard": {
+      "svg": "jugg_body_arm_equip_right_guard_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 82.14,
+          "y": 54.41
+        },
+        {
+          "name": "hand",
+          "x": 98.84,
+          "y": 61.13
         }
       ]
     }

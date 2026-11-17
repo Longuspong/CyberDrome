@@ -67,7 +67,8 @@
     "equip_left": 45.8,
     "equip_right": 34.2,
     "equip_left@hold": 45.75,
-    "equip_left@aim": 34.2
+    "equip_left@aim": 34.2,
+    "equip_left@guard": 45.85
   },
   "slot_rules": {
     "equip_left": {
@@ -109,6 +110,21 @@
           "name": "hand",
           "x": 33.36,
           "y": 46.66
+        }
+      ]
+    },
+    "arm_equip_left_guard": {
+      "svg": "scout_body_arm_equip_left_guard_west.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 50.16,
+          "y": 54.24
+        },
+        {
+          "name": "hand",
+          "x": 37.03,
+          "y": 58.24
         }
       ]
     }

@@ -7,7 +7,9 @@ die Entwurfs-Skripte unter `docs/design/drome_entwurf/`.
 
 **Arbeitsweise:** je Schritt ein eigener Commit (oder PR), danach immer
 `python3 tools/build_sample_parts.py`, `python3 tools/bake_godot_assets.py`,
-bei neuen SVG-Dateien `godot --headless --path . --import`, dann
+bei neuen SVG-Dateien `python3 tools/set_import_scale.py` und
+`godot --headless --path . --import` (sonst rastert Godot sie grob -- 17. Nov.
+waren die neuen Arme deshalb unscharf), dann
 `run_tests.gd`, `smoke_ui.gd`, `build_spot.py --check` und ein Screenshot von
 Hangar und Kampf (`tests/screenshot.gd`). Werte der DROMEs ändern sich in
 keinem Schritt -- nur Form, Licht und Bewegung.
@@ -116,6 +118,14 @@ Fernwaffen, Hände nur an Armen, die nie etwas tragen, Lafette ohne Griff.
       Nimbus-Orb-Arm hält seine Kugel
 - [x] **Strix-Lafette**: Runenstab nur als Kugel mit Fassung, Schlüssel nur
       als Kopf, jeweils auf kurzem Sockel (Frage 1 erledigt)
+- [x] Nachgebessert (17. Nov., Rückmeldung Spieler): das Arm-Bild bringt die
+      **Schulter seines Chassis** mit (`side_shapes`) -- sonst lag der
+      Oberarm als eigenes Sprite vor der Schulterplatte. Schild wieder vor
+      der Faust, eigene Tiefe `guard` (= halten, Schild vor dem Arm).
+      Neue SVGs mit `set_import_scale.py` auf 4-fache Rasterung gestellt
+- [x] **Waffenfarben unabhängig vom DROME**: Tabelle `WEAPON_COLORS` in
+      `build_sample_parts.py`, eine Palette je Waffe (Startwerte = bisherige
+      Bausatzfarben). Neue Farben: offen, Spieler entscheidet
 
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).

@@ -68,7 +68,8 @@
     "equip_left": 34.5,
     "equip_right": 45.5,
     "equip_left@hold": 34.45,
-    "equip_left@aim": 22.9
+    "equip_left@aim": 22.9,
+    "equip_left@guard": 34.55
   },
   "slot_rules": {
     "equip_left": {
@@ -110,6 +111,21 @@
           "name": "hand",
           "x": 67.63,
           "y": 34.23
+        }
+      ]
+    },
+    "arm_equip_left_guard": {
+      "svg": "mage_body_arm_equip_left_guard_north.svg",
+      "anchors": [
+        {
+          "name": "mount",
+          "x": 50.83,
+          "y": 41.82
+        },
+        {
+          "name": "hand",
+          "x": 62.04,
+          "y": 44.47
         }
       ]
     }

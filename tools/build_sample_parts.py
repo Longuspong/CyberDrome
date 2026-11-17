@@ -288,6 +288,29 @@ STRIX_PALETTE = make_palette(
 NEON_EQUIPMENT = {"hull": "#140b24", "mech": "#3a2a5c", "neon": "#ff2bd6",
                   "line": "#05020a"}
 
+# Waffenfarben, unabhaengig vom DROME (17. Nov. 2026, Wunsch des Spielers):
+# jede Waffe hat hier ihre EIGENE Palette, egal an welchem Chassis sie haengt.
+# Startwerte = die bisherigen Bausatzfarben, damit sich nichts verschiebt --
+# zum Umfaerben nur hier aendern, dann build_sample_parts.py und
+# bake_godot_assets.py laufen lassen.
+def _eq(base: dict) -> dict:
+    return dict(base["equipment"])
+
+
+WEAPON_COLORS = {
+    "eq_pulse_blaster": _eq(DEFAULT_PALETTE),
+    "eq_neon_blaster": dict(NEON_EQUIPMENT),
+    "eq_plasma_blade": _eq(DEFAULT_PALETTE),
+    "eq_boomerang": _eq(DEFAULT_PALETTE),
+    "eq_deflector": _eq(DEFAULT_PALETTE),
+    "eq_hammer": _eq(JUGG_PALETTE),
+    "eq_bulwark_ram": _eq(JUGG_PALETTE),
+    "eq_drone_pod": _eq(JUGG_PALETTE),        # E-Schraubenschluessel
+    "eq_rune_staff": _eq(MAGE_PALETTE),
+    "eq_rail_lance": _eq(STRIX_PALETTE),
+    "eq_mortar": _eq(STRIX_PALETTE),
+}
+
 C = {role: f"var(--c-{role.replace('_', '-')})" for role in PALETTE_ROLES}
 
 # Material = (Oberseite, linke Flanke, rechte Flanke, Kontur?)
@@ -1978,7 +2001,7 @@ EQ_RAIL_LANCE = [
 ARM_Z = 52
 HEAVY_K = 1.6
 LAFETTE_Z = 61
-POSES = ("hold", "aim")
+POSES = ("hold", "aim", "guard")
 
 
 def _fist(hf, hl, hz, k=1.0):
@@ -2046,18 +2069,42 @@ def molok_arm(shoulder, pose):
     return shapes + _cuff(hf, l0, hz, HEAVY_K), (hf, l0, hz)
 
 
-def arm_set(shoulder, build, mirror=False):
-    """Beide Haltungen eines Arms: {pose: (Formen, Handpunkt)}. ``build``
-    baut den LINKEN Arm; der rechte wird in 3D an l = 0 gespiegelt."""
+def arm_set(shoulder, build, cover=(), mirror=False):
+    """Alle Haltungen eines Arms: {pose: (Formen, Handpunkt)}. ``build``
+    baut den LINKEN Arm; der rechte wird in 3D an l = 0 gespiegelt.
+
+    ``cover`` sind die Formen der Schulter, unter der der Arm ansetzt (fuer
+    den linken Arm). Sie kommen MIT ins Arm-Bild: Arm und Rumpf sind eigene
+    Sprites, und ohne die Schulter laege der Oberarm immer UEBER ihr. So
+    deckt die Schulter den Oberarm im selben Bild richtig ab und liegt
+    deckungsgleich ueber der des Rumpfs.
+
+    "guard" (Schild) ist die Haltung "hold" -- nur liegt der Schild VOR der
+    Faust und bekommt dafuer eine eigene Tiefe (siehe slot_draw_order)."""
     res = {}
     for pose in POSES:
+        built = "hold" if pose == "guard" else pose
         if mirror:
             left = (shoulder[0], -shoulder[1], shoulder[2])
-            shapes, hand = build(left, pose)
-            res[pose] = (_mirror_l(shapes), (hand[0], -hand[1], hand[2]))
+            shapes, hand = build(left, built)
+            res[pose] = (_mirror_l(shapes + list(cover)), (hand[0], -hand[1], hand[2]))
         else:
-            res[pose] = build(shoulder, pose)
+            shapes, hand = build(shoulder, built)
+            res[pose] = (shapes + list(cover), hand)
     return res
+
+
+def side_shapes(shapes, l_min, l_max, z_min):
+    """Die Formen einer Seite (Quader und Drehkoerper) ab einer Hoehe --
+    fuer die Schulter, die ein Arm-Bild mitbringt."""
+    out = []
+    for sh in shapes:
+        if sh[0] == "box" and l_min <= sh[2][0] and sh[2][1] <= l_max and sh[3][0] >= z_min:
+            out.append(sh)
+        elif sh[0] == "lathe" and sh[4] == "z" and l_min <= sh[1][1] <= l_max \
+                and abs(sh[1][0]) < 0.01 and min(p for _r, p in sh[2]) >= z_min:
+            out.append(sh)
+    return out
 
 
 def light_arm(shoulder, pose):
@@ -2191,7 +2238,6 @@ def _head_wrench(h, k):
 def _head_shield(h, k):
     """Schild angewinkelt vor dem Koerper, zur Koerpermitte hin versetzt."""
     f, l, z = h
-    f -= 6.5 * k                                         # vor die Brust, nicht weit davor
     a, b = l - 16 * k, l + 3 * k                         # deckt die Koerpermitte
     return [
         B((f + 1.5 * k, f + 3.5 * k), (a, b), (z - 14 * k, z + 15 * k), "plate"),
@@ -2280,7 +2326,7 @@ W_PULSE = weapon_set("aim", _head_blaster, lafette=lafette_blaster())
 W_NEON = weapon_set("aim", _head_blaster, lafette=lafette_blaster(neon=True), neon=True)
 W_BLADE = weapon_set("hold", _head_blade)
 W_BOOMERANG = weapon_set("hold", _head_boomerang)
-W_SHIELD = weapon_set("hold", _head_shield)
+W_SHIELD = weapon_set("guard", _head_shield)
 W_HAMMER = weapon_set("hold", _head_hammer)
 W_RAM = weapon_set("aim", _head_ram)
 W_WRENCH = weapon_set("hold", _head_wrench, lafette=lafette_wrench())
@@ -2319,7 +2365,8 @@ SETS = [
                     "equip_right": (0, -14.5, 54),
                 },
                 # Der Waffenarm gehoert zum Chassis (Schritt 4b).
-                "arms": {"equip_left": arm_set((0, 14.5, 54), light_arm)},
+                "arms": {"equip_left": arm_set((0, 14.5, 54), light_arm,
+                                                cover=side_shapes(SCOUT_BODY, 10, 18, 54))},
                 # Ein Sprinter traegt keine Artillerie. Die Grenze steht hier
                 # und nicht in einer Balancing-Tabelle, weil sie sonst erst im
                 # Kampf auffaellt -- und weil ein Vireo mit Belagerungskanone
@@ -2410,8 +2457,10 @@ SETS = [
                     "equip_shoulder": (-7, 0, 63),
                 },
                 # Eigene Molok-Arme unter den Schulterplatten (Schritt 4b).
-                "arms": {"equip_left": arm_set((0, 19, 57), molok_arm),
-                         "equip_right": arm_set((0, -19, 57), molok_arm, mirror=True)},
+                "arms": {"equip_left": arm_set((0, 19, 57), molok_arm,
+                                               cover=side_shapes(JUGG_BODY, 12, 26, 56)),
+                         "equip_right": arm_set((0, -19, 57), molok_arm, mirror=True,
+                                                cover=side_shapes(JUGG_BODY, 12, 26, 56))},
                 # Der Schulteranker ist KEIN dritter Arm. Er sitzt hinter dem
                 # Kopf auf der Schulterbruecke, hat keinen Gegenhalt und nichts,
                 # woran sich ein Schild abstuetzen koennte -- dort gehoert
@@ -2482,7 +2531,8 @@ SETS = [
                     "equip_left": (0, 13.8, 47),
                     "equip_right": (0, -13.8, 47),
                 },
-                "arms": {"equip_left": arm_set((0, 13.8, 47), light_arm)},
+                "arms": {"equip_left": arm_set((0, 13.8, 47), light_arm,
+                                                cover=side_shapes(MAGE_BODY, 13, 14.6, 44))},
                 "slot_rules": {
                     "equip_left": {"max_class": "medium",
                                    "categories": ["weapon", "support"]},
@@ -2652,6 +2702,8 @@ def slot_draw_order(part: dict, direction: str) -> dict:
         for pose, (_shapes, hand) in poses.items():
             if pose == "hold":
                 order[f"{slot}@{pose}"] = round(order[slot] - 0.05, 2)
+            elif pose == "guard":
+                order[f"{slot}@{pose}"] = round(order[slot] + 0.05, 2)
             else:
                 ahead = (hand[0] + 4, hand[1] * WEAPON_DEPTH_INWARD, TORSO_REF[2])
                 order[f"{slot}@{pose}"] = round(closeness(to_world(ahead, direction)), 1)
@@ -2711,8 +2763,8 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
         # Referenzfarben: die acht CSS-Rollen, wie sie sich aus den vier
         # Kategorien DIESES Bauteiltyps ergeben. Rein dokumentierend --
         # gezeichnet wird immer mit der aktiven Palette der Werkstatt.
-        "color_scheme": resolve_roles(part.get("palette",
-                                               palette[palette_type(part["type"])]),
+        "color_scheme": resolve_roles(WEAPON_COLORS.get(pid, part.get(
+                                          "palette", palette[palette_type(part["type"])])),
                                       part["type"]),
         "tags": part.get("tags", []),
     }
