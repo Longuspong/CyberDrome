@@ -1995,6 +1995,19 @@ def _arm_raised(k=1.0):
     return shapes, (hf, hl, hz)
 
 
+def _arm_guard(k=1.0):
+    """Schild: Oberarm runter, Unterarm KURZ nach vorn -- der Schild sitzt
+    direkt vor der Brust und deckt den Koerper, statt weit davor zu haengen."""
+    t, zs = 2.0 * k, ARM_Z
+    hf, hl, hz = 6.5 * k, 1.0 * k, zs - 12.5 * k
+    shapes = [
+        B((-2.5 * k, 2.5 * k), (-t, t), (zs - 11 * k, zs), "metal"),
+        B((-2.5 * k, 5.5 * k), (-t - 0.3, t + 0.3), (zs - 16 * k, zs - 9 * k), "plate"),
+        B((hf - 2.2 * k, hf + 1.5 * k), (hl - 2.6 * k, hl + 2.6 * k), (hz - 2.6 * k, hz + 2.6 * k), "dark"),
+    ]
+    return shapes, (hf, hl, hz)
+
+
 def _head_blaster(h, k, neon=False):
     f, l, z = h
     s = [
@@ -2123,7 +2136,7 @@ def _head_wrench(h, k):
 def _head_shield(h, k):
     """Schild angewinkelt vor dem Koerper, zur Koerpermitte hin versetzt."""
     f, l, z = h
-    a, b = l - 11 * k, l + 6 * k                         # reicht zur Koerpermitte
+    a, b = l - 16 * k, l + 3 * k                         # deckt die Koerpermitte
     return [
         B((f + 1.5 * k, f + 3.5 * k), (a, b), (z - 14 * k, z + 15 * k), "plate"),
         B((f + 1.5 * k, f + 4 * k), (a - 0.5, b + 0.5), (z + 15 * k, z + 17 * k), "light"),
@@ -2136,7 +2149,7 @@ def _head_shield(h, k):
 
 def posed(pose, head, k=1.0, **kw):
     """Arm in der Pose plus Waffenkopf in der Hand: (Formen, Wirkpunkt)."""
-    arm, hand = (_arm_extended if pose == "ext" else _arm_raised)(k)
+    arm, hand = {"ext": _arm_extended, "up": _arm_raised, "guard": _arm_guard}[pose](k)
     shapes, point = head(hand, k, **kw)
     return arm + shapes, point
 
@@ -2224,7 +2237,7 @@ W_PULSE = weapon_set("ext", _head_blaster, lafette=lafette_blaster())
 W_NEON = weapon_set("ext", _head_blaster, lafette=lafette_blaster(neon=True), neon=True)
 W_BLADE = weapon_set("up", _head_blade)
 W_BOOMERANG = weapon_set("up", _head_boomerang)
-W_SHIELD = weapon_set("up", _head_shield)
+W_SHIELD = weapon_set("guard", _head_shield)
 W_HAMMER = weapon_set("up", _head_hammer)
 W_RAM = weapon_set("up", _head_ram)
 W_WRENCH = weapon_set("up", _head_wrench, lafette=lafette_wrench())
@@ -2569,11 +2582,28 @@ def slot_draw_order(part: dict, direction: str) -> dict:
         weil er dann das kameranaechste Teil ist.
     """
     order = {}
+    humanoid = part.get("body_kind", "humanoid") == "humanoid"
     for name, local in part["anchors"].items():
         if name == "mount":
             continue
+        # Waffen in Posen greifen nach VORN (Faust, Schild, Lauf). Gemessen
+        # wird deshalb nicht am Schulteranker, sondern ein Stueck davor --
+        # sonst laege ein Schild, der vor dem Koerper haengt, von hinten
+        # gesehen ueber dem Rumpf. Die Strix-Lafette liegt obenauf, fuer
+        # sie gilt der Anker selbst.
+        if humanoid and name in ("equip_left", "equip_right"):
+            local = (local[0] + WEAPON_DEPTH_AHEAD, local[1] * WEAPON_DEPTH_INWARD,
+                     TORSO_REF[2])
         order[name] = round(closeness(to_world(local, direction)), 1)
     return order
+
+
+# Wo die Tiefe einer Waffe gemessen wird: ein Stueck vor dem Schulteranker
+# und naeher zur Koerpermitte, auf Rumpfhoehe -- dort liegt der Schwerpunkt
+# von Faust, Schild und Lauf (die Hoehe zaehlt sonst in der Kameratiefe mit). Am Anker selbst gemessen gewinnt die Seite: ein Schild am nahen
+# Arm laege von hinten gesehen ueber dem Rumpf, obwohl er davor haengt.
+WEAPON_DEPTH_AHEAD = 10
+WEAPON_DEPTH_INWARD = 0.4
 
 
 def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,

@@ -76,7 +76,12 @@ Armebene gebaut -- dasselbe Bild passt an beide Molok-Arme, ohne Spiegeln.
       Klingenbumerang (wurfbereit, „L“ nach oben und vorn)
 - [x] Stab/Werkzeug senkrecht mit Griffwicklung: Runenstab,
       E-Schraubenschlüssel
-- [x] Schild angewinkelt vor dem Körper, mittig auf der Faust: Deflektor
+- [x] Schild direkt vor dem Körper (eigene kurze Armhaltung, deckt die
+      Körpermitte): Deflektor (17. Nov. nachgebessert)
+- [x] Zeichenreihenfolge der Waffen: Tiefe nicht am Schulteranker, sondern
+      vor dem Körper zur Mitte hin auf Rumpfhöhe gemessen
+      (`WEAPON_DEPTH_AHEAD`/`_INWARD`) -- von hinten liegt eine Waffe, die
+      vor dem Körper hängt, hinter dem Rumpf
 - [x] **Varianten** je Waffe: `heavy` (Armmaß 1,6, Molok) und `lafette`
       (Fernwaffen ohne Arm auf der Strix-Schulter: Puls-/Neon-Blaster,
       Runenstab und Schlüssel liegend -- Form vorläufig, siehe Frage 1).
