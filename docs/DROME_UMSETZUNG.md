@@ -284,10 +284,15 @@ Entwurf: Board 12 (Vortex animiert, Tabelle für alle). Muster: **Wo**
       also für jede Quelle. Blicktest:
       `docs/design/drome_entwurf/godot/render_faehigkeit.gd`
       (mit `--fixed-fps 60`).
-- [ ] Sperrfeuer, Präzisionsschuss, Betäubungsschlag, Rammstoß,
+- [x] Sperrfeuer, Präzisionsschuss, Betäubungsschlag, Rammstoß,
       Aufschlitzen, Wirbelwurf, Doppelschuss, Schildbrecher, Schildladung,
-      Schildfeld -- je nach Tabelle auf Board 12
-- [ ] Gegnerische Fähigkeiten: dieselben Formen, Ring mit rotem Außenrand
+      Schildfeld -- **gebaut 18. Nov.** nach den Skizzen auf der Leinwand
+      (Seite „Fähigkeiten lesbar“, vom Spieler freigegeben). Zuordnung nach
+      den Eigenschaften der Aktion (`AbilityPainter.kind_for`), also auch für
+      Varianten; Zustände über dem Kopf: verlangsamt (Pfeile), betäubt
+      (Sterne), verwundbar (gerissener Schild + rosa Fußring). Blicktest:
+      `render_faehigkeit.gd ... city ansage|wirkung` (alle Formen auf einmal).
+- [x] Gegnerische Fähigkeiten: dieselben Formen, Ring mit rotem Außenrand
 
 ### 7. Fraktions-Paletten im Spiel
 Quelle: `skins.py`. Neon fast schwarz mit grellem Neon, Solar

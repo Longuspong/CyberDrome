@@ -84,9 +84,8 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
   Plasmaklinge als lange Doppelpyramide, Bumerang als „Λ“ (Baustein `BP` im
   Generator). Entwurf: `v13_waffenfarben.py`, Blicktest
   `godot/render_waffenfarben.gd` (Ordner `-` = so wie im Spiel).
-* **Fähigkeiten lesbar**: Skizzen für die übrigen 10 Fähigkeiten auf der
-  Leinwand, Seite „Fähigkeiten lesbar“ (Ansage → Wirkung, Gegner mit rotem
-  Außenrand). Spieler will die Formen vor dem Bau sehen.
+* ~~Fähigkeiten lesbar~~ -- Skizzen vom Spieler freigegeben, alle 11 Formen
+  **gebaut 18. Nov.** (`AbilityPainter`, siehe `DROME_UMSETZUNG.md` 6).
 * **Shogun Kage**: Richtung gefällt („richtig gehyped“), Feinschliff nach
   Schritt 1. Ins Spiel erst mit den Story-Bossen.
 * Alles zum Hexfeld (siehe 3).

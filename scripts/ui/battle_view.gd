@@ -207,8 +207,13 @@ func show_attack(from: Vector2, to: Vector2, color: Color, style: Dictionary) ->
 
 ## Vortex lesbar (DROME_DESIGNREGELN Abschnitt 7): Bodenmarke ueber die
 ## Flaeche um ``tile`` bis zum Einschlag, dann Schockwelle.
-func show_vortex(tile: Vector2i, radius: int, delay: float, color: Color) -> void:
-	abilities.add_vortex(IsoView.map_to_local(tile), radius, delay, color)
+func show_vortex(tile: Vector2i, radius: int, delay: float, color: Color, enemy: bool = false) -> void:
+	abilities.add_vortex(IsoView.map_to_local(tile), radius, delay, color, enemy)
+
+
+## Jede andere Faehigkeit lesbar (Formen siehe AbilityPainter.add).
+func show_ability(kind: String, data: Dictionary) -> void:
+	abilities.add(kind, data)
 
 
 ## Schwebender Text ueber einer Stelle: Schaden, Reparatur, Faehigkeit.

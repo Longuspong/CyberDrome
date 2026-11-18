@@ -324,12 +324,59 @@ func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 	if not action.is_move() and (action.power > 0 or action.heal > 0):
 		view.show_attack(unit.visual_anchor(), IsoView.map_to_local(tile), color,
 			attack_style(unit, tile, action, battle.resolver.unit_at(tile)))
-	if action.gather and action.aoe_radius > 0:
-		view.show_vortex(tile, action.aoe_radius, action.delay, color)
+	_show_ability(unit, tile, action, color)
 	if not action.is_attack():
 		view.show_float(unit.visual_anchor(), action.display_name + "!",
 			Color(1.0, 0.86, 0.3), true)
 	_refresh_hud()
+
+
+## Faehigkeiten lesbar (DROME_DESIGNREGELN Abschnitt 7, 18. Nov. 2026):
+## Wo (Bodenmarke), Wer (Signalfarbe, Gegner mit rotem Aussenrand), Was
+## (eigene Form je Art, AbilityPainter.kind_for).
+func _show_ability(unit: Unit, tile: Vector2i, action: ActionData, color: Color) -> void:
+	var kind := AbilityPainter.kind_for(action)
+	if kind == "":
+		return
+	var at := IsoView.map_to_local(tile)
+	var data := {"at": at, "color": color, "enemy": not unit.is_player,
+		"radius": action.aoe_radius, "delay": action.delay}
+	match kind:
+		"vortex":
+			view.show_vortex(tile, action.aoe_radius, action.delay, color, not unit.is_player)
+			return
+		"lock":
+			data["from"] = unit.visual_anchor()
+		"push":
+			var dir := (at - IsoView.map_to_local(unit.tile)).normalized()
+			data["dir"] = dir if dir != Vector2.ZERO else Vector2.UP
+		"double":
+			data["targets"] = double_targets(unit, tile, action, battle.units)
+		"shield":
+			var aimed := battle.resolver.unit_at(tile)
+			if aimed == null or tile == unit.tile:
+				data["at"] = unit.visual_anchor()
+			else:
+				data["at"] = aimed.visual_anchor()
+				data["from"] = unit.visual_anchor()
+	view.show_ability(kind, data)
+
+
+## Die Ziele eines Doppelschusses wie ActionResolver._multi_shot: das Ziel,
+## dann der naechste Gegner in Reichweite (Feldmitten fuer die Marken).
+static func double_targets(unit: Unit, tile: Vector2i, action: ActionData, units: Array) -> Array:
+	var out := [IsoView.map_to_local(tile)]
+	var best: Unit = null
+	for other in units:
+		if not other.is_alive() or other.is_player == unit.is_player or other.tile == tile:
+			continue
+		if Grid.distance(unit.tile, other.tile) > action.range_tiles:
+			continue
+		if best == null or Grid.distance(unit.tile, other.tile) < Grid.distance(unit.tile, best.tile):
+			best = other
+	if best != null and action.shots > 1:
+		out.append(IsoView.map_to_local(best.tile))
+	return out
 
 
 ## Wie ein Angriff aussieht (Wunsch des Spielers, 9. Nov. 2026): Nahkampf ohne
