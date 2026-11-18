@@ -98,6 +98,8 @@ var think_left: float = 0.0
 ## Laufende Ausholzeit einer Faehigkeit (AIController): {"action", "aim",
 ## "mount", "fx", "left", "target"}; leer = keine.
 var cast: Dictionary = {}
+## Ausstehende Echos (Passive Echo, Nimbus): je {action, target, tile, left}.
+var echoes: Array = []
 ## Sekunden, die der DROME nach einem Schuss noch zum Ziel schaut, auch wenn
 ## er schon laeuft (nur Anzeige, 18. Nov. 2026).
 var aim_hold: float = 0.0
@@ -599,6 +601,7 @@ func init_realtime(pulse_offset: float) -> void:
 	pulse_left = maxf(0.05, pulse_offset)
 	think_left = 0.0
 	cast = {}
+	echoes.clear()
 	aim_hold = 0.0
 	target_id = null
 	target_blocked = 0.0

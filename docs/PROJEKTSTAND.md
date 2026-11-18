@@ -29,6 +29,17 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Echo nacheinander, Flaechen landen am Wurfort (18. Nov. 2026, Wunsch des Spielers)
+
+* **Echo (Nimbus)** wirkt nicht mehr im selben Augenblick, sondern
+  `passives.echo.gap` (0,5 s) nach der Faehigkeit; Faehigkeiten mit
+  Ausholzeit (Vortex) holen dafuer ein zweites Mal aus (`Unit.echoes`,
+  `AIController._tick_echoes`). Kann das Echo nicht wirken, verpufft es.
+* **Flaechen** (Vortex, Sperrfeuer, Wirbel) folgen dem Ziel waehrend der
+  Ausholzeit nicht mehr, sie landen auf dem Feld, auf das geworfen wurde
+  (`AIController.lands_on_tile`) -- wer rechtzeitig weglaeuft, entkommt dem
+  Sog und der Schockwelle. Leeres Feld ist kein Abbruchgrund mehr.
+
 ### Kampf als eine 3D-Szene + Bewegung (18. Nov. 2026, Übergabe Schritt 4/5)
 
 * `Arena3D`: alle DROMEs und Hindernisse in einer 3D-Welt, Kameras folgen der

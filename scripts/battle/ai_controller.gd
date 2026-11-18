@@ -67,6 +67,9 @@ func update(unit: Unit, dt: float) -> void:
 	# Betaeubt: weder laufen noch schiessen, die Waffen laden aber weiter.
 	if unit.is_stunned():
 		return
+	# Echo (Nimbus): die zweite Wirkung kommt kurz nach der ersten.
+	if unit.cast.is_empty() and not unit.echoes.is_empty():
+		_tick_echoes(unit, dt)
 	# Holt zu einer Faehigkeit aus: steht still, bis sie wirkt.
 	if not unit.cast.is_empty():
 		unit.cast["left"] = float(unit.cast["left"]) - dt
@@ -328,27 +331,61 @@ func _begin_cast(unit: Unit, ability: ActionData, aim: Dictionary, mount: Dictio
 	EventBus.ability_cast.emit(unit, tile, ability, ability.windup, target)
 
 
-## Ende der Ausholzeit: die Faehigkeit trifft das Ziel dort, wo es jetzt
-## steht. Ist es weg oder ausser Reichweite, verpufft sie nicht -- der Takt
-## bleibt voll und sie kommt mit dem naechsten Angriff wieder.
+## Ende der Ausholzeit. Einzelziele treffen das Ziel dort, wo es jetzt
+## steht; ist es weg oder ausser Reichweite, verpufft die Faehigkeit nicht --
+## der Takt bleibt voll und sie kommt mit dem naechsten Angriff wieder.
+## Flaechen (Vortex, Sperrfeuer; 18. Nov. 2026, Wunsch des Spielers) landen
+## dort, wohin geworfen wurde: wer rechtzeitig wegläuft, entkommt.
 func _finish_cast(unit: Unit) -> void:
 	var cast := unit.cast
 	unit.cast = {}
 	var ability: ActionData = cast["action"]
 	var aim: Dictionary = (cast["aim"] as Dictionary).duplicate()
+	var area := lands_on_tile(ability)
 	var target = cast.get("target")
 	if target is Unit:
 		if not target.is_alive():
 			target = null
-		else:
+		elif not area:
 			aim["tile"] = target.tile
-	if cast.get("target") is Unit and target == null \
-			or battle.resolver.target_blocker(unit, aim["tile"], ability) != "":
+	aim["target"] = target
+	var blocked: bool
+	if area:
+		blocked = _throw_blocker(unit, aim["tile"], ability) != ""
+	else:
+		blocked = cast.get("target") is Unit and target == null \
+			or battle.resolver.target_blocker(unit, aim["tile"], ability) != ""
+	if bool(cast.get("echo", false)):
+		# Das Echo verpufft, wenn es nicht wirken kann -- kein Takt zurueck.
+		if not blocked:
+			_execute(unit, aim["tile"], ability, target)
+		return
+	if blocked:
 		var mount: Dictionary = cast["mount"]
 		mount["count"] = float(mount["count"]) + float(trigger_every(unit, ability))
 		return
 	_resolve_ability(unit, ability, aim, cast["mount"], cast["fx"])
 	battle._check_victory()
+
+
+## Landet die Faehigkeit auf dem Feld, auf das sie geworfen wurde, statt dem
+## Ziel zu folgen? Alle Flaechen (Vortex, Sperrfeuer, Wirbel).
+static func lands_on_tile(ability: ActionData) -> bool:
+	return ability.aoe_radius > 0 and not ability.is_move()
+
+
+## Kann eine geworfene Flaeche noch auf ``tile`` landen? Nur Reichweite und
+## Mindestabstand zaehlen -- ein leeres Feld ist kein Hindernis.
+func _throw_blocker(unit: Unit, tile: Vector2i, ability: ActionData) -> String:
+	var reach := Grid.distance(unit.tile, tile)
+	if reach > ability.range_tiles:
+		return "Außer Reichweite"
+	if ability.min_range > 0 and reach < ability.min_range:
+		return "Zu nah"
+	var standing := battle.resolver.unit_at(tile)
+	if standing != null and standing.is_player == unit.is_player and standing != unit:
+		return "Verbündeter"
+	return ""
 
 
 ## Modul-Faehigkeiten nach Angriffen (Orbit-Fokus, 9. Nov. 2026): jeder
@@ -708,23 +745,55 @@ func _time_after_ability(unit: Unit, ability: ActionData) -> float:
 	return unit.takt_seconds(ability)
 
 
-## Passive Echo (Nimbus, 7. Nov. 2026): die Faehigkeit wirkt gleich noch
-## einmal -- aufs selbe Ziel, ist es gefallen, aufs naechstbeste.
+## Passive Echo (Nimbus, 7. Nov. 2026): die Faehigkeit wirkt noch einmal --
+## aufs selbe Ziel, ist es gefallen, aufs naechstbeste. Seit 18. Nov. 2026
+## (Wunsch des Spielers) nacheinander statt im selben Augenblick: das Echo
+## kommt ``passives.echo.gap`` Sekunden spaeter, mit Ausholzeit holt der
+## DROME dafuer ein zweites Mal aus -- so sieht man beide.
 func _echo(unit: Unit, ability: ActionData, aim: Dictionary) -> void:
 	if unit.passive() != "echo" or battle.outcome != BattleManager.Outcome.RUNNING:
 		return
-	var again := aim
-	var target: Unit = aim.get("target")
-	if target == null or not target.is_alive():
+	unit.echoes.append({"action": ability, "target": aim.get("target"),
+		"tile": aim["tile"], "left": echo_gap()})
+
+
+## Wie lange das Echo nach der Faehigkeit wartet (Sekunden).
+static func echo_gap() -> float:
+	return float((Config.section("passives").get("echo", {}) as Dictionary).get("gap", 0.5))
+
+
+## Laesst das naechste Echo ablaufen; ist es faellig, wirkt es (oder holt aus).
+func _tick_echoes(unit: Unit, dt: float) -> void:
+	var entry: Dictionary = unit.echoes[0]
+	entry["left"] = float(entry["left"]) - dt
+	if float(entry["left"]) > 0.0:
+		return
+	unit.echoes.pop_front()
+	if battle.outcome != BattleManager.Outcome.RUNNING:
+		return
+	var ability: ActionData = entry["action"]
+	var again := {}
+	var target = entry.get("target")
+	if target is Unit and target.is_alive() \
+			and battle.resolver.target_blocker(unit, target.tile, ability) == "":
+		again = {"tile": target.tile, "target": target}
+		if unit.has_bios() and ability.support == "":
+			# Nimbus-BIOS: das Echo darf ein anderes Ziel waehlen.
+			for foe in battle.enemies_of(unit):
+				if foe != target and foe.is_alive() \
+						and battle.resolver.target_blocker(unit, foe.tile, ability) == "":
+					again = {"tile": foe.tile, "target": foe}
+					break
+	elif ability.support != "":
+		again = _support_aim(unit, ability)
+	else:
 		again = _aim(unit, ability, null)
-	elif unit.has_bios() and ability.support == "":
-		# Nimbus-BIOS: das Echo darf ein anderes Ziel waehlen.
-		for foe in battle.enemies_of(unit):
-			if foe != target and foe.is_alive() \
-					and battle.resolver.target_blocker(unit, foe.tile, ability) == "":
-				again = {"tile": foe.tile, "target": foe}
-				break
-	if not again.is_empty():
+	if again.is_empty():
+		return
+	if ability.windup > 0.0:
+		_begin_cast(unit, ability, again, {}, {})
+		unit.cast["echo"] = true
+	else:
 		_execute(unit, again["tile"], ability, again["target"])
 
 
