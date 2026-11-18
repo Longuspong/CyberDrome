@@ -28,13 +28,13 @@
   <path d="M63.9 42.46 L66.58 40.57 L66.58 37.7 L63.9 39.59 Z" fill="#ff5a3d"/>
   <path d="M61.42 40.7 L63.9 42.46 L63.9 39.59 L61.42 37.84 Z" fill="#ff5a3d"/>
   <path d="M66.58 37.7 L64.1 35.95 L61.42 37.84 L63.9 39.59 Z" fill="#ff5a3d"/>
-  <path d="M64.0 39.68 L65.43 35.34 L64.72 36.86 Z" fill="#ff5a3d" />
-  <path d="M64.0 39.68 L64.72 36.86 L62.57 37.37 Z" fill="#ff5a3d" />
+  <path d="M64.0 39.68 L65.43 35.34 L64.72 36.86 Z" fill="#ff5a3d" stroke="#ff5a3d" stroke-width="3.2"/>
+  <path d="M64.0 39.68 L64.72 36.86 L62.57 37.37 Z" fill="#ff5a3d" stroke="#ff5a3d" stroke-width="3.2"/>
   <path d="M57.32 44.19 L61.14 46.89 L61.14 45.36 L57.32 42.66 Z" fill="#ff5a3d"/>
   <path d="M56.84 44.58 L60.85 47.41 L60.85 45.31 L56.84 42.48 Z" fill="#ff5a3d" />
   <path d="M62.0 44.5 L57.99 41.67 L56.84 42.48 L60.85 45.31 Z" fill="#ff5a3d" />
   <path d="M60.85 47.41 L62.0 46.6 L62.0 44.5 L60.85 45.31 Z" fill="#ff5a3d" />
-  <path d="M64.0 12.0 L64.72 36.86 L65.43 35.34 Z" fill="#ff5a3d" />
-  <path d="M64.0 12.0 L62.57 37.37 L64.72 36.86 Z" fill="#ff5a3d" />
+  <path d="M64.0 12.0 L64.72 36.86 L65.43 35.34 Z" fill="#ff5a3d" stroke="#ff5a3d" stroke-width="3.2"/>
+  <path d="M64.0 12.0 L62.57 37.37 L64.72 36.86 Z" fill="#ff5a3d" stroke="#ff5a3d" stroke-width="3.2"/>
 </g>
 </svg>

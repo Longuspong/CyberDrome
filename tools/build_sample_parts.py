@@ -871,6 +871,99 @@ def BP(back, tip, width, thick, mat, mid=0.18):
     return ("poly", tuple(faces), mat)
 
 
+def EX(profile, l, mat, bevel=0.0):
+    """
+    Profil (18. Nov. 2026): ein Umriss in der Seitenansicht -- Punkte (f, z),
+    auch eingebuchtet -- wird quer von ``l[0]`` bis ``l[1]`` gezogen. Fuer
+    Schaefte, Gehaeuse, Klingen mit echtem Umriss statt Quaderstapeln.
+    ``bevel`` schraegt die Kanten der beiden Deckflaechen ab (Fase).
+    Ergibt einen Vielflach ("poly"); Seitenwaende und Fasen tragen die dunkle
+    Kante wie Quader, die Deckflaechen nicht (sie sind in Dreiecke zerlegt).
+    """
+    pts = [(float(f), float(z)) for f, z in profile]
+    area = sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1]))
+    if area < 0:
+        pts.reverse()                       # gegen den Uhrzeigersinn
+    l0, l1 = float(l[0]), float(l[1])
+    b = max(0.0, min(float(bevel), (l1 - l0) / 2.0 - 1e-3))
+    inner = _inset(pts, b) if b > 0 else pts
+    faces = []
+    center = (sum(f for f, _z in pts) / len(pts), (l0 + l1) / 2.0,
+              sum(z for _f, z in pts) / len(pts))
+
+    def p3(fz, lv):
+        return (fz[0], lv, fz[1])
+
+    def add(poly, edge):
+        n = _norm(_cross(_sub(poly[1], poly[0]), _sub(poly[2], poly[0])))
+        mid = [sum(x) / len(poly) for x in zip(*poly)]
+        if sum(nc * (mc - cc) for nc, mc, cc in zip(n, mid, center)) < 0:
+            poly = list(reversed(poly))
+            n = tuple(-x for x in n)
+        faces.append((tuple(n), [tuple(pt) for pt in poly], edge))
+
+    # Deckflaechen (Fase: eingerueckt)
+    for lv in (l0, l1):
+        for tri in _ear_clip(inner):
+            add([p3(fz, lv) for fz in tri], False)
+    n = len(pts)
+    for i in range(n):
+        a, c = pts[i], pts[(i + 1) % n]
+        add([p3(a, l0 + b), p3(c, l0 + b), p3(c, l1 - b), p3(a, l1 - b)], True)
+        if b > 0:
+            ia, ic = inner[i], inner[(i + 1) % n]
+            add([p3(ia, l0), p3(ic, l0), p3(c, l0 + b), p3(a, l0 + b)], True)
+            add([p3(a, l1 - b), p3(c, l1 - b), p3(ic, l1), p3(ia, l1)], True)
+    return ("poly", tuple(faces), mat)
+
+
+def _inset(pts, d):
+    """Umriss (gegen den Uhrzeigersinn) um ``d`` nach innen versetzt."""
+    out = []
+    n = len(pts)
+    for i in range(n):
+        a, p, c = pts[i - 1], pts[i], pts[(i + 1) % n]
+        e1 = _norm((p[0] - a[0], p[1] - a[1], 0.0))
+        e2 = _norm((c[0] - p[0], c[1] - p[1], 0.0))
+        n1 = (-e1[1], e1[0])
+        n2 = (-e2[1], e2[0])
+        dot = n1[0] * n2[0] + n1[1] * n2[1]
+        k = d / max(0.25, 1.0 + dot)
+        out.append((p[0] + (n1[0] + n2[0]) * k, p[1] + (n1[1] + n2[1]) * k))
+    return out
+
+
+def _ear_clip(pts):
+    """Einfaches Polygon (gegen den Uhrzeigersinn) -> Dreiecke."""
+    idx = list(range(len(pts)))
+    tris = []
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    def inside(pt, a, b, c):
+        return cross(a, b, pt) >= 0 and cross(b, c, pt) >= 0 and cross(c, a, pt) >= 0
+
+    guard = 0
+    while len(idx) > 3 and guard < 10000:
+        guard += 1
+        for j in range(len(idx)):
+            i0, i1, i2 = idx[j - 1], idx[j], idx[(j + 1) % len(idx)]
+            a, b, c = pts[i0], pts[i1], pts[i2]
+            if cross(a, b, c) <= 1e-9:
+                continue
+            if any(inside(pts[k], a, b, c) for k in idx if k not in (i0, i1, i2)):
+                continue
+            tris.append((a, b, c))
+            idx.pop(j)
+            break
+        else:
+            break
+    if len(idx) == 3:
+        tris.append(tuple(pts[i] for i in idx))
+    return tris
+
+
 def SW(points, radii, mat, sides=8, flat=1.0, steps=6, side=(0.0, 1.0, 0.0), caps=True):
     """
     Zug (18. Nov. 2026): ein Querschnitt faehrt eine glatte Kurve entlang --
@@ -969,8 +1062,9 @@ def _reject(v, axis):
 def mirror_poly(s):
     """Vielflach an l = 0 gespiegelt (Punkte und Normalen)."""
     _, faces, mat = s
-    return ("poly", tuple(((n[0], -n[1], n[2]), [(pt[0], -pt[1], pt[2]) for pt in pts])
-                          for n, pts in faces), mat)
+    return ("poly", tuple(((f[0][0], -f[0][1], f[0][2]),
+                           [(pt[0], -pt[1], pt[2]) for pt in f[1]]) + tuple(f[2:])
+                          for f in faces), mat)
 
 
 def _rot_matrix(rot):
@@ -1084,7 +1178,7 @@ def _shape_faces(shape):
     if kind == "obox":
         return _obox_faces(*shape[1:4])
     if kind == "poly":
-        return [(n, list(pts)) for n, pts in shape[1]]
+        return [(face[0], list(face[1])) for face in shape[1]]
     if kind == "disc":
         _, f, l_center, z_center, radius, _mat, segments = shape
         return [((1, 0, 0), [
@@ -1418,8 +1512,12 @@ def render(shapes, facing):
                 if emitted:
                     faces.append(emitted)
         elif shape[0] == "poly":
-            for local_normal, points in shape[1]:
-                emitted = _emit(list(points), to_world(local_normal, facing), shape[2], facing)
+            for face in shape[1]:
+                # Ohne Kantenflag (Dreiecke, Facetten): Strich in Eigenfarbe,
+                # damit keine Fugen zwischen den Teilflaechen erscheinen.
+                edge = len(face) > 2 and face[2]
+                emitted = _emit(list(face[1]), to_world(face[0], facing), shape[2], facing,
+                                seam=not edge)
                 if emitted:
                     faces.append(emitted)
         elif shape[0] == "disc":
@@ -2224,14 +2322,48 @@ EQ_MORTAR = [
     B((3, 3.5), (-1.5, 1.5), (62, 63.5), "accent"),
 ]
 
+# Schienen-Lanze als schweres Scharfschuetzengewehr (Spieler 18. Nov. 2026:
+# "sieht ueberhaupt nicht nach Sniper aus"): Schaft mit Wangenauflage,
+# Gehaeuse mit Kastenmagazin, langer Lauf mit Muendungsbremse, Zielfernrohr,
+# eingeklapptes Zweibein. Railgun bleibt sie: Leuchtspalt im Gehaeuse,
+# Spulenringe am Lauf. Liegt auf der Strix-Lafette (Wiege bei z 61).
+_RL = 62.0                               # Unterkante Gehaeuse
 EQ_RAIL_LANCE = [
-    B((-6, 4), (-2, 2), (61, 63.5), "plate"),                        # Wiege
-    B((-16, 26), (-1, 1), (61.5, 64.5), "metal"),                    # Schiene
-    B((-12, 24), (-0.8, 0.8), (64.5, 65.3), "accent"),               # Energiespalt
-    L((0, 63), [(2.4, 8), (2.4, 10)], "dark", axis="f", segments=12),     # Spulen
-    L((0, 63), [(2.4, 15), (2.4, 17)], "dark", axis="f", segments=12),
-    B((26, 30), (-1.5, 1.5), (60.8, 65.2), "dark"),                  # Muendung
-    D(30.2, 0, 63, 1.4, "glow"),
+    B((-5, 5), (-2, 2), (61, 62.2), "plate"),                         # Wiege
+    # Schaft: Kolben, Griffstueck, Wangenauflage (Profil, Fase)
+    EX([(-17, _RL - 1.6), (-15.5, _RL - 2.2), (-6, _RL - 0.6), (-4, _RL + 0.2),
+        (-4, _RL + 4.0), (-9, _RL + 4.6), (-15, _RL + 5.0), (-17, _RL + 4.6)],
+       (-1.3, 1.3), "plate", bevel=0.35),
+    EX([(-17.4, _RL - 1.8), (-16.6, _RL - 2.0), (-16.6, _RL + 4.8), (-17.4, _RL + 4.7)],
+       (-1.5, 1.5), "dark", bevel=0.2),                               # Schaftkappe
+    # Gehaeuse mit Oberschiene
+    EX([(-4.5, _RL - 0.4), (13, _RL - 0.4), (14.5, _RL + 1.0), (14.5, _RL + 4.2),
+        (-4.5, _RL + 4.2)], (-1.7, 1.7), "plate", bevel=0.4),
+    B((-3, 12), (-1.0, 1.0), (_RL + 4.2, _RL + 4.9), "metal"),        # Schiene oben
+    B((0, 12.5), (-1.75, -1.65), (_RL + 1.2, _RL + 2.4), "accent"),   # Leuchtspalt
+    B((0, 12.5), (1.65, 1.75), (_RL + 1.2, _RL + 2.4), "accent"),
+    # Kastenmagazin, leicht nach vorn geneigt
+    O((5.5, 0, _RL - 2.2), (3.6, 2.2, 4.6), (0, 8, 0), "dark"),
+    # Lauf mit Spulenringen und Muendungsbremse
+    L((0, _RL + 2.4), [(1.0, 14.5), (1.0, 33)], "metal", axis="f", segments=12),
+    L((0, _RL + 2.4), [(1.6, 17), (1.6, 18.2)], "accent", axis="f", caps=False, segments=12),
+    L((0, _RL + 2.4), [(1.6, 21), (1.6, 22.2)], "accent", axis="f", caps=False, segments=12),
+    L((0, _RL + 2.4), [(1.6, 25), (1.6, 26.2)], "accent", axis="f", caps=False, segments=12),
+    EX([(33, _RL + 0.6), (37, _RL + 0.6), (37.5, _RL + 1.2), (37.5, _RL + 3.6),
+        (37, _RL + 4.2), (33, _RL + 4.2)], (-1.9, 1.9), "dark", bevel=0.3),
+    B((34, 35), (-2.0, 2.0), (_RL + 1.6, _RL + 3.2), "plate"),        # Bremsfenster
+    D(37.6, 0, _RL + 2.4, 1.0, "glow"),
+    # Zielfernrohr auf zwei Ringen
+    B((0.5, 1.8), (-0.9, 0.9), (_RL + 4.9, _RL + 6.2), "metal"),
+    B((7.5, 8.8), (-0.9, 0.9), (_RL + 4.9, _RL + 6.2), "metal"),
+    L((0, _RL + 7.6), [(1.7, -2.5), (1.5, -1.0), (1.5, 7.0), (2.2, 9.0), (2.2, 11.5)], "dark",
+      axis="f", segments=12),
+    L((0, _RL + 7.6), [(1.65, 3.0), (1.65, 4.2)], "metal", axis="f", caps=False, segments=12),
+    D(11.55, 0, _RL + 7.6, 1.7, "visor"),
+    # Zweibein, eingeklappt unter dem Lauf
+    OB((15.5, 1.1, _RL + 0.6), (25, 1.4, _RL + 0.9), 0.6, 0.6, "metal"),
+    OB((15.5, -1.1, _RL + 0.6), (25, -1.4, _RL + 0.9), 0.6, 0.6, "metal"),
+    B((14.5, 16), (-1.6, 1.6), (_RL + 0.2, _RL + 1.2), "dark"),
 ]
 
 # ===========================================================================
@@ -2894,7 +3026,7 @@ SETS = [
                 # Schwer wie die Belagerungskanone -- an einen Sprinterarm
                 # kommt sie damit ebenso wenig.
                 "mount_class": "heavy", "category": "weapon",
-                "anchors": {"mount": (0, 0, 61), "muzzle": (30.2, 0, 63)},
+                "anchors": {"mount": (0, 0, 61), "muzzle": (37.6, 0, 64.4)},
             },
             {
                 "id": "eq_mortar", "code": "EQP-015", "type": "equipment",
@@ -3032,9 +3164,10 @@ def model_faces(shapes):
                               [[_r(c) for c in p] for p in points]])
         elif shape[0] == "poly":
             # Dreiecke ohne Kante: Grat und Schneide zeichnen die Flaechen selbst.
-            for normal, points in shape[1]:
-                faces.append([shape[2], "seam", [_r(c) for c in normal],
-                              [[_r(c) for c in p] for p in points]])
+            for face in shape[1]:
+                kind = "box" if len(face) > 2 and face[2] and len(face[1]) == 4 else "seam"
+                faces.append([shape[2], kind, [_r(c) for c in face[0]],
+                              [[_r(c) for c in p] for p in face[1]]])
         elif shape[0] == "disc":
             _, f, lc, zc, radius, mat, segments = shape
             points = [[_r(f), _r(lc + radius * math.cos(2 * math.pi * i / segments)),
@@ -3072,7 +3205,7 @@ def _shape_center(shape) -> tuple:
     if kind == "obox":
         return (shape[1][1], shape[1][2])
     if kind == "poly":
-        pts = [pt for _n, ps in shape[1] for pt in ps]
+        pts = [pt for face in shape[1] for pt in face[1]]
         return (sum(pt[1] for pt in pts) / len(pts), sum(pt[2] for pt in pts) / len(pts))
     _, c, prof, _mat, axis, _seg, _caps = shape
     ts = [t for _r, t in prof]
