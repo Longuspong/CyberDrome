@@ -1786,6 +1786,24 @@ EQ_SHIELD = [
 #   * PAULDRONS, die HOEHER sitzen als der Kopfsockel, dazu zwei stehende
 #     Auspuffstapel dahinter. Der Rahmen wirkt dadurch geduckt und hat keinen
 #     sichtbaren Hals -- die Vireo-Silhouette hat beides umgekehrt.
+# Kabelschlaeuche an den Auspuff-Leuchtfeuern (18. Nov. 2026, Wunsch des
+# Spielers: passt ins Cyber-Setting). Je Seite zwei Schlaeuche (Zug): einer
+# vom Stapel im Bogen hinten hinunter in den Ruecken, einer hinueber zur
+# Schulterplatte; Muffen an beiden Enden.
+_JUGG_HOSES = [
+    SW([(-11.4, 8.6, 66.5), (-15.5, 11, 61), (-14.2, 10.5, 52), (-9.6, 8.5, 46.5)],
+       [1.6, 1.6, 1.6, 1.6], "metal", sides=10, steps=6),
+    SW([(-11.7, 8.6, 66.5), (-16.9, 11.4, 61), (-15.6, 10.9, 52), (-10.6, 8.5, 46.5)],
+       [0.45, 0.45, 0.45, 0.45], "glow", sides=6, steps=6),
+    SW([(-11.2, 6.4, 69), (-16, 5.2, 63), (-15.6, 4.5, 52), (-9.6, 4, 42)],
+       [1.0, 1.0, 1.0, 1.0], "dark", sides=8, steps=6),
+    SW([(-9.8, 10.4, 70), (-12.5, 13.5, 71), (-10.2, 16.5, 67)],
+       [1.1, 1.1, 1.1], "dark", sides=8, steps=5),
+    B((-10.8, -9), (6.6, 10.4), (44.6, 48.4), "dark"),                # Muffen
+    B((-10.6, -9), (2.6, 5.4), (40.5, 43.5), "dark"),
+    L((-11.4, 8.6), [(2.0, 65.4), (2.0, 67.6)], "accent", segments=10),
+]
+
 JUGG_BODY = [
     # Umbau 16. Nov. 2026 nach den DROME-Designregeln (Entwurf v4.py,
     # new_dromes.py M_BODY): Schultern HOEHER, der Kopf sitzt tief dazwischen,
@@ -1795,18 +1813,20 @@ JUGG_BODY = [
     # -- Huefte und Torso als Keil ---------------------------------------
     B((-7, 7), (-11, 11), (31, 38), "metal"),
     B((-8, 9), (-12, 12), (38, 48), "plate"),
-    B((-9, 10.5), (-14, 14), (48, 60), "plate"),
+    # Oberkoerper mit abgeschraegter Brustkante (Profil mit Fase, 18. Nov.)
+    EX([(-9, 48), (10.5, 48), (10.5, 57), (8.5, 60), (-9, 60)], (-14, 14), "plate", bevel=0.8),
     B((-8, 9.5), (-13, 13), (60, 62.5), "light"),
     # -- Frontpanzer mit Kernsockel ----------------------------------------
     B((10.5, 11.5), (-10, 10), (42, 58), "dark"),
     B((11.5, 12), (-8, 8), (44, 45.4), "accent"),
     B((11.5, 12), (-8, 8), (56, 57.4), "accent"),
     # -- Schultern hoeher als der Kopf -------------------------------------
-    B((-9, 9), (13, 25), (56, 70), "plate"),
-    B((-9.5, 9.5), (12.5, 25.5), (70, 73), "light"),
+    # (Profile mit Fase, vorn oben abgeschraegt -- 18. Nov. 2026)
+    EX([(-9, 56), (9, 56), (9, 67), (6.5, 70), (-9, 70)], (13, 25), "plate", bevel=0.9),
+    EX([(-9.5, 70), (6.5, 70), (5, 73), (-9.5, 73)], (12.5, 25.5), "light", bevel=0.5),
     B((9, 9.6), (15, 23), (62, 65), "accent"),
-    B((-9, 9), (-25, -13), (56, 70), "plate"),
-    B((-9.5, 9.5), (-25.5, -12.5), (70, 73), "light"),
+    EX([(-9, 56), (9, 56), (9, 67), (6.5, 70), (-9, 70)], (-25, -13), "plate", bevel=0.9),
+    EX([(-9.5, 70), (6.5, 70), (5, 73), (-9.5, 73)], (-25.5, -12.5), "light", bevel=0.5),
     B((9, 9.6), (-23, -15), (62, 65), "accent"),
     # -- Bunkerkopf, tief zwischen den Schultern (gehoert zum Rumpf) ------
     B((-5, 7), (-7, 7), (61, 68), "plate"),
@@ -1822,7 +1842,7 @@ JUGG_BODY = [
     L((-9.5, -8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
     L((-9.5, 8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
     L((-9.5, -8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
-]
+] + _JUGG_HOSES + _mirror_l(_JUGG_HOSES)
 
 # Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
 # Der Molok-Kopf ist Teil des Rumpfs (17. Nov. 2026, Wunsch des Spielers).
