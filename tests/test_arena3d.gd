@@ -52,8 +52,11 @@ func test_units_get_one_model_in_the_shared_scene() -> void:
 		if child is MeshInstance3D:
 			mesh = child
 			break
-	t.ok(mesh != null and mesh.get_instance_shader_parameter("tint") == Color(2, 1, 1),
-		"Farbstich je Einheit")
+	var own := mesh.get_surface_override_material(0) as ShaderMaterial if mesh != null else null
+	t.ok(own != null and own.get_shader_parameter("tint") == Color(2, 1, 1),
+		"Farbstich je Einheit (eigene Materialkopie)")
+	t.ok(mesh.mesh.surface_get_material(0).get_shader_parameter("tint") != Color(2, 1, 1),
+		"das geteilte Material bleibt unberuehrt")
 	for unit in [a, b]:
 		unit.free()
 	arena.free()

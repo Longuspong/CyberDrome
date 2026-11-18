@@ -38,7 +38,10 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Hindernis-Bilder von Neon City werden im Kampf nicht mehr genutzt.
 * Bewegung: Atmen, Wippen/Kippen/Hüpfen beim Laufen, Angriff je Waffenart
   (Ausholen um die Schulter, Rückstoß + Aufleuchten, Schildstoß).
-* Leistung nur vom Handy messbar (Leistungstest „eine Szene“ als Maßstab).
+* Boden aus 3D-Hexplatten je Region (`ArenaFloor3D`, einmal gerendert).
+* Leistung nur vom Handy messbar (Leistungstest „eine Szene“ als Maßstab);
+  vom Spieler am 18. Nov. als „okay“ bestätigt, ebenso die 3D-Hindernisse
+  statt der gezeichneten und die schwerere Elite auf dem Hexfeld.
 
 ### Hexfeld 9 x 17 (17. Nov. 2026, Entscheidung des Spielers)
 

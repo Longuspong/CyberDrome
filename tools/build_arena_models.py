@@ -145,6 +145,60 @@ CRATE = [
     B((9, 9.3), (-1, 1), (0, 16), "dark"),
 ]
 
+# ---------------------------------------------------------------- Boden
+# Sechseck-Platten (Entwurf docs/design/drome_entwurf/v10_hexboden.py): ein
+# Drehkoerper mit 6 Segmenten, Ecke entlang f -- im Kampf zeigt f nach oben
+# im Bild, dann liegen die Spitzen oben und unten wie bei IsoView.
+HEX_R = 22.0
+GAP = 0.7
+RT = HEX_R - GAP
+
+
+def hex_slab(r_top, z_top=0.0, depth=5.0, bevel=0.9, mat="plate"):
+    r = r_top
+    return [L((0, 0), [(0, z_top - depth), (r, z_top - depth), (r, z_top - bevel),
+                       (r - bevel, z_top), (0, z_top)], mat, segments=6)]
+
+
+def hex_ring(r_out, r_in, z, h=0.18, mat="glow"):
+    return [L((0, 0), [(r_in, z), (r_out, z), (r_out, z + h), (r_in, z + h), (r_in, z)],
+              mat, segments=6)]
+
+
+def hex_inlay(r, z, depth=0.4, mat="dark"):
+    return [L((0, 0), [(0, z - depth), (r, z - depth), (r, z), (0, z)], mat, segments=6)]
+
+
+SLAB = hex_slab(RT)
+FLOOR_SHAPES = {
+    "platte": SLAB,
+    "platte_b": SLAB + [B((-3, 3), (-9, -6), (0, 0.25), "light"),
+                        B((5, 7), (4, 10), (0, 0.25), "light")],
+    "gitter": SLAB + hex_inlay(RT - 5.0, 0.02)
+              + [B((-12 + i * 4.8, -11 + i * 4.8), (-10, 10), (-0.35, 0.02), "metal") for i in range(5)],
+    "fuge": SLAB + hex_ring(RT - 2.4, RT - 3.4, 0.0),
+    "warn": SLAB + [B((-2.0, 2.0), (-14 + i * 7, -11 + i * 7), (0, 0.22), "accent") for i in range(5)],
+    "fleck": SLAB + [L((3, -4), [(0, 0), (6.5, 0), (6.5, 0.2), (0, 0.2)], "accent", segments=10)],
+    "rand": hex_slab(RT, z_top=-1.0, depth=6.0),
+    # vorderste Randreihe: tiefer Sockel, damit das Feld eine Kante hat
+    "sockel": hex_slab(RT, z_top=-1.0, depth=22.0),
+}
+
+# Je Region: Farben der Platten und des Randes, und welche Sorten mit welcher
+# Haeufigkeit (Gewichte) im Feld liegen.
+FLOOR_REGIONS = {
+    "city": (roles("#2a2147", "#3d3166", "#140d26", "#4a3d78", "#ffe14d", "#2ee3eb", "#2ee3eb", "#05020a"),
+             roles("#191430", "#251d45", "#0c0818", "#332a55", "#ffe14d", "#ff2bd6", "#ff2bd6", "#05020a"),
+             {"platte": 6, "platte_b": 3, "gitter": 1, "fuge": 1, "warn": 0.4}),
+    "green": (roles("#34502c", "#4a6a3c", "#1d2d18", "#5b5a50", "#7a5a34", "#c8ff7a", "#c8ff7a", "#0d0f0a"),
+              roles("#26381f", "#34492b", "#141f10", "#46453d", "#7a5a34", "#c8ff7a", "#c8ff7a", "#0d0f0a"),
+              {"platte": 6, "platte_b": 3, "fleck": 1.2, "fuge": 0.4}),
+    "plant7": (roles("#363a40", "#4f545c", "#1c1e22", "#5e646e", "#ff8a2d", "#ffc07a", "#ffc07a", "#0d0a08"),
+               roles("#25272b", "#33363b", "#121315", "#44484f", "#ff8a2d", "#ffc07a", "#ffc07a", "#0d0a08"),
+               {"platte": 4, "gitter": 3, "warn": 0.8, "fleck": 1, "platte_b": 1}),
+}
+
+
 MODELS = {
     "barrier": (BARRIER, CITY), "crates": (CRATES, CITY), "server": (SERVER, CITY),
     "vending": (VENDING, CITY), "generator": (GENERATOR, CITY), "bollards": (BOLLARDS, CITY),
@@ -155,8 +209,25 @@ MODELS = {
 }
 
 
-def render_all() -> dict:
+def floor_models() -> dict:
+    """Boden: floor_<region>_<sorte>.m3d; dazu eine Liste der Sorten je Region."""
     out = {}
+    for region, (field, apron, weights) in FLOOR_REGIONS.items():
+        for sort, shapes in FLOOR_SHAPES.items():
+            colors = apron if sort in ("rand", "sockel") else field
+            faces, hulls = g.model_faces(shapes)
+            out[f"floor_{region}_{sort}.m3d"] = json.dumps(
+                {"id": f"floor_{region}_{sort}", "type": "floor", "colors": colors,
+                 "faces": faces, "hulls": hulls, "anchors": {"mount": [0, 0, 0]}},
+                ensure_ascii=False, separators=(",", ":")) + "\n"
+    out["floor.json"] = json.dumps(
+        {region: weights for region, (_f, _a, weights) in FLOOR_REGIONS.items()},
+        ensure_ascii=False, indent=1) + "\n"
+    return out
+
+
+def render_all() -> dict:
+    out = floor_models()
     for kind, (shapes, colors) in MODELS.items():
         faces, hulls = g.model_faces(shapes)
         out[f"{kind}.m3d"] = json.dumps(

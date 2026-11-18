@@ -135,6 +135,8 @@ static func shade(color: Color, amount: float) -> Color:
 class Floor extends Node2D:
 	var grid: Grid
 	var region_id := "city"
+	## Nur die Zierlinie -- die Platten kommen aus ArenaFloor3D (18. Nov. 2026).
+	var border_only := false
 
 	func _ready() -> void:
 		z_index = -60
@@ -144,6 +146,9 @@ class Floor extends Node2D:
 		var w := grid.width
 		var h := grid.height
 		var a := ArenaPainter.APRON
+		if border_only:
+			_border(s, w, h)
+			return
 		# Bildkacheln (Rauten) passen nicht aufs Hexfeld -- bis Platten aus dem
 		# 3D-Generator kommen (Schritt 4), wird der Boden gezeichnet.
 		# Randstreifen und Sockel zuerst -- von hinten nach vorn.
@@ -506,7 +511,7 @@ class Lights extends Node2D:
 ## ``obstacles_2d``: Hindernisse als gezeichnete 2D-Knoten. Im Kampf seit
 ## 18. Nov. 2026 aus: dort stehen sie in 3D in der Arena (Arena3D).
 static func build(world: Node2D, grid: Grid, depth_of: Callable,
-		obstacles_2d: bool = true) -> Array:
+		obstacles_2d: bool = true, floor_3d: bool = false) -> Array:
 	var nodes: Array = []
 	var region_id := str(grid.region.id) if grid.region != null else "city"
 	var s := style(region_id)
@@ -514,6 +519,7 @@ static func build(world: Node2D, grid: Grid, depth_of: Callable,
 	var floor := Floor.new()
 	floor.grid = grid
 	floor.region_id = region_id
+	floor.border_only = floor_3d
 	world.add_child(floor)
 	nodes.append(floor)
 

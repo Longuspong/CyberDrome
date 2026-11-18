@@ -16,7 +16,10 @@ uniform vec4 c_line : source_color;
 uniform float edge_px = 1.0;
 // Farbstich je DROME (Team, Trefferblende) in der gemeinsamen Kampfszene
 // (Arena3D, 18. Nov. 2026). Multiplikativ wie modulate; 1 = unveraendert.
-instance uniform vec4 tint = vec4(1.0);
+// Ein normaler Parameter auf eigenen Materialkopien je Einheit -- KEIN
+// instance uniform: die liefern im Compatibility-Renderer bei vielen
+// Instanzen falsche Werte (Bodenplatten kamen schwarz heraus).
+uniform vec4 tint = vec4(1.0);
 
 varying vec3 world_normal;
 

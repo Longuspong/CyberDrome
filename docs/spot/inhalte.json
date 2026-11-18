@@ -180,7 +180,7 @@
   ],
 
   "offene_punkte": [
-    {"punkt": "Elite auf dem Hexfeld schwerer (Standard-Squad mit Modulen: Runde 5 Elite 7/24 statt 13/24, Runde 8 Elite 7/40 statt 16/40; Leicht/Normal unverändert) -- so lassen oder Elite-Formationen anpassen?", "quelle": "Hexfeld 17. Nov. 2026, run_bench 40", "status": "offen"},
+    {"punkt": "Elite auf dem Hexfeld schwerer (Standard-Squad mit Modulen: Runde 5 Elite 7/24 statt 13/24, Runde 8 Elite 7/40 statt 16/40; Leicht/Normal unverändert) -> so lassen (Spieler, 18. Nov. 2026)", "quelle": "Hexfeld 17. Nov. 2026, run_bench 40", "status": "entschieden"},
     {"punkt": "Aufhänger „Die Liga und der Virus“ übernehmen? -> ersetzt durch den Story-Leitfaden (docs/STORY_LEITFADEN.md)", "quelle": "VORSCHLAG_STORY 1", "status": "entschieden"},
     {"punkt": "Level-Struktur Story-Modus bauen (10 Level Neon City, Level 1 mit 2 und Level 2 mit 3 DROMEs, je Level 3 Leben) -> Neon City hat 10 Einsätze (= Story-Level), Länge je Einsatz verschieden -- noch nicht gebaut", "quelle": "VORSCHLAG_STORY 2", "status": "entschieden"},
     {"punkt": "Wege zwischen den Reihen zurück? -> Kampfkarte mit festen Pfaden und Gabelungen (FTL-artig), anfangs viele Gabelungen, später weniger", "quelle": "VORSCHLAG_STORY 6", "status": "gebaut"},

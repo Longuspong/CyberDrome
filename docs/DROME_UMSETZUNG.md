@@ -221,7 +221,11 @@ und Blickrichtung. Farbstich/Trefferblende als Instanz-Parameter `tint` in
 Ausstieg (läuft über den ganzen Bildschirm). Hindernisse als 3D-Modelle aus
 `tools/build_arena_models.py` (`assets/arena3d/<art>.m3d`, CI prüft mit
 `--check`); die gezeichneten Hindernis-Bilder (Neon City) nutzt der Kampf
-nicht mehr, Deko am Rand bleibt 2D. Boden bleibt vorerst 2D (`ArenaPainter`).
+nicht mehr, Deko am Rand bleibt 2D. **Boden seit 18. Nov. in 3D**:
+Hexplatten je Region aus demselben Generator (`floor_<region>_<sorte>.m3d`,
+Gewichte in `assets/arena3d/floor.json`), `ArenaFloor3D` rendert sie EINMAL
+in ein Weltbild ganz unten (Zone, Ringe, Lichter bleiben darüber);
+`ArenaPainter` zeichnet im Kampf nur noch Zierlinie, Lichter und Deko.
 Blicktest: `docs/design/drome_entwurf/godot/render_arena.gd` (Region,
 optional `angriff ZEITFAKTOR`).
 

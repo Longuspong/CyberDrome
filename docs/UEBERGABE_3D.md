@@ -91,3 +91,7 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
   `bash tools/build_web.sh` und `python3 -m http.server` prüfen; im Container
   läuft der Browser ohne echte GPU -- Leistungszahlen nur vom Handy des Spielers.
 * Kontur-/Kantenbreite hängt an der Auflösung (`DromeModel.edge_px`).
+* **Keine `instance uniform` in Shadern** (Compatibility-Renderer): bei
+  vielen Instanzen kamen die zuerst angelegten mit falschen Werten heraus
+  (Bodenplatten schwarz), auch ausdrücklich gesetzt. Farbstich je DROME
+  deshalb über eigene Materialkopien (`Arena3D._tint_mesh`).

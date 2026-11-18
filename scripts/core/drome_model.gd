@@ -196,17 +196,23 @@ static func _variant_name(model: Dictionary, block: Dictionary) -> String:
 	return ""
 
 
+## Ein MeshInstance3D fuer Flaechen dieses Moduls (Bildebene, ohne Schatten).
+static func mesh_instance(mesh: Mesh) -> MeshInstance3D:
+	var inst := MeshInstance3D.new()
+	inst.mesh = mesh
+	inst.layers = LAYER_IMAGE
+	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return inst
+
+
 static func _add_block(parent: Node3D, node_name: String, key: String,
 		block: Dictionary, colors: Dictionary, offset: Vector3, neon: bool) -> void:
 	var mesh := _mesh_for(key, block, colors)
 	if mesh == null:
 		return
-	var inst := MeshInstance3D.new()
+	var inst := mesh_instance(mesh)
 	inst.name = node_name
-	inst.mesh = mesh
 	inst.position = offset
-	inst.layers = LAYER_IMAGE
-	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Anker (mount, hand, muzzle) fuer die Bewegung im Kampf (Arena3D).
 	inst.set_meta("anchors", block.get("anchors", {}))
 	parent.add_child(inst)

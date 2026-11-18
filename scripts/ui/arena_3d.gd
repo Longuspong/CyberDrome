@@ -147,14 +147,11 @@ func build_obstacles(grid: Grid) -> void:
 		var mesh := DromeModel._mesh_for("arena3d|" + kind, model, model.get("colors", {}))
 		if mesh == null:
 			continue
-		var inst := MeshInstance3D.new()
+		var inst := DromeModel.mesh_instance(mesh)
 		inst.name = "Hindernis_%d_%d" % [tile.x, tile.y]
 		inst.set_meta("obstacle", true)
-		inst.mesh = mesh
-		inst.layers = DromeModel.LAYER_IMAGE
 		inst.position = ground(IsoView.map_to_local(tile))
 		inst.basis = DromeModel.facing_basis(OBSTACLE_FACING).scaled(Vector3.ONE * OBSTACLE_SCALE)
-		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		for layer_info in [[DromeModel.LAYER_SIGNAL, OBSTACLE_SIGNAL],
 				[DromeModel.LAYER_NEON, Color.BLACK]]:
 			var copy := MeshInstance3D.new()
@@ -226,9 +223,27 @@ func tint(unit: Unit, color: Color) -> void:
 
 static func _tint_tree(node: Node, color: Color) -> void:
 	for child in node.get_children():
-		if child is MeshInstance3D and child.layers == DromeModel.LAYER_IMAGE:
-			child.set_instance_shader_parameter("tint", color)
+		_tint_mesh(child, color)
 		_tint_tree(child, color)
+
+
+## Farbstich auf eigenen Materialkopien des Blocks (die Materialien der
+## Meshes teilen sich alle DROMEs). Nur Flaechen-Materialien (mit ``tint``).
+static func _tint_mesh(node: Node, color: Color) -> void:
+	if not node is MeshInstance3D or node.layers != DromeModel.LAYER_IMAGE:
+		return
+	var inst := node as MeshInstance3D
+	if inst.mesh == null:
+		return
+	for i in inst.mesh.get_surface_count():
+		var own := inst.get_surface_override_material(i) as ShaderMaterial
+		if own == null:
+			var shared := inst.mesh.surface_get_material(i) as ShaderMaterial
+			if shared == null or shared.shader != DromeModel.FACE_SHADER:
+				continue
+			own = shared.duplicate() as ShaderMaterial
+			inst.set_surface_override_material(i, own)
+		own.set_shader_parameter("tint", color)
 
 
 func _sync_unit(unit: Unit, node: Node3D) -> void:
@@ -385,8 +400,7 @@ static func _anchor(block: Node3D, name: String) -> Vector3:
 
 
 static func _tint_tree_self(node: Node, color: Color) -> void:
-	if node is MeshInstance3D and node.layers == DromeModel.LAYER_IMAGE:
-		node.set_instance_shader_parameter("tint", color)
+	_tint_mesh(node, color)
 	_tint_tree(node, color)
 
 

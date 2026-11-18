@@ -1,0 +1,22 @@
+{
+ "city": {
+  "platte": 6,
+  "platte_b": 3,
+  "gitter": 1,
+  "fuge": 1,
+  "warn": 0.4
+ },
+ "green": {
+  "platte": 6,
+  "platte_b": 3,
+  "fleck": 1.2,
+  "fuge": 0.4
+ },
+ "plant7": {
+  "platte": 4,
+  "gitter": 3,
+  "warn": 0.8,
+  "fleck": 1,
+  "platte_b": 1
+ }
+}
