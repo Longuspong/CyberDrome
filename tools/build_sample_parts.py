@@ -2246,38 +2246,50 @@ EQ_HOLO_BOOST = [
 # ===========================================================================
 
 
+# Fluegelmantel als gestaffelte Federlagen (18. Nov. 2026, Spieler: "die
+# lange Treppe ist nicht das Wahre"): je Seite drei Profile mit Fase, die
+# nach aussen kleiner werden -- Deckfedern, Armschwingen, Handschwingen --
+# und hinten unten in eine Spitze auslaufen.
+_STRIX_WING = [
+    EX([(5, 57), (1, 59.5), (-5, 59.5), (-10.5, 57), (-13.5, 51), (-14.5, 41), (-14, 30),
+        (-12.5, 21), (-10.5, 16.5), (-7.5, 21), (-3, 31), (1, 41), (4, 50)],
+       (8.6, 12.6), "plate", bevel=0.6),
+    EX([(2, 53), (-5, 55.5), (-11, 51), (-13.2, 41), (-12.8, 30), (-11, 21), (-9.5, 17.5),
+        (-7, 23), (-3.5, 32), (-0.5, 42)], (12.4, 13.8), "light", bevel=0.4),
+    EX([(-3, 45), (-8.5, 46.5), (-12, 39), (-11.8, 29), (-10.2, 20.5), (-9.2, 18.5),
+        (-7.6, 24), (-5.5, 31), (-3.5, 38)], (13.6, 14.8), "plate", bevel=0.35),
+    SW([(-1.5, 15.0, 50), (-6.5, 15.0, 46), (-9.8, 15.0, 37), (-9.8, 15.0, 27),
+         (-9.2, 15.0, 21)], [0.35, 0.35, 0.35, 0.3, 0.1], "accent", sides=6, steps=4),
+]
+
 STRIX_BODY = [
     # -- Huefte und geduckter Rumpf, nach oben nach vorn versetzt -----------
     B((-6, 4), (-6, 6), (30, 36), "metal"),
     B((-7, 5), (-8, 8), (36, 44), "plate"),
     B((-5, 8), (-9, 9), (44, 52), "plate"),
     B((-4, 8.5), (-8, 8), (52, 54), "light"),
-    # -- Fluegel-Mantel: drei Stufen, nach unten breiter -------------------
-    B((-12, 5), (9, 13), (44, 56), "plate"),
-    B((-12.5, 5.5), (8.5, 13.5), (56, 59), "light"),
-    B((-13, 3), (10, 15), (32, 44), "plate"),
-    B((-14, 0), (11, 17), (20, 32), "plate"),
-    B((-14, 0), (17, 17.5), (24, 25.3), "accent"),
-    B((-13, 3), (15, 15.5), (36, 37.3), "accent"),
-    B((-12, 5), (13, 13.5), (48, 49.3), "accent"),
-    B((-12, 5), (-13, -9), (44, 56), "plate"),
-    B((-12.5, 5.5), (-13.5, -8.5), (56, 59), "light"),
-    B((-13, 3), (-15, -10), (32, 44), "plate"),
-    B((-14, 0), (-17, -11), (20, 32), "plate"),
-    # -- Lafette auf der linken Schulter (equip_center) ---------------------
-    B((-6, 4), (8.5, 12.5), (58, 61), "metal"),
-    B((3.9, 4.4), (9.5, 11.5), (59, 60), "accent"),
+    # -- Fluegelmantel ------------------------------------------------------
+] + _STRIX_WING + _mirror_l(_STRIX_WING) + [
+    # -- Lafette unter der linken Schulter (equip_center, 18. Nov. 2026):
+    #    Buchse im Fluegel, die Waffe steckt seitlich mit ihrem Halter darin.
+    L((-1, 49.5), [(2.6, 14.2), (2.6, 16.0)], "dark", axis="l", segments=12),
+    L((-1, 49.5), [(2.9, 14.8), (2.9, 15.3)], "accent", axis="l", caps=False, segments=12),
+    # Kabel vom Zielrechner am Ruecken zur Buchse
+    SW([(-7.6, 1.5, 41.5), (-11.5, 6, 43), (-12.5, 11.5, 46.5), (-7, 16.2, 49.5),
+        (-3.5, 15.6, 49.5)], [0.7] * 5, "dark", sides=8, steps=5),
+    SW([(-7.6, -1.5, 40), (-12.5, 5, 40.5), (-13.8, 12, 44.5), (-8, 16.6, 47.5),
+        (-3.5, 15.6, 48.0)], [0.55] * 5, "metal", sides=8, steps=5),
 ]
 
 STRIX_HEAD = [
     # Kapuze, nach vorn ueber die Brust gezogen
     B((3, 13), (-7.5, 7.5), (49, 60), "plate"),
     B((2.5, 13.5), (-8, 8), (60, 62), "light"),
-    # Federohren
-    B((2, 6), (3, 6), (62, 67), "plate"),
-    B((2, 6), (-6, -3), (62, 67), "plate"),
-    B((5, 6.3), (3.5, 5.5), (63, 66), "accent"),
-    B((5, 6.3), (-5.5, -3.5), (63, 66), "accent"),
+    # Federohren als Doppelpyramiden, leicht nach aussen und hinten
+    BP((4.5, 4.4, 60.5), (2.2, 6.2, 69), 3.2, 2.6, "plate", mid=0.35),
+    BP((4.5, -4.4, 60.5), (2.2, -6.2, 69), 3.2, 2.6, "plate", mid=0.35),
+    BP((5.6, 4.6, 62), (4.3, 5.8, 67.2), 1.4, 0.8, "accent", mid=0.35),
+    BP((5.6, -4.6, 62), (4.3, -5.8, 67.2), 1.4, 0.8, "accent", mid=0.35),
     # Gesicht: dunkle Platte, zwei grosse Linsen mit Lichtpunkt, Schnabel
     # (Linsen vergroessert 17. Nov. 2026, Board 16 / v6.py LENS_BIG)
     B((13, 13.6), (-7.0, 7.0), (50.5, 59.5), "dark"),
@@ -2313,13 +2325,32 @@ STRIX_CORE = [
 
 # Waffen der Lafette: um ihren eigenen Anker (0, 0, 61) gebaut, liegen auf
 # der Schulter statt in einer Hand.
-EQ_MORTAR = [
-    B((-5, 3), (-2.5, 2.5), (61, 64), "metal"),                      # Sockel
-    L((-1, 0), [(3.6, 64), (3.9, 78), (3.4, 82)], "metal", segments=14),   # Rohr
-    L((-1, 0), [(4.4, 78.5), (4.4, 80)], "accent", caps=False, segments=14),
-    L((-1, 0), [(2.4, 82), (2.4, 82.6)], "glow", segments=12),       # Muendung
-    B((-6, -5), (-1.5, 1.5), (62, 66), "dark"),                      # Ladeschacht
-    B((3, 3.5), (-1.5, 1.5), (62, 63.5), "accent"),
+def side_holder(z=61.0):
+    """Halter einer Lafetten-Waffe (Strix, 18. Nov. 2026): ein Arm quer zur
+    Waffe, der seitlich in die Buchse unter der Schulter greift (-l), mit
+    Kragen an der Buchse. Die Waffe liegt um (0, 0, z) wie bisher."""
+    return [
+        B((-2.4, 2.4), (-6.2, -1.4), (z + 1.0, z + 3.4), "metal"),
+        B((-2.9, 2.9), (-6.8, -5.6), (z + 0.6, z + 3.8), "dark"),
+        B((-1.0, 1.0), (-5.0, -2.4), (z + 3.4, z + 3.8), "accent"),
+    ]
+
+
+# Moerser (18. Nov. 2026): Verschlussblock mit Fase, Rohr mit Muendungskragen,
+# zwei Stuetzen, Munitionsgurt zum Halter -- statt eines nackten Zylinders.
+EQ_MORTAR = side_holder() + [
+    EX([(-5, 61.4), (3, 61.4), (4.2, 63), (3, 66.5), (-5, 66.5)], (-2.9, 2.9), "plate", bevel=0.45),
+    L((-1, 0), [(3.0, 66), (3.0, 79), (3.7, 80), (3.7, 83)], "metal", segments=14),   # Rohr
+    L((-1, 0), [(3.3, 70), (3.3, 71.2)], "accent", caps=False, segments=14),
+    L((-1, 0), [(3.3, 74), (3.3, 75.2)], "accent", caps=False, segments=14),
+    L((-1, 0), [(2.4, 83), (2.4, 83.5)], "glow", segments=12),                         # Muendung
+    OB((2.8, 2.6, 63), (0.6, 2.9, 73), 0.9, 0.9, "metal"),                             # Stuetzen
+    OB((2.8, -2.6, 63), (0.6, -2.9, 73), 0.9, 0.9, "metal"),
+    # Munitionsgurt vom Verschluss zum Halter
+    SW([(-5.2, -1.0, 64.5), (-7.2, -2.8, 63.6), (-6.4, -5.6, 62.6), (-3.2, -7.0, 62.6)],
+       [1.1] * 4, "dark", sides=4, flat=0.45, steps=5),
+    SW([(-5.3, -1.0, 64.5), (-7.3, -2.8, 63.6), (-6.5, -5.6, 62.6), (-3.3, -7.0, 62.6)],
+       [0.45] * 4, "glow", sides=6, steps=5),
 ]
 
 # Schienen-Lanze als schweres Scharfschuetzengewehr (Spieler 18. Nov. 2026:
@@ -2328,8 +2359,7 @@ EQ_MORTAR = [
 # eingeklapptes Zweibein. Railgun bleibt sie: Leuchtspalt im Gehaeuse,
 # Spulenringe am Lauf. Liegt auf der Strix-Lafette (Wiege bei z 61).
 _RL = 62.0                               # Unterkante Gehaeuse
-EQ_RAIL_LANCE = [
-    B((-5, 5), (-2, 2), (61, 62.2), "plate"),                         # Wiege
+EQ_RAIL_LANCE = side_holder() + [
     # Schaft: Kolben, Griffstueck, Wangenauflage (Profil, Fase)
     EX([(-17, _RL - 1.6), (-15.5, _RL - 2.2), (-6, _RL - 0.6), (-4, _RL + 0.2),
         (-4, _RL + 4.0), (-9, _RL + 4.6), (-15, _RL + 5.0), (-17, _RL + 4.6)],
@@ -2650,9 +2680,8 @@ def _head_shield(h, k):
 def lafette_blaster(neon=False):
     """Fernwaffe ohne Arm: liegt laengs auf der Schulter, Wiege statt Hand."""
     z = LAFETTE_Z
-    s = [
-        B((-6, 4), (-2, 2), (z, z + 2.5), "plate"),                  # Wiege
-        B((-4, 5), (-3, 3), (z + 2.5, z + 8), "plate"),              # Gehaeuse
+    s = side_holder(z) + [
+        B((-4, 5), (-3, 3), (z + 1.5, z + 8), "plate"),              # Gehaeuse
         B((5, 15), (-2, 2), (z + 3, z + 7.4), "plate"),              # Lauf
         B((5, 15), (-2.2, 2.2), (z + 7.4, z + 8.1), "light"),
         B((15, 17), (-1.8, 1.8), (z + 3.2, z + 7.2), "dark"),
@@ -2675,9 +2704,8 @@ def lafette_staff():
     z = LAFETTE_Z
     base = z + 5
     head, point = _head_staff((0, 0, base - 18.6), 1.0)
-    return [
-        B((-3, 3), (-2.6, 2.6), (z, z + 2), "plate"),
-        L((0, 0), [(1.6, z + 2), (1.6, base)], "metal", segments=10),
+    return side_holder(z) + [
+        L((0, 0), [(1.6, z + 1), (1.6, base)], "metal", segments=10),
     ] + head[5:], point
 
 
@@ -2687,9 +2715,8 @@ def lafette_wrench():
     z = LAFETTE_Z
     base = z + 5
     head, point = _head_wrench((0, 0, base - 14), 1.0)
-    return [
-        B((-3, 3), (-2.6, 2.6), (z, z + 2), "plate"),
-        B((-1.2, 1.2), (-1.2, 1.2), (z + 2, base), "plate"),
+    return side_holder(z) + [
+        B((-1.2, 1.2), (-1.2, 1.2), (z + 1, base), "plate"),
     ] + head[5:], point
 
 
@@ -2987,8 +3014,9 @@ SETS = [
                     "feet": (0, 0, 30),
                     # Am Ruecken statt an der Brust -- siehe STRIX_CORE.
                     "core": (-7.3, 0, 40.5),
-                    # Die Lafette: auf der linken Schulter, nicht an einem Arm.
-                    "equip_center": (-1, 10.5, 61),
+                    # Die Lafette: seitlich unter der linken Schulter, die Waffe
+                    # steckt mit ihrem Halter in der Buchse (18. Nov. 2026).
+                    "equip_center": (-1, 21.0, 47.5),
                 },
                 # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin --
                 # aber als Lafette nur Fernkampf (16. Nov. 2026).
@@ -3033,7 +3061,7 @@ SETS = [
                 "name": "Moerser", "tags": ["weapon", "heavy", "artillery"],
                 "shapes": EQ_MORTAR,
                 "mount_class": "heavy", "category": "weapon",
-                "anchors": {"mount": (0, 0, 61), "muzzle": (-1, 0, 82.6)},
+                "anchors": {"mount": (0, 0, 61), "muzzle": (-1, 0, 83.5)},
             },
         ],
     },

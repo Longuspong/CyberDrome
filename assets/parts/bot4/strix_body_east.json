@@ -36,8 +36,8 @@
     },
     {
       "name": "equip_center",
-      "x": 73.07,
-      "y": 30.01
+      "x": 83.09,
+      "y": 35.81
     }
   ],
   "color_scheme": {
@@ -61,7 +61,7 @@
     "head": 57,
     "feet": 30,
     "core": 33.2,
-    "equip_center": 49.5
+    "equip_center": 25.5
   },
   "slot_rules": {
     "equip_center": {
