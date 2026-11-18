@@ -48,9 +48,12 @@ mit PIL bauen). Leinwand: https://claude.ai/artifact/TAngQWD17gcfUoMok2Gzx6
   behoben; DROMEs auf 75 % (`figures.scale`). Details in `PROJEKTSTAND.md`.
 * Offen: Rückmeldung des Spielers zu flachen Feldern und 75 % auf dem Handy;
   "Tote bleiben stehen" ließ sich im Container nicht nachstellen (Sicherung
-  in `Arena3D` eingebaut) -- nach neuem Screenshot fragen; Dachschützen
-  gewinnen auf jeder Karte (Balance der Formation); Modulsystem wird
+  in `Arena3D` eingebaut) -- nach neuem Screenshot fragen; Modulsystem wird
   überdacht (erst besprechen); Story-Level.
+* Entschieden (Spieler, 18. Nov. spät): Dachschützen bleiben so stark
+  ("fordernd, man muss die Snipers umgehen"). `map_bench.gd` misst wieder
+  die echten Karten aus `config.json` -> `maps` plus "je Formation".
+  Nächster Fokus des Spielers: Grundbedienung und Spielablauf.
 
 ### Offen / nächste Schritte
 1. ~~Balance-Messung~~ -- **erledigt 18. Nov.** (PR #84): Ausholzeit,

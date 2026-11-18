@@ -3,7 +3,9 @@ extends SceneTree
 ## Karten-Messung ohne Bildschirm (18. Nov. 2026): dieselben Kaempfe auf
 ## verschiedenen Kartengroessen und -formen. Je Karte: Siege, Dauer, erster
 ## Treffer, Laufanteil -- und Siege je Formation (welche Karte passt zu
-## welchem Trupp).
+## welchem Trupp). Seit dem 18. Nov. 2026 die echten Karten aus config.json
+## -> maps; "je Formation" = jede auf ihrer eigenen Karte wie im Einsatz.
+## nur-karte filtert nach dem Schluessel (z. B. lang).
 ##
 ##     godot --headless --path . --script res://tools/playtest/map_bench.gd -- [seeds] [level] [nur-karte]
 
