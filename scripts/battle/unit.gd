@@ -205,7 +205,9 @@ func _build_sprites() -> void:
 	# 16. Nov. 2026: "die Sentinels schweben").
 	if build != null and build.sprite_scale != 1.0:
 		_scale_about_feet(_rig, build.sprite_scale)
-		_scale_about_feet(_ring, maxf(0.7, build.sprite_scale))
+	# Der Bodenring passt zur Figur (Arena3D.figure_scale, 18. Nov. 2026).
+	var small := maxf(0.7, build.sprite_scale) if build != null else 1.0
+	_scale_about_feet(_ring, small * Arena3D.figure_scale())
 	_refresh_tint()
 
 

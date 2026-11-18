@@ -329,7 +329,7 @@ class UnitBadgePainter extends Node2D:
 		var width := WIDTH * s
 		var height := HEIGHT * s * (0.7 if level == "far" else 1.0)
 		var takt_rows: int = 0 if level == "far" else (entry.get("takt", []) as Array).size()
-		var base := BASE_Y
+		var base := BASE_Y * Arena3D.figure_scale()
 		# Sentinels: kleiner Balken, naeher an der kleineren Figur.
 		if entry.get("small", false):
 			width *= 0.6
@@ -442,7 +442,8 @@ class UnitBadgePainter extends Node2D:
 		var width: float = box["width"]
 		var height: float = box["height"]
 		var left := center.x - width * 0.5
-		var top := center.y + (BASE_Y * 0.62 if entry.get("small", false) else BASE_Y) - height - lift
+		var top := center.y + (BASE_Y * 0.62 if entry.get("small", false) else BASE_Y) \
+			* Arena3D.figure_scale() - height - lift
 
 		var parts := split(int(entry.get("hp", 0)), int(entry.get("hp_max", 0)),
 			int(entry.get("shield", 0)), int(entry.get("shield_max", 0)))
