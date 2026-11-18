@@ -229,6 +229,25 @@ in ein Weltbild ganz unten (Zone, Ringe, Lichter bleiben darüber);
 Blicktest: `docs/design/drome_entwurf/godot/render_arena.gd` (Region,
 optional `angriff ZEITFAKTOR`).
 
+### 4g. Generator-Upgrade und Redesign -- erledigt (18. Nov.)
+
+Neue Bausteine in `tools/build_sample_parts.py` (alle ergeben ein `poly`,
+Spiegeln/SVG/3D/Silhouette laufen mit):
+* `BP` Doppelpyramide -- gerade Klingen, Dorne, Federohren
+* `SW` Zug -- Querschnitt entlang einer Catmull-Rom-Kurve: rund = Kabel und
+  Schläuche, Raute + `flat` = gebogene Klingen (Bumerang)
+* `EX` Profil -- Umriss (auch eingebuchtet) gezogen, mit Fase; `axis` "l"
+  (Seitenansicht), "f" (Vorderansicht, z. B. V-Torso), "z" (Grundriss)
+
+Redesign nach der Leinwand-Seite „Durchsicht & Redesign“ (vom Spieler
+freigegeben): Strix mit Federmantel statt Treppe und Lafette seitlich unter
+der linken Schulter (`equip_center` (-1, 21, 47.5), Buchse im Flügel, Kabel
+vom Zielrechner; jede Lafetten-Waffe hat `side_holder`), Molok mit
+Kabelschläuchen an den Auspuff-Leuchtfeuern und Fasen, Vireo mit V-Torso und
+gepfeilten Booster-Flügeln, Schienen-Lanze als schweres Scharfschützengewehr,
+Mörser, Puls-Blaster, Hammer, Ramme und E-Schlüssel überarbeitet. Blicktest
+für ein Chassis: `godot/render_chassis.gd <chassis> [waffe]`.
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 **Grundstufe gebaut (18. Nov.) in `Arena3D._animate`**: Atmen im Stand
 (Rumpf/Kopf/Waffen wippen, Füße fest), Wippen beim Laufen, Nimbus kippt nach
