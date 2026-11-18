@@ -29,6 +29,47 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Flache Hexfelder, doppelte Figuren (18. Nov. 2026, Meldung des Spielers)
+
+* **Flache Sechsecke** (Kante oben und unten): vorher hatten die Felder oben
+  und unten eine Spitze, wer geradeaus auf den Gegner zuging, lief im
+  Zickzack. Jetzt "odd-q": Spalten senkrecht, ungerade Spalten ein halbes
+  Feld tiefer und eine Reihe kuerzer -- so bleibt die Spiegelung an der
+  Mittelreihe exakt (`MapGenerator.mirror`: h - 1 - y bzw. h - 2 - y).
+  Richtung i zeigt auf 30 + 60 i Grad (`Grid.AXIAL_DIRS`, `direction_angle`),
+  `IsoView` mit `COL_W`/`ROW_H`, Tiefe in halben Reihen, Bodenplatten um
+  30 Grad gedreht (`ArenaFloor3D`). Kartenformen neu in Spalten gerechnet
+  (Bauch mit geraden Schraegkanten, Zwei Gassen als gerade Mauer in der
+  Mittelspalte). Messung: `playtest.gd -- 150` 114 statt 102 Siege,
+  `run_bench.gd -- 40` unveraendert.
+* **Doppelte Figuren**: die Aufstellung setzte die Blickrichtung, bevor die
+  Einheit an der 3D-Szene hing -- dabei entstand ein 2D-Bild, das unter dem
+  3D-Modell eingefroren stehen blieb ("der Vireo steht doppelt da"). Jetzt
+  raeumt `Unit._build_sprites` es weg. Dazu eine Sicherung in `Arena3D`:
+  wer gefallen ist, verschwindet spaetestens nach der Zerfallszeit.
+
+### Karten je Formation (18. Nov. 2026, Entscheidung des Spielers)
+
+* Messlauf `tools/playtest/map_bench.gd` (Ergebnis-Seite
+  https://claude.ai/artifact/GF1hrgR3G8fpBHUpa8L29e): die Groesse stellt das
+  Tempo ein (erster Treffer 3,0 s bei 13 Reihen, 4,2 s bei 17, 5,6 s bei 21),
+  die Form verschiebt einzelne Formationen um bis zu 30 Punkte.
+* Entschieden: die Karte stuetzt den Gedanken der Formation. `config.json` ->
+  `maps` (standard 9 x 15, kurz 9 x 13, lang 9 x 21, gassen 9 x 17 mit Block in
+  der Mitte, bauch 11 x 17), `formations.json` -> `map` je Formation
+  (Einfuehrung + Bullies kurz, Squad standard, Dachschuetzen lang, Lazarett
+  gassen, Schattenrudel bauch). Chaos-Kaempfe: Standard.
+* Formen: `MapGenerator.apply_shape` setzt Loecher (`Grid.holes`, gehoeren
+  nicht zum Feld; Boden und Zierlinie folgen von selbst) und feste Bloecke,
+  an der Mittelreihe gespiegelt, Zonen immer frei. Der Bauch waechst ab der
+  Zone je Reihe um ein halbes Feld (gerade Hexkanten).
+* Zufaellige Hindernisse aus (`obstacles.enabled` false, Wunsch des Spielers:
+  berechenbar), Randdeko bleibt.
+* Messung: `run_bench.gd -- 40` mit den Karten der Formationen wie vorher
+  (Abweichungen im Rauschen). Gegen gewuerfelte Gegner (`playtest.gd -- 150`)
+  auf der Standardkarte 102 statt 111 Siege, erster Treffer 4,4 statt 5,3 s.
+* Lauf-Vorschau zeigt die Karte ("Karte: Bauch").
+
 ### Hangar: DROME-Wechsel ohne Ruckler (18. Nov. 2026, Meldung des Spielers)
 
 * Jedes Antippen baute den ganzen Hangar neu auf, und jede Kachel renderte

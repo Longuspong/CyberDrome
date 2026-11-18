@@ -322,14 +322,21 @@ static func _tint_mesh(node: Node, color: Color) -> void:
 		own.set_shader_parameter("tint", color)
 
 
+## Wie gross die DROMEs im Verhaeltnis zum Feld sind (18. Nov. 2026,
+## Spieler: "die DROMEs sind zu gross fuer die Sechsecke").
+## data/config.json -> figures.scale.
+static func figure_scale() -> float:
+	return float(Config.section("figures").get("scale", 1.0))
+
+
 func _sync_unit(unit: Unit, node: Node3D) -> void:
 	node.visible = unit.visible and unit.is_inside_tree()
 	var rig := unit.rig()
 	var feet := unit.position + IsoView.SPRITE_ORIGIN
-	var factor := 1.0
+	var factor := figure_scale()
 	if rig != null:
 		feet = unit.position + rig.position + IsoView.SPRITE_ORIGIN * rig.scale
-		factor = rig.scale.x
+		factor *= rig.scale.x
 	node.position = ground(feet)
 	node.scale = Vector3.ONE * factor
 
@@ -705,6 +712,16 @@ func _process(_delta: float) -> void:
 			forget(unit)
 			continue
 		_sync_unit(unit, _models[unit])
+		# Sicherung (18. Nov. 2026, "Tote bleiben stehen"): wer gefallen ist,
+		# verschwindet spaetestens nach der Zerfallszeit -- auch wenn die
+		# Todesanimation nicht lief.
+		if not unit.is_alive():
+			var state: Dictionary = _anim.get(unit, {})
+			state["dead_for"] = float(state.get("dead_for", 0.0)) + _delta
+			_anim[unit] = state
+			if float(state["dead_for"]) > Unit.DEATH_TIME + 0.3:
+				unit.visible = false
+				_models[unit].visible = false
 		_animate(unit, _models[unit], _delta)
 	_sync_camera()
 

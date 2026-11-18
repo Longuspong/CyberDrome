@@ -13,7 +13,8 @@
   "  intro: darf in den ersten Kaempfen (run.training_rounds) kommen. VORSCHLAG von Claude --",
   "  der Spieler bestaetigt die Fraktionsidentitaet (SPOT-Blatt Formationen).",
   "variants: wie Leicht und Elite aus derselben Formation werden (level_offset aufs",
-  "  Reinforcement-Level, Ränge, Module der DROMEs)."
+  "  Reinforcement-Level, Ränge, Module der DROMEs).",
+  "map: die Karte der Formation (Schluessel in config.json -> maps, 18. Nov. 2026)."
  ],
  "sentinels": {
   "neon_assault": {
@@ -445,6 +446,7 @@
     "id": "neon_intro_vireo",
     "name": "Einführung: Vireo",
     "idea": "Ein einzelner Vireo mit zwei Klingen-Sentinels -- lerne, wie ein DROME eine Squad führt. Kein zweiter DROME.",
+    "map": "kurz",
     "intro": true,
     "steps": [
      {
@@ -497,6 +499,7 @@
     "id": "neon_bullies",
     "name": "Neon Bullies",
     "idea": "Bullien: eine Frontlinie ohne Backline. Erst Molok mit Assaults, verstärkt bis Molok und Vireo.",
+    "map": "kurz",
     "intro": true,
     "steps": [
      {
@@ -567,6 +570,7 @@
     "id": "neon_squad",
     "name": "Neon-Squad",
     "idea": "Die Grundformation der Neon Ninjas: ein Neon Vireo führt Assault, Sniper und Support. Später kommt ein Neon Nimbus dazu.",
+    "map": "standard",
     "steps": [
      {
       "from": 1,
@@ -638,6 +642,7 @@
     "id": "neon_rooftop",
     "name": "Dachschützen",
     "idea": "Backline: Sniper-Sentinels auf Abstand, ein Neon Nimbus hält dir die Front vom Leib. Schnell ran!",
+    "map": "lang",
     "steps": [
      {
       "from": 2,
@@ -708,6 +713,7 @@
     "id": "neon_clinic",
     "name": "Neon-Lazarett",
     "idea": "Ausdauer: Supports heilen eine zähe Front. Wer nicht bündelt, kämpft ewig -- bis der Virus kommt.",
+    "map": "gassen",
     "steps": [
      {
       "from": 2,
@@ -765,6 +771,7 @@
     "id": "neon_shadow_pack",
     "name": "Schattenrudel",
     "idea": "Flanke: schnelle Klingen, die um deine Front herum auf die Schützen gehen. Zum Schluss zwei Neon Vireos.",
+    "map": "bauch",
     "steps": [
      {
       "from": 3,

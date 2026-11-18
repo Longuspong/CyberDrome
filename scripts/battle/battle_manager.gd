@@ -63,8 +63,9 @@ var _time_limit: float = 180.0
 ## Fairness-Tests (dasselbe Squad auf beiden Seiten).
 ## ``region_id``: feste Region (Lauf: das Gebiet des Laufs). Leer = aus dem
 ## Seed gewuerfelt (Tests, Direktstart).
+## ``map_id``: die Karte (config.json -> maps), leer = Standardkarte.
 func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
-		region_id: StringName = &"") -> void:
+		region_id: StringName = &"", map_id: String = "") -> void:
 	battle_seed = seed_value
 	var realtime := Config.section("realtime")
 	_dt = float(realtime.get("tick", 0.05))
@@ -81,7 +82,7 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 	rng.seed = battle_seed
 
 	region = _region_for(rng, region_id)
-	grid = MapGenerator.generate(region)
+	grid = MapGenerator.generate(region, map_id)
 	MapGenerator.place_obstacles(grid, battle_seed)
 
 	# Ohne feste Gegner (Direktstart der Kampfszene, Tests, Werkzeuge) wird

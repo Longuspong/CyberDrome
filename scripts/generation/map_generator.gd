@@ -22,12 +22,94 @@ const SHAPES := [
 ]
 
 
-## Ein leeres Feld in der Groesse aus der Konfiguration.
-static func generate(region: Terrain.Region) -> Grid:
-	var grid := Grid.new(Config.get_int("grid_width", Grid.DEFAULT_WIDTH),
-		Config.get_int("grid_height", Grid.DEFAULT_HEIGHT))
+## Das Feld einer Karte (18. Nov. 2026, Wunsch des Spielers: die Karte
+## stuetzt den Gedanken der Formation). ``map_id`` ist ein Schluessel aus
+## ``data/config.json`` -> ``maps`` (leer oder unbekannt: ``maps.default``).
+## Jede Karte hat Breite, Hoehe und eine Form; die Form ist fest und an der
+## Mittelreihe gespiegelt -- beide Seiten haben dieselben Bedingungen.
+static func generate(region: Terrain.Region, map_id: String = "") -> Grid:
+	var spec := map_spec(map_id)
+	var grid := Grid.new(int(spec.get("width", Grid.DEFAULT_WIDTH)),
+		int(spec.get("height", Grid.DEFAULT_HEIGHT)))
 	grid.region = region
+	grid.map_id = str(spec.get("id", ""))
+	apply_shape(grid, str(spec.get("shape", "rect")))
 	return grid
+
+
+## Die Angaben einer Karte samt ihrer Id. Unbekannt oder leer: die Standardkarte.
+static func map_spec(map_id: String) -> Dictionary:
+	var maps := Config.section("maps")
+	var key := map_id
+	if key == "" or not maps.get(key) is Dictionary:
+		key = str(maps.get("default", ""))
+	var spec = maps.get(key)
+	if not spec is Dictionary:
+		return {"id": "", "width": Grid.DEFAULT_WIDTH, "height": Grid.DEFAULT_HEIGHT, "shape": "rect"}
+	var out: Dictionary = (spec as Dictionary).duplicate()
+	out["id"] = key
+	return out
+
+
+## Die Form einer Karte: Loecher (Felder ausserhalb) und feste Bloecke
+## (Hindernisse, ueber die geschossen wird). Die Aufstellungszonen bleiben
+## immer frei. Formen:
+##   rect    Rechteck
+##   belly   Bauch: an den Zonen schmal, in der Mitte die volle Breite --
+##           Platz fuer Flanken
+##   waist   Engpass: in der Mitte nur 5 Felder breit
+##   lanes   Zwei Gassen: ein Block in der Mitte teilt das Feld
+static func apply_shape(grid: Grid, shape: String) -> void:
+	grid.holes.clear()
+	if shape == "rect" or shape == "":
+		return
+	var zones := {}
+	for tile in deployment_zone(grid, true) + deployment_zone(grid, false):
+		zones[tile] = true
+	var kinds: Array = Config.section("obstacles").get("kinds", {}).get(
+		str(grid.region.id) if grid.region != null else "", ["block"])
+	if kinds.is_empty():
+		kinds = ["block"]
+	for y in grid.height:
+		for x in grid.width:
+			var tile := Vector2i(x, y)
+			if zones.has(tile) or not grid.in_bounds(tile):
+				continue
+			match _shape_cell(shape, tile, grid.width, grid.height):
+				"hole":
+					grid.holes[tile] = true
+				"block":
+					# Feste Optik je Feld (kein Zufall des Kampfes), gespiegelt gleich.
+					var other := mirror(grid, tile)
+					var top := tile if tile.y <= other.y else other
+					grid.obstacles[tile] = str(kinds[absi(hash(top)) % kinds.size()])
+
+
+## Was ein Feld in einer Form ist: "" (Spielfeld), "hole" oder "block".
+## Gerechnet wird nur fuer die obere Haelfte, die untere ist ihr Spiegelbild.
+## Flache Sechsecke: ungerade Spalten liegen ein halbes Feld tiefer, Reihen
+## zaehlen deshalb in halben Schritten (py).
+static func _shape_cell(shape: String, tile: Vector2i, w: int, h: int) -> String:
+	var mid := (float(h) - 1.0) * 0.5
+	var py := float(tile.y) + 0.5 * float(tile.x & 1)
+	if py > mid:
+		py = float(h - 1) - py
+	var across := absf(float(tile.x) - (float(w) - 1.0) * 0.5)    # Spalten von der Mitte
+	var inner := mid - py                                          # Reihen bis zur Mitte
+	match shape:
+		"waist":
+			if across > 2.0 and inner <= 3.0:
+				return "hole"
+		"belly":
+			# Ab der Zone (7 Spalten) je halbe Reihe eine Spalte breiter --
+			# das ist die gerade Schraegkante eines flachen Sechsecks.
+			if across > 3.0 + 2.0 * maxf(0.0, py - 2.0) + 0.001:
+				return "hole"
+		"lanes":
+			# Eine Mauer in der Mittelspalte; links und rechts je eine Gasse.
+			if across < 0.5 and inner <= 3.0:
+				return "block"
+	return ""
 
 
 ## Setzt die Hindernisse. Eigener Zufall aus ``seed_value`` -- der Zufall
@@ -39,7 +121,7 @@ static func generate(region: Terrain.Region) -> Grid:
 ## gespiegelt (x, y) -> (x, h - 1 - y), so wie die Gegnerzone die
 ## gespiegelte Spielerzone ist. Eine Gruppe, die das Feld zerteilen wuerde, faellt weg.
 static func place_obstacles(grid: Grid, seed_value: int) -> void:
-	grid.obstacles.clear()
+	# Die festen Bloecke der Kartenform (apply_shape) bleiben stehen.
 	var settings := Config.section("obstacles")
 	if not bool(settings.get("enabled", true)):
 		return
@@ -93,12 +175,13 @@ static func place_obstacles(grid: Grid, seed_value: int) -> void:
 		placed += 1
 
 
-## Das Gegenstueck eines Feldes, an der Mittelreihe gespiegelt. Bei einer
-## ungeraden Reihenzahl haben Reihe y und h - 1 - y denselben Versatz -- die
-## Spiegelung ist damit auf dem Hexfeld exakt (eine Drehung um die Mitte
-## waere es mit versetzten Reihen nicht).
+## Das Gegenstueck eines Feldes, an der Mittelreihe gespiegelt -- auf dem
+## flachen Hexfeld exakt, weil die ungeraden Spalten eine Reihe weniger haben
+## (Grid.in_bounds).
 static func mirror(grid: Grid, tile: Vector2i) -> Vector2i:
-	return Vector2i(tile.x, grid.height - 1 - tile.y)
+	# Flache Sechsecke: ungerade Spalten liegen ein halbes Feld tiefer und
+	# haben eine Reihe weniger -- ihr Spiegelbild ist h - 2 - y.
+	return Vector2i(tile.x, grid.height - 1 - (tile.x & 1) - tile.y)
 
 
 ## Ob ein Feld an ein schon gesetztes Hindernis grenzt -- Gruppen sollen
@@ -175,7 +258,10 @@ static func deployment_tile(grid: Grid, is_player: bool, row: int, column: int) 
 	var inset := clampi(int(Config.section("deployment").get("inset", 1)), 0,
 		maxi(0, grid.height / 2 - rows))
 	var left := (grid.width - columns) / 2
-	var tile := Vector2i(left + column, grid.height - inset - rows + row)
+	var x := left + column
+	# Die unterste Reihe der Spalte (ungerade Spalten: eine weniger).
+	var bottom := grid.height - 1 - (x & 1)
+	var tile := Vector2i(x, bottom - inset - (rows - 1) + row)
 	return tile if is_player else mirror(grid, tile)
 
 

@@ -41,6 +41,17 @@ mit PIL bauen). Leinwand: https://claude.ai/artifact/TAngQWD17gcfUoMok2Gzx6
 (Seiten „Fähigkeiten lesbar“ mit Filmen, „Durchsicht & Redesign“,
 „Waffenfarben“).
 
+### Nachtrag 18. Nov. abends (PR #84-#86)
+* Erledigt: Echo nacheinander, Flächen landen am Wurfort, Balance gemessen;
+  Hangar ohne Ruckler (Bild-Cache); Karten je Formation, Standard 9 x 15,
+  keine zufälligen Hindernisse; flache Sechsecke (odd-q); doppelte Figuren
+  behoben; DROMEs auf 75 % (`figures.scale`). Details in `PROJEKTSTAND.md`.
+* Offen: Rückmeldung des Spielers zu flachen Feldern und 75 % auf dem Handy;
+  "Tote bleiben stehen" ließ sich im Container nicht nachstellen (Sicherung
+  in `Arena3D` eingebaut) -- nach neuem Screenshot fragen; Dachschützen
+  gewinnen auf jeder Karte (Balance der Formation); Modulsystem wird
+  überdacht (erst besprechen); Story-Level.
+
 ### Offen / nächste Schritte
 1. ~~Balance-Messung~~ -- **erledigt 18. Nov.** (PR #84): Ausholzeit,
    Salven, Echo nacheinander und Flächen am Wurfort gegen `main` gemessen,

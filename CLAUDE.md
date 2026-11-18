@@ -12,6 +12,9 @@ Spielprinzips, der gerade mit dem Spieler besprochen wird.
 **Fuer Module: `docs/MODULE_KONZEPT.md`** -- seit 9. Nov. 2026 die
 festgelegte Richtung (9 Grundmodule, 18 Rezepte, Matrix-BIOS, Profile =
 Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
+**Achtung (18. Nov. 2026, Spieler): das Modulsystem wird ueberdacht** --
+keine neue Arbeit an Modulen, Rezepten oder BIOS, bevor es mit dem Spieler
+besprochen ist.
 **Fuer Story, Fraktionen, Gegnergruppen: `docs/VORSCHLAG_STORY.md`** --
 Vorschlaege vom 10. Nov. 2026, noch NICHT entschieden; die offenen Punkte
 stehen dort in Abschnitt 6. **Story-Rahmen seit 14. Nov. 2026: `docs/STORY_LEITFADEN.md`**
@@ -178,9 +181,15 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
   nach oben in groessere Halter, schwer nur in schwer).
-* Spielfeld ist seit 17. Nov. 2026 ein **Hexfeld 9 x 17** (hochkant,
-  Reihen waagerecht, Spieler unten, Gegner oben; `Grid`: `Vector2i(spalte,
-  reihe)`, ungerade Reihen halb nach rechts, Abstand in Hexschritten,
+* Spielfeld ist seit 17. Nov. 2026 ein **Hexfeld**, seit 18. Nov. 2026 **je
+  Formation eine eigene Karte** (`config.json` -> `maps`, Formation -> `map`;
+  Standard 9 x 15, dazu kurz 9 x 13, lang 9 x 21, Zwei Gassen, Bauch 11 x 17;
+  Formen fest und gespiegelt, `MapGenerator.apply_shape`, `Grid.holes`;
+  keine zufaelligen Hindernisse mehr, Randdeko bleibt) (hochkant,
+  Spieler unten, Gegner oben; seit 18. Nov. 2026 **flache Sechsecke**: Kante
+  oben/unten, Spalten senkrecht -- `Grid`: `Vector2i(spalte, reihe)`,
+  "odd-q": ungerade Spalten halb nach unten und eine Reihe kuerzer (exakte
+  Spiegelung), Richtung i zeigt auf 30 + 60 i Grad, Abstand in Hexschritten,
   `Grid.neighbors`/`neighbor`/`direction_toward`/`line_direction`;
   Bildschirm nur ueber `IsoView`). Reichweiten 1:1 von Manhattan uebernommen.
   Blickrichtung im Kampf als Winkel `deg<grad>` (`DromeModel.facing_basis`).
@@ -248,8 +257,8 @@ Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
 - [ ] **Bosse** am Ende der Story-Level (Oni, Shogun Kage; Abschnitt 3).
 - [ ] **Schwierigkeit** pruefen: Normal Runde 8 63 %, Elite 41 % ohne
       Module -- so lassen oder Elite-Teams anziehen? (Abschnitt 5)
-- [ ] **Aufstellung**: erster Treffer nach 5,6 s statt 2,0 s -- zu lang?
-      Stellschraube `deployment.inset` in `data/config.json` (1 -> 3).
+- [x] ~~Aufstellung: erster Treffer zu spaet~~ -- Standardkarte 9 x 15
+      (4,4 s), Karten je Formation, 18. Nov. 2026
 - [x] ~~Umlaute in der Anzeige~~ -- gebaut 14. Nov. 2026
 - [ ] **Endlos-Modus** ausbauen: Sektoren je Fraktion, bessere Beute je
       Sektor (Abschnitt 5; heute Platzhalter in `run.endless`).

@@ -48,12 +48,13 @@ func test_open_ground_offers_three_tiles_in_each_direction() -> void:
 	var landings := resolver.dash_landings(unit, dash)
 	# Sechs Hexrichtungen x drei Felder = achtzehn Landefelder auf freiem Feld.
 	t.equal(landings.size(), 18, "freies Feld: achtzehn Landefelder")
-	var up_right := Grid.neighbor(Grid.neighbor(Grid.neighbor(unit.tile, 1), 1), 1)
-	for tile in [Vector2i(6, 5), Vector2i(7, 5), Vector2i(8, 5), up_right, Vector2i(2, 5)]:
+	# Flache Sechsecke (18. Nov. 2026): die Spalte ist eine Linie.
+	var up_right := Grid.neighbor(Grid.neighbor(Grid.neighbor(unit.tile, 0), 0), 0)
+	for tile in [Vector2i(5, 4), Vector2i(5, 3), Vector2i(5, 2), up_right, Vector2i(5, 8)]:
 		t.ok(tile in landings, "%s ist erreichbar" % tile)
 	# Nichts abseits der sechs Linien, nichts jenseits von drei Feldern.
-	t.ok(not (Vector2i(5, 3) in landings), "zwei Reihen gerade hoch ist keine Linie")
-	t.ok(not (Vector2i(9, 5) in landings), "nichts jenseits von drei Feldern")
+	t.ok(not (Vector2i(7, 5) in landings), "zwei Spalten quer ist keine Linie")
+	t.ok(not (Vector2i(5, 1) in landings), "nichts jenseits von drei Feldern")
 	unit.free()
 
 
@@ -85,9 +86,9 @@ func test_executing_the_dash_moves_the_drome() -> void:
 	var resolver := ActionResolver.new(grid, [unit])
 	var dash := _dash_action(unit)
 
-	t.ok(resolver.execute(unit, Vector2i(8, 5), dash), "der Boost geht raus")
-	t.equal(unit.tile, Vector2i(8, 5), "der DROME steht jetzt drei Felder weiter")
-	t.equal(grid.occupant(Vector2i(8, 5)), unit.unit_id, "das Landefeld ist belegt")
+	t.ok(resolver.execute(unit, Vector2i(5, 2), dash), "der Boost geht raus")
+	t.equal(unit.tile, Vector2i(5, 2), "der DROME steht jetzt drei Felder weiter")
+	t.equal(grid.occupant(Vector2i(5, 2)), unit.unit_id, "das Landefeld ist belegt")
 	t.equal(grid.occupant(Vector2i(5, 5)), null, "das Startfeld ist frei")
 	unit.free()
 
@@ -100,11 +101,11 @@ func test_target_blocker_names_the_reason() -> void:
 	var resolver := ActionResolver.new(grid, [unit])
 	var dash := _dash_action(unit)
 
-	t.equal(resolver.target_blocker(unit, Vector2i(8, 5), dash), "",
+	t.equal(resolver.target_blocker(unit, Vector2i(5, 2), dash), "",
 		"ein gültiges Landefeld hat keinen Grund")
-	t.equal(resolver.target_blocker(unit, Vector2i(5, 3), dash), "Nur in gerader Linie",
+	t.equal(resolver.target_blocker(unit, Vector2i(7, 5), dash), "Nur in gerader Linie",
 		"abseits der Linien nennt den Grund")
-	t.equal(resolver.target_blocker(unit, Vector2i(9, 5), dash), "Zu weit für den Boost",
+	t.equal(resolver.target_blocker(unit, Vector2i(5, 1), dash), "Zu weit für den Boost",
 		"jenseits der Reichweite ebenso")
 	unit.free()
 

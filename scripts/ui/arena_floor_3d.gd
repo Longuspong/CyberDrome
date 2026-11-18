@@ -88,7 +88,8 @@ func build(grid: Grid) -> void:
 	cam.position = Arena3D.ground(box.get_center()) + cam.basis.z * 1500.0
 	_view.add_child(cam)
 	DromeModel._edge = maxf(0.75, 0.45 * OVERSAMPLE)
-	var basis := DromeModel.facing_basis("deg90")
+	# Flache Sechsecke (18. Nov. 2026): die Platte um 30 Grad gedreht.
+	var basis := DromeModel.facing_basis("deg60")
 	for tile in tiles:
 		var sort := sort_for(grid, tile, region_id, table)
 		var model := _model(region_id, sort)

@@ -399,6 +399,8 @@ func _show_prepare(run: RunState) -> void:
 			box.add_child(_label("Anführer: %s" % leader.to_upper(), 14, Arcade.TEXT))
 		if str(info.get("team_text", "")) != "":
 			box.add_child(_label(str(info["team_text"]), 13, COLOR_MUTED))
+		if str(info.get("map", "")) != "":
+			box.add_child(_label("Karte: %s" % str(info["map"]), 13, Arcade.TEXT))
 		# Die Einheiten der Formation als Kacheln -- antippen zeigt die Werte.
 		var flow := HFlowContainer.new()
 		flow.add_theme_constant_override("h_separation", 6)

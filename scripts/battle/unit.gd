@@ -188,6 +188,13 @@ func _build_sprites() -> void:
 	# Gelegenheiten, dass der Bot im Kampf anders aussieht als beim Bauen.
 	_ensure_chrome()
 	if arena != null:
+		# Gemeinsame 3D-Szene: ein 2D-Bild aus der Zeit vor dem Einhaengen
+		# (Aufstellung setzt die Blickrichtung frueher) muss weg -- sonst stand
+		# der DROME doppelt da, einmal eingefroren (18. Nov. 2026, Spieler).
+		for child in _rig.get_children():
+			if child is Sprite2D or child is SubViewport:
+				_rig.remove_child(child)
+				child.queue_free()
 		_sprites = {}
 		arena.rebuild(self)
 	else:
@@ -198,7 +205,9 @@ func _build_sprites() -> void:
 	# 16. Nov. 2026: "die Sentinels schweben").
 	if build != null and build.sprite_scale != 1.0:
 		_scale_about_feet(_rig, build.sprite_scale)
-		_scale_about_feet(_ring, maxf(0.7, build.sprite_scale))
+	# Der Bodenring passt zur Figur (Arena3D.figure_scale, 18. Nov. 2026).
+	var small := maxf(0.7, build.sprite_scale) if build != null else 1.0
+	_scale_about_feet(_ring, small * Arena3D.figure_scale())
 	_refresh_tint()
 
 

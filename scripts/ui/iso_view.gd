@@ -14,20 +14,24 @@ extends RefCounted
 ## Feld eine Bodenraute von 76 x 54 px (Quadrat 40 x 40, diagonal gesehen).
 
 ## Hexfeld (seit 17. Nov. 2026). Gemessen in derselben Projektion wie die
-## DROMEs (1,35 Bildpunkte je Generator-Einheit, Iso-Kamera 45 Grad): das
-## Brett liegt so, dass die Reihen waagerecht laufen; in der Tiefe staucht
-## die Kamera auf cos 45. Ein Sechseck hat 22 Einheiten Eckradius (Spitze
-## oben und unten), so gross wie die Platten aus dem 3D-Entwurf
-## (docs/design/drome_entwurf/v10_hexboden.py).
+## DROMEs (1,35 Bildpunkte je Generator-Einheit, Iso-Kamera 45 Grad); in der
+## Tiefe staucht die Kamera auf cos 45. Ein Sechseck hat 22 Einheiten
+## Eckradius, so gross wie die Platten aus dem 3D-Entwurf
+## (docs/design/drome_entwurf/v10_hexboden.py). Seit 18. Nov. 2026 liegen die
+## Sechsecke flach (Kante oben und unten, Spitze links und rechts): Spalten
+## laufen senkrecht, ungerade Spalten ein halbes Feld tiefer (Grid "odd-q").
 const HEX_R := 22.0
 const PX_PER_UNIT := 1.35
 const DEPTH_SQUASH := 0.70710678
-## Breite eines Sechsecks im Bild (Kante zu Kante) = Abstand zweier Spalten.
+## Abstand zweier Nachbarn quer im Bild (Mitte zu Mitte, sqrt(3) * R) -- die
+## "Feldbreite" fuer Kamera, Zoom und Reichweiten.
 const TILE_W := 1.7320508 * HEX_R * PX_PER_UNIT
-## Hoehe eines Sechsecks im Bild (Spitze zu Spitze).
-const TILE_H := 2.0 * HEX_R * PX_PER_UNIT * DEPTH_SQUASH
-## Abstand zweier Reihen im Bild.
-const ROW_H := 1.5 * HEX_R * PX_PER_UNIT * DEPTH_SQUASH
+## Hoehe eines Sechsecks im Bild (Kante zu Kante).
+const TILE_H := 1.7320508 * HEX_R * PX_PER_UNIT * DEPTH_SQUASH
+## Abstand zweier Spalten im Bild.
+const COL_W := 1.5 * HEX_R * PX_PER_UNIT
+## Abstand zweier Reihen (in einer Spalte) im Bild.
+const ROW_H := 1.7320508 * HEX_R * PX_PER_UNIT * DEPTH_SQUASH
 
 ## Grosse aller Teil- und Tile-Bilder -- im ENTWURFSRAUM, nicht in Pixeln.
 ## Jedes SVG dieses Projekts zeichnet in ``viewBox="0 0 128 128"``.
@@ -68,13 +72,13 @@ static func pivot_on_tile_center(sprite: Sprite2D) -> void:
 
 ## Feld -> Bildschirmposition der Feldmitte.
 static func map_to_local(cell: Vector2i) -> Vector2:
-	return Vector2((float(cell.x) + 0.5 * float(cell.y & 1)) * TILE_W, float(cell.y) * ROW_H)
+	return Vector2(float(cell.x) * COL_W, (float(cell.y) + 0.5 * float(cell.x & 1)) * ROW_H)
 
 
 ## Bildschirmposition -> Feld (das Sechseck, in dem der Punkt liegt).
 static func local_to_map(pos: Vector2) -> Vector2i:
-	var r := pos.y / ROW_H
-	var q := pos.x / TILE_W - r * 0.5
+	var q := pos.x / COL_W
+	var r := pos.y / ROW_H - q * 0.5
 	# Wuerfelkoordinaten runden (q + r + s = 0).
 	var s := -q - r
 	var rq := roundf(q)
@@ -101,21 +105,23 @@ static func sprite_position(cell: Vector2i) -> Vector2:
 ##
 ## Y-Sortierung allein genuegt nicht: alle Sprites eines Feldes teilen sich
 ## dieselbe y-Position, und ein Betonpfeiler muss den DROME davor verdecken,
-## aber den dahinter nicht. Auf dem Hexfeld ist das die Reihe.
+## aber den dahinter nicht. Auf dem flachen Hexfeld: halbe Reihen (ungerade
+## Spalten liegen ein halbes Feld tiefer).
 static func depth(cell: Vector2i) -> int:
-	return cell.y
+	return 2 * cell.y + (cell.x & 1)
 
 
 ## Die sechs Ecken eines Feldes im Bild -- fuer Boden, Umrisse und
-## Trefferpruefung. Reihenfolge: oben, oben rechts, unten rechts, unten,
-## unten links, oben links. Kante i verbindet Ecke i und i + 1; ueber ihr
-## liegt der Nachbar in Richtung EDGE_DIR[i] (Grid.AXIAL_DIRS).
+## Trefferpruefung. Reihenfolge: oben links, oben rechts, rechts, unten
+## rechts, unten links, links. Kante i verbindet Ecke i und i + 1; ueber ihr
+## liegt der Nachbar in Richtung EDGE_DIR[i] (Grid.AXIAL_DIRS): oben N,
+## oben rechts NO, unten rechts SO, unten S, unten links SW, oben links NW.
 const EDGE_DIR := [1, 0, 5, 4, 3, 2]
 
 static func tile_corners(cell: Vector2i) -> PackedVector2Array:
 	var center := map_to_local(cell)
 	var out := PackedVector2Array()
-	for angle in [90.0, 30.0, -30.0, -90.0, -150.0, 150.0]:
+	for angle in [120.0, 60.0, 0.0, -60.0, -120.0, 180.0]:
 		var a := deg_to_rad(angle)
 		out.append(center + Vector2(cos(a) * HEX_R * PX_PER_UNIT,
 			-sin(a) * HEX_R * PX_PER_UNIT * DEPTH_SQUASH))
@@ -124,4 +130,4 @@ static func tile_corners(cell: Vector2i) -> PackedVector2Array:
 
 ## Bildschirmmitte des Gitters -- damit die Kamera weiss, wohin.
 static func grid_center(width: int, height: int) -> Vector2:
-	return Vector2((float(width) - 0.5) * 0.5 * TILE_W, float(height - 1) * 0.5 * ROW_H)
+	return Vector2(float(width - 1) * 0.5 * COL_W, float(height - 1) * 0.5 * ROW_H)
