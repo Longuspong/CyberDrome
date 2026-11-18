@@ -30,14 +30,14 @@ func test_the_zone_is_a_strip_at_the_edge() -> void:
 	var battle := BattleManager.new()
 	battle.setup(321, _squad(), _squad())
 	var zone := battle.deployment_tiles(true)
-	t.equal(zone.size(), 24, "24 Felder")
+	t.equal(zone.size(), 21, "21 Felder (3 x 7)")
 	var xs := {}
 	var ys := {}
 	for tile in zone:
 		xs[tile.x] = true
 		ys[tile.y] = true
 	t.equal(ys.size(), 3, "drei Reihen tief")
-	t.equal(xs.size(), 8, "acht Felder breit")
+	t.equal(xs.size(), 7, "sieben Felder breit")
 	var edge := 0
 	for y in ys:
 		edge = maxi(edge, y)
@@ -45,7 +45,7 @@ func test_the_zone_is_a_strip_at_the_edge() -> void:
 	var foes := battle.deployment_tiles(false)
 	for i in zone.size():
 		t.equal(foes[i], MapGenerator.mirror(battle.grid, zone[i]),
-			"Gegnerzone ist die gedrehte Spielerzone (%d)" % i)
+			"Gegnerzone ist die gespiegelte Spielerzone (%d)" % i)
 	for unit in battle.units:
 		t.ok(unit.tile in battle.deployment_tiles(unit.is_player),
 			"%s steht in seiner Zone" % unit.display_name)

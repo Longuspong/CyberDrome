@@ -9,11 +9,43 @@ extends RefCounted
 var t
 
 
-func test_distance_is_manhattan() -> void:
-	# Reichweite und Bewegung rechnen beide mit dieser Distanz: vier
-	# Schrittrichtungen, also Manhattan.
-	t.equal(Grid.distance(Vector2i(0, 0), Vector2i(3, 4)), 7, "Manhattan-Distanz")
-	t.equal(Grid.directions().size(), 4, "vier Schrittrichtungen")
+func test_distance_counts_hex_steps() -> void:
+	# Hexfeld (17. Nov. 2026): sechs Schrittrichtungen, jeder Schritt kostet 1.
+	t.equal(Grid.distance(Vector2i(4, 8), Vector2i(4, 8)), 0, "gleiches Feld")
+	t.equal(Grid.neighbors(Vector2i(4, 8)).size(), 6, "sechs Nachbarn")
+	for start in [Vector2i(4, 8), Vector2i(4, 7)]:
+		for next in Grid.neighbors(start):
+			t.equal(Grid.distance(start, next), 1, "%s -> %s ist ein Schritt" % [start, next])
+	# Gerade Reihe: drei Felder nach rechts = 3; zwei Reihen hoch = 2.
+	t.equal(Grid.distance(Vector2i(1, 8), Vector2i(4, 8)), 3, "quer")
+	t.equal(Grid.distance(Vector2i(4, 8), Vector2i(4, 6)), 2, "zwei Reihen")
+	t.equal(Grid.distance(Vector2i(4, 16), Vector2i(4, 0)), 16, "unten nach oben")
+	# Axial hin und zurueck.
+	for tile in [Vector2i(0, 0), Vector2i(3, 5), Vector2i(8, 16), Vector2i(-1, -3)]:
+		t.equal(Grid.from_axial(Grid.to_axial(tile)), tile, "axial %s" % tile)
+
+
+func test_neighbors_lie_around_the_tile_on_screen() -> void:
+	# Richtung i zeigt im Bild auf i * 60 Grad -- Darstellung und Logik passen.
+	for start in [Vector2i(4, 8), Vector2i(4, 7)]:
+		var center := IsoView.map_to_local(start)
+		for dir in 6:
+			var d := IsoView.map_to_local(Grid.neighbor(start, dir)) - center
+			d.y /= IsoView.DEPTH_SQUASH
+			var angle := rad_to_deg(atan2(-d.y, d.x))
+			t.ok(absf(angle_difference(deg_to_rad(angle), deg_to_rad(dir * 60.0))) < 0.01,
+				"%s Richtung %d auf %d Grad (%.1f)" % [start, dir, dir * 60, angle])
+			t.equal(Grid.direction_toward(start, Grid.neighbor(start, dir)), dir,
+				"direction_toward erkennt Richtung %d" % dir)
+		t.equal(IsoView.local_to_map(center + Vector2(3, -2)), start, "Klick trifft das Feld")
+
+
+func test_lines_on_the_hex_field() -> void:
+	t.equal(Grid.line_direction(Vector2i(4, 8), Vector2i(7, 8)), 0, "nach rechts")
+	t.equal(Grid.line_direction(Vector2i(4, 8), Vector2i(1, 8)), 3, "nach links")
+	var far := Grid.neighbor(Grid.neighbor(Vector2i(4, 8), 1), 1)
+	t.equal(Grid.line_direction(Vector2i(4, 8), far), 1, "schraeg hoch rechts")
+	t.equal(Grid.line_direction(Vector2i(4, 8), Vector2i(4, 6)), -1, "zwei Reihen hoch ist keine Linie")
 
 
 func test_two_dromes_never_share_a_tile() -> void:
@@ -29,8 +61,8 @@ func test_two_dromes_never_share_a_tile() -> void:
 func test_the_field_is_open_and_has_the_configured_size() -> void:
 	var region := TerrainDB.get_region(&"city")
 	var grid := MapGenerator.generate(region)
-	t.equal(grid.width, Config.get_int("grid_width", 20), "Breite aus der Konfiguration")
-	t.equal(grid.height, Config.get_int("grid_height", 20), "Höhe aus der Konfiguration")
+	t.equal(grid.width, Config.get_int("grid_width", 9), "Breite aus der Konfiguration")
+	t.equal(grid.height, Config.get_int("grid_height", 17), "Höhe aus der Konfiguration")
 	t.equal(grid.region, region, "die Region hängt am Gitter (Optik)")
 	var free := 0
 	for tile in grid.all_tiles():
@@ -47,23 +79,25 @@ func test_every_region_has_a_floor_tile() -> void:
 	t.ok(TerrainDB.missing_tiles.is_empty(), "keine Kachel fehlt")
 
 
-func test_deployment_runs_bottom_left_against_top_right() -> void:
-	# Isometrisch ist x+y die Bildschirmtiefe. Ohne die Sortierung in
-	# deployment_zone() faengt jede Zone an ihrer Ecke an, und beide Squads
-	# landen auf den seitlichen Spitzen der Raute -- auf gleicher Hoehe.
-	var grid := Grid.new(20, 20)
+func test_deployment_runs_bottom_against_top() -> void:
+	# Hexfeld (17. Nov. 2026): Spieler unten, Gegner oben, beide mittig.
+	var grid := MapGenerator.generate(TerrainDB.get_region(&"city"))
 	var player := MapGenerator.deployment_zone(grid, true)
 	var enemy := MapGenerator.deployment_zone(grid, false)
 
 	var player_first: Vector2i = player[0]
 	var enemy_first: Vector2i = enemy[0]
-	t.ok(player_first.x + player_first.y > enemy_first.x + enemy_first.y,
+	t.ok(player_first.y > enemy_first.y,
 		"der Spieler stellt tiefer auf als der Gegner (%s vs %s)"
 		% [player_first, enemy_first])
+	for tile in player:
+		t.ok(tile.y >= grid.height - 3, "Spielerzone in den unteren drei Reihen (%s)" % tile)
+	for i in player.size():
+		t.equal(enemy[i], MapGenerator.mirror(grid, player[i]), "Gegnerzone gespiegelt (%d)" % i)
 
 	var player_pos := IsoView.map_to_local(player_first)
 	var enemy_pos := IsoView.map_to_local(enemy_first)
-	t.ok(player_pos.x < enemy_pos.x, "Spieler links, Gegner rechts")
+	t.ok(absf(player_pos.x - enemy_pos.x) < 1.0, "beide mittig")
 	t.ok(player_pos.y > enemy_pos.y, "Spieler unten, Gegner oben")
 
 

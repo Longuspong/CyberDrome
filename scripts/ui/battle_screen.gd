@@ -318,7 +318,7 @@ func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 ## die Doppelschuss war.
 func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 	if tile != unit.tile:
-		unit.play_attack(tile)
+		unit.play_attack(tile, action)
 	var color := Teams.color(unit.is_player)
 	if not action.is_move() and (action.power > 0 or action.heal > 0):
 		view.show_attack(unit.visual_anchor(), IsoView.map_to_local(tile), color,
@@ -434,11 +434,12 @@ func _follow_fight(delta: float) -> void:
 	_set_zoom(lerpf(camera.zoom.x, zoom, k))
 
 
-## Der naechste Zoom, den das Folgen zulaesst: rund sieben Felder ueber die
-## Breite -- naeher heran, wenn nur noch wenige stehen.
+## Der naechste Zoom, den das Folgen zulaesst: rund zehn Hexfelder ueber die
+## Breite (so gross wie frueher sieben Rauten -- die DROMEs behalten ihre
+## Groesse) -- naeher heran, wenn nur noch wenige stehen.
 func _follow_zoom() -> float:
 	var visible := get_viewport().get_visible_rect().size
-	return clampf(visible.x / (7.0 * IsoView.TILE_W), ZOOM_MIN, ZOOM_MAX)
+	return clampf(visible.x / (10.4 * IsoView.TILE_W), ZOOM_MIN, ZOOM_MAX)
 
 
 func _set_zoom(zoom: float) -> void:
@@ -460,7 +461,7 @@ func _look_at_unit(unit: Unit) -> void:
 	tween.tween_property(camera, "position", unit.visual_anchor() + Vector2(0, -40), 0.4) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	var visible := get_viewport().get_visible_rect().size
-	var close := clampf(visible.x / (5.0 * IsoView.TILE_W), ZOOM_MIN, ZOOM_MAX)
+	var close := clampf(visible.x / (7.4 * IsoView.TILE_W), ZOOM_MIN, ZOOM_MAX)
 	tween.tween_method(_set_zoom, camera.zoom.x, close, 0.4)
 
 

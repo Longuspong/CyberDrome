@@ -51,7 +51,7 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String,
 		var turn := old_view.get_node_or_null("Drome/Ausrichtung") as Node3D
 		if turn != null:
 			turn.basis = DromeModel.facing_basis(facing)
-			old_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+			redraw(parent)
 			return {"drome": old_sprite}
 	for child in parent.get_children():
 		if child is Sprite2D or child is SubViewport:
@@ -62,19 +62,21 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String,
 	if build == null or build.body() == null:
 		return sprites
 
-	var view := SubViewport.new()
-	view.name = "Ansicht3D"
-	view.size = Vector2i(resolution, resolution)
-	view.transparent_bg = true
-	view.own_world_3d = true
-	view.msaa_3d = Viewport.MSAA_4X
-	view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	# Drei Ansichten derselben 3D-Welt: das Bild, die Signalfarbe je Teil
+	# (Kontur je Teil) und -- nur mit Neon-Teilen -- die Leuchtroehren.
+	var world := World3D.new()
+	var view := _make_view("Ansicht3D", world, resolution, DromeModel.LAYER_IMAGE, true)
 	view.set_meta("build", build)
 	view.set_meta("signature", _signature(build))
 	var model := DromeModel.build_node(build, facing, resolution)
-	view.add_child(DromeModel.make_camera())
 	view.add_child(model)
 	parent.add_child(view)
+	var signal_view := _make_view("Signal3D", world, resolution, DromeModel.LAYER_SIGNAL, false)
+	parent.add_child(signal_view)
+	var neon_view: SubViewport = null
+	if bool(model.get_meta("neon", false)):
+		neon_view = _make_view("Neon3D", world, resolution, DromeModel.LAYER_NEON, true)
+		parent.add_child(neon_view)
 
 	var sprite := Sprite2D.new()
 	sprite.name = "Drome"
@@ -90,10 +92,41 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String,
 	# Haelfte ausserhalb der Flaeche.
 	outline.set_shader_parameter("line_px", 0.45 * resolution / 128.0)
 	outline.set_shader_parameter("rim_px", 1.6 * resolution / 128.0)
+	outline.set_shader_parameter("signal_tex", signal_view.get_texture())
+	outline.set_shader_parameter("use_signal", true)
 	sprite.material = outline
 	parent.add_child(sprite)
+	if neon_view != null:
+		sprite.add_child(NeonGlow.create_3d(neon_view.get_texture(), resolution))
 	sprites["drome"] = sprite
 	return sprites
+
+
+## Eine Ansicht der gemeinsamen 3D-Welt mit eigener Kamera fuer eine Ebene.
+static func _make_view(view_name: String, world: World3D, resolution: int, layer: int,
+		smooth: bool) -> SubViewport:
+	var view := SubViewport.new()
+	view.name = view_name
+	view.size = Vector2i(resolution, resolution)
+	view.transparent_bg = true
+	view.world_3d = world
+	# Die Signalebene ohne Kantenglaettung: ihre Farben werden nur gelesen,
+	# Mischfarben an den Kanten waeren dort falsch.
+	view.msaa_3d = Viewport.MSAA_4X if smooth else Viewport.MSAA_DISABLED
+	view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var cam := DromeModel.make_camera()
+	cam.cull_mask = layer
+	view.add_child(cam)
+	return view
+
+
+## Zeichnet alle Ansichten eines DROME einmal neu (nach Drehen oder Bewegen).
+static func redraw(parent: Node, always: bool = false) -> void:
+	for view_name in ["Ansicht3D", "Signal3D", "Neon3D"]:
+		var view := parent.get_node_or_null(view_name) as SubViewport
+		if view != null:
+			view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if always \
+				else SubViewport.UPDATE_ONCE
 
 
 ## Was im Aufbau steckt -- aendert es sich (Umbau), wird neu gebaut.

@@ -11,20 +11,21 @@ extends RefCounted
 ## Feldmitte, damit beide Seiten dieselben Bedingungen haben, und nie in oder
 ## direkt an den Aufstellungszonen. Alles am Seed des Kampfes.
 
-## Die Formen eines Hindernisses (Versatz vom Ankerfeld): einzeln, kurze
-## Mauer, Ecke.
+## Die Formen eines Hindernisses: Ankerfeld plus Nachbarn in diesen
+## Hexrichtungen (Grid.AXIAL_DIRS) -- einzeln, kurze Mauer quer, kurze Mauer
+## schraeg, Dreieck.
 const SHAPES := [
-	[Vector2i(0, 0)],
-	[Vector2i(0, 0), Vector2i(1, 0)],
-	[Vector2i(0, 0), Vector2i(0, 1)],
-	[Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1)],
+	[],
+	[0],
+	[5],
+	[0, 5],
 ]
 
 
 ## Ein leeres Feld in der Groesse aus der Konfiguration.
 static func generate(region: Terrain.Region) -> Grid:
-	var grid := Grid.new(Config.get_int("grid_width", Grid.DEFAULT_SIZE),
-		Config.get_int("grid_height", Grid.DEFAULT_SIZE))
+	var grid := Grid.new(Config.get_int("grid_width", Grid.DEFAULT_WIDTH),
+		Config.get_int("grid_height", Grid.DEFAULT_HEIGHT))
 	grid.region = region
 	return grid
 
@@ -34,9 +35,9 @@ static func generate(region: Terrain.Region) -> Grid:
 ## im Lauf zeigt weiter denselben Kampf.
 ##
 ## Einstellungen in data/config.json -> "obstacles": wie viele Gruppen
-## (je Seite), Abstand zu den Zonen. Jede Gruppe wird gespiegelt
-## (x, y) -> (b - 1 - x, h - 1 - y), so wie die Gegnerzone die gedrehte
-## Spielerzone ist. Eine Gruppe, die das Feld zerteilen wuerde, faellt weg.
+## (je Seite), Abstand zu den Zonen. Jede Gruppe wird an der Mittelreihe
+## gespiegelt (x, y) -> (x, h - 1 - y), so wie die Gegnerzone die
+## gespiegelte Spielerzone ist. Eine Gruppe, die das Feld zerteilen wuerde, faellt weg.
 static func place_obstacles(grid: Grid, seed_value: int) -> void:
 	grid.obstacles.clear()
 	var settings := Config.section("obstacles")
@@ -54,11 +55,12 @@ static func place_obstacles(grid: Grid, seed_value: int) -> void:
 
 	# Gesperrt fuer Hindernisse: beide Zonen samt Rand.
 	var keep_free := {}
-	for is_player in [true, false]:
-		for tile in deployment_zone(grid, is_player):
-			for dx in range(-margin, margin + 1):
-				for dy in range(-margin, margin + 1):
-					keep_free[tile + Vector2i(dx, dy)] = true
+	var zones: Array[Vector2i] = deployment_zone(grid, true) + deployment_zone(grid, false)
+	for tile in grid.all_tiles():
+		for zone_tile in zones:
+			if Grid.distance(tile, zone_tile) <= margin:
+				keep_free[tile] = true
+				break
 
 	var placed := 0
 	var attempts := 0
@@ -70,8 +72,11 @@ static func place_obstacles(grid: Grid, seed_value: int) -> void:
 		var kind: String = str(kinds[rng.randi() % kinds.size()])
 		var tiles: Array[Vector2i] = []
 		var ok := true
-		for offset in shape:
-			for tile in [anchor + offset, mirror(grid, anchor + offset)]:
+		var shape_tiles: Array[Vector2i] = [anchor]
+		for dir in shape:
+			shape_tiles.append(Grid.neighbor(anchor, dir))
+		for own in shape_tiles:
+			for tile in [own, mirror(grid, own)]:
 				if not grid.in_bounds(tile) or keep_free.has(tile) \
 						or grid.obstacles.has(tile) or _touches(grid, tile) \
 						or tile in tiles:
@@ -88,22 +93,26 @@ static func place_obstacles(grid: Grid, seed_value: int) -> void:
 		placed += 1
 
 
-## Das Gegenstueck eines Feldes, um die Feldmitte gedreht.
+## Das Gegenstueck eines Feldes, an der Mittelreihe gespiegelt. Bei einer
+## ungeraden Reihenzahl haben Reihe y und h - 1 - y denselben Versatz -- die
+## Spiegelung ist damit auf dem Hexfeld exakt (eine Drehung um die Mitte
+## waere es mit versetzten Reihen nicht).
 static func mirror(grid: Grid, tile: Vector2i) -> Vector2i:
-	return Vector2i(grid.width - 1 - tile.x, grid.height - 1 - tile.y)
+	return Vector2i(tile.x, grid.height - 1 - tile.y)
 
 
-## Ob ein Feld an ein schon gesetztes Hindernis grenzt (auch schraeg) --
-## Gruppen sollen frei stehen, sonst wachsen Mauern zusammen.
+## Ob ein Feld an ein schon gesetztes Hindernis grenzt -- Gruppen sollen
+## frei stehen, sonst wachsen Mauern zusammen.
 static func _touches(grid: Grid, tile: Vector2i) -> bool:
-	for dx in [-1, 0, 1]:
-		for dy in [-1, 0, 1]:
-			if grid.obstacles.has(tile + Vector2i(dx, dy)):
-				return true
+	if grid.obstacles.has(tile):
+		return true
+	for next in Grid.neighbors(tile):
+		if grid.obstacles.has(next):
+			return true
 	return false
 
 
-## Ob alle freien Felder zusammenhaengen (Schritte in vier Richtungen).
+## Ob alle freien Felder zusammenhaengen (Schritte in sechs Richtungen).
 static func _connected(grid: Grid) -> bool:
 	var start := Vector2i(-1, -1)
 	var free := 0
@@ -116,8 +125,7 @@ static func _connected(grid: Grid) -> bool:
 	var frontier: Array[Vector2i] = [start]
 	while not frontier.is_empty():
 		var tile: Vector2i = frontier.pop_back()
-		for dir in Grid.directions():
-			var next: Vector2i = tile + dir
+		for next in Grid.neighbors(tile):
 			if grid.in_bounds(next) and not grid.obstacles.has(next) and not seen.has(next):
 				seen[next] = true
 				frontier.append(next)
@@ -126,16 +134,16 @@ static func _connected(grid: Grid) -> bool:
 
 ## Die Aufstellungszone einer Seite: ein Streifen am Kartenrand (seit
 ## 10. Nov. 2026, Wunsch des Spielers -- vorher ein 3 x 5-Block, der 5 Felder
-## von der Ecke eingerueckt mitten im Feld lag). Der Spieler steht an der
-## Kante unten links, der Gegner an der Kante oben rechts; im Hochformat
-## laeuft der Kampf damit schraeg ueber den Bildschirm statt quer.
+## von der Ecke eingerueckt mitten im Feld lag). Seit dem Hexfeld (17. Nov.
+## 2026) steht der Spieler an der Kante unten, der Gegner oben; der Kampf
+## laeuft im Hochformat von unten nach oben.
 ##
 ## data/config.json -> "deployment": rows Reihen tief, columns Felder breit
 ## (mittig an der Kante), inset Felder Abstand zum Rand.
 ##
 ## Reihenfolge: die vorderste Reihe (dem Gegner am naechsten) zuerst, in
 ## jeder Reihe von der Mitte nach aussen. Die Gegnerzone ist Feld fuer Feld
-## die um die Kartenmitte gedrehte Spielerzone -- gleiche Stelle in der
+## die an der Mittelreihe gespiegelte Spielerzone -- gleiche Stelle in der
 ## Liste, gespiegeltes Feld. Daran haengt die Fairness im Spiegelkampf.
 static func deployment_zone(grid: Grid, is_player: bool) -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []

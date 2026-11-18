@@ -33,19 +33,24 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
 
 ## Nächste Schritte (vom Spieler gewollt, in dieser Reihenfolge)
 
-1. **Generator: gedrehter Quader** (Spieler: „dafür“). Neuer Baustein,
+1. **ERLEDIGT (17. Nov.)** -- `g.O`/`g.OB`, Shogun in `v11_shogun.py`, siehe
+   `DROME_UMSETZUNG.md` 4d. Ursprünglicher Plan: **Generator: gedrehter Quader** (Spieler: „dafür“). Neuer Baustein,
    z. B. `("obox", mitte(f,l,z), groesse(df,dl,dz), drehung(gier,nick,roll), mat)`:
    acht Ecken drehen, sechs Flächen mit gedrehten Normalen ausgeben. Stellen
    im Generator: `render` (SVG), `model_faces` (3D), `_shape_faces`/
    `_shape_polygons` (Silhouetten-Prüfung), `_mirror_l`; im Entwurf
    `new_dromes.shift`. Danach am Shogun (`v9_shogun.py`) Katana, Hörner und
    Umhang glatt statt in Stufen (`slope`, `slope_l` ersetzen).
-2. **Verlorenes aus dem 3D-Umbau nachholen**: Neon-Leuchten (`NeonGlow`) am
+2. **ERLEDIGT (17. Nov.)** -- siehe `DROME_UMSETZUNG.md` 4e. Ursprünglicher Plan:
+   **Verlorenes aus dem 3D-Umbau nachholen**: Neon-Leuchten (`NeonGlow`) am
    3D-DROME (z. B. zweiter Durchgang nur mit glow/accent-Flächen als
    Leuchtebene) und Kontur je Teil (heute eine Kontur in Chassisfarbe; der
    Neon-Blaster hätte gern seinen magenta Rand). Beim Zerstören fällt der
    DROME als Ganzes -- in 3D wieder in Teile zerlegen.
-3. **Hexfeld als Designfrage** (Spieler: „generell dafür“): auf der Leinwand
+3. **ENTSCHIEDEN und GEBAUT (17. Nov.)**: 9 x 17, Reichweiten 1:1, Reihen
+   waagerecht -- Logik und 2D-Kampfbild, siehe `PROJEKTSTAND.md`. Offen:
+   Elite auf dem Hexfeld schwerer (Messung dort). Ursprünglicher Plan:
+   **Hexfeld als Designfrage** (Spieler: „generell dafür“): auf der Leinwand
    mit Bildern vorlegen, dann entscheiden lassen -- Feldgröße und -form
    (Sechseck Radius 5 = 91 Felder, oder hochkant fürs Handy), Reichweiten in
    Hexschritten (Nahkampf bis 2 / Fernkampf ab 3 übertragen?),
@@ -53,12 +58,21 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
    Wegfindung, `MapGenerator`, Aufstellung, `ArenaPainter`, Kamera-Ziehen, KI.
    Bodenplatten kommen aus dem 3D-Generator (`v10_hexboden.py`), die
    gezeichneten Deko-Assets bringt der Spieler später nach.
-4. **Kampf als EINE 3D-Szene** (Boden, Hindernisse, alle DROMEs, eine
+4. **ERLEDIGT (18. Nov.)** -- `Arena3D` mit Grundbewegung, siehe
+   `DROME_UMSETZUNG.md` 4f und 5. Ursprünglicher Plan: **Kampf als EINE 3D-Szene** (Boden, Hindernisse, alle DROMEs, eine
    Kamera) zusammen mit **Schritt 5 Bewegung** (Idle, Wippen, Angriff je
    Waffenart; Arm/Waffe sind eigene Knoten `<slot>_arm`/`<slot>` unter
    `Ausrichtung`). Begründung: Leistungstest. Läuft auch in der PWA.
 5. **Android-App (APK)**: erst nach der Design-Politur, Story und grobem
    Ablauf (Spieler). Dann Leistungstest dort wiederholen.
+
+## Entschieden am 18. Nov. 2026
+
+* Leistung der 3D-Kampfszene, 3D-Hindernisse statt gezeichneter, schwerere
+  Elite auf dem Hexfeld: alles „okay so“.
+* Story: Level-Design macht der Spieler separat; **Bosse später**, Shogun
+  Kage dann als **eigenes Boss-Chassis** (Modell `v11_shogun.py`); Dialoge zu
+  den Einsätzen erst einmal nicht.
 
 ## Offene Entscheidungen des Spielers
 
@@ -85,3 +99,7 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
   `bash tools/build_web.sh` und `python3 -m http.server` prüfen; im Container
   läuft der Browser ohne echte GPU -- Leistungszahlen nur vom Handy des Spielers.
 * Kontur-/Kantenbreite hängt an der Auflösung (`DromeModel.edge_px`).
+* **Keine `instance uniform` in Shadern** (Compatibility-Renderer): bei
+  vielen Instanzen kamen die zuerst angelegten mit falschen Werten heraus
+  (Bodenplatten schwarz), auch ausdrücklich gesetzt. Farbstich je DROME
+  deshalb über eigene Materialkopien (`Arena3D._tint_mesh`).

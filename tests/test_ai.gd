@@ -34,6 +34,11 @@ func _strix() -> DromeBuild:
 func _battle(players: Array, enemies: Array, tiles: Array) -> BattleManager:
 	var battle := BattleManager.new()
 	battle.setup(4711, players, enemies)
+	# Gestellte Lagen: ein grosses, leeres Hexfeld (20 x 20), damit die Felder
+	# der Tests unabhaengig von der Spielfeldgroesse gueltig sind.
+	battle.grid.width = 20
+	battle.grid.height = 20
+	battle.grid.obstacles.clear()
 	for i in battle.units.size():
 		var unit: Unit = battle.units[i]
 		battle.grid.clear_occupant(unit.tile)
@@ -173,7 +178,8 @@ func test_an_unreachable_target_is_given_up_after_a_while() -> void:
 func test_allies_prefer_a_shared_target() -> void:
 	# Zwei gleich gute Gegner: wer schon von einem Verbuendeten angegriffen
 	# wird, bekommt den Fokus-Bonus.
-	var tiles := [Vector2i(11, 12), Vector2i(11, 13), Vector2i(9, 9), Vector2i(13, 9)]
+	# Hexfeld: (9, 9) und (12, 9) liegen beide drei Schritte von (11, 12).
+	var tiles := [Vector2i(11, 12), Vector2i(11, 13), Vector2i(9, 9), Vector2i(12, 9)]
 	var battle := _battle([_vireo(), _vireo()], [_vireo(), _vireo()], tiles)
 	var a: Unit = battle.units[0]
 	var b: Unit = battle.units[1]

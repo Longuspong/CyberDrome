@@ -179,7 +179,7 @@ func _spawn(builds: Array, is_player: bool) -> void:
 		if not grid.can_stand_on(tile, unit.unit_id):
 			tile = _free_deployment_tile(zone, unit)
 		unit.place_at(tile)
-		unit.set_facing("north" if is_player else "south")
+		unit.set_facing(Unit.FACING_PLAYER if is_player else Unit.FACING_ENEMY)
 		grid.set_occupant(tile, unit.unit_id)
 	# In der Einheitenliste bleibt die Reihenfolge des Squads.
 	units.append_array(created)

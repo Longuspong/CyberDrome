@@ -169,7 +169,83 @@ Die Grenze von ~45 setzt der Browser. Einzelansichten tragen bis ~12 bewegte
 DROMEs, die gemeinsame Szene auch 48. Folgerung: Bewegung (Schritt 5) und
 ein Hexboden gehören in EINE 3D-Szene für den Kampf.
 
+### 4d. Gedrehter Quader im Generator -- erledigt (17. Nov.)
+
+Neuer Baustein in `tools/build_sample_parts.py`:
+`O(mitte, groesse, (gier, nick, roll), mat)` -- ein Quader, der sich drehen
+darf (gier um z, nick um l -- positiv kippt die Vorderseite nach unten --,
+roll um f; Reihenfolge roll, nick, gier). Bequemer: `OB(p0, p1, breite,
+hoehe, mat, roll=0)` legt einen Balken von Punkt zu Punkt. Läuft durch SVG
+(`render`), 3D (`model_faces`, Flächenart „box“ mit Kante), Silhouetten- und
+Sitzprüfung (`_shape_faces`), Spiegeln (`mirror_obox`, gier/roll kehren sich
+um) und `side_shapes`; im Entwurf `new_dromes.shift/mirror`. Ungedreht ist er
+bitgleich mit `B`. Erster Einsatz: `docs/design/drome_entwurf/v11_shogun.py`
+(Katana, V-Hörner, Umhang glatt statt in Stufen; 180 statt 280 Formen).
+
+### 4e. Kontur je Teil, Neon-Leuchten, Zerfallen in 3D -- erledigt (17. Nov.)
+
+Was beim 3D-Umbau verloren ging, ist zurück:
+
+* **Drei Ansichten einer 3D-Welt** (`DromeSprites.assemble`): `Ansicht3D`
+  (das Bild), `Signal3D` (jedes Teil einfarbig in seiner Signalfarbe,
+  Ebene `DromeModel.LAYER_SIGNAL`) und nur mit Neon-Teilen `Neon3D`
+  (Röhren = Material glow/accent der Neon-Teile in ihrer Farbe, der Rest
+  schwarz als Verdecker, `LAYER_NEON`). Jeder Block bekommt dazu Kinder
+  „Signal“ und „Neon“ – sie gehen mit, wenn sich der Block bewegt.
+  `DromeSprites.redraw(parent, always)` zeichnet alle drei neu.
+* **Kontur je Teil**: `drome_outline.gdshader` nimmt die Farbe des Rings aus
+  der Signalebene, vom nächstgelegenen Teil. Der Neon-Blaster hat wieder
+  seinen magenta Rand, Nimbus-Orbs ihren hellen. Wie früher nur der
+  Außenrand (die SVG-Konturen lagen unter allen Teilen).
+* **Neon-Leuchten**: `NeonGlow.create_3d` legt die Leuchtebene mit Lichthof
+  (`assets/shaders/neon_halo.gdshader`, additiv) über das Bild; Pulsieren
+  und Flackern wie bisher. Der Generator markiert Neon-Teile im Modell
+  (`"neon": true`).
+* **Zerfallen**: `Unit._death_3d` lässt jeden Block (Füße, Rumpf, Kern, Kopf,
+  Waffe, Waffenarm) in eigener Richtung wegspringen, um seine Mitte kippen
+  und auf den Boden fallen; dann verblasst das Bild.
+* Blicktests: `docs/design/drome_entwurf/godot/render_kontur.gd` (alle
+  Bausätze in vier Richtungen + Neon-Blaster) und `render_zerfall.gd`
+  (Zeitpunkt über `Engine.time_scale`, Aufruf im Dateikopf).
+
+### 4f. Kampf als eine 3D-Szene -- erledigt (18. Nov.)
+
+`Arena3D` (`scripts/ui/arena_3d.gd`): eine 3D-Welt mit allen DROMEs und den
+Hindernissen, drei Kameras (Bild, Signal, Neon) folgen der Camera2D des
+Kampfbildschirms; das Bild liegt als ein Sprite in der 2D-Welt (über Boden,
+Zone, Bodenringen; unter Balken und Effekten). `Unit.arena` gesetzt =
+kein eigenes Bild, das Modell folgt Position, Rig (Rückstoß, Sentinel-Größe)
+und Blickrichtung. Farbstich/Trefferblende als Instanz-Parameter `tint` in
+`drome_face.gdshader`. Umrechnung `Arena3D.ground()` = IsoView-Projektion
+(Test). Doppelte Auflösung (`OVERSAMPLE`), Kontur-Shader mit schnellem
+Ausstieg (läuft über den ganzen Bildschirm). Hindernisse als 3D-Modelle aus
+`tools/build_arena_models.py` (`assets/arena3d/<art>.m3d`, CI prüft mit
+`--check`); die gezeichneten Hindernis-Bilder (Neon City) nutzt der Kampf
+nicht mehr, Deko am Rand bleibt 2D. **Boden seit 18. Nov. in 3D**:
+Hexplatten je Region aus demselben Generator (`floor_<region>_<sorte>.m3d`,
+Gewichte in `assets/arena3d/floor.json`), `ArenaFloor3D` rendert sie EINMAL
+in ein Weltbild ganz unten (Zone, Ringe, Lichter bleiben darüber);
+`ArenaPainter` zeichnet im Kampf nur noch Zierlinie, Lichter und Deko.
+Blicktest: `docs/design/drome_entwurf/godot/render_arena.gd` (Region,
+optional `angriff ZEITFAKTOR`).
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
+**Grundstufe gebaut (18. Nov.) in `Arena3D._animate`**: Atmen im Stand
+(Rumpf/Kopf/Waffen wippen, Füße fest), Wippen beim Laufen, Nimbus kippt nach
+vorn, Eule hüpft; Angriff je Waffenart über die Blöcke `<slot>`/`<slot>_arm`
+(Nahkampf holt um die Schulter aus und schlägt zu, Fernkampf Rückstoß +
+Aufleuchten der Waffe, Schild stößt vor) statt des Rucks des ganzen DROME.
+Werte als Konstanten oben in `arena_3d.gd`. Offen: Passive sichtbar bewegt,
+Mündungsblitz am `muzzle`-Anker, Beine im Wechsel.
+**Nachgezogen (18. Nov.)**: Nimbus-Kugel als eigener Block (`passive_shapes`
+im Generator -> Variante `passive` -> Knoten `body_passive`) schwebt;
+Vireo-Booster flackern (beim Laufen stärker), Molok-Lockfeuer pulsiert,
+Strix-Linsen blinzeln (über die Materialkopien der Einheit); Lichtball am
+`muzzle`-Anker; Schwung um eine gekippte Achse (von vorn lesbar), Rückstoß
+hebt die Waffe, Treffer kippen den DROME kurz nach hinten. Offen: Beine im
+Wechsel. **Deko am Rand in 3D**: Laternen in den Lichtfarben der Region,
+Kiosk, Schüssel, Haltestelle, Klimagerät, Antenne (`build_arena_models.py`,
+Plätze `ArenaPainter.prop_spots`, `Arena3D.build_props`).
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
       bewegt sich mit (Booster flackert, Kugel schwebt, Lockfeuer pulsiert,

@@ -29,6 +29,43 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Kampf als eine 3D-Szene + Bewegung (18. Nov. 2026, Übergabe Schritt 4/5)
+
+* `Arena3D`: alle DROMEs und Hindernisse in einer 3D-Welt, Kameras folgen der
+  2D-Kamera; Einheiten ohne eigene 3D-Ansicht; Kontur je Teil, Neon,
+  Farbstich und Zerfallen wie vorher. Hindernisse als 3D-Modelle
+  (`tools/build_arena_models.py`, CI prüft). Die gezeichneten
+  Hindernis-Bilder von Neon City werden im Kampf nicht mehr genutzt.
+* Bewegung: Atmen, Wippen/Kippen/Hüpfen beim Laufen, Angriff je Waffenart
+  (Ausholen um die Schulter, Rückstoß + Aufleuchten, Schildstoß).
+* Boden aus 3D-Hexplatten je Region (`ArenaFloor3D`, einmal gerendert).
+* Leistung nur vom Handy messbar (Leistungstest „eine Szene“ als Maßstab);
+  vom Spieler am 18. Nov. als „okay“ bestätigt, ebenso die 3D-Hindernisse
+  statt der gezeichneten und die schwerere Elite auf dem Hexfeld.
+
+### Hexfeld 9 x 17 (17. Nov. 2026, Entscheidung des Spielers)
+
+Entwurf mit drei Groessen (`docs/design/drome_entwurf/v12_hexfeld.py`, Bild
+`hexfeld_optionen.png`); gewaehlt: **9 x 17 hochkant, Reichweiten 1:1,
+Reihen waagerecht**. Gebaut:
+
+* `Grid`: Feld = `Vector2i(spalte, reihe)`, ungerade Reihen ein halbes Feld
+  rechts; Abstand in Hexschritten (axial), sechs Nachbarn, Richtungen
+  0..5 im Bild auf 0/60/.../300 Grad, gerade Linien (Dash, Stern-Flaeche).
+* `MapGenerator`: Spiegelung an der Mittelreihe (bei 17 Reihen exakt),
+  Zonen 3 x 7 unten/oben ohne Abstand zum Rand, Hindernis-Formen aus
+  Hexnachbarn. `config.json`: `grid_width` 9, `grid_height` 17.
+* KI, Ziehen/Stossen, Dash und Vortex auf sechs Richtungen; Blickrichtung
+  als Winkel (`Unit.facing_toward`, `DromeModel.angle_basis`).
+* Anzeige (`IsoView`, `ArenaPainter`): Sechsecke 22 Einheiten Eckradius in
+  der DROME-Projektion, Reihen waagerecht, Tiefe gestaucht (cos 45);
+  Rand = Kanten ohne Nachbarn, Sockel vorn. Die Rauten-Bildkacheln fallen
+  weg, bis der Boden in Schritt 4 aus dem 3D-Generator kommt.
+* Gemessen: Spiegelkaempfe 96:104 (fair), Kaempfe 26 statt 32 s, erster
+  Treffer 5,0 statt 7,2 s. Standard-Squad gegen Einsatz-Gegner: Leicht und
+  Normal wie vorher, **Elite deutlich schwerer** (Runde 5: 7/24 statt 13/24,
+  Runde 8: 7/40 statt 16/40) -- offen fuer den Spieler.
+
 ### UI-Symbole statt Sonderzeichen (15. Nov. 2026, Set des Spielers)
 
 Bungee und Chakra Petch kennen viele Sonderzeichen nicht (▸ ◈ ⬢ ✦ ✕ ✓ ◉ ▮ ↻

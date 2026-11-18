@@ -8,6 +8,7 @@ extends Sprite2D
 ## flackert ab und zu wie eine echte Roehre. "Animationen reduzieren" laesst
 ## das Leuchten stehen, schaltet aber Pulsieren und Flackern ab.
 
+const HALO_SHADER := preload("res://assets/shaders/neon_halo.gdshader")
 const BASE := 0.75
 const PULSE := 0.18
 const PULSE_SPEED := 2.4
@@ -35,6 +36,26 @@ static func create(texture_glow: Texture2D, part_texture: Texture2D) -> NeonGlow
 	material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	glow.material = material
 	glow.z_index = 1
+	glow._rng.randomize()
+	glow._time = glow._rng.randf() * TAU
+	glow._next_flicker = glow._rng.randf_range(1.0, FLICKER_EVERY * 2.0)
+	glow.self_modulate = Color(1, 1, 1, BASE)
+	return glow
+
+
+## Das Leuchten fuer einen 3D-DROME (17. Nov. 2026): die Leuchtebene aus
+## DromeSprites (gleiche Rasterung wie das Bild, deshalb ohne eigene
+## Skalierung), mit Lichthof aus neon_halo.gdshader.
+static func create_3d(texture_glow: Texture2D, resolution: int) -> NeonGlow:
+	var glow := NeonGlow.new()
+	glow.name = "Neon"
+	glow.texture = texture_glow
+	glow.centered = false
+	var material := ShaderMaterial.new()
+	material.shader = HALO_SHADER
+	# Lichthof 1,3 Entwurfspunkte (halber Strich aus glow_svg).
+	material.set_shader_parameter("halo_px", 1.3 * resolution / 128.0)
+	glow.material = material
 	glow._rng.randomize()
 	glow._time = glow._rng.randf() * TAU
 	glow._next_flicker = glow._rng.randf_range(1.0, FLICKER_EVERY * 2.0)

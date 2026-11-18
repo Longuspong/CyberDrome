@@ -48,6 +48,16 @@ static var _models: Dictionary = {}     # Pfad -> geparstes Modell
 static var _meshes: Dictionary = {}     # Schluessel -> ArrayMesh
 static var _materials: Dictionary = {}  # Farben -> Material
 static var _edge := 1.0                 # Kantenbreite des laufenden Aufbaus
+static var _neon_build := false         # baut der laufende Aufbau eine Leuchtebene?
+
+## Render-Ebenen (17. Nov. 2026): das Bild selbst, die Signalfarbe je Teil
+## (fuer die Kontur je Teil, drome_outline.gdshader) und die Leuchtroehren
+## der Neon-Teile (NeonGlow). Jede Ebene sieht eine eigene Kamera.
+const LAYER_IMAGE := 1
+const LAYER_SIGNAL := 2
+const LAYER_NEON := 4
+## Materialien, die in der Leuchtebene leuchten (wie glow_svg im Backen).
+const NEON_MATS := ["glow", "accent"]
 
 
 ## Das Modell eines Teils, oder {} wenn es (noch) keins gibt.
@@ -66,11 +76,31 @@ static func model_of(part: PartData) -> Dictionary:
 
 
 ## Basis der Blickrichtung: bot-lokal (f, l, z) -> Godot-Welt.
+##
+## Neben den vier Iso-Richtungen (Hangar, Podest) gibt es seit dem Hexfeld
+## (17. Nov. 2026) Winkel im Bild: "deg<grad>", 0 = nach rechts, 90 = nach
+## oben, gegen den Uhrzeigersinn -- gemessen auf dem Boden, der im Kampf so
+## liegt, dass die Hexreihen waagerecht laufen. Die alten Namen entsprechen
+## south 225, east 315, north 45, west 135.
 static func facing_basis(facing: String) -> Basis:
+	if facing.begins_with("deg"):
+		return angle_basis(float(facing.substr(3)))
 	var fl: Array = FACINGS.get(facing, FACINGS["south"])
 	var f: Vector2 = fl[0]
 	var l: Vector2 = fl[1]
 	return Basis(Vector3(f.x, 0, -f.y), Vector3(l.x, 0, -l.y), Vector3(0, 1, 0))
+
+
+## Blick in Bildwinkel ``degrees`` (siehe facing_basis). Bildrechts auf dem
+## Boden ist (1, 0, 1)/sqrt2, Bildoben (1, 0, -1)/sqrt2 -- so liegen die
+## Achsen der Iso-Kamera.
+static func angle_basis(degrees: float) -> Basis:
+	var right := Vector3(COS45, 0, COS45)
+	var up := Vector3(COS45, 0, -COS45)
+	var a := deg_to_rad(degrees)
+	var forward := right * cos(a) + up * sin(a)
+	var left := right * cos(a + PI * 0.5) + up * sin(a + PI * 0.5)
+	return Basis(forward, left, Vector3(0, 1, 0))
 
 
 ## Die Iso-Kamera, die genau wie ``to_screen`` im Generator projiziert.
@@ -82,6 +112,7 @@ static func make_camera() -> Camera3D:
 	cam.size = 128.0 / SCALE
 	cam.near = 0.1
 	cam.far = 1000.0
+	cam.cull_mask = LAYER_IMAGE
 	var right := Vector3(COS45, 0, COS45)
 	var up := Vector3(0.5, COS45, -0.5)
 	var back := Vector3(-0.5, COS45, 0.5)
@@ -94,7 +125,11 @@ static func make_camera() -> Camera3D:
 ## Baut den ganzen DROME. Rueckgabe: Node3D mit einem Kind "Ausrichtung",
 ## dessen Basis die Blickrichtung ist; darunter je Block ein MeshInstance3D,
 ## versetzt in bot-lokalen Koordinaten. Meta "accent": Signalfarbe des Chassis.
-static func build_node(build: DromeBuild, facing: String, resolution: int = 256) -> Node3D:
+##
+## ``neon_layer``: Leuchtebene immer anlegen (gemeinsame Kampfszene -- dort
+## muss jeder DROME die Roehren anderer verdecken, auch ohne eigene).
+static func build_node(build: DromeBuild, facing: String, resolution: int = 256,
+		neon_layer: bool = false) -> Node3D:
 	_edge = edge_px(resolution)
 	var root := Node3D.new()
 	root.name = "Drome"
@@ -111,6 +146,12 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256)
 	var weapon_variant := chassis.weapon_variant if chassis != null else ""
 	root.set_meta("accent", _color(body_model.get("colors", {}).get("accent", "#2de2e6")))
 	root.set_meta("line", _color(body_model.get("colors", {}).get("outline", "#080b13")))
+	_neon_build = false
+	for slot in SLOT_ORDER:
+		if bool(model_of(build.part_in(slot)).get("neon", false)):
+			_neon_build = true
+	root.set_meta("neon", _neon_build)
+	_neon_build = _neon_build or neon_layer
 
 	for slot in SLOT_ORDER:
 		var part := build.part_in(slot)
@@ -136,14 +177,19 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256)
 		if not arm.is_empty():
 			var arm_mount := _vec(arm.get("anchors", {}).get("mount", [0, 0, 0]))
 			_add_block(turn, "%s_arm" % slot, "%s|arm_%s_%s" % [chassis.id, slot, pose],
-				arm, body_model.get("colors", {}), socket - arm_mount)
+				arm, body_model.get("colors", {}), socket - arm_mount, false)
 			socket = _vec(arm.get("anchors", {}).get("hand", [0, 0, 0]))
 		var key := str(part.id) if block == model \
 			else "%s|%s" % [part.id, _variant_name(model, block)]
 		# Der Rumpf bleibt liegen: sein "mount" ist nur der Bezugspunkt fuer die
 		# Bildmitte, kein Sockel.
 		_add_block(turn, slot, key, block, colors,
-			Vector3.ZERO if slot == "body" else socket - mount)
+			Vector3.ZERO if slot == "body" else socket - mount, bool(model.get("neon", false)))
+		# Sichtbare Passive als eigener Block (Nimbus-Kugel), damit sie sich im
+		# Kampf bewegen kann (Arena3D, 18. Nov. 2026).
+		if slot == "body" and body_variants.has("passive"):
+			_add_block(turn, "body_passive", "%s|passive" % part.id, body_variants["passive"],
+				colors, Vector3.ZERO, false)
 	return root
 
 
@@ -155,17 +201,64 @@ static func _variant_name(model: Dictionary, block: Dictionary) -> String:
 	return ""
 
 
+## Ein MeshInstance3D fuer Flaechen dieses Moduls (Bildebene, ohne Schatten).
+static func mesh_instance(mesh: Mesh) -> MeshInstance3D:
+	var inst := MeshInstance3D.new()
+	inst.mesh = mesh
+	inst.layers = LAYER_IMAGE
+	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return inst
+
+
 static func _add_block(parent: Node3D, node_name: String, key: String,
-		block: Dictionary, colors: Dictionary, offset: Vector3) -> void:
+		block: Dictionary, colors: Dictionary, offset: Vector3, neon: bool) -> void:
 	var mesh := _mesh_for(key, block, colors)
 	if mesh == null:
 		return
-	var inst := MeshInstance3D.new()
+	var inst := mesh_instance(mesh)
 	inst.name = node_name
-	inst.mesh = mesh
 	inst.position = offset
-	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Anker (mount, hand, muzzle) fuer die Bewegung im Kampf (Arena3D).
+	inst.set_meta("anchors", block.get("anchors", {}))
 	parent.add_child(inst)
+	# Signalfarbe: dasselbe Mesh einfarbig in der Signalfarbe des Teils. Als
+	# Kind, damit es jede Bewegung des Blocks mitmacht (Zerfallen, Schritt 5).
+	var signal_inst := MeshInstance3D.new()
+	signal_inst.name = "Signal"
+	signal_inst.mesh = mesh
+	signal_inst.layers = LAYER_SIGNAL
+	signal_inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	signal_inst.material_override = _flat_material(_color(colors.get("accent", "#2de2e6")))
+	inst.add_child(signal_inst)
+	if not _neon_build:
+		return
+	# Leuchtebene: Roehren der Neon-Teile in ihrer Farbe, alles andere schwarz
+	# -- schwarz verdeckt nur (additiv gemischt leuchtet es nicht).
+	var neon_inst := MeshInstance3D.new()
+	neon_inst.name = "Neon"
+	neon_inst.mesh = mesh
+	neon_inst.layers = LAYER_NEON
+	neon_inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for i in mesh.get_surface_count():
+		var mat := str(mesh.surface_get_name(i))
+		var lit := Color.BLACK
+		if neon and mat in NEON_MATS:
+			lit = _color(colors.get(mat, "#ff00ff"))
+		neon_inst.set_surface_override_material(i, _flat_material(lit))
+	inst.add_child(neon_inst)
+
+
+## Einfarbiges Material ohne Licht (Signal- und Leuchtebene).
+static func _flat_material(color: Color) -> StandardMaterial3D:
+	var key := "flat|%s" % color.to_html()
+	if _materials.has(key):
+		return _materials[key]
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.albedo_color = color
+	_materials[key] = m
+	return m
 
 
 ## Ein Mesh je Block: eine Flaeche je Material, dazu die Huellen.
@@ -185,6 +278,7 @@ static func _mesh_for(key: String, block: Dictionary, colors: Dictionary) -> Arr
 		var st: SurfaceTool = by_mat[mat]
 		st.commit(mesh)
 		mesh.surface_set_material(mesh.get_surface_count() - 1, _face_material(mat, colors))
+		mesh.surface_set_name(mesh.get_surface_count() - 1, mat)
 	var hulls: Array = block.get("hulls", [])
 	if not hulls.is_empty():
 		var hs := SurfaceTool.new()
@@ -193,6 +287,7 @@ static func _mesh_for(key: String, block: Dictionary, colors: Dictionary) -> Arr
 			_add_face(hs, "seam", _vec(hull[0]), hull[1])
 		hs.commit(mesh)
 		mesh.surface_set_material(mesh.get_surface_count() - 1, _hull_material(colors))
+		mesh.surface_set_name(mesh.get_surface_count() - 1, "hull")
 	if mesh.get_surface_count() == 0:
 		mesh = null
 	_meshes[cache_key] = mesh

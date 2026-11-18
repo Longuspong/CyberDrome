@@ -8,20 +8,26 @@ extends RefCounted
 ## zweite Umrechnung anlegt, bekommt Bots, die neben ihrem Feld stehen, und
 ## einen Fehler, den man erst bei 400 Feldern als System erkennt.
 ##
-## Die Zahlen stammen nicht aus diesem Projekt, sondern aus der Werkstatt:
-## ``tools/build_sample_parts.py`` projiziert jedes Bauteil auf eine Bodenraute
-## von 76 x 54 px um (64, 96) in einem 128x128-Bild. Terrain-Tiles benutzen
-## dieselbe Projektion. Beide Werte hier zu aendern, ohne sie dort zu aendern,
-## bricht die Deckung.
-##
-## Anmerkung zum Entwurfsdokument: dort steht als Kachelmass 128 x 64, also
-## 2:1. Der Bestand ist sqrt(2):1 -- das faellt aus der 45-Grad-Kamera des
-## Renderers und laesst sich nicht unabhaengig davon waehlen. Mit 2:1 stuenden
-## die Bots neben ihren Feldern.
+## Die Zahlen stammen aus der Werkstatt: ``tools/build_sample_parts.py``
+## projiziert jedes Bauteil mit 1,35 Bildpunkten je Einheit in ein 128x128-
+## Bild, die Feldmitte liegt dort auf (64, 96). Bis 17. Nov. 2026 war das
+## Feld eine Bodenraute von 76 x 54 px (Quadrat 40 x 40, diagonal gesehen).
 
-## Bodenraute in Pixeln. Verhaeltnis sqrt(2):1.
-const TILE_W := 76.0
-const TILE_H := 54.0
+## Hexfeld (seit 17. Nov. 2026). Gemessen in derselben Projektion wie die
+## DROMEs (1,35 Bildpunkte je Generator-Einheit, Iso-Kamera 45 Grad): das
+## Brett liegt so, dass die Reihen waagerecht laufen; in der Tiefe staucht
+## die Kamera auf cos 45. Ein Sechseck hat 22 Einheiten Eckradius (Spitze
+## oben und unten), so gross wie die Platten aus dem 3D-Entwurf
+## (docs/design/drome_entwurf/v10_hexboden.py).
+const HEX_R := 22.0
+const PX_PER_UNIT := 1.35
+const DEPTH_SQUASH := 0.70710678
+## Breite eines Sechsecks im Bild (Kante zu Kante) = Abstand zweier Spalten.
+const TILE_W := 1.7320508 * HEX_R * PX_PER_UNIT
+## Hoehe eines Sechsecks im Bild (Spitze zu Spitze).
+const TILE_H := 2.0 * HEX_R * PX_PER_UNIT * DEPTH_SQUASH
+## Abstand zweier Reihen im Bild.
+const ROW_H := 1.5 * HEX_R * PX_PER_UNIT * DEPTH_SQUASH
 
 ## Grosse aller Teil- und Tile-Bilder -- im ENTWURFSRAUM, nicht in Pixeln.
 ## Jedes SVG dieses Projekts zeichnet in ``viewBox="0 0 128 128"``.
@@ -62,16 +68,26 @@ static func pivot_on_tile_center(sprite: Sprite2D) -> void:
 
 ## Feld -> Bildschirmposition der Feldmitte.
 static func map_to_local(cell: Vector2i) -> Vector2:
-	return Vector2(
-		(cell.x - cell.y) * TILE_W * 0.5,
-		(cell.x + cell.y) * TILE_H * 0.5)
+	return Vector2((float(cell.x) + 0.5 * float(cell.y & 1)) * TILE_W, float(cell.y) * ROW_H)
 
 
-## Bildschirmposition -> Feld.
+## Bildschirmposition -> Feld (das Sechseck, in dem der Punkt liegt).
 static func local_to_map(pos: Vector2) -> Vector2i:
-	var fx := pos.x / TILE_W + pos.y / TILE_H
-	var fy := pos.y / TILE_H - pos.x / TILE_W
-	return Vector2i(int(floor(fx + 0.5)), int(floor(fy + 0.5)))
+	var r := pos.y / ROW_H
+	var q := pos.x / TILE_W - r * 0.5
+	# Wuerfelkoordinaten runden (q + r + s = 0).
+	var s := -q - r
+	var rq := roundf(q)
+	var rr := roundf(r)
+	var rs := roundf(s)
+	var dq := absf(rq - q)
+	var dr := absf(rr - r)
+	var ds := absf(rs - s)
+	if dq > dr and dq > ds:
+		rq = -rr - rs
+	elif dr > ds:
+		rr = -rq - rs
+	return Grid.from_axial(Vector2i(int(rq), int(rr)))
 
 
 ## Wo ein 128x128-Sprite hin muss, damit seine Bodenraute auf diesem Feld
@@ -85,23 +101,27 @@ static func sprite_position(cell: Vector2i) -> Vector2:
 ##
 ## Y-Sortierung allein genuegt nicht: alle Sprites eines Feldes teilen sich
 ## dieselbe y-Position, und ein Betonpfeiler muss den DROME davor verdecken,
-## aber den dahinter nicht.
+## aber den dahinter nicht. Auf dem Hexfeld ist das die Reihe.
 static func depth(cell: Vector2i) -> int:
-	return cell.x + cell.y
+	return cell.y
 
 
-## Die vier Eckpunkte der Bodenraute eines Feldes -- fuer Umrisse und
-## Trefferpruefung beim Hovern.
+## Die sechs Ecken eines Feldes im Bild -- fuer Boden, Umrisse und
+## Trefferpruefung. Reihenfolge: oben, oben rechts, unten rechts, unten,
+## unten links, oben links. Kante i verbindet Ecke i und i + 1; ueber ihr
+## liegt der Nachbar in Richtung EDGE_DIR[i] (Grid.AXIAL_DIRS).
+const EDGE_DIR := [1, 0, 5, 4, 3, 2]
+
 static func tile_corners(cell: Vector2i) -> PackedVector2Array:
 	var center := map_to_local(cell)
-	return PackedVector2Array([
-		center + Vector2(0.0, -TILE_H * 0.5),
-		center + Vector2(TILE_W * 0.5, 0.0),
-		center + Vector2(0.0, TILE_H * 0.5),
-		center + Vector2(-TILE_W * 0.5, 0.0),
-	])
+	var out := PackedVector2Array()
+	for angle in [90.0, 30.0, -30.0, -90.0, -150.0, 150.0]:
+		var a := deg_to_rad(angle)
+		out.append(center + Vector2(cos(a) * HEX_R * PX_PER_UNIT,
+			-sin(a) * HEX_R * PX_PER_UNIT * DEPTH_SQUASH))
+	return out
 
 
 ## Bildschirmmitte des Gitters -- damit die Kamera weiss, wohin.
 static func grid_center(width: int, height: int) -> Vector2:
-	return map_to_local(Vector2i(width - 1, height - 1)) * 0.5
+	return Vector2((float(width) - 0.5) * 0.5 * TILE_W, float(height - 1) * 0.5 * ROW_H)

@@ -149,7 +149,8 @@ func _build() -> void:
 			if view == null:
 				continue
 			if _mode == "einzeln":
-				view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+				# alle Ansichten (Bild, Signal, Neon) jedes Bild neu
+				DromeSprites.redraw(rig, true)
 				_views.append(view)
 				_turns.append(view.get_node("Drome/Ausrichtung"))
 

@@ -401,14 +401,14 @@ func unit_by_id(unit_id) -> Unit:
 
 
 ## Die Felder, auf die der Dash den Handelnden versetzen kann: gerade Linie in
-## eine der vier Richtungen, bis zu ``range_tiles`` weit, nicht durch einen
-## anderen DROME hindurch.
+## eine der sechs Hexrichtungen, bis zu ``range_tiles`` weit, nicht durch
+## einen anderen DROME hindurch.
 func dash_landings(source: Unit, action: ActionData) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
-	for dir in Grid.DIRS_4:
+	for dir in 6:
 		var tile := source.tile
 		for _step in action.range_tiles:
-			tile += dir
+			tile = Grid.neighbor(tile, dir)
 			if not grid.in_bounds(tile):
 				break
 			if grid.is_occupied(tile, source.unit_id):
@@ -424,7 +424,7 @@ func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
 			return "Schon hier"
 		if tile in dash_landings(source, action):
 			return ""
-		if source.tile.x != tile.x and source.tile.y != tile.y:
+		if Grid.line_direction(source.tile, tile) < 0:
 			return "Nur in gerader Linie"
 		if Grid.distance(source.tile, tile) > action.range_tiles:
 			return "Zu weit für den Boost"
@@ -455,9 +455,9 @@ func affected_tiles(tile: Vector2i, action: ActionData) -> Array[Vector2i]:
 	for candidate in grid.all_tiles():
 		if Grid.distance(tile, candidate) > action.aoe_radius:
 			continue
-		# Das Kreuz trifft nur orthogonal: die Diagonalen (x UND y verschoben)
-		# fallen weg, das Ziel und die geraden Nachbarn bleiben.
-		if cross and candidate.x != tile.x and candidate.y != tile.y:
+		# Das Kreuz (auf dem Hexfeld ein Stern) trifft nur auf den sechs
+		# geraden Linien vom Ziel aus.
+		if cross and candidate != tile and Grid.line_direction(tile, candidate) < 0:
 			continue
 		tiles.append(candidate)
 	return tiles
@@ -473,11 +473,9 @@ func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
 		return false
 	# Dash: der Handelnde versetzt sich selbst.
 	if action.is_move():
-		var delta := tile - source.tile
-		var step := Vector2i(signi(delta.x), signi(delta.y))
 		EventBus.log_line("%s boostet %d Feld(er) nach %s."
 			% [source.display_name, Grid.distance(source.tile, tile), tile])
-		move_unit(source, tile, step)
+		move_unit(source, tile)
 		return true
 
 	# Unterstuetzung: auf einen Verbuendeten (oder sich selbst) gezielt heilt
@@ -639,41 +637,32 @@ func _gather(source: Unit, center: Vector2i, action: ActionData) -> void:
 		EventBus.log_line("%s zieht %d Gegner zusammen." % [source.display_name, pulled.size()])
 
 
-## Ein Feld naeher an ``center``, wenn frei -- erst die laengere Achse.
+## Ein Feld naeher an ``center``, wenn frei -- erst die Richtung, die am
+## besten hinzeigt, dann die beiden daneben.
 func _step_toward(unit: Unit, center: Vector2i) -> Vector2i:
-	var delta := center - unit.tile
-	var steps: Array[Vector2i] = []
-	if absi(delta.x) >= absi(delta.y):
-		steps = [Vector2i(signi(delta.x), 0), Vector2i(0, signi(delta.y))]
-	else:
-		steps = [Vector2i(0, signi(delta.y)), Vector2i(signi(delta.x), 0)]
-	for step in steps:
-		if step == Vector2i.ZERO:
-			continue
-		var tile := unit.tile + step
-		if grid.can_stand_on(tile, unit.unit_id):
+	var dir := Grid.direction_toward(unit.tile, center)
+	if dir < 0:
+		return unit.tile
+	var here := Grid.distance(unit.tile, center)
+	for turn in [0, 1, -1]:
+		var tile := Grid.neighbor(unit.tile, dir + turn)
+		if Grid.distance(tile, center) < here and grid.can_stand_on(tile, unit.unit_id):
 			return tile
 	return unit.tile
 
 
 ## Stossen und Ziehen. Positiv = weg, negativ = heran.
 func _shove(source: Unit, target: Unit, tiles: int) -> void:
-	var delta := target.tile - source.tile
-	var step := Vector2i(signi(delta.x), signi(delta.y))
-	if step.x != 0 and step.y != 0:
-		# Ohne Diagonalen wird auf die dominante Achse gerundet.
-		if absi(delta.x) >= absi(delta.y):
-			step = Vector2i(signi(delta.x), 0)
-		else:
-			step = Vector2i(0, signi(delta.y))
-	if step == Vector2i.ZERO:
+	# Die Hexrichtung von der Quelle zum Ziel; ziehen = Gegenrichtung.
+	var dir := Grid.direction_toward(source.tile, target.tile)
+	if dir < 0:
 		return
 	if tiles < 0:
-		step = -step
+		dir += 3
 
 	var moved := 0
 	for _i in absi(tiles):
-		var nxt := target.tile + step
+		var nxt := Grid.neighbor(target.tile, dir)
 		if not grid.can_stand_on(nxt, target.unit_id):
 			break
 		move_unit(target, nxt)

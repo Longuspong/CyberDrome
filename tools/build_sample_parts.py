@@ -782,6 +782,68 @@ def D(f, l_center, z_center, radius, mat, segments=16):
     return ("disc", f, l_center, z_center, radius, mat, segments)
 
 
+def O(center, size, rot, mat):
+    """
+    Gedrehter Quader: Mitte (f, l, z), Kantenlaengen (df, dl, dz) und
+    Drehung (gier, nick, roll) in Grad.
+
+        gier  um die Hochachse z  (positiv: Vorderseite dreht nach links, +l)
+        nick  um die Querachse l  (positiv: Vorderseite kippt nach UNTEN)
+        roll  um die Laengsachse f (positiv: linke Seite kippt nach oben)
+
+    Reihenfolge: erst roll, dann nick, dann gier. Damit fallen schraege
+    Klingen, Hoerner und Umhaenge glatt statt in Stufen aus.
+    """
+    return ("obox", tuple(center), tuple(size), tuple(rot), mat)
+
+
+def OB(p0, p1, width, height, mat, roll=0.0):
+    """
+    Balken von Punkt p0 nach p1 (je (f, l, z)) als gedrehter Quader:
+    ``width`` quer zur Laufrichtung waagerecht, ``height`` senkrecht dazu,
+    ``roll`` dreht den Balken um seine eigene Laengsachse.
+    """
+    d = [b - a for a, b in zip(p0, p1)]
+    length = math.sqrt(sum(c * c for c in d))
+    yaw = math.degrees(math.atan2(d[1], d[0]))
+    pitch = -math.degrees(math.atan2(d[2], math.hypot(d[0], d[1])))
+    mid = tuple((a + b) / 2.0 for a, b in zip(p0, p1))
+    return O(mid, (length, width, height), (yaw, pitch, roll), mat)
+
+
+def _rot_matrix(rot):
+    """Drehmatrix (Zeilen) aus (gier, nick, roll) in Grad: Rz * Rl * Rf."""
+    gy, ni, ro = (math.radians(a) for a in rot)
+    cg, sg = math.cos(gy), math.sin(gy)
+    cn, sn = math.cos(ni), math.sin(ni)
+    cr, sr = math.cos(ro), math.sin(ro)
+    rz = ((cg, -sg, 0), (sg, cg, 0), (0, 0, 1))
+    # nick positiv = Spitze nach unten: Drehung um +l mit +Winkel hebt f nach -z
+    rl = ((cn, 0, sn), (0, 1, 0), (-sn, 0, cn))
+    rf = ((1, 0, 0), (0, cr, -sr), (0, sr, cr))
+
+    def mul(a, b):
+        return tuple(tuple(sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3))
+                     for i in range(3))
+    return mul(rz, mul(rl, rf))
+
+
+def _apply(m, v):
+    return tuple(m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2] for i in range(3))
+
+
+def _obox_faces(center, size, rot):
+    """Sechs Flaechen eines gedrehten Quaders als (lokale Normale, Eckpunkte)."""
+    m = _rot_matrix(rot)
+    hf, hl, hz = (s / 2.0 for s in size)
+    out = []
+    for normal, points in _box_faces((-hf, hf), (-hl, hl), (-hz, hz)):
+        n = _apply(m, normal)
+        pts = [tuple(c + d for c, d in zip(center, _apply(m, p))) for p in points]
+        out.append((n, pts))
+    return out
+
+
 def L(center, profile, mat, axis="z", segments=14, caps=True):
     """
     Rotationskoerper -- alles Runde entsteht hier.
@@ -857,6 +919,8 @@ def _shape_faces(shape):
     if kind == "box":
         _, f, l, z, _mat = shape
         return _box_faces(f, l, z)
+    if kind == "obox":
+        return _obox_faces(*shape[1:4])
     if kind == "disc":
         _, f, l_center, z_center, radius, _mat, segments = shape
         return [((1, 0, 0), [
@@ -1184,6 +1248,11 @@ def render(shapes, facing):
                 emitted = _emit(points, wn, mat, facing)
                 if emitted:
                     faces.append(emitted)
+        elif shape[0] == "obox":
+            for local_normal, points in _obox_faces(*shape[1:4]):
+                emitted = _emit(points, to_world(local_normal, facing), shape[4], facing)
+                if emitted:
+                    faces.append(emitted)
         elif shape[0] == "disc":
             _, f, lc, zc, radius, mat, segments = shape
             points = [
@@ -1236,6 +1305,17 @@ def render(shapes, facing):
 #   Schultern 54..64   Hals 62..65   Kopf 65..77   Kamm bis 81
 # ===========================================================================
 
+def mirror_obox(s):
+    """Gedrehter Quader an l = 0 gespiegelt: gier und roll kehren sich um."""
+    _, (f, l, z), size, (gy, ni, ro), mat = s
+    return ("obox", (f, -l, z), size, (-gy, ni, -ro), mat)
+
+
+def shift_obox(s, df=0, dl=0, dz=0):
+    _, (f, l, z), size, rot, mat = s
+    return ("obox", (f + df, l + dl, z + dz), size, rot, mat)
+
+
 def _mirror_l(shapes):
     """Spiegelt Formen an l = 0 (fuer Beinpaare und Fluegel)."""
     out = []
@@ -1243,6 +1323,8 @@ def _mirror_l(shapes):
         if s[0] == "box":
             _, f, l, z, mat = s
             out.append(("box", f, (-l[1], -l[0]), z, mat))
+        elif s[0] == "obox":
+            out.append(mirror_obox(s))
         elif s[0] == "disc":
             _, f, lc, zc, r, mat, seg = s
             out.append(("disc", f, -lc, zc, r, mat, seg))
@@ -1762,11 +1844,16 @@ MAGE_BODY = [
     L((-13.8, 40), [(2.6, -1), (3.0, 10)], "plate", axis="f", segments=12),   # Unterarm
     L((-13.8, 40), [(3.2, 3.5), (3.2, 4.4)], "accent", axis="f", caps=False, segments=12),
     L((-13.8, 40), [(3.4, 10), (3.4, 12.4)], "dark", axis="f", segments=12),  # Hand
+]
+# Die Energiekugel mit Ring -- die sichtbare Passive Echo. Im 3D-Modell ein
+# eigener Block ("passive"), damit sie im Kampf schweben kann (18. Nov. 2026).
+MAGE_ORB = [
     L((16.2, -13.8), [(0, 42.2), (2.6, 43.2), (3.6, 46), (2.6, 48.8), (0, 49.8)], "glow", segments=14),
     L((16.2, -13.8), [(5.0, 45.6), (5.6, 45.6), (5.6, 46.4), (5.0, 46.4), (5.0, 45.6)],
       "accent", segments=20),                                                  # Ring
     L((19.5, -10.5), [(0, 51), (1.2, 51.5), (1.6, 52.6), (1.2, 53.7), (0, 54.2)], "accent", segments=10),
 ]
+MAGE_BODY = MAGE_BODY + MAGE_ORB
 
 # Flacher Helm.
 #
@@ -2100,6 +2187,8 @@ def side_shapes(shapes, l_min, l_max, z_min):
     out = []
     for sh in shapes:
         if sh[0] == "box" and l_min <= sh[2][0] and sh[2][1] <= l_max and sh[3][0] >= z_min:
+            out.append(sh)
+        elif sh[0] == "obox" and l_min <= sh[1][1] <= l_max and sh[1][2] >= z_min:
             out.append(sh)
         elif sh[0] == "lathe" and sh[4] == "z" and l_min <= sh[1][1] <= l_max \
                 and abs(sh[1][0]) < 0.01 and min(p for _r, p in sh[2]) >= z_min:
@@ -2525,7 +2614,7 @@ SETS = [
             {
                 "id": "mage_body", "code": "CHS-003", "type": "body",
                 "name": "Nimbus Chassis", "tags": ["round", "mage", "support"],
-                "shapes": MAGE_BODY,
+                "shapes": MAGE_BODY, "passive_shapes": MAGE_ORB,
                 "anchors": {
                     "mount": (0, 0, MOUNT_Z),
                     "head": (0, 0, 61),
@@ -2754,6 +2843,11 @@ def model_faces(shapes):
             _, f, l, z, mat = shape
             for normal, points in _box_faces(f, l, z):
                 faces.append([mat, "box", list(normal), [[_r(c) for c in p] for p in points]])
+        elif shape[0] == "obox":
+            # Kante wie beim Quader: der Shader zieht sie ueber die UV der Ecken
+            for normal, points in _obox_faces(*shape[1:4]):
+                faces.append([shape[4], "box", [_r(c) for c in normal],
+                              [[_r(c) for c in p] for p in points]])
         elif shape[0] == "disc":
             _, f, lc, zc, radius, mat, segments = shape
             points = [[_r(f), _r(lc + radius * math.cos(2 * math.pi * i / segments)),
@@ -2790,13 +2884,19 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
         return {"faces": faces, "hulls": hulls,
                 "anchors": {k: [_r(c) for c in v] for k, v in anchors.items()}}
 
+    passive = part.get("passive_shapes", [])
+    main = [sh for sh in part["shapes"] if sh not in passive]
     model = {
         "id": pid, "type": part["type"],
         "colors": resolve_roles(WEAPON_COLORS.get(pid, part.get(
             "palette", palette[palette_type(part["type"])])), part["type"]),
-        **block(part["shapes"], part["anchors"]),
+        **block(main, part["anchors"]),
     }
     variants = {}
+    if passive:
+        # Sichtbare Passive als eigener Block, der sich im Kampf bewegt
+        # (Arena3D); im SVG bleibt sie Teil des Rumpfs.
+        variants["passive"] = block(passive, {"mount": part["anchors"].get("mount", (0, 0, 0))})
     for vname, vspec in part.get("variants", {}).items():
         variants[vname] = block(vspec["shapes"], vspec["anchors"])
     for slot, poses in part.get("arms", {}).items():
@@ -2807,6 +2907,8 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
         model["variants"] = variants
     if part.get("pose"):
         model["pose"] = part["pose"]
+    if "neon" in part.get("tags", []):
+        model["neon"] = True       # Leuchtroehren (glow/accent) leuchten im Spiel
     (set_dir / f"{pid}.m3d").write_text(
         json.dumps(model, ensure_ascii=False, separators=(",", ":")) + "\n",
         encoding="utf-8")

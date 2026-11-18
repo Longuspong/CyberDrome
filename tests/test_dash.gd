@@ -46,13 +46,13 @@ func test_open_ground_offers_three_tiles_in_each_direction() -> void:
 	var dash := _dash_action(unit)
 
 	var landings := resolver.dash_landings(unit, dash)
-	# Vier Richtungen x drei Felder = zwoelf Landefelder auf freiem Feld.
-	t.equal(landings.size(), 12, "freies Feld: zwölf Landefelder")
-	for tile in [Vector2i(6, 5), Vector2i(7, 5), Vector2i(8, 5),
-			Vector2i(5, 2), Vector2i(2, 5)]:
+	# Sechs Hexrichtungen x drei Felder = achtzehn Landefelder auf freiem Feld.
+	t.equal(landings.size(), 18, "freies Feld: achtzehn Landefelder")
+	var up_right := Grid.neighbor(Grid.neighbor(Grid.neighbor(unit.tile, 1), 1), 1)
+	for tile in [Vector2i(6, 5), Vector2i(7, 5), Vector2i(8, 5), up_right, Vector2i(2, 5)]:
 		t.ok(tile in landings, "%s ist erreichbar" % tile)
-	# Nichts Diagonales, nichts jenseits von drei Feldern.
-	t.ok(not (Vector2i(6, 6) in landings), "keine Diagonale")
+	# Nichts abseits der sechs Linien, nichts jenseits von drei Feldern.
+	t.ok(not (Vector2i(5, 3) in landings), "zwei Reihen gerade hoch ist keine Linie")
 	t.ok(not (Vector2i(9, 5) in landings), "nichts jenseits von drei Feldern")
 	unit.free()
 
@@ -102,8 +102,8 @@ func test_target_blocker_names_the_reason() -> void:
 
 	t.equal(resolver.target_blocker(unit, Vector2i(8, 5), dash), "",
 		"ein gültiges Landefeld hat keinen Grund")
-	t.equal(resolver.target_blocker(unit, Vector2i(7, 7), dash), "Nur in gerader Linie",
-		"eine Diagonale nennt den Grund")
+	t.equal(resolver.target_blocker(unit, Vector2i(5, 3), dash), "Nur in gerader Linie",
+		"abseits der Linien nennt den Grund")
 	t.equal(resolver.target_blocker(unit, Vector2i(9, 5), dash), "Zu weit für den Boost",
 		"jenseits der Reichweite ebenso")
 	unit.free()
@@ -118,8 +118,8 @@ func test_the_boost_fires_when_an_enemy_stands_next_to_it() -> void:
 	var foe: Unit = battle.units[1]
 	for u in [unit, foe]:
 		battle.grid.clear_occupant(u.tile)
-	unit.place_at(Vector2i(10, 10))
-	foe.place_at(Vector2i(10, 9))
+	unit.place_at(Vector2i(4, 10))
+	foe.place_at(Vector2i(4, 9))
 	for u in [unit, foe]:
 		battle.grid.set_occupant(u.tile, u.unit_id)
 	var used := []

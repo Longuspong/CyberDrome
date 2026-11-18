@@ -19,7 +19,7 @@ var build: DromeBuild
 var is_player: bool = false
 
 var tile: Vector2i = Vector2i.ZERO
-var facing: String = "south"
+var facing: String = FACING_ENEMY
 
 ## Laufzeitwerte. Die Maxima stehen im Build, hier steht der aktuelle Stand.
 var hp: int = 0
@@ -115,6 +115,11 @@ var _sprites: Dictionary = {}
 ## verschieben die FIGUR, und ``position`` der Einheit gehoert dem Feld.
 var _rig: Node2D
 
+## Die gemeinsame 3D-Kampfszene (seit 18. Nov. 2026). Gesetzt, bevor die
+## Einheit in den Baum kommt -- dann baut sie kein eigenes Bild, sondern ihr
+## Modell steht in der Arena. Ohne Arena (Tests, Werkstatt) wie bisher.
+var arena: Arena3D = null
+
 ## Der Bodenring in Fraktionsfarbe, UNTER den Bauteilen (z_index -1).
 var _ring: UnitRing
 
@@ -172,7 +177,11 @@ func _build_sprites() -> void:
 	# die Werkstatt-Vorschau benutzt. Zwei Zusammenbauten waeren zwei
 	# Gelegenheiten, dass der Bot im Kampf anders aussieht als beim Bauen.
 	_ensure_chrome()
-	_sprites = DromeSprites.assemble(_rig, build, facing)
+	if arena != null:
+		_sprites = {}
+		arena.rebuild(self)
+	else:
+		_sprites = DromeSprites.assemble(_rig, build, facing)
 	# Sentinels kleiner (60 %, SPOT-Blatt Fragen 13), bis eigene Sprites kommen.
 	# Skaliert um die Fuesse (SPRITE_ORIGIN = Feldmitte), nicht um die linke
 	# obere Bildecke -- sonst hingen sie ueber ihrem Feld in der Luft (bis
@@ -203,6 +212,9 @@ func set_facing(direction: String) -> void:
 	if direction == facing:
 		return
 	facing = direction
+	if arena != null and arena.model_of(self) != null:
+		arena.face(self)
+		return
 	_build_sprites()
 
 
@@ -242,24 +254,50 @@ func _process(delta: float) -> void:
 		_glide_total = 0.0
 
 
+## Gleitet die Figur gerade zu ihrem Feld (laeuft sie)?
+func is_gliding() -> bool:
+	return _glide_total > 0.0
+
+
 ## Die Feldmitte unter der Figur, so wie sie gerade gezeichnet wird -- fuer
 ## den Lebensbalken, der mitgleiten soll.
 func visual_anchor() -> Vector2:
 	return position + IsoView.SPRITE_ORIGIN
 
 
-## Blickrichtung aus einem Schritt im Gitter.
-static func facing_for(step: Vector2i) -> String:
-	if absi(step.x) >= absi(step.y):
-		return "east" if step.x > 0 else "west"
-	return "south" if step.y > 0 else "north"
+## Blickrichtung auf dem Hexfeld (17. Nov. 2026): ein Winkel im Bild,
+## "deg<grad>" (0 = rechts, gegen den Uhrzeigersinn), siehe
+## DromeModel.facing_basis. Zu Beginn schaut der Spieler nach oben, der
+## Gegner nach unten; danach in eine der sechs Hexrichtungen.
+const FACING_PLAYER := "deg90"
+const FACING_ENEMY := "deg270"
+
+
+static func facing_toward(from: Vector2i, to: Vector2i) -> String:
+	var dir := Grid.direction_toward(from, to)
+	if dir < 0:
+		return FACING_PLAYER
+	return "deg%d" % int(Grid.direction_angle(dir))
 
 
 ## Fraktionsfarbstich und Trefferblende treffen sich hier -- und nur hier.
 func _refresh_tint() -> void:
 	if _flashing:
 		return
-	DromeSprites.tint(_sprites, Teams.tint(is_player))
+	_apply_tint(Teams.tint(is_player))
+
+
+## Das Rig (Rueckstoss, Erschuetterung, Sentinel-Groesse) -- die Arena liest
+## daraus, wo das 3D-Modell steht.
+func rig() -> Node2D:
+	return _rig
+
+
+func _apply_tint(color: Color) -> void:
+	if arena != null:
+		arena.tint(self, color)
+	else:
+		DromeSprites.tint(_sprites, color)
 
 
 # ---------------------------------------------------------------------------
@@ -279,8 +317,14 @@ const SHAKE_AMPLITUDE := 7.0
 ## Der Angreifer stemmt sich kurz gegen sein Ziel und faellt zurueck. Die
 ## Richtung kommt aus dem Feld, nicht aus ``facing``: bei einer Flaechenaktion
 ## steht der Bot woanders hin, als er trifft.
-func play_attack(toward: Vector2i) -> void:
+##
+## In der gemeinsamen 3D-Szene bewegt sich statt des ganzen DROME die Waffe
+## (Arena3D.attack, 18. Nov. 2026): Nahkampf holt aus und schlaegt zu,
+## Fernkampf mit Rueckstoss und Muendungsblitz, Schild stoesst vor.
+func play_attack(toward: Vector2i, action: ActionData = null) -> void:
 	if _rig == null:
+		return
+	if arena != null and arena.attack(self, action):
 		return
 	var delta := IsoView.map_to_local(toward) - IsoView.map_to_local(tile)
 	var push := Vector2.ZERO if delta == Vector2.ZERO \
@@ -299,6 +343,8 @@ func play_attack(toward: Vector2i) -> void:
 func play_hit() -> void:
 	if _rig == null:
 		return
+	if arena != null:
+		arena.hit(self)
 	var home := _rig_home()
 	var tween := create_tween()
 	var steps := 5
@@ -311,7 +357,7 @@ func play_hit() -> void:
 	tween.tween_property(_rig, "position", home, SHAKE_TIME / float(steps))
 
 	_flashing = true
-	DromeSprites.tint(_sprites, Teams.HIT_FLASH)
+	_apply_tint(Teams.HIT_FLASH)
 	var flash := create_tween()
 	flash.tween_interval(0.09)
 	flash.tween_callback(func():
@@ -325,7 +371,7 @@ func play_heal() -> void:
 	if _rig == null:
 		return
 	_flashing = true
-	DromeSprites.tint(_sprites, Color(1.1, 2.2, 1.3))
+	_apply_tint(Color(1.1, 2.2, 1.3))
 	var flash := create_tween()
 	flash.tween_interval(0.14)
 	flash.tween_callback(func():
@@ -349,8 +395,13 @@ func play_death() -> void:
 		return
 	var calm := Accessibility.reduce_motion
 	var total := DEATH_TIME_CALM if calm else DEATH_TIME
-	DromeSprites.tint(_sprites, Teams.HIT_FLASH)
+	_apply_tint(Teams.HIT_FLASH)
 	_flashing = true
+	var turn: Node3D = arena.turn_of(self) if arena != null \
+		else _rig.get_node_or_null("Ansicht3D/Drome/Ausrichtung") as Node3D
+	if turn != null:
+		_death_3d(turn, total, calm)
+		return
 	var parts: Array = []
 	for child in _rig.get_children():
 		if child is Sprite2D:
@@ -388,6 +439,78 @@ func play_death() -> void:
 	var done := create_tween()
 	done.tween_interval(total)
 	done.tween_callback(func(): visible = false)
+
+
+## Zerfallen des 3D-DROME (17. Nov. 2026): jeder Block (Fuesse, Rumpf, Kern,
+## Kopf, Waffe, Waffenarm) springt ein Stueck vom Koerper weg, kippt und
+## faellt auf den Boden; am Ende verblasst das ganze Bild. Koordinaten unter
+## "Ausrichtung" sind bot-lokal (f, l, z) in Weltmetern.
+func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
+	var sprite := _rig.get_node_or_null("Drome") as Sprite2D
+	if arena == null:
+		DromeSprites.redraw(_rig, true)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(str(unit_id))
+	if not calm:
+		var unit_m := 1.0 / DromeModel.SCALE      # ein Entwurfspunkt in Metern
+		# Jeder Block bekommt seine eigene Richtung (goldener Winkel), dazu
+		# ein Zug weg von der Koerpermitte -- so streuen die Teile rundum.
+		var base := rng.randf() * TAU
+		var index := 0
+		for block in turn.get_children():
+			if not block is MeshInstance3D:
+				continue
+			var inst := block as MeshInstance3D
+			var box := inst.get_aabb()
+			var mid := inst.position + box.get_center()
+			var away := Vector2.from_angle(base + index * 2.39996) + Vector2(mid.x, mid.y) * 0.08
+			away = away.normalized()
+			index += 1
+			var reach := rng.randf_range(12.0, 22.0) * unit_m
+			var start := inst.position
+			var pivot := box.get_center()          # gedreht wird um die Blockmitte
+			var hop := start + Vector3(away.x, away.y, 0) * reach * 0.35 \
+				+ Vector3(0, 0, rng.randf_range(4.0, 10.0) * unit_m)
+			# Landen: die Blockmitte knapp ueber dem Boden (z = 0) -- liegt.
+			var land := start + Vector3(away.x, away.y, 0) * reach
+			land.z = minf(box.size.z, box.size.x) * 0.4 - pivot.z
+			var axis := Vector3(-away.y, away.x, 0).normalized()
+			var angle := rng.randf_range(0.6, 1.4) * (1.0 if rng.randf() < 0.5 else -1.0)
+			create_tween().tween_method(func(t: float) -> void:
+				var p: Vector3
+				if t < 1.0 / 3.0:
+					var u := t * 3.0
+					p = start.lerp(hop, 1.0 - (1.0 - u) * (1.0 - u))
+				else:
+					var u := (t - 1.0 / 3.0) * 1.5
+					p = hop.lerp(land, u * u)
+				var turn_b := Basis(axis, angle * t)
+				inst.transform = Transform3D(turn_b, p + pivot - turn_b * pivot),
+				0.0, 1.0, total * 0.75)
+	if sprite != null:
+		create_tween().tween_property(sprite, "modulate:a", 0.0,
+			total if calm else total * 0.35).set_delay(0.0 if calm else total * 0.65)
+	elif arena != null:
+		# Gemeinsame Szene: kein eigenes Bild zum Ausblenden -- die Truemmer
+		# verdunkeln sich und verschwinden dann.
+		var dark := create_tween()
+		dark.tween_interval(0.0 if calm else total * 0.6)
+		dark.tween_method(func(k: float) -> void:
+			_apply_tint(Teams.tint(is_player).lerp(Color(0.15, 0.15, 0.2), k)),
+			0.0, 1.0, total * (1.0 if calm else 0.4))
+	if _ring != null:
+		create_tween().tween_property(_ring, "modulate:a", 0.0, total * 0.6)
+	var flash := create_tween()
+	flash.tween_interval(0.08)
+	flash.tween_callback(func():
+		_flashing = false
+		_refresh_tint())
+	var done := create_tween()
+	done.tween_interval(total)
+	done.tween_callback(func():
+		if arena == null:
+			DromeSprites.redraw(_rig)
+		visible = false)
 
 
 ## Der Bodenring: eine flache Ellipse in Fraktionsfarbe unter den Fuessen.

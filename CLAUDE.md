@@ -3,7 +3,7 @@
 Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 `docs/GAME_DESIGN.md`, Bedienung und Struktur in `README.md`.
 
-**Ganz zuerst (seit 17. Nov. 2026): `docs/UEBERGABE_3D.md`** -- 3D-DROMEs, Leistungstest, Hexboden-Entwurf und die vereinbarten naechsten Schritte (gedrehter Quader im Generator, Neon/Kontur in 3D, Hexfeld als Designfrage, Kampf als eine 3D-Szene mit Bewegung).
+**Ganz zuerst (seit 17. Nov. 2026): `docs/UEBERGABE_3D.md`** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung und 3D-Boden `ArenaFloor3D` seit 18. Nov.; sichtbare Passiven, Muendungsblitz und 3D-Deko seit 18. Nov.; offen: Beine im Wechsel, Story-Level).
 
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
@@ -178,11 +178,17 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
   nach oben in groessere Halter, schwer nur in schwer).
-* Spielfeld bleibt 20x20, ohne Gelaende-Regeln und ohne Sichtlinie (seit
-  5. Nov. 2026). Seit 7. Nov. 2026 gibt es **Hindernisse**, die nur Laufwege
-  sperren (Schuesse gehen darueber), punktsymmetrisch je Seed, nie an den
-  Zonen (`MapGenerator.place_obstacles`, `config.json` -> `obstacles`).
-  Aufgestellt wird in einem Streifen 3 x 8 am Kartenrand, ohne Zutun nach
+* Spielfeld ist seit 17. Nov. 2026 ein **Hexfeld 9 x 17** (hochkant,
+  Reihen waagerecht, Spieler unten, Gegner oben; `Grid`: `Vector2i(spalte,
+  reihe)`, ungerade Reihen halb nach rechts, Abstand in Hexschritten,
+  `Grid.neighbors`/`neighbor`/`direction_toward`/`line_direction`;
+  Bildschirm nur ueber `IsoView`). Reichweiten 1:1 von Manhattan uebernommen.
+  Blickrichtung im Kampf als Winkel `deg<grad>` (`DromeModel.facing_basis`).
+  Ohne Gelaende-Regeln und ohne Sichtlinie. Seit 7. Nov. 2026 gibt es
+  **Hindernisse**, die nur Laufwege sperren (Schuesse gehen darueber), an der
+  Mittelreihe gespiegelt je Seed, nie an den Zonen
+  (`MapGenerator.place_obstacles`, `config.json` -> `obstacles`).
+  Aufgestellt wird in einem Streifen 3 x 7 am Rand, ohne Zutun nach
   Rolle gestaffelt und verteilt (seit 10. Nov. 2026). Die
   Arena zeichnet `ArenaPainter` (Boden, Rand, Deko, Licht je Region). Die
   Kamera folgt dem Geschehen, Zoomen und Ziehen per Finger.
