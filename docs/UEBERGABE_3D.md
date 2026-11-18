@@ -1,7 +1,67 @@
-# Übergabe: 3D-DROMEs, Hexboden, nächste Schritte (Stand 17. Nov. 2026)
+# Übergabe: 3D-DROMEs, Fähigkeiten, Generator (Stand 18. Nov. 2026, abends)
 
-Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md`
-(Abschnitte 4b, 4c, Leistungstest, 5).
+Für eine frische Sitzung. Erst den Abschnitt „Stand 18. Nov.“ lesen, dann
+`docs/DROME_UMSETZUNG.md` (4g, 5, 6, 7). Ältere Abschnitte darunter bleiben
+als Hintergrund.
+
+## Stand 18. Nov. 2026 -- PR #83 (Draft, alles grün, Spieler merged selbst)
+
+Gebaut in dieser Sitzung (Details und Dateien in `DROME_UMSETZUNG.md`):
+
+* **Beine im Wechsel** (Vireo, Molok, Strix): `split_legs` im Generator,
+  `Arena3D._leg_pose`.
+* **Generator-Bausteine** in `tools/build_sample_parts.py`: `BP`
+  Doppelpyramide, `SW` Zug (Kabel/Schläuche rund, gebogene Klingen flach),
+  `EX` Profil mit Fase (`axis` l/f/z). Alle ergeben ein `poly`.
+* **Redesign** (vom Spieler freigegeben): Strix mit Eulenflügeln aus
+  überlappenden Tropfen-Federn, Lafette auf der Schulter mit Buchse, Kabel
+  und `side_holder` (Achsel-Variante per `STRIX_MOUNT=achsel`); Molok mit
+  Kabelschläuchen und Fasen; Vireo mit V-Torso; Waffen neu (Schienen-Lanze
+  als Scharfschützengewehr, Plasmaklinge, Bumerang gebogen, Mörser,
+  Puls-Blaster, Hammer, Ramme, E-Schlüssel).
+* **Waffenfarben**: Waffenstahl, Puls-Blaster Chrom (`WEAPON_COLORS`),
+  Glanzkante + Leuchten je Waffe (`WEAPON_FINISH`, Shader `drome_face` `shine`).
+* **Fraktions-Paletten** für Gegner-DROMEs/Sentinels
+  (`DromeModel.FACTION_PALETTES`, Mecha-Absperrstreifen im Shader `stripes`,
+  kein roter Teamstich für Fraktions-DROMEs).
+* **Fähigkeiten lesbar und in Abfolge**: `AbilityPainter` (Formen),
+  `AbilityFx` (Optik zu `ability_cast`/`action_used`), **Ausholzeit**
+  `ActionData.windup` (DROME steht still, Wirkung danach aufs Ziel, wo es
+  dann steht). Würfe (Runenstab-Vortex, Bumerang) über `Arena3D.throw`,
+  Loslassen mitten im Schwung. Genau zielen (`Unit.facing_at`, `aim_hold`),
+  Schüsse ab Mündung (`Arena3D.weapon_tip`). Sog/Stoß rutschen sichtbar.
+* **Doppelschuss** = 2 Salven × 3 Schüsse à 1/3 Schaden (Feld `salvo`,
+  verzögerte Treffer `ActionResolver.salvo_time`), dreht sich zum 2. Ziel.
+
+Werkzeuge für Bilder (ohne Web-Export, unter `docs/design/drome_entwurf/godot/`):
+`render_chassis.gd` (ein Chassis, 6 Richtungen), `render_waffenfarben.gd`
+(Ordner `-` = wie im Spiel), `render_fraktionen.gd`, `render_film.gd` +
+`film_scene.gd` (Fähigkeit als Film, derselbe Ablauf wie im Kampf; GIFs
+mit PIL bauen). Leinwand: https://claude.ai/artifact/TAngQWD17gcfUoMok2Gzx6
+(Seiten „Fähigkeiten lesbar“ mit Filmen, „Durchsicht & Redesign“,
+„Waffenfarben“).
+
+### Offen / nächste Schritte
+1. **Balance-Messung** nach Ausholzeit und Salven (noch nicht gemessen):
+   `run_bench.gd -- 60`, ggf. `windup` je Fähigkeit nachstellen.
+2. **Shogun Kage als Boss-Chassis** -- mit `SW`/`BP` jetzt Hörner und Katana
+   glatt möglich (Entwurf `v11_shogun.py`). Bosse kommen mit den Story-Leveln.
+3. Story-Level (macht der Spieler separat), Android-App später.
+4. Kleinkram: Nimbus-Energieleitung Kugel→Stab (optional), Fraktionsfarben
+   in die SPOT-Tabelle übernehmen (stehen heute nur im Code).
+
+### Fallstricke aus dieser Sitzung
+* Nach Änderungen am Generator immer `python3 tools/build_sample_parts.py`,
+  `python3 tools/bake_godot_assets.py`, `godot --headless --path . --import`.
+* Blicktests mit Zeitablauf (Filme, Fähigkeiten) mit `--fixed-fps 60`, sonst
+  läuft die Zeit im Container zu schnell.
+* `get_shader_parameter` liefert `null` für nie gesetzte Parameter.
+* Optik und Regeln müssen dieselben Zeiten nutzen (Ausholzeit, Salven) --
+  Konstanten liegen in `ActionResolver`/`Arena3D`, die Anzeige liest sie.
+* Molok-Passive „Präsenz“ fängt Anteile ab -- in Treffer-Tests Gegner ohne
+  Molok daneben wählen.
+
+## Älterer Stand (17. Nov. 2026)
 
 ## Was gebaut ist (PR #81, vom Spieler gemergt)
 
