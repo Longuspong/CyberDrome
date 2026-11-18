@@ -26,14 +26,14 @@
     }
   ],
   "color_scheme": {
-    "plate": "#5a4050",
-    "plate_light": "#986e88",
-    "plate_dark": "#32242d",
-    "metal": "#9a8796",
-    "accent": "#ff8a3d",
-    "glow": "#ffb76a",
-    "visor": "#ffb76a",
-    "outline": "#100a0e"
+    "plate": "#55504a",
+    "plate_light": "#90887e",
+    "plate_dark": "#302d29",
+    "metal": "#b0a89a",
+    "accent": "#ffd447",
+    "glow": "#ffff74",
+    "visor": "#ffff74",
+    "outline": "#07090d"
   },
   "tags": [
     "support",

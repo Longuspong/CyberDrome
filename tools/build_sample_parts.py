@@ -290,25 +290,48 @@ NEON_EQUIPMENT = {"hull": "#140b24", "mech": "#3a2a5c", "neon": "#ff2bd6",
 
 # Waffenfarben, unabhaengig vom DROME (17. Nov. 2026, Wunsch des Spielers):
 # jede Waffe hat hier ihre EIGENE Palette, egal an welchem Chassis sie haengt.
-# Startwerte = die bisherigen Bausatzfarben, damit sich nichts verschiebt --
+# Gewaehlt am 18. Nov. 2026 (siehe unten) --
 # zum Umfaerben nur hier aendern, dann build_sample_parts.py und
 # bake_godot_assets.py laufen lassen.
 def _eq(base: dict) -> dict:
     return dict(base["equipment"])
 
 
+def _w(hull, mech, neon, line="#07090d"):
+    return {"hull": hull, "mech": mech, "neon": neon, "line": line}
+
+
+# Gewaehlt am 18. Nov. 2026 (Leinwand "Waffenfarben", v13_waffenfarben.py):
+# Satz A "Waffenstahl" fuer alle, der Puls-Blaster aus Satz B "Chrom".
 WEAPON_COLORS = {
-    "eq_pulse_blaster": _eq(DEFAULT_PALETTE),
+    "eq_pulse_blaster": _w("#7a8494", "#d6dde6", "#2de2e6", "#0a0d12"),
     "eq_neon_blaster": dict(NEON_EQUIPMENT),
-    "eq_plasma_blade": _eq(DEFAULT_PALETTE),
-    "eq_boomerang": _eq(DEFAULT_PALETTE),
-    "eq_deflector": _eq(DEFAULT_PALETTE),
-    "eq_hammer": _eq(JUGG_PALETTE),
-    "eq_bulwark_ram": _eq(JUGG_PALETTE),
-    "eq_drone_pod": _eq(JUGG_PALETTE),        # E-Schraubenschluessel
-    "eq_rune_staff": _eq(MAGE_PALETTE),
-    "eq_rail_lance": _eq(STRIX_PALETTE),
-    "eq_mortar": _eq(STRIX_PALETTE),
+    "eq_plasma_blade": _w("#2a2f3a", "#9aa3b3", "#ff5a3d"),
+    "eq_boomerang": _w("#46505f", "#b8c0cc", "#ffb000"),
+    "eq_deflector": _w("#39404c", "#8a93a3", "#5ad1ff"),
+    "eq_hammer": _w("#4a4e56", "#a0a6b0", "#ff8a3d"),
+    "eq_bulwark_ram": _w("#3f444c", "#979ca6", "#ffd447"),
+    "eq_drone_pod": _w("#55504a", "#b0a89a", "#ffd447"),        # E-Schraubenschluessel
+    "eq_rune_staff": _w("#3a3550", "#a59ac8", "#b06bff"),
+    "eq_rail_lance": _w("#1d2430", "#6f7d92", "#3df2ff"),
+    "eq_mortar": _w("#3d4636", "#8e9688", "#ff6a2a"),
+}
+
+# Oberflaeche je Waffe (18. Nov. 2026): ``shine`` = Glanzkante je Material
+# (0..1, Shader drome_face), ``neon`` = die Leuchtteile leuchten im Spiel wie
+# beim Neon-Blaster (Energiewaffen). Vorgabe des Spielers: Klingen glaenzen
+# oder leuchten, Griffe und Halterungen bleiben matt.
+WEAPON_FINISH = {
+    "eq_pulse_blaster": {"shine": {"plate": 0.7, "light": 0.7, "metal": 0.6}},
+    "eq_plasma_blade": {"neon": True},
+    "eq_boomerang": {"shine": {"blade": 0.75}},
+    "eq_deflector": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
+    "eq_hammer": {"shine": {"plate": 0.4, "light": 0.4}},
+    "eq_bulwark_ram": {"shine": {"plate": 0.4, "light": 0.4}},
+    "eq_drone_pod": {"shine": {"metal": 0.4}},
+    "eq_rune_staff": {"shine": {"plate": 0.35}, "neon": True},
+    "eq_rail_lance": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
+    "eq_mortar": {"shine": {"plate": 0.3, "light": 0.3}},
 }
 
 C = {role: f"var(--c-{role.replace('_', '-')})" for role in PALETTE_ROLES}
@@ -319,6 +342,8 @@ MATERIALS = {
     "dark":   (C["plate"], C["plate_dark"], C["plate_dark"], True),
     "light":  (C["plate_light"], C["plate_light"], C["plate"], True),
     "metal":  (C["metal"], C["metal"], C["plate_dark"], True),
+    # Schneide (18. Nov. 2026): helles Metall, im Spiel mit Glanzkante.
+    "blade":  (C["plate_light"], C["metal"], C["plate"], True),
     "visor":  (C["visor"], C["visor"], C["visor"], True),
     "glow":   (C["glow"], C["glow"], C["glow"], False),
     "accent": (C["accent"], C["accent"], C["accent"], False),
@@ -811,6 +836,67 @@ def OB(p0, p1, width, height, mat, roll=0.0):
     return O(mid, (length, width, height), (yaw, pitch, roll), mat)
 
 
+def BP(back, tip, width, thick, mat, mid=0.18):
+    """
+    Doppelpyramide (18. Nov. 2026): zwei Pyramiden Ruecken an Ruecken -- eine
+    Klinge. Von ``back`` (kurze Spitze, steckt im Heft) nach ``tip`` (lange
+    Spitze); die breiteste Stelle liegt bei ``mid`` (Anteil der Laenge). Der
+    Querschnitt ist eine Raute: ``width`` quer zur Klinge waagerecht (l),
+    ``thick`` die Dicke senkrecht dazu. Grat und Schneide entstehen aus den
+    Flaechen selbst -- keine Stufen.
+    """
+    d = [b - a for a, b in zip(back, tip)]
+    length = math.sqrt(sum(c * c for c in d))
+    axis = [c / length for c in d]
+    # Querachsen: "side" moeglichst waagerecht (l), "front" senkrecht zu beiden.
+    up = (0.0, 1.0, 0.0) if abs(axis[1]) < 0.9 else (1.0, 0.0, 0.0)
+    side = _norm(_reject(up, axis))
+    front = _norm(_cross(side, axis))
+    m = [a + c * length * mid for a, c in zip(back, axis)]
+    corners = [tuple(mc + sc * width / 2.0 for mc, sc in zip(m, side)),
+               tuple(mc + fc * thick / 2.0 for mc, fc in zip(m, front)),
+               tuple(mc - sc * width / 2.0 for mc, sc in zip(m, side)),
+               tuple(mc - fc * thick / 2.0 for mc, fc in zip(m, front))]
+    center = tuple(m)
+    faces = []
+    for apex in (tuple(tip), tuple(back)):
+        for i in range(4):
+            tri = [apex, corners[i], corners[(i + 1) % 4]]
+            n = _norm(_cross(_sub(tri[1], tri[0]), _sub(tri[2], tri[0])))
+            mid_tri = [sum(c) / 3.0 for c in zip(*tri)]
+            if sum(nc * (tc - cc) for nc, tc, cc in zip(n, mid_tri, center)) < 0:
+                tri = [tri[0], tri[2], tri[1]]
+                n = tuple(-c for c in n)
+            faces.append((tuple(n), [tuple(pt) for pt in tri]))
+    return ("poly", tuple(faces), mat)
+
+
+def _sub(a, b):
+    return tuple(x - y for x, y in zip(a, b))
+
+
+def _cross(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+
+def _norm(v):
+    n = math.sqrt(sum(c * c for c in v)) or 1.0
+    return tuple(c / n for c in v)
+
+
+def _reject(v, axis):
+    """``v`` ohne seinen Anteil entlang ``axis``."""
+    dot = sum(a * b for a, b in zip(v, axis))
+    return tuple(a - dot * b for a, b in zip(v, axis))
+
+
+def mirror_poly(s):
+    """Vielflach an l = 0 gespiegelt (Punkte und Normalen)."""
+    _, faces, mat = s
+    return ("poly", tuple(((n[0], -n[1], n[2]), [(pt[0], -pt[1], pt[2]) for pt in pts])
+                          for n, pts in faces), mat)
+
+
 def _rot_matrix(rot):
     """Drehmatrix (Zeilen) aus (gier, nick, roll) in Grad: Rz * Rl * Rf."""
     gy, ni, ro = (math.radians(a) for a in rot)
@@ -921,6 +1007,8 @@ def _shape_faces(shape):
         return _box_faces(f, l, z)
     if kind == "obox":
         return _obox_faces(*shape[1:4])
+    if kind == "poly":
+        return [(n, list(pts)) for n, pts in shape[1]]
     if kind == "disc":
         _, f, l_center, z_center, radius, _mat, segments = shape
         return [((1, 0, 0), [
@@ -1253,6 +1341,11 @@ def render(shapes, facing):
                 emitted = _emit(points, to_world(local_normal, facing), shape[4], facing)
                 if emitted:
                     faces.append(emitted)
+        elif shape[0] == "poly":
+            for local_normal, points in shape[1]:
+                emitted = _emit(list(points), to_world(local_normal, facing), shape[2], facing)
+                if emitted:
+                    faces.append(emitted)
         elif shape[0] == "disc":
             _, f, lc, zc, radius, mat, segments = shape
             points = [
@@ -1325,6 +1418,8 @@ def _mirror_l(shapes):
             out.append(("box", f, (-l[1], -l[0]), z, mat))
         elif s[0] == "obox":
             out.append(mirror_obox(s))
+        elif s[0] == "poly":
+            out.append(mirror_poly(s))
         elif s[0] == "disc":
             _, f, lc, zc, r, mat, seg = s
             out.append(("disc", f, -lc, zc, r, mat, seg))
@@ -2226,6 +2321,7 @@ def _head_blade(h, k):
     # Die Klinge waechst am Molok nicht voll mit -- sonst ragt sie aus dem
     # 128er Rahmen. Griff und Parierstange tragen das Armmass.
     kb = min(k, 1.3)
+    top = z + 9.0 * k + 27 * kb
     return [
         B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 6 * k, z + 4.4 * k), "metal"),
         B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 7.8 * k, z - 6 * k), "dark"),
@@ -2234,10 +2330,10 @@ def _head_blade(h, k):
         B((f - 2.1 * k, f + 2.1 * k), (l - 5.4 * k, l - 4.2 * k), (z + 4.2 * k, z + 6.4 * k), "accent"),
         B((f - 2.1 * k, f + 2.1 * k), (l + 4.2 * k, l + 5.4 * k), (z + 4.2 * k, z + 6.4 * k), "accent"),
         B((f - 1.3 * k, f + 1.3 * k), (l - 1.4 * k, l + 1.4 * k), (z + 6.0 * k, z + 9.0 * k), "metal"),
-        B((f - 0.7 * k, f + 0.7 * k), (l - 1.1 * k, l + 1.1 * k), (z + 9.0 * k, z + 9.0 * k + 23 * kb), "glow"),
-        B((f - 0.5 * k, f + 0.5 * k), (l - 0.6 * k, l + 0.6 * k), (z + 9.0 * k + 23 * kb, z + 9.0 * k + 27 * kb), "glow"),
-        B((f + 0.7 * k, f + 1.1 * k), (l - 0.9 * k, l + 0.9 * k), (z + 9.0 * k, z + 9.0 * k + 22 * kb), "accent"),
-    ], (f, l, z + 9.0 * k + 27 * kb)
+        # Plasmaklinge als lange Doppelpyramide (Spieler 18. Nov. 2026): die
+        # kurze Spitze steckt im Heft, die breiteste Stelle knapp darueber.
+        BP((f, l, z + 7.0 * k), (f, l, top), 3.0 * k, 1.5 * k, "glow", mid=0.12),
+    ], (f, l, top)
 
 
 def _head_hammer(h, k):
@@ -2269,22 +2365,27 @@ def _head_ram(h, k):
 
 
 def _head_boomerang(h, k):
-    """Wurfbereit: Griff durch die Faust, ein Schenkel nach oben, einer nach
-    vorn -- ein "L" in der Armebene, damit es an beiden Armen gleich sitzt."""
+    """Wurfbereit wie ein echter Bumerang: die Faust haelt das Ende des einen
+    Fluegels, der steigt schraeg nach oben zum Knick, der zweite Fluegel faellt
+    von dort nach vorn ab -- ein "Λ" in der Armebene, damit es an beiden Armen
+    gleich sitzt. Fluegel als flache Doppelpyramiden mit Schneide ringsum,
+    keine Stufen (Spieler 18. Nov. 2026)."""
     f, l, z = h
+    elbow = (f + 3.0 * k, l, z + 15.5 * k)
+    tip = (f + 15.5 * k, l, z + 7.0 * k)
     return [
         B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 5 * k, z + 4 * k), "metal"),
         B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 6.6 * k, z - 5 * k), "dark"),
-        B((f - 2.2 * k, f + 2.2 * k), (l - 2.2 * k, l + 2.2 * k), (z + 4 * k, z + 7 * k), "plate"),
-        B((f - 2.3 * k, f + 2.3 * k), (l - 2.3 * k, l + 2.3 * k), (z + 5 * k, z + 5.8 * k), "accent"),
-        B((f - 0.6 * k, f + 0.6 * k), (l - 1.3 * k, l + 1.3 * k), (z + 7 * k, z + 19 * k), "glow"),
-        B((f + 0.6 * k, f + 1.0 * k), (l - 1.3 * k, l + 1.3 * k), (z + 7 * k, z + 18 * k), "accent"),
-        B((f - 0.9 * k, f + 0.9 * k), (l - 1.8 * k, l + 1.8 * k), (z + 19 * k, z + 21 * k), "plate"),
-        B((f + 2.2 * k, f + 6.5 * k), (l - 1.3 * k, l + 1.3 * k), (z + 5.5 * k, z + 8.5 * k), "glow"),
-        B((f + 6.5 * k, f + 10.5 * k), (l - 1.3 * k, l + 1.3 * k), (z + 8 * k, z + 11 * k), "glow"),
-        B((f + 2.2 * k, f + 10.5 * k), (l - 1.5 * k, l + 1.5 * k), (z + 7.6 * k, z + 8.4 * k), "accent"),
-        B((f + 10.5 * k, f + 12.5 * k), (l - 1.8 * k, l + 1.8 * k), (z + 9.5 * k, z + 12 * k), "plate"),
-    ], (f + 12.5 * k, l, z + 11 * k)
+        # Fluegel: duenn quer zur Armebene (l), breit in ihr
+        BP((f - 0.3 * k, l, z + 2.0 * k), (elbow[0] + 0.8 * k, l, elbow[2] + 1.2 * k),
+           1.2 * k, 5.0 * k, "blade", mid=0.55),
+        BP((elbow[0] - 0.8 * k, l, elbow[2] + 1.0 * k), tip, 1.2 * k, 5.0 * k, "blade", mid=0.4),
+        # Knick mit Leuchtkern
+        O(elbow, (3.4 * k, 2.0 * k, 3.4 * k), (0, -30, 0), "plate"),
+        O(elbow, (1.6 * k, 2.4 * k, 1.6 * k), (0, -30, 0), "glow"),
+        # Griffband am Ende des gehaltenen Fluegels
+        B((f - 1.2 * k, f + 1.2 * k), (l - 1.0 * k, l + 1.0 * k), (z + 3.2 * k, z + 4.4 * k), "accent"),
+    ], tip
 
 
 def _head_staff(h, k):
@@ -2856,6 +2957,11 @@ def model_faces(shapes):
             for normal, points in _obox_faces(*shape[1:4]):
                 faces.append([shape[4], "box", [_r(c) for c in normal],
                               [[_r(c) for c in p] for p in points]])
+        elif shape[0] == "poly":
+            # Dreiecke ohne Kante: Grat und Schneide zeichnen die Flaechen selbst.
+            for normal, points in shape[1]:
+                faces.append([shape[2], "seam", [_r(c) for c in normal],
+                              [[_r(c) for c in p] for p in points]])
         elif shape[0] == "disc":
             _, f, lc, zc, radius, mat, segments = shape
             points = [[_r(f), _r(lc + radius * math.cos(2 * math.pi * i / segments)),
@@ -2892,6 +2998,9 @@ def _shape_center(shape) -> tuple:
         return (shape[2], shape[3])
     if kind == "obox":
         return (shape[1][1], shape[1][2])
+    if kind == "poly":
+        pts = [pt for _n, ps in shape[1] for pt in ps]
+        return (sum(pt[1] for pt in pts) / len(pts), sum(pt[2] for pt in pts) / len(pts))
     _, c, prof, _mat, axis, _seg, _caps = shape
     ts = [t for _r, t in prof]
     if axis == "z":
@@ -2967,8 +3076,11 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
         model["variants"] = variants
     if part.get("pose"):
         model["pose"] = part["pose"]
-    if "neon" in part.get("tags", []):
+    finish = WEAPON_FINISH.get(pid, {})
+    if "neon" in part.get("tags", []) or finish.get("neon"):
         model["neon"] = True       # Leuchtroehren (glow/accent) leuchten im Spiel
+    if finish.get("shine"):
+        model["shine"] = finish["shine"]   # Glanzkante je Material (drome_face)
     (set_dir / f"{pid}.m3d").write_text(
         json.dumps(model, ensure_ascii=False, separators=(",", ":")) + "\n",
         encoding="utf-8")

@@ -5,6 +5,7 @@
 ##   xvfb-run -a godot --path . --script res://docs/design/drome_entwurf/godot/render_main.gd -- \
 ##       res://docs/design/drome_entwurf/godot/render_waffenfarben.gd /tmp/wf/bild /tmp/wf [FACING]
 ## Ein Bild je Satz (bild_0 = heute, bild_1 = A ...), Waffen in ORDER.
+## Ordner "-" statt des Plans: eine Reihe so, wie das Spiel sie zeigt.
 extends RefCounted
 
 const PX := 384
@@ -59,7 +60,9 @@ func _close_up(rig: Node, slot: String) -> void:
 	DromeSprites.redraw(rig)
 
 func build(root: Window, dir: String) -> Array:
-	var plan: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "/waffenfarben.json"))
+	# Ordner "-": eine Reihe so, wie das Spiel die Waffen heute zeigt.
+	var plan: Dictionary = {"spiel": {"weapons": {}}} if dir == "-" \
+		else JSON.parse_string(FileAccess.get_file_as_string(dir + "/waffenfarben.json"))
 	var args := OS.get_cmdline_user_args()
 	var facing := args[3] if args.size() > 3 else "south"
 	# "nah": nur die Waffe, gross (Farben beurteilen); sonst am ganzen DROME.
@@ -77,10 +80,11 @@ func build(root: Window, dir: String) -> Array:
 		root.add_child(out)
 		for i in ORDER.size():
 			var pid: String = ORDER[i]
-			var w: Dictionary = spec["weapons"][pid]
+			var w: Dictionary = spec["weapons"].get(pid, {})
 			var model := DromeModel.model_of(PartDB.get_part(StringName(pid)))
-			model["colors"] = w["colors"]
-			model["neon"] = bool(w["energie"])
+			if not w.is_empty():
+				model["colors"] = w["colors"]
+				model["neon"] = bool(w["energie"])
 			var build := _build(CHASSIS[pid], StringName(pid))
 			var rig := Node2D.new()
 			rig.position = Vector2(i * PX, 0)
@@ -88,7 +92,7 @@ func build(root: Window, dir: String) -> Array:
 			out.add_child(rig)
 			DromeSprites.assemble(rig, build, facing, PX)
 			var slot := str(build.equip_slots()[0])
-			_shine(rig, slot, float(w["glanz"]))
+			_shine(rig, slot, float(w.get("glanz", 0.0)))
 			if close:
 				_close_up(rig, slot)
 		outs.append(out)

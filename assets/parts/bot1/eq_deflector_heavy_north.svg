@@ -10,18 +10,18 @@
     Definition, nicht von Hand bearbeiten, sondern dort aendern.
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
   -->
-<g stroke="#080b13" stroke-width="0.9" stroke-linejoin="round">
-  <path d="M66.98 56.88 L84.88 69.54 L84.88 39.71 L66.98 27.05 Z" fill="#20273f"/>
-  <path d="M62.21 59.27 L84.88 75.3 L84.88 40.7 L62.21 24.67 Z" fill="#3a4670"/>
-  <path d="M68.77 35.83 L84.29 46.8 L84.29 45.12 L68.77 34.16 Z" fill="#2de2e6" stroke="none"/>
-  <path d="M84.29 45.12 L84.76 44.79 L69.25 33.82 L68.77 34.16 Z" fill="#2de2e6" stroke="none"/>
-  <path d="M84.88 69.54 L85.48 69.12 L85.48 39.29 L84.88 39.71 Z" fill="#20273f"/>
-  <path d="M84.88 75.3 L87.27 73.61 L87.27 39.01 L84.88 40.7 Z" fill="#20273f"/>
-  <path d="M84.29 46.8 L84.76 46.46 L84.76 44.79 L84.29 45.12 Z" fill="#2de2e6" stroke="none"/>
-  <path d="M84.88 39.71 L85.48 39.29 L67.58 26.63 L66.98 27.05 Z" fill="#3a4670"/>
-  <path d="M84.88 40.7 L87.27 39.01 L64.6 22.98 L62.21 24.67 Z" fill="#6477bb"/>
-  <path d="M85.36 38.65 L88.34 36.54 L64.72 19.83 L61.73 21.94 Z" fill="#6477bb"/>
-  <path d="M61.73 24.33 L85.36 41.03 L85.36 38.65 L61.73 21.94 Z" fill="#6477bb"/>
-  <path d="M85.36 41.03 L88.34 38.92 L88.34 36.54 L85.36 38.65 Z" fill="#3a4670"/>
+<g stroke="#07090d" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M66.98 56.88 L84.88 69.54 L84.88 39.71 L66.98 27.05 Z" fill="#20242b"/>
+  <path d="M62.21 59.27 L84.88 75.3 L84.88 40.7 L62.21 24.67 Z" fill="#39404c"/>
+  <path d="M68.77 35.83 L84.29 46.8 L84.29 45.12 L68.77 34.16 Z" fill="#5ad1ff" stroke="none"/>
+  <path d="M84.29 45.12 L84.76 44.79 L69.25 33.82 L68.77 34.16 Z" fill="#5ad1ff" stroke="none"/>
+  <path d="M84.88 69.54 L85.48 69.12 L85.48 39.29 L84.88 39.71 Z" fill="#20242b"/>
+  <path d="M84.88 75.3 L87.27 73.61 L87.27 39.01 L84.88 40.7 Z" fill="#20242b"/>
+  <path d="M84.29 46.8 L84.76 46.46 L84.76 44.79 L84.29 45.12 Z" fill="#5ad1ff" stroke="none"/>
+  <path d="M84.88 39.71 L85.48 39.29 L67.58 26.63 L66.98 27.05 Z" fill="#39404c"/>
+  <path d="M84.88 40.7 L87.27 39.01 L64.6 22.98 L62.21 24.67 Z" fill="#626e81"/>
+  <path d="M85.36 38.65 L88.34 36.54 L64.72 19.83 L61.73 21.94 Z" fill="#626e81"/>
+  <path d="M61.73 24.33 L85.36 41.03 L85.36 38.65 L61.73 21.94 Z" fill="#626e81"/>
+  <path d="M85.36 41.03 L88.34 38.92 L88.34 36.54 L85.36 38.65 Z" fill="#39404c"/>
 </g>
 </svg>

@@ -31,6 +31,7 @@ const MATERIALS := {
 	"dark": ["plate", "plate_dark", "plate_dark", true],
 	"light": ["plate_light", "plate_light", "plate", true],
 	"metal": ["metal", "metal", "plate_dark", true],
+	"blade": ["plate_light", "metal", "plate", true],
 	"visor": ["visor", "visor", "visor", true],
 	"glow": ["glow", "glow", "glow", false],
 	"accent": ["accent", "accent", "accent", false],
@@ -172,6 +173,11 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256,
 		var socket := Vector3.ZERO if slot == "body" \
 			else _vec(body_anchors.get(slot, block.get("anchors", {}).get("mount", [0, 0, 0])))
 		var colors: Dictionary = model.get("colors", {})
+		# Glanzkante je Material (Waffen, 18. Nov. 2026) reist mit den Farben,
+		# damit Mesh- und Material-Cache sie unterscheiden.
+		if model.has("shine"):
+			colors = colors.duplicate()
+			colors["_shine"] = model["shine"]
 		# Waffe mit Haltung: Arm des Chassis an den Sockel, Waffe in die Hand.
 		var pose: String = model.get("pose", "")
 		var arm: Dictionary = body_variants.get("arm_%s_%s" % [slot, pose], {}) \
@@ -341,8 +347,9 @@ static func _vertex(st: SurfaceTool, normal: Vector3, mode: float, uv: Vector2,
 
 static func _face_material(mat: String, colors: Dictionary) -> ShaderMaterial:
 	var roles: Array = MATERIALS.get(mat, MATERIALS["plate"])
-	var key := "%s|%s|%s|%s|%s|%s" % [colors.get(roles[0], ""), colors.get(roles[1], ""),
-		colors.get(roles[2], ""), colors.get("outline", ""), roles[3], _edge]
+	var shine := float((colors.get("_shine", {}) as Dictionary).get(mat, 0.0))
+	var key := "%s|%s|%s|%s|%s|%s|%s" % [colors.get(roles[0], ""), colors.get(roles[1], ""),
+		colors.get(roles[2], ""), colors.get("outline", ""), roles[3], _edge, shine]
 	if _materials.has(key):
 		return _materials[key]
 	var m := ShaderMaterial.new()
@@ -353,6 +360,8 @@ static func _face_material(mat: String, colors: Dictionary) -> ShaderMaterial:
 	m.set_shader_parameter("c_line", _color(colors.get("outline", "#080b13")))
 	# Leucht- und Akzentmaterial tragen keinen Strich (wie im SVG).
 	m.set_shader_parameter("edge_px", _edge if roles[3] else 0.0)
+	if shine > 0.0:
+		m.set_shader_parameter("shine", shine)
 	_materials[key] = m
 	return m
 

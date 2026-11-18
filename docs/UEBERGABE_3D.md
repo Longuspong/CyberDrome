@@ -76,13 +76,14 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
 
 ## Offene Entscheidungen des Spielers
 
-* **Waffenfarben**: Spieler will individuelle Farben je Waffe (18. Nov.):
-  Metallwaffen aus Metall, gern glänzend; Lanze energetisch; Runenstab Metall +
-  Strom. Drei Sätze (Waffenstahl, Chrom, Werkstatt) auf der Leinwand, Seite
-  „Waffenfarben“ -- Entwurf `docs/design/drome_entwurf/v13_waffenfarben.py`,
-  Bilder mit `godot/render_waffenfarben.gd` (Glanzkante nur im Entwurfs-Shader
-  `godot/drome_face_glanz.gdshader`). Nach der Wahl: in `WEAPON_COLORS`
-  eintragen, „energie“ = Tag `neon`, Glanz in den Spiel-Shader übernehmen.
+* ~~Waffenfarben~~ -- **entschieden und gebaut 18. Nov.**: Satz A „Waffenstahl“
+  für alle, der Puls-Blaster aus Satz B „Chrom“ (`WEAPON_COLORS`). Oberfläche je
+  Waffe in `WEAPON_FINISH`: Glanzkante je Material (Shader `drome_face`,
+  `shine`), Energiewaffen leuchten (`neon`). Klingen glänzen (Material `blade`)
+  oder leuchten (Plasma), Griffe und Halterungen bleiben matt. Dazu neu:
+  Plasmaklinge als lange Doppelpyramide, Bumerang als „Λ“ (Baustein `BP` im
+  Generator). Entwurf: `v13_waffenfarben.py`, Blicktest
+  `godot/render_waffenfarben.gd` (Ordner `-` = so wie im Spiel).
 * **Fähigkeiten lesbar**: Skizzen für die übrigen 10 Fähigkeiten auf der
   Leinwand, Seite „Fähigkeiten lesbar“ (Ansage → Wirkung, Gegner mit rotem
   Außenrand). Spieler will die Formen vor dem Bau sehen.

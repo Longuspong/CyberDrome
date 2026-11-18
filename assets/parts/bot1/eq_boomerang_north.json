@@ -21,19 +21,19 @@
     },
     {
       "name": "muzzle",
-      "x": 75.93,
-      "y": 27.42
+      "x": 78.8,
+      "y": 29.22
     }
   ],
   "color_scheme": {
-    "plate": "#3a4670",
-    "plate_light": "#6477bb",
-    "plate_dark": "#20273f",
-    "metal": "#7d8bb0",
-    "accent": "#2de2e6",
-    "glow": "#5affff",
-    "visor": "#5affff",
-    "outline": "#080b13"
+    "plate": "#46505f",
+    "plate_light": "#7788a0",
+    "plate_dark": "#272d35",
+    "metal": "#b8c0cc",
+    "accent": "#ffb000",
+    "glow": "#ffdd2d",
+    "visor": "#ffdd2d",
+    "outline": "#07090d"
   },
   "tags": [
     "weapon",
@@ -54,8 +54,8 @@
         },
         {
           "name": "muzzle",
-          "x": 83.09,
-          "y": 16.06
+          "x": 87.67,
+          "y": 18.93
         }
       ]
     },
@@ -69,8 +69,8 @@
         },
         {
           "name": "muzzle",
-          "x": 83.09,
-          "y": 16.06
+          "x": 87.67,
+          "y": 18.93
         }
       ]
     }

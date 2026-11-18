@@ -20,11 +20,18 @@ uniform float edge_px = 1.0;
 // instance uniform: die liefern im Compatibility-Renderer bei vielen
 // Instanzen falsche Werte (Bodenplatten kamen schwarz heraus).
 uniform vec4 tint = vec4(1.0);
+// Glanzkante (18. Nov. 2026, Waffen): helle Streifen schraeg ueber das Teil
+// wie poliertes Metall; 0 = matt. Im Teil verankert (Modellkoordinaten in
+// Entwurfseinheiten), laeuft also mit, wenn sich die Waffe bewegt.
+uniform float shine = 0.0;
+uniform float shine_period = 26.0;
 
 varying vec3 world_normal;
+varying vec3 local_pos;
 
 void vertex() {
 	world_normal = (MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz;
+	local_pos = VERTEX;
 }
 
 void fragment() {
@@ -50,6 +57,13 @@ void fragment() {
 		if (d < edge_px) {
 			col = c_line.rgb;
 		}
+	}
+	if (shine > 0.0) {
+		float t = fract((local_pos.x + local_pos.y * 1.4 - local_pos.z) / shine_period);
+		float band = smoothstep(0.0, 0.04, t) * (1.0 - smoothstep(0.10, 0.16, t));
+		float thin = smoothstep(0.30, 0.32, t) * (1.0 - smoothstep(0.34, 0.36, t));
+		float light = pz > 0.5 ? 1.0 : (px <= py ? 0.75 : 0.45);
+		col = mix(col, vec3(1.0), shine * light * (band * 0.8 + thin * 0.5));
 	}
 	ALBEDO = col * tint.rgb;
 }

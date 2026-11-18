@@ -26,14 +26,14 @@
     }
   ],
   "color_scheme": {
-    "plate": "#463673",
-    "plate_light": "#775dc0",
-    "plate_dark": "#271e40",
-    "metal": "#8f7fbd",
+    "plate": "#3a3550",
+    "plate_light": "#645c88",
+    "plate_dark": "#201e2d",
+    "metal": "#a59ac8",
     "accent": "#b06bff",
     "glow": "#dd98ff",
     "visor": "#dd98ff",
-    "outline": "#0d0818"
+    "outline": "#07090d"
   },
   "tags": [
     "weapon",
