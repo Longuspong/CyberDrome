@@ -36,7 +36,10 @@ func test_the_zone_is_a_strip_at_the_edge() -> void:
 	for tile in zone:
 		xs[tile.x] = true
 		ys[tile.y] = true
-	t.equal(ys.size(), 3, "drei Reihen tief")
+	# Flache Sechsecke: ungerade Spalten liegen ein halbes Feld tiefer und
+	# enden eine Reihe frueher -- je Spalte drei Felder.
+	for x in xs:
+		t.equal(zone.filter(func(tile): return tile.x == x).size(), 3, "drei Felder tief (Spalte %d)" % x)
 	t.equal(xs.size(), 7, "sieben Felder breit")
 	var edge := 0
 	for y in ys:

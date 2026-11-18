@@ -705,6 +705,16 @@ func _process(_delta: float) -> void:
 			forget(unit)
 			continue
 		_sync_unit(unit, _models[unit])
+		# Sicherung (18. Nov. 2026, "Tote bleiben stehen"): wer gefallen ist,
+		# verschwindet spaetestens nach der Zerfallszeit -- auch wenn die
+		# Todesanimation nicht lief.
+		if not unit.is_alive():
+			var state: Dictionary = _anim.get(unit, {})
+			state["dead_for"] = float(state.get("dead_for", 0.0)) + _delta
+			_anim[unit] = state
+			if float(state["dead_for"]) > Unit.DEATH_TIME + 0.3:
+				unit.visible = false
+				_models[unit].visible = false
 		_animate(unit, _models[unit], _delta)
 	_sync_camera()
 

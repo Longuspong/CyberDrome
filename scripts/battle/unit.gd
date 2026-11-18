@@ -188,6 +188,13 @@ func _build_sprites() -> void:
 	# Gelegenheiten, dass der Bot im Kampf anders aussieht als beim Bauen.
 	_ensure_chrome()
 	if arena != null:
+		# Gemeinsame 3D-Szene: ein 2D-Bild aus der Zeit vor dem Einhaengen
+		# (Aufstellung setzt die Blickrichtung frueher) muss weg -- sonst stand
+		# der DROME doppelt da, einmal eingefroren (18. Nov. 2026, Spieler).
+		for child in _rig.get_children():
+			if child is Sprite2D or child is SubViewport:
+				_rig.remove_child(child)
+				child.queue_free()
 		_sprites = {}
 		arena.rebuild(self)
 	else:

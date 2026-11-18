@@ -183,8 +183,10 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   Standard 9 x 15, dazu kurz 9 x 13, lang 9 x 21, Zwei Gassen, Bauch 11 x 17;
   Formen fest und gespiegelt, `MapGenerator.apply_shape`, `Grid.holes`;
   keine zufaelligen Hindernisse mehr, Randdeko bleibt) (hochkant,
-  Reihen waagerecht, Spieler unten, Gegner oben; `Grid`: `Vector2i(spalte,
-  reihe)`, ungerade Reihen halb nach rechts, Abstand in Hexschritten,
+  Spieler unten, Gegner oben; seit 18. Nov. 2026 **flache Sechsecke**: Kante
+  oben/unten, Spalten senkrecht -- `Grid`: `Vector2i(spalte, reihe)`,
+  "odd-q": ungerade Spalten halb nach unten und eine Reihe kuerzer (exakte
+  Spiegelung), Richtung i zeigt auf 30 + 60 i Grad, Abstand in Hexschritten,
   `Grid.neighbors`/`neighbor`/`direction_toward`/`line_direction`;
   Bildschirm nur ueber `IsoView`). Reichweiten 1:1 von Manhattan uebernommen.
   Blickrichtung im Kampf als Winkel `deg<grad>` (`DromeModel.facing_basis`).

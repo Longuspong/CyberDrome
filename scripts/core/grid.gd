@@ -12,7 +12,9 @@ extends RefCounted
 
 ## Hexfeld (seit 17. Nov. 2026, Entscheidung des Spielers): hochkant, seit
 ## 18. Nov. 2026 je Formation eine eigene Karte (``data/config.json`` ->
-## ``maps``, Standard 9 Spalten x 15 Reihen). Ein Feld ist ``Vector2i(spalte, reihe)``; ungerade Reihen
+## ``maps``, Standard 9 Spalten x 15 Reihen) und flache Sechsecke ("odd-q":
+## ungerade Spalten liegen ein halbes Feld tiefer; ihre letzte Reihe faellt
+## weg, damit die Karte an der Mittelreihe exakt gespiegelt ist). Ein Feld ist ``Vector2i(spalte, reihe)``; ungerade Reihen
 ## liegen ein halbes Feld weiter rechts ("odd-r"). Reihe 0 ist oben (Gegner),
 ## die letzte Reihe unten (Spieler). Abstand und Nachbarn rechnen ueber
 ## axiale Koordinaten -- jeder Schritt in eine der sechs Richtungen kostet 1.
@@ -20,14 +22,17 @@ const DEFAULT_WIDTH := 9
 const DEFAULT_HEIGHT := 15
 const DEFAULT_SIZE := DEFAULT_WIDTH     # alter Name, nur noch fuer die Breite
 
-## Die sechs Richtungen, axial (dq, dr), im Bild gegen den Uhrzeigersinn ab
-## rechts: O, NO, NW, W, SW, SO. Richtung i zeigt im Bild auf i * 60 Grad.
+## Die sechs Richtungen, axial (dq, dr). Seit 18. Nov. 2026 liegen die
+## Sechsecke flach (Kante oben und unten, Wunsch des Spielers): Spalten laufen
+## senkrecht, wer geradeaus auf den Gegner zugeht, laeuft gerade. Im Bild
+## gegen den Uhrzeigersinn: NO, N, NW, SW, S, SO -- Richtung i zeigt auf
+## 30 + i * 60 Grad.
 const AXIAL_DIRS: Array[Vector2i] = [
-	Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1),
-	Vector2i(-1, 0), Vector2i(-1, 1), Vector2i(0, 1),
+	Vector2i(1, -1), Vector2i(0, -1), Vector2i(-1, 0),
+	Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 0),
 ]
-## Hoehe einer Reihe in Feldbreiten (Mitte zu Mitte): sqrt(3) / 2.
-const ROW_STEP := 0.8660254
+## Abstand zweier Spalten in Feldbreiten (Mitte zu Mitte): sqrt(3) / 2.
+const COL_STEP := 0.8660254
 
 var width: int = DEFAULT_WIDTH
 var height: int = DEFAULT_HEIGHT
@@ -57,12 +62,12 @@ func _init(w: int = DEFAULT_WIDTH, h: int = DEFAULT_HEIGHT) -> void:
 
 ## Feld -> axial (q, r).
 static func to_axial(tile: Vector2i) -> Vector2i:
-	return Vector2i(tile.x - ((tile.y - (tile.y & 1)) >> 1), tile.y)
+	return Vector2i(tile.x, tile.y - ((tile.x - (tile.x & 1)) >> 1))
 
 
 ## Axial (q, r) -> Feld.
 static func from_axial(a: Vector2i) -> Vector2i:
-	return Vector2i(a.x + ((a.y - (a.y & 1)) >> 1), a.y)
+	return Vector2i(a.x, a.y + ((a.x - (a.x & 1)) >> 1))
 
 
 ## Die EINZIGE Distanzfunktion des Projekts (Hexschritte) -- Reichweite und
@@ -89,7 +94,7 @@ static func neighbors(tile: Vector2i) -> Array[Vector2i]:
 ## Die Feldmitte in der Ebene, in Feldbreiten: x nach rechts, y nach UNTEN
 ## (wie die Reihen). Fuer Richtungen und Darstellung, nicht fuer Abstaende.
 static func plane(tile: Vector2i) -> Vector2:
-	return Vector2(float(tile.x) + 0.5 * float(tile.y & 1), float(tile.y) * ROW_STEP)
+	return Vector2(float(tile.x) * COL_STEP, float(tile.y) + 0.5 * float(tile.x & 1))
 
 
 ## Die Richtung (0..5), die am besten von ``from`` nach ``to`` zeigt;
@@ -99,7 +104,7 @@ static func direction_toward(from: Vector2i, to: Vector2i) -> int:
 		return -1
 	var d := plane(to) - plane(from)
 	# Bild-y zeigt nach unten, die Richtungen zaehlen gegen den Uhrzeigersinn.
-	var angle := atan2(-d.y, d.x)
+	var angle := atan2(-d.y, d.x) - PI / 6.0
 	return posmod(int(round(angle / (PI / 3.0))), 6)
 
 
@@ -119,12 +124,12 @@ static func line_direction(from: Vector2i, to: Vector2i) -> int:
 ## Blickwinkel im Bild (Grad, 0 = rechts, gegen den Uhrzeigersinn) einer
 ## Richtung -- fuer die Blickrichtung der DROMEs ("deg<winkel>").
 static func direction_angle(dir: int) -> float:
-	return float(posmod(dir, 6)) * 60.0
+	return 30.0 + float(posmod(dir, 6)) * 60.0
 
 
 func in_bounds(tile: Vector2i) -> bool:
 	return tile.x >= 0 and tile.y >= 0 and tile.x < width and tile.y < height \
-		and not holes.has(tile)
+		and not (tile.x & 1 == 1 and tile.y == height - 1) and not holes.has(tile)
 
 
 func all_tiles() -> Array[Vector2i]:
@@ -132,7 +137,7 @@ func all_tiles() -> Array[Vector2i]:
 	for y in height:
 		for x in width:
 			var tile := Vector2i(x, y)
-			if not holes.has(tile):
+			if in_bounds(tile):
 				tiles.append(tile)
 	return tiles
 

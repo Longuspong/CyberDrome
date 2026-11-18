@@ -73,39 +73,41 @@ static func apply_shape(grid: Grid, shape: String) -> void:
 	for y in grid.height:
 		for x in grid.width:
 			var tile := Vector2i(x, y)
-			if zones.has(tile):
+			if zones.has(tile) or not grid.in_bounds(tile):
 				continue
 			match _shape_cell(shape, tile, grid.width, grid.height):
 				"hole":
 					grid.holes[tile] = true
 				"block":
 					# Feste Optik je Feld (kein Zufall des Kampfes), gespiegelt gleich.
-					var top := Vector2i(x, mini(y, grid.height - 1 - y))
+					var other := mirror(grid, tile)
+					var top := tile if tile.y <= other.y else other
 					grid.obstacles[tile] = str(kinds[absi(hash(top)) % kinds.size()])
 
 
 ## Was ein Feld in einer Form ist: "" (Spielfeld), "hole" oder "block".
-## Gerechnet wird nur fuer die obere Haelfte, die untere ist ihr Spiegelbild
-## (bei ungerader Reihenzahl haben Reihe y und h - 1 - y denselben Versatz).
+## Gerechnet wird nur fuer die obere Haelfte, die untere ist ihr Spiegelbild.
+## Flache Sechsecke: ungerade Spalten liegen ein halbes Feld tiefer, Reihen
+## zaehlen deshalb in halben Schritten (py).
 static func _shape_cell(shape: String, tile: Vector2i, w: int, h: int) -> String:
-	var y := mini(tile.y, h - 1 - tile.y)
-	var cx := (float(w) - 1.0) * 0.5
 	var mid := (float(h) - 1.0) * 0.5
-	var dx := absf(float(tile.x) + (0.5 if y % 2 == 1 else 0.0) - cx - 0.25)
-	var dy := mid - float(y)
-	var t := dy / mid                # 0 Mitte .. 1 Rand
+	var py := float(tile.y) + 0.5 * float(tile.x & 1)
+	if py > mid:
+		py = float(h - 1) - py
+	var across := absf(float(tile.x) - (float(w) - 1.0) * 0.5)    # Spalten von der Mitte
+	var inner := mid - py                                          # Reihen bis zur Mitte
 	match shape:
 		"waist":
-			if dx > lerpf(2.6, float(w) * 0.5, clampf((t - 0.15) / 0.45, 0.0, 1.0)):
+			if across > 2.0 and inner <= 3.0:
 				return "hole"
 		"belly":
-			# Ab der Zone (7 breit) je Reihe ein halbes Feld breiter -- gerade
-			# Hexkanten statt Treppen, bis zur vollen Breite.
-			var half := minf(3.5 + maxf(0.0, float(y) - 2.0) * 0.5, float(w) * 0.5)
-			if dx > half - 0.25 + 0.001:
+			# Ab der Zone (7 Spalten) je halbe Reihe eine Spalte breiter --
+			# das ist die gerade Schraegkante eines flachen Sechsecks.
+			if across > 3.0 + 2.0 * maxf(0.0, py - 2.0) + 0.001:
 				return "hole"
 		"lanes":
-			if dx <= 1.1 and dy <= 3.0:
+			# Eine Mauer in der Mittelspalte; links und rechts je eine Gasse.
+			if across < 0.5 and inner <= 3.0:
 				return "block"
 	return ""
 
@@ -173,12 +175,13 @@ static func place_obstacles(grid: Grid, seed_value: int) -> void:
 		placed += 1
 
 
-## Das Gegenstueck eines Feldes, an der Mittelreihe gespiegelt. Bei einer
-## ungeraden Reihenzahl haben Reihe y und h - 1 - y denselben Versatz -- die
-## Spiegelung ist damit auf dem Hexfeld exakt (eine Drehung um die Mitte
-## waere es mit versetzten Reihen nicht).
+## Das Gegenstueck eines Feldes, an der Mittelreihe gespiegelt -- auf dem
+## flachen Hexfeld exakt, weil die ungeraden Spalten eine Reihe weniger haben
+## (Grid.in_bounds).
 static func mirror(grid: Grid, tile: Vector2i) -> Vector2i:
-	return Vector2i(tile.x, grid.height - 1 - tile.y)
+	# Flache Sechsecke: ungerade Spalten liegen ein halbes Feld tiefer und
+	# haben eine Reihe weniger -- ihr Spiegelbild ist h - 2 - y.
+	return Vector2i(tile.x, grid.height - 1 - (tile.x & 1) - tile.y)
 
 
 ## Ob ein Feld an ein schon gesetztes Hindernis grenzt -- Gruppen sollen
@@ -255,7 +258,10 @@ static func deployment_tile(grid: Grid, is_player: bool, row: int, column: int) 
 	var inset := clampi(int(Config.section("deployment").get("inset", 1)), 0,
 		maxi(0, grid.height / 2 - rows))
 	var left := (grid.width - columns) / 2
-	var tile := Vector2i(left + column, grid.height - inset - rows + row)
+	var x := left + column
+	# Die unterste Reihe der Spalte (ungerade Spalten: eine weniger).
+	var bottom := grid.height - 1 - (x & 1)
+	var tile := Vector2i(x, bottom - inset - (rows - 1) + row)
 	return tile if is_player else mirror(grid, tile)
 
 
