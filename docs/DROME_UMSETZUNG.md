@@ -319,9 +319,14 @@ Entwurf: Board 12 (Vortex animiert, Tabelle für alle). Muster: **Wo**
 Quelle: `skins.py`. Neon fast schwarz mit grellem Neon, Solar
 biologisch-blühend, Mechas sattes Rot matt mit Absperrstreifen, Hipstar
 bleibt.
-- [ ] Paletten für Fraktions-DROMEs und Sentinels übernehmen
-- [ ] Absperrstreifen: prüfen, ob Godot das SVG-Muster zeichnet, sonst als
-      Geometrie
+- [x] Paletten für Fraktions-DROMEs und Sentinels übernehmen -- **gebaut
+      18. Nov.**: `DromeModel.FACTION_PALETTES` nach `build.faction` auf allen
+      Chassis-Teilen (auch Arme, Beine, Passive), Waffen behalten ihre Farben;
+      Neon lässt die Röhren leuchten. Fraktions-DROMEs ohne roten Teamstich
+      (`Unit.base_tint`), die Seite zeigen Bodenring und Balken. Blicktest:
+      `godot/render_fraktionen.gd`.
+- [x] Absperrstreifen: im Shader `drome_face` (`stripes`) auf den Akzenten,
+      kein SVG-Muster und keine Geometrie nötig
 
 ### 8. Auf Claude Design noch offen (vor den passenden Schritten)
 - [x] Eule: Linsen größer (Board 16, `v6.py` `LENS_BIG`: Ø 6,8 statt 4,6,

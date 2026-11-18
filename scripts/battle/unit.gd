@@ -284,7 +284,16 @@ static func facing_toward(from: Vector2i, to: Vector2i) -> String:
 func _refresh_tint() -> void:
 	if _flashing:
 		return
-	_apply_tint(Teams.tint(is_player))
+	_apply_tint(base_tint())
+
+
+## Der Farbstich der Seite -- entfaellt bei DROMEs mit Fraktions-Palette
+## (18. Nov. 2026): ihre Farben sind die Erkennung, der rote Stich wuerde
+## z. B. das Solar-Gruen verschmutzen. Die Seite zeigen Bodenring und Balken.
+func base_tint() -> Color:
+	if not DromeModel.faction_palette(build).is_empty():
+		return Color.WHITE
+	return Teams.tint(is_player)
 
 
 ## Das Rig (Rueckstoss, Erschuetterung, Sentinel-Groesse) -- die Arena liest
@@ -496,7 +505,7 @@ func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 		var dark := create_tween()
 		dark.tween_interval(0.0 if calm else total * 0.6)
 		dark.tween_method(func(k: float) -> void:
-			_apply_tint(Teams.tint(is_player).lerp(Color(0.15, 0.15, 0.2), k)),
+			_apply_tint(base_tint().lerp(Color(0.15, 0.15, 0.2), k)),
 			0.0, 1.0, total * (1.0 if calm else 0.4))
 	if _ring != null:
 		create_tween().tween_property(_ring, "modulate:a", 0.0, total * 0.6)

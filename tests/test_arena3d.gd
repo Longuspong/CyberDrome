@@ -117,3 +117,40 @@ func test_legs_alternate_while_walking() -> void:
 	unit.free()
 	arena.free()
 	Accessibility.reduce_motion = calm
+
+
+## Fraktions-Paletten (18. Nov. 2026): Chassis-Teile in Fraktionsfarben,
+## Waffen behalten ihre eigenen; ohne Fraktion bleibt alles beim Bausatz.
+func test_faction_palette_paints_the_chassis_not_the_weapon() -> void:
+	var build := _build(&"jugg_body", &"eq_hammer")
+	t.ok(DromeModel.faction_palette(build).is_empty(), "ohne Fraktion keine Palette")
+	for name in ["Neon", "solar", "Mecha", "Hipstar"]:
+		build.faction = name
+		t.ok(not DromeModel.faction_palette(build).is_empty(), "%s hat eine Palette" % name)
+	build.faction = "mecha"
+	var root := DromeModel.build_node(build, "deg270")
+	var turn := root.get_node("Ausrichtung")
+	var body := turn.get_node("body") as MeshInstance3D
+	var plate := Color(DromeModel.FACTION_PALETTES["mecha"]["plate"])
+	var found := false
+	var stripes := false
+	for i in body.mesh.get_surface_count():
+		var mat := body.mesh.surface_get_material(i) as ShaderMaterial
+		if mat.get_shader_parameter("c_left") == plate:
+			found = true
+		var value = mat.get_shader_parameter("stripes")
+		if value != null and float(value) > 0.0:
+			stripes = true
+	t.ok(found, "Rumpf in Maschinenrot")
+	t.ok(stripes, "Mecha: Absperrstreifen auf den Akzenten")
+	var weapon := turn.get_node("equip_left") as MeshInstance3D
+	var weapon_plate := false
+	for i in weapon.mesh.get_surface_count():
+		var mat := weapon.mesh.surface_get_material(i) as ShaderMaterial
+		if mat.get_shader_parameter("c_left") == plate:
+			weapon_plate = true
+	t.ok(not weapon_plate, "Waffe behaelt ihre Farbe")
+	root.free()
+	var unit := Unit.create(build, &"E0", false)
+	t.equal(unit.base_tint(), Color.WHITE, "Fraktion: kein roter Stich")
+	unit.free()

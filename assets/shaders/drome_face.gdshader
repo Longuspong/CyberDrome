@@ -25,6 +25,10 @@ uniform vec4 tint = vec4(1.0);
 // Entwurfseinheiten), laeuft also mit, wenn sich die Waffe bewegt.
 uniform float shine = 0.0;
 uniform float shine_period = 26.0;
+// Absperrstreifen (Fraktion Mega Mechas, 18. Nov. 2026): schraege schwarze
+// Streifen ueber die Flaeche; 0 = aus.
+uniform float stripes = 0.0;
+uniform vec4 stripe_color : source_color = vec4(0.1, 0.1, 0.1, 1.0);
 
 varying vec3 world_normal;
 varying vec3 local_pos;
@@ -57,6 +61,9 @@ void fragment() {
 		if (d < edge_px) {
 			col = c_line.rgb;
 		}
+	}
+	if (stripes > 0.0 && fract((local_pos.x + local_pos.y + local_pos.z) / 3.2) < 0.5) {
+		col = stripe_color.rgb;
 	}
 	if (shine > 0.0) {
 		float t = fract((local_pos.x + local_pos.y * 1.4 - local_pos.z) / shine_period);
