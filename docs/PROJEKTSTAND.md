@@ -32,13 +32,20 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 ### Echo nacheinander, Flaechen landen am Wurfort (18. Nov. 2026, Wunsch des Spielers)
 
 * **Echo (Nimbus)** wirkt nicht mehr im selben Augenblick, sondern
-  `passives.echo.gap` (0,5 s) nach der Faehigkeit; Faehigkeiten mit
-  Ausholzeit (Vortex) holen dafuer ein zweites Mal aus (`Unit.echoes`,
-  `AIController._tick_echoes`). Kann das Echo nicht wirken, verpufft es.
+  `passives.echo.gap` (0,5 s) nach der Faehigkeit (`Unit.echoes`,
+  `AIController._tick_echoes`). Mit Ausholzeit (Vortex) zeigt das Echo die
+  Ansage ein zweites Mal und fliegt so lange wie der erste Wurf -- der DROME
+  bleibt dafuer aber **nicht** stehen (ein zweites Stillstehen kostete in der
+  Messung rund 15 % Schaden). Kann das Echo nicht wirken, verpufft es.
 * **Flaechen** (Vortex, Sperrfeuer, Wirbel) folgen dem Ziel waehrend der
   Ausholzeit nicht mehr, sie landen auf dem Feld, auf das geworfen wurde
-  (`AIController.lands_on_tile`) -- wer rechtzeitig weglaeuft, entkommt dem
-  Sog und der Schockwelle. Leeres Feld ist kein Abbruchgrund mehr.
+  (`AIController.lands_on_tile`, `_landing`) -- wer rechtzeitig weglaeuft,
+  entkommt dem Sog und der Schockwelle. Auch ein inzwischen leeres Feld wird
+  getroffen (`ActionResolver.execute(..., thrown)`).
+* **Messung** (gleiche Seeds, `playtest.gd -- 200 0`, Squad Vireo/Molok/Nimbus):
+  `main` 146 Siege, Nimbus 8,6 Schaden/s; neu 150 Siege, Nimbus 8,4/s.
+  `run_bench.gd -- 20` unveraendert (Unterschiede je Feld +-1 bis 3). Ausholzeit
+  und Salven bleiben damit wie sie sind.
 
 ### Kampf als eine 3D-Szene + Bewegung (18. Nov. 2026, Übergabe Schritt 4/5)
 

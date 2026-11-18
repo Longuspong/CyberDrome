@@ -42,8 +42,9 @@ mit PIL bauen). Leinwand: https://claude.ai/artifact/TAngQWD17gcfUoMok2Gzx6
 „Waffenfarben“).
 
 ### Offen / nächste Schritte
-1. **Balance-Messung** nach Ausholzeit und Salven (noch nicht gemessen):
-   `run_bench.gd -- 60`, ggf. `windup` je Fähigkeit nachstellen.
+1. ~~Balance-Messung~~ -- **erledigt 18. Nov.** (PR #84): Ausholzeit,
+   Salven, Echo nacheinander und Flächen am Wurfort gegen `main` gemessen,
+   neutral (Zahlen in `PROJEKTSTAND.md`). `windup` bleibt wie es ist.
 2. **Shogun Kage als Boss-Chassis** -- mit `SW`/`BP` jetzt Hörner und Katana
    glatt möglich (Entwurf `v11_shogun.py`). Bosse kommen mit den Story-Leveln.
 3. Story-Level (macht der Spieler separat), Android-App später.

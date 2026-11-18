@@ -297,25 +297,30 @@ func test_echo_casts_the_vortex_twice_in_a_row() -> void:
 
 func test_the_vortex_lands_where_it_was_thrown() -> void:
 	# 18. Nov. 2026 (Wunsch des Spielers): Flaechen folgen dem Ziel waehrend
-	# der Ausholzeit nicht -- wer weglaeuft, entkommt.
-	var tiles := [Vector2i(4, 15), Vector2i(4, 11), Vector2i(8, 4)]
+	# der Ausholzeit nicht -- wer weglaeuft, entkommt; wer stehen bleibt,
+	# wird getroffen, auch wenn das Wurffeld inzwischen leer ist.
+	var tiles := [Vector2i(4, 15), Vector2i(4, 11), Vector2i(5, 11)]
 	var battle := _battle([_nimbus()], [_vireo(), _vireo()], tiles)
 	var nimbus: Unit = battle.units[0]
 	var runner: Unit = battle.units[1]
-	runner.shield = 0
+	var stayer: Unit = battle.units[2]
+	for u in [runner, stayer]:
+		u.shield = 0
 	var vortex := _action(nimbus, &"act_rune_vortex")
 	var thrown := runner.tile
 	battle.brain._begin_cast(nimbus, vortex, {"tile": thrown, "target": runner},
 		{"count": 0.0}, {})
 	# Waehrend der Ausholzeit laeuft das Ziel weit weg.
-	var away := Vector2i(1, 8)
+	var away := Vector2i(1, 7)
 	battle.resolver.move_unit(runner, away)
-	var hp_before := runner.hp
+	var runner_hp := runner.hp
+	var stayer_hp := stayer.hp
 	battle.brain._finish_cast(nimbus)
 	t.equal(runner.tile, away, "der Sog erreicht den Weggelaufenen nicht")
 	for i in int(ceil(vortex.delay / battle.step_seconds())) + 2:
 		battle.resolver.advance(battle.step_seconds())
-	t.equal(runner.hp, hp_before, "die Schockwelle trifft das alte Feld, nicht ihn")
+	t.equal(runner.hp, runner_hp, "die Schockwelle trifft das alte Feld, nicht ihn")
+	t.ok(stayer.hp < stayer_hp, "wer neben dem Wurffeld stehen blieb, wird getroffen")
 	battle.free()
 
 
