@@ -66,6 +66,14 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
 5. **Android-App (APK)**: erst nach der Design-Politur, Story und grobem
    Ablauf (Spieler). Dann Leistungstest dort wiederholen.
 
+## Entschieden am 18. Nov. 2026
+
+* Leistung der 3D-Kampfszene, 3D-Hindernisse statt gezeichneter, schwerere
+  Elite auf dem Hexfeld: alles „okay so“.
+* Story: Level-Design macht der Spieler separat; **Bosse später**, Shogun
+  Kage dann als **eigenes Boss-Chassis** (Modell `v11_shogun.py`); Dialoge zu
+  den Einsätzen erst einmal nicht.
+
 ## Offene Entscheidungen des Spielers
 
 * **Waffenfarben**: neutraler Stahl + Leuchtfarbe nach Art (Fern Cyan, Nah
