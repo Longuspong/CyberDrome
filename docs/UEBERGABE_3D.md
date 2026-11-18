@@ -76,8 +76,16 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
 
 ## Offene Entscheidungen des Spielers
 
-* **Waffenfarben**: neutraler Stahl + Leuchtfarbe nach Art (Fern Cyan, Nah
-  Orange; Empfehlung) oder eigene Farbe je Waffe. Eintragen in `WEAPON_COLORS`.
+* **Waffenfarben**: Spieler will individuelle Farben je Waffe (18. Nov.):
+  Metallwaffen aus Metall, gern glänzend; Lanze energetisch; Runenstab Metall +
+  Strom. Drei Sätze (Waffenstahl, Chrom, Werkstatt) auf der Leinwand, Seite
+  „Waffenfarben“ -- Entwurf `docs/design/drome_entwurf/v13_waffenfarben.py`,
+  Bilder mit `godot/render_waffenfarben.gd` (Glanzkante nur im Entwurfs-Shader
+  `godot/drome_face_glanz.gdshader`). Nach der Wahl: in `WEAPON_COLORS`
+  eintragen, „energie“ = Tag `neon`, Glanz in den Spiel-Shader übernehmen.
+* **Fähigkeiten lesbar**: Skizzen für die übrigen 10 Fähigkeiten auf der
+  Leinwand, Seite „Fähigkeiten lesbar“ (Ansage → Wirkung, Gegner mit rotem
+  Außenrand). Spieler will die Formen vor dem Bau sehen.
 * **Shogun Kage**: Richtung gefällt („richtig gehyped“), Feinschliff nach
   Schritt 1. Ins Spiel erst mit den Story-Bossen.
 * Alles zum Hexfeld (siehe 3).
