@@ -137,7 +137,7 @@
       "main =",
       "die zwei Hauptwerte je Chassis (+main_per_level je Level, Level 5 = +50 %),",
       "alle anderen Werte (hp, shield, shield_pulse, def) +other_per_level (+20 %).",
-      "Speed und Power steigen nie. module_slots_at: auf diesen Leveln +1 Modulplatz.",
+      "Speed und Power steigen nie. Modulplaetze bleiben fest (seit 18. Nov. 2026).",
       "weapon: EP je Kampf = damage_xp * angerichteter Schaden (Schild + Integritaet)",
       "+ kill_xp je Abschuss mit dieser Waffe. Nur Waffen in Squad-DROMEs, die aus dem",
       "Hangar stammen. EP sammeln sich im Lauf und werden am Ende zuhause gutgeschrieben.",
@@ -158,8 +158,7 @@
         "jugg_body": ["hp", "def"],
         "mage_body": ["shield", "shield_pulse"],
         "strix_body": ["hp", "def"]
-      },
-      "module_slots_at": {"default": [1, 3, 5], "jugg_body": [2, 4]}
+      }
     },
     "weapon": {
       "max": 10,

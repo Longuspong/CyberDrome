@@ -70,6 +70,18 @@ func _setup() -> void:
 				# weiter=1: nach dem letzten Ergebnis zur Kampfkarte.
 				"weiter":
 					state.run.continue_run()
+				# module=<drome>.<halter>:<id>+<id> setzt Module in eine Waffe
+				# des Einsatzes (Halter als Nummer in equip_slots).
+				"module":
+					var where := pair[1].split(":", true, 1)
+					var at := where[0].split(".")
+					var build = state.run.squad[int(at[0])]
+					var slot: String = build.equip_slots()[int(at[1])]
+					build.modules[slot] = Array(where[1].split("+")).map(func(id): return StringName(id))
+				# lager=<id>+<id> legt Module ins Lager des Einsatzes.
+				"lager":
+					for id in pair[1].split("+"):
+						state.run.storage.append(StringName(id))
 				_:
 					state.set(pair[0], str_to_var(pair[1]))
 	change_scene_to_file(_scene)

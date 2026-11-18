@@ -496,11 +496,10 @@ def build_dromes(ws):
                "Speed", "Lauftempo (Felder/s)", "Integritaet", "Schild", "Integritaet + Schild",
                "Schildpuls", "Ruhezeit bis Schildladung (s)", "Schild je Puls", "Ruestung", "Power",
                "Halter", "Modulplaetze je Halter", "Passive", "Passive: Wirkung", "Standardwaffe",
-               "Level: Hauptwerte (+10 % je Level)", "Level mit +1 Modulplatz", "Chassis-BIOS",
+               "Level: Hauptwerte (+10 % je Level)",
                "Kopf", "Kern", "Antrieb", "Status"]
     rows = []
     lv = CONFIG["levels"]["drome"]
-    bios = {b["chassis"]: b for b in MODULES["bios"].values() if b["kind"] == "chassis"}
     for i, b in enumerate(BODIES, 2):
         s = b["stats"]
         t = TEXTE["dromes"].get(b["id"], {})
@@ -518,8 +517,6 @@ def build_dromes(ws):
             s["def"], s["power"], slots_text(b), s["module_slots"],
             passive_name(s["passive"]), passive_text(s["passive"]), t.get("standardwaffe", ""),
             ", ".join(STAT_NAMES[k] for k in lv["main"].get(b["id"], [])),
-            ", ".join(map(str, lv["module_slots_at"].get(b["id"], lv["module_slots_at"]["default"]))),
-            bios[b["id"]]["text"] if b["id"] in bios else "--",
             by_type.get("head", ""), by_type.get("core", ""), by_type.get("feet", ""), "gebaut",
         ])
     notes = {
@@ -528,7 +525,7 @@ def build_dromes(ws):
         "Power": "Rohschaden = Waffenschaden x Power / 10.",
     }
     write_table(ws, headers, rows, [9, 10, 26, 13, 30, 36, 40, 7, 10, 10, 8, 10, 9, 11, 8, 8, 7, 20, 10,
-                                    11, 46, 22, 22, 12, 46, 16, 16, 16, 10], notes=notes)
+                                    11, 46, 22, 22, 16, 16, 16, 10], notes=notes)
 
 
 def build_waffen(ws):
@@ -652,7 +649,9 @@ def build_bios(ws):
                 [22, 18, 8, 10, 16, 16, 90, 10])
     r = len(rows) + 3
     ws.cell(row=r, column=1, value=f"Verkauf eines BIOS: {MODULES['sell_value']['bios']} Credits. "
-            f"Angebot: 1 aus {RULES['bios_offers']}, nur nach Elite-Kaempfen, nie nach dem letzten Kampf.").font = BODY_FONT
+            f"Angebot: 1 aus {RULES['bios_offers']} fest nach den ersten {RULES['bios_elite_wins']} gewonnenen "
+            f"Elite-Kaempfen (danach ein Lootcache), nie nach dem letzten Kampf. "
+            f"Hoechstens ein BIOS-Rezept je DROME, kein Extra-Modulplatz.").font = BODY_FONT
 
 
 def build_fraktionen(ws):
@@ -1212,7 +1211,7 @@ SHEETS = [
     ("Module", "Die 9 Grundmodule", build_module),
     ("Rezepte", "Die Rezepte aus je zwei Grundmodulen", build_rezepte),
     ("Rezept-Matrix", "Welche zwei Grundmodule welches Rezept ergeben", build_matrix),
-    ("BIOS", "Matrix-BIOS: Chassis und Rezept", build_bios),
+    ("BIOS", "Matrix-BIOS: Rezept-Upgrades", build_bios),
     ("Fraktionen", "Fraktionen, Profile, Besonderheiten, Vorschlaege", build_fraktionen),
     ("Stages", "Gebiete / Stages mit Fraktion und Boden", build_stages),
     ("Story", "Aufhaenger, Story-Level, Bosse (Vorschlaege)", build_story),

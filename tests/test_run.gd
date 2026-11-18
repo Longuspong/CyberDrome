@@ -65,15 +65,29 @@ func test_the_previewed_enemies_are_the_battle_enemies() -> void:
 	battle.free()
 
 
+## Seit 18. Nov. 2026: fest eine BIOS-Wahl nach jedem gewonnenen Elite-Kampf,
+## bis drei vergeben sind -- danach sicher ein Lootcache.
 func test_an_elite_win_guarantees_something_rare() -> void:
 	for seed_value in 20:
 		var run := _run_with_tier(RunState.Tier.ELITE, 1800 + seed_value * 301)
 		run.record_result(BattleManager.Outcome.VICTORY, [&"eq_pulse_blaster", &"eq_rune_staff"])
-		t.equal(run.last_loot.size(), 2, "BIOS oder DROME und ein Cache, kein Notstrom bei Elite")
-		var item: Dictionary = run.last_loot[0]
-		t.ok(item.get("rare", false), "%s ist selten" % item["title"])
-		t.ok(item["kind"] in ["bios", "drome"], "BIOS-Wahl oder DROME")
-		t.equal(run.last_loot[1]["kind"], "cache", "Elite: der Cache ist sicher")
+		var kinds: Array = run.last_loot.map(func(i): return i["kind"])
+		t.ok(kinds.has("bios"), "Elite: fest eine BIOS-Wahl")
+		t.equal(run.bios_offers.size(), 3, "drei zur Wahl")
+		t.equal(run.bios_given, 1, "mitgezählt")
+		t.ok(not kinds.has("life"), "kein Notstrom bei Elite")
+		t.equal(kinds[-1], "cache", "Elite: der Cache ist sicher")
+
+
+func test_after_three_bios_an_elite_win_gives_a_cache() -> void:
+	for seed_value in 10:
+		var run := _run_with_tier(RunState.Tier.ELITE, 2400 + seed_value * 53)
+		run.bios_given = RunState.bios_elite_wins()
+		run.record_result(BattleManager.Outcome.VICTORY, [&"eq_pulse_blaster"])
+		var kinds: Array = run.last_loot.map(func(i): return i["kind"])
+		t.ok(not kinds.has("bios"), "keine vierte BIOS-Wahl")
+		t.ok(run.bios_offers.is_empty(), "und kein Angebot")
+		t.equal(kinds[-1], "cache", "stattdessen sicher ein Cache")
 
 
 ## Seit 14. Nov. 2026 Lootcaches statt Teilen und Credits (SPOT-Blatt
@@ -474,7 +488,7 @@ func test_a_run_survives_saving_and_loading() -> void:
 	run.storage.append_array([&"mod_rapid_fire", &"bios_metronome"])
 	run.bag.append(&"eq_mortar")
 	run.squad[0].modules[run.squad[0].equip_slots()[0]] = [&"mod_capacitor", &"mod_seeker"]
-	run.squad[1].chassis_bios = true
+	run.bios_given = 2
 	run.set_target_recipe(&"mod_gunslinger")
 	run.credits = 17
 	var back := _through_json(run)
@@ -490,7 +504,7 @@ func test_a_run_survives_saving_and_loading() -> void:
 	t.equal(back.target_recipe, &"mod_gunslinger", "Ziel-Rezept")
 	t.equal(back.squad.size(), run.squad.size(), "Squad")
 	t.equal(back.squad[0].modules, run.squad[0].modules, "Module im Halter")
-	t.ok(back.squad[1].chassis_bios, "Chassis-BIOS")
+	t.equal(back.bios_given, 2, "vergebene BIOS-Wahlen")
 	t.equal(back.shop_offers, run.shop_offers, "Laden")
 	for i in run.squad.size():
 		t.equal(back.squad[i].slots, run.squad[i].slots, "%s: Waffen" % run.squad[i].display_name)

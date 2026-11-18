@@ -45,12 +45,6 @@ var direction: String = "south"
 ## tragen Module; der Hangar zuhause kennt keine (sie verfallen nach dem Lauf).
 var modules: Dictionary = {}
 
-## Chassis-BIOS (MODULE_KONZEPT.md 6.5, nur im Lauf): +1 Modulplatz und eine
-## verstaerkte Passive. ``bios_slot``: der Halter mit dem Extraplatz (Molok,
-## zwei Halter); leer = der einzige Halter.
-var chassis_bios: bool = false
-var bios_slot: String = ""
-
 ## Level (6g, 8. Nov. 2026): DROME 0-5, je Waffenhalter das Level der Waffe
 ## darin (0-10). Kommen aus dem Hangar (Roster.build_for); Gegner haben 0.
 var drome_level: int = 0
@@ -276,7 +270,6 @@ func stats() -> Dictionary:
 	var chassis := body()
 	if chassis != null and drome_level > 0:
 		_add_stats(total, Leveling.drome_bonus(chassis, drome_level))
-		total["module_slots"] += Leveling.extra_module_slots(chassis.id, drome_level)
 	for slot in equip_slots():
 		if weapon_level(slot) > 0:
 			_add_stats(total, Leveling.weapon_bonus(part_in(slot), weapon_level(slot)))
@@ -386,8 +379,6 @@ func clone() -> DromeBuild:
 	copy.palette = palette.duplicate(true)
 	copy.direction = direction
 	copy.modules = modules.duplicate(true)
-	copy.chassis_bios = chassis_bios
-	copy.bios_slot = bios_slot
 	copy.drome_level = drome_level
 	copy.weapon_levels = weapon_levels.duplicate()
 	copy.source_uid = source_uid
@@ -719,8 +710,6 @@ func to_save() -> Dictionary:
 	out["weapon_levels"] = weapon_levels.duplicate()
 	out["source_uid"] = source_uid
 	out["instance_uids"] = instance_uids.duplicate()
-	out["chassis_bios"] = chassis_bios
-	out["bios_slot"] = bios_slot
 	return out
 
 
@@ -736,8 +725,6 @@ static func from_save(data: Dictionary) -> DromeBuild:
 	build.source_uid = str(data.get("source_uid", ""))
 	for slot in data.get("instance_uids", {}):
 		build.instance_uids[slot] = str(data["instance_uids"][slot])
-	build.chassis_bios = bool(data.get("chassis_bios", false))
-	build.bios_slot = str(data.get("bios_slot", ""))
 	return build
 
 

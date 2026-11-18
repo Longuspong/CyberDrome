@@ -69,10 +69,10 @@ func test_a_drome_level_raises_two_values_more_than_the_rest() -> void:
 	t.equal(after["shield_pulse"], 8, "Schildpuls +20 %: 7 -> 8")
 	t.equal(after["spd"], before["spd"], "Speed steigt nie")
 	t.equal(after["power"], before["power"], "Power steigt nie")
-	t.equal(after["module_slots"], 6, "Modulplätze 3 -> 6 (Level 1, 3, 5)")
+	t.equal(after["module_slots"], 3, "Modulplätze bleiben 3 (seit 18. Nov. 2026)")
 	var molok := _molok()
 	molok.drome_level = 5
-	t.equal(molok.stats()["module_slots"], 4, "Molok 2 -> 4 (Level 2, 4)")
+	t.equal(molok.stats()["module_slots"], 2, "Molok bleibt bei 2 je Waffe")
 
 
 func test_levels_reach_the_battle() -> void:

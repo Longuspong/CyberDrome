@@ -29,6 +29,25 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Feste Modulplaetze, BIOS neu, Zwischenstopp in Zeilen (18. Nov. 2026, Entscheidung des Spielers)
+
+Entwurf als Canvas "Zwischenstopp Neu" (Variante B gewaehlt).
+
+* **Modulplaetze fest:** keine Plaetze mehr durch Level (`module_slots_at` und
+  `Leveling.extra_module_slots` entfernt) und keine durch BIOS. Vireo, Nimbus,
+  Strix 3 je Waffe, Molok 2 je Waffe.
+* **Chassis-BIOS entfallen** (Daten, `DromeBuild.chassis_bios/bios_slot`,
+  Passiv-Verstaerkungen im Kampf). Alte Spielstaende laden ohne Fehler.
+* **BIOS-Wahl fest** nach jedem gewonnenen Elite-Kampf (nie nach dem letzten),
+  bis `rules.bios_elite_wins` (3) vergeben sind (`RunState.bios_given`); danach
+  sicher ein Lootcache. Ein Rezept-BIOS wertet ein Rezept in einer Waffe an
+  seinem Platz auf (`install_bios`, Ziehen aus dem Angebot auf die Waffe),
+  beim Molok nur in einer Waffe. Chaos-Kaempfe geben keine BIOS-Wahl mehr.
+* **Zwischenstopp:** DROMEs als Zeilen, Waffe (Halterform) vor ihren Plaetzen;
+  Module ueberall 52 px als Kartusche (`ModuleChip`: abgeschraegt, Klassen-Ecke,
+  doppelter Rahmen fuer Rezepte). Token `module-fill` jetzt `#1a0b36`.
+* `tests/screenshot.gd` kennt `module=<drome>.<halter>:<id>+<id>` und `lager=<id>+<id>`.
+
 ### Flache Hexfelder, doppelte Figuren (18. Nov. 2026, Meldung des Spielers)
 
 * **Flache Sechsecke** (Kante oben und unten): vorher hatten die Felder oben

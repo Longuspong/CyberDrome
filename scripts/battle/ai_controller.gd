@@ -576,17 +576,13 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 		foe.apply_status(&"taunt", ability.taunt_seconds, {"taunt_by": unit.unit_id})
 		EventBus.log_line("%s lockt %s an." % [unit.display_name, foe.display_name])
 	if foe != null and mark_seconds > 0.0:
-		battle.resolver.mark(foe, mark_seconds * ActionResolver.mark_mult(unit))
+		battle.resolver.mark(foe, mark_seconds)
 	# Orbit-Fokus: das Ziel ist gewurzelt. Gravitation (BIOS): dazu der
 	# naechste Gegner an ihm.
 	if foe != null and root_seconds > 0.0:
 		foe.apply_status(&"root", root_seconds, {"rooted": true})
 		if bool(fx.get("gravity", false)):
 			_gravity(foe, root_seconds)
-	# Nimbus-BIOS: jede Faehigkeit gibt dem Traeger Schild.
-	if unit.passive() == "echo" and unit.has_bios():
-		var gain := int(round(ModuleData.rule("bios_ability_shield", 6) * unit.power_factor()))
-		unit.shield = mini(ActionResolver.shield_cap(unit), unit.shield + gain)
 	var fork := float(fx.get("ability_fork", 0.0))
 	if fork > 0.0:
 		_fork(unit, ability, aim, fork)
@@ -806,17 +802,11 @@ func _tick_echoes(unit: Unit, dt: float) -> void:
 			_execute(unit, again["tile"], ability, again["target"])
 
 
-## Worauf das Echo zielt: das alte Ziel, wenn es noch geht (mit Nimbus-BIOS
-## lieber ein anderes), sonst das naechstbeste.
+## Worauf das Echo zielt: das alte Ziel, wenn es noch geht, sonst das
+## naechstbeste.
 func _echo_aim(unit: Unit, ability: ActionData, target) -> Dictionary:
 	if target is Unit and target.is_alive() \
 			and battle.resolver.target_blocker(unit, target.tile, ability) == "":
-		if unit.has_bios() and ability.support == "":
-			# Nimbus-BIOS: das Echo darf ein anderes Ziel waehlen.
-			for foe in battle.enemies_of(unit):
-				if foe != target and foe.is_alive() \
-						and battle.resolver.target_blocker(unit, foe.tile, ability) == "":
-					return {"tile": foe.tile, "target": foe}
 		return {"tile": target.tile, "target": target}
 	if ability.support != "":
 		return _support_aim(unit, ability)

@@ -40,11 +40,12 @@ var _recipe_filter: String = "alle"
 var _flash_storage: int = -1
 ## Waffe "drome:slot", deren Feld kurz aufleuchten soll (frisch eingesetzt).
 var _flash_holder: String = ""
-## Hoehe der Lager-Kacheln (zwei Reihen, ohne Namen).
-const STORE_EDGE := 52.0
-## Module sind im Lager und im Waffenhalter gleich gross (Wunsch des Spielers,
-## 17. Nov. 2026; mehr passt nicht, sonst sprengen drei Plaetze die Kachel).
-const MODULE_EDGE := 30.0
+## Hoehe der Lager-Kacheln (zwei Reihen, ohne Namen): Modul + Rand.
+const STORE_EDGE := 60.0
+## Ein Modul ist im Laden, im Lager und in der Waffe gleich gross (Entwurf
+## "Zwischenstopp Neu", 18. Nov. 2026). Seit die Plaetze fest sind (3, Molok
+## 2 + 2), passen 52 px auch beim Molok in eine Zeile.
+const MODULE_EDGE := 52.0
 ## Zwischenstopp: die Waffenfelder und Lager-Kacheln des aktuellen Aufbaus
 ## (fuer Leuchten und Ziehen ohne Neuaufbau), die Hinweiszeile.
 var _holders: Array = []
@@ -560,9 +561,9 @@ func _show_stop(run: RunState) -> void:
 	_hint.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_side.add_child(_hint)
 
-	# --- Die DROMEs ---
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	# --- Die DROMEs: je eine Zeile (Variante B, 18. Nov. 2026) ---
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
 	for drome in run.squad.size():
 		row.add_child(_drome_box(run, drome))
 	_side.add_child(row)
@@ -812,8 +813,8 @@ func _bios_row(run: RunState) -> Control:
 		var item := ModuleData.get_module(run.bios_offers[index])
 		if item == null:
 			continue
-		var tile := Tile.new("bios:%d" % index, ModuleChip.new(item, 44.0), item.display_name,
-			Vector2(0, 84))
+		var tile := Tile.new("bios:%d" % index, ModuleChip.new(item, MODULE_EDGE), item.display_name,
+			Vector2(0, 86))
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tile.accent = ModuleData.CLASS_COLOR["bios"]
 		tile.glow = true
@@ -850,14 +851,15 @@ func _start_bios_drag(run: RunState, index: int, item: ModuleData, blocker: Stri
 	return {"kind": "bios_offer", "index": index}
 
 
-## Passt das angebotene BIOS ``offer`` in diesen DROME (Chassis, noch keins)?
-func _offer_fits(run: RunState, offer: int, drome: int) -> bool:
+## Wertet das angebotene BIOS ``offer`` ein Rezept in dieser Waffe auf (das
+## Rezept steckt dort, der DROME hat noch kein BIOS-Rezept)?
+func _offer_fits(run: RunState, offer: int, drome: int, slot: String) -> bool:
 	if run.bios_blocker() != "" or offer < 0 or offer >= run.bios_offers.size():
 		return false
 	var item := ModuleData.get_module(run.bios_offers[offer])
 	var build: DromeBuild = run.squad[drome]
-	return item != null and item.bios_kind == "chassis" and build.body() != null \
-		and build.body().id == item.bios_chassis and not build.chassis_bios
+	return item != null and item.is_bios_item() and not RunState.has_bios_recipe(build) \
+		and (build.modules.get(slot, []) as Array).has(item.bios_recipe)
 
 
 ## Ein gezogenes BIOS-Angebot ablegen: nehmen, und auf einer Waffe gleich
@@ -912,8 +914,8 @@ func _shop_row(run: RunState) -> Control:
 		holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		holder.add_theme_constant_override("separation", 0)
 		row.add_child(holder)
-		var tile := Tile.new("shop:%d:%s" % [index, module.id], ModuleChip.new(module, 32.0),
-			module.display_name, Vector2(0, 62))
+		var tile := Tile.new("shop:%d:%s" % [index, module.id], ModuleChip.new(module, MODULE_EDGE),
+			module.display_name, Vector2(0, 86))
 		tile.accent = module.color()
 		tile.dimmed = bool(offer["sold"])
 		tile.glow = run.target_recipe != &"" and _recipe_wants(run, module)
@@ -1186,10 +1188,10 @@ func _flash(control: Control) -> void:
 	tween.tween_property(control, "modulate", Color.WHITE, 0.45).set_trans(Tween.TRANS_QUAD)
 
 
-## Ein DROME-Kasten: oben der Kopf mit Name, darunter je Waffe ein Feld mit
-## der Waffe und ihren Modulplaetzen. Ein DROME mit zwei Waffen (Molok) wird
-## breiter, die Felder stehen nebeneinander -- welcher Platz zu welcher Waffe
-## gehoert, zeigt der Rahmen.
+## Eine DROME-Zeile (Variante B, 18. Nov. 2026): links Kopf und Name, dann
+## je Waffe ein Feld -- die Waffe als Halterform direkt vor ihren
+## Modulplaetzen. So ist klar, welche Plaetze zu welcher Waffe gehoeren; der
+## Molok (zwei Waffen mit je 2 Plaetzen) passt mit 52-px-Modulen in die Zeile.
 func _drome_box(run: RunState, drome: int) -> Control:
 	var build: DromeBuild = run.squad[drome]
 	var slots := build.equip_slots()
@@ -1199,32 +1201,30 @@ func _drome_box(run: RunState, drome: int) -> Control:
 	style.shadow_offset = Vector2(4, 4)
 	panel.add_theme_stylebox_override("panel", style)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_stretch_ratio = 1.0 if slots.size() <= 1 else 1.5
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	panel.add_child(row)
 
+	var head_box := VBoxContainer.new()
+	head_box.add_theme_constant_override("separation", 2)
+	head_box.custom_minimum_size = Vector2(64, 0)
+	head_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(head_box)
 	var head := TextureRect.new()
 	head.texture = UiKit.portrait_texture(build)
-	head.custom_minimum_size = Vector2(44, 44)
+	head.custom_minimum_size = Vector2(40, 40)
 	head.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	head.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	head.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	box.add_child(head)
-	var name := Arcade.label(build.display_name.to_upper(), 12, UiKit.TEXT, "bold", 0.06)
+	head_box.add_child(head)
+	var name := Arcade.label(build.display_name.to_upper(), 10, UiKit.TEXT, "display")
 	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name.clip_text = true
-	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	box.add_child(name)
+	head_box.add_child(name)
 
-	var holders := HBoxContainer.new()
-	holders.add_theme_constant_override("separation", 4)
-	holders.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(holders)
 	if slots.is_empty():
-		holders.add_child(_label("ohne Waffe", UiKit.SMALL, COLOR_BAD))
+		row.add_child(_label("ohne Waffe", UiKit.SMALL, COLOR_BAD))
 	for slot in slots:
-		holders.add_child(_holder_tile(run, drome, slot))
+		row.add_child(_holder_tile(run, drome, slot))
 	return panel
 
 
@@ -1235,20 +1235,21 @@ func _holder_tile(run: RunState, drome: int, slot: String) -> Tile:
 	var build: DromeBuild = run.squad[drome]
 	var part := build.part_in(slot)
 	var tile := Tile.new("holder:%d:%s" % [drome, slot], null, "", Vector2(0, 0))
-	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	tile.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tile.managed = true
 	tile.accent = COLOR_GOOD
 	tile.tooltip_text = part.display_name if part != null else "leer"
-	var box := VBoxContainer.new()
+	# Waffe vor ihren Plaetzen (Variante B): Halterform links, dann die Module.
+	var box := HBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	var shape := SlotShape.new(SlotRules.slot_class(build.body(), slot), UiKit.part_texture(part), 40.0)
 	shape.reach = SlotRules.slot_reach(build.body(), slot)
-	shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	shape.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	box.add_child(shape)
 	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 3)
+	row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	row.add_theme_constant_override("separation", 4)
 	box.add_child(row)
 	var layout := build.module_layout(slot)
 	var room := ModuleData.slots_for(build, slot)
@@ -1278,7 +1279,7 @@ func _holder_tile(run: RunState, drome: int, slot: String) -> Tile:
 		if not (data is Dictionary) or data.get("kind") == "holder":
 			return false
 		if data.get("kind") == "bios_offer":
-			return _offer_fits(run, int(data["index"]), drome)
+			return _offer_fits(run, int(data["index"]), drome, slot)
 		return _holder_allows(run, int(data.get("index", -1)), drome, slot)
 	tile.on_drop = func(data):
 		_dropped = true
