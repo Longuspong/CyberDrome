@@ -143,34 +143,59 @@ static func ground(p: Vector2) -> Vector3:
 # ---------------------------------------------------------------------------
 
 func build_obstacles(grid: Grid) -> void:
-	for child in _scene.get_children():
-		if child.has_meta("obstacle"):
-			child.queue_free()
+	_clear_meta("obstacle")
 	for tile in grid.obstacles:
-		var kind := str(grid.obstacles[tile])
-		var path := ARENA_DIR % kind
-		if not FileAccess.file_exists(path):
-			path = ARENA_DIR % "block"
-		var model = JSON.parse_string(FileAccess.get_file_as_string(path))
-		if not model is Dictionary:
-			continue
-		DromeModel._edge = DromeModel.edge_px(256)
-		var mesh := DromeModel._mesh_for("arena3d|" + kind, model, model.get("colors", {}))
-		if mesh == null:
-			continue
-		var inst := DromeModel.mesh_instance(mesh)
-		inst.name = "Hindernis_%d_%d" % [tile.x, tile.y]
-		inst.set_meta("obstacle", true)
-		inst.position = ground(IsoView.map_to_local(tile))
-		inst.basis = DromeModel.facing_basis(OBSTACLE_FACING).scaled(Vector3.ONE * OBSTACLE_SCALE)
-		for layer_info in [[DromeModel.LAYER_SIGNAL, OBSTACLE_SIGNAL],
-				[DromeModel.LAYER_NEON, Color.BLACK]]:
-			var copy := MeshInstance3D.new()
-			copy.mesh = mesh
-			copy.layers = layer_info[0]
-			copy.material_override = DromeModel._flat_material(layer_info[1])
-			inst.add_child(copy)
-		_scene.add_child(inst)
+		_place_model(str(grid.obstacles[tile]), tile, "obstacle")
+
+
+## Deko am Rand (18. Nov. 2026): Laternen in den Lichtfarben der Region,
+## dazu Kiosk, Schuessel, Haltestelle ... bzw. die Hindernisarten der Region.
+## Dieselben Plaetze wie die gezeichnete Deko (ArenaPainter.prop_spots).
+func build_props(grid: Grid) -> void:
+	_clear_meta("prop")
+	var region_id := str(grid.region.id) if grid.region != null else "city"
+	var spots := ArenaPainter.prop_spots(grid)
+	for index in spots.size():
+		var tile: Vector2i = spots[index][0]
+		var kind := ArenaPainter.deco_kind(region_id, tile)
+		if spots[index][1] == "lamp":
+			kind = "lamp_%s_%s" % [region_id, "a" if index % 2 == 0 else "b"]
+		_place_model(kind, tile, "prop")
+
+
+func _clear_meta(tag: String) -> void:
+	for child in _scene.get_children():
+		if child.has_meta(tag):
+			child.queue_free()
+
+
+## Ein Modell aus assets/arena3d auf ein Feld stellen (Vorderseite zur
+## Kamera), mit dunklem Rand in der Signal- und Verdecker in der Leuchtebene.
+func _place_model(kind: String, tile: Vector2i, tag: String) -> void:
+	var path := ARENA_DIR % kind
+	if not FileAccess.file_exists(path):
+		kind = "block"
+		path = ARENA_DIR % kind
+	var model = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not model is Dictionary:
+		return
+	DromeModel._edge = DromeModel.edge_px(256)
+	var mesh := DromeModel._mesh_for("arena3d|" + kind, model, model.get("colors", {}))
+	if mesh == null:
+		return
+	var inst := DromeModel.mesh_instance(mesh)
+	inst.name = "%s_%d_%d" % [tag, tile.x, tile.y]
+	inst.set_meta(tag, true)
+	inst.position = ground(IsoView.map_to_local(tile))
+	inst.basis = DromeModel.facing_basis(OBSTACLE_FACING).scaled(Vector3.ONE * OBSTACLE_SCALE)
+	for layer_info in [[DromeModel.LAYER_SIGNAL, OBSTACLE_SIGNAL],
+			[DromeModel.LAYER_NEON, Color.BLACK]]:
+		var copy := MeshInstance3D.new()
+		copy.mesh = mesh
+		copy.layers = layer_info[0]
+		copy.material_override = DromeModel._flat_material(layer_info[1])
+		inst.add_child(copy)
+	_scene.add_child(inst)
 
 
 # ---------------------------------------------------------------------------

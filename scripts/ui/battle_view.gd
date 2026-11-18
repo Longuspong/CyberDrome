@@ -63,7 +63,7 @@ func build_terrain(battle_grid: Grid) -> void:
 	for node in _arena:
 		node.queue_free()
 	_arena = ArenaPainter.build(_world, grid, func(tile: Vector2i) -> int:
-		return IsoView.depth(tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET, false, true)
+		return IsoView.depth(tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET, false, true, true)
 	# Boden aus 3D-Hexplatten, einmal gerendert (18. Nov. 2026), ganz unten.
 	var floor := ArenaFloor3D.new()
 	floor.name = "Boden3D"
@@ -76,6 +76,7 @@ func build_terrain(battle_grid: Grid) -> void:
 		arena3d.name = "Arena3D"
 		_world.add_child(arena3d)
 	arena3d.build_obstacles(grid)
+	arena3d.build_props(grid)
 
 
 ## Felder einfaerben -- die Aufstellungszone vor dem Kampf.

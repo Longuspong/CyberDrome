@@ -145,6 +145,60 @@ CRATE = [
     B((9, 9.3), (-1, 1), (0, 16), "dark"),
 ]
 
+# ------------------------------------------------- Deko am Rand (Neon City)
+def lamp(glow):
+    return [
+        L((0, 0), [(0, 0), (4, 0), (4, 2), (1.3, 3), (0, 3)], "plate", segments=10),
+        L((0, 0), [(1.2, 3), (1.2, 48)], "metal", caps=False, segments=8),
+        B((-0.8, 10), (-0.8, 0.8), (46, 48), "metal"),
+        L((9, 0), [(0, 42.5), (3.2, 44), (3.2, 46), (0, 46)], glow, segments=10),
+    ]
+
+
+SHOP = [
+    B((-9, 9), (-10, 10), (0, 22), "plate"),
+    B((-9.5, 9.5), (-10.5, 10.5), (22, 24), "light"),
+    B((9, 9.4), (-8, 8), (8, 18), "glow"),                   # Schaufenster
+    O((11.5, 0, 20), (5, 21, 1), (0, -25, 0), "accent"),     # Markise
+    B((9, 9.6), (-9, -7), (0, 8), "dark"),
+]
+
+DISH = [
+    B((-6, 6), (-6, 6), (0, 10), "plate"),
+    L((0, 0), [(0, 10), (1.5, 10), (1.5, 18), (0, 18)], "metal", segments=8),
+    L((2, 24), [(0, -1), (4, 0), (9, 2.5), (11, 4.5), (0, 4.5)], "light", axis="f", segments=14),
+    L((2, 24), [(0, 4.5), (1, 4.5), (1, 9), (0, 9)], "accent", axis="f", segments=8),
+]
+
+SHELTER = [
+    B((-6, -5), (-12, -11), (0, 26), "metal"), B((-6, -5), (11, 12), (0, 26), "metal"),
+    B((-7, 5), (-13, 13), (26, 28), "plate"),
+    B((-6, -5.4), (-11, 11), (4, 24), "glow"),               # Werbetafel
+    B((-3, 0), (-9, 9), (6, 7.5), "dark"),                    # Bank
+]
+
+AC = [
+    B((-7, 7), (-7, 7), (0, 12), "plate"),
+    B((-7.5, 7.5), (-7.5, 7.5), (12, 13), "light"),
+    L((0, 6), [(0, 7), (5, 7), (5, 7.6), (0, 7.6)], "dark", axis="f", segments=12),
+    L((0, 6), [(1, 7.6), (1, 8)], "accent", axis="f", caps=False, segments=8),
+]
+
+ANTENNA = [
+    B((-4, 4), (-4, 4), (0, 6), "plate"),
+    L((0, 0), [(1, 6), (0.8, 40)], "metal", caps=False, segments=6),
+    B((-0.5, 0.5), (-7, 7), (28, 29), "metal"), B((-0.5, 0.5), (-5, 5), (34, 35), "metal"),
+    L((0, 0), [(0, 40), (1.6, 40.5), (1.6, 42), (0, 42.5)], "glow", segments=8),
+]
+
+# Laternen in den Lichtfarben der Region (ArenaPainter.STYLE.lights).
+LAMP_COLORS = {
+    "city": ("#ff40b3", "#40d9ff"), "green": ("#d9ff73", "#ffd973"),
+    "plant7": ("#ff8c33", "#ffcc66"),
+}
+REGION_ROLES = {"city": CITY, "green": GREEN, "plant7": PLANT}
+
+
 # ---------------------------------------------------------------- Boden
 # Sechseck-Platten (Entwurf docs/design/drome_entwurf/v10_hexboden.py): ein
 # Drehkoerper mit 6 Segmenten, Ecke entlang f -- im Kampf zeigt f nach oben
@@ -206,7 +260,12 @@ MODELS = {
     "ruin": (RUIN, GREEN), "rock": (ROCK, GREEN),
     "tank": (TANK, PLANT), "pipes": (PIPES, PLANT), "crate": (CRATE, PLANT),
     "block": (CRATE, CITY),
+    "shop": (SHOP, CITY), "dish": (DISH, CITY), "shelter": (SHELTER, CITY),
+    "ac": (AC, CITY), "antenna": (ANTENNA, CITY),
 }
+for _region, (_a, _b) in LAMP_COLORS.items():
+    for _name, _color in (("a", _a), ("b", _b)):
+        MODELS[f"lamp_{_region}_{_name}"] = (lamp("glow"), dict(REGION_ROLES[_region], glow=_color))
 
 
 def floor_models() -> dict:

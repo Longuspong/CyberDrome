@@ -237,6 +237,15 @@ vorn, Eule hüpft; Angriff je Waffenart über die Blöcke `<slot>`/`<slot>_arm`
 Aufleuchten der Waffe, Schild stößt vor) statt des Rucks des ganzen DROME.
 Werte als Konstanten oben in `arena_3d.gd`. Offen: Passive sichtbar bewegt,
 Mündungsblitz am `muzzle`-Anker, Beine im Wechsel.
+**Nachgezogen (18. Nov.)**: Nimbus-Kugel als eigener Block (`passive_shapes`
+im Generator -> Variante `passive` -> Knoten `body_passive`) schwebt;
+Vireo-Booster flackern (beim Laufen stärker), Molok-Lockfeuer pulsiert,
+Strix-Linsen blinzeln (über die Materialkopien der Einheit); Lichtball am
+`muzzle`-Anker; Schwung um eine gekippte Achse (von vorn lesbar), Rückstoß
+hebt die Waffe, Treffer kippen den DROME kurz nach hinten. Offen: Beine im
+Wechsel. **Deko am Rand in 3D**: Laternen in den Lichtfarben der Region,
+Kiosk, Schüssel, Haltestelle, Klimagerät, Antenne (`build_arena_models.py`,
+Plätze `ArenaPainter.prop_spots`, `Arena3D.build_props`).
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
       bewegt sich mit (Booster flackert, Kugel schwebt, Lockfeuer pulsiert,

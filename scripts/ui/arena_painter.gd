@@ -505,13 +505,36 @@ class Lights extends Node2D:
 # Zusammenbau
 # ---------------------------------------------------------------------------
 
+## Die Plaetze der Deko am Rand: [Feld, "lamp" oder "deco"]. Hexfeld: hinten
+## (oben) eine Reihe, an den Seiten in Abstaenden, vorn nur die Ecken. Die
+## Laterne Nummer i leuchtet in Lichtfarbe i (STYLE.lights, abwechselnd).
+static func prop_spots(grid: Grid) -> Array:
+	var spots: Array = []
+	for i in range(0, grid.width, 3):
+		spots.append([Vector2i(i, -2), "lamp" if (i / 3) % 2 == 0 else "deco"])
+	for i in range(2, grid.height, 4):
+		spots.append([Vector2i(-2, i), "deco" if (i / 4) % 2 == 0 else "lamp"])
+		spots.append([Vector2i(grid.width + 1, i), "lamp" if (i / 4) % 2 == 0 else "deco"])
+	spots.append([Vector2i(grid.width + 1, grid.height + 1), "lamp"])
+	spots.append([Vector2i(-2, grid.height + 1), "lamp"])
+	return spots
+
+
+## Die Deko-Art auf einem Platz (fester Zufall je Feld).
+static func deco_kind(region_id: String, tile: Vector2i) -> String:
+	var settings := Config.section("obstacles")
+	var kinds: Array = settings.get("props", {}).get(region_id,
+		settings.get("kinds", {}).get(region_id, ["crate"]))
+	return str(kinds[tile_rng(tile, 11).randi() % kinds.size()])
+
+
 ## Baut alles in ``world`` ein. ``depth_of`` rechnet ein Feld in z_index um
 ## (wie bei den Einheiten). Gibt die angelegten Knoten zurueck.
 ##
 ## ``obstacles_2d``: Hindernisse als gezeichnete 2D-Knoten. Im Kampf seit
 ## 18. Nov. 2026 aus: dort stehen sie in 3D in der Arena (Arena3D).
 static func build(world: Node2D, grid: Grid, depth_of: Callable,
-		obstacles_2d: bool = true, floor_3d: bool = false) -> Array:
+		obstacles_2d: bool = true, floor_3d: bool = false, props_3d: bool = false) -> Array:
 	var nodes: Array = []
 	var region_id := str(grid.region.id) if grid.region != null else "city"
 	var s := style(region_id)
@@ -541,17 +564,14 @@ static func build(world: Node2D, grid: Grid, depth_of: Callable,
 	var kinds: Array = settings.get("props", {}).get(region_id,
 		settings.get("kinds", {}).get(region_id, ["crate"]))
 	var lamp_art := art(region_id, "lamp") != null
-	# Hexfeld: hinten (oben) eine Reihe, an den Seiten in Abstaenden, vorn
-	# nur die Ecken.
-	var spots: Array = []
-	for i in range(0, grid.width, 3):
-		spots.append([Vector2i(i, -2), "lamp" if (i / 3) % 2 == 0 else "deco"])
-	for i in range(2, grid.height, 4):
-		spots.append([Vector2i(-2, i), "deco" if (i / 4) % 2 == 0 else "lamp"])
-		spots.append([Vector2i(grid.width + 1, i), "lamp" if (i / 4) % 2 == 0 else "deco"])
-	spots.append([Vector2i(grid.width + 1, grid.height + 1), "lamp"])
-	spots.append([Vector2i(-2, grid.height + 1), "lamp"])
+	var spots := prop_spots(grid)
 	for index in spots.size():
+		# Deko in 3D (Arena3D.build_props): hier nur das Licht der Laternen.
+		if props_3d:
+			if spots[index][1] == "lamp":
+				lights.spots.append([IsoView.map_to_local(spots[index][0]),
+					colors[index % colors.size()], 90.0])
+			continue
 		var tile: Vector2i = spots[index][0]
 		var rng := tile_rng(tile, 11)
 		var node: Node2D

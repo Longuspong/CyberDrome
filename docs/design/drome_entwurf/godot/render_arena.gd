@@ -32,7 +32,7 @@ func build(root: Window, region_arg: String) -> Array:
 	view.add_child(world)
 	var grid := MapGenerator.generate(TerrainDB.get_region(StringName(region_id)))
 	MapGenerator.place_obstacles(grid, 7)
-	ArenaPainter.build(world, grid, func(tile: Vector2i) -> int: return tile.y * 16 + 8, false, true)
+	ArenaPainter.build(world, grid, func(tile: Vector2i) -> int: return tile.y * 16 + 8, false, true, true)
 	var floor := ArenaFloor3D.new()
 	floor.z_index = -70
 	floor.build(grid)
@@ -40,6 +40,7 @@ func build(root: Window, region_arg: String) -> Array:
 	var arena := Arena3D.new()
 	world.add_child(arena)
 	arena.build_obstacles(grid)
+	arena.build_props(grid)
 	var cam := Camera2D.new()
 	cam.position = IsoView.grid_center(grid.width, grid.height) + Vector2(0, -20)
 	cam.zoom = Vector2(0.95, 0.95)
