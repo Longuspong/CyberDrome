@@ -442,7 +442,7 @@ func _draw_air() -> void:
 			"whirl":
 				_air_whirl(mark)
 			"double":
-				_air_double_shot(mark)
+				pass                      # die Schuesse zeichnet EffectPainter
 			"breaker":
 				_air_breaker(mark)
 			"shield":

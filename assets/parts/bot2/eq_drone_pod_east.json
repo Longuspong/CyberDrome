@@ -130,7 +130,8 @@
         "hp_scaling": 0.0,
         "min_range": 0,
         "moving_bonus": 0.0,
-        "windup": 0.0
+        "windup": 0.0,
+        "salvo": 1
       },
       {
         "id": "act_drone_guard",
@@ -161,7 +162,8 @@
         "hp_scaling": 0.0,
         "min_range": 0,
         "moving_bonus": 0.0,
-        "windup": 0.3
+        "windup": 0.3,
+        "salvo": 1
       }
     ]
   }

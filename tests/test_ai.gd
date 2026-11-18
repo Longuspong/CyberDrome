@@ -304,8 +304,40 @@ func test_the_double_shot_splits_over_two_foes() -> void:
 	var s1 := first.shield + first.hp
 	var s2 := second.shield + second.hp
 	t.ok(battle.resolver.execute(vireo, first.tile, double), "der Doppelschuss geht raus")
+	t.equal(first.shield + first.hp, s1, "Salven fliegen noch -- kein Treffer im selben Augenblick")
+	battle.resolver.advance(1.0)
 	t.ok(first.shield + first.hp < s1, "das Ziel wird getroffen")
 	t.ok(second.shield + second.hp < s2, "und der zweite Gegner in Reichweite auch")
+	battle.free()
+
+
+## Doppelschuss als zwei Salven zu je 3 Schuessen (Spieler 18. Nov. 2026):
+## erst die Salve aufs Ziel, dann die aufs zweite Ziel, je Schuss 1/3 Schaden.
+func test_the_double_shot_fires_two_volleys_of_three() -> void:
+	# Gegner ohne Praesenz (ein Molok daneben faengt sonst einen Anteil ab).
+	var tiles := [Vector2i(10, 12), Vector2i(10, 10), Vector2i(11, 10)]
+	var battle := _battle([_vireo()], [_vireo(), _vireo()], tiles)
+	var vireo: Unit = battle.units[0]
+	var first: Unit = battle.units[1]
+	var double := _action(vireo, &"act_pulse_double")
+	t.equal(double.salvo, 3, "3 Schuesse je Salve")
+	var hits := []
+	var record := func(target, amount, source): if source == vireo: hits.append([target, amount])
+	EventBus.unit_damaged.connect(record)
+	battle.resolver.execute(vireo, first.tile, double)
+	for i in 40:
+		battle.resolver.advance(0.05)
+	EventBus.unit_damaged.disconnect(record)
+	t.equal(hits.size(), 6, "zwei Salven zu je drei Treffern (%s)" % str(hits.map(func(h): return [h[0].unit_id, h[1]])))
+	if hits.size() == 6:
+		t.ok(hits[0][0] == first and hits[1][0] == first and hits[2][0] == first,
+			"die erste Salve trifft das Ziel")
+		t.ok(hits[3][0] != first, "die zweite Salve den anderen Gegner")
+		var whole := vireo.raw_damage(double)
+		t.ok(abs(int(hits[0][1]) - whole / 3) <= 2 or int(hits[0][1]) <= whole,
+			"je Schuss etwa ein Drittel (%d von %d)" % [hits[0][1], whole])
+	t.ok(ActionResolver.salvo_time(double, 1, 0) > ActionResolver.salvo_time(double, 0, 2),
+		"die zweite Salve kommt nach der ersten")
 	battle.free()
 
 
@@ -319,8 +351,9 @@ func test_the_double_shot_hits_a_lone_foe_twice() -> void:
 	var record := func(target, _amount, source): if source == vireo: hits.append(target)
 	EventBus.unit_damaged.connect(record)
 	battle.resolver.execute(vireo, foe.tile, double)
+	battle.resolver.advance(1.0)
 	EventBus.unit_damaged.disconnect(record)
-	t.equal(hits.size(), 2, "allein in Reichweite: zwei Treffer")
+	t.equal(hits.size(), 6, "allein in Reichweite: beide Salven auf ihn (6 Treffer)")
 	battle.free()
 
 

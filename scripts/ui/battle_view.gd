@@ -603,7 +603,8 @@ class EffectPainter extends Node2D:
 		var total := (BEAM_TIME if kind == "beam" else flight + IMPACT_TIME)
 		# Funken: feste Richtungen je Treffer, damit nichts flackert.
 		var seed_angle := fmod(absf(to.x * 0.37 + to.y * 0.71 + from.x * 0.13), TAU)
-		_shots.append({"from": from, "to": to, "color": color, "age": 0.0,
+		_shots.append({"from": from, "to": to, "color": color,
+			"age": -float(style.get("wait", 0.0)),
 			"kind": kind, "flight": flight, "total": total,
 			"energy": float(style.get("energy", 0.0)), "heavy": bool(style.get("heavy", false)),
 			"area": int(style.get("area", 0)), "spin": seed_angle})
@@ -630,6 +631,8 @@ class EffectPainter extends Node2D:
 
 	func _draw() -> void:
 		for entry in _shots:
+			if float(entry["age"]) < 0.0:
+				continue
 			if entry["kind"] == "beam":
 				_draw_beam(entry)
 				continue

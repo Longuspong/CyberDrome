@@ -35,7 +35,10 @@ static func on_used(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 		var from := unit.visual_anchor()
 		if unit.arena != null and str(style.get("projectile", "")) != "":
 			from = unit.arena.weapon_tip(unit, action) + Vector2(0, 34)
-		view.show_attack(from, IsoView.map_to_local(tile), color, style)
+		if action.salvo > 1:
+			_salvos(view, unit, tile, action, units, from, color, style)
+		else:
+			view.show_attack(from, IsoView.map_to_local(tile), color, style)
 	_show_ability(view, unit, tile, action, color, units)
 	if not action.is_attack() and not cast:
 		view.show_float(unit.visual_anchor(), action.display_name + "!", NAME_COLOR, true)
@@ -68,6 +71,21 @@ static func on_cast(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 
 		"barrage":
 			unit.play_attack(tile, action)
+
+
+## Salven (Doppelschuss): jeder Schuss fliegt einzeln, zu denselben Zeiten,
+## zu denen er in den Regeln trifft (ActionResolver.salvo_time).
+static func _salvos(view: BattleView, unit: Unit, tile: Vector2i, action: ActionData,
+		units: Array, from: Vector2, color: Color, style: Dictionary) -> void:
+	var targets := double_targets(unit, tile, action, units)
+	while targets.size() < action.shots:
+		targets.append(targets[0])
+	for volley in targets.size():
+		for b in action.salvo:
+			var shot := style.duplicate()
+			shot["wait"] = ActionResolver.salvo_time(action, volley, b) - ActionResolver.SALVO_FLIGHT
+			shot["heavy"] = false
+			view.show_attack(from, targets[volley], color, shot)
 
 
 static func unit_at(units: Array, tile: Vector2i) -> Unit:

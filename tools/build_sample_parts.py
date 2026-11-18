@@ -545,6 +545,9 @@ STATS = {
             {"id": "act_pulse_double", "windup": 0.25, "display_name": "Doppelschuss",
              "category": "ability", "targeting": "single",
              "range_tiles": 3, "damage_pct": 0.7, "shots": 2,
+             # Zwei Salven zu je 3 Schuessen mit je 1/3 Schaden (Spieler
+             # 18. Nov. 2026): erst aufs Ziel, dann auf den naechsten Gegner.
+             "salvo": 3,
              "energy_fraction": 0.5,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_pulse"}},
         ],
@@ -764,6 +767,9 @@ ACTION_DEFAULTS = {
     # Ausholzeit (18. Nov. 2026): Sekunden zwischen Ansage und Wirkung einer
     # Faehigkeit -- der DROME steht still, die Ansage ist zu sehen.
     "windup": 0.0,
+    # Mehrfachschuss in Salven: so viele schnelle Schuesse je "shots", jeder
+    # mit dem entsprechenden Anteil Schaden (Doppelschuss, 18. Nov. 2026).
+    "salvo": 1,
 }
 
 TARGETINGS = ("single", "aoe_around_target", "aoe_cross", "dash")

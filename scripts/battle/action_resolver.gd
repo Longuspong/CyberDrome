@@ -22,6 +22,19 @@ var delayed: Array = []
 ## erzwungen -- die Anzeige laesst den DROME sichtbar rutschen.
 var forcing := false
 
+## Salven (18. Nov. 2026): Abstand der Schuesse einer Salve, Pause zwischen
+## zwei Salven und die Flugzeit bis zum Treffer -- dieselben Zeiten nutzt die
+## Anzeige (AbilityFx), damit Schuss und Zahl zusammenpassen.
+const SALVO_GAP := 0.07
+const SALVO_PAUSE := 0.16
+const SALVO_FLIGHT := 0.12
+
+
+## Wann der Schuss ``bullet`` der Salve ``volley`` trifft (Sekunden nach dem
+## Ausloesen).
+static func salvo_time(action: ActionData, volley: int, bullet: int) -> float:
+	return volley * (action.salvo * SALVO_GAP + SALVO_PAUSE) + bullet * SALVO_GAP + SALVO_FLIGHT
+
 ## Zufall des Kampfes (BattleManager.rng) -- fuer den Zusatztreffer der
 ## Stacheln (Splitterpanzer). Fehlt er, gibt es keinen.
 var rng: RandomNumberGenerator
@@ -572,6 +585,14 @@ func _multi_shot(source: Unit, tile: Vector2i, action: ActionData) -> void:
 		targets.append(unit)
 	while targets.size() < action.shots:
 		targets.append(primary)
+	if action.salvo > 1:
+		# Salven: die Schuesse treffen nacheinander, wenn sie ankommen.
+		var bullet := maxi(1, int(round(float(source.raw_damage(action)) / action.salvo)))
+		for volley in targets.size():
+			for b in action.salvo:
+				delayed.append({"left": salvo_time(action, volley, b), "source": source,
+					"target": targets[volley], "damage": bullet, "action": action})
+		return
 	for target in targets:
 		if target.is_alive():
 			apply_damage(source, target, source.raw_damage(action), action)
@@ -590,9 +611,15 @@ func advance(dt: float) -> bool:
 			continue
 		var source: Unit = entry["source"]
 		var action: ActionData = entry["action"]
+		fired = true
+		if entry.has("target"):
+			# Ein Schuss einer Salve.
+			var hit: Unit = entry["target"]
+			if hit.is_alive() and source.is_alive():
+				apply_damage(source, hit, int(entry["damage"]), action)
+			continue
 		EventBus.log_line("%s: %s schlägt ein." % [source.display_name, action.display_name])
 		_apply_area(source, entry["tile"], action)
-		fired = true
 	delayed = keep
 	return fired
 

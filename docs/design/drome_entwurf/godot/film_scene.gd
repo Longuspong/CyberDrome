@@ -18,6 +18,8 @@ var players: Array = []
 var enemies: Array = []
 var _hit_at := 0
 var _boom_at := -1
+## Spaete Treffer (Salven): [Bild, Einheit, Schaden]
+var _later: Array = []
 
 const SOURCES := {
 	"vortex": [&"mage_body", &"eq_rune_staff", &"act_rune_vortex"],
@@ -58,7 +60,7 @@ func build(root: Window, kind_arg: String) -> SubViewport:
 	view.build_terrain(MapGenerator.generate(TerrainDB.get_region(&"city")))
 	var melee := kind in ["stun", "push", "slash"]
 	var squad := [
-		[src[0], src[1], Vector2i(4, 4) if melee else (Vector2i(3, 5) if kind == "whirl" else Vector2i(4, 7)), true],
+		[src[0], src[1], Vector2i(4, 4) if melee else (Vector2i(3, 5) if kind in ["whirl", "double"] else Vector2i(4, 7)), true],
 		[&"scout_body", &"eq_plasma_blade", Vector2i(2, 7), true],
 		[&"mage_body", &"eq_rune_staff", Vector2i(6, 7), true],
 		[&"jugg_body", &"eq_hammer", Vector2i(4, 3), false],
@@ -106,6 +108,9 @@ func tick(k: int) -> void:
 		var tile := _target_tile()
 		_consequences(me, tile)
 		AbilityFx.on_used(view, me, tile, action, units)
+	for entry in _later:
+		if int(entry[0]) == k:
+			_hurt(entry[1], int(entry[2]))
 	if k == _boom_at:
 		for e in enemies:
 			if Grid.distance(e.tile, enemies[0].tile) <= action.aoe_radius:
@@ -134,8 +139,13 @@ func _consequences(me: Unit, tile: Vector2i) -> void:
 		"lock", "breaker", "whirl":
 			_hurt(target, 26)
 		"double":
-			_hurt(target, 12)
-			_hurt(enemies[1], 12)
+			# Je Schuss ein Treffer, wenn er ankommt (wie ActionResolver).
+			var spots := AbilityFx.double_targets(me, tile, action, units)
+			for volley in action.shots:
+				var at: Vector2 = spots[mini(volley, spots.size() - 1)]
+				var who: Unit = AbilityFx.unit_at(units, IsoView.local_to_map(at))
+				for b in action.salvo:
+					_later.append([_hit_at + int(round(ActionResolver.salvo_time(action, volley, b) * 60.0)), who, 4])
 
 func _slide(unit: Unit, to: Vector2i) -> void:
 	if unit == null:

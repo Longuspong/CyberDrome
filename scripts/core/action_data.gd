@@ -85,6 +85,11 @@ var delay: float = 0.0
 ## Faehigkeit -- auf das Ziel, wo es dann steht. 0 = sofort.
 var windup: float = 0.0
 
+## Salve (18. Nov. 2026): jeder der ``shots`` Treffer kommt als Salve aus so
+## vielen schnellen Schuessen, jeder mit 1/salvo des Schadens. Die Schuesse
+## wirken nacheinander, wenn sie ankommen (ActionResolver, SALVO_*).
+var salvo: int = 1
+
 ## Statuseffekt auf jeden Getroffenen, z. B. {"id": "slow", "seconds": 2.5,
 ## "move_mult": 0.6}. Leer = keiner.
 var status: Dictionary = {}
@@ -153,6 +158,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.shield_mult = float(meta.get("shield_mult", 1.0))
 	action.delay = float(meta.get("delay", 0.0))
 	action.windup = float(meta.get("windup", 0.0))
+	action.salvo = maxi(1, int(meta.get("salvo", 1)))
 	action.heal = int(meta.get("heal", 0))
 	action.shield_gain = int(meta.get("shield_gain", 0))
 	action.support = str(meta.get("support", ""))

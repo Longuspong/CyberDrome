@@ -133,7 +133,9 @@ static func action_lines(action: ActionData) -> Array[String]:
 			out.append("Kinetischer Schaden -- stark gegen Integrität, schwach gegen Schilde.")
 	if action.shield_mult > 1.0:
 		out.append("Schildbrecher: macht %d %% Schaden an Schilden." % int(round(action.shield_mult * 100.0)))
-	if action.shots > 1:
+	if action.shots > 1 and action.salvo > 1:
+		out.append("%d Salven zu je %d Schüssen (je 1/%d Schaden): erst aufs Ziel, dann auf den nächsten Gegner in Reichweite; ist nur einer da, alle auf ihn." % [action.shots, action.salvo, action.salvo])
+	elif action.shots > 1:
 		out.append("%d schnelle Treffer auf bis zu %d Gegner in Reichweite; ist nur einer da, trifft er ihn mehrfach." % [action.shots, action.shots])
 	if action.gather:
 		out.append("Zieht die Gegner im Umkreis %d zum Ziel heran." % action.aoe_radius)
