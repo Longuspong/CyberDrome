@@ -12,6 +12,9 @@ Spielprinzips, der gerade mit dem Spieler besprochen wird.
 **Fuer Module: `docs/MODULE_KONZEPT.md`** -- seit 9. Nov. 2026 die
 festgelegte Richtung (9 Grundmodule, 18 Rezepte, Matrix-BIOS, Profile =
 Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
+**Achtung (18. Nov. 2026, Spieler): das Modulsystem wird ueberdacht** --
+keine neue Arbeit an Modulen, Rezepten oder BIOS, bevor es mit dem Spieler
+besprochen ist.
 **Fuer Story, Fraktionen, Gegnergruppen: `docs/VORSCHLAG_STORY.md`** --
 Vorschlaege vom 10. Nov. 2026, noch NICHT entschieden; die offenen Punkte
 stehen dort in Abschnitt 6. **Story-Rahmen seit 14. Nov. 2026: `docs/STORY_LEITFADEN.md`**
