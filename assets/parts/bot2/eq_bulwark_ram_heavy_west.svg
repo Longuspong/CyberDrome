@@ -11,29 +11,101 @@
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
   -->
 <g stroke="#07090d" stroke-width="0.9" stroke-linejoin="round">
+  <path d="M56.9 43.01 L59.42 38.71 L59.42 24.2 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M45.44 51.12 L56.9 43.01 L59.42 24.2 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
   <path d="M43.08 37.46 L47.96 34.01 L47.96 29.12 L43.08 32.58 Z" fill="#ffff74" stroke="none"/>
   <path d="M38.95 48.61 L54.22 37.81 L54.22 19.49 L38.95 30.29 Z" fill="#23262b"/>
   <path d="M42.01 36.71 L43.08 37.46 L43.08 32.58 L42.01 31.82 Z" fill="#ffff74" stroke="none"/>
   <path d="M47.96 29.12 L46.89 28.37 L42.01 31.82 L43.08 32.58 Z" fill="#ffff74" stroke="none"/>
+  <path d="M45.44 51.12 L42.92 50.38 L41.09 50.76 L44.14 51.65 Z" fill="#23262b"/>
   <path d="M60.79 29.57 L56.21 26.33 L36.97 39.94 L41.55 43.18 Z" fill="#ffd447" stroke="none"/>
-  <path d="M42.01 54.46 L60.33 41.5 L60.33 20.12 L42.01 33.08 Z" fill="#23262b"/>
+  <path d="M42.92 50.38 L45.44 51.12 L59.42 24.2 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
   <path d="M41.55 45.01 L60.79 31.4 L60.79 29.57 L41.55 43.18 Z" fill="#ffd447" stroke="none"/>
+  <path d="M56.9 23.46 L59.42 24.2 L59.42 22.52 L56.36 21.63 Z" fill="#6c7481"/>
   <path d="M37.88 47.86 L38.95 48.61 L38.95 30.29 L37.88 29.53 Z" fill="#23262b"/>
   <path d="M65.53 49.25 L55.75 42.34 L52.7 44.5 L62.47 51.41 Z" fill="#3f444c"/>
   <path d="M54.22 19.49 L53.16 18.73 L37.88 29.53 L38.95 30.29 Z" fill="#3f444c"/>
   <path d="M52.7 47.25 L62.47 54.16 L62.47 51.41 L52.7 44.5 Z" fill="#23262b"/>
-  <path d="M37.42 51.22 L42.01 54.46 L42.01 33.08 L37.42 29.84 Z" fill="#3f444c"/>
+  <path d="M42.92 35.86 L42.92 50.38 L59.42 24.2 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M59.42 24.2 L56.9 23.46 L45.44 31.57 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M41.09 50.76 L41.09 35.48 L38.34 33.54 L38.34 48.81 Z" fill="#3f444c"/>
   <path d="M36.97 41.77 L41.55 45.01 L41.55 43.18 L36.97 39.94 Z" fill="#ffd447" stroke="none"/>
   <path d="M62.47 54.16 L65.53 52.0 L65.53 49.25 L62.47 51.41 Z" fill="#23262b"/>
-  <path d="M60.33 20.12 L55.75 16.88 L37.42 29.84 L42.01 33.08 Z" fill="#6c7481"/>
+  <path d="M45.64 37.23 L46.28 36.28 L46.12 36.28 L45.46 37.22 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M47.88 38.84 L46.77 39.03 L46.56 39.04 L47.67 38.85 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M45.84 38.37 L45.64 37.23 L45.46 37.22 L45.65 38.36 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M46.77 39.03 L45.84 38.37 L45.65 38.36 L46.56 39.04 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M42.92 50.38 L42.92 35.86 L41.09 35.48 L41.09 50.76 Z" fill="#3f444c"/>
+  <path d="M44.14 30.27 L56.36 21.63 L53.61 19.69 L41.4 28.33 Z" fill="#6c7481"/>
+  <path d="M45.88 37.18 L46.52 36.23 L46.28 36.28 L45.64 37.23 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M48.1 38.79 L46.99 38.99 L46.77 39.03 L47.88 38.84 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M46.07 38.32 L45.88 37.18 L45.64 37.23 L45.84 38.37 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M46.99 38.99 L46.07 38.32 L45.84 38.37 L46.77 39.03 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M45.44 31.57 L56.9 23.46 L56.36 21.63 L44.14 30.27 Z" fill="#6c7481"/>
+  <path d="M45.44 31.57 L42.92 35.86 L59.42 24.2 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
   <path d="M47.5 43.85 L60.33 52.92 L60.33 44.98 L47.5 35.91 Z" fill="#979ca6"/>
+  <path d="M48.34 38.82 L47.24 38.98 L46.99 38.99 L48.1 38.79 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M46.22 37.14 L46.91 36.22 L46.52 36.23 L45.88 37.18 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
   <path d="M67.67 39.8 L54.84 30.73 L47.5 35.91 L60.33 44.98 Z" fill="#979ca6"/>
+  <path d="M47.24 38.98 L46.36 38.28 L46.07 38.32 L46.99 38.99 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M46.36 38.28 L46.22 37.14 L45.88 37.18 L46.07 38.32 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
   <path d="M56.97 53.5 L66.75 46.59 L66.75 36.2 L56.97 43.11 Z" fill="#3f444c"/>
+  <path d="M48.59 38.97 L47.52 39.08 L47.24 38.98 L48.34 38.82 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M46.73 37.23 L47.48 36.36 L46.91 36.22 L46.22 37.14 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M47.52 39.08 L46.75 38.36 L46.36 38.28 L47.24 38.98 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M46.75 38.36 L46.73 37.23 L46.22 37.14 L46.36 38.28 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M38.34 33.54 L41.4 28.33 L40.86 28.33 L38.34 32.62 Z" fill="#3f444c"/>
   <path d="M60.33 52.92 L67.67 47.74 L67.67 39.8 L60.33 44.98 Z" fill="#23262b"/>
+  <path d="M48.26 36.79 L49.28 36.72 L48.55 36.24 L47.48 36.36 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M47.87 39.35 L47.27 38.65 L46.75 38.36 L47.52 39.08 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M47.43 37.59 L48.26 36.79 L47.48 36.36 L46.73 37.23 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M47.27 38.65 L47.43 37.59 L46.73 37.23 L46.75 38.36 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M41.09 35.48 L44.14 30.27 L41.4 28.33 L38.34 33.54 Z" fill="#6c7481"/>
+  <path d="M48.42 39.93 L47.94 39.28 L47.27 38.65 L47.87 39.35 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
   <path d="M65.53 38.56 L55.75 31.65 L52.7 33.81 L62.47 40.72 Z" fill="#3f444c"/>
+  <path d="M49.12 37.55 L50.08 37.49 L49.28 36.72 L48.26 36.79 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
   <path d="M52.7 36.56 L62.47 43.47 L62.47 40.72 L52.7 33.81 Z" fill="#23262b"/>
   <path d="M55.45 52.42 L56.97 53.5 L56.97 43.11 L55.45 42.03 Z" fill="#6c7481"/>
   <path d="M66.75 36.2 L65.22 35.12 L55.45 42.03 L56.97 43.11 Z" fill="#6c7481"/>
+  <path d="M47.94 39.28 L48.23 38.29 L47.43 37.59 L47.27 38.65 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M48.23 38.29 L49.12 37.55 L48.26 36.79 L47.43 37.59 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M42.92 35.86 L45.44 31.57 L44.14 30.27 L41.09 35.48 Z" fill="#6c7481"/>
+  <path d="M49.15 40.78 L48.76 40.18 L47.94 39.28 L48.42 39.93 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M50.03 38.54 L50.95 38.46 L50.08 37.49 L49.12 37.55 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M48.76 40.18 L49.12 39.25 L48.23 38.29 L47.94 39.28 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M58.38 48.49 L58.8 48.84 L57.89 48.2 L57.47 47.83 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M49.12 39.25 L50.03 38.54 L49.12 37.55 L48.23 38.29 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M50.01 41.79 L49.72 41.27 L48.76 40.18 L49.15 40.78 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M57.47 47.83 L57.89 48.2 L56.6 47.27 L56.17 46.91 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M60.27 47.5 L60.46 46.59 L59.56 45.96 L59.38 46.87 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M51.06 39.67 L51.9 39.54 L50.95 38.46 L50.03 38.54 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M58.8 48.84 L59.58 48.43 L58.69 47.8 L57.89 48.2 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
   <path d="M62.47 43.47 L65.53 41.31 L65.53 38.56 L62.47 40.72 Z" fill="#23262b"/>
+  <path d="M59.58 48.43 L60.27 47.5 L59.38 46.87 L58.69 47.8 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M49.72 41.27 L50.15 40.39 L49.12 39.25 L48.76 40.18 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M59.38 46.87 L59.56 45.96 L58.26 45.03 L58.08 45.94 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M50.15 40.39 L51.06 39.67 L50.03 38.54 L49.12 39.25 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M56.17 46.91 L56.6 47.27 L55.1 46.17 L54.71 45.88 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M57.89 48.2 L58.69 47.8 L57.39 46.87 L56.6 47.27 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M50.98 42.86 L50.84 42.47 L49.72 41.27 L50.01 41.79 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M58.69 47.8 L59.38 46.87 L58.08 45.94 L57.39 46.87 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M52.2 40.9 L52.91 40.64 L51.9 39.54 L51.06 39.67 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M58.08 45.94 L58.26 45.03 L56.76 43.93 L56.55 44.79 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M54.71 45.88 L55.1 46.17 L53.57 44.98 L53.27 44.84 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M56.6 47.27 L57.39 46.87 L55.86 45.72 L55.1 46.17 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M50.84 42.47 L51.34 41.65 L50.15 40.39 L49.72 41.27 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M52.04 43.87 L52.13 43.73 L50.84 42.47 L50.98 42.86 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M51.34 41.65 L52.2 40.9 L51.06 39.67 L50.15 40.39 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M57.39 46.87 L58.08 45.94 L56.55 44.79 L55.86 45.72 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M53.27 44.84 L53.57 44.98 L52.13 43.73 L52.04 43.87 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M53.5 42.17 L53.97 41.67 L52.91 40.64 L52.2 40.9 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M56.55 44.79 L56.76 43.93 L55.25 42.75 L54.97 43.5 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M54.97 43.5 L55.25 42.75 L53.97 41.67 L53.5 42.17 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M55.1 46.17 L55.86 45.72 L54.28 44.43 L53.57 44.98 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M52.13 43.73 L52.74 43.03 L51.34 41.65 L50.84 42.47 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M55.86 45.72 L56.55 44.79 L54.97 43.5 L54.28 44.43 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M52.74 43.03 L53.5 42.17 L52.2 40.9 L51.34 41.65 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
+  <path d="M53.57 44.98 L54.28 44.43 L52.74 43.03 L52.13 43.73 Z" fill="#23262b" stroke="#23262b" stroke-width="0.4"/>
+  <path d="M54.28 44.43 L54.97 43.5 L53.5 42.17 L52.74 43.03 Z" fill="#3f444c" stroke="#3f444c" stroke-width="0.4"/>
 </g>
 </svg>

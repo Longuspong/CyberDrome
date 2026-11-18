@@ -2572,12 +2572,20 @@ def light_arm(shoulder, pose):
 
 def _head_blaster(h, k, neon=False):
     f, l, z = h
+    # Gehaeuse und Laufmantel als Profile mit Fase, Kuehlrippen am Mantel
+    # (18. Nov. 2026, statt Kasten mit Lauf).
     s = [
-        B((f, f + 5 * k), (l - 3 * k, l + 3 * k), (z - 3.5 * k, z + 3.5 * k), "plate"),
-        B((f + 5 * k, f + 13 * k), (l - 2 * k, l + 2 * k), (z - 2.3 * k, z + 2.3 * k), "plate"),
-        B((f + 5 * k, f + 13 * k), (l - 2.2 * k, l + 2.2 * k), (z + 2.3 * k, z + 3 * k), "light"),
-        B((f + 13 * k, f + 15 * k), (l - 1.8 * k, l + 1.8 * k), (z - 2 * k, z + 2 * k), "dark"),
-        D(f + 15.1 * k, l, z, 1.4 * k, "glow"),
+        EX([(f, z - 3.5 * k), (f + 5.5 * k, z - 3.5 * k), (f + 6.5 * k, z - 2.2 * k),
+            (f + 6.5 * k, z + 2.6 * k), (f + 5 * k, z + 3.6 * k), (f + 0.6 * k, z + 3.6 * k),
+            (f, z + 2.6 * k)], (l - 3 * k, l + 3 * k), "plate", bevel=0.5 * k),
+        EX([(f + 6.5 * k, z - 2.2 * k), (f + 13 * k, z - 2.2 * k), (f + 14 * k, z - 1.4 * k),
+            (f + 14 * k, z + 1.8 * k), (f + 13 * k, z + 2.6 * k), (f + 6.5 * k, z + 2.6 * k)],
+           (l - 2 * k, l + 2 * k), "light", bevel=0.4 * k),
+        B((f + 8 * k, f + 8.7 * k), (l - 2.3 * k, l + 2.3 * k), (z - 2.5 * k, z + 2.9 * k), "dark"),
+        B((f + 9.7 * k, f + 10.4 * k), (l - 2.3 * k, l + 2.3 * k), (z - 2.5 * k, z + 2.9 * k), "dark"),
+        B((f + 11.4 * k, f + 12.1 * k), (l - 2.3 * k, l + 2.3 * k), (z - 2.5 * k, z + 2.9 * k), "dark"),
+        B((f + 14 * k, f + 15 * k), (l - 1.6 * k, l + 1.6 * k), (z - 1.6 * k, z + 1.9 * k), "dark"),
+        D(f + 15.1 * k, l, z + 0.2 * k, 1.3 * k, "glow"),
         B((f + 1 * k, f + 4 * k), (l - 3.5 * k, l - 3 * k), (z - 1 * k, z + 1 * k), "accent"),
         B((f + 1 * k, f + 4 * k), (l + 3 * k, l + 3.5 * k), (z - 1 * k, z + 1 * k), "accent"),
     ]
@@ -2588,7 +2596,7 @@ def _head_blaster(h, k, neon=False):
             L((l, z), [(2.5 * k, f + 13.4 * k), (2.5 * k, f + 14.2 * k)], "glow", axis="f",
               caps=False, segments=14),
         ]
-    return s, (f + 15.1 * k, l, z)
+    return s, (f + 15.1 * k, l, z + 0.2 * k)
 
 
 def _head_blade(h, k):
@@ -2616,8 +2624,12 @@ def _head_hammer(h, k):
     return [
         B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 8 * k, z + 17 * k), "metal"),
         B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 9.6 * k, z - 8 * k), "dark"),
-        B((f - 5 * k, f + 5 * k), (l - 4.5 * k, l + 4.5 * k), (z + 16 * k, z + 25 * k), "plate"),
-        B((f - 5.3 * k, f + 5.3 * k), (l - 4.8 * k, l + 4.8 * k), (z + 19.8 * k, z + 21.2 * k), "accent"),
+        EX([(f - 5 * k, z + 16 * k), (f + 5 * k, z + 16 * k), (f + 5 * k, z + 25 * k),
+            (f - 5 * k, z + 25 * k)], (l - 4.5 * k, l + 4.5 * k), "plate", bevel=1.0 * k),
+        B((f - 5.1 * k, f + 5.1 * k), (l - 4.6 * k, l + 4.6 * k), (z + 19.8 * k, z + 21.2 * k), "accent"),
+        # Dorn hinten
+        BP((f - 4.5 * k, l, z + 20.5 * k), (f - 11 * k, l, z + 20.5 * k), 3.4 * k, 3.4 * k,
+           "metal", mid=0.15),
         B((f + 5 * k, f + 5.8 * k), (l - 3.5 * k, l + 3.5 * k), (z + 17.5 * k, z + 23.5 * k), "dark"),
         D(f + 6 * k, l, z + 20.5 * k, 1.7 * k, "glow"),
     ], (f + 6 * k, l, z + 20.5 * k)
@@ -2632,7 +2644,14 @@ def _head_ram(h, k):
         B((f, f + 6.4 * k), (l - 1.0 * k, l + 1.0 * k), (z + 2.6 * k, z + 4.4 * k), "dark"),
         B((f, f + 6.4 * k), (l - 1.0 * k, l + 1.0 * k), (z - 4.4 * k, z - 2.6 * k), "dark"),
         B((f + 1.4 * k, f + 2.4 * k), (l - 3.2 * k, l + 3.2 * k), (z - 3.4 * k, z + 3.4 * k), "light"),
-        B((f + 8.4 * k, f + 11.4 * k), (l - 6 * k, l + 6 * k), (z - 7 * k, z + 7 * k), "plate"),
+        EX([(l - 6 * k, z - 5 * k), (l - 4 * k, z - 7 * k), (l + 4 * k, z - 7 * k),
+            (l + 6 * k, z - 5 * k), (l + 6 * k, z + 5 * k), (l + 4 * k, z + 7 * k),
+            (l - 4 * k, z + 7 * k), (l - 6 * k, z + 5 * k)], (f + 8.4 * k, f + 11.4 * k),
+           "plate", bevel=0.6 * k, axis="f"),
+        # Hydraulikschlauch am Kolben
+        SW([(f + 0.6 * k, l + 2.4 * k, z + 0.5 * k), (f + 3 * k, l + 4.2 * k, z + 3.2 * k),
+            (f + 6.5 * k, l + 3.6 * k, z + 3.4 * k), (f + 8.4 * k, l + 2.8 * k, z + 1.8 * k)],
+           [0.7 * k] * 4, "dark", sides=8, steps=5),
         B((f + 8.4 * k, f + 11.4 * k), (l - 6.3 * k, l + 6.3 * k), (z - 0.6 * k, z + 0.6 * k), "accent"),
         B((f + 11.4 * k, f + 12.1 * k), (l - 5 * k, l + 5 * k), (z - 6 * k, z + 6 * k), "dark"),
         B((f + 12.1 * k, f + 12.8 * k), (l - 1.6 * k, l + 1.6 * k), (z - 1.6 * k, z + 1.6 * k), "glow"),
@@ -2687,10 +2706,12 @@ def _head_wrench(h, k):
         B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z - 8 * k, z - 6.8 * k), "accent"),
         B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 3.2 * k, z + 4.4 * k), "accent"),
         B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 6.0 * k, z + 7.2 * k), "accent"),
-        B((f - 2.2 * k, f + 2.2 * k), (l - 4.6 * k, l + 4.6 * k), (z + 14 * k, z + 18 * k), "metal"),
-        B((f - 2.4 * k, f + 2.4 * k), (l - 4.9 * k, l + 4.9 * k), (z + 15.4 * k, z + 16.6 * k), "accent"),
-        B((f - 2.0 * k, f + 2.0 * k), (l - 4.6 * k, l - 2.0 * k), (z + 18 * k, z + 24 * k), "metal"),
-        B((f - 2.0 * k, f + 2.0 * k), (l + 2.0 * k, l + 4.6 * k), (z + 18 * k, z + 24 * k), "metal"),
+        # Maul als Profil der Vorderansicht: echte Schluesselform mit Oeffnung
+        EX([(l - 4.6 * k, z + 14 * k), (l + 4.6 * k, z + 14 * k), (l + 4.8 * k, z + 21 * k),
+            (l + 3.4 * k, z + 24.4 * k), (l + 1.7 * k, z + 24.4 * k), (l + 1.9 * k, z + 19.6 * k),
+            (l - 1.9 * k, z + 19.6 * k), (l - 1.7 * k, z + 24.4 * k), (l - 3.4 * k, z + 24.4 * k),
+            (l - 4.8 * k, z + 21 * k)], (f - 2.0 * k, f + 2.0 * k), "metal", bevel=0.5 * k, axis="f"),
+        B((f - 2.2 * k, f + 2.2 * k), (l - 4.75 * k, l + 4.75 * k), (z + 15.4 * k, z + 16.6 * k), "accent"),
         B((f - 1.3 * k, f + 1.3 * k), (l - 1.3 * k, l + 1.3 * k), (z + 18 * k, z + 21 * k), "glow"),
         D(f + 2.2 * k, l - 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
         D(f + 2.2 * k, l + 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
