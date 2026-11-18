@@ -57,6 +57,10 @@ func update(unit: Unit, dt: float) -> void:
 		mount["ready"] = float(mount["ready"]) - dt
 	for gadget in unit.gadgets:
 		gadget["ready"] = float(gadget["ready"]) - dt
+	# Echo (Nimbus): die zweite Wirkung kommt kurz nach der ersten -- laeuft
+	# neben allem anderen, der DROME bleibt dafuer nicht stehen.
+	if not unit.echoes.is_empty():
+		_tick_echoes(unit, dt)
 	unit.think_left -= dt
 	unit.aim_hold = maxf(0.0, unit.aim_hold - dt)
 
@@ -310,7 +314,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 ## Die Faehigkeit wirkt: ausfuehren, Echo, Nachwirkungen der Module.
 func _resolve_ability(unit: Unit, ability: ActionData, aim: Dictionary, mount: Dictionary,
 		fx: Dictionary) -> void:
-	_execute(unit, aim["tile"], ability, aim["target"])
+	_execute(unit, aim["tile"], ability, aim["target"], bool(aim.get("thrown", false)))
 	_echo(unit, ability, aim)
 	_after_ability(unit, ability, aim, fx)
 	_shackle(unit, mount)
@@ -328,27 +332,69 @@ func _begin_cast(unit: Unit, ability: ActionData, aim: Dictionary, mount: Dictio
 	EventBus.ability_cast.emit(unit, tile, ability, ability.windup, target)
 
 
-## Ende der Ausholzeit: die Faehigkeit trifft das Ziel dort, wo es jetzt
-## steht. Ist es weg oder ausser Reichweite, verpufft sie nicht -- der Takt
-## bleibt voll und sie kommt mit dem naechsten Angriff wieder.
+## Ende der Ausholzeit. Einzelziele treffen das Ziel dort, wo es jetzt
+## steht; ist es weg oder ausser Reichweite, verpufft die Faehigkeit nicht --
+## der Takt bleibt voll und sie kommt mit dem naechsten Angriff wieder.
+## Flaechen (Vortex, Sperrfeuer; 18. Nov. 2026, Wunsch des Spielers) landen
+## dort, wohin geworfen wurde: wer rechtzeitig wegläuft, entkommt.
 func _finish_cast(unit: Unit) -> void:
 	var cast := unit.cast
 	unit.cast = {}
 	var ability: ActionData = cast["action"]
-	var aim: Dictionary = (cast["aim"] as Dictionary).duplicate()
-	var target = cast.get("target")
-	if target is Unit:
-		if not target.is_alive():
-			target = null
-		else:
-			aim["tile"] = target.tile
-	if cast.get("target") is Unit and target == null \
-			or battle.resolver.target_blocker(unit, aim["tile"], ability) != "":
+	var aim := _landing(unit, ability, cast["aim"], cast.get("target"))
+	if aim.is_empty():
 		var mount: Dictionary = cast["mount"]
 		mount["count"] = float(mount["count"]) + float(trigger_every(unit, ability))
 		return
 	_resolve_ability(unit, ability, aim, cast["mount"], cast["fx"])
 	battle._check_victory()
+
+
+## Wo eine Faehigkeit nach der Ausholzeit wirkt: Flaechen auf dem Wurffeld,
+## Einzelziele dort, wo das Ziel jetzt steht. Leer, wenn sie nicht wirken kann.
+## ``in_flight``: schon unterwegs (Echo) -- dann zaehlt die Reichweite nicht
+## mehr, der DROME darf inzwischen weitergelaufen sein.
+func _landing(unit: Unit, ability: ActionData, thrown: Dictionary, aimed,
+		in_flight: bool = false) -> Dictionary:
+	var aim := thrown.duplicate()
+	var area := lands_on_tile(ability)
+	var target = aimed
+	if target is Unit:
+		if not target.is_alive():
+			target = null
+		elif not area:
+			aim["tile"] = target.tile
+	aim["target"] = target
+	if area:
+		aim["thrown"] = true
+		return {} if _throw_blocker(unit, aim["tile"], ability, in_flight) != "" else aim
+	if aimed is Unit and target == null \
+			or battle.resolver.target_blocker(unit, aim["tile"], ability) != "":
+		return {}
+	return aim
+
+
+## Landet die Faehigkeit auf dem Feld, auf das sie geworfen wurde, statt dem
+## Ziel zu folgen? Alle Flaechen (Vortex, Sperrfeuer, Wirbel).
+static func lands_on_tile(ability: ActionData) -> bool:
+	return ability.aoe_radius > 0 and not ability.is_move()
+
+
+## Kann eine geworfene Flaeche noch auf ``tile`` landen? Nur Reichweite und
+## Mindestabstand zaehlen -- ein leeres Feld ist kein Hindernis.
+func _throw_blocker(unit: Unit, tile: Vector2i, ability: ActionData,
+		in_flight: bool = false) -> String:
+	var reach := Grid.distance(unit.tile, tile)
+	if in_flight:
+		pass
+	elif reach > ability.range_tiles:
+		return "Außer Reichweite"
+	elif ability.min_range > 0 and reach < ability.min_range:
+		return "Zu nah"
+	var standing := battle.resolver.unit_at(tile)
+	if standing != null and standing.is_player == unit.is_player and standing != unit:
+		return "Verbündeter"
+	return ""
 
 
 ## Modul-Faehigkeiten nach Angriffen (Orbit-Fokus, 9. Nov. 2026): jeder
@@ -708,24 +754,73 @@ func _time_after_ability(unit: Unit, ability: ActionData) -> float:
 	return unit.takt_seconds(ability)
 
 
-## Passive Echo (Nimbus, 7. Nov. 2026): die Faehigkeit wirkt gleich noch
-## einmal -- aufs selbe Ziel, ist es gefallen, aufs naechstbeste.
+## Passive Echo (Nimbus, 7. Nov. 2026): die Faehigkeit wirkt noch einmal --
+## aufs selbe Ziel, ist es gefallen, aufs naechstbeste. Seit 18. Nov. 2026
+## (Wunsch des Spielers) nacheinander statt im selben Augenblick: das Echo
+## kommt ``passives.echo.gap`` Sekunden spaeter. Mit Ausholzeit fliegt es
+## so lange wie die erste Wirkung (Ansage wie beim Wurf), der DROME bleibt
+## dafuer aber nicht stehen -- so sieht man beide, ohne Zeit zu verlieren.
 func _echo(unit: Unit, ability: ActionData, aim: Dictionary) -> void:
 	if unit.passive() != "echo" or battle.outcome != BattleManager.Outcome.RUNNING:
 		return
-	var again := aim
-	var target: Unit = aim.get("target")
-	if target == null or not target.is_alive():
-		again = _aim(unit, ability, null)
-	elif unit.has_bios() and ability.support == "":
-		# Nimbus-BIOS: das Echo darf ein anderes Ziel waehlen.
-		for foe in battle.enemies_of(unit):
-			if foe != target and foe.is_alive() \
-					and battle.resolver.target_blocker(unit, foe.tile, ability) == "":
-				again = {"tile": foe.tile, "target": foe}
-				break
-	if not again.is_empty():
-		_execute(unit, again["tile"], ability, again["target"])
+	unit.echoes.append({"action": ability, "target": aim.get("target"),
+		"tile": aim["tile"], "left": echo_gap()})
+
+
+## Wie lange das Echo nach der Faehigkeit wartet (Sekunden).
+static func echo_gap() -> float:
+	return float((Config.section("passives").get("echo", {}) as Dictionary).get("gap", 0.5))
+
+
+## Laesst die Echos ablaufen. Erst die Pause, dann (mit Ausholzeit) der Flug,
+## dann die Wirkung.
+func _tick_echoes(unit: Unit, dt: float) -> void:
+	var keep: Array = []
+	var due: Array = []
+	for entry in unit.echoes:
+		entry["left"] = float(entry["left"]) - dt
+		if float(entry["left"]) > 0.0:
+			keep.append(entry)
+		else:
+			due.append(entry)
+	unit.echoes = keep
+	for entry in due:
+		if battle.outcome != BattleManager.Outcome.RUNNING or not unit.is_alive():
+			return
+		var ability: ActionData = entry["action"]
+		if bool(entry.get("flying", false)):
+			var aim := _landing(unit, ability, {"tile": entry["tile"]}, entry.get("target"), true)
+			if not aim.is_empty():
+				_execute(unit, aim["tile"], ability, aim["target"], bool(aim.get("thrown", false)))
+			continue
+		var again := _echo_aim(unit, ability, entry.get("target"))
+		if again.is_empty():
+			continue
+		if ability.windup > 0.0:
+			var tile: Vector2i = again["tile"]
+			_aim_at(unit, tile)
+			EventBus.ability_cast.emit(unit, tile, ability, ability.windup, again["target"])
+			unit.echoes.append({"action": ability, "target": again["target"], "tile": tile,
+				"left": ability.windup, "flying": true})
+		else:
+			_execute(unit, again["tile"], ability, again["target"])
+
+
+## Worauf das Echo zielt: das alte Ziel, wenn es noch geht (mit Nimbus-BIOS
+## lieber ein anderes), sonst das naechstbeste.
+func _echo_aim(unit: Unit, ability: ActionData, target) -> Dictionary:
+	if target is Unit and target.is_alive() \
+			and battle.resolver.target_blocker(unit, target.tile, ability) == "":
+		if unit.has_bios() and ability.support == "":
+			# Nimbus-BIOS: das Echo darf ein anderes Ziel waehlen.
+			for foe in battle.enemies_of(unit):
+				if foe != target and foe.is_alive() \
+						and battle.resolver.target_blocker(unit, foe.tile, ability) == "":
+					return {"tile": foe.tile, "target": foe}
+		return {"tile": target.tile, "target": target}
+	if ability.support != "":
+		return _support_aim(unit, ability)
+	return _aim(unit, ability, null)
 
 
 ## Worauf zielt ``action``? Das Ziel, wenn es geht; sonst der am besten
@@ -754,9 +849,10 @@ func _aim_at(unit: Unit, tile: Vector2i) -> void:
 	unit.aim_hold = AIM_HOLD
 
 
-func _execute(unit: Unit, tile: Vector2i, action: ActionData, target: Unit) -> void:
+func _execute(unit: Unit, tile: Vector2i, action: ActionData, target: Unit,
+		thrown: bool = false) -> void:
 	_aim_at(unit, tile)
-	if battle.resolver.execute(unit, tile, action):
+	if battle.resolver.execute(unit, tile, action, thrown):
 		EventBus.action_used.emit(unit, tile, action)
 		battle._check_victory()
 

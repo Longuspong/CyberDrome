@@ -484,8 +484,10 @@ func affected_tiles(tile: Vector2i, action: ActionData) -> Array[Vector2i]:
 # ---------------------------------------------------------------------------
 
 ## Fuehrt die Aktion aus. Gibt zurueck, ob sie ueberhaupt zulaessig war.
-func execute(source: Unit, tile: Vector2i, action: ActionData) -> bool:
-	if target_blocker(source, tile, action) != "":
+## ``thrown``: eine geworfene Flaeche, deren Landefeld der Aufrufer schon
+## geprueft hat (AIController._landing) -- sie wirkt auch auf ein leeres Feld.
+func execute(source: Unit, tile: Vector2i, action: ActionData, thrown: bool = false) -> bool:
+	if not thrown and target_blocker(source, tile, action) != "":
 		return false
 	# Dash: der Handelnde versetzt sich selbst.
 	if action.is_move():

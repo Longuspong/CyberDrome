@@ -359,7 +359,9 @@ bleibt.
       gestreckt, Bumerang wurfbereit, Ramme stößt vor, E-Schlüssel senkrecht,
       Deflektor an Vireo/Nimbus, Molok mit Armmaß 1,6; Puls- und Neon-Blaster
       auf der Lafette (Mörser, Lanze wie im Spiel) -- freigegeben 16. Nov.
-- [ ] Die übrigen 10 Fähigkeiten als Animation
+- [x] Die übrigen 10 Fähigkeiten als Animation -- erledigt 18. Nov.: alle
+      11 Fähigkeiten mit Ausholzeit, Ansage (`<art>_cast`) und Wirkung
+      (`AbilityFx`, `AbilityPainter`, Abschnitt 6)
 
 ## Offene Fragen an den Spieler
 

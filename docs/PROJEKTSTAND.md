@@ -29,6 +29,24 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Echo nacheinander, Flaechen landen am Wurfort (18. Nov. 2026, Wunsch des Spielers)
+
+* **Echo (Nimbus)** wirkt nicht mehr im selben Augenblick, sondern
+  `passives.echo.gap` (0,5 s) nach der Faehigkeit (`Unit.echoes`,
+  `AIController._tick_echoes`). Mit Ausholzeit (Vortex) zeigt das Echo die
+  Ansage ein zweites Mal und fliegt so lange wie der erste Wurf -- der DROME
+  bleibt dafuer aber **nicht** stehen (ein zweites Stillstehen kostete in der
+  Messung rund 15 % Schaden). Kann das Echo nicht wirken, verpufft es.
+* **Flaechen** (Vortex, Sperrfeuer, Wirbel) folgen dem Ziel waehrend der
+  Ausholzeit nicht mehr, sie landen auf dem Feld, auf das geworfen wurde
+  (`AIController.lands_on_tile`, `_landing`) -- wer rechtzeitig weglaeuft,
+  entkommt dem Sog und der Schockwelle. Auch ein inzwischen leeres Feld wird
+  getroffen (`ActionResolver.execute(..., thrown)`).
+* **Messung** (gleiche Seeds, `playtest.gd -- 200 0`, Squad Vireo/Molok/Nimbus):
+  `main` 146 Siege, Nimbus 8,6 Schaden/s; neu 150 Siege, Nimbus 8,4/s.
+  `run_bench.gd -- 20` unveraendert (Unterschiede je Feld +-1 bis 3). Ausholzeit
+  und Salven bleiben damit wie sie sind.
+
 ### Kampf als eine 3D-Szene + Bewegung (18. Nov. 2026, Übergabe Schritt 4/5)
 
 * `Arena3D`: alle DROMEs und Hindernisse in einer 3D-Welt, Kameras folgen der
