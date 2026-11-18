@@ -23,3 +23,6 @@ jobs:
           python-version: "3.12"
       - run: pip install openpyxl
       - run: python3 tools/build_spot.py --check
+      # Hindernis-Modelle der 3D-Kampfszene (18. Nov. 2026): Rot heisst
+      # python3 tools/build_arena_models.py ausfuehren und assets/arena3d einchecken.
+      - run: python3 tools/build_arena_models.py --check

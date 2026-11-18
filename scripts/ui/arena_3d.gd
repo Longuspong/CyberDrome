@@ -42,6 +42,25 @@ var _outline: ShaderMaterial
 ## Unit -> Node3D (Wurzel aus DromeModel.build_node)
 var _models: Dictionary = {}
 var _has_neon := false
+## Unit -> Bewegungszustand {"time", "phase", "attack", "tint"}
+var _anim: Dictionary = {}
+
+## Bewegung (Schritt 5, 18. Nov. 2026). Laengen in Generator-Einheiten (ein
+## DROME ist ~80 hoch), Zeiten in Sekunden.
+const IDLE_BOB := 0.5            # Atmen im Stand
+const IDLE_SPEED := 2.2
+const WALK_BOB := 1.4            # Wippen beim Laufen
+const WALK_SPEED := 9.0
+const NIMBUS_TILT := 0.13        # Nimbus kippt beim Fahren nach vorn (rad)
+const STRIX_HOP := 2.6           # die Eule huepft
+const RECOIL := 2.6              # Fernkampf: Rueckstoss
+const RANGED_TIME := 0.24
+const FLASH_TIME := 0.07         # Muendungsblitz (Waffe leuchtet auf)
+const SWING_BACK := -0.55        # Nahkampf: ausholen (rad, um die Schulter)
+const SWING_HIT := 0.65          # ... und zuschlagen
+const MELEE_TIME := 0.42
+const SHIELD_PUSH := 3.2         # Schild stoesst vor
+const SHIELD_TIME := 0.3
 
 
 ## Aufbau im Konstruktor, damit die Arena auch ausserhalb des Baums (Tests)
@@ -162,6 +181,12 @@ func rebuild(unit: Unit) -> void:
 		_ensure_neon()
 	_scene.add_child(node)
 	_models[unit] = node
+	var turn := node.get_node("Ausrichtung") as Node3D
+	for block in turn.get_children():
+		block.set_meta("base", block.transform)
+	var old: Dictionary = _anim.get(unit, {})
+	_anim[unit] = {"time": 0.0, "phase": float(hash(str(unit.unit_id)) % 628) / 100.0,
+		"attack": {}, "tint": old.get("tint", Color.WHITE)}
 	_sync_unit(unit, node)
 
 
@@ -169,6 +194,7 @@ func forget(unit: Unit) -> void:
 	if _models.has(unit):
 		var node: Node3D = _models[unit]
 		_models.erase(unit)
+		_anim.erase(unit)
 		node.queue_free()
 
 
@@ -193,6 +219,8 @@ func tint(unit: Unit, color: Color) -> void:
 	var node := model_of(unit)
 	if node == null:
 		return
+	if _anim.has(unit):
+		_anim[unit]["tint"] = color
 	_tint_tree(node, color)
 
 
@@ -216,6 +244,153 @@ func _sync_unit(unit: Unit, node: Node3D) -> void:
 
 
 # ---------------------------------------------------------------------------
+# Bewegung (Schritt 5)
+# ---------------------------------------------------------------------------
+
+## Angriff mit der Waffe, die ``action`` ausloest. false, wenn es nichts zu
+## bewegen gibt (dann ruckt der ganze DROME wie bisher).
+func attack(unit: Unit, action: ActionData) -> bool:
+	var turn := turn_of(unit)
+	if turn == null or not _anim.has(unit):
+		return false
+	var slot := _slot_for(unit, action)
+	if slot == "" or turn.get_node_or_null(slot) == null:
+		return false
+	var part: PartData = unit.build.part_in(slot)
+	var kind := "shield" if part.tags.has("defense") else part.reach_kind()
+	_anim[unit]["attack"] = {"slot": slot, "kind": kind, "t": 0.0,
+		"time": {"melee": MELEE_TIME, "shield": SHIELD_TIME}.get(kind, RANGED_TIME)}
+	return true
+
+
+## Der Waffenplatz, dessen Waffe die Aktion mitbringt (sonst der erste).
+static func _slot_for(unit: Unit, action: ActionData) -> String:
+	var first := ""
+	for slot in unit.build.body().equip_slots():
+		var part: PartData = unit.build.part_in(slot)
+		if part == null:
+			continue
+		if first == "":
+			first = slot
+		if action != null:
+			for own in part.actions:
+				if own.id == action.id:
+					return slot
+	return first
+
+
+func _animate(unit: Unit, node: Node3D, delta: float) -> void:
+	var state: Dictionary = _anim.get(unit, {})
+	var turn := node.get_node_or_null("Ausrichtung") as Node3D
+	# Beim Zerfallen gehoeren die Bloecke der Todesanimation.
+	if state.is_empty() or turn == null or not unit.is_alive():
+		return
+	state["time"] += delta
+	var t: float = state["time"] + state["phase"]
+	var calm := Accessibility.reduce_motion
+	var chassis := str(unit.build.body().id)
+	var bob := 0.0
+	var tilt := 0.0
+	var hop := 0.0
+	if not calm:
+		if unit.is_gliding():
+			var wave := absf(sin(t * WALK_SPEED))
+			if chassis == "strix_body":
+				hop = wave * STRIX_HOP
+			else:
+				bob = wave * WALK_BOB
+			if chassis == "mage_body":
+				tilt = NIMBUS_TILT
+		else:
+			bob = sin(t * IDLE_SPEED) * IDLE_BOB
+	turn.basis = DromeModel.facing_basis(unit.facing) * Basis(Vector3(0, 1, 0), tilt)
+	node.position.y += hop
+
+	# Angriff: Fortschritt 0..1, danach vorbei.
+	var attack: Dictionary = state["attack"]
+	var k := -1.0
+	if not attack.is_empty():
+		attack["t"] += delta
+		k = attack["t"] / attack["time"]
+		if k >= 1.0:
+			state["attack"] = {}
+			attack = {}
+			k = -1.0
+	var slot: String = attack.get("slot", "")
+	var kind: String = attack.get("kind", "")
+	var pivot := Vector3.ZERO
+	var arm := turn.get_node_or_null(slot + "_arm") as Node3D if slot != "" else null
+	if arm != null:
+		var base_arm: Transform3D = arm.get_meta("base", arm.transform)
+		pivot = base_arm.origin + _anchor(arm, "mount")
+	elif slot != "":
+		var weapon := turn.get_node_or_null(slot) as Node3D
+		if weapon != null:
+			pivot = (weapon.get_meta("base", weapon.transform) as Transform3D).origin \
+				+ _anchor(weapon, "mount")
+
+	for block in turn.get_children():
+		if not block is Node3D or not block.has_meta("base"):
+			continue
+		var tr: Transform3D = block.get_meta("base")
+		var bname := str(block.name)
+		if bname != "feet":
+			tr.origin.z += bob
+		if bname == "head":
+			tr.origin.z += bob * 0.4
+		if k >= 0.0 and (bname == slot or bname == slot + "_arm"):
+			tr = _attack_pose(tr, kind, k, pivot)
+		block.transform = tr
+
+	# Muendungsblitz: die Waffe leuchtet kurz auf.
+	if slot != "" and kind == "ranged":
+		var weapon := turn.get_node_or_null(slot)
+		if weapon != null:
+			var bright: bool = attack["t"] < FLASH_TIME
+			var base_tint: Color = state["tint"]
+			_tint_tree_self(weapon, base_tint * (2.2 if bright else 1.0))
+
+
+## Haltung eines Waffenblocks im Angriff (k = 0..1).
+static func _attack_pose(tr: Transform3D, kind: String, k: float, pivot: Vector3) -> Transform3D:
+	match kind:
+		"melee":
+			# ausholen (bis 35 %), zuschlagen (bis 60 %), zurueck
+			var angle := 0.0
+			if k < 0.35:
+				angle = lerpf(0.0, SWING_BACK, ease(k / 0.35, 0.5))
+			elif k < 0.6:
+				angle = lerpf(SWING_BACK, SWING_HIT, ease((k - 0.35) / 0.25, 2.0))
+			else:
+				angle = lerpf(SWING_HIT, 0.0, ease((k - 0.6) / 0.4, 0.5))
+			var turn := Transform3D(Basis(Vector3(0, 1, 0), angle), Vector3.ZERO)
+			return Transform3D(Basis.IDENTITY, pivot) * turn \
+				* Transform3D(Basis.IDENTITY, -pivot) * tr
+		"shield":
+			var push := sin(PI * k) * SHIELD_PUSH
+			tr.origin.x += push
+			return tr
+		_:
+			var kick := k / 0.2 if k < 0.2 else 1.0 - (k - 0.2) / 0.8
+			tr.origin.x -= RECOIL * kick
+			return tr
+
+
+static func _anchor(block: Node3D, name: String) -> Vector3:
+	var anchors: Dictionary = block.get_meta("anchors", {})
+	var a = anchors.get(name)
+	if a == null:
+		return Vector3.ZERO
+	return Vector3(float(a[0]), float(a[1]), float(a[2]))
+
+
+static func _tint_tree_self(node: Node, color: Color) -> void:
+	if node is MeshInstance3D and node.layers == DromeModel.LAYER_IMAGE:
+		node.set_instance_shader_parameter("tint", color)
+	_tint_tree(node, color)
+
+
+# ---------------------------------------------------------------------------
 # Jedes Bild
 # ---------------------------------------------------------------------------
 
@@ -225,6 +400,7 @@ func _process(_delta: float) -> void:
 			forget(unit)
 			continue
 		_sync_unit(unit, _models[unit])
+		_animate(unit, _models[unit], _delta)
 	_sync_camera()
 
 

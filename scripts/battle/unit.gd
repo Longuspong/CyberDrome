@@ -254,6 +254,11 @@ func _process(delta: float) -> void:
 		_glide_total = 0.0
 
 
+## Gleitet die Figur gerade zu ihrem Feld (laeuft sie)?
+func is_gliding() -> bool:
+	return _glide_total > 0.0
+
+
 ## Die Feldmitte unter der Figur, so wie sie gerade gezeichnet wird -- fuer
 ## den Lebensbalken, der mitgleiten soll.
 func visual_anchor() -> Vector2:
@@ -312,8 +317,14 @@ const SHAKE_AMPLITUDE := 7.0
 ## Der Angreifer stemmt sich kurz gegen sein Ziel und faellt zurueck. Die
 ## Richtung kommt aus dem Feld, nicht aus ``facing``: bei einer Flaechenaktion
 ## steht der Bot woanders hin, als er trifft.
-func play_attack(toward: Vector2i) -> void:
+##
+## In der gemeinsamen 3D-Szene bewegt sich statt des ganzen DROME die Waffe
+## (Arena3D.attack, 18. Nov. 2026): Nahkampf holt aus und schlaegt zu,
+## Fernkampf mit Rueckstoss und Muendungsblitz, Schild stoesst vor.
+func play_attack(toward: Vector2i, action: ActionData = null) -> void:
 	if _rig == null:
+		return
+	if arena != null and arena.attack(self, action):
 		return
 	var delta := IsoView.map_to_local(toward) - IsoView.map_to_local(tile)
 	var push := Vector2.ZERO if delta == Vector2.ZERO \

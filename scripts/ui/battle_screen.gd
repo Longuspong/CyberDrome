@@ -318,7 +318,7 @@ func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 ## die Doppelschuss war.
 func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 	if tile != unit.tile:
-		unit.play_attack(tile)
+		unit.play_attack(tile, action)
 	var color := Teams.color(unit.is_player)
 	if not action.is_move() and (action.power > 0 or action.heal > 0):
 		view.show_attack(unit.visual_anchor(), IsoView.map_to_local(tile), color,

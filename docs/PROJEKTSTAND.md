@@ -29,6 +29,17 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Kampf als eine 3D-Szene + Bewegung (18. Nov. 2026, Übergabe Schritt 4/5)
+
+* `Arena3D`: alle DROMEs und Hindernisse in einer 3D-Welt, Kameras folgen der
+  2D-Kamera; Einheiten ohne eigene 3D-Ansicht; Kontur je Teil, Neon,
+  Farbstich und Zerfallen wie vorher. Hindernisse als 3D-Modelle
+  (`tools/build_arena_models.py`, CI prüft). Die gezeichneten
+  Hindernis-Bilder von Neon City werden im Kampf nicht mehr genutzt.
+* Bewegung: Atmen, Wippen/Kippen/Hüpfen beim Laufen, Angriff je Waffenart
+  (Ausholen um die Schulter, Rückstoß + Aufleuchten, Schildstoß).
+* Leistung nur vom Handy messbar (Leistungstest „eine Szene“ als Maßstab).
+
 ### Hexfeld 9 x 17 (17. Nov. 2026, Entscheidung des Spielers)
 
 Entwurf mit drei Groessen (`docs/design/drome_entwurf/v12_hexfeld.py`, Bild

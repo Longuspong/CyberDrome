@@ -208,7 +208,31 @@ Was beim 3D-Umbau verloren ging, ist zurück:
   Bausätze in vier Richtungen + Neon-Blaster) und `render_zerfall.gd`
   (Zeitpunkt über `Engine.time_scale`, Aufruf im Dateikopf).
 
+### 4f. Kampf als eine 3D-Szene -- erledigt (18. Nov.)
+
+`Arena3D` (`scripts/ui/arena_3d.gd`): eine 3D-Welt mit allen DROMEs und den
+Hindernissen, drei Kameras (Bild, Signal, Neon) folgen der Camera2D des
+Kampfbildschirms; das Bild liegt als ein Sprite in der 2D-Welt (über Boden,
+Zone, Bodenringen; unter Balken und Effekten). `Unit.arena` gesetzt =
+kein eigenes Bild, das Modell folgt Position, Rig (Rückstoß, Sentinel-Größe)
+und Blickrichtung. Farbstich/Trefferblende als Instanz-Parameter `tint` in
+`drome_face.gdshader`. Umrechnung `Arena3D.ground()` = IsoView-Projektion
+(Test). Doppelte Auflösung (`OVERSAMPLE`), Kontur-Shader mit schnellem
+Ausstieg (läuft über den ganzen Bildschirm). Hindernisse als 3D-Modelle aus
+`tools/build_arena_models.py` (`assets/arena3d/<art>.m3d`, CI prüft mit
+`--check`); die gezeichneten Hindernis-Bilder (Neon City) nutzt der Kampf
+nicht mehr, Deko am Rand bleibt 2D. Boden bleibt vorerst 2D (`ArenaPainter`).
+Blicktest: `docs/design/drome_entwurf/godot/render_arena.gd` (Region,
+optional `angriff ZEITFAKTOR`).
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
+**Grundstufe gebaut (18. Nov.) in `Arena3D._animate`**: Atmen im Stand
+(Rumpf/Kopf/Waffen wippen, Füße fest), Wippen beim Laufen, Nimbus kippt nach
+vorn, Eule hüpft; Angriff je Waffenart über die Blöcke `<slot>`/`<slot>_arm`
+(Nahkampf holt um die Schulter aus und schlägt zu, Fernkampf Rückstoß +
+Aufleuchten der Waffe, Schild stößt vor) statt des Rucks des ganzen DROME.
+Werte als Konstanten oben in `arena_3d.gd`. Offen: Passive sichtbar bewegt,
+Mündungsblitz am `muzzle`-Anker, Beine im Wechsel.
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 - [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
       bewegt sich mit (Booster flackert, Kugel schwebt, Lockfeuer pulsiert,

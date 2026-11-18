@@ -3,7 +3,7 @@
 Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 `docs/GAME_DESIGN.md`, Bedienung und Struktur in `README.md`.
 
-**Ganz zuerst (seit 17. Nov. 2026): `docs/UEBERGABE_3D.md`** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; als Naechstes: Kampf als eine 3D-Szene mit Bewegung).
+**Ganz zuerst (seit 17. Nov. 2026): `docs/UEBERGABE_3D.md`** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung seit 18. Nov.; offen: Boden in 3D, Feinschliff der Bewegung nach Sichtpruefung).
 
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser

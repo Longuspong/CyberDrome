@@ -58,7 +58,8 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
    Wegfindung, `MapGenerator`, Aufstellung, `ArenaPainter`, Kamera-Ziehen, KI.
    Bodenplatten kommen aus dem 3D-Generator (`v10_hexboden.py`), die
    gezeichneten Deko-Assets bringt der Spieler später nach.
-4. **Kampf als EINE 3D-Szene** (Boden, Hindernisse, alle DROMEs, eine
+4. **ERLEDIGT (18. Nov.)** -- `Arena3D` mit Grundbewegung, siehe
+   `DROME_UMSETZUNG.md` 4f und 5. Ursprünglicher Plan: **Kampf als EINE 3D-Szene** (Boden, Hindernisse, alle DROMEs, eine
    Kamera) zusammen mit **Schritt 5 Bewegung** (Idle, Wippen, Angriff je
    Waffenart; Arm/Waffe sind eigene Knoten `<slot>_arm`/`<slot>` unter
    `Ausrichtung`). Begründung: Leistungstest. Läuft auch in der PWA.

@@ -1,7 +1,9 @@
 ## Blicktest Arena3D (18. Nov. 2026): Hexfeld einer Region mit Hindernissen
 ## in 3D und je drei DROMEs pro Seite, wie im Kampf (ohne Kampfbildschirm).
 ##   xvfb-run -a godot --path . --script res://docs/design/drome_entwurf/godot/render_main.gd -- \
-##       res://docs/design/drome_entwurf/godot/render_arena.gd /tmp/out/arena city
+##       res://docs/design/drome_entwurf/godot/render_arena.gd /tmp/out/arena city [angriff ZEITFAKTOR]
+## Mit "angriff" greifen alle sofort an; das Bild entsteht nach 10 Bildern,
+## ZEITFAKTOR (Engine.time_scale) waehlt den Zeitpunkt der Bewegung.
 extends RefCounted
 
 const W := 540
@@ -47,6 +49,7 @@ func build(root: Window, region_arg: String) -> Array:
 		[&"jugg_body", &"eq_bulwark_ram", Vector2i(4, 1), false],
 		[&"scout_body", &"eq_plasma_blade", Vector2i(6, 2), false],
 	]
+	var units: Array = []
 	for i in squad.size():
 		var d: Array = squad[i]
 		var unit := Unit.create(_build(d[0], d[1]), StringName("u%d" % i), d[3])
@@ -54,5 +57,13 @@ func build(root: Window, region_arg: String) -> Array:
 		unit.place_at(d[2])
 		unit.facing = Unit.FACING_PLAYER if d[3] else Unit.FACING_ENEMY
 		world.add_child(unit)
+		units.append(unit)
 	root.add_child(view)
+	var args := OS.get_cmdline_user_args()
+	if args.size() > 3 and args[3] == "angriff":
+		Engine.time_scale = float(args[4]) if args.size() > 4 else 1.0
+		cam.zoom = Vector2(2.6, 2.6)
+		cam.position = IsoView.map_to_local(Vector2i(4, 2)) + Vector2(0, -40)
+		for unit in units:
+			unit.play_attack(unit.tile + Vector2i(0, -1 if unit.is_player else 1))
 	return [view]

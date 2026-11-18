@@ -207,6 +207,8 @@ static func _add_block(parent: Node3D, node_name: String, key: String,
 	inst.position = offset
 	inst.layers = LAYER_IMAGE
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Anker (mount, hand, muzzle) fuer die Bewegung im Kampf (Arena3D).
+	inst.set_meta("anchors", block.get("anchors", {}))
 	parent.add_child(inst)
 	# Signalfarbe: dasselbe Mesh einfarbig in der Signalfarbe des Teils. Als
 	# Kind, damit es jede Bewegung des Blocks mitmacht (Zerfallen, Schritt 5).
