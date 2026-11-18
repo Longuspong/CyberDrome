@@ -22,18 +22,18 @@
     {
       "name": "muzzle",
       "x": 49.59,
-      "y": 36.17
+      "y": 35.98
     }
   ],
   "color_scheme": {
-    "plate": "#3a4670",
-    "plate_light": "#6477bb",
-    "plate_dark": "#20273f",
-    "metal": "#7d8bb0",
+    "plate": "#7a8494",
+    "plate_light": "#ccdcf6",
+    "plate_dark": "#444a53",
+    "metal": "#d6dde6",
     "accent": "#2de2e6",
     "glow": "#5affff",
     "visor": "#5affff",
-    "outline": "#080b13"
+    "outline": "#0a0d12"
   },
   "tags": [
     "weapon",
@@ -54,7 +54,7 @@
         {
           "name": "muzzle",
           "x": 40.94,
-          "y": 30.05
+          "y": 29.75
         }
       ]
     },
@@ -69,7 +69,7 @@
         {
           "name": "muzzle",
           "x": 40.94,
-          "y": 30.05
+          "y": 29.75
         }
       ]
     },
@@ -128,7 +128,9 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.0,
+        "salvo": 1
       },
       {
         "id": "act_pulse_double",
@@ -158,7 +160,9 @@
         "base_action": "act_pulse",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.25,
+        "salvo": 3
       }
     ]
   }

@@ -26,14 +26,14 @@
     }
   ],
   "color_scheme": {
-    "plate": "#3a4670",
-    "plate_light": "#6477bb",
-    "plate_dark": "#20273f",
-    "metal": "#7d8bb0",
-    "accent": "#2de2e6",
-    "glow": "#5affff",
-    "visor": "#5affff",
-    "outline": "#080b13"
+    "plate": "#39404c",
+    "plate_light": "#626e81",
+    "plate_dark": "#20242b",
+    "metal": "#8a93a3",
+    "accent": "#5ad1ff",
+    "glow": "#87feff",
+    "visor": "#87feff",
+    "outline": "#07090d"
   },
   "tags": [
     "defense",
@@ -113,7 +113,9 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.0,
+        "salvo": 1
       },
       {
         "id": "act_deflector_charge",
@@ -143,7 +145,9 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.25,
+        "salvo": 1
       }
     ]
   }

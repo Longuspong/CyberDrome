@@ -33,6 +33,10 @@ var _weights: Dictionary = {}
 var _realtime: Dictionary = {}
 
 
+## Wie lange ein DROME nach einem Schuss zum Ziel schaut (Sekunden).
+const AIM_HOLD := 0.8
+
+
 func _init(manager: BattleManager) -> void:
 	battle = manager
 	_weights = Config.section("ai")
@@ -54,6 +58,7 @@ func update(unit: Unit, dt: float) -> void:
 	for gadget in unit.gadgets:
 		gadget["ready"] = float(gadget["ready"]) - dt
 	unit.think_left -= dt
+	unit.aim_hold = maxf(0.0, unit.aim_hold - dt)
 
 	if unit.step_left > 0.0:
 		unit.step_left -= dt
@@ -61,6 +66,12 @@ func update(unit: Unit, dt: float) -> void:
 			return
 	# Betaeubt: weder laufen noch schiessen, die Waffen laden aber weiter.
 	if unit.is_stunned():
+		return
+	# Holt zu einer Faehigkeit aus: steht still, bis sie wirkt.
+	if not unit.cast.is_empty():
+		unit.cast["left"] = float(unit.cast["left"]) - dt
+		if float(unit.cast["left"]) <= 0.0:
+			_finish_cast(unit)
 		return
 
 	var target := _current_target(unit)
@@ -260,12 +271,12 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		var aim := _support_aim(unit, ability) if (ability as ActionData).support != "" \
 			else _aim(unit, ability, target)
 		if not aim.is_empty():
-			_execute(unit, aim["tile"], ability, aim["target"])
-			_echo(unit, ability, aim)
-			_after_ability(unit, ability, aim, fx)
-			_shackle(unit, mount)
 			mount["count"] = maxf(0.0, float(mount["count"]) + unit.takt_step(mount)
 				- float(trigger_every(unit, ability)))
+			if (ability as ActionData).windup > 0.0:
+				_begin_cast(unit, ability, aim, mount, fx)
+			else:
+				_resolve_ability(unit, ability, aim, mount, fx)
 			mount["instant"] = bool(fx.get("ready_after_ability", false))
 			# Ueberladung: die naechsten Angriffe treffen haerter.
 			if float(fx.get("post_ability_power", 0.0)) > 0.0:
@@ -294,6 +305,50 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	if ability != null and not due:
 		mount["count"] = float(mount["count"]) + unit.takt_step(mount)
 	return true
+
+
+## Die Faehigkeit wirkt: ausfuehren, Echo, Nachwirkungen der Module.
+func _resolve_ability(unit: Unit, ability: ActionData, aim: Dictionary, mount: Dictionary,
+		fx: Dictionary) -> void:
+	_execute(unit, aim["tile"], ability, aim["target"])
+	_echo(unit, ability, aim)
+	_after_ability(unit, ability, aim, fx)
+	_shackle(unit, mount)
+
+
+## Ausholen (18. Nov. 2026): die Ansage beginnt, die Wirkung folgt nach
+## ``windup`` Sekunden in _finish_cast.
+func _begin_cast(unit: Unit, ability: ActionData, aim: Dictionary, mount: Dictionary,
+		fx: Dictionary) -> void:
+	var target = aim.get("target")
+	unit.cast = {"action": ability, "aim": aim, "mount": mount, "fx": fx,
+		"left": ability.windup, "target": target}
+	var tile: Vector2i = aim["tile"]
+	_aim_at(unit, tile)
+	EventBus.ability_cast.emit(unit, tile, ability, ability.windup, target)
+
+
+## Ende der Ausholzeit: die Faehigkeit trifft das Ziel dort, wo es jetzt
+## steht. Ist es weg oder ausser Reichweite, verpufft sie nicht -- der Takt
+## bleibt voll und sie kommt mit dem naechsten Angriff wieder.
+func _finish_cast(unit: Unit) -> void:
+	var cast := unit.cast
+	unit.cast = {}
+	var ability: ActionData = cast["action"]
+	var aim: Dictionary = (cast["aim"] as Dictionary).duplicate()
+	var target = cast.get("target")
+	if target is Unit:
+		if not target.is_alive():
+			target = null
+		else:
+			aim["tile"] = target.tile
+	if cast.get("target") is Unit and target == null \
+			or battle.resolver.target_blocker(unit, aim["tile"], ability) != "":
+		var mount: Dictionary = cast["mount"]
+		mount["count"] = float(mount["count"]) + float(trigger_every(unit, ability))
+		return
+	_resolve_ability(unit, ability, aim, cast["mount"], cast["fx"])
+	battle._check_victory()
 
 
 ## Modul-Faehigkeiten nach Angriffen (Orbit-Fokus, 9. Nov. 2026): jeder
@@ -691,9 +746,16 @@ func _aim(unit: Unit, action: ActionData, target: Unit) -> Dictionary:
 	return best
 
 
+## Zum Ziel drehen und den Blick kurz halten (nur Anzeige).
+func _aim_at(unit: Unit, tile: Vector2i) -> void:
+	if tile == unit.tile:
+		return
+	unit.set_facing(Unit.facing_at(unit.tile, tile))
+	unit.aim_hold = AIM_HOLD
+
+
 func _execute(unit: Unit, tile: Vector2i, action: ActionData, target: Unit) -> void:
-	if tile != unit.tile:
-		unit.set_facing(Unit.facing_toward(unit.tile, tile))
+	_aim_at(unit, tile)
 	if battle.resolver.execute(unit, tile, action):
 		EventBus.action_used.emit(unit, tile, action)
 		battle._check_victory()
@@ -968,7 +1030,9 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 ## Einen Schritt beginnen. Das Feld gilt sofort (es ist damit belegt), die
 ## Figur gleitet in der Schrittzeit hinterher.
 func _walk(unit: Unit, next: Vector2i) -> void:
-	unit.set_facing(Unit.facing_toward(unit.tile, next))
+	# Kurz nach dem Schuss schaut er weiter zum Ziel (laeuft seitlich/rueckwaerts).
+	if unit.aim_hold <= 0.0:
+		unit.set_facing(Unit.facing_toward(unit.tile, next))
 	# Die Schrittzeit steht VOR dem Versetzen fest: move_unit meldet den
 	# Schritt (unit_moved), und die Szene liest daran ab, wie lange die Figur
 	# gleitet.

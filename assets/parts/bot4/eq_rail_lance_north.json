@@ -21,19 +21,19 @@
     },
     {
       "name": "muzzle",
-      "x": 92.83,
-      "y": 15.48
+      "x": 99.89,
+      "y": 9.14
     }
   ],
   "color_scheme": {
-    "plate": "#2a4e48",
-    "plate_light": "#4a847b",
-    "plate_dark": "#182c28",
-    "metal": "#74a394",
-    "accent": "#6dff9f",
-    "glow": "#9affcc",
-    "visor": "#9affcc",
-    "outline": "#060f0d"
+    "plate": "#1d2430",
+    "plate_light": "#354054",
+    "plate_dark": "#10141b",
+    "metal": "#6f7d92",
+    "accent": "#3df2ff",
+    "glow": "#6affff",
+    "visor": "#6affff",
+    "outline": "#07090d"
   },
   "tags": [
     "weapon",
@@ -82,7 +82,9 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.0,
+        "salvo": 1
       },
       {
         "id": "act_rail_pierce",
@@ -112,7 +114,9 @@
         "base_action": "act_raillance",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.55,
+        "salvo": 1
       }
     ]
   }

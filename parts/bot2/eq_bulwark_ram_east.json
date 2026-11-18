@@ -26,14 +26,14 @@
     }
   ],
   "color_scheme": {
-    "plate": "#5a4050",
-    "plate_light": "#986e88",
-    "plate_dark": "#32242d",
-    "metal": "#9a8796",
-    "accent": "#ff8a3d",
-    "glow": "#ffb76a",
-    "visor": "#ffb76a",
-    "outline": "#100a0e"
+    "plate": "#3f444c",
+    "plate_light": "#6c7481",
+    "plate_dark": "#23262b",
+    "metal": "#979ca6",
+    "accent": "#ffd447",
+    "glow": "#ffff74",
+    "visor": "#ffff74",
+    "outline": "#07090d"
   },
   "tags": [
     "weapon",
@@ -114,7 +114,9 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.0,
+        "salvo": 1
       },
       {
         "id": "act_ram_slam",
@@ -144,7 +146,9 @@
         "base_action": "act_ram",
         "hp_scaling": 0.08,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.35,
+        "salvo": 1
       }
     ]
   }

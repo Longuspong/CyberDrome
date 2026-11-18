@@ -26,14 +26,14 @@
     }
   ],
   "color_scheme": {
-    "plate": "#5a4050",
-    "plate_light": "#986e88",
-    "plate_dark": "#32242d",
-    "metal": "#9a8796",
+    "plate": "#4a4e56",
+    "plate_light": "#7e8491",
+    "plate_dark": "#292c30",
+    "metal": "#a0a6b0",
     "accent": "#ff8a3d",
     "glow": "#ffb76a",
     "visor": "#ffb76a",
-    "outline": "#100a0e"
+    "outline": "#07090d"
   },
   "tags": [
     "weapon",
@@ -114,7 +114,9 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.0,
+        "salvo": 1
       },
       {
         "id": "act_hammer_stun",
@@ -148,7 +150,9 @@
         "base_action": "act_hammer",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.35,
+        "salvo": 1
       }
     ]
   }

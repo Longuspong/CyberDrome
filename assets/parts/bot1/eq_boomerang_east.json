@@ -21,19 +21,19 @@
     },
     {
       "name": "muzzle",
-      "x": 75.93,
-      "y": 44.3
+      "x": 79.27,
+      "y": 50.96
     }
   ],
   "color_scheme": {
-    "plate": "#3a4670",
-    "plate_light": "#6477bb",
-    "plate_dark": "#20273f",
-    "metal": "#7d8bb0",
-    "accent": "#2de2e6",
-    "glow": "#5affff",
-    "visor": "#5affff",
-    "outline": "#080b13"
+    "plate": "#46505f",
+    "plate_light": "#7788a0",
+    "plate_dark": "#272d35",
+    "metal": "#b8c0cc",
+    "accent": "#ffb000",
+    "glow": "#ffdd2d",
+    "visor": "#ffdd2d",
+    "outline": "#07090d"
   },
   "tags": [
     "weapon",
@@ -54,8 +54,8 @@
         },
         {
           "name": "muzzle",
-          "x": 83.09,
-          "y": 43.06
+          "x": 88.44,
+          "y": 53.71
         }
       ]
     },
@@ -69,8 +69,8 @@
         },
         {
           "name": "muzzle",
-          "x": 83.09,
-          "y": 43.06
+          "x": 88.44,
+          "y": 53.71
         }
       ]
     }
@@ -114,7 +114,9 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.3
+        "moving_bonus": 0.3,
+        "windup": 0.0,
+        "salvo": 1
       },
       {
         "id": "act_boomerang_whirl",
@@ -144,7 +146,9 @@
         "base_action": "act_boomerang",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.3
+        "moving_bonus": 0.3,
+        "windup": 0.55,
+        "salvo": 1
       }
     ]
   }

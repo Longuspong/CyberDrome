@@ -59,6 +59,21 @@ const FLASH_TIME := 0.09         # Muendungsblitz (Waffe leuchtet auf)
 const SWING_BACK := -0.55        # Nahkampf: ausholen (rad, um die Schulter)
 const SWING_HIT := 0.65          # ... und zuschlagen
 const MELEE_TIME := 0.42
+## Anteil der Nahkampfbewegung, an dem der Schlag sitzt (Ende des Zuschlagens)
+## -- damit BattleScreen das Ausholen auf die Ausholzeit takten kann.
+const MELEE_HIT_AT := 0.6
+## Waffe hochhalten (Runenstab): Winkel um die Schulter, Anteil Heben/Senken.
+const RAISE_ANGLE := -1.15
+const RAISE_UP := 0.35
+const RAISE_DOWN := 0.25
+## Wurf (Runenstab-Faehigkeit, Bumerang): hoch, halten, schneller Schwung
+## nach vorn-unten bis ueber die Ruhelage hinaus, zurueck. Die Kugel bzw. der
+## Bumerang loest sich in der Mitte des Schwungs (THROW_RELEASE, Anteil).
+const THROW_UP := 0.32
+const THROW_HOLD := 0.42
+const THROW_SWING := 0.58
+const THROW_RELEASE := 0.5
+const THROW_FOLLOW := 0.5        # rad ueber die Ruhelage nach vorn-unten
 const SHIELD_PUSH := 3.2         # Schild stoesst vor
 const SHIELD_TIME := 0.3
 ## Ausholen auch von vorn lesbar: die Schwungachse kippt zur Seite.
@@ -72,6 +87,11 @@ const ORB_SPEED := 1.8
 const BLINK_EVERY := 3.6         # Strix-Linsen blinzeln
 const BLINK_TIME := 0.14
 const FLASH_SIZE := 3.6          # Muendungsblitz (Radius, Generator-Einheiten)
+## Beine im Wechsel (18. Nov. 2026): Schwung um die Huefte (rad) und Beugen
+## des Knies, solange das Bein nach vorn schwingt. Knie-Richtung -1 = Knie
+## nach hinten (Strix).
+const LEG_SWING := {"scout_body": 0.38, "jugg_body": 0.24, "strix_body": 0.3}
+const KNEE_BEND := {"scout_body": 0.7, "jugg_body": 0.45, "strix_body": -0.45}
 
 
 ## Aufbau im Konstruktor, damit die Arena auch ausserhalb des Baums (Tests)
@@ -136,6 +156,26 @@ static func ground(p: Vector2) -> Vector3:
 	var right := Vector3(c, 0, c)
 	var up := Vector3(c, 0, -c)
 	return right * (p.x / DromeModel.SCALE) + up * (-p.y / (DromeModel.SCALE * c))
+
+
+## Umkehrung fuer beliebige 3D-Punkte (auch ueber dem Boden): wo die
+## Iso-Kamera sie in der 2D-Welt zeigt.
+static func to_world_2d(g: Vector3) -> Vector2:
+	var c := DromeModel.COS45
+	return Vector2(g.dot(Vector3(c, 0, c)), -g.dot(Vector3(0.5, c, -0.5))) * DromeModel.SCALE
+
+
+## Die Spitze der Waffe einer Einheit (``muzzle``-Anker), so wie sie gerade
+## steht -- auch mitten in einer Bewegung (Stab hochgehalten). In der 2D-Welt.
+func weapon_tip(unit: Unit, action: ActionData) -> Vector2:
+	var turn := turn_of(unit)
+	var fallback := unit.visual_anchor() + Vector2(0, -90)
+	if turn == null or not turn.is_inside_tree():
+		return fallback
+	var weapon := turn.get_node_or_null(_slot_for(unit, action)) as Node3D
+	if weapon == null:
+		return fallback
+	return to_world_2d(weapon.global_transform * _anchor(weapon, "muzzle"))
 
 
 # ---------------------------------------------------------------------------
@@ -300,7 +340,7 @@ func _sync_unit(unit: Unit, node: Node3D) -> void:
 
 ## Angriff mit der Waffe, die ``action`` ausloest. false, wenn es nichts zu
 ## bewegen gibt (dann ruckt der ganze DROME wie bisher).
-func attack(unit: Unit, action: ActionData) -> bool:
+func attack(unit: Unit, action: ActionData, seconds: float = -1.0) -> bool:
 	var turn := turn_of(unit)
 	if turn == null or not _anim.has(unit):
 		return false
@@ -309,8 +349,37 @@ func attack(unit: Unit, action: ActionData) -> bool:
 		return false
 	var part: PartData = unit.build.part_in(slot)
 	var kind := "shield" if part.tags.has("defense") else part.reach_kind()
-	_anim[unit]["attack"] = {"slot": slot, "kind": kind, "t": 0.0,
-		"time": {"melee": MELEE_TIME, "shield": SHIELD_TIME}.get(kind, RANGED_TIME)}
+	var time: float = {"melee": MELEE_TIME, "shield": SHIELD_TIME}.get(kind, RANGED_TIME)
+	if seconds > 0.0:
+		time = seconds
+	_anim[unit]["attack"] = {"slot": slot, "kind": kind, "t": 0.0, "time": time}
+	return true
+
+
+## Ein Wurf: hoch, halten, Schwung nach vorn-unten (``seconds`` insgesamt);
+## mit ``hide`` verschwindet die Waffe ab dem Loslassen fuer so viele
+## Sekunden (der Bumerang ist unterwegs).
+func throw(unit: Unit, action: ActionData, seconds: float, hide: float = 0.0) -> bool:
+	if not raise(unit, action, seconds):
+		return false
+	var attack: Dictionary = _anim[unit]["attack"]
+	attack["kind"] = "throw"
+	if hide > 0.0:
+		_anim[unit]["hidden"] = {"slot": attack["slot"], "from": seconds * THROW_RELEASE,
+			"to": seconds * THROW_RELEASE + hide, "t": 0.0}
+	return true
+
+
+## Die Waffe hochhalten: Arm und Waffe drehen um die Schulter nach oben,
+## halten, und senken sich am Ende (``seconds`` insgesamt).
+func raise(unit: Unit, action: ActionData, seconds: float) -> bool:
+	var turn := turn_of(unit)
+	if turn == null or not _anim.has(unit):
+		return false
+	var slot := _slot_for(unit, action)
+	if slot == "" or turn.get_node_or_null(slot) == null:
+		return false
+	_anim[unit]["attack"] = {"slot": slot, "kind": "raise", "t": 0.0, "time": maxf(0.1, seconds)}
 	return true
 
 
@@ -348,9 +417,13 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 	var bob := 0.0
 	var tilt := 0.0
 	var hop := 0.0
+	var walking := false
 	if not calm:
 		if unit.is_gliding():
-			var wave := absf(sin(t * WALK_SPEED))
+			walking = true
+			# Mit Beinen ist der Rumpf oben, wenn ein Bein senkrecht steht.
+			var wave := absf(cos(t * WALK_SPEED)) if LEG_SWING.has(chassis) \
+				else absf(sin(t * WALK_SPEED))
 			if chassis == "strix_body":
 				hop = wave * STRIX_HOP
 			else:
@@ -398,6 +471,12 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			continue
 		var tr: Transform3D = block.get_meta("base")
 		var bname := str(block.name)
+		if bname.begins_with("feet_leg_"):
+			if walking:
+				block.transform = _leg_pose(turn, block, chassis, t, bname)
+			else:
+				block.transform = tr
+			continue
 		if bname != "feet":
 			tr.origin.z += bob
 		if bname == "head":
@@ -409,6 +488,16 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			tr = _attack_pose(tr, kind, k, pivot)
 		block.transform = tr
 
+	# Geworfene Waffe (Bumerang): zwischen Loslassen und Fangen nicht in der Hand.
+	if state.has("hidden"):
+		var hidden: Dictionary = state["hidden"]
+		hidden["t"] = float(hidden["t"]) + delta
+		var thrown := turn.get_node_or_null(str(hidden["slot"])) as Node3D
+		var away: bool = float(hidden["t"]) >= float(hidden["from"]) and float(hidden["t"]) < float(hidden["to"])
+		if thrown != null:
+			thrown.visible = not away
+		if float(hidden["t"]) >= float(hidden["to"]):
+			state.erase("hidden")
 	# Muendungsblitz: an der Waffenspitze ein Lichtball, die Waffe leuchtet auf.
 	if slot != "" and kind == "ranged":
 		var weapon := turn.get_node_or_null(slot) as Node3D
@@ -420,6 +509,36 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 	elif state.has("flash"):
 		_clear_flash(state)
 	_passive_glow(unit, turn, state, t, calm)
+
+
+## Ein Bein im Schritt: der Oberschenkel schwingt um die Huefte, das linke
+## gegen das rechte; der Unterschenkel beugt sich zusaetzlich um das Knie,
+## solange das Bein nach vorn schwingt (Fuss hebt ab).
+func _leg_pose(turn: Node3D, block: Node3D, chassis: String, t: float,
+		bname: String) -> Transform3D:
+	var base: Transform3D = block.get_meta("base")
+	var left := bname.begins_with("feet_leg_left")
+	var side := "feet_leg_left" if left else "feet_leg_right"
+	var upper := turn.get_node_or_null(side + "_upper") as Node3D
+	if upper == null:
+		return base
+	var origin: Vector3 = (upper.get_meta("base") as Transform3D).origin
+	var hip := origin + _anchor(upper, "mount")
+	var knee := origin + _anchor(upper, "knee")
+	var w := t * WALK_SPEED + (0.0 if left else PI)
+	# Basis um +y: positiver Winkel schiebt den Fuss nach hinten.
+	var swing := -float(LEG_SWING.get(chassis, 0.0)) * sin(w)
+	var hip_tr := _turn_about(hip, swing)
+	if bname.ends_with("_upper"):
+		return hip_tr * base
+	var bend := float(KNEE_BEND.get(chassis, 0.0)) * maxf(0.0, cos(w))
+	return hip_tr * _turn_about(knee, bend) * base
+
+
+static func _turn_about(pivot: Vector3, angle: float) -> Transform3D:
+	return Transform3D(Basis.IDENTITY, pivot) \
+		* Transform3D(Basis(Vector3(0, 1, 0), angle), Vector3.ZERO) \
+		* Transform3D(Basis.IDENTITY, -pivot)
 
 
 ## Der Lichtball an der Muendung (``muzzle``-Anker der Waffe): waechst kurz
@@ -528,6 +647,28 @@ static func _attack_pose(tr: Transform3D, kind: String, k: float, pivot: Vector3
 			else:
 				angle = lerpf(SWING_HIT, 0.0, ease((k - 0.6) / 0.4, 0.5))
 			var turn := Transform3D(Basis(SWING_AXIS.normalized(), angle), Vector3.ZERO)
+			return Transform3D(Basis.IDENTITY, pivot) * turn \
+				* Transform3D(Basis.IDENTITY, -pivot) * tr
+		"throw":
+			var angle := RAISE_ANGLE
+			if k < THROW_UP:
+				angle = RAISE_ANGLE * ease(k / THROW_UP, 0.4)
+			elif k < THROW_HOLD:
+				angle = RAISE_ANGLE
+			elif k < THROW_SWING:
+				angle = lerpf(RAISE_ANGLE, THROW_FOLLOW, ease((k - THROW_HOLD) / (THROW_SWING - THROW_HOLD), 1.8))
+			else:
+				angle = lerpf(THROW_FOLLOW, 0.0, ease((k - THROW_SWING) / (1.0 - THROW_SWING), 0.6))
+			var spin := Transform3D(Basis(Vector3(0, 1, 0), angle), Vector3.ZERO)
+			return Transform3D(Basis.IDENTITY, pivot) * spin \
+				* Transform3D(Basis.IDENTITY, -pivot) * tr
+		"raise":
+			var lift := 1.0
+			if k < RAISE_UP:
+				lift = ease(k / RAISE_UP, 0.4)
+			elif k > 1.0 - RAISE_DOWN:
+				lift = 1.0 - ease((k - (1.0 - RAISE_DOWN)) / RAISE_DOWN, 2.0)
+			var turn := Transform3D(Basis(Vector3(0, 1, 0), RAISE_ANGLE * lift), Vector3.ZERO)
 			return Transform3D(Basis.IDENTITY, pivot) * turn \
 				* Transform3D(Basis.IDENTITY, -pivot) * tr
 		"shield":

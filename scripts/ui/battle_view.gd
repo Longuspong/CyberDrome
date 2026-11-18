@@ -28,6 +28,8 @@ var _badges: UnitBadgePainter
 var _effects: EffectPainter
 var _arena: Array = []
 var _zone: ZonePainter
+## Faehigkeiten lesbar: Bodenmarken und Statuszeichen (18. Nov. 2026).
+var abilities: AbilityPainter
 ## Die gemeinsame 3D-Szene: Hindernisse und alle DROMEs (seit 18. Nov. 2026).
 var arena3d: Arena3D
 
@@ -40,6 +42,10 @@ func _ready() -> void:
 	_zone = ZonePainter.new()
 	_zone.name = "Zone"
 	_world.add_child(_zone)
+
+	abilities = AbilityPainter.new()
+	abilities.name = "Faehigkeiten"
+	_world.add_child(abilities)
 
 	_badges = UnitBadgePainter.new()
 	_badges.name = "UnitBadges"
@@ -178,6 +184,7 @@ func set_pixel_scale(camera_zoom: float) -> void:
 	_badges.zoom = camera_zoom
 	_badges.queue_redraw()
 	_effects.pixel_scale = factor
+	abilities.pixel_scale = factor
 
 
 ## Echtzeit: eine Schussspur von ``from`` nach ``to`` (Weltkoordinaten der
@@ -196,6 +203,22 @@ func show_shot(from: Vector2, to: Vector2, color: Color, heavy: bool = false) ->
 ##   area        Radius der Flaeche in Feldern (Ring am Ziel)
 func show_attack(from: Vector2, to: Vector2, color: Color, style: Dictionary) -> void:
 	_effects.add_attack(from, to, color, style)
+
+
+## Vortex lesbar (DROME_DESIGNREGELN Abschnitt 7): Bodenmarke ueber die
+## Flaeche um ``tile`` bis zum Einschlag, dann Schockwelle.
+func show_vortex(tile: Vector2i, radius: int, delay: float, color: Color, enemy: bool = false) -> void:
+	abilities.add_vortex(IsoView.map_to_local(tile), radius, delay, color, enemy)
+
+
+## Die Ansage einer Faehigkeit waehrend ihrer Ausholzeit.
+func show_cast(kind: String, data: Dictionary, seconds: float) -> void:
+	abilities.add_cast(kind, data, seconds)
+
+
+## Jede andere Faehigkeit lesbar (Formen siehe AbilityPainter.add).
+func show_ability(kind: String, data: Dictionary) -> void:
+	abilities.add(kind, data)
 
 
 ## Schwebender Text ueber einer Stelle: Schaden, Reparatur, Faehigkeit.
@@ -580,10 +603,12 @@ class EffectPainter extends Node2D:
 		var total := (BEAM_TIME if kind == "beam" else flight + IMPACT_TIME)
 		# Funken: feste Richtungen je Treffer, damit nichts flackert.
 		var seed_angle := fmod(absf(to.x * 0.37 + to.y * 0.71 + from.x * 0.13), TAU)
-		_shots.append({"from": from, "to": to, "color": color, "age": 0.0,
+		_shots.append({"from": from, "to": to, "color": color,
+			"age": -float(style.get("wait", 0.0)),
 			"kind": kind, "flight": flight, "total": total,
 			"energy": float(style.get("energy", 0.0)), "heavy": bool(style.get("heavy", false)),
-			"area": int(style.get("area", 0)), "spin": seed_angle})
+			"area": int(style.get("area", 0)), "spin": seed_angle,
+			"from_fn": style.get("from_fn", null)})
 
 	func add_text(at: Vector2, text: String, color: Color, big: bool) -> void:
 		# Mehrere Zahlen am selben Ort stapeln sich, statt sich zu ueberdecken.
@@ -598,7 +623,12 @@ class EffectPainter extends Node2D:
 		if _shots.is_empty() and _texts.is_empty():
 			return
 		for entry in _shots:
-			entry["age"] = float(entry["age"]) + delta
+			var was := float(entry["age"])
+			entry["age"] = was + delta
+			# Startpunkt erst beim Abfeuern holen (Salven: der Schuetze hat
+			# sich inzwischen zum naechsten Ziel gedreht).
+			if was < 0.0 and float(entry["age"]) >= 0.0 and entry["from_fn"] is Callable:
+				entry["from"] = (entry["from_fn"] as Callable).call()
 		for entry in _texts:
 			entry["age"] = float(entry["age"]) + delta
 		_shots = _shots.filter(func(e): return float(e["age"]) < float(e["total"]))
@@ -607,6 +637,8 @@ class EffectPainter extends Node2D:
 
 	func _draw() -> void:
 		for entry in _shots:
+			if float(entry["age"]) < 0.0:
+				continue
 			if entry["kind"] == "beam":
 				_draw_beam(entry)
 				continue

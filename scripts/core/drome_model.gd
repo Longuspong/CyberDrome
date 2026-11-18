@@ -23,12 +23,35 @@ const COS45 := 0.70710678
 ## Reihenfolge wie DromeSprites: Ausruestung nach dem Rumpf.
 const SLOT_ORDER := ["feet", "body", "core", "head", "equip_left", "equip_center",
 	"equip_right", "equip_shoulder"]
+## Fraktions-Paletten (DROME_DESIGNREGELN Abschnitt 8, Entwurf skins.py;
+## gebaut 18. Nov. 2026): Gegner-DROMEs und Sentinels einer Fraktion tragen
+## sie auf allen Chassis-Teilen (Rumpf, Kopf, Antrieb, Kern, Arme), Waffen
+## behalten ihre eigenen Farben. "neon" laesst die Roehren leuchten,
+## "hazard" malt Absperrstreifen auf die Akzente (Shader drome_face).
+const FACTION_PALETTES := {
+	"neon": {"plate": "#1a1820", "plate_light": "#34303f", "plate_dark": "#09080c",
+		"metal": "#423c52", "accent": "#ff2a55", "glow": "#ffffff", "visor": "#ff9a3d",
+		"outline": "#000000", "neon": true},
+	"solar": {"plate": "#3f7a3a", "plate_light": "#86c95e", "plate_dark": "#1d4222",
+		"metal": "#8a6440", "accent": "#ff6fae", "glow": "#fff27a", "visor": "#ffc4e2",
+		"outline": "#0b1d0d"},
+	"mecha": {"plate": "#a3121c", "plate_light": "#c4252a", "plate_dark": "#55070d",
+		"metal": "#232325", "accent": "#d4a017", "glow": "#b8860b", "visor": "#c9971a",
+		"outline": "#0a0a0a", "hazard": true},
+	"hipstar": {"plate": "#2a1446", "plate_light": "#5a2e8a", "plate_dark": "#150826",
+		"metal": "#3ad6e0", "accent": "#ff2bd6", "glow": "#2ee3eb", "visor": "#ffe14d",
+		"outline": "#06020e"},
+}
+
+## Beine als eigene Bloecke (Generator: split_legs), Knoten "feet_<name>".
+const LEG_BLOCKS := ["leg_left_upper", "leg_left_lower", "leg_right_upper", "leg_right_lower"]
 ## Material -> (oben, links, rechts, Kante?) wie MATERIALS im Generator.
 const MATERIALS := {
 	"plate": ["plate_light", "plate", "plate_dark", true],
 	"dark": ["plate", "plate_dark", "plate_dark", true],
 	"light": ["plate_light", "plate_light", "plate", true],
 	"metal": ["metal", "metal", "plate_dark", true],
+	"blade": ["plate_light", "metal", "plate", true],
 	"visor": ["visor", "visor", "visor", true],
 	"glow": ["glow", "glow", "glow", false],
 	"accent": ["accent", "accent", "accent", false],
@@ -144,9 +167,10 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256,
 	var body_anchors: Dictionary = body_model.get("anchors", {})
 	var body_variants: Dictionary = body_model.get("variants", {})
 	var weapon_variant := chassis.weapon_variant if chassis != null else ""
+	var faction := faction_palette(build)
 	root.set_meta("accent", _color(body_model.get("colors", {}).get("accent", "#2de2e6")))
 	root.set_meta("line", _color(body_model.get("colors", {}).get("outline", "#080b13")))
-	_neon_build = false
+	_neon_build = bool(faction.get("neon", false))
 	for slot in SLOT_ORDER:
 		if bool(model_of(build.part_in(slot)).get("neon", false)):
 			_neon_build = true
@@ -170,27 +194,67 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256,
 		var socket := Vector3.ZERO if slot == "body" \
 			else _vec(body_anchors.get(slot, block.get("anchors", {}).get("mount", [0, 0, 0])))
 		var colors: Dictionary = model.get("colors", {})
+		var chassis_part := not str(slot).begins_with("equip_")
+		if chassis_part and not faction.is_empty():
+			colors = _faction_colors(colors, faction)
+		# Glanzkante je Material (Waffen, 18. Nov. 2026) reist mit den Farben,
+		# damit Mesh- und Material-Cache sie unterscheiden.
+		if model.has("shine"):
+			colors = colors.duplicate()
+			colors["_shine"] = model["shine"]
 		# Waffe mit Haltung: Arm des Chassis an den Sockel, Waffe in die Hand.
 		var pose: String = model.get("pose", "")
 		var arm: Dictionary = body_variants.get("arm_%s_%s" % [slot, pose], {}) \
 			if pose != "" else {}
 		if not arm.is_empty():
 			var arm_mount := _vec(arm.get("anchors", {}).get("mount", [0, 0, 0]))
+			var arm_colors: Dictionary = body_model.get("colors", {})
+			if not faction.is_empty():
+				arm_colors = _faction_colors(arm_colors, faction)
 			_add_block(turn, "%s_arm" % slot, "%s|arm_%s_%s" % [chassis.id, slot, pose],
-				arm, body_model.get("colors", {}), socket - arm_mount, false)
+				arm, arm_colors, socket - arm_mount, bool(faction.get("neon", false)))
 			socket = _vec(arm.get("anchors", {}).get("hand", [0, 0, 0]))
 		var key := str(part.id) if block == model \
 			else "%s|%s" % [part.id, _variant_name(model, block)]
 		# Der Rumpf bleibt liegen: sein "mount" ist nur der Bezugspunkt fuer die
 		# Bildmitte, kein Sockel.
+		var lit := bool(model.get("neon", false)) or (chassis_part and bool(faction.get("neon", false)))
 		_add_block(turn, slot, key, block, colors,
-			Vector3.ZERO if slot == "body" else socket - mount, bool(model.get("neon", false)))
+			Vector3.ZERO if slot == "body" else socket - mount, lit)
 		# Sichtbare Passive als eigener Block (Nimbus-Kugel), damit sie sich im
 		# Kampf bewegen kann (Arena3D, 18. Nov. 2026).
+		# Beine als eigene Bloecke (Ober-/Unterschenkel je Seite), damit sie
+		# im Kampf im Wechsel schwingen (Arena3D, 18. Nov. 2026).
+		if slot == "feet":
+			for vname in LEG_BLOCKS:
+				var leg: Dictionary = model.get("variants", {}).get(vname, {})
+				if not leg.is_empty():
+					_add_block(turn, "feet_" + vname, "%s|%s" % [part.id, vname], leg,
+						colors, socket - mount, lit)
 		if slot == "body" and body_variants.has("passive"):
 			_add_block(turn, "body_passive", "%s|passive" % part.id, body_variants["passive"],
 				colors, Vector3.ZERO, false)
 	return root
+
+
+## Die Palette der Fraktion eines DROME ({} = keine, Bausatzfarben).
+static func faction_palette(build: DromeBuild) -> Dictionary:
+	if build == null:
+		return {}
+	var key := build.faction.strip_edges().to_lower()
+	if key.begins_with("hipstar") or key.begins_with("hacker"):
+		key = "hipstar"
+	return FACTION_PALETTES.get(key, {})
+
+
+static func _faction_colors(colors: Dictionary, faction: Dictionary) -> Dictionary:
+	var out := colors.duplicate()
+	for role in faction:
+		if faction[role] is String:
+			out[role] = faction[role]
+	if bool(faction.get("hazard", false)):
+		out["_hazard"] = true
+	return out
 
 
 static func _variant_name(model: Dictionary, block: Dictionary) -> String:
@@ -331,8 +395,10 @@ static func _vertex(st: SurfaceTool, normal: Vector3, mode: float, uv: Vector2,
 
 static func _face_material(mat: String, colors: Dictionary) -> ShaderMaterial:
 	var roles: Array = MATERIALS.get(mat, MATERIALS["plate"])
-	var key := "%s|%s|%s|%s|%s|%s" % [colors.get(roles[0], ""), colors.get(roles[1], ""),
-		colors.get(roles[2], ""), colors.get("outline", ""), roles[3], _edge]
+	var shine := float((colors.get("_shine", {}) as Dictionary).get(mat, 0.0))
+	var hazard := mat == "accent" and bool(colors.get("_hazard", false))
+	var key := "%s|%s|%s|%s|%s|%s|%s|%s" % [colors.get(roles[0], ""), colors.get(roles[1], ""),
+		colors.get(roles[2], ""), colors.get("outline", ""), roles[3], _edge, shine, hazard]
 	if _materials.has(key):
 		return _materials[key]
 	var m := ShaderMaterial.new()
@@ -343,6 +409,10 @@ static func _face_material(mat: String, colors: Dictionary) -> ShaderMaterial:
 	m.set_shader_parameter("c_line", _color(colors.get("outline", "#080b13")))
 	# Leucht- und Akzentmaterial tragen keinen Strich (wie im SVG).
 	m.set_shader_parameter("edge_px", _edge if roles[3] else 0.0)
+	if shine > 0.0:
+		m.set_shader_parameter("shine", shine)
+	if hazard:
+		m.set_shader_parameter("stripes", 1.0)
 	_materials[key] = m
 	return m
 

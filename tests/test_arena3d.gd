@@ -76,3 +76,81 @@ func test_obstacles_stand_in_the_scene() -> void:
 		for kind in kind_list:
 			t.ok(FileAccess.file_exists(Arena3D.ARENA_DIR % kind), "Modell fuer %s" % kind)
 	arena.free()
+
+
+## Beine im Wechsel (18. Nov. 2026): beim Laufen schwingt das linke Bein
+## gegen das rechte; im Stand stehen beide wie gebaut.
+func test_legs_alternate_while_walking() -> void:
+	var calm := Accessibility.reduce_motion
+	Accessibility.reduce_motion = false
+	var arena := Arena3D.new()
+	var unit := Unit.create(_build(&"scout_body", &"eq_plasma_blade"), &"P0", true)
+	unit.arena = arena
+	unit.place_at(Vector2i(4, 10))
+	unit._build_sprites()
+	var node := arena.model_of(unit)
+	var turn := arena.turn_of(unit)
+	var left := turn.get_node_or_null("feet_leg_left_upper") as Node3D
+	var right := turn.get_node_or_null("feet_leg_right_upper") as Node3D
+	var shin := turn.get_node_or_null("feet_leg_left_lower") as Node3D
+	t.ok(left != null and right != null and shin != null, "Beine als eigene Knoten")
+	if left != null and right != null and shin != null:
+		arena._animate(unit, node, 0.1)
+		t.ok(left.transform.is_equal_approx(left.get_meta("base")), "im Stand: Bein ruht")
+		unit._glide_total = 1.0
+		arena._anim[unit]["phase"] = 0.0
+		arena._anim[unit]["time"] = 0.0
+		# Viertel Schrittzyklus: linkes Bein vorn, rechtes hinten.
+		arena._animate(unit, node, PI / 2.0 / Arena3D.WALK_SPEED)
+		var l_angle := left.transform.basis.get_euler().y
+		var r_angle := right.transform.basis.get_euler().y
+		t.ok(absf(l_angle) > 0.2 and is_equal_approx(l_angle, -r_angle),
+			"Beine schwingen gegengleich (%.2f / %.2f)" % [l_angle, r_angle])
+		t.ok(l_angle < 0.0, "linkes Bein vorn")
+		# Ganzer Zyklus: das linke Bein schwingt mittig nach vorn, Knie gebeugt.
+		arena._animate(unit, node, PI * 1.5 / Arena3D.WALK_SPEED)
+		var knee := (shin.transform.basis.get_euler().y) - (left.transform.basis.get_euler().y)
+		var r_shin := turn.get_node("feet_leg_right_lower") as Node3D
+		var r_knee := r_shin.transform.basis.get_euler().y - right.transform.basis.get_euler().y
+		t.ok(knee > 0.3 and absf(r_knee) < 0.01,
+			"das vorschwingende Bein beugt das Knie (%.2f / %.2f)" % [knee, r_knee])
+	unit.free()
+	arena.free()
+	Accessibility.reduce_motion = calm
+
+
+## Fraktions-Paletten (18. Nov. 2026): Chassis-Teile in Fraktionsfarben,
+## Waffen behalten ihre eigenen; ohne Fraktion bleibt alles beim Bausatz.
+func test_faction_palette_paints_the_chassis_not_the_weapon() -> void:
+	var build := _build(&"jugg_body", &"eq_hammer")
+	t.ok(DromeModel.faction_palette(build).is_empty(), "ohne Fraktion keine Palette")
+	for name in ["Neon", "solar", "Mecha", "Hipstar"]:
+		build.faction = name
+		t.ok(not DromeModel.faction_palette(build).is_empty(), "%s hat eine Palette" % name)
+	build.faction = "mecha"
+	var root := DromeModel.build_node(build, "deg270")
+	var turn := root.get_node("Ausrichtung")
+	var body := turn.get_node("body") as MeshInstance3D
+	var plate := Color(DromeModel.FACTION_PALETTES["mecha"]["plate"])
+	var found := false
+	var stripes := false
+	for i in body.mesh.get_surface_count():
+		var mat := body.mesh.surface_get_material(i) as ShaderMaterial
+		if mat.get_shader_parameter("c_left") == plate:
+			found = true
+		var value = mat.get_shader_parameter("stripes")
+		if value != null and float(value) > 0.0:
+			stripes = true
+	t.ok(found, "Rumpf in Maschinenrot")
+	t.ok(stripes, "Mecha: Absperrstreifen auf den Akzenten")
+	var weapon := turn.get_node("equip_left") as MeshInstance3D
+	var weapon_plate := false
+	for i in weapon.mesh.get_surface_count():
+		var mat := weapon.mesh.surface_get_material(i) as ShaderMaterial
+		if mat.get_shader_parameter("c_left") == plate:
+			weapon_plate = true
+	t.ok(not weapon_plate, "Waffe behaelt ihre Farbe")
+	root.free()
+	var unit := Unit.create(build, &"E0", false)
+	t.equal(unit.base_tint(), Color.WHITE, "Fraktion: kein roter Stich")
+	unit.free()

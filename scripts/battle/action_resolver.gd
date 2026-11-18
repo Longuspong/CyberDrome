@@ -18,6 +18,22 @@ var units: Array = []
 ## { left: Sekunden, source: Unit, tile: Vector2i, action: ActionData }.
 ## Der BattleManager ruft advance() je Schritt.
 var delayed: Array = []
+## Waehrend Sog oder Stoss gesetzt (18. Nov. 2026): die Versetzung ist
+## erzwungen -- die Anzeige laesst den DROME sichtbar rutschen.
+var forcing := false
+
+## Salven (18. Nov. 2026): Abstand der Schuesse einer Salve, Pause zwischen
+## zwei Salven und die Flugzeit bis zum Treffer -- dieselben Zeiten nutzt die
+## Anzeige (AbilityFx), damit Schuss und Zahl zusammenpassen.
+const SALVO_GAP := 0.07
+const SALVO_PAUSE := 0.16
+const SALVO_FLIGHT := 0.12
+
+
+## Wann der Schuss ``bullet`` der Salve ``volley`` trifft (Sekunden nach dem
+## Ausloesen).
+static func salvo_time(action: ActionData, volley: int, bullet: int) -> float:
+	return volley * (action.salvo * SALVO_GAP + SALVO_PAUSE) + bullet * SALVO_GAP + SALVO_FLIGHT
 
 ## Zufall des Kampfes (BattleManager.rng) -- fuer den Zusatztreffer der
 ## Stacheln (Splitterpanzer). Fehlt er, gibt es keinen.
@@ -569,6 +585,14 @@ func _multi_shot(source: Unit, tile: Vector2i, action: ActionData) -> void:
 		targets.append(unit)
 	while targets.size() < action.shots:
 		targets.append(primary)
+	if action.salvo > 1:
+		# Salven: die Schuesse treffen nacheinander, wenn sie ankommen.
+		var bullet := maxi(1, int(round(float(source.raw_damage(action)) / action.salvo)))
+		for volley in targets.size():
+			for b in action.salvo:
+				delayed.append({"left": salvo_time(action, volley, b), "source": source,
+					"target": targets[volley], "damage": bullet, "action": action})
+		return
 	for target in targets:
 		if target.is_alive():
 			apply_damage(source, target, source.raw_damage(action), action)
@@ -587,9 +611,15 @@ func advance(dt: float) -> bool:
 			continue
 		var source: Unit = entry["source"]
 		var action: ActionData = entry["action"]
+		fired = true
+		if entry.has("target"):
+			# Ein Schuss einer Salve.
+			var hit: Unit = entry["target"]
+			if hit.is_alive() and source.is_alive():
+				apply_damage(source, hit, int(entry["damage"]), action)
+			continue
 		EventBus.log_line("%s: %s schlägt ein." % [source.display_name, action.display_name])
 		_apply_area(source, entry["tile"], action)
-		fired = true
 	delayed = keep
 	return fired
 
@@ -625,6 +655,7 @@ func _gather(source: Unit, center: Vector2i, action: ActionData) -> void:
 			pulled.append(unit)
 	pulled.sort_custom(func(a, b):
 		return Grid.distance(a.tile, center) < Grid.distance(b.tile, center))
+	forcing = true
 	for unit in pulled:
 		for _i in action.aoe_radius:
 			if Grid.distance(unit.tile, center) <= 1:
@@ -633,6 +664,7 @@ func _gather(source: Unit, center: Vector2i, action: ActionData) -> void:
 			if next == unit.tile:
 				break
 			move_unit(unit, next)
+	forcing = false
 	if not pulled.is_empty():
 		EventBus.log_line("%s zieht %d Gegner zusammen." % [source.display_name, pulled.size()])
 
@@ -661,12 +693,14 @@ func _shove(source: Unit, target: Unit, tiles: int) -> void:
 		dir += 3
 
 	var moved := 0
+	forcing = true
 	for _i in absi(tiles):
 		var nxt := Grid.neighbor(target.tile, dir)
 		if not grid.can_stand_on(nxt, target.unit_id):
 			break
 		move_unit(target, nxt)
 		moved += 1
+	forcing = false
 	if moved > 0:
 		EventBus.log_line("%s wird %d Feld(er) %s."
 			% [target.display_name, moved,

@@ -99,10 +99,19 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import pathlib
 import re
 import shutil
 from xml.etree import ElementTree
+
+# Wo die Strix-Lafette sitzt (18. Nov. 2026, Vergleich fuer den Spieler;
+# Empfehlung und Standard: Schulter -- die Waffe ragt ueber die Silhouette,
+# verdeckt die grossen Fluegel nicht und liest sich auf dem Handy sofort als
+# Scharfschuetze; Umschalten mit STRIX_MOUNT=achsel):
+# "achsel" = seitlich unter der Schulter, Halter greift quer hinein;
+# "schulter" = oben auf der Schulter, Halter steckt von oben in der Buchse.
+STRIX_MOUNT = os.environ.get("STRIX_MOUNT", "schulter")
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PARTS_DIR = ROOT / "parts"
@@ -290,25 +299,48 @@ NEON_EQUIPMENT = {"hull": "#140b24", "mech": "#3a2a5c", "neon": "#ff2bd6",
 
 # Waffenfarben, unabhaengig vom DROME (17. Nov. 2026, Wunsch des Spielers):
 # jede Waffe hat hier ihre EIGENE Palette, egal an welchem Chassis sie haengt.
-# Startwerte = die bisherigen Bausatzfarben, damit sich nichts verschiebt --
+# Gewaehlt am 18. Nov. 2026 (siehe unten) --
 # zum Umfaerben nur hier aendern, dann build_sample_parts.py und
 # bake_godot_assets.py laufen lassen.
 def _eq(base: dict) -> dict:
     return dict(base["equipment"])
 
 
+def _w(hull, mech, neon, line="#07090d"):
+    return {"hull": hull, "mech": mech, "neon": neon, "line": line}
+
+
+# Gewaehlt am 18. Nov. 2026 (Leinwand "Waffenfarben", v13_waffenfarben.py):
+# Satz A "Waffenstahl" fuer alle, der Puls-Blaster aus Satz B "Chrom".
 WEAPON_COLORS = {
-    "eq_pulse_blaster": _eq(DEFAULT_PALETTE),
+    "eq_pulse_blaster": _w("#7a8494", "#d6dde6", "#2de2e6", "#0a0d12"),
     "eq_neon_blaster": dict(NEON_EQUIPMENT),
-    "eq_plasma_blade": _eq(DEFAULT_PALETTE),
-    "eq_boomerang": _eq(DEFAULT_PALETTE),
-    "eq_deflector": _eq(DEFAULT_PALETTE),
-    "eq_hammer": _eq(JUGG_PALETTE),
-    "eq_bulwark_ram": _eq(JUGG_PALETTE),
-    "eq_drone_pod": _eq(JUGG_PALETTE),        # E-Schraubenschluessel
-    "eq_rune_staff": _eq(MAGE_PALETTE),
-    "eq_rail_lance": _eq(STRIX_PALETTE),
-    "eq_mortar": _eq(STRIX_PALETTE),
+    "eq_plasma_blade": _w("#2a2f3a", "#9aa3b3", "#ff5a3d"),
+    "eq_boomerang": _w("#46505f", "#b8c0cc", "#ffb000"),
+    "eq_deflector": _w("#39404c", "#8a93a3", "#5ad1ff"),
+    "eq_hammer": _w("#4a4e56", "#a0a6b0", "#ff8a3d"),
+    "eq_bulwark_ram": _w("#3f444c", "#979ca6", "#ffd447"),
+    "eq_drone_pod": _w("#55504a", "#b0a89a", "#ffd447"),        # E-Schraubenschluessel
+    "eq_rune_staff": _w("#3a3550", "#a59ac8", "#b06bff"),
+    "eq_rail_lance": _w("#1d2430", "#6f7d92", "#3df2ff"),
+    "eq_mortar": _w("#3d4636", "#8e9688", "#ff6a2a"),
+}
+
+# Oberflaeche je Waffe (18. Nov. 2026): ``shine`` = Glanzkante je Material
+# (0..1, Shader drome_face), ``neon`` = die Leuchtteile leuchten im Spiel wie
+# beim Neon-Blaster (Energiewaffen). Vorgabe des Spielers: Klingen glaenzen
+# oder leuchten, Griffe und Halterungen bleiben matt.
+WEAPON_FINISH = {
+    "eq_pulse_blaster": {"shine": {"plate": 0.7, "light": 0.7, "metal": 0.6}},
+    "eq_plasma_blade": {"neon": True},
+    "eq_boomerang": {"shine": {"blade": 0.75}},
+    "eq_deflector": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
+    "eq_hammer": {"shine": {"plate": 0.4, "light": 0.4}},
+    "eq_bulwark_ram": {"shine": {"plate": 0.4, "light": 0.4}},
+    "eq_drone_pod": {"shine": {"metal": 0.4}},
+    "eq_rune_staff": {"shine": {"plate": 0.35}, "neon": True},
+    "eq_rail_lance": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
+    "eq_mortar": {"shine": {"plate": 0.3, "light": 0.3}},
 }
 
 C = {role: f"var(--c-{role.replace('_', '-')})" for role in PALETTE_ROLES}
@@ -319,6 +351,8 @@ MATERIALS = {
     "dark":   (C["plate"], C["plate_dark"], C["plate_dark"], True),
     "light":  (C["plate_light"], C["plate_light"], C["plate"], True),
     "metal":  (C["metal"], C["metal"], C["plate_dark"], True),
+    # Schneide (18. Nov. 2026): helles Metall, im Spiel mit Glanzkante.
+    "blade":  (C["plate_light"], C["metal"], C["plate"], True),
     "visor":  (C["visor"], C["visor"], C["visor"], True),
     "glow":   (C["glow"], C["glow"], C["glow"], False),
     "accent": (C["accent"], C["accent"], C["accent"], False),
@@ -508,9 +542,12 @@ STATS = {
             # Doppelschuss (Vorgabe des Spielers, Nov. 2026): ein schneller
             # Schuss auf bis zu zwei Gegner in Reichweite; ist nur einer da,
             # trifft er ihn zweimal.
-            {"id": "act_pulse_double", "display_name": "Doppelschuss",
+            {"id": "act_pulse_double", "windup": 0.25, "display_name": "Doppelschuss",
              "category": "ability", "targeting": "single",
              "range_tiles": 3, "damage_pct": 0.7, "shots": 2,
+             # Zwei Salven zu je 3 Schuessen mit je 1/3 Schaden (Spieler
+             # 18. Nov. 2026): erst aufs Ziel, dann auf den naechsten Gegner.
+             "salvo": 3,
              "energy_fraction": 0.5,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_pulse"}},
         ],
@@ -525,7 +562,7 @@ STATS = {
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 10, "energy_fraction": 0.6,
              "interval": 1.4},
-            {"id": "act_neon_breaker", "display_name": "Schildbrecher",
+            {"id": "act_neon_breaker", "windup": 0.35, "display_name": "Schildbrecher",
              "category": "ability", "targeting": "single",
              "range_tiles": 3, "damage_pct": 1.2, "energy_fraction": 1.0,
              "shield_mult": 2.0,
@@ -541,7 +578,7 @@ STATS = {
             {"id": "act_plasma_slash", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 12, "interval": 1.0},
-            {"id": "act_plasma_rend", "display_name": "Aufschlitzen",
+            {"id": "act_plasma_rend", "windup": 0.3, "display_name": "Aufschlitzen",
              "category": "ability", "targeting": "single",
              "range_tiles": 1, "damage_pct": 1.5,
              "status": {"id": "vulnerable", "seconds": 5.0, "damage_taken_mult": 1.5},
@@ -558,7 +595,7 @@ STATS = {
             {"id": "act_deflector_bash", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 6, "interval": 1.5},
-            {"id": "act_deflector_charge", "display_name": "Schildladung",
+            {"id": "act_deflector_charge", "windup": 0.25, "display_name": "Schildladung",
              "category": "ability", "targeting": "single",
              "range_tiles": 0, "power": 0, "shield_gain": 15, "support": "self",
              "trigger": {"kind": "attacks", "every": 4, "weapon": "act_deflector_bash"}},
@@ -572,7 +609,7 @@ STATS = {
             {"id": "act_hammer", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 16, "interval": 1.8},
-            {"id": "act_hammer_stun", "display_name": "Betaeubungsschlag",
+            {"id": "act_hammer_stun", "windup": 0.35, "display_name": "Betaeubungsschlag",
              "category": "ability", "targeting": "single",
              "range_tiles": 1, "damage_pct": 1.0,
              "status": {"id": "stun", "seconds": 1.0, "stunned": True},
@@ -591,7 +628,7 @@ STATS = {
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 4, "heal": 6, "support": "ally",
              "energy_fraction": 1.0, "interval": 1.5},
-            {"id": "act_drone_guard", "display_name": "Schildfeld",
+            {"id": "act_drone_guard", "windup": 0.3, "display_name": "Schildfeld",
              "category": "ability", "targeting": "single",
              "range_tiles": 3, "power": 0, "shield_gain": 15, "support": "ally",
              "trigger": {"kind": "attacks", "every": 4, "weapon": "act_drone_repair"}},
@@ -610,7 +647,7 @@ STATS = {
              "category": "attack", "targeting": "single",
              "range_tiles": 3, "power": 9,
              "energy_fraction": 1.0, "interval": 1.2},
-            {"id": "act_rune_vortex", "display_name": "Vortex",
+            {"id": "act_rune_vortex", "windup": 0.95, "display_name": "Vortex",
              "category": "ability", "targeting": "aoe_around_target",
              "range_tiles": 5, "aoe_radius": 2, "damage_pct": 1.5,
              "energy_fraction": 1.0, "gather": True, "delay": 0.6,
@@ -630,7 +667,7 @@ STATS = {
             {"id": "act_ram", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 10, "interval": 1.6},
-            {"id": "act_ram_slam", "display_name": "Rammstoss",
+            {"id": "act_ram_slam", "windup": 0.35, "display_name": "Rammstoss",
              "category": "ability", "targeting": "single",
              "range_tiles": 1, "damage_pct": 1.0, "hp_scaling": 0.08, "push_tiles": 1,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_ram"}},
@@ -645,7 +682,7 @@ STATS = {
              "category": "attack", "targeting": "aoe_around_target",
              "range_tiles": 6, "min_range": 2, "aoe_radius": 1, "power": 14,
              "interval": 2.8, "delay": 0.8},
-            {"id": "act_mortar_barrage", "display_name": "Sperrfeuer",
+            {"id": "act_mortar_barrage", "windup": 0.3, "display_name": "Sperrfeuer",
              "category": "ability", "targeting": "aoe_around_target",
              "range_tiles": 6, "min_range": 2, "aoe_radius": 2, "damage_pct": 1.0,
              "push_tiles": 1, "delay": 0.8,
@@ -662,7 +699,7 @@ STATS = {
              "category": "attack", "targeting": "single",
              "range_tiles": 2, "power": 6, "shots": 2, "interval": 1.3,
              "moving_bonus": 0.3},
-            {"id": "act_boomerang_whirl", "display_name": "Wirbelwurf",
+            {"id": "act_boomerang_whirl", "windup": 0.55, "display_name": "Wirbelwurf",
              "category": "ability", "targeting": "aoe_around_target",
              "range_tiles": 2, "aoe_radius": 1, "damage_pct": 1.4, "moving_bonus": 0.3,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_boomerang"}},
@@ -675,7 +712,7 @@ STATS = {
              "category": "attack", "targeting": "single",
              "range_tiles": 8, "power": 22,
              "interval": 2.6},
-            {"id": "act_rail_pierce", "display_name": "Praezisionsschuss",
+            {"id": "act_rail_pierce", "windup": 0.55, "display_name": "Praezisionsschuss",
              "category": "ability", "targeting": "single",
              "range_tiles": 8, "damage_pct": 1.2,
              "trigger": {"kind": "attacks", "every": 4, "weapon": "act_raillance"}},
@@ -727,6 +764,12 @@ ACTION_DEFAULTS = {
     "hp_scaling": 0.0,
     "min_range": 0,
     "moving_bonus": 0.0,
+    # Ausholzeit (18. Nov. 2026): Sekunden zwischen Ansage und Wirkung einer
+    # Faehigkeit -- der DROME steht still, die Ansage ist zu sehen.
+    "windup": 0.0,
+    # Mehrfachschuss in Salven: so viele schnelle Schuesse je "shots", jeder
+    # mit dem entsprechenden Anteil Schaden (Doppelschuss, 18. Nov. 2026).
+    "salvo": 1,
 }
 
 TARGETINGS = ("single", "aoe_around_target", "aoe_cross", "dash")
@@ -809,6 +852,247 @@ def OB(p0, p1, width, height, mat, roll=0.0):
     pitch = -math.degrees(math.atan2(d[2], math.hypot(d[0], d[1])))
     mid = tuple((a + b) / 2.0 for a, b in zip(p0, p1))
     return O(mid, (length, width, height), (yaw, pitch, roll), mat)
+
+
+def BP(back, tip, width, thick, mat, mid=0.18):
+    """
+    Doppelpyramide (18. Nov. 2026): zwei Pyramiden Ruecken an Ruecken -- eine
+    Klinge. Von ``back`` (kurze Spitze, steckt im Heft) nach ``tip`` (lange
+    Spitze); die breiteste Stelle liegt bei ``mid`` (Anteil der Laenge). Der
+    Querschnitt ist eine Raute: ``width`` quer zur Klinge waagerecht (l),
+    ``thick`` die Dicke senkrecht dazu. Grat und Schneide entstehen aus den
+    Flaechen selbst -- keine Stufen.
+    """
+    d = [b - a for a, b in zip(back, tip)]
+    length = math.sqrt(sum(c * c for c in d))
+    axis = [c / length for c in d]
+    # Querachsen: "side" moeglichst waagerecht (l), "front" senkrecht zu beiden.
+    up = (0.0, 1.0, 0.0) if abs(axis[1]) < 0.9 else (1.0, 0.0, 0.0)
+    side = _norm(_reject(up, axis))
+    front = _norm(_cross(side, axis))
+    m = [a + c * length * mid for a, c in zip(back, axis)]
+    corners = [tuple(mc + sc * width / 2.0 for mc, sc in zip(m, side)),
+               tuple(mc + fc * thick / 2.0 for mc, fc in zip(m, front)),
+               tuple(mc - sc * width / 2.0 for mc, sc in zip(m, side)),
+               tuple(mc - fc * thick / 2.0 for mc, fc in zip(m, front))]
+    center = tuple(m)
+    faces = []
+    for apex in (tuple(tip), tuple(back)):
+        for i in range(4):
+            tri = [apex, corners[i], corners[(i + 1) % 4]]
+            n = _norm(_cross(_sub(tri[1], tri[0]), _sub(tri[2], tri[0])))
+            mid_tri = [sum(c) / 3.0 for c in zip(*tri)]
+            if sum(nc * (tc - cc) for nc, tc, cc in zip(n, mid_tri, center)) < 0:
+                tri = [tri[0], tri[2], tri[1]]
+                n = tuple(-c for c in n)
+            faces.append((tuple(n), [tuple(pt) for pt in tri]))
+    return ("poly", tuple(faces), mat)
+
+
+def EX(profile, l, mat, bevel=0.0, axis="l"):
+    """
+    Profil (18. Nov. 2026): ein Umriss in der Seitenansicht -- Punkte (f, z),
+    auch eingebuchtet -- wird quer von ``l[0]`` bis ``l[1]`` gezogen. Fuer
+    Schaefte, Gehaeuse, Klingen mit echtem Umriss statt Quaderstapeln.
+    ``bevel`` schraegt die Kanten der beiden Deckflaechen ab (Fase).
+    ``axis`` sagt, wohin gezogen wird: "l" (Standard, Umriss = Seitenansicht
+    (f, z)), "f" (Umriss = Vorderansicht (l, z), z. B. ein V-Torso) oder "z"
+    (Umriss = Grundriss (f, l), z. B. flache Fluegel).
+    Ergibt einen Vielflach ("poly"); Seitenwaende und Fasen tragen die dunkle
+    Kante wie Quader, die Deckflaechen nicht (sie sind in Dreiecke zerlegt).
+    """
+    pts = [(float(f), float(z)) for f, z in profile]
+    area = sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1]))
+    if area < 0:
+        pts.reverse()                       # gegen den Uhrzeigersinn
+    l0, l1 = float(l[0]), float(l[1])
+    b = max(0.0, min(float(bevel), (l1 - l0) / 2.0 - 1e-3))
+    inner = _inset(pts, b) if b > 0 else pts
+    faces = []
+    ca = sum(a for a, _b in pts) / len(pts)
+    cb = sum(b for _a, b in pts) / len(pts)
+    cm = (l0 + l1) / 2.0
+
+    def p3(ab, lv):
+        if axis == "f":
+            return (lv, ab[0], ab[1])
+        if axis == "z":
+            return (ab[0], ab[1], lv)
+        return (ab[0], lv, ab[1])
+
+    center = p3((ca, cb), cm)
+
+    def add(poly, edge):
+        n = _norm(_cross(_sub(poly[1], poly[0]), _sub(poly[2], poly[0])))
+        mid = [sum(x) / len(poly) for x in zip(*poly)]
+        if sum(nc * (mc - cc) for nc, mc, cc in zip(n, mid, center)) < 0:
+            poly = list(reversed(poly))
+            n = tuple(-x for x in n)
+        faces.append((tuple(n), [tuple(pt) for pt in poly], edge))
+
+    # Deckflaechen (Fase: eingerueckt)
+    for lv in (l0, l1):
+        for tri in _ear_clip(inner):
+            add([p3(fz, lv) for fz in tri], False)
+    n = len(pts)
+    for i in range(n):
+        a, c = pts[i], pts[(i + 1) % n]
+        add([p3(a, l0 + b), p3(c, l0 + b), p3(c, l1 - b), p3(a, l1 - b)], True)
+        if b > 0:
+            ia, ic = inner[i], inner[(i + 1) % n]
+            add([p3(ia, l0), p3(ic, l0), p3(c, l0 + b), p3(a, l0 + b)], True)
+            add([p3(a, l1 - b), p3(c, l1 - b), p3(ic, l1), p3(ia, l1)], True)
+    return ("poly", tuple(faces), mat)
+
+
+def _inset(pts, d):
+    """Umriss (gegen den Uhrzeigersinn) um ``d`` nach innen versetzt."""
+    out = []
+    n = len(pts)
+    for i in range(n):
+        a, p, c = pts[i - 1], pts[i], pts[(i + 1) % n]
+        e1 = _norm((p[0] - a[0], p[1] - a[1], 0.0))
+        e2 = _norm((c[0] - p[0], c[1] - p[1], 0.0))
+        n1 = (-e1[1], e1[0])
+        n2 = (-e2[1], e2[0])
+        dot = n1[0] * n2[0] + n1[1] * n2[1]
+        k = d / max(0.25, 1.0 + dot)
+        out.append((p[0] + (n1[0] + n2[0]) * k, p[1] + (n1[1] + n2[1]) * k))
+    return out
+
+
+def _ear_clip(pts):
+    """Einfaches Polygon (gegen den Uhrzeigersinn) -> Dreiecke."""
+    idx = list(range(len(pts)))
+    tris = []
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    def inside(pt, a, b, c):
+        return cross(a, b, pt) >= 0 and cross(b, c, pt) >= 0 and cross(c, a, pt) >= 0
+
+    guard = 0
+    while len(idx) > 3 and guard < 10000:
+        guard += 1
+        for j in range(len(idx)):
+            i0, i1, i2 = idx[j - 1], idx[j], idx[(j + 1) % len(idx)]
+            a, b, c = pts[i0], pts[i1], pts[i2]
+            if cross(a, b, c) <= 1e-9:
+                continue
+            if any(inside(pts[k], a, b, c) for k in idx if k not in (i0, i1, i2)):
+                continue
+            tris.append((a, b, c))
+            idx.pop(j)
+            break
+        else:
+            break
+    if len(idx) == 3:
+        tris.append(tuple(pts[i] for i in idx))
+    return tris
+
+
+def SW(points, radii, mat, sides=8, flat=1.0, steps=6, side=(0.0, 1.0, 0.0), caps=True):
+    """
+    Zug (18. Nov. 2026): ein Querschnitt faehrt eine glatte Kurve entlang --
+    fuer Kabel, Schlaeuche und gebogene Klingen.
+
+    ``points``  Stuetzpunkte (f, l, z); die Kurve laeuft als Catmull-Rom
+                durch alle hindurch, ``steps`` Abschnitte je Stueck.
+    ``radii``   Halbmesser je Stuetzpunkt (dazwischen weich verlaufen);
+                0 am Ende = Spitze.
+    ``sides``   Ecken des Querschnitts: 8 rund (Kabel), 4 Raute (Klinge).
+    ``flat``    Stauchung des Querschnitts entlang ``side`` (Standard l):
+                0,25 = flache Klinge, die in der f-z-Ebene breit ist.
+    Ergibt einen Vielflach ("poly") -- Spiegeln, Rendern und 3D wie beim
+    Doppelpyramiden-Baustein BP.
+    """
+    pts = [tuple(float(c) for c in pt) for pt in points]
+    curve, rad = [], []
+    for i in range(len(pts) - 1):
+        p0 = pts[max(0, i - 1)]
+        p1, p2 = pts[i], pts[i + 1]
+        p3 = pts[min(len(pts) - 1, i + 2)]
+        for j in range(steps):
+            t = j / steps
+            t2, t3 = t * t, t * t * t
+            curve.append(tuple(0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2
+                                      + (-a + 3 * b - 3 * c + d) * t3)
+                               for a, b, c, d in zip(p0, p1, p2, p3)))
+            r0, r1 = radii[i], radii[i + 1]
+            u = t * t * (3 - 2 * t)
+            rad.append(r0 + (r1 - r0) * u)
+    curve.append(pts[-1])
+    rad.append(radii[-1])
+    rings = []
+    for i, c in enumerate(curve):
+        a = curve[max(0, i - 1)]
+        b = curve[min(len(curve) - 1, i + 1)]
+        tangent = _norm(_sub(b, a))
+        n = _reject(side, tangent)
+        if math.sqrt(sum(x * x for x in n)) < 1e-4:
+            n = _reject((0.0, 0.0, 1.0), tangent)
+        n = _norm(n)
+        bi = _norm(_cross(tangent, n))
+        ring = []
+        for k in range(sides):
+            ang = 2 * math.pi * k / sides
+            ring.append(tuple(cc + rad[i] * (math.cos(ang) * flat * nc + math.sin(ang) * bc)
+                              for cc, nc, bc in zip(c, n, bi)))
+        rings.append(ring)
+    faces = []
+
+    def add(poly, inside):
+        """Normale nach aussen (weg von ``inside``)."""
+        n = _norm(_cross(_sub(poly[1], poly[0]), _sub(poly[2], poly[0])))
+        mid = [sum(x) / len(poly) for x in zip(*poly)]
+        if sum(nc * (mc - ic) for nc, mc, ic in zip(n, mid, inside)) < 0:
+            poly = list(reversed(poly))
+            n = tuple(-x for x in n)
+        faces.append((tuple(n), [tuple(pt) for pt in poly]))
+
+    for i in range(len(rings) - 1):
+        inside = tuple((x + y) / 2 for x, y in zip(curve[i], curve[i + 1]))
+        for k in range(sides):
+            quad = [rings[i][k], rings[i][(k + 1) % sides],
+                    rings[i + 1][(k + 1) % sides], rings[i + 1][k]]
+            if rad[i] < 1e-6:
+                quad = [quad[0], quad[2], quad[3]]
+            elif rad[i + 1] < 1e-6:
+                quad = quad[:3]
+            add(quad, inside)
+    if caps:
+        for end, nxt in ((0, 1), (len(rings) - 1, len(rings) - 2)):
+            if rad[end] > 1e-6:
+                add(list(rings[end]), curve[nxt])
+    return ("poly", tuple(faces), mat)
+
+
+def _sub(a, b):
+    return tuple(x - y for x, y in zip(a, b))
+
+
+def _cross(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+
+def _norm(v):
+    n = math.sqrt(sum(c * c for c in v)) or 1.0
+    return tuple(c / n for c in v)
+
+
+def _reject(v, axis):
+    """``v`` ohne seinen Anteil entlang ``axis``."""
+    dot = sum(a * b for a, b in zip(v, axis))
+    return tuple(a - dot * b for a, b in zip(v, axis))
+
+
+def mirror_poly(s):
+    """Vielflach an l = 0 gespiegelt (Punkte und Normalen)."""
+    _, faces, mat = s
+    return ("poly", tuple(((f[0][0], -f[0][1], f[0][2]),
+                           [(pt[0], -pt[1], pt[2]) for pt in f[1]]) + tuple(f[2:])
+                          for f in faces), mat)
 
 
 def _rot_matrix(rot):
@@ -921,6 +1205,8 @@ def _shape_faces(shape):
         return _box_faces(f, l, z)
     if kind == "obox":
         return _obox_faces(*shape[1:4])
+    if kind == "poly":
+        return [(face[0], list(face[1])) for face in shape[1]]
     if kind == "disc":
         _, f, l_center, z_center, radius, _mat, segments = shape
         return [((1, 0, 0), [
@@ -1253,6 +1539,15 @@ def render(shapes, facing):
                 emitted = _emit(points, to_world(local_normal, facing), shape[4], facing)
                 if emitted:
                     faces.append(emitted)
+        elif shape[0] == "poly":
+            for face in shape[1]:
+                # Ohne Kantenflag (Dreiecke, Facetten): Strich in Eigenfarbe,
+                # damit keine Fugen zwischen den Teilflaechen erscheinen.
+                edge = len(face) > 2 and face[2]
+                emitted = _emit(list(face[1]), to_world(face[0], facing), shape[2], facing,
+                                seam=not edge)
+                if emitted:
+                    faces.append(emitted)
         elif shape[0] == "disc":
             _, f, lc, zc, radius, mat, segments = shape
             points = [
@@ -1325,6 +1620,8 @@ def _mirror_l(shapes):
             out.append(("box", f, (-l[1], -l[0]), z, mat))
         elif s[0] == "obox":
             out.append(mirror_obox(s))
+        elif s[0] == "poly":
+            out.append(mirror_poly(s))
         elif s[0] == "disc":
             _, f, lc, zc, r, mat, seg = s
             out.append(("disc", f, -lc, zc, r, mat, seg))
@@ -1355,9 +1652,12 @@ SCOUT_BODY = [
     # -- Huefte, schlanke Taille, V-Torso ----------------------------------
     B((-5, 5), (-8.5, 8.5), (34, 39), "metal"),
     B((-4.5, 5), (-6, 6), (39, 45), "dark"),
-    B((-6, 7), (-9, 9), (45, 52), "plate"),
-    B((-6.5, 8), (-11, 11), (52, 60), "plate"),
-    B((-6, 7.5), (-10, 10), (60, 62), "light"),          # Brustdach
+    # V-Torso als Profil der Vorderansicht, nach vorn gezogen, mit Fase
+    # (18. Nov. 2026) -- statt zweier gestufter Quader.
+    EX([(-8.6, 45), (8.6, 45), (11.2, 52), (11.4, 59), (10, 60.6), (-10, 60.6),
+        (-11.4, 59), (-11.2, 52)], (-6.4, 8), "plate", bevel=0.8, axis="f"),
+    EX([(-9.8, 60.4), (9.8, 60.4), (9.0, 62), (-9.0, 62)], (-6, 7.5), "light",
+       bevel=0.4, axis="f"),                                          # Brustdach
     # Brustplatte mit Kernsockel -- der Sockel traegt den Kern bis in seine
     # aeussersten Energiestreifen.
     B((8, 8.6), (-6.5, 6.5), (45.5, 59), "dark"),
@@ -1365,11 +1665,11 @@ SCOUT_BODY = [
     B((8.6, 9.1), (-6, -1.2), (56.4, 57.8), "accent"),
     B((8.6, 9.1), (1.2, 6), (56.4, 57.8), "accent"),
     # -- Schultern ---------------------------------------------------------
-    B((-5.5, 5.5), (11, 17), (54, 62), "plate"),
-    B((-6, 6), (10.5, 17.5), (62, 64), "light"),
+    EX([(-5.5, 54), (5.5, 54), (5.5, 60.5), (4, 62), (-5.5, 62)], (11, 17), "plate", bevel=0.6),
+    EX([(-6, 62), (4.5, 62), (3.5, 64), (-6, 64)], (10.5, 17.5), "light", bevel=0.35),
     B((5.5, 6), (12, 16), (57, 59), "accent"),
-    B((-5.5, 5.5), (-17, -11), (54, 62), "plate"),
-    B((-6, 6), (-17.5, -10.5), (62, 64), "light"),
+    EX([(-5.5, 54), (5.5, 54), (5.5, 60.5), (4, 62), (-5.5, 62)], (-17, -11), "plate", bevel=0.6),
+    EX([(-6, 62), (4.5, 62), (3.5, 64), (-6, 64)], (-17.5, -10.5), "light", bevel=0.35),
     B((5.5, 6), (-16, -12), (57, 59), "accent"),
     # -- Hals --------------------------------------------------------------
     B((-2.5, 2.5), (-3, 3), (62, 65), "metal"),
@@ -1383,16 +1683,20 @@ SCOUT_BODY = [
     B((1.0, 3.0), (-15.0, -12.4), (30.0, 31.5), "light"),
     B((-0.8, 2.0), (-12.4, -11.3), (31.5, 33.6), "plate"), # Daumen
     # -- Passive Sprint: Ruecken-Booster mit Fluegeln und Duesen -----------
-    B((-13, -7), (-6.5, 6.5), (44, 62), "plate"),
+    EX([(-7, 44), (-12.5, 45.5), (-13.5, 52), (-13.5, 60), (-12, 62), (-7, 62)],
+       (-6.5, 6.5), "plate", bevel=0.6),
     B((-13.5, -6.5), (-7, 7), (62, 64), "light"),
     L((-12, 4), [(2.4, 40), (2.8, 44)], "metal", segments=12),
     L((-12, -4), [(2.4, 40), (2.8, 44)], "metal", segments=12),
     L((-12, 4), [(1.9, 36.5), (1.9, 40)], "glow", segments=10),
     L((-12, -4), [(1.9, 36.5), (1.9, 40)], "glow", segments=10),
-    B((-12, -8), (6.5, 13), (55, 57), "light"),          # Fluegel
-    B((-12, -8), (-13, -6.5), (55, 57), "light"),
-    B((-12.2, -11.6), (7, 12.5), (55.5, 56.5), "accent"),
-    B((-12.2, -11.6), (-12.5, -7), (55.5, 56.5), "accent"),
+    # Fluegel nach hinten gepfeilt (Grundriss, nach oben gezogen)
+    EX([(-8, 6.4), (-11.5, 6.4), (-15.5, 14.5), (-13.8, 15)], (55, 56.8), "light",
+       bevel=0.3, axis="z"),
+    EX([(-8, -6.4), (-11.5, -6.4), (-15.5, -14.5), (-13.8, -15)], (55, 56.8), "light",
+       bevel=0.3, axis="z"),
+    EX([(-11.2, 7.5), (-12, 7.5), (-15.2, 14), (-14.6, 14.3)], (56.8, 57.2), "accent", axis="z"),
+    EX([(-11.2, -7.5), (-12, -7.5), (-15.2, -14), (-14.6, -14.3)], (56.8, 57.2), "accent", axis="z"),
     B((-13.6, -13), (-3, 3), (48, 58), "accent"),
 ]
 
@@ -1517,6 +1821,24 @@ EQ_SHIELD = [
 #   * PAULDRONS, die HOEHER sitzen als der Kopfsockel, dazu zwei stehende
 #     Auspuffstapel dahinter. Der Rahmen wirkt dadurch geduckt und hat keinen
 #     sichtbaren Hals -- die Vireo-Silhouette hat beides umgekehrt.
+# Kabelschlaeuche an den Auspuff-Leuchtfeuern (18. Nov. 2026, Wunsch des
+# Spielers: passt ins Cyber-Setting). Je Seite zwei Schlaeuche (Zug): einer
+# vom Stapel im Bogen hinten hinunter in den Ruecken, einer hinueber zur
+# Schulterplatte; Muffen an beiden Enden.
+_JUGG_HOSES = [
+    SW([(-11.4, 8.6, 66.5), (-15.5, 11, 61), (-14.2, 10.5, 52), (-9.6, 8.5, 46.5)],
+       [1.6, 1.6, 1.6, 1.6], "metal", sides=10, steps=6),
+    SW([(-11.7, 8.6, 66.5), (-16.9, 11.4, 61), (-15.6, 10.9, 52), (-10.6, 8.5, 46.5)],
+       [0.45, 0.45, 0.45, 0.45], "glow", sides=6, steps=6),
+    SW([(-11.2, 6.4, 69), (-16, 5.2, 63), (-15.6, 4.5, 52), (-9.6, 4, 42)],
+       [1.0, 1.0, 1.0, 1.0], "dark", sides=8, steps=6),
+    SW([(-9.8, 10.4, 70), (-12.5, 13.5, 71), (-10.2, 16.5, 67)],
+       [1.1, 1.1, 1.1], "dark", sides=8, steps=5),
+    B((-10.8, -9), (6.6, 10.4), (44.6, 48.4), "dark"),                # Muffen
+    B((-10.6, -9), (2.6, 5.4), (40.5, 43.5), "dark"),
+    L((-11.4, 8.6), [(2.0, 65.4), (2.0, 67.6)], "accent", segments=10),
+]
+
 JUGG_BODY = [
     # Umbau 16. Nov. 2026 nach den DROME-Designregeln (Entwurf v4.py,
     # new_dromes.py M_BODY): Schultern HOEHER, der Kopf sitzt tief dazwischen,
@@ -1526,18 +1848,20 @@ JUGG_BODY = [
     # -- Huefte und Torso als Keil ---------------------------------------
     B((-7, 7), (-11, 11), (31, 38), "metal"),
     B((-8, 9), (-12, 12), (38, 48), "plate"),
-    B((-9, 10.5), (-14, 14), (48, 60), "plate"),
+    # Oberkoerper mit abgeschraegter Brustkante (Profil mit Fase, 18. Nov.)
+    EX([(-9, 48), (10.5, 48), (10.5, 57), (8.5, 60), (-9, 60)], (-14, 14), "plate", bevel=0.8),
     B((-8, 9.5), (-13, 13), (60, 62.5), "light"),
     # -- Frontpanzer mit Kernsockel ----------------------------------------
     B((10.5, 11.5), (-10, 10), (42, 58), "dark"),
     B((11.5, 12), (-8, 8), (44, 45.4), "accent"),
     B((11.5, 12), (-8, 8), (56, 57.4), "accent"),
     # -- Schultern hoeher als der Kopf -------------------------------------
-    B((-9, 9), (13, 25), (56, 70), "plate"),
-    B((-9.5, 9.5), (12.5, 25.5), (70, 73), "light"),
+    # (Profile mit Fase, vorn oben abgeschraegt -- 18. Nov. 2026)
+    EX([(-9, 56), (9, 56), (9, 67), (6.5, 70), (-9, 70)], (13, 25), "plate", bevel=0.9),
+    EX([(-9.5, 70), (6.5, 70), (5, 73), (-9.5, 73)], (12.5, 25.5), "light", bevel=0.5),
     B((9, 9.6), (15, 23), (62, 65), "accent"),
-    B((-9, 9), (-25, -13), (56, 70), "plate"),
-    B((-9.5, 9.5), (-25.5, -12.5), (70, 73), "light"),
+    EX([(-9, 56), (9, 56), (9, 67), (6.5, 70), (-9, 70)], (-25, -13), "plate", bevel=0.9),
+    EX([(-9.5, 70), (6.5, 70), (5, 73), (-9.5, 73)], (-25.5, -12.5), "light", bevel=0.5),
     B((9, 9.6), (-23, -15), (62, 65), "accent"),
     # -- Bunkerkopf, tief zwischen den Schultern (gehoert zum Rumpf) ------
     B((-5, 7), (-7, 7), (61, 68), "plate"),
@@ -1553,7 +1877,7 @@ JUGG_BODY = [
     L((-9.5, -8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
     L((-9.5, 8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
     L((-9.5, -8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
-]
+] + _JUGG_HOSES + _mirror_l(_JUGG_HOSES)
 
 # Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
 # Der Molok-Kopf ist Teil des Rumpfs (17. Nov. 2026, Wunsch des Spielers).
@@ -1977,38 +2301,96 @@ EQ_HOLO_BOOST = [
 # ===========================================================================
 
 
+# Fluegelmantel als gestaffelte Federlagen (18. Nov. 2026, Spieler: "die
+# lange Treppe ist nicht das Wahre"): je Seite drei Profile mit Fase, die
+# nach aussen kleiner werden -- Deckfedern, Armschwingen, Handschwingen --
+# und hinten unten in eine Spitze auslaufen.
+def _feather(root, tip, width, l, mat, bend=0.0):
+    """Eine Feder als Tropfen (18. Nov. 2026): spitz an der Wurzel, breit und
+    rund am Ende, flach quer zur Koerperseite. ``bend`` biegt sie leicht
+    nach hinten (f), damit die Reihen nicht steif wirken."""
+    rf, rz = root
+    tf, tz = tip
+    mid = ((rf + tf) / 2 - bend, (rz + tz) / 2)
+    pts = [(rf, l, rz), (mid[0], l, mid[1]), (tf, l, tz)]
+    return SW(pts, [0.2, width * 0.85, width * 0.35], mat, sides=8, flat=0.22, steps=5)
+
+
+def _feather_row(roots, tips, width, l, mat, dl=0.0, bend=1.0):
+    """Eine Reihe Federn; jede liegt ``dl`` weiter aussen als die vorige,
+    damit sie sich schuppenartig ueberlappen."""
+    return [_feather(r, t, width, l + i * dl, mat, bend) for i, (r, t) in enumerate(zip(roots, tips))]
+
+
+# Fluegel einer Eule (18. Nov. 2026, Wunsch des Spielers): eine Grundplatte
+# schliesst die Luecken, darueber vier Reihen Tropfen-Federn, jede Reihe
+# weiter aussen und hoeher, jede Feder leicht verdreht -- Handschwingen
+# (lang, innen, bis zum Boden), Armschwingen, grosse und kleine Deckfedern.
+_STRIX_WING = [
+    EX([(6, 58), (1, 61), (-6, 61), (-12, 58), (-16, 50), (-17.5, 38), (-17, 26),
+        (-15, 15), (-12, 12), (-9, 17), (-4, 28), (1, 40), (5, 50)],
+       (8.6, 11.4), "dark", bevel=0.5),
+] + _feather_row(                                         # Handschwingen
+    [(-7, 40), (-9.5, 41), (-12, 42), (-14.5, 42)],
+    [(-9.5, 13), (-12.5, 12.5), (-15.5, 14), (-17.5, 18)], 3.4, 11.6, "metal", dl=0.15, bend=0.8,
+) + _feather_row(                                         # Armschwingen
+    [(1, 46), (-2.5, 47), (-6, 48), (-9.5, 49), (-13, 49)],
+    [(-3, 26), (-6.5, 25), (-10, 25), (-13.5, 27), (-16.5, 31)], 3.4, 12.6, "light",
+    dl=0.15, bend=1.2,
+) + _feather_row(                                         # grosse Deckfedern
+    [(4, 54), (0, 55.5), (-4, 56), (-8, 56), (-12, 54)],
+    [(1.5, 41), (-3, 40), (-7.5, 40), (-12, 41), (-15.5, 43)], 3.0, 13.6, "plate",
+    dl=0.15, bend=1.0,
+) + _feather_row(                                         # kleine Deckfedern
+    [(5, 59.5), (1, 60.5), (-3, 61), (-7, 60.5), (-11, 58.5)],
+    [(3, 51), (-1, 50), (-5, 50), (-9, 50), (-13, 50)], 2.6, 14.6, "light",
+    dl=0.12, bend=0.6,
+) + [
+    SW([(-2, 15.6, 60.5), (-7, 15.6, 60), (-12, 15.4, 57)], [0.35, 0.35, 0.2], "accent",
+       sides=6, steps=4),
+]
+
+# Buchse und Kabel der Lafette, je nach STRIX_MOUNT.
+if STRIX_MOUNT == "schulter":
+    _STRIX_SOCKET = [
+        L((-1, 11.5), [(2.8, 59.5), (2.8, 61.2)], "dark", segments=12),
+        L((-1, 11.5), [(3.1, 60.0), (3.1, 60.6)], "accent", caps=False, segments=12),
+        SW([(-7.6, 1.5, 41.5), (-12.5, 5, 46), (-12, 9.5, 56), (-6, 11.5, 61),
+            (-3.5, 11.5, 60.8)], [0.7] * 5, "dark", sides=8, steps=5),
+        SW([(-7.6, -1.5, 40), (-13.5, 4, 44), (-13.5, 8, 55), (-7, 10, 61.3),
+            (-3.4, 10.8, 60.6)], [0.55] * 5, "metal", sides=8, steps=5),
+    ]
+else:
+    _STRIX_SOCKET = [
+        L((-1, 49.5), [(2.6, 14.6), (2.6, 16.8)], "dark", axis="l", segments=12),
+        L((-1, 49.5), [(2.9, 15.4), (2.9, 15.9)], "accent", axis="l", caps=False, segments=12),
+        SW([(-7.6, 1.5, 41.5), (-11.5, 6, 43), (-13.5, 12, 46.5), (-7, 17.0, 49.5),
+            (-3.5, 16.4, 49.5)], [0.7] * 5, "dark", sides=8, steps=5),
+        SW([(-7.6, -1.5, 40), (-12.5, 5, 40.5), (-14.5, 12, 44.5), (-8, 17.4, 47.5),
+            (-3.5, 16.4, 48.0)], [0.55] * 5, "metal", sides=8, steps=5),
+    ]
+
+
 STRIX_BODY = [
     # -- Huefte und geduckter Rumpf, nach oben nach vorn versetzt -----------
     B((-6, 4), (-6, 6), (30, 36), "metal"),
     B((-7, 5), (-8, 8), (36, 44), "plate"),
     B((-5, 8), (-9, 9), (44, 52), "plate"),
     B((-4, 8.5), (-8, 8), (52, 54), "light"),
-    # -- Fluegel-Mantel: drei Stufen, nach unten breiter -------------------
-    B((-12, 5), (9, 13), (44, 56), "plate"),
-    B((-12.5, 5.5), (8.5, 13.5), (56, 59), "light"),
-    B((-13, 3), (10, 15), (32, 44), "plate"),
-    B((-14, 0), (11, 17), (20, 32), "plate"),
-    B((-14, 0), (17, 17.5), (24, 25.3), "accent"),
-    B((-13, 3), (15, 15.5), (36, 37.3), "accent"),
-    B((-12, 5), (13, 13.5), (48, 49.3), "accent"),
-    B((-12, 5), (-13, -9), (44, 56), "plate"),
-    B((-12.5, 5.5), (-13.5, -8.5), (56, 59), "light"),
-    B((-13, 3), (-15, -10), (32, 44), "plate"),
-    B((-14, 0), (-17, -11), (20, 32), "plate"),
-    # -- Lafette auf der linken Schulter (equip_center) ---------------------
-    B((-6, 4), (8.5, 12.5), (58, 61), "metal"),
-    B((3.9, 4.4), (9.5, 11.5), (59, 60), "accent"),
-]
+    # -- Fluegelmantel ------------------------------------------------------
+] + _STRIX_WING + _mirror_l(_STRIX_WING) + [
+] + _STRIX_SOCKET
+
 
 STRIX_HEAD = [
     # Kapuze, nach vorn ueber die Brust gezogen
     B((3, 13), (-7.5, 7.5), (49, 60), "plate"),
     B((2.5, 13.5), (-8, 8), (60, 62), "light"),
-    # Federohren
-    B((2, 6), (3, 6), (62, 67), "plate"),
-    B((2, 6), (-6, -3), (62, 67), "plate"),
-    B((5, 6.3), (3.5, 5.5), (63, 66), "accent"),
-    B((5, 6.3), (-5.5, -3.5), (63, 66), "accent"),
+    # Federohren als Doppelpyramiden, leicht nach aussen und hinten
+    BP((4.5, 4.4, 60.5), (2.2, 6.2, 69), 3.2, 2.6, "plate", mid=0.35),
+    BP((4.5, -4.4, 60.5), (2.2, -6.2, 69), 3.2, 2.6, "plate", mid=0.35),
+    BP((5.6, 4.6, 62), (4.3, 5.8, 67.2), 1.4, 0.8, "accent", mid=0.35),
+    BP((5.6, -4.6, 62), (4.3, -5.8, 67.2), 1.4, 0.8, "accent", mid=0.35),
     # Gesicht: dunkle Platte, zwei grosse Linsen mit Lichtpunkt, Schnabel
     # (Linsen vergroessert 17. Nov. 2026, Board 16 / v6.py LENS_BIG)
     B((13, 13.6), (-7.0, 7.0), (50.5, 59.5), "dark"),
@@ -2044,23 +2426,81 @@ STRIX_CORE = [
 
 # Waffen der Lafette: um ihren eigenen Anker (0, 0, 61) gebaut, liegen auf
 # der Schulter statt in einer Hand.
-EQ_MORTAR = [
-    B((-5, 3), (-2.5, 2.5), (61, 64), "metal"),                      # Sockel
-    L((-1, 0), [(3.6, 64), (3.9, 78), (3.4, 82)], "metal", segments=14),   # Rohr
-    L((-1, 0), [(4.4, 78.5), (4.4, 80)], "accent", caps=False, segments=14),
-    L((-1, 0), [(2.4, 82), (2.4, 82.6)], "glow", segments=12),       # Muendung
-    B((-6, -5), (-1.5, 1.5), (62, 66), "dark"),                      # Ladeschacht
-    B((3, 3.5), (-1.5, 1.5), (62, 63.5), "accent"),
+def side_holder(z=61.0):
+    """Halter einer Lafetten-Waffe (Strix, 18. Nov. 2026): ein Arm quer zur
+    Waffe, der seitlich in die Buchse unter der Schulter greift (-l), mit
+    Kragen an der Buchse. Die Waffe liegt um (0, 0, z) wie bisher."""
+    if STRIX_MOUNT == "schulter":
+        return [
+            B((-2.0, 2.0), (-1.6, 1.6), (z - 3.2, z + 1.2), "metal"),
+            B((-2.6, 2.6), (-2.2, 2.2), (z - 3.8, z - 2.8), "dark"),
+            B((-2.1, 2.1), (-1.0, 1.0), (z - 1.6, z - 1.2), "accent"),
+        ]
+    return [
+        B((-2.4, 2.4), (-6.2, -1.4), (z + 1.0, z + 3.4), "metal"),
+        B((-2.9, 2.9), (-6.8, -5.6), (z + 0.6, z + 3.8), "dark"),
+        B((-1.0, 1.0), (-5.0, -2.4), (z + 3.4, z + 3.8), "accent"),
+    ]
+
+
+# Moerser (18. Nov. 2026): Verschlussblock mit Fase, Rohr mit Muendungskragen,
+# zwei Stuetzen, Munitionsgurt zum Halter -- statt eines nackten Zylinders.
+EQ_MORTAR = side_holder() + [
+    EX([(-5, 61.4), (3, 61.4), (4.2, 63), (3, 66.5), (-5, 66.5)], (-2.9, 2.9), "plate", bevel=0.45),
+    L((-1, 0), [(3.0, 66), (3.0, 79), (3.7, 80), (3.7, 83)], "metal", segments=14),   # Rohr
+    L((-1, 0), [(3.3, 70), (3.3, 71.2)], "accent", caps=False, segments=14),
+    L((-1, 0), [(3.3, 74), (3.3, 75.2)], "accent", caps=False, segments=14),
+    L((-1, 0), [(2.4, 83), (2.4, 83.5)], "glow", segments=12),                         # Muendung
+    OB((2.8, 2.6, 63), (0.6, 2.9, 73), 0.9, 0.9, "metal"),                             # Stuetzen
+    OB((2.8, -2.6, 63), (0.6, -2.9, 73), 0.9, 0.9, "metal"),
+    # Munitionsgurt vom Verschluss zum Halter
+    SW([(-5.2, -1.0, 64.5), (-7.2, -2.8, 63.6), (-6.4, -5.6, 62.6), (-3.2, -7.0, 62.6)],
+       [1.1] * 4, "dark", sides=4, flat=0.45, steps=5),
+    SW([(-5.3, -1.0, 64.5), (-7.3, -2.8, 63.6), (-6.5, -5.6, 62.6), (-3.3, -7.0, 62.6)],
+       [0.45] * 4, "glow", sides=6, steps=5),
 ]
 
-EQ_RAIL_LANCE = [
-    B((-6, 4), (-2, 2), (61, 63.5), "plate"),                        # Wiege
-    B((-16, 26), (-1, 1), (61.5, 64.5), "metal"),                    # Schiene
-    B((-12, 24), (-0.8, 0.8), (64.5, 65.3), "accent"),               # Energiespalt
-    L((0, 63), [(2.4, 8), (2.4, 10)], "dark", axis="f", segments=12),     # Spulen
-    L((0, 63), [(2.4, 15), (2.4, 17)], "dark", axis="f", segments=12),
-    B((26, 30), (-1.5, 1.5), (60.8, 65.2), "dark"),                  # Muendung
-    D(30.2, 0, 63, 1.4, "glow"),
+# Schienen-Lanze als schweres Scharfschuetzengewehr (Spieler 18. Nov. 2026:
+# "sieht ueberhaupt nicht nach Sniper aus"): Schaft mit Wangenauflage,
+# Gehaeuse mit Kastenmagazin, langer Lauf mit Muendungsbremse, Zielfernrohr,
+# eingeklapptes Zweibein. Railgun bleibt sie: Leuchtspalt im Gehaeuse,
+# Spulenringe am Lauf. Liegt auf der Strix-Lafette (Wiege bei z 61).
+_RL = 62.0                               # Unterkante Gehaeuse
+EQ_RAIL_LANCE = side_holder() + [
+    # Schaft: Kolben, Griffstueck, Wangenauflage (Profil, Fase)
+    EX([(-17, _RL - 1.6), (-15.5, _RL - 2.2), (-6, _RL - 0.6), (-4, _RL + 0.2),
+        (-4, _RL + 4.0), (-9, _RL + 4.6), (-15, _RL + 5.0), (-17, _RL + 4.6)],
+       (-1.3, 1.3), "plate", bevel=0.35),
+    EX([(-17.4, _RL - 1.8), (-16.6, _RL - 2.0), (-16.6, _RL + 4.8), (-17.4, _RL + 4.7)],
+       (-1.5, 1.5), "dark", bevel=0.2),                               # Schaftkappe
+    # Gehaeuse mit Oberschiene
+    EX([(-4.5, _RL - 0.4), (13, _RL - 0.4), (14.5, _RL + 1.0), (14.5, _RL + 4.2),
+        (-4.5, _RL + 4.2)], (-1.7, 1.7), "plate", bevel=0.4),
+    B((-3, 12), (-1.0, 1.0), (_RL + 4.2, _RL + 4.9), "metal"),        # Schiene oben
+    B((0, 12.5), (-1.75, -1.65), (_RL + 1.2, _RL + 2.4), "accent"),   # Leuchtspalt
+    B((0, 12.5), (1.65, 1.75), (_RL + 1.2, _RL + 2.4), "accent"),
+    # Kastenmagazin, leicht nach vorn geneigt
+    O((5.5, 0, _RL - 2.2), (3.6, 2.2, 4.6), (0, 8, 0), "dark"),
+    # Lauf mit Spulenringen und Muendungsbremse
+    L((0, _RL + 2.4), [(1.0, 14.5), (1.0, 33)], "metal", axis="f", segments=12),
+    L((0, _RL + 2.4), [(1.6, 17), (1.6, 18.2)], "accent", axis="f", caps=False, segments=12),
+    L((0, _RL + 2.4), [(1.6, 21), (1.6, 22.2)], "accent", axis="f", caps=False, segments=12),
+    L((0, _RL + 2.4), [(1.6, 25), (1.6, 26.2)], "accent", axis="f", caps=False, segments=12),
+    EX([(33, _RL + 0.6), (37, _RL + 0.6), (37.5, _RL + 1.2), (37.5, _RL + 3.6),
+        (37, _RL + 4.2), (33, _RL + 4.2)], (-1.9, 1.9), "dark", bevel=0.3),
+    B((34, 35), (-2.0, 2.0), (_RL + 1.6, _RL + 3.2), "plate"),        # Bremsfenster
+    D(37.6, 0, _RL + 2.4, 1.0, "glow"),
+    # Zielfernrohr auf zwei Ringen
+    B((0.5, 1.8), (-0.9, 0.9), (_RL + 4.9, _RL + 6.2), "metal"),
+    B((7.5, 8.8), (-0.9, 0.9), (_RL + 4.9, _RL + 6.2), "metal"),
+    L((0, _RL + 7.6), [(1.7, -2.5), (1.5, -1.0), (1.5, 7.0), (2.2, 9.0), (2.2, 11.5)], "dark",
+      axis="f", segments=12),
+    L((0, _RL + 7.6), [(1.65, 3.0), (1.65, 4.2)], "metal", axis="f", caps=False, segments=12),
+    D(11.55, 0, _RL + 7.6, 1.7, "visor"),
+    # Zweibein, eingeklappt unter dem Lauf
+    OB((15.5, 1.1, _RL + 0.6), (25, 1.4, _RL + 0.9), 0.6, 0.6, "metal"),
+    OB((15.5, -1.1, _RL + 0.6), (25, -1.4, _RL + 0.9), 0.6, 0.6, "metal"),
+    B((14.5, 16), (-1.6, 1.6), (_RL + 0.2, _RL + 1.2), "dark"),
 ]
 
 # ===========================================================================
@@ -2202,12 +2642,20 @@ def light_arm(shoulder, pose):
 
 def _head_blaster(h, k, neon=False):
     f, l, z = h
+    # Gehaeuse und Laufmantel als Profile mit Fase, Kuehlrippen am Mantel
+    # (18. Nov. 2026, statt Kasten mit Lauf).
     s = [
-        B((f, f + 5 * k), (l - 3 * k, l + 3 * k), (z - 3.5 * k, z + 3.5 * k), "plate"),
-        B((f + 5 * k, f + 13 * k), (l - 2 * k, l + 2 * k), (z - 2.3 * k, z + 2.3 * k), "plate"),
-        B((f + 5 * k, f + 13 * k), (l - 2.2 * k, l + 2.2 * k), (z + 2.3 * k, z + 3 * k), "light"),
-        B((f + 13 * k, f + 15 * k), (l - 1.8 * k, l + 1.8 * k), (z - 2 * k, z + 2 * k), "dark"),
-        D(f + 15.1 * k, l, z, 1.4 * k, "glow"),
+        EX([(f, z - 3.5 * k), (f + 5.5 * k, z - 3.5 * k), (f + 6.5 * k, z - 2.2 * k),
+            (f + 6.5 * k, z + 2.6 * k), (f + 5 * k, z + 3.6 * k), (f + 0.6 * k, z + 3.6 * k),
+            (f, z + 2.6 * k)], (l - 3 * k, l + 3 * k), "plate", bevel=0.5 * k),
+        EX([(f + 6.5 * k, z - 2.2 * k), (f + 13 * k, z - 2.2 * k), (f + 14 * k, z - 1.4 * k),
+            (f + 14 * k, z + 1.8 * k), (f + 13 * k, z + 2.6 * k), (f + 6.5 * k, z + 2.6 * k)],
+           (l - 2 * k, l + 2 * k), "light", bevel=0.4 * k),
+        B((f + 8 * k, f + 8.7 * k), (l - 2.3 * k, l + 2.3 * k), (z - 2.5 * k, z + 2.9 * k), "dark"),
+        B((f + 9.7 * k, f + 10.4 * k), (l - 2.3 * k, l + 2.3 * k), (z - 2.5 * k, z + 2.9 * k), "dark"),
+        B((f + 11.4 * k, f + 12.1 * k), (l - 2.3 * k, l + 2.3 * k), (z - 2.5 * k, z + 2.9 * k), "dark"),
+        B((f + 14 * k, f + 15 * k), (l - 1.6 * k, l + 1.6 * k), (z - 1.6 * k, z + 1.9 * k), "dark"),
+        D(f + 15.1 * k, l, z + 0.2 * k, 1.3 * k, "glow"),
         B((f + 1 * k, f + 4 * k), (l - 3.5 * k, l - 3 * k), (z - 1 * k, z + 1 * k), "accent"),
         B((f + 1 * k, f + 4 * k), (l + 3 * k, l + 3.5 * k), (z - 1 * k, z + 1 * k), "accent"),
     ]
@@ -2218,7 +2666,7 @@ def _head_blaster(h, k, neon=False):
             L((l, z), [(2.5 * k, f + 13.4 * k), (2.5 * k, f + 14.2 * k)], "glow", axis="f",
               caps=False, segments=14),
         ]
-    return s, (f + 15.1 * k, l, z)
+    return s, (f + 15.1 * k, l, z + 0.2 * k)
 
 
 def _head_blade(h, k):
@@ -2226,6 +2674,7 @@ def _head_blade(h, k):
     # Die Klinge waechst am Molok nicht voll mit -- sonst ragt sie aus dem
     # 128er Rahmen. Griff und Parierstange tragen das Armmass.
     kb = min(k, 1.3)
+    top = z + 9.0 * k + 27 * kb
     return [
         B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 6 * k, z + 4.4 * k), "metal"),
         B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 7.8 * k, z - 6 * k), "dark"),
@@ -2234,10 +2683,10 @@ def _head_blade(h, k):
         B((f - 2.1 * k, f + 2.1 * k), (l - 5.4 * k, l - 4.2 * k), (z + 4.2 * k, z + 6.4 * k), "accent"),
         B((f - 2.1 * k, f + 2.1 * k), (l + 4.2 * k, l + 5.4 * k), (z + 4.2 * k, z + 6.4 * k), "accent"),
         B((f - 1.3 * k, f + 1.3 * k), (l - 1.4 * k, l + 1.4 * k), (z + 6.0 * k, z + 9.0 * k), "metal"),
-        B((f - 0.7 * k, f + 0.7 * k), (l - 1.1 * k, l + 1.1 * k), (z + 9.0 * k, z + 9.0 * k + 23 * kb), "glow"),
-        B((f - 0.5 * k, f + 0.5 * k), (l - 0.6 * k, l + 0.6 * k), (z + 9.0 * k + 23 * kb, z + 9.0 * k + 27 * kb), "glow"),
-        B((f + 0.7 * k, f + 1.1 * k), (l - 0.9 * k, l + 0.9 * k), (z + 9.0 * k, z + 9.0 * k + 22 * kb), "accent"),
-    ], (f, l, z + 9.0 * k + 27 * kb)
+        # Plasmaklinge als lange Doppelpyramide (Spieler 18. Nov. 2026): die
+        # kurze Spitze steckt im Heft, die breiteste Stelle knapp darueber.
+        BP((f, l, z + 7.0 * k), (f, l, top), 3.0 * k, 1.5 * k, "glow", mid=0.12),
+    ], (f, l, top)
 
 
 def _head_hammer(h, k):
@@ -2245,8 +2694,12 @@ def _head_hammer(h, k):
     return [
         B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 8 * k, z + 17 * k), "metal"),
         B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 9.6 * k, z - 8 * k), "dark"),
-        B((f - 5 * k, f + 5 * k), (l - 4.5 * k, l + 4.5 * k), (z + 16 * k, z + 25 * k), "plate"),
-        B((f - 5.3 * k, f + 5.3 * k), (l - 4.8 * k, l + 4.8 * k), (z + 19.8 * k, z + 21.2 * k), "accent"),
+        EX([(f - 5 * k, z + 16 * k), (f + 5 * k, z + 16 * k), (f + 5 * k, z + 25 * k),
+            (f - 5 * k, z + 25 * k)], (l - 4.5 * k, l + 4.5 * k), "plate", bevel=1.0 * k),
+        B((f - 5.1 * k, f + 5.1 * k), (l - 4.6 * k, l + 4.6 * k), (z + 19.8 * k, z + 21.2 * k), "accent"),
+        # Dorn hinten
+        BP((f - 4.5 * k, l, z + 20.5 * k), (f - 11 * k, l, z + 20.5 * k), 3.4 * k, 3.4 * k,
+           "metal", mid=0.15),
         B((f + 5 * k, f + 5.8 * k), (l - 3.5 * k, l + 3.5 * k), (z + 17.5 * k, z + 23.5 * k), "dark"),
         D(f + 6 * k, l, z + 20.5 * k, 1.7 * k, "glow"),
     ], (f + 6 * k, l, z + 20.5 * k)
@@ -2261,7 +2714,14 @@ def _head_ram(h, k):
         B((f, f + 6.4 * k), (l - 1.0 * k, l + 1.0 * k), (z + 2.6 * k, z + 4.4 * k), "dark"),
         B((f, f + 6.4 * k), (l - 1.0 * k, l + 1.0 * k), (z - 4.4 * k, z - 2.6 * k), "dark"),
         B((f + 1.4 * k, f + 2.4 * k), (l - 3.2 * k, l + 3.2 * k), (z - 3.4 * k, z + 3.4 * k), "light"),
-        B((f + 8.4 * k, f + 11.4 * k), (l - 6 * k, l + 6 * k), (z - 7 * k, z + 7 * k), "plate"),
+        EX([(l - 6 * k, z - 5 * k), (l - 4 * k, z - 7 * k), (l + 4 * k, z - 7 * k),
+            (l + 6 * k, z - 5 * k), (l + 6 * k, z + 5 * k), (l + 4 * k, z + 7 * k),
+            (l - 4 * k, z + 7 * k), (l - 6 * k, z + 5 * k)], (f + 8.4 * k, f + 11.4 * k),
+           "plate", bevel=0.6 * k, axis="f"),
+        # Hydraulikschlauch am Kolben
+        SW([(f + 0.6 * k, l + 2.4 * k, z + 0.5 * k), (f + 3 * k, l + 4.2 * k, z + 3.2 * k),
+            (f + 6.5 * k, l + 3.6 * k, z + 3.4 * k), (f + 8.4 * k, l + 2.8 * k, z + 1.8 * k)],
+           [0.7 * k] * 4, "dark", sides=8, steps=5),
         B((f + 8.4 * k, f + 11.4 * k), (l - 6.3 * k, l + 6.3 * k), (z - 0.6 * k, z + 0.6 * k), "accent"),
         B((f + 11.4 * k, f + 12.1 * k), (l - 5 * k, l + 5 * k), (z - 6 * k, z + 6 * k), "dark"),
         B((f + 12.1 * k, f + 12.8 * k), (l - 1.6 * k, l + 1.6 * k), (z - 1.6 * k, z + 1.6 * k), "glow"),
@@ -2269,22 +2729,24 @@ def _head_ram(h, k):
 
 
 def _head_boomerang(h, k):
-    """Wurfbereit: Griff durch die Faust, ein Schenkel nach oben, einer nach
-    vorn -- ein "L" in der Armebene, damit es an beiden Armen gleich sitzt."""
+    """Wurfbereit wie ein echter Bumerang -- ohne Griff: das Ende des einen
+    Fluegels steckt in der Faust, die Klinge steigt in einem Bogen zum Knick
+    und faellt nach vorn ab. Ein durchgehender gebogener Zug mit Rauten-
+    Querschnitt (Schneide ringsum), dazu eine Leuchtnut auf beiden Seiten
+    (Spieler 18. Nov. 2026)."""
     f, l, z = h
+    path = [(f - 0.2 * k, l, z - 3.0 * k), (f + 0.4 * k, l, z + 6.0 * k),
+            (f + 3.0 * k, l, z + 13.5 * k), (f + 7.5 * k, l, z + 15.0 * k),
+            (f + 12.5 * k, l, z + 11.5 * k), (f + 16.0 * k, l, z + 6.5 * k)]
+    radii = [1.3 * k, 2.2 * k, 2.8 * k, 2.8 * k, 2.0 * k, 0.15 * k]
+    groove = [(pt[0], pt[1], pt[2]) for pt in path[1:5]]
     return [
-        B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 5 * k, z + 4 * k), "metal"),
-        B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 6.6 * k, z - 5 * k), "dark"),
-        B((f - 2.2 * k, f + 2.2 * k), (l - 2.2 * k, l + 2.2 * k), (z + 4 * k, z + 7 * k), "plate"),
-        B((f - 2.3 * k, f + 2.3 * k), (l - 2.3 * k, l + 2.3 * k), (z + 5 * k, z + 5.8 * k), "accent"),
-        B((f - 0.6 * k, f + 0.6 * k), (l - 1.3 * k, l + 1.3 * k), (z + 7 * k, z + 19 * k), "glow"),
-        B((f + 0.6 * k, f + 1.0 * k), (l - 1.3 * k, l + 1.3 * k), (z + 7 * k, z + 18 * k), "accent"),
-        B((f - 0.9 * k, f + 0.9 * k), (l - 1.8 * k, l + 1.8 * k), (z + 19 * k, z + 21 * k), "plate"),
-        B((f + 2.2 * k, f + 6.5 * k), (l - 1.3 * k, l + 1.3 * k), (z + 5.5 * k, z + 8.5 * k), "glow"),
-        B((f + 6.5 * k, f + 10.5 * k), (l - 1.3 * k, l + 1.3 * k), (z + 8 * k, z + 11 * k), "glow"),
-        B((f + 2.2 * k, f + 10.5 * k), (l - 1.5 * k, l + 1.5 * k), (z + 7.6 * k, z + 8.4 * k), "accent"),
-        B((f + 10.5 * k, f + 12.5 * k), (l - 1.8 * k, l + 1.8 * k), (z + 9.5 * k, z + 12 * k), "plate"),
-    ], (f + 12.5 * k, l, z + 11 * k)
+        SW(path, radii, "blade", sides=4, flat=0.32, steps=5),
+        SW([(pt[0], l + 0.75 * k, pt[2]) for pt in groove], [0.35 * k] * 4, "glow",
+           sides=6, steps=4),
+        SW([(pt[0], l - 0.75 * k, pt[2]) for pt in groove], [0.35 * k] * 4, "glow",
+           sides=6, steps=4),
+    ], (f + 16.0 * k, l, z + 6.5 * k)
 
 
 def _head_staff(h, k):
@@ -2314,10 +2776,12 @@ def _head_wrench(h, k):
         B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z - 8 * k, z - 6.8 * k), "accent"),
         B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 3.2 * k, z + 4.4 * k), "accent"),
         B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 6.0 * k, z + 7.2 * k), "accent"),
-        B((f - 2.2 * k, f + 2.2 * k), (l - 4.6 * k, l + 4.6 * k), (z + 14 * k, z + 18 * k), "metal"),
-        B((f - 2.4 * k, f + 2.4 * k), (l - 4.9 * k, l + 4.9 * k), (z + 15.4 * k, z + 16.6 * k), "accent"),
-        B((f - 2.0 * k, f + 2.0 * k), (l - 4.6 * k, l - 2.0 * k), (z + 18 * k, z + 24 * k), "metal"),
-        B((f - 2.0 * k, f + 2.0 * k), (l + 2.0 * k, l + 4.6 * k), (z + 18 * k, z + 24 * k), "metal"),
+        # Maul als Profil der Vorderansicht: echte Schluesselform mit Oeffnung
+        EX([(l - 4.6 * k, z + 14 * k), (l + 4.6 * k, z + 14 * k), (l + 4.8 * k, z + 21 * k),
+            (l + 3.4 * k, z + 24.4 * k), (l + 1.7 * k, z + 24.4 * k), (l + 1.9 * k, z + 19.6 * k),
+            (l - 1.9 * k, z + 19.6 * k), (l - 1.7 * k, z + 24.4 * k), (l - 3.4 * k, z + 24.4 * k),
+            (l - 4.8 * k, z + 21 * k)], (f - 2.0 * k, f + 2.0 * k), "metal", bevel=0.5 * k, axis="f"),
+        B((f - 2.2 * k, f + 2.2 * k), (l - 4.75 * k, l + 4.75 * k), (z + 15.4 * k, z + 16.6 * k), "accent"),
         B((f - 1.3 * k, f + 1.3 * k), (l - 1.3 * k, l + 1.3 * k), (z + 18 * k, z + 21 * k), "glow"),
         D(f + 2.2 * k, l - 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
         D(f + 2.2 * k, l + 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
@@ -2344,9 +2808,8 @@ def _head_shield(h, k):
 def lafette_blaster(neon=False):
     """Fernwaffe ohne Arm: liegt laengs auf der Schulter, Wiege statt Hand."""
     z = LAFETTE_Z
-    s = [
-        B((-6, 4), (-2, 2), (z, z + 2.5), "plate"),                  # Wiege
-        B((-4, 5), (-3, 3), (z + 2.5, z + 8), "plate"),              # Gehaeuse
+    s = side_holder(z) + [
+        B((-4, 5), (-3, 3), (z + 1.5, z + 8), "plate"),              # Gehaeuse
         B((5, 15), (-2, 2), (z + 3, z + 7.4), "plate"),              # Lauf
         B((5, 15), (-2.2, 2.2), (z + 7.4, z + 8.1), "light"),
         B((15, 17), (-1.8, 1.8), (z + 3.2, z + 7.2), "dark"),
@@ -2369,9 +2832,8 @@ def lafette_staff():
     z = LAFETTE_Z
     base = z + 5
     head, point = _head_staff((0, 0, base - 18.6), 1.0)
-    return [
-        B((-3, 3), (-2.6, 2.6), (z, z + 2), "plate"),
-        L((0, 0), [(1.6, z + 2), (1.6, base)], "metal", segments=10),
+    return side_holder(z) + [
+        L((0, 0), [(1.6, z + 1), (1.6, base)], "metal", segments=10),
     ] + head[5:], point
 
 
@@ -2381,9 +2843,8 @@ def lafette_wrench():
     z = LAFETTE_Z
     base = z + 5
     head, point = _head_wrench((0, 0, base - 14), 1.0)
-    return [
-        B((-3, 3), (-2.6, 2.6), (z, z + 2), "plate"),
-        B((-1.2, 1.2), (-1.2, 1.2), (z + 2, base), "plate"),
+    return side_holder(z) + [
+        B((-1.2, 1.2), (-1.2, 1.2), (z + 1, base), "plate"),
     ] + head[5:], point
 
 
@@ -2481,6 +2942,9 @@ SETS = [
                 "id": "scout_feet", "code": "LEG-001", "type": "feet", "name": "Vireo Sprintbeine",
                 "tags": ["light", "fast"], "shapes": SCOUT_FEET,
                 "anchors": {"mount": (0, 0, 36), "ground": (1, 0, 0)},
+                # Beine im Wechsel (18. Nov. 2026): Drehpunkte je Bein (links,
+                # rechts gespiegelt), Teilung Ober-/Unterschenkel bei split_z.
+                "legs": {"hip": (0, 5.75, 33), "knee": (0, 5.75, 22), "split_z": 21},
             },
             {
                 "id": "scout_core", "code": "COR-001", "type": "core", "name": "Vireo Impulskern",
@@ -2575,6 +3039,9 @@ SETS = [
                 "id": "jugg_feet", "code": "LEG-002", "type": "feet", "name": "Molok Standbeine",
                 "tags": ["heavy", "slow"], "shapes": JUGG_FEET,
                 "anchors": {"mount": (0, 0, 33), "ground": (1, 0, 0)},
+                # Hueftausleger (ueber static_z) bleiben am Rumpf.
+                "legs": {"hip": (0, 12.5, 29), "knee": (0, 12.5, 16.5),
+                         "split_z": 15, "static_z": 29},
             },
             {
                 "id": "jugg_core", "code": "COR-002", "type": "core", "name": "Molok Fusionskern",
@@ -2675,8 +3142,10 @@ SETS = [
                     "feet": (0, 0, 30),
                     # Am Ruecken statt an der Brust -- siehe STRIX_CORE.
                     "core": (-7.3, 0, 40.5),
-                    # Die Lafette: auf der linken Schulter, nicht an einem Arm.
-                    "equip_center": (-1, 10.5, 61),
+                    # Die Lafette: seitlich unter der linken Schulter, die Waffe
+                    # steckt mit ihrem Halter in der Buchse (18. Nov. 2026).
+                    "equip_center": (-1, 11.5, 64.5) if STRIX_MOUNT == "schulter"
+                    else (-1, 21.8, 47.5),
                 },
                 # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin --
                 # aber als Lafette nur Fernkampf (16. Nov. 2026).
@@ -2698,6 +3167,8 @@ SETS = [
                 "name": "Strix Federbeine", "tags": ["marksman", "digitigrad"],
                 "shapes": STRIX_FEET,
                 "anchors": {"mount": (0, 0, 30), "ground": (0, 0, 0)},
+                # Knie nach hinten: der Unterschenkel haengt am Gelenk bei z 21.
+                "legs": {"hip": (-3, 5.5, 30), "knee": (-3, 5.5, 21), "split_z": 19},
             },
             {
                 "id": "strix_core", "code": "COR-004", "type": "core",
@@ -2712,14 +3183,14 @@ SETS = [
                 # Schwer wie die Belagerungskanone -- an einen Sprinterarm
                 # kommt sie damit ebenso wenig.
                 "mount_class": "heavy", "category": "weapon",
-                "anchors": {"mount": (0, 0, 61), "muzzle": (30.2, 0, 63)},
+                "anchors": {"mount": (0, 0, 61), "muzzle": (37.6, 0, 64.4)},
             },
             {
                 "id": "eq_mortar", "code": "EQP-015", "type": "equipment",
                 "name": "Moerser", "tags": ["weapon", "heavy", "artillery"],
                 "shapes": EQ_MORTAR,
                 "mount_class": "heavy", "category": "weapon",
-                "anchors": {"mount": (0, 0, 61), "muzzle": (-1, 0, 82.6)},
+                "anchors": {"mount": (0, 0, 61), "muzzle": (-1, 0, 83.5)},
             },
         ],
     },
@@ -2848,6 +3319,12 @@ def model_faces(shapes):
             for normal, points in _obox_faces(*shape[1:4]):
                 faces.append([shape[4], "box", [_r(c) for c in normal],
                               [[_r(c) for c in p] for p in points]])
+        elif shape[0] == "poly":
+            # Dreiecke ohne Kante: Grat und Schneide zeichnen die Flaechen selbst.
+            for face in shape[1]:
+                kind = "box" if len(face) > 2 and face[2] and len(face[1]) == 4 else "seam"
+                faces.append([shape[2], kind, [_r(c) for c in face[0]],
+                              [[_r(c) for c in p] for p in face[1]]])
         elif shape[0] == "disc":
             _, f, lc, zc, radius, mat, segments = shape
             points = [[_r(f), _r(lc + radius * math.cos(2 * math.pi * i / segments)),
@@ -2875,6 +3352,55 @@ def model_faces(shapes):
     return faces, hulls
 
 
+def _shape_center(shape) -> tuple:
+    """Grobe Mitte (l, z) einer Form -- reicht zum Zuordnen zu einem Bein."""
+    kind = shape[0]
+    if kind == "box":
+        return (sum(shape[2]) / 2, sum(shape[3]) / 2)
+    if kind == "disc":
+        return (shape[2], shape[3])
+    if kind == "obox":
+        return (shape[1][1], shape[1][2])
+    if kind == "poly":
+        pts = [pt for face in shape[1] for pt in face[1]]
+        return (sum(pt[1] for pt in pts) / len(pts), sum(pt[2] for pt in pts) / len(pts))
+    _, c, prof, _mat, axis, _seg, _caps = shape
+    ts = [t for _r, t in prof]
+    if axis == "z":
+        return (c[1], (min(ts) + max(ts)) / 2)
+    if axis == "f":
+        return (c[0], c[1])
+    return ((min(ts) + max(ts)) / 2, c[1])
+
+
+def split_legs(shapes, spec) -> dict:
+    """
+    Teilt die Formen eines Antriebs in Beine (18. Nov. 2026): je Seite
+    Ober- und Unterschenkel (``leg_<seite>_upper``/``_lower``) mit den
+    Drehpunkten ``mount`` (Huefte bzw. Knie). Was ueber ``static_z`` oder
+    auf der Mitte liegt, bleibt am Rumpf (``static``).
+    """
+    hip, knee = spec["hip"], spec["knee"]
+    split_z, static_z = spec["split_z"], spec.get("static_z", 999)
+    out = {"static": []}
+    groups = {}
+    for shape in shapes:
+        l, z = _shape_center(shape)
+        if z >= static_z or abs(l) < 0.5:
+            out["static"].append(shape)
+            continue
+        side = "left" if l > 0 else "right"
+        seg = "upper" if z >= split_z else "lower"
+        groups.setdefault((side, seg), []).append(shape)
+    for side, sign in (("left", 1), ("right", -1)):
+        h = (hip[0], hip[1] * sign, hip[2])
+        k = (knee[0], knee[1] * sign, knee[2])
+        out[f"leg_{side}_upper"] = (groups.get((side, "upper"), []),
+                                    {"mount": h, "knee": k})
+        out[f"leg_{side}_lower"] = (groups.get((side, "lower"), []), {"mount": k})
+    return out
+
+
 def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
     """Das 3D-Modell eines Teils: ``<id>.m3d`` (JSON)."""
     pid = part["id"]
@@ -2886,6 +3412,9 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
 
     passive = part.get("passive_shapes", [])
     main = [sh for sh in part["shapes"] if sh not in passive]
+    legs = split_legs(main, part["legs"]) if part.get("legs") else {}
+    if legs:
+        main = legs.pop("static")
     model = {
         "id": pid, "type": part["type"],
         "colors": resolve_roles(WEAPON_COLORS.get(pid, part.get(
@@ -2897,6 +3426,9 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
         # Sichtbare Passive als eigener Block, der sich im Kampf bewegt
         # (Arena3D); im SVG bleibt sie Teil des Rumpfs.
         variants["passive"] = block(passive, {"mount": part["anchors"].get("mount", (0, 0, 0))})
+    for vname, (shapes, anchors) in legs.items():
+        # Beine als eigene Bloecke, die im Kampf im Wechsel schwingen.
+        variants[vname] = block(shapes, anchors)
     for vname, vspec in part.get("variants", {}).items():
         variants[vname] = block(vspec["shapes"], vspec["anchors"])
     for slot, poses in part.get("arms", {}).items():
@@ -2907,8 +3439,11 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
         model["variants"] = variants
     if part.get("pose"):
         model["pose"] = part["pose"]
-    if "neon" in part.get("tags", []):
+    finish = WEAPON_FINISH.get(pid, {})
+    if "neon" in part.get("tags", []) or finish.get("neon"):
         model["neon"] = True       # Leuchtroehren (glow/accent) leuchten im Spiel
+    if finish.get("shine"):
+        model["shine"] = finish["shine"]   # Glanzkante je Material (drome_face)
     (set_dir / f"{pid}.m3d").write_text(
         json.dumps(model, ensure_ascii=False, separators=(",", ":")) + "\n",
         encoding="utf-8")

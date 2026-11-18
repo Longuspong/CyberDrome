@@ -22,6 +22,10 @@ signal virus_pulsed
 ## Schussspuren und den Hinweis "Streusalve!" ueber der Figur.
 signal action_used(unit, tile: Vector2i, action)
 
+## Ein DROME holt zu einer Faehigkeit aus (Ausholzeit, 18. Nov. 2026): die
+## Ansage laeuft ``seconds`` lang, dann folgt action_used mit der Wirkung.
+signal ability_cast(unit, tile: Vector2i, action, seconds: float, target)
+
 # --- Protokoll ---
 signal log_message(text: String)
 

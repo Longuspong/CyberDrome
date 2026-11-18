@@ -100,6 +100,7 @@ func _ready() -> void:
 	EventBus.unit_damaged.connect(_on_unit_damaged)
 	EventBus.unit_healed.connect(_on_unit_healed)
 	EventBus.action_used.connect(_on_action_used)
+	EventBus.ability_cast.connect(_on_ability_cast)
 	EventBus.virus_pulsed.connect(_on_virus_pulse)
 	battle.battle_over.connect(_on_battle_over)
 
@@ -122,6 +123,7 @@ func _start_battle() -> void:
 	battle.apply_formation(GameState.formation)
 	for unit in battle.units:
 		view.attach_unit(unit)
+	view.abilities.units = battle.units
 
 	camera.position = IsoView.grid_center(battle.grid.width, battle.grid.height)
 	_add_scenery()
@@ -308,6 +310,11 @@ func _on_log(text: String) -> void:
 ## Gelaufen, gestossen, gesprungen: die Figur gleitet hinterher. Ein normaler
 ## Schritt dauert so lange wie die Schrittzeit; Stossen und Boost sind kurz.
 func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
+	# Sog und Stoss (18. Nov. 2026): sichtbar rutschen statt springen.
+	if battle.resolver.forcing:
+		unit.animate_last_move(FORCED_SLIDE, true)
+		view.refresh_unit_depth(unit)
+		return
 	var seconds := unit.step_left if unit.step_left > 0.0 else 0.18
 	unit.animate_last_move(seconds)
 	view.refresh_unit_depth(unit)
@@ -317,38 +324,17 @@ func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 ## ihr Name ueber der Figur -- damit man sieht, dass gerade der dritte Schuss
 ## die Doppelschuss war.
 func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
-	if tile != unit.tile:
-		unit.play_attack(tile, action)
-	var color := Teams.color(unit.is_player)
-	if not action.is_move() and (action.power > 0 or action.heal > 0):
-		view.show_attack(unit.visual_anchor(), IsoView.map_to_local(tile), color,
-			attack_style(unit, tile, action, battle.resolver.unit_at(tile)))
-	if not action.is_attack():
-		view.show_float(unit.visual_anchor(), action.display_name + "!",
-			Color(1.0, 0.86, 0.3), true)
+	AbilityFx.on_used(view, unit, tile, action, battle.units)
 	_refresh_hud()
 
 
-## Wie ein Angriff aussieht (Wunsch des Spielers, 9. Nov. 2026): Nahkampf ohne
-## Projektil; Blaster gerader Schuss, Lanze schweres Geschoss, Runenstab und
-## E-Schraubenschluessel eine Energiekugel, die Reparatur ein Heilstrahl. Die
-## Schadensart steuert Leuchten und Einschlag (BattleView.show_attack).
-static func attack_style(unit: Unit, tile: Vector2i, action: ActionData, target: Unit = null) -> Dictionary:
-	var style := {"energy": action.energy_fraction, "area": action.aoe_radius,
-		"heavy": not action.is_attack() or action.aoe_radius > 0, "projectile": "bolt"}
-	var id := str(action.id)
-	var reach := Grid.distance(unit.tile, tile)
-	if action.heal > 0 and target != null and target != unit and target.is_player == unit.is_player:
-		style["projectile"] = "beam"
-		style["energy"] = 1.0
-	elif action.range_tiles <= 1 or reach <= 1:
-		style["projectile"] = ""
-	elif id.begins_with("act_rune") or id.begins_with("act_drone"):
-		style["projectile"] = "orb"
-	elif id.begins_with("act_rail") or id.begins_with("act_mortar"):
-		# Moerser: schweres Geschoss wie die Lanze, schlaegt als Flaeche ein.
-		style["projectile"] = "slug"
-	return style
+## Ausholen einer Faehigkeit (18. Nov. 2026): Ansage und Haltung, AbilityFx.
+func _on_ability_cast(unit: Unit, tile: Vector2i, action: ActionData, seconds: float, _target) -> void:
+	AbilityFx.on_cast(view, unit, tile, action, seconds, battle.units)
+
+
+## Dauer, in der ein gezogener oder gestossener DROME auf sein Feld rutscht.
+const FORCED_SLIDE := AbilityFx.FORCED_SLIDE
 
 
 ## Ein Treffer muss man sehen: Zucken, Blende, Zahl, und bei einem grossen

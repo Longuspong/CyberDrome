@@ -95,6 +95,12 @@ var burst_cooldown: float = 0.0
 var _recharge_carry: float = 0.0
 ## Bis zur naechsten Pruefung des Ziels, und das aktuelle Ziel.
 var think_left: float = 0.0
+## Laufende Ausholzeit einer Faehigkeit (AIController): {"action", "aim",
+## "mount", "fx", "left", "target"}; leer = keine.
+var cast: Dictionary = {}
+## Sekunden, die der DROME nach einem Schuss noch zum Ziel schaut, auch wenn
+## er schon laeuft (nur Anzeige, 18. Nov. 2026).
+var aim_hold: float = 0.0
 var target_id = null
 ## Wie lange das aktuelle Ziel schon nicht angreifbar ist (Sekunden).
 ## Ein Ziel wird gehalten -- erst wenn es zu lange ausser Reichweite bleibt,
@@ -106,6 +112,8 @@ var _glide_from: Vector2 = Vector2.ZERO
 var _glide_to: Vector2 = Vector2.ZERO
 var _glide_time: float = 0.0
 var _glide_total: float = 0.0
+## Erzwungene Versetzung (Sog, Stoss): schnell los, dann abbremsen.
+var _glide_eased := false
 var _prev_position: Vector2 = Vector2.ZERO
 
 var _sprites: Dictionary = {}
@@ -229,8 +237,9 @@ func place_at(new_tile: Vector2i) -> void:
 
 ## Die letzte Versetzung (place_at) sichtbar nachgleiten: vom Ort, an dem die
 ## Figur vorher gezeichnet wurde, zum neuen Feld.
-func animate_last_move(seconds: float) -> void:
+func animate_last_move(seconds: float, eased: bool = false) -> void:
 	glide_to(tile, seconds, _prev_position)
+	_glide_eased = eased
 
 
 ## Wie place_at, aber die Figur gleitet in ``seconds`` vom bisherigen Ort
@@ -241,6 +250,7 @@ func glide_to(new_tile: Vector2i, seconds: float, from_position: Vector2) -> voi
 	_glide_to = IsoView.sprite_position(new_tile)
 	_glide_time = 0.0
 	_glide_total = maxf(0.01, seconds)
+	_glide_eased = false
 	position = _glide_from
 
 
@@ -249,7 +259,7 @@ func _process(delta: float) -> void:
 		return
 	_glide_time += delta
 	var t := clampf(_glide_time / _glide_total, 0.0, 1.0)
-	position = _glide_from.lerp(_glide_to, t)
+	position = _glide_from.lerp(_glide_to, ease(t, 0.35) if _glide_eased else t)
 	if t >= 1.0:
 		_glide_total = 0.0
 
@@ -273,6 +283,16 @@ const FACING_PLAYER := "deg90"
 const FACING_ENEMY := "deg270"
 
 
+## Genau zum Ziel (18. Nov. 2026): der Winkel im Bild statt der naechsten
+## Hexrichtung -- sonst zeigt ein Gewehr bis zu 30 Grad am Ziel vorbei.
+## Fuer Angriffe und Faehigkeiten; Laufen bleibt bei den sechs Richtungen.
+static func facing_at(from: Vector2i, to: Vector2i) -> String:
+	var d := IsoView.map_to_local(to) - IsoView.map_to_local(from)
+	if d == Vector2.ZERO:
+		return FACING_PLAYER
+	return "deg%d" % int(round(fposmod(rad_to_deg(atan2(-d.y, d.x)), 360.0)))
+
+
 static func facing_toward(from: Vector2i, to: Vector2i) -> String:
 	var dir := Grid.direction_toward(from, to)
 	if dir < 0:
@@ -284,7 +304,16 @@ static func facing_toward(from: Vector2i, to: Vector2i) -> String:
 func _refresh_tint() -> void:
 	if _flashing:
 		return
-	_apply_tint(Teams.tint(is_player))
+	_apply_tint(base_tint())
+
+
+## Der Farbstich der Seite -- entfaellt bei DROMEs mit Fraktions-Palette
+## (18. Nov. 2026): ihre Farben sind die Erkennung, der rote Stich wuerde
+## z. B. das Solar-Gruen verschmutzen. Die Seite zeigen Bodenring und Balken.
+func base_tint() -> Color:
+	if not DromeModel.faction_palette(build).is_empty():
+		return Color.WHITE
+	return Teams.tint(is_player)
 
 
 ## Das Rig (Rueckstoss, Erschuetterung, Sentinel-Groesse) -- die Arena liest
@@ -321,10 +350,10 @@ const SHAKE_AMPLITUDE := 7.0
 ## In der gemeinsamen 3D-Szene bewegt sich statt des ganzen DROME die Waffe
 ## (Arena3D.attack, 18. Nov. 2026): Nahkampf holt aus und schlaegt zu,
 ## Fernkampf mit Rueckstoss und Muendungsblitz, Schild stoesst vor.
-func play_attack(toward: Vector2i, action: ActionData = null) -> void:
+func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -1.0) -> void:
 	if _rig == null:
 		return
-	if arena != null and arena.attack(self, action):
+	if arena != null and arena.attack(self, action, seconds):
 		return
 	var delta := IsoView.map_to_local(toward) - IsoView.map_to_local(tile)
 	var push := Vector2.ZERO if delta == Vector2.ZERO \
@@ -335,6 +364,20 @@ func play_attack(toward: Vector2i, action: ActionData = null) -> void:
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tween.tween_property(_rig, "position", home, RECOIL_TIME * 2.2) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Waffe hochhalten (Runenstab vor dem Vortex, 18. Nov. 2026). Nur in der
+## gemeinsamen 3D-Szene; ohne sie bleibt der DROME ruhig.
+func play_raise(action: ActionData, seconds: float) -> void:
+	if arena != null:
+		arena.raise(self, action, seconds)
+
+
+## Ein Wurf (Runenstab-Faehigkeit, Bumerang): hoch, Schwung, loslassen in der
+## Mitte des Schwungs; ``hide`` Sekunden ist die Waffe danach nicht in der Hand.
+func play_throw(action: ActionData, seconds: float, hide: float = 0.0) -> void:
+	if arena != null:
+		arena.throw(self, action, seconds, hide)
 
 
 ## Das Ziel zuckt und blendet kurz hell auf. Die Erschuetterung laeuft ueber
@@ -496,7 +539,7 @@ func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 		var dark := create_tween()
 		dark.tween_interval(0.0 if calm else total * 0.6)
 		dark.tween_method(func(k: float) -> void:
-			_apply_tint(Teams.tint(is_player).lerp(Color(0.15, 0.15, 0.2), k)),
+			_apply_tint(base_tint().lerp(Color(0.15, 0.15, 0.2), k)),
 			0.0, 1.0, total * (1.0 if calm else 0.4))
 	if _ring != null:
 		create_tween().tween_property(_ring, "modulate:a", 0.0, total * 0.6)
@@ -555,6 +598,8 @@ func init_realtime(pulse_offset: float) -> void:
 	step_left = 0.0
 	pulse_left = maxf(0.05, pulse_offset)
 	think_left = 0.0
+	cast = {}
+	aim_hold = 0.0
 	target_id = null
 	target_blocked = 0.0
 	calm_time = 0.0

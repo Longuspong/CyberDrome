@@ -229,6 +229,27 @@ in ein Weltbild ganz unten (Zone, Ringe, Lichter bleiben darüber);
 Blicktest: `docs/design/drome_entwurf/godot/render_arena.gd` (Region,
 optional `angriff ZEITFAKTOR`).
 
+### 4g. Generator-Upgrade und Redesign -- erledigt (18. Nov.)
+
+Neue Bausteine in `tools/build_sample_parts.py` (alle ergeben ein `poly`,
+Spiegeln/SVG/3D/Silhouette laufen mit):
+* `BP` Doppelpyramide -- gerade Klingen, Dorne, Federohren
+* `SW` Zug -- Querschnitt entlang einer Catmull-Rom-Kurve: rund = Kabel und
+  Schläuche, Raute + `flat` = gebogene Klingen (Bumerang)
+* `EX` Profil -- Umriss (auch eingebuchtet) gezogen, mit Fase; `axis` "l"
+  (Seitenansicht), "f" (Vorderansicht, z. B. V-Torso), "z" (Grundriss)
+
+Redesign nach der Leinwand-Seite „Durchsicht & Redesign“ (vom Spieler
+freigegeben): Strix mit Eulenflügeln aus vier Reihen überlappender
+Tropfen-Federn (`_feather`, `_feather_row`) auf einer Grundplatte, Lafette
+wieder auf der linken Schulter, jetzt mit Buchse, Kabel vom Zielrechner und
+Halter je Waffe (`side_holder`); Vergleich Schulter/Achsel am 18. Nov.,
+Empfehlung Schulter (Standard), umschaltbar mit `STRIX_MOUNT=achsel`, Molok mit
+Kabelschläuchen an den Auspuff-Leuchtfeuern und Fasen, Vireo mit V-Torso und
+gepfeilten Booster-Flügeln, Schienen-Lanze als schweres Scharfschützengewehr,
+Mörser, Puls-Blaster, Hammer, Ramme und E-Schlüssel überarbeitet. Blicktest
+für ein Chassis: `godot/render_chassis.gd <chassis> [waffe]`.
+
 ### 5. Bewegung im Teile-Rig (`scripts/battle/unit.gd`, `DromeSprites`)
 **Grundstufe gebaut (18. Nov.) in `Arena3D._animate`**: Atmen im Stand
 (Rumpf/Kopf/Waffen wippen, Füße fest), Wippen beim Laufen, Nimbus kippt nach
@@ -242,19 +263,27 @@ im Generator -> Variante `passive` -> Knoten `body_passive`) schwebt;
 Vireo-Booster flackern (beim Laufen stärker), Molok-Lockfeuer pulsiert,
 Strix-Linsen blinzeln (über die Materialkopien der Einheit); Lichtball am
 `muzzle`-Anker; Schwung um eine gekippte Achse (von vorn lesbar), Rückstoß
-hebt die Waffe, Treffer kippen den DROME kurz nach hinten. Offen: Beine im
-Wechsel. **Deko am Rand in 3D**: Laternen in den Lichtfarben der Region,
+hebt die Waffe, Treffer kippen den DROME kurz nach hinten.
+**Beine im Wechsel (18. Nov., gebaut)**: der Generator teilt die Beine von
+Vireo, Molok und Strix (`legs` am Antrieb, `split_legs`) in Ober- und
+Unterschenkel je Seite (Varianten `leg_<seite>_upper/_lower` mit Anker
+`mount` = Hüfte bzw. Knie, `knee`); `DromeModel` legt sie als Knoten
+`feet_leg_...` an, `Arena3D._leg_pose` schwingt sie gegengleich um die Hüfte
+und beugt das Knie des vorschwingenden Beins (Strix: Knie nach hinten).
+Werte `LEG_SWING`/`KNEE_BEND` oben in `arena_3d.gd`; der Rumpf wippt jetzt im
+Schritt (oben, wenn ein Bein senkrecht steht). Nimbus fährt weiter.
+Blicktest: `docs/design/drome_entwurf/godot/render_laufen.gd`. **Deko am Rand in 3D**: Laternen in den Lichtfarben der Region,
 Kiosk, Schüssel, Haltestelle, Klimagerät, Antenne (`build_arena_models.py`,
 Plätze `ArenaPainter.prop_spots`, `Arena3D.build_props`).
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
-- [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
+- [x] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
       bewegt sich mit (Booster flackert, Kugel schwebt, Lockfeuer pulsiert,
       Linsen blinzeln)
-- [ ] **Laufen**: Wippen; Nimbus kippt nach vorn, Eule hüpft. Beine im
+- [x] **Laufen**: Wippen; Nimbus kippt nach vorn, Eule hüpft. Beine im
       Wechsel brauchen getrennte Bein-Sprites -- Vorschlag: `feet` in
       `feet_left`/`feet_right` teilen, erst wenn das Wippen allein nicht reicht
       (entschieden 17. Nov.: zuerst nur Wippen)
-- [ ] **Angriff** nach Waffenart (seit 4c in 3D: Arm und Waffe sind eigene
+- [x] **Angriff** nach Waffenart (seit 4c in 3D: Arm und Waffe sind eigene
       Knoten `<slot>_arm` und `<slot>` unter `Ausrichtung`, die Ansicht dann
       auf UPDATE_ALWAYS stellen): Nahkampf dreht die Waffe um den
       Schulteranker (ausholen, zuschlagen), Fernkampf Rückstoß + Mündungsblitz
@@ -265,21 +294,62 @@ Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 ### 6. Fähigkeiten lesbar (`scripts/ui/battle_view.gd`)
 Entwurf: Board 12 (Vortex animiert, Tabelle für alle). Muster: **Wo**
 (Bodenmarke in Iso-Perspektive), **Wer** (Signalfarbe), **Was** (eigene Form).
-- [ ] **Vortex** zuerst: gestrichelter Iso-Ring während der 0,6 s
+- [x] **Vortex** zuerst: gestrichelter Iso-Ring während der 0,6 s
       Verzögerung, Runen drehen nach innen, Sog-Pfeile, Treffer, danach
-      „verlangsamt“ (Ring am Fuß, Pfeile über dem Kopf, 2,5 s)
-- [ ] Sperrfeuer, Präzisionsschuss, Betäubungsschlag, Rammstoß,
+      „verlangsamt“ (Ring am Fuß, Pfeile über dem Kopf, 2,5 s) -- **gebaut
+      18. Nov.** in `AbilityPainter` (`scripts/ui/ability_painter.gd`,
+      `BattleView.show_vortex`, ausgelöst in `BattleScreen._on_action_used`
+      für Fähigkeiten mit Sog und Fläche). Bodenmarken unter den DROMEs
+      (z -30), Pfeile über dem Kopf über der 3D-Szene (z 4003); Striche mit
+      dunkler Unterlage. „Verlangsamt“ liest den Status jeder Einheit, gilt
+      also für jede Quelle. Blicktest:
+      `docs/design/drome_entwurf/godot/render_faehigkeit.gd`
+      (mit `--fixed-fps 60`).
+- [x] Sperrfeuer, Präzisionsschuss, Betäubungsschlag, Rammstoß,
       Aufschlitzen, Wirbelwurf, Doppelschuss, Schildbrecher, Schildladung,
-      Schildfeld -- je nach Tabelle auf Board 12
-- [ ] Gegnerische Fähigkeiten: dieselben Formen, Ring mit rotem Außenrand
+      Schildfeld -- **gebaut 18. Nov.** nach den Skizzen auf der Leinwand
+      (Seite „Fähigkeiten lesbar“, vom Spieler freigegeben). Zuordnung nach
+      den Eigenschaften der Aktion (`AbilityPainter.kind_for`), also auch für
+      Varianten; Zustände über dem Kopf: verlangsamt (Pfeile), betäubt
+      (Sterne), verwundbar (gerissener Schild + rosa Fußring). Blicktest:
+      `render_faehigkeit.gd ... city ansage|wirkung` (alle Formen auf einmal).
+- [x] Gegnerische Fähigkeiten: dieselben Formen, Ring mit rotem Außenrand
+- [x] **Abfolge statt alles auf einmal** (18. Nov., Wunsch des Spielers):
+      Fähigkeiten haben eine **Ausholzeit** (`windup` an der Aktion, Werte
+      in `build_sample_parts.py`, z. B. Präzisionsschuss 0,55 s, Vortex
+      0,75 s, Nahkampf 0,3–0,35 s). Der DROME steht so lange still
+      (`Unit.cast`, `AIController._begin_cast/_finish_cast`), die Wirkung
+      trifft das Ziel dort, wo es dann steht; ist es weg, bleibt der Takt voll.
+      Optik in `AbilityFx` (aus `BattleScreen` gezogen): `on_cast` = Name,
+      Ansage (`AbilityPainter.add_cast`) und Haltung (Nahkampf holt so aus,
+      dass der Schlag beim Wirken sitzt; Runenstab hochgehalten, Kugel von der
+      Stabspitze im Bogen -- `Arena3D.raise`, `weapon_tip`), `on_used` =
+      Schuss/Aufprall und Wirkung. Sog und Stoß rutschen sichtbar mit
+      Abbremsen (`ActionResolver.forcing`, `FORCED_SLIDE`). Filme:
+      `godot/render_film.gd` + `film_scene.gd` (derselbe Ablauf wie im Kampf).
+- [x] **Würfe wie echte Würfe** (18. Nov., Spieler): Runenstab-Fähigkeit und
+      Bumerang über `Arena3D.throw` -- hoch, halten, Schwung nach vorn-unten;
+      Kugel bzw. Bumerang lösen sich in der Mitte des Schwungs
+      (`THROW_RELEASE`) an der echten Waffenspitze. Der Bumerang verlässt die
+      Hand (Waffe ausgeblendet), kreist um das Ziel und kommt zurück.
+      Ausholzeit Vortex 0,95 s, Wirbelwurf 0,55 s.
+- [x] **Genau zielen**: Angriffe und Fähigkeiten drehen den DROME exakt zum
+      Ziel (`Unit.facing_at`, Bildwinkel statt Hexrichtung), der Blick hält
+      nach dem Schuss 0,8 s (`aim_hold`); Schuss, Laser und Strahl starten an
+      der Mündung (`Arena3D.weapon_tip`).
 
 ### 7. Fraktions-Paletten im Spiel
 Quelle: `skins.py`. Neon fast schwarz mit grellem Neon, Solar
 biologisch-blühend, Mechas sattes Rot matt mit Absperrstreifen, Hipstar
 bleibt.
-- [ ] Paletten für Fraktions-DROMEs und Sentinels übernehmen
-- [ ] Absperrstreifen: prüfen, ob Godot das SVG-Muster zeichnet, sonst als
-      Geometrie
+- [x] Paletten für Fraktions-DROMEs und Sentinels übernehmen -- **gebaut
+      18. Nov.**: `DromeModel.FACTION_PALETTES` nach `build.faction` auf allen
+      Chassis-Teilen (auch Arme, Beine, Passive), Waffen behalten ihre Farben;
+      Neon lässt die Röhren leuchten. Fraktions-DROMEs ohne roten Teamstich
+      (`Unit.base_tint`), die Seite zeigen Bodenring und Balken. Blicktest:
+      `godot/render_fraktionen.gd`.
+- [x] Absperrstreifen: im Shader `drome_face` (`stripes`) auf den Akzenten,
+      kein SVG-Muster und keine Geometrie nötig
 
 ### 8. Auf Claude Design noch offen (vor den passenden Schritten)
 - [x] Eule: Linsen größer (Board 16, `v6.py` `LENS_BIG`: Ø 6,8 statt 4,6,
@@ -298,6 +368,6 @@ bleibt.
 2. ~~Molok-Waffen~~ -- entschieden 16. Nov.: dieselbe Waffe mit Armmaß 1,6
    (Board 14), kein zweiter Satz.
 3. ~~Beine trennen oder nur Wippen?~~ -- entschieden 17. Nov.: erst nur
-   Wippen; Beine erst trennen, wenn das zu steif aussieht.
+   Wippen; am 18. Nov. vom Spieler gewünscht und gebaut (Beine im Wechsel).
 4. ~~Bumerang als Nahkampf~~ -- entschieden 16. Nov.: bleibt Nahkampf, Pose
    angewinkelt und wurfbereit (Board 14).
