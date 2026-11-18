@@ -81,8 +81,10 @@ Für eine frische Sitzung. Erst diese Datei lesen, dann `docs/DROME_UMSETZUNG.md
   Waffe in `WEAPON_FINISH`: Glanzkante je Material (Shader `drome_face`,
   `shine`), Energiewaffen leuchten (`neon`). Klingen glänzen (Material `blade`)
   oder leuchten (Plasma), Griffe und Halterungen bleiben matt. Dazu neu:
-  Plasmaklinge als lange Doppelpyramide, Bumerang als „Λ“ (Baustein `BP` im
-  Generator). Entwurf: `v13_waffenfarben.py`, Blicktest
+  Plasmaklinge als lange Doppelpyramide (Baustein `BP`), Bumerang als
+  gebogene Klinge ohne Griff, das Flügelende steckt in der Faust (Baustein
+  `SW` „Zug“: Querschnitt entlang einer Catmull-Rom-Kurve, rund = Kabel und
+  Schläuche, Raute + `flat` = gebogene Klinge; beide ergeben ein `poly`). Entwurf: `v13_waffenfarben.py`, Blicktest
   `godot/render_waffenfarben.gd` (Ordner `-` = so wie im Spiel).
 * ~~Fähigkeiten lesbar~~ -- Skizzen vom Spieler freigegeben, alle 11 Formen
   **gebaut 18. Nov.** (`AbilityPainter`, siehe `DROME_UMSETZUNG.md` 6).

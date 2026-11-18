@@ -871,6 +871,82 @@ def BP(back, tip, width, thick, mat, mid=0.18):
     return ("poly", tuple(faces), mat)
 
 
+def SW(points, radii, mat, sides=8, flat=1.0, steps=6, side=(0.0, 1.0, 0.0), caps=True):
+    """
+    Zug (18. Nov. 2026): ein Querschnitt faehrt eine glatte Kurve entlang --
+    fuer Kabel, Schlaeuche und gebogene Klingen.
+
+    ``points``  Stuetzpunkte (f, l, z); die Kurve laeuft als Catmull-Rom
+                durch alle hindurch, ``steps`` Abschnitte je Stueck.
+    ``radii``   Halbmesser je Stuetzpunkt (dazwischen weich verlaufen);
+                0 am Ende = Spitze.
+    ``sides``   Ecken des Querschnitts: 8 rund (Kabel), 4 Raute (Klinge).
+    ``flat``    Stauchung des Querschnitts entlang ``side`` (Standard l):
+                0,25 = flache Klinge, die in der f-z-Ebene breit ist.
+    Ergibt einen Vielflach ("poly") -- Spiegeln, Rendern und 3D wie beim
+    Doppelpyramiden-Baustein BP.
+    """
+    pts = [tuple(float(c) for c in pt) for pt in points]
+    curve, rad = [], []
+    for i in range(len(pts) - 1):
+        p0 = pts[max(0, i - 1)]
+        p1, p2 = pts[i], pts[i + 1]
+        p3 = pts[min(len(pts) - 1, i + 2)]
+        for j in range(steps):
+            t = j / steps
+            t2, t3 = t * t, t * t * t
+            curve.append(tuple(0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2
+                                      + (-a + 3 * b - 3 * c + d) * t3)
+                               for a, b, c, d in zip(p0, p1, p2, p3)))
+            r0, r1 = radii[i], radii[i + 1]
+            u = t * t * (3 - 2 * t)
+            rad.append(r0 + (r1 - r0) * u)
+    curve.append(pts[-1])
+    rad.append(radii[-1])
+    rings = []
+    for i, c in enumerate(curve):
+        a = curve[max(0, i - 1)]
+        b = curve[min(len(curve) - 1, i + 1)]
+        tangent = _norm(_sub(b, a))
+        n = _reject(side, tangent)
+        if math.sqrt(sum(x * x for x in n)) < 1e-4:
+            n = _reject((0.0, 0.0, 1.0), tangent)
+        n = _norm(n)
+        bi = _norm(_cross(tangent, n))
+        ring = []
+        for k in range(sides):
+            ang = 2 * math.pi * k / sides
+            ring.append(tuple(cc + rad[i] * (math.cos(ang) * flat * nc + math.sin(ang) * bc)
+                              for cc, nc, bc in zip(c, n, bi)))
+        rings.append(ring)
+    faces = []
+
+    def add(poly, inside):
+        """Normale nach aussen (weg von ``inside``)."""
+        n = _norm(_cross(_sub(poly[1], poly[0]), _sub(poly[2], poly[0])))
+        mid = [sum(x) / len(poly) for x in zip(*poly)]
+        if sum(nc * (mc - ic) for nc, mc, ic in zip(n, mid, inside)) < 0:
+            poly = list(reversed(poly))
+            n = tuple(-x for x in n)
+        faces.append((tuple(n), [tuple(pt) for pt in poly]))
+
+    for i in range(len(rings) - 1):
+        inside = tuple((x + y) / 2 for x, y in zip(curve[i], curve[i + 1]))
+        for k in range(sides):
+            quad = [rings[i][k], rings[i][(k + 1) % sides],
+                    rings[i + 1][(k + 1) % sides], rings[i + 1][k]]
+            if rad[i] < 1e-6:
+                quad = [quad[0], quad[2], quad[3]]
+            elif rad[i + 1] < 1e-6:
+                quad = quad[:3]
+            add(quad, inside)
+    if caps:
+        for end, nxt in ((0, 1), (len(rings) - 1, len(rings) - 2)):
+            if rad[end] > 1e-6:
+                add(list(rings[end]), curve[nxt])
+    return ("poly", tuple(faces), mat)
+
+
 def _sub(a, b):
     return tuple(x - y for x, y in zip(a, b))
 
@@ -2365,27 +2441,24 @@ def _head_ram(h, k):
 
 
 def _head_boomerang(h, k):
-    """Wurfbereit wie ein echter Bumerang: die Faust haelt das Ende des einen
-    Fluegels, der steigt schraeg nach oben zum Knick, der zweite Fluegel faellt
-    von dort nach vorn ab -- ein "Λ" in der Armebene, damit es an beiden Armen
-    gleich sitzt. Fluegel als flache Doppelpyramiden mit Schneide ringsum,
-    keine Stufen (Spieler 18. Nov. 2026)."""
+    """Wurfbereit wie ein echter Bumerang -- ohne Griff: das Ende des einen
+    Fluegels steckt in der Faust, die Klinge steigt in einem Bogen zum Knick
+    und faellt nach vorn ab. Ein durchgehender gebogener Zug mit Rauten-
+    Querschnitt (Schneide ringsum), dazu eine Leuchtnut auf beiden Seiten
+    (Spieler 18. Nov. 2026)."""
     f, l, z = h
-    elbow = (f + 3.0 * k, l, z + 15.5 * k)
-    tip = (f + 15.5 * k, l, z + 7.0 * k)
+    path = [(f - 0.2 * k, l, z - 3.0 * k), (f + 0.4 * k, l, z + 6.0 * k),
+            (f + 3.0 * k, l, z + 13.5 * k), (f + 7.5 * k, l, z + 15.0 * k),
+            (f + 12.5 * k, l, z + 11.5 * k), (f + 16.0 * k, l, z + 6.5 * k)]
+    radii = [1.3 * k, 2.2 * k, 2.8 * k, 2.8 * k, 2.0 * k, 0.15 * k]
+    groove = [(pt[0], pt[1], pt[2]) for pt in path[1:5]]
     return [
-        B((f - 0.9 * k, f + 0.9 * k), (l - 0.9 * k, l + 0.9 * k), (z - 5 * k, z + 4 * k), "metal"),
-        B((f - 1.5 * k, f + 1.5 * k), (l - 1.5 * k, l + 1.5 * k), (z - 6.6 * k, z - 5 * k), "dark"),
-        # Fluegel: duenn quer zur Armebene (l), breit in ihr
-        BP((f - 0.3 * k, l, z + 2.0 * k), (elbow[0] + 0.8 * k, l, elbow[2] + 1.2 * k),
-           1.2 * k, 5.0 * k, "blade", mid=0.55),
-        BP((elbow[0] - 0.8 * k, l, elbow[2] + 1.0 * k), tip, 1.2 * k, 5.0 * k, "blade", mid=0.4),
-        # Knick mit Leuchtkern
-        O(elbow, (3.4 * k, 2.0 * k, 3.4 * k), (0, -30, 0), "plate"),
-        O(elbow, (1.6 * k, 2.4 * k, 1.6 * k), (0, -30, 0), "glow"),
-        # Griffband am Ende des gehaltenen Fluegels
-        B((f - 1.2 * k, f + 1.2 * k), (l - 1.0 * k, l + 1.0 * k), (z + 3.2 * k, z + 4.4 * k), "accent"),
-    ], tip
+        SW(path, radii, "blade", sides=4, flat=0.32, steps=5),
+        SW([(pt[0], l + 0.75 * k, pt[2]) for pt in groove], [0.35 * k] * 4, "glow",
+           sides=6, steps=4),
+        SW([(pt[0], l - 0.75 * k, pt[2]) for pt in groove], [0.35 * k] * 4, "glow",
+           sides=6, steps=4),
+    ], (f + 16.0 * k, l, z + 6.5 * k)
 
 
 def _head_staff(h, k):
