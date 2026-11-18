@@ -29,6 +29,19 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Hangar: DROME-Wechsel ohne Ruckler (18. Nov. 2026, Meldung des Spielers)
+
+* Jedes Antippen baute den ganzen Hangar neu auf, und jede Kachel renderte
+  ihren DROME frisch in 3D (2-3 SubViewports mit MSAA je Bild). Gemessen
+  (`tools/perf_hangar.gd`, Software-Rendering, 4 DROMEs): erstes Bild nach dem
+  Wechsel 115-150 ms bei ~30 ms Grundlast.
+* Jetzt: `UiKit.drome_view` rendert jeden Aufbau einmal und merkt sich die
+  fertigen Ebenen (Bild, Signal, Neon) als Texturen
+  (`DromeSprites.assemble_picture`, bis 48 Bilder); danach nur noch ein Sprite
+  mit Konturshader, ohne 3D. Antippen im Squad tauscht nur die grosse Karte
+  und die Markierung (`HangarScreen._select_in_squad`). Ergebnis: 30-46 ms.
+  Der Kampf rendert weiter live (Drehen, Bewegung).
+
 ### Echo nacheinander, Flaechen landen am Wurfort (18. Nov. 2026, Wunsch des Spielers)
 
 * **Echo (Nimbus)** wirkt nicht mehr im selben Augenblick, sondern

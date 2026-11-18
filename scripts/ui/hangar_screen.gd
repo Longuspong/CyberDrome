@@ -40,6 +40,10 @@ const STRIP_TILE := 104.0
 var _tab := "squad"
 var _selected := -1
 var _selected_slot := ""
+## Squad-Reiter: die grosse Karte und die Kacheln (Index -> Tile), damit ein
+## Antippen nur diese aendert statt den ganzen Bildschirm neu zu bauen.
+var _primary: Control = null
+var _squad_tiles: Dictionary = {}
 
 var _content: VBoxContainer
 ## Der feste Bereich ueber dem scrollbaren Inhalt (nur im Umbau gefuellt).
@@ -138,7 +142,9 @@ func _show_squad() -> void:
 	# Entwurf 15. Nov. 2026: oben der gewaehlte DROME gross, darunter alle
 	# DROMEs als Kacheln (3 Spalten). Tippen waehlt, nochmal tippen zeigt die
 	# Karte, Doppeltipp oeffnet den Umbau.
-	_content.add_child(_primary_card(_selected))
+	_primary = _primary_card(_selected)
+	_content.add_child(_primary)
+	_squad_tiles.clear()
 	var head := HBoxContainer.new()
 	var title := Arcade.label("ALLE DROMEs", 15, Arcade.CYAN, "bold", 0.2)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -157,7 +163,9 @@ func _show_squad() -> void:
 	grid.add_theme_constant_override("v_separation", TILE_GAP)
 	_content.add_child(grid)
 	for index in _squad_first_order():
-		grid.add_child(_drome_tile(index))
+		var tile := _drome_tile(index)
+		_squad_tiles[index] = tile
+		grid.add_child(tile)
 	# Neue DROMEs, Beute und Shop stehen seit 15. Nov. 2026 im Tab Shop.
 	_content.add_child(UiKit.label("Neue DROMEs bauen, Caches und Shop: Tab Shop unten.",
 		UiKit.SMALL, UiKit.MUTED))
@@ -251,9 +259,7 @@ func _drome_tile(index: int) -> Control:
 	tile.managed = true
 	# 15. Nov. 2026: tippen waehlt, nochmal tippen zeigt die Karte des
 	# DROME (blaetterbar), Doppeltipp oeffnet den Umbau.
-	tile.on_select = func():
-		_selected = index
-		_refresh()
+	tile.on_select = func(): _select_in_squad(index)
 	tile.on_info = func(): InfoPopup.open_pages(self, _drome_pages(), _squad_first_order().find(index))
 	tile.on_action = func():
 		_selected = index
@@ -335,6 +341,30 @@ func _tile_stack(build: DromeBuild, edge: float, in_squad: bool) -> Control:
 		mark.tooltip_text = "im Squad"
 		stack.add_child(mark)
 	return stack
+
+
+## Antippen im Squad-Reiter (18. Nov. 2026, ruckelte vorher): nur die grosse
+## Karte tauschen und die Markierung der Kacheln umsetzen.
+func _select_in_squad(index: int) -> void:
+	_selected = index
+	if _tab != "squad" or _primary == null or not is_instance_valid(_primary) \
+			or _primary.get_parent() == null or not _squad_tiles.has(index):
+		_refresh()
+		return
+	var parent := _primary.get_parent()
+	var at := _primary.get_index()
+	var card := _primary_card(index)
+	parent.remove_child(_primary)
+	_primary.queue_free()
+	parent.add_child(card)
+	parent.move_child(card, at)
+	_primary = card
+	var entries := _entries()
+	for i in _squad_tiles:
+		var tile: Tile = _squad_tiles[i]
+		var entry: RosterEntry = entries[i]
+		tile.selected = i == index
+		tile.accent = UiKit.GOOD if entry.in_squad and i != index else UiKit.ACCENT
 
 
 ## Die grosse Box (Entwurf): Bild, Etikett, Name, Rolle, Level, Kampfwert,

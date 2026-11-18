@@ -619,7 +619,8 @@ static func drome_view(build: DromeBuild, edge: float, facing: String = "south")
 	# Aufloesung der 3D-Ansicht nach Bildgroesse (zweifach fuer scharfe
 	# Handy-Bildschirme), in 64er Stufen, damit gleiche Groessen gleich bleiben.
 	var resolution := clampi(int(ceil(128.0 * scale * 2.0 / 64.0)) * 64, 256, 768)
-	DromeSprites.assemble(rig, build, facing, resolution)
+	# Stehendes Bild: einmal rendern, danach aus dem Zwischenspeicher.
+	DromeSprites.assemble_picture(rig, build, facing, resolution)
 	holder.add_child(rig)
 	return holder
 
