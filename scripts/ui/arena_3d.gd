@@ -55,12 +55,23 @@ const NIMBUS_TILT := 0.13        # Nimbus kippt beim Fahren nach vorn (rad)
 const STRIX_HOP := 2.6           # die Eule huepft
 const RECOIL := 2.6              # Fernkampf: Rueckstoss
 const RANGED_TIME := 0.24
-const FLASH_TIME := 0.07         # Muendungsblitz (Waffe leuchtet auf)
+const FLASH_TIME := 0.09         # Muendungsblitz (Waffe leuchtet auf)
 const SWING_BACK := -0.55        # Nahkampf: ausholen (rad, um die Schulter)
 const SWING_HIT := 0.65          # ... und zuschlagen
 const MELEE_TIME := 0.42
 const SHIELD_PUSH := 3.2         # Schild stoesst vor
 const SHIELD_TIME := 0.3
+## Ausholen auch von vorn lesbar: die Schwungachse kippt zur Seite.
+const SWING_AXIS := Vector3(0, 1, 0.5)
+const RECOIL_LIFT := 0.9         # Rueckstoss hebt die Waffe leicht
+const HIT_TILT := 0.16           # Treffer: der DROME kippt kurz nach hinten
+const HIT_TIME := 0.28
+## Sichtbare Passiven (DROME_DESIGNREGELN Abschnitt 6).
+const ORB_FLOAT := 1.6           # Nimbus-Kugel schwebt
+const ORB_SPEED := 1.8
+const BLINK_EVERY := 3.6         # Strix-Linsen blinzeln
+const BLINK_TIME := 0.14
+const FLASH_SIZE := 3.6          # Muendungsblitz (Radius, Generator-Einheiten)
 
 
 ## Aufbau im Konstruktor, damit die Arena auch ausserhalb des Baums (Tests)
@@ -299,6 +310,11 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 	var turn := node.get_node_or_null("Ausrichtung") as Node3D
 	# Beim Zerfallen gehoeren die Bloecke der Todesanimation.
 	if state.is_empty() or turn == null or not unit.is_alive():
+		if turn != null and state.has("attack") and not state["attack"].is_empty():
+			var weapon := turn.get_node_or_null(str(state["attack"].get("slot", "")))
+			if weapon != null and weapon.get_node_or_null("Blitz") != null:
+				weapon.get_node("Blitz").queue_free()
+			state["attack"] = {}
 		return
 	state["time"] += delta
 	var t: float = state["time"] + state["phase"]
@@ -318,6 +334,14 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 				tilt = NIMBUS_TILT
 		else:
 			bob = sin(t * IDLE_SPEED) * IDLE_BOB
+	# Treffer: kurz nach hinten kippen.
+	if state.has("hit"):
+		state["hit"] += delta
+		var h: float = state["hit"] / HIT_TIME
+		if h >= 1.0:
+			state.erase("hit")
+		elif not calm:
+			tilt -= HIT_TILT * sin(PI * h)
 	turn.basis = DromeModel.facing_basis(unit.facing) * Basis(Vector3(0, 1, 0), tilt)
 	node.position.y += hop
 
@@ -353,17 +377,117 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			tr.origin.z += bob
 		if bname == "head":
 			tr.origin.z += bob * 0.4
+		if bname == "body_passive" and not calm:
+			tr.origin.z += sin(t * ORB_SPEED) * ORB_FLOAT
+			tr.origin.y += sin(t * ORB_SPEED * 0.6) * ORB_FLOAT * 0.4
 		if k >= 0.0 and (bname == slot or bname == slot + "_arm"):
 			tr = _attack_pose(tr, kind, k, pivot)
 		block.transform = tr
 
-	# Muendungsblitz: die Waffe leuchtet kurz auf.
+	# Muendungsblitz: an der Waffenspitze ein Lichtball, die Waffe leuchtet auf.
 	if slot != "" and kind == "ranged":
-		var weapon := turn.get_node_or_null(slot)
+		var weapon := turn.get_node_or_null(slot) as Node3D
 		if weapon != null:
 			var bright: bool = attack["t"] < FLASH_TIME
 			var base_tint: Color = state["tint"]
-			_tint_tree_self(weapon, base_tint * (2.2 if bright else 1.0))
+			_tint_tree_self(weapon, base_tint * (1.6 if bright else 1.0))
+			_muzzle_flash(weapon, attack, bright)
+	elif state.has("flash"):
+		_clear_flash(state)
+	_passive_glow(unit, turn, state, t, calm)
+
+
+## Der Lichtball an der Muendung (``muzzle``-Anker der Waffe): waechst kurz
+## auf und verschwindet. In der Bild- und der Leuchtebene.
+func _muzzle_flash(weapon: Node3D, attack: Dictionary, bright: bool) -> void:
+	var flash := weapon.get_node_or_null("Blitz") as Node3D
+	if not bright:
+		if flash != null:
+			flash.queue_free()
+		return
+	if flash == null:
+		var color := Color(1.0, 0.95, 0.75)
+		var mesh := SphereMesh.new()
+		mesh.radius = FLASH_SIZE
+		mesh.height = FLASH_SIZE * 2.0
+		mesh.radial_segments = 10
+		mesh.rings = 5
+		flash = Node3D.new()
+		flash.name = "Blitz"
+		flash.position = _anchor(weapon, "muzzle")
+		for layer_info in [[DromeModel.LAYER_IMAGE, color], [DromeModel.LAYER_NEON, color],
+				[DromeModel.LAYER_SIGNAL, color]]:
+			var ball := MeshInstance3D.new()
+			ball.mesh = mesh
+			ball.layers = layer_info[0]
+			ball.material_override = DromeModel._flat_material(layer_info[1])
+			ball.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			flash.add_child(ball)
+		weapon.add_child(flash)
+	var grow: float = clampf(attack["t"] / FLASH_TIME, 0.0, 1.0)
+	flash.scale = Vector3.ONE * lerpf(0.6, 1.3, grow)
+
+
+func _clear_flash(state: Dictionary) -> void:
+	state.erase("flash")
+
+
+## Leuchtteile der Passiven: Vireo-Booster flackern (beim Laufen staerker),
+## Molok-Lockfeuer pulsiert, Nimbus-Kugel glimmt, Strix-Linsen blinzeln.
+## Ueber die Materialkopien der Einheit (Farbstich je Flaeche).
+func _passive_glow(unit: Unit, turn: Node3D, state: Dictionary, t: float, calm: bool) -> void:
+	if calm:
+		return
+	if not state.has("glow_mats"):
+		state["glow_mats"] = _collect_glow(turn)
+	var mats: Array = state["glow_mats"]
+	if mats.is_empty():
+		return
+	var chassis := str(unit.build.body().id)
+	var factor := 1.0
+	match chassis:
+		"scout_body":
+			var strength := 1.0 if unit.is_gliding() else 0.45
+			factor = 1.0 + strength * (0.3 * sin(t * 23.0) + 0.2 * sin(t * 37.0 + 1.3))
+		"jugg_body":
+			factor = 1.0 + 0.35 * sin(t * 3.0)
+		"mage_body":
+			factor = 1.0 + 0.3 * sin(t * ORB_SPEED * 2.0)
+		"strix_body":
+			factor = 0.2 if fmod(t, BLINK_EVERY) < BLINK_TIME else 1.0
+	var base: Color = state["tint"]
+	for entry in mats:
+		var mat: ShaderMaterial = entry
+		mat.set_shader_parameter("tint", Color(base.r * factor, base.g * factor, base.b * factor))
+
+
+## Die Leuchtflaechen (glow, bei der Strix auch die Linsen) von Rumpf, Kopf
+## und Passive -- als eigene Materialkopien.
+static func _collect_glow(turn: Node3D) -> Array:
+	var out: Array = []
+	for bname in ["body", "head", "body_passive"]:
+		var inst := turn.get_node_or_null(bname) as MeshInstance3D
+		if inst == null or inst.mesh == null:
+			continue
+		for i in inst.mesh.get_surface_count():
+			var sname := str(inst.mesh.surface_get_name(i))
+			if sname != "glow" and not (sname == "visor" and bname == "head"):
+				continue
+			var own := inst.get_surface_override_material(i) as ShaderMaterial
+			if own == null:
+				var shared := inst.mesh.surface_get_material(i) as ShaderMaterial
+				if shared == null:
+					continue
+				own = shared.duplicate() as ShaderMaterial
+				inst.set_surface_override_material(i, own)
+			out.append(own)
+	return out
+
+
+## Treffer: der DROME kippt kurz nach hinten (zusaetzlich zum Zucken).
+func hit(unit: Unit) -> void:
+	if _anim.has(unit):
+		_anim[unit]["hit"] = 0.0
 
 
 ## Haltung eines Waffenblocks im Angriff (k = 0..1).
@@ -378,7 +502,7 @@ static func _attack_pose(tr: Transform3D, kind: String, k: float, pivot: Vector3
 				angle = lerpf(SWING_BACK, SWING_HIT, ease((k - 0.35) / 0.25, 2.0))
 			else:
 				angle = lerpf(SWING_HIT, 0.0, ease((k - 0.6) / 0.4, 0.5))
-			var turn := Transform3D(Basis(Vector3(0, 1, 0), angle), Vector3.ZERO)
+			var turn := Transform3D(Basis(SWING_AXIS.normalized(), angle), Vector3.ZERO)
 			return Transform3D(Basis.IDENTITY, pivot) * turn \
 				* Transform3D(Basis.IDENTITY, -pivot) * tr
 		"shield":
@@ -388,6 +512,7 @@ static func _attack_pose(tr: Transform3D, kind: String, k: float, pivot: Vector3
 		_:
 			var kick := k / 0.2 if k < 0.2 else 1.0 - (k - 0.2) / 0.8
 			tr.origin.x -= RECOIL * kick
+			tr.origin.z += RECOIL_LIFT * kick
 			return tr
 
 

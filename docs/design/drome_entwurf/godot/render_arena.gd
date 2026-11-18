@@ -67,7 +67,7 @@ func build(root: Window, region_arg: String) -> Array:
 	if args.size() > 3 and args[3] == "angriff":
 		Engine.time_scale = float(args[4]) if args.size() > 4 else 1.0
 		cam.zoom = Vector2(2.6, 2.6)
-		cam.position = IsoView.map_to_local(Vector2i(4, 2)) + Vector2(0, -40)
+		cam.position = IsoView.map_to_local(Vector2i(3, 2)) + Vector2(-30, -40)
 		for unit in units:
 			unit.play_attack(unit.tile + Vector2i(0, -1 if unit.is_player else 1))
 	return [view]

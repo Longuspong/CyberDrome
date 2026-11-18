@@ -185,6 +185,11 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256,
 		# Bildmitte, kein Sockel.
 		_add_block(turn, slot, key, block, colors,
 			Vector3.ZERO if slot == "body" else socket - mount, bool(model.get("neon", false)))
+		# Sichtbare Passive als eigener Block (Nimbus-Kugel), damit sie sich im
+		# Kampf bewegen kann (Arena3D, 18. Nov. 2026).
+		if slot == "body" and body_variants.has("passive"):
+			_add_block(turn, "body_passive", "%s|passive" % part.id, body_variants["passive"],
+				colors, Vector3.ZERO, false)
 	return root
 
 

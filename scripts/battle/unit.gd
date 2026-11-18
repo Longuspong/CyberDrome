@@ -343,6 +343,8 @@ func play_attack(toward: Vector2i, action: ActionData = null) -> void:
 func play_hit() -> void:
 	if _rig == null:
 		return
+	if arena != null:
+		arena.hit(self)
 	var home := _rig_home()
 	var tween := create_tween()
 	var steps := 5

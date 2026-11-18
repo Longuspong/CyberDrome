@@ -1844,11 +1844,16 @@ MAGE_BODY = [
     L((-13.8, 40), [(2.6, -1), (3.0, 10)], "plate", axis="f", segments=12),   # Unterarm
     L((-13.8, 40), [(3.2, 3.5), (3.2, 4.4)], "accent", axis="f", caps=False, segments=12),
     L((-13.8, 40), [(3.4, 10), (3.4, 12.4)], "dark", axis="f", segments=12),  # Hand
+]
+# Die Energiekugel mit Ring -- die sichtbare Passive Echo. Im 3D-Modell ein
+# eigener Block ("passive"), damit sie im Kampf schweben kann (18. Nov. 2026).
+MAGE_ORB = [
     L((16.2, -13.8), [(0, 42.2), (2.6, 43.2), (3.6, 46), (2.6, 48.8), (0, 49.8)], "glow", segments=14),
     L((16.2, -13.8), [(5.0, 45.6), (5.6, 45.6), (5.6, 46.4), (5.0, 46.4), (5.0, 45.6)],
       "accent", segments=20),                                                  # Ring
     L((19.5, -10.5), [(0, 51), (1.2, 51.5), (1.6, 52.6), (1.2, 53.7), (0, 54.2)], "accent", segments=10),
 ]
+MAGE_BODY = MAGE_BODY + MAGE_ORB
 
 # Flacher Helm.
 #
@@ -2609,7 +2614,7 @@ SETS = [
             {
                 "id": "mage_body", "code": "CHS-003", "type": "body",
                 "name": "Nimbus Chassis", "tags": ["round", "mage", "support"],
-                "shapes": MAGE_BODY,
+                "shapes": MAGE_BODY, "passive_shapes": MAGE_ORB,
                 "anchors": {
                     "mount": (0, 0, MOUNT_Z),
                     "head": (0, 0, 61),
@@ -2879,13 +2884,19 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
         return {"faces": faces, "hulls": hulls,
                 "anchors": {k: [_r(c) for c in v] for k, v in anchors.items()}}
 
+    passive = part.get("passive_shapes", [])
+    main = [sh for sh in part["shapes"] if sh not in passive]
     model = {
         "id": pid, "type": part["type"],
         "colors": resolve_roles(WEAPON_COLORS.get(pid, part.get(
             "palette", palette[palette_type(part["type"])])), part["type"]),
-        **block(part["shapes"], part["anchors"]),
+        **block(main, part["anchors"]),
     }
     variants = {}
+    if passive:
+        # Sichtbare Passive als eigener Block, der sich im Kampf bewegt
+        # (Arena3D); im SVG bleibt sie Teil des Rumpfs.
+        variants["passive"] = block(passive, {"mount": part["anchors"].get("mount", (0, 0, 0))})
     for vname, vspec in part.get("variants", {}).items():
         variants[vname] = block(vspec["shapes"], vspec["anchors"])
     for slot, poses in part.get("arms", {}).items():
