@@ -122,6 +122,7 @@ func _start_battle() -> void:
 	battle.apply_formation(GameState.formation)
 	for unit in battle.units:
 		view.attach_unit(unit)
+	view.abilities.units = battle.units
 
 	camera.position = IsoView.grid_center(battle.grid.width, battle.grid.height)
 	_add_scenery()
@@ -323,6 +324,8 @@ func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 	if not action.is_move() and (action.power > 0 or action.heal > 0):
 		view.show_attack(unit.visual_anchor(), IsoView.map_to_local(tile), color,
 			attack_style(unit, tile, action, battle.resolver.unit_at(tile)))
+	if action.gather and action.aoe_radius > 0:
+		view.show_vortex(tile, action.aoe_radius, action.delay, color)
 	if not action.is_attack():
 		view.show_float(unit.visual_anchor(), action.display_name + "!",
 			Color(1.0, 0.86, 0.3), true)

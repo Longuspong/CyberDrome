@@ -28,6 +28,8 @@ var _badges: UnitBadgePainter
 var _effects: EffectPainter
 var _arena: Array = []
 var _zone: ZonePainter
+## Faehigkeiten lesbar: Bodenmarken und Statuszeichen (18. Nov. 2026).
+var abilities: AbilityPainter
 ## Die gemeinsame 3D-Szene: Hindernisse und alle DROMEs (seit 18. Nov. 2026).
 var arena3d: Arena3D
 
@@ -40,6 +42,10 @@ func _ready() -> void:
 	_zone = ZonePainter.new()
 	_zone.name = "Zone"
 	_world.add_child(_zone)
+
+	abilities = AbilityPainter.new()
+	abilities.name = "Faehigkeiten"
+	_world.add_child(abilities)
 
 	_badges = UnitBadgePainter.new()
 	_badges.name = "UnitBadges"
@@ -178,6 +184,7 @@ func set_pixel_scale(camera_zoom: float) -> void:
 	_badges.zoom = camera_zoom
 	_badges.queue_redraw()
 	_effects.pixel_scale = factor
+	abilities.pixel_scale = factor
 
 
 ## Echtzeit: eine Schussspur von ``from`` nach ``to`` (Weltkoordinaten der
@@ -196,6 +203,12 @@ func show_shot(from: Vector2, to: Vector2, color: Color, heavy: bool = false) ->
 ##   area        Radius der Flaeche in Feldern (Ring am Ziel)
 func show_attack(from: Vector2, to: Vector2, color: Color, style: Dictionary) -> void:
 	_effects.add_attack(from, to, color, style)
+
+
+## Vortex lesbar (DROME_DESIGNREGELN Abschnitt 7): Bodenmarke ueber die
+## Flaeche um ``tile`` bis zum Einschlag, dann Schockwelle.
+func show_vortex(tile: Vector2i, radius: int, delay: float, color: Color) -> void:
+	abilities.add_vortex(IsoView.map_to_local(tile), radius, delay, color)
 
 
 ## Schwebender Text ueber einer Stelle: Schaden, Reparatur, Faehigkeit.

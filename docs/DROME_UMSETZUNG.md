@@ -273,9 +273,17 @@ Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
 ### 6. Fähigkeiten lesbar (`scripts/ui/battle_view.gd`)
 Entwurf: Board 12 (Vortex animiert, Tabelle für alle). Muster: **Wo**
 (Bodenmarke in Iso-Perspektive), **Wer** (Signalfarbe), **Was** (eigene Form).
-- [ ] **Vortex** zuerst: gestrichelter Iso-Ring während der 0,6 s
+- [x] **Vortex** zuerst: gestrichelter Iso-Ring während der 0,6 s
       Verzögerung, Runen drehen nach innen, Sog-Pfeile, Treffer, danach
-      „verlangsamt“ (Ring am Fuß, Pfeile über dem Kopf, 2,5 s)
+      „verlangsamt“ (Ring am Fuß, Pfeile über dem Kopf, 2,5 s) -- **gebaut
+      18. Nov.** in `AbilityPainter` (`scripts/ui/ability_painter.gd`,
+      `BattleView.show_vortex`, ausgelöst in `BattleScreen._on_action_used`
+      für Fähigkeiten mit Sog und Fläche). Bodenmarken unter den DROMEs
+      (z -30), Pfeile über dem Kopf über der 3D-Szene (z 4003); Striche mit
+      dunkler Unterlage. „Verlangsamt“ liest den Status jeder Einheit, gilt
+      also für jede Quelle. Blicktest:
+      `docs/design/drome_entwurf/godot/render_faehigkeit.gd`
+      (mit `--fixed-fps 60`).
 - [ ] Sperrfeuer, Präzisionsschuss, Betäubungsschlag, Rammstoß,
       Aufschlitzen, Wirbelwurf, Doppelschuss, Schildbrecher, Schildladung,
       Schildfeld -- je nach Tabelle auf Board 12
