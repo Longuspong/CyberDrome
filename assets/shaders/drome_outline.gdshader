@@ -29,6 +29,20 @@ void fragment() {
 		COLOR = c * tint;
 	} else {
 		vec2 texel = TEXTURE_PIXEL_SIZE;
+		// Schneller Ausstieg (18. Nov. 2026): in der gemeinsamen Kampfszene
+		// laeuft der Shader ueber den ganzen Bildschirm, und die meisten
+		// Punkte liegen weit weg von jedem DROME. Acht Proben auf dem
+		// Konturradius genuegen, um das festzustellen.
+		float any_near = c.a;
+		for (int i = 0; i < 8; i++) {
+			float a = 6.2831853 * (float(i) + 0.5) / 8.0;
+			vec2 dir = vec2(cos(a), sin(a)) * texel;
+			any_near = max(any_near, texture(TEXTURE, UV + dir * rim_px).a);
+			any_near = max(any_near, texture(TEXTURE, UV + dir * rim_px * 0.5).a);
+		}
+		if (any_near <= 0.0) {
+			COLOR = vec4(0.0);
+		} else {
 		float near = 0.0;
 		float far = 0.0;
 		// Signalfarbe des naechstgelegenen Teils: Radien von innen nach aussen,
@@ -61,5 +75,6 @@ void fragment() {
 		vec3 rgb = mix(ring.rgb, c.rgb / max(c.a, 1e-4), c.a);
 		float a = c.a + ring_a * (1.0 - c.a);
 		COLOR = vec4(rgb, a) * tint;
+		}
 	}
 }

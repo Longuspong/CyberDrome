@@ -502,7 +502,11 @@ class Lights extends Node2D:
 
 ## Baut alles in ``world`` ein. ``depth_of`` rechnet ein Feld in z_index um
 ## (wie bei den Einheiten). Gibt die angelegten Knoten zurueck.
-static func build(world: Node2D, grid: Grid, depth_of: Callable) -> Array:
+##
+## ``obstacles_2d``: Hindernisse als gezeichnete 2D-Knoten. Im Kampf seit
+## 18. Nov. 2026 aus: dort stehen sie in 3D in der Arena (Arena3D).
+static func build(world: Node2D, grid: Grid, depth_of: Callable,
+		obstacles_2d: bool = true) -> Array:
 	var nodes: Array = []
 	var region_id := str(grid.region.id) if grid.region != null else "city"
 	var s := style(region_id)
@@ -513,7 +517,7 @@ static func build(world: Node2D, grid: Grid, depth_of: Callable) -> Array:
 	world.add_child(floor)
 	nodes.append(floor)
 
-	for tile in grid.obstacles:
+	for tile in (grid.obstacles if obstacles_2d else {}):
 		var block := Obstacle.new()
 		block.tile = tile
 		block.kind = str(grid.obstacles[tile])

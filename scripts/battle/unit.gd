@@ -115,6 +115,11 @@ var _sprites: Dictionary = {}
 ## verschieben die FIGUR, und ``position`` der Einheit gehoert dem Feld.
 var _rig: Node2D
 
+## Die gemeinsame 3D-Kampfszene (seit 18. Nov. 2026). Gesetzt, bevor die
+## Einheit in den Baum kommt -- dann baut sie kein eigenes Bild, sondern ihr
+## Modell steht in der Arena. Ohne Arena (Tests, Werkstatt) wie bisher.
+var arena: Arena3D = null
+
 ## Der Bodenring in Fraktionsfarbe, UNTER den Bauteilen (z_index -1).
 var _ring: UnitRing
 
@@ -172,7 +177,11 @@ func _build_sprites() -> void:
 	# die Werkstatt-Vorschau benutzt. Zwei Zusammenbauten waeren zwei
 	# Gelegenheiten, dass der Bot im Kampf anders aussieht als beim Bauen.
 	_ensure_chrome()
-	_sprites = DromeSprites.assemble(_rig, build, facing)
+	if arena != null:
+		_sprites = {}
+		arena.rebuild(self)
+	else:
+		_sprites = DromeSprites.assemble(_rig, build, facing)
 	# Sentinels kleiner (60 %, SPOT-Blatt Fragen 13), bis eigene Sprites kommen.
 	# Skaliert um die Fuesse (SPRITE_ORIGIN = Feldmitte), nicht um die linke
 	# obere Bildecke -- sonst hingen sie ueber ihrem Feld in der Luft (bis
@@ -203,6 +212,9 @@ func set_facing(direction: String) -> void:
 	if direction == facing:
 		return
 	facing = direction
+	if arena != null and arena.model_of(self) != null:
+		arena.face(self)
+		return
 	_build_sprites()
 
 
@@ -267,7 +279,20 @@ static func facing_toward(from: Vector2i, to: Vector2i) -> String:
 func _refresh_tint() -> void:
 	if _flashing:
 		return
-	DromeSprites.tint(_sprites, Teams.tint(is_player))
+	_apply_tint(Teams.tint(is_player))
+
+
+## Das Rig (Rueckstoss, Erschuetterung, Sentinel-Groesse) -- die Arena liest
+## daraus, wo das 3D-Modell steht.
+func rig() -> Node2D:
+	return _rig
+
+
+func _apply_tint(color: Color) -> void:
+	if arena != null:
+		arena.tint(self, color)
+	else:
+		DromeSprites.tint(_sprites, color)
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +344,7 @@ func play_hit() -> void:
 	tween.tween_property(_rig, "position", home, SHAKE_TIME / float(steps))
 
 	_flashing = true
-	DromeSprites.tint(_sprites, Teams.HIT_FLASH)
+	_apply_tint(Teams.HIT_FLASH)
 	var flash := create_tween()
 	flash.tween_interval(0.09)
 	flash.tween_callback(func():
@@ -333,7 +358,7 @@ func play_heal() -> void:
 	if _rig == null:
 		return
 	_flashing = true
-	DromeSprites.tint(_sprites, Color(1.1, 2.2, 1.3))
+	_apply_tint(Color(1.1, 2.2, 1.3))
 	var flash := create_tween()
 	flash.tween_interval(0.14)
 	flash.tween_callback(func():
@@ -357,9 +382,10 @@ func play_death() -> void:
 		return
 	var calm := Accessibility.reduce_motion
 	var total := DEATH_TIME_CALM if calm else DEATH_TIME
-	DromeSprites.tint(_sprites, Teams.HIT_FLASH)
+	_apply_tint(Teams.HIT_FLASH)
 	_flashing = true
-	var turn := _rig.get_node_or_null("Ansicht3D/Drome/Ausrichtung") as Node3D
+	var turn: Node3D = arena.turn_of(self) if arena != null \
+		else _rig.get_node_or_null("Ansicht3D/Drome/Ausrichtung") as Node3D
 	if turn != null:
 		_death_3d(turn, total, calm)
 		return
@@ -408,7 +434,8 @@ func play_death() -> void:
 ## "Ausrichtung" sind bot-lokal (f, l, z) in Weltmetern.
 func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 	var sprite := _rig.get_node_or_null("Drome") as Sprite2D
-	DromeSprites.redraw(_rig, true)
+	if arena == null:
+		DromeSprites.redraw(_rig, true)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(str(unit_id))
 	if not calm:
@@ -450,6 +477,14 @@ func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 	if sprite != null:
 		create_tween().tween_property(sprite, "modulate:a", 0.0,
 			total if calm else total * 0.35).set_delay(0.0 if calm else total * 0.65)
+	elif arena != null:
+		# Gemeinsame Szene: kein eigenes Bild zum Ausblenden -- die Truemmer
+		# verdunkeln sich und verschwinden dann.
+		var dark := create_tween()
+		dark.tween_interval(0.0 if calm else total * 0.6)
+		dark.tween_method(func(k: float) -> void:
+			_apply_tint(Teams.tint(is_player).lerp(Color(0.15, 0.15, 0.2), k)),
+			0.0, 1.0, total * (1.0 if calm else 0.4))
 	if _ring != null:
 		create_tween().tween_property(_ring, "modulate:a", 0.0, total * 0.6)
 	var flash := create_tween()
@@ -460,7 +495,8 @@ func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 	var done := create_tween()
 	done.tween_interval(total)
 	done.tween_callback(func():
-		DromeSprites.redraw(_rig)
+		if arena == null:
+			DromeSprites.redraw(_rig)
 		visible = false)
 
 

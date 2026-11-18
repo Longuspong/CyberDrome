@@ -125,7 +125,11 @@ static func make_camera() -> Camera3D:
 ## Baut den ganzen DROME. Rueckgabe: Node3D mit einem Kind "Ausrichtung",
 ## dessen Basis die Blickrichtung ist; darunter je Block ein MeshInstance3D,
 ## versetzt in bot-lokalen Koordinaten. Meta "accent": Signalfarbe des Chassis.
-static func build_node(build: DromeBuild, facing: String, resolution: int = 256) -> Node3D:
+##
+## ``neon_layer``: Leuchtebene immer anlegen (gemeinsame Kampfszene -- dort
+## muss jeder DROME die Roehren anderer verdecken, auch ohne eigene).
+static func build_node(build: DromeBuild, facing: String, resolution: int = 256,
+		neon_layer: bool = false) -> Node3D:
 	_edge = edge_px(resolution)
 	var root := Node3D.new()
 	root.name = "Drome"
@@ -147,6 +151,7 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256)
 		if bool(model_of(build.part_in(slot)).get("neon", false)):
 			_neon_build = true
 	root.set_meta("neon", _neon_build)
+	_neon_build = _neon_build or neon_layer
 
 	for slot in SLOT_ORDER:
 		var part := build.part_in(slot)

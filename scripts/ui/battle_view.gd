@@ -28,6 +28,8 @@ var _badges: UnitBadgePainter
 var _effects: EffectPainter
 var _arena: Array = []
 var _zone: ZonePainter
+## Die gemeinsame 3D-Szene: Hindernisse und alle DROMEs (seit 18. Nov. 2026).
+var arena3d: Arena3D
 
 
 func _ready() -> void:
@@ -61,7 +63,12 @@ func build_terrain(battle_grid: Grid) -> void:
 	for node in _arena:
 		node.queue_free()
 	_arena = ArenaPainter.build(_world, grid, func(tile: Vector2i) -> int:
-		return IsoView.depth(tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET)
+		return IsoView.depth(tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET, false)
+	if arena3d == null:
+		arena3d = Arena3D.new()
+		arena3d.name = "Arena3D"
+		_world.add_child(arena3d)
+	arena3d.build_obstacles(grid)
 
 
 ## Felder einfaerben -- die Aufstellungszone vor dem Kampf.
@@ -127,6 +134,8 @@ class ZonePainter extends Node2D:
 # ---------------------------------------------------------------------------
 
 func attach_unit(unit: Unit) -> void:
+	if arena3d != null:
+		unit.arena = arena3d
 	_world.add_child(unit)
 	refresh_unit_depth(unit)
 

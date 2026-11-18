@@ -14,6 +14,9 @@ uniform vec4 c_right : source_color;
 uniform vec4 c_line : source_color;
 // Kantenbreite in Bildpunkten (halbe Strichbreite des SVG).
 uniform float edge_px = 1.0;
+// Farbstich je DROME (Team, Trefferblende) in der gemeinsamen Kampfszene
+// (Arena3D, 18. Nov. 2026). Multiplikativ wie modulate; 1 = unveraendert.
+instance uniform vec4 tint = vec4(1.0);
 
 varying vec3 world_normal;
 
@@ -45,5 +48,5 @@ void fragment() {
 			col = c_line.rgb;
 		}
 	}
-	ALBEDO = col;
+	ALBEDO = col * tint.rgb;
 }
