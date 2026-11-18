@@ -607,7 +607,8 @@ class EffectPainter extends Node2D:
 			"age": -float(style.get("wait", 0.0)),
 			"kind": kind, "flight": flight, "total": total,
 			"energy": float(style.get("energy", 0.0)), "heavy": bool(style.get("heavy", false)),
-			"area": int(style.get("area", 0)), "spin": seed_angle})
+			"area": int(style.get("area", 0)), "spin": seed_angle,
+			"from_fn": style.get("from_fn", null)})
 
 	func add_text(at: Vector2, text: String, color: Color, big: bool) -> void:
 		# Mehrere Zahlen am selben Ort stapeln sich, statt sich zu ueberdecken.
@@ -622,7 +623,12 @@ class EffectPainter extends Node2D:
 		if _shots.is_empty() and _texts.is_empty():
 			return
 		for entry in _shots:
-			entry["age"] = float(entry["age"]) + delta
+			var was := float(entry["age"])
+			entry["age"] = was + delta
+			# Startpunkt erst beim Abfeuern holen (Salven: der Schuetze hat
+			# sich inzwischen zum naechsten Ziel gedreht).
+			if was < 0.0 and float(entry["age"]) >= 0.0 and entry["from_fn"] is Callable:
+				entry["from"] = (entry["from_fn"] as Callable).call()
 		for entry in _texts:
 			entry["age"] = float(entry["age"]) + delta
 		_shots = _shots.filter(func(e): return float(e["age"]) < float(e["total"]))

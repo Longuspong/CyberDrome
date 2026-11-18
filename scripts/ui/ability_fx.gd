@@ -94,6 +94,11 @@ static func _salvos(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 			var shot := style.duplicate()
 			shot["wait"] = ActionResolver.salvo_time(action, volley, b) - ActionResolver.SALVO_FLIGHT
 			shot["heavy"] = false
+			if unit.arena != null:
+				# Aus der Muendung, wie sie beim Abfeuern steht.
+				shot["from_fn"] = func() -> Vector2:
+					return unit.arena.weapon_tip(unit, action) + Vector2(0, 34) \
+						if is_instance_valid(unit) else from
 			view.show_attack(from, targets[volley], color, shot)
 
 
