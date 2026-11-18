@@ -72,6 +72,11 @@ const ORB_SPEED := 1.8
 const BLINK_EVERY := 3.6         # Strix-Linsen blinzeln
 const BLINK_TIME := 0.14
 const FLASH_SIZE := 3.6          # Muendungsblitz (Radius, Generator-Einheiten)
+## Beine im Wechsel (18. Nov. 2026): Schwung um die Huefte (rad) und Beugen
+## des Knies, solange das Bein nach vorn schwingt. Knie-Richtung -1 = Knie
+## nach hinten (Strix).
+const LEG_SWING := {"scout_body": 0.38, "jugg_body": 0.24, "strix_body": 0.3}
+const KNEE_BEND := {"scout_body": 0.7, "jugg_body": 0.45, "strix_body": -0.45}
 
 
 ## Aufbau im Konstruktor, damit die Arena auch ausserhalb des Baums (Tests)
@@ -348,9 +353,13 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 	var bob := 0.0
 	var tilt := 0.0
 	var hop := 0.0
+	var walking := false
 	if not calm:
 		if unit.is_gliding():
-			var wave := absf(sin(t * WALK_SPEED))
+			walking = true
+			# Mit Beinen ist der Rumpf oben, wenn ein Bein senkrecht steht.
+			var wave := absf(cos(t * WALK_SPEED)) if LEG_SWING.has(chassis) \
+				else absf(sin(t * WALK_SPEED))
 			if chassis == "strix_body":
 				hop = wave * STRIX_HOP
 			else:
@@ -398,6 +407,12 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			continue
 		var tr: Transform3D = block.get_meta("base")
 		var bname := str(block.name)
+		if bname.begins_with("feet_leg_"):
+			if walking:
+				block.transform = _leg_pose(turn, block, chassis, t, bname)
+			else:
+				block.transform = tr
+			continue
 		if bname != "feet":
 			tr.origin.z += bob
 		if bname == "head":
@@ -420,6 +435,36 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 	elif state.has("flash"):
 		_clear_flash(state)
 	_passive_glow(unit, turn, state, t, calm)
+
+
+## Ein Bein im Schritt: der Oberschenkel schwingt um die Huefte, das linke
+## gegen das rechte; der Unterschenkel beugt sich zusaetzlich um das Knie,
+## solange das Bein nach vorn schwingt (Fuss hebt ab).
+func _leg_pose(turn: Node3D, block: Node3D, chassis: String, t: float,
+		bname: String) -> Transform3D:
+	var base: Transform3D = block.get_meta("base")
+	var left := bname.begins_with("feet_leg_left")
+	var side := "feet_leg_left" if left else "feet_leg_right"
+	var upper := turn.get_node_or_null(side + "_upper") as Node3D
+	if upper == null:
+		return base
+	var origin: Vector3 = (upper.get_meta("base") as Transform3D).origin
+	var hip := origin + _anchor(upper, "mount")
+	var knee := origin + _anchor(upper, "knee")
+	var w := t * WALK_SPEED + (0.0 if left else PI)
+	# Basis um +y: positiver Winkel schiebt den Fuss nach hinten.
+	var swing := -float(LEG_SWING.get(chassis, 0.0)) * sin(w)
+	var hip_tr := _turn_about(hip, swing)
+	if bname.ends_with("_upper"):
+		return hip_tr * base
+	var bend := float(KNEE_BEND.get(chassis, 0.0)) * maxf(0.0, cos(w))
+	return hip_tr * _turn_about(knee, bend) * base
+
+
+static func _turn_about(pivot: Vector3, angle: float) -> Transform3D:
+	return Transform3D(Basis.IDENTITY, pivot) \
+		* Transform3D(Basis(Vector3(0, 1, 0), angle), Vector3.ZERO) \
+		* Transform3D(Basis.IDENTITY, -pivot)
 
 
 ## Der Lichtball an der Muendung (``muzzle``-Anker der Waffe): waechst kurz

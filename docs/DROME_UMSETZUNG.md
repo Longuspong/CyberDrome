@@ -242,19 +242,27 @@ im Generator -> Variante `passive` -> Knoten `body_passive`) schwebt;
 Vireo-Booster flackern (beim Laufen stärker), Molok-Lockfeuer pulsiert,
 Strix-Linsen blinzeln (über die Materialkopien der Einheit); Lichtball am
 `muzzle`-Anker; Schwung um eine gekippte Achse (von vorn lesbar), Rückstoß
-hebt die Waffe, Treffer kippen den DROME kurz nach hinten. Offen: Beine im
-Wechsel. **Deko am Rand in 3D**: Laternen in den Lichtfarben der Region,
+hebt die Waffe, Treffer kippen den DROME kurz nach hinten.
+**Beine im Wechsel (18. Nov., gebaut)**: der Generator teilt die Beine von
+Vireo, Molok und Strix (`legs` am Antrieb, `split_legs`) in Ober- und
+Unterschenkel je Seite (Varianten `leg_<seite>_upper/_lower` mit Anker
+`mount` = Hüfte bzw. Knie, `knee`); `DromeModel` legt sie als Knoten
+`feet_leg_...` an, `Arena3D._leg_pose` schwingt sie gegengleich um die Hüfte
+und beugt das Knie des vorschwingenden Beins (Strix: Knie nach hinten).
+Werte `LEG_SWING`/`KNEE_BEND` oben in `arena_3d.gd`; der Rumpf wippt jetzt im
+Schritt (oben, wenn ein Bein senkrecht steht). Nimbus fährt weiter.
+Blicktest: `docs/design/drome_entwurf/godot/render_laufen.gd`. **Deko am Rand in 3D**: Laternen in den Lichtfarben der Region,
 Kiosk, Schüssel, Haltestelle, Klimagerät, Antenne (`build_arena_models.py`,
 Plätze `ArenaPainter.prop_spots`, `Arena3D.build_props`).
 Entwurf: Board 11, `v5.py` (Ebenen und Drehpunkte).
-- [ ] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
+- [x] **Idle**: Rumpf/Kopf atmen 1–2 px, Leuchtteile pulsieren, Passive
       bewegt sich mit (Booster flackert, Kugel schwebt, Lockfeuer pulsiert,
       Linsen blinzeln)
-- [ ] **Laufen**: Wippen; Nimbus kippt nach vorn, Eule hüpft. Beine im
+- [x] **Laufen**: Wippen; Nimbus kippt nach vorn, Eule hüpft. Beine im
       Wechsel brauchen getrennte Bein-Sprites -- Vorschlag: `feet` in
       `feet_left`/`feet_right` teilen, erst wenn das Wippen allein nicht reicht
       (entschieden 17. Nov.: zuerst nur Wippen)
-- [ ] **Angriff** nach Waffenart (seit 4c in 3D: Arm und Waffe sind eigene
+- [x] **Angriff** nach Waffenart (seit 4c in 3D: Arm und Waffe sind eigene
       Knoten `<slot>_arm` und `<slot>` unter `Ausrichtung`, die Ansicht dann
       auf UPDATE_ALWAYS stellen): Nahkampf dreht die Waffe um den
       Schulteranker (ausholen, zuschlagen), Fernkampf Rückstoß + Mündungsblitz
@@ -298,6 +306,6 @@ bleibt.
 2. ~~Molok-Waffen~~ -- entschieden 16. Nov.: dieselbe Waffe mit Armmaß 1,6
    (Board 14), kein zweiter Satz.
 3. ~~Beine trennen oder nur Wippen?~~ -- entschieden 17. Nov.: erst nur
-   Wippen; Beine erst trennen, wenn das zu steif aussieht.
+   Wippen; am 18. Nov. vom Spieler gewünscht und gebaut (Beine im Wechsel).
 4. ~~Bumerang als Nahkampf~~ -- entschieden 16. Nov.: bleibt Nahkampf, Pose
    angewinkelt und wurfbereit (Board 14).

@@ -135,7 +135,30 @@ func test_every_part_has_a_3d_model() -> void:
 			var model := DromeModel.model_of(part)
 			t.ok(not model.is_empty(), "%s hat ein 3D-Modell" % part.id)
 			if part.type != PartData.Type.HEAD:
-				t.ok(not model.get("faces", []).is_empty(), "%s hat Flaechen" % part.id)
+				# Beine liegen als eigene Bloecke in den Varianten (18. Nov. 2026).
+				var count: int = model.get("faces", []).size()
+				for vname in DromeModel.LEG_BLOCKS:
+					count += model.get("variants", {}).get(vname, {}).get("faces", []).size()
+				t.ok(count > 0, "%s hat Flaechen" % part.id)
+
+
+## Beine im Wechsel: wer Beine hat, bekommt je Seite Ober- und Unterschenkel
+## als eigene Knoten; das Fahrwerk des Nimbus nicht.
+func test_legs_are_own_blocks() -> void:
+	for feet_id in [&"scout_feet", &"jugg_feet", &"strix_feet", &"mage_drive"]:
+		var model := DromeModel.model_of(PartDB.get_part(feet_id))
+		var variants: Dictionary = model.get("variants", {})
+		var legged: bool = feet_id != &"mage_drive"
+		for vname in DromeModel.LEG_BLOCKS:
+			t.equal(variants.has(vname), legged, "%s: %s" % [feet_id, vname])
+		if legged:
+			var upper: Dictionary = variants["leg_left_upper"]
+			t.ok(not upper["faces"].is_empty() and not variants["leg_left_lower"]["faces"].is_empty(),
+				"%s: Ober- und Unterschenkel haben Flaechen" % feet_id)
+			t.ok(upper["anchors"].has("knee"), "%s: Knie als Drehpunkt" % feet_id)
+			t.ok(float(upper["anchors"]["mount"][1]) > 0.0
+				and float(variants["leg_right_upper"]["anchors"]["mount"][1]) < 0.0,
+				"%s: Huefte links/rechts gespiegelt" % feet_id)
 
 
 ## Die Kamera bildet exakt so ab wie ``to_screen`` im Generator: dieselbe

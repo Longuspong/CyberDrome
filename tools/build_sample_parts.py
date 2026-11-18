@@ -2481,6 +2481,9 @@ SETS = [
                 "id": "scout_feet", "code": "LEG-001", "type": "feet", "name": "Vireo Sprintbeine",
                 "tags": ["light", "fast"], "shapes": SCOUT_FEET,
                 "anchors": {"mount": (0, 0, 36), "ground": (1, 0, 0)},
+                # Beine im Wechsel (18. Nov. 2026): Drehpunkte je Bein (links,
+                # rechts gespiegelt), Teilung Ober-/Unterschenkel bei split_z.
+                "legs": {"hip": (0, 5.75, 33), "knee": (0, 5.75, 22), "split_z": 21},
             },
             {
                 "id": "scout_core", "code": "COR-001", "type": "core", "name": "Vireo Impulskern",
@@ -2575,6 +2578,9 @@ SETS = [
                 "id": "jugg_feet", "code": "LEG-002", "type": "feet", "name": "Molok Standbeine",
                 "tags": ["heavy", "slow"], "shapes": JUGG_FEET,
                 "anchors": {"mount": (0, 0, 33), "ground": (1, 0, 0)},
+                # Hueftausleger (ueber static_z) bleiben am Rumpf.
+                "legs": {"hip": (0, 12.5, 29), "knee": (0, 12.5, 16.5),
+                         "split_z": 15, "static_z": 29},
             },
             {
                 "id": "jugg_core", "code": "COR-002", "type": "core", "name": "Molok Fusionskern",
@@ -2698,6 +2704,8 @@ SETS = [
                 "name": "Strix Federbeine", "tags": ["marksman", "digitigrad"],
                 "shapes": STRIX_FEET,
                 "anchors": {"mount": (0, 0, 30), "ground": (0, 0, 0)},
+                # Knie nach hinten: der Unterschenkel haengt am Gelenk bei z 21.
+                "legs": {"hip": (-3, 5.5, 30), "knee": (-3, 5.5, 21), "split_z": 19},
             },
             {
                 "id": "strix_core", "code": "COR-004", "type": "core",
@@ -2875,6 +2883,52 @@ def model_faces(shapes):
     return faces, hulls
 
 
+def _shape_center(shape) -> tuple:
+    """Grobe Mitte (l, z) einer Form -- reicht zum Zuordnen zu einem Bein."""
+    kind = shape[0]
+    if kind == "box":
+        return (sum(shape[2]) / 2, sum(shape[3]) / 2)
+    if kind == "disc":
+        return (shape[2], shape[3])
+    if kind == "obox":
+        return (shape[1][1], shape[1][2])
+    _, c, prof, _mat, axis, _seg, _caps = shape
+    ts = [t for _r, t in prof]
+    if axis == "z":
+        return (c[1], (min(ts) + max(ts)) / 2)
+    if axis == "f":
+        return (c[0], c[1])
+    return ((min(ts) + max(ts)) / 2, c[1])
+
+
+def split_legs(shapes, spec) -> dict:
+    """
+    Teilt die Formen eines Antriebs in Beine (18. Nov. 2026): je Seite
+    Ober- und Unterschenkel (``leg_<seite>_upper``/``_lower``) mit den
+    Drehpunkten ``mount`` (Huefte bzw. Knie). Was ueber ``static_z`` oder
+    auf der Mitte liegt, bleibt am Rumpf (``static``).
+    """
+    hip, knee = spec["hip"], spec["knee"]
+    split_z, static_z = spec["split_z"], spec.get("static_z", 999)
+    out = {"static": []}
+    groups = {}
+    for shape in shapes:
+        l, z = _shape_center(shape)
+        if z >= static_z or abs(l) < 0.5:
+            out["static"].append(shape)
+            continue
+        side = "left" if l > 0 else "right"
+        seg = "upper" if z >= split_z else "lower"
+        groups.setdefault((side, seg), []).append(shape)
+    for side, sign in (("left", 1), ("right", -1)):
+        h = (hip[0], hip[1] * sign, hip[2])
+        k = (knee[0], knee[1] * sign, knee[2])
+        out[f"leg_{side}_upper"] = (groups.get((side, "upper"), []),
+                                    {"mount": h, "knee": k})
+        out[f"leg_{side}_lower"] = (groups.get((side, "lower"), []), {"mount": k})
+    return out
+
+
 def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
     """Das 3D-Modell eines Teils: ``<id>.m3d`` (JSON)."""
     pid = part["id"]
@@ -2886,6 +2940,9 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
 
     passive = part.get("passive_shapes", [])
     main = [sh for sh in part["shapes"] if sh not in passive]
+    legs = split_legs(main, part["legs"]) if part.get("legs") else {}
+    if legs:
+        main = legs.pop("static")
     model = {
         "id": pid, "type": part["type"],
         "colors": resolve_roles(WEAPON_COLORS.get(pid, part.get(
@@ -2897,6 +2954,9 @@ def write_model(set_dir: pathlib.Path, part: dict, palette: dict) -> None:
         # Sichtbare Passive als eigener Block, der sich im Kampf bewegt
         # (Arena3D); im SVG bleibt sie Teil des Rumpfs.
         variants["passive"] = block(passive, {"mount": part["anchors"].get("mount", (0, 0, 0))})
+    for vname, (shapes, anchors) in legs.items():
+        # Beine als eigene Bloecke, die im Kampf im Wechsel schwingen.
+        variants[vname] = block(shapes, anchors)
     for vname, vspec in part.get("variants", {}).items():
         variants[vname] = block(vspec["shapes"], vspec["anchors"])
     for slot, poses in part.get("arms", {}).items():

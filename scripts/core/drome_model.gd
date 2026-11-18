@@ -23,6 +23,8 @@ const COS45 := 0.70710678
 ## Reihenfolge wie DromeSprites: Ausruestung nach dem Rumpf.
 const SLOT_ORDER := ["feet", "body", "core", "head", "equip_left", "equip_center",
 	"equip_right", "equip_shoulder"]
+## Beine als eigene Bloecke (Generator: split_legs), Knoten "feet_<name>".
+const LEG_BLOCKS := ["leg_left_upper", "leg_left_lower", "leg_right_upper", "leg_right_lower"]
 ## Material -> (oben, links, rechts, Kante?) wie MATERIALS im Generator.
 const MATERIALS := {
 	"plate": ["plate_light", "plate", "plate_dark", true],
@@ -187,6 +189,14 @@ static func build_node(build: DromeBuild, facing: String, resolution: int = 256,
 			Vector3.ZERO if slot == "body" else socket - mount, bool(model.get("neon", false)))
 		# Sichtbare Passive als eigener Block (Nimbus-Kugel), damit sie sich im
 		# Kampf bewegen kann (Arena3D, 18. Nov. 2026).
+		# Beine als eigene Bloecke (Ober-/Unterschenkel je Seite), damit sie
+		# im Kampf im Wechsel schwingen (Arena3D, 18. Nov. 2026).
+		if slot == "feet":
+			for vname in LEG_BLOCKS:
+				var leg: Dictionary = model.get("variants", {}).get(vname, {})
+				if not leg.is_empty():
+					_add_block(turn, "feet_" + vname, "%s|%s" % [part.id, vname], leg,
+						colors, socket - mount, bool(model.get("neon", false)))
 		if slot == "body" and body_variants.has("passive"):
 			_add_block(turn, "body_passive", "%s|passive" % part.id, body_variants["passive"],
 				colors, Vector3.ZERO, false)
