@@ -22,12 +22,92 @@ const SHAPES := [
 ]
 
 
-## Ein leeres Feld in der Groesse aus der Konfiguration.
-static func generate(region: Terrain.Region) -> Grid:
-	var grid := Grid.new(Config.get_int("grid_width", Grid.DEFAULT_WIDTH),
-		Config.get_int("grid_height", Grid.DEFAULT_HEIGHT))
+## Das Feld einer Karte (18. Nov. 2026, Wunsch des Spielers: die Karte
+## stuetzt den Gedanken der Formation). ``map_id`` ist ein Schluessel aus
+## ``data/config.json`` -> ``maps`` (leer oder unbekannt: ``maps.default``).
+## Jede Karte hat Breite, Hoehe und eine Form; die Form ist fest und an der
+## Mittelreihe gespiegelt -- beide Seiten haben dieselben Bedingungen.
+static func generate(region: Terrain.Region, map_id: String = "") -> Grid:
+	var spec := map_spec(map_id)
+	var grid := Grid.new(int(spec.get("width", Grid.DEFAULT_WIDTH)),
+		int(spec.get("height", Grid.DEFAULT_HEIGHT)))
 	grid.region = region
+	grid.map_id = str(spec.get("id", ""))
+	apply_shape(grid, str(spec.get("shape", "rect")))
 	return grid
+
+
+## Die Angaben einer Karte samt ihrer Id. Unbekannt oder leer: die Standardkarte.
+static func map_spec(map_id: String) -> Dictionary:
+	var maps := Config.section("maps")
+	var key := map_id
+	if key == "" or not maps.get(key) is Dictionary:
+		key = str(maps.get("default", ""))
+	var spec = maps.get(key)
+	if not spec is Dictionary:
+		return {"id": "", "width": Grid.DEFAULT_WIDTH, "height": Grid.DEFAULT_HEIGHT, "shape": "rect"}
+	var out: Dictionary = (spec as Dictionary).duplicate()
+	out["id"] = key
+	return out
+
+
+## Die Form einer Karte: Loecher (Felder ausserhalb) und feste Bloecke
+## (Hindernisse, ueber die geschossen wird). Die Aufstellungszonen bleiben
+## immer frei. Formen:
+##   rect    Rechteck
+##   belly   Bauch: an den Zonen schmal, in der Mitte die volle Breite --
+##           Platz fuer Flanken
+##   waist   Engpass: in der Mitte nur 5 Felder breit
+##   lanes   Zwei Gassen: ein Block in der Mitte teilt das Feld
+static func apply_shape(grid: Grid, shape: String) -> void:
+	grid.holes.clear()
+	if shape == "rect" or shape == "":
+		return
+	var zones := {}
+	for tile in deployment_zone(grid, true) + deployment_zone(grid, false):
+		zones[tile] = true
+	var kinds: Array = Config.section("obstacles").get("kinds", {}).get(
+		str(grid.region.id) if grid.region != null else "", ["block"])
+	if kinds.is_empty():
+		kinds = ["block"]
+	for y in grid.height:
+		for x in grid.width:
+			var tile := Vector2i(x, y)
+			if zones.has(tile):
+				continue
+			match _shape_cell(shape, tile, grid.width, grid.height):
+				"hole":
+					grid.holes[tile] = true
+				"block":
+					# Feste Optik je Feld (kein Zufall des Kampfes), gespiegelt gleich.
+					var top := Vector2i(x, mini(y, grid.height - 1 - y))
+					grid.obstacles[tile] = str(kinds[absi(hash(top)) % kinds.size()])
+
+
+## Was ein Feld in einer Form ist: "" (Spielfeld), "hole" oder "block".
+## Gerechnet wird nur fuer die obere Haelfte, die untere ist ihr Spiegelbild
+## (bei ungerader Reihenzahl haben Reihe y und h - 1 - y denselben Versatz).
+static func _shape_cell(shape: String, tile: Vector2i, w: int, h: int) -> String:
+	var y := mini(tile.y, h - 1 - tile.y)
+	var cx := (float(w) - 1.0) * 0.5
+	var mid := (float(h) - 1.0) * 0.5
+	var dx := absf(float(tile.x) + (0.5 if y % 2 == 1 else 0.0) - cx - 0.25)
+	var dy := mid - float(y)
+	var t := dy / mid                # 0 Mitte .. 1 Rand
+	match shape:
+		"waist":
+			if dx > lerpf(2.6, float(w) * 0.5, clampf((t - 0.15) / 0.45, 0.0, 1.0)):
+				return "hole"
+		"belly":
+			# Ab der Zone (7 breit) je Reihe ein halbes Feld breiter -- gerade
+			# Hexkanten statt Treppen, bis zur vollen Breite.
+			var half := minf(3.5 + maxf(0.0, float(y) - 2.0) * 0.5, float(w) * 0.5)
+			if dx > half - 0.25 + 0.001:
+				return "hole"
+		"lanes":
+			if dx <= 1.1 and dy <= 3.0:
+				return "block"
+	return ""
 
 
 ## Setzt die Hindernisse. Eigener Zufall aus ``seed_value`` -- der Zufall
@@ -39,7 +119,7 @@ static func generate(region: Terrain.Region) -> Grid:
 ## gespiegelt (x, y) -> (x, h - 1 - y), so wie die Gegnerzone die
 ## gespiegelte Spielerzone ist. Eine Gruppe, die das Feld zerteilen wuerde, faellt weg.
 static func place_obstacles(grid: Grid, seed_value: int) -> void:
-	grid.obstacles.clear()
+	# Die festen Bloecke der Kartenform (apply_shape) bleiben stehen.
 	var settings := Config.section("obstacles")
 	if not bool(settings.get("enabled", true)):
 		return

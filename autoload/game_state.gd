@@ -431,6 +431,10 @@ var enemy_override: Array = []
 ## wuerfelt selbst.
 var battle_region: StringName = &""
 
+## Karte fuer den naechsten Kampf (Lauf: die der Formation, config.json ->
+## maps). Leer = Standardkarte.
+var battle_map: String = ""
+
 ## Ob der naechste/aktuelle Kampf ein Kampf dieses Laufs ist. Dann kaempft der
 ## Lauf-Squad statt des Roster-Squads, es gibt keine Chaos-Beute, und das
 ## Ergebnis geht an den Lauf zurueck.
@@ -550,6 +554,7 @@ func begin_run_battle() -> void:
 	squad = run.squad.map(func(b): return b.clone())
 	battle_seed = run.battle_seed()
 	battle_region = run.region_id
+	battle_map = run.map_id()
 	enemy_override = run.enemies().map(func(b): return b.clone())
 
 
@@ -572,6 +577,7 @@ func finish_run_battle(outcome: int, enemy_pool: Array, fighters: Array = []) ->
 	in_run_battle = false
 	enemy_override = []
 	battle_region = &""
+	battle_map = ""
 	battle_seed = 0
 	refresh_squad()
 	save_run()

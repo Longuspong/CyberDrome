@@ -438,6 +438,21 @@ func enemy_power(which: int = -1) -> float:
 	return base_power * (start_factor + growth * float(round - 1)) * factor
 
 
+## Die Karte eines Knotens (ohne Angabe: des gewaehlten) -- die der Formation
+## (data/formations.json -> map); Chaos-Kaempfe und Formationen ohne Angabe
+## auf der Standardkarte (18. Nov. 2026).
+func map_id(index: int = -1) -> String:
+	if index < 0:
+		index = node
+	var nodes := row()
+	if index < 0 or index >= nodes.size():
+		return ""
+	var info: Dictionary = nodes[index]
+	if bool(info.get("chaos", false)):
+		return ""
+	return str(Formations.formation(str(info.get("team", ""))).get("map", ""))
+
+
 ## Die Gegner eines Knotens dieser Runde (ohne Angabe: des gewaehlten) --
 ## dieselben in Vorschau und Kampf. Seit 14. Nov. 2026 eine Formation
 ## (DROMEs + Sentinels) nach Reinforcement-Level und Stufe; nur der
@@ -599,6 +614,7 @@ func preview(index: int = -1) -> Dictionary:
 	var entry := Formations.formation(str(info.get("team", "")))
 	conditions["team"] = str(entry.get("name", ""))
 	conditions["team_text"] = str(entry.get("idea", ""))
+	conditions["map"] = str(MapGenerator.map_spec(map_id(index)).get("name", ""))
 	conditions["type"] = ""
 	conditions["type_hint"] = ""
 	conditions["reinforcement"] = reinforcement()

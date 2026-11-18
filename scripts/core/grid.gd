@@ -10,13 +10,14 @@ extends RefCounted
 ## (Entscheidung des Spielers). Das Gitter fuehrt, wer wo steht (zwei DROMEs
 ## teilen sich nie ein Feld) und welche Felder gesperrt sind.
 
-## Hexfeld (seit 17. Nov. 2026, Entscheidung des Spielers): 9 Spalten x 17
-## Reihen, hochkant. Ein Feld ist ``Vector2i(spalte, reihe)``; ungerade Reihen
+## Hexfeld (seit 17. Nov. 2026, Entscheidung des Spielers): hochkant, seit
+## 18. Nov. 2026 je Formation eine eigene Karte (``data/config.json`` ->
+## ``maps``, Standard 9 Spalten x 15 Reihen). Ein Feld ist ``Vector2i(spalte, reihe)``; ungerade Reihen
 ## liegen ein halbes Feld weiter rechts ("odd-r"). Reihe 0 ist oben (Gegner),
 ## die letzte Reihe unten (Spieler). Abstand und Nachbarn rechnen ueber
 ## axiale Koordinaten -- jeder Schritt in eine der sechs Richtungen kostet 1.
 const DEFAULT_WIDTH := 9
-const DEFAULT_HEIGHT := 17
+const DEFAULT_HEIGHT := 15
 const DEFAULT_SIZE := DEFAULT_WIDTH     # alter Name, nur noch fuer die Breite
 
 ## Die sechs Richtungen, axial (dq, dr), im Bild gegen den Uhrzeigersinn ab
@@ -39,6 +40,14 @@ var _occupants: Dictionary = {}     ## Vector2i -> unit_id (Variant)
 ## Gesperrte Felder: Vector2i -> Art des Hindernisses (String, nur Optik).
 ## Wer hier steht, ist niemand; betreten kann es keiner.
 var obstacles: Dictionary = {}
+
+## Felder, die nicht zur Karte gehoeren (Form der Karte, 18. Nov. 2026):
+## Vector2i -> true. Fuer alles ausser der Optik gibt es sie nicht --
+## ``in_bounds`` ist dort false, ``all_tiles`` laesst sie aus.
+var holes: Dictionary = {}
+
+## Welche Karte (Schluessel in ``config.json`` -> ``maps``), nur zur Anzeige.
+var map_id: String = ""
 
 
 func _init(w: int = DEFAULT_WIDTH, h: int = DEFAULT_HEIGHT) -> void:
@@ -114,14 +123,17 @@ static func direction_angle(dir: int) -> float:
 
 
 func in_bounds(tile: Vector2i) -> bool:
-	return tile.x >= 0 and tile.y >= 0 and tile.x < width and tile.y < height
+	return tile.x >= 0 and tile.y >= 0 and tile.x < width and tile.y < height \
+		and not holes.has(tile)
 
 
 func all_tiles() -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []
 	for y in height:
 		for x in width:
-			tiles.append(Vector2i(x, y))
+			var tile := Vector2i(x, y)
+			if not holes.has(tile):
+				tiles.append(tile)
 	return tiles
 
 
@@ -170,5 +182,7 @@ func duplicate_grid() -> Grid:
 	var copy := Grid.new(width, height)
 	copy._occupants = _occupants.duplicate()
 	copy.obstacles = obstacles.duplicate()
+	copy.holes = holes.duplicate()
+	copy.map_id = map_id
 	copy.region = region
 	return copy

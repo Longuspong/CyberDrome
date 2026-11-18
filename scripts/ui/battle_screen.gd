@@ -116,7 +116,7 @@ func _start_battle() -> void:
 		GameState.new_seed()
 
 	battle.setup(GameState.battle_seed, builds, GameState.enemy_override,
-		GameState.battle_region)
+		GameState.battle_region, GameState.battle_map)
 	battle.virus_enabled = true
 	view.build_terrain(battle.grid)
 	# Die gemerkte Aufstellung des letzten Kampfs, wenn sie noch passt.

@@ -29,6 +29,28 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Karten je Formation (18. Nov. 2026, Entscheidung des Spielers)
+
+* Messlauf `tools/playtest/map_bench.gd` (Ergebnis-Seite
+  https://claude.ai/artifact/GF1hrgR3G8fpBHUpa8L29e): die Groesse stellt das
+  Tempo ein (erster Treffer 3,0 s bei 13 Reihen, 4,2 s bei 17, 5,6 s bei 21),
+  die Form verschiebt einzelne Formationen um bis zu 30 Punkte.
+* Entschieden: die Karte stuetzt den Gedanken der Formation. `config.json` ->
+  `maps` (standard 9 x 15, kurz 9 x 13, lang 9 x 21, gassen 9 x 17 mit Block in
+  der Mitte, bauch 11 x 17), `formations.json` -> `map` je Formation
+  (Einfuehrung + Bullies kurz, Squad standard, Dachschuetzen lang, Lazarett
+  gassen, Schattenrudel bauch). Chaos-Kaempfe: Standard.
+* Formen: `MapGenerator.apply_shape` setzt Loecher (`Grid.holes`, gehoeren
+  nicht zum Feld; Boden und Zierlinie folgen von selbst) und feste Bloecke,
+  an der Mittelreihe gespiegelt, Zonen immer frei. Der Bauch waechst ab der
+  Zone je Reihe um ein halbes Feld (gerade Hexkanten).
+* Zufaellige Hindernisse aus (`obstacles.enabled` false, Wunsch des Spielers:
+  berechenbar), Randdeko bleibt.
+* Messung: `run_bench.gd -- 40` mit den Karten der Formationen wie vorher
+  (Abweichungen im Rauschen). Gegen gewuerfelte Gegner (`playtest.gd -- 150`)
+  auf der Standardkarte 102 statt 111 Siege, erster Treffer 4,4 statt 5,3 s.
+* Lauf-Vorschau zeigt die Karte ("Karte: Bauch").
+
 ### Hangar: DROME-Wechsel ohne Ruckler (18. Nov. 2026, Meldung des Spielers)
 
 * Jedes Antippen baute den ganzen Hangar neu auf, und jede Kachel renderte

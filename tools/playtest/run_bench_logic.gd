@@ -37,9 +37,10 @@ func run(count: int, drome_level: int = 0, weapon_level: int = 0) -> void:
 					c.modules = {}
 					return c)
 				var seed_value := state.battle_seed()
-				if _play(seed_value, state.squad, foes):
+				var map := state.map_id()
+				if _play(seed_value, state.squad, foes, map):
 					with_mods += 1
-				if _play(seed_value, state.squad, bare):
+				if _play(seed_value, state.squad, bare, map):
 					without += 1
 			print("%5d  %-7s  %9s  %13d  %5d/%d    %d/%d" % [round, RunState.TIER_NAMES[which], _lv(round, which), mods,
 				with_mods, played, without, played])
@@ -52,9 +53,11 @@ func _lv(round: int, which: int) -> String:
 	return "%d/%d" % [lv["drome"], lv["weapon"]]
 
 
-func _play(seed_value: int, ours: Array, theirs: Array) -> bool:
+## ``map``: die Karte der Formation (seit 18. Nov. 2026 wie im Spiel).
+func _play(seed_value: int, ours: Array, theirs: Array, map: String = "") -> bool:
 	var battle := BattleManager.new()
-	battle.setup(seed_value, ours.map(func(b): return b.clone()), theirs.map(func(b): return b.clone()))
+	battle.setup(seed_value, ours.map(func(b): return b.clone()), theirs.map(func(b): return b.clone()),
+		&"", map)
 	var guard := 0
 	while battle.outcome == BattleManager.Outcome.RUNNING and guard < 100000:
 		battle.tick()

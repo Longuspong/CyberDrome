@@ -178,7 +178,11 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
   nach oben in groessere Halter, schwer nur in schwer).
-* Spielfeld ist seit 17. Nov. 2026 ein **Hexfeld 9 x 17** (hochkant,
+* Spielfeld ist seit 17. Nov. 2026 ein **Hexfeld**, seit 18. Nov. 2026 **je
+  Formation eine eigene Karte** (`config.json` -> `maps`, Formation -> `map`;
+  Standard 9 x 15, dazu kurz 9 x 13, lang 9 x 21, Zwei Gassen, Bauch 11 x 17;
+  Formen fest und gespiegelt, `MapGenerator.apply_shape`, `Grid.holes`;
+  keine zufaelligen Hindernisse mehr, Randdeko bleibt) (hochkant,
   Reihen waagerecht, Spieler unten, Gegner oben; `Grid`: `Vector2i(spalte,
   reihe)`, ungerade Reihen halb nach rechts, Abstand in Hexschritten,
   `Grid.neighbors`/`neighbor`/`direction_toward`/`line_direction`;
@@ -248,8 +252,8 @@ Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
 - [ ] **Bosse** am Ende der Story-Level (Oni, Shogun Kage; Abschnitt 3).
 - [ ] **Schwierigkeit** pruefen: Normal Runde 8 63 %, Elite 41 % ohne
       Module -- so lassen oder Elite-Teams anziehen? (Abschnitt 5)
-- [ ] **Aufstellung**: erster Treffer nach 5,6 s statt 2,0 s -- zu lang?
-      Stellschraube `deployment.inset` in `data/config.json` (1 -> 3).
+- [x] ~~Aufstellung: erster Treffer zu spaet~~ -- Standardkarte 9 x 15
+      (4,4 s), Karten je Formation, 18. Nov. 2026
 - [x] ~~Umlaute in der Anzeige~~ -- gebaut 14. Nov. 2026
 - [ ] **Endlos-Modus** ausbauen: Sektoren je Fraktion, bessere Beute je
       Sektor (Abschnitt 5; heute Platzhalter in `run.endless`).

@@ -1049,7 +1049,7 @@ def build_maps(ws):
         "Ausrichtung: Spieler LINKS, Gegner RECHTS (für die Iso-Ansicht dreht das Spiel die Karte).",
         "Gegnerseite: leer lassen = gespiegelt zur Spielerseite (um die Mitte gedreht), oder selbst eintragen.",
         "Gelesen werden nur die Buchstaben -- Rahmen und Farben sind für dich. Name, Gebiet, Notiz: hellblau.",
-        "Heute gebaut: 20 x 20, Hindernisse je Seed gewürfelt. Die Vorlagen sind 24 x 24, damit Platz für andere Formen ist.",
+        "Heute gebaut (18. Nov. 2026): Hexfeld, je Formation eine Karte (Blatt Formationen, Spalte Karte; config.json -> maps), keine zufälligen Hindernisse. Die Vorlagen sind 24 x 24.",
     ]
     for r, t in enumerate(legend, 1):
         ws.cell(row=r, column=1, value=t).font = SUB_FONT if r == 1 else BODY_FONT
@@ -1099,6 +1099,14 @@ def build_maps(ws):
 def build_formationen(ws):
     rows = []
     regions = {r["id"]: r["name"] for r in REGIONS["regions"]}
+    maps = CONFIG.get("maps", {})
+
+    def map_text(key):
+        spec = maps.get(key or maps.get("default", ""), {})
+        if not isinstance(spec, dict):
+            return ""
+        return f'{spec.get("name", key)} ({spec.get("width")} x {spec.get("height")})'
+
     for i, (region, forms) in enumerate(FORMATIONS["formations"].items()):
         for f in forms:
             for n, step in enumerate(f["steps"]):
@@ -1112,12 +1120,15 @@ def build_formationen(ws):
                              len(sentinels) + len(step["dromes"]), ", ".join(ranks) or "Basic",
                              ", ".join(unit_name(x) for x in sentinels),
                              (f["idea"] + (" (Einführung)" if f.get("intro") else "")) if n == 0 else "",
+                             map_text(f.get("map", "")) if n == 0 else "",
                              "Vorschlag gebaut"])
     notes = {"ab Level": "Reinforcement-Level, ab dem diese Stufe gilt (steigt nach jedem Kampf, nach Elite schneller).",
-             "Einheiten gesamt": "Sentinels + DROMEs. Der Spieler hat bis zu 4 DROMEs."}
+             "Einheiten gesamt": "Sentinels + DROMEs. Der Spieler hat bis zu 4 DROMEs.",
+             "Karte": "Die Karte der Formation (config.json -> maps, 18. Nov. 2026): sie stützt den Grundgedanken."}
     last = write_table(ws, ["Formation", "Gebiet", "ab Level", "DROMEs", "Assault", "Sniper", "Support",
-                            "Sentinels gesamt", "Einheiten gesamt", "Ränge", "Sentinels", "Grundgedanke", "Status"],
-                       rows, [20, 12, 8, 30, 8, 8, 8, 10, 10, 18, 70, 60, 14], notes=notes)
+                            "Sentinels gesamt", "Einheiten gesamt", "Ränge", "Sentinels", "Grundgedanke", "Karte",
+                            "Status"],
+                       rows, [20, 12, 8, 30, 8, 8, 8, 10, 10, 18, 70, 60, 22, 14], notes=notes)
     r = last + 2
     ws.cell(row=r, column=1, value="Varianten: Leicht, Normal, Elite aus derselben Formation").font = SUB_FONT
     v = FORMATIONS["variants"]

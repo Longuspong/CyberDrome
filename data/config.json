@@ -285,6 +285,23 @@
     "inset": 0
   },
 
+  "maps": {
+    "_kommentar": [
+      "Karten je Formation (18. Nov. 2026, Entscheidung des Spielers nach dem Messlauf",
+      "tools/playtest/map_bench.gd): die Karte stuetzt den Gedanken des Trupps. Die Formation",
+      "nennt ihre Karte in data/formations.json (map), ohne Angabe gilt default.",
+      "width x height Hexfelder, shape: rect, belly (Bauch, Platz fuer Flanken), waist",
+      "(Engpass), lanes (Zwei Gassen, Block in der Mitte). Formen sind fest und an der",
+      "Mittelreihe gespiegelt (MapGenerator.apply_shape)."
+    ],
+    "default": "standard",
+    "standard": {"name": "Standard", "width": 9, "height": 15, "shape": "rect"},
+    "kurz": {"name": "Kurz", "width": 9, "height": 13, "shape": "rect"},
+    "lang": {"name": "Lang", "width": 9, "height": 21, "shape": "rect"},
+    "gassen": {"name": "Zwei Gassen", "width": 9, "height": 17, "shape": "lanes"},
+    "bauch": {"name": "Bauch", "width": 11, "height": 17, "shape": "belly"}
+  },
+
   "obstacles": {
     "_kommentar": [
       "Hindernisse (7. Nov. 2026, scripts/generation/map_generator.gd): sperren nur",
@@ -292,9 +309,12 @@
       "punktsymmetrisch gespiegelt (also doppelt so viele auf dem Feld), nie in",
       "den Aufstellungszonen oder zone_margin Felder daneben. kinds: Optik je Region.",
       "props: Deko auf dem Randstreifen je Region (sonst wie kinds). Neon City",
-      "seit 9. Nov. 2026 aus Bildern (assets/arena/city/, tools/cut_arena_city.py)."
+      "seit 9. Nov. 2026 aus Bildern (assets/arena/city/, tools/cut_arena_city.py).",
+      "Seit 18. Nov. 2026 aus (enabled false, Wunsch des Spielers): die Karten haben feste",
+      "Formen (maps), zufaellige Hindernisse machten Kaempfe unberechenbar. kinds bleibt",
+      "fuer die festen Bloecke der Formen, props fuer die Randdeko."
     ],
-    "enabled": true,
+    "enabled": false,
     "groups_min": 3,
     "groups_max": 5,
     "zone_margin": 1,
