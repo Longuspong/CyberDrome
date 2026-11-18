@@ -240,9 +240,11 @@ Spiegeln/SVG/3D/Silhouette laufen mit):
   (Seitenansicht), "f" (Vorderansicht, z. B. V-Torso), "z" (Grundriss)
 
 Redesign nach der Leinwand-Seite „Durchsicht & Redesign“ (vom Spieler
-freigegeben): Strix mit Federmantel statt Treppe und Lafette seitlich unter
-der linken Schulter (`equip_center` (-1, 21, 47.5), Buchse im Flügel, Kabel
-vom Zielrechner; jede Lafetten-Waffe hat `side_holder`), Molok mit
+freigegeben): Strix mit Eulenflügeln aus vier Reihen überlappender
+Tropfen-Federn (`_feather`, `_feather_row`) auf einer Grundplatte, Lafette
+wieder auf der linken Schulter, jetzt mit Buchse, Kabel vom Zielrechner und
+Halter je Waffe (`side_holder`); Vergleich Schulter/Achsel am 18. Nov.,
+Empfehlung Schulter (Standard), umschaltbar mit `STRIX_MOUNT=achsel`, Molok mit
 Kabelschläuchen an den Auspuff-Leuchtfeuern und Fasen, Vireo mit V-Torso und
 gepfeilten Booster-Flügeln, Schienen-Lanze als schweres Scharfschützengewehr,
 Mörser, Puls-Blaster, Hammer, Ramme und E-Schlüssel überarbeitet. Blicktest

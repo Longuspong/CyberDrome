@@ -99,10 +99,19 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import pathlib
 import re
 import shutil
 from xml.etree import ElementTree
+
+# Wo die Strix-Lafette sitzt (18. Nov. 2026, Vergleich fuer den Spieler;
+# Empfehlung und Standard: Schulter -- die Waffe ragt ueber die Silhouette,
+# verdeckt die grossen Fluegel nicht und liest sich auf dem Handy sofort als
+# Scharfschuetze; Umschalten mit STRIX_MOUNT=achsel):
+# "achsel" = seitlich unter der Schulter, Halter greift quer hinein;
+# "schulter" = oben auf der Schulter, Halter steckt von oben in der Buchse.
+STRIX_MOUNT = os.environ.get("STRIX_MOUNT", "schulter")
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PARTS_DIR = ROOT / "parts"
@@ -2287,17 +2296,71 @@ EQ_HOLO_BOOST = [
 # lange Treppe ist nicht das Wahre"): je Seite drei Profile mit Fase, die
 # nach aussen kleiner werden -- Deckfedern, Armschwingen, Handschwingen --
 # und hinten unten in eine Spitze auslaufen.
+def _feather(root, tip, width, l, mat, bend=0.0):
+    """Eine Feder als Tropfen (18. Nov. 2026): spitz an der Wurzel, breit und
+    rund am Ende, flach quer zur Koerperseite. ``bend`` biegt sie leicht
+    nach hinten (f), damit die Reihen nicht steif wirken."""
+    rf, rz = root
+    tf, tz = tip
+    mid = ((rf + tf) / 2 - bend, (rz + tz) / 2)
+    pts = [(rf, l, rz), (mid[0], l, mid[1]), (tf, l, tz)]
+    return SW(pts, [0.2, width * 0.85, width * 0.35], mat, sides=8, flat=0.22, steps=5)
+
+
+def _feather_row(roots, tips, width, l, mat, dl=0.0, bend=1.0):
+    """Eine Reihe Federn; jede liegt ``dl`` weiter aussen als die vorige,
+    damit sie sich schuppenartig ueberlappen."""
+    return [_feather(r, t, width, l + i * dl, mat, bend) for i, (r, t) in enumerate(zip(roots, tips))]
+
+
+# Fluegel einer Eule (18. Nov. 2026, Wunsch des Spielers): eine Grundplatte
+# schliesst die Luecken, darueber vier Reihen Tropfen-Federn, jede Reihe
+# weiter aussen und hoeher, jede Feder leicht verdreht -- Handschwingen
+# (lang, innen, bis zum Boden), Armschwingen, grosse und kleine Deckfedern.
 _STRIX_WING = [
-    EX([(5, 57), (1, 59.5), (-5, 59.5), (-10.5, 57), (-13.5, 51), (-14.5, 41), (-14, 30),
-        (-12.5, 21), (-10.5, 16.5), (-7.5, 21), (-3, 31), (1, 41), (4, 50)],
-       (8.6, 12.6), "plate", bevel=0.6),
-    EX([(2, 53), (-5, 55.5), (-11, 51), (-13.2, 41), (-12.8, 30), (-11, 21), (-9.5, 17.5),
-        (-7, 23), (-3.5, 32), (-0.5, 42)], (12.4, 13.8), "light", bevel=0.4),
-    EX([(-3, 45), (-8.5, 46.5), (-12, 39), (-11.8, 29), (-10.2, 20.5), (-9.2, 18.5),
-        (-7.6, 24), (-5.5, 31), (-3.5, 38)], (13.6, 14.8), "plate", bevel=0.35),
-    SW([(-1.5, 15.0, 50), (-6.5, 15.0, 46), (-9.8, 15.0, 37), (-9.8, 15.0, 27),
-         (-9.2, 15.0, 21)], [0.35, 0.35, 0.35, 0.3, 0.1], "accent", sides=6, steps=4),
+    EX([(6, 58), (1, 61), (-6, 61), (-12, 58), (-16, 50), (-17.5, 38), (-17, 26),
+        (-15, 15), (-12, 12), (-9, 17), (-4, 28), (1, 40), (5, 50)],
+       (8.6, 11.4), "dark", bevel=0.5),
+] + _feather_row(                                         # Handschwingen
+    [(-7, 40), (-9.5, 41), (-12, 42), (-14.5, 42)],
+    [(-9.5, 13), (-12.5, 12.5), (-15.5, 14), (-17.5, 18)], 3.4, 11.6, "metal", dl=0.15, bend=0.8,
+) + _feather_row(                                         # Armschwingen
+    [(1, 46), (-2.5, 47), (-6, 48), (-9.5, 49), (-13, 49)],
+    [(-3, 26), (-6.5, 25), (-10, 25), (-13.5, 27), (-16.5, 31)], 3.4, 12.6, "light",
+    dl=0.15, bend=1.2,
+) + _feather_row(                                         # grosse Deckfedern
+    [(4, 54), (0, 55.5), (-4, 56), (-8, 56), (-12, 54)],
+    [(1.5, 41), (-3, 40), (-7.5, 40), (-12, 41), (-15.5, 43)], 3.0, 13.6, "plate",
+    dl=0.15, bend=1.0,
+) + _feather_row(                                         # kleine Deckfedern
+    [(5, 59.5), (1, 60.5), (-3, 61), (-7, 60.5), (-11, 58.5)],
+    [(3, 51), (-1, 50), (-5, 50), (-9, 50), (-13, 50)], 2.6, 14.6, "light",
+    dl=0.12, bend=0.6,
+) + [
+    SW([(-2, 15.6, 60.5), (-7, 15.6, 60), (-12, 15.4, 57)], [0.35, 0.35, 0.2], "accent",
+       sides=6, steps=4),
 ]
+
+# Buchse und Kabel der Lafette, je nach STRIX_MOUNT.
+if STRIX_MOUNT == "schulter":
+    _STRIX_SOCKET = [
+        L((-1, 11.5), [(2.8, 59.5), (2.8, 61.2)], "dark", segments=12),
+        L((-1, 11.5), [(3.1, 60.0), (3.1, 60.6)], "accent", caps=False, segments=12),
+        SW([(-7.6, 1.5, 41.5), (-12.5, 5, 46), (-12, 9.5, 56), (-6, 11.5, 61),
+            (-3.5, 11.5, 60.8)], [0.7] * 5, "dark", sides=8, steps=5),
+        SW([(-7.6, -1.5, 40), (-13.5, 4, 44), (-13.5, 8, 55), (-7, 10, 61.3),
+            (-3.4, 10.8, 60.6)], [0.55] * 5, "metal", sides=8, steps=5),
+    ]
+else:
+    _STRIX_SOCKET = [
+        L((-1, 49.5), [(2.6, 14.6), (2.6, 16.8)], "dark", axis="l", segments=12),
+        L((-1, 49.5), [(2.9, 15.4), (2.9, 15.9)], "accent", axis="l", caps=False, segments=12),
+        SW([(-7.6, 1.5, 41.5), (-11.5, 6, 43), (-13.5, 12, 46.5), (-7, 17.0, 49.5),
+            (-3.5, 16.4, 49.5)], [0.7] * 5, "dark", sides=8, steps=5),
+        SW([(-7.6, -1.5, 40), (-12.5, 5, 40.5), (-14.5, 12, 44.5), (-8, 17.4, 47.5),
+            (-3.5, 16.4, 48.0)], [0.55] * 5, "metal", sides=8, steps=5),
+    ]
+
 
 STRIX_BODY = [
     # -- Huefte und geduckter Rumpf, nach oben nach vorn versetzt -----------
@@ -2307,16 +2370,8 @@ STRIX_BODY = [
     B((-4, 8.5), (-8, 8), (52, 54), "light"),
     # -- Fluegelmantel ------------------------------------------------------
 ] + _STRIX_WING + _mirror_l(_STRIX_WING) + [
-    # -- Lafette unter der linken Schulter (equip_center, 18. Nov. 2026):
-    #    Buchse im Fluegel, die Waffe steckt seitlich mit ihrem Halter darin.
-    L((-1, 49.5), [(2.6, 14.2), (2.6, 16.0)], "dark", axis="l", segments=12),
-    L((-1, 49.5), [(2.9, 14.8), (2.9, 15.3)], "accent", axis="l", caps=False, segments=12),
-    # Kabel vom Zielrechner am Ruecken zur Buchse
-    SW([(-7.6, 1.5, 41.5), (-11.5, 6, 43), (-12.5, 11.5, 46.5), (-7, 16.2, 49.5),
-        (-3.5, 15.6, 49.5)], [0.7] * 5, "dark", sides=8, steps=5),
-    SW([(-7.6, -1.5, 40), (-12.5, 5, 40.5), (-13.8, 12, 44.5), (-8, 16.6, 47.5),
-        (-3.5, 15.6, 48.0)], [0.55] * 5, "metal", sides=8, steps=5),
-]
+] + _STRIX_SOCKET
+
 
 STRIX_HEAD = [
     # Kapuze, nach vorn ueber die Brust gezogen
@@ -2366,6 +2421,12 @@ def side_holder(z=61.0):
     """Halter einer Lafetten-Waffe (Strix, 18. Nov. 2026): ein Arm quer zur
     Waffe, der seitlich in die Buchse unter der Schulter greift (-l), mit
     Kragen an der Buchse. Die Waffe liegt um (0, 0, z) wie bisher."""
+    if STRIX_MOUNT == "schulter":
+        return [
+            B((-2.0, 2.0), (-1.6, 1.6), (z - 3.2, z + 1.2), "metal"),
+            B((-2.6, 2.6), (-2.2, 2.2), (z - 3.8, z - 2.8), "dark"),
+            B((-2.1, 2.1), (-1.0, 1.0), (z - 1.6, z - 1.2), "accent"),
+        ]
     return [
         B((-2.4, 2.4), (-6.2, -1.4), (z + 1.0, z + 3.4), "metal"),
         B((-2.9, 2.9), (-6.8, -5.6), (z + 0.6, z + 3.8), "dark"),
@@ -3074,7 +3135,8 @@ SETS = [
                     "core": (-7.3, 0, 40.5),
                     # Die Lafette: seitlich unter der linken Schulter, die Waffe
                     # steckt mit ihrem Halter in der Buchse (18. Nov. 2026).
-                    "equip_center": (-1, 21.0, 47.5),
+                    "equip_center": (-1, 11.5, 64.5) if STRIX_MOUNT == "schulter"
+                    else (-1, 21.8, 47.5),
                 },
                 # Ein Slot, dafuer ohne Deckel: hier darf das Schwerste hin --
                 # aber als Lafette nur Fernkampf (16. Nov. 2026).

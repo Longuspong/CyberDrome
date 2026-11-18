@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <!-- Leuchtebene, erzeugt von tools/bake_godot_assets.py -->
+  <path d="M61.04 38.17 L65.05 41.01 L66.96 39.66 L62.95 36.82 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M61.04 38.55 L65.05 41.39 L65.05 41.01 L61.04 38.17 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M65.05 41.39 L66.96 40.04 L66.96 39.66 L65.05 41.01 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
   <path d="M64.0 29.9 L70.68 34.63 L70.68 32.72 L64.0 27.99 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
   <path d="M64.0 27.99 L70.68 32.72 L71.16 32.38 L64.48 27.65 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
   <path d="M70.68 34.63 L71.16 34.29 L71.16 32.38 L70.68 32.72 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
-  <path d="M58.27 36.84 L60.18 38.19 L62.66 36.44 L60.75 35.09 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
-  <path d="M60.18 38.57 L62.66 36.82 L62.66 36.44 L60.18 38.19 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
-  <path d="M58.27 37.22 L60.18 38.57 L60.18 38.19 L58.27 36.84 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
   <path d="M57.8 34.29 L64.48 39.01 L64.48 37.1 L57.8 32.38 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
   <path d="M57.8 32.38 L64.48 37.1 L64.95 36.77 L58.27 32.04 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
   <path d="M64.48 39.01 L64.95 38.68 L64.95 36.77 L64.48 37.1 Z" fill="#ff2bd6" stroke="#ff2bd6" stroke-width="2.6" stroke-linejoin="round"/>
