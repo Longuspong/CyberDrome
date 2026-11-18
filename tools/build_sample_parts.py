@@ -871,12 +871,15 @@ def BP(back, tip, width, thick, mat, mid=0.18):
     return ("poly", tuple(faces), mat)
 
 
-def EX(profile, l, mat, bevel=0.0):
+def EX(profile, l, mat, bevel=0.0, axis="l"):
     """
     Profil (18. Nov. 2026): ein Umriss in der Seitenansicht -- Punkte (f, z),
     auch eingebuchtet -- wird quer von ``l[0]`` bis ``l[1]`` gezogen. Fuer
     Schaefte, Gehaeuse, Klingen mit echtem Umriss statt Quaderstapeln.
     ``bevel`` schraegt die Kanten der beiden Deckflaechen ab (Fase).
+    ``axis`` sagt, wohin gezogen wird: "l" (Standard, Umriss = Seitenansicht
+    (f, z)), "f" (Umriss = Vorderansicht (l, z), z. B. ein V-Torso) oder "z"
+    (Umriss = Grundriss (f, l), z. B. flache Fluegel).
     Ergibt einen Vielflach ("poly"); Seitenwaende und Fasen tragen die dunkle
     Kante wie Quader, die Deckflaechen nicht (sie sind in Dreiecke zerlegt).
     """
@@ -888,11 +891,18 @@ def EX(profile, l, mat, bevel=0.0):
     b = max(0.0, min(float(bevel), (l1 - l0) / 2.0 - 1e-3))
     inner = _inset(pts, b) if b > 0 else pts
     faces = []
-    center = (sum(f for f, _z in pts) / len(pts), (l0 + l1) / 2.0,
-              sum(z for _f, z in pts) / len(pts))
+    ca = sum(a for a, _b in pts) / len(pts)
+    cb = sum(b for _a, b in pts) / len(pts)
+    cm = (l0 + l1) / 2.0
 
-    def p3(fz, lv):
-        return (fz[0], lv, fz[1])
+    def p3(ab, lv):
+        if axis == "f":
+            return (lv, ab[0], ab[1])
+        if axis == "z":
+            return (ab[0], ab[1], lv)
+        return (ab[0], lv, ab[1])
+
+    center = p3((ca, cb), cm)
 
     def add(poly, edge):
         n = _norm(_cross(_sub(poly[1], poly[0]), _sub(poly[2], poly[0])))
@@ -1624,9 +1634,12 @@ SCOUT_BODY = [
     # -- Huefte, schlanke Taille, V-Torso ----------------------------------
     B((-5, 5), (-8.5, 8.5), (34, 39), "metal"),
     B((-4.5, 5), (-6, 6), (39, 45), "dark"),
-    B((-6, 7), (-9, 9), (45, 52), "plate"),
-    B((-6.5, 8), (-11, 11), (52, 60), "plate"),
-    B((-6, 7.5), (-10, 10), (60, 62), "light"),          # Brustdach
+    # V-Torso als Profil der Vorderansicht, nach vorn gezogen, mit Fase
+    # (18. Nov. 2026) -- statt zweier gestufter Quader.
+    EX([(-8.6, 45), (8.6, 45), (11.2, 52), (11.4, 59), (10, 60.6), (-10, 60.6),
+        (-11.4, 59), (-11.2, 52)], (-6.4, 8), "plate", bevel=0.8, axis="f"),
+    EX([(-9.8, 60.4), (9.8, 60.4), (9.0, 62), (-9.0, 62)], (-6, 7.5), "light",
+       bevel=0.4, axis="f"),                                          # Brustdach
     # Brustplatte mit Kernsockel -- der Sockel traegt den Kern bis in seine
     # aeussersten Energiestreifen.
     B((8, 8.6), (-6.5, 6.5), (45.5, 59), "dark"),
@@ -1634,11 +1647,11 @@ SCOUT_BODY = [
     B((8.6, 9.1), (-6, -1.2), (56.4, 57.8), "accent"),
     B((8.6, 9.1), (1.2, 6), (56.4, 57.8), "accent"),
     # -- Schultern ---------------------------------------------------------
-    B((-5.5, 5.5), (11, 17), (54, 62), "plate"),
-    B((-6, 6), (10.5, 17.5), (62, 64), "light"),
+    EX([(-5.5, 54), (5.5, 54), (5.5, 60.5), (4, 62), (-5.5, 62)], (11, 17), "plate", bevel=0.6),
+    EX([(-6, 62), (4.5, 62), (3.5, 64), (-6, 64)], (10.5, 17.5), "light", bevel=0.35),
     B((5.5, 6), (12, 16), (57, 59), "accent"),
-    B((-5.5, 5.5), (-17, -11), (54, 62), "plate"),
-    B((-6, 6), (-17.5, -10.5), (62, 64), "light"),
+    EX([(-5.5, 54), (5.5, 54), (5.5, 60.5), (4, 62), (-5.5, 62)], (-17, -11), "plate", bevel=0.6),
+    EX([(-6, 62), (4.5, 62), (3.5, 64), (-6, 64)], (-17.5, -10.5), "light", bevel=0.35),
     B((5.5, 6), (-16, -12), (57, 59), "accent"),
     # -- Hals --------------------------------------------------------------
     B((-2.5, 2.5), (-3, 3), (62, 65), "metal"),
@@ -1652,16 +1665,20 @@ SCOUT_BODY = [
     B((1.0, 3.0), (-15.0, -12.4), (30.0, 31.5), "light"),
     B((-0.8, 2.0), (-12.4, -11.3), (31.5, 33.6), "plate"), # Daumen
     # -- Passive Sprint: Ruecken-Booster mit Fluegeln und Duesen -----------
-    B((-13, -7), (-6.5, 6.5), (44, 62), "plate"),
+    EX([(-7, 44), (-12.5, 45.5), (-13.5, 52), (-13.5, 60), (-12, 62), (-7, 62)],
+       (-6.5, 6.5), "plate", bevel=0.6),
     B((-13.5, -6.5), (-7, 7), (62, 64), "light"),
     L((-12, 4), [(2.4, 40), (2.8, 44)], "metal", segments=12),
     L((-12, -4), [(2.4, 40), (2.8, 44)], "metal", segments=12),
     L((-12, 4), [(1.9, 36.5), (1.9, 40)], "glow", segments=10),
     L((-12, -4), [(1.9, 36.5), (1.9, 40)], "glow", segments=10),
-    B((-12, -8), (6.5, 13), (55, 57), "light"),          # Fluegel
-    B((-12, -8), (-13, -6.5), (55, 57), "light"),
-    B((-12.2, -11.6), (7, 12.5), (55.5, 56.5), "accent"),
-    B((-12.2, -11.6), (-12.5, -7), (55.5, 56.5), "accent"),
+    # Fluegel nach hinten gepfeilt (Grundriss, nach oben gezogen)
+    EX([(-8, 6.4), (-11.5, 6.4), (-15.5, 14.5), (-13.8, 15)], (55, 56.8), "light",
+       bevel=0.3, axis="z"),
+    EX([(-8, -6.4), (-11.5, -6.4), (-15.5, -14.5), (-13.8, -15)], (55, 56.8), "light",
+       bevel=0.3, axis="z"),
+    EX([(-11.2, 7.5), (-12, 7.5), (-15.2, 14), (-14.6, 14.3)], (56.8, 57.2), "accent", axis="z"),
+    EX([(-11.2, -7.5), (-12, -7.5), (-15.2, -14), (-14.6, -14.3)], (56.8, 57.2), "accent", axis="z"),
     B((-13.6, -13), (-3, 3), (48, 58), "accent"),
 ]
 
