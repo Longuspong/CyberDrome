@@ -31,7 +31,11 @@ static func on_used(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 		var style := attack_style(unit, tile, action, unit_at(units, tile))
 		if cast and kind in ["lock", "vortex"]:
 			style["projectile"] = ""      # Strahl bzw. Kugel zeigt die Ansage
-		view.show_attack(unit.visual_anchor(), IsoView.map_to_local(tile), color, style)
+		# Fernkampf beginnt an der Muendung (EffectPainter hebt "from" um 34).
+		var from := unit.visual_anchor()
+		if unit.arena != null and str(style.get("projectile", "")) != "":
+			from = unit.arena.weapon_tip(unit, action) + Vector2(0, 34)
+		view.show_attack(from, IsoView.map_to_local(tile), color, style)
 	_show_ability(view, unit, tile, action, color, units)
 	if not action.is_attack() and not cast:
 		view.show_float(unit.visual_anchor(), action.display_name + "!", NAME_COLOR, true)
@@ -46,16 +50,21 @@ static func on_cast(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 		return
 	var data := ability_data(unit, tile, action, color, kind, units)
 	data["ability"] = kind
-	if kind == "vortex" and unit.arena != null:
-		# Die Kugel entsteht an der Spitze des hochgehaltenen Stabs.
+	data["release"] = Arena3D.THROW_RELEASE
+	if kind in ["vortex", "whirl"] and unit.arena != null:
+		# Kugel bzw. Bumerang: an der Waffenspitze, bis sie den Schwung verlassen.
 		data["tip"] = func() -> Vector2: return unit.arena.weapon_tip(unit, action)
 	view.show_cast(kind, data, seconds)
 	match kind:
-		"stun", "push", "slash", "whirl":
+		"stun", "push", "slash":
 			# Ausholen so getaktet, dass der Schlag beim Wirken sitzt.
 			unit.play_attack(tile, action, seconds / Arena3D.MELEE_HIT_AT)
 		"vortex":
-			unit.play_raise(action, seconds)
+			unit.play_throw(action, seconds)
+		"whirl":
+			# Der Bumerang verlaesst die Hand, kreist und kommt zurueck.
+			var away := seconds * (1.0 - Arena3D.THROW_RELEASE) + AbilityPainter.LIFE["whirl"]
+			unit.play_throw(action, seconds, away)
 
 		"barrage":
 			unit.play_attack(tile, action)
@@ -79,6 +88,9 @@ static func _show_ability(view: BattleView, unit: Unit, tile: Vector2i, action: 
 		return
 	if kind == "breaker":
 		data["wait"] = 0.12                   # erst der Schuss, dann zerspringt das Schild
+	if kind == "whirl" and unit.arena != null:
+		# Zurueck in die Hand: dorthin, wo die Hand dann ist.
+		data["tip"] = func() -> Vector2: return unit.arena.weapon_tip(unit, action)
 	view.show_ability(kind, data)
 
 
@@ -88,6 +100,8 @@ static func ability_data(unit: Unit, tile: Vector2i, action: ActionData, color: 
 	var at := IsoView.map_to_local(tile)
 	var data := {"at": at, "color": color, "enemy": not unit.is_player,
 		"radius": action.aoe_radius, "delay": action.delay, "from": unit.visual_anchor()}
+	if unit.arena != null and kind in ["lock", "double", "barrage"]:
+		data["muzzle"] = func() -> Vector2: return unit.arena.weapon_tip(unit, action)
 	match kind:
 		"push":
 			var dir := (at - IsoView.map_to_local(unit.tile)).normalized()

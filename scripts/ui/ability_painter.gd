@@ -39,7 +39,7 @@ const HEAD_HEIGHT := 92.0
 const CHEST := 40.0
 ## Dauer der Formen ohne Verzoegerung (Sekunden).
 const LIFE := {"lock": 0.35, "breaker": 0.4, "double": 0.25,
-	"stun": 0.45, "push": 0.5, "slash": 0.35, "whirl": 0.55,
+	"stun": 0.45, "push": 0.5, "slash": 0.35, "whirl": 0.8,
 	"shield": 0.75}
 ## Fussring eines Zustands (Halbachse waagerecht).
 const FOOT_RING := 26.0
@@ -328,7 +328,7 @@ func _draw_whirl_ground(mark: Dictionary) -> void:
 	_enemy_rim(mark, at, axes, fade)
 	_dashed_ellipse(at, axes, Color(color.lightened(0.2), fade), _width(2.6), float(mark["spin"]), 14)
 	# Kreisspur hinter dem Bumerang (zeichnet die Luftebene).
-	var head := float(mark["spin"]) + t * TAU * 1.1
+	var head := float(mark["spin"]) + minf(t / 0.7, 1.0) * TAU * 1.1
 	draw_polyline(_ellipse_points(at, axes * 0.9, head - 2.4, head, 16),
 		Color(color.lightened(0.4), 0.85 * fade), _width(4.0), true)
 
@@ -427,6 +427,8 @@ func _draw_air() -> void:
 				_air_beam(mark)
 			"vortex_cast":
 				_air_vortex_cast(mark)
+			"whirl_cast":
+				_air_whirl_throw(mark)
 			"barrage_cast":
 				_air_shell(mark)
 			"double_cast":
@@ -448,6 +450,15 @@ func _draw_air() -> void:
 	for unit in units:
 		if _shows_status(unit):
 			_air_status(unit)
+
+
+## Wo Schuss, Laser und Strahl beginnen: an der Muendung der Waffe, so wie
+## sie gerade steht ("muzzle", Callable aus Arena3D.weapon_tip), sonst in
+## Brusthoehe ueber dem Schuetzen.
+func _muzzle(mark: Dictionary) -> Vector2:
+	if mark.has("muzzle"):
+		return (mark["muzzle"] as Callable).call()
+	return mark.get("from", mark["at"]) + _lift(CHEST + 8.0)
 
 
 func _lift(base: float) -> Vector2:
@@ -493,7 +504,7 @@ func _air_status(unit) -> void:
 ## Praezisionsschuss, Ansage: duenner Ziel-Laser, der sich festbeisst.
 func _air_laser(mark: Dictionary) -> void:
 	var t: float = float(mark["age"]) / _life(mark)
-	var from: Vector2 = mark.get("from", mark["at"]) + _lift(CHEST + 8.0)
+	var from := _muzzle(mark)
 	var to: Vector2 = mark["at"] + _lift(CHEST)
 	var color: Color = mark["color"]
 	var length := from.distance_to(to)
@@ -519,7 +530,7 @@ func _air_laser(mark: Dictionary) -> void:
 ## Praezisionsschuss, Wirkung: dicker Strahl durch das Ziel, Trefferring.
 func _air_beam(mark: Dictionary) -> void:
 	var k: float = float(mark["age"]) / _life(mark)
-	var from: Vector2 = mark.get("from", mark["at"]) + _lift(CHEST + 8.0)
+	var from := _muzzle(mark)
 	var to: Vector2 = mark["at"] + _lift(CHEST)
 	var color: Color = mark["color"]
 	var fade := 1.0 - k
@@ -535,16 +546,18 @@ func _air_beam(mark: Dictionary) -> void:
 func _air_vortex_cast(mark: Dictionary) -> void:
 	var t: float = float(mark["age"]) / _life(mark)
 	var color: Color = mark["color"]
+	var release := float(mark.get("release", 0.4))
 	var top: Vector2 = mark.get("from", mark["at"]) + _lift(HEAD_HEIGHT + 4.0)
 	if mark.has("tip"):
-		# Startpunkt der Kugel: die Stabspitze beim Loesen (40 %).
-		if t < 0.4 or not mark.has("tip_at"):
+		# Die Kugel sitzt an der Stabspitze und loest sich in der Mitte des
+		# Schwungs -- dort, wo die Spitze dann ist.
+		if t < release or not mark.has("tip_at"):
 			mark["tip_at"] = (mark["tip"] as Callable).call()
 		top = mark["tip_at"]
 	var to: Vector2 = mark["at"] + _lift(CHEST)
 	var r := 6.0 * maxf(1.0, pixel_scale * 0.7)
-	if t < 0.4:
-		var g := ease(t / 0.4, 0.5)
+	if t < release:
+		var g := ease(minf(1.0, t / (release * 0.6)), 0.5)
 		_air.draw_circle(top, r * 2.6 * g, Color(color, 0.25))
 		_air.draw_circle(top, r * g, Color(color.lightened(0.5), 0.95))
 		for i in 4:
@@ -552,7 +565,7 @@ func _air_vortex_cast(mark: Dictionary) -> void:
 			_air.draw_circle(top + Vector2(cos(ang), sin(ang) * 0.6) * r * 2.2 * g, 1.6 * maxf(1.0, pixel_scale * 0.5),
 				Color(color.lightened(0.6), 0.9))
 		return
-	var k := (t - 0.4) / 0.6
+	var k := (t - release) / (1.0 - release)
 	var mid := (top + to) * 0.5 + _lift(70.0)
 	for j in 6:
 		var u := clampf(k - j * 0.04, 0.0, 1.0)
@@ -567,7 +580,8 @@ func _air_vortex_cast(mark: Dictionary) -> void:
 ## Sperrfeuer, Ansage: die Granate steigt aus dem Moerser steil nach oben.
 func _air_shell(mark: Dictionary) -> void:
 	var t: float = float(mark["age"]) / _life(mark)
-	var base: Vector2 = mark.get("from", mark["at"]) + _lift(HEAD_HEIGHT - 10.0)
+	var base: Vector2 = _muzzle(mark) if mark.has("muzzle") \
+		else mark.get("from", mark["at"]) + _lift(HEAD_HEIGHT - 10.0)
 	var p := base + Vector2(0, -260.0 * ease(t, 0.6))
 	var r := 4.0 * maxf(1.0, pixel_scale * 0.6)
 	_air.draw_line(base, p, Color(FIRE_COLOR, 0.45 * (1.0 - t)), _width(3.0), true)
@@ -581,7 +595,7 @@ func _air_double_shot(mark: Dictionary) -> void:
 	if targets.size() < 2:
 		return
 	var k: float = float(mark["age"]) / _life(mark)
-	var from: Vector2 = mark.get("from", mark["at"]) + _lift(CHEST + 8.0)
+	var from := _muzzle(mark)
 	var to: Vector2 = targets[1] + _lift(CHEST)
 	var head := from.lerp(to, clampf(k * 1.6, 0.0, 1.0))
 	var tail := from.lerp(to, clampf(k * 1.6 - 0.3, 0.0, 1.0))
@@ -630,19 +644,56 @@ func _air_slash(mark: Dictionary) -> void:
 			Color(VULN_COLOR, 1.0 - maxf(0.0, t - 0.6) / 0.4), 3.6)
 
 
+## Der Bumerang selbst: zwei Fluegel, die sich drehen.
+func _draw_boomerang(at: Vector2) -> void:
+	var size := 13.0 * maxf(1.0, pixel_scale * 0.7)
+	var turn := _time * 16.0
+	# Wirbelspur: ein heller Kreisbogen um die Drehmitte.
+	_air.draw_arc(at, size * 1.25, turn, turn + 2.2, 12, Color(1.0, 0.75, 0.2, 0.55), _width(2.4), true)
+	var wing := PackedVector2Array()
+	for p in [Vector2(-1.2, 0.2), Vector2(-0.15, -0.45), Vector2(0, -0.5), Vector2(1.2, 0.2),
+			Vector2(0, -0.1)]:
+		wing.append(at + p.rotated(turn) * size)
+	_air.draw_colored_polygon(wing, Color(0.86, 0.9, 0.95))
+	wing.append(wing[0])
+	_air.draw_polyline(wing, Color(1.0, 0.69, 0.0), _width(2.4), true)
+	_air.draw_polyline(wing, SHADE, _width(1.0), true)
+
+
+## Wo der Bumerang in seine Kreisbahn um das Ziel einfaedelt.
+func _orbit_point(mark: Dictionary, turns: float) -> Vector2:
+	var axes := ellipse_axes(float(mark.get("radius", 1))) * 0.9
+	var ang := float(mark["spin"]) + turns * TAU
+	return mark["at"] + Vector2(cos(ang) * axes.x, sin(ang) * axes.y) + _lift(14.0)
+
+
+## Wirbelwurf, Ansage: nach dem Loslassen fliegt der Bumerang zum Ziel.
+func _air_whirl_throw(mark: Dictionary) -> void:
+	var t: float = float(mark["age"]) / _life(mark)
+	var release := float(mark.get("release", 0.5))
+	if mark.has("tip") and (t < release or not mark.has("tip_at")):
+		mark["tip_at"] = (mark["tip"] as Callable).call()
+	if t < release:
+		return
+	var k := (t - release) / (1.0 - release)
+	var start: Vector2 = mark.get("tip_at", mark.get("from", mark["at"]) + _lift(CHEST))
+	var end := _orbit_point(mark, 0.0)
+	var mid := (start + end) * 0.5 + _lift(30.0)
+	_draw_boomerang(start.lerp(mid, k).lerp(mid.lerp(end, k), k))
+
+
+## Wirbelwurf, Wirkung: der Bumerang kreist einmal um das Ziel und fliegt
+## zurueck in die Hand.
 func _air_whirl(mark: Dictionary) -> void:
 	var t: float = float(mark["age"]) / _life(mark)
-	var axes := ellipse_axes(float(mark["radius"])) * 0.9
-	var ang := float(mark["spin"]) + t * TAU * 1.1
-	var at: Vector2 = mark["at"] + Vector2(cos(ang) * axes.x, sin(ang) * axes.y) + _lift(14.0)
-	var size := 9.0 * maxf(1.0, pixel_scale * 0.7)
-	var turn := _time * 18.0
-	var wing := PackedVector2Array()
-	for p in [Vector2(-1.2, 0.15), Vector2(0, -0.35), Vector2(1.2, 0.15), Vector2(0, -0.05)]:
-		wing.append(at + p.rotated(turn) * size)
-	_air.draw_colored_polygon(wing, Color(1.0, 0.85, 0.3))
-	wing.append(wing[0])
-	_air.draw_polyline(wing, SHADE, _width(1.6), true)
+	if t < 0.7:
+		_draw_boomerang(_orbit_point(mark, t / 0.7 * 1.1))
+		return
+	var k := (t - 0.7) / 0.3
+	var start := _orbit_point(mark, 1.1)
+	var hand: Vector2 = (mark["tip"] as Callable).call() if mark.has("tip") \
+		else mark.get("from", mark["at"]) + _lift(CHEST)
+	_draw_boomerang(start.lerp(hand, ease(k, 0.8)))
 
 
 func _air_double(mark: Dictionary) -> void:

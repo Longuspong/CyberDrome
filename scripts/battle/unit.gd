@@ -98,6 +98,9 @@ var think_left: float = 0.0
 ## Laufende Ausholzeit einer Faehigkeit (AIController): {"action", "aim",
 ## "mount", "fx", "left", "target"}; leer = keine.
 var cast: Dictionary = {}
+## Sekunden, die der DROME nach einem Schuss noch zum Ziel schaut, auch wenn
+## er schon laeuft (nur Anzeige, 18. Nov. 2026).
+var aim_hold: float = 0.0
 var target_id = null
 ## Wie lange das aktuelle Ziel schon nicht angreifbar ist (Sekunden).
 ## Ein Ziel wird gehalten -- erst wenn es zu lange ausser Reichweite bleibt,
@@ -280,6 +283,16 @@ const FACING_PLAYER := "deg90"
 const FACING_ENEMY := "deg270"
 
 
+## Genau zum Ziel (18. Nov. 2026): der Winkel im Bild statt der naechsten
+## Hexrichtung -- sonst zeigt ein Gewehr bis zu 30 Grad am Ziel vorbei.
+## Fuer Angriffe und Faehigkeiten; Laufen bleibt bei den sechs Richtungen.
+static func facing_at(from: Vector2i, to: Vector2i) -> String:
+	var d := IsoView.map_to_local(to) - IsoView.map_to_local(from)
+	if d == Vector2.ZERO:
+		return FACING_PLAYER
+	return "deg%d" % int(round(fposmod(rad_to_deg(atan2(-d.y, d.x)), 360.0)))
+
+
 static func facing_toward(from: Vector2i, to: Vector2i) -> String:
 	var dir := Grid.direction_toward(from, to)
 	if dir < 0:
@@ -358,6 +371,13 @@ func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -
 func play_raise(action: ActionData, seconds: float) -> void:
 	if arena != null:
 		arena.raise(self, action, seconds)
+
+
+## Ein Wurf (Runenstab-Faehigkeit, Bumerang): hoch, Schwung, loslassen in der
+## Mitte des Schwungs; ``hide`` Sekunden ist die Waffe danach nicht in der Hand.
+func play_throw(action: ActionData, seconds: float, hide: float = 0.0) -> void:
+	if arena != null:
+		arena.throw(self, action, seconds, hide)
 
 
 ## Das Ziel zuckt und blendet kurz hell auf. Die Erschuetterung laeuft ueber
@@ -579,6 +599,7 @@ func init_realtime(pulse_offset: float) -> void:
 	pulse_left = maxf(0.05, pulse_offset)
 	think_left = 0.0
 	cast = {}
+	aim_hold = 0.0
 	target_id = null
 	target_blocked = 0.0
 	calm_time = 0.0

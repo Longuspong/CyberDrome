@@ -327,6 +327,16 @@ Entwurf: Board 12 (Vortex animiert, Tabelle für alle). Muster: **Wo**
       Schuss/Aufprall und Wirkung. Sog und Stoß rutschen sichtbar mit
       Abbremsen (`ActionResolver.forcing`, `FORCED_SLIDE`). Filme:
       `godot/render_film.gd` + `film_scene.gd` (derselbe Ablauf wie im Kampf).
+- [x] **Würfe wie echte Würfe** (18. Nov., Spieler): Runenstab-Fähigkeit und
+      Bumerang über `Arena3D.throw` -- hoch, halten, Schwung nach vorn-unten;
+      Kugel bzw. Bumerang lösen sich in der Mitte des Schwungs
+      (`THROW_RELEASE`) an der echten Waffenspitze. Der Bumerang verlässt die
+      Hand (Waffe ausgeblendet), kreist um das Ziel und kommt zurück.
+      Ausholzeit Vortex 0,95 s, Wirbelwurf 0,55 s.
+- [x] **Genau zielen**: Angriffe und Fähigkeiten drehen den DROME exakt zum
+      Ziel (`Unit.facing_at`, Bildwinkel statt Hexrichtung), der Blick hält
+      nach dem Schuss 0,8 s (`aim_hold`); Schuss, Laser und Strahl starten an
+      der Mündung (`Arena3D.weapon_tip`).
 
 ### 7. Fraktions-Paletten im Spiel
 Quelle: `skins.py`. Neon fast schwarz mit grellem Neon, Solar

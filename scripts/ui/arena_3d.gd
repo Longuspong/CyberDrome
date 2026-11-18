@@ -66,6 +66,14 @@ const MELEE_HIT_AT := 0.6
 const RAISE_ANGLE := -1.15
 const RAISE_UP := 0.35
 const RAISE_DOWN := 0.25
+## Wurf (Runenstab-Faehigkeit, Bumerang): hoch, halten, schneller Schwung
+## nach vorn-unten bis ueber die Ruhelage hinaus, zurueck. Die Kugel bzw. der
+## Bumerang loest sich in der Mitte des Schwungs (THROW_RELEASE, Anteil).
+const THROW_UP := 0.32
+const THROW_HOLD := 0.42
+const THROW_SWING := 0.58
+const THROW_RELEASE := 0.5
+const THROW_FOLLOW := 0.5        # rad ueber die Ruhelage nach vorn-unten
 const SHIELD_PUSH := 3.2         # Schild stoesst vor
 const SHIELD_TIME := 0.3
 ## Ausholen auch von vorn lesbar: die Schwungachse kippt zur Seite.
@@ -348,6 +356,20 @@ func attack(unit: Unit, action: ActionData, seconds: float = -1.0) -> bool:
 	return true
 
 
+## Ein Wurf: hoch, halten, Schwung nach vorn-unten (``seconds`` insgesamt);
+## mit ``hide`` verschwindet die Waffe ab dem Loslassen fuer so viele
+## Sekunden (der Bumerang ist unterwegs).
+func throw(unit: Unit, action: ActionData, seconds: float, hide: float = 0.0) -> bool:
+	if not raise(unit, action, seconds):
+		return false
+	var attack: Dictionary = _anim[unit]["attack"]
+	attack["kind"] = "throw"
+	if hide > 0.0:
+		_anim[unit]["hidden"] = {"slot": attack["slot"], "from": seconds * THROW_RELEASE,
+			"to": seconds * THROW_RELEASE + hide, "t": 0.0}
+	return true
+
+
 ## Die Waffe hochhalten: Arm und Waffe drehen um die Schulter nach oben,
 ## halten, und senken sich am Ende (``seconds`` insgesamt).
 func raise(unit: Unit, action: ActionData, seconds: float) -> bool:
@@ -466,6 +488,16 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			tr = _attack_pose(tr, kind, k, pivot)
 		block.transform = tr
 
+	# Geworfene Waffe (Bumerang): zwischen Loslassen und Fangen nicht in der Hand.
+	if state.has("hidden"):
+		var hidden: Dictionary = state["hidden"]
+		hidden["t"] = float(hidden["t"]) + delta
+		var thrown := turn.get_node_or_null(str(hidden["slot"])) as Node3D
+		var away: bool = float(hidden["t"]) >= float(hidden["from"]) and float(hidden["t"]) < float(hidden["to"])
+		if thrown != null:
+			thrown.visible = not away
+		if float(hidden["t"]) >= float(hidden["to"]):
+			state.erase("hidden")
 	# Muendungsblitz: an der Waffenspitze ein Lichtball, die Waffe leuchtet auf.
 	if slot != "" and kind == "ranged":
 		var weapon := turn.get_node_or_null(slot) as Node3D
@@ -616,6 +648,19 @@ static func _attack_pose(tr: Transform3D, kind: String, k: float, pivot: Vector3
 				angle = lerpf(SWING_HIT, 0.0, ease((k - 0.6) / 0.4, 0.5))
 			var turn := Transform3D(Basis(SWING_AXIS.normalized(), angle), Vector3.ZERO)
 			return Transform3D(Basis.IDENTITY, pivot) * turn \
+				* Transform3D(Basis.IDENTITY, -pivot) * tr
+		"throw":
+			var angle := RAISE_ANGLE
+			if k < THROW_UP:
+				angle = RAISE_ANGLE * ease(k / THROW_UP, 0.4)
+			elif k < THROW_HOLD:
+				angle = RAISE_ANGLE
+			elif k < THROW_SWING:
+				angle = lerpf(RAISE_ANGLE, THROW_FOLLOW, ease((k - THROW_HOLD) / (THROW_SWING - THROW_HOLD), 1.8))
+			else:
+				angle = lerpf(THROW_FOLLOW, 0.0, ease((k - THROW_SWING) / (1.0 - THROW_SWING), 0.6))
+			var spin := Transform3D(Basis(Vector3(0, 1, 0), angle), Vector3.ZERO)
+			return Transform3D(Basis.IDENTITY, pivot) * spin \
 				* Transform3D(Basis.IDENTITY, -pivot) * tr
 		"raise":
 			var lift := 1.0

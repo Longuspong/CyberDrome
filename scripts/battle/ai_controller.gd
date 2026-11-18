@@ -33,6 +33,10 @@ var _weights: Dictionary = {}
 var _realtime: Dictionary = {}
 
 
+## Wie lange ein DROME nach einem Schuss zum Ziel schaut (Sekunden).
+const AIM_HOLD := 0.8
+
+
 func _init(manager: BattleManager) -> void:
 	battle = manager
 	_weights = Config.section("ai")
@@ -54,6 +58,7 @@ func update(unit: Unit, dt: float) -> void:
 	for gadget in unit.gadgets:
 		gadget["ready"] = float(gadget["ready"]) - dt
 	unit.think_left -= dt
+	unit.aim_hold = maxf(0.0, unit.aim_hold - dt)
 
 	if unit.step_left > 0.0:
 		unit.step_left -= dt
@@ -319,8 +324,7 @@ func _begin_cast(unit: Unit, ability: ActionData, aim: Dictionary, mount: Dictio
 	unit.cast = {"action": ability, "aim": aim, "mount": mount, "fx": fx,
 		"left": ability.windup, "target": target}
 	var tile: Vector2i = aim["tile"]
-	if tile != unit.tile:
-		unit.set_facing(Unit.facing_toward(unit.tile, tile))
+	_aim_at(unit, tile)
 	EventBus.ability_cast.emit(unit, tile, ability, ability.windup, target)
 
 
@@ -742,9 +746,16 @@ func _aim(unit: Unit, action: ActionData, target: Unit) -> Dictionary:
 	return best
 
 
+## Zum Ziel drehen und den Blick kurz halten (nur Anzeige).
+func _aim_at(unit: Unit, tile: Vector2i) -> void:
+	if tile == unit.tile:
+		return
+	unit.set_facing(Unit.facing_at(unit.tile, tile))
+	unit.aim_hold = AIM_HOLD
+
+
 func _execute(unit: Unit, tile: Vector2i, action: ActionData, target: Unit) -> void:
-	if tile != unit.tile:
-		unit.set_facing(Unit.facing_toward(unit.tile, tile))
+	_aim_at(unit, tile)
 	if battle.resolver.execute(unit, tile, action):
 		EventBus.action_used.emit(unit, tile, action)
 		battle._check_victory()
@@ -1019,7 +1030,9 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 ## Einen Schritt beginnen. Das Feld gilt sofort (es ist damit belegt), die
 ## Figur gleitet in der Schrittzeit hinterher.
 func _walk(unit: Unit, next: Vector2i) -> void:
-	unit.set_facing(Unit.facing_toward(unit.tile, next))
+	# Kurz nach dem Schuss schaut er weiter zum Ziel (laeuft seitlich/rueckwaerts).
+	if unit.aim_hold <= 0.0:
+		unit.set_facing(Unit.facing_toward(unit.tile, next))
 	# Die Schrittzeit steht VOR dem Versetzen fest: move_unit meldet den
 	# Schritt (unit_moved), und die Szene liest daran ab, wie lange die Figur
 	# gleitet.

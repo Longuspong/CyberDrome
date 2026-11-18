@@ -166,7 +166,7 @@
         "hp_scaling": 0.0,
         "min_range": 0,
         "moving_bonus": 0.0,
-        "windup": 0.75
+        "windup": 0.95
       }
     ]
   }

@@ -58,7 +58,7 @@ func build(root: Window, kind_arg: String) -> SubViewport:
 	view.build_terrain(MapGenerator.generate(TerrainDB.get_region(&"city")))
 	var melee := kind in ["stun", "push", "slash"]
 	var squad := [
-		[src[0], src[1], Vector2i(4, 4) if melee else Vector2i(4, 7), true],
+		[src[0], src[1], Vector2i(4, 4) if melee else (Vector2i(3, 5) if kind == "whirl" else Vector2i(4, 7)), true],
 		[&"scout_body", &"eq_plasma_blade", Vector2i(2, 7), true],
 		[&"mage_body", &"eq_rune_staff", Vector2i(6, 7), true],
 		[&"jugg_body", &"eq_hammer", Vector2i(4, 3), false],
@@ -99,7 +99,8 @@ func _target_tile() -> Vector2i:
 func tick(k: int) -> void:
 	var me: Unit = players[0]
 	if k == CAST_AT:
-		me.set_facing(Unit.facing_toward(me.tile, _target_tile()))
+		if _target_tile() != me.tile:
+			me.set_facing(Unit.facing_at(me.tile, _target_tile()))
 		AbilityFx.on_cast(view, me, _target_tile(), action, action.windup, units)
 	if k == _hit_at:
 		var tile := _target_tile()
