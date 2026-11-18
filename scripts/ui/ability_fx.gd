@@ -81,6 +81,15 @@ static func _salvos(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 	while targets.size() < action.shots:
 		targets.append(targets[0])
 	for volley in targets.size():
+		if volley > 0 and targets[volley] != targets[volley - 1]:
+			# Vor der naechsten Salve zum naechsten Ziel drehen.
+			var turn_at := ActionResolver.salvo_time(action, volley, 0) \
+				- ActionResolver.SALVO_FLIGHT - ActionResolver.SALVO_PAUSE * 0.5
+			var aim := IsoView.local_to_map(targets[volley])
+			view.create_tween().tween_callback(func() -> void:
+				if is_instance_valid(unit) and unit.is_alive():
+					unit.set_facing(Unit.facing_at(unit.tile, aim))
+					unit.aim_hold = maxf(unit.aim_hold, 0.6)).set_delay(maxf(0.0, turn_at))
 		for b in action.salvo:
 			var shot := style.duplicate()
 			shot["wait"] = ActionResolver.salvo_time(action, volley, b) - ActionResolver.SALVO_FLIGHT

@@ -128,7 +128,8 @@ func _consequences(me: Unit, tile: Vector2i) -> void:
 			_slide(enemies[1], Vector2i(3, 2))
 			_slide(enemies[2], Vector2i(5, 2))
 		"push":
-			_slide(target, Vector2i(4, 2))
+			# Wie ActionResolver._shove: in Verlaengerung Angreifer -> Ziel.
+			_slide(target, Grid.neighbor(target.tile, Grid.direction_toward(me.tile, target.tile)))
 			_hurt(target, 24)
 		"stun":
 			_hurt(target, 20)
