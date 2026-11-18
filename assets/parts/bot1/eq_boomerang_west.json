@@ -114,7 +114,8 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.3
+        "moving_bonus": 0.3,
+        "windup": 0.0
       },
       {
         "id": "act_boomerang_whirl",
@@ -144,7 +145,8 @@
         "base_action": "act_boomerang",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.3
+        "moving_bonus": 0.3,
+        "windup": 0.3
       }
     ]
   }

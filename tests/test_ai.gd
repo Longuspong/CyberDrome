@@ -503,3 +503,53 @@ func test_the_strix_steadies_after_standing_still() -> void:
 	t.equal((strix.mounts[0]["attack"] as ActionData).range_tiles, lance.range_tiles,
 		"Reichweite wieder normal")
 	battle.free()
+
+
+# ---------------------------------------------------------------------------
+# Ausholzeit (18. Nov. 2026): erst die Ansage, dann die Wirkung
+# ---------------------------------------------------------------------------
+
+func test_abilities_wind_up_before_they_hit() -> void:
+	var casts := []
+	var hits := []
+	var clock := {"battle": null}
+	var on_cast := func(unit, _tile, action, seconds, _target):
+		if unit.is_player and action.id == &"act_rail_pierce":
+			casts.append([clock["battle"].time, seconds])
+	var on_hit := func(unit, _tile, action):
+		if unit.is_player and action.id == &"act_rail_pierce":
+			hits.append(clock["battle"].time)
+	EventBus.ability_cast.connect(on_cast)
+	EventBus.action_used.connect(on_hit)
+	var battle := BattleManager.new()
+	clock["battle"] = battle
+	battle.setup(5150, [_strix(), _molok()], [_molok(), _molok()])
+	battle.run_to_end(40.0)
+	battle.free()
+	EventBus.ability_cast.disconnect(on_cast)
+	EventBus.action_used.disconnect(on_hit)
+	t.ok(not casts.is_empty(), "der Strix holt zum Präzisionsschuss aus (%d)" % casts.size())
+	t.ok(not hits.is_empty(), "und der Schuss wirkt")
+	if not casts.is_empty() and not hits.is_empty():
+		var first_cast: float = casts[0][0]
+		var windup: float = casts[0][1]
+		t.ok(windup > 0.0, "mit Ausholzeit (%.2f s)" % windup)
+		t.ok(hits[0] >= first_cast + windup - 0.051,
+			"Wirkung erst nach dem Ausholen (%.2f -> %.2f)" % [first_cast, hits[0]])
+
+
+func test_a_casting_drome_stands_still() -> void:
+	var battle := _battle([_strix()], [_molok()], [Vector2i(10, 14), Vector2i(10, 6)])
+	var strix: Unit = battle.units[0]
+	var lance := _action(strix, &"act_rail_pierce")
+	strix.cast = {"action": lance, "aim": {"tile": Vector2i(10, 6), "target": battle.units[1]},
+		"mount": strix.mounts[0], "fx": {}, "left": 0.5, "target": battle.units[1]}
+	var before := strix.tile
+	var hp: int = battle.units[1].hp + battle.units[1].shield
+	battle.brain.update(strix, 0.3)
+	t.equal(strix.tile, before, "steht beim Ausholen still")
+	t.equal(battle.units[1].hp + battle.units[1].shield, hp, "noch kein Schaden")
+	battle.brain.update(strix, 0.3)
+	t.ok(strix.cast.is_empty(), "Ausholen vorbei")
+	t.ok(battle.units[1].hp + battle.units[1].shield < hp, "jetzt trifft der Schuss")
+	battle.free()

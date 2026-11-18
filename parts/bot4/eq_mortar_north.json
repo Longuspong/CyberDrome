@@ -82,7 +82,8 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 2,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.0
       },
       {
         "id": "act_mortar_barrage",
@@ -112,7 +113,8 @@
         "base_action": "act_mortar",
         "hp_scaling": 0.0,
         "min_range": 2,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.3
       }
     ]
   }

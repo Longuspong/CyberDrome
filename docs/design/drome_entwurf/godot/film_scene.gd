@@ -1,17 +1,37 @@
-## Szene fuer render_film.gd: Neon-City-Arena, drei Gegner oben, drei eigene
-## DROMEs darunter, die Kamera auf dem Ausschnitt. tick(k) spielt die
-## Faehigkeit nach Bild k ab (60 Bilder = 1 s).
+## Szene fuer render_film.gd (18. Nov. 2026): der echte Kampfbildschirm-
+## Unterbau (BattleView) mit Neon-City-Arena, drei eigene DROMEs unten, drei
+## Gegner in Fraktionsfarben oben. Die Faehigkeit laeuft wie im Kampf ab:
+## AbilityFx.on_cast (Ansage, Haltung), nach der Ausholzeit AbilityFx.on_used
+## (Wirkung), dazu die Folgen, die sonst die Regeln ausloesen: Sog bzw. Stoss
+## (Rutschen), Treffer mit Zahl, Zustaende. 60 Bilder = 1 s.
 extends RefCounted
 
 const W := 540
 const H := 420
-const HIT := 20             # Bild, in dem die Faehigkeit ausgeloest wird
+const CAST_AT := 12          # Bild, in dem ausgeholt wird
 
-var painter: AbilityPainter
+var view: BattleView
 var kind := ""
+var action: ActionData
 var units: Array = []
 var players: Array = []
 var enemies: Array = []
+var _hit_at := 0
+var _boom_at := -1
+
+const SOURCES := {
+	"vortex": [&"mage_body", &"eq_rune_staff", &"act_rune_vortex"],
+	"barrage": [&"strix_body", &"eq_mortar", &"act_mortar_barrage"],
+	"lock": [&"strix_body", &"eq_rail_lance", &"act_rail_pierce"],
+	"stun": [&"jugg_body", &"eq_hammer", &"act_hammer_stun"],
+	"push": [&"jugg_body", &"eq_bulwark_ram", &"act_ram_slam"],
+	"slash": [&"scout_body", &"eq_plasma_blade", &"act_plasma_rend"],
+	"whirl": [&"scout_body", &"eq_boomerang", &"act_boomerang_whirl"],
+	"double": [&"scout_body", &"eq_pulse_blaster", &"act_pulse_double"],
+	"breaker": [&"scout_body", &"eq_neon_blaster", &"act_neon_breaker"],
+	"shield": [&"scout_body", &"eq_deflector", &"act_deflector_charge"],
+	"shield_ally": [&"jugg_body", &"eq_drone_pod", &"act_drone_guard"],
+}
 
 func _build(chassis: StringName, weapon: StringName) -> DromeBuild:
 	var b := DromeBuild.create("X", {})
@@ -21,40 +41,29 @@ func _build(chassis: StringName, weapon: StringName) -> DromeBuild:
 
 func build(root: Window, kind_arg: String) -> SubViewport:
 	kind = kind_arg
-	var view := SubViewport.new()
-	view.size = Vector2i(W, H)
-	view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	var src: Array = SOURCES.get(kind, SOURCES["double"])
+	for a in PartDB.get_part(src[1]).actions:
+		if a.id == src[2]:
+			action = a
+	var port := SubViewport.new()
+	port.size = Vector2i(W, H)
+	port.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	var bg := ColorRect.new(); bg.color = Color("#0a0618"); bg.size = Vector2(W, H) * 6
 	bg.position = -Vector2(W, H) * 2.5
 	bg.z_index = -4000
-	view.add_child(bg)
-	var world := Node2D.new()
-	view.add_child(world)
-	var grid := MapGenerator.generate(TerrainDB.get_region(&"city"))
-	ArenaPainter.build(world, grid, func(tile: Vector2i) -> int: return tile.y * 16 + 8, false, true, true)
-	var floor := ArenaFloor3D.new()
-	floor.z_index = -70
-	floor.build(grid)
-	world.add_child(floor)
-	var arena := Arena3D.new()
-	world.add_child(arena)
-	painter = AbilityPainter.new()
-	world.add_child(painter)
-	var source: Array = {
-		"vortex": [&"mage_body", &"eq_rune_staff"], "barrage": [&"strix_body", &"eq_mortar"],
-		"lock": [&"strix_body", &"eq_rail_lance"], "stun": [&"jugg_body", &"eq_hammer"],
-		"push": [&"jugg_body", &"eq_bulwark_ram"], "slash": [&"scout_body", &"eq_plasma_blade"],
-		"whirl": [&"scout_body", &"eq_boomerang"], "double": [&"scout_body", &"eq_pulse_blaster"],
-		"breaker": [&"scout_body", &"eq_neon_blaster"], "shield": [&"scout_body", &"eq_deflector"],
-		"shield_ally": [&"jugg_body", &"eq_drone_pod"]}.get(kind, [&"scout_body", &"eq_pulse_blaster"])
+	port.add_child(bg)
+	view = BattleView.new()
+	port.add_child(view)
+	root.add_child(port)
+	view.build_terrain(MapGenerator.generate(TerrainDB.get_region(&"city")))
 	var melee := kind in ["stun", "push", "slash"]
 	var squad := [
-		[source[0], source[1], Vector2i(4, 6) if not melee else Vector2i(4, 4), true],
+		[src[0], src[1], Vector2i(4, 4) if melee else Vector2i(4, 7), true],
 		[&"scout_body", &"eq_plasma_blade", Vector2i(2, 7), true],
 		[&"mage_body", &"eq_rune_staff", Vector2i(6, 7), true],
 		[&"jugg_body", &"eq_hammer", Vector2i(4, 3), false],
-		[&"scout_body", &"eq_plasma_blade", Vector2i(3, 2), false],
-		[&"strix_body", &"eq_rail_lance", Vector2i(5, 2), false],
+		[&"scout_body", &"eq_plasma_blade", Vector2i(2, 2), false],
+		[&"strix_body", &"eq_rail_lance", Vector2i(5, 1), false],
 	]
 	for i in squad.size():
 		var d: Array = squad[i]
@@ -62,62 +71,80 @@ func build(root: Window, kind_arg: String) -> SubViewport:
 		if not d[3]:
 			b.faction = ["neon", "mecha", "solar"][i % 3]
 		var unit := Unit.create(b, StringName("u%d" % i), d[3])
-		unit.arena = arena
 		unit.place_at(d[2])
 		unit.facing = Unit.FACING_PLAYER if d[3] else Unit.FACING_ENEMY
 		unit.hp = 100
-		world.add_child(unit)
+		view.attach_unit(unit)
 		units.append(unit)
 		(players if d[3] else enemies).append(unit)
-	painter.units = units
+	view.abilities.units = units
+	view.set_pixel_scale(1.45)
 	var cam := Camera2D.new()
 	cam.zoom = Vector2(1.45, 1.45)
-	cam.position = IsoView.map_to_local(Vector2i(4, 4)) + Vector2(0, -62)
-	world.add_child(cam)
-	root.add_child(view)
+	cam.position = IsoView.map_to_local(Vector2i(4, 4)) + Vector2(0, -50)
+	view.add_child(cam)
 	cam.make_current()
-	return view
+	_hit_at = CAST_AT + int(round(action.windup * 60.0))
+	if action.delay > 0.0:
+		_boom_at = _hit_at + int(round(action.delay * 60.0))
+	return port
+
+func _target_tile() -> Vector2i:
+	if kind == "shield":
+		return players[0].tile
+	if kind == "shield_ally":
+		return players[1].tile
+	return enemies[0].tile
 
 func tick(k: int) -> void:
-	if k != HIT:
-		_status_tick(k)
-		return
 	var me: Unit = players[0]
-	var target: Unit = enemies[0]
-	var at := IsoView.map_to_local(target.tile)
-	var color := Teams.color(true)
-	if kind not in ["shield", "shield_ally"]:
-		me.play_attack(target.tile)
-	var data := {"at": at, "color": color, "enemy": false, "radius": 2, "delay": 0.8,
-		"from": me.visual_anchor(), "dir": (at - IsoView.map_to_local(me.tile)).normalized()}
-	match kind:
-		"vortex":
-			painter.add_vortex(at, 2, 0.6, color)
-		"whirl":
-			data["radius"] = 1
-			painter.add("whirl", data)
-		"double":
-			data["targets"] = [at, IsoView.map_to_local(enemies[1].tile)]
-			painter.add("double", data)
-		"shield":
-			data["at"] = me.visual_anchor()
-			data.erase("from")
-			painter.add("shield", data)
-		"shield_ally":
-			data["at"] = players[1].visual_anchor()
-			painter.add("shield", data)
-		_:
-			painter.add(kind, data)
-
-## Zustaende so, wie die Wirkung sie setzt (nach der Verzoegerung).
-func _status_tick(k: int) -> void:
-	var target: Unit = enemies[0]
-	if kind == "vortex" and k == HIT + 36:
+	if k == CAST_AT:
+		me.set_facing(Unit.facing_toward(me.tile, _target_tile()))
+		AbilityFx.on_cast(view, me, _target_tile(), action, action.windup, units)
+	if k == _hit_at:
+		var tile := _target_tile()
+		_consequences(me, tile)
+		AbilityFx.on_used(view, me, tile, action, units)
+	if k == _boom_at:
 		for e in enemies:
-			e.apply_status(&"slow", 2.5, {"move_mult": 0.6})
-	if kind == "stun" and k == HIT + 4:
-		target.apply_status(&"stun", 1.0, {"stunned": true})
-	if kind == "slash" and k == HIT + 8:
-		target.apply_status(&"vulnerable", 5.0, {"damage_taken_mult": 1.5})
+			if Grid.distance(e.tile, enemies[0].tile) <= action.aoe_radius:
+				_hurt(e, 18)
+				if kind == "vortex":
+					e.apply_status(&"slow", 2.5, {"move_mult": 0.6})
 	for u in units:
 		u.tick_statuses(1.0 / 60.0)
+
+## Was sonst die Regeln tun: Sog/Stoss, Schaden, Zustaende.
+func _consequences(me: Unit, tile: Vector2i) -> void:
+	var target: Unit = AbilityFx.unit_at(units, tile)
+	match kind:
+		"vortex":
+			_slide(enemies[1], Vector2i(3, 2))
+			_slide(enemies[2], Vector2i(5, 2))
+		"push":
+			_slide(target, Vector2i(4, 2))
+			_hurt(target, 24)
+		"stun":
+			_hurt(target, 20)
+			target.apply_status(&"stun", 1.0, {"stunned": true})
+		"slash":
+			_hurt(target, 22)
+			target.apply_status(&"vulnerable", 5.0, {"damage_taken_mult": 1.5})
+		"lock", "breaker", "whirl":
+			_hurt(target, 26)
+		"double":
+			_hurt(target, 12)
+			_hurt(enemies[1], 12)
+
+func _slide(unit: Unit, to: Vector2i) -> void:
+	if unit == null:
+		return
+	unit.place_at(to)
+	unit.animate_last_move(AbilityFx.FORCED_SLIDE, true)
+	view.refresh_unit_depth(unit)
+
+func _hurt(unit: Unit, amount: int) -> void:
+	if unit == null:
+		return
+	unit.play_hit()
+	view.show_float(unit.visual_anchor(), "-%d" % amount, Color(1.0, 0.9, 0.5))

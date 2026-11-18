@@ -79,6 +79,12 @@ var gather: bool = false
 ## Schockwelle danach (ActionResolver.advance).
 var delay: float = 0.0
 
+## Ausholzeit (18. Nov. 2026, Wunsch des Spielers: Faehigkeiten in Abfolge):
+## Sekunden zwischen Ansage und Wirkung. Der DROME steht so lange still
+## (AIController, Unit.cast), die Ansage ist zu sehen, erst dann wirkt die
+## Faehigkeit -- auf das Ziel, wo es dann steht. 0 = sofort.
+var windup: float = 0.0
+
 ## Statuseffekt auf jeden Getroffenen, z. B. {"id": "slow", "seconds": 2.5,
 ## "move_mult": 0.6}. Leer = keiner.
 var status: Dictionary = {}
@@ -146,6 +152,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.shots = maxi(1, int(meta.get("shots", 1)))
 	action.shield_mult = float(meta.get("shield_mult", 1.0))
 	action.delay = float(meta.get("delay", 0.0))
+	action.windup = float(meta.get("windup", 0.0))
 	action.heal = int(meta.get("heal", 0))
 	action.shield_gain = int(meta.get("shield_gain", 0))
 	action.support = str(meta.get("support", ""))

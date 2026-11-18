@@ -82,7 +82,8 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.0
       },
       {
         "id": "act_rail_pierce",
@@ -112,7 +113,8 @@
         "base_action": "act_raillance",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.55
       }
     ]
   }

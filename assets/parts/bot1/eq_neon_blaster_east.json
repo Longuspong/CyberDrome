@@ -129,7 +129,8 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.0
       },
       {
         "id": "act_neon_breaker",
@@ -159,7 +160,8 @@
         "base_action": "act_neon_pulse",
         "hp_scaling": 0.0,
         "min_range": 0,
-        "moving_bonus": 0.0
+        "moving_bonus": 0.0,
+        "windup": 0.35
       }
     ]
   }

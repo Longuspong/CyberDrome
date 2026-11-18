@@ -62,6 +62,12 @@ func update(unit: Unit, dt: float) -> void:
 	# Betaeubt: weder laufen noch schiessen, die Waffen laden aber weiter.
 	if unit.is_stunned():
 		return
+	# Holt zu einer Faehigkeit aus: steht still, bis sie wirkt.
+	if not unit.cast.is_empty():
+		unit.cast["left"] = float(unit.cast["left"]) - dt
+		if float(unit.cast["left"]) <= 0.0:
+			_finish_cast(unit)
+		return
 
 	var target := _current_target(unit)
 	if target != null and not _can_shoot(unit, unit.tile, target):
@@ -260,12 +266,12 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		var aim := _support_aim(unit, ability) if (ability as ActionData).support != "" \
 			else _aim(unit, ability, target)
 		if not aim.is_empty():
-			_execute(unit, aim["tile"], ability, aim["target"])
-			_echo(unit, ability, aim)
-			_after_ability(unit, ability, aim, fx)
-			_shackle(unit, mount)
 			mount["count"] = maxf(0.0, float(mount["count"]) + unit.takt_step(mount)
 				- float(trigger_every(unit, ability)))
+			if (ability as ActionData).windup > 0.0:
+				_begin_cast(unit, ability, aim, mount, fx)
+			else:
+				_resolve_ability(unit, ability, aim, mount, fx)
 			mount["instant"] = bool(fx.get("ready_after_ability", false))
 			# Ueberladung: die naechsten Angriffe treffen haerter.
 			if float(fx.get("post_ability_power", 0.0)) > 0.0:
@@ -294,6 +300,51 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	if ability != null and not due:
 		mount["count"] = float(mount["count"]) + unit.takt_step(mount)
 	return true
+
+
+## Die Faehigkeit wirkt: ausfuehren, Echo, Nachwirkungen der Module.
+func _resolve_ability(unit: Unit, ability: ActionData, aim: Dictionary, mount: Dictionary,
+		fx: Dictionary) -> void:
+	_execute(unit, aim["tile"], ability, aim["target"])
+	_echo(unit, ability, aim)
+	_after_ability(unit, ability, aim, fx)
+	_shackle(unit, mount)
+
+
+## Ausholen (18. Nov. 2026): die Ansage beginnt, die Wirkung folgt nach
+## ``windup`` Sekunden in _finish_cast.
+func _begin_cast(unit: Unit, ability: ActionData, aim: Dictionary, mount: Dictionary,
+		fx: Dictionary) -> void:
+	var target = aim.get("target")
+	unit.cast = {"action": ability, "aim": aim, "mount": mount, "fx": fx,
+		"left": ability.windup, "target": target}
+	var tile: Vector2i = aim["tile"]
+	if tile != unit.tile:
+		unit.set_facing(Unit.facing_toward(unit.tile, tile))
+	EventBus.ability_cast.emit(unit, tile, ability, ability.windup, target)
+
+
+## Ende der Ausholzeit: die Faehigkeit trifft das Ziel dort, wo es jetzt
+## steht. Ist es weg oder ausser Reichweite, verpufft sie nicht -- der Takt
+## bleibt voll und sie kommt mit dem naechsten Angriff wieder.
+func _finish_cast(unit: Unit) -> void:
+	var cast := unit.cast
+	unit.cast = {}
+	var ability: ActionData = cast["action"]
+	var aim: Dictionary = (cast["aim"] as Dictionary).duplicate()
+	var target = cast.get("target")
+	if target is Unit:
+		if not target.is_alive():
+			target = null
+		else:
+			aim["tile"] = target.tile
+	if cast.get("target") is Unit and target == null \
+			or battle.resolver.target_blocker(unit, aim["tile"], ability) != "":
+		var mount: Dictionary = cast["mount"]
+		mount["count"] = float(mount["count"]) + float(trigger_every(unit, ability))
+		return
+	_resolve_ability(unit, ability, aim, cast["mount"], cast["fx"])
+	battle._check_victory()
 
 
 ## Modul-Faehigkeiten nach Angriffen (Orbit-Fokus, 9. Nov. 2026): jeder

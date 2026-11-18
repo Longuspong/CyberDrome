@@ -314,6 +314,19 @@ Entwurf: Board 12 (Vortex animiert, Tabelle für alle). Muster: **Wo**
       (Sterne), verwundbar (gerissener Schild + rosa Fußring). Blicktest:
       `render_faehigkeit.gd ... city ansage|wirkung` (alle Formen auf einmal).
 - [x] Gegnerische Fähigkeiten: dieselben Formen, Ring mit rotem Außenrand
+- [x] **Abfolge statt alles auf einmal** (18. Nov., Wunsch des Spielers):
+      Fähigkeiten haben eine **Ausholzeit** (`windup` an der Aktion, Werte
+      in `build_sample_parts.py`, z. B. Präzisionsschuss 0,55 s, Vortex
+      0,75 s, Nahkampf 0,3–0,35 s). Der DROME steht so lange still
+      (`Unit.cast`, `AIController._begin_cast/_finish_cast`), die Wirkung
+      trifft das Ziel dort, wo es dann steht; ist es weg, bleibt der Takt voll.
+      Optik in `AbilityFx` (aus `BattleScreen` gezogen): `on_cast` = Name,
+      Ansage (`AbilityPainter.add_cast`) und Haltung (Nahkampf holt so aus,
+      dass der Schlag beim Wirken sitzt; Runenstab hochgehalten, Kugel von der
+      Stabspitze im Bogen -- `Arena3D.raise`, `weapon_tip`), `on_used` =
+      Schuss/Aufprall und Wirkung. Sog und Stoß rutschen sichtbar mit
+      Abbremsen (`ActionResolver.forcing`, `FORCED_SLIDE`). Filme:
+      `godot/render_film.gd` + `film_scene.gd` (derselbe Ablauf wie im Kampf).
 
 ### 7. Fraktions-Paletten im Spiel
 Quelle: `skins.py`. Neon fast schwarz mit grellem Neon, Solar

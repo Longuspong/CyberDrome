@@ -211,6 +211,11 @@ func show_vortex(tile: Vector2i, radius: int, delay: float, color: Color, enemy:
 	abilities.add_vortex(IsoView.map_to_local(tile), radius, delay, color, enemy)
 
 
+## Die Ansage einer Faehigkeit waehrend ihrer Ausholzeit.
+func show_cast(kind: String, data: Dictionary, seconds: float) -> void:
+	abilities.add_cast(kind, data, seconds)
+
+
 ## Jede andere Faehigkeit lesbar (Formen siehe AbilityPainter.add).
 func show_ability(kind: String, data: Dictionary) -> void:
 	abilities.add(kind, data)

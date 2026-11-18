@@ -59,6 +59,13 @@ const FLASH_TIME := 0.09         # Muendungsblitz (Waffe leuchtet auf)
 const SWING_BACK := -0.55        # Nahkampf: ausholen (rad, um die Schulter)
 const SWING_HIT := 0.65          # ... und zuschlagen
 const MELEE_TIME := 0.42
+## Anteil der Nahkampfbewegung, an dem der Schlag sitzt (Ende des Zuschlagens)
+## -- damit BattleScreen das Ausholen auf die Ausholzeit takten kann.
+const MELEE_HIT_AT := 0.6
+## Waffe hochhalten (Runenstab): Winkel um die Schulter, Anteil Heben/Senken.
+const RAISE_ANGLE := -1.15
+const RAISE_UP := 0.35
+const RAISE_DOWN := 0.25
 const SHIELD_PUSH := 3.2         # Schild stoesst vor
 const SHIELD_TIME := 0.3
 ## Ausholen auch von vorn lesbar: die Schwungachse kippt zur Seite.
@@ -141,6 +148,26 @@ static func ground(p: Vector2) -> Vector3:
 	var right := Vector3(c, 0, c)
 	var up := Vector3(c, 0, -c)
 	return right * (p.x / DromeModel.SCALE) + up * (-p.y / (DromeModel.SCALE * c))
+
+
+## Umkehrung fuer beliebige 3D-Punkte (auch ueber dem Boden): wo die
+## Iso-Kamera sie in der 2D-Welt zeigt.
+static func to_world_2d(g: Vector3) -> Vector2:
+	var c := DromeModel.COS45
+	return Vector2(g.dot(Vector3(c, 0, c)), -g.dot(Vector3(0.5, c, -0.5))) * DromeModel.SCALE
+
+
+## Die Spitze der Waffe einer Einheit (``muzzle``-Anker), so wie sie gerade
+## steht -- auch mitten in einer Bewegung (Stab hochgehalten). In der 2D-Welt.
+func weapon_tip(unit: Unit, action: ActionData) -> Vector2:
+	var turn := turn_of(unit)
+	var fallback := unit.visual_anchor() + Vector2(0, -90)
+	if turn == null or not turn.is_inside_tree():
+		return fallback
+	var weapon := turn.get_node_or_null(_slot_for(unit, action)) as Node3D
+	if weapon == null:
+		return fallback
+	return to_world_2d(weapon.global_transform * _anchor(weapon, "muzzle"))
 
 
 # ---------------------------------------------------------------------------
@@ -305,7 +332,7 @@ func _sync_unit(unit: Unit, node: Node3D) -> void:
 
 ## Angriff mit der Waffe, die ``action`` ausloest. false, wenn es nichts zu
 ## bewegen gibt (dann ruckt der ganze DROME wie bisher).
-func attack(unit: Unit, action: ActionData) -> bool:
+func attack(unit: Unit, action: ActionData, seconds: float = -1.0) -> bool:
 	var turn := turn_of(unit)
 	if turn == null or not _anim.has(unit):
 		return false
@@ -314,8 +341,23 @@ func attack(unit: Unit, action: ActionData) -> bool:
 		return false
 	var part: PartData = unit.build.part_in(slot)
 	var kind := "shield" if part.tags.has("defense") else part.reach_kind()
-	_anim[unit]["attack"] = {"slot": slot, "kind": kind, "t": 0.0,
-		"time": {"melee": MELEE_TIME, "shield": SHIELD_TIME}.get(kind, RANGED_TIME)}
+	var time: float = {"melee": MELEE_TIME, "shield": SHIELD_TIME}.get(kind, RANGED_TIME)
+	if seconds > 0.0:
+		time = seconds
+	_anim[unit]["attack"] = {"slot": slot, "kind": kind, "t": 0.0, "time": time}
+	return true
+
+
+## Die Waffe hochhalten: Arm und Waffe drehen um die Schulter nach oben,
+## halten, und senken sich am Ende (``seconds`` insgesamt).
+func raise(unit: Unit, action: ActionData, seconds: float) -> bool:
+	var turn := turn_of(unit)
+	if turn == null or not _anim.has(unit):
+		return false
+	var slot := _slot_for(unit, action)
+	if slot == "" or turn.get_node_or_null(slot) == null:
+		return false
+	_anim[unit]["attack"] = {"slot": slot, "kind": "raise", "t": 0.0, "time": maxf(0.1, seconds)}
 	return true
 
 
@@ -573,6 +615,15 @@ static func _attack_pose(tr: Transform3D, kind: String, k: float, pivot: Vector3
 			else:
 				angle = lerpf(SWING_HIT, 0.0, ease((k - 0.6) / 0.4, 0.5))
 			var turn := Transform3D(Basis(SWING_AXIS.normalized(), angle), Vector3.ZERO)
+			return Transform3D(Basis.IDENTITY, pivot) * turn \
+				* Transform3D(Basis.IDENTITY, -pivot) * tr
+		"raise":
+			var lift := 1.0
+			if k < RAISE_UP:
+				lift = ease(k / RAISE_UP, 0.4)
+			elif k > 1.0 - RAISE_DOWN:
+				lift = 1.0 - ease((k - (1.0 - RAISE_DOWN)) / RAISE_DOWN, 2.0)
+			var turn := Transform3D(Basis(Vector3(0, 1, 0), RAISE_ANGLE * lift), Vector3.ZERO)
 			return Transform3D(Basis.IDENTITY, pivot) * turn \
 				* Transform3D(Basis.IDENTITY, -pivot) * tr
 		"shield":

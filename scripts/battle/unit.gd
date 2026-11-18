@@ -95,6 +95,9 @@ var burst_cooldown: float = 0.0
 var _recharge_carry: float = 0.0
 ## Bis zur naechsten Pruefung des Ziels, und das aktuelle Ziel.
 var think_left: float = 0.0
+## Laufende Ausholzeit einer Faehigkeit (AIController): {"action", "aim",
+## "mount", "fx", "left", "target"}; leer = keine.
+var cast: Dictionary = {}
 var target_id = null
 ## Wie lange das aktuelle Ziel schon nicht angreifbar ist (Sekunden).
 ## Ein Ziel wird gehalten -- erst wenn es zu lange ausser Reichweite bleibt,
@@ -106,6 +109,8 @@ var _glide_from: Vector2 = Vector2.ZERO
 var _glide_to: Vector2 = Vector2.ZERO
 var _glide_time: float = 0.0
 var _glide_total: float = 0.0
+## Erzwungene Versetzung (Sog, Stoss): schnell los, dann abbremsen.
+var _glide_eased := false
 var _prev_position: Vector2 = Vector2.ZERO
 
 var _sprites: Dictionary = {}
@@ -229,8 +234,9 @@ func place_at(new_tile: Vector2i) -> void:
 
 ## Die letzte Versetzung (place_at) sichtbar nachgleiten: vom Ort, an dem die
 ## Figur vorher gezeichnet wurde, zum neuen Feld.
-func animate_last_move(seconds: float) -> void:
+func animate_last_move(seconds: float, eased: bool = false) -> void:
 	glide_to(tile, seconds, _prev_position)
+	_glide_eased = eased
 
 
 ## Wie place_at, aber die Figur gleitet in ``seconds`` vom bisherigen Ort
@@ -241,6 +247,7 @@ func glide_to(new_tile: Vector2i, seconds: float, from_position: Vector2) -> voi
 	_glide_to = IsoView.sprite_position(new_tile)
 	_glide_time = 0.0
 	_glide_total = maxf(0.01, seconds)
+	_glide_eased = false
 	position = _glide_from
 
 
@@ -249,7 +256,7 @@ func _process(delta: float) -> void:
 		return
 	_glide_time += delta
 	var t := clampf(_glide_time / _glide_total, 0.0, 1.0)
-	position = _glide_from.lerp(_glide_to, t)
+	position = _glide_from.lerp(_glide_to, ease(t, 0.35) if _glide_eased else t)
 	if t >= 1.0:
 		_glide_total = 0.0
 
@@ -330,10 +337,10 @@ const SHAKE_AMPLITUDE := 7.0
 ## In der gemeinsamen 3D-Szene bewegt sich statt des ganzen DROME die Waffe
 ## (Arena3D.attack, 18. Nov. 2026): Nahkampf holt aus und schlaegt zu,
 ## Fernkampf mit Rueckstoss und Muendungsblitz, Schild stoesst vor.
-func play_attack(toward: Vector2i, action: ActionData = null) -> void:
+func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -1.0) -> void:
 	if _rig == null:
 		return
-	if arena != null and arena.attack(self, action):
+	if arena != null and arena.attack(self, action, seconds):
 		return
 	var delta := IsoView.map_to_local(toward) - IsoView.map_to_local(tile)
 	var push := Vector2.ZERO if delta == Vector2.ZERO \
@@ -344,6 +351,13 @@ func play_attack(toward: Vector2i, action: ActionData = null) -> void:
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tween.tween_property(_rig, "position", home, RECOIL_TIME * 2.2) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Waffe hochhalten (Runenstab vor dem Vortex, 18. Nov. 2026). Nur in der
+## gemeinsamen 3D-Szene; ohne sie bleibt der DROME ruhig.
+func play_raise(action: ActionData, seconds: float) -> void:
+	if arena != null:
+		arena.raise(self, action, seconds)
 
 
 ## Das Ziel zuckt und blendet kurz hell auf. Die Erschuetterung laeuft ueber
@@ -564,6 +578,7 @@ func init_realtime(pulse_offset: float) -> void:
 	step_left = 0.0
 	pulse_left = maxf(0.05, pulse_offset)
 	think_left = 0.0
+	cast = {}
 	target_id = null
 	target_blocked = 0.0
 	calm_time = 0.0
