@@ -1315,9 +1315,9 @@ func module_options(index: int) -> Array:
 			if module.is_bios_item():
 				entry["detail"] = "ein BIOS steckt nicht im Halter"
 			elif second_bios:
-				entry["detail"] = "höchstens ein BIOS-Rezept je DROME"
+				entry["detail"] = "höchstens eine BIOS-Fusion je DROME"
 			elif twice:
-				entry["detail"] = "%s steckt hier schon drin (Rezepte einmal je Halter)" % module.display_name
+				entry["detail"] = "%s steckt hier schon drin (Fusionen einmal je Waffe)" % module.display_name
 			elif used >= room:
 				entry["detail"] = "Modulplätze voll (%d/%d)" % [used, room]
 			elif weapon == null:
@@ -1518,7 +1518,7 @@ func buy_onto_storage(offer: int, index: int, apply: bool = true) -> String:
 		return "kein Modul"
 	var fused := pair_of(StringName(entry["module_id"]), storage[index])
 	if fused == null:
-		return "ergibt kein Rezept"
+		return "ergibt keine Fusion"
 	return _attempt(apply, func() -> String:
 		storage[index] = fused.id
 		credits -= shop_price(module)
@@ -1611,9 +1611,9 @@ func _layout_blocker(build: DromeBuild) -> String:
 				var other := ModuleData.get_module(list[j])
 				if other != null and other.is_recipe() \
 						and (other.parts().has(module.id) or module.parts().has(other.id)):
-					return "%s steckt hier schon drin (Rezepte einmal je Waffe)" % module.display_name
+					return "%s steckt hier schon drin (Fusionen einmal je Waffe)" % module.display_name
 	if bios > 1:
-		return "höchstens ein BIOS-Rezept je DROME"
+		return "höchstens eine BIOS-Fusion je DROME"
 	return ""
 
 
@@ -1845,9 +1845,9 @@ func bios_options(index: int) -> Array:
 			var entry := {"drome": drome, "slot": slot, "allowed": false, "detail": ""}
 			var here: Array = build.modules.get(slot, [])
 			if recipe == null or result == null:
-				entry["detail"] = "unbekanntes Rezept"
+				entry["detail"] = "unbekannte Fusion"
 			elif has_bios_recipe(build):
-				entry["detail"] = "hat schon ein BIOS-Rezept"
+				entry["detail"] = "hat schon eine BIOS-Fusion"
 			elif not here.has(recipe.id):
 				entry["detail"] = "braucht %s in dieser Waffe" % recipe.display_name
 			else:

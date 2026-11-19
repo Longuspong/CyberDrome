@@ -1535,7 +1535,7 @@ func _process(_delta: float) -> void:
 		var fused := RunState.pair_of(module.id, other.id) \
 			if module != null and other != null and _drag.get("kind") != "bios_offer" else null
 		if fused != null:
-			_show_tip(tile, "%sRezept: %s" % ["Kaufen · " if buying else "", fused.display_name],
+			_show_tip(tile, "%sFusion: %s" % ["Kaufen · " if buying else "", fused.display_name],
 				COLOR_GOOD)
 			return
 		if other != null and _drag.get("kind") != "bios_offer":
@@ -1553,11 +1553,11 @@ func _process(_delta: float) -> void:
 			else RunState.pair_of(module.id if module != null else &"", run.storage[int(target["index"])])
 		if result != null:
 			tile.selected = true
-			_show_tip(tile, "%sRezept: %s" % ["Kaufen · " if _drag.get("kind") == "shop" else "",
+			_show_tip(tile, "%sFusion: %s" % ["Kaufen · " if _drag.get("kind") == "shop" else "",
 				result.display_name], COLOR_GOOD)
 			Accessibility.vibrate(8)
 		else:
-			_show_tip(tile, "ergibt kein Rezept", COLOR_MUTED)
+			_show_tip(tile, "ergibt keine Fusion", COLOR_MUTED)
 
 
 func _clear_hover() -> void:
@@ -2251,7 +2251,7 @@ func _drop_blocker(run: RunState, data: Dictionary, drome: int, slot: String, po
 			return run.buy_into(int(data["index"]), drome, slot, position, apply)
 		"bios_offer":
 			if not _offer_fits(run, int(data["index"]), drome, slot):
-				return "braucht das passende Rezept in dieser Waffe"
+				return "braucht die passende Fusion in dieser Waffe"
 			if apply:
 				_drop_offer(run, data, drome, slot)
 			return ""
@@ -2447,7 +2447,7 @@ func _show_bios_choice(run: RunState) -> void:
 		_bios_pick = -1
 	var last: Dictionary = run.history[-1] if not run.history.is_empty() else {}
 	var why := "Chaos-Sieg" if bool(last.get("chaos", false)) else "Elite-Sieg"
-	var intro := _label("%s: wähle ein BIOS. Es wertet ein Rezept auf und kommt ins Lager." % why,
+	var intro := _label("%s: wähle ein BIOS. Es wertet eine Fusion auf und kommt ins Lager." % why,
 		UiKit.BODY, UiKit.TEXT)
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_side.add_child(intro)

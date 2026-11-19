@@ -561,7 +561,7 @@ func test_a_recipe_fits_only_once_per_holder() -> void:
 	var spot: Dictionary = run.module_options(0).filter(
 		func(e): return e["drome"] == drome and e["slot"] == slot)[0]
 	t.ok(not spot["allowed"], "zweiter Taktchip wird angeboten, aber gesperrt")
-	t.ok(String(spot["detail"]).contains("einmal je Halter"), "mit Grund")
+	t.ok(String(spot["detail"]).contains("einmal je Waffe"), "mit Grund")
 	t.ok(not run.install_module(0, drome, slot), "zweiter Taktchip passt nicht")
 	t.ok(run.install_module(1, drome, slot), "ein anderes Rezept schon")
 

@@ -9,11 +9,11 @@ Arcade-Glitch ist der Stil von CyberDrome, einem Autobattler fuer das Handy im H
 
 ## Sprache und Ton
 
-- Deutsch, kurz, in der Du-Form: „Antippen zeigt Details", „Irgendwo tippen", „2 Module im selben DROME = Rezept".
+- Deutsch, kurz, in der Du-Form: „Antippen zeigt Details", „Irgendwo tippen", „Modul auf Modul = Fusion".
 - Knoepfe, Etiketten und Zwischentitel GROSS: `ZUR KARTE`, `IM SQUAD`, `ALLE DROMES`. Fliesstext normal geschrieben.
 - Englische Arcade-Brocken nur als Deko auf Titel und Etiketten: `PLAYER 1 · READY`, `SAVE SELECT`, Laufband `DEATH ROBOT ◆ OMNI MACHINE ◆ EXECUTOR`.
 - Umlaute werden angezeigt (Ä, Ö, Ü, ß); im Code und in Kommentaren ohne Umlaute.
-- Begriffe des Spiels: **DROME** (der Roboter), **Squad** (bis 3), **Einsatz** (ein Lauf), **Hangar**, **Lootcache**, **Coin**, **Credits**, **Waffe** (alles im Halter), **Modul**, **Rezept**. Die Fraktion heisst **Hipstar Hackers**.
+- Begriffe des Spiels: **DROME** (der Roboter), **Squad** (bis 3), **Einsatz** (ein Lauf), **Hangar**, **Lootcache**, **Coin**, **Credits**, **Waffe** (alles im Halter), **Modul**, **Fusion** (Modul aus zwei Modulen, mit BIOS: BIOS-Fusion), **Rezept** (nur die Anleitung im Rezeptbuch). Die Fraktion heisst **Hipstar Hackers**.
 - Keine Emoji. Trenner ist der Mittelpunkt `·`.
 
 ## Farbe
@@ -72,7 +72,7 @@ Bedienung: Kachel antippen waehlt, nochmal tippen zeigt Details (Popup, blaetter
 ## Spielbausteine
 
 - **Kopfzeile** (Header) auf jedem Bildschirm; im Einsatz mit Statuszeile Leben `magenta`, Credits `cyan`, Caches `yellow`, Verstaerkung `orange`.
-- **Module** (ModuleChip): Chip mit Beinchen, Rand in der Klassenfarbe (`module-attack`, `module-defense`, `module-tactic`, `module-bios`); Rezepte mit doppeltem Rand.
+- **Module** (ModuleChip): Kartusche, abgeschraegt wie die Knoepfe, ueberall 52 px; Rand in der Klassenfarbe (`module-attack`, `module-defense`, `module-tactic`, `module-bios`), Klassen-Ecke oben rechts mit Zeichen, grosses Symbol; Fusionen (Rezept-Module) mit doppeltem Rahmen.
 - **Kampf** (BattleHud): eigenes Squad `hp-player` (Gruen) / `shield-player` (Hellblau), Gegner `hp-enemy` (Rot) / `shield-enemy` (Violett); alle Balken oben rechts und unten links abgeschraegt; Ueberschild als heller Rahmen in `overshield`; Takt-Leiste in `takt`; Virus-Warnung in `magenta`.
 - **Ergebnis** (ResultScreen): Etikett, riesiger Glitch-Titel, drei Kennzahlen, Beute, ein Hauptknopf.
 
@@ -95,6 +95,6 @@ Bungee und Chakra Petch stehen unter der SIL Open Font License 1.1 (`fonts/OFL_B
 ## Bilder
 
 - **Screens**: die 24 Bildschirm-Entwuerfe vom 15. Nov. 2026 (450 x 800). Referenz fuer Optik und Layout; Namen von Waffen und Modulen darin sind Platzhalter.
-- **Modules**: die 27 Modul-Symbole (farbig, fuer den ModuleChip).
+- **Modules**: die 27 Modul-Symbole (farbig, fuer die Modul-Kartusche).
 - **App**: das App-Icon (512 x 512).
 - Ein Logo als Bilddatei gibt es nicht: das Logo ist Satz — `CYBER` / `DROME` in `logo`, mit Glitch (siehe Komponente GlitchTitle).
