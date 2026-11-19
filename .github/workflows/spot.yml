@@ -1,6 +1,6 @@
-# Prueft, dass die SPOT-Tabelle (docs/spot/CyberDrome_SPOT.xlsx) zu den
-# Spieldaten passt. Rot heisst: python3 tools/build_spot.py ausfuehren und
-# die neue Tabelle einchecken.
+# Prueft, dass die SPOT-Tabellen (docs/spot/CyberDrome_SPOT_*.xlsx) zu den
+# Spieldaten passen. Rot heisst: python3 tools/build_spot.py ausfuehren und
+# die neuen Tabellen einchecken.
 
 name: SPOT-Tabelle aktuell
 

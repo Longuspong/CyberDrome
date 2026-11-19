@@ -1,0 +1,183 @@
+{
+  "_kommentar": [
+    "SPOT-Datei Welt & Fortschritt, Blatt Design: Farben, Schriften, Bildschirme, Effekte, Design-Tokens.",
+    "Texte fuer die SPOT-Tabellen (docs/spot/*.xlsx), die NICHT in den Spieldaten stehen.",
+    "Alle Zahlen und Namen aus dem Spiel liest tools/build_spot.py direkt aus parts/ und data/*.json.",
+    "Nach jeder Aenderung: python3 tools/build_spot.py",
+    "status: gebaut | entschieden | Vorschlag | offen"
+  ],
+
+  "_kommentar_design": [
+    "Arcade-Glitch-Stil (13. Nov. 2026): Entwuerfe in docs/design/ (Titel, Spielstand). Seit 14. Nov. 2026 auf allen Bildschirmen gebaut."
+  ],
+
+  "design_farben": [
+    {"name": "Nachtschwarz", "token": "night", "hex": "#0a0618", "verwendung": "Hintergrund aller Bildschirme"},
+    {"name": "Tiefviolett", "token": "deep", "hex": "#12082a", "verwendung": "Boden unter dem Horizont, Text auf Gelb"},
+    {"name": "Violett", "token": "violet", "hex": "#1b0b3a", "verwendung": "Karten / Slots, Bergsilhouette"},
+    {"name": "Arcade-Gelb", "token": "yellow", "hex": "#ffe14d", "verwendung": "Hauptknopf, Etiketten (PLAYER 1, SAVE SELECT), Fokusrahmen, Zurück-Pfeil"},
+    {"name": "Cyan", "token": "cyan", "hex": "#2ee3eb", "verwendung": "Gitterlinien, Glitch-Kanal, Zwischentitel, zuletzt gespielter Slot, Meldungen"},
+    {"name": "Magenta", "token": "magenta", "hex": "#ff2bd6", "verwendung": "Glitch-Kanal, andere belegte Slots, Sonnen-Verlauf unten"},
+    {"name": "Pink-Punkte", "token": "dots", "hex": "#ff3dbb", "verwendung": "Punktraster im Hintergrund (Deckkraft 0,22-0,35)"},
+    {"name": "Orange", "token": "orange", "hex": "#ff6a3d", "verwendung": "Mitte des Sonnen-Verlaufs"},
+    {"name": "Rosa", "token": "rose", "hex": "#ff8ce8", "verwendung": "Löschen-Knopf"},
+    {"name": "Weiß-Rosa", "token": "white", "hex": "#fff7fe", "verwendung": "Logo, Slot-Namen"},
+    {"name": "Fließtext", "token": "text", "hex": "#e9dcff", "verwendung": "normaler Text"},
+    {"name": "Fließtext gedämpft", "token": "muted", "hex": "#c3b3e6", "verwendung": "Nebentext, leere Slots"},
+    {"name": "Leer-Rahmen", "token": "empty-line", "hex": "#6a5a96", "verwendung": "gestrichelter Rahmen leerer Slots"},
+    {"name": "Popup-Grund", "token": "popup", "hex": "#160930", "verwendung": "Grund der Popups und des Waffen-Blatts (InfoPopup)."},
+    {"name": "Reiter-Schiene", "token": "rail", "hex": "#3a1a6e", "verwendung": "Schiene des Segmentknopfs (Reiter oben rechts)."},
+    {"name": "Tab-Leiste", "token": "tab-bar", "hex": "#120a26", "verwendung": "Grund der Tab-Leiste unten."},
+    {"name": "Tab aktiv", "token": "tab-on", "hex": "#1d1040", "verwendung": "Grund des aktiven Tabs."},
+    {"name": "Tab-Strich", "token": "tab-line", "hex": "#2a1650", "verwendung": "Strich oben an der Tab-Leiste."},
+    {"name": "Kartenrahmen", "token": "card-line", "hex": "#6e5ab4", "verwendung": "Rahmen normaler Karten und Zweitknöpfe, Griff des Popups (UiKit.CARD_LINE). Seit 17. Nov. 2026 heller (vorher #4b3a82): mindestens 3:1 auf `night` und `violet`."},
+    {"name": "Kartenschatten", "token": "card-shadow", "hex": "#2a0f55", "verwendung": "Harter Versatzschatten normaler Karten (6 px)."},
+    {"name": "Leer-Nummer", "token": "empty-num", "hex": "#8f80bd", "verwendung": "Nummern und Plus in leeren Slots, auf `night` und `violet`."},
+    {"name": "Fokus", "token": "focus", "hex": "#fff3a8", "verwendung": "Fokusrahmen (3 px) auf allen Knoepfen, Reitern und Tabs."},
+    {"name": "Gut", "token": "good", "hex": "#5cf2a2", "verwendung": "Positiv: Heilung, Sieg, Bonus. Immer mit Wort oder Symbol (check, heal)."},
+    {"name": "Schlecht", "token": "bad", "hex": "#ff5c7c", "verwendung": "Negativ: Schaden, Niederlage, fehlende Mittel. Immer mit Wort oder Symbol (cross, vulnerable)."},
+    {"name": "Warnung", "token": "warn", "alias": "yellow", "hex": "#ffe14d", "verwendung": "Warnung, gleich `yellow` (UiKit.WARN)."},
+    {"name": "Neon Platte", "token": "neon-plate", "hex": "#1a1820", "verwendung": "Neon Ninja's: Platte (fast schwarz)."},
+    {"name": "Neon Metall", "token": "neon-metal", "hex": "#423c52", "verwendung": "Neon Ninja's: Metall."},
+    {"name": "Neon Neonrot", "token": "neon-red", "hex": "#ff2a55", "verwendung": "Neon Ninja's: Akzent und Kontur (Neonrot)."},
+    {"name": "Neon Orange", "token": "neon-orange", "hex": "#ff9a3d", "verwendung": "Neon Ninja's: Zweitakzent."},
+    {"name": "Solar Laubgrün", "token": "solar-leaf", "hex": "#3f7a3a", "verwendung": "Solar Sentients: Platte (Laubgruen)."},
+    {"name": "Solar Rinde", "token": "solar-bark", "hex": "#8a6440", "verwendung": "Solar Sentients: Metall (Rinde)."},
+    {"name": "Solar Blütenrosa", "token": "solar-pink", "hex": "#ff6fae", "verwendung": "Solar Sentients: Akzent und Kontur (Bluetenrosa)."},
+    {"name": "Solar Pollengelb", "token": "solar-pollen", "hex": "#fff27a", "verwendung": "Solar Sentients: Zweitakzent (Pollengelb)."},
+    {"name": "Mecha Maschinenrot", "token": "mecha-red", "hex": "#a3121c", "verwendung": "Mega Mechas: Platte (Maschinenrot)."},
+    {"name": "Mecha Schwarz", "token": "mecha-black", "hex": "#232325", "verwendung": "Mega Mechas: Metall (Schwarz)."},
+    {"name": "Mecha Absperrstreifen", "token": "mecha-stripe", "hex": "#d4a017", "verwendung": "Mega Mechas: gelb-schwarze Absperrstreifen, matt."},
+    {"name": "Mecha Glühen", "token": "mecha-glow", "hex": "#b8860b", "verwendung": "Mega Mechas: kaum Gluehen."},
+    {"name": "Mecha Kontur", "token": "mecha-line", "hex": "#8a6a12", "verwendung": "Mega Mechas: Kontur (gedecktes Gelb)."},
+    {"name": "Hipstar Platte", "token": "hipstar-plate", "hex": "#2a1446", "verwendung": "Hipstar Hackers: Platte (Violett)."},
+    {"name": "Hipstar Metall", "token": "hipstar-metal", "hex": "#3ad6e0", "verwendung": "Hipstar Hackers: Metall (Cyan)."},
+    {"name": "Hipstar Akzent", "token": "hipstar-glow", "alias": "magenta", "hex": "#ff2bd6", "verwendung": "Hipstar Hackers: Akzent und Kontur (Magenta)."},
+    {"name": "Abdunklung", "token": "scrim", "hex": "#05000f", "alpha": 0.72, "verwendung": "Abdunklung hinter Popups, Blaettern und dem Story-Dialog."},
+    {"name": "Stufe Leicht", "token": "tier-light", "alias": "cyan", "hex": "#2ee3eb", "verwendung": "Kampfkarte: Leicht (Kreis). Seit 17. Nov. 2026 Cyan statt Grün."},
+    {"name": "Stufe Normal", "token": "tier-normal", "alias": "orange", "hex": "#ff6a3d", "verwendung": "Kampfkarte: Normal (Raute). Seit 17. Nov. 2026 Orange statt Gelb -- Gelb bleibt der Auswahl."},
+    {"name": "Stufe Elite", "token": "tier-elite", "alias": "magenta", "hex": "#ff2bd6", "verwendung": "Kampfkarte: Elite (Stern). Seit 17. Nov. 2026 Magenta statt Rot."},
+    {"name": "Stufe Chaos", "token": "tier-chaos", "hex": "#c58cff", "verwendung": "Kampfkarte: Chaos-Knoten im Endlos-Modus (Fragezeichen). Stufen immer mit Symbol tier_* und Wort, nie nur Farbe."},
+    {"name": "Mecha-Cache Linie", "token": "cache-mecha", "hex": "#9a93b8", "verwendung": "Mecha Cache: Linien der grauen Kiste (Akzent `orange`, Streifen `yellow`)."},
+    {"name": "Cache Rumpf", "token": "cache-fill", "hex": "#1a0a33", "verwendung": "Rumpf von Neon und Hipstar Cache."},
+    {"name": "Cache Deckel", "token": "cache-lid", "hex": "#2a1046", "verwendung": "Deckel von Neon und Hipstar Cache."},
+    {"name": "Solar-Cache Füllung", "token": "cache-solar-fill", "hex": "#0f2a1c", "verwendung": "Kuppel und Schale des Solar Cache (Linien `good`, Sonne `yellow`)."},
+    {"name": "Mecha-Cache Rumpf", "token": "cache-mecha-fill", "hex": "#2a2540", "verwendung": "Rumpf des Mecha Cache."},
+    {"name": "Mecha-Cache Deckel", "token": "cache-mecha-lid", "hex": "#3a3458", "verwendung": "Deckel des Mecha Cache."},
+    {"name": "Modul Angriff", "token": "module-attack", "hex": "#ff7366", "verwendung": "Modulklasse Angriff: Rand des Modul-Chips (ModuleData.CLASS_COLOR), Zeichen Spitze (class_attack)."},
+    {"name": "Modul Abwehr", "token": "module-defense", "hex": "#66b3ff", "verwendung": "Modulklasse Abwehr: Rand des Modul-Chips, Zeichen Bogen (class_defense)."},
+    {"name": "Modul Taktik", "token": "module-tactic", "hex": "#ffd159", "verwendung": "Modulklasse Taktik: Rand des Modul-Chips, Zeichen Punkt (class_tactic)."},
+    {"name": "Modul BIOS", "token": "module-bios", "hex": "#c78cff", "verwendung": "Matrix-BIOS: Rand des Chips, Zeichen bios."},
+    {"name": "Modul-Chip Grund", "token": "module-fill", "hex": "#1a0b36", "verwendung": "Grund der Modul-Kartusche (seit 18. Nov. 2026, vorher graublau #141a24)."},
+    {"name": "Team Spieler", "token": "team-player", "hex": "#4db8f2", "verwendung": "Kampf: Ring, Namen und Schussspuren des eigenen Squads (Teams.PLAYER)."},
+    {"name": "Team Gegner", "token": "team-enemy", "hex": "#f26b61", "verwendung": "Kampf: Ring, Namen und Schussspuren der Gegner (Teams.ENEMY)."},
+    {"name": "Integrität Spieler", "token": "hp-player", "hex": "#39ff88", "verwendung": "Kampf: Integrität des eigenen Squads, lebendiges Cyber-Grün (Teams.PLAYER_HP). Seit 17. Nov. 2026; hell, damit es sich auch bei Rot-Grün-Schwäche vom Gegner-Rot abhebt (3,6:1)."},
+    {"name": "Schild Spieler", "token": "shield-player", "hex": "#7cc8ff", "verwendung": "Kampf: Schild des eigenen Squads, Hellblau (Teams.PLAYER_SHIELD)."},
+    {"name": "Integrität Gegner", "token": "hp-enemy", "hex": "#e01a2e", "verwendung": "Kampf: Integrität der Gegner, sattes Rot (Teams.ENEMY_HP), dunkler als das eigene Grün."},
+    {"name": "Schild Gegner", "token": "shield-enemy", "hex": "#8a46f0", "verwendung": "Kampf: Schild der Gegner, dunkleres Violett (Teams.ENEMY_SHIELD), noch 3,9:1 auf dem Balkengrund."},
+    {"name": "Überschild", "token": "overshield", "hex": "#efe3ff", "verwendung": "Kampf: Überschild (Schild über dem Maximum, bis +50 %) als heller Rahmen außen um den Schildteil des Balkens -- links immer ganz, oben und unten so weit, wie er gefüllt ist; voll = rundum (Teams.OVERSHIELD)."},
+    {"name": "Takt", "token": "takt", "hex": "#ffd159", "verwendung": "Kampf: Takt-Leiste unter dem Balken -- gezaehlte Angriffe bis zur Faehigkeit."},
+    {"name": "Takt bereit", "token": "takt-ready", "hex": "#ffffd9", "verwendung": "Kampf: Takt-Leiste voll, der naechste Angriff ist die Faehigkeit."},
+    {"name": "Gefahr", "token": "danger", "hex": "#ff4033", "verwendung": "Kampf: pulsierender Rand um den Balken unter 25 % Integritaet."},
+    {"name": "Gelockt", "token": "lured", "hex": "#ff9e26", "verwendung": "Kampf: Markierung eines gelockten DROMEs (Koeder, Molok)."}
+  ],
+
+  "design_schriften": [
+    {"schrift": "Bungee", "einsatz": "Logo CYBERDROME, Knöpfe, Slot-Nummern, TAP", "groessen": "Logo 50 px (Titel) / 36 px (Slots), Knöpfe 19 px, Nummer 26 px", "quelle": "Google Fonts (frei)"},
+    {"schrift": "Chakra Petch 500-700", "einsatz": "alles andere: Etiketten, Überschriften, Fließtext", "groessen": "Überschrift 18 px, Slot-Name 19 px, Text 15 px, Etikett 13-14 px, Laufband 11-12 px", "quelle": "Google Fonts (frei)"}
+  ],
+
+  "design_bildschirme": [
+    {"bildschirm": "Titelbildschirm (NEU)", "inhalt": "Erster Bildschirm vor der Spielstand-Wahl. Etikett PLAYER 1 · READY, schräges Glitch-Logo CYBER/DROME, Synthwave-Sonne mit Schlitzen über Bergsilhouette und Cyan-Gitterboden, zwei gegenläufige Laufbänder (DEATH ROBOT ◆ OMNI MACHINE ◆ EXECUTOR / AUTOBATTLER ✕ NEON CITY), unten sechseckiger TAP-Knopf mit drehendem Ring und IRGENDWO TIPPEN. Tippen irgendwo -> Spielstand wählen.", "status": "gebaut"},
+    {"bildschirm": "Spielstand wählen (neu gestaltet)", "inhalt": "Kopf: Zurück-Pfeil zum Titel, Etikett SAVE SELECT. Glitch-Logo, Überschrift SPIELSTAND WÄHLEN. Drei Slot-Karten mit abgeschrägten Ecken: Nummer 01-03, SLOT n, Kennzeichen ZULETZT, Zeile mit DROMEs / Squad / Ø Level und Zeile mit dem Stand. Knopf Weiterspielen ▶ (gelb) bzw. Neues Spiel + (gelber Rahmen). LÖSCHEN mit Nachfrage durch zweites Tippen. Statusmeldung mit blinkendem Cursor. Fußtext: jeder Slot hat eigenen Hangar und Level, Speichern automatisch.", "status": "gebaut"},
+    {"bildschirm": "Übrige Bildschirme", "inhalt": "Entwurf des Spielers vom 15. Nov. 2026 (docs/design/einsatz_arcade, 24 Bilder) umgesetzt: Startseite, Hangar Squad/Umbau, Waffen-Karte als Blatt von unten, Kampfkarte, Aufstellung, Kampf, Virus, Ergebnis, Zwischenstopp, Einsatz geschafft/gescheitert, Caches-Lager, Cache öffnen (Vorschau), Shop, Optionen, Story-Dialog (Baustein).", "status": "gebaut"},
+    {"bildschirm": "Gemeinsame Bausteine (Entwurf 15. Nov.)", "inhalt": "Kopfzeile mit Glitch-Titel in Bungee (gedreht), Reiter als Segmentknopf oben rechts (aktiv Cyan), Zahnrad daneben. Tab-Leiste mit Symbolen (assets/ui_icons), aktive Seite Cyan mit Strich oben. Karten Violett mit Rahmen und hartem Schatten 6 px (hervorgehoben Cyan/Magenta). Zweitknöpfe mit farbigem Rahmen (ZUM HANGAR, REZEPTBUCH). Popups mit Titel in Bungee, Waffen-Karte als Blatt von unten mit gelbem Etikett.", "status": "gebaut"}
+  ],
+
+  "design_effekte": [
+    {"effekt": "Glitch", "wirkung": "Logo dreifach: Cyan und Magenta versetzt (Bildschirm-Mischung), springt alle 3,2-4 s kurz und zerschneidet sich", "status": "entschieden"},
+    {"effekt": "Scanlines", "wirkung": "feine dunkle Querlinien über dem ganzen Bild (alle 3 px, 16-18 %)", "status": "entschieden"},
+    {"effekt": "Laufbänder", "wirkung": "zwei schräge Textbänder, gegenläufig (22 s / 28 s je Durchlauf)", "status": "entschieden"},
+    {"effekt": "Sonne", "wirkung": "Verlauf Gelb -> Orange -> Magenta, unten in Streifen geschnitten, schwebt sanft", "status": "entschieden"},
+    {"effekt": "TAP-Knopf", "wirkung": "pulsiert (1,4 s), gestrichelter Ring dreht sich (7 s)", "status": "entschieden"},
+    {"effekt": "Slots einblenden", "wirkung": "gleiten von links herein (0,3 s)", "status": "entschieden"},
+    {"effekt": "Weniger Bewegung", "wirkung": "bei der Systemeinstellung ‚Bewegung reduzieren‘ stehen alle Animationen still", "status": "entschieden"},
+    {"effekt": "Formensprache", "wirkung": "abgeschrägte Ecken (12-14 px), harte Versatzschatten (6 px), schräge Etiketten (-3° bis +2°), Fokusrahmen gelb", "status": "entschieden"}
+  ],
+
+  "design_tokens": {
+    "_kommentar": "Alle Design-Tokens ausser den Farben (die stehen in design_farben). build_spot.py schreibt daraus docs/design/tokens.json fuer das Design-System.",
+    "name": "CyberDrome Arcade-Glitch",
+    "themes": [{"id": "night", "name": "Nacht"}],
+    "type": {
+      "fonts": [
+        {"family": "Bungee", "file": "fonts/Bungee-Regular.ttf", "weight": "400", "style": "normal"},
+        {"family": "Chakra Petch", "file": "fonts/ChakraPetch-Medium.ttf", "weight": "500", "style": "normal"},
+        {"family": "Chakra Petch", "file": "fonts/ChakraPetch-Bold.ttf", "weight": "700", "style": "normal"}
+      ],
+      "families": {"display": "Bungee, \"Arial Black\", sans-serif", "sans": "\"Chakra Petch\", \"Segoe UI\", sans-serif"},
+      "groups": [
+        {"name": "Display", "family": "display", "styles": [
+          {"name": "logo", "fontSize": "50px", "lineHeight": "50px", "fontWeight": 400, "sample": "CYBERDROME", "usage": "Glitch-Logo auf dem Titel (dreifach: weiss, Cyan und Magenta versetzt)."},
+          {"name": "logo-small", "fontSize": "36px", "lineHeight": "38px", "fontWeight": 400, "sample": "CYBERDROME", "usage": "Logo auf der Spielstand-Wahl."},
+          {"name": "screen-title", "fontSize": "28px", "lineHeight": "32px", "fontWeight": 400, "sample": "HANGAR", "usage": "Glitch-Titel der Kopfzeile, leicht gedreht (UiKit.H1)."},
+          {"name": "slot-number", "fontSize": "26px", "lineHeight": "28px", "fontWeight": 400, "sample": "01", "usage": "Slot-Nummern, grosse Zahlen (Kampfwert, Squad 4/4)."},
+          {"name": "name", "fontSize": "22px", "lineHeight": "26px", "fontWeight": 400, "sample": "VIREO", "usage": "DROME-Namen in Karten (UiKit.H2)."},
+          {"name": "button", "fontSize": "19px", "lineHeight": "22px", "fontWeight": 400, "letterSpacing": "0.05em", "sample": "ZUR KARTE", "usage": "Hauptknopf, immer GROSS."},
+          {"name": "button-outline", "fontSize": "16px", "lineHeight": "20px", "fontWeight": 400, "letterSpacing": "0.04em", "sample": "REZEPTBUCH", "usage": "Zweitknopf mit farbigem Rahmen, immer GROSS."}
+        ]},
+        {"name": "Text", "family": "sans", "styles": [
+          {"name": "body-lg", "fontSize": "18px", "lineHeight": "24px", "fontWeight": 500, "sample": "Jeder 3. Angriff: Doppelschnitt", "usage": "Standard-Fliesstext der Bildschirme (UiKit.BODY)."},
+          {"name": "heading", "fontSize": "18px", "lineHeight": "22px", "fontWeight": 700, "letterSpacing": "0.12em", "sample": "ALLE DROMES", "usage": "Zwischentitel in `cyan`, GROSS."},
+          {"name": "slot-name", "fontSize": "19px", "lineHeight": "24px", "fontWeight": 700, "sample": "Klingenarm", "usage": "Slot- und Teilenamen."},
+          {"name": "small", "fontSize": "16px", "lineHeight": "21px", "fontWeight": 500, "sample": "Antippen zeigt Details", "usage": "Nebentext (UiKit.SMALL)."},
+          {"name": "text", "fontSize": "15px", "lineHeight": "20px", "fontWeight": 500, "sample": "Speichern automatisch", "usage": "Text im Arcade-Baukasten (Titel, Spielstand)."},
+          {"name": "label", "fontSize": "13px", "lineHeight": "16px", "fontWeight": 700, "letterSpacing": "0.24em", "sample": "IM SQUAD", "usage": "Schraege Etiketten auf `yellow` und Reiter (13-14 px)."},
+          {"name": "tab", "fontSize": "12px", "lineHeight": "14px", "fontWeight": 700, "letterSpacing": "0.16em", "sample": "HANGAR", "usage": "Namen in der Tab-Leiste unter dem Symbol."},
+          {"name": "ticker", "fontSize": "11px", "lineHeight": "14px", "fontWeight": 700, "letterSpacing": "0.2em", "sample": "DEATH ROBOT  OMNI MACHINE  EXECUTOR", "usage": "Laufbaender auf dem Titel (11-12 px)."}
+        ]}
+      ]
+    },
+    "spacing": {"tokens": [
+      {"name": "space-2", "value": "2px", "usage": "Innenrand der Segment-Schiene."},
+      {"name": "space-6", "value": "6px", "usage": "Abstand der Zeilen in einer Karte."},
+      {"name": "space-gap", "value": "12px", "usage": "Abstand zwischen Karten und Knoepfen (UiKit.GAP); Innenrand der Knoepfe."},
+      {"name": "space-card", "value": "14px", "usage": "Innenrand der Karten."},
+      {"name": "space-pad", "value": "16px", "usage": "Seitenrand der Bildschirme (UiKit.PAD)."}
+    ]},
+    "size": {"tokens": [
+      {"name": "button-height", "value": "56px", "usage": "Mindesthoehe grosser Knoepfe (Arcade-Knopf 54 px)."},
+      {"name": "tap-min", "value": "44px", "usage": "Mindesthoehe kleiner Knoepfe, Reiter, Textknoepfe."},
+      {"name": "tab-height", "value": "64px", "usage": "Hoehe der Tab-Leiste."},
+      {"name": "icon", "value": "24px", "usage": "Rastergroesse der UI-Symbole; Anzeige 16-52 px."},
+      {"name": "design-width", "value": "450px", "usage": "Entwurfsbreite Handy hochkant (Entwurfsraum 450 x 800)."},
+      {"name": "max-column", "value": "640px", "usage": "Hoechstbreite der Inhaltsspalte im Querformat."}
+    ]},
+    "radius": {"note": "Arcade-Ecken sind ABGESCHRAEGT, nicht rund: nur oben links und unten rechts, gerade Kante (corner_detail 1). In CSS per clip-path, siehe bundle.css .cd-chamfer.", "tokens": [
+      {"name": "chamfer-lg", "value": "14px", "usage": "Grosse Arcade-Knoepfe (Titel, Spielstand)."},
+      {"name": "chamfer-md", "value": "12px", "usage": "Knoepfe der Bildschirme (UiKit.RADIUS)."},
+      {"name": "chamfer-sm", "value": "10px", "usage": "Segment-Schiene."},
+      {"name": "chamfer-xs", "value": "9px", "usage": "Einzelner Reiter im Segmentknopf."},
+      {"name": "square", "value": "0px", "usage": "Karten, Kacheln, Etiketten, Zweitknoepfe: eckig."}
+    ]},
+    "shadow": {"note": "Nur harte Versatzschatten, nie weich.", "tokens": [
+      {"name": "shadow-card", "value": "6px 6px 0 0 #2a0f55", "usage": "Normale Karte."},
+      {"name": "shadow-card-hi", "value": "6px 6px 0 0 #ff2bd6", "usage": "Hervorgehobene Karte (Rahmen `cyan`)."},
+      {"name": "shadow-primary", "value": "5px 5px 0 0 rgba(255, 43, 214, 0.75)", "usage": "Hauptknopf auf `yellow`."}
+    ]},
+    "border": {"tokens": [
+      {"name": "line", "value": "2px", "usage": "Rahmen von Karten, Kacheln, Zweitknoepfen."},
+      {"name": "line-focus", "value": "3px", "usage": "Fokusrahmen in `focus`."},
+      {"name": "line-tab", "value": "3px", "usage": "Strich ueber dem aktiven Tab (76 % Breite)."}
+    ]},
+    "opacity": {"tokens": [
+      {"name": "card-alpha", "value": "0.94", "usage": "Deckkraft der Karten: die Kulisse scheint durch."},
+      {"name": "dots-alpha", "value": "0.22", "usage": "Punktraster auf Bildschirmen (Titel 0.35)."},
+      {"name": "scanline-alpha", "value": "0.18", "usage": "Scanlines alle 3 px (16-18 %)."}
+    ]},
+    "rotation": {"tokens": [
+      {"name": "tilt-tag", "value": "-3deg", "usage": "Schraege Etiketten (-3 bis +2 Grad)."},
+      {"name": "tilt-title", "value": "-2deg", "usage": "Glitch-Titel der Kopfzeile."}
+    ]}
+  }
+}

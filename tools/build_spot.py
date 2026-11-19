@@ -1,8 +1,19 @@
 #!/usr/bin/env python3
-"""Baut die SPOT-Tabelle docs/spot/CyberDrome_SPOT.xlsx.
+"""Baut die SPOT-Tabellen docs/spot/CyberDrome_SPOT_*.xlsx.
 
-SPOT = Single Point of Truth fuer alle inhaltlichen Daten des Spiels in einer
-fuer Menschen lesbaren Excel-Datei. Gelesen wird ausschliesslich, was das Spiel
+SPOT = Single Point of Truth fuer alle inhaltlichen Daten des Spiels in vier
+fuer Menschen lesbaren Excel-Dateien (seit 19. Nov. 2026, vorher eine):
+
+  CyberDrome_SPOT_Entscheidungen.xlsx  Eckpunkte, Fragen, offene Punkte, Glossar
+  CyberDrome_SPOT_Balance.xlsx         Regeln, Level, DROMEs, Waffen, Sentinels ...
+  CyberDrome_SPOT_Module.xlsx          Module, Rezepte, Rezept-Matrix, BIOS
+  CyberDrome_SPOT_Welt.xlsx            Fraktionen, Story, Formationen, Maps, Design ...
+
+Formeln zeigen nie in eine andere Datei: alles, was aufeinander rechnet
+(Regeln, Waffen, Einsatz, Sentinels, Gegner-DROMEs), liegt in der Balance.
+Die Aufteilung steht in FILES unten.
+
+Gelesen wird ausschliesslich, was das Spiel Gelesen wird ausschliesslich, was das Spiel
 selbst liest -- so kann die Tabelle nie vom Spiel abweichen:
 
   parts/*/*_south.json   DROMEs (Chassis, Kopf, Kern, Antrieb) und Waffen
@@ -10,18 +21,19 @@ selbst liest -- so kann die Tabelle nie vom Spiel abweichen:
   data/modules.json      Grundmodule, Rezepte, BIOS, Laden
   data/regions.json      Stages / Gebiete und Fraktionsprofile
   data/encounters.json   Gegnertypen, Gegnerteams, Einheiten
-  docs/spot/inhalte.json Texte, die nicht in den Spieldaten stehen
-                         (Eckpunkte, Identitaeten, Story, Bosse, offene Punkte,
-                         Entwurf: Einsatz, Lootcaches, Sentinels, Formationen,
-                         Design-Farben und Design-Tokens)
+  docs/spot/inhalte/*.json  Texte, die nicht in den Spieldaten stehen, je Thema:
+                         entscheidungen (Eckpunkte, Fragen, offene Punkte, Glossar),
+                         balance (Identitaeten, Rollen, Einsatz, Sentinels),
+                         welt (Fraktionen, Story, Bosse, Lootcaches, Maps),
+                         design (Design-Farben und Design-Tokens)
 
 Daneben entsteht docs/design/tokens.json: die Design-Tokens (Farben aus
 design_farben, alles andere aus design_tokens) fuer das Design-System
 "CyberDrome Arcade-Glitch". Auch sie prueft --check.
 
 Aufruf:
-  python3 tools/build_spot.py           # Tabelle neu schreiben
-  python3 tools/build_spot.py --check   # nur pruefen, ob sie aktuell ist (CI)
+  python3 tools/build_spot.py           # Tabellen neu schreiben
+  python3 tools/build_spot.py --check   # nur pruefen, ob sie aktuell sind (CI)
 
 Nach JEDER Aenderung an den Dateien oben neu bauen und mit einchecken.
 """
@@ -40,7 +52,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "docs", "spot", "CyberDrome_SPOT.xlsx")
+SPOT_DIR = os.path.join(ROOT, "docs", "spot")
 TOKENS_OUT = os.path.join(ROOT, "docs", "design", "tokens.json")
 
 
@@ -53,7 +65,23 @@ CONFIG = load("data/config.json")
 MODULES = load("data/modules.json")
 REGIONS = load("data/regions.json")
 FORMATIONS = load("data/formations.json")
-TEXTE = load("docs/spot/inhalte.json")
+TEXTE_DATEIEN = ["entscheidungen", "balance", "welt", "design"]
+
+
+def load_texte():
+    """Fuegt docs/spot/inhalte/*.json zu einem Woerterbuch zusammen."""
+    out = {}
+    for name in TEXTE_DATEIEN:
+        for k, v in load(f"docs/spot/inhalte/{name}.json").items():
+            if k.startswith("_"):
+                continue
+            if k in out:
+                raise SystemExit(f"Schluessel {k} steht doppelt in docs/spot/inhalte/")
+            out[k] = v
+    return out
+
+
+TEXTE = load_texte()
 
 # ---------------------------------------------------------------------------
 # Teile einlesen (Suedansicht genuegt, die Werte sind je Richtung gleich)
@@ -452,17 +480,18 @@ def build_regeln(ws):
     write_table(ws, ["Datei", "Schluessel", "Wert", "Bedeutung"], rows, [18, 46, 22, 70])
 
 
-def build_uebersicht(ws):
-    ws["A1"] = "CyberDrome -- SPOT (Single Point of Truth)"
+def build_uebersicht(ws, datei):
+    ws["A1"] = f"CyberDrome -- SPOT {datei['titel']}"
     ws["A1"].font = TITLE_FONT
     lines = [
-        "Alle inhaltlich relevanten Daten des Spiels in einer Datei. Diese Tabelle wird NICHT von Hand bearbeitet,",
-        "sondern von tools/build_spot.py aus genau den Dateien erzeugt, die das Spiel selbst liest -- so stimmt sie immer.",
-        "Aendern: Werte in parts/ (ueber tools/build_sample_parts.py) oder data/*.json, Texte in docs/spot/inhalte.json,",
-        "dann: python3 tools/build_spot.py  -- die CI prueft mit --check, dass die Tabelle aktuell ist.",
+        "Die SPOT (Single Point of Truth) besteht aus vier Dateien, diese ist eine davon. Sie wird NICHT von Hand",
+        "bearbeitet, sondern von tools/build_spot.py aus genau den Dateien erzeugt, die das Spiel selbst liest.",
+        "Aendern: Werte in parts/ (ueber tools/build_sample_parts.py) oder data/*.json, Texte in "
+        f"docs/spot/inhalte/*.json (fuer diese Datei: {datei['texte']}),",
+        "dann: python3 tools/build_spot.py  -- die CI prueft mit --check, dass alle vier aktuell sind.",
         "Texte aus den Spieldaten stehen so wie im Spiel (ohne Umlaute, z. B. 'Praesenz').",
-        "Hellblaue Felder (Blaetter Einsatz, Lootcaches, Hangar-Shop, Sentinels, Gegner-DROMEs, Formationen): hier "
-        "traegst du Werte ein und gibst die Datei zurueck -- sie werden dann nach docs/spot/inhalte.json uebertragen.",
+        "Hellblaue Felder: hier traegst du Werte ein und gibst die Datei zurueck -- sie werden dann nach "
+        "docs/spot/inhalte/ uebertragen.",
     ]
     for i, t in enumerate(lines, 2):
         ws.cell(row=i, column=1, value=t).font = BODY_FONT
@@ -479,10 +508,13 @@ def build_uebersicht(ws):
         c.font = BODY_FONT
         c.border = BORDER
         r += 1
-    ws.cell(row=r + 1, column=1, value="Blaetter").font = SUB_FONT
-    rows = [(name, text) for name, text in SHEETS_INFO]
-    write_table(ws, ["Blatt", "Inhalt"], rows, start_row=r + 2)
-    ws.column_dimensions["A"].width = 22
+    ws.cell(row=r + 1, column=1, value="Blaetter in dieser Datei").font = SUB_FONT
+    rows = [(name, text) for name, text, _ in datei["blaetter"]]
+    last = write_table(ws, ["Blatt", "Inhalt"], rows, start_row=r + 2)
+    ws.cell(row=last + 2, column=1, value="Die anderen SPOT-Dateien").font = SUB_FONT
+    rows = [(f["datei"], ", ".join(n for n, _, _ in f["blaetter"])) for f in FILES if f is not datei]
+    write_table(ws, ["Datei", "Blaetter"], rows, start_row=last + 3)
+    ws.column_dimensions["A"].width = 36
     ws.column_dimensions["B"].width = 110
 
 
@@ -834,7 +866,7 @@ def build_glossar(ws):
 
 # ---------------------------------------------------------------------------
 # Neues Spielprinzip (12./13. Nov. 2026, docs/GEGNERDESIGN.md) -- noch nicht
-# gebaut. Daten aus docs/spot/inhalte.json, hellblaue Spalten fuellt der Spieler.
+# gebaut. Daten aus docs/spot/inhalte/, hellblaue Spalten fuellt der Spieler.
 # ---------------------------------------------------------------------------
 
 VIRUS = {}  # id -> Zelle auf "Einsatz" (fuer Formeln)
@@ -939,7 +971,7 @@ def build_sentinels(ws):
                "Integritaet", "Schild", "Integritaet + Schild", "Schildpuls", "Ruestung", "Power", "Modulplaetze",
                "Schaden/s roh (Waffe x Power)", "Virusschaden je Puls", "Module Elite / Heavy Elite", "Status"]
     rows = []
-    # Seit 14. Nov. 2026 aus data/formations.json (gebaut), nicht mehr aus inhalte.json.
+    # Seit 14. Nov. 2026 aus data/formations.json (gebaut), nicht mehr aus inhalte/.
     for i, (sid, s) in enumerate(FORMATIONS["sentinels"].items(), 2):
         st = s["stats"]
         rows.append([s["name"], s["faction"], ARCHE_NAMES.get(s["archetype"], s["archetype"]), part_name(s["weapon"]),
@@ -1157,7 +1189,7 @@ def design_tokens():
     """Die Design-Tokens fuer das Design-System (docs/design/tokens.json)."""
     t = TEXTE["design_tokens"]
     out = {"name": t["name"], "version": 1,
-           "meta": {"source": "SPOT", "paths": {"tokens": ["docs/spot/inhalte.json"]},
+           "meta": {"source": "SPOT", "paths": {"tokens": ["docs/spot/inhalte/design.json"]},
                     "note": "Erzeugt von tools/build_spot.py -- nicht von Hand bearbeiten."},
            "color": {"themes": t["themes"],
                      "tokens": [{"name": f["token"], "value": color_value(f), "usage": f["verwendung"]}
@@ -1194,52 +1226,69 @@ def build_design(ws):
             "Quelle des Design-Systems CyberDrome Arcade-Glitch.").font = BODY_FONT
 
 
-SHEETS = [
-    ("Uebersicht", "Wie die Tabelle gepflegt wird, Legende", build_uebersicht),
-    ("Eckpunkte", "Alle festgehaltenen Entscheidungen mit Datum und Status", build_eckpunkte),
-    ("Fragen", "Beantwortet (14. Nov.): Detailfragen fuer die Schritte 1-3 -- umgesetzt am 14. Nov.", build_fragen),
-    ("Einsatz", "GEBAUT (14. Nov.): Einsatz, Virusschaden, Kampfkarte, wann ein Lootcache droppt", build_einsatz),
-    ("Lootcaches", "TEILS GEBAUT: Caches droppen und landen im Hangar; Inhalt und Oeffnen folgen", build_lootcaches),
-    ("Hangar-Shop", "NEU (nicht gebaut): Upgrades und Caches fuer Platzhaltercoin", build_hangar),
-    ("Sentinels", "GEBAUT (14. Nov.): Gegner-Bots je Fraktion und Archetyp, Raenge -- aus data/formations.json", build_sentinels),
-    ("Gegner-DROMEs", "GEBAUT (14. Nov.): die DROMEs der Gegner-Squads -- aus data/formations.json", build_gegner_dromes),
-    ("Formationen", "GEBAUT (14. Nov., Vorschlag Neon): Formationen je Reinforcement-Level, Varianten", build_formationen),
-    ("Maps", "OFFEN: Arenen zeichnen -- Frontline, Mittellinie, Backline, Umrisse (quadratische Zellen)", build_maps),
-    ("Design", "GEBAUT (14. Nov.): Arcade-Glitch-Stil auf allen Bildschirmen -- Farben, Schriften, Formen", build_design),
-    ("DROMEs", "Die DROMEs: Rolle, Identitaet, Werte, Passive, Level, BIOS, Bauteile", build_dromes),
-    ("Waffen", "Alle Waffen: Angriff, Faehigkeit, Takt, Bonus-Wert (Passive), Besonderheit", build_waffen),
-    ("Passiven", "Alle Passiven: DROMEs, Waffen-Bonus, Chassis-BIOS, Fraktions-Vorschlaege", build_passiven),
-    ("Module", "Die 9 Grundmodule", build_module),
-    ("Rezepte", "Die Rezepte aus je zwei Grundmodulen", build_rezepte),
-    ("Rezept-Matrix", "Welche zwei Grundmodule welches Rezept ergeben", build_matrix),
-    ("BIOS", "Matrix-BIOS: Rezept-Upgrades", build_bios),
-    ("Fraktionen", "Fraktionen, Profile, Besonderheiten, Vorschlaege", build_fraktionen),
-    ("Stages", "Gebiete / Stages mit Fraktion und Boden", build_stages),
-    ("Story", "Aufhaenger, Story-Level, Bosse (Vorschlaege)", build_story),
-    ("Einheiten", "Gebaut: alle Gegner-Einheiten (DROMEs und Sentinels) und in welchen Formationen sie auftreten", build_einheiten),
-    ("Rollen", "KI-Rollen und Zielregeln", build_rollen),
-    ("Lauf", "Heute gebaut: der Lauf Runde fuer Runde, Stufen und Beute -- abgeloest durch Einsatz", build_lauf),
-    ("Level", "Level von DROMEs und Waffen", build_level),
-    ("Regeln", "Alle Stellschrauben aus config.json und modules.json", build_regeln),
-    ("Teile", "Alle Bauteile mit Code", build_teile),
-    ("Offene Punkte", "Was noch entschieden werden muss", build_offen),
-    ("Glossar", "Begriffe", build_glossar),
+# Die vier SPOT-Dateien. Formeln zeigen nur innerhalb einer Datei: Sentinels,
+# Gegner-DROMEs und DROMEs rechnen mit Regeln, Waffen und Einsatz -- alle in der Balance.
+FILES = [
+    {"id": "entscheidungen", "titel": "Entscheidungen", "datei": "CyberDrome_SPOT_Entscheidungen.xlsx", "texte": "entscheidungen.json", "blaetter": [
+        ("Eckpunkte", "Alle festgehaltenen Entscheidungen mit Datum und Status", build_eckpunkte),
+        ("Fragen", "Beantwortet (14. Nov.): Detailfragen fuer die Schritte 1-3 -- umgesetzt am 14. Nov.", build_fragen),
+        ("Offene Punkte", "Was noch entschieden werden muss", build_offen),
+        ("Glossar", "Begriffe", build_glossar),
+    ]},
+    {"id": "balance", "titel": "Kampf-Balance", "datei": "CyberDrome_SPOT_Balance.xlsx", "texte": "balance.json", "blaetter": [
+        ("Regeln", "Alle Stellschrauben aus config.json und modules.json", build_regeln),
+        ("Level", "Level von DROMEs und Waffen", build_level),
+        ("Rollen", "KI-Rollen und Zielregeln", build_rollen),
+        ("DROMEs", "Die DROMEs: Rolle, Identitaet, Werte, Passive, Level, BIOS, Bauteile", build_dromes),
+        ("Teile", "Alle Bauteile mit Code", build_teile),
+        ("Waffen", "Alle Waffen: Angriff, Faehigkeit, Takt, Bonus-Wert (Passive), Besonderheit", build_waffen),
+        ("Passiven", "Alle Passiven: DROMEs, Waffen-Bonus, Chassis-BIOS, Fraktions-Vorschlaege", build_passiven),
+        ("Sentinels", "GEBAUT (14. Nov.): Gegner-Bots je Fraktion und Archetyp, Raenge -- aus data/formations.json", build_sentinels),
+        ("Gegner-DROMEs", "GEBAUT (14. Nov.): die DROMEs der Gegner-Squads -- aus data/formations.json", build_gegner_dromes),
+        ("Einsatz", "GEBAUT (14. Nov.): Einsatz, Virusschaden, Kampfkarte, wann ein Lootcache droppt", build_einsatz),
+    ]},
+    {"id": "module", "titel": "Module", "datei": "CyberDrome_SPOT_Module.xlsx", "texte": "keine, alles aus data/modules.json", "blaetter": [
+        ("Module", "Die 9 Grundmodule", build_module),
+        ("Rezepte", "Die Rezepte aus je zwei Grundmodulen", build_rezepte),
+        ("Rezept-Matrix", "Welche zwei Grundmodule welches Rezept ergeben", build_matrix),
+        ("BIOS", "Matrix-BIOS: Rezept-Upgrades", build_bios),
+    ]},
+    {"id": "welt", "titel": "Welt & Fortschritt", "datei": "CyberDrome_SPOT_Welt.xlsx", "texte": "welt.json, Design: design.json", "blaetter": [
+        ("Fraktionen", "Fraktionen, Profile, Besonderheiten, Vorschlaege", build_fraktionen),
+        ("Stages", "Gebiete / Stages mit Fraktion und Boden", build_stages),
+        ("Story", "Aufhaenger, Story-Level, Bosse (Vorschlaege)", build_story),
+        ("Einheiten", "Gebaut: alle Gegner-Einheiten (DROMEs und Sentinels) und in welchen Formationen sie auftreten", build_einheiten),
+        ("Formationen", "GEBAUT (14. Nov., Vorschlag Neon): Formationen je Reinforcement-Level, Varianten", build_formationen),
+        ("Maps", "OFFEN: Arenen zeichnen -- Frontline, Mittellinie, Backline, Umrisse (quadratische Zellen)", build_maps),
+        ("Lauf", "Heute gebaut: der Lauf Runde fuer Runde, Stufen und Beute -- abgeloest durch Einsatz", build_lauf),
+        ("Lootcaches", "TEILS GEBAUT: Caches droppen und landen im Hangar; Inhalt und Oeffnen folgen", build_lootcaches),
+        ("Hangar-Shop", "NEU (nicht gebaut): Upgrades und Caches fuer Platzhaltercoin", build_hangar),
+        ("Design", "GEBAUT (14. Nov.): Arcade-Glitch-Stil auf allen Bildschirmen -- Farben, Schriften, Formen", build_design),
+    ]},
 ]
-SHEETS_INFO = [(n, t) for n, t, _ in SHEETS]
 
 
 def build():
-    wb = Workbook()
-    wb.remove(wb.active)
-    sheets = {name: sheet(wb, name) for name, _, _ in SHEETS}
-    # Regeln zuerst fuellen: die Formeln der anderen Blaetter zeigen darauf.
+    """Baut alle vier Dateien; liefert [(Dateiinfo, Workbook)]."""
+    books = []
+    sheets = {}
+    for datei in FILES:
+        wb = Workbook()
+        wb.remove(wb.active)
+        sheets[("Uebersicht", datei["id"])] = sheet(wb, "Uebersicht")
+        for name, _, _ in datei["blaetter"]:
+            sheets[name] = sheet(wb, name)
+        wb.calculation.fullCalcOnLoad = True
+        books.append((datei, wb))
+    # Regeln und Einsatz zuerst fuellen: die Formeln der anderen Blaetter zeigen darauf.
     build_regeln(sheets["Regeln"])
     build_einsatz(sheets["Einsatz"])
-    for name, _, fn in SHEETS:
-        if fn not in (build_regeln, build_einsatz):
-            fn(sheets[name])
-    wb.calculation.fullCalcOnLoad = True
-    return wb
+    for datei, _ in books:
+        build_uebersicht(sheets[("Uebersicht", datei["id"])], datei)
+        for name, _, fn in datei["blaetter"]:
+            if fn not in (build_regeln, build_einsatz):
+                fn(sheets[name])
+    return books
 
 
 def snapshot(wb):
@@ -1258,27 +1307,33 @@ def snapshot(wb):
 
 
 def main():
-    wb = build()
+    books = build()
     if "--check" in sys.argv:
-        if not os.path.exists(OUT):
-            print(f"FEHLT: {OUT} -- bitte python3 tools/build_spot.py ausfuehren")
-            return 1
-        if snapshot(load_workbook(OUT)) != snapshot(wb):
-            print("VERALTET: docs/spot/CyberDrome_SPOT.xlsx passt nicht zu den Daten -- "
-                  "bitte python3 tools/build_spot.py ausfuehren und einchecken")
-            return 1
+        ok = True
+        for datei, wb in books:
+            path = os.path.join(SPOT_DIR, datei["datei"])
+            if not os.path.exists(path):
+                print(f"FEHLT: docs/spot/{datei['datei']} -- bitte python3 tools/build_spot.py ausfuehren")
+                ok = False
+            elif snapshot(load_workbook(path)) != snapshot(wb):
+                print(f"VERALTET: docs/spot/{datei['datei']} passt nicht zu den Daten -- "
+                      "bitte python3 tools/build_spot.py ausfuehren und einchecken")
+                ok = False
         current = open(TOKENS_OUT, encoding="utf-8").read() if os.path.exists(TOKENS_OUT) else ""
         if current != design_tokens():
-            print("VERALTET: docs/design/tokens.json passt nicht zu docs/spot/inhalte.json -- "
+            print("VERALTET: docs/design/tokens.json passt nicht zu docs/spot/inhalte/design.json -- "
                   "bitte python3 tools/build_spot.py ausfuehren und einchecken")
+            ok = False
+        if not ok:
             return 1
-        print("SPOT-Tabelle und Design-Tokens sind aktuell.")
+        print("SPOT-Tabellen und Design-Tokens sind aktuell.")
         return 0
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    wb.save(OUT)
+    os.makedirs(SPOT_DIR, exist_ok=True)
+    for datei, wb in books:
+        wb.save(os.path.join(SPOT_DIR, datei["datei"]))
+        print(f"geschrieben: docs/spot/{datei['datei']} ({len(wb.worksheets)} Blaetter)")
     with open(TOKENS_OUT, "w", encoding="utf-8") as f:
         f.write(design_tokens())
-    print(f"geschrieben: {os.path.relpath(OUT, ROOT)} ({len(wb.worksheets)} Blaetter)")
     return 0
 
 

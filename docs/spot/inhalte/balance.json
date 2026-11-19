@@ -1,0 +1,114 @@
+{
+  "_kommentar": [
+    "SPOT-Datei Kampf-Balance: Texte zu DROMEs, Rollen, Waffen, Einsatz, Sentinels, Gegner-DROMEs.",
+    "Texte fuer die SPOT-Tabellen (docs/spot/*.xlsx), die NICHT in den Spieldaten stehen.",
+    "Alle Zahlen und Namen aus dem Spiel liest tools/build_spot.py direkt aus parts/ und data/*.json.",
+    "Nach jeder Aenderung: python3 tools/build_spot.py",
+    "status: gebaut | entschieden | Vorschlag | offen"
+  ],
+
+  "dromes": {
+    "scout_body": {"identitaet": "Der schnelle Allrounder. Trägt nur eine leichte Waffe und lebt vom Bewegen.", "standardwaffe": "Puls-Blaster", "beschreibung": "Leichte, wendige DROME auf Sprintbeinen. Nimmt Treffer in Kauf, um dranzubleiben."},
+    "jugg_body": {"identitaet": "Der harte Zweihänder. Will in die Frontlinie und schützt andere.", "standardwaffe": "Hammer + Deflektor-Schild", "beschreibung": "Schwerer Tank mit zwei Haltern. Wenig Power, dafür sehr viel Integrität und Rüstung."},
+    "mage_body": {"identitaet": "Fragil und schildlastig, ganz auf Fähigkeiten ausgelegt.", "standardwaffe": "Runenstab", "beschreibung": "Gerundete Support-DROME auf Fahrgestell. Größter Schildpuls, höchste Power nach dem Strix."},
+    "strix_body": {"identitaet": "Langstrecke: wenige, sehr harte Treffer aus der Ferne.", "standardwaffe": "Schienen-Lanze", "beschreibung": "Scharfschütze auf Federbeinen. Langsam, aber die höchste Power."}
+  },
+
+  "rollen": [
+    {"id": "vanguard", "name": "Vorhut", "traeger": "Molok", "zielregel": "den nächsten Gegner", "fraktion": "Mega Mechas", "status": "gebaut"},
+    {"id": "skirmisher", "name": "Plänkler", "traeger": "Vireo", "zielregel": "den nächsten Gegner, weicht aus (kitet)", "fraktion": "Neon Ninja's", "status": "gebaut"},
+    {"id": "controller", "name": "Kontrolle", "traeger": "Nimbus", "zielregel": "den, um den die meisten Gegner stehen (für den Vortex)", "fraktion": "Solar Sentients", "status": "gebaut"},
+    {"id": "sniper", "name": "Scharfschütze", "traeger": "Strix", "zielregel": "in Reichweite den, der am meisten Schaden macht", "fraktion": "Mega Mechas", "status": "gebaut"},
+    {"id": "hunter", "name": "Jäger", "traeger": "-- (geplant: Shinobi)", "zielregel": "den Verwundbarsten (wenig Integrität, verwundbar oder betäubt); Regel liegt im Code bereit", "fraktion": "Neon Ninja's", "status": "Vorschlag"},
+    {"id": "support", "name": "Stütze", "traeger": "-- (heute nur als Waffe: E-Schraubenschlüssel)", "zielregel": "heilt den Verletztesten", "fraktion": "Solar Sentients", "status": "Vorschlag"}
+  ],
+
+  "waffen": {
+    "eq_pulse_blaster": "Halb kinetisch, halb Energie -- der Allrounder ohne Schwäche.",
+    "eq_neon_blaster": "Mehr Energie: knackt Schilde. Beim Leveln wächst nur der Energieanteil.",
+    "eq_plasma_blade": "Nahkampf. Aufschlitzen macht das Ziel 5 s verwundbar (+50 % Schaden von allen).",
+    "eq_boomerang": "Zwei Treffer je Wurf; +30 % Schaden, wenn der Träger in der letzten Sekunde gelaufen ist.",
+    "eq_rune_staff": "Energie auf Distanz. Vortex trifft eine Fläche, zieht zusammen und verlangsamt.",
+    "eq_drone_pod": "Support-Werkzeug: heilt Verbündete und gibt ihnen Schild, kitzelt Gegner nur.",
+    "eq_hammer": "Nahkampf. Jeder 3. Schlag betäubt 1 s.",
+    "eq_bulwark_ram": "Nahkampf. Der Rammstoß skaliert mit der eigenen max. Integrität (ohne Power) und stößt zurück -- für Off-Tanks.",
+    "eq_deflector": "Schild für den zweiten Molok-Halter: gibt Rüstung und lädt sich selbst Schild auf.",
+    "eq_rail_lance": "Reichweite 8, harte Einzeltreffer. Die einzige echte Scharfschützenwaffe.",
+    "eq_mortar": "Artillerie: Mindestreichweite 2, Einschlag nach 0,8 s. Sperrfeuer trifft eine Fläche und stößt zurück."
+  },
+
+  "_kommentar_einsatz": [
+    "Neues Spielprinzip (12./13. Nov. 2026, docs/GEGNERDESIGN.md): Einsatz, Virusschaden,",
+    "Lootcaches, Platzhaltercoin, Sentinels, gegnerische DROMEs, Formationen. Gebaut am 14. Nov. 2026 (ausser Caches oeffnen und Hangar-Shop).",
+    "Zahlen mit status Vorschlag sind Startwerte zum Ausbalancieren -- der Spieler aendert sie in der",
+    "Excel (hellblaue Eingabefelder) und gibt die Datei zurueck; dann hier nachtragen."
+  ],
+
+  "virusschaden": [
+    {"id": "start", "parameter": "Virusschaden beginnt nach (s)", "wert": 300, "status": "entschieden", "notiz": "5 Minuten Kampfzeit"},
+    {"id": "anteil", "parameter": "Anteil des effektiven Lebens je Puls", "wert": 0.1, "status": "entschieden", "notiz": "10 %, gleichbleibend, nicht wachsend"},
+    {"id": "puls", "parameter": "Sekunden je Puls", "wert": 3, "status": "gebaut", "notiz": "wie heute (config -> realtime.pulse)"},
+    {"id": "bezug", "parameter": "Effektives Leben", "wert": "Schild + Integrität", "status": "entschieden", "notiz": "Höchst- oder aktuelle Werte? -> Offene Punkte (Vorschlag: Höchstwerte)"},
+    {"id": "ruestung", "parameter": "Rüstung", "wert": "wirkt nicht", "status": "entschieden", "notiz": "totaler, absoluter Schaden"},
+    {"id": "gilt", "parameter": "Gilt für", "wert": "alle Einheiten beider Seiten", "status": "Vorschlag", "notiz": "DROMEs und Sentinels"}
+  ],
+
+  "einsatz": [
+    {"parameter": "Kämpfe je Einsatz", "wert": 8, "status": "gebaut", "notiz": "ein Einsatz Neon City; zehn Story-Einsätze folgen"},
+    {"parameter": "Leben je Einsatz", "wert": 3, "status": "gebaut", "notiz": ""},
+    {"parameter": "DROMEs des Spielers", "wert": "bis 4", "status": "entschieden", "notiz": "GEGNERDESIGN 4"},
+    {"parameter": "Gegner-Squad", "wert": "1+ DROME + Sentinels", "status": "gebaut", "notiz": "Formationen: Blatt Formationen"},
+    {"parameter": "Wellen je Kampf", "wert": "keine", "status": "entschieden", "notiz": "gemeint war das Reinforcement-Level (Blatt Formationen)"},
+    {"parameter": "Gebiet", "wert": "eine Fraktion je Einsatz", "status": "Vorschlag", "notiz": "bestimmt die Caches"},
+    {"parameter": "Shop zwischen den Kämpfen", "wert": "bleibt (Credits, Module)", "status": "gebaut", "notiz": "GEGNERDESIGN 9"},
+    {"parameter": "Beute", "wert": "Lootcache oder Platzhaltercoin", "status": "gebaut", "notiz": "Regeln unten, Inhalt: Blatt Lootcaches"},
+    {"parameter": "Kampfkarte", "wert": "feste Wege (FTL)", "status": "gebaut", "notiz": "config.json run.map: wide_until, forks_until, easy_share, elite_share"},
+    {"parameter": "Reinforcement-Level", "wert": "Kampf + 1 je Elite", "status": "Vorschlag gebaut", "notiz": "data/formations.json -> reinforcement"}
+  ],
+
+  "lootregeln": [
+    {"wann": "Sieg Leicht", "art": "Glück", "chance": 0.25, "anzahl": 1, "coins": 5, "status": "Vorschlag"},
+    {"wann": "Sieg Normal", "art": "Glück", "chance": 0.5, "anzahl": 1, "coins": 10, "status": "Vorschlag"},
+    {"wann": "Sieg Elite", "art": "sicher", "chance": 1.0, "anzahl": 1, "coins": 0, "status": "Vorschlag"},
+    {"wann": "Sieg Boss", "art": "sicher", "chance": 1.0, "anzahl": 2, "coins": 0, "status": "Vorschlag"},
+    {"wann": "Einsatz abgeschlossen", "art": "sicher", "chance": 1.0, "anzahl": 1, "coins": 0, "status": "Vorschlag"},
+    {"wann": "Niederlage", "art": "--", "chance": 0, "anzahl": 0, "coins": 3, "status": "Vorschlag"}
+  ],
+
+  "sentinel_archetypen": [
+    {"archetyp": "Assault", "aufgabe": "Direkter Angriff, Druck auf den Spieler (Nahkampf mit fokus auf Flanke)", "verhalten": "aus der Waffe: wie Vorhut -- den nächsten Gegner", "status": "entschieden"},
+    {"archetyp": "Sniper", "aufgabe": "Distanzangriffe, gezielter Schaden", "verhalten": "aus der Waffe: wie Scharfschütze -- in Reichweite den, der am meisten Schaden macht (sentinels schützen sich nicht selbst, entscheiden immer schaden machen vor überleben)", "status": "entschieden"},
+    {"archetyp": "Support", "aufgabe": "Buffs und Unterstützung anderer Einheiten", "verhalten": "aus der Waffe: wie Stütze -- heilt/schützt den Verletztesten", "status": "entschieden"}
+  ],
+
+  "sentinel_varianten": [
+    {"variante": "Basic", "integritaet": 1, "schild": 1, "power": 1, "ruestung": 0, "speed": 0, "module": 0, "herausforderung": "Standardgegner", "status": "entschieden"},
+    {"variante": "Elite", "integritaet": 1.2, "schild": 1.2, "power": 1.2, "ruestung": 1, "speed": 0, "module": 1, "herausforderung": "Nutzt ein Modul/Rezeptmodul", "status": "entschieden"},
+    {"variante": "Specialist", "integritaet": 1, "schild": 1, "power": 1, "ruestung": 0, "speed": 0, "module": 1, "herausforderung": "besondere taktische Funktion (welche?)", "status": "fällt weg"},
+    {"variante": "Heavy", "integritaet": 1.8, "schild": 1.2, "power": 1, "ruestung": 2, "speed": 0, "module": 0, "herausforderung": "widerstandsfähig", "status": "entschieden"},
+    {"variante": "Heavy Elite", "integritaet": 2, "schild": 1.4, "power": 1.5, "ruestung": 3, "speed": 0, "module": 2, "herausforderung": "Nutzt zwei Module/Rezeptmodule", "status": "entschieden"}
+  ],
+
+  "sentinels": [
+    {"fraktion": "Neon", "archetyp": "Assault", "waffe": "eq_plasma_blade", "speed": 10, "integritaet": 60, "schild": 20, "schildpuls": 5, "ruestung": 0, "power": 5, "modulplaetze": 0, "status": "Vorschlag"},
+    {"fraktion": "Neon", "archetyp": "Sniper", "waffe": "eq_rail_lance", "speed": 8, "integritaet": 45, "schild": 15, "schildpuls": 5, "ruestung": 0, "power": 5, "modulplaetze": 0, "status": "Vorschlag"},
+    {"fraktion": "Neon", "archetyp": "Support", "waffe": "eq_drone_pod", "speed": 10, "integritaet": 40, "schild": 30, "schildpuls": 8, "ruestung": 0, "power": 5, "modulplaetze": 0, "status": "Vorschlag"},
+    {"fraktion": "Solar", "archetyp": "Assault", "waffe": "eq_boomerang", "speed": 10, "integritaet": 60, "schild": 20, "schildpuls": 2, "ruestung": 2, "power": 5, "modulplaetze": 0, "status": "Vorschlag"},
+    {"fraktion": "Solar", "archetyp": "Sniper", "waffe": "eq_mortar", "speed": 8, "integritaet": 45, "schild": 15, "schildpuls": 2, "ruestung": 0, "power": 5, "modulplaetze": 0, "status": "Vorschlag"},
+    {"fraktion": "Solar", "archetyp": "Support", "waffe": "eq_drone_pod", "speed": 10, "integritaet": 40, "schild": 30, "schildpuls": 5, "ruestung": 0, "power": 5, "modulplaetze": 0, "status": "Vorschlag"},
+    {"fraktion": "Mecha", "archetyp": "Assault", "waffe": "eq_hammer", "speed": 8, "integritaet": 80, "schild": 0, "schildpuls": 0, "ruestung": 5, "power": 4, "modulplaetze": 0, "status": "Vorschlag"},
+    {"fraktion": "Mecha", "archetyp": "Sniper", "waffe": "eq_rail_lance", "speed": 6, "integritaet": 60, "schild": 0, "schildpuls": 0, "ruestung": 3, "power": 4, "modulplaetze": 0, "status": "Vorschlag"},
+    {"fraktion": "Mecha", "archetyp": "Support", "waffe": "eq_drone_pod", "speed": 8, "integritaet": 70, "schild": 0, "schildpuls": 0, "ruestung": 3, "power": 4, "modulplaetze": 0, "status": "Vorschlag"},
+    {"fraktion": "Hipstar", "archetyp": "Assault", "waffe": "eq_pulse_blaster", "speed": 10, "integritaet": 60, "schild": 20, "schildpuls": 2, "ruestung": 2, "power": 5, "modulplaetze": 0, "status": "offen"},
+    {"fraktion": "Hipstar", "archetyp": "Sniper", "waffe": "eq_neon_blaster", "speed": 8, "integritaet": 45, "schild": 15, "schildpuls": 2, "ruestung": 0, "power": 5, "modulplaetze": 0, "status": "offen"},
+    {"fraktion": "Hipstar", "archetyp": "Support", "waffe": "eq_drone_pod", "speed": 10, "integritaet": 40, "schild": 30, "schildpuls": 5, "ruestung": 0, "power": 5, "modulplaetze": 0, "status": "offen"}
+  ],
+
+  "gegner_dromes": [
+    {"name": "Neon Vireo", "fraktion": "Neon", "chassis": "scout_body", "waffe": "eq_plasma_blade", "speed": 12, "integritaet": 80, "schild": 50, "schildpuls": 7, "ruestung": 2, "power": 10, "modulplaetze": 3, "aufgabe": "Anführer der Neon-Squad (Nahkampf-Plänkler)", "status": "Vorschlag"},
+    {"name": "Neon Nimbus", "fraktion": "Neon", "chassis": "mage_body", "waffe": "eq_rune_staff", "speed": 12, "integritaet": 60, "schild": 60, "schildpuls": 10, "ruestung": 0, "power": 12, "modulplaetze": 3, "aufgabe": "zweiter DROME ab Welle 4: Support für den Vireo, kämpft mit", "status": "Vorschlag"},
+    {"name": "Solar Nimbus", "fraktion": "Solar", "chassis": "mage_body", "waffe": "eq_rune_staff", "speed": 12, "integritaet": 60, "schild": 60, "schildpuls": 10, "ruestung": 0, "power": 12, "modulplaetze": 3, "aufgabe": "Anführer der Solar-Squad", "status": "Vorschlag"},
+    {"name": "Mecha Molok", "fraktion": "Mecha", "chassis": "jugg_body", "waffe": "eq_hammer + eq_deflector", "speed": 10, "integritaet": 250, "schild": 50, "schildpuls": 3, "ruestung": 10, "power": 6, "modulplaetze": 2, "aufgabe": "Anführer der Mecha-Squad", "status": "Vorschlag"},
+    {"name": "Mecha Strix", "fraktion": "Mecha", "chassis": "strix_body", "waffe": "eq_rail_lance", "speed": 7, "integritaet": 100, "schild": 30, "schildpuls": 5, "ruestung": 2, "power": 15, "modulplaetze": 3, "aufgabe": "Verstärkung (zweiter DROME)", "status": "Vorschlag"}
+  ]
+}

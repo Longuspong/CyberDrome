@@ -86,22 +86,33 @@ FTL-artig mit festen Pfaden. Neue offene Punkte stehen im Blatt Offene Punkte.
 
 ## SPOT-Tabelle (Vorgabe des Spielers, 12. Nov. 2026)
 
-`docs/spot/CyberDrome_SPOT.xlsx` ist die **Single Point of Truth** fuer alle
-inhaltlichen Daten (DROMEs, Waffen, Passiven, Module, Rezepte, BIOS,
-Fraktionen, Stages, Teams, Einheiten, Lauf, Level, Regeln, Eckpunkte, offene
-Punkte). Sie wird **nicht von Hand** bearbeitet, sondern von
-`tools/build_spot.py` aus `parts/`, `data/*.json` und
-`docs/spot/inhalte.json` erzeugt.
+Die SPOT ist die **Single Point of Truth** fuer alle inhaltlichen Daten.
+Seit 19. Nov. 2026 sind es **vier Dateien** unter `docs/spot/` (vorher eine):
+
+* `CyberDrome_SPOT_Entscheidungen.xlsx` -- Eckpunkte, Fragen, Offene Punkte, Glossar
+* `CyberDrome_SPOT_Balance.xlsx` -- Regeln, Level, Rollen, DROMEs, Teile,
+  Waffen, Passiven, Sentinels, Gegner-DROMEs, Einsatz
+* `CyberDrome_SPOT_Module.xlsx` -- Module, Rezepte, Rezept-Matrix, BIOS
+* `CyberDrome_SPOT_Welt.xlsx` -- Fraktionen, Stages, Story, Einheiten,
+  Formationen, Maps, Lauf, Lootcaches, Hangar-Shop, Design
+
+Jede hat vorn ein Blatt Uebersicht. Formeln zeigen nie in eine andere Datei
+(was aufeinander rechnet, liegt in der Balance); die Aufteilung steht in
+`FILES` in `tools/build_spot.py`. Die Dateien werden **nicht von Hand**
+bearbeitet, sondern von `tools/build_spot.py` aus `parts/`, `data/*.json` und
+den Texten unter `docs/spot/inhalte/` erzeugt (`entscheidungen.json`,
+`balance.json`, `welt.json`, `design.json`).
 
 * **Jede Aenderung** an Werten, Daten oder Entscheidungen: neue Texte
-  (Eckpunkte, Story, Fraktionen, offene Punkte) in `docs/spot/inhalte.json`
-  nachtragen, dann `python3 tools/build_spot.py` und die xlsx mit einchecken.
-* Die CI (`.github/workflows/spot.yml`) prueft mit `--check`, dass die
-  Tabelle aktuell ist.
+  (Eckpunkte, Story, Fraktionen, offene Punkte) in der passenden Datei unter
+  `docs/spot/inhalte/` nachtragen, dann `python3 tools/build_spot.py` und die
+  xlsx mit einchecken.
+* Die CI (`.github/workflows/spot.yml`) prueft mit `--check`, dass alle vier
+  aktuell sind.
 * **Design-System** (seit 17. Nov. 2026): Artefakt „CyberDrome Arcade-Glitch“
   (https://claude.ai/artifact/M5RC8KNDTr5psmKSuJpdS2) mit Tokens, Brand-Book,
   Komponenten und Symbolen -- ebenfalls ein Spiegel. Seine Tokens erzeugt
-  `build_spot.py` aus `design_farben` + `design_tokens` in `inhalte.json`
+  `build_spot.py` aus `design_farben` + `design_tokens` in `inhalte/design.json`
   nach `docs/design/tokens.json` (CI prueft mit). Farben im Spiel aendern =
   dort nachtragen, neu bauen und `tokens.json` ins Design-System uebernehmen.
   Brand-Book und Komponenten liegen als Sicherung unter
