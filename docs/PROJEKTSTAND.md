@@ -29,6 +29,16 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Begriff "Fusion", Token im Design-System (19. Nov. 2026, Spieler)
+
+* Rezept-Module heissen im Spiel **Fusion** (mit BIOS: **BIOS-Fusion**);
+  "Rezept" bleibt die Anleitung im Rezeptbuch. Im Code bleibt `recipe`.
+* Token `module-fill` (#1a0b36) ins Design-System-Artefakt uebernommen.
+* Offene Annahmen vom Spieler bestaetigt: Chaos-BIOS zaehlt zu den drei
+  BIOS, der Booster zaehlt jeden Kampf, ohne Modul im Einsatz beliebige
+  BIOS-Angebote, Luecken nach dem Verkauf bleiben. Laden bleibt oben;
+  Tauschen/Kaufen per Tippen braucht es nicht.
+
 ### Zusammenfuegen beim Ablegen, BIOS-Karten schlanker (19. Nov. 2026, Spieler)
 
 * Ablegen auf ein Modul, mit dem es ein Rezept ergibt, fuegt zusammen statt

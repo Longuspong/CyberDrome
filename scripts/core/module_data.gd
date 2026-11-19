@@ -482,8 +482,11 @@ static func _seconds(value: float) -> String:
 ## Kurzer Klartext fuer Belohnung und Lager: "Angriff · nur Fernwaffen".
 func headline() -> String:
 	if is_bios_item():
-		return "Matrix-BIOS · Rezept-Upgrade"
-	var parts: Array[String] = ["BIOS-Rezept" if is_bios_result else "Modul", class_label()]
+		return "Matrix-BIOS · Fusions-Upgrade"
+	# Ein Rezept-Modul heisst im Spiel "Fusion" (18./19. Nov. 2026, Spieler);
+	# "Rezept" bleibt die Anleitung im Rezeptbuch.
+	var parts: Array[String] = ["BIOS-Fusion" if is_bios_result else ("Fusion" if is_recipe() else "Modul"),
+		class_label()]
 	if condition != "":
 		parts.append(CONDITION_LABEL.get(condition, condition))
 	return " · ".join(parts)
