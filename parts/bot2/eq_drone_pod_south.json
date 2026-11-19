@@ -3,7 +3,7 @@
   "code": "EQP-004",
   "set": "bot2",
   "type": "equipment",
-  "name": "E-Schraubenschluessel",
+  "name": "E-Schraubenschlüssel",
   "direction": "south",
   "svg": "eq_drone_pod_south.svg",
   "view_box": [

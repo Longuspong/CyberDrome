@@ -860,8 +860,9 @@ def build_offen(ws):
 
 
 def build_glossar(ws):
-    rows = [[g["begriff"], g["erklaerung"]] for g in TEXTE["glossar"]]
-    write_table(ws, ["Begriff", "Erklaerung"], rows, [20, 100])
+    # Spalte Englisch (19. Nov. 2026): Vorschlaege fuer die englische Fassung.
+    rows = [[g["begriff"], g.get("englisch", ""), g["erklaerung"]] for g in TEXTE["glossar"]]
+    write_table(ws, ["Begriff", "Englisch (Vorschlag)", "Erklaerung"], rows, [20, 22, 100])
 
 
 # ---------------------------------------------------------------------------

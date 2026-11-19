@@ -27,3 +27,6 @@ build/
 .DS_Store
 Thumbs.db
 *.swp
+
+# Uebersetzungen: Godot erzeugt sie beim Import aus i18n/texte.csv
+i18n/*.translation

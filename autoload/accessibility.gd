@@ -58,6 +58,12 @@ var reduce_motion: bool = false
 ## Haptik (10. Nov. 2026, Wunsch des Spielers): kurzes Vibrieren bei
 ## Treffern, Abschuessen, Kampfende und beim Einbauen. Abschaltbar.
 var haptics: bool = true
+## Sprache der Anzeige (19. Nov. 2026, Vorbereitung Englisch): "de" ist die
+## Quelle -- die deutschen Texte sind selbst die Schluessel in
+## i18n/texte.csv. Fest auf Deutsch, bis es einen Schalter gibt; sonst
+## zeigte ein englisches Handy eine halb uebersetzte Oberflaeche.
+const LANGUAGES := ["de", "en"]
+var language: String = "de"
 ## Zeitpunkt (ms) der letzten Vibration -- Drosselung, damit ein Echtzeit-
 ## kampf das Handy nicht dauerhaft brummen laesst.
 var _last_vibration: int = -100000
@@ -69,6 +75,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	reduce_motion = _system_prefers_reduced_motion()
 	_load()
+	TranslationServer.set_locale(language)
 	get_tree().root.size_changed.connect(_on_resized)
 	get_tree().node_added.connect(_on_node_added)
 	_apply_font_theme()
@@ -104,6 +111,16 @@ func _apply_font_theme() -> void:
 
 func set_reduce_motion(value: bool) -> void:
 	reduce_motion = value
+	_save()
+	settings_changed.emit()
+
+
+## Sprache wechseln (noch ohne Schalter in den Optionen).
+func set_language(value: String) -> void:
+	if not value in LANGUAGES:
+		return
+	language = value
+	TranslationServer.set_locale(language)
 	_save()
 	settings_changed.emit()
 
@@ -158,6 +175,9 @@ func _load() -> void:
 	size_option = clampi(int(data.get("font_option", 0)), 0, SIZE_OPTIONS.size() - 1)
 	reduce_motion = bool(data.get("reduce_motion", reduce_motion))
 	haptics = bool(data.get("haptics", haptics))
+	var lang := str(data.get("language", language))
+	if lang in LANGUAGES:
+		language = lang
 
 
 ## Einstellungen werden IMMER gespeichert -- unabhaengig von save_enabled.
@@ -171,6 +191,7 @@ func _save() -> void:
 		"font_option": size_option,
 		"reduce_motion": reduce_motion,
 		"haptics": haptics,
+		"language": language,
 	}))
 
 

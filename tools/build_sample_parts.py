@@ -3064,7 +3064,7 @@ SETS = [
                 # Frueher fest auf der Molok-Schulter ("slots"); seit es die
                 # Schulter als Halter nicht mehr gibt, ein Gadget wie die anderen.
                 "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment",
-                "name": "E-Schraubenschluessel",
+                "name": "E-Schraubenschlüssel",
                 "tags": ["support", "tool"], **W_WRENCH,
                 "mount_class": "light", "category": "support",
             },
@@ -3187,7 +3187,7 @@ SETS = [
             },
             {
                 "id": "eq_mortar", "code": "EQP-015", "type": "equipment",
-                "name": "Moerser", "tags": ["weapon", "heavy", "artillery"],
+                "name": "Mörser", "tags": ["weapon", "heavy", "artillery"],
                 "shapes": EQ_MORTAR,
                 "mount_class": "heavy", "category": "weapon",
                 "anchors": {"mount": (0, 0, 61), "muzzle": (-1, 0, 83.5)},
