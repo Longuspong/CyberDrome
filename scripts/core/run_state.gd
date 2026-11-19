@@ -1350,6 +1350,181 @@ func remove_module(drome: int, slot: String, position: int) -> bool:
 	return true
 
 
+# ---------------------------------------------------------------------------
+# Ziehen im Zwischenstopp (19. Nov. 2026, bestaetigt vom Spieler): Schrott
+# (auch aus der Waffe verkaufen), direkt aus dem Laden in eine Waffe kaufen,
+# Tauschen beim Ablegen auf einen belegten Platz. Jede Handlung laeuft als
+# Probe (``apply`` false): sie aendert alles, prueft den Aufbau und setzt
+# zurueck -- so sagt dieselbe Funktion vorher, ob und warum es nicht geht.
+# ---------------------------------------------------------------------------
+
+## Verkauft das Modul auf Platz ``position`` der Waffe ``slot`` (Schrott).
+## Gibt die Credits zurueck (0 = nichts verkauft).
+func sell_installed(drome: int, slot: String, position: int) -> int:
+	var id := _installed_at(drome, slot, position)
+	if phase != Phase.STOP or id == &"":
+		return 0
+	var build: DromeBuild = squad[drome]
+	var list: Array = build.modules[slot]
+	var value := ModuleData.sell_value(ModuleData.get_module(id))
+	list[position] = &""
+	_tidy_modules(build, slot, list)
+	credits += value
+	return value
+
+
+## Lagerplatz ``index`` auf Platz ``position`` einer Waffe: frei = einsetzen,
+## belegt = tauschen (das alte Modul nimmt den Lagerplatz ein). ``position``
+## -1 = erster freier Platz.
+func place_from_storage(index: int, drome: int, slot: String, position: int, apply: bool = true) -> String:
+	if not is_module_at(index):
+		return "kein Modul"
+	return _attempt(apply, func() -> String:
+		var old := _put(drome, slot, position, storage[index])
+		if old == &"!":
+			return "Modulplätze voll"
+		if old == &"":
+			storage.remove_at(index)
+		else:
+			storage[index] = old
+		return "")
+
+
+## Setzt ein eingebautes Modul um: auf einen freien Platz (auch in eine
+## andere Waffe oder einen anderen DROME) oder tauscht mit dem Modul dort.
+func move_installed(from_drome: int, from_slot: String, from_position: int,
+		drome: int, slot: String, position: int, apply: bool = true) -> String:
+	var id := _installed_at(from_drome, from_slot, from_position)
+	if id == &"":
+		return "kein Modul"
+	if from_drome == drome and from_slot == slot and (position == from_position or position < 0):
+		return "schon hier"
+	return _attempt(apply, func() -> String:
+		var source: Array = squad[from_drome].modules[from_slot]
+		source[from_position] = &""
+		var old := _put(drome, slot, position, id)
+		if old == &"!":
+			return "Modulplätze voll"
+		source[from_position] = old
+		return "")
+
+
+## Kauft Angebot ``offer`` direkt in eine Waffe: freier Platz = einsetzen,
+## belegter = tauschen (das alte Modul geht ins Lager). Ein volles Lager
+## stoert nur beim Tauschen.
+func buy_into(offer: int, drome: int, slot: String, position: int, apply: bool = true) -> String:
+	if phase != Phase.STOP or offer < 0 or offer >= shop_offers.size():
+		return "kein Angebot"
+	var entry: Dictionary = shop_offers[offer]
+	var module := ModuleData.get_module(entry["module_id"])
+	if entry["sold"]:
+		return "verkauft"
+	if credits < shop_price(module):
+		return "zu wenig Credits"
+	return _attempt(apply, func() -> String:
+		var old := _put(drome, slot, position, StringName(entry["module_id"]))
+		if old == &"!":
+			return "Modulplätze voll"
+		if old != &"":
+			if storage_full():
+				return "Lager voll -- das alte Modul hätte keinen Platz"
+			storage.append(old)
+		credits -= shop_price(module)
+		entry["sold"] = true
+		return "")
+
+
+## Die ID auf Platz ``position`` einer Waffe (leer = nichts dort).
+func _installed_at(drome: int, slot: String, position: int) -> StringName:
+	if drome < 0 or drome >= squad.size():
+		return &""
+	var list: Array = (squad[drome] as DromeBuild).modules.get(slot, [])
+	if position < 0 or position >= list.size():
+		return &""
+	return StringName(list[position])
+
+
+## Legt ``id`` auf Platz ``position`` der Waffe und gibt zurueck, was dort
+## lag (&"" = frei). -1 = erster freier Platz; ``&"!"`` = kein Platz.
+func _put(drome: int, slot: String, position: int, id: StringName) -> StringName:
+	if drome < 0 or drome >= squad.size():
+		return &"!"
+	var build: DromeBuild = squad[drome]
+	if slot not in build.equip_slots():
+		return &"!"
+	var room := ModuleData.slots_for(build, slot)
+	var list: Array = build.modules.get(slot, [])
+	var at := position
+	if at < 0:
+		at = 0
+		while at < list.size() and str(list[at]) != "":
+			at += 1
+	if at >= room:
+		return &"!"
+	while list.size() <= at:
+		list.append(&"")
+	var old := StringName(list[at])
+	list[at] = id
+	build.modules[slot] = list
+	return old
+
+
+## Fuehrt ``change`` aus und prueft danach jeden Aufbau im Squad. Geht etwas
+## nicht (oder ist es nur eine Probe), wird alles zurueckgesetzt.
+func _attempt(apply: bool, change: Callable) -> String:
+	if phase != Phase.STOP:
+		return "nur im Zwischenstopp"
+	var saved_modules: Array = squad.map(func(b): return (b as DromeBuild).modules.duplicate(true))
+	var saved_storage := storage.duplicate()
+	var saved_credits := credits
+	var saved_offers := shop_offers.duplicate(true)
+	var blocker: String = change.call()
+	if blocker == "":
+		for build in squad:
+			blocker = _layout_blocker(build)
+			if blocker != "":
+				break
+	if blocker != "" or not apply:
+		for i in squad.size():
+			(squad[i] as DromeBuild).modules = saved_modules[i]
+		storage = saved_storage
+		credits = saved_credits
+		shop_offers = saved_offers
+		return blocker
+	for build in squad:
+		for slot in (build as DromeBuild).modules.keys():
+			_tidy_modules(build, slot, build.modules[slot])
+	return ""
+
+
+## Warum dieser Aufbau so nicht geht (leer = er geht): Plaetze, Rezepte
+## einmal je Waffe, hoechstens ein BIOS-Rezept je DROME, kein BIOS im Halter.
+func _layout_blocker(build: DromeBuild) -> String:
+	var bios := 0
+	for slot in build.modules:
+		var list: Array = (build.modules[slot] as Array).filter(func(id): return str(id) != "")
+		if list.size() > ModuleData.slots_for(build, slot):
+			return "Modulplätze voll"
+		for i in list.size():
+			var module := ModuleData.get_module(list[i])
+			if module == null:
+				continue
+			if module.is_bios_item():
+				return "ein BIOS steckt nicht im Halter"
+			if module.is_bios_result:
+				bios += 1
+			if not module.is_recipe():
+				continue
+			for j in range(i + 1, list.size()):
+				var other := ModuleData.get_module(list[j])
+				if other != null and other.is_recipe() \
+						and (other.parts().has(module.id) or module.parts().has(other.id)):
+					return "%s steckt hier schon drin (Rezepte einmal je Waffe)" % module.display_name
+	if bios > 1:
+		return "höchstens ein BIOS-Rezept je DROME"
+	return ""
+
+
 ## Das Rezeptbuch: je Rezept {module, have: [bool je Zutat], ready}. Gezaehlt
 ## wird nur, was im LAGER liegt -- zusammengefuegt wird dort.
 func recipe_book() -> Array:

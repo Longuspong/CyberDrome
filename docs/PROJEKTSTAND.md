@@ -29,6 +29,22 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Zwischenstopp: Schrott, Kauf in die Waffe, Tauschen (19. Nov. 2026, bestaetigt vom Spieler)
+
+* **Schrott-Feld** rechts neben dem Lager (`ScrapZone`): Module aus dem Lager
+  oder aus einer Waffe hineinziehen = verkaufen (`RunState.sell_installed`);
+  im Waffen-Popup zusaetzlich "Verkaufen".
+* **Laden -> Waffe:** Angebot auf eine Waffe ziehen = kaufen und einsetzen
+  (`RunState.buy_into`), aufs Lager = kaufen. Ein volles Lager stoert nur,
+  wenn dabei getauscht wird.
+* **Tauschen:** Ablegen auf einen belegten Platz tauscht
+  (`place_from_storage`, `move_installed`, auch zwischen Waffen und DROMEs).
+* Alle drei laufen als Probe (`apply` false) ueber `RunState._attempt` und
+  `_layout_blocker`: dieselbe Funktion sagt vorher, ob und warum etwas nicht
+  geht -- das Ziel leuchtet oder nennt den Grund.
+* Geprueft mit echten Maus-Ereignissen im Fenster (Einsetzen, Tauschen,
+  Schrott aus Waffe und Lager, Kauf in die Waffe, Umsetzen).
+
 ### Feste Modulplaetze, BIOS neu, Zwischenstopp in Zeilen (18. Nov. 2026, Entscheidung des Spielers)
 
 Entwurf als Canvas "Zwischenstopp Neu" (Variante B gewaehlt).

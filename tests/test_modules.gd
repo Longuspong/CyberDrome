@@ -802,6 +802,83 @@ func test_a_recipe_bios_upgrades_a_recipe_in_its_weapon() -> void:
 	t.ok(not run.install_bios(0, drome, left), "nur ein BIOS-Rezept je DROME")
 
 
+# ---------------------------------------------------------------------------
+# Ziehen im Zwischenstopp (19. Nov. 2026): Schrott, Kaufen in die Waffe,
+# Tauschen auf belegtem Platz
+# ---------------------------------------------------------------------------
+
+func test_an_installed_module_can_be_sold() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.squad[0].modules[slot] = [&"mod_rapid_fire", &"mod_beacon"]
+	var before := run.credits
+	t.equal(run.sell_installed(0, slot, 1), 2, "Grundmodul bringt 2")
+	t.equal(run.credits, before + 2, "Credits gutgeschrieben")
+	t.equal(run.squad[0].modules[slot], [&"mod_rapid_fire"], "Platz frei")
+	t.equal(run.sell_installed(0, slot, 1), 0, "leerer Platz: nichts")
+
+
+func test_dropping_on_a_taken_place_swaps() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.squad[0].modules[slot] = [&"mod_rapid_fire", &"mod_beacon"]
+	run.storage.append_array([&"mod_bait", &"mod_twin_barrel"])
+	t.equal(run.place_from_storage(1, 0, slot, 0), "", "auf belegten Platz")
+	t.equal(run.squad[0].modules[slot], [&"mod_twin_barrel", &"mod_beacon"], "getauscht")
+	t.equal(run.storage, [&"mod_bait", &"mod_rapid_fire"], "das alte nimmt den Lagerplatz")
+	t.equal(run.place_from_storage(0, 0, slot, -1), "", "freier Platz")
+	t.equal(run.squad[0].modules[slot], [&"mod_twin_barrel", &"mod_beacon", &"mod_bait"], "eingesetzt")
+
+
+func test_a_swap_that_breaks_a_rule_changes_nothing() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.squad[0].modules[slot] = [&"mod_takt_chip", &"mod_beacon"]
+	run.storage.append(&"mod_metronome")
+	var why := run.place_from_storage(0, 0, slot, 1, false)
+	t.ok(why != "", "Taktgeber neben Taktchip geht nicht (%s)" % why)
+	t.equal(run.place_from_storage(0, 0, slot, 1), why, "auch nicht ernsthaft")
+	t.equal(run.squad[0].modules[slot], [&"mod_takt_chip", &"mod_beacon"], "Waffe unverändert")
+	t.equal(run.storage, [&"mod_metronome"], "Lager unverändert")
+	t.equal(run.place_from_storage(0, 0, slot, 0, false), "", "auf den Taktchip getauscht geht")
+
+
+func test_installed_modules_move_and_swap_between_weapons() -> void:
+	var run := _stop_run()
+	var a: String = run.squad[0].equip_slots()[0]
+	var b: String = run.squad[1].equip_slots()[0]
+	run.squad[0].modules[a] = [&"mod_rapid_fire"]
+	run.squad[1].modules[b] = [&"mod_bait"]
+	t.equal(run.move_installed(0, a, 0, 1, b, 0), "", "auf belegten Platz: tauschen")
+	t.equal(run.squad[0].modules[a], [&"mod_bait"], "hin")
+	t.equal(run.squad[1].modules[b], [&"mod_rapid_fire"], "und her")
+	t.equal(run.move_installed(0, a, 0, 1, b, -1), "", "auf freien Platz: umsetzen")
+	t.ok(not run.squad[0].modules.has(a), "die alte Waffe ist leer")
+	t.equal(run.squad[1].modules[b], [&"mod_rapid_fire", &"mod_bait"], "beide in der neuen")
+	t.ok(run.storage.is_empty(), "das Lager bleibt aus dem Spiel")
+
+
+func test_buying_straight_into_a_weapon() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.shop_offers = [{"module_id": &"mod_bait", "sold": false},
+		{"module_id": &"mod_beacon", "sold": false}]
+	run.credits = 20
+	t.equal(run.buy_into(0, 0, slot, -1), "", "gekauft und eingesetzt")
+	t.equal(run.squad[0].modules[slot], [&"mod_bait"], "steckt in der Waffe")
+	t.equal(run.credits, 20 - RunState.shop_price(ModuleData.get_module(&"mod_bait")), "bezahlt")
+	t.ok(run.shop_offers[0]["sold"], "verkauft")
+	t.ok(run.storage.is_empty(), "das Lager bleibt leer")
+	t.equal(run.buy_into(0, 0, slot, -1), "verkauft", "nur einmal")
+	while not run.storage_full():
+		run.storage.append(&"mod_rapid_fire")
+	t.ok(run.buy_into(1, 0, slot, 0, false) != "", "tauschen bei vollem Lager geht nicht")
+	t.equal(run.buy_into(1, 0, slot, 1), "", "auf freien Platz auch bei vollem Lager")
+	run.credits = 0
+	run.shop_offers.append({"module_id": &"mod_amplifier", "sold": false})
+	t.equal(run.buy_into(2, 0, slot, 2), "zu wenig Credits", "ohne Credits nicht")
+
+
 func test_a_recipe_bios_fuses_from_recipe_or_ingredients() -> void:
 	var run := _stop_run()
 	run.storage.append_array([&"bios_metronome", &"mod_takt_chip"])
