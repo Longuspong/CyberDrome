@@ -822,12 +822,13 @@ func test_dropping_on_a_taken_place_swaps() -> void:
 	var run := _stop_run()
 	var slot: String = run.squad[0].equip_slots()[0]
 	run.squad[0].modules[slot] = [&"mod_rapid_fire", &"mod_beacon"]
-	run.storage.append_array([&"mod_bait", &"mod_twin_barrel"])
+	# Paare ohne gemeinsames Rezept -- sonst wird zusammengefuegt.
+	run.storage.append_array([&"mod_spike_grid", &"mod_armor_plate"])
 	t.equal(run.place_from_storage(1, 0, slot, 0), "", "auf belegten Platz")
-	t.equal(run.squad[0].modules[slot], [&"mod_twin_barrel", &"mod_beacon"], "getauscht")
-	t.equal(run.storage, [&"mod_bait", &"mod_rapid_fire"], "das alte nimmt den Lagerplatz")
+	t.equal(run.squad[0].modules[slot], [&"mod_armor_plate", &"mod_beacon"], "getauscht")
+	t.equal(run.storage, [&"mod_spike_grid", &"mod_rapid_fire"], "das alte nimmt den Lagerplatz")
 	t.equal(run.place_from_storage(0, 0, slot, -1), "", "freier Platz")
-	t.equal(run.squad[0].modules[slot], [&"mod_twin_barrel", &"mod_beacon", &"mod_bait"], "eingesetzt")
+	t.equal(run.squad[0].modules[slot], [&"mod_armor_plate", &"mod_beacon", &"mod_spike_grid"], "eingesetzt")
 
 
 func test_a_swap_that_breaks_a_rule_changes_nothing() -> void:
@@ -862,7 +863,7 @@ func test_buying_straight_into_a_weapon() -> void:
 	var run := _stop_run()
 	var slot: String = run.squad[0].equip_slots()[0]
 	run.shop_offers = [{"module_id": &"mod_bait", "sold": false},
-		{"module_id": &"mod_beacon", "sold": false}]
+		{"module_id": &"mod_twin_barrel", "sold": false}]
 	run.credits = 20
 	t.equal(run.buy_into(0, 0, slot, -1), "", "gekauft und eingesetzt")
 	t.equal(run.squad[0].modules[slot], [&"mod_bait"], "steckt in der Waffe")
@@ -877,6 +878,37 @@ func test_buying_straight_into_a_weapon() -> void:
 	run.credits = 0
 	run.shop_offers.append({"module_id": &"mod_amplifier", "sold": false})
 	t.equal(run.buy_into(2, 0, slot, 2), "zu wenig Credits", "ohne Credits nicht")
+
+
+## Ablegen auf ein Modul, mit dem es ein Rezept ergibt: zusammenfuegen statt
+## tauschen (19. Nov. 2026) -- aus dem Lager, aus einer Waffe, aus dem Laden.
+func test_dropping_on_a_partner_fuses_in_place() -> void:
+	var run := _stop_run()
+	var a: String = run.squad[0].equip_slots()[0]
+	var b: String = run.squad[1].equip_slots()[0]
+	run.squad[0].modules[a] = [&"mod_rapid_fire"]
+	run.storage.append(&"mod_twin_barrel")
+	t.equal(run.place_from_storage(0, 0, a, 0), "", "aus dem Lager")
+	t.equal(run.squad[0].modules[a], [&"mod_gunslinger"], "Gunslinger an seinem Platz")
+	t.ok(run.storage.is_empty(), "die Zutat ist verbraucht")
+	run.squad[1].modules[b] = [&"mod_bait"]
+	run.squad[0].modules[a] = [&"mod_gunslinger", &"mod_beacon"]
+	t.equal(run.move_installed(0, a, 1, 1, b, 0), "", "aus einer Waffe")
+	t.equal(run.squad[1].modules[b], [&"mod_orbit"], "Orbit-Fokus")
+	t.equal(run.squad[0].modules[a], [&"mod_gunslinger"], "der alte Platz ist frei")
+	run.credits = 30
+	run.shop_offers = [{"module_id": &"mod_amplifier", "sold": false},
+		{"module_id": &"mod_capacitor", "sold": false}]
+	run.squad[1].modules[b] = [&"mod_heavy_edge"]
+	t.equal(run.buy_into(0, 1, b, 0), "", "aus dem Laden in die Waffe")
+	t.equal(run.squad[1].modules[b], [&"mod_overload"], "Überladung")
+	t.equal(run.credits, 24, "bezahlt")
+	run.storage.append(&"mod_armor_plate")
+	t.equal(run.buy_onto_storage(1, 0, false), "", "aus dem Laden aufs Lager-Modul (Probe)")
+	t.equal(run.storage, [&"mod_armor_plate"], "Probe ändert nichts")
+	t.equal(run.buy_onto_storage(1, 0), "", "gekauft und zusammengefügt")
+	t.equal(run.storage, [&"mod_bulwark"], "Bollwerk")
+	t.equal(run.buy_onto_storage(0, 0), "verkauft", "nur einmal")
 
 
 func test_a_recipe_bios_fuses_from_recipe_or_ingredients() -> void:
