@@ -994,8 +994,8 @@
  },
  "lastChange": {
   "by": "Claude",
-  "at": "2026-11-17T07:36:45Z",
+  "at": "2026-11-19T06:45:00Z",
   "via": "Claude Code · GitHub longuspong/cyberdrome",
-  "note": "Tokens aus der SPOT (docs/design/tokens.json), Stufenfarben, hellere Kartenrahmen, OFL; neu: ModuleChip, Header, BattleHud, ResultScreen, Modul-Symbole"
+  "note": "ModuleChip als Kartusche (52 px, Klassen-Ecke, Fusion mit doppeltem Rahmen); Begriff Fusion im Brand-Book"
  }
 }
