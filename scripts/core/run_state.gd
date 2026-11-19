@@ -1426,12 +1426,18 @@ func sell_installed(drome: int, slot: String, position: int) -> int:
 
 
 ## Lagerplatz ``index`` auf Platz ``position`` einer Waffe: frei = einsetzen,
-## belegt = tauschen (das alte Modul nimmt den Lagerplatz ein). ``position``
+## belegt = zusammenfuegen, wenn beide ein Rezept ergeben (19. Nov. 2026),
+## sonst tauschen (das alte Modul nimmt den Lagerplatz ein). ``position``
 ## -1 = erster freier Platz.
 func place_from_storage(index: int, drome: int, slot: String, position: int, apply: bool = true) -> String:
 	if not is_module_at(index):
 		return "kein Modul"
+	var fused := pair_of(storage[index], _installed_at(drome, slot, position))
 	return _attempt(apply, func() -> String:
+		if fused != null:
+			_put(drome, slot, position, fused.id)
+			storage.remove_at(index)
+			return ""
 		var old := _put(drome, slot, position, storage[index])
 		if old == &"!":
 			return "Modulplätze voll"
@@ -1451,9 +1457,13 @@ func move_installed(from_drome: int, from_slot: String, from_position: int,
 		return "kein Modul"
 	if from_drome == drome and from_slot == slot and (position == from_position or position < 0):
 		return "schon hier"
+	var fused := pair_of(id, _installed_at(drome, slot, position))
 	return _attempt(apply, func() -> String:
 		var source: Array = squad[from_drome].modules[from_slot]
 		source[from_position] = &""
+		if fused != null:
+			_put(drome, slot, position, fused.id)
+			return ""
 		var old := _put(drome, slot, position, id)
 		if old == &"!":
 			return "Modulplätze voll"
@@ -1473,7 +1483,13 @@ func buy_into(offer: int, drome: int, slot: String, position: int, apply: bool =
 		return "verkauft"
 	if credits < shop_price(module):
 		return "zu wenig Credits"
+	var fused := pair_of(StringName(entry["module_id"]), _installed_at(drome, slot, position))
 	return _attempt(apply, func() -> String:
+		if fused != null:
+			_put(drome, slot, position, fused.id)
+			credits -= shop_price(module)
+			entry["sold"] = true
+			return ""
 		var old := _put(drome, slot, position, StringName(entry["module_id"]))
 		if old == &"!":
 			return "Modulplätze voll"
@@ -1481,6 +1497,30 @@ func buy_into(offer: int, drome: int, slot: String, position: int, apply: bool =
 			if storage_full():
 				return "Lager voll -- das alte Modul hätte keinen Platz"
 			storage.append(old)
+		credits -= shop_price(module)
+		entry["sold"] = true
+		return "")
+
+
+## Kauft Angebot ``offer`` direkt auf das Modul in Lagerplatz ``index`` und
+## fuegt beide zum Rezept zusammen (19. Nov. 2026). Braucht keinen freien
+## Lagerplatz.
+func buy_onto_storage(offer: int, index: int, apply: bool = true) -> String:
+	if phase != Phase.STOP or offer < 0 or offer >= shop_offers.size():
+		return "kein Angebot"
+	var entry: Dictionary = shop_offers[offer]
+	var module := ModuleData.get_module(entry["module_id"])
+	if entry["sold"]:
+		return "verkauft"
+	if credits < shop_price(module):
+		return "zu wenig Credits"
+	if index < 0 or index >= storage.size():
+		return "kein Modul"
+	var fused := pair_of(StringName(entry["module_id"]), storage[index])
+	if fused == null:
+		return "ergibt kein Rezept"
+	return _attempt(apply, func() -> String:
+		storage[index] = fused.id
 		credits -= shop_price(module)
 		entry["sold"] = true
 		return "")
@@ -1609,8 +1649,14 @@ func recipe_book() -> Array:
 func pair_result(a: int, b: int) -> ModuleData:
 	if a == b or a < 0 or b < 0 or a >= storage.size() or b >= storage.size():
 		return null
-	var x: StringName = storage[a]
-	var y: StringName = storage[b]
+	return pair_of(storage[a], storage[b])
+
+
+## Was zwei Module zusammen ergeben (Rezept, oder BIOS + Rezept = BIOS-Rezept);
+## null = nichts.
+static func pair_of(x: StringName, y: StringName) -> ModuleData:
+	if x == &"" or y == &"":
+		return null
 	for recipe in ModuleData.recipes():
 		if recipe.is_bios_result or recipe.from.size() != 2:
 			continue

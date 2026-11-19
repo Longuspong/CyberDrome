@@ -1501,7 +1501,7 @@ func _process(_delta: float) -> void:
 			position = _spot_under(h["spots"], at)
 			key = "h:%d:%s:%d" % [h["drome"], h["slot"], position]
 			target = h
-	if key == "" and _drag.get("kind") == "store":
+	if key == "" and _drag.get("kind") in ["store", "shop"]:
 		for s in _stores:
 			if int(s["index"]) != _drag_index and (s["tile"] as Control).get_global_rect().has_point(at):
 				key = "s:%d" % s["index"]
@@ -1532,6 +1532,12 @@ func _process(_delta: float) -> void:
 		Accessibility.vibrate(8)
 		var other := ModuleData.get_module(run._installed_at(drome, slot, position))
 		var buying: bool = _drag.get("kind") == "shop"
+		var fused := RunState.pair_of(module.id, other.id) \
+			if module != null and other != null and _drag.get("kind") != "bios_offer" else null
+		if fused != null:
+			_show_tip(tile, "%sRezept: %s" % ["Kaufen · " if buying else "", fused.display_name],
+				COLOR_GOOD)
+			return
 		if other != null and _drag.get("kind") != "bios_offer":
 			_show_tip(tile, "%sTauschen mit %s" % ["Kaufen · " if buying else "", other.display_name],
 				COLOR_GOOD)
@@ -1543,10 +1549,12 @@ func _process(_delta: float) -> void:
 		if buying:
 			_show_tip(tile, "Kaufen und einsetzen", COLOR_GOOD)
 	else:
-		var result := run.pair_result(_drag_index, int(target["index"]))
+		var result := run.pair_result(_drag_index, int(target["index"])) if _drag.get("kind") == "store" \
+			else RunState.pair_of(module.id if module != null else &"", run.storage[int(target["index"])])
 		if result != null:
 			tile.selected = true
-			_show_tip(tile, "Rezept: %s" % result.display_name, COLOR_GOOD)
+			_show_tip(tile, "%sRezept: %s" % ["Kaufen · " if _drag.get("kind") == "shop" else "",
+				result.display_name], COLOR_GOOD)
 			Accessibility.vibrate(8)
 		else:
 			_show_tip(tile, "ergibt kein Rezept", COLOR_MUTED)
@@ -2151,6 +2159,14 @@ func _drop_at(run: RunState, data: Dictionary, apply: bool) -> bool:
 					_dropped = true
 					_craft_pair(run, int(data["index"]), other)
 				return true
+			if data.get("kind") == "shop" and run.buy_onto_storage(int(data["index"]), other, false) == "":
+				if apply:
+					_dropped = true
+					if run.buy_onto_storage(int(data["index"]), other) == "":
+						Accessibility.vibrate(30, true)
+						_flash_storage = other
+					_refresh()
+				return true
 			if not _storage_accepts(run, data):
 				return false
 			if apply:
@@ -2304,6 +2320,13 @@ func _mark_drag_targets(run: RunState, data: Dictionary) -> void:
 		h["allowed"] = _holder_accepts(run, data, h)
 		tile.glow = h["allowed"]
 		tile.dimmed = not h["allowed"]
+	# Aus dem Laden: Lager-Module, mit denen es ein Rezept ergibt, leuchten.
+	if data.get("kind") == "shop":
+		var held := _drag_module(run, data)
+		for s in _stores:
+			var pair := RunState.pair_of(held.id, run.storage[int(s["index"])]) if held != null else null
+			(s["tile"] as Tile).glow = pair != null
+			(s["tile"] as Tile).accent = COLOR_GOOD if pair != null else s["accent"]
 	if _scrap != null:
 		var module := _drag_module(run, data)
 		_scrap.set_offer(ModuleData.sell_value(module) if _can_scrap(data) and module != null else -1)
@@ -2457,7 +2480,8 @@ func _show_bios_choice(run: RunState) -> void:
 
 
 ## Eine Angebotskarte: oben "Rezept -> BIOS-Rezept" mit beiden Kartuschen,
-## darunter die neue Regel und wie nah es ist (sofort, bald, angefangen).
+## darunter die neue Regel und die bisherige Wirkung (ohne "sofort nutzbar"
+## -- erklaert sich selbst, Wunsch des Spielers 19. Nov. 2026).
 func _bios_card(run: RunState, index: int, item: ModuleData) -> Control:
 	var recipe := ModuleData.get_module(item.bios_recipe)
 	var result := ModuleData.get_module(item.bios_result)
@@ -2487,13 +2511,6 @@ func _bios_card(run: RunState, index: int, item: ModuleData) -> Control:
 		UiKit.SMALL, COLOR_MUTED))
 	names.add_child(Arcade.label((result.display_name if result != null else item.display_name).to_upper(),
 		17, Color.WHITE, "display"))
-	var state := run.bios_state(item)
-	var rank := int(state.get("rank", 3))
-	var tag_text: String = ["SOFORT NUTZBAR", "BALD: ZUTATEN DA",
-		"ANGEFANGEN: %d/%d ZUTATEN" % [int(state.get("have", 0)), int(state.get("need", 2))],
-		"NOCH KEINE ZUTAT"][rank]
-	var tag_color: Color = [COLOR_GOOD, Arcade.CYAN, Arcade.YELLOW, COLOR_MUTED][rank]
-	box.add_child(Arcade.label(tag_text, 12, tag_color, "bold", 0.1))
 	if result != null:
 		var extra := result.effect_lines(result.bonus)
 		if not extra.is_empty():

@@ -29,6 +29,16 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Zusammenfuegen beim Ablegen, BIOS-Karten schlanker (19. Nov. 2026, Spieler)
+
+* Ablegen auf ein Modul, mit dem es ein Rezept ergibt, fuegt zusammen statt
+  zu tauschen -- aus dem Lager (`place_from_storage`), aus einer Waffe
+  (`move_installed`), aus dem Laden in eine Waffe (`buy_into`) und aus dem
+  Laden auf ein Lager-Modul (`buy_onto_storage`). `RunState.pair_of` sagt,
+  was zwei Module ergeben. Der Hinweis zeigt "Kaufen · Rezept: X" schon
+  beim Ueberfahren; passende Lager-Module leuchten beim Ziehen aus dem Laden.
+* BIOS-Karten ohne "sofort nutzbar / bald / angefangen".
+
 ### Chaos-Beute, Credit-Booster, BIOS-Wahl als Bildschirm (19. Nov. 2026, Spieler)
 
 * **Chaos-Sieg:** ein Wurf aus `run.loot.chaos` -- 33 % BIOS-Wahl (zaehlt zu
