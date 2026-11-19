@@ -116,6 +116,9 @@ var bag: Array = []
 ## Matrix-BIOS zur Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): BIOS-IDs,
 ## eines davon kommt ins Lager. Verfaellt beim Weitergehen.
 var bios_offers: Array = []
+## Credit-Booster aus dem Chaos-Kampf (19. Nov. 2026): so viele Kaempfe
+## bringen noch loot.booster_mult-fache Credits.
+var credit_boost: int = 0
 ## Wie viele BIOS-Wahlen dieser Einsatz schon gegeben hat. Ab
 ## rules.bios_elite_wins gibt ein Elite-Sieg einen Lootcache statt der Wahl
 ## (18. Nov. 2026: hoechstens ein BIOS je DROME, drei im Squad).
@@ -237,7 +240,7 @@ func to_dict() -> Dictionary:
 		"squad": squad.map(func(b): return b.to_save()),
 		"storage": storage.map(func(id): return str(id)),
 		"bag": bag.map(func(id): return str(id)),
-		"bios_offers": bios_offers.map(func(id): return str(id)), "bios_given": bios_given,
+		"bios_offers": bios_offers.map(func(id): return str(id)), "bios_given": bios_given, "credit_boost": credit_boost,
 		"shop_offers": shop_offers.map(func(o): return {"module_id": str(o["module_id"]), "sold": o["sold"]}),
 		"rerolls": rerolls, "target_recipe": str(target_recipe),
 		"last_loot": _plain(last_loot), "last_growth": _plain(last_growth),
@@ -274,6 +277,7 @@ static func from_dict(data: Dictionary) -> RunState:
 	run.bag = (data.get("bag", []) as Array).map(func(id): return StringName(str(id)))
 	run.bios_offers = (data.get("bios_offers", []) as Array).map(func(id): return StringName(str(id)))
 	run.bios_given = int(data.get("bios_given", 0))
+	run.credit_boost = int(data.get("credit_boost", 0))
 	run.shop_offers = (data.get("shop_offers", []) as Array).map(func(o):
 		return {"module_id": StringName(str(o.get("module_id", ""))), "sold": bool(o.get("sold", false))})
 	run.rerolls = int(data.get("rerolls", 0))
@@ -670,6 +674,10 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 		return
 	var won := outcome == BattleManager.Outcome.VICTORY
 	var gain := battle_credits(won)
+	# Credit-Booster: gilt fuer die naechsten Kaempfe, gewonnen oder nicht.
+	if credit_boost > 0:
+		gain = roundi(float(gain) * float(loot_cfg().get("booster_mult", 2.0)))
+		credit_boost -= 1
 	credits += gain
 	history.append({"round": round, "won": won, "tier": tier, "credits": gain,
 		"node": node, "chaos": is_chaos()})
@@ -1057,15 +1065,20 @@ func roll_loot(enemy_pool: Array) -> Array:
 	# bis rules.bios_elite_wins vergeben sind (eins je DROME) -- danach
 	# sicher ein Lootcache. Nie nach dem letzten Kampf, dort waere ein BIOS
 	# wertlos (Module verfallen).
-	var bios := tier == Tier.ELITE and not is_last_round() and bios_given < bios_elite_wins()
+	var bios_open := not is_last_round() and bios_given < bios_elite_wins()
+	var bios := tier == Tier.ELITE and bios_open
 	if bios:
-		out.append({"kind": "bios", "rare": true, "title": "Matrix-BIOS",
-			"text": "Wähle eines von %d -- es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))})
-	# Lootcaches statt Teilen und Credits (14. Nov. 2026, SPOT-Blatt Einsatz):
-	# je Stufe eine Chance auf einen Cache der Fraktion, sonst Platzhaltercoin.
-	# Der letzte Kampf eines Einsatzes (der schwerste) gibt zwei. Elite ohne
-	# BIOS-Wahl gibt sicher einen Cache.
-	out.append(_cache_roll(rng, rare, tier == Tier.ELITE and not bios))
+		out.append(_bios_entry())
+	if is_chaos():
+		# Chaos-Kampf (19. Nov. 2026): ein Wurf -- BIOS, Cache, Booster oder
+		# (selten) ein Fraktionskern.
+		out.append(_chaos_roll(rng, bios_open))
+	else:
+		# Lootcaches statt Teilen und Credits (14. Nov. 2026, SPOT-Blatt
+		# Einsatz): je Stufe eine Chance auf einen Cache der Fraktion, sonst
+		# Platzhaltercoin. Der letzte Kampf eines Einsatzes (der schwerste)
+		# gibt zwei. Elite ohne BIOS-Wahl gibt sicher einen Cache.
+		out.append(_cache_roll(rng, rare, tier == Tier.ELITE and not bios))
 	if tier != Tier.ELITE and lives < lives_max() \
 			and rng.randf() < float(settings.get("life_chance", cfg().get("life_chance", 0.35))):
 		out.append({"kind": "life", "title": "Notstrom",
@@ -1128,6 +1141,45 @@ func _apply_loot(item: Dictionary) -> void:
 			run_coins += int(item.get("amount", 0))
 		"life":
 			lives = mini(lives_max(), lives + 1)
+		"booster":
+			item["where"] = "booster"
+			credit_boost += int(item.get("fights", 3))
+		"faction_core":
+			item["where"] = "home"
+			home_queue.append(item.duplicate())
+
+
+func _bios_entry() -> Dictionary:
+	return {"kind": "bios", "rare": true, "title": "Matrix-BIOS",
+		"text": "Wähle eines von %d -- es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))}
+
+
+## Beute eines gewonnenen Chaos-Kampfs (loot.chaos): ein Wurf ueber BIOS,
+## Cache, Credit-Booster und Fraktionskern. Ist keine BIOS-Wahl mehr offen,
+## wird aus dem BIOS ein Cache.
+func _chaos_roll(rng: RandomNumberGenerator, bios_open: bool) -> Dictionary:
+	var odds: Dictionary = loot_cfg().get("chaos", {})
+	var roll := rng.randf()
+	var edge := float(odds.get("bios", 0.33))
+	if roll < edge:
+		return _bios_entry() if bios_open else _cache_roll(rng, true, true)
+	edge += float(odds.get("cache", 0.33))
+	if roll < edge:
+		return _cache_roll(rng, true, true)
+	edge += float(odds.get("booster", 0.33))
+	if roll < edge:
+		var fights := int(loot_cfg().get("booster_fights", 3))
+		return {"kind": "booster", "rare": true, "fights": fights, "title": "Credit-Booster",
+			"text": "Die nächsten %d Kämpfe bringen doppelte Credits." % fights}
+	var faction := faction_core_key()
+	return {"kind": "faction_core", "rare": true, "faction": faction,
+		"title": Roster.core_name(faction),
+		"text": "Fraktionskern -- kommt am Ende nach Hause (Bauen im Shop)."}
+
+
+## Die Fraktion des Gebiets als Schluessel der Fraktionskerne (neon ...).
+func faction_core_key() -> String:
+	return str((loot_cfg().get("faction_cores", {}) as Dictionary).get(str(region_id), "neon"))
 
 
 ## Cache oder Platzhaltercoin nach der Stufe (run.loot).
@@ -1652,36 +1704,24 @@ func _craft_bios(result: ModuleData) -> bool:
 
 ## Die BIOS-Wahl nach einem Elite-Sieg (6.2): rules.bios_offers Angebote.
 ## Rangfolge: SOFORT (Rezept steckt im Lauf), BALD (beide Zutaten im Lauf),
-## ANGEFANGEN (eine Zutat), zuletzt der Rest. Seit 18. Nov. 2026 gibt es die
-## Wahl fest nach jedem gewonnenen Elite-Kampf (bis rules.bios_elite_wins),
-## deshalb ist sie nie leer.
+## ANGEFANGEN (eine Zutat). Seit 19. Nov. 2026 (Spieler) nur diese -- also
+## sofort oder bald nutzbar; es koennen weniger als drei sein. Nur wenn gar
+## keins passt (noch kein Modul im Lauf), kommen beliebige, damit die feste
+## Wahl nach dem Elite-Sieg nicht leer bleibt.
 func roll_bios_offers() -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = absi(hash([run_seed, round, "bios"]))
-	var owned := _owned_modules()
 	var ranks := [[], [], [], []]
 	for item in ModuleData.bios_items():
-		var recipe := ModuleData.get_module(item.bios_recipe)
-		if recipe == null:
-			continue
-		if owned.has(recipe.id):
-			ranks[0].append(item.id)
-			continue
-		var have := 0
-		var pool := owned.duplicate()
-		for ingredient in recipe.from:
-			var found := pool.find(ingredient)
-			if found >= 0:
-				have += 1
-				pool.remove_at(found)
-		if have >= recipe.from.size():
-			ranks[1].append(item.id)
-		elif have > 0:
-			ranks[2].append(item.id)
-		else:
-			ranks[3].append(item.id)
+		var state := bios_state(item)
+		if not state.is_empty():
+			ranks[int(state["rank"])].append(item.id)
 	var out: Array = []
 	var want := int(ModuleData.rule("bios_offers", 3))
+	if ranks[0].is_empty() and ranks[1].is_empty() and ranks[2].is_empty():
+		ranks = [ranks[3]]
+	else:
+		ranks.resize(3)
 	for rank in ranks:
 		var list: Array = rank.duplicate()
 		while not list.is_empty() and out.size() < want:
@@ -1689,6 +1729,27 @@ func roll_bios_offers() -> Array:
 			out.append(list[pick])
 			list.remove_at(pick)
 	return out
+
+
+## Wie nah ein BIOS am Einsatz ist: {rank, have, need} -- rank 0 SOFORT
+## (das Rezept steckt im Lauf), 1 BALD (alle Zutaten da), 2 ANGEFANGEN (eine
+## Zutat), 3 noch nichts. Leer bei unbekanntem Rezept.
+func bios_state(item: ModuleData) -> Dictionary:
+	var recipe := ModuleData.get_module(item.bios_recipe) if item != null else null
+	if recipe == null:
+		return {}
+	var owned := _owned_modules()
+	var need := recipe.from.size()
+	if owned.has(recipe.id):
+		return {"rank": 0, "have": need, "need": need}
+	var have := 0
+	for ingredient in recipe.from:
+		var found := owned.find(ingredient)
+		if found >= 0:
+			have += 1
+			owned.remove_at(found)
+	var rank := 1 if have >= need else (2 if have > 0 else 3)
+	return {"rank": rank, "have": have, "need": need}
 
 
 func bios_blocker() -> String:

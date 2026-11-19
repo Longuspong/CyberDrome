@@ -78,6 +78,9 @@ func _setup() -> void:
 					var build = state.run.squad[int(at[0])]
 					var slot: String = build.equip_slots()[int(at[1])]
 					build.modules[slot] = Array(where[1].split("+")).map(func(id): return StringName(id))
+				# bios=1 legt eine BIOS-Wahl aus (wie nach einem Elite-Sieg).
+				"bios":
+					state.run.bios_offers = state.run.roll_bios_offers()
 				# lager=<id>+<id> legt Module ins Lager des Einsatzes.
 				"lager":
 					for id in pair[1].split("+"):

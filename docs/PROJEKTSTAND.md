@@ -29,6 +29,21 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Chaos-Beute, Credit-Booster, BIOS-Wahl als Bildschirm (19. Nov. 2026, Spieler)
+
+* **Chaos-Sieg:** ein Wurf aus `run.loot.chaos` -- 33 % BIOS-Wahl (zaehlt zu
+  `bios_elite_wins`, sonst Cache), 33 % Cache, 33 % Credit-Booster, 1 %
+  Fraktionskern (`home_queue`, `Roster.add_faction_core`, Gebiet -> Fraktion
+  ueber `loot.faction_cores`).
+* **Credit-Booster:** `RunState.credit_boost` Kaempfe mit `booster_mult`
+  (2x) Credits, auch bei Niederlage gezaehlt; steht im Beute-Popup.
+* **BIOS-Angebote** nur noch sofort/bald/angefangen (`bios_state`), sonst
+  beliebige, wenn gar kein Modul im Lauf ist.
+* **BIOS-Wahl als eigener Bildschirm** vor dem Zwischenstopp
+  (`_show_bios_choice`): Karten "aus X wird Y" mit Wirkung und Naehe,
+  antippen + NEHMEN; Lager voll -> "Zum Zwischenstopp", Wahl bleibt oben.
+* `tests/screenshot.gd`: `bios=1` legt eine BIOS-Wahl aus.
+
 ### Zwischenstopp: Schrott, Kauf in die Waffe, Tauschen (19. Nov. 2026, bestaetigt vom Spieler)
 
 * **Schrott-Feld** rechts neben dem Lager (`ScrapZone`): Module aus dem Lager

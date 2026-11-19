@@ -739,6 +739,71 @@ func test_a_chaos_fight_only_shows_up_in_the_endless_run() -> void:
 		_through_json(found).enemies().map(func(b): return b.to_save()), "dieselben nach dem Laden")
 
 
+## Ein Infinity-Einsatz, der gerade vor einem Chaos-Kampf steht.
+func _chaos_run(base_seed: int) -> RunState:
+	for seed_value in 400:
+		var run := RunState.start(base_seed + seed_value, [], "endless")
+		run.round = 3
+		run._pick_default_node()
+		var nodes := run.row()
+		for i in run.available_nodes():
+			if nodes[i]["chaos"]:
+				run.choose_node(i)
+				return run
+	return null
+
+
+## Chaos-Beute (19. Nov. 2026): ein Wurf -- je etwa ein Drittel BIOS-Wahl,
+## Cache und Credit-Booster, selten ein Fraktionskern.
+func test_a_chaos_win_rolls_bios_cache_or_booster() -> void:
+	var kinds := {}
+	var base := 30000
+	for n in 60:
+		var run := _chaos_run(base)
+		if run == null:
+			break
+		base = run.run_seed + 1
+		run.record_result(BattleManager.Outcome.VICTORY, [])
+		var rolled: Array = run.last_loot.map(func(i): return i["kind"]).filter(
+			func(k): return k in ["bios", "cache", "booster", "faction_core", "coins"])
+		t.equal(rolled.size(), 1, "genau ein Chaos-Wurf (%s)" % [rolled])
+		t.ok(not rolled.has("coins"), "kein Platzhaltercoin im Chaos")
+		for k in rolled:
+			kinds[k] = int(kinds.get(k, 0)) + 1
+	t.ok(kinds.has("bios") and kinds.has("cache") and kinds.has("booster"),
+		"BIOS, Cache und Booster kommen vor (%s)" % [kinds])
+
+
+func test_the_credit_booster_doubles_three_fights() -> void:
+	var run := RunState.start(4242)
+	run.credit_boost = 3
+	var normal := run.battle_credits(true)
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	t.equal(run.history[-1]["credits"], normal * 2, "doppelte Credits")
+	t.equal(run.credit_boost, 2, "einer verbraucht")
+	t.equal(_through_json(run).credit_boost, 2, "bleibt im Spielstand")
+
+
+func test_a_faction_core_goes_home() -> void:
+	var run := RunState.start(4243)
+	var item := {"kind": "faction_core", "faction": run.faction_core_key(), "title": "Kern"}
+	run._apply_loot(item)
+	t.equal(item["where"], "home", "nach Hause")
+	t.equal(run.home_queue.size(), 1, "in der Liste")
+	t.equal(run.faction_core_key(), "neon", "Neon City gibt Neon-Kerne")
+
+
+func test_bios_offers_are_usable_or_close() -> void:
+	var run := RunState.start(77)
+	run.phase = RunState.Phase.STOP
+	run.storage.append_array([&"mod_brand", &"mod_rapid_fire"])
+	for seed_value in 10:
+		run.run_seed = seed_value
+		for id in run.roll_bios_offers():
+			var state := run.bios_state(ModuleData.get_module(id))
+			t.ok(int(state["rank"]) <= 2, "%s ist sofort oder bald nutzbar" % id)
+
+
 func test_the_loot_text_follows_the_cache_rules() -> void:
 	# Die Kampfkarte nennt die Beute aus run.loot (Caches seit 14. Nov. 2026),
 	# nicht mehr den alten Text "Teil der Gegner".

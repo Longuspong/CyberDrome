@@ -32,6 +32,11 @@ var _footer: VBoxContainer
 
 ## Zwischenstopp: der angetippte Lagerplatz (-1 = keiner).
 var _selected_storage: int = -1
+## BIOS-Wahl nach dem Sieg (19. Nov. 2026): das angetippte Angebot (-1 =
+## keins) und ob der Spieler sie verschoben hat (Lager voll) -- dann steht
+## sie wie frueher oben im Zwischenstopp.
+var _bios_pick: int = -1
+var _bios_later: bool = false
 
 ## Zwischenstopp: Rezeptbuch offen (Popup)? Filter im Rezeptbuch.
 var _recipes_open: bool = false
@@ -182,7 +187,14 @@ func _refresh() -> void:
 	else:
 		_header_round.text = "%s · Kampf %d/%d" % [_region_name(run), mini(run.round, RunState.rounds_total()),
 			RunState.rounds_total()]
-	if run.phase == RunState.Phase.STOP:
+	if run.bios_offers.is_empty():
+		_bios_pick = -1
+		_bios_later = false
+	var bios_choice := run.phase == RunState.Phase.STOP and not run.bios_offers.is_empty() \
+		and not _bios_later
+	if bios_choice:
+		_set_title("Matrix-BIOS")
+	elif run.phase == RunState.Phase.STOP:
 		# Eine Zeile statt Titel und Leiste (16. Nov. 2026).
 		_set_title("")
 		_title_holder.add_child(_stop_hud(run))
@@ -193,6 +205,9 @@ func _refresh() -> void:
 	_lives_box.visible = run.phase == RunState.Phase.PREPARE
 	_refresh_lives(run)
 	_refresh_squad(run)
+	if bios_choice:
+		_show_bios_choice(run)
+		return
 	match run.phase:
 		RunState.Phase.PREPARE: _show_prepare(run)
 		RunState.Phase.STOP: _show_stop(run)
@@ -740,13 +755,16 @@ func _loot_page(run: RunState) -> Dictionary:
 		var where: String = {"lager": "  →  Lager", "squad": "  →  Squad",
 			"tasche": "  →  Tasche (nach dem Einsatz in den Hangar)",
 			"home": "  →  nach Hause", "caches": "  →  Einsatz-Beute",
-			"coins": "  →  Einsatz-Beute"}.get(str(item.get("where", "")), "")
+			"coins": "  →  Einsatz-Beute", "booster": "  →  aktiv"}.get(str(item.get("where", "")), "")
 		lines.append(["%s%s%s" % ["[Selten] " if item.get("rare", false) else "", item["title"], where],
 			COLOR_WARN if item.get("rare", false) else Color.WHITE])
 		if str(item.get("text", "")) != "":
 			lines.append([str(item["text"]), COLOR_MUTED, UiKit.SMALL])
 	if run.last_loot.is_empty():
 		lines.append(["Diesmal keine Teile.", COLOR_MUTED, UiKit.SMALL])
+	if run.credit_boost > 0:
+		lines.append(["Credit-Booster: noch %d %s doppelte Credits" % [run.credit_boost,
+			"Kampf" if run.credit_boost == 1 else "Kämpfe"], Arcade.CYAN])
 	return {"title": "Beute", "lines": lines}
 
 
@@ -2282,3 +2300,111 @@ class ScrapZone extends PanelContainer:
 		var corners := [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]
 		for i in 4:
 			draw_dashed_line(corners[i], corners[(i + 1) % 4], Arcade.ROSE, 2.0, 5.0)
+
+
+# ---------------------------------------------------------------------------
+# BIOS-Wahl nach dem Sieg (19. Nov. 2026, Ablauf des Spielers): Endscreen ->
+# diese Wahl -> Zwischenstopp mit dem BIOS im Lager.
+# ---------------------------------------------------------------------------
+
+## Eigener Bildschirm vor dem Zwischenstopp: je Angebot eine Karte "aus X wird
+## Y" mit der neuen Wirkung und wie nah es ist; antippen waehlt, "Nehmen"
+## bestaetigt.
+func _show_bios_choice(run: RunState) -> void:
+	if _bios_pick >= run.bios_offers.size():
+		_bios_pick = -1
+	var last: Dictionary = run.history[-1] if not run.history.is_empty() else {}
+	var why := "Chaos-Sieg" if bool(last.get("chaos", false)) else "Elite-Sieg"
+	var intro := _label("%s: wähle ein BIOS. Es wertet ein Rezept auf und kommt ins Lager." % why,
+		UiKit.BODY, UiKit.TEXT)
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_side.add_child(intro)
+	for index in run.bios_offers.size():
+		var item := ModuleData.get_module(run.bios_offers[index])
+		if item != null:
+			_side.add_child(_bios_card(run, index, item))
+
+	var blocker := run.bios_blocker()
+	var take := _big_button("Nehmen")
+	take.disabled = _bios_pick < 0 or blocker != ""
+	take.pressed.connect(func():
+		if run.choose_bios(_bios_pick):
+			Accessibility.vibrate(30, true)
+			_flash_storage = run.storage.size() - 1
+		_bios_pick = -1
+		_refresh())
+	if blocker != "" and blocker != "keine Wahl":
+		var note := _label("%s -- im Zwischenstopp Platz schaffen, dann wählen." % blocker,
+			UiKit.SMALL, COLOR_BAD)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_side.add_child(note)
+		var later := UiKit.button("Zum Zwischenstopp")
+		later.pressed.connect(func():
+			_bios_later = true
+			_refresh())
+		_main_action(later)
+		return
+	_main_action(take)
+
+
+## Eine Angebotskarte: oben "Rezept -> BIOS-Rezept" mit beiden Kartuschen,
+## darunter die neue Regel und wie nah es ist (sofort, bald, angefangen).
+func _bios_card(run: RunState, index: int, item: ModuleData) -> Control:
+	var recipe := ModuleData.get_module(item.bios_recipe)
+	var result := ModuleData.get_module(item.bios_result)
+	var tile := Tile.new("bios_pick:%d:%s" % [index, item.id], null, "", Vector2(0, 0))
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.managed = true
+	tile.selected = index == _bios_pick
+	tile.accent = ModuleData.CLASS_COLOR["bios"]
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	box.add_child(row)
+	if recipe != null:
+		row.add_child(ModuleChip.new(recipe, MODULE_EDGE))
+	var arrow := UiIcon.rect("play", 16, Arcade.YELLOW)
+	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(arrow)
+	if result != null:
+		row.add_child(ModuleChip.new(result, MODULE_EDGE))
+	var names := VBoxContainer.new()
+	names.add_theme_constant_override("separation", 0)
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(names)
+	names.add_child(_label("aus %s wird" % (recipe.display_name if recipe != null else "?"),
+		UiKit.SMALL, COLOR_MUTED))
+	names.add_child(Arcade.label((result.display_name if result != null else item.display_name).to_upper(),
+		17, Color.WHITE, "display"))
+	var state := run.bios_state(item)
+	var rank := int(state.get("rank", 3))
+	var tag_text: String = ["SOFORT NUTZBAR", "BALD: ZUTATEN DA",
+		"ANGEFANGEN: %d/%d ZUTATEN" % [int(state.get("have", 0)), int(state.get("need", 2))],
+		"NOCH KEINE ZUTAT"][rank]
+	var tag_color: Color = [COLOR_GOOD, Arcade.CYAN, Arcade.YELLOW, COLOR_MUTED][rank]
+	box.add_child(Arcade.label(tag_text, 12, tag_color, "bold", 0.1))
+	if result != null:
+		var extra := result.effect_lines(result.bonus)
+		if not extra.is_empty():
+			var line := _label("Neu: %s" % ", ".join(extra), UiKit.SMALL, UiKit.TEXT)
+			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			box.add_child(line)
+		var base := result.effect_lines(_without(result.effects, result.bonus))
+		if not base.is_empty():
+			var line := _label("Dazu wie bisher: %s" % ", ".join(base), UiKit.SMALL, COLOR_MUTED)
+			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			box.add_child(line)
+	tile.add_extra(box)
+	tile.on_select = func():
+		_bios_pick = index
+		_refresh()
+	tile.on_action = func():
+		_bios_pick = index
+		if run.choose_bios(index):
+			Accessibility.vibrate(30, true)
+			_flash_storage = run.storage.size() - 1
+		_bios_pick = -1
+		_refresh()
+	return tile

@@ -525,6 +525,9 @@ func deliver_run_home() -> Array:
 					if part != null:
 						entry.assignments[slot] = roster.add_instance(part.id)
 				delivered.append(item)
+			"faction_core":
+				roster.add_faction_core(str(item.get("faction", "")))
+				delivered.append(item)
 	run.home_queue.clear()
 	# Lootcaches und Platzhaltercoin (14. Nov. 2026): am Ende nach Hause.
 	if run.is_over() and (not run.run_caches.is_empty() or run.run_coins > 0):

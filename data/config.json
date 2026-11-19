@@ -71,8 +71,16 @@
         "uebernommen): nach einem Sieg mit cache_chance je Stufe ein Cache der Fraktion,",
         "sonst coins Platzhaltercoin. Elite und Chaos sicher. Der letzte Kampf gibt",
         "final_caches, ein geschaffter Einsatz zusaetzlich complete_caches, eine",
-        "Niederlage loss_coins. Caches sind noch nicht zu oeffnen (Hangar-Shop folgt)."
+        "Niederlage loss_coins. Caches sind noch nicht zu oeffnen (Hangar-Shop folgt).",
+        "chaos (19. Nov. 2026, Spieler): ein Wurf je gewonnenem Chaos-Kampf -- bios BIOS-Wahl",
+        "(zaehlt zu rules.bios_elite_wins; ist die Grenze erreicht oder ist es der letzte",
+        "Kampf, wird es ein Cache), cache Lootcache, booster Credit-Booster (die naechsten",
+        "booster_fights Kaempfe booster_mult-fache Credits), faction_core ein Fraktionskern",
+        "der Gebietsfraktion (faction_cores, kommt am Ende nach Hause)."
       ],
+      "chaos": {"bios": 0.33, "cache": 0.33, "booster": 0.33, "faction_core": 0.01},
+      "booster_fights": 3, "booster_mult": 2.0,
+      "faction_cores": {"city": "neon", "green": "solar", "plant7": "mecha"},
       "cache_chance": {"easy": 0.25, "normal": 0.5, "elite": 1.0},
       "coins": {"easy": 5, "normal": 10, "elite": 0},
       "final_caches": 2, "complete_caches": 1, "loss_coins": 3,

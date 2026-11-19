@@ -650,7 +650,8 @@ def build_bios(ws):
     r = len(rows) + 3
     ws.cell(row=r, column=1, value=f"Verkauf eines BIOS: {MODULES['sell_value']['bios']} Credits. "
             f"Angebot: 1 aus {RULES['bios_offers']} fest nach den ersten {RULES['bios_elite_wins']} gewonnenen "
-            f"Elite-Kaempfen (danach ein Lootcache), nie nach dem letzten Kampf. "
+            f"Elite-Kaempfen (danach ein Lootcache), nie nach dem letzten Kampf; Chaos-Kaempfe mit "
+            f"{round(CONFIG['run']['loot']['chaos']['bios'] * 100)} %. "
             f"Hoechstens ein BIOS-Rezept je DROME, kein Extra-Modulplatz.").font = BODY_FONT
 
 
