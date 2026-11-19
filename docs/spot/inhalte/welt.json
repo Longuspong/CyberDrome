@@ -1,0 +1,132 @@
+{
+  "_kommentar": [
+    "SPOT-Datei Welt & Fortschritt: Fraktionen, Stages, Story, Lootcaches, Hangar-Shop, Formationen, Maps.",
+    "Texte fuer die SPOT-Tabellen (docs/spot/*.xlsx), die NICHT in den Spieldaten stehen.",
+    "Alle Zahlen und Namen aus dem Spiel liest tools/build_spot.py direkt aus parts/ und data/*.json.",
+    "Nach jeder Aenderung: python3 tools/build_spot.py",
+    "status: gebaut | entschieden | Vorschlag | offen"
+  ],
+
+  "fraktionen": [
+    {"name": "Neon Ninja's", "kurz": "Neon", "gebiet": "Neon City", "profil": "Kämpfer", "virus": "Stolz: nehmen Hinweise von außen schlecht an, entwickeln eine Eigendynamik. Starre Taktik, kein Zurückweichen. Lernregion.", "chassis_vorschlag": "Shinobi (Jäger) -- Hinterhalt: der erste Treffer auf ein neues Ziel +50 %", "boss": "Oni (Level 5), Shogun Kage (Level 10)", "status": "gebaut (Profil + Teams); Chassis Vorschlag"},
+    {"name": "Solar Sentients", "kurz": "Solar", "gebiet": "Parkanlage", "profil": "Rudel", "virus": "Wohl der ganzen Region. Alles Synergie -- das Netz, über das sich der Virus ausbreitet.", "chassis_vorschlag": "Spore (Rudel) -- Teilung: zerfällt beim Tod in zwei schwache Sporlinge", "boss": "--", "status": "gebaut (Profil + erste Teams); Chassis Vorschlag"},
+    {"name": "Mega Mechas", "kurz": "Mecha", "gebiet": "Factory 5", "profil": "Festung", "virus": "Verabscheuen Energietechnik, nur die Starken überleben -- und brechen trotzdem zusammen (Wendepunkt 1).", "chassis_vorschlag": "Bastion (Geschütz) -- Verankert: läuft nicht, +2 Reichweite und Schildwall für Nachbarn", "boss": "--", "status": "gebaut (Profil + erste Teams); Chassis Vorschlag"},
+    {"name": "Hipstar Hackers", "kurz": "Hipstar", "gebiet": "Dachterrassen", "profil": "Trickser (Vorschlag)", "virus": "Jeder Bug ist ein Feature: der Virus tarnt sich im Chaos, sie bemerken ihn zuletzt (Wendepunkt 2).", "chassis_vorschlag": "Hook (Trickser) -- Greifhaken: jede Fähigkeit zieht ihr Ziel 2 Felder heran", "boss": "--", "status": "offen"}
+  ],
+
+  "stages_zusatz": [
+    {"stage": 4, "id": "roof", "name": "Dachterrassen", "boden": "--", "fraktion": "Hipstar Hackers", "profil": "Trickser (Vorschlag)", "text": "Ziehen die Hinterreihe nach vorn, stellen Hologramm-Köder, stören den Takt.", "status": "geplant"}
+  ],
+
+  "story_level": [
+    {"level": 1, "titel": "Zulassung I", "squad": 2, "kaempfe": 3, "gegner": "Sparring, je 2", "neu": "Aufstellen, Kampf lesen", "status": "Vorschlag"},
+    {"level": 2, "titel": "Zulassung II", "squad": 3, "kaempfe": 3, "gegner": "Sparring, je 3", "neu": "Laden, erstes Modul", "status": "Vorschlag"},
+    {"level": 3, "titel": "Erster Ligakampf", "squad": 4, "kaempfe": 4, "gegner": "Straßenbande, Klingentrupp", "neu": "Gegnertypen, Gegnerwahl", "status": "Vorschlag"},
+    {"level": 4, "titel": "Die Werfer", "squad": 4, "kaempfe": 4, "gegner": "Wurfsterne, Hornissen", "neu": "Elite-Knoten", "status": "Vorschlag"},
+    {"level": 5, "titel": "Das Dojo", "squad": 4, "kaempfe": 5, "gegner": "Eisenfaust + Boss Oni", "neu": "Rezepte, erster Boss", "status": "Vorschlag"},
+    {"level": 6, "titel": "Schattenviertel", "squad": 4, "kaempfe": 5, "gegner": "Schattenläufer, Klingentrupp", "neu": "Gegner tragen Rezepte", "status": "Vorschlag"},
+    {"level": 7, "titel": "Rivalen", "squad": 4, "kaempfe": 5, "gegner": "gemischt, Gegner Level 2", "neu": "Matrix-BIOS", "status": "Vorschlag"},
+    {"level": 8, "titel": "Die Meister", "squad": 4, "kaempfe": 6, "gegner": "Schattenrat, Nachtwache", "neu": "nur noch Elite-Teams als Elite", "status": "Vorschlag"},
+    {"level": 9, "titel": "Vor dem Turm", "squad": 4, "kaempfe": 6, "gegner": "alles, Gegner Level 3", "neu": "--", "status": "Vorschlag"},
+    {"level": 10, "titel": "Der Turm", "squad": 4, "kaempfe": 6, "gegner": "Klingenmeister + Boss Shogun Kage", "neu": "Endlos-Modus", "status": "Vorschlag"}
+  ],
+
+  "bosse": [
+    {"name": "Oni", "fraktion": "Neon Ninja's", "level": 5, "drome": "Molok mit Hammer + Bollwerk-Ramme, BIOS-Rezept Berserker", "lehrt": "nicht alle in den Nahkampf schicken", "status": "Vorschlag"},
+    {"name": "Shogun Kage", "fraktion": "Neon Ninja's", "level": 10, "drome": "Nimbus mit Plasmaklinge, BIOS-Rezept Taktgeber -- Echo macht aus jedem 3. Hieb einen doppelten Aufschlitzer", "lehrt": "den Wirker zuerst, mit Betäubung oder Locken", "status": "Vorschlag"}
+  ],
+
+  "story": [
+    {"thema": "Grundidee", "text": "Dystopie: Roboter und Aufrüstung von Menschen halfen der Gesellschaft lange. Dann übernimmt ein Cybervirus, der sich vermehrt und anpasst, die Roboter. Ein Systemneustart hilft nicht.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Dilemma", "text": "Die einzige Waffe gegen Roboter sind wieder Roboter. Jede DROME kann selbst infiziert werden -- jeder Sieg hat seinen Preis.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Name", "text": "CyberDrome = Setting und Einheiten. DROME = Death Robot Omni Machine Executor (mit M, nicht Drone).", "status": "Leitfaden 14. Nov."},
+    {"thema": "Erzählperspektive", "text": "Keine personifizierte Hauptfigur, der Spieler ist kein Commander und spricht kaum. Beobachtende Sicht: das Tutorial wirkt wie ein Video. Erzählt wird über Commander und Fraktionsoberhäupter und über Missverständnisse, die sich aufklären. Nach dem ersten großen Twist: vom Zuschauer zu 'Ich gehöre zum Team'.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Geheimer Twist", "text": "Hängt mit der fehlenden Hauptfigur zusammen. Bewusst noch nicht festgehalten.", "status": "offen"},
+    {"thema": "Struktur der Welt", "text": "Wie Everspace 2: wirkt wie ein Krieg der Fraktionen, dahinter ein Drahtzieher; ein Gegenspieler verbindet die Einsichtigen. Regionen werden freigeschaltet, man springt zwischen ihnen. Schwierigkeit je Region in einem Rahmen, kein steiler Anstieg.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Prolog / Tutorial", "text": "„Die Welt, wie sie war“: video-artiger Einstieg, Roboter als Fortschritt zeigen, damit der Verlust wehtut. Erste Störungen wirken wie Pannen.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Akt 1", "text": "„Der vergiftete Brunnen“: Unfälle gehen immer mit Ressourcentransfers einher, die Fraktionen verdächtigen sich gegenseitig. Neon Ninja's blocken Hinweise ab, Solar Sentients werden über ihre Vernetzung getroffen. Leitfrage: Wer sabotiert hier wen?", "status": "Leitfaden 14. Nov."},
+    {"thema": "Wendepunkt 1", "text": "„Selbst die Starken fallen“: die Mega Mechas brechen trotz Abkehr von Energietechnik zusammen. Leitfrage: Ist das überhaupt ein Krieg zwischen Fraktionen?", "status": "Leitfaden 14. Nov."},
+    {"thema": "Wendepunkt 2", "text": "„Im Rauschen versteckt“: bei den Hipstar Hackers wird aufgedeckt, dass es ein Virus ist -- die Exploit-Experten haben ihn als Letzte bemerkt.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Akt 2", "text": "„Der Sondertrupp“: Einsichtige aus allen Fraktionen schließen sich ohne Fraktionsbindung zusammen, verbunden vom Gegenspieler. Fraktionsübergreifende Teams werden Kern des Spiels.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Akt 3", "text": "„Der Preis der Waffe“: je stärker die DROMEs, desto größer das Infektionsrisiko. Auflösung des geheimen Twists.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Fraktionsvarianten", "text": "Standard-DROMEs (Molok Tank, Vireo Allrounder, Nimbus, Strix) sind die ersten Militärformen. Fraktionsvarianten füllen Nischen. Fest: Solar-Molok teilt sich in zwei DROMEs, die sich wieder zusammensetzen können; Neon-Vireo mit mehr Energieschaden und Schild. Der Sondertrupp spiegelt das gemischte Team des Spielers.", "status": "Leitfaden 14. Nov."},
+    {"thema": "Infinity-Einsatz", "text": "Story-Einbettung offen (früher: Chaos-Netz unter der Stadt).", "status": "offen"}
+  ],
+
+  "caches": [
+    {"cache": "Neon Cache", "fraktion": "Neon Ninja's", "gebiet": "Neon City", "preis_coin": 50, "status": "entschieden"},
+    {"cache": "Solar Cache", "fraktion": "Solar Sentients", "gebiet": "Parkanlage", "preis_coin": 50, "status": "entschieden"},
+    {"cache": "Mecha Cache", "fraktion": "Mega Mechas", "gebiet": "Factory 5", "preis_coin": 50, "status": "Vorschlag"},
+    {"cache": "Hipstar Cache", "fraktion": "Hipstar Hackers", "gebiet": "Dachterrassen", "preis_coin": 50, "status": "Vorschlag"}
+  ],
+
+  "cache_drops": [
+    {"cache": "Neon Cache", "art": "Waffe", "gegenstand": "eq_plasma_blade", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "Waffe", "gegenstand": "eq_hammer", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "Waffe", "gegenstand": "eq_bulwark_ram", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "Waffe", "gegenstand": "eq_boomerang", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "DROME", "gegenstand": "scout_body", "menge": 1, "gewicht": 2, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "Credits", "gegenstand": "Credits", "menge": 30, "gewicht": 20, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "Platzhaltercoin", "gegenstand": "Platzhaltercoin", "menge": 15, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Neon Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Neon Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Solar Cache", "art": "Waffe", "gegenstand": "eq_pulse_blaster", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Solar Cache", "art": "Waffe", "gegenstand": "eq_neon_blaster", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Solar Cache", "art": "Waffe", "gegenstand": "eq_rune_staff", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Solar Cache", "art": "Waffe", "gegenstand": "eq_boomerang", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Solar Cache", "art": "DROME", "gegenstand": "mage_body", "menge": 1, "gewicht": 2, "status": "Vorschlag"},
+    {"cache": "Solar Cache", "art": "Credits", "gegenstand": "Credits", "menge": 30, "gewicht": 20, "status": "Vorschlag"},
+    {"cache": "Solar Cache", "art": "Platzhaltercoin", "gegenstand": "Platzhaltercoin", "menge": 15, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Solar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Solar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Solar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Mecha Cache", "art": "Waffe", "gegenstand": "eq_hammer", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Mecha Cache", "art": "Waffe", "gegenstand": "eq_deflector", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Mecha Cache", "art": "Waffe", "gegenstand": "eq_bulwark_ram", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Mecha Cache", "art": "Waffe", "gegenstand": "eq_mortar", "menge": 1, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Mecha Cache", "art": "DROME", "gegenstand": "jugg_body", "menge": 1, "gewicht": 2, "status": "Vorschlag"},
+    {"cache": "Mecha Cache", "art": "Credits", "gegenstand": "Credits", "menge": 30, "gewicht": 20, "status": "Vorschlag"},
+    {"cache": "Mecha Cache", "art": "Platzhaltercoin", "gegenstand": "Platzhaltercoin", "menge": 15, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Mecha Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Mecha Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Mecha Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Hipstar Cache", "art": "Credits", "gegenstand": "Credits", "menge": 30, "gewicht": 20, "status": "Vorschlag"},
+    {"cache": "Hipstar Cache", "art": "Platzhaltercoin", "gegenstand": "Platzhaltercoin", "menge": 15, "gewicht": 10, "status": "Vorschlag"},
+    {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
+    {"cache": "Neon Cache", "art": "Fraktionskern", "gegenstand": "Neon-Kern", "menge": 1, "gewicht": 3, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "Baukern", "gegenstand": "Baukern", "menge": 1, "gewicht": 8, "status": "Vorschlag"},
+    {"cache": "Neon Cache", "art": "DROME", "gegenstand": "Neon Vireo", "menge": 1, "gewicht": 1, "status": "Vorschlag"}
+  ],
+
+  "hangar_shop": [
+    {"angebot": "Neon Cache", "art": "Cache", "preis": 50, "wirkung": "ein Neon Cache", "status": "gebaut"},
+    {"angebot": "Solar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Solar Cache", "status": "gebaut"},
+    {"angebot": "Mecha Cache", "art": "Cache", "preis": 50, "wirkung": "ein Mecha Cache", "status": "gebaut"},
+    {"angebot": "Hipstar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Hipstar Cache", "status": "Vorschlag"},
+    {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "welche Upgrades? -> Offene Punkte", "status": "offen"},
+    {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
+    {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
+    {"angebot": "Baukern", "art": "Upgrade", "preis": 20, "wirkung": "1 Baukern (3 = ein Standard-DROME)", "status": "gebaut"}
+  ],
+
+  "formationen": [
+    {"formation": "Neon-Squad", "fraktion": "Neon", "welle": 1, "dromes": "Neon Vireo", "assault": 1, "sniper": 1, "support": 1, "variante": "Basic", "module": "Grundausrüstung", "text": "Grundformation", "status": "Vorschlag"},
+    {"formation": "Neon-Squad", "fraktion": "Neon", "welle": 2, "dromes": "Neon Vireo", "assault": 1, "sniper": 1, "support": 1, "variante": "Basic", "module": "+ zusätzliche Module", "text": "Zusätzliche Module", "status": "Vorschlag"},
+    {"formation": "Neon-Squad", "fraktion": "Neon", "welle": 3, "dromes": "Neon Vireo", "assault": 2, "sniper": 1, "support": 1, "variante": "Basic", "module": "wie Welle 2", "text": "Verstärkung", "status": "Vorschlag"},
+    {"formation": "Neon-Squad", "fraktion": "Neon", "welle": 4, "dromes": "Neon Vireo + Neon Nimbus", "assault": 2, "sniper": 1, "support": 1, "variante": "Basic", "module": "wie Welle 2", "text": "Support-Erweiterung: zweiter DROME", "status": "Vorschlag"},
+    {"formation": "Neon Bullies (neu)", "fraktion": "Neon", "welle": 1, "dromes": "", "assault": null, "sniper": null, "support": null, "variante": "", "module": "", "text": "alt: 2 Tanks + 2 Plänkler -- neue Fassung offen", "status": "offen"}
+  ],
+
+  "_kommentar_maps": "Blatt Maps (14. Nov. 2026): je Map ein Raster, Punkt = leer. Buchstaben: X ausserhalb/Wand, H Hindernis, F Frontline, M Mittellinie, B Backline.",
+
+  "maps": [
+    {"name": "Heute (Beispiel)", "gebiet": "alle", "notiz": "So ist es heute gebaut: 20 x 20, Streifen 3 x 8, ein Feld vom Rand. Gezeichnet liegend: Spieler links, Gegner rechts gespiegelt; im Spiel wird die Karte für die Iso-Ansicht gedreht. Hindernisse werden je Seed gewürfelt und fehlen hier.", "zeilen": ["....................", "....................", "....................", "....................", "....................", "....................", ".BMF............FMB.", ".BMF............FMB.", ".BMF............FMB.", ".BMF............FMB.", ".BMF............FMB.", ".BMF............FMB.", ".BMF............FMB.", ".BMF............FMB.", "....................", "....................", "....................", "....................", "....................", "...................."]},
+    {"name": "", "gebiet": "", "notiz": "", "zeilen": ["........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................"]},
+    {"name": "", "gebiet": "", "notiz": "", "zeilen": ["........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................"]},
+    {"name": "", "gebiet": "", "notiz": "", "zeilen": ["........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................"]},
+    {"name": "", "gebiet": "", "notiz": "", "zeilen": ["........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................", "........................"]}
+  ]
+}

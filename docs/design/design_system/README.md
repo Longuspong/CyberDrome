@@ -86,7 +86,7 @@ Die 82 Symbole unter **Icons** sind 24 x 24, Strich 2 (Kreuze und Haken 2,6), ec
 
 ## Herkunft der Werte
 
-Die Tokens kommen aus der SPOT (`docs/spot/inhalte.json`: `design_farben`, `design_tokens`); `tools/build_spot.py` schreibt sie nach `docs/design/tokens.json`. Werte dort aendern, nicht hier.
+Die Tokens kommen aus der SPOT (`docs/spot/inhalte/design.json`: `design_farben`, `design_tokens`); `tools/build_spot.py` schreibt sie nach `docs/design/tokens.json`. Werte dort aendern, nicht hier.
 
 ## Schriften
 

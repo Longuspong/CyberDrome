@@ -22,7 +22,7 @@ hochgeladen; die Vorschauen verweisen auf sie als `/_blob/<id>` (IDs in
 
 ## Aendern
 
-1. Farben und Werte: in `docs/spot/inhalte.json` (`design_farben`,
+1. Farben und Werte: in `docs/spot/inhalte/design.json` (`design_farben`,
    `design_tokens`), dann `python3 tools/build_spot.py`.
 2. Texte und Komponenten: hier bearbeiten.
 3. Ins Artefakt uebernehmen: einen Ordner mit `project/` anlegen (diese
