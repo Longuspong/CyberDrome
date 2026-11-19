@@ -65,15 +65,29 @@ func test_the_previewed_enemies_are_the_battle_enemies() -> void:
 	battle.free()
 
 
+## Seit 18. Nov. 2026: fest eine BIOS-Wahl nach jedem gewonnenen Elite-Kampf,
+## bis drei vergeben sind -- danach sicher ein Lootcache.
 func test_an_elite_win_guarantees_something_rare() -> void:
 	for seed_value in 20:
 		var run := _run_with_tier(RunState.Tier.ELITE, 1800 + seed_value * 301)
 		run.record_result(BattleManager.Outcome.VICTORY, [&"eq_pulse_blaster", &"eq_rune_staff"])
-		t.equal(run.last_loot.size(), 2, "BIOS oder DROME und ein Cache, kein Notstrom bei Elite")
-		var item: Dictionary = run.last_loot[0]
-		t.ok(item.get("rare", false), "%s ist selten" % item["title"])
-		t.ok(item["kind"] in ["bios", "drome"], "BIOS-Wahl oder DROME")
-		t.equal(run.last_loot[1]["kind"], "cache", "Elite: der Cache ist sicher")
+		var kinds: Array = run.last_loot.map(func(i): return i["kind"])
+		t.ok(kinds.has("bios"), "Elite: fest eine BIOS-Wahl")
+		t.equal(run.bios_offers.size(), 3, "drei zur Wahl")
+		t.equal(run.bios_given, 1, "mitgezählt")
+		t.ok(not kinds.has("life"), "kein Notstrom bei Elite")
+		t.equal(kinds[-1], "cache", "Elite: der Cache ist sicher")
+
+
+func test_after_three_bios_an_elite_win_gives_a_cache() -> void:
+	for seed_value in 10:
+		var run := _run_with_tier(RunState.Tier.ELITE, 2400 + seed_value * 53)
+		run.bios_given = RunState.bios_elite_wins()
+		run.record_result(BattleManager.Outcome.VICTORY, [&"eq_pulse_blaster"])
+		var kinds: Array = run.last_loot.map(func(i): return i["kind"])
+		t.ok(not kinds.has("bios"), "keine vierte BIOS-Wahl")
+		t.ok(run.bios_offers.is_empty(), "und kein Angebot")
+		t.equal(kinds[-1], "cache", "stattdessen sicher ein Cache")
 
 
 ## Seit 14. Nov. 2026 Lootcaches statt Teilen und Credits (SPOT-Blatt
@@ -474,7 +488,7 @@ func test_a_run_survives_saving_and_loading() -> void:
 	run.storage.append_array([&"mod_rapid_fire", &"bios_metronome"])
 	run.bag.append(&"eq_mortar")
 	run.squad[0].modules[run.squad[0].equip_slots()[0]] = [&"mod_capacitor", &"mod_seeker"]
-	run.squad[1].chassis_bios = true
+	run.bios_given = 2
 	run.set_target_recipe(&"mod_gunslinger")
 	run.credits = 17
 	var back := _through_json(run)
@@ -490,7 +504,7 @@ func test_a_run_survives_saving_and_loading() -> void:
 	t.equal(back.target_recipe, &"mod_gunslinger", "Ziel-Rezept")
 	t.equal(back.squad.size(), run.squad.size(), "Squad")
 	t.equal(back.squad[0].modules, run.squad[0].modules, "Module im Halter")
-	t.ok(back.squad[1].chassis_bios, "Chassis-BIOS")
+	t.equal(back.bios_given, 2, "vergebene BIOS-Wahlen")
 	t.equal(back.shop_offers, run.shop_offers, "Laden")
 	for i in run.squad.size():
 		t.equal(back.squad[i].slots, run.squad[i].slots, "%s: Waffen" % run.squad[i].display_name)
@@ -723,6 +737,71 @@ func test_a_chaos_fight_only_shows_up_in_the_endless_run() -> void:
 		t.ok(build.is_valid() and not build.weapons().is_empty(), "%s ist kampftauglich" % build.display_name)
 	t.equal(found.enemies().map(func(b): return b.to_save()),
 		_through_json(found).enemies().map(func(b): return b.to_save()), "dieselben nach dem Laden")
+
+
+## Ein Infinity-Einsatz, der gerade vor einem Chaos-Kampf steht.
+func _chaos_run(base_seed: int) -> RunState:
+	for seed_value in 400:
+		var run := RunState.start(base_seed + seed_value, [], "endless")
+		run.round = 3
+		run._pick_default_node()
+		var nodes := run.row()
+		for i in run.available_nodes():
+			if nodes[i]["chaos"]:
+				run.choose_node(i)
+				return run
+	return null
+
+
+## Chaos-Beute (19. Nov. 2026): ein Wurf -- je etwa ein Drittel BIOS-Wahl,
+## Cache und Credit-Booster, selten ein Fraktionskern.
+func test_a_chaos_win_rolls_bios_cache_or_booster() -> void:
+	var kinds := {}
+	var base := 30000
+	for n in 60:
+		var run := _chaos_run(base)
+		if run == null:
+			break
+		base = run.run_seed + 1
+		run.record_result(BattleManager.Outcome.VICTORY, [])
+		var rolled: Array = run.last_loot.map(func(i): return i["kind"]).filter(
+			func(k): return k in ["bios", "cache", "booster", "faction_core", "coins"])
+		t.equal(rolled.size(), 1, "genau ein Chaos-Wurf (%s)" % [rolled])
+		t.ok(not rolled.has("coins"), "kein Platzhaltercoin im Chaos")
+		for k in rolled:
+			kinds[k] = int(kinds.get(k, 0)) + 1
+	t.ok(kinds.has("bios") and kinds.has("cache") and kinds.has("booster"),
+		"BIOS, Cache und Booster kommen vor (%s)" % [kinds])
+
+
+func test_the_credit_booster_doubles_three_fights() -> void:
+	var run := RunState.start(4242)
+	run.credit_boost = 3
+	var normal := run.battle_credits(true)
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	t.equal(run.history[-1]["credits"], normal * 2, "doppelte Credits")
+	t.equal(run.credit_boost, 2, "einer verbraucht")
+	t.equal(_through_json(run).credit_boost, 2, "bleibt im Spielstand")
+
+
+func test_a_faction_core_goes_home() -> void:
+	var run := RunState.start(4243)
+	var item := {"kind": "faction_core", "faction": run.faction_core_key(), "title": "Kern"}
+	run._apply_loot(item)
+	t.equal(item["where"], "home", "nach Hause")
+	t.equal(run.home_queue.size(), 1, "in der Liste")
+	t.equal(run.faction_core_key(), "neon", "Neon City gibt Neon-Kerne")
+
+
+func test_bios_offers_are_usable_or_close() -> void:
+	var run := RunState.start(77)
+	run.phase = RunState.Phase.STOP
+	run.storage.append_array([&"mod_brand", &"mod_rapid_fire"])
+	for seed_value in 10:
+		run.run_seed = seed_value
+		for id in run.roll_bios_offers():
+			var state := run.bios_state(ModuleData.get_module(id))
+			t.ok(int(state["rank"]) <= 2, "%s ist sofort oder bald nutzbar" % id)
 
 
 func test_the_loot_text_follows_the_cache_rules() -> void:

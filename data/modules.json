@@ -107,12 +107,7 @@
     "burst_stun": 0.5,
     "burst_cooldown": 6.0,
     "bios_offers": 3,
-    "bios_guard_share": 0.4,
-    "bios_lure_bonus": 1,
-    "bios_rush_attack_speed": 0.2,
-    "bios_ability_shield": 6,
-    "bios_steady_seconds": 2.5,
-    "bios_mark_mult": 2.0
+    "bios_elite_wins": 3
   },
   "modules": {
     "mod_rapid_fire": {
@@ -450,10 +445,10 @@
     }
   },
   "bios_kommentar": [
-    "Matrix-BIOS (MODULE_KONZEPT.md 6): späte Schicht, nur aus Elite-Kämpfen (Wahl 1 aus 3,",
-    "statt des Teils, nie nach dem letzten Kampf). Ein BIOS liegt im Lager.",
-    "bios: die Gegenstände. kind 'chassis': +1 Modulplatz (Molok: in einem Halter nach Wahl)",
-    "und eine verstärkte Passive (DromeBuild.chassis_bios, Zahlen in rules). kind 'recipe':",
+    "Matrix-BIOS (MODULE_KONZEPT.md 6): späte Schicht. Fest nach jedem gewonnenen Elite-Kampf",
+    "eine Wahl 1 aus rules.bios_offers, bis rules.bios_elite_wins BIOS vergeben sind (eins je",
+    "DROME), danach statt der Wahl ein Lootcache; nie nach dem letzten Kampf. Ein BIOS liegt im",
+    "Lager. Seit 18. Nov. 2026 nur noch Rezept-BIOS (kein Chassis-BIOS, kein Extra-Platz). kind 'recipe':",
     "verwandelt das Rezept 'recipe' im Rezeptbuch in 'result' (Rezept + BIOS oder",
     "Zutat + Zutat + BIOS). Höchstens ein BIOS-Rezept je DROME, nicht trennbar.",
     "bios_recipes: die Ergebnisse -- Wirkung des Grundrezepts plus bonus:",
@@ -468,34 +463,6 @@
     "  bonus_vs_unshielded  +Anteil Schaden gegen Gegner ohne Schild"
   ],
   "bios": {
-    "bios_vireo": {
-      "name": "Vireo-BIOS",
-      "short": "V+",
-      "kind": "chassis",
-      "chassis": "scout_body",
-      "text": "+1 Modulplatz. Sprint gibt dazu +20 % Angriffstempo."
-    },
-    "bios_molok": {
-      "name": "Molok-BIOS",
-      "short": "M+",
-      "kind": "chassis",
-      "chassis": "jugg_body",
-      "text": "+1 Modulplatz in einem Halter. Präsenz fängt 40 % statt 30 % ab und lockt 1 Feld weiter."
-    },
-    "bios_nimbus": {
-      "name": "Nimbus-BIOS",
-      "short": "N+",
-      "kind": "chassis",
-      "chassis": "mage_body",
-      "text": "+1 Modulplatz. Jede Fähigkeit gibt Schild (6 x Power / 10), das Echo darf ein anderes Ziel wählen."
-    },
-    "bios_strix": {
-      "name": "Strix-BIOS",
-      "short": "S+",
-      "kind": "chassis",
-      "chassis": "strix_body",
-      "text": "+1 Modulplatz. Anlegen schon nach 2,5 s und hält einen Feldwechsel aus; Markierungen halten doppelt."
-    },
     "bios_metronome": {
       "name": "Taktgeber-BIOS",
       "short": "T+",

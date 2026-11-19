@@ -116,6 +116,13 @@ var bag: Array = []
 ## Matrix-BIOS zur Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): BIOS-IDs,
 ## eines davon kommt ins Lager. Verfaellt beim Weitergehen.
 var bios_offers: Array = []
+## Credit-Booster aus dem Chaos-Kampf (19. Nov. 2026): so viele Kaempfe
+## bringen noch loot.booster_mult-fache Credits.
+var credit_boost: int = 0
+## Wie viele BIOS-Wahlen dieser Einsatz schon gegeben hat. Ab
+## rules.bios_elite_wins gibt ein Elite-Sieg einen Lootcache statt der Wahl
+## (18. Nov. 2026: hoechstens ein BIOS je DROME, drei im Squad).
+var bios_given: int = 0
 
 ## Lootcaches und Platzhaltercoin dieses Einsatzes (14. Nov. 2026). Gehen am
 ## Ende nach Hause -- auch bei einem gescheiterten Einsatz (Fortschritt
@@ -233,7 +240,7 @@ func to_dict() -> Dictionary:
 		"squad": squad.map(func(b): return b.to_save()),
 		"storage": storage.map(func(id): return str(id)),
 		"bag": bag.map(func(id): return str(id)),
-		"bios_offers": bios_offers.map(func(id): return str(id)),
+		"bios_offers": bios_offers.map(func(id): return str(id)), "bios_given": bios_given, "credit_boost": credit_boost,
 		"shop_offers": shop_offers.map(func(o): return {"module_id": str(o["module_id"]), "sold": o["sold"]}),
 		"rerolls": rerolls, "target_recipe": str(target_recipe),
 		"last_loot": _plain(last_loot), "last_growth": _plain(last_growth),
@@ -269,6 +276,8 @@ static func from_dict(data: Dictionary) -> RunState:
 	run.storage = (data.get("storage", []) as Array).map(func(id): return StringName(str(id)))
 	run.bag = (data.get("bag", []) as Array).map(func(id): return StringName(str(id)))
 	run.bios_offers = (data.get("bios_offers", []) as Array).map(func(id): return StringName(str(id)))
+	run.bios_given = int(data.get("bios_given", 0))
+	run.credit_boost = int(data.get("credit_boost", 0))
 	run.shop_offers = (data.get("shop_offers", []) as Array).map(func(o):
 		return {"module_id": StringName(str(o.get("module_id", ""))), "sold": bool(o.get("sold", false))})
 	run.rerolls = int(data.get("rerolls", 0))
@@ -665,6 +674,10 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 		return
 	var won := outcome == BattleManager.Outcome.VICTORY
 	var gain := battle_credits(won)
+	# Credit-Booster: gilt fuer die naechsten Kaempfe, gewonnen oder nicht.
+	if credit_boost > 0:
+		gain = roundi(float(gain) * float(loot_cfg().get("booster_mult", 2.0)))
+		credit_boost -= 1
 	credits += gain
 	history.append({"round": round, "won": won, "tier": tier, "credits": gain,
 		"node": node, "chaos": is_chaos()})
@@ -1048,15 +1061,24 @@ func roll_loot(enemy_pool: Array) -> Array:
 		var entry := _drome_reward(rng)
 		entry["rare"] = tier == Tier.ELITE
 		out.append(entry)
-	elif rare and not is_last_round() and not roll_bios_offers().is_empty():
-		# Elite: ein Matrix-BIOS zur Wahl statt des Teils -- nie nach dem
-		# letzten Kampf, dort waere es wertlos (Module verfallen).
-		out.append({"kind": "bios", "rare": true, "title": "Matrix-BIOS",
-			"text": "Wähle eines von %d -- es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))})
-	# Lootcaches statt Teilen und Credits (14. Nov. 2026, SPOT-Blatt Einsatz):
-	# je Stufe eine Chance auf einen Cache der Fraktion, sonst Platzhaltercoin.
-	# Der letzte Kampf eines Einsatzes (der schwerste) gibt zwei.
-	out.append(_cache_roll(rng, rare))
+	# Elite-Sieg (18. Nov. 2026, Vorgabe des Spielers): fest eine BIOS-Wahl,
+	# bis rules.bios_elite_wins vergeben sind (eins je DROME) -- danach
+	# sicher ein Lootcache. Nie nach dem letzten Kampf, dort waere ein BIOS
+	# wertlos (Module verfallen).
+	var bios_open := not is_last_round() and bios_given < bios_elite_wins()
+	var bios := tier == Tier.ELITE and bios_open
+	if bios:
+		out.append(_bios_entry())
+	if is_chaos():
+		# Chaos-Kampf (19. Nov. 2026): ein Wurf -- BIOS, Cache, Booster oder
+		# (selten) ein Fraktionskern.
+		out.append(_chaos_roll(rng, bios_open))
+	else:
+		# Lootcaches statt Teilen und Credits (14. Nov. 2026, SPOT-Blatt
+		# Einsatz): je Stufe eine Chance auf einen Cache der Fraktion, sonst
+		# Platzhaltercoin. Der letzte Kampf eines Einsatzes (der schwerste)
+		# gibt zwei. Elite ohne BIOS-Wahl gibt sicher einen Cache.
+		out.append(_cache_roll(rng, rare, tier == Tier.ELITE and not bios))
 	if tier != Tier.ELITE and lives < lives_max() \
 			and rng.randf() < float(settings.get("life_chance", cfg().get("life_chance", 0.35))):
 		out.append({"kind": "life", "title": "Notstrom",
@@ -1107,6 +1129,7 @@ func _apply_loot(item: Dictionary) -> void:
 		"bios":
 			item["where"] = "wahl"
 			bios_offers = roll_bios_offers()
+			bios_given += 1
 		"credits":
 			credits += int(item.get("amount", 0))
 		"cache":
@@ -1118,14 +1141,53 @@ func _apply_loot(item: Dictionary) -> void:
 			run_coins += int(item.get("amount", 0))
 		"life":
 			lives = mini(lives_max(), lives + 1)
+		"booster":
+			item["where"] = "booster"
+			credit_boost += int(item.get("fights", 3))
+		"faction_core":
+			item["where"] = "home"
+			home_queue.append(item.duplicate())
+
+
+func _bios_entry() -> Dictionary:
+	return {"kind": "bios", "rare": true, "title": "Matrix-BIOS",
+		"text": "Wähle eines von %d -- es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))}
+
+
+## Beute eines gewonnenen Chaos-Kampfs (loot.chaos): ein Wurf ueber BIOS,
+## Cache, Credit-Booster und Fraktionskern. Ist keine BIOS-Wahl mehr offen,
+## wird aus dem BIOS ein Cache.
+func _chaos_roll(rng: RandomNumberGenerator, bios_open: bool) -> Dictionary:
+	var odds: Dictionary = loot_cfg().get("chaos", {})
+	var roll := rng.randf()
+	var edge := float(odds.get("bios", 0.33))
+	if roll < edge:
+		return _bios_entry() if bios_open else _cache_roll(rng, true, true)
+	edge += float(odds.get("cache", 0.33))
+	if roll < edge:
+		return _cache_roll(rng, true, true)
+	edge += float(odds.get("booster", 0.33))
+	if roll < edge:
+		var fights := int(loot_cfg().get("booster_fights", 3))
+		return {"kind": "booster", "rare": true, "fights": fights, "title": "Credit-Booster",
+			"text": "Die nächsten %d Kämpfe bringen doppelte Credits." % fights}
+	var faction := faction_core_key()
+	return {"kind": "faction_core", "rare": true, "faction": faction,
+		"title": Roster.core_name(faction),
+		"text": "Fraktionskern -- kommt am Ende nach Hause (Bauen im Shop)."}
+
+
+## Die Fraktion des Gebiets als Schluessel der Fraktionskerne (neon ...).
+func faction_core_key() -> String:
+	return str((loot_cfg().get("faction_cores", {}) as Dictionary).get(str(region_id), "neon"))
 
 
 ## Cache oder Platzhaltercoin nach der Stufe (run.loot).
-func _cache_roll(rng: RandomNumberGenerator, rare: bool) -> Dictionary:
+func _cache_roll(rng: RandomNumberGenerator, rare: bool, sure: bool = false) -> Dictionary:
 	var loot := loot_cfg()
 	var key: String = "elite" if rare else TIER_KEYS[tier]
 	var chance := float((loot.get("cache_chance", {}) as Dictionary).get(key, 0.5))
-	if rng.randf() < chance:
+	if rng.randf() < chance or sure:
 		var count := int(loot.get("final_caches", 2)) if is_last_round() else 1
 		return {"kind": "cache", "cache": str(region_id), "count": count, "rare": count > 1,
 			"title": "%s%s" % ["%d× " % count if count > 1 else "", cache_name(region_id)],
@@ -1340,6 +1402,181 @@ func remove_module(drome: int, slot: String, position: int) -> bool:
 	return true
 
 
+# ---------------------------------------------------------------------------
+# Ziehen im Zwischenstopp (19. Nov. 2026, bestaetigt vom Spieler): Schrott
+# (auch aus der Waffe verkaufen), direkt aus dem Laden in eine Waffe kaufen,
+# Tauschen beim Ablegen auf einen belegten Platz. Jede Handlung laeuft als
+# Probe (``apply`` false): sie aendert alles, prueft den Aufbau und setzt
+# zurueck -- so sagt dieselbe Funktion vorher, ob und warum es nicht geht.
+# ---------------------------------------------------------------------------
+
+## Verkauft das Modul auf Platz ``position`` der Waffe ``slot`` (Schrott).
+## Gibt die Credits zurueck (0 = nichts verkauft).
+func sell_installed(drome: int, slot: String, position: int) -> int:
+	var id := _installed_at(drome, slot, position)
+	if phase != Phase.STOP or id == &"":
+		return 0
+	var build: DromeBuild = squad[drome]
+	var list: Array = build.modules[slot]
+	var value := ModuleData.sell_value(ModuleData.get_module(id))
+	list[position] = &""
+	_tidy_modules(build, slot, list)
+	credits += value
+	return value
+
+
+## Lagerplatz ``index`` auf Platz ``position`` einer Waffe: frei = einsetzen,
+## belegt = tauschen (das alte Modul nimmt den Lagerplatz ein). ``position``
+## -1 = erster freier Platz.
+func place_from_storage(index: int, drome: int, slot: String, position: int, apply: bool = true) -> String:
+	if not is_module_at(index):
+		return "kein Modul"
+	return _attempt(apply, func() -> String:
+		var old := _put(drome, slot, position, storage[index])
+		if old == &"!":
+			return "Modulplätze voll"
+		if old == &"":
+			storage.remove_at(index)
+		else:
+			storage[index] = old
+		return "")
+
+
+## Setzt ein eingebautes Modul um: auf einen freien Platz (auch in eine
+## andere Waffe oder einen anderen DROME) oder tauscht mit dem Modul dort.
+func move_installed(from_drome: int, from_slot: String, from_position: int,
+		drome: int, slot: String, position: int, apply: bool = true) -> String:
+	var id := _installed_at(from_drome, from_slot, from_position)
+	if id == &"":
+		return "kein Modul"
+	if from_drome == drome and from_slot == slot and (position == from_position or position < 0):
+		return "schon hier"
+	return _attempt(apply, func() -> String:
+		var source: Array = squad[from_drome].modules[from_slot]
+		source[from_position] = &""
+		var old := _put(drome, slot, position, id)
+		if old == &"!":
+			return "Modulplätze voll"
+		source[from_position] = old
+		return "")
+
+
+## Kauft Angebot ``offer`` direkt in eine Waffe: freier Platz = einsetzen,
+## belegter = tauschen (das alte Modul geht ins Lager). Ein volles Lager
+## stoert nur beim Tauschen.
+func buy_into(offer: int, drome: int, slot: String, position: int, apply: bool = true) -> String:
+	if phase != Phase.STOP or offer < 0 or offer >= shop_offers.size():
+		return "kein Angebot"
+	var entry: Dictionary = shop_offers[offer]
+	var module := ModuleData.get_module(entry["module_id"])
+	if entry["sold"]:
+		return "verkauft"
+	if credits < shop_price(module):
+		return "zu wenig Credits"
+	return _attempt(apply, func() -> String:
+		var old := _put(drome, slot, position, StringName(entry["module_id"]))
+		if old == &"!":
+			return "Modulplätze voll"
+		if old != &"":
+			if storage_full():
+				return "Lager voll -- das alte Modul hätte keinen Platz"
+			storage.append(old)
+		credits -= shop_price(module)
+		entry["sold"] = true
+		return "")
+
+
+## Die ID auf Platz ``position`` einer Waffe (leer = nichts dort).
+func _installed_at(drome: int, slot: String, position: int) -> StringName:
+	if drome < 0 or drome >= squad.size():
+		return &""
+	var list: Array = (squad[drome] as DromeBuild).modules.get(slot, [])
+	if position < 0 or position >= list.size():
+		return &""
+	return StringName(list[position])
+
+
+## Legt ``id`` auf Platz ``position`` der Waffe und gibt zurueck, was dort
+## lag (&"" = frei). -1 = erster freier Platz; ``&"!"`` = kein Platz.
+func _put(drome: int, slot: String, position: int, id: StringName) -> StringName:
+	if drome < 0 or drome >= squad.size():
+		return &"!"
+	var build: DromeBuild = squad[drome]
+	if slot not in build.equip_slots():
+		return &"!"
+	var room := ModuleData.slots_for(build, slot)
+	var list: Array = build.modules.get(slot, [])
+	var at := position
+	if at < 0:
+		at = 0
+		while at < list.size() and str(list[at]) != "":
+			at += 1
+	if at >= room:
+		return &"!"
+	while list.size() <= at:
+		list.append(&"")
+	var old := StringName(list[at])
+	list[at] = id
+	build.modules[slot] = list
+	return old
+
+
+## Fuehrt ``change`` aus und prueft danach jeden Aufbau im Squad. Geht etwas
+## nicht (oder ist es nur eine Probe), wird alles zurueckgesetzt.
+func _attempt(apply: bool, change: Callable) -> String:
+	if phase != Phase.STOP:
+		return "nur im Zwischenstopp"
+	var saved_modules: Array = squad.map(func(b): return (b as DromeBuild).modules.duplicate(true))
+	var saved_storage := storage.duplicate()
+	var saved_credits := credits
+	var saved_offers := shop_offers.duplicate(true)
+	var blocker: String = change.call()
+	if blocker == "":
+		for build in squad:
+			blocker = _layout_blocker(build)
+			if blocker != "":
+				break
+	if blocker != "" or not apply:
+		for i in squad.size():
+			(squad[i] as DromeBuild).modules = saved_modules[i]
+		storage = saved_storage
+		credits = saved_credits
+		shop_offers = saved_offers
+		return blocker
+	for build in squad:
+		for slot in (build as DromeBuild).modules.keys():
+			_tidy_modules(build, slot, build.modules[slot])
+	return ""
+
+
+## Warum dieser Aufbau so nicht geht (leer = er geht): Plaetze, Rezepte
+## einmal je Waffe, hoechstens ein BIOS-Rezept je DROME, kein BIOS im Halter.
+func _layout_blocker(build: DromeBuild) -> String:
+	var bios := 0
+	for slot in build.modules:
+		var list: Array = (build.modules[slot] as Array).filter(func(id): return str(id) != "")
+		if list.size() > ModuleData.slots_for(build, slot):
+			return "Modulplätze voll"
+		for i in list.size():
+			var module := ModuleData.get_module(list[i])
+			if module == null:
+				continue
+			if module.is_bios_item():
+				return "ein BIOS steckt nicht im Halter"
+			if module.is_bios_result:
+				bios += 1
+			if not module.is_recipe():
+				continue
+			for j in range(i + 1, list.size()):
+				var other := ModuleData.get_module(list[j])
+				if other != null and other.is_recipe() \
+						and (other.parts().has(module.id) or module.parts().has(other.id)):
+					return "%s steckt hier schon drin (Rezepte einmal je Waffe)" % module.display_name
+	if bios > 1:
+		return "höchstens ein BIOS-Rezept je DROME"
+	return ""
+
+
 ## Das Rezeptbuch: je Rezept {module, have: [bool je Zutat], ready}. Gezaehlt
 ## wird nur, was im LAGER liegt -- zusammengefuegt wird dort.
 func recipe_book() -> Array:
@@ -1465,45 +1702,26 @@ func _craft_bios(result: ModuleData) -> bool:
 	return true
 
 
-## Die BIOS-Wahl nach einem Elite-Sieg (6.2): rules.bios_offers Angebote, jedes
-## nutzbar. Rangfolge: SOFORT (Rezept steckt im Lauf, oder Chassis-BIOS fuer
-## einen DROME im Squad ohne BIOS), BALD (beide Zutaten im Lauf), ANGEFANGEN
-## (eine Zutat) nur als Lueckenfueller. Mindestens eines ist sofort nutzbar --
-## sonst gibt es keine Wahl (dann die normale Beute). Nie fuer DROMEs ausser-
-## halb des Squads oder Rezepte ohne vorhandene Zutat.
+## Die BIOS-Wahl nach einem Elite-Sieg (6.2): rules.bios_offers Angebote.
+## Rangfolge: SOFORT (Rezept steckt im Lauf), BALD (beide Zutaten im Lauf),
+## ANGEFANGEN (eine Zutat). Seit 19. Nov. 2026 (Spieler) nur diese -- also
+## sofort oder bald nutzbar; es koennen weniger als drei sein. Nur wenn gar
+## keins passt (noch kein Modul im Lauf), kommen beliebige, damit die feste
+## Wahl nach dem Elite-Sieg nicht leer bleibt.
 func roll_bios_offers() -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = absi(hash([run_seed, round, "bios"]))
-	var owned := _owned_modules()
-	var ranks := [[], [], []]
+	var ranks := [[], [], [], []]
 	for item in ModuleData.bios_items():
-		if item.bios_kind == "chassis":
-			for build in squad:
-				if build.body() != null and build.body().id == item.bios_chassis \
-						and not build.chassis_bios and not ranks[0].has(item.id):
-					ranks[0].append(item.id)
-			continue
-		var recipe := ModuleData.get_module(item.bios_recipe)
-		if recipe == null:
-			continue
-		if owned.has(recipe.id):
-			ranks[0].append(item.id)
-			continue
-		var have := 0
-		var pool := owned.duplicate()
-		for ingredient in recipe.from:
-			var found := pool.find(ingredient)
-			if found >= 0:
-				have += 1
-				pool.remove_at(found)
-		if have >= recipe.from.size():
-			ranks[1].append(item.id)
-		elif have > 0:
-			ranks[2].append(item.id)
-	if ranks[0].is_empty():
-		return []
+		var state := bios_state(item)
+		if not state.is_empty():
+			ranks[int(state["rank"])].append(item.id)
 	var out: Array = []
 	var want := int(ModuleData.rule("bios_offers", 3))
+	if ranks[0].is_empty() and ranks[1].is_empty() and ranks[2].is_empty():
+		ranks = [ranks[3]]
+	else:
+		ranks.resize(3)
 	for rank in ranks:
 		var list: Array = rank.duplicate()
 		while not list.is_empty() and out.size() < want:
@@ -1511,6 +1729,27 @@ func roll_bios_offers() -> Array:
 			out.append(list[pick])
 			list.remove_at(pick)
 	return out
+
+
+## Wie nah ein BIOS am Einsatz ist: {rank, have, need} -- rank 0 SOFORT
+## (das Rezept steckt im Lauf), 1 BALD (alle Zutaten da), 2 ANGEFANGEN (eine
+## Zutat), 3 noch nichts. Leer bei unbekanntem Rezept.
+func bios_state(item: ModuleData) -> Dictionary:
+	var recipe := ModuleData.get_module(item.bios_recipe) if item != null else null
+	if recipe == null:
+		return {}
+	var owned := _owned_modules()
+	var need := recipe.from.size()
+	if owned.has(recipe.id):
+		return {"rank": 0, "have": need, "need": need}
+	var have := 0
+	for ingredient in recipe.from:
+		var found := owned.find(ingredient)
+		if found >= 0:
+			have += 1
+			owned.remove_at(found)
+	var rank := 1 if have >= need else (2 if have > 0 else 3)
+	return {"rank": rank, "have": have, "need": need}
 
 
 func bios_blocker() -> String:
@@ -1537,40 +1776,53 @@ func is_bios_at(index: int) -> bool:
 	return item != null and item.is_bios_item()
 
 
-## Wohin das Chassis-BIOS aus Lagerplatz ``index`` passt: je DROME und Halter
-## {drome, slot, allowed, detail}.
+## Wie viele BIOS-Wahlen ein Einsatz hoechstens gibt (modules.json ->
+## rules.bios_elite_wins, eins je DROME).
+static func bios_elite_wins() -> int:
+	return int(ModuleData.rule("bios_elite_wins", 3))
+
+
+## Wohin das Rezept-BIOS aus Lagerplatz ``index`` passt: je DROME und Halter
+## {drome, slot, allowed, detail}. Es wertet das passende Rezept auf, das in
+## diesem Halter steckt (18. Nov. 2026) -- beim Molok also nur in einer seiner
+## zwei Waffen. Hoechstens ein BIOS-Rezept je DROME.
 func bios_options(index: int) -> Array:
 	var out: Array = []
 	if not is_bios_at(index):
 		return out
 	var item := ModuleData.get_module(storage[index])
+	var recipe := ModuleData.get_module(item.bios_recipe)
+	var result := ModuleData.get_module(item.bios_result)
 	for drome in squad.size():
 		var build: DromeBuild = squad[drome]
 		for slot in build.equip_slots():
 			var entry := {"drome": drome, "slot": slot, "allowed": false, "detail": ""}
-			if item.bios_kind != "chassis":
-				entry["detail"] = "im Rezeptbuch verschmelzen"
-			elif build.body() == null or build.body().id != item.bios_chassis:
-				entry["detail"] = "nur für %s" % item.display_name.trim_suffix("-BIOS")
-			elif build.chassis_bios:
-				entry["detail"] = "hat schon ein BIOS"
+			var here: Array = build.modules.get(slot, [])
+			if recipe == null or result == null:
+				entry["detail"] = "unbekanntes Rezept"
+			elif has_bios_recipe(build):
+				entry["detail"] = "hat schon ein BIOS-Rezept"
+			elif not here.has(recipe.id):
+				entry["detail"] = "braucht %s in dieser Waffe" % recipe.display_name
 			else:
 				entry["allowed"] = true
-				entry["detail"] = "+1 Modulplatz hier, Passive verstärkt"
+				entry["detail"] = "%s wird %s" % [recipe.display_name, result.display_name]
 			out.append(entry)
 	return out
 
 
-## Baut das Chassis-BIOS aus Lagerplatz ``index`` in DROME ``drome`` ein; der
-## Extraplatz gehoert zu ``slot`` (wichtig beim Molok mit zwei Haltern).
+## Wertet mit dem BIOS aus Lagerplatz ``index`` das Rezept im Halter ``slot``
+## von DROME ``drome`` auf: das Rezept wird an seinem Platz zum BIOS-Rezept,
+## das BIOS ist verbraucht.
 func install_bios(index: int, drome: int, slot: String) -> bool:
 	if phase != Phase.STOP:
 		return false
 	for entry in bios_options(index):
 		if int(entry["drome"]) == drome and entry["slot"] == slot and entry["allowed"]:
+			var item := ModuleData.get_module(storage[index])
 			var build: DromeBuild = squad[drome]
-			build.chassis_bios = true
-			build.bios_slot = slot if build.equip_slots().size() > 1 else ""
+			var here: Array = build.modules[slot]
+			here[here.find(item.bios_recipe)] = item.bios_result
 			storage.remove_at(index)
 			return true
 	return false

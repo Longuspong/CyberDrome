@@ -32,6 +32,11 @@ var _footer: VBoxContainer
 
 ## Zwischenstopp: der angetippte Lagerplatz (-1 = keiner).
 var _selected_storage: int = -1
+## BIOS-Wahl nach dem Sieg (19. Nov. 2026): das angetippte Angebot (-1 =
+## keins) und ob der Spieler sie verschoben hat (Lager voll) -- dann steht
+## sie wie frueher oben im Zwischenstopp.
+var _bios_pick: int = -1
+var _bios_later: bool = false
 
 ## Zwischenstopp: Rezeptbuch offen (Popup)? Filter im Rezeptbuch.
 var _recipes_open: bool = false
@@ -40,11 +45,12 @@ var _recipe_filter: String = "alle"
 var _flash_storage: int = -1
 ## Waffe "drome:slot", deren Feld kurz aufleuchten soll (frisch eingesetzt).
 var _flash_holder: String = ""
-## Hoehe der Lager-Kacheln (zwei Reihen, ohne Namen).
-const STORE_EDGE := 52.0
-## Module sind im Lager und im Waffenhalter gleich gross (Wunsch des Spielers,
-## 17. Nov. 2026; mehr passt nicht, sonst sprengen drei Plaetze die Kachel).
-const MODULE_EDGE := 30.0
+## Hoehe der Lager-Kacheln (zwei Reihen, ohne Namen): Modul + Rand.
+const STORE_EDGE := 60.0
+## Ein Modul ist im Laden, im Lager und in der Waffe gleich gross (Entwurf
+## "Zwischenstopp Neu", 18. Nov. 2026). Seit die Plaetze fest sind (3, Molok
+## 2 + 2), passen 52 px auch beim Molok in eine Zeile.
+const MODULE_EDGE := 52.0
 ## Zwischenstopp: die Waffenfelder und Lager-Kacheln des aktuellen Aufbaus
 ## (fuer Leuchten und Ziehen ohne Neuaufbau), die Hinweiszeile.
 var _holders: Array = []
@@ -56,6 +62,17 @@ var _drag_index: int = -1
 var _dropped: bool = false
 ## Wird gerade ein Modul aus einem Halter gezogen: {drome, slot, position, chip}.
 var _holder_drag: Dictionary = {}
+## Die Daten des laufenden Zugs, egal woher (Lager, Waffe, Laden); leer =
+## nichts in der Hand. Das Schrott-Feld neben dem Lager.
+var _drag: Dictionary = {}
+var _scrap: ScrapZone
+var _storage_box: Control
+## Fangflaeche ueber dem ganzen Bildschirm, solange gezogen wird: nicht der
+## Finger, sondern das schwebende Modul (DRAG_LIFT ueber dem Finger) sagt, wo
+## abgelegt wird (19. Nov. 2026, Wunsch des Spielers -- wie in Backpack Brawl).
+var _catcher: CanvasLayer
+## Mitte der Zug-Vorschau relativ zum Finger (Karte bei (-34, -104), 68 px).
+const DRAG_LIFT := Vector2(0, -70)
 var _hover_key: String = ""
 var _pointer := Vector2.ZERO
 var _tip: PanelContainer
@@ -177,7 +194,14 @@ func _refresh() -> void:
 	else:
 		_header_round.text = "%s · Kampf %d/%d" % [_region_name(run), mini(run.round, RunState.rounds_total()),
 			RunState.rounds_total()]
-	if run.phase == RunState.Phase.STOP:
+	if run.bios_offers.is_empty():
+		_bios_pick = -1
+		_bios_later = false
+	var bios_choice := run.phase == RunState.Phase.STOP and not run.bios_offers.is_empty() \
+		and not _bios_later
+	if bios_choice:
+		_set_title("Matrix-BIOS")
+	elif run.phase == RunState.Phase.STOP:
 		# Eine Zeile statt Titel und Leiste (16. Nov. 2026).
 		_set_title("")
 		_title_holder.add_child(_stop_hud(run))
@@ -188,6 +212,9 @@ func _refresh() -> void:
 	_lives_box.visible = run.phase == RunState.Phase.PREPARE
 	_refresh_lives(run)
 	_refresh_squad(run)
+	if bios_choice:
+		_show_bios_choice(run)
+		return
 	match run.phase:
 		RunState.Phase.PREPARE: _show_prepare(run)
 		RunState.Phase.STOP: _show_stop(run)
@@ -553,16 +580,21 @@ func _show_stop(run: RunState) -> void:
 		recipes.pressed.connect(func(): _open_recipes(run))
 	_side.add_child(_section_head("Lager  %d / %d" % [run.storage.size(), RunState.storage_size()],
 		recipes))
-	_side.add_child(_storage_grid(run))
+	var store_row := HBoxContainer.new()
+	store_row.add_theme_constant_override("separation", 8)
+	store_row.add_child(_storage_grid(run))
+	_scrap = _scrap_zone(run)
+	store_row.add_child(_scrap)
+	_side.add_child(store_row)
 	_hint = _label("", UiKit.SMALL, COLOR_MUTED)
 	_hint.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_hint.clip_text = true
 	_hint.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_side.add_child(_hint)
 
-	# --- Die DROMEs ---
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	# --- Die DROMEs: je eine Zeile (Variante B, 18. Nov. 2026) ---
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
 	for drome in run.squad.size():
 		row.add_child(_drome_box(run, drome))
 	_side.add_child(row)
@@ -730,13 +762,16 @@ func _loot_page(run: RunState) -> Dictionary:
 		var where: String = {"lager": "  →  Lager", "squad": "  →  Squad",
 			"tasche": "  →  Tasche (nach dem Einsatz in den Hangar)",
 			"home": "  →  nach Hause", "caches": "  →  Einsatz-Beute",
-			"coins": "  →  Einsatz-Beute"}.get(str(item.get("where", "")), "")
+			"coins": "  →  Einsatz-Beute", "booster": "  →  aktiv"}.get(str(item.get("where", "")), "")
 		lines.append(["%s%s%s" % ["[Selten] " if item.get("rare", false) else "", item["title"], where],
 			COLOR_WARN if item.get("rare", false) else Color.WHITE])
 		if str(item.get("text", "")) != "":
 			lines.append([str(item["text"]), COLOR_MUTED, UiKit.SMALL])
 	if run.last_loot.is_empty():
 		lines.append(["Diesmal keine Teile.", COLOR_MUTED, UiKit.SMALL])
+	if run.credit_boost > 0:
+		lines.append(["Credit-Booster: noch %d %s doppelte Credits" % [run.credit_boost,
+			"Kampf" if run.credit_boost == 1 else "Kämpfe"], Arcade.CYAN])
 	return {"title": "Beute", "lines": lines}
 
 
@@ -812,8 +847,8 @@ func _bios_row(run: RunState) -> Control:
 		var item := ModuleData.get_module(run.bios_offers[index])
 		if item == null:
 			continue
-		var tile := Tile.new("bios:%d" % index, ModuleChip.new(item, 44.0), item.display_name,
-			Vector2(0, 84))
+		var tile := Tile.new("bios:%d" % index, ModuleChip.new(item, MODULE_EDGE), item.display_name,
+			Vector2(0, 86))
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tile.accent = ModuleData.CLASS_COLOR["bios"]
 		tile.glow = true
@@ -847,17 +882,21 @@ func _start_bios_drag(run: RunState, index: int, item: ModuleData, blocker: Stri
 	holder.add_child(card)
 	set_drag_preview(holder)
 	Accessibility.vibrate(12)
-	return {"kind": "bios_offer", "index": index}
+	var data := {"kind": "bios_offer", "index": index}
+	_drag = data
+	_mark_drag_targets(run, data)
+	return data
 
 
-## Passt das angebotene BIOS ``offer`` in diesen DROME (Chassis, noch keins)?
-func _offer_fits(run: RunState, offer: int, drome: int) -> bool:
+## Wertet das angebotene BIOS ``offer`` ein Rezept in dieser Waffe auf (das
+## Rezept steckt dort, der DROME hat noch kein BIOS-Rezept)?
+func _offer_fits(run: RunState, offer: int, drome: int, slot: String) -> bool:
 	if run.bios_blocker() != "" or offer < 0 or offer >= run.bios_offers.size():
 		return false
 	var item := ModuleData.get_module(run.bios_offers[offer])
 	var build: DromeBuild = run.squad[drome]
-	return item != null and item.bios_kind == "chassis" and build.body() != null \
-		and build.body().id == item.bios_chassis and not build.chassis_bios
+	return item != null and item.is_bios_item() and not RunState.has_bios_recipe(build) \
+		and (build.modules.get(slot, []) as Array).has(item.bios_recipe)
 
 
 ## Ein gezogenes BIOS-Angebot ablegen: nehmen, und auf einer Waffe gleich
@@ -912,8 +951,8 @@ func _shop_row(run: RunState) -> Control:
 		holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		holder.add_theme_constant_override("separation", 0)
 		row.add_child(holder)
-		var tile := Tile.new("shop:%d:%s" % [index, module.id], ModuleChip.new(module, 32.0),
-			module.display_name, Vector2(0, 62))
+		var tile := Tile.new("shop:%d:%s" % [index, module.id], ModuleChip.new(module, MODULE_EDGE),
+			module.display_name, Vector2(0, 86))
 		tile.accent = module.color()
 		tile.dimmed = bool(offer["sold"])
 		tile.glow = run.target_recipe != &"" and _recipe_wants(run, module)
@@ -921,6 +960,9 @@ func _shop_row(run: RunState) -> Control:
 		var page := index
 		tile.on_info = func(): InfoPopup.open_pages(self, pages, page)
 		tile.on_action = func(): _buy(run, page)
+		# Ziehen (19. Nov. 2026): auf eine Waffe = kaufen und einsetzen (auf
+		# belegtem Platz tauschen), aufs Lager = kaufen.
+		tile.on_drag = func() -> Variant: return _start_shop_drag(run, page)
 		holder.add_child(tile)
 		var buy := _price_button(price, bool(offer["sold"]), blocker)
 		buy.pressed.connect(func(): _buy(run, index))
@@ -1102,7 +1144,8 @@ func _recipes_using(module: ModuleData) -> Array:
 
 func _storage_grid(run: RunState) -> Control:
 	var grid := GridContainer.new()
-	# Zwei Reihen (Wunsch des Spielers, 16. Nov. 2026).
+	# Zwei Reihen (Wunsch des Spielers, 16. Nov. 2026), feste Kacheln -- rechts
+	# daneben steht der Schrott (19. Nov. 2026).
 	grid.columns = maxi(1, ceili(RunState.storage_size() / 2.0))
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 6)
@@ -1110,25 +1153,17 @@ func _storage_grid(run: RunState) -> Control:
 		if index < run.storage.size():
 			grid.add_child(_storage_tile(run, index))
 		else:
-			var free := Tile.new("", null, "", Vector2(0, STORE_EDGE))
-			free.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var free := Tile.new("", null, "", Vector2(STORE_EDGE, STORE_EDGE))
 			free.empty = true
 			free.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			grid.add_child(free)
 	# Das ganze Lager nimmt ein Modul zurueck, das aus einem Halter gezogen wird.
 	grid.mouse_filter = Control.MOUSE_FILTER_STOP
 	grid.set_drag_forwarding(Callable(),
-		func(_at: Vector2, data: Variant) -> bool:
-			if data is Dictionary and data.get("kind") == "bios_offer":
-				return run.bios_blocker() == ""
-			return data is Dictionary and data.get("kind") == "holder" and _can_return(run),
-		func(_at: Vector2, data: Variant) -> void:
-			_dropped = true
-			if data.get("kind") == "bios_offer":
-				_drop_offer(run, data)
-			else:
-				_return_module(run, data))
+		func(_at: Vector2, data: Variant) -> bool: return _storage_accepts(run, data),
+		func(_at: Vector2, data: Variant) -> void: _drop_on_storage(run, data))
 	_flash_storage = -1
+	_storage_box = grid
 	return grid
 
 
@@ -1142,33 +1177,28 @@ func _storage_tile(run: RunState, index: int) -> Control:
 	var tile: Tile
 	if module != null:
 		tile = Tile.new("store:%d:%s" % [index, id], ModuleChip.new(module, MODULE_EDGE), "",
-			Vector2(0, STORE_EDGE))
+			Vector2(STORE_EDGE, STORE_EDGE))
 		tile.accent = module.color()
 		tile.on_select = func():
 			_selected_storage = index
 			_refresh()
 		tile.on_drag = func() -> Variant: return _start_drag(run, index)
 		tile.can_drop = func(data) -> bool:
-			if data is Dictionary and data.get("kind") == "holder":
-				return _can_return(run)
-			if data is Dictionary and data.get("kind") == "bios_offer":
-				return run.bios_blocker() == ""
-			return data is Dictionary and run.pair_result(int(data.get("index", -1)), index) != null
+			if data is Dictionary and data.get("kind") == "store":
+				return run.pair_result(int(data.get("index", -1)), index) != null
+			return _storage_accepts(run, data)
 		tile.on_drop = func(data):
-			_dropped = true
-			if data.get("kind") == "holder":
-				_return_module(run, data)
-			elif data.get("kind") == "bios_offer":
-				_drop_offer(run, data)
-			else:
+			if data.get("kind") == "store":
+				_dropped = true
 				_craft_pair(run, int(data["index"]), index)
+			else:
+				_drop_on_storage(run, data)
 	else:
 		tile = Tile.new("store:%d:%s" % [index, id],
 			SlotShape.new(part.mount_class if part != null else "light",
 				UiKit.part_texture(part), 36.0), "", Vector2(0, STORE_EDGE))
 	var pages := _storage_pages(run)
 	tile.on_info = func(): InfoPopup.open_pages(self, pages, index)
-	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.managed = module != null
 	tile.selected = index == _selected_storage
 	_stores.append({"tile": tile, "index": index, "accent": tile.accent})
@@ -1186,10 +1216,10 @@ func _flash(control: Control) -> void:
 	tween.tween_property(control, "modulate", Color.WHITE, 0.45).set_trans(Tween.TRANS_QUAD)
 
 
-## Ein DROME-Kasten: oben der Kopf mit Name, darunter je Waffe ein Feld mit
-## der Waffe und ihren Modulplaetzen. Ein DROME mit zwei Waffen (Molok) wird
-## breiter, die Felder stehen nebeneinander -- welcher Platz zu welcher Waffe
-## gehoert, zeigt der Rahmen.
+## Eine DROME-Zeile (Variante B, 18. Nov. 2026): links Kopf und Name, dann
+## je Waffe ein Feld -- die Waffe als Halterform direkt vor ihren
+## Modulplaetzen. So ist klar, welche Plaetze zu welcher Waffe gehoeren; der
+## Molok (zwei Waffen mit je 2 Plaetzen) passt mit 52-px-Modulen in die Zeile.
 func _drome_box(run: RunState, drome: int) -> Control:
 	var build: DromeBuild = run.squad[drome]
 	var slots := build.equip_slots()
@@ -1199,32 +1229,30 @@ func _drome_box(run: RunState, drome: int) -> Control:
 	style.shadow_offset = Vector2(4, 4)
 	panel.add_theme_stylebox_override("panel", style)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_stretch_ratio = 1.0 if slots.size() <= 1 else 1.5
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	panel.add_child(row)
 
+	var head_box := VBoxContainer.new()
+	head_box.add_theme_constant_override("separation", 2)
+	head_box.custom_minimum_size = Vector2(64, 0)
+	head_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(head_box)
 	var head := TextureRect.new()
 	head.texture = UiKit.portrait_texture(build)
-	head.custom_minimum_size = Vector2(44, 44)
+	head.custom_minimum_size = Vector2(40, 40)
 	head.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	head.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	head.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	box.add_child(head)
-	var name := Arcade.label(build.display_name.to_upper(), 12, UiKit.TEXT, "bold", 0.06)
+	head_box.add_child(head)
+	var name := Arcade.label(build.display_name.to_upper(), 10, UiKit.TEXT, "display")
 	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name.clip_text = true
-	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	box.add_child(name)
+	head_box.add_child(name)
 
-	var holders := HBoxContainer.new()
-	holders.add_theme_constant_override("separation", 4)
-	holders.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(holders)
 	if slots.is_empty():
-		holders.add_child(_label("ohne Waffe", UiKit.SMALL, COLOR_BAD))
+		row.add_child(_label("ohne Waffe", UiKit.SMALL, COLOR_BAD))
 	for slot in slots:
-		holders.add_child(_holder_tile(run, drome, slot))
+		row.add_child(_holder_tile(run, drome, slot))
 	return panel
 
 
@@ -1235,20 +1263,21 @@ func _holder_tile(run: RunState, drome: int, slot: String) -> Tile:
 	var build: DromeBuild = run.squad[drome]
 	var part := build.part_in(slot)
 	var tile := Tile.new("holder:%d:%s" % [drome, slot], null, "", Vector2(0, 0))
-	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	tile.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tile.managed = true
 	tile.accent = COLOR_GOOD
 	tile.tooltip_text = part.display_name if part != null else "leer"
-	var box := VBoxContainer.new()
+	# Waffe vor ihren Plaetzen (Variante B): Halterform links, dann die Module.
+	var box := HBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	var shape := SlotShape.new(SlotRules.slot_class(build.body(), slot), UiKit.part_texture(part), 40.0)
 	shape.reach = SlotRules.slot_reach(build.body(), slot)
-	shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	shape.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	box.add_child(shape)
 	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 3)
+	row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	row.add_theme_constant_override("separation", 4)
 	box.add_child(row)
 	var layout := build.module_layout(slot)
 	var room := ModuleData.slots_for(build, slot)
@@ -1257,6 +1286,9 @@ func _holder_tile(run: RunState, drome: int, slot: String) -> Tile:
 	var frees: Array = []
 	# Eingesetzte Module mit Platz: sie lassen sich wieder herausziehen.
 	var placed: Array = []
+	# Alle Plaetze [Kaestchen/Modul, Platz] -- abgelegt wird auf den unter
+	# dem Finger (frei = einsetzen, belegt = tauschen).
+	var spots: Array = []
 	for position in maxi(room, layout.size()):
 		var module: ModuleData = layout[position] if position < layout.size() else null
 		if module != null:
@@ -1265,29 +1297,24 @@ func _holder_tile(run: RunState, drome: int, slot: String) -> Tile:
 			chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			row.add_child(chip)
 			placed.append([chip, position, module])
+			spots.append([chip, position])
 		elif position < room:
 			var free := FreeSlot.new()
 			row.add_child(free)
 			frees.append([free, position])
+			spots.append([free, position])
 			if first_free == null:
 				first_free = free
 	tile.add_extra(box)
 	tile.on_select = func(): _tap_holder(run, drome, slot)
 	tile.on_drag = func() -> Variant: return _start_holder_drag(run, drome, slot, placed)
 	tile.can_drop = func(data) -> bool:
-		if not (data is Dictionary) or data.get("kind") == "holder":
-			return false
-		if data.get("kind") == "bios_offer":
-			return _offer_fits(run, int(data["index"]), drome)
-		return _holder_allows(run, int(data.get("index", -1)), drome, slot)
+		return data is Dictionary \
+			and _drop_blocker(run, data, drome, slot, _spot_under(spots, _aim()), false) == ""
 	tile.on_drop = func(data):
-		_dropped = true
-		if data.get("kind") == "bios_offer":
-			_drop_offer(run, data, drome, slot)
-			return
-		_install_at(run, int(data["index"]), drome, slot, _free_under(frees, _pointer)[1])
+		_drop_on_holder(run, data, drome, slot, _spot_under(spots, _aim()))
 	_holders.append({"tile": tile, "drome": drome, "slot": slot, "free": first_free,
-		"frees": frees, "allowed": false, "detail": ""})
+		"frees": frees, "spots": spots, "placed": placed, "allowed": false, "detail": ""})
 	if _flash_holder == "%d:%s" % [drome, slot]:
 		_flash_holder = ""
 		_flash(tile)
@@ -1420,7 +1447,7 @@ func _mark_targets(run: RunState, index: int) -> void:
 				"Waffe oder Modul" if _stores.any(func(s): return s["tile"].glow) else "eine Waffe"]
 			_hint.add_theme_color_override("font_color", COLOR_GOOD)
 		else:
-			_hint.text = "Modul auf eine Waffe ziehen  ·  auf ein Modul = Rezept"
+			_hint.text = "Auf Waffe = einsetzen/tauschen  ·  Schrott = verkaufen"
 			_hint.add_theme_color_override("font_color", COLOR_MUTED)
 
 
@@ -1436,34 +1463,23 @@ func _start_drag(run: RunState, index: int) -> Variant:
 	_drag_index = index
 	_dropped = false
 	_hover_key = ""
-	var holder := Control.new()
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var card := PanelContainer.new()
-	var box := Arcade.chamfer_box(Color(UiKit.CARD, 0.96), 10, Arcade.YELLOW, 3)
-	box.set_content_margin_all(6)
-	box.shadow_color = Color(UiKit.MAGENTA, 0.8)
-	box.shadow_size = 1
-	box.shadow_offset = Vector2(5, 5)
-	card.add_theme_stylebox_override("panel", box)
-	card.add_child(ModuleChip.new(module, 56.0))
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Mittig ueber dem Finger, ein Stueck hoeher -- sonst liegt er darauf.
-	card.position = Vector2(-34, -104)
-	holder.add_child(card)
-	set_drag_preview(holder)
+	_drag_preview(module, Arcade.YELLOW)
+	var data := {"kind": "store", "index": index}
+	_drag = data
+	_mark_targets(run, index)
+	_mark_drag_targets(run, data)
 	for s in _stores:
 		if int(s["index"]) == index:
 			s["tile"].dimmed = true
-	_mark_targets(run, index)
 	Accessibility.vibrate(12)
-	return {"kind": "store", "index": index}
+	return data
 
 
 ## Waehrend des Zugs: das Ziel unter dem Finger hervorheben -- eine passende
 ## Waffe zeigt das Modul im freien Platz, ein Modul im Lager nennt das
 ## Rezept, eine unpassende Waffe den Grund.
 func _process(_delta: float) -> void:
-	if _drag_index < 0:
+	if _drag.is_empty():
 		return
 	if not get_viewport().gui_is_dragging():
 		_end_drag()
@@ -1471,36 +1487,61 @@ func _process(_delta: float) -> void:
 	var run := _run()
 	if run == null or run.phase != RunState.Phase.STOP:
 		return
-	var at := _pointer
+	if _catcher == null:
+		_open_catcher()
+	# Nicht der Finger, sondern das schwebende Modul zeigt das Ziel.
+	var at := _aim()
 	var key := ""
 	var target: Dictionary = {}
+	var position := -1
 	for h in _holders:
 		if (h["tile"] as Control).get_global_rect().has_point(at):
-			# Der Platz gehoert zum Schluessel: wandert der Finger ueber ein
-			# anderes freies Kaestchen, wandert die Vorschau mit.
-			key = "h:%d:%s:%d" % [h["drome"], h["slot"], int(_free_under(h["frees"], at)[1])]
+			# Der Platz gehoert zum Schluessel: wandert der Finger ueber einen
+			# anderen Platz, wandert die Vorschau mit.
+			position = _spot_under(h["spots"], at)
+			key = "h:%d:%s:%d" % [h["drome"], h["slot"], position]
 			target = h
-	if key == "":
+	if key == "" and _drag.get("kind") == "store":
 		for s in _stores:
 			if int(s["index"]) != _drag_index and (s["tile"] as Control).get_global_rect().has_point(at):
 				key = "s:%d" % s["index"]
 				target = s
+	if key == "" and _scrap != null and _scrap.get_global_rect().has_point(at):
+		key = "scrap"
 	if key == _hover_key:
 		return
 	_clear_hover()
 	_hover_key = key
+	var module := _drag_module(run, _drag)
+	if key == "scrap":
+		if _can_scrap(_drag) and module != null:
+			_show_tip(_scrap, "Verkaufen  +%d" % ModuleData.sell_value(module), Arcade.ROSE)
+			Accessibility.vibrate(8)
+		return
 	if target.is_empty():
 		return
 	var tile: Tile = target["tile"]
 	if target.has("slot"):
-		if target["allowed"]:
-			tile.selected = true
-			var spot: Variant = _free_under(target["frees"], at)[0]
-			if spot != null:
-				(spot as FreeSlot).show_ghost(ModuleData.get_module(run.storage[_drag_index]))
-			Accessibility.vibrate(8)
-		else:
-			_show_tip(tile, str(target["detail"]), COLOR_BAD)
+		var drome := int(target["drome"])
+		var slot := str(target["slot"])
+		var why := _drop_blocker(run, _drag, drome, slot, position, false)
+		if why != "":
+			_show_tip(tile, why, COLOR_BAD)
+			return
+		tile.selected = true
+		Accessibility.vibrate(8)
+		var other := ModuleData.get_module(run._installed_at(drome, slot, position))
+		var buying: bool = _drag.get("kind") == "shop"
+		if other != null and _drag.get("kind") != "bios_offer":
+			_show_tip(tile, "%sTauschen mit %s" % ["Kaufen · " if buying else "", other.display_name],
+				COLOR_GOOD)
+			return
+		for entry in target["frees"]:
+			if int(entry[1]) == position or (position < 0 and entry == target["frees"][0]):
+				(entry[0] as FreeSlot).show_ghost(module)
+				break
+		if buying:
+			_show_tip(tile, "Kaufen und einsetzen", COLOR_GOOD)
 	else:
 		var result := run.pair_result(_drag_index, int(target["index"]))
 		if result != null:
@@ -1531,15 +1572,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_DRAG_END and _drag_index >= 0:
+	if what == NOTIFICATION_DRAG_END and not _drag.is_empty():
 		_end_drag()
-	if what == NOTIFICATION_DRAG_END and not _holder_drag.is_empty():
-		_holder_drag = {}
-		if _tip != null:
-			_tip.visible = false
-		if not _dropped:
-			_refresh()
-		_dropped = false
 
 
 ## Ein eingesetztes Modul greifen (17. Nov. 2026): das Modul, das dem Finger
@@ -1562,21 +1596,13 @@ func _start_holder_drag(run: RunState, drome: int, slot: String, placed: Array) 
 	_dropped = false
 	_holder_drag = {"drome": drome, "slot": slot, "position": int(best[1]), "chip": chip}
 	chip.modulate = Color(1, 1, 1, 0.25)
-	var holder := Control.new()
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var card := PanelContainer.new()
-	var box := Arcade.chamfer_box(Color(UiKit.CARD, 0.96), 10, Arcade.CYAN, 3)
-	box.set_content_margin_all(6)
-	card.add_theme_stylebox_override("panel", box)
-	card.add_child(ModuleChip.new(module, 56.0))
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card.position = Vector2(-34, -104)
-	holder.add_child(card)
-	set_drag_preview(holder)
-	if run.storage_full():
-		_show_tip(chip, "Lager voll", COLOR_BAD)
+	_hover_key = ""
+	_drag_preview(module, Arcade.CYAN)
+	var data := {"kind": "holder", "drome": drome, "slot": slot, "position": int(best[1])}
+	_drag = data
+	_mark_drag_targets(run, data)
 	Accessibility.vibrate(12)
-	return {"kind": "holder", "drome": drome, "slot": slot, "position": int(best[1])}
+	return data
 
 
 func _can_return(run: RunState) -> bool:
@@ -1593,9 +1619,12 @@ func _return_module(run: RunState, data: Dictionary) -> void:
 
 
 func _end_drag() -> void:
-	if _drag_index < 0:
+	_close_catcher()
+	if _drag.is_empty():
 		return
+	_drag = {}
 	_drag_index = -1
+	_holder_drag = {}
 	_hover_key = ""
 	if _tip != null:
 		_tip.visible = false
@@ -1626,7 +1655,7 @@ func _show_tip(anchor: Control, text: String, color: Color) -> void:
 	# sie das Schild.
 	var area := get_viewport_rect().size
 	var tip_size := _tip.get_combined_minimum_size()
-	var top := _pointer.y - 112.0 - tip_size.y if _drag_index >= 0 \
+	var top := _pointer.y - 112.0 - tip_size.y if not _drag.is_empty() \
 		else anchor.get_global_rect().position.y - tip_size.y - 8.0
 	_tip.position = Vector2(clampf(_pointer.x - tip_size.x * 0.5, 8.0, area.x - tip_size.x - 8.0),
 		maxf(8.0, top))
@@ -1675,7 +1704,13 @@ func _installed_pages(run: RunState, drome: int, slot: String) -> Array:
 				"lines": lines, "actions": [{"text": "Zurück ins Lager", "disabled": run.storage_full(),
 					"why": "Lager voll", "call": func():
 						run.remove_module(drome, slot, at)
-						_refresh()}]})
+						_refresh()},
+					# Schrott auch aus der Waffe (19. Nov. 2026).
+					{"text": "Verkaufen  +%d" % ModuleData.sell_value(module), "icon": "credits",
+						"call": func():
+							run.sell_installed(drome, slot, at)
+							InfoPopup.close_all(self)
+							_refresh()}]})
 	return pages
 
 
@@ -2044,3 +2079,441 @@ func _big_button(text: String) -> Button:
 
 func _panel_style(highlight: bool = false) -> StyleBoxFlat:
 	return UiKit.card_style(highlight)
+
+
+# ---------------------------------------------------------------------------
+# Ziehen von ueberall nach ueberall (19. Nov. 2026, bestaetigt vom Spieler)
+# ---------------------------------------------------------------------------
+
+## Legt das Gezogene auf Platz ``position`` dieser Waffe (-1 = erster freier).
+func _drop_on_holder(run: RunState, data: Dictionary, drome: int, slot: String, position: int) -> void:
+	_dropped = true
+	var swapped: bool = data.get("kind") == "shop" and run._installed_at(drome, slot, position) != &""
+	if _drop_blocker(run, data, drome, slot, position, true) == "":
+		Accessibility.vibrate(25, true)
+		_selected_storage = -1
+		_flash_holder = "%d:%s" % [drome, slot]
+		if swapped:
+			_flash_storage = run.storage.size() - 1
+	_holder_drag = {}
+	_refresh()
+
+
+## Wo das schwebende Modul gerade ist (seine Mitte) -- dort wird abgelegt.
+func _aim() -> Vector2:
+	return _pointer + DRAG_LIFT
+
+
+## Was unter ``at`` liegt: {type: holder (mit h, position) | scrap | store
+## (mit s) | storage} oder leer.
+func _target_at(at: Vector2) -> Dictionary:
+	for h in _holders:
+		if (h["tile"] as Control).get_global_rect().has_point(at):
+			return {"type": "holder", "h": h, "position": _spot_under(h["spots"], at)}
+	if _scrap != null and _scrap.get_global_rect().has_point(at):
+		return {"type": "scrap"}
+	for s in _stores:
+		if (s["tile"] as Control).get_global_rect().has_point(at):
+			return {"type": "store", "s": s}
+	if _storage_box != null and _storage_box.get_global_rect().has_point(at):
+		return {"type": "storage"}
+	return {}
+
+
+## Nimmt das Ziel unter dem schwebenden Modul es an (``apply`` false) bzw.
+## legt es dort ab.
+func _drop_at(run: RunState, data: Dictionary, apply: bool) -> bool:
+	if run == null or run.phase != RunState.Phase.STOP:
+		return false
+	var target := _target_at(_aim())
+	match str(target.get("type", "")):
+		"holder":
+			var h: Dictionary = target["h"]
+			var drome := int(h["drome"])
+			var slot := str(h["slot"])
+			var position := int(target["position"])
+			if not apply:
+				return _drop_blocker(run, data, drome, slot, position, false) == ""
+			_drop_on_holder(run, data, drome, slot, position)
+			return true
+		"scrap":
+			if not _can_scrap(data):
+				return false
+			if apply:
+				_sell_dragged(run, data)
+			return true
+		"store":
+			var other := int(target["s"]["index"])
+			if data.get("kind") == "store":
+				if run.pair_result(int(data["index"]), other) == null:
+					return false
+				if apply:
+					_dropped = true
+					_craft_pair(run, int(data["index"]), other)
+				return true
+			if not _storage_accepts(run, data):
+				return false
+			if apply:
+				_drop_on_storage(run, data)
+			return true
+		"storage":
+			if not _storage_accepts(run, data):
+				return false
+			if apply:
+				_drop_on_storage(run, data)
+			return true
+	return false
+
+
+## Legt die Fangflaeche ueber den Bildschirm (beim Greifen).
+func _open_catcher() -> void:
+	if _catcher != null:
+		return
+	_catcher = CanvasLayer.new()
+	_catcher.layer = 90
+	add_child(_catcher)
+	var area := Control.new()
+	area.set_anchors_preset(Control.PRESET_FULL_RECT)
+	area.mouse_filter = Control.MOUSE_FILTER_STOP
+	area.set_drag_forwarding(Callable(),
+		func(_at: Vector2, data: Variant) -> bool:
+			return data is Dictionary and _drop_at(_run(), data, false),
+		func(_at: Vector2, data: Variant) -> void:
+			_drop_at(_run(), data, true))
+	_catcher.add_child(area)
+
+
+func _close_catcher() -> void:
+	if _catcher != null:
+		_catcher.queue_free()
+		_catcher = null
+
+
+## Verkauft das Gezogene (Schrott), aus dem Lager oder aus einer Waffe.
+func _sell_dragged(run: RunState, data: Dictionary) -> void:
+	_dropped = true
+	var gain := 0
+	if data["kind"] == "store":
+		gain = run.sell(int(data["index"]))
+	else:
+		gain = run.sell_installed(int(data["drome"]), str(data["slot"]), int(data["position"]))
+	if gain > 0:
+		Accessibility.vibrate(30, true)
+	_selected_storage = -1
+	_holder_drag = {}
+	_refresh()
+
+
+## Der Platz unter ``at`` (frei oder belegt); -1 = keiner (dann der erste
+## freie).
+static func _spot_under(spots: Array, at: Vector2) -> int:
+	for entry in spots:
+		if (entry[0] as Control).get_global_rect().grow(3.0).has_point(at):
+			return int(entry[1])
+	return -1
+
+
+## Ablegen auf Platz ``position`` einer Waffe -- als Probe (``apply`` false)
+## oder echt. Leer = geht, sonst der Grund.
+func _drop_blocker(run: RunState, data: Dictionary, drome: int, slot: String, position: int,
+		apply: bool) -> String:
+	match str(data.get("kind", "")):
+		"store":
+			var index := int(data["index"])
+			if run.is_bios_at(index):
+				var option := _option_for(run, index, drome, slot)
+				if not bool(option.get("allowed", false)):
+					return str(option.get("detail", "passt nicht"))
+				if apply and not run.install_bios(index, drome, slot):
+					return "passt nicht"
+				return ""
+			return run.place_from_storage(index, drome, slot, position, apply)
+		"holder":
+			return run.move_installed(int(data["drome"]), str(data["slot"]), int(data["position"]),
+				drome, slot, position, apply)
+		"shop":
+			return run.buy_into(int(data["index"]), drome, slot, position, apply)
+		"bios_offer":
+			if not _offer_fits(run, int(data["index"]), drome, slot):
+				return "braucht das passende Rezept in dieser Waffe"
+			if apply:
+				_drop_offer(run, data, drome, slot)
+			return ""
+	return "passt nicht"
+
+
+## Nimmt diese Waffe das Gezogene irgendwo (frei oder zum Tauschen)?
+func _holder_accepts(run: RunState, data: Dictionary, h: Dictionary) -> bool:
+	var drome := int(h["drome"])
+	var slot := str(h["slot"])
+	if _drop_blocker(run, data, drome, slot, -1, false) == "":
+		return true
+	for entry in h["placed"]:
+		if _drop_blocker(run, data, drome, slot, int(entry[1]), false) == "":
+			return true
+	return false
+
+
+## Was das Lager annimmt: ein Modul aus der Waffe (zurueck), ein Angebot aus
+## dem Laden (kaufen), ein BIOS-Angebot (nehmen).
+func _storage_accepts(run: RunState, data: Variant) -> bool:
+	if not (data is Dictionary):
+		return false
+	match str(data.get("kind", "")):
+		"holder":
+			return _can_return(run)
+		"shop":
+			return run.shop_blocker(int(data["index"])) == ""
+		"bios_offer":
+			return run.bios_blocker() == ""
+	return false
+
+
+func _drop_on_storage(run: RunState, data: Dictionary) -> void:
+	_dropped = true
+	match str(data.get("kind", "")):
+		"holder":
+			_return_module(run, data)
+		"shop":
+			_buy(run, int(data["index"]))
+		"bios_offer":
+			_drop_offer(run, data)
+
+
+## Das Modul des laufenden Zugs (fuer Vorschau und Schrott-Wert).
+func _drag_module(run: RunState, data: Dictionary) -> ModuleData:
+	match str(data.get("kind", "")):
+		"store":
+			var index := int(data["index"])
+			return ModuleData.get_module(run.storage[index]) if index < run.storage.size() else null
+		"holder":
+			return ModuleData.get_module(run._installed_at(int(data["drome"]), str(data["slot"]),
+				int(data["position"])))
+		"shop":
+			return ModuleData.get_module(run.shop_offers[int(data["index"])]["module_id"])
+		"bios_offer":
+			return ModuleData.get_module(run.bios_offers[int(data["index"])])
+	return null
+
+
+## Leuchten beim Greifen: Waffen, die es nehmen, gruen, die anderen blass;
+## das Schrott-Feld, wenn sich das Gezogene verkaufen laesst.
+func _mark_drag_targets(run: RunState, data: Dictionary) -> void:
+	for h in _holders:
+		var tile: Tile = h["tile"]
+		h["allowed"] = _holder_accepts(run, data, h)
+		tile.glow = h["allowed"]
+		tile.dimmed = not h["allowed"]
+	if _scrap != null:
+		var module := _drag_module(run, data)
+		_scrap.set_offer(ModuleData.sell_value(module) if _can_scrap(data) and module != null else -1)
+	if _hint != null:
+		var module := _drag_module(run, data)
+		_hint.text = "%s: auf eine Waffe%s" % [module.display_name if module != null else "Modul",
+			" oder Schrott" if _can_scrap(data) else ""]
+		_hint.add_theme_color_override("font_color", COLOR_GOOD)
+
+
+static func _can_scrap(data: Dictionary) -> bool:
+	return str(data.get("kind", "")) in ["store", "holder"]
+
+
+## Ein Angebot aus dem Laden greifen (nur, wenn es bezahlbar ist).
+func _start_shop_drag(run: RunState, index: int) -> Variant:
+	if run.phase != RunState.Phase.STOP or index < 0 or index >= run.shop_offers.size():
+		return null
+	var offer: Dictionary = run.shop_offers[index]
+	var module := ModuleData.get_module(offer["module_id"])
+	if offer["sold"] or module == null or run.credits < RunState.shop_price(module):
+		return null
+	InfoPopup.close_all(self)
+	_dropped = false
+	_hover_key = ""
+	_drag_preview(module, Arcade.YELLOW)
+	var data := {"kind": "shop", "index": index}
+	_drag = data
+	_mark_drag_targets(run, data)
+	Accessibility.vibrate(12)
+	return data
+
+
+## Grosse Vorschau ueber dem Finger, damit er das Modul nicht verdeckt.
+func _drag_preview(module: ModuleData, line: Color) -> void:
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var card := PanelContainer.new()
+	var box := Arcade.chamfer_box(Color(UiKit.CARD, 0.96), 10, line, 3)
+	box.set_content_margin_all(6)
+	box.shadow_color = Color(UiKit.MAGENTA, 0.8)
+	box.shadow_size = 1
+	box.shadow_offset = Vector2(5, 5)
+	card.add_theme_stylebox_override("panel", box)
+	card.add_child(ModuleChip.new(module, 56.0))
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.position = Vector2(-34, -104)
+	holder.add_child(card)
+	set_drag_preview(holder)
+
+
+## Das Schrott-Feld rechts neben dem Lager: ein Modul hierher ziehen =
+## verkaufen, egal ob aus dem Lager oder aus einer Waffe.
+func _scrap_zone(run: RunState) -> ScrapZone:
+	var zone := ScrapZone.new()
+	zone.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	zone.set_drag_forwarding(Callable(),
+		func(_at: Vector2, data: Variant) -> bool:
+			return data is Dictionary and _can_scrap(data) and run.phase == RunState.Phase.STOP,
+		func(_at: Vector2, data: Variant) -> void: _sell_dragged(run, data))
+	return zone
+
+
+## Schrott: gestrichelt in Rosa, beim Ziehen eines Moduls kraeftig mit dem
+## Verkaufswert.
+class ScrapZone extends PanelContainer:
+	var _value: Label
+	var _hot: bool = false
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(0, STORE_EDGE * 2 + 6)
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		var empty := StyleBoxEmpty.new()
+		add_theme_stylebox_override("panel", empty)
+		var box := VBoxContainer.new()
+		box.alignment = BoxContainer.ALIGNMENT_CENTER
+		box.add_theme_constant_override("separation", 2)
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(box)
+		var icon := UiIcon.rect("scrap", 24, Arcade.ROSE)
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		box.add_child(icon)
+		var title := Arcade.label("SCHROTT", 14, Arcade.ROSE, "display")
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(title)
+		_value = Arcade.label("hierher ziehen\n= verkaufen", 12, UiKit.TEXT, "medium")
+		_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(_value)
+
+	## Wert des gezogenen Moduls (-1 = nichts Verkaufbares in der Hand).
+	func set_offer(value: int) -> void:
+		_hot = value >= 0
+		_value.text = ("+%d Credits" % value) if _hot else "hierher ziehen\n= verkaufen"
+		_value.add_theme_color_override("font_color", Arcade.CYAN if _hot else UiKit.TEXT)
+		queue_redraw()
+
+	func _draw() -> void:
+		var r := Rect2(Vector2(1.5, 1.5), size - Vector2(3, 3))
+		draw_rect(r, Color(Arcade.ROSE, 0.16 if _hot else 0.05), true)
+		if _hot:
+			draw_rect(r, Arcade.ROSE, false, 3.0)
+			return
+		var corners := [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]
+		for i in 4:
+			draw_dashed_line(corners[i], corners[(i + 1) % 4], Arcade.ROSE, 2.0, 5.0)
+
+
+# ---------------------------------------------------------------------------
+# BIOS-Wahl nach dem Sieg (19. Nov. 2026, Ablauf des Spielers): Endscreen ->
+# diese Wahl -> Zwischenstopp mit dem BIOS im Lager.
+# ---------------------------------------------------------------------------
+
+## Eigener Bildschirm vor dem Zwischenstopp: je Angebot eine Karte "aus X wird
+## Y" mit der neuen Wirkung und wie nah es ist; antippen waehlt, "Nehmen"
+## bestaetigt.
+func _show_bios_choice(run: RunState) -> void:
+	if _bios_pick >= run.bios_offers.size():
+		_bios_pick = -1
+	var last: Dictionary = run.history[-1] if not run.history.is_empty() else {}
+	var why := "Chaos-Sieg" if bool(last.get("chaos", false)) else "Elite-Sieg"
+	var intro := _label("%s: wähle ein BIOS. Es wertet ein Rezept auf und kommt ins Lager." % why,
+		UiKit.BODY, UiKit.TEXT)
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_side.add_child(intro)
+	for index in run.bios_offers.size():
+		var item := ModuleData.get_module(run.bios_offers[index])
+		if item != null:
+			_side.add_child(_bios_card(run, index, item))
+
+	var blocker := run.bios_blocker()
+	var take := _big_button("Nehmen")
+	take.disabled = _bios_pick < 0 or blocker != ""
+	take.pressed.connect(func():
+		if run.choose_bios(_bios_pick):
+			Accessibility.vibrate(30, true)
+			_flash_storage = run.storage.size() - 1
+		_bios_pick = -1
+		_refresh())
+	if blocker != "" and blocker != "keine Wahl":
+		var note := _label("%s -- im Zwischenstopp Platz schaffen, dann wählen." % blocker,
+			UiKit.SMALL, COLOR_BAD)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_side.add_child(note)
+		var later := UiKit.button("Zum Zwischenstopp")
+		later.pressed.connect(func():
+			_bios_later = true
+			_refresh())
+		_main_action(later)
+		return
+	_main_action(take)
+
+
+## Eine Angebotskarte: oben "Rezept -> BIOS-Rezept" mit beiden Kartuschen,
+## darunter die neue Regel und wie nah es ist (sofort, bald, angefangen).
+func _bios_card(run: RunState, index: int, item: ModuleData) -> Control:
+	var recipe := ModuleData.get_module(item.bios_recipe)
+	var result := ModuleData.get_module(item.bios_result)
+	var tile := Tile.new("bios_pick:%d:%s" % [index, item.id], null, "", Vector2(0, 0))
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.managed = true
+	tile.selected = index == _bios_pick
+	tile.accent = ModuleData.CLASS_COLOR["bios"]
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	box.add_child(row)
+	if recipe != null:
+		row.add_child(ModuleChip.new(recipe, MODULE_EDGE))
+	var arrow := UiIcon.rect("play", 16, Arcade.YELLOW)
+	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(arrow)
+	if result != null:
+		row.add_child(ModuleChip.new(result, MODULE_EDGE))
+	var names := VBoxContainer.new()
+	names.add_theme_constant_override("separation", 0)
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(names)
+	names.add_child(_label("aus %s wird" % (recipe.display_name if recipe != null else "?"),
+		UiKit.SMALL, COLOR_MUTED))
+	names.add_child(Arcade.label((result.display_name if result != null else item.display_name).to_upper(),
+		17, Color.WHITE, "display"))
+	var state := run.bios_state(item)
+	var rank := int(state.get("rank", 3))
+	var tag_text: String = ["SOFORT NUTZBAR", "BALD: ZUTATEN DA",
+		"ANGEFANGEN: %d/%d ZUTATEN" % [int(state.get("have", 0)), int(state.get("need", 2))],
+		"NOCH KEINE ZUTAT"][rank]
+	var tag_color: Color = [COLOR_GOOD, Arcade.CYAN, Arcade.YELLOW, COLOR_MUTED][rank]
+	box.add_child(Arcade.label(tag_text, 12, tag_color, "bold", 0.1))
+	if result != null:
+		var extra := result.effect_lines(result.bonus)
+		if not extra.is_empty():
+			var line := _label("Neu: %s" % ", ".join(extra), UiKit.SMALL, UiKit.TEXT)
+			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			box.add_child(line)
+		var base := result.effect_lines(_without(result.effects, result.bonus))
+		if not base.is_empty():
+			var line := _label("Dazu wie bisher: %s" % ", ".join(base), UiKit.SMALL, COLOR_MUTED)
+			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			box.add_child(line)
+	tile.add_extra(box)
+	tile.on_select = func():
+		_bios_pick = index
+		_refresh()
+	tile.on_action = func():
+		_bios_pick = index
+		if run.choose_bios(index):
+			Accessibility.vibrate(30, true)
+			_flash_storage = run.storage.size() - 1
+		_bios_pick = -1
+		_refresh()
+	return tile

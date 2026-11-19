@@ -65,9 +65,6 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		var guard := _guard_for(target)
 		if guard != null:
 			var share := float((Config.section("passives").get("presence", {}) as Dictionary).get("guard_share", 0.3))
-			# Molok-BIOS: faengt mehr ab.
-			if guard.has_bios():
-				share = maxf(share, ModuleData.rule("bios_guard_share", 0.4))
 			var taken := int(round(float(raw) * share))
 			if taken > 0:
 				raw -= taken
@@ -146,7 +143,7 @@ func _thorns(source: Unit, target: Unit, action: ActionData) -> void:
 			target.retaliation_stacks + (2 if melee else 1))
 	var brand := float(target.stats.get("mark_on_hit_taken", 0.0))
 	if brand > 0.0:
-		mark(source, brand * mark_mult(target))
+		mark(source, brand)
 	var spikes := int(target.stats.get("thorns", 0))
 	if melee:
 		spikes += int(target.stats.get("thorns_melee", 0))
@@ -172,13 +169,6 @@ func mark(foe: Unit, seconds: float) -> void:
 	var left := float((foe.statuses.get(&"mark", {}) as Dictionary).get("seconds_left", 0.0))
 	foe.apply_status(&"mark", maxf(seconds, left),
 		{"damage_taken_mult": 1.0 + ModuleData.rule("mark_damage_taken", 0.1)})
-
-
-## Strix-BIOS: Markierungen des Strix halten laenger.
-static func mark_mult(by: Unit) -> float:
-	if by != null and by.passive() == "steady" and by.has_bios():
-		return ModuleData.rule("bios_mark_mult", 2.0)
-	return 1.0
 
 
 static func is_marked(unit: Unit) -> bool:
@@ -261,9 +251,6 @@ func _on_hit(source: Unit, dealt: int) -> void:
 	if source.passive() == "hit_rush":
 		var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
 		var mods := {"move_mult": float(rush.get("move_mult", 1.4))}
-		# Vireo-BIOS: Sprint macht auch schneller im Angriff.
-		if source.has_bios():
-			mods["attack_speed_mult"] = 1.0 + ModuleData.rule("bios_rush_attack_speed", 0.2)
 		source.apply_status(&"rush", float(rush.get("seconds", 2.0)), mods)
 
 

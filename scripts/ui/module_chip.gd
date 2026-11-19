@@ -1,27 +1,42 @@
 class_name ModuleChip
 extends Control
 
-## Ein Modul als kleiner Chip: Gehaeuse mit Beinchen, darin das Symbol aus
-## assets/modules/<id>.svg. Ohne Symbol: zwei Buchstaben in der
-## Mitte (Schnellfeuer = SF), Rand in der Farbe der Klasse (rot Angriff, blau
-## Abwehr, gelb Taktik). Die Klasse steht zusaetzlich als Zeichen oben im
-## Chip -- Spitze (Angriff), Bogen (Abwehr), Punkt (Taktik) --, damit man sie
-## nicht nur an der Farbe erkennt. Rezept-Module haben einen doppelten Rand.
-## Ruhende Module (Bedingung passt nicht zur Waffe) sind abgeblendet.
+## Ein Modul als Kartusche (Entwurf "Zwischenstopp Neu", 18. Nov. 2026):
+## abgeschraegt wie die Knoepfe (Ecke oben links und unten rechts), Rahmen in
+## der Farbe der Klasse (rot Angriff, blau Abwehr, gelb Taktik, violett BIOS),
+## oben rechts eine Klassen-Ecke mit dem Klassenzeichen -- damit man die
+## Klasse nicht nur an der Farbe erkennt -- und in der Mitte gross das Symbol
+## aus assets/modules/<id>.svg (ohne Symbol: zwei Buchstaben, Schnellfeuer =
+## SF). Rezept-Module haben einen doppelten Rahmen. Ruhende Module (Bedingung
+## passt nicht zur Waffe) sind abgeblendet.
+##
+## Die Kartusche ist ueberall gleich gross (52 px im Laden, im Lager und in
+## der Waffe); andere Groessen nur fuer Popups und Vorschauen.
+
+## Grund der Kartusche (vorher graublau, passte nicht zum Violett der Karten).
+const FILL := Color("#1a0b36")
 
 var module: ModuleData
 var dim: bool = false:
 	set(value):
 		dim = value
 		queue_redraw()
-var edge: float = 48.0
+var edge: float = 52.0
 
 
-func _init(which: ModuleData = null, size_edge: float = 48.0) -> void:
+func _init(which: ModuleData = null, size_edge: float = 52.0) -> void:
 	module = which
 	edge = size_edge
 	custom_minimum_size = Vector2(size_edge, size_edge)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+## Umriss der Kartusche in ``r``: Ecke ``cut`` oben links und unten rechts ab.
+static func outline(r: Rect2, cut: float) -> PackedVector2Array:
+	return PackedVector2Array([
+		r.position + Vector2(cut, 0), Vector2(r.end.x, r.position.y),
+		r.end - Vector2(0, cut), r.end - Vector2(cut, 0),
+		Vector2(r.position.x, r.end.y), r.position + Vector2(0, cut)])
 
 
 func _draw() -> void:
@@ -31,40 +46,37 @@ func _draw() -> void:
 	if dim:
 		color = color.darkened(0.55)
 	var side := minf(size.x, size.y)
-	var origin := (size - Vector2(side, side)) * 0.5
-	var inset := side * 0.16
-	var body := Rect2(origin + Vector2(inset, inset), Vector2(side - 2.0 * inset, side - 2.0 * inset))
-	# Beinchen links und rechts
-	var pins := 3
-	for i in pins:
-		var y := body.position.y + body.size.y * (float(i) + 0.5) / float(pins)
-		draw_line(Vector2(origin.x + inset * 0.25, y), Vector2(body.position.x, y), color, 2.0)
-		draw_line(Vector2(body.end.x, y), Vector2(origin.x + side - inset * 0.25, y), color, 2.0)
-	var fill := Color(0.08, 0.1, 0.14) if not dim else Color(0.06, 0.07, 0.09)
-	draw_rect(body, fill, true)
-	draw_rect(body, color, false, 2.0)
-	if module.is_recipe():
-		draw_rect(body.grow(-4.0), color, false, 1.5)
-	# Eigenes Symbol (assets/modules/<id>.svg) statt Zeichen und Buchstaben.
+	var body := Rect2((size - Vector2(side, side)) * 0.5, Vector2(side, side))
+	var line := maxf(1.5, side / 26.0)
+	var cut := side * 0.19
+	var shape := outline(body.grow(-line * 0.5), cut)
+	draw_colored_polygon(shape, FILL if not dim else FILL.darkened(0.3))
+	var closed := shape.duplicate()
+	closed.append(shape[0])
+	draw_polyline(closed, color, line, true)
+	if module.is_recipe() or module.is_bios_result:
+		var inner := outline(body.grow(-side * 0.11), cut * 0.7)
+		inner.append(inner[0])
+		draw_polyline(inner, color, maxf(1.0, line * 0.7), true)
+
+	# Klassen-Ecke oben rechts: Feld in der Klassenfarbe, darin das Zeichen.
+	var tab := side * 0.29
+	var corner := Rect2(Vector2(body.end.x - tab, body.position.y), Vector2(tab, tab))
+	draw_rect(corner, color, true)
+	var klass := UiIcon.texture("bios" if module.klass == "bios" else "class_" + module.klass)
+	if klass != null:
+		draw_texture_rect(klass, corner.grow(-tab * 0.18), false, UiKit.BG)
+
+	# Symbol gross in der Mitte.
+	var art := Rect2(body.get_center() - Vector2(side, side) * 0.31, Vector2(side, side) * 0.62)
 	var picture := module.icon()
 	if picture != null:
-		var pad := body.size.x * 0.1
-		draw_texture_rect(picture, body.grow(-pad), false,
-			Color(1, 1, 1, 0.4) if dim else Color.WHITE)
+		draw_texture_rect(picture, art, false, Color(1, 1, 1, 0.4) if dim else Color.WHITE)
 		return
-	# Klassenzeichen oben (assets/ui_icons/class_*.svg)
-	var mark := Vector2(body.get_center().x, body.position.y + body.size.y * 0.22)
-	var m := body.size.x * 0.12
-	var klass := UiIcon.texture("bios" if module.klass == "bios" else "class_" + module.klass)
-	if klass == null:
-		klass = UiIcon.texture("class_tactic")
-	if klass != null:
-		draw_texture_rect(klass, Rect2(mark - Vector2(m, m) * 1.4, Vector2(m, m) * 2.8), false, color)
 	var font := get_theme_default_font()
-	var font_size := int(maxf(11.0, side * 0.26))
+	var font_size := int(maxf(11.0, side * 0.3))
 	var text := module.short_name()
 	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	var base := Vector2(body.get_center().x - width * 0.5,
-		body.position.y + body.size.y * 0.78)
+	var base := Vector2(body.get_center().x - width * 0.5, body.get_center().y + font_size * 0.36)
 	draw_string(font, base, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size,
 		Color(1, 1, 1, 0.5 if dim else 1.0))

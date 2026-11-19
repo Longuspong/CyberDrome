@@ -318,6 +318,12 @@ func faction_cores(faction: String) -> int:
 	return int(materials.get("kern:" + faction, 0))
 
 
+## Ein Fraktionskern aus einem Einsatz (Chaos-Beute, 19. Nov. 2026).
+func add_faction_core(faction: String) -> void:
+	if faction != "":
+		_add_material("kern:" + faction, 1)
+
+
 func _add_material(key: String, amount: int) -> void:
 	materials[key] = maxi(0, int(materials.get(key, 0)) + amount)
 	if int(materials[key]) == 0:

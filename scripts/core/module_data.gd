@@ -54,10 +54,9 @@ var gadget: StringName = &""
 var bonus: Dictionary = {}
 
 ## Matrix-BIOS (MODULE_KONZEPT.md 6). Ein BIOS-Gegenstand hat ``bios_kind``
-## "chassis" (fuer ``bios_chassis``) oder "recipe" (verwandelt ``bios_recipe``
-## in ``bios_result``); er steckt nie in einem Halter.
+## "recipe": er verwandelt ``bios_recipe`` in ``bios_result`` und steckt nie
+## selbst in einem Halter. Chassis-BIOS gibt es seit 18. Nov. 2026 nicht mehr.
 var bios_kind: String = ""
-var bios_chassis: StringName = &""
 var bios_recipe: StringName = &""
 var bios_result: StringName = &""
 var bios_text: String = ""
@@ -108,7 +107,6 @@ static func _load() -> void:
 		var item := _from_meta(StringName(key), meta)
 		item.klass = "bios"
 		item.bios_kind = str(meta.get("kind", ""))
-		item.bios_chassis = StringName(str(meta.get("chassis", "")))
 		item.bios_recipe = StringName(str(meta.get("recipe", "")))
 		item.bios_result = StringName(str(meta.get("result", "")))
 		item.bios_text = str(meta.get("text", ""))
@@ -271,19 +269,15 @@ func is_recipe() -> bool:
 ## Wie viele Module ein Halter dieses DROME fasst: 3, Molok 2 (6g).
 ## Modulplaetze je Waffenhalter: ein Wert des DROME (Chassis, 8. Nov. 2026).
 ## Fehlt er (alte Daten), gilt modules.json -> slots.
-## Mit Chassis-BIOS einer mehr -- beim Molok nur im gewaehlten Halter
-## (``slot`` leer = der erste bzw. einzige Halter).
+## Level und BIOS geben keine Plaetze dazu (18. Nov. 2026, Vorgabe des
+## Spielers): die Zahl bleibt fest, jedes Modul ist eine Entscheidung.
+## ``slot`` bleibt fuer die Aufrufer, die je Halter fragen.
 static func slots_for(build: DromeBuild, slot: String = "") -> int:
 	var base := int(data().get("slots", 3))
 	if build != null:
 		var own := int(build.stats().get("module_slots", 0))
 		if own > 0:
 			base = own
-		if build.chassis_bios:
-			var chosen := build.bios_slot
-			var asked := slot if slot != "" else (build.equip_slots()[0] if not build.equip_slots().is_empty() else "")
-			if chosen == "" or chosen == asked:
-				base += 1
 	return base
 
 
@@ -488,7 +482,7 @@ static func _seconds(value: float) -> String:
 ## Kurzer Klartext fuer Belohnung und Lager: "Angriff · nur Fernwaffen".
 func headline() -> String:
 	if is_bios_item():
-		return "Matrix-BIOS · %s" % ("Chassis" if bios_kind == "chassis" else "Rezept")
+		return "Matrix-BIOS · Rezept-Upgrade"
 	var parts: Array[String] = ["BIOS-Rezept" if is_bios_result else "Modul", class_label()]
 	if condition != "":
 		parts.append(CONDITION_LABEL.get(condition, condition))

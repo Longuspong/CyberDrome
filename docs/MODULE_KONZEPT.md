@@ -262,6 +262,18 @@ Verteilung: 8 Angriff, 5 Abwehr, 5 Taktik. Bedingt sind nur Gunslinger und Rundu
 
 > Voller Name **Matrix-BIOS**, kurz **BIOS** (Mehrzahl ebenfalls BIOS). Nicht „Kern“, weil der Kern schon ein Körperteil der DROMEs ist.
 
+> **Neu seit 18. Nov. 2026 (Entscheidung des Spielers):** Es gibt **kein Chassis-BIOS** mehr
+> (beim Molok war unklar, wohin der Extraplatz gehört) und **keine Extra-Modulplätze** – weder
+> durch BIOS noch durch Level. Nach **jedem gewonnenen Elite-Kampf** gibt es **fest** eine Wahl
+> 1 aus 3 (nie nach dem letzten Kampf), bis **drei** BIOS vergeben sind – eins je DROME. Ab dem
+> 4. Elite-Sieg kommt statt der Wahl sicher ein **Lootcache**. Chaos-Kämpfe geben seit 19. Nov.
+> mit 33 % eine BIOS-Wahl (zählt mit). Angeboten werden nur BIOS, die sofort oder bald nutzbar
+> sind; gewählt wird auf einem eigenen Bildschirm nach dem Endscreen. Ein BIOS wertet ein Rezept auf,
+> das in einer Waffe steckt (an seinem Platz; beim Molok also nur in einer seiner zwei Waffen –
+> eine taktische Entscheidung), oder wird im Rezeptbuch verschmolzen. Die Angebote ordnen sich
+> weiter nach 6.2 (sofort, bald, angefangen), sind aber nie leer. Was unten zu Chassis-BIOS
+> steht, ist überholt.
+
 ### 6.1 Arten
 
 | Art | Wirkung | Wann nutzbar |
@@ -310,7 +322,7 @@ Wer den Elite-Kampf wählt und knapp gewinnt, darf kein BIOS bekommen, das er ni
 
 Ziel ist ein BIOS je Rezept. Für den Anfang reichen 6–8.
 
-### 6.5 Chassis-BIOS
+### 6.5 Chassis-BIOS (entfallen 18. Nov. 2026)
 
 Jede gibt **+1 Modulplatz** (Molok: in einem Halter nach Wahl) und verstärkt die Passive:
 

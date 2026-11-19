@@ -110,17 +110,6 @@ static func drome_bonus(body: PartData, level: int) -> Dictionary:
 	return out
 
 
-## Zusaetzliche Modulplaetze je Halter auf diesem Level.
-static func extra_module_slots(body_id: StringName, level: int) -> int:
-	var table: Dictionary = drome_cfg().get("module_slots_at", {})
-	var steps: Array = table.get(str(body_id), table.get("default", []))
-	var extra := 0
-	for at in steps:
-		if level >= int(at):
-			extra += 1
-	return extra
-
-
 # ---------------------------------------------------------------------------
 # Waffe
 # ---------------------------------------------------------------------------

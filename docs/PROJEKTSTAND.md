@@ -29,6 +29,62 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Chaos-Beute, Credit-Booster, BIOS-Wahl als Bildschirm (19. Nov. 2026, Spieler)
+
+* **Chaos-Sieg:** ein Wurf aus `run.loot.chaos` -- 33 % BIOS-Wahl (zaehlt zu
+  `bios_elite_wins`, sonst Cache), 33 % Cache, 33 % Credit-Booster, 1 %
+  Fraktionskern (`home_queue`, `Roster.add_faction_core`, Gebiet -> Fraktion
+  ueber `loot.faction_cores`).
+* **Credit-Booster:** `RunState.credit_boost` Kaempfe mit `booster_mult`
+  (2x) Credits, auch bei Niederlage gezaehlt; steht im Beute-Popup.
+* **BIOS-Angebote** nur noch sofort/bald/angefangen (`bios_state`), sonst
+  beliebige, wenn gar kein Modul im Lauf ist.
+* **BIOS-Wahl als eigener Bildschirm** vor dem Zwischenstopp
+  (`_show_bios_choice`): Karten "aus X wird Y" mit Wirkung und Naehe,
+  antippen + NEHMEN; Lager voll -> "Zum Zwischenstopp", Wahl bleibt oben.
+* `tests/screenshot.gd`: `bios=1` legt eine BIOS-Wahl aus.
+
+### Zwischenstopp: Schrott, Kauf in die Waffe, Tauschen (19. Nov. 2026, bestaetigt vom Spieler)
+
+* **Schrott-Feld** rechts neben dem Lager (`ScrapZone`): Module aus dem Lager
+  oder aus einer Waffe hineinziehen = verkaufen (`RunState.sell_installed`);
+  im Waffen-Popup zusaetzlich "Verkaufen".
+* **Laden -> Waffe:** Angebot auf eine Waffe ziehen = kaufen und einsetzen
+  (`RunState.buy_into`), aufs Lager = kaufen. Ein volles Lager stoert nur,
+  wenn dabei getauscht wird.
+* **Tauschen:** Ablegen auf einen belegten Platz tauscht
+  (`place_from_storage`, `move_installed`, auch zwischen Waffen und DROMEs).
+* Alle drei laufen als Probe (`apply` false) ueber `RunState._attempt` und
+  `_layout_blocker`: dieselbe Funktion sagt vorher, ob und warum etwas nicht
+  geht -- das Ziel leuchtet oder nennt den Grund.
+* Geprueft mit echten Maus-Ereignissen im Fenster (Einsetzen, Tauschen,
+  Schrott aus Waffe und Lager, Kauf in die Waffe, Umsetzen).
+* **Das Gezogene zielt, nicht der Finger** (Wunsch des Spielers, wie in
+  Backpack Brawl): Waehrend des Ziehens liegt eine Fangflaeche ueber dem
+  Bildschirm (`_open_catcher`), das Ziel ist, was unter der Mitte des
+  schwebenden Moduls liegt (`_aim()` = Finger + `DRAG_LIFT` 70 px nach
+  oben). Aufstellung im Kampf ebenso: die Figur schwebt `DEPLOY_LIFT` 44 px
+  ueber dem Finger, das Feld unter ihren Fuessen zaehlt.
+
+### Feste Modulplaetze, BIOS neu, Zwischenstopp in Zeilen (18. Nov. 2026, Entscheidung des Spielers)
+
+Entwurf als Canvas "Zwischenstopp Neu" (Variante B gewaehlt).
+
+* **Modulplaetze fest:** keine Plaetze mehr durch Level (`module_slots_at` und
+  `Leveling.extra_module_slots` entfernt) und keine durch BIOS. Vireo, Nimbus,
+  Strix 3 je Waffe, Molok 2 je Waffe.
+* **Chassis-BIOS entfallen** (Daten, `DromeBuild.chassis_bios/bios_slot`,
+  Passiv-Verstaerkungen im Kampf). Alte Spielstaende laden ohne Fehler.
+* **BIOS-Wahl fest** nach jedem gewonnenen Elite-Kampf (nie nach dem letzten),
+  bis `rules.bios_elite_wins` (3) vergeben sind (`RunState.bios_given`); danach
+  sicher ein Lootcache. Ein Rezept-BIOS wertet ein Rezept in einer Waffe an
+  seinem Platz auf (`install_bios`, Ziehen aus dem Angebot auf die Waffe),
+  beim Molok nur in einer Waffe. Chaos-Kaempfe geben keine BIOS-Wahl mehr.
+* **Zwischenstopp:** DROMEs als Zeilen, Waffe (Halterform) vor ihren Plaetzen;
+  Module ueberall 52 px als Kartusche (`ModuleChip`: abgeschraegt, Klassen-Ecke,
+  doppelter Rahmen fuer Rezepte). Token `module-fill` jetzt `#1a0b36`.
+* `tests/screenshot.gd` kennt `module=<drome>.<halter>:<id>+<id>` und `lager=<id>+<id>`.
+
 ### Flache Hexfelder, doppelte Figuren (18. Nov. 2026, Meldung des Spielers)
 
 * **Flache Sechsecke** (Kante oben und unten): vorher hatten die Felder oben

@@ -26,6 +26,10 @@ const SPEEDS := [1.0, 2.0]
 const ZOOM_MIN := 0.2
 const ZOOM_MAX := 1.2
 const DRAG_THRESHOLD := 10.0
+## Beim Aufstellen schwebt die gezogene Figur so weit (Bildschirm-Pixel)
+## UEBER dem Finger: ihre Fuesse zeigen das Feld, nicht der Finger, und der
+## Daumen verdeckt sie nicht (19. Nov. 2026, Wunsch des Spielers).
+const DEPLOY_LIFT := 44.0
 const FOLLOW_EASE := 2.5
 
 ## Hoechstens so viele Simulationsschritte je Bild -- haengt ein Bild, holt der
@@ -45,7 +49,6 @@ var _grabbed: Unit = null
 var _dragged: Unit = null
 var _selected: Unit = null
 var _grab_start := Vector2.ZERO
-var _grab_offset := Vector2.ZERO
 var _deploy_bar: Control
 var _play_bar: Control
 var _paused: bool = false
@@ -592,7 +595,6 @@ func _deploy_input(event: InputEvent) -> bool:
 		_dragged = null
 		_grab_start = at
 		if _grabbed != null:
-			_grab_offset = _pointer_world(at) - _grabbed.position
 			return true
 		# Daneben getippt: ein Feld der Zone setzt die gewaehlte Figur um.
 		return _selected != null
@@ -602,7 +604,8 @@ func _deploy_input(event: InputEvent) -> bool:
 			_selected = null
 			_dragged.z_index = 4000
 		if _dragged != null:
-			_dragged.position = _pointer_world(at) - _grab_offset
+			# Fuesse ueber dem Finger -- das Feld darunter ist das Ziel.
+			_dragged.position = _pointer_world(at - Vector2(0, DEPLOY_LIFT)) - IsoView.SPRITE_ORIGIN
 			var under := IsoView.local_to_map(_dragged.visual_anchor())
 			view.mark_zone(under, under in battle.deployment_tiles(true), null)
 		return true

@@ -718,9 +718,8 @@ func test_late_shops_sometimes_offer_a_recipe() -> void:
 # ---------------------------------------------------------------------------
 
 func test_the_bios_catalog() -> void:
-	var chassis := ModuleData.bios_items().filter(func(i): return i.bios_kind == "chassis")
 	var recipe := ModuleData.bios_items().filter(func(i): return i.bios_kind == "recipe")
-	t.equal(chassis.size(), 4, "ein Chassis-BIOS je DROME")
+	t.equal(recipe.size(), ModuleData.bios_items().size(), "nur Rezept-BIOS (Chassis-BIOS seit 18. Nov. 2026 weg)")
 	t.ok(recipe.size() >= 6, "6-8 Rezept-BIOS für den Anfang (%d)" % recipe.size())
 	for item in recipe:
 		var base := ModuleData.get_module(item.bios_recipe)
@@ -761,48 +760,123 @@ func test_elite_wins_offer_a_bios_but_never_after_the_last_fight() -> void:
 	t.ok(seen, "Elite bringt ein BIOS zur Wahl")
 
 
-func test_bios_offers_are_always_usable() -> void:
-	var run := RunState.start(61, RunState.standard_squad().filter(
-		func(b): return b.body().id in [&"scout_body", &"jugg_body"]))
+func test_bios_offers_are_always_there() -> void:
+	var run := RunState.start(61)
 	run.phase = RunState.Phase.STOP
 	for seed_value in 20:
 		run.run_seed = seed_value
 		var offers := run.roll_bios_offers()
-		t.ok(not offers.has(&"bios_nimbus") and not offers.has(&"bios_strix"),
-			"keins für DROMEs ausserhalb des Squads")
-		var now := offers.filter(func(id): return id in [&"bios_vireo", &"bios_molok"])
-		t.ok(not now.is_empty(), "mindestens eins sofort nutzbar")
+		t.equal(offers.size(), 3, "immer drei zur Wahl, auch ohne Rezept im Lauf")
 		for id in offers:
-			var item := ModuleData.get_module(id)
-			t.ok(item.bios_kind == "chassis", "ohne Module nur Chassis-BIOS (%s)" % id)
-	run.storage.append(&"mod_rapid_fire")
-	run.run_seed = 3
-	var with_part := run.roll_bios_offers()
-	t.ok(with_part.size() == 3, "eine Zutat fuellt als 'angefangen' auf")
+			t.equal(ModuleData.get_module(id).bios_kind, "recipe", "nur Rezept-BIOS (%s)" % id)
+	run.storage.append(&"mod_brand")
+	for seed_value in 10:
+		run.run_seed = seed_value
+		t.ok(run.roll_bios_offers().has(&"bios_hunt"), "ein Rezept im Lauf kommt zuerst")
 
 
-func test_choosing_and_installing_a_chassis_bios() -> void:
+## Seit 18. Nov. 2026: ein BIOS wertet ein Rezept in einer Waffe auf -- an
+## seinem Platz, beim Molok nur in einer der zwei Waffen. Kein Extraplatz.
+func test_a_recipe_bios_upgrades_a_recipe_in_its_weapon() -> void:
 	var run := _stop_run()
-	run.bios_offers = [&"bios_molok", &"bios_vireo", &"bios_strix"]
-	t.ok(run.choose_bios(0), "gewaehlt")
-	t.equal(run.storage, [&"bios_molok"], "liegt im Lager")
-	t.ok(run.bios_offers.is_empty(), "die anderen verfallen")
 	var drome := -1
 	for i in run.squad.size():
 		if run.squad[i].body().id == &"jugg_body":
 			drome = i
 	var build: DromeBuild = run.squad[drome]
-	var right: String = build.equip_slots()[1]
 	var left: String = build.equip_slots()[0]
+	var right: String = build.equip_slots()[1]
+	build.modules[right] = [&"mod_armor_plate", &"mod_brand"]
+	run.bios_offers = [&"bios_hunt", &"bios_revolver", &"bios_phase"]
+	t.ok(run.choose_bios(0), "gewaehlt")
+	t.equal(run.storage, [&"bios_hunt"], "liegt im Lager")
+	t.ok(run.bios_offers.is_empty(), "die anderen verfallen")
 	t.ok(not run.install_module(0, drome, left), "ein BIOS steckt nicht wie ein Modul")
-	t.ok(not run.install_bios(0, 0 if drome != 0 else 1, left), "nicht in einen anderen DROME")
-	t.ok(run.install_bios(0, drome, right), "eingebaut")
-	t.ok(build.chassis_bios, "der Molok trägt es")
-	t.equal(ModuleData.slots_for(build, right), 3, "+1 Modulplatz im gewählten Halter")
-	t.equal(ModuleData.slots_for(build, left), 2, "der andere bleibt")
-	t.ok(build.clone().chassis_bios, "die Kopie für den Kampf trägt es mit")
-	run.storage.append(&"bios_molok")
-	t.ok(not run.install_bios(0, drome, left), "nur ein Chassis-BIOS je DROME")
+	t.ok(not run.install_bios(0, drome, left), "nicht in die Waffe ohne Brandmarke")
+	t.ok(run.install_bios(0, drome, right), "wertet die Brandmarke auf")
+	t.equal(build.modules[right], [&"mod_armor_plate", &"mod_hunt"], "an ihrem Platz")
+	t.ok(run.storage.is_empty(), "das BIOS ist verbraucht")
+	t.equal(ModuleData.slots_for(build, right), 2, "kein Extraplatz")
+	build.modules[left] = [&"mod_brand"]
+	run.storage.append(&"bios_hunt")
+	t.ok(not run.install_bios(0, drome, left), "nur ein BIOS-Rezept je DROME")
+
+
+# ---------------------------------------------------------------------------
+# Ziehen im Zwischenstopp (19. Nov. 2026): Schrott, Kaufen in die Waffe,
+# Tauschen auf belegtem Platz
+# ---------------------------------------------------------------------------
+
+func test_an_installed_module_can_be_sold() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.squad[0].modules[slot] = [&"mod_rapid_fire", &"mod_beacon"]
+	var before := run.credits
+	t.equal(run.sell_installed(0, slot, 1), 2, "Grundmodul bringt 2")
+	t.equal(run.credits, before + 2, "Credits gutgeschrieben")
+	t.equal(run.squad[0].modules[slot], [&"mod_rapid_fire"], "Platz frei")
+	t.equal(run.sell_installed(0, slot, 1), 0, "leerer Platz: nichts")
+
+
+func test_dropping_on_a_taken_place_swaps() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.squad[0].modules[slot] = [&"mod_rapid_fire", &"mod_beacon"]
+	run.storage.append_array([&"mod_bait", &"mod_twin_barrel"])
+	t.equal(run.place_from_storage(1, 0, slot, 0), "", "auf belegten Platz")
+	t.equal(run.squad[0].modules[slot], [&"mod_twin_barrel", &"mod_beacon"], "getauscht")
+	t.equal(run.storage, [&"mod_bait", &"mod_rapid_fire"], "das alte nimmt den Lagerplatz")
+	t.equal(run.place_from_storage(0, 0, slot, -1), "", "freier Platz")
+	t.equal(run.squad[0].modules[slot], [&"mod_twin_barrel", &"mod_beacon", &"mod_bait"], "eingesetzt")
+
+
+func test_a_swap_that_breaks_a_rule_changes_nothing() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.squad[0].modules[slot] = [&"mod_takt_chip", &"mod_beacon"]
+	run.storage.append(&"mod_metronome")
+	var why := run.place_from_storage(0, 0, slot, 1, false)
+	t.ok(why != "", "Taktgeber neben Taktchip geht nicht (%s)" % why)
+	t.equal(run.place_from_storage(0, 0, slot, 1), why, "auch nicht ernsthaft")
+	t.equal(run.squad[0].modules[slot], [&"mod_takt_chip", &"mod_beacon"], "Waffe unverändert")
+	t.equal(run.storage, [&"mod_metronome"], "Lager unverändert")
+	t.equal(run.place_from_storage(0, 0, slot, 0, false), "", "auf den Taktchip getauscht geht")
+
+
+func test_installed_modules_move_and_swap_between_weapons() -> void:
+	var run := _stop_run()
+	var a: String = run.squad[0].equip_slots()[0]
+	var b: String = run.squad[1].equip_slots()[0]
+	run.squad[0].modules[a] = [&"mod_rapid_fire"]
+	run.squad[1].modules[b] = [&"mod_bait"]
+	t.equal(run.move_installed(0, a, 0, 1, b, 0), "", "auf belegten Platz: tauschen")
+	t.equal(run.squad[0].modules[a], [&"mod_bait"], "hin")
+	t.equal(run.squad[1].modules[b], [&"mod_rapid_fire"], "und her")
+	t.equal(run.move_installed(0, a, 0, 1, b, -1), "", "auf freien Platz: umsetzen")
+	t.ok(not run.squad[0].modules.has(a), "die alte Waffe ist leer")
+	t.equal(run.squad[1].modules[b], [&"mod_rapid_fire", &"mod_bait"], "beide in der neuen")
+	t.ok(run.storage.is_empty(), "das Lager bleibt aus dem Spiel")
+
+
+func test_buying_straight_into_a_weapon() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.shop_offers = [{"module_id": &"mod_bait", "sold": false},
+		{"module_id": &"mod_beacon", "sold": false}]
+	run.credits = 20
+	t.equal(run.buy_into(0, 0, slot, -1), "", "gekauft und eingesetzt")
+	t.equal(run.squad[0].modules[slot], [&"mod_bait"], "steckt in der Waffe")
+	t.equal(run.credits, 20 - RunState.shop_price(ModuleData.get_module(&"mod_bait")), "bezahlt")
+	t.ok(run.shop_offers[0]["sold"], "verkauft")
+	t.ok(run.storage.is_empty(), "das Lager bleibt leer")
+	t.equal(run.buy_into(0, 0, slot, -1), "verkauft", "nur einmal")
+	while not run.storage_full():
+		run.storage.append(&"mod_rapid_fire")
+	t.ok(run.buy_into(1, 0, slot, 0, false) != "", "tauschen bei vollem Lager geht nicht")
+	t.equal(run.buy_into(1, 0, slot, 1), "", "auf freien Platz auch bei vollem Lager")
+	run.credits = 0
+	run.shop_offers.append({"module_id": &"mod_amplifier", "sold": false})
+	t.equal(run.buy_into(2, 0, slot, 2), "zu wenig Credits", "ohne Credits nicht")
 
 
 func test_a_recipe_bios_fuses_from_recipe_or_ingredients() -> void:
@@ -836,45 +910,6 @@ func test_a_held_recipe_bios_pulls_its_ingredients_in_the_shop() -> void:
 	var run := _stop_run()
 	run.storage.append(&"bios_revolver")
 	t.equal(run._bios_missing(), [&"mod_rapid_fire", &"mod_twin_barrel"], "Gunslinger fehlt ganz")
-
-
-func test_chassis_bios_strengthen_the_passives() -> void:
-	# Vireo: Sprint mit Angriffstempo.
-	var vireo := _vireo()
-	vireo.chassis_bios = true
-	var battle := _battle([vireo], [_molok()], [Vector2i(10, 12), Vector2i(10, 10)])
-	var v: Unit = battle.units[0]
-	var foe: Unit = battle.units[1]
-	battle.resolver.apply_damage(v, foe, 10, v.mounts[0]["attack"])
-	t.ok(v.attack_speed_mult() > 1.1, "Sprint macht auch schneller im Angriff")
-	battle.free()
-	# Molok: lockt weiter.
-	var molok := _molok()
-	molok.chassis_bios = true
-	var m := Unit.create(molok, &"M", true)
-	var plain := Unit.create(_molok(), &"M", true)
-	t.equal(m.lure_radius(), plain.lure_radius() + 1, "Präsenz lockt 1 Feld weiter")
-	m.free()
-	plain.free()
-
-
-func test_the_strix_bios_keeps_aiming_through_one_step() -> void:
-	var strix := DromeBuild.create("Strix", {"body": &"strix_body", "head": &"strix_head",
-		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_rail_lance"})
-	strix.chassis_bios = true
-	var unit := Unit.create(strix, &"S", true)
-	unit.init_realtime(0.0)
-	unit.place_at(Vector2i(5, 5))
-	unit.track_stillness(0.0)
-	unit.track_stillness(2.6)
-	t.ok(unit.steady, "angelegt nach 2,5 s")
-	unit.place_at(Vector2i(5, 6))
-	unit.track_stillness(0.05)
-	t.ok(unit.steady, "ein Feldwechsel bricht es nicht")
-	unit.place_at(Vector2i(5, 7))
-	unit.track_stillness(0.05)
-	t.ok(not unit.steady, "der zweite schon")
-	unit.free()
 
 
 func test_phase_break_hits_unshielded_foes_harder() -> void:
