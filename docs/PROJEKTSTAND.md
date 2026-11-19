@@ -59,6 +59,12 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   geht -- das Ziel leuchtet oder nennt den Grund.
 * Geprueft mit echten Maus-Ereignissen im Fenster (Einsetzen, Tauschen,
   Schrott aus Waffe und Lager, Kauf in die Waffe, Umsetzen).
+* **Das Gezogene zielt, nicht der Finger** (Wunsch des Spielers, wie in
+  Backpack Brawl): Waehrend des Ziehens liegt eine Fangflaeche ueber dem
+  Bildschirm (`_open_catcher`), das Ziel ist, was unter der Mitte des
+  schwebenden Moduls liegt (`_aim()` = Finger + `DRAG_LIFT` 70 px nach
+  oben). Aufstellung im Kampf ebenso: die Figur schwebt `DEPLOY_LIFT` 44 px
+  ueber dem Finger, das Feld unter ihren Fuessen zaehlt.
 
 ### Feste Modulplaetze, BIOS neu, Zwischenstopp in Zeilen (18. Nov. 2026, Entscheidung des Spielers)
 

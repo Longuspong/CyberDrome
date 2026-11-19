@@ -66,6 +66,13 @@ var _holder_drag: Dictionary = {}
 ## nichts in der Hand. Das Schrott-Feld neben dem Lager.
 var _drag: Dictionary = {}
 var _scrap: ScrapZone
+var _storage_box: Control
+## Fangflaeche ueber dem ganzen Bildschirm, solange gezogen wird: nicht der
+## Finger, sondern das schwebende Modul (DRAG_LIFT ueber dem Finger) sagt, wo
+## abgelegt wird (19. Nov. 2026, Wunsch des Spielers -- wie in Backpack Brawl).
+var _catcher: CanvasLayer
+## Mitte der Zug-Vorschau relativ zum Finger (Karte bei (-34, -104), 68 px).
+const DRAG_LIFT := Vector2(0, -70)
 var _hover_key: String = ""
 var _pointer := Vector2.ZERO
 var _tip: PanelContainer
@@ -1156,6 +1163,7 @@ func _storage_grid(run: RunState) -> Control:
 		func(_at: Vector2, data: Variant) -> bool: return _storage_accepts(run, data),
 		func(_at: Vector2, data: Variant) -> void: _drop_on_storage(run, data))
 	_flash_storage = -1
+	_storage_box = grid
 	return grid
 
 
@@ -1302,20 +1310,9 @@ func _holder_tile(run: RunState, drome: int, slot: String) -> Tile:
 	tile.on_drag = func() -> Variant: return _start_holder_drag(run, drome, slot, placed)
 	tile.can_drop = func(data) -> bool:
 		return data is Dictionary \
-			and _drop_blocker(run, data, drome, slot, _spot_under(spots, _pointer), false) == ""
+			and _drop_blocker(run, data, drome, slot, _spot_under(spots, _aim()), false) == ""
 	tile.on_drop = func(data):
-		_dropped = true
-		var position := _spot_under(spots, _pointer)
-		var swapped: bool = data.get("kind") != "bios_offer" and spots.any(func(e): return e[1] == position) \
-			and placed.any(func(e): return e[1] == position)
-		if _drop_blocker(run, data, drome, slot, position, true) == "":
-			Accessibility.vibrate(25, true)
-			_selected_storage = -1
-			_flash_holder = "%d:%s" % [drome, slot]
-			if swapped and data.get("kind") == "shop":
-				_flash_storage = run.storage.size() - 1
-		_holder_drag = {}
-		_refresh()
+		_drop_on_holder(run, data, drome, slot, _spot_under(spots, _aim()))
 	_holders.append({"tile": tile, "drome": drome, "slot": slot, "free": first_free,
 		"frees": frees, "spots": spots, "placed": placed, "allowed": false, "detail": ""})
 	if _flash_holder == "%d:%s" % [drome, slot]:
@@ -1490,7 +1487,10 @@ func _process(_delta: float) -> void:
 	var run := _run()
 	if run == null or run.phase != RunState.Phase.STOP:
 		return
-	var at := _pointer
+	if _catcher == null:
+		_open_catcher()
+	# Nicht der Finger, sondern das schwebende Modul zeigt das Ziel.
+	var at := _aim()
 	var key := ""
 	var target: Dictionary = {}
 	var position := -1
@@ -1619,6 +1619,7 @@ func _return_module(run: RunState, data: Dictionary) -> void:
 
 
 func _end_drag() -> void:
+	_close_catcher()
 	if _drag.is_empty():
 		return
 	_drag = {}
@@ -2084,6 +2085,125 @@ func _panel_style(highlight: bool = false) -> StyleBoxFlat:
 # Ziehen von ueberall nach ueberall (19. Nov. 2026, bestaetigt vom Spieler)
 # ---------------------------------------------------------------------------
 
+## Legt das Gezogene auf Platz ``position`` dieser Waffe (-1 = erster freier).
+func _drop_on_holder(run: RunState, data: Dictionary, drome: int, slot: String, position: int) -> void:
+	_dropped = true
+	var swapped: bool = data.get("kind") == "shop" and run._installed_at(drome, slot, position) != &""
+	if _drop_blocker(run, data, drome, slot, position, true) == "":
+		Accessibility.vibrate(25, true)
+		_selected_storage = -1
+		_flash_holder = "%d:%s" % [drome, slot]
+		if swapped:
+			_flash_storage = run.storage.size() - 1
+	_holder_drag = {}
+	_refresh()
+
+
+## Wo das schwebende Modul gerade ist (seine Mitte) -- dort wird abgelegt.
+func _aim() -> Vector2:
+	return _pointer + DRAG_LIFT
+
+
+## Was unter ``at`` liegt: {type: holder (mit h, position) | scrap | store
+## (mit s) | storage} oder leer.
+func _target_at(at: Vector2) -> Dictionary:
+	for h in _holders:
+		if (h["tile"] as Control).get_global_rect().has_point(at):
+			return {"type": "holder", "h": h, "position": _spot_under(h["spots"], at)}
+	if _scrap != null and _scrap.get_global_rect().has_point(at):
+		return {"type": "scrap"}
+	for s in _stores:
+		if (s["tile"] as Control).get_global_rect().has_point(at):
+			return {"type": "store", "s": s}
+	if _storage_box != null and _storage_box.get_global_rect().has_point(at):
+		return {"type": "storage"}
+	return {}
+
+
+## Nimmt das Ziel unter dem schwebenden Modul es an (``apply`` false) bzw.
+## legt es dort ab.
+func _drop_at(run: RunState, data: Dictionary, apply: bool) -> bool:
+	if run == null or run.phase != RunState.Phase.STOP:
+		return false
+	var target := _target_at(_aim())
+	match str(target.get("type", "")):
+		"holder":
+			var h: Dictionary = target["h"]
+			var drome := int(h["drome"])
+			var slot := str(h["slot"])
+			var position := int(target["position"])
+			if not apply:
+				return _drop_blocker(run, data, drome, slot, position, false) == ""
+			_drop_on_holder(run, data, drome, slot, position)
+			return true
+		"scrap":
+			if not _can_scrap(data):
+				return false
+			if apply:
+				_sell_dragged(run, data)
+			return true
+		"store":
+			var other := int(target["s"]["index"])
+			if data.get("kind") == "store":
+				if run.pair_result(int(data["index"]), other) == null:
+					return false
+				if apply:
+					_dropped = true
+					_craft_pair(run, int(data["index"]), other)
+				return true
+			if not _storage_accepts(run, data):
+				return false
+			if apply:
+				_drop_on_storage(run, data)
+			return true
+		"storage":
+			if not _storage_accepts(run, data):
+				return false
+			if apply:
+				_drop_on_storage(run, data)
+			return true
+	return false
+
+
+## Legt die Fangflaeche ueber den Bildschirm (beim Greifen).
+func _open_catcher() -> void:
+	if _catcher != null:
+		return
+	_catcher = CanvasLayer.new()
+	_catcher.layer = 90
+	add_child(_catcher)
+	var area := Control.new()
+	area.set_anchors_preset(Control.PRESET_FULL_RECT)
+	area.mouse_filter = Control.MOUSE_FILTER_STOP
+	area.set_drag_forwarding(Callable(),
+		func(_at: Vector2, data: Variant) -> bool:
+			return data is Dictionary and _drop_at(_run(), data, false),
+		func(_at: Vector2, data: Variant) -> void:
+			_drop_at(_run(), data, true))
+	_catcher.add_child(area)
+
+
+func _close_catcher() -> void:
+	if _catcher != null:
+		_catcher.queue_free()
+		_catcher = null
+
+
+## Verkauft das Gezogene (Schrott), aus dem Lager oder aus einer Waffe.
+func _sell_dragged(run: RunState, data: Dictionary) -> void:
+	_dropped = true
+	var gain := 0
+	if data["kind"] == "store":
+		gain = run.sell(int(data["index"]))
+	else:
+		gain = run.sell_installed(int(data["drome"]), str(data["slot"]), int(data["position"]))
+	if gain > 0:
+		Accessibility.vibrate(30, true)
+	_selected_storage = -1
+	_holder_drag = {}
+	_refresh()
+
+
 ## Der Platz unter ``at`` (frei oder belegt); -1 = keiner (dann der erste
 ## freie).
 static func _spot_under(spots: Array, at: Vector2) -> int:
@@ -2243,18 +2363,7 @@ func _scrap_zone(run: RunState) -> ScrapZone:
 	zone.set_drag_forwarding(Callable(),
 		func(_at: Vector2, data: Variant) -> bool:
 			return data is Dictionary and _can_scrap(data) and run.phase == RunState.Phase.STOP,
-		func(_at: Vector2, data: Variant) -> void:
-			_dropped = true
-			var gain := 0
-			if data["kind"] == "store":
-				gain = run.sell(int(data["index"]))
-			else:
-				gain = run.sell_installed(int(data["drome"]), str(data["slot"]), int(data["position"]))
-			if gain > 0:
-				Accessibility.vibrate(30, true)
-			_selected_storage = -1
-			_holder_drag = {}
-			_refresh())
+		func(_at: Vector2, data: Variant) -> void: _sell_dragged(run, data))
 	return zone
 
 
