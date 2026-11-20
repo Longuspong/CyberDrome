@@ -136,7 +136,8 @@ def module_name(mid):
 
 STAT_NAMES = {
     "hp": "Integritaet", "spd": "Speed", "def": "Ruestung", "shield": "Schild",
-    "shield_pulse": "Schildpuls", "power": "Power", "module_slots": "Modulplaetze",
+    "shield_pulse": "Schildpuls", "power": "Power", "efficiency": "Effizienz",
+    "module_slots": "Modulplaetze",
 }
 CLASS_NAMES = {"light": "leicht", "medium": "mittel", "heavy": "schwer"}
 CATEGORY_NAMES = {"weapon": "Waffe", "shield": "Schild", "support": "Support"}
@@ -527,7 +528,7 @@ def build_dromes(ws):
     headers = ["Code", "DROME", "Set-Titel", "Rolle", "Zielregel", "Identitaet", "Beschreibung",
                "Speed", "Lauftempo (Felder/s)", "Integritaet", "Schild", "Integritaet + Schild",
                "Schildpuls", "Ruhezeit bis Schildladung (s)", "Schild je Puls", "Ruestung", "Power",
-               "Halter", "Modulplaetze je Halter", "Passive", "Passive: Wirkung", "Standardwaffe",
+               "Effizienz", "Halter", "Modulplaetze je Halter", "Passive", "Passive: Wirkung", "Standardwaffe",
                "Level: Hauptwerte (+10 % je Level)",
                "Kopf", "Kern", "Antrieb", "Status"]
     rows = []
@@ -546,7 +547,7 @@ def build_dromes(ws):
             s["hp"], s["shield"], f"=J{i}+K{i}", s["shield_pulse"],
             f"=MAX({REG['combat.shield_pulse.min_delay']},{REG['combat.shield_pulse.base_delay']}-M{i}*{REG['combat.shield_pulse.delay_per_point']})",
             f"=M{i}*{REG['combat.shield_pulse.gain_per_point']}",
-            s["def"], s["power"], slots_text(b), s["module_slots"],
+            s["def"], s["power"], s.get("efficiency", 10), slots_text(b), s["module_slots"],
             passive_name(s["passive"]), passive_text(s["passive"]), t.get("standardwaffe", ""),
             ", ".join(STAT_NAMES[k] for k in lv["main"].get(b["id"], [])),
             by_type.get("head", ""), by_type.get("core", ""), by_type.get("feet", ""), "gebaut",
@@ -555,8 +556,9 @@ def build_dromes(ws):
         "Lauftempo (Felder/s)": "Formel: max(Untergrenze, Grundwert + Speed x je Punkt) -- Zahlen aus Blatt Regeln (realtime).",
         "Ruhezeit bis Schildladung (s)": "Formel aus Blatt Regeln (combat.shield_pulse).",
         "Power": "Rohschaden = Waffenschaden x Power / 10.",
+        "Effizienz": "Dauer, Stapel und Stärke der Statuseffekte, die der DROME auslöst: x Effizienz / 10. Nie Schaden.",
     }
-    write_table(ws, headers, rows, [9, 10, 26, 13, 30, 36, 40, 7, 10, 10, 8, 10, 9, 11, 8, 8, 7, 20, 10,
+    write_table(ws, headers, rows, [9, 10, 26, 13, 30, 36, 40, 7, 10, 10, 8, 10, 9, 11, 8, 8, 7, 9, 20, 10,
                                     11, 46, 22, 22, 16, 16, 16, 10], notes=notes)
 
 
@@ -1018,7 +1020,7 @@ def build_gegner_dromes(ws):
     weapons = [w["name"] for w in WEAPONS]
     headers = ["Gegner-DROME", "Fraktion", "Chassis", "Rolle", "Waffe 1", "Waffe 2", "Speed", "Lauftempo (Felder/s)",
                "Integritaet", "Schild", "Integritaet + Schild", "Schildpuls", "Ruestung", "Power", "Modulplaetze",
-               "Schaden/s roh (Waffen x Power)", "Virusschaden je Puls", "Aufgabe in der Squad", "Status"]
+               "Effizienz", "Schaden/s roh (Waffen x Power)", "Virusschaden je Puls", "Aufgabe in der Squad", "Status"]
     rows = []
     tasks = {g["name"]: g.get("aufgabe", "") for g in TEXTE["gegner_dromes"]}
     fixed = [(k, d) for k, d in FORMATIONS["dromes"].items() if d.get("stats")]
@@ -1027,21 +1029,23 @@ def build_gegner_dromes(ws):
         g = {"name": d["name"], "fraktion": d["name"].split(" ")[0], "chassis": d["chassis"],
              "speed": st["spd"], "integritaet": st["hp_max"], "schild": st["shield"],
              "schildpuls": st["shield_pulse"], "ruestung": st["def"], "power": st["power"],
-             "modulplaetze": st["module_slots"], "aufgabe": tasks.get(d["name"], ""), "status": "gebaut"}
+             "modulplaetze": st["module_slots"],
+             "effizienz": st.get("efficiency", PARTS[d["chassis"]]["stats"].get("efficiency", 10)), "aufgabe": tasks.get(d["name"], ""), "status": "gebaut"}
         w = [part_name(x) for x in d["weapons"]] + [""]
         role = PARTS[g["chassis"]]["stats"]["ai_role"]
         rows.append([g["name"], g["fraktion"], drome_name(g["chassis"]), ROLE_NAMES.get(role, role), w[0], w[1],
                      g["speed"],
                      f"=ROUND(MAX({REG['realtime.move_min']},{REG['realtime.move_base']}+G{i}*{REG['realtime.move_per_spd']}),2)",
                      g["integritaet"], g["schild"], f"=I{i}+J{i}", g["schildpuls"], g["ruestung"], g["power"],
-                     g["modulplaetze"], f"=ROUND({weapon_dps(f'E{i}', f'N{i}')}+{weapon_dps(f'F{i}', f'N{i}')},1)",
+                     g["modulplaetze"], g["effizienz"], f"=ROUND({weapon_dps(f'E{i}', f'N{i}')}+{weapon_dps(f'F{i}', f'N{i}')},1)",
                      f"=ROUND(K{i}*{VIRUS['anteil']},1)", g["aufgabe"], g["status"]])
     notes = {"Speed": "Startwerte = Werte des Chassis (Blatt DROMEs) -- hier frei ausbalancieren.",
              "Waffe 2": "Nur Molok hat zwei Halter.",
+             "Effizienz": "Dauer, Stapel und Stärke der Statuseffekte (10 = 100 %). Ohne eigenen Wert der des Chassis.",
              "Schaden/s roh (Waffen x Power)": "Summe Schaden/s roh beider Waffen (Blatt Waffen) x Power / 10."}
     inputs = ("Gegner-DROME", "Fraktion", "Chassis", "Waffe 1", "Waffe 2", "Speed", "Integritaet", "Schild",
-              "Schildpuls", "Ruestung", "Power", "Modulplaetze", "Aufgabe in der Squad")
-    last = write_table(ws, headers, rows, [16, 10, 10, 13, 18, 18, 7, 10, 10, 8, 10, 9, 8, 7, 10, 12, 11, 46, 11],
+              "Schildpuls", "Ruestung", "Power", "Modulplaetze", "Effizienz", "Aufgabe in der Squad")
+    last = write_table(ws, headers, rows, [16, 10, 10, 13, 18, 18, 7, 10, 10, 8, 10, 9, 8, 7, 10, 9, 12, 11, 46, 11],
                        notes=notes, inputs=inputs)
     add_list(ws, weapons, f"E2:F{last + 10}")
     add_list(ws, [drome_name(b["id"]) for b in BODIES], f"C2:C{last + 10}")

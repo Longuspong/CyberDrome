@@ -497,8 +497,11 @@ func test_the_hammer_stuns_and_a_stunned_drome_does_nothing() -> void:
 	battle.brain.update(foe, battle.step_seconds())
 	t.equal(foe.tile, tile, "betäubt läuft er nicht")
 	t.equal(molok.hp + molok.shield, hp_before + shield_before, "und schießt nicht")
-	foe.tick_statuses(1.1)
-	t.ok(not foe.is_stunned(), "nach einer Sekunde ist es vorbei")
+	# Der Molok hat Effizienz 14 (20. Nov. 2026): die Sekunde haelt 1,4 s.
+	foe.tick_statuses(1.0 * molok.efficiency_factor() - 0.1)
+	t.ok(foe.is_stunned(), "mit Effizienz 14 haelt es etwas laenger als eine Sekunde")
+	foe.tick_statuses(0.2)
+	t.ok(not foe.is_stunned(), "nach 1,4 s ist es vorbei")
 	battle.free()
 
 

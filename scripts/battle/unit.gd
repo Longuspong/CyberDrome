@@ -1007,9 +1007,26 @@ func apply_status(id: StringName, seconds: float, modifiers: Dictionary,
 		source: Unit = null) -> void:
 	var status := modifiers.duplicate()
 	if source != null:
-		seconds *= source.efficiency_factor()
+		var factor := source.efficiency_factor()
+		seconds *= factor
+		_scale_strength(status, factor)
 	status["seconds_left"] = seconds
 	statuses[id] = status
+
+
+## Staerke eines Statuseffekts mit der Effizienz: die Abweichung von 1 der
+## Faktoren (Verlangsamen, Sprint, Angriffstempo, verwundbar) waechst mit.
+## Verlangsamen hoechstens ``statuses.efficiency.slow_cap`` (Anteil).
+static func _scale_strength(status: Dictionary, factor: float) -> void:
+	if is_equal_approx(factor, 1.0):
+		return
+	for key in ["move_mult", "attack_speed_mult", "damage_taken_mult"]:
+		if status.has(key):
+			status[key] = maxf(0.0, 1.0 + (float(status[key]) - 1.0) * factor)
+	if status.has("move_mult"):
+		var rule := Config.section("statuses").get("efficiency", {}) as Dictionary
+		var cap := float(rule.get("slow_cap", 0.7))
+		status["move_mult"] = maxf(1.0 - cap, float(status["move_mult"]))
 
 
 ## Effizienz (20. Nov. 2026): versteckter Wert, Grundwert

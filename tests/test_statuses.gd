@@ -26,11 +26,20 @@ func _rule(key: String) -> int:
 	return int((Config.section("statuses").get("cable_fire", {}) as Dictionary).get(key, 0))
 
 
-func test_every_drome_starts_with_efficiency_ten() -> void:
+func test_efficiency_is_a_chassis_stat() -> void:
 	var battle := _battle()
-	for unit in battle.units:
-		t.equal(unit.efficiency(), 10, "%s: Effizienz 10" % unit.display_name)
-		t.ok(is_equal_approx(unit.efficiency_factor(), 1.0), "entspricht 100 %")
+	var vireo: Unit = battle.units[0]
+	t.equal(vireo.efficiency(), 10, "Vireo: Effizienz 10")
+	t.ok(is_equal_approx(vireo.efficiency_factor(), 1.0), "entspricht 100 %")
+	t.equal(int(_molok().stats()["efficiency"]), 14, "Molok: Effizienz 14")
+	var nimbus := DromeBuild.create("Nimbus", {"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core", "equip_left": &"eq_rune_staff"})
+	t.equal(int(nimbus.stats()["efficiency"]), 12, "Nimbus: Effizienz 12 (Allrounder)")
+	var neon := DromeBuild.new()
+	neon.stat_override = {"power": 14, "efficiency": 7}
+	t.equal(int(neon.stats()["efficiency"]), 7, "feste Werte (Neon Nimbus) gehen vor")
+	var bare := DromeBuild.new()
+	t.equal(int(bare.stats()["efficiency"]), 10, "ohne Wert: Grundwert 10")
 	battle.free()
 
 
@@ -122,4 +131,19 @@ func test_a_battle_with_cable_fire_still_ends() -> void:
 	battle.setup(5003, [_vireo(), _vireo()], [_molok()])
 	battle.run_to_end()
 	t.ok(battle.outcome != BattleManager.Outcome.RUNNING, "Kampf endet")
+	battle.free()
+
+
+func test_efficiency_also_raises_the_strength() -> void:
+	var battle := _battle()
+	var vireo: Unit = battle.units[0]
+	var molok: Unit = battle.units[1]
+	vireo.stats["efficiency"] = 12
+	molok.apply_status(&"slow", 2.5, {"move_mult": 0.6}, vireo)
+	t.ok(is_equal_approx(float(molok.statuses[&"slow"]["move_mult"]), 0.52), "40 % -> 48 % langsamer")
+	vireo.stats["efficiency"] = 40
+	molok.apply_status(&"slow", 2.5, {"move_mult": 0.6}, vireo)
+	t.ok(is_equal_approx(float(molok.statuses[&"slow"]["move_mult"]), 0.3), "höchstens 70 % langsamer")
+	molok.apply_status(&"slow", 2.5, {"move_mult": 0.6})
+	t.ok(is_equal_approx(float(molok.statuses[&"slow"]["move_mult"]), 0.6), "ohne Auslöser unverändert")
 	battle.free()

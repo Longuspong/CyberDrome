@@ -84,20 +84,29 @@ Kinetischer und Energieschaden sind **keine Amps**, sondern höchstens Effekte v
 
 ## 5. Effizienz und Statuseffekte (20. Nov. 2026)
 
-**Effizienz** ist ein versteckter Wert je DROME, Grundwert **10 = 100 % Wirkung**
-(`config.json` -> `statuses.efficiency`). Der Tech-Amp gibt **+2** (= +20 %).
+**Effizienz** ist ein **sichtbarer Wert am Chassis wie Power** (seit 20. Nov. 2026 abends,
+vorher versteckt), **10 = 100 % Wirkung** (`config.json` -> `statuses.efficiency`). Der Tech-Amp
+gibt **+2** (= +20 %). Trennung: **Power = wie viel** (Schaden, Heilung, Schildgabe),
+**Effizienz = wie gut ein Statuseffekt wirkt** (Dauer, Stapel, Stärke).
+
+| DROME | Power | Effizienz | Gedanke |
+|---|---|---|---|
+| Vireo | 10 | 10 | |
+| Molok | 6 | **14** | Kontrolle über Hammer-Betäubung und Locken |
+| Nimbus | 12 | **12** | Allrounder: Fähigkeiten und Schaden |
+| Strix | 15 | 10 | |
+| Neon Nimbus (Gegner) | **14** | **7** | nur eine Schadensklasse, stark durch doppelte Fähigkeiten (Echo) |
 
 * Effizienz ändert **nie die Schadenszahl** (das bleibt Power).
-* Sie streckt die **Dauer** jedes Statuseffekts, den der DROME auslöst: Verlangsamen des
+* **Dauer:** jeder Statuseffekt, den der DROME auslöst, hält × Effizienz / 10: Verlangsamen des
   Vortex, Betäuben des Hammers, Wurzeln, Locken, auch den **eigenen Vireo-Sprint**
   (`Unit.apply_status(..., source)`).
-* Bei Stapel-Effekten ohne Dauer (Kabelbrand) erhöht sie die **Zahl der Stapel**: Effizienz 15
-  legt je Treffer 1,5 Stapel, Bruchteile sammeln sich am Ziel.
-* **Gebaut** als Wert am DROME (`Unit.efficiency()`, `DromeBuild.stats()["efficiency"]`).
-  Der Tech-Amp selbst ist noch nicht gebaut (Modulsystem in Arbeit).
-
-Offen: ob Effizienz auch die **Stärke** von Effekten hebt (z. B. stärker verlangsamen), oder nur
-Dauer und Stapel. Heute nur Dauer und Stapel.
+* **Stärke:** die Abweichung von 1 bei Tempo- und Schadensfaktoren wächst mit (Verlangsamen 40 %
+  bei Effizienz 12: 48 %). Verlangsamen höchstens 70 % (`slow_cap`). Ob die Stärke langsamer
+  wachsen soll als die Dauer, wird später ausbalanciert.
+* **Stapel** ohne Dauer (Kabelbrand): Effizienz 15 legt je Treffer 1,5 Stapel, Bruchteile sammeln
+  sich am Ziel.
+* Der Tech-Amp selbst ist noch nicht gebaut (Modulsystem in Arbeit).
 
 **Kabelbrand** (erster Statuseffekt mit Stapeln, gebaut):
 
@@ -113,6 +122,8 @@ Dauer und Stapel. Heute nur Dauer und Stapel.
 1. Sondereffekte der übrigen fünf Hyperfusionen (Abschnitt 3).
 2. Auswahl der Fusionen (Abschnitt 4).
 3. Preis und Häufigkeit des Fusion Core im Laden.
-4. Effizienz: nur Dauer und Stapel, oder auch die Stärke von Effekten (Abschnitt 5)?
+4. Effizienz: soll die Stärke langsamer wachsen als die Dauer (Balance später)?
+6. Passiven: Neon Vireo hat eine andere Passive -- bekommt der Neon Nimbus auch eine eigene,
+   oder der normale Nimbus eine andere als der Neon Nimbus? (Spieler denkt nach)
 5. Hinweis zu Prozentwerten: Shield +10 % bringt dem Molok (10 Schild) nur +1. So gewollt
    (Spieler, 20. Nov. 2026).

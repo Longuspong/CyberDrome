@@ -462,6 +462,9 @@ STAT_DEFAULTS = {
     "shield_pulse": 0,
     # Power: Schaden der Waffe x power / 10 (10 = 100 %).
     "power": 0,
+    # Effizienz (20. Nov. 2026): Dauer, Stapel und Staerke der Statuseffekte,
+    # die der DROME ausloest -- x efficiency / 10 (10 = 100 %). Nie Schaden.
+    "efficiency": 0,
     # Modulplaetze je Waffenhalter (nur Chassis).
     "module_slots": 0,
     # Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet.
@@ -505,19 +508,19 @@ STATS = {
     # gibt es nicht mehr.
     # Vireo: der schnelle Allrounder, nur eine leichte Waffe.
     "scout_body":  {"spd": 12, "hp":  80, "shield": 50, "shield_pulse":  7, "def":  2,
-                    "power": 10, "module_slots": 3,
+                    "power": 10, "efficiency": 10, "module_slots": 3,
                     "ai_role": "skirmisher", "passive": "hit_rush"},
     # Molok: der harte Zweihaender fuer die Frontlinie, wenig Power.
     "jugg_body":   {"spd": 10, "hp": 250, "shield": 50, "shield_pulse":  3, "def": 10,
-                    "power":  6, "module_slots": 2,
+                    "power":  6, "efficiency": 14, "module_slots": 2,
                     "ai_role": "vanguard", "passive": "presence"},
     # Nimbus: fragil, schildlastig, Richtung Faehigkeiten.
     "mage_body":   {"spd": 12, "hp":  60, "shield": 60, "shield_pulse": 10, "def":  0,
-                    "power": 12, "module_slots": 3,
+                    "power": 12, "efficiency": 12, "module_slots": 3,
                     "ai_role": "controller", "passive": "echo"},
     # Strix: Langstrecke, langsam, viel Power.
     "strix_body":  {"spd":  7, "hp": 100, "shield": 30, "shield_pulse":  5, "def":  2,
-                    "power": 15, "module_slots": 3,
+                    "power": 15, "efficiency": 10, "module_slots": 3,
                     "ai_role": "sniper", "passive": "steady"},
 
     # --- KERN, ANTRIEB, KOPF -------------------------------------------------
