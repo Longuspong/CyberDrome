@@ -93,6 +93,11 @@ var burst_cooldown: float = 0.0
 ## Kabelbrand (Statuseffekt mit Stapeln, 20. Nov. 2026): liegende Stapel,
 ## mit Bruchteil aus der Effizienz; wer zuletzt angesteckt hat.
 var cable_fire: float = 0.0
+## Elementarbelastung am Ziel (Charger, 20. Nov. 2026): Element -> Belastung
+## unter ``charger.stack_at``. Stapel der Elemente, die noch nicht wirken
+## (alles ausser Feuer), zaehlt ``element_stacks``.
+var element_load: Dictionary = {}
+var element_stacks: Dictionary = {}
 var cable_fire_source = null
 var _recharge_carry: float = 0.0
 ## Bis zur naechsten Pruefung des Ziels, und das aktuelle Ziel.
@@ -632,10 +637,12 @@ func init_realtime(pulse_offset: float) -> void:
 		var fx := build.module_effects(slot)
 		# Waffenlevel (Leveling): Schaden waechst, als Kopie.
 		var level := build.weapon_level(slot)
+		# Charger der Waffe (20. Nov. 2026): Elementarbelastung je Treffer.
+		var spec := Charger.combat_spec(build.charger_phases(slot))
 		var attack: ActionData = null
 		for action in part.actions:
 			if action.is_attack():
-				attack = Leveling.level_action(action, part, level).with_modules(fx)
+				attack = Leveling.level_action(action, part, level).with_modules(fx).with_charger(spec, false)
 				break
 		for action in part.actions:
 			if action.is_attack() or build.auto_only:
@@ -666,7 +673,7 @@ func init_realtime(pulse_offset: float) -> void:
 		# Sentinels loesen nur den Auto-Angriff aus (SPOT-Blatt Fragen 2).
 		for action in ([] if build.auto_only else part.actions):
 			if not action.is_attack() and action.trigger_kind == "attacks":
-				ability = Leveling.level_action(action, part, level).with_modules(fx)
+				ability = Leveling.level_action(action, part, level).with_modules(fx).with_charger(spec, true)
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
@@ -1055,6 +1062,17 @@ func add_cable_fire(stacks: float, source: Unit = null) -> void:
 		stacks *= source.efficiency_factor()
 		cable_fire_source = source.unit_id
 	cable_fire += stacks
+
+
+## Legt Elementarbelastung an und gibt zurueck, wie viele Stapel dabei voll
+## wurden (je ``stack_at``; der Rest zaehlt weiter).
+func add_element_load(element: String, amount: float, stack_at: float = 100.0) -> int:
+	if amount <= 0.0 or not is_alive() or stack_at <= 0.0:
+		return 0
+	var total := float(element_load.get(element, 0.0)) + amount
+	var stacks := int(floor(total / stack_at + 0.0001))
+	element_load[element] = maxf(0.0, total - float(stacks) * stack_at)
+	return stacks
 
 
 ## Ganze Kabelbrand-Stapel, die gerade auf dem DROME liegen.

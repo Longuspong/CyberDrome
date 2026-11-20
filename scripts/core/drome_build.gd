@@ -49,6 +49,9 @@ var modules: Dictionary = {}
 ## darin (0-10). Kommen aus dem Hangar (Roster.build_for); Gegner haben 0.
 var drome_level: int = 0
 var weapon_levels: Dictionary = {}
+## Charger je Halter (20. Nov. 2026): slot -> Array der Phasen (Charger).
+## Kommt aus dem Roster (der Charger sitzt am Waffen-Exemplar), Gegner haben keinen.
+var chargers: Dictionary = {}
 
 ## Herkunft im Hangar, damit EP aus dem Lauf zurueckfinden: die uid des
 ## Chassis-Exemplars (= der DROME) und je Halter die uid der Waffe.
@@ -285,6 +288,12 @@ func stats() -> Dictionary:
 		var fx := all_module_effects()
 		total["def"] += int(fx.get("def", 0))
 		total["shield"] += int(fx.get("shield", 0))
+		# Amps (20. Nov. 2026): Power und Effizienz fest, Integritaet und
+		# Schild in Prozent (MODULE_AMP_FUSION.md 2).
+		total["power"] += int(round(float(fx.get("power", 0))))
+		total["amp_efficiency"] = int(round(float(fx.get("efficiency", 0))))
+		total["hp_max"] = int(round(float(total["hp_max"]) * (1.0 + float(fx.get("hp_pct", 0.0)))))
+		total["amp_shield_pct"] = float(fx.get("shield_pct", 0.0))
 		total["thorns"] = int(fx.get("thorns", 0))
 		total["thorns_melee"] = int(fx.get("thorns_melee", 0))
 		total["shield_delay"] = float(fx.get("shield_delay", 0.0))
@@ -312,12 +321,16 @@ func stats() -> Dictionary:
 	# Ohne Wert am Chassis (Sentinels, alte Teile): Grundwert 10 = 100 %.
 	if int(total.get("efficiency", 0)) <= 0:
 		total["efficiency"] = Unit.efficiency_base()
+	total["efficiency"] += int(total.get("amp_efficiency", 0))
+	total.erase("amp_efficiency")
 	total["shield_pulse"] = maxi(0, total["shield_pulse"])
 	total["shield"] = maxi(0, total["shield"])
 	# Das Schild-Maximum ist der Grundwert mal der prozentualen Schild-Effizienz
 	# des Kerns (§11): shield_max = shield * (1 + shield_bonus). Der Bonus ist
 	# ein Anteil (0.1 = +10 %).
-	total["shield_max"] = int(round(float(total["shield"]) * (1.0 + total["shield_bonus"])))
+	total["shield_max"] = int(round(float(total["shield"]) * (1.0 + total["shield_bonus"])
+		* (1.0 + float(total.get("amp_shield_pct", 0.0)))))
+	total.erase("amp_shield_pct")
 	return total
 
 
@@ -386,6 +399,7 @@ func clone() -> DromeBuild:
 	copy.modules = modules.duplicate(true)
 	copy.drome_level = drome_level
 	copy.weapon_levels = weapon_levels.duplicate()
+	copy.chargers = chargers.duplicate(true)
 	copy.source_uid = source_uid
 	copy.instance_uids = instance_uids.duplicate()
 	copy.stat_override = stat_override.duplicate()
@@ -397,6 +411,11 @@ func clone() -> DromeBuild:
 	copy.role_override = role_override
 	copy.faction = faction
 	return copy
+
+
+## Die Phasen des Chargers in diesem Halter (leer ohne Charger).
+func charger_phases(slot: String) -> Array:
+	return chargers.get(slot, []) as Array
 
 
 ## Das Level der Waffe in diesem Halter.
@@ -713,6 +732,8 @@ func to_save() -> Dictionary:
 	out["modules"] = mods
 	out["drome_level"] = drome_level
 	out["weapon_levels"] = weapon_levels.duplicate()
+	if not chargers.is_empty():
+		out["chargers"] = chargers.duplicate(true)
 	out["source_uid"] = source_uid
 	out["instance_uids"] = instance_uids.duplicate()
 	return out
@@ -727,6 +748,8 @@ static func from_save(data: Dictionary) -> DromeBuild:
 	build.drome_level = int(data.get("drome_level", 0))
 	for slot in data.get("weapon_levels", {}):
 		build.weapon_levels[slot] = int(data["weapon_levels"][slot])
+	for slot in data.get("chargers", {}):
+		build.chargers[str(slot)] = Charger.normalized(data["chargers"][slot])
 	build.source_uid = str(data.get("source_uid", ""))
 	for slot in data.get("instance_uids", {}):
 		build.instance_uids[slot] = str(data["instance_uids"][slot])

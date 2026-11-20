@@ -1,6 +1,6 @@
 # CyberDrome – Module v3: Amp, Fusion, Hyperfusion
 
-Stand 20. Nov. 2026 · Status: **Richtung vom Spieler festgelegt (19./20. Nov. 2026), noch nicht gebaut** (außer Effizienz und Kabelbrand, Abschnitt 5).
+Stand 20. Nov. 2026 · Status: **gebaut** (20. Nov. 2026): 6 Amps, 15 Fusionen (2 entschieden, 13 Vorschläge), 6 Hyperfusionen mit Fusion Core (Sondereffekt nur Power), BIOS für Fusionen. Offene Punkte: `docs/design/UEBERGABEN_DESIGN.md`, Abschnitt „Offene Logik“.
 Ersetzt die Grundmodule und Rezepte aus `MODULE_KONZEPT.md` (Abschnitte 4 und 5). Was dort zu
 Modulplätzen, BIOS-Vergabe, Laden und Gegner-Profilen steht, gilt weiter, soweit hier nichts
 anderes steht. Zahlen sind Startwerte für den Bench.

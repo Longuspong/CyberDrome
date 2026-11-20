@@ -146,3 +146,16 @@ Zeilennummern unten sind der Stand vor dem Umbau.
 | `class_attack.svg` | Modulklasse Angriff | Spitze | `scripts/ui/module_chip.gd:58` |
 | `class_defense.svg` | Modulklasse Abwehr | Bogen | `scripts/ui/module_chip.gd:58` |
 | `class_tactic.svg` | Modulklasse Taktik | Punkt | `scripts/ui/module_chip.gd:58` |
+
+### Charger und Energy Phases (20. Nov. 2026)
+
+| Datei | Bedeutung | ersetzt | Fundstellen |
+|---|---|---|---|
+| `phase_fire.svg` | Phase Feuer | Flamme | `scripts/ui/phase_gem.gd` |
+| `phase_cryo.svg` | Phase Cryo | Schneeflocke | `scripts/ui/phase_gem.gd` |
+| `phase_volt.svg` | Phase Volt | Blitz | `scripts/ui/phase_gem.gd` |
+| `phase_terra.svg` | Phase Terra | Blatt | `scripts/ui/phase_gem.gd` |
+| `phase_virus.svg` | Phase Virus | Totenkopf mit X-Auge | `scripts/ui/phase_gem.gd` |
+| `phase_chaos.svg` | Phase Chaos | Wirbel | `scripts/ui/phase_gem.gd` |
+| `hammer.svg` | Charger bauen | Hammer | `scripts/ui/charger_crafter.gd` |
+| `charger.svg` | Charger / Rohling | Hex mit Blitz | `scripts/ui/charger_crafter.gd` |

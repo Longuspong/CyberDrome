@@ -352,10 +352,11 @@ func test_the_weapon_card_shows_values_as_bars_to_compare() -> void:
 		row.free()
 
 
-func test_cache_opening_is_only_a_preview() -> void:
-	# Was ein Cache enthaelt, ist noch nicht entschieden (Wunsch des Spielers,
-	# 15. Nov. 2026): Oeffnen zeigt nur die Optik und verbraucht nichts.
+func test_cache_opening_rolls_four_items() -> void:
+	# Seit 20. Nov. 2026 echt (CHARGER_KONZEPT.md 5): ein Cache wird verbraucht,
+	# vier Wuerfe landen als Karten im Bildschirm.
 	var host := Control.new()
+	var saved := GameState.roster.to_dict()
 	var before := int(GameState.roster.caches.get("city", 0))
 	GameState.roster.caches["city"] = before + 1
 	var opener := CacheOpener.new()
@@ -363,8 +364,9 @@ func test_cache_opening_is_only_a_preview() -> void:
 	host.add_child(opener)
 	opener._ready()
 	opener._open()
-	t.equal(int(GameState.roster.caches.get("city", 0)), before + 1, "Cache bleibt im Lager")
-	GameState.roster.caches["city"] = before
+	t.equal(int(GameState.roster.caches.get("city", 0)), before, "ein Cache verbraucht")
+	t.equal(opener._cards.size(), 4, "vier Ergebnisse")
+	GameState.roster.load_dict(saved)
 	host.free()
 
 

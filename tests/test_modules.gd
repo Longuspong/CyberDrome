@@ -44,25 +44,27 @@ func _stop_run() -> RunState:
 
 
 # ---------------------------------------------------------------------------
-# Katalog
+# Katalog (Module v3: Amp, Fusion, Hyperfusion -- MODULE_AMP_FUSION.md)
 # ---------------------------------------------------------------------------
 
-func test_the_catalog_has_three_classes_and_recipes() -> void:
+func test_the_catalog_has_six_amps_fifteen_fusions_six_hyperfusions() -> void:
 	var classes := {}
 	for module in ModuleData.base_modules():
 		classes[module.klass] = true
 		t.ok(not module.effect_lines().is_empty(), "%s sagt, was es tut" % module.display_name)
+		t.equal(module.effects.size(), 1, "%s: genau ein Wert" % module.display_name)
 	t.equal(classes.keys().size(), 3, "Angriff, Abwehr, Taktik")
-	t.equal(ModuleData.base_modules().size(), 9, "9 Grundmodule")
-	t.equal(ModuleData.recipes().size(), 18, "18 Rezepte")
+	t.equal(ModuleData.base_modules().size(), 6, "6 Amps")
+	t.equal(ModuleData.recipes().size(), 15, "15 Fusionen (jedes Paar)")
+	t.equal(ModuleData.hyperfusions().size(), 6, "6 Hyperfusionen")
 	for recipe in ModuleData.recipes():
 		for ingredient in recipe.from:
 			var part := ModuleData.get_module(ingredient)
 			t.ok(part != null and not part.is_recipe(),
-				"%s: Zutat %s ist ein Grundmodul" % [recipe.display_name, ingredient])
+				"%s: Zutat %s ist ein Amp" % [recipe.display_name, ingredient])
 
 
-func test_every_recipe_is_a_pair_and_every_base_module_is_in_four() -> void:
+func test_every_fusion_is_a_pair_of_two_different_amps() -> void:
 	var degree := {}
 	var pairs := {}
 	for recipe in ModuleData.recipes():
@@ -71,13 +73,22 @@ func test_every_recipe_is_a_pair_and_every_base_module_is_in_four() -> void:
 		var sorted_ids: Array = recipe.from.map(func(x): return str(x))
 		sorted_ids.sort()
 		var key := ",".join(sorted_ids)
-		t.ok(not pairs.has(key), "%s: kein anderes Rezept mit denselben Zutaten" % recipe.display_name)
+		t.ok(not pairs.has(key), "%s: keine andere Fusion mit denselben Zutaten" % recipe.display_name)
 		pairs[key] = true
 		for ingredient in recipe.from:
 			degree[ingredient] = int(degree.get(ingredient, 0)) + 1
 	for module in ModuleData.base_modules():
-		t.equal(int(degree.get(module.id, 0)), 4, "%s steckt in 4 Rezepten" % module.display_name)
+		t.equal(int(degree.get(module.id, 0)), 5, "%s steckt in 5 Fusionen" % module.display_name)
 		t.equal(module.condition, "", "%s wirkt auf jede Waffe" % module.display_name)
+
+
+func test_the_amp_values() -> void:
+	t.ok(is_equal_approx(float(ModuleData.get_module(&"amp_attack").effects["attack_speed"]), 0.1), "Attack +10 % Tempo")
+	t.equal(int(ModuleData.get_module(&"amp_power").effects["power"]), 1, "Power +1")
+	t.ok(is_equal_approx(float(ModuleData.get_module(&"amp_integrity").effects["hp_pct"]), 0.1), "Integrity +10 %")
+	t.ok(is_equal_approx(float(ModuleData.get_module(&"amp_shield").effects["shield_pct"]), 0.1), "Shield +10 %")
+	t.equal(int(ModuleData.get_module(&"amp_armor").effects["def"]), 3, "Armor +3")
+	t.equal(int(ModuleData.get_module(&"amp_tech").effects["efficiency"]), 2, "Tech +2 Effizienz")
 
 
 func test_every_module_has_its_own_symbol() -> void:
@@ -91,25 +102,27 @@ func test_every_module_has_its_own_symbol() -> void:
 		seen[module.short_name()] = true
 
 
-func test_a_recipe_sums_its_ingredients_and_adds_its_own_effect() -> void:
-	var gun := ModuleData.get_module(&"mod_gunslinger")
-	t.ok(gun != null and gun.is_recipe(), "Gunslinger ist ein Rezept")
-	t.ok(is_equal_approx(float(gun.effects["attack_speed"]), 0.08), "Schnellfeuer steckt drin")
-	t.ok(is_equal_approx(float(gun.effects["ricochet_chance"]), 0.2), "Doppellauf steckt drin")
-	t.equal(int(gun.effects["field_shot_every"]), 6, "dazu jeder 6. Angriff quer übers Feld")
+func test_a_fusion_sums_its_amps_and_adds_its_own_effect() -> void:
+	var twin := ModuleData.get_module(&"mod_twin")
+	t.ok(twin != null and twin.is_recipe(), "Doppellauf ist eine Fusion")
+	t.ok(is_equal_approx(float(twin.effects["attack_speed"]), 0.1), "Attack steckt drin")
+	t.equal(int(twin.effects["power"]), 1, "Power steckt drin")
+	t.ok(is_equal_approx(float(twin.effects["ricochet_chance"]), 0.2), "dazu der Zusatztreffer")
+	t.equal(ModuleData.get_module(&"mod_brawler").from, [&"amp_attack", &"amp_armor"], "Raufbold (Spieler)")
+	t.equal(ModuleData.get_module(&"mod_mender").from, [&"amp_power", &"amp_integrity"],
+		"Heilung stärker (Spieler)")
 
 
-func test_conditions_decide_whether_a_module_works() -> void:
-	var gun := ModuleData.get_module(&"mod_gunslinger")
-	t.ok(gun.fits(PartDB.get_part(&"eq_pulse_blaster")), "Gunslinger am Blaster")
-	t.ok(not gun.fits(PartDB.get_part(&"eq_plasma_blade")), "nicht an der Klinge")
-	var whirl := ModuleData.get_module(&"mod_whirlwind")
-	t.ok(whirl.fits(PartDB.get_part(&"eq_hammer")), "Rundumschlag am Hammer")
-	t.ok(not whirl.fits(PartDB.get_part(&"eq_rail_lance")), "nicht an der Lanze")
-	t.ok(ModuleData.get_module(&"mod_heavy_edge").fits(PartDB.get_part(&"eq_rail_lance")),
-		"Wuchtkante seit dem Neuentwurf auch an der Lanze")
-	t.ok(ModuleData.get_module(&"mod_armor_plate").fits(PartDB.get_part(&"eq_rail_lance")),
-		"ohne Bedingung passt es überall")
+func test_a_hyperfusion_triples_its_amp() -> void:
+	var hyper := ModuleData.get_module(&"hyp_attack")
+	t.ok(hyper.is_hyper and hyper.is_recipe(), "Hyperfusion")
+	t.equal(hyper.from, [&"amp_attack", &"amp_attack"], "zwei gleiche Amps")
+	t.ok(is_equal_approx(float(hyper.effects["attack_speed"]), 0.3), "+30 % Angriffstempo")
+	var power := ModuleData.get_module(&"hyp_power")
+	t.equal(int(power.effects["power"]), 3, "+3 Power")
+	t.ok(is_equal_approx(float(power.effects["virus_fraction"]), 0.2), "20 % Virusschaden")
+	t.equal(ModuleData.hyper_of(&"amp_power"), power, "aus zwei Power-Amps")
+	t.ok(not ModuleData.get_module(&"fusion_core").installable(), "der Fusion Core steckt nie im Halter")
 
 
 func test_the_molok_has_fewer_module_slots() -> void:
@@ -121,25 +134,25 @@ func test_the_molok_has_fewer_module_slots() -> void:
 # Wirkung
 # ---------------------------------------------------------------------------
 
-func test_attack_modules_change_a_copy_of_the_weapon() -> void:
-	var build := _with(_vireo(), "equip_left", [&"mod_heavy_edge", &"mod_rapid_fire"])
+func test_attack_amps_change_a_copy_of_the_weapon() -> void:
+	var build := _with(_vireo(), "equip_left", [&"amp_attack", &"amp_power"])
 	var unit := Unit.create(build, &"V", true)
 	unit.init_realtime(0.0)
 	var attack: ActionData = unit.mounts[0]["attack"]
 	var original: ActionData = PartDB.get_part(&"eq_pulse_blaster").actions[0]
-	t.equal(attack.power, int(round(original.power * 1.12)), "12 % mehr Schaden")
-	t.ok(is_equal_approx(attack.interval, original.interval / 1.08), "8 % schneller")
+	t.ok(is_equal_approx(attack.interval, original.interval / 1.1), "10 % schneller")
+	t.equal(int(build.stats()["power"]), int(_vireo().stats()["power"]) + 1, "+1 Power")
 	t.equal(original.power, 10, "das Teil in der PartDB bleibt unverändert")
 
 
-func test_a_resting_module_does_nothing() -> void:
-	var build := _with(_vireo(&"eq_plasma_blade"), "equip_left", [&"mod_gunslinger"])
-	var unit := Unit.create(build, &"V", true)
-	unit.init_realtime(0.0)
-	var original: ActionData = PartDB.get_part(&"eq_plasma_blade").actions[0]
-	t.ok(is_equal_approx((unit.mounts[0]["attack"] as ActionData).interval, original.interval),
-		"die Klinge wird nicht schneller")
-	t.ok(build.active_modules("equip_left").is_empty(), "das Modul ruht")
+func test_defense_amps_raise_the_bearers_stats_in_percent() -> void:
+	var plain := _vireo().stats()
+	var armored := _with(_vireo(), "equip_left", [&"amp_armor", &"amp_shield", &"amp_integrity"]).stats()
+	t.equal(armored["def"], plain["def"] + 3, "+3 Panzerung")
+	t.equal(armored["shield_max"], int(round(plain["shield_max"] * 1.1)), "+10 % Schild")
+	t.equal(armored["hp_max"], int(round(plain["hp_max"] * 1.1)), "+10 % Integrität")
+	var tech := _with(_vireo(), "equip_left", [&"amp_tech"]).stats()
+	t.equal(tech["efficiency"], plain["efficiency"] + 2, "Tech: +2 Effizienz")
 
 
 ## Wie oft kommt die Faehigkeit in ``attacks`` Waffeneinsaetzen?
@@ -165,20 +178,48 @@ func test_the_takt_chip_counts_each_attack_as_one_and_a_quarter() -> void:
 	t.equal(_abilities_in(chip, 12), 5, "mit Taktchip: 12 / 2,4 = 5")
 	t.equal(chip.takt_bars()[0]["segments"], 3, "die Takt-Leiste behält ihre Abschnitte")
 	var recipe := ModuleData.get_module(&"mod_takt_chip")
-	t.equal(recipe.from, [&"mod_rapid_fire", &"mod_amplifier"], "aus Schnellfeuer und Verstärker")
-	t.ok(not recipe.effects.has("takt_time"), "kein Zeit-Takt mehr (9. Nov. 2026)")
+	t.equal(recipe.from, [&"amp_attack", &"amp_tech"], "aus Attack und Tech")
 
 
-func test_the_amplifier_strengthens_the_ability() -> void:
-	var unit := Unit.create(_with(_vireo(), "equip_left", [&"mod_amplifier"]), &"V", true)
-	unit.init_realtime(0.0)
-	var ability: ActionData = unit.mounts[0]["ability"]
-	var original: ActionData = PartDB.get_part(&"eq_pulse_blaster").actions[1]
-	t.equal(ability.power, int(round(original.power * 1.2)), "Fähigkeit +20 %")
-	var pod := Unit.create(_with(_vireo(&"eq_drone_pod"), "equip_left", [&"mod_amplifier"]), &"V", true)
+func test_the_mender_strengthens_heals_and_shield_gifts() -> void:
+	var pod := Unit.create(_with(_vireo(&"eq_drone_pod"), "equip_left", [&"mod_mender"]), &"V", true)
 	pod.init_realtime(0.0)
 	var field: ActionData = pod.mounts[0]["ability"]
-	t.equal(field.shield_gain, 18, "Schildgabe 15 -> 18")
+	var original: ActionData = PartDB.get_part(&"eq_drone_pod").actions[1]
+	t.equal(field.shield_gain, int(round(original.shield_gain * 1.3)), "Schildgabe +30 %")
+
+
+func test_lifesteal_heals_the_shooter() -> void:
+	var leech := _with(_vireo(&"eq_plasma_blade"), "equip_left", [&"mod_lifesteal"])
+	var battle := _battle([leech], [_molok()], [Vector2i(10, 10), Vector2i(10, 9)])
+	var bearer: Unit = battle.units[0]
+	var foe: Unit = battle.units[1]
+	bearer.hp = 10
+	foe.shield = 0
+	battle.resolver.apply_damage(bearer, foe, 40, bearer.mounts[0]["attack"])
+	t.ok(bearer.hp > 10, "der Treffer heilt (%d)" % bearer.hp)
+	battle.free()
+
+
+func test_virus_damage_ignores_armor() -> void:
+	var battle := _battle([_vireo()], [_molok()], [Vector2i(10, 10), Vector2i(10, 7)])
+	var foe: Unit = battle.units[1]
+	foe.shield = 0
+	var plain := battle.resolver.resolve_damage(foe, 100, 0.0)["hp"] as int
+	var virus := battle.resolver.resolve_damage(foe, 100, 0.0, 1.0, false, 0.2)["hp"] as int
+	t.ok(virus > plain, "Virusanteil geht an der Panzerung vorbei (%d gegen %d)" % [virus, plain])
+	foe.shield = 50
+	var res := battle.resolver.resolve_damage(foe, 100, 0.0, 1.0, false, 1.0)
+	t.equal(int(res["shield_after"]), 0, "trifft zuerst den Schild, ohne Faktor")
+	t.equal(int(res["hp"]), 50, "der Rest geht in die Integrität")
+	battle.free()
+
+
+func test_the_power_hyperfusion_turns_damage_into_virus() -> void:
+	var unit := Unit.create(_with(_vireo(), "equip_left", [&"hyp_power"]), &"V", true)
+	unit.init_realtime(0.0)
+	t.ok(is_equal_approx((unit.mounts[0]["attack"] as ActionData).virus_fraction, 0.2), "Angriff 20 % Virus")
+	t.ok(is_equal_approx((unit.mounts[0]["ability"] as ActionData).virus_fraction, 0.2), "Fähigkeit auch")
 
 
 func test_retaliation_charges_the_next_strike() -> void:
@@ -196,26 +237,10 @@ func test_retaliation_charges_the_next_strike() -> void:
 	battle.free()
 
 
-func test_whirlwind_hits_every_foe_next_to_the_bearer() -> void:
-	var whirl := _with(_molok(), "equip_left", [&"mod_whirlwind"])
-	var battle := _battle([whirl], [_vireo(), _vireo(), _vireo()],
-		[Vector2i(10, 10), Vector2i(10, 9), Vector2i(11, 10), Vector2i(15, 15)])
-	var molok: Unit = battle.units[0]
-	var target: Unit = battle.units[1]
-	var side: Unit = battle.units[2]
-	var far: Unit = battle.units[3]
-	var side_before := side.hp + side.shield
-	var far_before := far.hp + far.shield
-	battle.brain._attack_modules(molok, molok.mounts[0], molok.mounts[0]["attack"], target)
-	t.ok(side.hp + side.shield < side_before, "der Nachbar wird mitgetroffen")
-	t.equal(far.hp + far.shield, far_before, "wer weiter weg steht, nicht")
-	battle.free()
-
-
 func test_the_shackle_pulls_three_foes_next_to_the_bearer_and_stuns_them() -> void:
 	var chained := _with(_molok(), "equip_left", [&"mod_shackle"])
 	t.equal(ModuleData.get_module(&"mod_shackle").from,
-		[&"mod_armor_plate", &"mod_bait"], "Panzerplatte und Ködersender")
+		[&"amp_armor", &"amp_tech"], "Armor und Tech")
 	var battle := _battle([chained], [_vireo(), _vireo(), _vireo(), _vireo()],
 		[Vector2i(10, 10), Vector2i(10, 13), Vector2i(13, 10), Vector2i(7, 10), Vector2i(16, 16)])
 	var molok: Unit = battle.units[0]
@@ -230,15 +255,8 @@ func test_the_shackle_pulls_three_foes_next_to_the_bearer_and_stuns_them() -> vo
 	battle.free()
 
 
-func test_defense_modules_raise_the_bearers_stats() -> void:
-	var plain := _vireo().stats()
-	var armored := _with(_vireo(), "equip_left", [&"mod_armor_plate", &"mod_capacitor"]).stats()
-	t.equal(armored["def"], plain["def"] + 3, "+3 Panzerung")
-	t.ok(armored["shield_max"] >= plain["shield_max"] + 10, "+10 Schild")
-
-
 func test_spikes_hurt_every_attacker_and_melee_more() -> void:
-	var spiky := _with(_molok(), "equip_left", [&"mod_spike_grid"])
+	var spiky := _with(_molok(), "equip_left", [&"mod_spikes"])
 	var battle := _battle([spiky], [_vireo(), _vireo(&"eq_plasma_blade")],
 		[Vector2i(10, 10), Vector2i(10, 7), Vector2i(10, 9)])
 	var molok: Unit = battle.units[0]
@@ -255,21 +273,8 @@ func test_spikes_hurt_every_attacker_and_melee_more() -> void:
 	battle.free()
 
 
-func test_splinter_spikes_go_past_the_shield() -> void:
-	var spiky := _with(_molok(), "equip_left", [&"mod_splinter"])
-	var battle := _battle([spiky], [_vireo(&"eq_plasma_blade")], [Vector2i(10, 10), Vector2i(10, 9)])
-	var molok: Unit = battle.units[0]
-	var blade: Unit = battle.units[1]
-	var shield_before := blade.shield
-	var hp_before := blade.hp
-	battle.resolver.execute(blade, molok.tile, blade.mounts[0]["attack"])
-	t.equal(blade.shield, shield_before, "der Schild bleibt")
-	t.ok(blade.hp < hp_before, "die Integrität sinkt")
-	battle.free()
-
-
-func test_the_beacon_marks_and_marked_foes_take_more() -> void:
-	var beacon := _with(_vireo(), "equip_left", [&"mod_beacon"])
+func test_the_seeker_marks_and_marked_foes_take_more() -> void:
+	var beacon := _with(_vireo(), "equip_left", [&"mod_seeker"])
 	var battle := _battle([beacon], [_molok(), _molok()],
 		[Vector2i(10, 12), Vector2i(10, 10), Vector2i(4, 4)])
 	var bearer: Unit = battle.units[0]
@@ -282,20 +287,6 @@ func test_the_beacon_marks_and_marked_foes_take_more() -> void:
 	t.ok(not ActionResolver.is_marked(other), "der andere nicht")
 	foe.tick_statuses(4.1)
 	t.ok(not ActionResolver.is_marked(foe), "nach 4 s vorbei")
-	battle.free()
-
-
-func test_the_beacon_on_a_shield_gift_marks_the_nearest_foe() -> void:
-	var pod := _with(_vireo(&"eq_drone_pod"), "equip_left", [&"mod_beacon"])
-	var battle := _battle([pod, _vireo()], [_molok()],
-		[Vector2i(10, 12), Vector2i(10, 13), Vector2i(10, 10)])
-	var bearer: Unit = battle.units[0]
-	var ally: Unit = battle.units[1]
-	var foe: Unit = battle.units[2]
-	battle.brain._after_ability(bearer, bearer.mounts[0]["ability"],
-		{"tile": ally.tile, "target": ally}, bearer.mounts[0]["fx"])
-	t.ok(ActionResolver.is_marked(foe), "Ersatzregel: der nächste Gegner in Rw 3")
-	t.ok(not ActionResolver.is_marked(ally), "nicht der Verbündete")
 	battle.free()
 
 
@@ -329,7 +320,7 @@ func test_the_brand_marks_whoever_hits_the_bearer() -> void:
 func test_the_ram_adds_part_of_the_armor() -> void:
 	var ram := Unit.create(_with(_molok(), "equip_left", [&"mod_ram"]), &"M", true)
 	ram.init_realtime(0.0)
-	var edge := Unit.create(_with(_molok(), "equip_left", [&"mod_heavy_edge", &"mod_armor_plate"]), &"M", true)
+	var edge := Unit.create(_with(_molok(), "equip_left", [&"amp_power", &"amp_armor"]), &"M", true)
 	edge.init_realtime(0.0)
 	var a := ram.raw_damage(ram.mounts[0]["attack"])
 	var b := edge.raw_damage(edge.mounts[0]["attack"])
@@ -350,39 +341,6 @@ func test_overvolt_turns_kinetic_into_energy_while_the_shield_holds() -> void:
 	battle.resolver.apply_damage(bearer, foe, 20, attack)
 	var without := 100 - foe.shield
 	t.ok(with_shield > without, "mit eigenem Schild mehr am Gegnerschild (%d gegen %d)" % [with_shield, without])
-	battle.free()
-
-
-func test_overload_strengthens_the_next_attacks() -> void:
-	var unit := Unit.create(_with(_vireo(), "equip_left", [&"mod_overload"]), &"V", true)
-	var battle := _battle([unit.build], [_molok()], [Vector2i(10, 12), Vector2i(10, 10)])
-	var bearer: Unit = battle.units[0]
-	var foe: Unit = battle.units[1]
-	var mount: Dictionary = bearer.mounts[0]
-	mount["count"] = 2.0
-	t.ok(battle.brain._fire(bearer, mount, foe), "die Fähigkeit geht los")
-	t.equal(int(mount.get("overload", 0)), 3, "drei Angriffe aufgeladen")
-	battle.brain._fire(bearer, mount, foe)
-	t.equal(int(mount.get("overload", 0)), 2, "einer verbraucht")
-	t.ok((mount["overload_attack"] as ActionData).power > (mount["attack"] as ActionData).power,
-		"der aufgeladene Angriff ist stärker")
-	battle.free()
-
-
-func test_the_fork_repeats_the_ability_on_a_second_foe() -> void:
-	var fork := _with(_vireo(&"eq_plasma_blade"), "equip_left", [&"mod_fork"])
-	var battle := _battle([fork], [_molok(), _molok(), _molok()],
-		[Vector2i(10, 11), Vector2i(10, 10), Vector2i(11, 10), Vector2i(17, 17)])
-	var bearer: Unit = battle.units[0]
-	var first: Unit = battle.units[1]
-	var second: Unit = battle.units[2]
-	var far: Unit = battle.units[3]
-	var second_before := second.hp + second.shield
-	var far_before := far.hp + far.shield
-	battle.brain._after_ability(bearer, bearer.mounts[0]["ability"],
-		{"tile": first.tile, "target": first}, bearer.mounts[0]["fx"])
-	t.ok(second.hp + second.shield < second_before, "der Nachbar des Ziels bekommt die Gabelung")
-	t.equal(far.hp + far.shield, far_before, "wer weit weg steht, nicht")
 	battle.free()
 
 
@@ -417,55 +375,8 @@ func test_the_discharge_hits_foes_when_the_shield_breaks() -> void:
 	battle.free()
 
 
-func test_the_chain_reaction_jumps_to_marked_foes() -> void:
-	var chain := _with(_vireo(), "equip_left", [&"mod_chain_reaction"])
-	var battle := _battle([chain], [_molok(), _molok()],
-		[Vector2i(10, 13), Vector2i(10, 10), Vector2i(11, 10)])
-	var bearer: Unit = battle.units[0]
-	var target: Unit = battle.units[1]
-	var marked: Unit = battle.units[2]
-	battle.resolver.mark(marked, 10.0)
-	t.equal(battle.brain._chain_next(bearer, target), marked, "springt auf den Markierten")
-	battle.resolver.mark(marked, 0.0)
-	marked.statuses.erase(&"mark")
-	t.equal(battle.brain._chain_next(bearer, target), target, "ohne Markierung bleibt es beim Ziel")
-	battle.free()
-
-
-func test_spikes_hurt_melee_attackers() -> void:
-	var spiky := _with(_molok(), "equip_left", [&"mod_spike_grid"])
-	var battle := _battle([spiky], [_vireo(&"eq_plasma_blade")], [Vector2i(10, 10), Vector2i(10, 9)])
-	var molok: Unit = battle.units[0]
-	var blade: Unit = battle.units[1]
-	var before := blade.hp + blade.shield
-	var slash: ActionData = blade.mounts[0]["attack"]
-	battle.resolver.execute(blade, molok.tile, slash)
-	t.ok(blade.hp + blade.shield < before, "der Angreifer nimmt Schaden (%d -> %d)"
-		% [before, blade.hp + blade.shield])
-	battle.free()
-
-
-func test_the_bait_module_makes_the_target_attack_the_bearer() -> void:
-	var bait := _with(_vireo(), "equip_left", [&"mod_bait"])
-	var battle := _battle([bait, _vireo()], [_molok()],
-		[Vector2i(10, 12), Vector2i(4, 4), Vector2i(10, 10)])
-	var bearer: Unit = battle.units[0]
-	var foe: Unit = battle.units[2]
-	var ability: ActionData = bearer.mounts[0]["ability"]
-	t.ok(is_equal_approx(ability.taunt_seconds, 2.0), "die Fähigkeit lockt 2 s")
-	var twice := Unit.create(_with(_vireo(), "equip_left", [&"mod_bait", &"mod_bait"]), &"V", true)
-	twice.init_realtime(0.0)
-	t.ok(is_equal_approx((twice.mounts[0]["ability"] as ActionData).taunt_seconds, 3.0),
-		"ein zweites Exemplar +1 s")
-	battle.brain._after_ability(bearer, ability, {"tile": foe.tile, "target": foe})
-	t.equal(battle.brain.lured_by(foe), bearer, "der Gegner greift den Träger an")
-	foe.tick_statuses(ability.taunt_seconds + 0.1)
-	t.equal(battle.brain.lured_by(foe), null, "danach nicht mehr")
-	battle.free()
-
-
 func test_a_battle_with_every_module_runs_to_the_end() -> void:
-	# Alle 18 Rezepte, verteilt auf zwei gleiche Squads.
+	# Alle 15 Fusionen und zwei Hyperfusionen, verteilt auf zwei Squads.
 	var ids: Array = ModuleData.recipes().map(func(m): return m.id)
 	for side_seed in [919, 920]:
 		var gun := _with(_vireo(), "equip_left", ids.slice(0, 3))
@@ -473,8 +384,8 @@ func test_a_battle_with_every_module_runs_to_the_end() -> void:
 		var pod := _with(_vireo(&"eq_drone_pod"), "equip_left", ids.slice(6, 9))
 		var tank := _with(_molok(), "equip_left", ids.slice(9, 11))
 		tank.modules["equip_right"] = ids.slice(11, 13)
-		var foe_a := _with(_vireo(&"eq_neon_blaster"), "equip_left", ids.slice(13, 16))
-		var foe_b := _with(_molok(), "equip_left", ids.slice(16, 18))
+		var foe_a := _with(_vireo(&"eq_neon_blaster"), "equip_left", ids.slice(13, 15) + [&"hyp_power"])
+		var foe_b := _with(_molok(), "equip_left", [&"hyp_armor", &"amp_tech"])
 		var battle := BattleManager.new()
 		battle.setup(side_seed, [gun, blade, pod, tank], [foe_a, foe_b, _vireo(), _molok()])
 		var outcome := battle.run_to_end()
@@ -488,16 +399,16 @@ func test_a_battle_with_every_module_runs_to_the_end() -> void:
 
 func test_a_module_goes_from_storage_into_a_holder_and_back() -> void:
 	var run := _stop_run()
-	run.storage.append(&"mod_armor_plate")
+	run.storage.append(&"amp_armor")
 	var options := run.module_options(0)
 	t.ok(not options.is_empty(), "es gibt Halter zur Wahl")
 	var spot: Dictionary = options[0]
 	t.ok(run.install_module(0, int(spot["drome"]), spot["slot"]), "eingesetzt")
 	t.ok(run.storage.is_empty(), "das Lager ist leer")
 	var build: DromeBuild = run.squad[int(spot["drome"])]
-	t.equal(build.modules[spot["slot"]], [&"mod_armor_plate"], "steckt im Halter")
+	t.equal(build.modules[spot["slot"]], [&"amp_armor"], "steckt im Halter")
 	t.ok(run.remove_module(int(spot["drome"]), spot["slot"], 0), "herausgenommen")
-	t.equal(run.storage, [&"mod_armor_plate"], "zurück im Lager")
+	t.equal(run.storage, [&"amp_armor"], "zurück im Lager")
 	t.ok(not build.modules.has(spot["slot"]), "der Halter ist leer")
 
 
@@ -514,20 +425,20 @@ func test_a_module_lands_on_the_slot_it_is_dropped_on() -> void:
 				slot = s
 	t.ok(drome >= 0, "ein Halter mit drei Modulplaetzen")
 	var build: DromeBuild = run.squad[drome]
-	run.storage.append(&"mod_armor_plate")
-	run.storage.append(&"mod_capacitor")
-	run.storage.append(&"mod_spike_grid")
+	run.storage.append(&"amp_armor")
+	run.storage.append(&"amp_shield")
+	run.storage.append(&"amp_integrity")
 	t.ok(run.install_module(0, drome, slot, 2), "auf den dritten Platz")
 	t.equal(build.module_count(slot), 1, "ein Modul gezaehlt")
 	var layout := build.module_layout(slot)
 	t.ok(layout.size() == 3 and layout[0] == null and layout[1] == null
-		and layout[2].id == &"mod_armor_plate", "Plaetze 1 und 2 bleiben frei")
+		and layout[2].id == &"amp_armor", "Plaetze 1 und 2 bleiben frei")
 	t.ok(run.install_module(0, drome, slot, 2), "belegter Platz: weicht aus")
-	t.equal(build.module_layout(slot)[0].id, &"mod_capacitor", "auf den ersten freien")
+	t.equal(build.module_layout(slot)[0].id, &"amp_shield", "auf den ersten freien")
 	t.ok(run.install_module(0, drome, slot), "ohne Platz: erster freier")
-	t.equal(build.module_layout(slot)[1].id, &"mod_spike_grid", "Platz 2")
+	t.equal(build.module_layout(slot)[1].id, &"amp_integrity", "Platz 2")
 	t.ok(run.remove_module(drome, slot, 1), "mittleres heraus")
-	t.equal(build.module_layout(slot)[2].id, &"mod_armor_plate", "das dritte rutscht nicht nach")
+	t.equal(build.module_layout(slot)[2].id, &"amp_armor", "das dritte rutscht nicht nach")
 	t.equal(build.module_count(slot), 2, "zwei gezaehlt")
 	t.ok(not run.remove_module(drome, slot, 1), "ein freier Platz gibt nichts her")
 	t.ok(run.remove_module(drome, slot, 2), "drittes heraus")
@@ -545,7 +456,7 @@ func test_a_holder_takes_only_as_many_modules_as_it_has_slots() -> void:
 	t.ok(drome >= 0, "der Molok ist im Standard-Squad")
 	var slot: String = run.squad[drome].equip_slots()[0]
 	for _i in 3:
-		run.storage.append(&"mod_capacitor")
+		run.storage.append(&"amp_shield")
 	t.ok(run.install_module(0, drome, slot), "erstes Modul")
 	t.ok(run.install_module(0, drome, slot), "zweites Modul")
 	t.ok(not run.install_module(0, drome, slot), "drittes passt beim Molok nicht")
@@ -568,36 +479,37 @@ func test_a_recipe_fits_only_once_per_holder() -> void:
 
 func test_recipes_combine_in_the_storage() -> void:
 	var run := _stop_run()
-	run.storage.append_array([&"mod_rapid_fire", &"mod_bait"])
+	run.storage.append_array([&"amp_attack", &"amp_shield"])
 	var book := run.recipe_book()
-	var gun: Dictionary = book.filter(func(e): return e["module"].id == &"mod_gunslinger")[0]
-	t.ok(not gun["ready"], "Doppellauf fehlt noch")
-	t.ok(not run.craft(&"mod_gunslinger"), "ohne alle Zutaten geht es nicht")
-	run.storage.append(&"mod_twin_barrel")
-	t.ok(run.craft(&"mod_gunslinger"), "zusammengefuegt")
-	t.equal(run.storage, [&"mod_bait", &"mod_gunslinger"], "Zutaten weg, Ergebnis im Lager")
+	var twin: Dictionary = book.filter(func(e): return e["module"].id == &"mod_twin")[0]
+	t.ok(not twin["ready"], "Power fehlt noch")
+	t.ok(not run.craft(&"mod_twin"), "ohne alle Zutaten geht es nicht")
+	run.storage.append(&"amp_power")
+	t.ok(run.craft(&"mod_twin"), "zusammengefuegt")
+	t.equal(run.storage, [&"amp_shield", &"mod_twin"], "Zutaten weg, Ergebnis im Lager")
 
 
-## Modul auf Modul ziehen (16. Nov. 2026): pair_result nennt das Rezept.
+## Modul auf Modul ziehen (16. Nov. 2026): pair_result nennt die Fusion.
 func test_dragging_one_module_onto_another_names_the_recipe() -> void:
 	var run := _stop_run()
-	run.storage.append_array([&"mod_rapid_fire", &"mod_bait", &"mod_twin_barrel"])
-	var gun := run.pair_result(0, 2)
-	t.ok(gun != null and gun.id == &"mod_gunslinger", "Schnellfeuer + Doppellauf = Gunslinger")
-	t.ok(run.pair_result(2, 0) == gun, "in beide Richtungen")
-	t.ok(run.pair_result(0, 1) == null, "Schnellfeuer + Köder ergibt nichts")
+	run.storage.append_array([&"amp_attack", &"mod_ram", &"amp_power", &"amp_attack"])
+	var twin := run.pair_result(0, 2)
+	t.ok(twin != null and twin.id == &"mod_twin", "Attack + Power = Doppellauf")
+	t.ok(run.pair_result(2, 0) == twin, "in beide Richtungen")
+	t.ok(run.pair_result(0, 1) == null, "Amp + Fusion ergibt nichts")
 	t.ok(run.pair_result(0, 0) == null, "nicht mit sich selbst")
 	t.ok(run.pair_result(0, 9) == null, "leerer Platz ergibt nichts")
+	t.equal(run.pair_result(0, 3), ModuleData.get_module(&"hyp_attack"), "zwei gleiche: Hyperfusion")
 
 
 func test_modules_sell_but_never_go_home() -> void:
 	var run := _stop_run()
-	run.storage.append(&"mod_bait")
+	run.storage.append(&"amp_tech")
 	var before := run.credits
 	t.ok(run.sell(0) > 0, "verkaufen bringt Credits")
 	t.ok(run.credits > before, "die Credits steigen")
-	run.storage.append(&"mod_bait")
-	run.squad[0].modules[run.squad[0].equip_slots()[0]] = [&"mod_capacitor"]
+	run.storage.append(&"amp_tech")
+	run.squad[0].modules[run.squad[0].equip_slots()[0]] = [&"amp_shield"]
 	run.abandon()
 	for item in run.home_queue:
 		t.ok(not ModuleData.is_module(item.get("part_id", "")), "kein Modul geht nach Hause")
@@ -632,18 +544,18 @@ func test_the_shop_is_full_storage_aware_and_seeded() -> void:
 	t.equal(run.roll_shop(), run.shop_offers, "derselbe Seed, derselbe Laden")
 	run.credits = 99
 	for _i in RunState.storage_size():
-		run.storage.append(&"mod_capacitor")
+		run.storage.append(&"amp_shield")
 	t.equal(run.shop_blocker(0), "Lager voll", "voll")
 	t.ok(not run.buy(0), "kein Kauf bei vollem Lager")
 
 
 func test_the_shop_favours_missing_recipe_parts() -> void:
-	# Mitleid: Schnellfeuer liegt im Lager -> Doppellauf (Gunslinger) und
-	# Kondensator (Ueberspannung) kommen oefter als ohne.
+	# Mitleid: Attack liegt im Lager -> seine Partner fehlen, Attack selbst
+	# nicht. Attack kommt darum seltener als ohne Lager.
 	var run := _stop_run()
-	run.storage.append(&"mod_rapid_fire")
-	t.ok(run.recipe_missing().has(&"mod_twin_barrel"), "Doppellauf fehlt dem Gunslinger")
-	t.ok(not run.recipe_missing().has(&"mod_rapid_fire"), "was da ist, fehlt nicht")
+	run.storage.append(&"amp_attack")
+	t.ok(run.recipe_missing().has(&"amp_power"), "Power fehlt dem Doppellauf")
+	t.ok(not run.recipe_missing().has(&"amp_attack"), "was da ist, fehlt nicht")
 	var with_hits := 0
 	var without_hits := 0
 	var bare := _stop_run()
@@ -651,12 +563,12 @@ func test_the_shop_favours_missing_recipe_parts() -> void:
 		run.run_seed = seed_value
 		bare.run_seed = seed_value
 		for offer in run.roll_shop():
-			if offer["module_id"] in [&"mod_capacitor", &"mod_twin_barrel"]:
+			if offer["module_id"] == &"amp_attack":
 				with_hits += 1
 		for offer in bare.roll_shop():
-			if offer["module_id"] in [&"mod_capacitor", &"mod_twin_barrel"]:
+			if offer["module_id"] == &"amp_attack":
 				without_hits += 1
-	t.ok(with_hits > without_hits * 1.3, "angefangenes Rezept zieht (%d gegen %d)" % [with_hits, without_hits])
+	t.ok(with_hits < without_hits, "angefangene Fusion zieht die Partner (%d gegen %d)" % [with_hits, without_hits])
 
 
 func test_the_shop_can_be_rerolled_for_rising_credits() -> void:
@@ -676,11 +588,11 @@ func test_the_shop_can_be_rerolled_for_rising_credits() -> void:
 
 
 func test_a_target_recipe_steers_the_shop() -> void:
-	# Ziel Gunslinger: Schnellfeuer und Doppellauf kommen deutlich oefter.
+	# Ziel Doppellauf: Attack und Power kommen deutlich oefter.
 	var run := _stop_run()
-	run.set_target_recipe(&"mod_gunslinger")
-	t.equal(run.target_recipe, &"mod_gunslinger", "Ziel gesetzt")
-	t.equal(run.target_missing(), [&"mod_rapid_fire", &"mod_twin_barrel"], "beide Zutaten fehlen")
+	run.set_target_recipe(&"mod_twin")
+	t.equal(run.target_recipe, &"mod_twin", "Ziel gesetzt")
+	t.equal(run.target_missing(), [&"amp_attack", &"amp_power"], "beide Zutaten fehlen")
 	var bare := _stop_run()
 	var hits := 0
 	var bare_hits := 0
@@ -688,13 +600,13 @@ func test_a_target_recipe_steers_the_shop() -> void:
 		run.run_seed = seed_value
 		bare.run_seed = seed_value
 		for offer in run.roll_shop():
-			if offer["module_id"] in [&"mod_rapid_fire", &"mod_twin_barrel"]:
+			if offer["module_id"] in [&"amp_attack", &"amp_power"]:
 				hits += 1
 		for offer in bare.roll_shop():
-			if offer["module_id"] in [&"mod_rapid_fire", &"mod_twin_barrel"]:
+			if offer["module_id"] in [&"amp_attack", &"amp_power"]:
 				bare_hits += 1
 	t.ok(hits > bare_hits * 1.5, "Ziel zieht (%d gegen %d)" % [hits, bare_hits])
-	run.set_target_recipe(&"mod_gunslinger")
+	run.set_target_recipe(&"mod_twin")
 	t.equal(run.target_recipe, &"", "noch einmal: Ziel weg")
 
 
@@ -720,7 +632,7 @@ func test_late_shops_sometimes_offer_a_recipe() -> void:
 func test_the_bios_catalog() -> void:
 	var recipe := ModuleData.bios_items().filter(func(i): return i.bios_kind == "recipe")
 	t.equal(recipe.size(), ModuleData.bios_items().size(), "nur Rezept-BIOS (Chassis-BIOS seit 18. Nov. 2026 weg)")
-	t.ok(recipe.size() >= 6, "6-8 Rezept-BIOS für den Anfang (%d)" % recipe.size())
+	t.ok(recipe.size() >= 5, "5 Rezept-BIOS (%d)" % recipe.size())
 	for item in recipe:
 		var base := ModuleData.get_module(item.bios_recipe)
 		var result := ModuleData.get_module(item.bios_result)
@@ -731,8 +643,6 @@ func test_the_bios_catalog() -> void:
 		for key in base.effects:
 			t.ok(result.effects.has(key), "%s behält %s" % [result.display_name, key])
 		t.ok(not result.bonus.is_empty(), "%s bringt eine eigene Regel" % result.display_name)
-	var revolver := ModuleData.get_module(&"mod_revolver")
-	t.equal(int(revolver.effects["field_shot_every"]), 3, "Revolverheld: jeder 3. statt 5.")
 
 
 func _elite_win(seed_value: int, last: bool = false) -> RunState:
@@ -786,15 +696,15 @@ func test_a_recipe_bios_upgrades_a_recipe_in_its_weapon() -> void:
 	var build: DromeBuild = run.squad[drome]
 	var left: String = build.equip_slots()[0]
 	var right: String = build.equip_slots()[1]
-	build.modules[right] = [&"mod_armor_plate", &"mod_brand"]
-	run.bios_offers = [&"bios_hunt", &"bios_revolver", &"bios_phase"]
+	build.modules[right] = [&"amp_armor", &"mod_brand"]
+	run.bios_offers = [&"bios_hunt", &"bios_wrecker", &"bios_phase"]
 	t.ok(run.choose_bios(0), "gewaehlt")
 	t.equal(run.storage, [&"bios_hunt"], "liegt im Lager")
 	t.ok(run.bios_offers.is_empty(), "die anderen verfallen")
 	t.ok(not run.install_module(0, drome, left), "ein BIOS steckt nicht wie ein Modul")
 	t.ok(not run.install_bios(0, drome, left), "nicht in die Waffe ohne Brandmarke")
 	t.ok(run.install_bios(0, drome, right), "wertet die Brandmarke auf")
-	t.equal(build.modules[right], [&"mod_armor_plate", &"mod_hunt"], "an ihrem Platz")
+	t.equal(build.modules[right], [&"amp_armor", &"mod_hunt"], "an ihrem Platz")
 	t.ok(run.storage.is_empty(), "das BIOS ist verbraucht")
 	t.equal(ModuleData.slots_for(build, right), 2, "kein Extraplatz")
 	build.modules[left] = [&"mod_brand"]
@@ -810,36 +720,36 @@ func test_a_recipe_bios_upgrades_a_recipe_in_its_weapon() -> void:
 func test_an_installed_module_can_be_sold() -> void:
 	var run := _stop_run()
 	var slot: String = run.squad[0].equip_slots()[0]
-	run.squad[0].modules[slot] = [&"mod_rapid_fire", &"mod_beacon"]
+	run.squad[0].modules[slot] = [&"amp_attack", &"amp_tech"]
 	var before := run.credits
 	t.equal(run.sell_installed(0, slot, 1), 2, "Grundmodul bringt 2")
 	t.equal(run.credits, before + 2, "Credits gutgeschrieben")
-	t.equal(run.squad[0].modules[slot], [&"mod_rapid_fire"], "Platz frei")
+	t.equal(run.squad[0].modules[slot], [&"amp_attack"], "Platz frei")
 	t.equal(run.sell_installed(0, slot, 1), 0, "leerer Platz: nichts")
 
 
 func test_dropping_on_a_taken_place_swaps() -> void:
 	var run := _stop_run()
 	var slot: String = run.squad[0].equip_slots()[0]
-	run.squad[0].modules[slot] = [&"mod_rapid_fire", &"mod_beacon"]
-	# Paare ohne gemeinsames Rezept -- sonst wird zusammengefuegt.
-	run.storage.append_array([&"mod_spike_grid", &"mod_armor_plate"])
+	run.squad[0].modules[slot] = [&"amp_attack", &"amp_tech"]
+	# Fusion auf Amp ergibt nichts -- sonst wird zusammengefuegt.
+	run.storage.append_array([&"mod_spikes", &"mod_ram"])
 	t.equal(run.place_from_storage(1, 0, slot, 0), "", "auf belegten Platz")
-	t.equal(run.squad[0].modules[slot], [&"mod_armor_plate", &"mod_beacon"], "getauscht")
-	t.equal(run.storage, [&"mod_spike_grid", &"mod_rapid_fire"], "das alte nimmt den Lagerplatz")
+	t.equal(run.squad[0].modules[slot], [&"mod_ram", &"amp_tech"], "getauscht")
+	t.equal(run.storage, [&"mod_spikes", &"amp_attack"], "das alte nimmt den Lagerplatz")
 	t.equal(run.place_from_storage(0, 0, slot, -1), "", "freier Platz")
-	t.equal(run.squad[0].modules[slot], [&"mod_armor_plate", &"mod_beacon", &"mod_spike_grid"], "eingesetzt")
+	t.equal(run.squad[0].modules[slot], [&"mod_ram", &"amp_tech", &"mod_spikes"], "eingesetzt")
 
 
 func test_a_swap_that_breaks_a_rule_changes_nothing() -> void:
 	var run := _stop_run()
 	var slot: String = run.squad[0].equip_slots()[0]
-	run.squad[0].modules[slot] = [&"mod_takt_chip", &"mod_beacon"]
+	run.squad[0].modules[slot] = [&"mod_takt_chip", &"amp_shield"]
 	run.storage.append(&"mod_metronome")
 	var why := run.place_from_storage(0, 0, slot, 1, false)
 	t.ok(why != "", "Taktgeber neben Taktchip geht nicht (%s)" % why)
 	t.equal(run.place_from_storage(0, 0, slot, 1), why, "auch nicht ernsthaft")
-	t.equal(run.squad[0].modules[slot], [&"mod_takt_chip", &"mod_beacon"], "Waffe unverändert")
+	t.equal(run.squad[0].modules[slot], [&"mod_takt_chip", &"amp_shield"], "Waffe unverändert")
 	t.equal(run.storage, [&"mod_metronome"], "Lager unverändert")
 	t.equal(run.place_from_storage(0, 0, slot, 0, false), "", "auf den Taktchip getauscht geht")
 
@@ -848,66 +758,66 @@ func test_installed_modules_move_and_swap_between_weapons() -> void:
 	var run := _stop_run()
 	var a: String = run.squad[0].equip_slots()[0]
 	var b: String = run.squad[1].equip_slots()[0]
-	run.squad[0].modules[a] = [&"mod_rapid_fire"]
-	run.squad[1].modules[b] = [&"mod_bait"]
+	run.squad[0].modules[a] = [&"amp_attack"]
+	run.squad[1].modules[b] = [&"mod_ram"]
 	t.equal(run.move_installed(0, a, 0, 1, b, 0), "", "auf belegten Platz: tauschen")
-	t.equal(run.squad[0].modules[a], [&"mod_bait"], "hin")
-	t.equal(run.squad[1].modules[b], [&"mod_rapid_fire"], "und her")
+	t.equal(run.squad[0].modules[a], [&"mod_ram"], "hin")
+	t.equal(run.squad[1].modules[b], [&"amp_attack"], "und her")
 	t.equal(run.move_installed(0, a, 0, 1, b, -1), "", "auf freien Platz: umsetzen")
 	t.ok(not run.squad[0].modules.has(a), "die alte Waffe ist leer")
-	t.equal(run.squad[1].modules[b], [&"mod_rapid_fire", &"mod_bait"], "beide in der neuen")
+	t.equal(run.squad[1].modules[b], [&"amp_attack", &"mod_ram"], "beide in der neuen")
 	t.ok(run.storage.is_empty(), "das Lager bleibt aus dem Spiel")
 
 
 func test_buying_straight_into_a_weapon() -> void:
 	var run := _stop_run()
 	var slot: String = run.squad[0].equip_slots()[0]
-	run.shop_offers = [{"module_id": &"mod_bait", "sold": false},
-		{"module_id": &"mod_twin_barrel", "sold": false}]
-	run.credits = 20
+	run.shop_offers = [{"module_id": &"amp_tech", "sold": false},
+		{"module_id": &"mod_ram", "sold": false}]
+	run.credits = 40
 	t.equal(run.buy_into(0, 0, slot, -1), "", "gekauft und eingesetzt")
-	t.equal(run.squad[0].modules[slot], [&"mod_bait"], "steckt in der Waffe")
-	t.equal(run.credits, 20 - RunState.shop_price(ModuleData.get_module(&"mod_bait")), "bezahlt")
+	t.equal(run.squad[0].modules[slot], [&"amp_tech"], "steckt in der Waffe")
+	t.equal(run.credits, 40 - RunState.shop_price(ModuleData.get_module(&"amp_tech")), "bezahlt")
 	t.ok(run.shop_offers[0]["sold"], "verkauft")
 	t.ok(run.storage.is_empty(), "das Lager bleibt leer")
 	t.equal(run.buy_into(0, 0, slot, -1), "verkauft", "nur einmal")
 	while not run.storage_full():
-		run.storage.append(&"mod_rapid_fire")
+		run.storage.append(&"amp_attack")
 	t.ok(run.buy_into(1, 0, slot, 0, false) != "", "tauschen bei vollem Lager geht nicht")
 	t.equal(run.buy_into(1, 0, slot, 1), "", "auf freien Platz auch bei vollem Lager")
 	run.credits = 0
-	run.shop_offers.append({"module_id": &"mod_amplifier", "sold": false})
+	run.shop_offers.append({"module_id": &"amp_shield", "sold": false})
 	t.equal(run.buy_into(2, 0, slot, 2), "zu wenig Credits", "ohne Credits nicht")
 
 
-## Ablegen auf ein Modul, mit dem es ein Rezept ergibt: zusammenfuegen statt
+## Ablegen auf ein Modul, mit dem es eine Fusion ergibt: zusammenfuegen statt
 ## tauschen (19. Nov. 2026) -- aus dem Lager, aus einer Waffe, aus dem Laden.
 func test_dropping_on_a_partner_fuses_in_place() -> void:
 	var run := _stop_run()
 	var a: String = run.squad[0].equip_slots()[0]
 	var b: String = run.squad[1].equip_slots()[0]
-	run.squad[0].modules[a] = [&"mod_rapid_fire"]
-	run.storage.append(&"mod_twin_barrel")
+	run.squad[0].modules[a] = [&"amp_attack"]
+	run.storage.append(&"amp_power")
 	t.equal(run.place_from_storage(0, 0, a, 0), "", "aus dem Lager")
-	t.equal(run.squad[0].modules[a], [&"mod_gunslinger"], "Gunslinger an seinem Platz")
+	t.equal(run.squad[0].modules[a], [&"mod_twin"], "Doppellauf an seinem Platz")
 	t.ok(run.storage.is_empty(), "die Zutat ist verbraucht")
-	run.squad[1].modules[b] = [&"mod_bait"]
-	run.squad[0].modules[a] = [&"mod_gunslinger", &"mod_beacon"]
+	run.squad[1].modules[b] = [&"amp_shield"]
+	run.squad[0].modules[a] = [&"mod_twin", &"amp_tech"]
 	t.equal(run.move_installed(0, a, 1, 1, b, 0), "", "aus einer Waffe")
-	t.equal(run.squad[1].modules[b], [&"mod_orbit"], "Orbit-Fokus")
-	t.equal(run.squad[0].modules[a], [&"mod_gunslinger"], "der alte Platz ist frei")
+	t.equal(run.squad[1].modules[b], [&"mod_holo"], "Hologramm")
+	t.equal(run.squad[0].modules[a], [&"mod_twin"], "der alte Platz ist frei")
 	run.credits = 30
-	run.shop_offers = [{"module_id": &"mod_amplifier", "sold": false},
-		{"module_id": &"mod_capacitor", "sold": false}]
-	run.squad[1].modules[b] = [&"mod_heavy_edge"]
+	run.shop_offers = [{"module_id": &"amp_tech", "sold": false},
+		{"module_id": &"amp_shield", "sold": false}]
+	run.squad[1].modules[b] = [&"amp_power"]
 	t.equal(run.buy_into(0, 1, b, 0), "", "aus dem Laden in die Waffe")
-	t.equal(run.squad[1].modules[b], [&"mod_overload"], "Überladung")
-	t.equal(run.credits, 24, "bezahlt")
-	run.storage.append(&"mod_armor_plate")
+	t.equal(run.squad[1].modules[b], [&"mod_seeker"], "Peilsender")
+	t.equal(run.credits, 30 - RunState.shop_price(ModuleData.get_module(&"amp_tech")), "bezahlt")
+	run.storage.append(&"amp_armor")
 	t.equal(run.buy_onto_storage(1, 0, false), "", "aus dem Laden aufs Lager-Modul (Probe)")
-	t.equal(run.storage, [&"mod_armor_plate"], "Probe ändert nichts")
+	t.equal(run.storage, [&"amp_armor"], "Probe ändert nichts")
 	t.equal(run.buy_onto_storage(1, 0), "", "gekauft und zusammengefügt")
-	t.equal(run.storage, [&"mod_bulwark"], "Bollwerk")
+	t.equal(run.storage, [&"mod_guard_pulse"], "Schutzimpuls")
 	t.equal(run.buy_onto_storage(0, 0), "verkauft", "nur einmal")
 
 
@@ -920,7 +830,7 @@ func test_a_recipe_bios_fuses_from_recipe_or_ingredients() -> void:
 	t.ok(run.craft(&"mod_metronome"), "verschmolzen")
 	t.equal(run.storage, [&"mod_metronome"], "BIOS und Rezept sind weg")
 	var raw := _stop_run()
-	raw.storage.append_array([&"mod_rapid_fire", &"bios_metronome", &"mod_amplifier"])
+	raw.storage.append_array([&"amp_attack", &"bios_metronome", &"amp_tech"])
 	t.ok(raw.craft(&"mod_metronome"), "Zutat + Zutat + BIOS geht auch")
 	t.equal(raw.storage, [&"mod_metronome"], "alles verbraucht")
 	var none := _stop_run()
@@ -940,8 +850,8 @@ func test_only_one_bios_recipe_per_drome() -> void:
 
 func test_a_held_recipe_bios_pulls_its_ingredients_in_the_shop() -> void:
 	var run := _stop_run()
-	run.storage.append(&"bios_revolver")
-	t.equal(run._bios_missing(), [&"mod_rapid_fire", &"mod_twin_barrel"], "Gunslinger fehlt ganz")
+	run.storage.append(&"bios_metronome")
+	t.equal(run._bios_missing(), [&"amp_attack", &"amp_tech"], "Taktchip fehlt ganz")
 
 
 func test_phase_break_hits_unshielded_foes_harder() -> void:
@@ -1027,36 +937,44 @@ func test_a_battle_with_the_new_weapons_runs_to_the_end() -> void:
 	battle.free()
 
 
-func test_the_orbit_focus_roots_the_target_of_the_ability() -> void:
-	var orbit := _with(_vireo(), "equip_left", [&"mod_orbit"])
-	var battle := _battle([orbit], [_vireo(), _vireo()],
-		[Vector2i(10, 13), Vector2i(10, 10), Vector2i(11, 10)])
-	var bearer: Unit = battle.units[0]
-	var foe: Unit = battle.units[1]
-	var other: Unit = battle.units[2]
-	battle.brain._after_ability(bearer, bearer.mounts[0]["ability"],
-		{"tile": foe.tile, "target": foe}, bearer.mounts[0]["fx"])
-	t.ok(foe.is_rooted(), "das Ziel ist gewurzelt")
-	t.ok(not other.is_rooted(), "der Nachbar nicht")
-	t.ok(not foe.is_stunned(), "greift aber weiter an")
-	foe.target_id = bearer.unit_id
-	var before := foe.tile
-	foe.step_left = 0.0
-	battle.brain.update(foe, 0.05)
-	t.equal(foe.tile, before, "und läuft nicht")
-	foe.tick_statuses(2.1)
-	t.ok(not foe.is_rooted(), "nach 2 s vorbei")
-	battle.free()
+# ---------------------------------------------------------------------------
+# Hyperfusion und Fusion Core (MODULE_AMP_FUSION.md 1)
+# ---------------------------------------------------------------------------
+
+func test_a_hyperfusion_needs_two_amps_and_a_core() -> void:
+	var run := _stop_run()
+	run.storage.append_array([&"amp_power", &"amp_power"])
+	var hyper := ModuleData.get_module(&"hyp_power")
+	t.equal(run.hyper_blocker(hyper), "ein Fusion Core fehlt", "ohne Core nicht")
+	t.ok(not run.craft(&"hyp_power"), "nicht verschmolzen")
+	run.storage.append(&"fusion_core")
+	var entry: Array = run.recipe_book().filter(func(e): return e["module"].id == &"hyp_power")
+	t.ok(entry[0]["ready"], "steht bereit im Rezeptbuch")
+	t.ok(run.craft(&"hyp_power"), "verschmolzen")
+	t.equal(run.storage, [&"hyp_power"], "Amps und Core verbraucht")
+	run.storage.append_array([&"amp_power", &"amp_power", &"fusion_core"])
+	t.ok(not run.craft(&"hyp_power"), "jede Sorte einmal je Einsatz")
+	t.ok(run.hyper_blocker(hyper).contains("schon"), "mit Grund")
 
 
-func test_the_gravity_bios_roots_a_second_foe() -> void:
-	var gravity := _with(_vireo(), "equip_left", [&"mod_gravity"])
-	var battle := _battle([gravity], [_vireo(), _vireo()],
-		[Vector2i(10, 13), Vector2i(10, 10), Vector2i(11, 10)])
-	var bearer: Unit = battle.units[0]
-	var foe: Unit = battle.units[1]
-	var other: Unit = battle.units[2]
-	battle.brain._after_ability(bearer, bearer.mounts[0]["ability"],
-		{"tile": foe.tile, "target": foe}, bearer.mounts[0]["fx"])
-	t.ok(foe.is_rooted() and other.is_rooted(), "beide gewurzelt")
-	battle.free()
+func test_only_one_hyperfusion_per_drome() -> void:
+	var run := _stop_run()
+	var slot: String = run.squad[0].equip_slots()[0]
+	run.storage.append_array([&"hyp_power", &"hyp_attack", &"fusion_core"])
+	t.ok(run.install_module(0, 0, slot), "erste Hyperfusion")
+	t.ok(not run.install_module(0, 0, slot), "eine zweite nicht")
+	t.ok(run.install_module(0, 1, run.squad[1].equip_slots()[0]), "in einem anderen DROME schon")
+	t.ok(not run.install_module(0, 0, slot), "der Fusion Core steckt nie im Halter")
+
+
+func test_the_shop_sometimes_offers_a_fusion_core() -> void:
+	var found := false
+	for seed_value in 80:
+		var run := _stop_run()
+		run.run_seed = 900 + seed_value
+		for offer in run.roll_shop():
+			if offer["module_id"] == &"fusion_core":
+				found = true
+	t.ok(found, "selten ein Fusion Core im Laden")
+	t.ok(RunState.shop_price(ModuleData.get_module(&"fusion_core")) > RunState.shop_price(ModuleData.get_module(&"amp_attack")),
+		"teurer als ein Amp")

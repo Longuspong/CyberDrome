@@ -9,11 +9,11 @@ extends RefCounted
 ## der eine Teil.
 const CHASSIS := ["Vireo", "Molok", "Nimbus", "Strix"]
 const RECIPE_FIT := {
-	"Vireo": ["mod_gunslinger", "mod_chain_reaction", "mod_seeker", "mod_overload", "mod_takt_chip"],
+	"Vireo": ["mod_twin", "mod_lifesteal", "mod_seeker", "mod_takt_chip", "mod_overvolt"],
 	"Molok": ["mod_brand", "mod_brawler", "mod_ram", "mod_bulwark", "mod_discharge",
-		"mod_shackle", "mod_whirlwind", "mod_splinter", "mod_guard_pulse"],
-	"Nimbus": ["mod_fork", "mod_takt_chip", "mod_overload", "mod_guard_pulse", "mod_orbit"],
-	"Strix": ["mod_seeker", "mod_gunslinger", "mod_chain_reaction", "mod_overvolt"],
+		"mod_shackle", "mod_spikes", "mod_brawler", "mod_guard_pulse"],
+	"Nimbus": ["mod_mender", "mod_takt_chip", "mod_seeker", "mod_guard_pulse", "mod_holo"],
+	"Strix": ["mod_seeker", "mod_twin", "mod_takt_chip", "mod_overvolt"],
 }
 
 

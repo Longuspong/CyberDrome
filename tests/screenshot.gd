@@ -62,6 +62,23 @@ func _setup() -> void:
 					for item in pair[1].split(","):
 						var kv := item.split(":")
 						state.roster.caches[kv[0]] = int(kv[1])
+				# material=phase:fire:3,rohling:2 legt Material ins Lager.
+				"material":
+					for item in pair[1].split(","):
+						var kv := item.rsplit(":", true, 1)
+						state.roster.materials[kv[0]] = int(kv[1])
+				# charger=fire+fire+cryo baut einen Charger (ohne Kosten) und setzt
+				# ihn in die erste Waffe des ersten DROME.
+				"charger":
+					var list := Array(pair[1].split("+"))
+					for e in list:
+						state.roster.add_phases(e, 1)
+					state.roster.add_blanks(1)
+					var made: Dictionary = state.roster.craft_charger(list)
+					for slot in state.roster.entries[0].assignments:
+						if str(slot).begins_with("equip_"):
+							state.roster.mount_charger(str(made["uid"]), str(state.roster.entries[0].assignments[slot]))
+							break
 				# static=res://pfad.gd:variable:wert setzt eine statische Variable
 				# (z. B. den Reiter im Shop).
 				"static":

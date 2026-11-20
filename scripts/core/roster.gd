@@ -41,7 +41,14 @@ var caches: Dictionary = {}
 ## Platzhaltercoin (Arbeitsname): Waehrung fuer den Hangar-Shop.
 var coins: int = 0
 ## Baumaterial (15. Nov. 2026): "baukern" und "kern:<fraktion>" -> Anzahl.
+## Seit 20. Nov. 2026 auch "phase:<element>" (Energy Phases) und "rohling"
+## (Charger-Rohlinge).
 var materials: Dictionary = {}
+## Charger (20. Nov. 2026, docs/CHARGER_KONZEPT.md): je Eintrag
+## {"uid": "chg-N", "phases": [6 Element-ids oder ""], "on": Waffen-uid oder ""}.
+## Ein Charger sitzt an hoechstens einer Waffe, eine Waffe traegt hoechstens einen.
+var chargers: Array = []
+var _next_charger: int = 1
 
 ## Die vier Standard-DROMEs mit ihrer VOLLEN Standard-Ausstattung -- der
 ## handgesetzte Startbestand (§10g/§12c). Reihenfolge = Reihenfolge im frischen
@@ -231,6 +238,9 @@ func build_for(entry: RosterEntry) -> DromeBuild:
 				var owned := instance(uid)
 				if owned != null and owned.level > 0:
 					build.weapon_levels[slot] = owned.level
+				var mounted := charger_on(uid)
+				if not mounted.is_empty():
+					build.chargers[slot] = (mounted["phases"] as Array).duplicate()
 	return build
 
 
@@ -322,6 +332,160 @@ func faction_cores(faction: String) -> int:
 func add_faction_core(faction: String) -> void:
 	if faction != "":
 		_add_material("kern:" + faction, 1)
+
+
+# ---------------------------------------------------------------------------
+# Charger und Energy Phases (20. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+func phases(element: String) -> int:
+	return int(materials.get("phase:" + element, 0))
+
+
+func add_phases(element: String, amount: int = 1) -> void:
+	if element in Charger.element_ids():
+		_add_material("phase:" + element, amount)
+
+
+func blanks() -> int:
+	return int(materials.get("rohling", 0))
+
+
+func add_blanks(amount: int = 1) -> void:
+	_add_material("rohling", amount)
+
+
+## Warum sich diese Phasen nicht bauen lassen ("" = geht).
+func charger_blocker(phase_list: Array) -> String:
+	if blanks() < 1:
+		return "Kein Charger-Rohling."
+	var want := Charger.counts(Charger.normalized(phase_list))
+	if want.is_empty():
+		return "Keine Phase im Hexagon."
+	for id in want:
+		if phases(id) < int(want[id]):
+			return "Zu wenig %s-Phasen." % Charger.element_name(id)
+	return ""
+
+
+## Baut einen Charger: ein Rohling und die Phasen werden verbraucht. Gibt den
+## neuen Charger zurueck (leer, wenn es nicht geht).
+func craft_charger(phase_list: Array) -> Dictionary:
+	var list := Charger.normalized(phase_list)
+	if charger_blocker(list) != "":
+		return {}
+	var want := Charger.counts(list)
+	for id in want:
+		add_phases(id, -int(want[id]))
+	add_blanks(-1)
+	var charger := {"uid": "chg-%d" % _next_charger, "phases": list, "on": ""}
+	_next_charger += 1
+	chargers.append(charger)
+	return charger
+
+
+func charger(uid: String) -> Dictionary:
+	for c in chargers:
+		if str(c.get("uid", "")) == uid:
+			return c
+	return {}
+
+
+## Der Charger an dieser Waffe (Exemplar-uid), sonst leer.
+func charger_on(weapon_uid: String) -> Dictionary:
+	if weapon_uid == "":
+		return {}
+	for c in chargers:
+		if str(c.get("on", "")) == weapon_uid:
+			return c
+	return {}
+
+
+## Setzt einen Charger in eine Waffe. Ein Charger an einer anderen Waffe zieht
+## um; was vorher in dieser Waffe sass, wird frei.
+func mount_charger(charger_uid: String, weapon_uid: String) -> bool:
+	var c := charger(charger_uid)
+	if c.is_empty() or instance(weapon_uid) == null:
+		return false
+	unmount_charger(weapon_uid)
+	c["on"] = weapon_uid
+	return true
+
+
+func unmount_charger(weapon_uid: String) -> void:
+	var old := charger_on(weapon_uid)
+	if not old.is_empty():
+		old["on"] = ""
+
+
+# ---------------------------------------------------------------------------
+# Lootcaches oeffnen (20. Nov. 2026, CHARGER_KONZEPT.md 5)
+# ---------------------------------------------------------------------------
+
+## Oeffnet einen Cache aus dem Lager: ``charger.cache.rolls`` Wuerfe nach der
+## Tabelle, alles wird gutgeschrieben. Gibt die Ergebnisse in Wurf-Reihenfolge
+## zurueck, je {"kind", "element"?, "amount"?, "faction"?, "name"?}. Leer, wenn
+## kein Cache da ist.
+func open_cache(kind: String, rng: RandomNumberGenerator = null) -> Array:
+	if int(caches.get(kind, 0)) <= 0:
+		return []
+	if rng == null:
+		rng = RandomNumberGenerator.new()
+		rng.randomize()
+	caches[kind] = int(caches[kind]) - 1
+	if int(caches[kind]) <= 0:
+		caches.erase(kind)
+	var faction := str((RunState.loot_cfg().get("faction_cores", {}) as Dictionary).get(kind, ""))
+	var cache_cfg := Charger.cfg().get("cache", {}) as Dictionary
+	var results: Array = []
+	for i in int(cache_cfg.get("rolls", 4)):
+		results.append(_cache_roll(cache_cfg.get("table", []), faction, rng))
+	return results
+
+
+func _cache_roll(table: Array, faction: String, rng: RandomNumberGenerator) -> Dictionary:
+	var roll := rng.randf()
+	var row: Dictionary = table[table.size() - 1] if not table.is_empty() else {"kind": "coins"}
+	for r in table:
+		roll -= float(r.get("chance", 0.0))
+		if roll < 0.0:
+			row = r
+			break
+	match str(row.get("kind", "")):
+		"faction_drome":
+			var picks: Array = []
+			for id in faction_variants():
+				if str(((Formations.data().get("dromes", {}) as Dictionary).get(id, {}) as Dictionary).get("faction", "")) == faction:
+					picks.append(id)
+			if not picks.is_empty():
+				var id: String = picks[rng.randi() % picks.size()]
+				var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary)[id]
+				var entry := craft_drome_free(StringName(str(spec.get("chassis", ""))), str(spec.get("name", id)))
+				if entry != null:
+					entry.variant = id
+					return {"kind": "faction_drome", "name": str(spec.get("name", id)), "faction": faction}
+			add_faction_core(faction)
+			return {"kind": "faction_core", "faction": faction}
+		"faction_core":
+			if faction == "":
+				_add_material("baukern", 1)
+				return {"kind": "baukern", "amount": 1}
+			add_faction_core(faction)
+			return {"kind": "faction_core", "faction": faction}
+		"baukern":
+			_add_material("baukern", 1)
+			return {"kind": "baukern", "amount": 1}
+		"phase":
+			var ids := Charger.element_ids()
+			var e: String = ids[rng.randi() % ids.size()]
+			add_phases(e, 1)
+			return {"kind": "phase", "element": e}
+		"blank":
+			add_blanks(1)
+			return {"kind": "blank"}
+	var amount := rng.randi_range(int(row.get("min", 10)), int(row.get("max", 20)))
+	coins += amount
+	return {"kind": "coins", "amount": amount}
 
 
 func _add_material(key: String, amount: int) -> void:
@@ -538,6 +702,7 @@ func to_dict() -> Dictionary:
 		"caches": caches.duplicate(),
 		"coins": coins,
 		"materials": materials.duplicate(),
+		"chargers": chargers.duplicate(true),
 	}
 
 
@@ -557,6 +722,16 @@ func load_dict(data: Dictionary) -> bool:
 	materials = {}
 	for key in data.get("materials", {}):
 		materials[str(key)] = int(data["materials"][key])
+	chargers = []
+	_next_charger = 1
+	for c in data.get("chargers", []):
+		if not c is Dictionary or str(c.get("uid", "")) == "":
+			continue
+		var uid := str(c["uid"])
+		chargers.append({"uid": uid, "phases": Charger.normalized(c.get("phases", [])),
+			"on": str(c.get("on", ""))})
+		if uid.begins_with("chg-"):
+			_next_charger = maxi(_next_charger, int(uid.substr(4)) + 1)
 
 	for entry_data in data.get("inventory", []):
 		var inst := PartInstance.from_dict(entry_data)
@@ -578,6 +753,9 @@ func load_dict(data: Dictionary) -> bool:
 			if not _instances.has(str(entry.assignments[slot])):
 				entry.assignments.erase(slot)
 		entries.append(entry)
+	for c in chargers:
+		if str(c["on"]) != "" and not _instances.has(str(c["on"])):
+			c["on"] = ""
 	trim_squad()
 	return true
 

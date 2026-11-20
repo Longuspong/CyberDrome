@@ -356,6 +356,10 @@ func _show_setup() -> void:
 	_side.add_child(_label("Wer kommt mit? Vorgeschlagen ist dein Hangar-Squad. Im Einsatz "
 		+ "bleiben die Waffen, wie sie sind -- stärker wirst du mit Modulen aus dem Laden.",
 		UiKit.SMALL, COLOR_MUTED))
+	# Aufklaerung (20. Nov. 2026, Uebergabe Ue2): welche Gegner warten, damit
+	# der Squad darauf abgestimmt wird.
+	if not endless:
+		_side.add_child(EnemyIntel.new(&"city", 3))
 	var picker := SquadPicker.new()
 	_side.add_child(picker)
 	picker.setup(RunState.squad_max())
@@ -1770,8 +1774,9 @@ func _open_recipes(run: RunState) -> void:
 	if shown == 0:
 		body.add_child(_label("Nichts in dieser Auswahl.", UiKit.SMALL, COLOR_MUTED))
 	body.add_child(_label("Tippen wählt, nochmal tippen zeigt das Rezept, Doppeltipp fügt zusammen. "
-		+ "Zwei Zutaten aus dem Lager ergeben ein neues Modul: die Summe ihrer Werte und ein "
-		+ "eigener Effekt.", 13, COLOR_MUTED))
+		+ "Zwei verschiedene Amps ergeben eine Fusion: beide Werte und ein eigener Effekt. "
+		+ "Zwei gleiche Amps und ein Fusion Core ergeben eine Hyperfusion: dreifacher Wert.",
+		13, COLOR_MUTED))
 	_recipes_open = true
 	var popup := InfoPopup.open(self, "Rezeptbuch", {"body": body})
 	popup.closed.connect(func(): _recipes_open = false)
@@ -1837,10 +1842,26 @@ func _recipe_page(run: RunState, entry: Dictionary) -> Dictionary:
 		if have:
 			piece.add_child(UiIcon.rect("check", 16, COLOR_GOOD))
 		parts.add_child(piece)
+	# Hyperfusion (20. Nov. 2026): dazu der Fusion Core.
+	if bool(entry.get("core", false)):
+		var core := ModuleData.get_module(RunState.CORE_ID)
+		var have_core: bool = (entry["have"] as Array).back()
+		var piece := HBoxContainer.new()
+		piece.add_theme_constant_override("separation", 4)
+		piece.add_child(ModuleChip.new(core, 30.0))
+		piece.add_child(_flow_label(core.display_name, 15, COLOR_GOOD if have_core else COLOR_MUTED))
+		if have_core:
+			piece.add_child(UiIcon.rect("check", 16, COLOR_GOOD))
+		parts.add_child(piece)
 	var lines: Array = [parts]
+	if bool(entry.get("used", false)):
+		lines.append(["In diesem Einsatz schon verschmolzen -- jede Hyperfusion einmal je Einsatz.",
+			COLOR_MUTED, UiKit.SMALL])
+	if module.is_hyper:
+		lines.append(["Höchstens eine Hyperfusion je DROME.", COLOR_MUTED, UiKit.SMALL])
 	lines.append_array(_module_lines(module))
 	var actions: Array = [{"text": "Zusammenfügen", "primary": true, "disabled": not entry["ready"],
-		"why": "Zutaten fehlen", "call": func():
+		"why": run.hyper_blocker(module) if module.is_hyper else "Zutaten fehlen", "call": func():
 			if run.craft(module.id):
 				Accessibility.vibrate(40, true)
 				_selected_storage = -1

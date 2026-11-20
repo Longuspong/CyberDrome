@@ -1,3 +1,4 @@
+class_name HangarScreen
 extends Control
 
 ## Der Hangar: Squad und Umbau an EINER Stelle -- mobile first.
@@ -21,6 +22,12 @@ extends Control
 ##           Vergleichsbalken und "Einbauen" bzw. "Ausbauen"; Doppeltipp baut
 ##           ein (Kachel) bzw. aus (Halter).
 ##
+## Seit 20. Nov. 2026 (Uebergabe Ue1, Design-Canvas): der Reiter Squad ist
+## raus -- der Squad wird vor jedem Einsatz gewaehlt (Einsatzvorbereitung).
+## Statt dessen **Upgrade**: je Waffe ein Charger-Platz (dauerhaft), Charger
+## aus dem Lager einsetzen oder tauschen. Der alte Squad-Code bleibt, bis der
+## Assembler-Modus (DROME-Uebersicht) steht.
+##
 ## Regeln, Werte und Validierung kommen wie ueberall aus Roster, DromeBuild und
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
 
@@ -37,7 +44,12 @@ const STRIP_TILE := 104.0
 ## Welcher Reiter: "squad" oder "umbau". Ueberlebt einen Szenenwechsel ueber
 ## die Meta des GameState nicht -- muss es auch nicht: aus dem Kampf kommt man
 ## am besten im Squad an.
-var _tab := "squad"
+var _tab := "umbau"
+## Reiter fuer den naechsten Aufbau (HangarScreen.open_tab, z. B. aus dem Shop).
+static var _next_tab := ""
+## Upgrade: gewaehlte Waffe (Exemplar-uid) und gewaehlter Charger im Lager.
+static var _weapon_uid := ""
+static var _charger_pick := ""
 var _selected := -1
 var _selected_slot := ""
 ## Squad-Reiter: die grosse Karte und die Kacheln (Index -> Tile), damit ein
@@ -58,6 +70,9 @@ func _ready() -> void:
 		GameState.editing_index = -1
 	elif GameState.roster.entries.size() > 0:
 		_selected = _first_in_squad()
+	if _next_tab != "":
+		_tab = _next_tab
+		_next_tab = ""
 	_content = UiKit.page(self, "Hangar", "", 1, true)
 	_build_tabs()
 	_refresh()
@@ -114,15 +129,22 @@ func _switch(tab: String) -> void:
 func _refresh() -> void:
 	if _tab_slot != null:
 		UiKit.clear(_tab_slot)
-		_tab_slot.add_child(UiKit.segmented([["squad", "Squad"], ["umbau", "Umbau"]], _tab,
+		_tab_slot.add_child(UiKit.segmented([["umbau", "Umbau"], ["upgrade", "Upgrade"]], _tab,
 			func(id): _switch(id)))
 	UiKit.clear(_content)
 	UiKit.clear(_fixed)
-	(_fixed.get_parent() as Control).visible = _tab == "umbau"
+	(_fixed.get_parent() as Control).visible = _tab != "squad"
 	if _tab == "squad":
 		_show_squad()
+	elif _tab == "upgrade":
+		_show_upgrade()
 	else:
 		_show_umbau()
+
+
+## Oeffnet den Hangar beim naechsten Aufbau in diesem Reiter.
+static func open_tab(tab: String) -> void:
+	_next_tab = tab
 
 
 func _changed() -> void:
@@ -565,7 +587,7 @@ func _confirm_salvage(entry: RosterEntry) -> void:
 				return
 			Accessibility.vibrate(60, true)
 			_selected = _first_in_squad()
-			_tab = "squad"
+			_tab = "umbau"
 			_changed()}, {"text": "Behalten", "primary": true}]})
 
 
@@ -575,7 +597,7 @@ func _confirm_salvage(entry: RosterEntry) -> void:
 
 func _show_umbau() -> void:
 	if _entries().is_empty():
-		_content.add_child(UiKit.label("Noch kein DROME. Im Reiter Squad einen bauen.",
+		_content.add_child(UiKit.label("Noch kein DROME. Im Shop unter Bauen einen bauen.",
 			UiKit.BODY, UiKit.MUTED))
 		return
 	_selected = clampi(_selected, 0, _entries().size() - 1)
@@ -661,6 +683,232 @@ func _show_umbau() -> void:
 	scrap.add_theme_color_override("font_color", UiKit.BAD)
 	scrap.pressed.connect(func(): _confirm_salvage(entry))
 	_content.add_child(scrap)
+
+
+# ---------------------------------------------------------------------------
+# Reiter "Upgrade" (20. Nov. 2026): Charger in Waffen
+# ---------------------------------------------------------------------------
+
+## Alle Waffen-Exemplare: erst die verbauten (in Reihenfolge der DROMEs), dann
+## die freien. Je {"uid", "part", "owner"}.
+func _weapons() -> Array:
+	var roster := GameState.roster
+	var out: Array = []
+	var seen := {}
+	for entry in _entries():
+		for slot in entry.assignments:
+			if not str(slot).begins_with("equip_"):
+				continue
+			var uid := str(entry.assignments[slot])
+			var inst := roster.instance(uid)
+			if inst == null or inst.part() == null or seen.has(uid):
+				continue
+			seen[uid] = true
+			out.append({"uid": uid, "part": inst.part(), "owner": entry.name, "level": inst.level})
+	for inst in roster.all_instances():
+		if seen.has(inst.uid) or inst.type() != PartData.Type.EQUIPMENT or inst.part() == null:
+			continue
+		var has_attack := false
+		for action in inst.part().actions:
+			has_attack = has_attack or action.is_attack()
+		if has_attack:
+			out.append({"uid": inst.uid, "part": inst.part(), "owner": "", "level": inst.level})
+	return out
+
+
+func _show_upgrade() -> void:
+	var roster := GameState.roster
+	var weapons := _weapons()
+	if weapons.is_empty():
+		_content.add_child(UiKit.label("Noch keine Waffe.", UiKit.BODY, UiKit.MUTED))
+		return
+	var current: Dictionary = weapons[0]
+	for w in weapons:
+		if str(w["uid"]) == _weapon_uid:
+			current = w
+	_weapon_uid = str(current["uid"])
+
+	# --- fest: Waffen-Reiter ------------------------------------------------
+	var scroll := ScrollContainer.new()
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, 62)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	scroll.add_child(row)
+	for w in weapons:
+		var uid := str(w["uid"])
+		var chosen := uid == _weapon_uid
+		var panel := _tappable(UiKit.card_style(chosen), func():
+			_weapon_uid = uid
+			_refresh())
+		var box := VBoxContainer.new()
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_theme_constant_override("separation", 0)
+		box.custom_minimum_size = Vector2(96, 0)
+		panel.add_child(box)
+		box.add_child(_quiet(Arcade.label((w["part"] as PartData).display_name.to_upper(), 12,
+			Arcade.CYAN if chosen else Arcade.WHITE, "display")))
+		var sub := HBoxContainer.new()
+		sub.add_theme_constant_override("separation", 4)
+		sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var on := roster.charger_on(uid)
+		var dot := ColorRect.new()
+		dot.custom_minimum_size = Vector2(9, 9)
+		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var dom := Charger.dominant(on.get("phases", [])) if not on.is_empty() else ""
+		dot.color = Charger.element_color(dom) if dom != "" else (Arcade.WHITE if not on.is_empty() else Color("#3a1a6e"))
+		sub.add_child(dot)
+		sub.add_child(_quiet(Arcade.label(str(w["owner"]).to_upper() if str(w["owner"]) != "" else "FREI", 11,
+			Arcade.MUTED, "bold")))
+		box.add_child(sub)
+		row.add_child(panel)
+	_fixed.add_child(scroll)
+
+	# --- Waffenkarte mit Charger-Platz --------------------------------------
+	var part: PartData = current["part"]
+	var mounted := roster.charger_on(_weapon_uid)
+	var phases: Array = mounted.get("phases", [])
+	var dom := Charger.dominant(phases)
+	var card := _DropCard.new(func(data): return data is Dictionary and data.has("charger"),
+		func(data): _mount(str(data["charger"])))
+	card.add_theme_stylebox_override("panel", UiKit.card_style(true))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_fixed.add_child(card)
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 6)
+	card.add_child(inner)
+	var top := HBoxContainer.new()
+	var names := VBoxContainer.new()
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names.add_theme_constant_override("separation", 0)
+	names.add_child(Arcade.label(part.display_name.to_upper(), 20, Arcade.WHITE, "display"))
+	var owner := str(current["owner"])
+	names.add_child(Arcade.label("%s · %s · LV %d" % [owner if owner != "" else "frei", _class_name(part.mount_class),
+		int(current["level"])], 13, Arcade.CYAN, "bold"))
+	top.add_child(names)
+	top.add_child(Arcade.tilt(Arcade.tag("BLEIBT DAUERHAFT", 11, 0.0), 2.0))
+	inner.add_child(top)
+	for action in part.actions:
+		var what := "ANGRIFF " if action.is_attack() else "FÄHIGKEIT "
+		var text: String = action.display_name
+		if action.is_attack():
+			text = "Reichweite %d · alle %s s" % [action.range_tiles, String.num(action.interval, 1)]
+		elif action.trigger_text() != "":
+			text += ", " + action.trigger_text()
+		var line := HBoxContainer.new()
+		line.add_child(Arcade.label(what, 11, Arcade.MUTED, "bold", 0.1))
+		var l := UiKit.label(text, 13, UiKit.TEXT)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(l)
+		inner.add_child(line)
+	var mid := HBoxContainer.new()
+	mid.add_theme_constant_override("separation", 12)
+	inner.add_child(mid)
+	mid.add_child(ChargerHex.new(phases, 150, mounted.is_empty()))
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 4)
+	mid.add_child(right)
+	right.add_child(Arcade.label("CHARGER", 11, Arcade.CYAN, "bold", 0.14))
+	right.add_child(Arcade.label(Charger.display_name(phases).to_upper() if not mounted.is_empty() else "LEERER PLATZ",
+		15, Charger.element_color(dom) if dom != "" else Arcade.MUTED, "display"))
+	var loads := Charger.loads(phases)
+	for e in Charger.element_ids():
+		if not loads.has(e):
+			continue
+		var lr := HBoxContainer.new()
+		var en := Arcade.label(Charger.element_name(e).to_upper(), 11, Charger.element_color(e), "bold")
+		en.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lr.add_child(en)
+		lr.add_child(Arcade.label("+%d / Treffer" % int(loads[e]), 11, Arcade.WHITE, "bold"))
+		right.add_child(lr)
+		right.add_child(ChargerCrafter._Bar.new(float(loads[e]) / 120.0, Charger.element_color(e)))
+	if mounted.is_empty():
+		right.add_child(UiKit.label("Charger aus dem Lager auf die Waffe ziehen.", 13, UiKit.MUTED))
+	# Resonanz: alle erreichten Stufen zaehlen zusammen.
+	var res := Charger.active_resonances(phases)
+	var res_box := VBoxContainer.new()
+	res_box.add_theme_constant_override("separation", 2)
+	inner.add_child(res_box)
+	if not mounted.is_empty():
+		var title := "KEINE RESONANZ" if res.is_empty() else "RESONANZ %s · %s" % [
+			" + ".join(res.map(func(r): return str(int(r["at"])))), Charger.element_name(dom).to_upper()]
+		res_box.add_child(Arcade.label(title, 11, Charger.element_color(dom) if not res.is_empty() else Arcade.MUTED,
+			"bold", 0.14))
+		for r in res:
+			if Charger.upgraded(int(r["at"]), phases):
+				continue
+			res_box.add_child(UiKit.label("· " + Charger.resonance_text(int(r["at"])), 13, UiKit.TEXT))
+		if dom != "":
+			var effect := Charger.status_name(dom)
+			res_box.add_child(UiKit.label("Fähigkeit legt %s-Stapel an%s." % [Charger.element_name(dom),
+				"" if Charger.is_built(dom) else " (Wirkung folgt)"], 13, UiKit.HEADING))
+			if effect != "" and Charger.is_built(dom):
+				res_box.add_child(UiKit.label("Stapel lösen %s aus." % effect, 12, UiKit.MUTED))
+
+	# --- Charger im Lager ---------------------------------------------------
+	var head := HBoxContainer.new()
+	var ht := Arcade.label("CHARGER IM LAGER", 13, Arcade.CYAN, "bold", 0.14)
+	ht.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(ht)
+	var craft := Button.new()
+	craft.flat = true
+	craft.text = "NEU BAUEN"
+	craft.add_theme_color_override("font_color", Arcade.CYAN)
+	craft.pressed.connect(func(): Fader.go("res://scenes/shop.tscn"))
+	head.add_child(craft)
+	_content.add_child(head)
+	_content.add_child(UiKit.label("Auf die Waffe ziehen · Doppeltipp setzt ein", 13, UiKit.MUTED))
+	if roster.chargers.is_empty():
+		_content.add_child(UiKit.label("Noch kein Charger. Im Shop unter Bauen aus einem Rohling und Energy Phases bauen.",
+			14, UiKit.MUTED))
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", TILE_GAP)
+	grid.add_theme_constant_override("v_separation", TILE_GAP)
+	_content.add_child(grid)
+	var weapon_names := {}
+	for w in weapons:
+		weapon_names[str(w["uid"])] = (w["part"] as PartData).display_name
+	for c in roster.chargers:
+		var cuid := str(c["uid"])
+		var cphases: Array = c["phases"]
+		var cdom := Charger.dominant(cphases)
+		var on := str(c.get("on", ""))
+		var tile := Tile.new("charger:" + cuid, ChargerHex.new(cphases, 84), Charger.display_name(cphases),
+			Vector2(0, 130))
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tile.accent = Charger.element_color(cdom) if cdom != "" else UiKit.ACCENT
+		tile.add_caption("FREI" if on == "" else "IN %s" % str(weapon_names.get(on, "?")).to_upper(),
+			UiKit.WARN if on == "" else UiKit.MUTED, 11)
+		tile.on_select = func(): _charger_pick = cuid
+		tile.on_action = func(): _mount(cuid)
+		tile.on_drag = func():
+			var preview := ChargerHex.new(cphases, 72)
+			tile.set_drag_preview(preview)
+			return {"charger": cuid}
+		grid.add_child(tile)
+
+	var here := not mounted.is_empty() and (_charger_pick == "" or _charger_pick == str(mounted["uid"]))
+	var main := UiKit.button("Entfernen" if here else "Einsetzen", true)
+	main.disabled = not here and _charger_pick == ""
+	main.pressed.connect(func():
+		if here:
+			roster.unmount_charger(_weapon_uid)
+			_changed()
+		else:
+			_mount(_charger_pick))
+	_content.add_child(main)
+
+
+func _mount(charger_uid: String) -> void:
+	if charger_uid == "":
+		return
+	if GameState.roster.mount_charger(charger_uid, _weapon_uid):
+		Accessibility.vibrate(40, true)
+		_charger_pick = charger_uid
+		_changed()
 
 
 ## Umbenennen im Popup (der Name ist im Umbau ein Knopf, Entwurf 15. Nov.).
@@ -1060,3 +1308,19 @@ class StatCell extends HBoxContainer:
 			var y := size.y * 0.5 - 3
 			draw_rect(Rect2(0, y, size.x, 6), Color("#2a1650"))
 			draw_rect(Rect2(0, y, size.x * _f, 6), Arcade.CYAN)
+
+
+## Eine Karte, die Gezogenes annimmt (Upgrade: Charger auf die Waffe).
+class _DropCard extends PanelContainer:
+	var _accepts: Callable
+	var _dropped: Callable
+
+	func _init(accepts: Callable, dropped: Callable) -> void:
+		_accepts = accepts
+		_dropped = dropped
+
+	func _can_drop_data(_at: Vector2, data) -> bool:
+		return _accepts.call(data)
+
+	func _drop_data(_at: Vector2, data) -> void:
+		_dropped.call(data)

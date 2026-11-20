@@ -1,23 +1,31 @@
 class_name CacheArt
 extends Control
 
-## Ein Lootcache als Zeichnung (Entwurf 15. Nov. 2026, docs/design/einsatz_arcade
-## Bilder 17-22): je Fraktion eine eigene Kiste.
+## Ein Lootcache als Zeichnung. Seit 20. Nov. 2026 (Design-Canvas "Lootcaches
+## Rework", vom Spieler abgesegnet) ein schwerer Hex-Container -- dieselbe Form
+## wie Spielfeld und Charger --, den jede Fraktion auf ihre Art baut:
 ##
-##     city    Neon Cache     Cyan/Magenta, Neon-Schriftzeichen
-##     green   Solar Cache    gruene Kuppel mit Sonne und Blatt
-##     plant7  Mecha Cache    graue Kiste, "F5", Warnstreifen
-##     hip     Hipstar Cache  Terminal-Kiste "./open cache_07_"
+##     city    Neon Cache     dunkles Metall, rote/orange Leuchtstreifen, Schloss
+##     green   Solar Cache    Holz und Rinde, Keimling auf dem Deckel, Pollen-Sonne
+##     plant7  Mecha Cache    matt (kein Gluehen), Absperrband, rote Industriefarbe
+##     hip     Hipstar Cache  Sticker und Pixel, Terminal vorn
 ##
-## ``open`` hebt den Deckel ab (Wert 0..1, fuer die Oeffnen-Animation);
-## ``locked`` zeichnet nur gestrichelte Umrisse (noch keiner / gesperrt).
+## ``open`` hebt den Deckel ab (0..1, fuer die Oeffnen-Animation) und zeigt die
+## leuchtende Oeffnung; ``locked`` zeichnet nur gestrichelte Umrisse.
 
-const COLORS := {
-	"city": [Color("#2ee3eb"), Color("#ff2bd6")],
-	"green": [Color("#5cf2a2"), Color("#ffe14d")],
-	"plant7": [Color("#9a93b8"), Color("#ff6a3d")],
-	"hip": [Color("#ff8ce8"), Color("#2ee3eb")],
+## [Rahmen/Akzent, Deckel, Front, Seite, Kante, Fuge, Einlage]
+const STYLE := {
+	"city": [Color("#ff2a55"), Color("#2a2633"), Color("#423c52"), Color("#1a1820"),
+		Color("#0a0618"), Color("#ff2a55"), Color("#423c52")],
+	"green": [Color("#6fdc6a"), Color("#6b4e33"), Color("#8a6440"), Color("#4f3a26"),
+		Color("#0f2a1c"), Color("#3f7a3a"), Color("#3f7a3a")],
+	"plant7": [Color("#d4a017"), Color("#3a3a3d"), Color("#a3121c"), Color("#232325"),
+		Color("#111113"), Color("#232325"), Color("#232325")],
+	"hip": [Color("#3ad6e0"), Color("#3a1d5e"), Color("#2a1446"), Color("#1b0b3a"),
+		Color("#0a0618"), Color("#ff2bd6"), Color("#3ad6e0")],
 }
+
+const RATIO := 0.85
 
 var kind: String = "city":
 	set(value):
@@ -32,109 +40,146 @@ var locked: bool = false:
 		locked = value
 		queue_redraw()
 
+var _s := 1.0
+var _o := Vector2.ZERO
+
 
 func _init(cache_kind: String = "city", edge: float = 72.0) -> void:
 	kind = cache_kind
-	custom_minimum_size = Vector2(edge, edge * 0.8)
+	custom_minimum_size = Vector2(edge, edge * RATIO)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 static func color(cache_kind: String) -> Color:
-	return COLORS.get(cache_kind, COLORS["city"])[0]
+	return (STYLE.get(cache_kind, STYLE["city"]) as Array)[0]
+
+
+func _p(x: float, y: float) -> Vector2:
+	return _o + Vector2(x, y) * _s
+
+
+func _pts(coords: Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for i in range(0, coords.size(), 2):
+		out.append(_p(coords[i], coords[i + 1]))
+	return out
 
 
 func _draw() -> void:
-	var s := minf(size.x, size.y / 0.8) / 100.0
-	var o := Vector2((size.x - 100.0 * s) * 0.5, (size.y - 80.0 * s) * 0.5)
-	var pair: Array = COLORS.get(kind, COLORS["city"])
-	var line: Color = pair[0]
-	var accent: Color = pair[1]
+	# Entwurfsraum 200 x 170.
+	_s = minf(size.x / 200.0, size.y / 170.0)
+	_o = Vector2((size.x - 200.0 * _s) * 0.5, (size.y - 170.0 * _s) * 0.5)
+	var st: Array = STYLE.get(kind, STYLE["city"])
+	var accent: Color = st[0]
+	var w := maxf(1.2, 3.0 * _s)
+	var lift := open * 52.0
+
 	if locked:
-		line = Arcade.EMPTY_LINE
-		accent = Arcade.EMPTY_LINE
-	var p := func(x: float, y: float) -> Vector2: return o + Vector2(x, y) * s
-	var lift := open * 34.0
-	var width := maxf(1.5, 3.0 * s)
+		var dash := Arcade.EMPTY_LINE
+		_dashed([20, 50, 60, 84, 140, 84, 180, 50, 140, 16, 60, 16], dash, w)
+		_dashed([20, 50, 20, 116, 60, 150, 140, 150, 180, 116, 180, 50], dash, w)
+		draw_line(_p(60, 84), _p(60, 150), dash, w * 0.7)
+		draw_line(_p(140, 84), _p(140, 150), dash, w * 0.7)
+		return
 
 	# Schatten
-	if not locked:
-		draw_set_transform(p.call(50, 76), 0.0, Vector2(1.0, 0.18))
-		draw_circle(Vector2.ZERO, 40.0 * s, Color(accent, 0.25))
-		draw_set_transform(Vector2.ZERO)
+	draw_colored_polygon(_pts([26, 130, 64, 162, 146, 162, 184, 130]), Color("#05000f"))
+	# Seiten
+	draw_colored_polygon(_pts([20, 50, 60, 84, 60, 150, 20, 116]), st[3])
+	draw_colored_polygon(_pts([60, 84, 140, 84, 140, 150, 60, 150]), st[2])
+	draw_colored_polygon(_pts([140, 84, 180, 50, 180, 116, 140, 150]), st[3])
+	# Deckel-Fuge
+	draw_polyline(_pts([20, 68, 60, 102, 140, 102, 180, 68]), st[5], w)
+	_decor_body(accent)
+	# Kanten
+	for x in [60.0, 140.0]:
+		draw_line(_p(x, 84), _p(x, 150), st[4], w)
+	draw_line(_p(20, 50), _p(20, 116), st[4], w)
+	draw_line(_p(180, 50), _p(180, 116), st[4], w)
+	draw_polyline(_pts([20, 116, 60, 150, 140, 150, 180, 116]), st[4], w)
 
+	if open > 0.01:
+		# Oeffnung: dunkel, darin das Licht der Fraktion
+		draw_colored_polygon(_pts([20, 50, 60, 16, 140, 16, 180, 50, 140, 84, 60, 84]), Color("#05000f"))
+		draw_colored_polygon(_pts([44, 50, 72, 28, 128, 28, 156, 50, 128, 72, 72, 72]),
+			Color(accent, 0.35 * open))
+		draw_colored_polygon(_pts([70, 50, 86, 38, 114, 38, 130, 50, 114, 62, 86, 62]),
+			Color(Color.WHITE.lerp(accent, 0.4), 0.5 * open))
+		# Lichtsaeule
+		draw_colored_polygon(_pts([72, 50, 86, 50 - 60 * open - lift, 114, 50 - 60 * open - lift, 128, 50]),
+			Color(accent, 0.16 * open))
+		draw_polyline(_close(_pts([20, 50, 60, 16, 140, 16, 180, 50, 140, 84, 60, 84])), accent, w)
+
+	# Deckel (hebt sich mit ``open``)
+	var lid_y := -lift
+	draw_colored_polygon(_pts([20, 50 + lid_y, 60, 84 + lid_y, 60, 92 + lid_y, 20, 58 + lid_y]), st[3])
+	draw_colored_polygon(_pts([60, 84 + lid_y, 140, 84 + lid_y, 140, 92 + lid_y, 60, 92 + lid_y]), st[2])
+	draw_colored_polygon(_pts([140, 84 + lid_y, 180, 50 + lid_y, 180, 58 + lid_y, 140, 92 + lid_y]), st[3])
+	var top := _pts([20, 50 + lid_y, 60, 16 + lid_y, 140, 16 + lid_y, 180, 50 + lid_y,
+		140, 84 + lid_y, 60, 84 + lid_y])
+	draw_colored_polygon(top, st[1])
+	draw_polyline(_close(top), st[4], w)
+	draw_polyline(_close(_pts([50, 50 + lid_y, 75, 30 + lid_y, 125, 30 + lid_y, 150, 50 + lid_y,
+		125, 70 + lid_y, 75, 70 + lid_y])), st[6], w * 0.7)
+	_decor_lid(accent, lid_y)
+
+
+func _decor_body(accent: Color) -> void:
+	var w := maxf(1.0, 3.0 * _s)
 	match kind:
 		"green":
-			# Kuppel mit Blatt und Sonne
-			var dome := PackedVector2Array()
-			for i in 17:
-				var a := PI + PI * float(i) / 16.0
-				dome.append(p.call(50 + cos(a) * 40, 52 + sin(a) * 34 - lift))
-			_shape(dome, Color("#0f2a1c") if not locked else Color.TRANSPARENT, line, width)
-			var bowl := PackedVector2Array([p.call(10, 52), p.call(90, 52), p.call(80, 72), p.call(20, 72)])
-			_shape(bowl, Color("#0f2a1c") if not locked else Color.TRANSPARENT, line, width)
-			if not locked:
-				draw_circle(p.call(50, 52), 9.0 * s, accent)
-				for i in 8:
-					var a := TAU * float(i) / 8.0
-					draw_line(p.call(50 + cos(a) * 13, 52 + sin(a) * 13),
-						p.call(50 + cos(a) * 18, 52 + sin(a) * 18), accent, width * 0.7)
-				_shape(PackedVector2Array([p.call(50, 18 - lift), p.call(38, 8 - lift),
-					p.call(50, 12 - lift)]), line, line, width * 0.5)
-				_shape(PackedVector2Array([p.call(50, 18 - lift), p.call(62, 8 - lift),
-					p.call(50, 12 - lift)]), line, line, width * 0.5)
+			draw_arc(_p(100, 122), 14.0 * _s, 0.0, TAU, 24, Color("#fff27a"), w)
+			draw_circle(_p(100, 122), 5.0 * _s, Color("#fff27a"))
+			draw_polyline(_pts([24, 72, 30, 84, 30, 96, 26, 108]), Color("#ff6fae"), w)
+			draw_polyline(_pts([176, 72, 170, 84, 170, 96, 174, 108]), Color("#ff6fae"), w)
 		"plant7":
-			var body := PackedVector2Array([p.call(12, 30), p.call(88, 30), p.call(88, 74), p.call(12, 74)])
-			_shape(body, Color("#2a2540") if not locked else Color.TRANSPARENT, line, width)
-			var lid := PackedVector2Array([p.call(8, 20 - lift), p.call(92, 20 - lift),
-				p.call(92, 30 - lift), p.call(8, 30 - lift)])
-			_shape(lid, Color("#3a3458") if not locked else Color.TRANSPARENT, line, width)
-			if not locked:
-				for i in 6:
-					var x := 14.0 + i * 13.0
-					_shape(PackedVector2Array([p.call(x, 72), p.call(x + 6, 62), p.call(x + 12, 62),
-						p.call(x + 6, 72)]), Arcade.YELLOW, Arcade.YELLOW, 1.0)
-				draw_rect(Rect2(p.call(40, 36), Vector2(20, 18) * s), Color(0, 0, 0, 0), false, width * 0.8)
-				_text("F5", p.call(50, 49), 12.0 * s, accent)
+			draw_colored_polygon(_pts([60, 110, 140, 110, 140, 132, 60, 132]), Color("#d4a017"))
+			for x in [66.0, 86.0, 106.0, 126.0]:
+				draw_line(_p(x, 132), _p(x + 14, 110), Color("#232325"), 7.0 * _s)
+			for pos in [[68, 96], [124, 96], [68, 142], [124, 142]]:
+				draw_line(_p(pos[0], pos[1]), _p(pos[0] + 8, pos[1]), Color("#8a6a12"), 4.0 * _s)
 		"hip":
-			var body := PackedVector2Array([p.call(12, 26), p.call(88, 26), p.call(88, 72), p.call(12, 72)])
-			_shape(body, Color("#1a0a33") if not locked else Color.TRANSPARENT, line, width)
-			var lid := PackedVector2Array([p.call(10, 16 - lift), p.call(90, 16 - lift),
-				p.call(90, 26 - lift), p.call(10, 26 - lift)])
-			_shape(lid, Color("#2a1046") if not locked else Color.TRANSPARENT, line, width)
-			if not locked:
-				draw_rect(Rect2(p.call(22, 34), Vector2(56, 28) * s), accent, false, width * 0.7)
-				_text("> ./open", p.call(50, 46), 8.0 * s, accent)
-				_text("cache_07_", p.call(50, 57), 8.0 * s, accent)
+			draw_rect(Rect2(_p(72, 108), Vector2(40, 24) * _s), Color("#3ad6e0"), false, w)
+			draw_line(_p(78, 120), _p(86, 120), Color("#ff2bd6"), w)
+			draw_line(_p(90, 120), _p(106, 120), Color("#ff2bd6"), w)
+			draw_rect(Rect2(_p(118, 112), Vector2(8, 8) * _s), Color("#ff2bd6"))
+			draw_rect(Rect2(_p(126, 120), Vector2(6, 6) * _s), Color("#3ad6e0"))
+			draw_rect(Rect2(_p(150, 76), Vector2(10, 10) * _s), Color("#ff2bd6"))
+			draw_rect(Rect2(_p(36, 92), Vector2(8, 8) * _s), Color("#3ad6e0"))
 		_:
-			var body := PackedVector2Array([p.call(14, 30), p.call(86, 30), p.call(80, 74), p.call(20, 74)])
-			_shape(body, Color("#1a0a33") if not locked else Color.TRANSPARENT, line, width)
-			var lid := PackedVector2Array([p.call(8, 18 - lift), p.call(92, 18 - lift),
-				p.call(88, 30 - lift), p.call(12, 30 - lift)])
-			_shape(lid, Color("#2a1046") if not locked else Color.TRANSPARENT, line, width)
-			if not locked:
-				draw_rect(Rect2(p.call(34, 38), Vector2(32, 26) * s), accent, false, width * 0.8)
-				# Neon-Zeichen: zwei Querstriche und Stiele
-				draw_line(p.call(39, 44), p.call(61, 44), accent, width * 0.7)
-				draw_line(p.call(41, 51), p.call(59, 51), accent, width * 0.7)
-				draw_line(p.call(45, 44), p.call(43, 60), accent, width * 0.7)
-				draw_line(p.call(55, 44), p.call(57, 60), accent, width * 0.7)
-				draw_circle(p.call(50, 24 - lift), 3.5 * s, Arcade.YELLOW)
+			draw_line(_p(68, 120), _p(132, 120), accent, 5.0 * _s)
+			draw_line(_p(68, 130), _p(110, 130), Color("#ff9a3d"), w)
+			draw_line(_p(28, 80), _p(28, 108), accent, w)
+			draw_line(_p(172, 80), _p(172, 108), accent, w)
 
 
-func _shape(points: PackedVector2Array, fill: Color, line: Color, width: float) -> void:
-	if fill.a > 0.0:
-		draw_colored_polygon(points, fill)
-	var closed := points.duplicate()
-	closed.append(points[0])
-	if locked:
-		for i in points.size():
-			draw_dashed_line(closed[i], closed[i + 1], line, width * 0.7, 5.0)
-	else:
-		draw_polyline(closed, line, width, true)
+func _decor_lid(accent: Color, dy: float) -> void:
+	var w := maxf(1.0, 3.0 * _s)
+	match kind:
+		"green":
+			draw_colored_polygon(_pts([100, 46 + dy, 102, 30 + dy, 112, 22 + dy, 124, 16 + dy,
+				120, 30 + dy, 110, 42 + dy]), Color("#3f7a3a"))
+			draw_colored_polygon(_pts([100, 46 + dy, 96, 36 + dy, 88, 30 + dy, 78, 28 + dy,
+				82, 38 + dy, 92, 45 + dy]), Color("#3f7a3a"))
+		"plant7":
+			draw_colored_polygon(_pts([84, 40 + dy, 116, 40 + dy, 120, 50 + dy, 116, 60 + dy,
+				84, 60 + dy, 80, 50 + dy]), Color("#a3121c"))
+		"hip":
+			draw_line(_p(82, 50 + dy), _p(118, 50 + dy), Color("#3ad6e0"), w)
+			draw_line(_p(100, 38 + dy), _p(100, 62 + dy), Color("#3ad6e0"), w)
+			draw_line(_p(162, 20 + dy), _p(172, 14 + dy), Color("#ff2bd6"), w)
+		_:
+			draw_rect(Rect2(_p(88, 42 + dy), Vector2(24, 16) * _s), accent, false, w)
+			draw_polyline(_pts([94, 42 + dy, 94, 36 + dy, 106, 36 + dy, 106, 42 + dy]), accent, w)
 
 
-func _text(text: String, center: Vector2, font_size: float, color: Color) -> void:
-	var f := Arcade.font("bold")
-	var px := maxi(6, int(round(font_size)))
-	var w := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
-	draw_string(f, center + Vector2(-w * 0.5, px * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
+func _close(points: PackedVector2Array) -> PackedVector2Array:
+	var out := points.duplicate()
+	out.append(points[0])
+	return out
+
+
+func _dashed(coords: Array, line: Color, width: float) -> void:
+	var pts := _close(_pts(coords))
+	for i in pts.size() - 1:
+		draw_dashed_line(pts[i], pts[i + 1], line, width * 0.7, 5.0)

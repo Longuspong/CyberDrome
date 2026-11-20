@@ -364,6 +364,54 @@
     "cable_fire": {"kinetic": 5, "energy": 5, "max_per_pulse": 10}
   },
 
+  "charger": {
+    "_kommentar": [
+      "Charger und Energy Phases (20. Nov. 2026, Spieler; docs/CHARGER_KONZEPT.md).",
+      "Ein Charger sitzt dauerhaft an einer Waffe (Charger-Platz, bleibt nach dem Einsatz).",
+      "Gebaut wird er aus einem Rohling und bis zu slots Phasen (Shop > Bauen), die",
+      "Phasen werden verbraucht. Je Phase load_per_phase Elementarbelastung je Treffer;",
+      "ab stack_at am Ziel ein Stapel des Elements (der Rest zaehlt weiter).",
+      "UEBERWIEGT ein Element (mehr Phasen als jedes andere), legt die Faehigkeit",
+      "dominant_ability_stacks Stapel davon an.",
+      "RESONANZ (gleiche Phasen des ueberwiegenden Elements) ZAEHLT ZUSAMMEN",
+      "(Spieler, 20. Nov. 2026 im Design-Canvas): ab 2 legt die Faehigkeit dazu",
+      "ability_load an, ab 4 zaehlt jeder double_every. Treffer doppelt. Stufe 6 ist",
+      "ein UPGRADE davon: dann jeder 3. statt jeder 5. Treffer doppelt, die",
+      "Faehigkeit 200 statt 100 (hoechste Stufe gilt je Wert).",
+      "Wirkung der Stapel: nur Feuer (Kabelbrand) ist gebaut, die uebrigen werden",
+      "gezaehlt und angezeigt, wirken aber noch nicht.",
+      "cache: Inhalt je Lootcache (Spieler): rolls Wuerfe, je Wurf eine Zeile nach chance."
+    ],
+    "slots": 6,
+    "load_per_phase": 20,
+    "stack_at": 100,
+    "dominant_ability_stacks": 1,
+    "resonance": [
+      {"at": 2, "ability_load": 100},
+      {"at": 4, "double_every": 5},
+      {"at": 6, "double_every": 3, "ability_load": 200}
+    ],
+    "elements": [
+      {"id": "fire", "name": "Feuer", "color": "#ff6a2a", "status": "Kabelbrand", "built": true},
+      {"id": "cryo", "name": "Cryo", "color": "#a8ecff", "status": "Freeze"},
+      {"id": "volt", "name": "Volt", "color": "#5b86ff", "status": "EMP"},
+      {"id": "terra", "name": "Terra", "color": "#6fdc6a", "status": "Säure"},
+      {"id": "virus", "name": "Virus", "color": "#ff3d9a", "status": "Virus"},
+      {"id": "chaos", "name": "Chaos", "color": "#b07cff", "status": "Chaos"}
+    ],
+    "cache": {
+      "rolls": 4,
+      "table": [
+        {"kind": "faction_drome", "chance": 0.005},
+        {"kind": "faction_core", "chance": 0.025},
+        {"kind": "baukern", "chance": 0.07},
+        {"kind": "phase", "chance": 0.72},
+        {"kind": "blank", "chance": 0.12},
+        {"kind": "coins", "chance": 0.06, "min": 10, "max": 20}
+      ]
+    }
+  },
+
   "combat": {
     "_kommentar": [
       "Das Zwei-Verteidigungs-System. Siehe ActionResolver.resolve_damage.",
