@@ -78,7 +78,8 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		frac += (1.0 - frac) * clampf(action.kinetic_to_energy, 0.0, 1.0)
 	var shield_before := target.shield
 	var res := resolve_damage(target, raw, frac,
-		action.shield_mult if action != null else 1.0, pierce_shield)
+		action.shield_mult if action != null else 1.0, pierce_shield,
+		action.virus_fraction if action != null else 0.0)
 	target.shield = res["shield_after"]
 	var amount: int = res["hp"]
 
@@ -110,6 +111,12 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 			% [who, target.display_name, amount])
 
 	_on_hit(source, dealt)
+	# Lebensraub (Fusion Attack + Integrity): der Treffer heilt den Schuetzen.
+	if action != null and action.lifesteal > 0.0 and source != null and source.is_alive() \
+			and dealt > 0 and source != target:
+		var heal := int(round(float(dealt) * action.lifesteal))
+		if heal > 0:
+			source.hp = mini(int(source.stats.get("hp_max", source.hp)), source.hp + heal)
 	if action != null and not action.charger.is_empty() and target.hp > 0 \
 			and source != null and source.is_player != target.is_player:
 		_charge(source, target, action)
@@ -284,10 +291,14 @@ func _on_hit(source: Unit, dealt: int) -> void:
 ##
 ## Erst das Schild vollstaendig, dann die HP: das Schild wird immer zuerst leer.
 func resolve_damage(target: Unit, raw: int, energy_fraction: float,
-		shield_mult: float = 1.0, pierce_shield: bool = false) -> Dictionary:
+		shield_mult: float = 1.0, pierce_shield: bool = false, virus_fraction: float = 0.0) -> Dictionary:
 	var section := Config.section("combat")
 	# Verwundbar (Plasmaklinge): der Statuseffekt vergroessert jeden Treffer.
 	raw = int(round(float(raw) * target.damage_taken_mult()))
+	# Virusschaden (Power-Hyperfusion, 20. Nov. 2026): dieser Anteil ignoriert
+	# Panzerung und Schild-Faktoren, trifft aber zuerst den Schild.
+	var v := int(round(float(raw) * clampf(virus_fraction, 0.0, 1.0)))
+	raw -= v
 	var e := int(round(float(raw) * clampf(energy_fraction, 0.0, 1.0)))
 	var p := raw - e
 	# Splitterpanzer: die Stacheln gehen am Schild vorbei.
@@ -320,7 +331,15 @@ func resolve_damage(target: Unit, raw: int, energy_fraction: float,
 				shield = 0
 		else:
 			to_hp += float(amt) * float(portion["hf"])
-	return {"hp": _apply_armor_ehp(to_hp, target.def()),
+	var true_hp := 0
+	if v > 0:
+		if shield > 0 and not pierce_shield:
+			var taken := mini(shield, v)
+			shield -= taken
+			true_hp = v - taken
+		else:
+			true_hp = v
+	return {"hp": _apply_armor_ehp(to_hp, target.def()) + true_hp,
 		"shield_after": target.shield if pierce_shield else shield}
 
 

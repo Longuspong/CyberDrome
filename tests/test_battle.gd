@@ -308,7 +308,7 @@ func _ability_squad() -> Array:
 		_with_modules(DromeBuild.create("SANI", {
 			"body": &"mage_body", "head": &"mage_head",
 			"feet": &"mage_drive", "core": &"mage_core",
-			"equip_left": &"eq_rune_staff"}), "equip_left", [&"mod_orbit"]),
+			"equip_left": &"eq_rune_staff"}), "equip_left", [&"mod_seeker"]),
 	]
 
 

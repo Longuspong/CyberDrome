@@ -288,6 +288,12 @@ func stats() -> Dictionary:
 		var fx := all_module_effects()
 		total["def"] += int(fx.get("def", 0))
 		total["shield"] += int(fx.get("shield", 0))
+		# Amps (20. Nov. 2026): Power und Effizienz fest, Integritaet und
+		# Schild in Prozent (MODULE_AMP_FUSION.md 2).
+		total["power"] += int(round(float(fx.get("power", 0))))
+		total["amp_efficiency"] = int(round(float(fx.get("efficiency", 0))))
+		total["hp_max"] = int(round(float(total["hp_max"]) * (1.0 + float(fx.get("hp_pct", 0.0)))))
+		total["amp_shield_pct"] = float(fx.get("shield_pct", 0.0))
 		total["thorns"] = int(fx.get("thorns", 0))
 		total["thorns_melee"] = int(fx.get("thorns_melee", 0))
 		total["shield_delay"] = float(fx.get("shield_delay", 0.0))
@@ -315,12 +321,16 @@ func stats() -> Dictionary:
 	# Ohne Wert am Chassis (Sentinels, alte Teile): Grundwert 10 = 100 %.
 	if int(total.get("efficiency", 0)) <= 0:
 		total["efficiency"] = Unit.efficiency_base()
+	total["efficiency"] += int(total.get("amp_efficiency", 0))
+	total.erase("amp_efficiency")
 	total["shield_pulse"] = maxi(0, total["shield_pulse"])
 	total["shield"] = maxi(0, total["shield"])
 	# Das Schild-Maximum ist der Grundwert mal der prozentualen Schild-Effizienz
 	# des Kerns (§11): shield_max = shield * (1 + shield_bonus). Der Bonus ist
 	# ein Anteil (0.1 = +10 %).
-	total["shield_max"] = int(round(float(total["shield"]) * (1.0 + total["shield_bonus"])))
+	total["shield_max"] = int(round(float(total["shield"]) * (1.0 + total["shield_bonus"])
+		* (1.0 + float(total.get("amp_shield_pct", 0.0)))))
+	total.erase("amp_shield_pct")
 	return total
 
 

@@ -140,6 +140,10 @@ var base_action: StringName = &""
 ## ueberwiegendes Element, Resonanz. Leer ohne Charger. ``ability`` markiert die
 ## Faehigkeit, ``hits`` zaehlt die Treffer dieser Kopie (Resonanz 4/6).
 var charger: Dictionary = {}
+## Amps v3 (20. Nov. 2026): Lebensraub (Anteil des Schadens heilt den Schuetzen)
+## und Virusschaden (Anteil, an Panzerung und Schild-Faktoren vorbei).
+var lifesteal: float = 0.0
+var virus_fraction: float = 0.0
 
 
 static func from_meta(meta: Dictionary, owner_name: String = "",
@@ -240,6 +244,14 @@ func with_modules(fx: Dictionary) -> ActionData:
 			out.power = int(round(float(power) * (1.0 + stronger)))
 			out.heal = int(round(float(heal) * (1.0 + stronger)))
 			out.shield_gain = int(round(float(shield_gain) * (1.0 + stronger)))
+	# Heilverstaerker: Heilung und Schildgabe aller Aktionen der Waffe.
+	var support := float(fx.get("support_power", 0.0))
+	if support > 0.0:
+		out.heal = int(round(float(out.heal) * (1.0 + support)))
+		out.shield_gain = int(round(float(out.shield_gain) * (1.0 + support)))
+	if is_attack():
+		out.lifesteal = float(fx.get("lifesteal", 0.0))
+	out.virus_fraction = float(fx.get("virus_fraction", 0.0))
 	out.kinetic_to_energy = float(fx.get("kinetic_to_energy", 0.0))
 	out.bonus_vs_unshielded = float(fx.get("bonus_vs_unshielded", 0.0))
 	var longer := float(fx.get("status_time", 0.0))

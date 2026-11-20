@@ -184,6 +184,13 @@ def effect_text(key, val):
     r = RULES
     texts = {
         "attack_speed": lambda v: f"+{pct(v)} Angriffstempo",
+        "power": lambda v: f"+{num(v)} Power",
+        "hp_pct": lambda v: f"+{pct(v)} max. Integritaet",
+        "shield_pct": lambda v: f"+{pct(v)} max. Schild",
+        "efficiency": lambda v: f"+{num(v)} Effizienz",
+        "support_power": lambda v: f"Heilung und Schildgabe +{pct(v)}",
+        "lifesteal": lambda v: f"Treffer heilen {pct(v)} des Schadens",
+        "virus_fraction": lambda v: f"{pct(v)} des Schadens als Virusschaden",
         "attack_power": lambda v: f"+{pct(v)} Schaden der Angriffe",
         "ricochet_chance": lambda v: f"{pct(v)} Chance auf Zusatztreffer",
         "ricochet_share": lambda v: f"Zusatztreffer mit {pct(v)} Schaden",
@@ -623,7 +630,7 @@ def build_module(ws):
         rec = [module_name(r) for r, rv in MODULES["recipes"].items() if mid in rv["from"]]
         rows.append([m["name"], mid, m["short"], MOD_CLASS.get(m["class"], m["class"]), CONDITION.get(m["condition"], m["condition"]),
                      effects_text(m["effects"]), ", ".join(rec), MODULES["shop"]["price"]["base"], MODULES["sell_value"]["base"], "gebaut"])
-    write_table(ws, ["Grundmodul", "ID", "Kuerzel", "Klasse", "Passt zu", "Wirkung", "Steckt in Rezepten",
+    write_table(ws, ["Amp", "ID", "Kuerzel", "Klasse", "Passt zu", "Wirkung", "Steckt in Fusionen",
                      "Preis (Credits)", "Verkauf (Credits)", "Status"], rows, [16, 18, 8, 13, 22, 60, 48, 9, 9, 10])
 
 
@@ -633,8 +640,17 @@ def build_rezepte(ws):
         rows.append([r["name"], rid, r["short"], MOD_CLASS.get(r["class"], r["class"]), CONDITION.get(r["condition"], r["condition"]),
                      module_name(r["from"][0]), module_name(r["from"][1]), effects_text(recipe_total(rid)),
                      effects_text(r["bonus"]), "ja: " + r["gadget"] if r.get("gadget") else "--",
-                     MODULES["shop"]["price"]["recipe"], MODULES["sell_value"]["recipe"], "gebaut"])
-    write_table(ws, ["Rezept", "ID", "Kuerzel", "Klasse", "Passt zu", "Zutat 1", "Zutat 2", "Wirkung der Zutaten (Summe)",
+                     MODULES["shop"]["price"]["recipe"], MODULES["sell_value"]["recipe"],
+                     "entschieden" if rid in ("mod_mender", "mod_brawler") else "Vorschlag (gebaut)"])
+    # Hyperfusionen (20. Nov. 2026): zwei gleiche Amps + Fusion Core, dreifacher Wert.
+    for hid, h in MODULES.get("hyperfusions", {}).items():
+        amp = MODULES["modules"][h["amp"]]
+        triple = {k: v * 3 for k, v in amp["effects"].items()}
+        rows.append([h["name"], hid, h["short"], MOD_CLASS.get(amp["class"], amp["class"]), "--",
+                     module_name(h["amp"]), module_name(h["amp"]) + " + Fusion Core", effects_text(triple),
+                     effects_text(h["bonus"]) if h["bonus"] else "offen", "--", "--",
+                     MODULES["sell_value"]["recipe"] * 2, "entschieden" if h["bonus"] else "Wert gebaut, Effekt offen"])
+    write_table(ws, ["Fusion / Hyperfusion", "ID", "Kuerzel", "Klasse", "Passt zu", "Zutat 1", "Zutat 2", "Wirkung der Zutaten (Summe)",
                      "Eigener Effekt", "Gadget", "Preis (Credits)", "Verkauf (Credits)", "Status"], rows,
                 [16, 20, 8, 13, 20, 15, 15, 55, 60, 14, 9, 9, 10])
 

@@ -319,9 +319,9 @@ func test_weapons_are_fixed_during_the_run() -> void:
 func test_selling_a_module_from_the_storage() -> void:
 	var run := RunState.start(23)
 	run.phase = RunState.Phase.STOP
-	run.storage.append(&"mod_capacitor")
+	run.storage.append(&"amp_shield")
 	var value := run.sell(0)
-	t.equal(value, ModuleData.sell_value(ModuleData.get_module(&"mod_capacitor")), "Verkaufspreis")
+	t.equal(value, ModuleData.sell_value(ModuleData.get_module(&"amp_shield")), "Verkaufspreis")
 	t.equal(run.credits, value, "Credits gutgeschrieben")
 	t.ok(run.storage.is_empty(), "das Lager ist leer")
 
@@ -485,11 +485,11 @@ func _through_json(run: RunState) -> RunState:
 func test_a_run_survives_saving_and_loading() -> void:
 	var run := RunState.start(5150)
 	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_hammer", &"eq_deflector"])
-	run.storage.append_array([&"mod_rapid_fire", &"bios_metronome"])
+	run.storage.append_array([&"amp_attack", &"bios_metronome"])
 	run.bag.append(&"eq_mortar")
-	run.squad[0].modules[run.squad[0].equip_slots()[0]] = [&"mod_capacitor", &"mod_seeker"]
+	run.squad[0].modules[run.squad[0].equip_slots()[0]] = [&"amp_shield", &"mod_seeker"]
 	run.bios_given = 2
-	run.set_target_recipe(&"mod_gunslinger")
+	run.set_target_recipe(&"mod_twin")
 	run.credits = 17
 	var back := _through_json(run)
 	t.ok(back != null, "der Lauf lässt sich laden")
@@ -501,7 +501,7 @@ func test_a_run_survives_saving_and_loading() -> void:
 	t.equal(back.credits, 17, "Credits")
 	t.equal(back.storage, run.storage, "Lager (als StringName)")
 	t.equal(back.bag, run.bag, "Tasche")
-	t.equal(back.target_recipe, &"mod_gunslinger", "Ziel-Rezept")
+	t.equal(back.target_recipe, &"mod_twin", "Ziel-Rezept")
 	t.equal(back.squad.size(), run.squad.size(), "Squad")
 	t.equal(back.squad[0].modules, run.squad[0].modules, "Module im Halter")
 	t.equal(back.bios_given, 2, "vergebene BIOS-Wahlen")

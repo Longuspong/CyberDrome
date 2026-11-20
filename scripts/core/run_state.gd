@@ -107,6 +107,9 @@ var target_recipe: StringName = &""
 ## Das Lager des Laufs: nur Module (seit 9. Nov. 2026, NEUANFANG 6h), die
 ## gerade in keinem Halter stecken -- storage_size() Plaetze.
 var storage: Array = []
+## Hyperfusionen, die in diesem Einsatz schon verschmolzen wurden (jede Sorte
+## einmal je Einsatz, MODULE_AMP_FUSION.md 1).
+var hyper_made: Array = []
 
 ## Die Tasche (6h): Beute-Teile (Waffen) dieses Laufs. Waffen sind im Lauf
 ## fest (MODULE_KONZEPT.md) -- die Teile werden nicht eingebaut, belegen keinen
@@ -239,6 +242,7 @@ func to_dict() -> Dictionary:
 		"start_size": start_size, "credits": credits,
 		"squad": squad.map(func(b): return b.to_save()),
 		"storage": storage.map(func(id): return str(id)),
+		"hyper_made": hyper_made.map(func(id): return str(id)),
 		"bag": bag.map(func(id): return str(id)),
 		"bios_offers": bios_offers.map(func(id): return str(id)), "bios_given": bios_given, "credit_boost": credit_boost,
 		"shop_offers": shop_offers.map(func(o): return {"module_id": str(o["module_id"]), "sold": o["sold"]}),
@@ -274,6 +278,7 @@ static func from_dict(data: Dictionary) -> RunState:
 			return null
 		run.squad.append(build)
 	run.storage = (data.get("storage", []) as Array).map(func(id): return StringName(str(id)))
+	run.hyper_made = (data.get("hyper_made", []) as Array).map(func(id): return StringName(str(id)))
 	run.bag = (data.get("bag", []) as Array).map(func(id): return StringName(str(id)))
 	run.bios_offers = (data.get("bios_offers", []) as Array).map(func(id): return StringName(str(id)))
 	run.bios_given = int(data.get("bios_given", 0))
@@ -1309,11 +1314,17 @@ func module_options(index: int) -> Array:
 			var weapon := build.part_in(slot)
 			var twice := _recipe_twice(build, slot, module)
 			var second_bios := module.is_bios_result and has_bios_recipe(build)
+			var second_hyper := module.is_hyper and has_hyper(build)
 			var entry := {"drome": drome, "slot": slot,
-				"allowed": used < room and not twice and not second_bios and not module.is_bios_item(),
+				"allowed": used < room and not twice and not second_bios and not second_hyper
+					and module.installable(),
 				"active": module.fits(weapon), "detail": ""}
 			if module.is_bios_item():
 				entry["detail"] = "ein BIOS steckt nicht im Halter"
+			elif module.is_core_item:
+				entry["detail"] = "der Fusion Core wird beim Verschmelzen verbraucht"
+			elif second_hyper:
+				entry["detail"] = "höchstens eine Hyperfusion je DROME"
 			elif second_bios:
 				entry["detail"] = "höchstens eine BIOS-Fusion je DROME"
 			elif twice:
@@ -1340,7 +1351,9 @@ func install_module(index: int, drome: int, slot: String, position: int = -1) ->
 	if slot not in build.equip_slots() or build.module_count(slot) >= ModuleData.slots_for(build, slot):
 		return false
 	var module := ModuleData.get_module(storage[index])
-	if module.is_bios_item() or (module.is_bios_result and has_bios_recipe(build)):
+	if not module.installable() or (module.is_bios_result and has_bios_recipe(build)):
+		return false
+	if module.is_hyper and has_hyper(build):
 		return false
 	if _recipe_twice(build, slot, module):
 		return false
@@ -1593,6 +1606,7 @@ func _attempt(apply: bool, change: Callable) -> String:
 ## einmal je Waffe, hoechstens ein BIOS-Rezept je DROME, kein BIOS im Halter.
 func _layout_blocker(build: DromeBuild) -> String:
 	var bios := 0
+	var hyper := 0
 	for slot in build.modules:
 		var list: Array = (build.modules[slot] as Array).filter(func(id): return str(id) != "")
 		if list.size() > ModuleData.slots_for(build, slot):
@@ -1603,8 +1617,12 @@ func _layout_blocker(build: DromeBuild) -> String:
 				continue
 			if module.is_bios_item():
 				return "ein BIOS steckt nicht im Halter"
+			if module.is_core_item:
+				return "der Fusion Core steckt nicht im Halter"
 			if module.is_bios_result:
 				bios += 1
+			if module.is_hyper:
+				hyper += 1
 			if not module.is_recipe():
 				continue
 			for j in range(i + 1, list.size()):
@@ -1614,6 +1632,8 @@ func _layout_blocker(build: DromeBuild) -> String:
 					return "%s steckt hier schon drin (Fusionen einmal je Waffe)" % module.display_name
 	if bios > 1:
 		return "höchstens eine BIOS-Fusion je DROME"
+	if hyper > 1:
+		return "höchstens eine Hyperfusion je DROME"
 	return ""
 
 
@@ -1640,6 +1660,17 @@ func recipe_book() -> Array:
 			if found >= 0:
 				pool.remove_at(found)
 		out.append({"module": recipe, "have": have, "ready": not have.has(false)})
+	# Hyperfusionen: zwei gleiche Amps + Fusion Core, jede Sorte einmal je Einsatz.
+	for hyper in ModuleData.hyperfusions():
+		var pool := storage.duplicate()
+		var have: Array = []
+		for ingredient in hyper.from + [CORE_ID]:
+			var found := pool.find(ingredient)
+			have.append(found >= 0)
+			if found >= 0:
+				pool.remove_at(found)
+		out.append({"module": hyper, "have": have, "core": true, "used": hyper_made.has(hyper.id),
+			"ready": not have.has(false) and not hyper_made.has(hyper.id)})
 	return out
 
 
@@ -1657,6 +1688,8 @@ func pair_result(a: int, b: int) -> ModuleData:
 static func pair_of(x: StringName, y: StringName) -> ModuleData:
 	if x == &"" or y == &"":
 		return null
+	if x == y:
+		return ModuleData.hyper_of(x)
 	for recipe in ModuleData.recipes():
 		if recipe.is_bios_result or recipe.from.size() != 2:
 			continue
@@ -1680,6 +1713,8 @@ func craft(recipe_id: StringName) -> bool:
 		return false
 	if recipe.is_bios_result:
 		return _craft_bios(recipe)
+	if recipe.is_hyper:
+		return _craft_hyper(recipe)
 	var pool := storage.duplicate()
 	for ingredient in recipe.from:
 		var found := pool.find(ingredient)
@@ -1689,6 +1724,46 @@ func craft(recipe_id: StringName) -> bool:
 	pool.append(recipe.id)
 	storage = pool
 	return true
+
+
+const CORE_ID := &"fusion_core"
+
+
+## Warum diese Hyperfusion gerade nicht geht ("" = geht).
+func hyper_blocker(hyper: ModuleData) -> String:
+	if hyper == null or not hyper.is_hyper:
+		return "keine Hyperfusion"
+	if hyper_made.has(hyper.id):
+		return "%s gab es in diesem Einsatz schon" % hyper.display_name
+	var amp: StringName = hyper.from[0]
+	if storage.count(amp) < 2:
+		return "zwei gleiche Amps nötig"
+	if not storage.has(CORE_ID):
+		return "ein Fusion Core fehlt"
+	return ""
+
+
+## Zwei gleiche Amps + Fusion Core -> Hyperfusion (alles aus dem Lager).
+func _craft_hyper(hyper: ModuleData) -> bool:
+	if hyper_blocker(hyper) != "":
+		return false
+	var pool := storage.duplicate()
+	for ingredient in hyper.from + [CORE_ID]:
+		pool.remove_at(pool.find(ingredient))
+	pool.append(hyper.id)
+	storage = pool
+	hyper_made.append(hyper.id)
+	return true
+
+
+## Traegt dieser DROME schon eine Hyperfusion (in irgendeinem Halter)?
+static func has_hyper(build: DromeBuild) -> bool:
+	for slot in build.modules:
+		for id in build.modules[slot]:
+			var module := ModuleData.get_module(id)
+			if module != null and module.is_hyper:
+				return true
+	return false
 
 
 # ---------------------------------------------------------------------------
@@ -1893,6 +1968,8 @@ static func shop_price(module: ModuleData) -> int:
 	if module == null:
 		return 0
 	var prices: Dictionary = (ModuleData.data().get("shop", {}) as Dictionary).get("price", {})
+	if module.is_core_item:
+		return int(prices.get("core", 14))
 	return int(prices.get("recipe" if module.is_recipe() else "base", 6))
 
 
@@ -1942,6 +2019,9 @@ func roll_shop() -> Array:
 	if with_recipe:
 		var recipes := ModuleData.recipes()
 		out.append({"module_id": recipes[rng.randi() % recipes.size()].id, "sold": false})
+	# Fusion Core: seltenes Angebot (MODULE_AMP_FUSION.md 1), ersetzt das letzte.
+	elif not out.is_empty() and rng.randf() < float(settings.get("core_chance", 0.0)):
+		out[out.size() - 1] = {"module_id": CORE_ID, "sold": false}
 	return out
 
 

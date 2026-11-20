@@ -70,15 +70,15 @@ func _process(_delta: float) -> bool:
 		14:
 			# Module im Lager, eines angetippt, eines eingesetzt, Rezeptbuch offen.
 			var stop = root.get_node("RunStop")
-			gs.run.storage.append_array([&"mod_rapid_fire", &"mod_capacitor", &"mod_twin_barrel"])
-			gs.run.squad[0].modules[gs.run.squad[0].equip_slots()[0]] = [&"mod_capacitor"]
+			gs.run.storage.append_array([&"amp_attack", &"amp_shield", &"amp_power"])
+			gs.run.squad[0].modules[gs.run.squad[0].equip_slots()[0]] = [&"amp_shield"]
 			stop._recipes_open = true
 			stop._selected_storage = gs.run.storage.size() - 1
 			stop._refresh()
 			print("SMOKE: Zwischenstopp mit Modulen und Rezeptbuch, Lager %d" % gs.run.storage.size())
 			# Modul gewaehlt, dann eine Waffe (Waffenfeld) angetippt: eingesetzt.
 			var before: int = gs.run.storage.size()
-			stop._selected_storage = gs.run.storage.find(&"mod_rapid_fire")
+			stop._selected_storage = gs.run.storage.find(&"amp_attack")
 			stop._refresh()
 			var card = null
 			for tile in stop.find_children("*", "Tile", true, false):

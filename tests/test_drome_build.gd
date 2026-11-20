@@ -334,8 +334,8 @@ func test_power_score_counts_what_makes_a_build_stronger() -> void:
 	veteran.drome_level = 3
 	t.ok(veteran.power_score() > base.power_score(), "DROME-Level zählt")
 	var tuned := base.clone()
-	tuned.modules["equip_left"] = [&"mod_rapid_fire"]
-	t.ok(tuned.power_score() > base.power_score(), "ein Schnellfeuer-Modul zählt")
+	tuned.modules["equip_left"] = [&"amp_attack"]
+	t.ok(tuned.power_score() > base.power_score(), "ein Attack-Amp zählt")
 	var parts := base.power_parts()
 	t.ok(parts["staying"] > 0.0 and parts["firepower"] > 0.0, "beide Hälften sind da")
 

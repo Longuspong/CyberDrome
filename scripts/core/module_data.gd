@@ -23,7 +23,7 @@ const PATH := "res://data/modules.json"
 const ICON_DIR := "res://assets/modules/"
 
 const CLASS_LABEL := {"attack": "Angriff", "defense": "Abwehr", "tactic": "Taktik",
-	"bios": "Matrix-BIOS"}
+	"bios": "Matrix-BIOS", "core": "Fusion Core"}
 const CONDITION_LABEL := {"ranged": "nur Fernwaffen", "melee": "nur Nahkampfwaffen"}
 
 ## Farbe je Klasse -- fuer die Modul-Kacheln (rot Angriff, blau Abwehr,
@@ -33,6 +33,7 @@ const CLASS_COLOR := {
 	"defense": Color(0.4, 0.7, 1.0),
 	"tactic": Color(1.0, 0.82, 0.35),
 	"bios": Color(0.78, 0.55, 1.0),
+	"core": Color("#ff2bd6"),
 }
 
 var id: StringName = &""
@@ -52,6 +53,12 @@ var from: Array = []
 ## Eigene Faehigkeit des Moduls (modules.json -> gadgets), leer = keine.
 var gadget: StringName = &"" 
 var bonus: Dictionary = {}
+## Eigene Farbe der Kartusche (Amps, 20. Nov. 2026); leer = Farbe der Klasse.
+var tint: String = ""
+## Hyperfusion (MODULE_AMP_FUSION.md): zwei gleiche Amps + Fusion Core.
+var is_hyper: bool = false
+## Der Fusion Core selbst (steckt nie im Halter, wird beim Verschmelzen verbraucht).
+var is_core_item: bool = false
 
 ## Matrix-BIOS (MODULE_KONZEPT.md 6). Ein BIOS-Gegenstand hat ``bios_kind``
 ## "recipe": er verwandelt ``bios_recipe`` in ``bios_result`` und steckt nie
@@ -101,6 +108,32 @@ static func _load() -> void:
 		module.bonus = meta.get("bonus", {})
 		module.effects = add_effects(module.effects, module.bonus)
 		_modules[module.id] = module
+	# Hyperfusionen (20. Nov. 2026): Zutaten [Amp, Amp], Wirkung dreimal der
+	# Amp plus Sondereffekt.
+	var hypers: Dictionary = _data.get("hyperfusions", {})
+	for key in hypers:
+		var meta: Dictionary = hypers[key]
+		var amp: ModuleData = _modules.get(StringName(str(meta.get("amp", ""))))
+		if amp == null:
+			continue
+		var module := _from_meta(StringName(key), meta)
+		module.klass = amp.klass
+		module.tint = amp.tint
+		module.is_hyper = true
+		module.from = [amp.id, amp.id]
+		module.effects = {}
+		for _i in 3:
+			module.effects = add_effects(module.effects, amp.effects)
+		module.bonus = meta.get("bonus", {})
+		module.effects = add_effects(module.effects, module.bonus)
+		_modules[module.id] = module
+	var cores: Dictionary = _data.get("items", {})
+	for key in cores:
+		var item := _from_meta(StringName(key), cores[key])
+		item.klass = "core"
+		item.is_core_item = true
+		item.bios_text = str((cores[key] as Dictionary).get("text", ""))
+		_modules[item.id] = item
 	var items: Dictionary = _data.get("bios", {})
 	for key in items:
 		var meta: Dictionary = items[key]
@@ -140,6 +173,7 @@ static func _from_meta(key: StringName, meta: Dictionary) -> ModuleData:
 	module.condition = str(meta.get("condition", ""))
 	module.effects = meta.get("effects", {}).duplicate()
 	module.gadget = StringName(str(meta.get("gadget", "")))
+	module.tint = str(meta.get("color", ""))
 	return module
 
 
@@ -162,7 +196,7 @@ static func reload() -> void:
 ## Anteil, Dauer der Markierung, Spruenge, Gabelung, Umwandlung in Energie).
 const MAX_KEYS := ["ricochet_share", "mark", "chain_jumps", "ability_fork",
 	"kinetic_to_energy", "takt_count", "decoy", "shield_break_burst",
-	"retaliation_max", "bonus_vs_unshielded"]
+	"retaliation_max", "bonus_vs_unshielded", "virus_fraction"]
 ## Wirkungen, bei denen der kleinste Wert zaehlt (Bollwerk: frueher laden;
 ## Revolverheld: Feldschuss haeufiger als beim Gunslinger).
 const MIN_KEYS := ["shield_delay", "field_shot_every", "knockback_every"]
@@ -244,12 +278,34 @@ func is_bios_item() -> bool:
 	return bios_kind != ""
 
 
-## Die Rezept-Module, in der Reihenfolge der Datei.
+## Die Rezept-Module (Fusionen), in der Reihenfolge der Datei.
 static func recipes() -> Array:
 	var out: Array = []
 	for key in data().get("recipes", {}):
 		out.append(_modules[StringName(key)])
 	return out
+
+
+## Die Hyperfusionen, in der Reihenfolge der Datei.
+static func hyperfusions() -> Array:
+	var out: Array = []
+	for key in data().get("hyperfusions", {}):
+		if _modules.has(StringName(key)):
+			out.append(_modules[StringName(key)])
+	return out
+
+
+## Die Hyperfusion aus zwei Exemplaren dieses Amps (null = keine).
+static func hyper_of(amp_id: StringName) -> ModuleData:
+	for module in hyperfusions():
+		if module.from.size() == 2 and module.from[0] == amp_id:
+			return module
+	return null
+
+
+## Kann dieser Gegenstand in einem Halter stecken? BIOS und Fusion Core nicht.
+func installable() -> bool:
+	return not is_bios_item() and not is_core_item
 
 
 ## Das Symbol des Moduls, null wenn es keins gibt (dann Buchstaben).
@@ -287,6 +343,10 @@ static func sell_value(module: ModuleData) -> int:
 	var values: Dictionary = data().get("sell_value", {})
 	if module.is_bios_item() or module.is_bios_result:
 		return int(values.get("bios", 8))
+	if module.is_core_item:
+		return int(values.get("core", 4))
+	if module.is_hyper:
+		return int(values.get("recipe", 6)) * 2
 	return int(values.get("recipe" if module.is_recipe() else "base", 2))
 
 
@@ -327,6 +387,8 @@ func class_label() -> String:
 
 
 func color() -> Color:
+	if tint != "":
+		return Color(tint)
 	return CLASS_COLOR.get(klass, Color.WHITE)
 
 
@@ -382,6 +444,20 @@ static func effect_text(key: String, value) -> String:
 	match key:
 		"attack_speed":
 			return "+%d %% Angriffstempo" % _pct(v)
+		"power":
+			return "+%d Power" % int(v)
+		"hp_pct":
+			return "+%d %% max. Integrität" % _pct(v)
+		"shield_pct":
+			return "+%d %% max. Schild" % _pct(v)
+		"efficiency":
+			return "+%d Effizienz (Statuseffekte)" % int(v)
+		"support_power":
+			return "Heilung und Schildgabe +%d %%" % _pct(v)
+		"lifesteal":
+			return "Treffer heilen %d %% des Schadens" % _pct(v)
+		"virus_fraction":
+			return "%d %% des Schadens werden Virusschaden" % _pct(v)
 		"attack_power":
 			return "+%d %% Schaden der Angriffe" % _pct(v)
 		"range":
@@ -483,9 +559,13 @@ static func _seconds(value: float) -> String:
 func headline() -> String:
 	if is_bios_item():
 		return "Matrix-BIOS · Fusions-Upgrade"
+	if is_core_item:
+		return "Fusion Core · für eine Hyperfusion"
+	if is_hyper:
+		return "Hyperfusion · " + class_label()
 	# Ein Rezept-Modul heisst im Spiel "Fusion" (18./19. Nov. 2026, Spieler);
 	# "Rezept" bleibt die Anleitung im Rezeptbuch.
-	var parts: Array[String] = ["BIOS-Fusion" if is_bios_result else ("Fusion" if is_recipe() else "Modul"),
+	var parts: Array[String] = ["BIOS-Fusion" if is_bios_result else ("Fusion" if is_recipe() else "Amp"),
 		class_label()]
 	if condition != "":
 		parts.append(CONDITION_LABEL.get(condition, condition))

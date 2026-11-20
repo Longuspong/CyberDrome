@@ -10,6 +10,11 @@ extends Control
 ## SF). Rezept-Module haben einen doppelten Rahmen. Ruhende Module (Bedingung
 ## passt nicht zur Waffe) sind abgeblendet.
 ##
+## Seit 20. Nov. 2026 (Amps, Design-Canvas): Fusion = Rahmen geteilt in die
+## Farben ihrer zwei Amps, innen ein heller zweiter Rahmen; Hyperfusion =
+## dreifacher Rahmen und Fusion-Core-Sechseck; BIOS-Fusion = violetter
+## Matrix-Code laeuft auf der Flaeche herunter (steht bei "Bewegung reduzieren").
+##
 ## Die Kartusche ist ueberall gleich gross (52 px im Laden, im Lager und in
 ## der Waffe); andere Groessen nur fuer Popups und Vorschauen.
 
@@ -22,6 +27,8 @@ var dim: bool = false:
 		dim = value
 		queue_redraw()
 var edge: float = 52.0
+var _time := 0.0
+const RAIN := "10B7F01SI0S1BF7"
 
 
 func _init(which: ModuleData = null, size_edge: float = 52.0) -> void:
@@ -29,6 +36,15 @@ func _init(which: ModuleData = null, size_edge: float = 52.0) -> void:
 	edge = size_edge
 	custom_minimum_size = Vector2(size_edge, size_edge)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func _ready() -> void:
+	set_process(module != null and module.is_bios_result and Arcade.moving())
+
+
+func _process(delta: float) -> void:
+	_time += delta
+	queue_redraw()
 
 
 ## Umriss der Kartusche in ``r``: Ecke ``cut`` oben links und unten rechts ab.
@@ -51,13 +67,38 @@ func _draw() -> void:
 	var cut := side * 0.19
 	var shape := outline(body.grow(-line * 0.5), cut)
 	draw_colored_polygon(shape, FILL if not dim else FILL.darkened(0.3))
+	if module.is_bios_result:
+		_draw_rain(body, side)
 	var closed := shape.duplicate()
 	closed.append(shape[0])
-	draw_polyline(closed, color, line, true)
+	var parts := module.from
+	if module.is_recipe() and not module.is_hyper and parts.size() == 2 \
+			and ModuleData.get_module(parts[0]) != null and ModuleData.get_module(parts[1]) != null:
+		# Fusion: Rahmen geteilt in die Farben der zwei Amps (Diagonale).
+		var a := ModuleData.get_module(parts[0]).color()
+		var b := ModuleData.get_module(parts[1]).color()
+		if dim:
+			a = a.darkened(0.55)
+			b = b.darkened(0.55)
+		draw_polyline(PackedVector2Array([closed[4], closed[5], closed[0], closed[1]]), a, line, true)
+		draw_polyline(PackedVector2Array([closed[1], closed[2], closed[3], closed[4]]), b, line, true)
+	else:
+		draw_polyline(closed, color, line, true)
 	if module.is_recipe() or module.is_bios_result:
 		var inner := outline(body.grow(-side * 0.11), cut * 0.7)
 		inner.append(inner[0])
-		draw_polyline(inner, color, maxf(1.0, line * 0.7), true)
+		var inner_color := Arcade.WHITE if module.is_recipe() and not module.is_hyper else color
+		draw_polyline(inner, inner_color if not dim else inner_color.darkened(0.55), maxf(1.0, line * 0.7), true)
+	if module.is_hyper:
+		var third := outline(body.grow(-side * 0.2), cut * 0.45)
+		third.append(third[0])
+		draw_polyline(third, color, maxf(1.0, line * 0.7), true)
+		var hex := PackedVector2Array()
+		var c := body.position + Vector2(side * 0.2, side * 0.8)
+		for i in 6:
+			var ang := TAU * float(i) / 6.0
+			hex.append(c + Vector2(cos(ang), sin(ang)) * side * 0.11)
+		draw_colored_polygon(hex, Color("#ff2bd6"))
 
 	# Klassen-Ecke oben rechts: Feld in der Klassenfarbe, darin das Zeichen.
 	var tab := side * 0.29
@@ -80,3 +121,22 @@ func _draw() -> void:
 	var base := Vector2(body.get_center().x - width * 0.5, body.get_center().y + font_size * 0.36)
 	draw_string(font, base, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size,
 		Color(1, 1, 1, 0.5 if dim else 1.0))
+
+
+## BIOS-Fusion: Spalten violetter Zeichen laufen herunter (Design-Canvas Amps).
+func _draw_rain(body: Rect2, side: float) -> void:
+	var font := get_theme_default_font()
+	var px := int(maxf(6.0, side * 0.14))
+	var cols := 5
+	var violet := Color("#c78cff")
+	for col in cols:
+		var x := body.position.x + side * 0.12 + float(col) * (side * 0.76 / float(cols - 1)) - px * 0.3
+		var speed := 18.0 + float((col * 7) % 5) * 6.0
+		var shift := fmod(_time * speed + float(col) * 11.0, float(px))
+		for row in int(side / px) + 1:
+			var y := body.position.y + float(row) * px + shift
+			if y > body.end.y - 2.0 or y < body.position.y + px:
+				continue
+			var ch := RAIN[(row + col * 3 + int(_time * speed / px)) % RAIN.length()]
+			draw_string(font, Vector2(x, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, px,
+				Color(violet, 0.35 if col % 2 == 0 else 0.22))
