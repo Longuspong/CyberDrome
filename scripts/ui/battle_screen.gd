@@ -295,7 +295,7 @@ func _refresh_badges() -> void:
 			"lured": battle.brain != null and battle.brain.lured_by(unit) != null,
 			"takt": unit.takt_bars(),
 			"id": unit.unit_id,
-			"statuses": unit.statuses.keys(),
+			"statuses": unit.status_names(),
 			"focus": unit.unit_id == _focus_id and Time.get_ticks_msec() < _focus_until,
 			"small": unit.is_sentinel(),
 		})

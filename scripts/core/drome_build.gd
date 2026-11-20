@@ -252,6 +252,7 @@ func stats() -> Dictionary:
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
 		"hp_regen_pct": 0,
 		"lure_radius": 0,
+		"efficiency": Unit.efficiency_base(),
 	}
 	for part in all_parts():
 		total["hp_max"] += part.hp

@@ -1,6 +1,6 @@
 # CyberDrome – Module v3: Amp, Fusion, Hyperfusion
 
-Stand 20. Nov. 2026 · Status: **Richtung vom Spieler festgelegt (19./20. Nov. 2026), noch nicht gebaut.**
+Stand 20. Nov. 2026 · Status: **Richtung vom Spieler festgelegt (19./20. Nov. 2026), noch nicht gebaut** (außer Effizienz und Kabelbrand, Abschnitt 5).
 Ersetzt die Grundmodule und Rezepte aus `MODULE_KONZEPT.md` (Abschnitte 4 und 5). Was dort zu
 Modulplätzen, BIOS-Vergabe, Laden und Gegner-Profilen steht, gilt weiter, soweit hier nichts
 anderes steht. Zahlen sind Startwerte für den Bench.
@@ -30,10 +30,10 @@ Sechs Amps ergeben genau **15 Fusionen** (jedes Paar) und **6 Hyperfusionen**.
 | **Power** | +1 Power | +3 Power | fest (Power ist selbst ein Faktor: Schaden und Heilung = Grundwert × Power / 10) |
 | **Integrity** | +10 % max. Integrität | +30 % | Prozent |
 | **Shield** | +10 % max. Schild | +30 % | Prozent |
-| **Armor** | offen (Abschnitt 5) | | |
-| **Tech** | offen (Abschnitt 5) | | |
+| **Armor** | +3 Panzerung | +9 | fest (Panzerung wirkt schon über eine Kurve als Faktor, 20. Nov. 2026) |
+| **Tech** | +2 Effizienz (Abschnitt 5) | +6 | fest (Effizienz ist selbst ein Faktor) |
 
-**Grundsatz (Spieler):** lieber Prozent. Feste Abwehrwerte wären für Tanks uninteressant oder für
+**Grundsatz (Spieler):** lieber Prozent -- was schon ein Faktor ist (Power, Panzerung, Effizienz), bleibt fest. Feste Abwehrwerte wären für Tanks uninteressant oder für
 Damage Dealer zu stark. Prozent verstärkt, was ein Chassis schon kann.
 
 ## 3. Hyperfusionen
@@ -82,20 +82,37 @@ Vorschläge zum Auswählen (aus den alten Rezepten, nicht entschieden):
 Kinetischer und Energieschaden sind **keine Amps**, sondern höchstens Effekte von Fusionen
 (etwa Überspannung, Rammbock, Entladung).
 
-## 5. Offen
+## 5. Effizienz und Statuseffekte (20. Nov. 2026)
 
-1. **Tech-Amp:** gesucht ist ein Wert, der wie Power automatisch wirkt, und zwar auf
-   **Wirksamkeit und Dauer** von Fähigkeiten und Statuseffekten. Der Spieler denkt noch darüber
-   nach. Idee: Tech als eigener Wert am DROME (Grundwert 10, Wirkung und Dauer × Tech / 10),
-   das Amp gibt +1. Risiko: Fähigkeitsschaden hängt schon an Power und würde dann doppelt wachsen.
-   Dann sollte Tech nur Dauer und Nicht-Schadenswirkungen tragen (Heilung? Schildgabe? Betäubung,
-   Wurzeln, Markierung ...).
-2. **Armor-Amp in Prozent:** Vireo, Nimbus und Strix haben 1 bis 2 Panzerung. +10 % davon sind
-   praktisch nichts, nur der Molok (14) bekäme etwas. Panzerung wirkt schon über eine Kurve mit
-   abnehmendem Ertrag (höchstens +50 % eHP). Vorschlag: Armor wie Power **fest** (+3), weil die
-   Kurve den Wert selbst schon in einen Faktor verwandelt. Entscheidung des Spielers.
-3. Sondereffekte der übrigen fünf Hyperfusionen (Abschnitt 3).
-4. Auswahl der Fusionen (Abschnitt 4).
-5. Preis und Häufigkeit des Fusion Core im Laden.
-6. Hinweis zu Prozentwerten: Shield +10 % bringt dem Molok (10 Schild) nur +1. Das passt zu
-   „Prozent verstärkt Stärken“, sollte aber bekannt sein.
+**Effizienz** ist ein versteckter Wert je DROME, Grundwert **10 = 100 % Wirkung**
+(`config.json` -> `statuses.efficiency`). Der Tech-Amp gibt **+2** (= +20 %).
+
+* Effizienz ändert **nie die Schadenszahl** (das bleibt Power).
+* Sie streckt die **Dauer** jedes Statuseffekts, den der DROME auslöst: Verlangsamen des
+  Vortex, Betäuben des Hammers, Wurzeln, Locken, auch den **eigenen Vireo-Sprint**
+  (`Unit.apply_status(..., source)`).
+* Bei Stapel-Effekten ohne Dauer (Kabelbrand) erhöht sie die **Zahl der Stapel**: Effizienz 15
+  legt je Treffer 1,5 Stapel, Bruchteile sammeln sich am Ziel.
+* **Gebaut** als Wert am DROME (`Unit.efficiency()`, `DromeBuild.stats()["efficiency"]`).
+  Der Tech-Amp selbst ist noch nicht gebaut (Modulsystem in Arbeit).
+
+Offen: ob Effizienz auch die **Stärke** von Effekten hebt (z. B. stärker verlangsamen), oder nur
+Dauer und Stapel. Heute nur Dauer und Stapel.
+
+**Kabelbrand** (erster Statuseffekt mit Stapeln, gebaut):
+
+* Jeder Puls des Ziels (alle 3 s) verbraucht **höchstens 10 Stapel**. Je Stapel
+  **5 kinetischer + 5 Energieschaden**, ohne Power, durch Schild und Panzerung wie ein Treffer.
+* Nicht verbrauchte Stapel bleiben liegen und brennen im nächsten Puls.
+* Auslöser übergangsweise: der **Wirbelwurf des Klingenbumerangs** gibt jedem getroffenen Gegner
+  einen Stapel. Später kommen die Auslöser über die **Firecharger-Upgrades** des neuen Waffensystems.
+* Werte in `config.json` -> `statuses.cable_fire`, Rechnung in `ActionResolver.burn_cable_fire`.
+
+## 6. Offen
+
+1. Sondereffekte der übrigen fünf Hyperfusionen (Abschnitt 3).
+2. Auswahl der Fusionen (Abschnitt 4).
+3. Preis und Häufigkeit des Fusion Core im Laden.
+4. Effizienz: nur Dauer und Stapel, oder auch die Stärke von Effekten (Abschnitt 5)?
+5. Hinweis zu Prozentwerten: Shield +10 % bringt dem Molok (10 Schild) nur +1. So gewollt
+   (Spieler, 20. Nov. 2026).

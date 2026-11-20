@@ -90,6 +90,10 @@ var _still_tile: Vector2i = Vector2i(-9999, -9999)
 var retaliation_stacks: int = 0
 ## Modul Entladung: Sekunden bis zur naechsten Entladung (tick_statuses).
 var burst_cooldown: float = 0.0
+## Kabelbrand (Statuseffekt mit Stapeln, 20. Nov. 2026): liegende Stapel,
+## mit Bruchteil aus der Effizienz; wer zuletzt angesteckt hat.
+var cable_fire: float = 0.0
+var cable_fire_source = null
 var _recharge_carry: float = 0.0
 ## Bis zur naechsten Pruefung des Ziels, und das aktuelle Ziel.
 var think_left: float = 0.0
@@ -998,10 +1002,54 @@ func regenerate_hp() -> int:
 
 ## Wirkt ``seconds`` lang. ``modifiers`` sind Stat-Aufschlaege (spd, def ...).
 ## Derselbe Effekt noch einmal frischt die Dauer auf, statt zu stapeln.
-func apply_status(id: StringName, seconds: float, modifiers: Dictionary) -> void:
+## ``source``: wer den Effekt ausloest -- seine Effizienz streckt die Dauer.
+func apply_status(id: StringName, seconds: float, modifiers: Dictionary,
+		source: Unit = null) -> void:
 	var status := modifiers.duplicate()
+	if source != null:
+		seconds *= source.efficiency_factor()
 	status["seconds_left"] = seconds
 	statuses[id] = status
+
+
+## Effizienz (20. Nov. 2026): versteckter Wert, Grundwert
+## ``statuses.efficiency.base`` (10 = 100 %). Streckt Dauer und Wirkung der
+## Statuseffekte, die dieser DROME ausloest -- nie die Schadenszahl.
+func efficiency() -> int:
+	return maxi(0, stat("efficiency"))
+
+
+static func efficiency_base() -> int:
+	var rule := Config.section("statuses").get("efficiency", {}) as Dictionary
+	return maxi(1, int(rule.get("base", 10)))
+
+
+func efficiency_factor() -> float:
+	return float(efficiency()) / float(efficiency_base())
+
+
+## Kabelbrand: legt ``stacks`` Stapel auf diesen DROME, gestreckt mit der
+## Effizienz des Ausloesers. Bruchteile sammeln sich (zwei Treffer mit 1,5
+## ergeben drei Stapel). Verbraucht wird je Puls (BattleManager).
+func add_cable_fire(stacks: float, source: Unit = null) -> void:
+	if stacks <= 0.0 or not is_alive():
+		return
+	if source != null:
+		stacks *= source.efficiency_factor()
+		cable_fire_source = source.unit_id
+	cable_fire += stacks
+
+
+## Ganze Kabelbrand-Stapel, die gerade auf dem DROME liegen.
+func cable_fire_stacks() -> int:
+	return int(floor(cable_fire + 0.0001))
+
+
+## Nimmt hoechstens ``limit`` ganze Stapel herunter und gibt ihre Zahl zurueck.
+func take_cable_fire(limit: int) -> int:
+	var taken := mini(cable_fire_stacks(), maxi(0, limit))
+	cable_fire = maxf(0.0, cable_fire - float(taken))
+	return taken
 
 
 ## Je Simulationsschritt. Gibt true zurueck, wenn ein Effekt abgelaufen ist.
@@ -1020,6 +1068,8 @@ func status_names() -> Array[String]:
 	var names: Array[String] = []
 	for id in statuses:
 		names.append(str(id))
+	if cable_fire_stacks() > 0:
+		names.append("cable_fire")
 	return names
 
 

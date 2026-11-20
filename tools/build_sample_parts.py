@@ -702,6 +702,9 @@ STATS = {
             {"id": "act_boomerang_whirl", "windup": 0.55, "display_name": "Wirbelwurf",
              "category": "ability", "targeting": "aoe_around_target",
              "range_tiles": 2, "aoe_radius": 1, "damage_pct": 1.4, "moving_bonus": 0.3,
+             # Kabelbrand (20. Nov. 2026, Spieler): uebergangsweise, bis die
+             # Firecharger-Upgrades mit dem neuen Waffensystem kommen.
+             "status": {"id": "cable_fire", "stacks": 1},
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_boomerang"}},
         ],
     },

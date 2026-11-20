@@ -138,7 +138,10 @@
         "shots": 1,
         "gather": false,
         "delay": 0.0,
-        "status": null,
+        "status": {
+          "id": "cable_fire",
+          "stacks": 1
+        },
         "heal": 0,
         "shield_gain": 0,
         "support": "",
