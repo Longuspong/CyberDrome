@@ -53,6 +53,13 @@ Kartusche (`ModuleChip`). **Begriff (19. Nov.):** ein Rezept-Modul heisst im
 Spiel **Fusion** (mit BIOS: BIOS-Fusion), "Rezept" ist nur die Anleitung im
 Rezeptbuch; im Code bleibt `recipe`. Details `docs/PROJEKTSTAND.md`, `MODULE_KONZEPT.md` 6.
 
+**Englisch vorbereitet (19. Nov. 2026):** neue Anzeigetexte ueber `tr("Deutscher
+Text")` (statisch: `TranslationServer.translate`), Englisch in `i18n/texte.csv`
+(Schluessel = deutscher Text), Begriffe nach der Spalte Englisch im SPOT-Glossar
+(Vorschlaege, noch nicht entschieden). Sprache fest Deutsch
+(`Accessibility.language`), kein Schalter. Der grosse Umbau der alten Texte
+kommt erst, wenn Module und Story ruhiger sind. Regeln: `i18n/LIESMICH.md`.
+
 **UI-Symbole (15. Nov. 2026):** Sonderzeichen, die die Schriften nicht haben,
 nie als Text -- stattdessen SVG aus `assets/ui_icons/` ueber `UiIcon`
 (`tests/test_glyphs.gd` prueft das).
