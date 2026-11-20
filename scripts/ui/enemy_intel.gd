@@ -105,6 +105,46 @@ func _init(region_id: StringName = &"city", level: int = 3) -> void:
 	box.add_child(hint)
 
 
+## Rollen-Bilanz der Formationen eines Gebiets (wie in der Karte gezaehlt).
+static func role_counts(region_id: StringName = &"city", level: int = 3) -> Dictionary:
+	var counts := {"VORN": 0, "FLANKE": 0, "FERN": 0, "SUPPORT": 0}
+	var shown := 0
+	for entry in Formations.of_region(region_id):
+		if bool(entry.get("intro", false)) or shown >= MAX_ROWS:
+			continue
+		shown += 1
+		var plan := Formations.composition(entry, level, "normal")
+		for drome_id in plan.get("dromes", []):
+			var build := Formations.build_drome(str(drome_id))
+			var role := HangarScreen.role_key(build) if build != null else ""
+			counts[_column(role)] = int(counts[_column(role)]) + 1
+		for pair in plan.get("sentinels", []):
+			var spec: Dictionary = (Formations.data().get("sentinels", {}) as Dictionary).get(str(pair[0]), {})
+			var role: String = SENTINEL_ROLE.get(str(spec.get("archetype", "")), "skirmisher")
+			counts[_column(role)] = int(counts[_column(role)]) + 1
+	return counts
+
+
+## Welche eigenen Rollen gegen diese Mischung gut passen (Hinweis KONTER in
+## der Squad-Wahl; nur Optik, keine Regel).
+static func counter_roles(region_id: StringName = &"city", level: int = 3) -> Array:
+	var counts := role_counts(region_id, level)
+	var best := ""
+	var n := -1
+	for key in counts:
+		if int(counts[key]) > n:
+			best = str(key)
+			n = int(counts[key])
+	match best:
+		"VORN":
+			return ["sniper", "controller"]
+		"FLANKE":
+			return ["vanguard"]
+		"FERN":
+			return ["skirmisher"]
+	return ["sniper", "skirmisher"]
+
+
 static func _column(role: String) -> String:
 	return str((ROLE.get(role, ROLE["skirmisher"]) as Array)[1])
 
