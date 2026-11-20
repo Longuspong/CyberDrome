@@ -91,13 +91,28 @@ func _process(_delta: float) -> bool:
 		16:
 			# Titel (13. Nov. 2026), Spielstand-Auswahl, Hauptmenue, Optionen (10. Nov. 2026).
 			root.get_node("RunStop").free()
+			# Charger (20. Nov. 2026): Crafter im Shop-Reiter Bauen, Upgrade im Hangar.
+			gs.roster.add_blanks(1)
+			gs.roster.add_phases("fire", 3)
+			var made: Dictionary = gs.roster.craft_charger(["fire", "fire", "", "", "", ""])
+			var first_weapon := ""
+			for slot in gs.roster.entries[0].assignments:
+				if str(slot).begins_with("equip_"):
+					first_weapon = str(gs.roster.entries[0].assignments[slot])
+			gs.roster.mount_charger(str(made.get("uid", "")), first_weapon)
+			load("res://scripts/ui/shop_screen.gd").open_tab("bauen")
+			load("res://scripts/ui/hangar_screen.gd").open_tab("upgrade")
+			var upgrade = load("res://scenes/hangar.tscn").instantiate()
+			upgrade.name = "Probe_upgrade"
+			root.add_child(upgrade)
+			print("SMOKE: Hangar (Upgrade) mit Charger instanziiert")
 			for scene in ["title", "saves", "main", "settings", "shop"]:
 				var node = load("res://scenes/%s.tscn" % scene).instantiate()
 				node.name = "Probe_%s" % scene
 				root.add_child(node)
 			print("SMOKE: Titel, Spielstände, Hauptmenü und Optionen instanziiert")
 		18:
-			for scene in ["title", "saves", "main", "settings", "shop"]:
+			for scene in ["title", "saves", "main", "settings", "shop", "upgrade"]:
 				root.get_node("Probe_%s" % scene).free()
 			# Lauf vor dem Kampf: Story-Reihe, dann Endlos mit Chaos-Knoten.
 			gs.start_run(4242)

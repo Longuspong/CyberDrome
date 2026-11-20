@@ -6,10 +6,11 @@ extends Control
 ##
 ##   Shop     Angebote fuer Platzhaltercoin -- Baukerne und Caches
 ##            (Roster.shop_offers, config hangar_shop)
-##   Caches   die Lootcaches im Hangar; oeffnen kommt mit Bauschritt 4.
+##   Caches   die Lootcaches im Hangar; seit 20. Nov. 2026 zu oeffnen (vier Wuerfe).
 ##            Caches und Bosse koennen spaeter Komponenten (Baukerne,
 ##            Fraktionskerne) oder gleich ganze DROMEs enthalten.
-##   Bauen    Material (Baukerne, Fraktionskerne) und neue DROMEs daraus
+##   Bauen    Charger-Crafter (Rohling + Energy Phases, 20. Nov. 2026), dann
+##            Material (Baukerne, Fraktionskerne) und neue DROMEs daraus
 ##
 ## Kacheln wie ueberall: tippen waehlt, nochmal tippen zeigt Details
 ## (blaetterbar), Doppeltipp handelt (kaufen, bauen).
@@ -27,6 +28,11 @@ const CACHE_KINDS := ["city", "green", "plant7", "hip"]
 
 var _content: VBoxContainer
 var _tabs: HBoxContainer
+
+
+## Oeffnet den Shop beim naechsten Aufbau in diesem Reiter.
+static func open_tab(tab: String) -> void:
+	_tab = tab
 
 
 func _ready() -> void:
@@ -405,10 +411,10 @@ func _caches_section() -> void:
 func _cache_page(key: String) -> Dictionary:
 	return {"title": RunState.cache_name(StringName(key)), "picture": _cache_icon(),
 		"lines": ["%d Stück im Hangar." % int(GameState.roster.caches.get(key, 0)),
-			["Caches enthalten Teile, Module, Komponenten (Baukerne, Fraktionskerne) oder "
-			+ "gleich ganze DROMEs -- was genau, legst du im SPOT-Blatt Lootcaches fest.",
+			["Vier Würfe je Cache: Energy Phases, Charger-Rohlinge, Baukerne, selten ein "
+			+ "Fraktionskern oder ein ganzer Fraktions-DROME, sonst Coins.",
 			UiKit.MUTED, UiKit.SMALL]],
-		"actions": [{"text": "Öffnen (Vorschau)", "primary": true, "call": func():
+		"actions": [{"text": "Öffnen", "primary": true, "call": func():
 			var opener := CacheOpener.show_over(self, key)
 			opener.finished.connect(_refresh)}]}
 
@@ -424,6 +430,10 @@ func _cache_page(key: String) -> Dictionary:
 func _build_section() -> void:
 	var roster := GameState.roster
 	var need := Roster.kits_per_drome()
+	# Charger-Crafter (20. Nov. 2026, Design-Canvas Ue3) zuerst.
+	var crafter := ChargerCrafter.new()
+	crafter.built.connect(_charger_built)
+	_content.add_child(crafter)
 	_content.add_child(UiKit.heading("Neuen DROME bauen"))
 	_content.add_child(UiKit.label("%s: %d / %d  ·  Doppeltipp baut" % [Roster.kit_name(), roster.kits(),
 		need], UiKit.SMALL, UiKit.GOOD if roster.kits() >= need else UiKit.MUTED))
@@ -528,6 +538,26 @@ func _build_drome(spec: Dictionary) -> void:
 	GameState.editing_index = GameState.roster.entries.size() - 1
 	Fader.go("res://scenes/hangar.tscn")
 
+
+
+## Nach dem Bauen: der neue Charger, dazu der Weg in den Hangar (Upgrade).
+func _charger_built(charger: Dictionary) -> void:
+	_refresh()
+	var phases: Array = charger.get("phases", [])
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	for e in phases:
+		if str(e) != "":
+			row.add_child(PhaseGem.new(str(e), 40))
+	var dom := Charger.dominant(phases)
+	var lines: Array = [row]
+	lines.append("Die Phasen sind verbraucht. Einsetzen im Hangar unter Upgrade.")
+	if dom != "":
+		lines.append(["Die Fähigkeit legt %s-Stapel an." % Charger.element_name(dom), UiKit.HEADING])
+	InfoPopup.open(self, Charger.display_name(phases).to_upper(), {"subtitle": "NEU IM LAGER",
+		"lines": lines, "actions": [{"text": "Zum Hangar", "primary": true, "call": func():
+			HangarScreen.open_tab("upgrade")
+			Fader.go("res://scenes/hangar.tscn")}]})
 
 
 ## Ein Cache als Symbol: Kiste mit Neon-Rand (gezeichnet, bis es ein Bild gibt).
