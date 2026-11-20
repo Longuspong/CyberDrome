@@ -356,6 +356,10 @@ func _show_setup() -> void:
 	_side.add_child(_label("Wer kommt mit? Vorgeschlagen ist dein Hangar-Squad. Im Einsatz "
 		+ "bleiben die Waffen, wie sie sind -- stärker wirst du mit Modulen aus dem Laden.",
 		UiKit.SMALL, COLOR_MUTED))
+	# Aufklaerung (20. Nov. 2026, Uebergabe Ue2): welche Gegner warten, damit
+	# der Squad darauf abgestimmt wird.
+	if not endless:
+		_side.add_child(EnemyIntel.new(&"city", 3))
 	var picker := SquadPicker.new()
 	_side.add_child(picker)
 	picker.setup(RunState.squad_max())
