@@ -362,6 +362,8 @@ func _show_setup() -> void:
 		_side.add_child(EnemyIntel.new(&"city", 3))
 	var picker := SquadPicker.new()
 	_side.add_child(picker)
+	if not endless:
+		picker.counter_roles = EnemyIntel.counter_roles(&"city", 3)
 	picker.setup(RunState.squad_max())
 	if endless:
 		_side.add_child(_label("Kein Ende, ein Leben: die erste Niederlage beendet den Einsatz und "

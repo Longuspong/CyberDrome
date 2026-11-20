@@ -66,9 +66,10 @@ func _rebuild() -> void:
 	holder.add_child(_stage)
 	_add_slots()
 
-	var sockel := Arcade.label("ROHLING · MK I  %d/6" % Charger.filled(_slots), 12, Arcade.MUTED, "bold", 0.14)
-	sockel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(sockel)
+	# Sockel aus der Skizze: Trapez unter dem Hexagon, darauf der Rohling.
+	var sockel_holder := CenterContainer.new()
+	add_child(sockel_holder)
+	sockel_holder.add_child(_Sockel.new("ROHLING · MK I", "%d/6" % Charger.filled(_slots)))
 
 	_readout = VBoxContainer.new()
 	add_child(_readout)
@@ -322,6 +323,11 @@ class _Core extends Control:
 
 	func _ready() -> void:
 		place()
+		# Der gelbe Knopf pulsiert, solange gebaut werden kann (Entwurf, 1,4 s).
+		if ready_to_build and Arcade.moving():
+			var tween := create_tween().set_loops()
+			tween.tween_property(self, "scale", Vector2(1.05, 1.05), 0.7).set_trans(Tween.TRANS_SINE)
+			tween.tween_property(self, "scale", Vector2.ONE, 0.7).set_trans(Tween.TRANS_SINE)
 
 	func place() -> void:
 		var parent := get_parent() as Control
@@ -329,6 +335,7 @@ class _Core extends Control:
 			return
 		var k := parent.size.x / ChargerCrafter.STAGE.x if parent.size.x > 0 else 320.0 / ChargerCrafter.STAGE.x
 		size = Vector2(100, 87) * k
+		pivot_offset = size * 0.5
 		position = Vector2(170, 147.5) * k - size * 0.5
 		var icon := get_node("Icon") as Control
 		icon.position = Vector2((size.x - 30) * 0.5, size.y * 0.16)
@@ -404,6 +411,31 @@ class _Source extends PanelContainer:
 			ChargerCrafter._tap_ms = now
 			ChargerCrafter._tap_el = element
 			crafter.pick(element)
+
+
+## Der Sockel unter dem Hexagon: Trapez mit Kante oben, Name und Fuellstand.
+class _Sockel extends Control:
+	var title := ""
+	var count := ""
+
+	func _init(text: String, fill: String) -> void:
+		title = text
+		count = fill
+		custom_minimum_size = Vector2(200, 28)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var w := size.x
+		var h := size.y
+		draw_colored_polygon(PackedVector2Array([Vector2(w * 0.1, 0), Vector2(w * 0.9, 0), Vector2(w, h), Vector2(0, h)]),
+			Arcade.VIOLET)
+		draw_line(Vector2(w * 0.1, 1), Vector2(w * 0.9, 1), Color("#6e5ab4"), 2.0)
+		var font := Arcade.font("bold")
+		var a := font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		var b := font.get_string_size(count, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		var x := (w - a - 8.0 - b) * 0.5
+		draw_string(font, Vector2(x, h * 0.68), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Arcade.MUTED)
+		draw_string(font, Vector2(x + a + 8.0, h * 0.68), count, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Arcade.YELLOW)
 
 
 ## Schmaler Wertbalken in einer Farbe.
