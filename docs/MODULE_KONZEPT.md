@@ -5,6 +5,9 @@ Stand 9. Nov. 2026 · Grundlage: `BRAINSTORMING_MODULE.md`, Waffen- und DROME-Da
 Alle Zahlen sind Startwerte für den Bench. Die Entscheidungen zu den offenen Fragen stehen
 direkt unten und gehen dem Text darunter vor.
 
+> **Neu (20. Nov. 2026): `docs/MODULE_AMP_FUSION.md`** -- Amps, Fusionen, Hyperfusionen ersetzen
+> die Grundmodule und Rezepte unten (Abschnitte 4 und 5). Noch nicht gebaut.
+
 ## Entschieden (9. Nov. 2026)
 
 * **Name der späten Schicht: Matrix-BIOS, kurz BIOS** (statt „Matrix“ oder „Kern“).

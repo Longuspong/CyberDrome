@@ -15,6 +15,11 @@ Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
 **Achtung (18. Nov. 2026, Spieler): das Modulsystem wird ueberdacht** --
 keine neue Arbeit an Modulen, Rezepten oder BIOS, bevor es mit dem Spieler
 besprochen ist.
+**Neue Richtung (20. Nov. 2026): `docs/MODULE_AMP_FUSION.md`** -- Amp (Grundmodul,
+ein Wert, Abwehr in Prozent), Fusion (zwei verschiedene Amps, kostenlos),
+Hyperfusion (zwei gleiche + Fusion Core, 1 je DROME, je Sorte 1x je Einsatz),
+BIOS darueber. Tech- und Armor-Amp, Hyperfusion-Effekte und die Fusionsliste
+sind offen (Abschnitt 5) -- noch nicht bauen.
 **Fuer Story, Fraktionen, Gegnergruppen: `docs/VORSCHLAG_STORY.md`** --
 Vorschlaege vom 10. Nov. 2026, noch NICHT entschieden; die offenen Punkte
 stehen dort in Abschnitt 6. **Story-Rahmen seit 14. Nov. 2026: `docs/STORY_LEITFADEN.md`**
