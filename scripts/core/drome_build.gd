@@ -49,6 +49,9 @@ var modules: Dictionary = {}
 ## darin (0-10). Kommen aus dem Hangar (Roster.build_for); Gegner haben 0.
 var drome_level: int = 0
 var weapon_levels: Dictionary = {}
+## Charger je Halter (20. Nov. 2026): slot -> Array der Phasen (Charger).
+## Kommt aus dem Roster (der Charger sitzt am Waffen-Exemplar), Gegner haben keinen.
+var chargers: Dictionary = {}
 
 ## Herkunft im Hangar, damit EP aus dem Lauf zurueckfinden: die uid des
 ## Chassis-Exemplars (= der DROME) und je Halter die uid der Waffe.
@@ -386,6 +389,7 @@ func clone() -> DromeBuild:
 	copy.modules = modules.duplicate(true)
 	copy.drome_level = drome_level
 	copy.weapon_levels = weapon_levels.duplicate()
+	copy.chargers = chargers.duplicate(true)
 	copy.source_uid = source_uid
 	copy.instance_uids = instance_uids.duplicate()
 	copy.stat_override = stat_override.duplicate()
@@ -397,6 +401,11 @@ func clone() -> DromeBuild:
 	copy.role_override = role_override
 	copy.faction = faction
 	return copy
+
+
+## Die Phasen des Chargers in diesem Halter (leer ohne Charger).
+func charger_phases(slot: String) -> Array:
+	return chargers.get(slot, []) as Array
 
 
 ## Das Level der Waffe in diesem Halter.
@@ -713,6 +722,8 @@ func to_save() -> Dictionary:
 	out["modules"] = mods
 	out["drome_level"] = drome_level
 	out["weapon_levels"] = weapon_levels.duplicate()
+	if not chargers.is_empty():
+		out["chargers"] = chargers.duplicate(true)
 	out["source_uid"] = source_uid
 	out["instance_uids"] = instance_uids.duplicate()
 	return out
@@ -727,6 +738,8 @@ static func from_save(data: Dictionary) -> DromeBuild:
 	build.drome_level = int(data.get("drome_level", 0))
 	for slot in data.get("weapon_levels", {}):
 		build.weapon_levels[slot] = int(data["weapon_levels"][slot])
+	for slot in data.get("chargers", {}):
+		build.chargers[str(slot)] = Charger.normalized(data["chargers"][slot])
 	build.source_uid = str(data.get("source_uid", ""))
 	for slot in data.get("instance_uids", {}):
 		build.instance_uids[slot] = str(data["instance_uids"][slot])

@@ -136,6 +136,10 @@ var moving_bonus: float = 0.0
 ## daraus schon berechnet; der Anteil bleibt fuer die Anzeige.
 var damage_pct: float = 0.0
 var base_action: StringName = &""
+## Charger der Waffe (20. Nov. 2026, Charger.combat_spec): Belastung je Treffer,
+## ueberwiegendes Element, Resonanz. Leer ohne Charger. ``ability`` markiert die
+## Faehigkeit, ``hits`` zaehlt die Treffer dieser Kopie (Resonanz 4/6).
+var charger: Dictionary = {}
 
 
 static func from_meta(meta: Dictionary, owner_name: String = "",
@@ -186,6 +190,18 @@ func copy() -> ActionData:
 		if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
 			var value = get(property["name"])
 			out.set(property["name"], value.duplicate(true) if value is Dictionary else value)
+	return out
+
+
+## Die Aktion mit dem Charger ihrer Waffe -- immer eine eigene Kopie, weil sie
+## die Treffer mitzaehlt. Ohne Charger die Aktion selbst.
+func with_charger(spec: Dictionary, is_ability: bool) -> ActionData:
+	if spec.is_empty():
+		return self
+	var out := copy()
+	out.charger = spec.duplicate(true)
+	out.charger["ability"] = is_ability
+	out.charger["hits"] = 0
 	return out
 
 

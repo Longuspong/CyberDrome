@@ -110,6 +110,9 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 			% [who, target.display_name, amount])
 
 	_on_hit(source, dealt)
+	if action != null and not action.charger.is_empty() and target.hp > 0 \
+			and source != null and source.is_player != target.is_player:
+		_charge(source, target, action)
 	if shield_before > 0 and target.shield <= 0 and target.hp > 0:
 		_shield_broken(target)
 	if target.hp <= 0:
@@ -628,6 +631,46 @@ func _apply_area(source: Unit, tile: Vector2i, action: ActionData) -> void:
 			_shove(source, target, action.push_tiles)
 		if not action.status.is_empty() and target.is_alive():
 			apply_action_status(source, target, action)
+
+
+## Charger (20. Nov. 2026, docs/CHARGER_KONZEPT.md): jeder Treffer legt die
+## Elementarbelastung seiner Phasen an. Resonanz 4/6 verdoppelt jeden 5./3.
+## Treffer; die Faehigkeit legt beim ueberwiegenden Element Stapel direkt an
+## und ab Resonanz 2 zusaetzlich ``ability_load``. Volle Stapel wirken je
+## Element (_element_stack).
+func _charge(source: Unit, target: Unit, action: ActionData) -> void:
+	var spec := action.charger
+	spec["hits"] = int(spec.get("hits", 0)) + 1
+	var hits := int(spec["hits"])
+	var mult := 1.0
+	for every in spec.get("double_every", []):
+		if int(every) > 0 and hits % int(every) == 0:
+			mult = 2.0
+	var stack_at := float(spec.get("stack_at", 100))
+	var dominant := str(spec.get("dominant", ""))
+	var is_ability := bool(spec.get("ability", false))
+	var loads: Dictionary = spec.get("load", {})
+	for element in loads:
+		var amount := float(loads[element]) * mult
+		if is_ability and str(element) == dominant:
+			amount += float(spec.get("ability_load", 0))
+		var stacks := target.add_element_load(str(element), amount, stack_at)
+		if stacks > 0:
+			_element_stack(source, target, str(element), stacks)
+	if is_ability and dominant != "" and target.is_alive():
+		_element_stack(source, target, dominant, int(spec.get("ability_stacks", 1)))
+
+
+## Volle Stapel eines Elements. Feuer = Kabelbrand (gebaut); die uebrigen
+## werden gezaehlt, wirken aber noch nicht.
+func _element_stack(source: Unit, target: Unit, element: String, stacks: int) -> void:
+	if stacks <= 0:
+		return
+	if element == "fire":
+		target.add_cable_fire(float(stacks), source)
+	else:
+		target.element_stacks[element] = int(target.element_stacks.get(element, 0)) + stacks
+	EventBus.log_line("%s: %d %s-Stapel." % [target.display_name, stacks, Charger.element_name(element)])
 
 
 ## Der Statuseffekt einer Aktion am Ziel. Mit ``stacks`` (Kabelbrand) legt er
