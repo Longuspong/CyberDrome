@@ -130,14 +130,35 @@ Web-Template ohne ungenutzte Godot-Module kann `index.wasm` deutlich
 verkleinern. Das ist aufwendig (Engine selbst bauen) und lohnt erst vor
 einem öffentlichen Start.
 
-## 5. Offen (Spieler)
+## 5. Antworten des Spielers (20. Nov. 2026)
 
-1. **Ziel-Gerät**: Ist die Browser-PWA das Hauptziel oder die App im Store?
-   Davon hängt ab, wie wichtig Schritt A/D sind. Für B ist es egal.
-2. **Schritt B jetzt** (vor Story-Leveln und Bossen) oder später?
+* **Hauptziel ist eine Android-APK**, vermutlich für eine Indie-Plattform
+  (Play Store offen). Die **PWA bleibt der Testweg**: schneller Playtest
+  ohne Rechner, ohne jedes Mal eine APK aufs Handy zu ziehen. Wenn die PWA
+  an grafische oder technische Grenzen stößt, wechselt der Spieler auf nativ.
+  Folge: Schritt A beschleunigt jede Vorschau und bleibt sinnvoll. Schritt D
+  entfällt (in der APK gibt es keinen WASM-Download).
+* **Leistungstest** auf dem Handy (Bilder pro Sekunde, `main` und
+  Vercel-Vorschau, gleicher Code, Unterschiede sind Messrauschen):
+
+  | DROMEs | Ruhend | Einzeln | Eine Szene |
+  |---|---|---|---|
+  | 3 | 45–47 | 37–40 | 44–45 |
+  | 6 | 47–50 | 31 | 41–42 |
+  | 12 | 48–49 | 25–26 | 40–41 |
+  | 24 | 47–49 | 21 | 41 |
+  | 48 | 46–47 | 15 | 34–36 |
+
+  Schon ohne Bewegung liegt der Browser bei ca. 47 B/s, das ist die Decke
+  der PWA. Eine gemeinsame 3D-Szene bleibt bis 24 DROMEs bei ca. 41 B/s.
+  Ein Kampf (8 DROMEs + Sentinels) liegt also nahe an der Decke. Schritt B
+  ist kein Leistungsrisiko, solange alles in **einer** Szene bleibt. Die
+  Zahlen sind der Ausgangswert für B.
+
+## 6. Offen (Spieler)
+
+1. **Schritt B jetzt** (vor Story-Leveln und Bossen) oder später?
    Empfehlung: jetzt, weil sonst jede neue Fähigkeit doppelt gebaut wird.
-3. Bitte auf dem Handy den **Leistungstest** (Optionen > Zum Testen) mit dem
-   aktuellen Stand wiederholen, als Ausgangswert für Schritt B.
 
 Messwerkzeug (nicht im Repo, einfach nachzubauen): kleiner Python-Server, der
 `build/web` Brotli-komprimiert ausliefert, und ein Playwright-Skript mit

@@ -267,7 +267,7 @@
     {"punkt": "Charger am DROME statt an der Waffe? -> bleibt an der Waffe.", "quelle": "Spieler 20. Nov. 2026", "status": "entschieden"},
     {"punkt": "Kabelbrand am Wirbelwurf des Klingenbumerangs -> bleibt.", "quelle": "Spieler 20. Nov. 2026", "status": "entschieden"},
     {"punkt": "Amps, Fusion, Hyperfusion gebaut (20. Nov. 2026). Offen: Auswahl der 13 Vorschlags-Fusionen, Sondereffekte der Hyperfusionen außer Power, BIOS für Hyperfusionen, Preis/Häufigkeit des Fusion Core -- Liste in docs/design/UEBERGABEN_DESIGN.md (Offene Logik).", "quelle": "Spieler 20. Nov. 2026", "status": "offen"},
-    {"punkt": "Technik-Prüfung (20. Nov. 2026): Godot bleibt. Offen: Hauptziel Browser-PWA oder Store-App; Kampfbühne ganz in 3D (Schritt B) jetzt oder später; 26 % des Downloads sind ungenutzte DROME-SVGs (Schritt A). Messungen und Plan in docs/TECHNIK_PRUEFUNG.md.", "quelle": "Spieler 20. Nov. 2026", "status": "offen"}
+    {"punkt": "Technik-Prüfung (20. Nov. 2026): Godot bleibt. Hauptziel Android-APK (Indie-Plattform), die PWA bleibt der Testweg. Leistungstest Handy: eine 3D-Szene ca. 41 B/s bis 24 DROMEs, Browser-Decke ca. 47. Offen: Kampfbühne ganz in 3D (Schritt B) jetzt oder später; 26 % des Downloads sind ungenutzte DROME-SVGs (Schritt A). Messungen und Plan in docs/TECHNIK_PRUEFUNG.md.", "quelle": "Spieler 20. Nov. 2026", "status": "offen"}
   ],
 
   "_kommentar_glossar": ["Spalte englisch (19. Nov. 2026): Vorschlaege fuer die englische Fassung, noch nicht",
