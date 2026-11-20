@@ -29,6 +29,21 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Englisch vorbereitet, letzte Umlaute (19. Nov. 2026, Spieler)
+
+* Aufwand Englisch geschaetzt (rund 1.000 Anzeigetexte in `scripts/`, 750
+  Namen/Beschreibungen in `data/` + `parts/`, bisher kein `tr()`): reines
+  Umschreiben 2-3 Sitzungen, Sprachwahl de/en 4-6. Entschieden: erst die
+  Grundlage, den Umbau spaeter.
+* Gebaut: `i18n/texte.csv` (Schluessel = deutscher Text, Spalte `en`),
+  in `project.godot` eingetragen, `Accessibility.language` (fest `de`,
+  `set_language`), Test `test_i18n`. Regeln in `i18n/LIESMICH.md`.
+* SPOT-Glossar mit Spalte **Englisch (Vorschlag)** -- z. B. Einsatz =
+  Mission, Takt = Beat, Halter = Socket, Zwischenstopp = Interference, Baukern = Build Core.
+  Noch nicht entschieden.
+* Umlaute nachgezogen: "Mörser" und "E-Schraubenschlüssel" standen noch
+  ohne (der Teile-Generator hatte sie zurueckgeschrieben).
+
 ### Begriff "Fusion", Token im Design-System (19. Nov. 2026, Spieler)
 
 * Rezept-Module heissen im Spiel **Fusion** (mit BIOS: **BIOS-Fusion**);
