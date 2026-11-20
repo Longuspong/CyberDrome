@@ -219,7 +219,8 @@ func _fill_readout() -> void:
 		num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		badge.add_child(num)
 		row.add_child(badge)
-		var text := UiKit.label(Charger.resonance_text(at), 12, UiKit.TEXT)
+		var text := UiKit.label(Charger.resonance_text(at) + (" (verbessert durch 6)"
+			if on and Charger.upgraded(at, _slots) else ""), 12, UiKit.TEXT)
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.custom_minimum_size.x = 60

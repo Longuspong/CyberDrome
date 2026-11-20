@@ -143,13 +143,15 @@ static func ability_load(phases: Array) -> int:
 	return best
 
 
-## Die Takte, an denen ein Treffer doppelt anlegt (5, 3 ...).
+## Der Takt, an dem ein Treffer doppelt anlegt: die hoechste erreichte Stufe
+## gilt, Stufe 6 macht aus "jeder 5." ein "jeder 3." (Upgrade, Spieler 20. Nov.
+## 2026). Als Liste (leer = nie), damit der Kampf sie wie bisher liest.
 static func double_every(phases: Array) -> Array:
 	var out: Array = []
 	for r in active_resonances(phases):
 		var every := int(r.get("double_every", 0))
 		if every > 0:
-			out.append(every)
+			out = [every]
 	return out
 
 
@@ -164,6 +166,12 @@ static func resonance_text(at: int) -> String:
 			return "Jeder %d. Treffer doppelt, Fähigkeit %d" % [
 				_res_value(6, "double_every", 3), _res_value(6, "ability_load", 200)]
 	return ""
+
+
+## Wird diese Stufe von einer hoeheren ueberboten? (Stufe 6 verbessert die
+## Faehigkeit von 2 und den Takt von 4.)
+static func upgraded(at: int, phases: Array) -> bool:
+	return at < 6 and resonance(phases) >= 6
 
 
 static func _res_value(at: int, key: String, fallback: int) -> int:

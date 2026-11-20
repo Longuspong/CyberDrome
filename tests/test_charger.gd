@@ -129,3 +129,9 @@ func test_open_cache_rolls_four_times() -> void:
 	var gained := phases + roster.blanks() + roster.kits() + roster.faction_cores("neon")
 	t.ok(gained > 0 or roster.coins > 0 or roster.entries.size() > 0, "Beute gutgeschrieben")
 	t.equal(roster.open_cache("city", rng).size(), 0, "leeres Lager: nichts")
+
+
+func test_resonance_six_upgrades_fifth_to_third() -> void:
+	t.equal(Charger.double_every(["fire", "fire", "fire", "fire", "", ""]), [5], "Stufe 4: jeder 5.")
+	t.equal(Charger.double_every(["fire", "fire", "fire", "fire", "fire", "fire"]), [3],
+		"Stufe 6: jeder 3. statt jeder 5.")

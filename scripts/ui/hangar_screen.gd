@@ -837,6 +837,8 @@ func _show_upgrade() -> void:
 		res_box.add_child(Arcade.label(title, 11, Charger.element_color(dom) if not res.is_empty() else Arcade.MUTED,
 			"bold", 0.14))
 		for r in res:
+			if Charger.upgraded(int(r["at"]), phases):
+				continue
 			res_box.add_child(UiKit.label("· " + Charger.resonance_text(int(r["at"])), 13, UiKit.TEXT))
 		if dom != "":
 			var effect := Charger.status_name(dom)

@@ -375,8 +375,9 @@
       "dominant_ability_stacks Stapel davon an.",
       "RESONANZ (gleiche Phasen des ueberwiegenden Elements) ZAEHLT ZUSAMMEN",
       "(Spieler, 20. Nov. 2026 im Design-Canvas): ab 2 legt die Faehigkeit dazu",
-      "ability_load an, ab 4 zaehlt jeder double_every. Treffer doppelt, ab 6 auch",
-      "jeder 3. und die Faehigkeit 200. Fallen 3. und 5. Treffer zusammen: doppelt.",
+      "ability_load an, ab 4 zaehlt jeder double_every. Treffer doppelt. Stufe 6 ist",
+      "ein UPGRADE davon: dann jeder 3. statt jeder 5. Treffer doppelt, die",
+      "Faehigkeit 200 statt 100 (hoechste Stufe gilt je Wert).",
       "Wirkung der Stapel: nur Feuer (Kabelbrand) ist gebaut, die uebrigen werden",
       "gezaehlt und angezeigt, wirken aber noch nicht.",
       "cache: Inhalt je Lootcache (Spieler): rolls Wuerfe, je Wurf eine Zeile nach chance."
