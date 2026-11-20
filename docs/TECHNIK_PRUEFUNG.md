@@ -101,6 +101,13 @@ Jeder Schritt bleibt für sich lauffähig und grün und bekommt einen eigenen PR
 * Später die Symbole selbst aus dem `.m3d` rendern (wie `UiKit.drome_view`),
   dann braucht der Generator gar kein SVG mehr.
 
+**Ergebnis Schritt A (gebaut 20. Nov. 2026):** `tools/bake_godot_assets.py`
+backt nur noch die Südansicht je Teil (27 SVGs statt 636) und räumt alte
+Bilder weg. `index.pck` 11,6 → 6,0 MB roh, **8,2 → 3,7 MB übertragen**,
+zusammen **16,3 → 11,8 MB**. Auf 4G (CPU × 4) startet das Spiel nach 14,6 s
+statt 19,2 s. Im WLAN bleibt es bei ca. 9 s, dort zählt fast nur der
+Engine-Start. Alle Tests und `smoke_ui` sind grün.
+
 **Schritt B: Kampfbühne in 3D (Kern des Umbaus, ca. 3–4 Sitzungen)**
 1. `Camera3D` statt `Camera2D` + drei mitlaufenden Kameras. Zoomen und
    Ziehen per Finger auf der Kamera, Antippen per Strahl auf die Bodenebene

@@ -7,7 +7,7 @@ Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 
 **Technik-Prüfung (20. Nov. 2026): `docs/TECHNIK_PRUEFUNG.md`** -- Godot bleibt;
 Ziel Android-APK, PWA = Testweg; Ladezeit gemessen (16,3 MB, 26 % davon ungenutzte DROME-SVGs); Plan „nur noch 3D“
-(A Ballast raus, B Kampfbühne in 3D, C Generator ohne SVG) -- wartet auf den Spieler.
+(A Ballast raus -- GEBAUT 20. Nov., nur noch Südansichten als SVG, 11,8 MB Download; B Kampfbühne in 3D, C Generator ohne SVG) -- B/C warten auf den Spieler.
 
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser

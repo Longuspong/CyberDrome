@@ -69,49 +69,9 @@ def bake_svg(svg_text: str, color_scheme: dict) -> tuple[str, set[str]]:
     return VAR_PATTERN.sub(replace, svg_text), missing
 
 
-PATH_PATTERN = re.compile(r'<path d="([^"]+)" fill="(#[0-9a-fA-F]{6})"')
-
-GLOW_STROKE = 2.6
-
-
-def glow_svg(baked: str, color_scheme: dict) -> str:
-    """
-    Die Leuchtebene eines Neon-Teils: nur die Roehren (Farbrollen accent und
-    glow), mit breitem Strich derselben Farbe als Lichthof. Die Engine legt sie
-    additiv ueber das Teil und laesst sie pulsieren (DromeSprites).
-    """
-    lit = {color_scheme.get("accent", "").lower(), color_scheme.get("glow", "").lower()}
-    lit.discard("")
-    paths = []
-    for d, fill in PATH_PATTERN.findall(baked):
-        if fill.lower() in lit:
-            paths.append(f'  <path d="{d}" fill="{fill}" stroke="{fill}" '
-                         f'stroke-width="{GLOW_STROKE}" stroke-linejoin="round"/>')
-    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" '
-            'width="128" height="128">\n'
-            '  <!-- Leuchtebene, erzeugt von tools/bake_godot_assets.py -->\n'
-            + "\n".join(paths) + "\n</svg>\n")
-
-
-RIM_STROKE = 3.2
-FILL_ATTR = re.compile(r'fill="#[0-9a-fA-F]{6}"')
-
-
-def rim_svg(baked: str, color_scheme: dict) -> str:
-    """
-    Die Kontur eines Teils in seiner Signalfarbe (docs/DROME_DESIGNREGELN.md,
-    Abschnitt 5): alle Flaechen einmal in der Akzentfarbe, mit dickem Strich.
-    Die Engine legt die Konturen ALLER Teile eines DROME unter alle Teile
-    (DromeSprites) -- so bleibt nur der Aussenrand sichtbar, und jede Kontur
-    geht mit ihrem Teil mit, wenn es sich bewegt.
-    """
-    color = color_scheme.get("accent", MISSING_COLOR)
-    out = FILL_ATTR.sub(f'fill="{color}"', baked)
-    out = out.replace('stroke="none"', "")
-    out = re.sub(r'stroke="#[0-9a-fA-F]{6}"', f'stroke="{color}"', out)
-    out = re.sub(r'stroke-width="[0-9.]+"', f'stroke-width="{RIM_STROKE}"', out)
-    out = re.sub(r'<title>.*?</title>', "", out, flags=re.S)
-    return out
+# Leuchtebene (_glow) und Kontur (_rim) als SVG gibt es seit dem 3D-Umbau nicht
+# mehr: beides rendert DromeModel aus den .m3d (Strich 2.6 bzw. 3.2
+# Entwurfspunkte blieben als Werte in NeonGlow und DromeSprites).
 
 
 def iter_parts():
@@ -155,6 +115,12 @@ def main() -> int:
         emit(OUT_DIR / set_meta.parent.name / "set.json",
              set_meta.read_text(encoding="utf-8"))
 
+    # Seit dem 3D-Umbau (17./18. Nov. 2026) zeichnet DromeModel alle DROMEs aus
+    # den .m3d. Gebraucht wird nur noch die Suedansicht als Symbol
+    # (UiKit.part_texture). Andere Richtungen, Kontur, Leuchten und
+    # Waffen-Varianten fliegen raus -- 26 % des Downloads (TECHNIK_PRUEFUNG.md,
+    # Schritt A). Die JSONs aller Richtungen bleiben: sie tragen die Anker.
+    kept: set[pathlib.Path] = set()
     for meta_path, meta, svg_path in iter_parts():
         baked, missing = bake_svg(svg_path.read_text(encoding="utf-8"),
                                   meta.get("color_scheme", {}))
@@ -166,29 +132,24 @@ def main() -> int:
         # Quellbaum parts/ traegt eine .gdignore, sonst importierte Godot 92
         # schwarze Texturen daneben -- und beim Export waere dann offen,
         # welcher der beiden Baeume mitgeht.
-        emit(OUT_DIR / meta["set"] / svg_path.name, baked)
-        # Neon-Teile leuchten: dazu eine eigene Ebene nur mit den Roehren.
-        if "neon" in meta.get("tags", []):
-            emit(OUT_DIR / meta["set"] / svg_path.name.replace(".svg", "_glow.svg"),
-                 glow_svg(baked, meta.get("color_scheme", {})))
-        # Jedes Teil hat eine Kontur in seiner Signalfarbe (Kontur je Teil).
-        emit(OUT_DIR / meta["set"] / svg_path.name.replace(".svg", "_rim.svg"),
-             rim_svg(baked, meta.get("color_scheme", {})))
-        # Waffen in Posen: Varianten (Molok, Strix-Lafette) backen wie das Teil.
-        for variant in meta.get("variants", {}).values():
-            vpath = meta_path.parent / variant["svg"]
-            if not vpath.exists():
-                raise SystemExit(f"{meta_path}: verweist auf fehlendes {variant['svg']}")
-            vbaked, _ = bake_svg(vpath.read_text(encoding="utf-8"),
-                                 meta.get("color_scheme", {}))
-            emit(OUT_DIR / meta["set"] / vpath.name, vbaked)
-            if "neon" in meta.get("tags", []):
-                emit(OUT_DIR / meta["set"] / vpath.name.replace(".svg", "_glow.svg"),
-                     glow_svg(vbaked, meta.get("color_scheme", {})))
-            emit(OUT_DIR / meta["set"] / vpath.name.replace(".svg", "_rim.svg"),
-                 rim_svg(vbaked, meta.get("color_scheme", {})))
+        if meta.get("direction", "south") == "south":
+            target = OUT_DIR / meta["set"] / svg_path.name
+            emit(target, baked)
+            kept.add(target)
         emit(OUT_DIR / meta["set"] / meta_path.name,
              json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
+
+    # Alte Bilder (andere Richtungen, _rim, _glow, Varianten) wegraeumen.
+    for old in sorted(OUT_DIR.glob("*/*.svg")):
+        if old in kept:
+            continue
+        stale += 1
+        if args.check:
+            print(f"[ueberzaehlig] {old.relative_to(ROOT)}")
+            continue
+        old.unlink()
+        old.with_name(old.name + ".import").unlink(missing_ok=True)
+        written += 1
 
     # 3D-Modelle (17. Nov. 2026): unveraendert mit, die Farben stehen darin.
     for model_path in sorted(PARTS_DIR.glob("*/*.m3d")):

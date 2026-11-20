@@ -79,7 +79,7 @@ static var _neon_build := false         # baut der laufende Aufbau eine Leuchteb
 const LAYER_IMAGE := 1
 const LAYER_SIGNAL := 2
 const LAYER_NEON := 4
-## Materialien, die in der Leuchtebene leuchten (wie glow_svg im Backen).
+## Materialien, die in der Leuchtebene leuchten (wie frueher glow_svg im Backen).
 const NEON_MATS := ["glow", "accent"]
 
 

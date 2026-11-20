@@ -88,7 +88,7 @@ static func assemble(parent: Node2D, build: DromeBuild, facing: String,
 	outline.shader = OUTLINE_SHADER
 	outline.set_shader_parameter("line_color", model.get_meta("line", Color(0.03, 0.04, 0.07)))
 	outline.set_shader_parameter("rim_color", model.get_meta("accent", Color(0.18, 0.89, 0.9)))
-	# Strich 0.9 und Kontur 3.2 Entwurfspunkte wie im SVG (rim_svg), je zur
+	# Strich 0.9 und Kontur 3.2 Entwurfspunkte wie im frueheren Kontur-SVG (rim_svg), je zur
 	# Haelfte ausserhalb der Flaeche.
 	outline.set_shader_parameter("line_px", 0.45 * resolution / 128.0)
 	outline.set_shader_parameter("rim_px", 1.6 * resolution / 128.0)
