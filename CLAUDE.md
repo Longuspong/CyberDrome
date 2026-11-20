@@ -12,9 +12,8 @@ Spielprinzips, der gerade mit dem Spieler besprochen wird.
 **Fuer Module: `docs/MODULE_KONZEPT.md`** -- seit 9. Nov. 2026 die
 festgelegte Richtung (9 Grundmodule, 18 Rezepte, Matrix-BIOS, Profile =
 Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
-**Achtung (18. Nov. 2026, Spieler): das Modulsystem wird ueberdacht** --
-keine neue Arbeit an Modulen, Rezepten oder BIOS, bevor es mit dem Spieler
-besprochen ist.
+**Seit 20. Nov. 2026 gilt Module v3 (Amps) und ist GEBAUT** -- `MODULE_KONZEPT.md`
+ist fuer Grundmodule und Rezepte ueberholt.
 **Neue Richtung (20. Nov. 2026): `docs/MODULE_AMP_FUSION.md`** -- Amp (Grundmodul,
 ein Wert, Abwehr in Prozent), Fusion (zwei verschiedene Amps, kostenlos),
 Hyperfusion (zwei gleiche + Fusion Core, 1 je DROME, je Sorte 1x je Einsatz),
@@ -22,8 +21,10 @@ BIOS darueber; Armor +3, Tech +2 **Effizienz** (versteckter Wert 10 = 100 %,
 Dauer/Stapel von Statuseffekten, nie Schaden). Gebaut seit 20. Nov.: Effizienz
 (`Unit.efficiency`, `apply_status(..., source)`) und **Kabelbrand** (Stapel, je
 Puls max. 10, `ActionResolver.burn_cable_fire`; Bumerang-Wirbelwurf als
-Ausloeser). Hyperfusion-Effekte und Fusionsliste offen (Abschnitt 6) -- noch
-nicht bauen.
+Ausloeser). **Seit 20. Nov. 2026 gebaut:** 6 Amps, 15 Fusionen (2 entschieden, 13
+Vorschlaege), 6 Hyperfusionen mit Fusion Core. **Offene Logik (Charger + Amps) steht in
+`docs/design/UEBERGABEN_DESIGN.md`, Abschnitt „Offene Logik nach dem Bau“** -- vor neuer
+Arbeit daran lesen.
 **Waffen-Upgrades (20. Nov. 2026, entschieden und GEBAUT): `docs/CHARGER_KONZEPT.md`**
 -- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.
 **Bildschirme fuer Design-Sessions: `docs/design/UEBERGABEN_DESIGN.md`** -- Hangar

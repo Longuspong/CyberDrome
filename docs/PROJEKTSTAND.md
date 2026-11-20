@@ -992,6 +992,28 @@ Nach dem Design-Canvas „CyberDrome Charger & Hangar“
 * Offen (SPOT): Wirkung der uebrigen Elemente, Kabelbrand am Bumerang (Uebergang),
   Charger am DROME statt an der Waffe?, Amps (nur Entwurf).
 
+### Module v3: Amps, Fusionen, Hyperfusionen (20. Nov. 2026)
+
+`docs/MODULE_AMP_FUSION.md`, Daten in `data/modules.json`:
+
+* **6 Amps** (`modules`): Attack +10 % Angriffstempo, Power +1, Integrity +10 % max.
+  Integritaet (`hp_pct`), Shield +10 % max. Schild (`shield_pct`), Armor +3, Tech +2
+  Effizienz -- in `DromeBuild.stats()`.
+* **15 Fusionen** (`recipes`, jedes Paar zweier verschiedener Amps): Heilverstaerker
+  (`support_power`) und Raufbold entschieden, 13 Vorschlaege; neu Lebensraub (`lifesteal`).
+* **6 Hyperfusionen** (`hyperfusions`): zwei gleiche Amps + **Fusion Core** (`items`),
+  dreifacher Wert; Power: 20 % **Virusschaden** (`virus_fraction`, in
+  `ActionResolver.resolve_damage` an Panzerung und Schild-Faktoren vorbei, Schild zuerst).
+  Hoechstens eine je DROME (`RunState.has_hyper`), jede Sorte einmal je Einsatz
+  (`RunState.hyper_made`, im Spielstand). Fusion Core selten im Laden (`shop.core_chance`).
+* BIOS bleibt fuer die erhaltenen Fusionen (Taktgeber, Berserker, Treibjagd, Abrissbirne,
+  Phasenbruch). Gegner-Profile (`regions.json`) und Sentinel-Module (`formations.json`) auf
+  Amps umgestellt.
+* Kartuschen (`ModuleChip`): Fusion mit geteiltem Rahmen in den Farben der Amps, Hyperfusion
+  dreifach mit Core-Sechseck, BIOS-Fusion mit Matrix-Regen. Symbole `assets/modules/amp_*.svg`.
+* `run_bench 20`: Siegquoten praktisch wie vorher.
+* Offene Logik: `docs/design/UEBERGABEN_DESIGN.md`, Abschnitt „Offene Logik nach dem Bau“.
+
 ## 3. Messungen und gefundene Fehler (lohnt sich zu wissen)
 
 * **KI griff abgeschirmte Ziele nie an.** Sie bewertete nur HP-Schaden; ein
