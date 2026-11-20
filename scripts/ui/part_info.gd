@@ -29,6 +29,7 @@ const ROLE := {
 const STAT_LABELS := [
 	["hp", "Integrität"], ["shield", "Schild"],
 	["shield_pulse", "Schildpuls"], ["def", "Rüstung"], ["power", "Power"],
+	["efficiency", "Effizienz (Statuseffekte)"],
 	["spd", "Speed (Laufgeschwindigkeit)"], ["module_slots", "Modulplätze je Halter"],
 ]
 

@@ -12,18 +12,20 @@ extends Control
 
 const SCALE := {
 	"hp_max": 320.0, "shield_max": 130.0, "shield_pulse": 15.0, "spd": 16.0,
-	"def": 24.0, "power": 20.0, "power_score": 250.0,
+	"def": 24.0, "power": 20.0, "efficiency": 20.0, "power_score": 250.0,
 }
 
 const LABEL := {
 	"hp_max": "Integrität", "shield_max": "Schild", "shield_pulse": "Schildpuls",
-	"spd": "Speed", "def": "Rüstung", "power": "Power", "power_score": "Kampfwert",
+	"spd": "Speed", "def": "Rüstung", "power": "Power", "efficiency": "Effizienz",
+	"power_score": "Kampfwert",
 }
 
 const BAR_COLOR := {
 	"hp_max": Color(0.46, 0.86, 0.52), "shield_max": Color(0.38, 0.7, 1.0),
 	"shield_pulse": Color(0.5, 0.82, 1.0), "spd": Color(1.0, 0.82, 0.35),
 	"def": Color(0.75, 0.75, 0.8), "power": Color(1.0, 0.5, 0.46),
+	"efficiency": Color(1.0, 0.62, 0.2),
 	"power_score": Color(0.38, 0.8, 0.98),
 }
 

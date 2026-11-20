@@ -84,6 +84,7 @@
     "shield_bonus": 0.0,
     "shield_pulse": 0,
     "power": 0,
+    "efficiency": 0,
     "module_slots": 0,
     "hp_regen_pct": 0,
     "lure_radius": 0,
@@ -138,7 +139,10 @@
         "shots": 1,
         "gather": false,
         "delay": 0.0,
-        "status": null,
+        "status": {
+          "id": "cable_fire",
+          "stacks": 1
+        },
         "heal": 0,
         "shield_gain": 0,
         "support": "",

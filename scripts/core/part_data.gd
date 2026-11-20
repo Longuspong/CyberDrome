@@ -67,6 +67,8 @@ var def: int = 0
 ## Power (8. Nov. 2026): Waffenschaden x power / 10. Am Chassis, Waffen
 ## koennen etwas dazugeben (Plasmaklinge, Schienen-Lanze).
 var power: int = 0
+## Effizienz: Dauer, Stapel und Staerke der Statuseffekte (10 = 100 %).
+var efficiency: int = 0
 ## Schildpuls: Ruhezeit bis zum Laden und Ladung je Puls in einem Wert
 ## (combat.shield_pulse in data/config.json).
 var shield_pulse: int = 0
@@ -128,6 +130,7 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.hp = stats.get("hp", 0)
 	part.spd = stats.get("spd", 0)
 	part.power = int(stats.get("power", 0))
+	part.efficiency = int(stats.get("efficiency", 0))
 	part.shield_pulse = int(stats.get("shield_pulse", 0))
 	part.module_slots = int(stats.get("module_slots", 0))
 	part.def = stats.get("def", 0)

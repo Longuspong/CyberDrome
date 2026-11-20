@@ -338,6 +338,10 @@ func pulse_seconds() -> float:
 ## Was je Puls laeuft: Reparatur, Overtime. Der Schild laedt nicht mehr je
 ## Puls, sondern nach Ruhe (Unit.recharge_shield, jeden Schritt).
 func _pulse_unit(unit: Unit) -> void:
+	resolver.burn_cable_fire(unit)
+	if not unit.is_alive():
+		_check_victory()
+		return
 	var healed := unit.regenerate_hp()
 	if healed > 0:
 		EventBus.unit_healed.emit(unit, healed, unit)

@@ -469,7 +469,7 @@ static func stat_grid(build: DromeBuild, compare: Dictionary = {}) -> Control:
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 16)
 	grid.add_theme_constant_override("v_separation", 6)
-	for key in ["spd", "hp_max", "shield_max", "shield_pulse", "def", "power"]:
+	for key in ["spd", "hp_max", "shield_max", "shield_pulse", "def", "power", "efficiency"]:
 		var value := float(stats.get(key, 0))
 		grid.add_child(StatCell.new(str(StatBar.LABEL[key]).to_upper(), value,
 			value / float(StatBar.SCALE[key]), float(compare.get(key, value)) - value))
@@ -537,7 +537,7 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 		UiKit.ACCENT))
 	# Werte als Balken (10. Nov. 2026) -- zwischen DROMEs vergleichbar.
 	var stats := build.stats()
-	for key in ["hp_max", "shield_max", "spd", "def", "power"]:
+	for key in ["hp_max", "shield_max", "spd", "def", "power", "efficiency"]:
 		info.add_child(StatBar.make(key, float(stats.get(key, 0))))
 	info.add_child(UiKit.label(_loadout(build), UiKit.SMALL, UiKit.MUTED))
 	return info
@@ -643,7 +643,7 @@ func _show_umbau() -> void:
 	head.add_child(info)
 	info.add_child(Arcade.label("WERTE", 11, Arcade.CYAN, "bold", 0.2))
 	var stats := build.stats()
-	for key in ["spd", "hp_max", "shield_max", "shield_pulse", "def", "power"]:
+	for key in ["spd", "hp_max", "shield_max", "shield_pulse", "def", "power", "efficiency"]:
 		var value := float(stats.get(key, 0))
 		info.add_child(StatCell.new(str(StatBar.LABEL[key]).to_upper(), value,
 			value / float(StatBar.SCALE[key])))
@@ -952,7 +952,7 @@ func _delta_lines(build: DromeBuild, slot: String, part: PartData, box: VBoxCont
 	var before := build.stats()
 	var after := trial.stats()
 	# Vorher -> nachher als Vergleichsbalken: gruen dazu, rot weg.
-	for key in ["hp_max", "shield_max", "shield_pulse", "spd", "def", "power"]:
+	for key in ["hp_max", "shield_max", "shield_pulse", "spd", "def", "power", "efficiency"]:
 		var a: int = before.get(key, 0)
 		var b: int = after.get(key, 0)
 		if a != b:

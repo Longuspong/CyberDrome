@@ -343,6 +343,27 @@
     }
   },
 
+  "statuses": {
+    "_kommentar": [
+      "Statuseffekte (20. Nov. 2026, Spieler; Konzept docs/MODULE_AMP_FUSION.md 5).",
+      "EFFIZIENZ: versteckter Wert je DROME, Grundwert base (10 = 100 % Wirkung).",
+      "  Jeder Statuseffekt, den ein DROME auslöst (auch an sich selbst, z. B.",
+      "  der Vireo-Sprint), hält efficiency / base so lange. Später +2 je Tech-Amp.",
+      "  Effizienz ändert nie die Schadenszahl. Sie hebt auch die STÄRKE: die",
+      "  Abweichung von 1 bei move_mult, attack_speed_mult und damage_taken_mult",
+      "  wächst mit (Verlangsamen 40 % bei Effizienz 12: 48 %), Verlangsamen",
+      "  höchstens slow_cap. Sichtbarer Wert am Chassis wie Power (Vireo 10,",
+      "  Molok 14, Nimbus 12, Strix 10; Neon Nimbus 7 bei Power 14).",
+      "KABELBRAND (cable_fire): Stapel am Ziel. Jeder Puls des Ziels verbraucht",
+      "  höchstens max_per_pulse Stapel; je Stapel kinetic + energy Schaden (ohne",
+      "  Power, durch Schild und Panzerung wie ein Treffer). Der Rest bleibt",
+      "  für den nächsten Puls. Effizienz des Auslösers: so viele Stapel mal",
+      "  efficiency / base (Bruchteile sammeln sich am Ziel)."
+    ],
+    "efficiency": {"base": 10, "slow_cap": 0.7},
+    "cable_fire": {"kinetic": 5, "energy": 5, "max_per_pulse": 10}
+  },
+
   "combat": {
     "_kommentar": [
       "Das Zwei-Verteidigungs-System. Siehe ActionResolver.resolve_damage.",

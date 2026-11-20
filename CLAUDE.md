@@ -15,6 +15,20 @@ Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
 **Achtung (18. Nov. 2026, Spieler): das Modulsystem wird ueberdacht** --
 keine neue Arbeit an Modulen, Rezepten oder BIOS, bevor es mit dem Spieler
 besprochen ist.
+**Neue Richtung (20. Nov. 2026): `docs/MODULE_AMP_FUSION.md`** -- Amp (Grundmodul,
+ein Wert, Abwehr in Prozent), Fusion (zwei verschiedene Amps, kostenlos),
+Hyperfusion (zwei gleiche + Fusion Core, 1 je DROME, je Sorte 1x je Einsatz),
+BIOS darueber; Armor +3, Tech +2 **Effizienz** (versteckter Wert 10 = 100 %,
+Dauer/Stapel von Statuseffekten, nie Schaden). Gebaut seit 20. Nov.: Effizienz
+(`Unit.efficiency`, `apply_status(..., source)`) und **Kabelbrand** (Stapel, je
+Puls max. 10, `ActionResolver.burn_cable_fire`; Bumerang-Wirbelwurf als
+Ausloeser). Hyperfusion-Effekte und Fusionsliste offen (Abschnitt 6) -- noch
+nicht bauen.
+**Waffen-Upgrades (20. Nov. 2026, entschieden, nicht gebaut): `docs/CHARGER_KONZEPT.md`**
+-- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.
+**Bildschirme fuer Design-Sessions: `docs/design/UEBERGABEN_DESIGN.md`** -- Hangar
+(Umbau + Waffen-Upgrade statt Squad), Einsatzvorbereitung mit Squad-Wahl,
+Charger-Crafter. Diese Bildschirme NICHT selbst bauen, erst nach dem Entwurf.
 **Fuer Story, Fraktionen, Gegnergruppen: `docs/VORSCHLAG_STORY.md`** --
 Vorschlaege vom 10. Nov. 2026, noch NICHT entschieden; die offenen Punkte
 stehen dort in Abschnitt 6. **Story-Rahmen seit 14. Nov. 2026: `docs/STORY_LEITFADEN.md`**

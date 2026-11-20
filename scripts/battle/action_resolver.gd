@@ -223,7 +223,7 @@ func _shield_broken(unit: Unit) -> void:
 			continue
 		apply_damage(unit, foe, burst, spark, false)
 		if foe.is_alive():
-			foe.apply_status(&"stun", stun, {"id": "stun", "stunned": true})
+			foe.apply_status(&"stun", stun, {"id": "stun", "stunned": true}, unit)
 
 
 ## Der naechste lebende Verbuendete mit Praesenz im Schutzradius -- nicht das
@@ -251,7 +251,7 @@ func _on_hit(source: Unit, dealt: int) -> void:
 	if source.passive() == "hit_rush":
 		var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
 		var mods := {"move_mult": float(rush.get("move_mult", 1.4))}
-		source.apply_status(&"rush", float(rush.get("seconds", 2.0)), mods)
+		source.apply_status(&"rush", float(rush.get("seconds", 2.0)), mods, source)
 
 
 ## Das Zwei-Verteidigungs-System (§11) als reine Rechnung -- was von ``raw`` auf
@@ -627,8 +627,50 @@ func _apply_area(source: Unit, tile: Vector2i, action: ActionData) -> void:
 		if action.push_tiles != 0 and target.is_alive():
 			_shove(source, target, action.push_tiles)
 		if not action.status.is_empty() and target.is_alive():
-			target.apply_status(StringName(str(action.status.get("id", "status"))),
-				float(action.status.get("seconds", 1.0)), action.status)
+			apply_action_status(source, target, action)
+
+
+## Der Statuseffekt einer Aktion am Ziel. Mit ``stacks`` (Kabelbrand) legt er
+## Stapel, sonst wirkt er ``seconds`` lang -- beides gestreckt mit der
+## Effizienz des Ausloesers.
+func apply_action_status(source: Unit, target: Unit, action: ActionData) -> void:
+	var status := action.status
+	if str(status.get("id", "")) == "cable_fire":
+		target.add_cable_fire(float(status.get("stacks", 1)), source)
+		return
+	target.apply_status(StringName(str(status.get("id", "status"))),
+		float(status.get("seconds", 1.0)), status, source)
+
+
+## Kabelbrand je Puls: verbraucht hoechstens ``max_per_pulse`` Stapel, je
+## Stapel kinetischen und Energieschaden (ohne Power). Der Rest bleibt liegen.
+## Gibt den angerichteten Schaden zurueck.
+func burn_cable_fire(unit: Unit) -> int:
+	if unit == null or not unit.is_alive():
+		return 0
+	var rule := Config.section("statuses").get("cable_fire", {}) as Dictionary
+	var stacks := unit.take_cable_fire(int(rule.get("max_per_pulse", 10)))
+	if stacks <= 0:
+		return 0
+	var kinetic := int(rule.get("kinetic", 5))
+	var energy := int(rule.get("energy", 5))
+	var raw := (kinetic + energy) * stacks
+	if raw <= 0:
+		return 0
+	var burn := ActionData.new()
+	burn.id = &"status_cable_fire"
+	burn.display_name = "Kabelbrand"
+	burn.category = ActionData.Category.ABILITY
+	burn.energy_fraction = float(energy) / float(kinetic + energy)
+	var source: Unit = null
+	for other in units:
+		if other.unit_id == unit.cable_fire_source and other.is_alive():
+			source = other
+	EventBus.log_line("%s: Kabelbrand, %d Stapel." % [unit.display_name, stacks])
+	var shield_before := unit.shield
+	var hp_before := unit.hp
+	apply_damage(source, unit, raw, burn, false)
+	return (shield_before - unit.shield) + (hp_before - unit.hp)
 
 
 ## Sog: die Gegner im Radius ruecken Feld fuer Feld zum Zielfeld, die

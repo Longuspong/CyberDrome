@@ -549,7 +549,7 @@ func _shackle(unit: Unit, mount: Dictionary) -> void:
 			if next == foe.tile:
 				break
 			battle.resolver.move_unit(foe, next)
-		foe.apply_status(&"stun", SHACKLE_STUN, {"id": "stun", "stunned": true})
+		foe.apply_status(&"stun", SHACKLE_STUN, {"id": "stun", "stunned": true}, unit)
 	EventBus.log_line("%s legt %d Gegner in Ketten." % [unit.display_name, caught.size()])
 
 
@@ -573,16 +573,16 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 	if foe == null and (ability.taunt_seconds > 0.0 or mark_seconds > 0.0 or root_seconds > 0.0):
 		foe = _nearest_enemy(unit, int(ModuleData.rule("fallback_range", 3)))
 	if foe != null and ability.taunt_seconds > 0.0:
-		foe.apply_status(&"taunt", ability.taunt_seconds, {"taunt_by": unit.unit_id})
+		foe.apply_status(&"taunt", ability.taunt_seconds, {"taunt_by": unit.unit_id}, unit)
 		EventBus.log_line("%s lockt %s an." % [unit.display_name, foe.display_name])
 	if foe != null and mark_seconds > 0.0:
 		battle.resolver.mark(foe, mark_seconds)
 	# Orbit-Fokus: das Ziel ist gewurzelt. Gravitation (BIOS): dazu der
 	# naechste Gegner an ihm.
 	if foe != null and root_seconds > 0.0:
-		foe.apply_status(&"root", root_seconds, {"rooted": true})
+		foe.apply_status(&"root", root_seconds, {"rooted": true}, unit)
 		if bool(fx.get("gravity", false)):
-			_gravity(foe, root_seconds)
+			_gravity(foe, root_seconds, unit)
 	var fork := float(fx.get("ability_fork", 0.0))
 	if fork > 0.0:
 		_fork(unit, ability, aim, fork)
@@ -592,10 +592,10 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 		var seconds := ModuleData.rule("aura_seconds", 4.0)
 		for ally in battle.allies_of(unit):
 			if ally.is_alive() and Grid.distance(unit.tile, ally.tile) <= reach:
-				ally.apply_status(&"guard_pulse", seconds, {"def": aura})
+				ally.apply_status(&"guard_pulse", seconds, {"def": aura}, unit)
 
 
-func _gravity(first: Unit, seconds: float) -> void:
+func _gravity(first: Unit, seconds: float, source: Unit = null) -> void:
 	var second: Unit = null
 	var best_gap := 1 << 30
 	for other in battle.allies_of(first):
@@ -606,7 +606,7 @@ func _gravity(first: Unit, seconds: float) -> void:
 			best_gap = gap
 			second = other
 	if second != null:
-		second.apply_status(&"root", seconds, {"rooted": true})
+		second.apply_status(&"root", seconds, {"rooted": true}, source)
 
 
 func _nearest_enemy(unit: Unit, reach: int) -> Unit:
@@ -884,7 +884,7 @@ func _use_gadgets(unit: Unit, target: Unit) -> bool:
 				_execute(unit, landing, ability, null)
 				for foe in fooled:
 					if foe.is_alive():
-						foe.apply_status(&"decoy", decoy, {"stunned": true})
+						foe.apply_status(&"decoy", decoy, {"stunned": true}, unit)
 				if not fooled.is_empty():
 					EventBus.log_line("%s lässt einen Köder zurück." % unit.display_name)
 				gadget["ready"] = ability.trigger_every

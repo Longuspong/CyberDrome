@@ -249,6 +249,11 @@ func trigger_text() -> String:
 func status_text() -> String:
 	if status.is_empty():
 		return ""
+	if str(status.get("id", "")) == "cable_fire":
+		var rule := Config.section("statuses").get("cable_fire", {}) as Dictionary
+		return "Kabelbrand: +%d Stapel je getroffenem Gegner (je Puls und Stapel %d kinetisch + %d Energie, höchstens %d Stapel je Puls)" % [
+			int(status.get("stacks", 1)), int(rule.get("kinetic", 5)),
+			int(rule.get("energy", 5)), int(rule.get("max_per_pulse", 10))]
 	var seconds := _seconds(float(status.get("seconds", 0.0)))
 	match str(status.get("id", "")):
 		"slow":

@@ -326,7 +326,8 @@
     "shield": 60,
     "shield_pulse": 10,
     "def": 0,
-    "power": 12,
+    "power": 14,
+    "efficiency": 7,
     "module_slots": 3
    },
    "faction": "neon"

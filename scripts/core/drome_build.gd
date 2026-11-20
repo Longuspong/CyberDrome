@@ -252,11 +252,13 @@ func stats() -> Dictionary:
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
 		"hp_regen_pct": 0,
 		"lure_radius": 0,
+		"efficiency": 0,
 	}
 	for part in all_parts():
 		total["hp_max"] += part.hp
 		total["spd"] += part.spd
 		total["power"] += part.power
+		total["efficiency"] += part.efficiency
 		total["shield_pulse"] += part.shield_pulse
 		total["module_slots"] = maxi(int(total["module_slots"]), part.module_slots)
 		total["def"] += part.def
@@ -307,6 +309,9 @@ func stats() -> Dictionary:
 	total["hp_max"] = maxi(0, total["hp_max"])
 	total["def"] = maxi(0, total["def"])
 	total["power"] = maxi(0, total["power"])
+	# Ohne Wert am Chassis (Sentinels, alte Teile): Grundwert 10 = 100 %.
+	if int(total.get("efficiency", 0)) <= 0:
+		total["efficiency"] = Unit.efficiency_base()
 	total["shield_pulse"] = maxi(0, total["shield_pulse"])
 	total["shield"] = maxi(0, total["shield"])
 	# Das Schild-Maximum ist der Grundwert mal der prozentualen Schild-Effizienz

@@ -191,6 +191,7 @@
     "shield_bonus": 0.0,
     "shield_pulse": 3,
     "power": 6,
+    "efficiency": 14,
     "module_slots": 2,
     "hp_regen_pct": 0,
     "lure_radius": 0,
