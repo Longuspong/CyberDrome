@@ -19,7 +19,6 @@ extends Node2D
 const DEPTH_STRIDE := 16
 const UNIT_DEPTH_OFFSET := 8
 
-const OVERLAY_TILE := "res://assets/terrain/overlay_tile.svg"
 
 var grid: Grid
 
@@ -60,16 +59,13 @@ func _ready() -> void:
 # Boden
 # ---------------------------------------------------------------------------
 
-## Boden, Rand, Hindernisse, Deko und Licht -- gezeichnet von ArenaPainter
-## (7. Nov. 2026; vorher eine SVG-Kachel je Feld mit schwarzem Umriss).
-## Hindernisse und Deko sortieren sich wie Einheiten nach der Tiefe ihres
-## Feldes.
+## Boden aus 3D-Platten (ArenaFloor3D), Zierlinie und Licht (ArenaPainter),
+## Hindernisse und Deko in der 3D-Szene (Arena3D).
 func build_terrain(battle_grid: Grid) -> void:
 	grid = battle_grid
 	for node in _arena:
 		node.queue_free()
-	_arena = ArenaPainter.build(_world, grid, func(tile: Vector2i) -> int:
-		return IsoView.depth(tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET, false, true, true)
+	_arena = ArenaPainter.build(_world, grid)
 	# Boden aus 3D-Hexplatten, einmal gerendert (18. Nov. 2026), ganz unten.
 	var floor := ArenaFloor3D.new()
 	floor.name = "Boden3D"
