@@ -5,6 +5,11 @@ sie gebaut werden. Je Eintrag steht alles, was die Session braucht. Ergebnis wie
 `einsatz_arcade/`: Bild + Vorlage je Bildschirm (450 x 800, Hochformat), danach baut eine
 Code-Session nach dem Entwurf.
 
+**Entwurf zu Ü1-Ü3 (20. Nov. 2026):** Design-Canvas „CyberDrome Charger & Hangar“
+https://claude.ai/artifact/FJpqxTaHcbXsPTU619YC1e -- dazu Phasen, Amps, Caches und die
+Neon-Cache-Shader-Studie. Gebaut wie in `docs/PROJEKTSTAND.md` („Charger, Caches oeffnen,
+Hangar-Upgrade“) beschrieben; Amps sind nur Entwurf.
+
 **Für jede Design-Session gilt:**
 
 * Stil **Arcade-Glitch**: Design-System-Artefakt https://claude.ai/artifact/M5RC8KNDTr5psmKSuJpdS2
@@ -21,7 +26,7 @@ Code-Session nach dem Entwurf.
 
 ---
 
-## Ü1 Hangar neu: Umbau besser, Waffen-Upgrade statt Squad (20. Nov. 2026, offen)
+## Ü1 Hangar neu: Umbau besser, Waffen-Upgrade statt Squad (20. Nov. 2026, entworfen und gebaut)
 
 **Warum:** Der Reiter **Squad** im Hangar ist nutzlos, weil der Squad vor jedem Einsatz ohnehin
 neu gewählt wird (Spieler, 20. Nov. 2026).
@@ -42,7 +47,7 @@ neu gewählt wird (Spieler, 20. Nov. 2026).
 **DROME-Übersicht** (Level, später Skillbaum): baut der Spieler in den **Assembler-Modus** ein --
 nicht Teil dieser Übergabe.
 
-## Ü2 Einsatzvorbereitung mit Squad-Wahl (20. Nov. 2026, offen)
+## Ü2 Einsatzvorbereitung mit Squad-Wahl (20. Nov. 2026, entworfen und gebaut)
 
 **Was:** Vor jedem Einsatz wählt der Spieler seinen Squad (max. 3 DROMEs). Der Bildschirm soll
 zeigen, **welche Gegner zu erwarten sind** (Fraktion, Formationen, Gegner-DROMEs und Sentinels
@@ -55,7 +60,7 @@ mit Rolle), daneben die eigenen DROMEs -- damit der Squad auf die Gegner abgesti
 * Die Gegner-Squads werden später überarbeitet -- der Entwurf soll mit wechselnden Inhalten
   zurechtkommen (1-2 Gegner-DROMEs + Sentinels je Formation).
 
-## Ü3 Charger-Crafter im Crafting-Tab (20. Nov. 2026, offen -- Bild vom Spieler folgt)
+## Ü3 Charger-Crafter im Crafting-Tab (20. Nov. 2026, entworfen und gebaut -- Skizze unter docs/design/charger/)
 
 **Was:** Im Shop-Reiter **Bauen** (Crafting) wird aus einem **Charger-Rohling** und bis zu
 **6 Energy Phases** ein Charger gebaut. Die Phasen werden per **Ziehen** in ein **Hexagon**

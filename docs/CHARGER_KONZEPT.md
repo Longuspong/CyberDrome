@@ -1,6 +1,7 @@
 # CyberDrome – Waffen-Upgrades: Charger und Energy Phases
 
-Stand 20. Nov. 2026 · Status: **vom Spieler entschieden, noch nicht gebaut.**
+Stand 20. Nov. 2026 · Status: **entschieden und gebaut** (20. Nov. 2026; wirken tut vorerst nur Feuer).
+Resonanz: die Stufen **zaehlen zusammen** (Spieler im Design-Canvas). Details zum Bau: `docs/PROJEKTSTAND.md`.
 Bildschirme dazu: Übergabe an eine Design-Session in `docs/design/UEBERGABEN_DESIGN.md`
 (Ü1 Waffen-Upgrade, Ü3 Charger-Crafter).
 

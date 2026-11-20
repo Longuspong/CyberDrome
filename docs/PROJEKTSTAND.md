@@ -962,6 +962,36 @@ Spielstand). Vorschlaege zu Story, Fraktionen, Klassen und Anstieg stehen in
 
 ---
 
+### Charger, Caches oeffnen, Hangar-Upgrade (20. Nov. 2026)
+
+Nach dem Design-Canvas „CyberDrome Charger & Hangar“
+(https://claude.ai/artifact/FJpqxTaHcbXsPTU619YC1e, vom Spieler abgesegnet) und
+`docs/CHARGER_KONZEPT.md` gebaut:
+
+* **Daten** (`Charger`, `Roster`): Energy Phases (`materials["phase:<element>"]`),
+  Charger-Rohlinge (`materials["rohling"]`), Charger als Gegenstand (`roster.chargers`,
+  `craft_charger`, `mount_charger` am Waffen-Exemplar), `DromeBuild.chargers`
+  (bleibt im Lauf-Spielstand). Werte in `config.json -> charger`.
+* **Kampf** (`ActionResolver._charge`): 20 Belastung je Phase und Treffer, ab 100 ein
+  Stapel (`Unit.add_element_load`). Ueberwiegendes Element: die Faehigkeit legt einen
+  Stapel direkt an. Resonanz 2/4/6 zaehlt zusammen (Spieler im Canvas): Stufe 2 Faehigkeit
+  +100, 4 jeder 5. Treffer doppelt, 6 jeder 3. doppelt und Faehigkeit +200. Wirken tut
+  nur Feuer (Kabelbrand); die anderen Elemente werden gezaehlt (`Unit.element_stacks`).
+* **Caches oeffnen** echt: vier Wuerfe (`Roster.open_cache`), Energiebaelle fliegen in die
+  Ergebnis-Felder. Caches neu als Hex-Container je Fraktion (`CacheArt`). Der **Neon Cache**
+  ist eine 3D-Szene als Shader (`assets/shaders/neon_cache.gdshader`, Raymarching, Parameter
+  `open` 0..1 fuer den Oeffnen-Ablauf). Farben im Shader linear (sonst wirkt es blass).
+* **Shop › Bauen**: Charger-Crafter (`ChargerCrafter`) nach der Skizze des Spielers
+  (`docs/design/charger/skizze_spieler.jpg`): ziehen, antippen + Feld, Doppeltipp.
+* **Hangar**: Reiter Umbau | **Upgrade** (Charger in Waffen); der Squad-Reiter ist raus,
+  sein Code bleibt bis zum Assembler-Modus. `HangarScreen.open_tab`, `ShopScreen.open_tab`.
+* **Einsatzvorbereitung**: Aufklaerung (`EnemyIntel`) -- Formationen der Fraktion mit
+  DROMEs (Sechseck) und Sentinels (Quadrat), Rollen-Bilanz, Hinweis.
+* Bausteine: `PhaseGem` (Hex-Kristall), `ChargerHex`, Symbole `phase_*.svg`, `hammer.svg`,
+  `charger.svg`; Farben `phase-*` im SPOT-Blatt Design.
+* Offen (SPOT): Wirkung der uebrigen Elemente, Kabelbrand am Bumerang (Uebergang),
+  Charger am DROME statt an der Waffe?, Amps (nur Entwurf).
+
 ## 3. Messungen und gefundene Fehler (lohnt sich zu wissen)
 
 * **KI griff abgeschirmte Ziele nie an.** Sie bewertete nur HP-Schaden; ein
