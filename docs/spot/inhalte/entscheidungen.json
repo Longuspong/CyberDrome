@@ -250,7 +250,7 @@
   "glossar": [
     {"begriff": "DROME", "englisch": "DROME", "erklaerung": "Death Robot Omni Machine Executor. Eine Kampfeinheit. Besteht aus Chassis (mit Werten und Passive), Kopf, Kern, Antrieb (nur Optik) und Waffen im Halter."},
     {"begriff": "Squad", "englisch": "Squad", "erklaerung": "Spieler: die DROMEs, die in den Kampf gehen (max. 3 seit 16. Nov. 2026). Gegner: mindestens ein DROME + Sentinels."},
-    {"begriff": "Halter", "englisch": "Slot", "erklaerung": "Waffenplatz am Chassis. Form = Gewichtsklasse: Dreieck leicht, Viereck mittel, Fünfeck schwer."},
+    {"begriff": "Halter", "englisch": "Socket", "erklaerung": "Waffenplatz am Chassis. Form = Gewichtsklasse: Dreieck leicht, Viereck mittel, Fünfeck schwer."},
     {"begriff": "Takt", "englisch": "Beat", "erklaerung": "Auslösevoraussetzung einer Fähigkeit, z. B. „jeder 3. Angriff“."},
     {"begriff": "Puls", "englisch": "Pulse", "erklaerung": "Alle 3 s: Schildladung, Reparatur, ab Minute 5 Virusschaden (heute gebaut: Overtime)."},
     {"begriff": "Power", "englisch": "Power", "erklaerung": "Schadensfaktor des DROME: Rohschaden = Waffenschaden x Power / 10."},

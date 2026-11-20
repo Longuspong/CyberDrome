@@ -39,7 +39,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   in `project.godot` eingetragen, `Accessibility.language` (fest `de`,
   `set_language`), Test `test_i18n`. Regeln in `i18n/LIESMICH.md`.
 * SPOT-Glossar mit Spalte **Englisch (Vorschlag)** -- z. B. Einsatz =
-  Mission, Takt = Beat, Halter = Slot, Zwischenstopp = Interference, Baukern = Build Core.
+  Mission, Takt = Beat, Halter = Socket, Zwischenstopp = Interference, Baukern = Build Core.
   Noch nicht entschieden.
 * Umlaute nachgezogen: "Mörser" und "E-Schraubenschlüssel" standen noch
   ohne (der Teile-Generator hatte sie zurueckgeschrieben).
