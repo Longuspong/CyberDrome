@@ -162,10 +162,46 @@ einem öffentlichen Start.
   ist kein Leistungsrisiko, solange alles in **einer** Szene bleibt. Die
   Zahlen sind der Ausgangswert für B.
 
-## 6. Offen (Spieler)
+## 6. Schritt B nach dem Lesen des Codes (20. Nov. 2026, abends)
 
-1. **Schritt B jetzt** (vor Story-Leveln und Bossen) oder später?
-   Empfehlung: jetzt, weil sonst jede neue Fähigkeit doppelt gebaut wird.
+Der Spieler hat B und C freigegeben. Beim Lesen von `Arena3D`, `BattleView`
+und `ArenaPainter` zeigte sich: der Kampf ist schon **weiter 3D als in
+Abschnitt 3 beschrieben**. DROMEs, Hindernisse, Deko und Boden kommen aus dem
+3D-Generator, in einer gemeinsamen Szene mit derselben Ortho-Iso-Projektion
+wie die 2D-Ebene. Die Schichten liegen so:
+
+| Ebene | Inhalt | Verdeckung |
+|---|---|---|
+| unten (2D) | Boden-Bild (3D, einmal gerendert), Zierlinie, Licht, Aufstellzone, Bodenringe, Bodenmarken der Fähigkeiten | liegt unter den Figuren, also richtig |
+| Mitte (3D) | DROMEs, Hindernisse, Deko, Mündungsblitz, Kontur, Neon | echte Tiefe |
+| oben (2D) | Geschosse, Einschläge, Zahlen, Balken, Ansagen | bleibt immer sichtbar |
+
+Bei einer festen Ortho-Kamera ist das die übliche, günstige Aufteilung.
+
+* **B-a gebaut:** Der tote 2D-Pfad ist raus: gezeichnete Hindernisse,
+  Deko, Bodenkacheln, die Neon-City-Bilder (`assets/arena/`) und
+  `tools/cut_arena_city.py`. Die Quelle `art/arena_city/` bleibt.
+  `ArenaPainter` zeichnet nur noch Zierlinie und Licht. Das Kampfbild ist
+  unverändert, alle Tests sind grün.
+* **B-b (Geschosse in 3D): empfohlen, es zu lassen.** In 3D würden Hindernisse
+  und DROMEs Schüsse verdecken. Auf dem Handy sind Treffer oben drauf
+  lesbarer. Dazu kämen Kosten je Bild ohne sichtbaren Gewinn. Die
+  Bodenmarken liegen schon richtig unter den Figuren.
+* **Kamera frei drehen / Perspektive**: erst sinnvoll, wenn es gewollt ist
+  (z. B. Kamerafahrt bei Boss-Fähigkeiten). Dann wandern Bodenmarken und
+  Geschosse mit in die Szene. Bis dahin nicht nötig.
+
+**C (Generator ohne SVG): wartet auf eine Frage an den Spieler.** Die
+SVG-Werkstatt (`werkstatt/index.html`) liest alle vier Richtungsbilder aus
+`parts/`. Wer sie noch benutzt, verliert sie mit C. Ohne die Werkstatt könnte
+der Generator nur noch Südansicht + `.m3d` schreiben (ca. 75 % weniger
+Dateien in `parts/`). Ganz ohne SVG wäre es erst, wenn die Symbole aus dem
+3D-Modell gerendert werden.
+
+## 7. Offen (Spieler)
+
+1. Wird die SVG-Werkstatt noch gebraucht? Nein → C bauen.
+2. Einverstanden, B-b (Geschosse in 3D) zu lassen?
 
 Messwerkzeug (nicht im Repo, einfach nachzubauen): kleiner Python-Server, der
 `build/web` Brotli-komprimiert ausliefert, und ein Playwright-Skript mit
