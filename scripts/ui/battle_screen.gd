@@ -106,6 +106,8 @@ var _follow_scale := 1.0
 var _follow_seeded := false
 var _intro: Tween
 var _intro_end: Array = []
+## Eine Kamera-Szene laeuft (C10): die Zeit steht so lange.
+var _cinema_running := false
 ## Glitch ueber dem Bild: Vorwarnung vor dem Virus und je Viruspuls.
 var _glitch: Arcade.GlitchOverlay
 ## Kampfzeit des naechsten Warn-Flackerns (-1 = noch nicht gesetzt).
@@ -214,7 +216,7 @@ func _add_scenery() -> void:
 func _process(delta: float) -> void:
 	if battle == null or battle.grid == null:
 		return
-	if not _paused and not _over and not _deploying:
+	if not _paused and not _over and not _deploying and not _cinema_running:
 		_accumulator += delta
 		var dt := battle.step_seconds()
 		var steps := 0
@@ -417,6 +419,29 @@ func _on_unit_died(unit: Unit) -> void:
 	_refresh_hud()
 
 
+## Kamera fuer Sonderszenen (C10): Blick tief auf die lebenden Einheiten einer
+## Seite; die Zeit steht, bis die Szene vorbei oder uebersprungen ist.
+func _play_cinema(which: String, players: bool, title: String, color: Color, done: Callable) -> void:
+	var group: Array = battle.units.filter(func(u): return u.is_alive() and u.is_player == players)
+	if group.is_empty() or view.arena3d == null:
+		if done.is_valid():
+			done.call()
+		return
+	var center := Vector2.ZERO
+	for unit in group:
+		center += unit.visual_anchor()
+	center /= float(group.size())
+	var spread := 0.0
+	for unit in group:
+		spread = maxf(spread, Arena3D.ground(unit.visual_anchor()).distance_to(Arena3D.ground(center)))
+	view.arena3d.build_cinema_floor(battle.grid)
+	_cinema_running = true
+	Cinema.play(self, view.arena3d, which, Arena3D.ground(center), title, color, func():
+		_cinema_running = false
+		if done.is_valid():
+			done.call(), spread)
+
+
 ## Kurzer Kamerastoss, der von selbst zur Ruhe kommt. ``severity`` ist der
 ## Anteil der Maximalintegritaet, den der Treffer gekostet hat.
 func _shake_camera(severity: float) -> void:
@@ -443,7 +468,13 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	# Erst den letzten DROME zerfallen sehen, dann das Ergebnis (17. Nov. 2026).
 	var wait := (Unit.DEATH_TIME_CALM if Accessibility.reduce_motion else Unit.DEATH_TIME) + 0.4
 	get_tree().create_timer(wait).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
+		# Sieg: kurze Kreisfahrt um das eigene Squad, dann das Ergebnis (C10).
+		if outcome == BattleManager.Outcome.VICTORY:
+			_play_cinema("victory", true, tr("SIEG"), UiKit.GOOD,
+				func(): _show_result(outcome))
+		else:
 			_show_result(outcome))
 
 
@@ -564,6 +595,10 @@ func _start_fight() -> void:
 	_play_bar.visible = true
 	_set_follow(true)
 	_refresh_hud()
+	# Elite-Kampf (spaeter Bosse): die Gegner treten kurz gross auf (C10).
+	var run = GameState.run if GameState.in_run_battle else null
+	if run != null and int(run.tier) == RunState.Tier.ELITE:
+		_play_cinema("entrance", false, tr("ELITE-KAMPF"), Arcade.YELLOW, Callable())
 
 
 ## Schwenk zu Beginn der Aufstellung: erst die Gegner etwas naeher, dann

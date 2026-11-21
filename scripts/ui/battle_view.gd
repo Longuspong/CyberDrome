@@ -79,6 +79,7 @@ func _ready() -> void:
 ## Hindernisse und Deko in der 3D-Szene (Arena3D).
 func build_terrain(battle_grid: Grid) -> void:
 	grid = battle_grid
+	abilities.grid = grid
 	for node in _arena:
 		node.queue_free()
 	_arena = ArenaPainter.build(_world, grid)

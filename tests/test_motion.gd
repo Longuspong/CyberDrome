@@ -227,3 +227,47 @@ func test_funken_fallen_zu_boden() -> void:
 	fx.free()
 	quiet.free()
 	Accessibility.reduce_motion = calm
+
+
+# ---------------------------------------------------------------------------
+# Paket 3 (ohne Hoehenstufen)
+# ---------------------------------------------------------------------------
+
+func test_bodenmarke_sind_genau_die_felder() -> void:
+	var painter := AbilityPainter.new()
+	var at := IsoView.map_to_local(Vector2i(4, 8))
+	t.ok(painter.area_tiles(at, 0).size() == 1, "Radius 0: ein Feld")
+	t.ok(painter.area_tiles(at, 1).size() == 7, "Radius 1: Feld und sechs Nachbarn")
+	t.ok(painter.area_tiles(at, 2).size() == 19, "Radius 2: 19 Felder")
+	for tile in painter.area_tiles(at, 2):
+		t.ok(Grid.distance(Vector2i(4, 8), tile) <= 2, "%s liegt im Radius" % tile)
+	painter.free()
+
+
+func test_szenen_kamera_bleibt_nahe_der_iso_richtung() -> void:
+	for kind in Cinema.SHOTS:
+		var shot: Dictionary = Cinema.SHOTS[kind]
+		for k in [0.0, 0.5, 1.0]:
+			var p := Cinema.camera_place(shot, Vector3.ZERO, k)
+			t.ok(p.y > 10.0, "%s %.1f: Kamera ueber dem Boden" % [kind, k])
+			var flat := Vector2(p.x, p.z).normalized()
+			var iso := Vector2(-1.0, 1.0).normalized()
+			t.ok(rad_to_deg(acos(clampf(flat.dot(iso), -1.0, 1.0))) <= Cinema.ORBIT_MAX + 0.5,
+				"%s %.1f: hoechstens %d Grad seitlich" % [kind, k, int(Cinema.ORBIT_MAX)])
+
+
+func test_echtes_licht_waehlt_blitze_und_naechste_laternen() -> void:
+	var arena := Arena3D.new()
+	for i in 12:
+		arena.light_spots.append([Vector2(i * 100.0, 0.0), Color(0.2, 0.9, 1.0), 90.0])
+	arena.light_spots.append([Vector2(5.0, 5.0), Color.RED, 70.0])
+	var lights := arena.real_lights()
+	t.ok(lights.size() == Arena3D.REAL_LIGHTS, "hoechstens acht Lichter (%d)" % lights.size())
+	var first: Vector4 = lights[0][0]
+	t.ok(Vector2(first.x, first.z).distance_to(Vector2(Arena3D.ground(Vector2.ZERO).x,
+		Arena3D.ground(Vector2.ZERO).z)) < 0.01, "die naechste Laterne zuerst")
+	arena._flashes.append({"unit": null, "at": Vector2(300, 0), "foot": Vector2(300, 0), "t": 0.0})
+	lights = arena.real_lights()
+	t.ok(lights.size() == Arena3D.REAL_LIGHTS, "mit Blitz weiter acht")
+	t.ok((lights[0][1] as Vector4).x > 1.0, "der Blitz kommt zuerst und ist hell")
+	arena.free()

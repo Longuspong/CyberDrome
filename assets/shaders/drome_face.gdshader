@@ -36,12 +36,49 @@ uniform vec4 stripe_color : source_color = vec4(0.1, 0.1, 0.1, 1.0);
 uniform vec3 glow_in = vec3(0.0);
 uniform vec3 glow_dir = vec3(0.0, 1.0, 0.0);
 
+// Echtes Licht (21. Nov. 2026, Kampfbild mehr 3D B6 Stufe 2, Option "Echtes
+// Licht"): bis zu acht Punktlichter (Laternen, Muendungsblitze) fuer alle
+// Flaechen der Kampfszene auf einmal, je Bildpunkt nach Abstand und Richtung.
+// pos: Weltpunkt + Reichweite, col: Farbe * Staerke. Arena3D setzt sie jedes
+// Bild; arena_light_count = 0 schaltet ab. Kein Licht-Node, keine Schatten.
+global uniform int arena_light_count;
+global uniform vec4 arena_light_pos_0;
+global uniform vec4 arena_light_col_0;
+global uniform vec4 arena_light_pos_1;
+global uniform vec4 arena_light_col_1;
+global uniform vec4 arena_light_pos_2;
+global uniform vec4 arena_light_col_2;
+global uniform vec4 arena_light_pos_3;
+global uniform vec4 arena_light_col_3;
+global uniform vec4 arena_light_pos_4;
+global uniform vec4 arena_light_col_4;
+global uniform vec4 arena_light_pos_5;
+global uniform vec4 arena_light_col_5;
+global uniform vec4 arena_light_pos_6;
+global uniform vec4 arena_light_col_6;
+global uniform vec4 arena_light_pos_7;
+global uniform vec4 arena_light_col_7;
+
 varying vec3 world_normal;
+varying vec3 world_pos;
 varying vec3 local_pos;
 
 void vertex() {
 	world_normal = (MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz;
+	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	local_pos = VERTEX;
+}
+
+vec3 point_light(vec4 p, vec4 c, vec3 n, vec3 base, vec3 at) {
+	vec3 d = p.xyz - at;
+	float dist = length(d);
+	if (p.w <= 0.0 || dist >= p.w) {
+		return vec3(0.0);
+	}
+	float att = 1.0 - dist / p.w;
+	att *= att;
+	float lambert = max(dot(n, d / max(dist, 1e-3)), 0.0);
+	return c.rgb * att * (base * lambert * 1.6 + 0.06);
 }
 
 void fragment() {
@@ -82,6 +119,16 @@ void fragment() {
 	if (glow_in.r + glow_in.g + glow_in.b > 0.001) {
 		float facing = max(dot(n, normalize(glow_dir)), 0.0);
 		lit += glow_in * (0.3 + 0.7 * facing);
+	}
+	if (arena_light_count > 0) {
+		if (arena_light_count > 0) lit += point_light(arena_light_pos_0, arena_light_col_0, n, col, world_pos);
+		if (arena_light_count > 1) lit += point_light(arena_light_pos_1, arena_light_col_1, n, col, world_pos);
+		if (arena_light_count > 2) lit += point_light(arena_light_pos_2, arena_light_col_2, n, col, world_pos);
+		if (arena_light_count > 3) lit += point_light(arena_light_pos_3, arena_light_col_3, n, col, world_pos);
+		if (arena_light_count > 4) lit += point_light(arena_light_pos_4, arena_light_col_4, n, col, world_pos);
+		if (arena_light_count > 5) lit += point_light(arena_light_pos_5, arena_light_col_5, n, col, world_pos);
+		if (arena_light_count > 6) lit += point_light(arena_light_pos_6, arena_light_col_6, n, col, world_pos);
+		if (arena_light_count > 7) lit += point_light(arena_light_pos_7, arena_light_col_7, n, col, world_pos);
 	}
 	ALBEDO = lit;
 }

@@ -45,6 +45,9 @@ const LIFE := {"lock": 0.35, "breaker": 0.4, "double": 0.25,
 const FOOT_RING := 26.0
 
 var pixel_scale: float = 1.0
+## Das Kampffeld -- fuer die Felder einer Flaechenmarke (Kampfbild mehr 3D B8,
+## 21. Nov. 2026). Ohne Feld (Tests) zaehlen alle Felder im Radius.
+var grid: Grid = null
 ## Einheiten, deren Statuseffekte als Marke gezeigt werden (BattleScreen).
 var units: Array = []
 
@@ -224,6 +227,56 @@ func _draw() -> void:
 			_dashed_ellipse(at, foot_axes(1.18), Color(VULN_COLOR, 0.9 * alpha), _width(2.0), _time * 0.9, 12)
 
 
+# ---------------------------------------------------------------------------
+# Felder statt Ellipse (Kampfbild mehr 3D B8, 21. Nov. 2026)
+# ---------------------------------------------------------------------------
+# Die Marke liegt auf den Platten: genau die Felder, die die Logik trifft,
+# leicht gefuellt, die Aussenkante leuchtet. Die Fuellung waechst mit der
+# Ausholzeit. Ringe, Runen und Pfeile bleiben obendrauf ("Was?").
+
+## Die Felder einer Marke: alle im Radius um das Feld unter ``at``.
+func area_tiles(at: Vector2, radius: int) -> Array:
+	var center := IsoView.local_to_map(at)
+	var out: Array = []
+	for dy in range(-radius - 1, radius + 2):
+		for dx in range(-radius, radius + 1):
+			var tile := center + Vector2i(dx, dy)
+			if Grid.distance(center, tile) > radius:
+				continue
+			if grid != null and not grid.in_bounds(tile):
+				continue
+			out.append(tile)
+	return out
+
+
+func _cells_of(mark: Dictionary) -> Array:
+	if not mark.has("cells"):
+		mark["cells"] = area_tiles(mark["at"], int(mark.get("radius", 0)))
+	return mark["cells"]
+
+
+## Felder fuellen (``fill`` Deckkraft) und die Aussenkante leuchten lassen.
+func _draw_cells(cells: Array, color: Color, fill: float, edge: float, enemy: bool = false) -> void:
+	if cells.is_empty() or (fill <= 0.0 and edge <= 0.0):
+		return
+	var inside: Dictionary = {}
+	for tile in cells:
+		inside[tile] = true
+	for tile in cells:
+		var corners := IsoView.tile_corners(tile)
+		if fill > 0.0:
+			draw_colored_polygon(corners, Color(color, fill))
+	var rim := ENEMY_RIM if enemy else color.lightened(0.25)
+	for pass_width in [6.0, 2.2]:
+		var alpha := edge * (0.28 if pass_width > 3.0 else 0.95)
+		for tile in cells:
+			var corners := IsoView.tile_corners(tile)
+			for i in 6:
+				if inside.has(Grid.neighbor(tile, IsoView.EDGE_DIR[i])):
+					continue
+				draw_line(corners[i], corners[(i + 1) % 6], Color(rim, alpha), _width(pass_width), true)
+
+
 func _width(base: float) -> float:
 	return base * maxf(1.0, pixel_scale * 0.7)
 
@@ -243,8 +296,10 @@ func _draw_vortex(mark: Dictionary) -> void:
 	if age < delay:
 		var k := age / delay
 		var fade_in := clampf(age / 0.12, 0.0, 1.0)
-		# Wo: gestrichelter Ring, der sich langsam dreht, dazu eine zarte Flaeche.
-		_fill_ellipse(at, axes, Color(color, 0.16 * fade_in))
+		# Wo: genau die Felder, Fuellung waechst bis zum Einschlag; darueber
+		# der gestrichelte Ring, der sich langsam dreht.
+		_draw_cells(_cells_of(mark), color, (0.08 + 0.2 * k) * fade_in, fade_in,
+			bool(mark.get("enemy", false)))
 		_enemy_rim(mark, at, axes, fade_in)
 		_dashed_ellipse(at, axes, Color(color.lightened(0.2), fade_in), _width(3.0),
 			float(mark["spin"]) + age * 1.6, 18)
@@ -273,7 +328,8 @@ func _draw_vortex(mark: Dictionary) -> void:
 			Color(color.lightened(0.5), fade), _width(4.0))
 		_ellipse(at, axes * lerpf(0.1, 0.8, ease(t, 0.4)),
 			Color(1, 1, 1, fade * 0.7), _width(2.0))
-		_fill_ellipse(at, axes * lerpf(0.2, 1.0, t), Color(color, 0.18 * fade))
+		_draw_cells(_cells_of(mark), color.lightened(0.3), 0.3 * fade, fade,
+			bool(mark.get("enemy", false)))
 
 
 ## Drei Einschlagstellen im Ring -- fest je Ziel, damit nichts springt.
@@ -298,8 +354,8 @@ func _draw_barrage(mark: Dictionary) -> void:
 	if age < delay:
 		var fade_in := clampf(age / 0.12, 0.0, 1.0)
 		var k := age / delay
-		_fill_ellipse(at, axes, Color(color, 0.12 * fade_in))
-		_enemy_rim(mark, at, axes, fade_in)
+		_draw_cells(_cells_of(mark), color, (0.06 + 0.18 * k) * fade_in, fade_in,
+			bool(mark.get("enemy", false)))
 		_dashed_ellipse(at, axes, Color(color.lightened(0.2), fade_in), _width(3.0),
 			float(mark["spin"]), 16)
 		for spot in spots:
@@ -308,6 +364,7 @@ func _draw_barrage(mark: Dictionary) -> void:
 	else:
 		var t := (age - delay) / 0.45
 		var fade := 1.0 - t
+		_draw_cells(_cells_of(mark), FIRE_COLOR, 0.22 * fade, fade, bool(mark.get("enemy", false)))
 		for spot in spots:
 			var r := foot_axes(lerpf(0.5, 1.2, ease(t, 0.4)))
 			_ellipse(at + spot, r, Color(FIRE_COLOR, fade), _width(3.5))
@@ -325,7 +382,7 @@ func _draw_whirl_ground(mark: Dictionary) -> void:
 	var color: Color = mark["color"]
 	var t: float = float(mark["age"]) / _life(mark)
 	var fade := 1.0 - maxf(0.0, t - 0.7) / 0.3
-	_enemy_rim(mark, at, axes, fade)
+	_draw_cells(_cells_of(mark), color, 0.14 * fade, fade, bool(mark.get("enemy", false)))
 	_dashed_ellipse(at, axes, Color(color.lightened(0.2), fade), _width(2.6), float(mark["spin"]), 14)
 	# Kreisspur hinter dem Bumerang (zeichnet die Luftebene).
 	var head := float(mark["spin"]) + minf(t / 0.7, 1.0) * TAU * 1.1
@@ -339,6 +396,7 @@ func _draw_melee_cast(mark: Dictionary) -> void:
 	var t: float = float(mark["age"]) / _life(mark)
 	var at: Vector2 = mark["at"]
 	var color: Color = mark["color"]
+	_draw_cells(_cells_of(mark), color, 0.05 + 0.22 * t, 0.4 + 0.6 * t, bool(mark.get("enemy", false)))
 	_dashed_ellipse(at, foot_axes(lerpf(1.6, 1.15, ease(t, 0.5))), color, _width(2.8), _time * 2.5, 10)
 	if mark.has("dir") and str(mark.get("ability", "")) == "push":
 		var dir: Vector2 = mark["dir"]
@@ -351,7 +409,9 @@ func _draw_whirl_cast(mark: Dictionary) -> void:
 	var t: float = float(mark["age"]) / _life(mark)
 	var at: Vector2 = mark["at"]
 	var axes := ellipse_axes(float(mark.get("radius", 1)))
-	_enemy_rim(mark, at, axes, t)
+	if not mark.has("radius"):
+		mark["radius"] = 1
+	_draw_cells(_cells_of(mark), mark["color"], 0.04 + 0.2 * t, 0.5 + 0.5 * t, bool(mark.get("enemy", false)))
 	_dashed_ellipse(at, axes, Color(mark["color"], 0.5 + 0.5 * t), _width(2.6), float(mark["spin"]) - _time, 14)
 
 

@@ -29,7 +29,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
-### Kampfbild mehr 3D, Paket 1 + 2 (21. Nov. 2026, Entscheidung des Spielers)
+### Kampfbild mehr 3D, Paket 1-3 ohne Höhenstufen (21. Nov. 2026, Entscheidung des Spielers)
 
 Grundlage: Design-Canvas „Kampfbild mehr 3D“
 (https://claude.ai/artifact/WrHqW9gAqkfgZUfsEL3At7), Spieler: „Paket 1 und 2
@@ -67,9 +67,25 @@ läuft weiter Feld für Feld. Werte in `data/config.json` -> `motion`.
   Glühwürmchen im Park.
 * Mit „Bewegung reduzieren“: keine Teilchen, kein Regen, kein Zoom/Schwenk,
   keine Neigung.
-* **Offen:** Leistung auf dem Handy messen (24 DROMEs, Ziel weiter ca. 41 B/s);
-  Paket 3 (Höhenstufen, Projektion, Sonderszenen, echtes Licht) entscheidet der
-  Spieler noch. Tests: `tests/test_motion.gd`.
+* **Paket 3 ohne Höhenstufen (21. Nov. 2026, Spieler: „Paket drei auch gern,
+  Höhenunterschiede erstmal weglassen“):**
+  * **B8 Bodenmarken als Felder:** `AbilityPainter.area_tiles`/`_draw_cells` --
+    Flächenmarken (Vortex, Sperrfeuer, Wirbel, Nahkampf-Ansage) färben genau
+    die getroffenen Hexfelder, die Außenkante leuchtet (Gegner: rot), die
+    Füllung wächst mit der Ausholzeit. Ringe, Runen, Pfeile bleiben obendrauf.
+  * **C10 Kamera-Szenen:** `Cinema` (neu) -- perspektivische Kamera auf dieselbe
+    3D-Welt, Boden dafür auf eigener Ebene (`Arena3D.build_cinema_floor`).
+    Auftritt der Gegner im Elite-Kampf, Kreisfahrt beim Sieg vor dem Ergebnis;
+    die Zeit steht, Antippen überspringt, höchstens 20 Grad neben der
+    Iso-Richtung (die Modelle sind für sie gebaut).
+  * **B6 Stufe 2 echtes Licht:** Option „Echtes Licht (Test)“ in den Optionen
+    (`Accessibility.real_light`, Standard aus). Bis zu 8 Punktlichter je Bild
+    (Mündungsblitze, nächste Laternen) als globale Shader-Werte
+    (`project.godot` -> `shader_globals`, `arena_light_*`), Licht je Bildpunkt
+    nach Abstand und Richtung im `drome_face.gdshader`. Keine Schatten.
+  * **D11 Höhenstufen:** zurückgestellt, steht als offener Punkt in der SPOT.
+* **Offen:** Leistung auf dem Handy messen (24 DROMEs, Ziel weiter ca. 41 B/s),
+  einmal mit und einmal ohne „Echtes Licht (Test)“. Tests: `tests/test_motion.gd`.
 
 ### Englisch vorbereitet, letzte Umlaute (19. Nov. 2026, Spieler)
 

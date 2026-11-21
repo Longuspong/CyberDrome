@@ -53,6 +53,10 @@ var light_spots: Array = []
 var _flashes: Array = []
 ## Teilchen (ParticleFx im Kampfbild) -- fuer den Staub beim Auftreten.
 var fx = null
+## Mitte des sichtbaren Ausschnitts (2D-Welt), fuer die Wahl der Lichter.
+var _view_center := Vector2.ZERO
+var _real_on := false
+var _cinema_floor := false
 
 ## Bewegung (Schritt 5, 18. Nov. 2026). Laengen in Generator-Einheiten (ein
 ## DROME ist ~80 hoch), Zeiten in Sekunden.
@@ -80,6 +84,19 @@ const FLASH_GAIN := 0.55
 const FLASH_LIGHT_TIME := 0.12
 const FLASH_REACH := 2.0         # in Feldbreiten
 const FLASH_COLOR := Color(1.0, 0.86, 0.6)
+## Echtes Licht (B6 Stufe 2, Option "Echtes Licht"): bis zu acht Punktlichter
+## je Bild fuer den Flaechen-Shader (globale Werte arena_light_*). Hoehe der
+## Laternen und Reichweiten in Welteinheiten (ein DROME ist ~60 hoch).
+const REAL_LIGHTS := 8
+const REAL_FLASHES := 3
+const LAMP_HEIGHT := 52.0
+const LAMP_REACH := 1.25         # mal Lichtfleck-Radius (Bildpunkte -> Welt)
+const LAMP_ENERGY := 0.6
+const FLASH_REACH_3D := 95.0
+const FLASH_ENERGY := 1.5
+## Kamera-Szenen (C10): eigene Ebene fuer den Boden, den nur die Szenen-Kamera
+## sieht (der Kampf zeichnet seinen Boden einmal als Bild, ArenaFloor3D).
+const LAYER_CINEMA_FLOOR := 8
 const STRIX_HOP := 2.6           # die Eule huepft
 const RECOIL := 2.6              # Fernkampf: Rueckstoss
 const RANGED_TIME := 0.24
@@ -389,7 +406,8 @@ func attack(unit: Unit, action: ActionData, seconds: float = -1.0) -> bool:
 		time = seconds
 	_anim[unit]["attack"] = {"slot": slot, "kind": kind, "t": 0.0, "time": time}
 	if kind == "ranged":
-		_flashes.append({"unit": unit, "at": unit.visual_anchor() + Vector2(0, -18), "t": 0.0})
+		_flashes.append({"unit": unit, "at": unit.visual_anchor() + Vector2(0, -18),
+			"foot": unit.visual_anchor(), "t": 0.0})
 	return true
 
 
@@ -674,7 +692,10 @@ func _apply_light(unit: Unit, node: Node3D, state: Dictionary) -> void:
 	var sum := Vector3.ZERO
 	var dir := Vector3.ZERO
 	var here := ground(at)
-	for spot in light_spots:
+	# Mit echtem Licht (Stufe 2) uebernimmt der Shader -- hier nichts dazu.
+	var spots: Array = [] if Accessibility.real_light else light_spots
+	var flashes: Array = [] if Accessibility.real_light else _flashes
+	for spot in spots:
 		var radius := float(spot[2]) * LIGHT_REACH
 		var d: Vector2 = (spot[0] as Vector2) - at
 		var dist := Vector2(d.x, d.y / IsoView.DEPTH_SQUASH).length()
@@ -684,7 +705,7 @@ func _apply_light(unit: Unit, node: Node3D, state: Dictionary) -> void:
 		var c: Color = spot[1]
 		sum += Vector3(c.r, c.g, c.b) * w
 		dir += (ground(spot[0]) - here).normalized() * w
-	for flash in _flashes:
+	for flash in flashes:
 		if flash["unit"] == unit:
 			continue
 		var reach := FLASH_REACH * IsoView.TILE_W
@@ -706,6 +727,97 @@ func _apply_light(unit: Unit, node: Node3D, state: Dictionary) -> void:
 	for mat in state["face_mats"]:
 		(mat as ShaderMaterial).set_shader_parameter("glow_in", sum)
 		(mat as ShaderMaterial).set_shader_parameter("glow_dir", direction)
+
+
+## Echtes Licht (B6 Stufe 2): Muendungsblitze zuerst, dann die Laternen, die
+## dem sichtbaren Ausschnitt am naechsten sind -- hoechstens REAL_LIGHTS.
+func _update_real_light() -> void:
+	if not Accessibility.real_light:
+		if _real_on:
+			Arena3D.clear_real_light()
+			_real_on = false
+		return
+	_real_on = true
+	var lights: Array = real_lights()
+	RenderingServer.global_shader_parameter_set("arena_light_count", lights.size())
+	for i in lights.size():
+		RenderingServer.global_shader_parameter_set("arena_light_pos_%d" % i, lights[i][0])
+		RenderingServer.global_shader_parameter_set("arena_light_col_%d" % i, lights[i][1])
+
+
+## Die Lichter dieses Bildes: [Vector4 (Weltpunkt, Reichweite), Vector4 Farbe].
+func real_lights() -> Array:
+	var out: Array = []
+	var flashes := _flashes.duplicate()
+	flashes.sort_custom(func(a, b): return float(a["t"]) < float(b["t"]))
+	for flash in flashes:
+		if out.size() >= REAL_FLASHES:
+			break
+		var k := 1.0 - float(flash["t"]) / FLASH_LIGHT_TIME
+		var p := ground(flash.get("foot", flash["at"])) + Vector3.UP * 30.0
+		out.append([Vector4(p.x, p.y, p.z, FLASH_REACH_3D),
+			Vector4(FLASH_COLOR.r, FLASH_COLOR.g, FLASH_COLOR.b, 1.0) * FLASH_ENERGY * k])
+	var lamps: Array = []
+	for spot in light_spots:
+		if float(spot[2]) < 80.0:
+			continue
+		lamps.append(spot)
+	var center := _view_center
+	lamps.sort_custom(func(a, b): return (a[0] as Vector2).distance_squared_to(center) \
+		< (b[0] as Vector2).distance_squared_to(center))
+	for spot in lamps:
+		if out.size() >= REAL_LIGHTS:
+			break
+		var p := ground(spot[0]) + Vector3.UP * LAMP_HEIGHT
+		var reach := float(spot[2]) * LAMP_REACH / DromeModel.SCALE * 2.0
+		var c: Color = spot[1]
+		out.append([Vector4(p.x, p.y, p.z, reach), Vector4(c.r, c.g, c.b, 1.0) * LAMP_ENERGY])
+	return out
+
+
+static func clear_real_light() -> void:
+	RenderingServer.global_shader_parameter_set("arena_light_count", 0)
+
+
+func _exit_tree() -> void:
+	if _real_on:
+		Arena3D.clear_real_light()
+		_real_on = false
+
+
+# ---------------------------------------------------------------------------
+# Kamera-Szenen (C10, 21. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+## Den Boden des Feldes einmal in die Szene legen -- nur fuer die Kamera der
+## Szenen sichtbar (Ebene LAYER_CINEMA_FLOOR). Im Kampf bleibt der Boden ein
+## einmal gerendertes Bild (ArenaFloor3D).
+func build_cinema_floor(grid: Grid) -> void:
+	if _cinema_floor or grid == null:
+		return
+	_cinema_floor = true
+	var region_id := str(grid.region.id) if grid.region != null else "city"
+	var table := ArenaFloor3D.weights(region_id)
+	var basis := DromeModel.facing_basis("deg60")
+	DromeModel._edge = DromeModel.edge_px(256)
+	var apron := ArenaFloor3D.APRON
+	for y in range(-apron, grid.height + apron):
+		for x in range(-apron, grid.width + apron):
+			var tile := Vector2i(x, y)
+			var sort := ArenaFloor3D.sort_for(grid, tile, region_id, table)
+			var model := ArenaFloor3D._model(region_id, sort)
+			if model.is_empty():
+				continue
+			var mesh := DromeModel._mesh_for("floor|%s|%s" % [region_id, sort], model,
+				model.get("colors", {}))
+			if mesh == null:
+				continue
+			var inst := DromeModel.mesh_instance(mesh)
+			inst.layers = LAYER_CINEMA_FLOOR
+			inst.set_meta("cinema_floor", true)
+			inst.position = ground(IsoView.map_to_local(tile))
+			inst.basis = basis
+			_scene.add_child(inst)
 
 
 ## Alle Flaechen-Materialien einer Einheit als eigene Kopien (wie beim
@@ -1075,6 +1187,7 @@ func _process(_delta: float) -> void:
 		_animate(unit, _models[unit], _delta)
 		if unit.is_alive() and _anim.has(unit):
 			_apply_light(unit, _models[unit], _anim[unit])
+	_update_real_light()
 	_fly_shots(_delta)
 	_sync_camera()
 
@@ -1093,6 +1206,7 @@ func _sync_camera() -> void:
 	# Bis hier globale Koordinaten; die 3D-Welt rechnet in den lokalen der
 	# 2D-Welt (IsoView), also in denen dieses Knotens.
 	var local_center := to_local(center)
+	_view_center = local_center
 	var world_scale := get_global_transform().get_scale().x
 	var px_zoom := zoom * world_scale
 	var size := Vector2i(maxi(1, int(screen.x * OVERSAMPLE)), maxi(1, int(screen.y * OVERSAMPLE)))
