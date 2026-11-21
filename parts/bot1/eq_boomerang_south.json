@@ -43,38 +43,6 @@
   "mount_class": "light",
   "category": "weapon",
   "pose": "hold",
-  "variants": {
-    "heavy": {
-      "svg": "eq_boomerang_heavy_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 64.0,
-          "y": 46.36
-        },
-        {
-          "name": "muzzle",
-          "x": 39.56,
-          "y": 53.71
-        }
-      ]
-    },
-    "heavy_right": {
-      "svg": "eq_boomerang_heavy_right_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 64.0,
-          "y": 46.36
-        },
-        {
-          "name": "muzzle",
-          "x": 39.56,
-          "y": 53.71
-        }
-      ]
-    }
-  },
   "stats": {
     "hp": 0,
     "spd": 1,

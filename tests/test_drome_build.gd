@@ -39,7 +39,9 @@ func test_library_loaded() -> void:
 	t.equal(PartDB.parts.size(), 27, "27 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausätze erwartet")
 	for part in PartDB.parts.values():
-		t.equal(part.views.size(), 4, "%s braucht vier Ansichten" % part.id)
+		# Seit 20. Nov. 2026 nur noch die Suedansicht als Symbol (Schritt C).
+		t.equal(part.views.size(), 1, "%s hat genau ein Symbol" % part.id)
+		t.ok(part.views.has("south"), "%s: Symbol ist die Suedansicht" % part.id)
 
 
 func test_stock_builds_are_valid() -> void:

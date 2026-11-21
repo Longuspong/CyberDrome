@@ -83,53 +83,6 @@
       "off": true
     }
   },
-  "variants": {
-    "arm_equip_left_hold": {
-      "svg": "mage_body_arm_equip_left_hold_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 77.17,
-          "y": 60.45
-        },
-        {
-          "name": "hand",
-          "x": 65.96,
-          "y": 81.66
-        }
-      ]
-    },
-    "arm_equip_left_aim": {
-      "svg": "mage_body_arm_equip_left_aim_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 77.17,
-          "y": 60.45
-        },
-        {
-          "name": "hand",
-          "x": 60.37,
-          "y": 76.62
-        }
-      ]
-    },
-    "arm_equip_left_guard": {
-      "svg": "mage_body_arm_equip_left_guard_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 77.17,
-          "y": 60.45
-        },
-        {
-          "name": "hand",
-          "x": 65.96,
-          "y": 81.66
-        }
-      ]
-    }
-  },
   "stats": {
     "hp": 60,
     "spd": 12,

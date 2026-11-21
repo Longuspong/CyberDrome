@@ -42,38 +42,6 @@
   "mount_class": "medium",
   "category": "shield",
   "pose": "guard",
-  "variants": {
-    "heavy": {
-      "svg": "eq_deflector_heavy_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 64.0,
-          "y": 46.36
-        },
-        {
-          "name": "muzzle",
-          "x": 58.39,
-          "y": 51.52
-        }
-      ]
-    },
-    "heavy_right": {
-      "svg": "eq_deflector_heavy_right_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 64.0,
-          "y": 46.36
-        },
-        {
-          "name": "muzzle",
-          "x": 58.39,
-          "y": 51.52
-        }
-      ]
-    }
-  },
   "stats": {
     "hp": 0,
     "spd": 0,

@@ -95,8 +95,11 @@ def main() -> int:
     written = stale = 0
     all_missing: dict[str, set[str]] = {}
 
+    kept: set[pathlib.Path] = set()
+
     def emit(target: pathlib.Path, text: str) -> None:
         nonlocal written, stale
+        kept.add(target)
         current = target.read_text(encoding="utf-8") if target.exists() else None
         if current == text:
             return
@@ -120,7 +123,6 @@ def main() -> int:
     # (UiKit.part_texture). Andere Richtungen, Kontur, Leuchten und
     # Waffen-Varianten fliegen raus -- 26 % des Downloads (TECHNIK_PRUEFUNG.md,
     # Schritt A). Die JSONs aller Richtungen bleiben: sie tragen die Anker.
-    kept: set[pathlib.Path] = set()
     for meta_path, meta, svg_path in iter_parts():
         baked, missing = bake_svg(svg_path.read_text(encoding="utf-8"),
                                   meta.get("color_scheme", {}))
@@ -135,13 +137,18 @@ def main() -> int:
         if meta.get("direction", "south") == "south":
             target = OUT_DIR / meta["set"] / svg_path.name
             emit(target, baked)
-            kept.add(target)
         emit(OUT_DIR / meta["set"] / meta_path.name,
              json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
 
-    # Alte Bilder (andere Richtungen, _rim, _glow, Varianten) wegraeumen.
-    for old in sorted(OUT_DIR.glob("*/*.svg")):
-        if old in kept:
+    # 3D-Modelle (17. Nov. 2026): unveraendert mit, die Farben stehen darin.
+    for model_path in sorted(PARTS_DIR.glob("*/*.m3d")):
+        emit(OUT_DIR / model_path.parent.name / model_path.name,
+             model_path.read_text(encoding="utf-8"))
+
+    # Was der Generator nicht mehr erzeugt (alte Richtungen, _rim, _glow,
+    # Varianten), wegraeumen -- samt der .import-Datei daneben.
+    for old in sorted(OUT_DIR.glob("*/*")):
+        if old.suffix not in (".svg", ".json", ".m3d") or old in kept:
             continue
         stale += 1
         if args.check:
@@ -150,11 +157,6 @@ def main() -> int:
         old.unlink()
         old.with_name(old.name + ".import").unlink(missing_ok=True)
         written += 1
-
-    # 3D-Modelle (17. Nov. 2026): unveraendert mit, die Farben stehen darin.
-    for model_path in sorted(PARTS_DIR.glob("*/*.m3d")):
-        emit(OUT_DIR / model_path.parent.name / model_path.name,
-             model_path.read_text(encoding="utf-8"))
 
     if all_missing:
         print("\nFehlende Farbrollen (mit Magenta gefuellt):", file=sys.stderr)

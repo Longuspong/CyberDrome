@@ -1,16 +1,22 @@
 # Teile-Format (`/parts/`)
 
-Alles, was die SVG-Werkstatt zusammensetzt, liegt hier. Ein Ordner = ein
-**Set** (eine Bot-Familie).
+> **Stand 20. Nov. 2026:** Die SVG-Werkstatt ist entfernt, gezeichnet wird im
+> Spiel das 3D-Modell (`<id>.m3d`, `DromeModel`). Der Generator
+> (`tools/build_sample_parts.py`) schreibt je Teil nur noch das Modell und die
+> **Suedansicht** als Symbol (SVG + JSON mit den Spielwerten). Wo dieser Text
+> von vier Richtungen, Ankern im Bild oder der Werkstatt spricht, ist er
+> Hintergrund fuer den Generator (`render`, `project`), nicht mehr das Format
+> der Dateien. Details: `docs/TECHNIK_PRUEFUNG.md`.
+
+Alle Teile liegen hier. Ein Ordner = ein **Set** (eine Bot-Familie).
 
 ```
 parts/
   bot1/                     <- Set-Ordner (Name = Set-ID, nur A-Z a-z 0-9 _ - .)
     set.json                <- optionale Set-Beschreibung + Standardpalette
-    scout_body_south.svg    <- Grafik
-    scout_body_south.json   <- Metadaten (gleicher Dateiname!)
-    scout_body_north.svg
-    scout_body_north.json
+    scout_body.m3d          <- 3D-Modell (Flaechen, Anker, Varianten, Farben)
+    scout_body_south.svg    <- Symbol (Suedansicht)
+    scout_body_south.json   <- Metadaten + Spielwerte (gleicher Dateiname!)
     ...
   bot2/
     ...
@@ -20,8 +26,9 @@ parts/
     ...
 ```
 
-Der Server liest jede `*.json` (ausser `set.json`) als ein Teil und erwartet
-daneben die gleichnamige `.svg`.
+Das Spiel (`PartDB`, ueber die gebackene Kopie unter `assets/parts/`) liest
+jede `*.json` (ausser `set.json`) als ein Teil und erwartet daneben die
+gleichnamige `.svg`.
 
 ---
 

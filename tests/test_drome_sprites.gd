@@ -1,15 +1,14 @@
 extends RefCounted
 
-## Der Zusammenbau: sitzt jedes Teil auf seinem Sockel?
-##
-## Die Regel steht in parts/README.md, Abschnitt 2, und lautet
-## ``verschiebung = body.anker[slot] - teil.anker["mount"]``. Sie hier
-## festzuhalten kostet wenig und faengt einen Fehler, den man sonst nur sieht
-## und nicht misst -- und selbst dann erst, wenn man den Bot dreht.
+## Der Zusammenbau eines DROME als Bild (DromeSprites, 3D-Modell per
+## SubViewport). Die Sockel-Regel der frueheren 2D-Bilder entfiel am
+## 20. Nov. 2026 mit den Richtungsbildern; im 3D-Modell setzt DromeModel die
+## Teile ueber die 3D-Anker aus den .m3d.
 
 var t
 
-## Die vier Ansichten, in denen jedes Teil vorliegt.
+## Die vier Blickrichtungen der Iso-Kamera (die Teile liegen seit 20. Nov. 2026
+## nur noch als Suedansicht-Symbol vor; gedreht wird das 3D-Modell).
 const DIRECTIONS := ["south", "west", "east", "north"]
 
 
@@ -49,61 +48,7 @@ func _stock(chassis: PartData) -> DromeBuild:
 
 
 # ---------------------------------------------------------------------------
-# Die Regel selbst
-# ---------------------------------------------------------------------------
-
-func test_equipment_lands_on_its_socket_in_every_direction() -> void:
-	# Der eigentliche Fehler: Ausruestung wurde ohne Verschiebung gezeichnet
-	# und sass damit auf der Mittelachse des Bots. Die Sockel wandern beim
-	# Drehen um ihn herum, der Fehler wechselte also mit der Richtung die
-	# Seite -- ein Orbit-Fokus schien seinen Platz zu tauschen.
-	for chassis: PartData in _bodies():
-		for direction in DIRECTIONS:
-			var sockets: Dictionary = chassis.view(direction).get("anchors", {})
-			for slot in chassis.equip_slots():
-				var part := _equipment_for(chassis, slot)
-				if part == null:
-					continue
-				var view := part.view(direction)
-				var mount: Vector2 = view["anchors"]["mount"]
-				var offset := DromeSprites.mount_offset(slot, view, sockets)
-				t.ok(mount + offset == sockets[slot],
-					"%s/%s %s: der Anker muss auf dem Sockel landen (%s + %s)"
-					% [chassis.id, slot, direction, mount, offset])
-
-
-func test_socket_parts_are_not_moved() -> void:
-	# Kopf, Fuesse und Kern haben ihren "mount" AUF dem Sockel -- ihre Grafik
-	# sitzt bereits richtig. Faellt hier etwas anderes als (0,0) heraus, sind
-	# die Anker auseinandergelaufen, und die Verschiebung wuerde ein Teil
-	# verschieben, das schon am Platz war.
-	for chassis: PartData in _bodies():
-		var build := _stock(chassis)
-		for direction in DIRECTIONS:
-			var sockets: Dictionary = chassis.view(direction).get("anchors", {})
-			for slot in ["head", "feet", "core"]:
-				var part := build.part_in(slot)
-				if part == null:
-					continue
-				t.equal(DromeSprites.mount_offset(slot, part.view(direction), sockets),
-					Vector2.ZERO,
-					"%s/%s %s sitzt schon auf seinem Sockel"
-					% [chassis.id, slot, direction])
-
-
-func test_the_body_stays_where_its_graphic_puts_it() -> void:
-	# Der Body traegt die Bodenraute auf (64, 96), und daran haengt die
-	# Platzierung auf dem Feld. Wird er verschoben, steht der ganze Bot
-	# neben seinem Feld -- und zwar in allen vier Richtungen anders.
-	for chassis: PartData in _bodies():
-		for direction in DIRECTIONS:
-			var view := chassis.view(direction)
-			t.equal(DromeSprites.mount_offset("body", view, view.get("anchors", {})),
-				Vector2.ZERO, "%s %s: der Body bleibt liegen" % [chassis.id, direction])
-
-
-# ---------------------------------------------------------------------------
-# ... und der Zusammenbau, der sie anwendet
+# Der Zusammenbau
 # ---------------------------------------------------------------------------
 
 func test_assemble_builds_one_3d_view() -> void:
@@ -227,24 +172,6 @@ func _block_for(chassis: PartData, slot: String, model: Dictionary) -> Dictionar
 	if not variants.has(name):
 		name = chassis.weapon_variant
 	return variants.get(name, model)
-
-
-func test_turning_does_not_move_equipment_relative_to_its_socket() -> void:
-	# Die Formulierung des Spielers: "der Orbit-Fokus wechselt den Platz".
-	# Gemessen heisst das: der Abstand zwischen Teil und Sockel darf sich
-	# beim Drehen nicht aendern -- er muss null bleiben, in jeder Richtung.
-	var chassis := PartDB.get_part(&"mage_body")
-	var focus := PartDB.get_part(&"eq_rune_staff")
-	var seen := {}
-	for direction in DIRECTIONS:
-		var sockets: Dictionary = chassis.view(direction).get("anchors", {})
-		var view := focus.view(direction)
-		var placed: Vector2 = view["anchors"]["mount"] \
-			+ DromeSprites.mount_offset("equip_right", view, sockets)
-		seen[direction] = placed - sockets["equip_right"]
-	for direction in seen:
-		t.equal(seen[direction], Vector2.ZERO,
-			"Orbit-Fokus %s: kein Abstand zum Sockel" % direction)
 
 
 ## Drehen baut nicht neu: dieselbe 3D-Ansicht, nur das Modell dreht sich.

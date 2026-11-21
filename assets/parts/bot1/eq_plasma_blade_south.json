@@ -42,38 +42,6 @@
   "mount_class": "light",
   "category": "weapon",
   "pose": "hold",
-  "variants": {
-    "heavy": {
-      "svg": "eq_plasma_blade_heavy_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 64.0,
-          "y": 46.36
-        },
-        {
-          "name": "muzzle",
-          "x": 64.0,
-          "y": -0.89
-        }
-      ]
-    },
-    "heavy_right": {
-      "svg": "eq_plasma_blade_heavy_right_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 64.0,
-          "y": 46.36
-        },
-        {
-          "name": "muzzle",
-          "x": 64.0,
-          "y": -0.89
-        }
-      ]
-    }
-  },
   "stats": {
     "hp": 0,
     "spd": 0,
