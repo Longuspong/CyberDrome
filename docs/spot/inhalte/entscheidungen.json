@@ -268,7 +268,8 @@
     {"punkt": "Charger: Übergewicht -> Fähigkeit legt 1 Stapel direkt an; Resonanz 2 legt zusätzlich 100 Belastung an, 6 zusätzlich 200 (statt 100); Stufe 6 macht aus jedem 5. jeden 3. Treffer doppelt.", "quelle": "Spieler 20. Nov. 2026", "status": "entschieden"},
     {"punkt": "Charger am DROME statt an der Waffe? -> bleibt an der Waffe.", "quelle": "Spieler 20. Nov. 2026", "status": "entschieden"},
     {"punkt": "Kabelbrand am Wirbelwurf des Klingenbumerangs -> bleibt.", "quelle": "Spieler 20. Nov. 2026", "status": "entschieden"},
-    {"punkt": "Amps, Fusion, Hyperfusion gebaut (20. Nov. 2026). Offen: Auswahl der 13 Vorschlags-Fusionen, Sondereffekte der Hyperfusionen außer Power, BIOS für Hyperfusionen, Preis/Häufigkeit des Fusion Core -- Liste in docs/design/UEBERGABEN_DESIGN.md (Offene Logik).", "quelle": "Spieler 20. Nov. 2026", "status": "offen"}
+    {"punkt": "Amps, Fusion, Hyperfusion gebaut (20. Nov. 2026). Offen: Auswahl der 13 Vorschlags-Fusionen, Sondereffekte der Hyperfusionen außer Power, BIOS für Hyperfusionen, Preis/Häufigkeit des Fusion Core -- Liste in docs/design/UEBERGABEN_DESIGN.md (Offene Logik).", "quelle": "Spieler 20. Nov. 2026", "status": "offen"},
+    {"punkt": "Technik-Prüfung (20. Nov. 2026): Godot bleibt. Hauptziel Android-APK (Indie-Plattform), die PWA bleibt der Testweg. Leistungstest Handy: eine 3D-Szene ca. 41 B/s bis 24 DROMEs, Browser-Decke ca. 47. Gebaut 20./21. Nov.: A nur Südansichten (16,3 → 11,8 MB), B-a gezeichnete 2D-Arena raus, B-b Geschosse fliegen in 3D, C SVG-Werkstatt entfernt, Generator schreibt nur Modell + Symbol. Details in docs/TECHNIK_PRUEFUNG.md.", "quelle": "Spieler 20./21. Nov. 2026", "status": "entschieden"}
   ],
 
   "_kommentar_glossar": ["Spalte englisch (19. Nov. 2026): Vorschlaege fuer die englische Fassung, noch nicht",

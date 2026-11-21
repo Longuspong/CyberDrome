@@ -151,6 +151,8 @@ FACINGS = {
     "west":  ((0, 1), (-1, 0)),    # blickt nach oben-links
 }
 DIRECTIONS = ["south", "west", "east", "north"]
+## Die Richtung des Symbols je Teil (die einzige, die noch als Bild entsteht).
+SYMBOL_DIRECTION = "south"
 
 
 def to_world(point, facing):
@@ -3521,34 +3523,9 @@ def write_part(set_dir: pathlib.Path, set_id: str, part: dict, direction: str,
         meta["category"] = part.get("category", DEFAULT_CATEGORY)
         if part.get("pose"):
             meta["pose"] = part["pose"]
-    # Varianten: Waffen fuer den Molok (Waffenmass) und die Strix-Lafette,
-    # am Chassis die Arme je Slot und Haltung ("arm_<slot>_<pose>").
-    vspecs = dict(part.get("variants", {}))
-    for slot, poses in part.get("arms", {}).items():
-        for pose, (shapes, hand) in poses.items():
-            vspecs[f"arm_{slot}_{pose}"] = {
-                "shapes": shapes,
-                "anchors": {"mount": part["anchors"][slot], "hand": hand},
-            }
-    variants = {}
-    for vname, vspec in vspecs.items():
-        vstem = f"{pid}_{vname}_{direction}"
-        vsvg = SVG_TEMPLATE.format(
-            pid=pid, ptype=part["type"], direction=direction,
-            name=part.get("name", pid), body=render(vspec["shapes"], direction),
-            note=svg_comment_body(SVG_NOTE.format(direction=direction)),
-        )
-        ElementTree.fromstring(vsvg)
-        (set_dir / f"{vstem}.svg").write_text(vsvg, encoding="utf-8")
-        variants[vname] = {
-            "svg": f"{vstem}.svg",
-            "anchors": [
-                {"name": name, **dict(zip(("x", "y"), project(local, direction)))}
-                for name, local in vspec["anchors"].items()
-            ],
-        }
-    if variants:
-        meta["variants"] = variants
+    # Varianten (Molok-Waffenmass, Strix-Lafette, Arme je Haltung) gibt es
+    # seit 20. Nov. 2026 nur noch im 3D-Modell (write_model) -- als Bild wurden
+    # sie nur von der entfernten SVG-Werkstatt gebraucht.
     if "slots" in part:
         meta["slots"] = part["slots"]
     # Spielwerte. Richtungsunabhaengig, deshalb in allen vier JSONs identisch --
@@ -3576,11 +3553,14 @@ def main() -> None:
         )
 
         for part in spec["parts"]:
-            for direction in DIRECTIONS:
-                write_part(set_dir, spec["id"], part, direction, spec["palette"])
+            # Seit 20. Nov. 2026 nur die Suedansicht: sie ist das Symbol fuer
+            # Kacheln und Halter (UiKit.part_texture). Gezeichnet wird im Spiel
+            # das 3D-Modell; die vier Richtungen brauchte nur die entfernte
+            # SVG-Werkstatt (docs/TECHNIK_PRUEFUNG.md, Schritt C).
+            write_part(set_dir, spec["id"], part, SYMBOL_DIRECTION, spec["palette"])
             write_model(set_dir, part, spec["palette"])
 
-        print(f"[ok] {spec['dir']}: {len(list(set_dir.glob('*.svg')))} SVGs geschrieben")
+        print(f"[ok] {spec['dir']}: {len(spec['parts'])} Teile (Modell + Symbol) geschrieben")
 
     # Codes muessen projektweit eindeutig sein -- hier gleich mitpruefen.
     seen = {}

@@ -19,7 +19,6 @@ extends Node2D
 const DEPTH_STRIDE := 16
 const UNIT_DEPTH_OFFSET := 8
 
-const OVERLAY_TILE := "res://assets/terrain/overlay_tile.svg"
 
 var grid: Grid
 
@@ -60,16 +59,13 @@ func _ready() -> void:
 # Boden
 # ---------------------------------------------------------------------------
 
-## Boden, Rand, Hindernisse, Deko und Licht -- gezeichnet von ArenaPainter
-## (7. Nov. 2026; vorher eine SVG-Kachel je Feld mit schwarzem Umriss).
-## Hindernisse und Deko sortieren sich wie Einheiten nach der Tiefe ihres
-## Feldes.
+## Boden aus 3D-Platten (ArenaFloor3D), Zierlinie und Licht (ArenaPainter),
+## Hindernisse und Deko in der 3D-Szene (Arena3D).
 func build_terrain(battle_grid: Grid) -> void:
 	grid = battle_grid
 	for node in _arena:
 		node.queue_free()
-	_arena = ArenaPainter.build(_world, grid, func(tile: Vector2i) -> int:
-		return IsoView.depth(tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET, false, true, true)
+	_arena = ArenaPainter.build(_world, grid)
 	# Boden aus 3D-Hexplatten, einmal gerendert (18. Nov. 2026), ganz unten.
 	var floor := ArenaFloor3D.new()
 	floor.name = "Boden3D"
@@ -202,6 +198,13 @@ func show_shot(from: Vector2, to: Vector2, color: Color, heavy: bool = false) ->
 ##   heavy       groesser (Faehigkeit, Flaeche)
 ##   area        Radius der Flaeche in Feldern (Ring am Ziel)
 func show_attack(from: Vector2, to: Vector2, color: Color, style: Dictionary) -> void:
+	# Seit 21. Nov. 2026 fliegen Geschosse in der 3D-Szene (Arena3D.add_shot);
+	# hier bleibt nur der Einschlag, zur selben Zeit.
+	var kind := str(style.get("projectile", ""))
+	if arena3d != null and arena3d.add_shot(from, to, color, style,
+			float(EffectPainter.FLIGHT.get(kind, 0.0))):
+		style = style.duplicate()
+		style["in_3d"] = true
 	_effects.add_attack(from, to, color, style)
 
 
@@ -611,7 +614,7 @@ class EffectPainter extends Node2D:
 			"kind": kind, "flight": flight, "total": total,
 			"energy": float(style.get("energy", 0.0)), "heavy": bool(style.get("heavy", false)),
 			"area": int(style.get("area", 0)), "spin": seed_angle,
-			"from_fn": style.get("from_fn", null)})
+			"from_fn": style.get("from_fn", null), "in_3d": bool(style.get("in_3d", false))})
 
 	func add_text(at: Vector2, text: String, color: Color, big: bool) -> void:
 		# Mehrere Zahlen am selben Ort stapeln sich, statt sich zu ueberdecken.
@@ -648,7 +651,8 @@ class EffectPainter extends Node2D:
 			var age: float = entry["age"]
 			var flight: float = entry["flight"]
 			if age < flight and entry["kind"] != "":
-				_draw_projectile(entry, age / maxf(0.001, flight))
+				if not entry["in_3d"]:
+					_draw_projectile(entry, age / maxf(0.001, flight))
 			elif age >= flight:
 				_draw_impact(entry, (age - flight) / IMPACT_TIME)
 		_draw_texts()

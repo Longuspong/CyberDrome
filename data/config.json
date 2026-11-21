@@ -323,8 +323,8 @@
       "Laufwege, Schuesse gehen darueber. groups_min..groups_max Gruppen, jede",
       "punktsymmetrisch gespiegelt (also doppelt so viele auf dem Feld), nie in",
       "den Aufstellungszonen oder zone_margin Felder daneben. kinds: Optik je Region.",
-      "props: Deko auf dem Randstreifen je Region (sonst wie kinds). Neon City",
-      "seit 9. Nov. 2026 aus Bildern (assets/arena/city/, tools/cut_arena_city.py).",
+      "props: Deko auf dem Randstreifen je Region (sonst wie kinds), in 3D aus",
+      "assets/arena3d (Arena3D.build_props; die Bilder von 9. Nov. 2026 sind seit 20. Nov. weg).",
       "Seit 18. Nov. 2026 aus (enabled false, Wunsch des Spielers): die Karten haben feste",
       "Formen (maps), zufaellige Hindernisse machten Kaempfe unberechenbar. kinds bleibt",
       "fuer die festen Bloecke der Formen, props fuer die Randdeko."

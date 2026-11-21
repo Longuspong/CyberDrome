@@ -53,7 +53,7 @@ static func create_3d(texture_glow: Texture2D, resolution: int) -> NeonGlow:
 	glow.centered = false
 	var material := ShaderMaterial.new()
 	material.shader = HALO_SHADER
-	# Lichthof 1,3 Entwurfspunkte (halber Strich aus glow_svg).
+	# Lichthof 1,3 Entwurfspunkte (halber Strich der frueheren Leuchtebene glow_svg).
 	material.set_shader_parameter("halo_px", 1.3 * resolution / 128.0)
 	glow.material = material
 	glow._rng.randomize()

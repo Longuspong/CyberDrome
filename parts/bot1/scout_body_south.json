@@ -82,53 +82,6 @@
       "off": true
     }
   },
-  "variants": {
-    "arm_equip_left_hold": {
-      "svg": "scout_body_arm_equip_left_hold_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 77.84,
-          "y": 54.24
-        },
-        {
-          "name": "hand",
-          "x": 66.63,
-          "y": 75.45
-        }
-      ]
-    },
-    "arm_equip_left_aim": {
-      "svg": "scout_body_arm_equip_left_aim_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 77.84,
-          "y": 54.24
-        },
-        {
-          "name": "hand",
-          "x": 61.04,
-          "y": 70.42
-        }
-      ]
-    },
-    "arm_equip_left_guard": {
-      "svg": "scout_body_arm_equip_left_guard_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 77.84,
-          "y": 54.24
-        },
-        {
-          "name": "hand",
-          "x": 66.63,
-          "y": 75.45
-        }
-      ]
-    }
-  },
   "stats": {
     "hp": 80,
     "spd": 12,
