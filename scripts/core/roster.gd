@@ -460,10 +460,10 @@ func _cache_roll(table: Array, faction: String, rng: RandomNumberGenerator) -> D
 			if not picks.is_empty():
 				var id: String = picks[rng.randi() % picks.size()]
 				var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary)[id]
-				var entry := craft_drome_free(StringName(str(spec.get("chassis", ""))), str(spec.get("name", id)))
+				var entry := craft_drome_free(StringName(str(spec.get("chassis", ""))), faction_drome_name(id))
 				if entry != null:
 					entry.variant = id
-					return {"kind": "faction_drome", "name": str(spec.get("name", id)), "faction": faction}
+					return {"kind": "faction_drome", "name": faction_drome_name(id), "faction": faction}
 			add_faction_core(faction)
 			return {"kind": "faction_core", "faction": faction}
 		"faction_core":
@@ -551,6 +551,37 @@ func craft_drome(chassis_id: StringName, entry_name: String = "") -> RosterEntry
 	return entry
 
 
+## Name eines Fraktions-DROME (21. Nov. 2026, Spieler): eine Variante heisst wie
+## ihr Chassis (Molok), ein neuer DROME traegt seinen eigenen Namen (Neon Vireo).
+static func faction_drome_name(variant_id: String) -> String:
+	var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(variant_id, {})
+	if str(spec.get("art", "")) == "variante":
+		return _starter_name(StringName(str(spec.get("chassis", ""))))
+	return str(spec.get("name", variant_id))
+
+
+## Untertitel unter dem Namen: die Fraktion ("Mega Mechas", "Neon Ninja's") oder
+## "CyberDrome" fuer die Standard-DROMEs. ``faction`` ist der Schluessel (mecha).
+static func subtitle_for(faction: String) -> String:
+	if faction == "":
+		return "CyberDrome"
+	var cores: Dictionary = RunState.loot_cfg().get("faction_cores", {})
+	for region_id in cores:
+		if str(cores[region_id]).to_lower() == faction.to_lower():
+			var region := TerrainDB.get_region(StringName(str(region_id)))
+			if region != null:
+				return str(region.faction.get("name", faction))
+	return faction.capitalize()
+
+
+## Der Untertitel eines Roster-Eintrags.
+static func subtitle(entry: RosterEntry) -> String:
+	if entry == null or entry.variant == "":
+		return subtitle_for("")
+	var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(entry.variant, {})
+	return subtitle_for(str(spec.get("faction", "")))
+
+
 ## Die Fraktions-DROMEs, die sich bauen liessen (alle mit festen Werten).
 static func faction_variants() -> Array:
 	var out: Array = []
@@ -572,7 +603,7 @@ func craft_faction_drome(variant_id: String) -> RosterEntry:
 	if PartDB.get_part(chassis_id) == null:
 		return null
 	_add_material("kern:" + faction, -1)
-	var entry := craft_drome_free(chassis_id, str(spec.get("name", variant_id)))
+	var entry := craft_drome_free(chassis_id, faction_drome_name(variant_id))
 	_add_material("baukern", -kits_per_drome())
 	entry.variant = variant_id
 	return entry
@@ -675,7 +706,7 @@ func seed_new_game() -> void:
 	var fresh: Array = []
 	for variant in faction_variants():
 		var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(variant, {})
-		var entry := craft_drome_free(StringName(str(spec.get("chassis", ""))), str(spec.get("name", variant)))
+		var entry := craft_drome_free(StringName(str(spec.get("chassis", ""))), faction_drome_name(variant))
 		if entry == null:
 			continue
 		entry.variant = variant
@@ -801,6 +832,12 @@ func load_dict(data: Dictionary) -> bool:
 		for slot in entry.assignments.keys():
 			if not _instances.has(str(entry.assignments[slot])):
 				entry.assignments.erase(slot)
+		# Varianten hiessen bis 21. Nov. 2026 "Mecha Molok" -- jetzt "Molok"
+		# mit der Fraktion als Untertitel (selbst vergebene Namen bleiben).
+		if entry.variant != "":
+			var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(entry.variant, {})
+			if str(spec.get("art", "")) == "variante" and entry.name == str(spec.get("name", "")):
+				entry.name = faction_drome_name(entry.variant)
 		entries.append(entry)
 	for c in chargers:
 		if str(c["on"]) != "" and not _instances.has(str(c["on"])):

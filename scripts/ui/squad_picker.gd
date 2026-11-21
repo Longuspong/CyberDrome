@@ -143,6 +143,7 @@ func _drome_box(item: Dictionary, edge: float) -> Control:
 	box.add_theme_constant_override("separation", 0)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(name_label(entry.name, 10))
+	box.add_child(subtitle_label(Roster.subtitle(entry), 9, edge + 20.0))
 	var view := UiKit.drome_view(item["build"], edge, "south")
 	view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(view)
@@ -160,6 +161,20 @@ static func name_label(text: String, size: int) -> Label:
 	name.custom_minimum_size = Vector2(40, size * 2.4)
 	name.max_lines_visible = 2
 	return name
+
+
+## Der Untertitel unter dem Namen (21. Nov. 2026): Fraktion oder "CyberDrome".
+## Eine Zeile in fester Hoehe; Fraktionen in Magenta, Standard gedaempft.
+static func subtitle_label(text: String, size: int, width: float = 0.0) -> Label:
+	# Accessibility hebt jede Schrift auf mindestens 16 px -- die Breite muss
+	# also fuer "NEON NINJA'S" reichen, sonst endet der Text mit "...".
+	var sub := Arcade.label(text.to_upper(), size,
+		Arcade.MUTED if text == "CyberDrome" else Arcade.MAGENTA, "bold")
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.clip_text = true
+	sub.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	sub.custom_minimum_size = Vector2(maxf(width, 40.0), 0)
+	return sub
 
 
 func _free_slot() -> Control:

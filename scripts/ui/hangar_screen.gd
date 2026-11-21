@@ -434,6 +434,9 @@ func _primary_card(index: int) -> Control:
 	code.size_flags_vertical = Control.SIZE_SHRINK_END
 	name_row.add_child(code)
 	info.add_child(name_row)
+	var sub := SquadPicker.subtitle_label(Roster.subtitle(entry), 11, 200.0)
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	info.add_child(sub)
 	info.add_child(role_label(build, role_text(build), 15))
 	var level_row := HBoxContainer.new()
 	level_row.add_theme_constant_override("separation", 8)
@@ -962,7 +965,7 @@ func _picker() -> Control:
 		var box := VBoxContainer.new()
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		box.add_theme_constant_override("separation", 0)
-		box.custom_minimum_size = Vector2(72, 0)
+		box.custom_minimum_size = Vector2(112, 0)
 		panel.add_child(box)
 		# Entwurf: Name und "LV n · #01" statt Bild -- spart Hoehe.
 		# Feste Breite: lange Namen (NEON NIMBUS) brechen um statt zu schieben.
@@ -972,6 +975,9 @@ func _picker() -> Control:
 		dname.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		dname.custom_minimum_size = Vector2(80, 28)
 		box.add_child(_quiet(dname))
+		var dsub := SquadPicker.subtitle_label(Roster.subtitle(entry), 9, 112.0)
+		dsub.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		box.add_child(_quiet(dsub))
 		box.add_child(_quiet(Arcade.label("LV %d · %s" % [entry.level, _code(index)], 12,
 			Arcade.MUTED, "medium")))
 		row.add_child(panel)
