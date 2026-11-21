@@ -10,18 +10,16 @@ extends VBoxContainer
 ##
 ## Kein Umbau: gebaut wird im Hangar. Hier wird nur gewaehlt.
 ##
-## Seit 20. Nov. 2026 (Design-Canvas, Einsatzvorbereitung): Kacheln im Raster
-## 2 x n -- Rollensechseck, Name, Rolle und Level, Waffe; antippen nimmt mit,
-## nochmal tippen laesst zuhause. Gewaehlte tragen DABEI, wer gut gegen die
-## erwarteten Gegner passt (``counter_roles``), traegt KONTER.
+## Seit 21. Nov. 2026 (Wunsch des Spielers): oben die Plaetze des Squads (FREI
+## oder belegt, antippen nimmt heraus), darunter alle uebrigen DROMEs als
+## Kacheln in zwei Reihen -- Name klein oben, der DROME von vorn --, bei mehr als
+## sechs seitlich zu scrollen. Antippen setzt ihn auf den naechsten freien Platz.
 
 signal changed
 
 ## Die waehlbaren DROMEs: {entry: RosterEntry, build: DromeBuild}.
 var _items: Array = []
 var _max_count: int = 4
-## Rollen, die gegen die erwarteten Gegner gut passen (EnemyIntel.counter_roles).
-var counter_roles: Array = []
 
 
 ## Sammelt alle kampftauglichen DROMEs des Rosters ein und zeigt sie.
@@ -83,67 +81,96 @@ func _rebuild() -> void:
 	head.add_child(Arcade.label("KW %d  " % int(power), 12, Arcade.MUTED, "bold", 0.1))
 	head.add_child(Arcade.label("%d/%d" % [count, _max_count], 18, Arcade.YELLOW, "display"))
 	add_child(head)
-	add_child(UiKit.label("Antippen nimmt mit · nochmal tippen lässt zuhause", 13, UiKit.MUTED))
-	# Platz fuer die schraegen DABEI-Etiketten ueber der ersten Reihe.
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 10)
-	add_child(gap)
+
+	# Die Plaetze des Squads: belegt (antippen nimmt heraus) oder FREI.
+	var slots := GridContainer.new()
+	slots.columns = _max_count
+	slots.add_theme_constant_override("h_separation", 8)
+	add_child(slots)
+	var chosen := _items.filter(func(item): return item["entry"].in_squad)
+	for i in _max_count:
+		if i < chosen.size():
+			var item: Dictionary = chosen[i]
+			var entry: RosterEntry = item["entry"]
+			var slot := _TapPanel.new(func(): _set_chosen(entry, false))
+			slot.tooltip_text = "%s zuhause lassen" % entry.name
+			slot.add_theme_stylebox_override("panel", _box(true))
+			slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			slot.add_child(_drome_box(item, 64))
+			slots.add_child(slot)
+		else:
+			slots.add_child(_free_slot())
+
+	# Darunter alle uebrigen DROMEs: Raster aus zwei Reihen, seitlich scrollbar.
+	var rest := _items.filter(func(item): return not item["entry"].in_squad)
+	if rest.is_empty():
+		return
+	var scroll := ScrollContainer.new()
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, 2 * TILE_H + 10)
+	add_child(scroll)
 	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 10)
-	grid.add_theme_constant_override("v_separation", 22)
-	add_child(grid)
-	for item in _items:
-		var chosen: bool = item["entry"].in_squad
-		grid.add_child(_tile(item, chosen, chosen or count < _max_count))
+	grid.columns = maxi(3, int(ceil(float(rest.size()) / 2.0)))
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	scroll.add_child(grid)
+	var full := count >= _max_count
+	for item in rest:
+		var entry: RosterEntry = item["entry"]
+		var tile := _TapPanel.new(func(): _set_chosen(entry, true))
+		tile.tooltip_text = "%s mitnehmen" % entry.name if not full else "Squad ist voll (%d)" % _max_count
+		tile.add_theme_stylebox_override("panel", _box(false))
+		tile.custom_minimum_size = Vector2(TILE_W, TILE_H)
+		tile.modulate.a = 0.55 if full else 1.0
+		tile.add_child(_drome_box(item, 84))
+		grid.add_child(tile)
 
 
-## Eine Kachel: Rollensechseck, Name, Rolle und Level, Waffe; DABEI / KONTER.
-func _tile(item: Dictionary, chosen: bool, enabled: bool) -> Control:
-	var entry: RosterEntry = item["entry"]
-	var build: DromeBuild = item["build"]
-	var role := HangarScreen.role_key(build)
-	var panel := _TapPanel.new(func(): _set_chosen(entry, not chosen))
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+const TILE_W := 128.0
+const TILE_H := 132.0
+
+
+func _box(chosen: bool) -> StyleBoxFlat:
 	var style := UiKit.card_style(chosen)
-	style.set_content_margin_all(10)
-	panel.add_theme_stylebox_override("panel", style)
-	panel.custom_minimum_size = Vector2(0, 92)
-	panel.modulate.a = 1.0 if enabled else 0.5
-	panel.tooltip_text = ("%s zuhause lassen" if chosen else "%s mitnehmen") % entry.name \
-		if enabled else "Squad ist voll (%d)" % _max_count
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(row)
-	var hex := _RoleHex.new(role, Arcade.CYAN if chosen else Color("#6e5ab4"))
-	hex.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(hex)
-	var text := VBoxContainer.new()
-	text.add_theme_constant_override("separation", 0)
-	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(text)
-	var name := Arcade.label(entry.name.to_upper(), 15, Arcade.WHITE, "display")
+	style.set_content_margin_all(6)
+	return style
+
+
+## Name klein oben, darunter der DROME von vorn (schaut nach Suedwesten).
+func _drome_box(item: Dictionary, edge: float) -> Control:
+	var entry: RosterEntry = item["entry"]
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 0)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var name := Arcade.label(entry.name.to_upper(), 10, Arcade.WHITE, "display")
+	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name.clip_text = true
-	text.add_child(name)
-	var role_line := Arcade.label("%s · LV %d" % [HangarScreen.role_text(build).get_slice(" · ", 0).to_upper(),
-		entry.level], 10, Arcade.CYAN, "bold")
-	role_line.clip_text = true
-	text.add_child(role_line)
-	var weapons := Arcade.label(loadout_text(build).get_slice("\n", 0), 11, Arcade.MUTED)
-	weapons.clip_text = true
-	text.add_child(weapons)
-	if chosen:
-		var tag := Arcade.tilt(Arcade.tag("DABEI", 10, 0.0), 3.0)
-		tag.position = Vector2(0, -10)
-		panel.add_overlay(tag, Vector2(1, 0))
-	elif role in counter_roles:
-		var hint := HBoxContainer.new()
-		hint.add_theme_constant_override("separation", 3)
-		hint.add_child(UiIcon.rect("check", 12, UiKit.GOOD))
-		hint.add_child(Arcade.label("KONTER", 10, UiKit.GOOD, "bold", 0.08))
-		panel.add_overlay(hint, Vector2(1, 1))
+	box.add_child(name)
+	var view := UiKit.drome_view(item["build"], edge, "south")
+	view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(view)
+	return box
+
+
+func _free_slot() -> Control:
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(Arcade.NIGHT, 0.6)
+	style.border_color = Arcade.EMPTY_LINE
+	style.set_border_width_all(2)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(0, 92)
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 4)
+	panel.add_child(box)
+	var plus := UiIcon.rect("plus", 22, Arcade.EMPTY_NUM)
+	plus.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(plus)
+	var label := Arcade.label("FREI", 12, Arcade.EMPTY_NUM, "bold", 0.14)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(label)
 	return panel
 
 
@@ -226,23 +253,13 @@ class _TapPanel extends PanelContainer:
 		if corner.y < 0.5:
 			child.position.y -= 22
 
+	var _down := Vector2(-9999, -9999)
+
+	## Tippen = Loslassen ohne Wischen (sonst scrollt das Raster seitlich).
 	func _gui_input(event: InputEvent) -> void:
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			accept_event()
-			_on_tap.call()
-
-
-## Rollensymbol im Sechseck (Farbe: gewaehlt Cyan, sonst Violett).
-class _RoleHex extends Control:
-	var tint := Color.WHITE
-
-	func _init(role: String, color: Color) -> void:
-		tint = color
-		custom_minimum_size = Vector2(38, 33)
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var icon := UiIcon.rect("role_" + (role if role != "" else "skirmisher"), 18, Arcade.NIGHT)
-		icon.position = Vector2(10, 7.5)
-		add_child(icon)
-
-	func _draw() -> void:
-		draw_colored_polygon(PhaseGem.hex(size * 0.5, size.x, size.y), tint)
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_down = event.global_position
+			elif _down.distance_to(event.global_position) < 14.0:
+				_down = Vector2(-9999, -9999)
+				_on_tap.call()

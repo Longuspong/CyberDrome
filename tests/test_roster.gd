@@ -263,3 +263,18 @@ func test_migration_from_the_old_throwaway_squad() -> void:
 	t.equal(build.display_name, "ALPHA", "der Name kommt mit")
 	t.ok(build.validate().is_empty(), "und der DROME ist kampftauglich")
 	t.ok(roster.entries[0].in_squad, "migrierte DROMEs ziehen ins Gefecht")
+
+
+func test_a_new_game_starts_with_everything_once() -> void:
+	var roster := Roster.new()
+	roster.seed_new_game()
+	t.equal(roster.entries.size(), 4 + Roster.faction_variants().size(), "jeder DROME einmal")
+	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+		t.equal(roster.total_count(part.id), 1, "%s genau einmal" % part.display_name)
+	for entry in roster.entries:
+		t.ok(roster.build_for(entry).is_valid(), "%s ist kampfbereit" % entry.name)
+	for e in Charger.element_ids():
+		t.equal(roster.phases(e), 6, "6 %s-Phasen" % e)
+	t.equal(roster.blanks(), 2, "2 Rohlinge")
+	t.equal(int(roster.caches.get("city", 0)), 5, "5 Neon Caches")
+	t.equal(roster.coins, 200, "200 Platzhaltercoin")

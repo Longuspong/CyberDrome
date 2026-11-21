@@ -364,6 +364,20 @@
     "cable_fire": {"kinetic": 5, "energy": 5, "max_per_pulse": 10}
   },
 
+  "new_game": {
+    "_kommentar": [
+      "Startbestand eines neuen Spielstands (21. Nov. 2026, Spieler): jeder DROME einmal",
+      "(Standard + Fraktion), jede Waffe einmal, phases_each je Energy Phase, blanks",
+      "Charger-Rohlinge, caches_each Lootcaches je Gebiet, coins Platzhaltercoin.",
+      "weapon_order: welche freien Waffen die Fraktions-DROMEs zuerst bekommen."
+    ],
+    "phases_each": 6,
+    "blanks": 2,
+    "caches_each": 5,
+    "coins": 200,
+    "weapon_order": ["eq_plasma_blade", "eq_neon_blaster", "eq_boomerang", "eq_bulwark_ram", "eq_mortar", "eq_drone_pod"]
+  },
+
   "charger": {
     "_kommentar": [
       "Charger und Energy Phases (20. Nov. 2026, Spieler; docs/CHARGER_KONZEPT.md).",
