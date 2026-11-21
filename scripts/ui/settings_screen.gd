@@ -58,6 +58,10 @@ func _ready() -> void:
 	motion.add_child(_switch("Vibration", "Kurzes Rütteln bei schweren Treffern, Abschüssen, "
 		+ "Kampfende, Caches und beim Einbauen. Nur auf Geräten, die es können.",
 		Accessibility.haptics, Accessibility.set_haptics))
+	motion.add_child(_rule())
+	motion.add_child(_switch(tr("Echtes Licht (Test)"), tr("Laternen und Mündungsblitze "
+		+ "beleuchten die DROMEs wirklich. Kann auf schwachen Handys ruckeln – zum Ausprobieren."),
+		Accessibility.real_light, Accessibility.set_real_light))
 
 	var screen := _card(content, "Bildschirm")
 	var full_row := HBoxContainer.new()

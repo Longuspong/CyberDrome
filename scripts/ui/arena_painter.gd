@@ -61,8 +61,15 @@ class Floor extends Node2D:
 
 
 ## Farbige Lichtflecken auf dem Boden -- additiv, unter den Einheiten.
+## Seit 21. Nov. 2026 (Kampfbild mehr 3D D12) leben sie: in Neon City flackern
+## die Leuchtreklamen und setzen kurz aus, in der Parkanlage atmen die
+## Laternen und Gluehwuermchen tanzen, in Factory 5 pulsiert das Warnlicht.
 class Lights extends Node2D:
+	const FRAME := 0.1
 	var spots: Array = []     # [Vector2 position, Color, float radius]
+	var region_id := "city"
+	var _time := 0.0
+	var _since := 0.0
 
 	func _ready() -> void:
 		z_index = -50
@@ -70,16 +77,61 @@ class Lights extends Node2D:
 		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 		material = mat
 
+	func _process(delta: float) -> void:
+		if Accessibility.reduce_motion:
+			return
+		_time += delta
+		_since += delta
+		if _since >= FRAME:
+			_since = 0.0
+			queue_redraw()
+
+	## Helligkeit eines Lichts (1 = wie bisher) zur Zeit ``t``.
+	static func strength(region: String, index: int, t: float) -> float:
+		var phase := float(index) * 1.7
+		match region:
+			"city":
+				# Leuchtreklame: leichtes Flimmern, ab und zu kurz aus.
+				var cycle := fmod(t + phase, 5.0 + float(index % 3))
+				if cycle < 0.12 or (cycle > 0.24 and cycle < 0.3):
+					return 0.25
+				return 0.9 + 0.1 * sin(t * 13.0 + phase)
+			"green":
+				return 0.85 + 0.15 * sin(t * 0.9 + phase)
+			"plant7":
+				return 0.7 + 0.3 * maxf(0.0, sin(t * 3.2 + phase))
+		return 1.0
+
 	func _draw() -> void:
+		var index := 0
 		for spot in spots:
 			var pos: Vector2 = spot[0]
 			var color: Color = spot[1]
 			var radius: float = spot[2]
-			for k in 6:
-				var r := radius * (1.0 - float(k) / 6.0)
+			var k := 1.0 if Accessibility.reduce_motion else strength(region_id, index, _time)
+			for ring in 6:
+				var r := radius * (1.0 - float(ring) / 6.0)
 				draw_set_transform(pos, 0.0, Vector2(1.0, IsoView.DEPTH_SQUASH))
-				draw_circle(Vector2.ZERO, r, Color(color, 0.05))
+				draw_circle(Vector2.ZERO, r, Color(color, 0.05 * k))
+			index += 1
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		if region_id == "green" and not Accessibility.reduce_motion:
+			_fireflies()
+
+	## Ein paar Gluehwuermchen um die Laternen der Parkanlage.
+	func _fireflies() -> void:
+		var index := 0
+		for spot in spots:
+			if float(spot[2]) < 80.0:
+				continue
+			var pos: Vector2 = spot[0]
+			for i in 3:
+				var seed_value := float(index * 3 + i)
+				var p := pos + Vector2(sin(_time * 0.7 + seed_value * 2.1) * 34.0,
+					sin(_time * 0.53 + seed_value * 1.3) * 16.0 - 30.0)
+				var blink := maxf(0.0, sin(_time * 2.3 + seed_value * 4.0))
+				draw_circle(p, 2.2, Color(1.0, 0.95, 0.5, 0.55 * blink))
+			index += 1
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +176,7 @@ static func build(world: Node2D, grid: Grid) -> Array:
 
 	# Das Licht der Laternen (die Laternen selbst baut Arena3D.build_props).
 	var lights := Lights.new()
+	lights.region_id = region_id
 	var spots := prop_spots(grid)
 	for index in spots.size():
 		if spots[index][1] == "lamp":

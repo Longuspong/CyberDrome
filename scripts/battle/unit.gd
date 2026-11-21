@@ -125,6 +125,27 @@ var _glide_total: float = 0.0
 var _glide_eased := false
 var _prev_position: Vector2 = Vector2.ZERO
 
+## Bewegung "mehr 3D" (21. Nov. 2026, Paket 1/2): die Logik gleitet weiter
+## linear von Feldmitte zu Feldmitte (_glide_*, der Fuehrungspunkt). Die Figur
+## (``position``) haengt an einer gedaempften Feder daran: sie laeuft weich an,
+## schneidet Ecken leicht, laeuft ueber die Feldmitten durch und bremst erst
+## am Ziel. Daraus kommen auch Tempo und Beschleunigung fuer die
+## Koerpersprache (Arena3D). Werte in data/config.json -> motion.
+var _track: Vector2 = Vector2.ZERO
+var _vel: Vector2 = Vector2.ZERO
+var _acc: Vector2 = Vector2.ZERO
+var _spring_on := false
+var _prev_vel: Vector2 = Vector2.ZERO
+var _prev_track: Vector2 = Vector2.ZERO
+## Aufstellung: die Figur haengt am Finger -- keine Feder.
+var held := false
+## Ausweichen beim Vorbeilaufen (Arena3D setzt es), in Bildpunkten.
+var nudge: Vector2 = Vector2.ZERO:
+	set(value):
+		if value.distance_squared_to(nudge) > 0.01:
+			_spring_on = true
+		nudge = value
+
 var _sprites: Dictionary = {}
 
 ## Die Bauteile haengen unter einem eigenen Knoten, nicht direkt unter der
@@ -249,42 +270,126 @@ func set_facing(direction: String) -> void:
 func place_at(new_tile: Vector2i) -> void:
 	tile = new_tile
 	_prev_position = position
-	position = IsoView.sprite_position(new_tile)
+	_prev_vel = _vel
+	_prev_track = _track
+	_track = IsoView.sprite_position(new_tile)
+	position = _track + stand_offset()
+	_vel = Vector2.ZERO
+	_acc = Vector2.ZERO
+	_spring_on = false
 	_glide_total = 0.0
 
 
 ## Die letzte Versetzung (place_at) sichtbar nachgleiten: vom Ort, an dem die
-## Figur vorher gezeichnet wurde, zum neuen Feld.
+## Figur vorher gezeichnet wurde, zum neuen Feld. Laufen (``eased`` false)
+## geht ueber die Feder -- die Figur behaelt ihr Tempo aus dem letzten
+## Schritt und laeuft durch; Sog und Stoss rutschen wie bisher.
 func animate_last_move(seconds: float, eased: bool = false) -> void:
-	glide_to(tile, seconds, _prev_position)
-	_glide_eased = eased
+	if eased:
+		glide_to(tile, seconds, _prev_position)
+		_glide_eased = true
+		return
+	position = _prev_position
+	_vel = _prev_vel
+	_glide_from = _prev_track
+	_glide_to = IsoView.sprite_position(tile)
+	_track = _glide_from
+	_glide_time = 0.0
+	_glide_total = maxf(0.01, seconds)
+	_glide_eased = false
+	_spring_on = true
 
 
 ## Wie place_at, aber die Figur gleitet in ``seconds`` vom bisherigen Ort
-## dorthin. Das Feld gilt sofort -- nur das Bild laeuft hinterher.
+## dorthin (gerade, ohne Feder). Das Feld gilt sofort -- nur das Bild laeuft
+## hinterher.
 func glide_to(new_tile: Vector2i, seconds: float, from_position: Vector2) -> void:
 	tile = new_tile
-	_glide_from = from_position
+	_glide_from = from_position - stand_offset()
 	_glide_to = IsoView.sprite_position(new_tile)
 	_glide_time = 0.0
 	_glide_total = maxf(0.01, seconds)
 	_glide_eased = false
-	position = _glide_from
+	_spring_on = false
+	_vel = Vector2.ZERO
+	position = from_position
 
 
 func _process(delta: float) -> void:
-	if _glide_total <= 0.0:
+	if _glide_total > 0.0:
+		_glide_time += delta
+		var t := clampf(_glide_time / _glide_total, 0.0, 1.0)
+		_track = _glide_from.lerp(_glide_to, ease(t, 0.35) if _glide_eased else t)
+		if t >= 1.0:
+			_glide_total = 0.0
+		if _glide_eased:
+			position = _track + stand_offset() + nudge
+			return
+	if held or not _spring_on:
 		return
-	_glide_time += delta
-	var t := clampf(_glide_time / _glide_total, 0.0, 1.0)
-	position = _glide_from.lerp(_glide_to, ease(t, 0.35) if _glide_eased else t)
-	if t >= 1.0:
-		_glide_total = 0.0
+	_spring_step(delta)
 
 
-## Gleitet die Figur gerade zu ihrem Feld (laeuft sie)?
+## Gedaempfte Feder (kritisch gedaempft) von der Figur zum Fuehrungspunkt.
+## In kleinen Teilschritten, damit sie auch bei ruckelnden Bildern stabil ist.
+func _spring_step(delta: float) -> void:
+	var omega := motion_value("omega", 14.0)
+	var target := _track + stand_offset() + nudge
+	var left := minf(delta, 0.25)
+	var before := _vel
+	while left > 0.0:
+		var dt := minf(left, 1.0 / 120.0)
+		left -= dt
+		var acc := (target - position) * omega * omega - _vel * 2.0 * omega
+		_vel += acc * dt
+		position += _vel * dt
+	if delta > 0.0:
+		_acc = _acc.lerp((_vel - before) / delta, clampf(delta * 20.0, 0.0, 1.0))
+	if _glide_total <= 0.0 and position.distance_to(target) < 0.25 and _vel.length() < 3.0:
+		position = target
+		_vel = Vector2.ZERO
+		_acc = Vector2.ZERO
+		_spring_on = false
+
+
+## Gleitet die Figur gerade zu ihrem Feld (laeuft sie)? Die Logik-Sicht:
+## der Fuehrungspunkt ist unterwegs.
 func is_gliding() -> bool:
 	return _glide_total > 0.0
+
+
+## Tempo und Beschleunigung der gezeichneten Figur (Bildpunkte je s bzw. s^2)
+## -- fuer Neigung, Schrittlaenge und Blick in Laufrichtung (Arena3D).
+func visual_velocity() -> Vector2:
+	return _vel
+
+
+func visual_accel() -> Vector2:
+	return _acc
+
+
+## Lockere Aufstellung (A5): ein kleiner, fester Versatz je Figur in ihrem
+## Feld -- aus der Kennung, nicht gewuerfelt, also in jedem Kampf gleich.
+func stand_offset() -> Vector2:
+	var share := float(Config.section("motion").get("offset", 0.0))
+	if share <= 0.0:
+		return Vector2.ZERO
+	var h := hash(str(unit_id))
+	var angle := float(h % 6283) / 1000.0
+	var radius := (0.45 + 0.55 * float((h / 6283) % 1000) / 1000.0) * share * IsoView.TILE_W * 0.5
+	return Vector2(cos(angle), sin(angle) * IsoView.DEPTH_SQUASH) * radius
+
+
+## Ein Wert je Chassis aus data/config.json -> motion (Eintrag "_" als Vorgabe).
+func motion_value(key: String, fallback: float) -> float:
+	return Unit.motion_for(key, str(build.body().id) if build != null and build.body() != null else "", fallback)
+
+
+static func motion_for(key: String, chassis: String, fallback: float) -> float:
+	var entry = Config.section("motion").get(key, fallback)
+	if entry is Dictionary:
+		return float(entry.get(chassis, entry.get("_", fallback)))
+	return float(entry)
 
 
 ## Die Feldmitte unter der Figur, so wie sie gerade gezeichnet wird -- fuer
@@ -308,7 +413,9 @@ static func facing_at(from: Vector2i, to: Vector2i) -> String:
 	var d := IsoView.map_to_local(to) - IsoView.map_to_local(from)
 	if d == Vector2.ZERO:
 		return FACING_PLAYER
-	return "deg%d" % int(round(fposmod(rad_to_deg(atan2(-d.y, d.x)), 360.0)))
+	# Auf dem Boden gemessen (21. Nov. 2026): die Tiefe ist im Bild gestaucht,
+	# also zurueckrechnen -- sonst zeigte die Waffe bei steilen Winkeln vorbei.
+	return "deg%d" % int(round(fposmod(rad_to_deg(atan2(-d.y / IsoView.DEPTH_SQUASH, d.x)), 360.0)))
 
 
 static func facing_toward(from: Vector2i, to: Vector2i) -> String:
@@ -578,6 +685,9 @@ func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 class UnitRing extends Node2D:
 	const RADIUS_X := 30.0
 	const RADIUS_Y := 30.0 * IsoView.TILE_H / IsoView.TILE_W
+	const SHADOW_STEPS := 5
+	const SHADOW_SIZE := 1.08
+	const SHADOW_ALPHA := 0.15
 
 	var tint: Color = Teams.PLAYER:
 		set(value):
@@ -588,8 +698,21 @@ class UnitRing extends Node2D:
 		# Die Einheit sitzt mit ihrem Ursprung in der oberen linken Ecke des
 		# 128er Bildes; die Feldmitte liegt bei SPRITE_ORIGIN.
 		var center := IsoView.SPRITE_ORIGIN
+		# Blob-Schatten (21. Nov. 2026, Kampfbild mehr 3D B6 Stufe 1): ein
+		# weicher dunkler Fleck unter der Figur -- sie steht auf dem Boden.
+		for k in SHADOW_STEPS:
+			var f := 1.0 - float(k) / float(SHADOW_STEPS)
+			_fill_ellipse(center, RADIUS_X * SHADOW_SIZE * f, RADIUS_Y * SHADOW_SIZE * f,
+				Color(0.0, 0.0, 0.03, SHADOW_ALPHA))
 		_ellipse(center, RADIUS_X, RADIUS_Y, Color(tint, 0.85), 3.0)
 		_ellipse(center, RADIUS_X * 0.62, RADIUS_Y * 0.62, Color(tint, 0.30), 2.0)
+
+	func _fill_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
+		var points := PackedVector2Array()
+		for i in 24:
+			var angle := TAU * float(i) / 24.0
+			points.append(center + Vector2(cos(angle) * rx, sin(angle) * ry))
+		draw_colored_polygon(points, color)
 
 	func _ellipse(center: Vector2, rx: float, ry: float, color: Color,
 			width: float) -> void:
