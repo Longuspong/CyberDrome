@@ -183,25 +183,25 @@ Bei einer festen Ortho-Kamera ist das die übliche, günstige Aufteilung.
   `tools/cut_arena_city.py`. Die Quelle `art/arena_city/` bleibt.
   `ArenaPainter` zeichnet nur noch Zierlinie und Licht. Das Kampfbild ist
   unverändert, alle Tests sind grün.
-* **B-b (Geschosse in 3D): empfohlen, es zu lassen.** In 3D würden Hindernisse
-  und DROMEs Schüsse verdecken. Auf dem Handy sind Treffer oben drauf
-  lesbarer. Dazu kämen Kosten je Bild ohne sichtbaren Gewinn. Die
-  Bodenmarken liegen schon richtig unter den Figuren.
+* **B-b gebaut (21. Nov. 2026, Spieler: "lieber jetzt als später"):**
+  Schuss, schweres Geschoss und Energiekugel fliegen als 3D-Körper durch die
+  Szene (`Arena3D.add_shot`, Kapsel bzw. Kugel, mit Kontur in Teamfarbe,
+  Energie zusätzlich in der Leuchtebene). DROMEs und Hindernisse verdecken
+  sie. Einschlag, Zahlen, Heilstrahl und die Bodenmarken der Fähigkeiten
+  bleiben 2D obenauf bzw. am Boden, damit sie immer lesbar sind.
 * **Kamera frei drehen / Perspektive**: erst sinnvoll, wenn es gewollt ist
-  (z. B. Kamerafahrt bei Boss-Fähigkeiten). Dann wandern Bodenmarken und
-  Geschosse mit in die Szene. Bis dahin nicht nötig.
+  (z. B. Kamerafahrt bei Boss-Fähigkeiten). Dann wandern Bodenmarken mit in
+  die Szene.
+* **C gebaut (21. Nov. 2026, Spieler: Werkstatt wird nicht mehr gebraucht):**
+  `werkstatt/`, `main.py` und `tools/check_workshop_stats.js` sind entfernt.
+  Der Generator schreibt je Teil nur noch das 3D-Modell und die Südansicht
+  als Symbol (`parts/` 5,7 → 2,5 MB). Neue DROMEs und Waffen entstehen wie
+  seit November im Generator; ansehen über die Render-Helfer unter
+  `docs/design/drome_entwurf/godot/`.
 
-**C (Generator ohne SVG): wartet auf eine Frage an den Spieler.** Die
-SVG-Werkstatt (`werkstatt/index.html`) liest alle vier Richtungsbilder aus
-`parts/`. Wer sie noch benutzt, verliert sie mit C. Ohne die Werkstatt könnte
-der Generator nur noch Südansicht + `.m3d` schreiben (ca. 75 % weniger
-Dateien in `parts/`). Ganz ohne SVG wäre es erst, wenn die Symbole aus dem
-3D-Modell gerendert werden.
+## 7. Offen
 
-## 7. Offen (Spieler)
-
-1. Wird die SVG-Werkstatt noch gebraucht? Nein → C bauen.
-2. Einverstanden, B-b (Geschosse in 3D) zu lassen?
+* Nichts aus diesem Plan. Schritt D (kleinere Engine) entfällt mit dem Ziel APK.
 
 Messwerkzeug (nicht im Repo, einfach nachzubauen): kleiner Python-Server, der
 `build/web` Brotli-komprimiert ausliefert, und ein Playwright-Skript mit

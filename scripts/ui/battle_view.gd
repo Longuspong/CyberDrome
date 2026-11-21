@@ -198,6 +198,13 @@ func show_shot(from: Vector2, to: Vector2, color: Color, heavy: bool = false) ->
 ##   heavy       groesser (Faehigkeit, Flaeche)
 ##   area        Radius der Flaeche in Feldern (Ring am Ziel)
 func show_attack(from: Vector2, to: Vector2, color: Color, style: Dictionary) -> void:
+	# Seit 21. Nov. 2026 fliegen Geschosse in der 3D-Szene (Arena3D.add_shot);
+	# hier bleibt nur der Einschlag, zur selben Zeit.
+	var kind := str(style.get("projectile", ""))
+	if arena3d != null and arena3d.add_shot(from, to, color, style,
+			float(EffectPainter.FLIGHT.get(kind, 0.0))):
+		style = style.duplicate()
+		style["in_3d"] = true
 	_effects.add_attack(from, to, color, style)
 
 
@@ -607,7 +614,7 @@ class EffectPainter extends Node2D:
 			"kind": kind, "flight": flight, "total": total,
 			"energy": float(style.get("energy", 0.0)), "heavy": bool(style.get("heavy", false)),
 			"area": int(style.get("area", 0)), "spin": seed_angle,
-			"from_fn": style.get("from_fn", null)})
+			"from_fn": style.get("from_fn", null), "in_3d": bool(style.get("in_3d", false))})
 
 	func add_text(at: Vector2, text: String, color: Color, big: bool) -> void:
 		# Mehrere Zahlen am selben Ort stapeln sich, statt sich zu ueberdecken.
@@ -644,7 +651,8 @@ class EffectPainter extends Node2D:
 			var age: float = entry["age"]
 			var flight: float = entry["flight"]
 			if age < flight and entry["kind"] != "":
-				_draw_projectile(entry, age / maxf(0.001, flight))
+				if not entry["in_3d"]:
+					_draw_projectile(entry, age / maxf(0.001, flight))
 			elif age >= flight:
 				_draw_impact(entry, (age - flight) / IMPACT_TIME)
 		_draw_texts()

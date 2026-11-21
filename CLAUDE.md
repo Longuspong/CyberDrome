@@ -7,7 +7,8 @@ Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 
 **Technik-Prüfung (20. Nov. 2026): `docs/TECHNIK_PRUEFUNG.md`** -- Godot bleibt;
 Ziel Android-APK, PWA = Testweg; Ladezeit gemessen (16,3 MB, 26 % davon ungenutzte DROME-SVGs); Plan „nur noch 3D“
-(A Ballast raus und B-a 2D-Arena raus -- GEBAUT 20. Nov., 11,8 MB Download; B-b Geschosse in 3D: empfohlen zu lassen; C Generator ohne SVG wartet auf die Frage nach der Werkstatt) -- Abschnitt 6/7.
+(A Ballast raus, B-a 2D-Arena raus, B-b Geschosse in 3D (`Arena3D.add_shot`), C Werkstatt
+entfernt + Generator schreibt nur Modell + Suedansicht-Symbol -- alles GEBAUT 20./21. Nov.) -- Abschnitt 6.
 
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser

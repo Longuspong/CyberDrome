@@ -44,6 +44,8 @@ var _models: Dictionary = {}
 var _has_neon := false
 ## Unit -> Bewegungszustand {"time", "phase", "attack", "tint"}
 var _anim: Dictionary = {}
+## Geschosse im Flug (21. Nov. 2026, add_shot).
+var _shots: Array = []
 
 ## Bewegung (Schritt 5, 18. Nov. 2026). Laengen in Generator-Einheiten (ein
 ## DROME ist ~80 hoch), Zeiten in Sekunden.
@@ -703,6 +705,141 @@ static func _tint_tree_self(node: Node, color: Color) -> void:
 
 
 # ---------------------------------------------------------------------------
+# Geschosse (21. Nov. 2026, Spieler: "Geschosse auch 3D, lieber jetzt")
+# ---------------------------------------------------------------------------
+# Schuss, schweres Geschoss und Energiekugel fliegen als Koerper durch die
+# Szene: DROMEs und Hindernisse verdecken sie, wo sie davor stehen. Einschlag,
+# Zahlen und Heilstrahl bleiben 2D obenauf (BattleView.EffectPainter) -- sie
+# sollen immer lesbar sein. Groessen in Entwurfspunkten wie bisher in 2D.
+
+## Laenge und Dicke je Art (Entwurfspunkte); die Kugel nutzt nur die Dicke.
+const SHOT_SIZE := {"bolt": Vector2(22.0, 3.4), "slug": Vector2(16.0, 5.5), "orb": Vector2(7.0, 7.0)}
+## Hoehe ueber dem Boden, auf die ein Schuss am Ziel zielt (Brust), in
+## Bildpunkten der 2D-Welt -- dieselbe wie bisher im EffectPainter.
+const SHOT_LIFT_TO := 24.0
+## Der Startpunkt kommt als Bildpunkt um so viel unter der Muendung
+## (AbilityFx: weapon_tip + 34).
+const SHOT_LIFT_FROM := 34.0
+## Kinetische Geschosse: Stahl, mit dunklem Rand.
+const SHOT_STEEL := Color(0.78, 0.78, 0.82)
+const SHOT_STEEL_SIGNAL := Color(0.3, 0.3, 0.34)
+
+static var _shot_meshes: Dictionary = {}
+
+
+## Der 3D-Punkt ueber dem Bodenpunkt ``p`` (2D-Welt), so hoch, dass die
+## Iso-Kamera ihn ``lift`` Bildpunkte hoeher zeigt (bei p - (0, lift)).
+static func lifted(p: Vector2, lift: float) -> Vector3:
+	return ground(p) + Vector3.UP * (lift / (DromeModel.COS45 * DromeModel.SCALE))
+
+
+## Ein Geschoss von ``from`` (Bildpunkt unter der Muendung, s. SHOT_LIFT_FROM)
+## nach ``to`` (Feldmitte des Ziels). ``style`` wie BattleView.show_attack
+## ("projectile", "energy", "heavy", "wait", "from_fn"). Gibt false zurueck,
+## wenn die Art nicht in 3D fliegt.
+func add_shot(from: Vector2, to: Vector2, color: Color, style: Dictionary, flight: float) -> bool:
+	var kind := str(style.get("projectile", ""))
+	if not SHOT_SIZE.has(kind) or flight <= 0.0:
+		return false
+	var glow := float(style.get("energy", 0.0)) >= 0.5 or kind == "orb"
+	var big := 1.4 if bool(style.get("heavy", false)) else 1.0
+	var node := Node3D.new()
+	node.name = "Geschoss"
+	node.visible = false
+	var core := color.lightened(0.55) if glow else SHOT_STEEL
+	var signal_color := color if glow else SHOT_STEEL_SIGNAL
+	var mesh := _shot_mesh(kind)
+	for layer_info in [[DromeModel.LAYER_IMAGE, core], [DromeModel.LAYER_SIGNAL, signal_color],
+			[DromeModel.LAYER_NEON, color if glow else Color.BLACK]]:
+		if layer_info[0] == DromeModel.LAYER_NEON and not glow:
+			continue
+		var inst := MeshInstance3D.new()
+		inst.mesh = mesh
+		inst.layers = layer_info[0]
+		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		inst.material_override = DromeModel._flat_material(layer_info[1])
+		node.add_child(inst)
+	if glow:
+		_ensure_neon()
+	var size: Vector2 = SHOT_SIZE[kind] * big
+	# Kapsel laeuft entlang y (Laenge), die Kugel ist rund.
+	node.scale = Vector3(size.y, size.x if kind != "orb" else size.y, size.y)
+	_scene.add_child(node)
+	_shots.append({"node": node, "from": lifted(from, SHOT_LIFT_FROM),
+		"to": lifted(to, SHOT_LIFT_TO), "age": -float(style.get("wait", 0.0)),
+		"flight": flight, "kind": kind, "size": node.scale,
+		"from_fn": style.get("from_fn", null)})
+	return true
+
+
+## Einheits-Mesh je Art: Bolzen/Geschoss als Kapsel entlang y (Laenge 1),
+## die Kugel mit Durchmesser 1.
+static func _shot_mesh(kind: String) -> Mesh:
+	if _shot_meshes.has(kind):
+		return _shot_meshes[kind]
+	var mesh: Mesh
+	if kind == "orb":
+		var sphere := SphereMesh.new()
+		sphere.radius = 0.5
+		sphere.height = 1.0
+		sphere.radial_segments = 12
+		sphere.rings = 6
+		mesh = sphere
+	else:
+		var capsule := CapsuleMesh.new()
+		capsule.radius = 0.5
+		capsule.height = 1.0
+		capsule.radial_segments = 8
+		capsule.rings = 2
+		mesh = capsule
+	_shot_meshes[kind] = mesh
+	return mesh
+
+
+func _fly_shots(delta: float) -> void:
+	if _shots.is_empty():
+		return
+	var keep: Array = []
+	for shot in _shots:
+		var node: Node3D = shot["node"]
+		var was := float(shot["age"])
+		shot["age"] = was + delta
+		var age := float(shot["age"])
+		# Salven: der Startpunkt erst beim Abfeuern (der Schuetze hat sich
+		# inzwischen zum naechsten Ziel gedreht).
+		if was < 0.0 and age >= 0.0 and shot["from_fn"] is Callable:
+			shot["from"] = lifted((shot["from_fn"] as Callable).call(), SHOT_LIFT_FROM)
+		if age >= float(shot["flight"]) or not is_instance_valid(node):
+			if is_instance_valid(node):
+				node.queue_free()
+			continue
+		keep.append(shot)
+		if age < 0.0:
+			continue
+		var t := age / float(shot["flight"])
+		var from: Vector3 = shot["from"]
+		var to: Vector3 = shot["to"]
+		node.visible = true
+		var dir := to - from
+		var size: Vector3 = shot["size"]
+		if shot["kind"] == "orb":
+			node.position = from.lerp(to, t)
+			node.scale = size * (1.0 + 0.15 * sin(age * 30.0))
+		elif dir.length() > 0.001:
+			# Die Spitze fliegt von der Muendung zum Ziel, der Schweif folgt.
+			var along := dir.normalized()
+			node.position = from.lerp(to, t) - along * size.y * 0.5
+			var side := along.cross(Vector3.UP if absf(along.y) < 0.99 else Vector3.RIGHT).normalized()
+			var third := side.cross(along)
+			node.basis = Basis(side * size.x, along * size.y, third * size.z)
+	_shots = keep
+
+
+func shots_in_flight() -> int:
+	return _shots.size()
+
+
+# ---------------------------------------------------------------------------
 # Jedes Bild
 # ---------------------------------------------------------------------------
 
@@ -723,6 +860,7 @@ func _process(_delta: float) -> void:
 				unit.visible = false
 				_models[unit].visible = false
 		_animate(unit, _models[unit], _delta)
+	_fly_shots(_delta)
 	_sync_camera()
 
 

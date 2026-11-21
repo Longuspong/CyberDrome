@@ -29,6 +29,49 @@ func test_ground_matches_the_iso_projection() -> void:
 		t.ok(screen.distance_to(p) < 0.01, "%s: Projektion %s = IsoView %s" % [tile, screen, p])
 
 
+func test_lifted_point_stays_on_its_screen_spot() -> void:
+	# Geschosse (21. Nov. 2026) starten ueber einem Bodenpunkt: die Kamera
+	# zeigt den 3D-Punkt genau so viel hoeher, wie bisher der 2D-Schuss lag.
+	var p := Vector2(120.0, 260.0)
+	var g := Arena3D.lifted(p, 34.0)
+	t.ok(g.y > 0.0, "der Punkt liegt ueber dem Boden")
+	t.ok(Arena3D.to_world_2d(g).distance_to(p - Vector2(0, 34)) < 0.01,
+		"Projektion 34 Bildpunkte ueber dem Bodenpunkt")
+
+
+func test_shots_fly_in_3d_and_vanish() -> void:
+	var arena := Arena3D.new()
+	var style := {"projectile": "bolt", "energy": 1.0, "heavy": false}
+	t.ok(arena.add_shot(Vector2(0, 300), Vector2(0, 100), Color.CYAN, style, 0.12),
+		"ein Schuss fliegt in 3D")
+	t.ok(not arena.add_shot(Vector2.ZERO, Vector2(0, 50), Color.CYAN, {"projectile": ""}, 0.0),
+		"Nahkampf hat kein Geschoss")
+	t.ok(not arena.add_shot(Vector2.ZERO, Vector2(0, 50), Color.CYAN, {"projectile": "beam"}, 0.0),
+		"der Heilstrahl bleibt 2D")
+	t.equal(arena.shots_in_flight(), 1, "ein Geschoss unterwegs")
+	arena._fly_shots(0.06)
+	var shot: Node3D = arena._shots[0]["node"]
+	t.ok(shot.visible, "im Flug sichtbar")
+	var mid := Arena3D.to_world_2d(shot.position)
+	t.ok(mid.y < 300.0 and mid.y > 100.0, "zwischen Schuetze und Ziel (%s)" % mid)
+	arena._fly_shots(0.1)
+	t.equal(arena.shots_in_flight(), 0, "nach der Flugzeit weg")
+	arena.free()
+
+
+func test_salvo_shot_waits_and_takes_the_muzzle_late() -> void:
+	var arena := Arena3D.new()
+	var style := {"projectile": "slug", "energy": 0.0, "wait": 0.2,
+		"from_fn": func() -> Vector2: return Vector2(50, 300)}
+	arena.add_shot(Vector2(0, 300), Vector2(0, 100), Color.RED, style, 0.08)
+	arena._fly_shots(0.1)
+	t.ok(not arena._shots[0]["node"].visible, "wartet auf seine Salve")
+	arena._fly_shots(0.12)
+	t.ok(Arena3D.to_world_2d(arena._shots[0]["from"]).distance_to(Vector2(50, 300 - 34)) < 0.01,
+		"Startpunkt erst beim Abfeuern geholt")
+	arena.free()
+
+
 func test_units_get_one_model_in_the_shared_scene() -> void:
 	var arena := Arena3D.new()
 	var a := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
