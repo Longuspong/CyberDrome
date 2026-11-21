@@ -11,7 +11,9 @@ extends Control
 ##     hip     Hipstar Cache  Sticker und Pixel, Terminal vorn
 ##
 ## ``open`` hebt den Deckel ab (0..1, fuer die Oeffnen-Animation) und zeigt die
-## leuchtende Oeffnung; ``locked`` zeichnet nur gestrichelte Umrisse.
+## leuchtende Oeffnung; ``locked`` zeichnet nur gestrichelte Umrisse, ``flat``
+## nur den Umriss in einer Farbe. Seit 21. Nov. 2026 ist auch der Neon Cache
+## wieder diese Zeichnung (der 3D-Shader passte nicht zum Stil).
 
 ## [Rahmen/Akzent, Deckel, Front, Seite, Kante, Fuge, Einlage]
 const STYLE := {
@@ -38,6 +40,11 @@ var open: float = 0.0:
 var locked: bool = false:
 	set(value):
 		locked = value
+		queue_redraw()
+## Nur der Umriss in einer Farbe (Glitch-Kanaele beim Oeffnen, CacheOpener).
+var flat: Color = Color.TRANSPARENT:
+	set(value):
+		flat = value
 		queue_redraw()
 
 var _s := 1.0
@@ -73,6 +80,11 @@ func _draw() -> void:
 	var accent: Color = st[0]
 	var w := maxf(1.2, 3.0 * _s)
 	var lift := open * 52.0
+
+	if flat.a > 0.0:
+		draw_colored_polygon(_pts([20, 50, 60, 16, 140, 16, 180, 50, 180, 116, 140, 150,
+			60, 150, 20, 116]), flat)
+		return
 
 	if locked:
 		var dash := Arcade.EMPTY_LINE

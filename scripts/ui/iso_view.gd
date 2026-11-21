@@ -20,7 +20,7 @@ extends RefCounted
 ## (docs/design/drome_entwurf/v10_hexboden.py). Seit 18. Nov. 2026 liegen die
 ## Sechsecke flach (Kante oben und unten, Spitze links und rechts): Spalten
 ## laufen senkrecht, ungerade Spalten ein halbes Feld tiefer (Grid "odd-q").
-const HEX_R := 22.0
+const HEX_R := 26.0
 const PX_PER_UNIT := 1.35
 const DEPTH_SQUASH := 0.70710678
 ## Abstand zweier Nachbarn quer im Bild (Mitte zu Mitte, sqrt(3) * R) -- die

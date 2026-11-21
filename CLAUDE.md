@@ -248,7 +248,8 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   Aufgestellt wird in einem Streifen 3 x 7 am Rand, ohne Zutun nach
   Rolle gestaffelt und verteilt (seit 10. Nov. 2026). Die
   Arena zeichnet `ArenaPainter` (Boden, Rand, Deko, Licht je Region). Die
-  Kamera folgt dem Geschehen, Zoomen und Ziehen per Finger.
+  Kamera steht seit 21. Nov. 2026 fest (Zoom auf Feldbreite, gleitet nur senkrecht mit;
+  Kamerafahrten aus, `BattleScreen.CAMERA_MOVES`), Zoomen und Ziehen per Finger.
 * Das Spiel ist ein **Autobattler in Echtzeit** (seit Nov. 2026): alle
   DROMEs handeln gleichzeitig, keine Zuege. `BattleManager.tick()` rechnet in
   festen Schritten (0,05 s, deterministisch je Seed), die KI (`AIController`)
