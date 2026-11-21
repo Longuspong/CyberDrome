@@ -66,6 +66,12 @@ func _setup() -> void:
 				"newgame":
 					state.roster.seed_new_game()
 					state.refresh_squad()
+				# squad=3+4+5: genau diese DROMEs (Index im Roster) in den Squad.
+				"squad":
+					var picks: Array = Array(pair[1].split("+")).map(func(x): return int(x))
+					for i in state.roster.entries.size():
+						state.roster.entries[i].in_squad = i in picks
+					state.refresh_squad()
 				# material=phase:fire:3,rohling:2 legt Material ins Lager.
 				"material":
 					for item in pair[1].split(","):

@@ -159,11 +159,11 @@ static func double_every(phases: Array) -> Array:
 static func resonance_text(at: int) -> String:
 	match at:
 		2:
-			return "Fähigkeit legt dazu %d Belastung an" % _res_value(2, "ability_load", 100)
+			return "Fähigkeit +%d" % _res_value(2, "ability_load", 100)
 		4:
-			return "Jeder %d. Treffer legt doppelt an" % _res_value(4, "double_every", 5)
+			return "jeder %d. Treffer ×2" % _res_value(4, "double_every", 5)
 		6:
-			return "Jeder %d. Treffer doppelt, Fähigkeit %d" % [
+			return "jeder %d. Treffer ×2, Fähigkeit +%d" % [
 				_res_value(6, "double_every", 3), _res_value(6, "ability_load", 200)]
 	return ""
 

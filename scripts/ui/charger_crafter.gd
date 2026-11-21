@@ -7,10 +7,10 @@ extends VBoxContainer
 ## Rohling, die Belastung je Treffer, die Resonanz (Stufen zaehlen zusammen) und
 ## die Phasen im Lager.
 ##
-## Bedienung: Phase aus dem Lager auf ein Feld ziehen. Ersatz: Phase antippen
-## waehlt sie, dann ein freies Feld antippen -- oder doppelt tippen, dann kommt
-## sie ins naechste freie Feld. Ein belegtes Feld antippen nimmt die Phase
-## wieder heraus.
+## Bedienung (21. Nov. 2026): Phase antippen setzt sie ins naechste freie Feld,
+## ziehen legt sie auf ein bestimmtes Feld; ein belegtes Feld antippen nimmt
+## sie wieder heraus. Alles hat feste Hoehen -- beim Tippen springt nichts. Die
+## Auswertung (Belastung, Resonanz) erscheint erst mit der ersten Phase.
 
 signal built(charger: Dictionary)
 
@@ -24,6 +24,8 @@ static var _tap_el := ""
 const SLOT_POS := [Vector2(80, 26), Vector2(180, 26), Vector2(230, 113),
 	Vector2(180, 200), Vector2(80, 200), Vector2(30, 113)]
 const STAGE := Vector2(340, 295)
+## Feste Hoehe der Auswertung unter den Phasen (leer, solange keine Phase drin ist).
+const READOUT_H := 60.0
 
 var _stage: Control
 var _readout: VBoxContainer
@@ -71,16 +73,9 @@ func _rebuild() -> void:
 	add_child(sockel_holder)
 	sockel_holder.add_child(_Sockel.new("ROHLING · MK I", "%d/6" % Charger.filled(_slots)))
 
-	_readout = VBoxContainer.new()
-	add_child(_readout)
-	_fill_readout()
-
-	var inv_head := HBoxContainer.new()
-	var inv_title := Arcade.label("ENERGY PHASES", 13, Arcade.CYAN, "bold", 0.14)
-	inv_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	inv_head.add_child(inv_title)
-	inv_head.add_child(Arcade.label("Ziehen · Doppeltipp setzt ein", 12, Arcade.MUTED))
-	add_child(inv_head)
+	# Gleich unter dem Hexagon die Phasen (was man zuerst braucht), darunter
+	# die Auswertung -- in fester Hoehe, damit beim Tippen nichts springt.
+	add_child(Arcade.label("ENERGY PHASES", 13, Arcade.CYAN, "bold", 0.14))
 	var grid := GridContainer.new()
 	grid.columns = 6
 	grid.add_theme_constant_override("h_separation", 6)
@@ -89,6 +84,12 @@ func _rebuild() -> void:
 		var src := _Source.new(self, e)
 		src.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(src)
+
+	_readout = VBoxContainer.new()
+	_readout.custom_minimum_size = Vector2(0, READOUT_H)
+	_readout.add_theme_constant_override("separation", 6)
+	add_child(_readout)
+	_fill_readout()
 
 
 func _chip(text: String, icon: String, color: Color) -> Control:
@@ -172,61 +173,57 @@ func build() -> void:
 	_rebuild()
 
 
+## Zwei feste Zeilen, erst sichtbar, wenn eine Phase im Hexagon liegt:
+## Belastung je Treffer (je Element) und die Resonanz (2/4/6, die hoechste
+## erreichte Stufe mit ihrem Effekt).
 func _fill_readout() -> void:
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 10)
-	_readout.add_child(grid)
-	var left := UiKit.card(grid)
-	left.get_parent().custom_minimum_size.x = 0
-	left.get_parent().custom_minimum_size = Vector2(0, 130)
-	left.get_parent().size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.add_child(Arcade.label("BELASTUNG", 11, Arcade.CYAN, "bold", 0.14))
-	left.add_child(Arcade.label("je Treffer", 11, Arcade.MUTED))
+	if Charger.filled(_slots) == 0:
+		return
 	var loads := Charger.loads(_slots)
-	if loads.is_empty():
-		left.add_child(UiKit.label("Noch keine Phase im Hexagon.", 13, UiKit.MUTED))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.custom_minimum_size = Vector2(0, 24)
+	row.add_child(Arcade.label("BELASTUNG", 11, Arcade.CYAN, "bold", 0.14))
 	for e in Charger.element_ids():
-		if not loads.has(e):
-			continue
-		var row := HBoxContainer.new()
-		var name := Arcade.label(Charger.element_name(e).to_upper(), 12, Charger.element_color(e), "bold", 0.08)
-		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(name)
-		row.add_child(Arcade.label("+%d" % int(loads[e]), 12, Arcade.WHITE, "bold"))
-		left.add_child(row)
-		var bar := _Bar.new(float(loads[e]) / float(Charger.slots() * 20), Charger.element_color(e))
-		left.add_child(bar)
+		if loads.has(e):
+			row.add_child(Arcade.label("%s +%d" % [Charger.element_name(e).to_upper(), int(loads[e])], 12,
+				Charger.element_color(e), "bold", 0.06))
+	_readout.add_child(row)
 
 	var dom := Charger.dominant(_slots)
 	var dcol := Charger.element_color(dom) if dom != "" else Arcade.MUTED
-	var right := UiKit.card(grid)
-	right.get_parent().size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.add_child(Arcade.label("RESONANZ", 11, Arcade.CYAN, "bold", 0.14))
-	right.add_child(Arcade.label("%s %d/6" % [Charger.element_name(dom).to_upper(), Charger.dominant_count(_slots)]
-		if dom != "" else "kein Übergewicht", 11, dcol, "bold", 0.08))
 	var n := Charger.dominant_count(_slots)
+	var res := HBoxContainer.new()
+	res.add_theme_constant_override("separation", 4)
+	res.custom_minimum_size = Vector2(0, 26)
+	res.add_child(Arcade.label("RESONANZ ", 11, Arcade.CYAN, "bold", 0.14))
 	for at in [2, 4, 6]:
 		var on: bool = n >= at
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
-		row.modulate.a = 1.0 if on else 0.6
 		var badge := PanelContainer.new()
 		var st := StyleBoxFlat.new()
 		st.bg_color = dcol if on else Arcade.DEEP
 		badge.add_theme_stylebox_override("panel", st)
-		badge.custom_minimum_size = Vector2(20, 20)
+		badge.custom_minimum_size = Vector2(22, 22)
+		badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var num := Arcade.label(str(at), 12, Arcade.NIGHT if on else Arcade.EMPTY_NUM, "display")
 		num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		badge.add_child(num)
-		row.add_child(badge)
-		var text := UiKit.label(Charger.resonance_text(at) + (" (verbessert durch 6)"
-			if on and Charger.upgraded(at, _slots) else ""), 12, UiKit.TEXT)
-		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		text.custom_minimum_size.x = 60
-		row.add_child(text)
-		right.add_child(row)
+		res.add_child(badge)
+	_readout.add_child(res)
+	res.add_child(Control.new())
+	# Alle wirkenden Stufen (2 und 4 zusammen; 6 verbessert beide), eine Zeile.
+	var parts: Array = []
+	for r in Charger.active_resonances(_slots):
+		var at := int(r.get("at", 0))
+		if not Charger.upgraded(at, _slots):
+			parts.append(Charger.resonance_text(at))
+	var text := Arcade.label(" · ".join(parts) if not parts.is_empty() else "ab 2 gleichen Phasen", 12,
+		Arcade.TEXT if not parts.is_empty() else Arcade.MUTED)
+	text.clip_text = true
+	text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	text.custom_minimum_size = Vector2(60, 18)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	res.add_child(text)
 
 
 ## Die Buehne: grosses Hexagon, Speichen, Platz fuer Felder und Kern.
@@ -273,7 +270,6 @@ class _Slot extends Control:
 		index = i
 		gem = PhaseGem.new(str(ChargerCrafter._slots[i]), 80)
 		gem.set_anchors_preset(Control.PRESET_FULL_RECT)
-		gem.highlight = str(ChargerCrafter._slots[i]) == "" and ChargerCrafter._picked != ""
 		add_child(gem)
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		tooltip_text = "Feld %d" % (i + 1)
@@ -402,15 +398,8 @@ class _Source extends PanelContainer:
 		if not ChargerCrafter._is_tap(event):
 			return
 		accept_event()
-		var now := Time.get_ticks_msec()
-		if ChargerCrafter._tap_el == element and now - ChargerCrafter._tap_ms < Tile.DOUBLE_MS:
-			ChargerCrafter._tap_ms = -10000
-			ChargerCrafter._picked = element
-			crafter.put_next(element)
-		else:
-			ChargerCrafter._tap_ms = now
-			ChargerCrafter._tap_el = element
-			crafter.pick(element)
+		# Antippen setzt die Phase ins naechste freie Feld (21. Nov. 2026).
+		crafter.put_next(element)
 
 
 ## Der Sockel unter dem Hexagon: Trapez mit Kante oben, Name und Fuellstand.
