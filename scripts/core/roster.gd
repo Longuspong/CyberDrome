@@ -662,6 +662,55 @@ func seed_starter() -> void:
 		add_instance(part_id)
 
 
+## Startbestand eines NEUEN Spielstands (21. Nov. 2026, Wunsch des Spielers):
+## jeder DROME einmal (die vier Standard-DROMEs mit ihrer Ausstattung und jeder
+## Fraktions-DROME), jede Waffe einmal, jede Energy Phase 6-mal, 2 Charger-
+## Rohlinge, je Gebiet 5 Lootcaches und 200 Platzhaltercoin. Werte in
+## config.json -> new_game. ``seed_starter`` bleibt der schlanke Bestand fuer
+## Tests und den Standard-Squad.
+func seed_new_game() -> void:
+	seed_starter()
+	var cfg := Config.section("new_game")
+	# Fraktions-DROMEs (ohne Waffe gebaut, bekommen gleich eine).
+	var fresh: Array = []
+	for variant in faction_variants():
+		var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(variant, {})
+		var entry := craft_drome_free(StringName(str(spec.get("chassis", ""))), str(spec.get("name", variant)))
+		if entry == null:
+			continue
+		entry.variant = variant
+		fresh.append(entry)
+	# Jede Waffe genau einmal: was der Startbestand nicht hat, kommt dazu.
+	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+		if total_count(part.id) < 1:
+			add_instance(part.id)
+	# Freie Waffen in die neuen DROMEs, in der Reihenfolge der Vorliebe.
+	var order: Array = cfg.get("weapon_order", [])
+	for entry in fresh:
+		var build := build_for(entry)
+		var body := build.body()
+		if body == null:
+			continue
+		for slot in build.equip_slots():
+			if entry.assignments.has(slot):
+				continue
+			var picks: Array = order.duplicate()
+			for inst in all_instances():
+				if not picks.has(str(inst.part_id)):
+					picks.append(str(inst.part_id))
+			for pid in picks:
+				var inst := free_instance(StringName(pid))
+				if inst != null and inst.type() == PartData.Type.EQUIPMENT and body.accepts(inst.part(), slot):
+					entry.assignments[slot] = inst.uid
+					break
+	for e in Charger.element_ids():
+		add_phases(e, int(cfg.get("phases_each", 6)))
+	add_blanks(int(cfg.get("blanks", 2)))
+	for kind in (RunState.loot_cfg().get("cache_names", {}) as Dictionary):
+		caches[str(kind)] = int(cfg.get("caches_each", 5))
+	coins = int(cfg.get("coins", 200))
+
+
 ## Legt eine neue Instanz von ``part_id`` in den ersten Ausruestungsslot dieses
 ## Eintrags, der noch frei ist UND das Teil annimmt. So landet der support-only
 ## Drohnen-Pod im Schulterpod und nicht auf einem Waffenarm. Findet sich kein

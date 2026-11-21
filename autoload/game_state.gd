@@ -256,7 +256,7 @@ func load_roster() -> void:
 	if path == "":
 		# Ein frischer Spielstand: der handgesetzte Startbestand (§10g), gleich
 		# abgelegt -- sonst gaebe es ihn in der Auswahl noch nicht.
-		roster.seed_starter()
+		roster.seed_new_game()
 		save_roster()
 		print("[GameState] Spielstand %d neu -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
 			% [slot, roster.entries.size(), roster.all_instances().size()])

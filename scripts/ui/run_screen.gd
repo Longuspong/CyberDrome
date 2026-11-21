@@ -353,30 +353,13 @@ func _drome_card(build: DromeBuild) -> Control:
 func _show_setup() -> void:
 	var endless := GameState.next_run_mode == "endless"
 	_header_round.text = "Infinity-Einsatz" if endless else "Neon City"
-	_side.add_child(_label("Wer kommt mit? Vorgeschlagen ist dein Hangar-Squad. Im Einsatz "
-		+ "bleiben die Waffen, wie sie sind -- stärker wirst du mit Modulen aus dem Laden.",
-		UiKit.SMALL, COLOR_MUTED))
 	# Aufklaerung (20. Nov. 2026, Uebergabe Ue2): welche Gegner warten, damit
 	# der Squad darauf abgestimmt wird.
 	if not endless:
 		_side.add_child(EnemyIntel.new(&"city", 3))
 	var picker := SquadPicker.new()
 	_side.add_child(picker)
-	if not endless:
-		picker.counter_roles = EnemyIntel.counter_roles(&"city", 3)
 	picker.setup(RunState.squad_max())
-	if endless:
-		_side.add_child(_label("Kein Ende, ein Leben: die erste Niederlage beendet den Einsatz und "
-			+ "kostet die Beute. Nach jedem Kampf kannst du aussteigen und sie behalten. "
-			+ "Ab und zu taucht ein Chaos-Kampf auf -- Gegner unbekannt, bessere Beute.",
-			UiKit.SMALL, COLOR_MUTED))
-	else:
-		_side.add_child(_label("%d Kämpfe, %d Leben. Die ersten %d sind Training gegen normale "
-			% [RunState.rounds_total(), RunState.max_lives(),
-				int(RunState.cfg().get("training_rounds", 0))]
-			+ "DROMEs, danach kommen die Neon Ninja's. Vor jedem Kampf wählst du: immer ein "
-			+ "leichter Gegner, dazu zwei normale oder ein normaler und ein Elite.",
-			UiKit.SMALL, COLOR_MUTED))
 	var start := _big_button("Einsatz starten")
 	start.disabled = picker.chosen_count() < 1
 	picker.changed.connect(func(): start.disabled = picker.chosen_count() < 1)

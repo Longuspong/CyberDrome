@@ -62,6 +62,10 @@ func _setup() -> void:
 					for item in pair[1].split(","):
 						var kv := item.split(":")
 						state.roster.caches[kv[0]] = int(kv[1])
+				# newgame=1: Startbestand eines neuen Spielstands (Roster.seed_new_game).
+				"newgame":
+					state.roster.seed_new_game()
+					state.refresh_squad()
 				# material=phase:fire:3,rohling:2 legt Material ins Lager.
 				"material":
 					for item in pair[1].split(","):
