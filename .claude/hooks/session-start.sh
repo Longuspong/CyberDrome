@@ -1,8 +1,8 @@
 #!/bin/bash
 # Stellt Godot fuer eine Web-Session bereit.
 #
-# Das Repo hat sonst keine Abhaengigkeiten: main.py laeuft auf der
-# Python-Standardbibliothek, tools/check_workshop_stats.js auf Node-Builtins.
+# Das Repo hat sonst keine Abhaengigkeiten: die Werkzeuge unter tools/ laufen
+# auf der Python-Standardbibliothek.
 # Godot fehlt -- und ohne Godot ist von diesem Projekt nur die Haelfte
 # pruefbar: die Testsuite liegt in GDScript, und ob ein Betonpfeiler den
 # DROME davor verdeckt, sieht ohnehin kein Unit-Test.

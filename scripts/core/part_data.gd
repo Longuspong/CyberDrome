@@ -162,7 +162,8 @@ func add_view(meta: Dictionary, dir_path: String) -> void:
 	for entry in meta.get("anchors", []):
 		anchors[entry.get("name", "")] = Vector2(entry.get("x", 0.0), entry.get("y", 0.0))
 	var svg := dir_path.path_join(meta.get("svg", ""))
-	# Neon-Teile haben eine eigene Leuchtebene (tools/bake_godot_assets.py).
+	# Leuchtebene/Kontur als SVG gibt es seit dem 3D-Umbau nicht mehr (nur noch
+	# die Suedansicht als Symbol) -- die Pruefung auf exists bleibt.
 	var glow := svg.replace(".svg", "_glow.svg")
 	# Jedes Teil hat eine Kontur in seiner Signalfarbe (docs/DROME_DESIGNREGELN.md).
 	var rim := svg.replace(".svg", "_rim.svg")

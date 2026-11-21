@@ -44,53 +44,6 @@
   "mount_class": "light",
   "category": "weapon",
   "pose": "hold",
-  "variants": {
-    "heavy": {
-      "svg": "eq_rune_staff_heavy_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 64.0,
-          "y": 46.36
-        },
-        {
-          "name": "muzzle",
-          "x": 64.0,
-          "y": 9.09
-        }
-      ]
-    },
-    "heavy_right": {
-      "svg": "eq_rune_staff_heavy_right_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 64.0,
-          "y": 46.36
-        },
-        {
-          "name": "muzzle",
-          "x": 64.0,
-          "y": 9.09
-        }
-      ]
-    },
-    "lafette": {
-      "svg": "eq_rune_staff_lafette_south.svg",
-      "anchors": [
-        {
-          "name": "mount",
-          "x": 64.0,
-          "y": 37.77
-        },
-        {
-          "name": "muzzle",
-          "x": 64.0,
-          "y": 27.46
-        }
-      ]
-    }
-  },
   "stats": {
     "hp": 0,
     "spd": 0,

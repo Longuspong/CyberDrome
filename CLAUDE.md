@@ -5,6 +5,11 @@ Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 
 **Ganz zuerst (seit 17. Nov. 2026, zuletzt 18. Nov. abends): `docs/UEBERGABE_3D.md`, Abschnitt „Stand 18. Nov.“** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung und 3D-Boden `ArenaFloor3D` seit 18. Nov.; sichtbare Passiven, Muendungsblitz und 3D-Deko seit 18. Nov.; Beine im Wechsel, alle Faehigkeiten lesbar (`AbilityPainter`), Waffenfarben mit Glanzkante (`WEAPON_FINISH`), Generator-Bausteine BP/SW/EX und Redesign aller Chassis seit 18. Nov. -- `DROME_UMSETZUNG.md` 4g; Fraktions-Paletten fuer Gegner und Faehigkeiten mit Ausholzeit/Abfolge (`AbilityFx`, `ActionData.windup`) seit 18. Nov.; alle Faehigkeiten animiert; Echo nacheinander und Flaechen am Wurfort seit 18. Nov., Balance gemessen; offen: Story-Level).
 
+**Technik-Prüfung (20. Nov. 2026): `docs/TECHNIK_PRUEFUNG.md`** -- Godot bleibt;
+Ziel Android-APK, PWA = Testweg; Ladezeit gemessen (16,3 MB, 26 % davon ungenutzte DROME-SVGs); Plan „nur noch 3D“
+(A Ballast raus, B-a 2D-Arena raus, B-b Geschosse in 3D (`Arena3D.add_shot`), C Werkstatt
+entfernt + Generator schreibt nur Modell + Suedansicht-Symbol -- alles GEBAUT 20./21. Nov.) -- Abschnitt 6.
+
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
 als Handy testet. **Dann `docs/NEUANFANG.md`** -- der Neuentwurf des

@@ -32,7 +32,7 @@ func build(root: Window, region_arg: String) -> Array:
 	view.add_child(world)
 	var grid := MapGenerator.generate(TerrainDB.get_region(StringName(region_id)))
 	MapGenerator.place_obstacles(grid, 7)
-	ArenaPainter.build(world, grid, func(tile: Vector2i) -> int: return tile.y * 16 + 8, false, true, true)
+	ArenaPainter.build(world, grid)
 	var floor := ArenaFloor3D.new()
 	floor.z_index = -70
 	floor.build(grid)

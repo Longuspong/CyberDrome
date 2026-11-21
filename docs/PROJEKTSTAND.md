@@ -470,7 +470,10 @@ und Offene Punkte.
   additive Lichtflecken, Vignette. Hindernisse als Iso-Bloecke je Region
   (Container, Kisten, Absperrung / Ruine, Fels / Tank, Rohre, Kisten).
   Die Boden-SVGs unter `assets/terrain/` werden im Kampf nicht mehr gezeichnet.
-* **Neon City aus Bildern** (9. Nov. 2026, Wunsch des Spielers): Boden,
+* **Neon City aus Bildern** (9. Nov. 2026, Wunsch des Spielers; **seit 20. Nov.
+  2026 entfernt** -- Boden, Hindernisse und Deko kommen aus dem 3D-Generator,
+  `assets/arena/` und `tools/cut_arena_city.py` sind weg, die Quelle
+  `art/arena_city/` bleibt; `docs/TECHNIK_PRUEFUNG.md`): Boden,
   Hindernisse und Deko kommen aus KI-Bildern (Quelle `art/arena_city/`,
   mit `.gdignore`). `tools/cut_arena_city.py` schneidet sie zu: Bodenkacheln
   von Draufsicht auf die Spiel-Raute, Objekte per weichem Gruen-Key
