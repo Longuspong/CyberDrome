@@ -29,6 +29,48 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Kampfbild mehr 3D, Paket 1 + 2 (21. Nov. 2026, Entscheidung des Spielers)
+
+Grundlage: Design-Canvas „Kampfbild mehr 3D“
+(https://claude.ai/artifact/WrHqW9gAqkfgZUfsEL3At7), Spieler: „Paket 1 und 2
+direkt umsetzen, Paket 3 überlege ich mir noch“. Alles nur Bild, die Logik
+läuft weiter Feld für Feld. Werte in `data/config.json` -> `motion`.
+
+* **A1/A2 Kurven, Durchlaufen:** `Unit` trennt Führungspunkt (linear wie
+  bisher, `_track`) und Figur (`position`, gedämpfte Feder, `omega` je
+  Chassis). Die Figur läuft weich an, schneidet Ecken leicht, läuft über die
+  Feldmitten durch und bremst erst am Ziel. Sog/Stoß rutschen wie bisher.
+  `visual_velocity()`/`visual_accel()` für die Körpersprache; `held` beim
+  Ziehen in der Aufstellung.
+* **A3 Drehen:** `Arena3D._turn_toward` -- Blick zieht weich nach
+  (`turn_time`, `turn_rate`), beim Laufen in Laufrichtung, beim Zielen genau
+  aufs Ziel. `Unit.facing_at` misst jetzt auf dem Boden (vorher bis ~8 Grad
+  daneben).
+* **A4 Körpersprache:** `Arena3D._lean` -- nach vorn je Tempo/Anlauf, zurück
+  beim Bremsen, in Kurven nach innen; Schrittlänge folgt dem Tempo; Molok
+  stampft (Staub), Nimbus schwebt, Strix hüpft.
+* **A5 Lockere Aufstellung:** `Unit.stand_offset()` (fest je Kennung,
+  höchstens 8 % der Feldbreite), Ausweichen beim Vorbeilaufen
+  (`Arena3D._update_nudges`, `Unit.nudge`).
+* **B6 Stufe 1:** Blob-Schatten im `UnitRing`; vorgetäuschtes Licht über
+  `glow_in`/`glow_dir` im `drome_face.gdshader` aus den Laternen
+  (`Arena3D.light_spots`) und Mündungsblitzen -- kein Licht-Node.
+* **B7 Teilchen:** `ParticleFx` (neu) rechnet im Raum (Boden + Höhe, Schwerkraft,
+  Abprall) und zeichnet flach: Funken, Rauch ab 15 % Schaden, Trümmer beim
+  Zerfallen, Staub, Dampf; Obergrenze `particles_max`. Energie- und
+  Flächenringe liegen als Ellipsen am Boden (`BattleView.FloorRings`).
+* **C9 Kamera:** kurzer Zoom bei großen Fähigkeiten (Fläche oder Ausholzeit
+  ab 0,3 s, höchstens alle 3,5 s), Schwenk von den Gegnern zum eigenen Squad
+  zu Beginn der Aufstellung (Antippen überspringt). Wackeln gab es schon.
+* **D12 Ränder:** `EdgeLife` (neu): Regen in Neon City (`motion.rain`),
+  Gras im Park, Dampf in Factory 5; `ArenaPainter.Lights` flackern/atmen,
+  Glühwürmchen im Park.
+* Mit „Bewegung reduzieren“: keine Teilchen, kein Regen, kein Zoom/Schwenk,
+  keine Neigung.
+* **Offen:** Leistung auf dem Handy messen (24 DROMEs, Ziel weiter ca. 41 B/s);
+  Paket 3 (Höhenstufen, Projektion, Sonderszenen, echtes Licht) entscheidet der
+  Spieler noch. Tests: `tests/test_motion.gd`.
+
 ### Englisch vorbereitet, letzte Umlaute (19. Nov. 2026, Spieler)
 
 * Aufwand Englisch geschaetzt (rund 1.000 Anzeigetexte in `scripts/`, 750

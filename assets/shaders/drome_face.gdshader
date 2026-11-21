@@ -29,6 +29,12 @@ uniform float shine_period = 26.0;
 // Streifen ueber die Flaeche; 0 = aus.
 uniform float stripes = 0.0;
 uniform vec4 stripe_color : source_color = vec4(0.1, 0.1, 0.1, 1.0);
+// Vorgetaeuschtes Licht (21. Nov. 2026, Kampfbild mehr 3D B6 Stufe 1): die
+// Farbe der naechsten Laterne bzw. eines Muendungsblitzes, additiv; staerker
+// auf den Flaechen, die zur Lichtquelle zeigen. rgb schon mit der Staerke
+// multipliziert, 0 = aus. Kein Licht-Node -- kostet nur diese Addition.
+uniform vec3 glow_in = vec3(0.0);
+uniform vec3 glow_dir = vec3(0.0, 1.0, 0.0);
 
 varying vec3 world_normal;
 varying vec3 local_pos;
@@ -72,5 +78,10 @@ void fragment() {
 		float light = pz > 0.5 ? 1.0 : (px <= py ? 0.75 : 0.45);
 		col = mix(col, vec3(1.0), shine * light * (band * 0.8 + thin * 0.5));
 	}
-	ALBEDO = col * tint.rgb;
+	vec3 lit = col * tint.rgb;
+	if (glow_in.r + glow_in.g + glow_in.b > 0.001) {
+		float facing = max(dot(n, normalize(glow_dir)), 0.0);
+		lit += glow_in * (0.3 + 0.7 * facing);
+	}
+	ALBEDO = lit;
 }
