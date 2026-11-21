@@ -295,9 +295,10 @@
   "figures": {
     "_kommentar": [
       "Groesse der DROMEs im Verhaeltnis zum Hexfeld (18. Nov. 2026, Entscheidung des",
-      "Spielers: 75 %). Bodenring und Balken skalieren mit (Arena3D.figure_scale)."
+      "Spielers: 75 %). Bodenring und Balken skalieren mit (Arena3D.figure_scale).",
+      "21. Nov. 2026 (Spieler: groessere Hexfelder, kleinere DROMEs): 62 %."
     ],
-    "scale": 0.75
+    "scale": 0.62
   },
 
   "motion": {

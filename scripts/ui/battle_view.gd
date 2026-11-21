@@ -294,7 +294,9 @@ func show_unit_badges(entries: Array) -> void:
 ## zwangslaeufig irgendwann als Rest im Baum.
 class UnitBadgePainter extends Node2D:
 	const WIDTH := 56.0
-	const HEIGHT := 6.0
+	## Seit 21. Nov. 2026 hoeher (vorher 6): die DROMEs sind kleiner, der
+	## Balken muss trotzdem gut lesbar bleiben (Spieler).
+	const HEIGHT := 8.0
 	## Unterkante des Balkens ueber der Feldmitte -- in WELT-Einheiten.
 	const BASE_Y := -72.0
 
@@ -304,8 +306,13 @@ class UnitBadgePainter extends Node2D:
 	const COLOR_GHOST := Color(1.0, 0.95, 0.85)
 	const COLOR_DANGER := Color(1.0, 0.25, 0.2)
 	## Takt-Leiste unter dem Lebensbalken: wann kommt die Faehigkeit?
-	const TAKT_HEIGHT := 3.0
-	const TAKT_GAP := 2.0
+	## Seit 21. Nov. 2026 als einzelne Kaestchen je Angriff (vorher eine 3 px
+	## duenne Leiste, kaum zu lesen): leer nur als Umriss, gefuellt gelb, voll
+	## = alle hell und ein pulsierender Rahmen -- der naechste Angriff ist die
+	## Faehigkeit.
+	const TAKT_HEIGHT := 5.0
+	const TAKT_GAP := 3.0
+	const TAKT_PIP_GAP := 2.0
 	const COLOR_TAKT := Color(1.0, 0.82, 0.35)
 	const COLOR_TAKT_READY := Color(1.0, 1.0, 0.85)
 
@@ -545,7 +552,7 @@ class UnitBadgePainter extends Node2D:
 					Vector2(x0, y0), Vector2(x0, y1), Vector2(reach, y1)]), Teams.OVERSHIELD, line)
 
 		if level != "far":
-			_takt(entry.get("takt", []), left, below, width, s)
+			_takt(entry.get("takt", []), left, below, width, s, now)
 		if level == "near":
 			_statuses(entry.get("statuses", []), left + width + 5.0 * s, top + height * 0.5, s)
 
@@ -585,25 +592,34 @@ class UnitBadgePainter extends Node2D:
 	## Abschnitte zu je einem Viertel), gefuellt je Treffer. Zeit-Takt: eine
 	## Leiste, die sich in halben Sekunden fuellt. Volle Leiste leuchtet hell:
 	## als Naechstes kommt die Faehigkeit.
-	func _takt(bars: Array, left: float, top: float, width: float, s: float) -> void:
+	func _takt(bars: Array, left: float, top: float, width: float, s: float,
+			now: float = 0.0) -> void:
 		var h := TAKT_HEIGHT * s
 		var y := top + TAKT_GAP * s * 0.5
 		for bar in bars:
-			var color := COLOR_TAKT_READY if bar.get("ready", false) else COLOR_TAKT
-			draw_rect(Rect2(Vector2(left - s, y - s), Vector2(width + 2.0 * s, h + 2.0 * s)),
-				COLOR_OUTLINE)
-			draw_rect(Rect2(Vector2(left, y), Vector2(width, h)), COLOR_TRACK)
+			var ready: bool = bar.get("ready", false)
+			var color := COLOR_TAKT_READY if ready else COLOR_TAKT
+			if ready:
+				# Pulsierender Rahmen um die ganze Leiste.
+				var glow := 1.0 if Accessibility.reduce_motion else 0.55 + 0.45 * sin(now * TAU * 2.5)
+				draw_rect(Rect2(Vector2(left - 2.5 * s, y - 2.5 * s), Vector2(width + 5.0 * s, h + 5.0 * s)),
+					Color(COLOR_TAKT_READY, 0.9 * glow), false, 1.5 * s)
 			if bar["kind"] == "hits":
 				var n: int = maxi(1, int(bar["segments"]))
-				var piece := width / float(n)
+				var gap := TAKT_PIP_GAP * s
+				var piece := (width - gap * float(n - 1)) / float(n)
 				for i in n:
-					var x := left + piece * float(i)
-					if i < int(bar["filled"]):
-						draw_rect(Rect2(Vector2(x, y), Vector2(piece, h)), color)
-					if i > 0:
-						draw_rect(Rect2(Vector2(x - 0.5 * s, y), Vector2(1.0 * s, h)),
-							COLOR_OUTLINE)
+					var rect := Rect2(Vector2(left + (piece + gap) * float(i), y), Vector2(piece, h))
+					draw_rect(rect.grow(s), COLOR_OUTLINE)
+					if ready or i < int(bar["filled"]):
+						draw_rect(rect, color)
+					else:
+						draw_rect(rect, COLOR_TRACK)
+						draw_rect(rect, Color(COLOR_TAKT, 0.45), false, 1.0 * s)
 			else:
+				draw_rect(Rect2(Vector2(left - s, y - s), Vector2(width + 2.0 * s, h + 2.0 * s)),
+					COLOR_OUTLINE)
+				draw_rect(Rect2(Vector2(left, y), Vector2(width, h)), COLOR_TRACK)
 				draw_rect(Rect2(Vector2(left, y), Vector2(width * float(bar["fill"]), h)),
 					color)
 			y += h + TAKT_GAP * s
