@@ -744,10 +744,15 @@ func _show_upgrade() -> void:
 		var box := VBoxContainer.new()
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		box.add_theme_constant_override("separation", 0)
-		box.custom_minimum_size = Vector2(96, 0)
+		box.custom_minimum_size = Vector2(104, 0)
+		panel.custom_minimum_size = Vector2(118, 0)
 		panel.add_child(box)
-		box.add_child(_quiet(Arcade.label((w["part"] as PartData).display_name.to_upper(), 12,
-			Arcade.CYAN if chosen else Arcade.WHITE, "display")))
+		var wname := Arcade.label((w["part"] as PartData).display_name.to_upper(), 11,
+			Arcade.CYAN if chosen else Arcade.WHITE, "display")
+		wname.clip_text = true
+		wname.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		wname.custom_minimum_size.x = 104
+		box.add_child(_quiet(wname))
 		var sub := HBoxContainer.new()
 		sub.add_theme_constant_override("separation", 4)
 		sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -944,7 +949,7 @@ func _head_style() -> StyleBoxFlat:
 func _picker() -> Control:
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.custom_minimum_size = Vector2(0, 62)
+	scroll.custom_minimum_size = Vector2(0, 70)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	scroll.add_child(row)
@@ -960,12 +965,24 @@ func _picker() -> Control:
 		box.custom_minimum_size = Vector2(72, 0)
 		panel.add_child(box)
 		# Entwurf: Name und "LV n · #01" statt Bild -- spart Hoehe.
-		box.add_child(_quiet(Arcade.label(entry.name.to_upper(), 14,
-			Arcade.CYAN if index == _selected else (Arcade.WHITE if entry.in_squad else Arcade.MUTED),
-			"display")))
+		# Feste Breite: lange Namen (NEON NIMBUS) brechen um statt zu schieben.
+		var dname := SquadPicker.name_label(entry.name, 12)
+		dname.add_theme_color_override("font_color",
+			Arcade.CYAN if index == _selected else (Arcade.WHITE if entry.in_squad else Arcade.MUTED))
+		dname.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		dname.custom_minimum_size = Vector2(80, 28)
+		box.add_child(_quiet(dname))
 		box.add_child(_quiet(Arcade.label("LV %d · %s" % [entry.level, _code(index)], 12,
 			Arcade.MUTED, "medium")))
 		row.add_child(panel)
+		if index == _selected:
+			# Der gewaehlte DROME steht im Blick, auch weit hinten in der Reihe.
+			var bring := func():
+				await scroll.get_tree().process_frame
+				await scroll.get_tree().process_frame
+				if is_instance_valid(panel):
+					scroll.ensure_control_visible(panel)
+			bring.call_deferred()
 	return scroll
 
 
