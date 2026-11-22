@@ -14,7 +14,11 @@
   "  der Spieler bestaetigt die Fraktionsidentitaet (SPOT-Blatt Formationen).",
   "variants: wie Leicht und Elite aus derselben Formation werden (level_offset aufs",
   "  Reinforcement-Level, Ränge, Module der DROMEs).",
-  "map: die Karte der Formation (Schluessel in config.json -> maps, 18. Nov. 2026)."
+  "map: die Karte der Formation (Schluessel in config.json -> maps, 18. Nov. 2026).",
+  "art (21. Nov. 2026, Spieler): 'variante' = ein bekannter DROME im Look einer Fraktion,",
+  "  heisst wie sein Chassis (Molok) mit der Fraktion als Untertitel (Mega Mechas);",
+  "  'neu' = ein eigener DROME mit eigenem Namen (Neon Vireo). Standard-DROMEs tragen",
+  "  den Untertitel CyberDrome."
  ],
  "sentinels": {
   "neon_assault": {
@@ -298,6 +302,7 @@
  },
  "dromes": {
   "neon_vireo": {
+   "art": "neu",
    "name": "Neon Vireo",
    "chassis": "scout_body",
    "weapons": [
@@ -315,6 +320,7 @@
    "faction": "neon"
   },
   "neon_nimbus": {
+   "art": "neu",
    "name": "Neon Nimbus",
    "chassis": "mage_body",
    "weapons": [
@@ -333,6 +339,7 @@
    "faction": "neon"
   },
   "solar_nimbus": {
+   "art": "variante",
    "name": "Solar Nimbus",
    "chassis": "mage_body",
    "weapons": [
@@ -350,6 +357,7 @@
    "faction": "solar"
   },
   "mecha_molok": {
+   "art": "variante",
    "name": "Mecha Molok",
    "chassis": "jugg_body",
    "weapons": [
@@ -368,6 +376,7 @@
    "faction": "mecha"
   },
   "mecha_strix": {
+   "art": "variante",
    "name": "Mecha Strix",
    "chassis": "strix_body",
    "weapons": [

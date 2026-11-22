@@ -30,6 +30,10 @@ Ausloeser). **Seit 20. Nov. 2026 gebaut:** 6 Amps, 15 Fusionen (2 entschieden, 1
 Vorschlaege), 6 Hyperfusionen mit Fusion Core. **Offene Logik (Charger + Amps) steht in
 `docs/design/UEBERGABEN_DESIGN.md`, Abschnitt „Offene Logik nach dem Bau“** -- vor neuer
 Arbeit daran lesen.
+**Skilltrees (22. Nov. 2026, Richtung entschieden, Schablone Entwurf): `docs/SKILLBAUM_KONZEPT.md`**
+-- keine Erfahrung mehr, DROMEs und Waffen je 5 Level ueber Ressourcen, Knoten 1-4 nur Werte,
+Knoten 5 aendert Passive bzw. Faehigkeit, Umskillen kostet Ressourcen, Fraktionsvarianten =
+Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegnen.
 **Waffen-Upgrades (20. Nov. 2026, entschieden und GEBAUT): `docs/CHARGER_KONZEPT.md`**
 -- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.
 **Bildschirme fuer Design-Sessions: `docs/design/UEBERGABEN_DESIGN.md`** -- Hangar
