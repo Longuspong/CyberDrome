@@ -51,8 +51,8 @@ Design-Canvas „CyberDrome Cache, Kampf, Hangar“ (https://claude.ai/artifact/
 * **Ruckeln:** Punktraster (`Arcade.draw_dots`) und Scanlines als gekachelte Textur statt
   ~1800 Kreisen bzw. ~270 Linien -- betrifft jede Seite mit Arcade-Hintergrund (Optionen,
   Shop, Hangar ...) und den Cache-Bildschirm, der das Raster vorher JEDES Bild neu zeichnete.
-* **Nachtrag (Spieler):** DROMEs kleiner (`figures.scale` 0,62 statt 0,75), Lebensbalken 8 px
-  hoch, Takt-Leiste als Kaestchen je Angriff mit pulsierendem Rahmen, wenn die Faehigkeit
+* **Nachtrag (Spieler):** DROMEs kleiner (`figures.scale` 0,62 statt 0,75), Lebensbalken 6 px
+  hoch nur mit schwarzem Umriss (abgeschraegt, ohne schwarzen Grund; 22. Nov.), Takt-Leiste als Kaestchen je Angriff mit pulsierendem Rahmen, wenn die Faehigkeit
   als Naechstes kommt (`UnitBadgePainter._takt`). Level durch Erfahrung entfaellt (Upgrade
   mit Ressourcen + Skilltrees kommen spaeter); Richtung fuer die Navigation: fuenf Tabs
   (Shop, Ressourcen, Home in der Mitte, DROMEs, Inventar) -- SPOT-Eckpunkte, noch in Ueberlegung.

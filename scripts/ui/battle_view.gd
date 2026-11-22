@@ -294,9 +294,11 @@ func show_unit_badges(entries: Array) -> void:
 ## zwangslaeufig irgendwann als Rest im Baum.
 class UnitBadgePainter extends Node2D:
 	const WIDTH := 56.0
-	## Seit 21. Nov. 2026 hoeher (vorher 6): die DROMEs sind kleiner, der
-	## Balken muss trotzdem gut lesbar bleiben (Spieler).
-	const HEIGHT := 8.0
+	## Seit 22. Nov. 2026 (Spieler): 6 hoch, ohne schwarzen Grund -- nur ein
+	## schwarzer Umriss, der oben rechts und unten links mit abgeschraegt ist.
+	const HEIGHT := 6.0
+	## Deckkraft des leeren Teils (nur ein Hauch, kein schwarzer Balken).
+	const EMPTY_ALPHA := 0.22
 	## Unterkante des Balkens ueber der Feldmitte -- in WELT-Einheiten.
 	const BASE_Y := -72.0
 
@@ -503,31 +505,27 @@ class UnitBadgePainter extends Node2D:
 			var pulse := 0.5 + 0.5 * sin(now * TAU * 1.5)
 			outline = COLOR_DANGER.lerp(COLOR_OUTLINE, 0.6 * (1.0 - pulse))
 			pad = 1.6 * s
-		draw_rect(Rect2(Vector2(left - pad, top - pad),
-			Vector2(width + pad * 2.0, height + pad * 2.0)), outline)
-		draw_rect(Rect2(Vector2(left, top), Vector2(width, height)), COLOR_TRACK)
+		# Form: abgeschraegt oben rechts und unten links (Arcade-Form). Fuellungen
+		# werden auf diese Form beschnitten, darum nur ein Umriss.
+		var cut := height * 0.9
+		var shape := _chamfer(left, top, width, height, cut)
+		draw_colored_polygon(shape, Color(COLOR_TRACK, EMPTY_ALPHA))
 		# Nachlauf zuerst, darueber der echte Wert.
-		draw_rect(Rect2(Vector2(left, top), Vector2(width * hp_ghost, height)), COLOR_GHOST)
-		draw_rect(Rect2(Vector2(left, top), Vector2(width * parts["hp_fill"], height)),
-			Teams.hp_color(mine))
+		_fill(shape, left, left + width * hp_ghost, top, height, COLOR_GHOST)
+		_fill(shape, left, left + width * parts["hp_fill"], top, height, Teams.hp_color(mine))
 		var shield_left: float = left + width * float(parts["hp_slot"])
-		draw_rect(Rect2(Vector2(shield_left, top), Vector2(width * sh_ghost, height)), COLOR_GHOST)
-		draw_rect(Rect2(Vector2(shield_left, top),
-			Vector2(width * parts["shield_fill"], height)), Teams.shield_color(mine))
+		_fill(shape, shield_left, shield_left + width * sh_ghost, top, height, COLOR_GHOST)
+		_fill(shape, shield_left, shield_left + width * parts["shield_fill"], top, height,
+			Teams.shield_color(mine))
 		# Die Fuge zwischen den beiden Teilen, damit ein leerer Schild nicht
 		# wie ein Stueck fehlender Integritaet aussieht.
 		if parts["hp_slot"] > 0.0 and parts["shield_slot"] > 0.0:
-			draw_rect(Rect2(Vector2(shield_left - 0.5 * s, top),
-				Vector2(1.0 * s, height)), COLOR_OUTLINE)
-		# Abgeschraegt oben rechts und unten links (Arcade-Form, seit 17. Nov.
-		# 2026 fuer alle Balken; die Teams trennen Farbe und Helligkeit).
-		var cut := height + pad
-		var bottom := top + height + pad
-		draw_colored_polygon(PackedVector2Array([Vector2(left - pad, bottom),
-			Vector2(left - pad, bottom - cut), Vector2(left - pad + cut, bottom)]), outline)
-		draw_colored_polygon(PackedVector2Array([Vector2(left + width + pad, top - pad),
-			Vector2(left + width + pad - cut, top - pad),
-			Vector2(left + width + pad, top - pad + cut)]), outline)
+			draw_line(Vector2(shield_left, top), Vector2(shield_left, top + height),
+				COLOR_OUTLINE, 1.0 * s)
+		var ring := _chamfer(left - pad * 0.5, top - pad * 0.5, width + pad, height + pad,
+			cut + pad * 0.5)
+		ring.append(ring[0])
+		draw_polyline(ring, outline, pad * 1.6)
 		# Ueberschild: Rahmen um den Schildteil, links immer ganz, oben und
 		# unten so weit, wie er gefuellt ist; voll = rundum (folgt der Schraege).
 		var over: float = parts["over"]
@@ -562,6 +560,23 @@ class UnitBadgePainter extends Node2D:
 			var at := Vector2(left - 7.0 * s, top + height * 0.5)
 			draw_circle(at, 5.0 * s, COLOR_OUTLINE)
 			_icon("lured", at, 5.0 * s, COLOR_LURED)
+
+	## Rechteck mit abgeschraegten Ecken oben rechts und unten links.
+	static func _chamfer(x: float, y: float, w: float, h: float, cut: float) -> PackedVector2Array:
+		cut = minf(cut, minf(w, h))
+		return PackedVector2Array([Vector2(x, y), Vector2(x + w - cut, y), Vector2(x + w, y + cut),
+			Vector2(x + w, y + h), Vector2(x + cut, y + h), Vector2(x, y + h - cut)])
+
+	## Fuellt den Streifen x0..x1 innerhalb von ``shape``.
+	func _fill(shape: PackedVector2Array, x0: float, x1: float, top: float, height: float,
+			color: Color) -> void:
+		if x1 - x0 < 0.05:
+			return
+		var strip := PackedVector2Array([Vector2(x0, top - 1.0), Vector2(x1, top - 1.0),
+			Vector2(x1, top + height + 1.0), Vector2(x0, top + height + 1.0)])
+		for piece in Geometry2D.intersect_polygons(strip, shape):
+			if piece.size() >= 3:
+				draw_colored_polygon(piece, color)
 
 	## UI-Symbol (assets/ui_icons) mittig auf ``at``, halbe Kante ``half``.
 	func _icon(name: String, at: Vector2, half: float, color: Color) -> void:
