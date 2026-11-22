@@ -55,12 +55,21 @@ const MAGENTA := Color("#ff2bd6")
 const SETTINGS_SCENE := "res://scenes/settings.tscn"
 static var return_scene := "res://scenes/main.tscn"
 
-## Die Hauptseiten der Tab-Leiste: Titel und Szene.
+## Die Hauptseiten der Tab-Leiste: Titel und Szene. Seit 22. Nov. 2026 fuenf
+## (Design-Canvas "Fuenf Tabs", Entscheidung des Spielers): Shop, Fabrik
+## (Ressourcen), Home in der Mitte hervorgehoben, DROMEs, Inventar.
 const TABS := [
-	["Spielen", "res://scenes/main.tscn"],
-	["Hangar", "res://scenes/hangar.tscn"],
 	["Shop", "res://scenes/shop.tscn"],
+	["Fabrik", "res://scenes/resources.tscn"],
+	["Home", "res://scenes/main.tscn"],
+	["DROMEs", "res://scenes/hangar.tscn"],
+	["Inventar", "res://scenes/inventory.tscn"],
 ]
+const TAB_SHOP := 0
+const TAB_RESOURCES := 1
+const TAB_HOME := 2
+const TAB_DROMES := 3
+const TAB_INVENTORY := 4
 
 
 ## Baut den Rahmen einer Seite unter ``root`` und gibt die Inhaltsspalte
@@ -282,10 +291,10 @@ static func tab_bar(root: Control, active: int) -> Control:
 	return bar
 
 
-## Ein Knopf der Tab-Leiste: UI-Symbol (Spielen = Dreieck, Hangar = Halle,
-## Shop = Sechseck-Coin; assets/ui_icons/tab_*.svg) und Name darunter.
+## Ein Knopf der Tab-Leiste: UI-Symbol (assets/ui_icons/tab_*.svg) und Name
+## darunter. Home (Mitte) steht immer gelb hervorgehoben da.
 class TabButton extends Button:
-	const TAB_ICONS := ["tab_play", "tab_hangar", "tab_shop"]
+	const TAB_ICONS := ["tab_shop", "tab_factory", "tab_play", "tab_dromes", "tab_inventory"]
 
 	var _icon := 0
 	var _on := false
@@ -301,19 +310,29 @@ class TabButton extends Button:
 			Arcade.chamfer_box(Color.TRANSPARENT, 0, Color("#fff3a8"), 2))
 
 	func _draw() -> void:
-		if _on:
+		var home := _icon == UiKit.TAB_HOME
+		if home:
+			# Gelb, oben links abgeschraegt; aktiv mit hellem Strich oben.
+			var cut := 12.0
+			draw_colored_polygon(PackedVector2Array([Vector2(cut, 0), Vector2(size.x, 0),
+				Vector2(size.x, size.y), Vector2(0, size.y), Vector2(0, cut)]),
+				Arcade.YELLOW if _on else Color(Arcade.YELLOW, 0.85))
+			if _on:
+				draw_rect(Rect2(size.x * 0.12, 0, size.x * 0.76, 3), Arcade.WHITE)
+		elif _on:
 			draw_rect(Rect2(Vector2.ZERO, size), Color("#1d1040"))
 			draw_rect(Rect2(size.x * 0.12, 0, size.x * 0.76, 3), Arcade.CYAN)
-		var color := Arcade.CYAN if _on else Arcade.MUTED
+		var color := Arcade.DEEP if home else (Arcade.CYAN if _on else Arcade.MUTED)
 		var icon := UiIcon.texture(str(TAB_ICONS[_icon]) if _icon < TAB_ICONS.size() else "tab_shop")
 		if icon != null:
 			var edge := 22.0
 			draw_texture_rect(icon, Rect2(Vector2((size.x - edge) * 0.5, size.y * 0.36 - edge * 0.5),
 				Vector2(edge, edge)), false, color)
-		var f := Arcade.font("bold", 12, 0.16)
-		var w := f.get_string_size(_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+		# Fuenf Tabs auf 450 px: kleinere Schrift, damit INVENTAR passt.
+		var f := Arcade.font("bold", 11, 0.08)
+		var w := f.get_string_size(_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 		draw_string(f, Vector2((size.x - w) * 0.5, size.y * 0.78), _name,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, color)
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 11, color)
 
 
 # --- Bausteine -------------------------------------------------------------

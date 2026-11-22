@@ -29,6 +29,27 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Fuenf Tabs: Shop, Fabrik, Home, DROMEs, Inventar (22. Nov. 2026, Entscheidung des Spielers)
+
+Design-Canvas https://claude.ai/artifact/AH1kw5G3KweJxjygGuFu33 (Boards „Fuenf Tabs“).
+
+* **Tab-Leiste** (`UiKit.TABS`, `TAB_*`): Shop · Fabrik · Home (Mitte, gelb) · DROMEs ·
+  Inventar; neue Symbole `tab_factory`, `tab_dromes`, `tab_inventory`.
+* **Shop** nur kaufen (`shop_screen.gd`, `mode = "shop"`). **Inventar** (`scenes/inventory.tscn`,
+  gleiches Skript, `mode = "inventory"`): Reiter Inventar (Bestand, Energy Phases, Caches oeffnen)
+  und Charger (Charger-Crafter).
+* **Fabrik** (`resources_screen.gd`): Platzhalter fuer das Ressourcen-System.
+* **DROMEs** (`hangar_screen.gd`): Reiter DROMEs (Liste, gewaehlter DROME gross, Knoepfe
+  Ausruestung / Upgrade, darunter neue DROMEs bauen -- `DromeForge`, vorher im Shop) und Waffen
+  (alle Waffen, Knoepfe Upgrade / Charger). Unterseiten mit Zurueck-Pfeil und Schalter in einer
+  eigenen Zeile. **Ausruestung**: Bild oben links, rechts die Werte der Waffe im gewaehlten
+  Halter; eine freie Waffe antippen zeigt den Vergleich als Balken mit Unterschied
+  (`_set_compare`, `WeaponCard.attack_bars/ability_bars`); darunter Halter und Charger.
+  **Upgrade** (DROME und Waffe) ist ein Platzhalter, bis Ressourcen-Upgrade und Skilltrees
+  entschieden sind; Level durch Erfahrung entfaellt.
+* Offen: Home nach dem Entwurf (Boss, Story-Stand, Missionswahl, Cyberwave) -- heute das
+  bisherige Hauptmenue; Squad-Wahl bleibt in der Einsatzvorbereitung.
+
 ### Ruhige Kamera, groessere Hexfelder, Cache im Glitch-Stil, weniger Ruckeln (21. Nov. 2026, Wunsch des Spielers)
 
 Design-Canvas „CyberDrome Cache, Kampf, Hangar“ (https://claude.ai/artifact/AH1kw5G3KweJxjygGuFu33).

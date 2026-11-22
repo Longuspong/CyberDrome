@@ -100,13 +100,22 @@ func _process(_delta: float) -> bool:
 				if str(slot).begins_with("equip_"):
 					first_weapon = str(gs.roster.entries[0].assignments[slot])
 			gs.roster.mount_charger(str(made.get("uid", "")), first_weapon)
-			load("res://scripts/ui/shop_screen.gd").open_tab("bauen")
+			load("res://scripts/ui/shop_screen.gd").open_tab("charger")
 			load("res://scripts/ui/hangar_screen.gd").open_tab("upgrade")
 			var upgrade = load("res://scenes/hangar.tscn").instantiate()
 			upgrade.name = "Probe_upgrade"
 			root.add_child(upgrade)
 			print("SMOKE: Hangar (Upgrade) mit Charger instanziiert")
-			for scene in ["title", "saves", "main", "settings", "shop"]:
+			# Tab DROMEs (22. Nov. 2026): Reiter und Unterseiten, Vergleich in der Ausruestung.
+			for t in ["dromes", "waffen", "umbau", "drome_up", "weapon_up"]:
+				load("res://scripts/ui/hangar_screen.gd").open_tab(t)
+				var page = load("res://scenes/hangar.tscn").instantiate()
+				page.name = "Probe_h_" + t
+				root.add_child(page)
+			var umbau = root.get_node("Probe_h_umbau")
+			umbau._set_compare(root.get_node("PartDB").get_part(&"eq_hammer"))
+			print("SMOKE: DROMEs-Tab mit Reitern und Vergleich instanziiert")
+			for scene in ["title", "saves", "main", "settings", "shop", "inventory", "resources"]:
 				var node = load("res://scenes/%s.tscn" % scene).instantiate()
 				node.name = "Probe_%s" % scene
 				root.add_child(node)
@@ -122,8 +131,10 @@ func _process(_delta: float) -> bool:
 			opener._show_results()
 			print("SMOKE: Cache geöffnet, %d Ergebnisse" % opener._results.size())
 		18:
-			for scene in ["title", "saves", "main", "settings", "shop", "upgrade"]:
+			for scene in ["title", "saves", "main", "settings", "shop", "inventory", "resources", "upgrade"]:
 				root.get_node("Probe_%s" % scene).free()
+			for t in ["dromes", "waffen", "umbau", "drome_up", "weapon_up"]:
+				root.get_node("Probe_h_" + t).free()
 			# Lauf vor dem Kampf: Story-Reihe, dann Endlos mit Chaos-Knoten.
 			gs.start_run(4242)
 			gs.run.round = 4
