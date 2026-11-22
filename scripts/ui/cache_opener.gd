@@ -3,25 +3,47 @@ extends Control
 
 ## Der Bildschirm "Cache oeffnen" (Entwurf 15. Nov. 2026, Bilder 18-22): die
 ## Kiste der Fraktion gross vor Lichtstrahlen, Glitch-Name, TAP-Knopf.
-## Antippen hebt den Deckel.
 ##
 ## Seit 20. Nov. 2026 echt (CHARGER_KONZEPT.md 5): vier Wuerfe nach der Tabelle
-## (Roster.open_cache), alles wird gutgeschrieben. Design-Canvas "Cache oeffnen":
-## je Wurf fliegt ein Energieball in der Farbe des Gegenstands aus der Oeffnung
-## in sein Feld und platzt dort auf. Der Neon Cache ist eine echte 3D-Szene
-## (Shader assets/shaders/neon_cache.gdshader); die anderen bleiben Zeichnung.
+## (Roster.open_cache), alles wird gutgeschrieben. Je Wurf fliegt ein
+## Energieball in der Farbe des Gegenstands aus der Oeffnung in sein Feld.
+##
+## Seit 21. Nov. 2026 (Wunsch des Spielers, Design-Canvas "Cache oeffnen ·
+## Glitch-Animation") ist der Neon Cache wieder die Zeichnung wie die anderen
+## (der 3D-Shader passte nicht zum Stil und ruckelte), und das Oeffnen ist eine
+## kurze Abfolge im Glitch-Stil:
+##
+##   1 Ruhe         Kiste schwebt, Strahlen drehen langsam, TAP pulsiert
+##   2 Anspannen    0,00-0,45 s  Wackeln immer schneller, Kiste blaeht sich auf
+##   3 Glitch-Riss  0,45-0,80 s  Cyan/Magenta springen heraus, Streifen rutschen
+##   4 Knall        0,80-1,10 s  Blitz, Deckel springt ab, Sechseck-Ring, Funken
+##   5 Beute        ab 1,10 s    Energiebaelle fliegen in ihre Felder
+##
+## Gegen das Ruckeln wird nichts je Bild neu gezeichnet: Grund und Strahlen
+## stehen fest, bewegt werden nur Lage, Drehung, Groesse und Deckkraft fertiger
+## Bilder. Mit "Bewegung reduzieren" oeffnet die Kiste sofort.
 
 signal finished
 
+const WIND_UP := 0.45
+const GLITCH_AT := [0.45, 0.57, 0.69]
+const BANG := 0.8
+const LOOT := 1.1
+const RAY_SPEED := 0.12
+
 var _kind := "city"
-var _art: Control
-var _neon: ColorRect
+var _art: CacheArt
+var _ghosts: Array[CacheArt] = []
+var _slices: Array[Control] = []
+var _rig: Control
+var _rays: _Rays
+var _flash: ColorRect
 var _results: Array = []
 var _cards: Array = []
 var _time := 0.0
 var _opened := false
 var _tap_box: Control
-var _result: Control
+var _rng := RandomNumberGenerator.new()
 
 
 ## Legt den Bildschirm ueber ``host`` (ganze Flaeche) und gibt ihn zurueck.
@@ -35,7 +57,15 @@ static func show_over(host: Control, cache_kind: String) -> CacheOpener:
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	set_process(Arcade.moving())
+	_rng.seed = 5011
+
+	# Strahlen: einmal gezeichnet, nur die Drehung aendert sich.
+	_rays = _Rays.new(CacheArt.color(_kind))
+	add_child(_rays)
+	resized.connect(_place_rays)
+	_place_rays.call_deferred()
 
 	var column := VBoxContainer.new()
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -67,22 +97,39 @@ func _ready() -> void:
 	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(tag)
 
+	# Die Buehne: ein fester Platz, darin der Aufbau (_rig), der wackelt,
+	# springt und sich aufblaeht -- der Container bleibt still.
 	var stage := CenterContainer.new()
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(stage)
-	if _kind == "city":
-		_neon = ColorRect.new()
-		_neon.custom_minimum_size = Vector2(300, 210)
-		var mat := ShaderMaterial.new()
-		mat.shader = load("res://assets/shaders/neon_cache.gdshader")
-		mat.set_shader_parameter("res", Vector2(300, 210))
-		mat.set_shader_parameter("still", 0.0 if Arcade.moving() else 1.0)
-		_neon.material = mat
-		_neon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_art = _neon
-	else:
-		_art = CacheArt.new(_kind, 230.0)
-	stage.add_child(_art)
+	var place := Control.new()
+	place.custom_minimum_size = Vector2(230, 196)
+	place.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(place)
+	_rig = Control.new()
+	_rig.size = place.custom_minimum_size
+	_rig.pivot_offset = _rig.size * 0.5
+	_rig.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	place.add_child(_rig)
+	for tint in [Arcade.CYAN, Arcade.MAGENTA]:
+		var ghost := CacheArt.new(_kind, 230.0)
+		ghost.size = _rig.size
+		ghost.flat = Color(tint, 0.75)
+		ghost.visible = false
+		var add := CanvasItemMaterial.new()
+		add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		ghost.material = add
+		_rig.add_child(ghost)
+		_ghosts.append(ghost)
+	_art = CacheArt.new(_kind, 230.0)
+	_art.size = _rig.size
+	_rig.add_child(_art)
+	# Zwei Streifen, die beim Riss die Kiste zerschneiden.
+	for tint in [Arcade.CYAN, Arcade.MAGENTA]:
+		var slice := _Slice.new(tint)
+		slice.visible = false
+		_rig.add_child(slice)
+		_slices.append(slice)
 
 	var name := Arcade.GlitchLogo.new(RunState.cache_name(StringName(_kind)).to_upper(), 30, 3.6, [
 		[0.0, Vector2(-2, 0), Vector2(2, 0)],
@@ -105,6 +152,13 @@ func _ready() -> void:
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tap_box.add_child(hint)
 
+	_flash = ColorRect.new()
+	_flash.color = Arcade.WHITE
+	_flash.modulate.a = 0.0
+	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_flash)
+
 
 ## "Neon Ninja's · Neon City" aus regions.json; Hipstar gibt es noch nicht.
 func _origin() -> String:
@@ -116,28 +170,24 @@ func _origin() -> String:
 	return "%s · %s" % [str(region.faction.get("name", "")), region.display_name]
 
 
+func _place_rays() -> void:
+	if _rays != null:
+		_rays.position = Vector2(size.x * 0.5, size.y * 0.36)
+		_rays.reach = size.length()
+
+
+## Je Bild nur Lagen: Strahlen drehen, die Kiste schwebt in Ruhe.
 func _process(delta: float) -> void:
 	_time += delta
-	queue_redraw()
+	_rays.rotation = _time * RAY_SPEED
+	if not _opened:
+		_rig.position.y = -4.0 * sin(_time * TAU / 2.6)
 
 
-## Dunkler Grund, Punktraster und Lichtstrahlen in der Farbe der Fraktion.
+## Grund und Punktraster -- einmal gezeichnet (gekachelte Textur).
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Arcade.NIGHT)
-	var color := CacheArt.color(_kind)
-	var center := Vector2(size.x * 0.5, size.y * 0.4)
-	var turn := _time * 0.12
-	for i in 12:
-		var a := turn + TAU * float(i) / 12.0
-		var spread := 0.09
-		var far := size.length()
-		draw_colored_polygon(PackedVector2Array([center,
-			center + Vector2(cos(a - spread), sin(a - spread)) * far,
-			center + Vector2(cos(a + spread), sin(a + spread)) * far]),
-			Color(color, 0.07 + (0.06 if _opened else 0.0)))
-	for y in range(7, int(size.y), 14):
-		for x in range(7, int(size.x), 14):
-			draw_circle(Vector2(x, y), 1.2, Color(Arcade.DOTS, 0.12))
+	Arcade.draw_dots(self, Rect2(Vector2.ZERO, size), 14.0, 1.2, Color(Arcade.DOTS, 0.12))
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -150,16 +200,117 @@ func _gui_input(event: InputEvent) -> void:
 
 func _open() -> void:
 	_opened = true
-	Accessibility.vibrate(80, true)
 	_tap_box.visible = false
 	_results = GameState.roster.open_cache(_kind)
 	GameState.save_roster()
-	if Arcade.moving() and is_inside_tree():
-		var tween := create_tween()
-		tween.tween_method(_set_open, 0.0, 1.0, 1.4 if _neon != null else 0.45) \
-			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	else:
-		_set_open(1.0)
+	if not (Arcade.moving() and is_inside_tree()):
+		Accessibility.vibrate(80, true)
+		_art.open = 1.0
+		_show_results()
+		return
+	Accessibility.vibrate(30)
+	_rig.position = Vector2.ZERO
+	var seq := create_tween()
+	# 2 Anspannen
+	seq.tween_method(_wind_up, 0.0, 1.0, WIND_UP)
+	# 3 Glitch-Riss: drei harte Spruenge
+	for i in GLITCH_AT.size():
+		var at: float = GLITCH_AT[i]
+		var next: float = GLITCH_AT[i + 1] if i + 1 < GLITCH_AT.size() else BANG
+		seq.tween_callback(_glitch_jump.bind(i))
+		seq.tween_interval(next - at)
+	# 4 Knall
+	seq.tween_callback(_bang)
+	seq.tween_interval(LOOT - BANG)
+	# 5 Beute
+	seq.tween_callback(_show_results)
+
+
+## Wackeln, das immer schneller und groesser wird; die Kiste blaeht sich auf.
+func _wind_up(t: float) -> void:
+	var swing := sin(t * t * 46.0)
+	_rig.rotation = deg_to_rad(swing * (1.5 + 4.5 * t))
+	_rig.position = Vector2(swing * 4.0 * t, 0.0)
+	_rig.scale = Vector2.ONE * (1.0 + 0.08 * t)
+	_rays.modulate.a = 1.0 + 0.8 * t
+
+
+## Ein Glitch-Sprung: Farbkanaele versetzt, Streifen an neuer Stelle, die Kiste
+## ruckt seitlich. Bleibt stehen bis zum naechsten Sprung (kein Flimmern).
+func _glitch_jump(index: int) -> void:
+	Accessibility.vibrate(20)
+	var push := 6.0 + 3.0 * float(index)
+	var side := -1.0 if index % 2 == 0 else 1.0
+	_rig.rotation = 0.0
+	_rig.scale = Vector2.ONE * (1.08 + 0.02 * float(index))
+	_rig.position = Vector2(side * _rng.randf_range(3.0, 7.0), 0.0)
+	_ghosts[0].visible = true
+	_ghosts[1].visible = true
+	_ghosts[0].position = Vector2(-push * side, _rng.randf_range(-3.0, 3.0))
+	_ghosts[1].position = Vector2(push * side, _rng.randf_range(-3.0, 3.0))
+	for i in _slices.size():
+		var slice := _slices[i]
+		slice.visible = true
+		slice.size = Vector2(_rig.size.x + 60.0, _rng.randf_range(8.0, 16.0))
+		slice.position = Vector2(-30.0 + _rng.randf_range(-24.0, 24.0),
+			_rng.randf_range(0.25, 0.75) * _rig.size.y)
+
+
+## Blitz, Deckel ab, Sechseck-Ring, Funken, Stoss.
+func _bang() -> void:
+	Accessibility.vibrate(80, true)
+	for ghost in _ghosts:
+		ghost.visible = false
+	for slice in _slices:
+		slice.visible = false
+	_rig.rotation = 0.0
+	_rig.position = Vector2.ZERO
+	_rig.scale = Vector2.ONE * 1.18
+	var color := CacheArt.color(_kind)
+	var fx := create_tween().set_parallel(true)
+	fx.tween_property(_rig, "scale", Vector2.ONE, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	fx.tween_property(_art, "open", 1.0, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_flash.modulate.a = 0.6
+	fx.tween_property(_flash, "modulate:a", 0.0, 0.2)
+	_rays.modulate.a = 2.4
+	fx.tween_property(_rays, "modulate:a", 1.6, 0.6)
+	# Ring: einmal gezeichnet, waechst ueber die Groesse.
+	var center := _rig.get_global_rect().get_center() - global_position
+	for i in 2:
+		var ring := _Ring.new(color if i == 0 else Arcade.WHITE, 5.0 - 2.0 * float(i))
+		ring.position = center
+		ring.scale = Vector2.ONE * 0.4
+		add_child(ring)
+		var grow := create_tween().set_parallel(true)
+		grow.tween_property(ring, "scale", Vector2.ONE * (2.4 - 0.6 * float(i)), 0.45) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		grow.tween_property(ring, "modulate:a", 0.0, 0.45)
+		grow.chain().tween_callback(ring.queue_free)
+	# Pixel-Funken
+	var tints := [color, Arcade.YELLOW, Arcade.CYAN, Arcade.MAGENTA, Arcade.WHITE]
+	for i in 16:
+		var spark := ColorRect.new()
+		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		spark.color = tints[i % tints.size()]
+		spark.size = Vector2.ONE * _rng.randf_range(4.0, 8.0)
+		spark.position = center - spark.size * 0.5
+		add_child(spark)
+		var a := TAU * float(i) / 16.0 + _rng.randf_range(-0.2, 0.2)
+		var to := center + Vector2(cos(a), sin(a) * 0.8) * _rng.randf_range(110.0, 190.0)
+		var fly := create_tween().set_parallel(true)
+		fly.tween_property(spark, "position", to, 0.55).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+		fly.tween_property(spark, "modulate:a", 0.0, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		fly.chain().tween_callback(spark.queue_free)
+	# Kurzer Stoss der ganzen Buehne
+	var shake := create_tween()
+	for k in 5:
+		var strength := 7.0 * (1.0 - float(k) / 5.0)
+		shake.tween_property(_rig, "position",
+			Vector2(_rng.randf_range(-strength, strength), _rng.randf_range(-strength, strength)), 0.04)
+	shake.tween_property(_rig, "position", Vector2.ZERO, 0.05)
+
+
+func _show_results() -> void:
 	var holder := _tap_box.get_parent() as Control
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -180,13 +331,6 @@ func _open() -> void:
 	_fly.call_deferred()
 
 
-func _set_open(value: float) -> void:
-	if _neon != null:
-		(_neon.material as ShaderMaterial).set_shader_parameter("open", value)
-	elif _art is CacheArt:
-		(_art as CacheArt).open = value
-
-
 func _fly() -> void:
 	await get_tree().process_frame
 	var from := _art.global_position + _art.size * Vector2(0.5, 0.45) - global_position
@@ -201,9 +345,9 @@ func _fly() -> void:
 		var to: Vector2 = card.icon_center() - global_position
 		var mid := (from + to) * 0.5 + Vector2((to.x - from.x) * 0.3, -60)
 		var tween := create_tween()
-		tween.tween_interval(0.5 + 0.35 * i)
+		tween.tween_interval(0.1 + 0.3 * i)
 		tween.tween_method(func(t: float):
-			ball.position = from.lerp(mid, t).lerp(mid.lerp(to, t), t), 0.0, 1.0, 0.45) \
+			ball.position = from.lerp(mid, t).lerp(mid.lerp(to, t), t), 0.0, 1.0, 0.4) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tween.tween_callback(func():
 			Accessibility.vibrate(20)
@@ -215,6 +359,58 @@ func _fly() -> void:
 func _close() -> void:
 	finished.emit()
 	queue_free()
+
+
+## Zwoelf Lichtstrahlen um den eigenen Ursprung -- einmal gezeichnet, gedreht
+## wird der Knoten.
+class _Rays extends Control:
+	var tint := Color.WHITE
+	var reach := 1200.0:
+		set(value):
+			reach = value
+			queue_redraw()
+
+	func _init(color: Color) -> void:
+		tint = color
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		for i in 12:
+			var a := TAU * float(i) / 12.0
+			draw_colored_polygon(PackedVector2Array([Vector2.ZERO,
+				Vector2(cos(a - 0.09), sin(a - 0.09)) * reach,
+				Vector2(cos(a + 0.09), sin(a + 0.09)) * reach]), Color(tint, 0.07))
+
+
+## Ein Riss-Streifen: Nachtschwarz mit farbiger Kante.
+class _Slice extends Control:
+	var tint := Color.WHITE
+
+	func _init(color: Color) -> void:
+		tint = color
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		draw_rect(Rect2(Vector2.ZERO, size), Arcade.NIGHT)
+		draw_rect(Rect2(0, 0, size.x, 2.0), tint)
+
+
+## Sechseck-Ring (flach, wie Feld und Kiste) um den eigenen Ursprung, Radius 100.
+class _Ring extends Control:
+	var tint := Color.WHITE
+	var width := 4.0
+
+	func _init(color: Color, line: float) -> void:
+		tint = color
+		width = line
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var points := PackedVector2Array()
+		for i in 7:
+			var a := TAU * float(i) / 6.0
+			points.append(Vector2(cos(a) * 100.0, sin(a) * 78.0))
+		draw_polyline(points, tint, width)
 
 
 ## Ein Ergebnis: Feld mit Wurf-Nummer, Gegenstand erscheint mit Aufploppen.
@@ -300,6 +496,12 @@ class _ResultCard extends PanelContainer:
 			child.modulate.a = 1.0
 		(get_theme_stylebox("panel") as StyleBoxFlat).border_color = color()
 		if Arcade.moving() and is_inside_tree():
+			# Glitch-Aufploppen: kurz ueberhell und seitlich versetzt.
+			modulate = Color(1.9, 1.9, 1.9)
+			create_tween().tween_property(self, "modulate", Color.WHITE, 0.22)
+			_content.position.x = 6.0
+			create_tween().tween_property(_content, "position:x", 0.0, 0.12) \
+				.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 			_icon_box.pivot_offset = _icon_box.size * 0.5
 			_icon_box.scale = Vector2(0.5, 0.5)
 			create_tween().tween_property(_icon_box, "scale", Vector2.ONE, 0.25) \

@@ -203,7 +203,7 @@ REGION_ROLES = {"city": CITY, "green": GREEN, "plant7": PLANT}
 # Sechseck-Platten (Entwurf docs/design/drome_entwurf/v10_hexboden.py): ein
 # Drehkoerper mit 6 Segmenten, Ecke entlang f -- im Kampf zeigt f nach oben
 # im Bild, dann liegen die Spitzen oben und unten wie bei IsoView.
-HEX_R = 22.0
+HEX_R = 26.0
 GAP = 0.7
 RT = HEX_R - GAP
 
