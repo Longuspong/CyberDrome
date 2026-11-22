@@ -55,7 +55,7 @@ Auf Level 5 stehen **3 Knoten** zur Wahl (Spieler 22. Nov. 2026):
 |---|---|---|
 | **Fokus** | 1 Salve, alle Schüsse auf ein Ziel, dafür nur 5 | einen Gegner herausnehmen (Elite-DROME) |
 | **Streuung** | alle Schüsse gleich verteilt auf alle Ziele in Reichweite | viele Gegner (Sentinel-Schwarm) |
-| **Trippel** | Salven à 3 statt à 2 (Annahme: 2 Salven à 3, noch bestätigen) | gleichmäßiger Druck |
+| **Trippel** | 2 Salven à 3 Schüsse statt 3 à 2 | gleichmäßiger Druck |
 
 ## 5. Beispiel Vireo / Neon Vireo (Spieler 22. Nov. 2026, Richtung entschieden)
 
