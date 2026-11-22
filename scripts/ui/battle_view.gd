@@ -31,6 +31,11 @@ var _zone: ZonePainter
 var abilities: AbilityPainter
 ## Die gemeinsame 3D-Szene: Hindernisse und alle DROMEs (seit 18. Nov. 2026).
 var arena3d: Arena3D
+## Kampfbild mehr 3D (21. Nov. 2026): Teilchen (B7), liegende Ringe am Boden,
+## lebendiger Rand (D12).
+var particles: ParticleFx
+var _floor_rings: FloorRings
+var _edge: EdgeLife
 
 
 func _ready() -> void:
@@ -54,6 +59,17 @@ func _ready() -> void:
 	_effects.name = "Effects"
 	add_child(_effects)
 
+	particles = ParticleFx.new()
+	particles.name = "Teilchen"
+	add_child(particles)
+	_effects.particles = particles
+
+	_floor_rings = FloorRings.new()
+	_floor_rings.name = "Bodenringe"
+	_floor_rings.painter = _effects
+	add_child(_floor_rings)
+	_effects.floor_rings = _floor_rings
+
 
 # ---------------------------------------------------------------------------
 # Boden
@@ -63,6 +79,7 @@ func _ready() -> void:
 ## Hindernisse und Deko in der 3D-Szene (Arena3D).
 func build_terrain(battle_grid: Grid) -> void:
 	grid = battle_grid
+	abilities.grid = grid
 	for node in _arena:
 		node.queue_free()
 	_arena = ArenaPainter.build(_world, grid)
@@ -79,6 +96,15 @@ func build_terrain(battle_grid: Grid) -> void:
 		_world.add_child(arena3d)
 	arena3d.build_obstacles(grid)
 	arena3d.build_props(grid)
+	arena3d.fx = particles
+	for node in _arena:
+		if node is ArenaPainter.Lights:
+			arena3d.light_spots = node.spots
+	if _edge != null and is_instance_valid(_edge):
+		_edge.queue_free()
+	_edge = EdgeLife.create(grid, particles)
+	_world.add_child(_edge)
+	_arena.append(_edge)
 
 
 ## Felder einfaerben -- die Aufstellungszone vor dem Kampf.
@@ -181,6 +207,10 @@ func set_pixel_scale(camera_zoom: float) -> void:
 	_badges.queue_redraw()
 	_effects.pixel_scale = factor
 	abilities.pixel_scale = factor
+	if particles != null:
+		particles.pixel_scale = factor
+	if _floor_rings != null:
+		_floor_rings.pixel_scale = factor
 
 
 ## Echtzeit: eine Schussspur von ``from`` nach ``to`` (Weltkoordinaten der
@@ -264,7 +294,9 @@ func show_unit_badges(entries: Array) -> void:
 ## zwangslaeufig irgendwann als Rest im Baum.
 class UnitBadgePainter extends Node2D:
 	const WIDTH := 56.0
-	const HEIGHT := 6.0
+	## Seit 21. Nov. 2026 hoeher (vorher 6): die DROMEs sind kleiner, der
+	## Balken muss trotzdem gut lesbar bleiben (Spieler).
+	const HEIGHT := 8.0
 	## Unterkante des Balkens ueber der Feldmitte -- in WELT-Einheiten.
 	const BASE_Y := -72.0
 
@@ -274,8 +306,13 @@ class UnitBadgePainter extends Node2D:
 	const COLOR_GHOST := Color(1.0, 0.95, 0.85)
 	const COLOR_DANGER := Color(1.0, 0.25, 0.2)
 	## Takt-Leiste unter dem Lebensbalken: wann kommt die Faehigkeit?
-	const TAKT_HEIGHT := 3.0
-	const TAKT_GAP := 2.0
+	## Seit 21. Nov. 2026 als einzelne Kaestchen je Angriff (vorher eine 3 px
+	## duenne Leiste, kaum zu lesen): leer nur als Umriss, gefuellt gelb, voll
+	## = alle hell und ein pulsierender Rahmen -- der naechste Angriff ist die
+	## Faehigkeit.
+	const TAKT_HEIGHT := 5.0
+	const TAKT_GAP := 3.0
+	const TAKT_PIP_GAP := 2.0
 	const COLOR_TAKT := Color(1.0, 0.82, 0.35)
 	const COLOR_TAKT_READY := Color(1.0, 1.0, 0.85)
 
@@ -515,7 +552,7 @@ class UnitBadgePainter extends Node2D:
 					Vector2(x0, y0), Vector2(x0, y1), Vector2(reach, y1)]), Teams.OVERSHIELD, line)
 
 		if level != "far":
-			_takt(entry.get("takt", []), left, below, width, s)
+			_takt(entry.get("takt", []), left, below, width, s, now)
 		if level == "near":
 			_statuses(entry.get("statuses", []), left + width + 5.0 * s, top + height * 0.5, s)
 
@@ -555,25 +592,34 @@ class UnitBadgePainter extends Node2D:
 	## Abschnitte zu je einem Viertel), gefuellt je Treffer. Zeit-Takt: eine
 	## Leiste, die sich in halben Sekunden fuellt. Volle Leiste leuchtet hell:
 	## als Naechstes kommt die Faehigkeit.
-	func _takt(bars: Array, left: float, top: float, width: float, s: float) -> void:
+	func _takt(bars: Array, left: float, top: float, width: float, s: float,
+			now: float = 0.0) -> void:
 		var h := TAKT_HEIGHT * s
 		var y := top + TAKT_GAP * s * 0.5
 		for bar in bars:
-			var color := COLOR_TAKT_READY if bar.get("ready", false) else COLOR_TAKT
-			draw_rect(Rect2(Vector2(left - s, y - s), Vector2(width + 2.0 * s, h + 2.0 * s)),
-				COLOR_OUTLINE)
-			draw_rect(Rect2(Vector2(left, y), Vector2(width, h)), COLOR_TRACK)
+			var ready: bool = bar.get("ready", false)
+			var color := COLOR_TAKT_READY if ready else COLOR_TAKT
+			if ready:
+				# Pulsierender Rahmen um die ganze Leiste.
+				var glow := 1.0 if Accessibility.reduce_motion else 0.55 + 0.45 * sin(now * TAU * 2.5)
+				draw_rect(Rect2(Vector2(left - 2.5 * s, y - 2.5 * s), Vector2(width + 5.0 * s, h + 5.0 * s)),
+					Color(COLOR_TAKT_READY, 0.9 * glow), false, 1.5 * s)
 			if bar["kind"] == "hits":
 				var n: int = maxi(1, int(bar["segments"]))
-				var piece := width / float(n)
+				var gap := TAKT_PIP_GAP * s
+				var piece := (width - gap * float(n - 1)) / float(n)
 				for i in n:
-					var x := left + piece * float(i)
-					if i < int(bar["filled"]):
-						draw_rect(Rect2(Vector2(x, y), Vector2(piece, h)), color)
-					if i > 0:
-						draw_rect(Rect2(Vector2(x - 0.5 * s, y), Vector2(1.0 * s, h)),
-							COLOR_OUTLINE)
+					var rect := Rect2(Vector2(left + (piece + gap) * float(i), y), Vector2(piece, h))
+					draw_rect(rect.grow(s), COLOR_OUTLINE)
+					if ready or i < int(bar["filled"]):
+						draw_rect(rect, color)
+					else:
+						draw_rect(rect, COLOR_TRACK)
+						draw_rect(rect, Color(COLOR_TAKT, 0.45), false, 1.0 * s)
 			else:
+				draw_rect(Rect2(Vector2(left - s, y - s), Vector2(width + 2.0 * s, h + 2.0 * s)),
+					COLOR_OUTLINE)
+				draw_rect(Rect2(Vector2(left, y), Vector2(width, h)), COLOR_TRACK)
 				draw_rect(Rect2(Vector2(left, y), Vector2(width * float(bar["fill"]), h)),
 					color)
 			y += h + TAKT_GAP * s
@@ -599,6 +645,10 @@ class EffectPainter extends Node2D:
 	var pixel_scale: float = 1.0
 	var _shots: Array = []
 	var _texts: Array = []
+	## Kampfbild mehr 3D (21. Nov. 2026): Funken und Rauch als Teilchen,
+	## Energie- und Flaechenringe liegend am Boden (FloorRings).
+	var particles: ParticleFx
+	var floor_rings: FloorRings
 
 	func _ready() -> void:
 		z_index = 4020
@@ -635,11 +685,26 @@ class EffectPainter extends Node2D:
 			# sich inzwischen zum naechsten Ziel gedreht).
 			if was < 0.0 and float(entry["age"]) >= 0.0 and entry["from_fn"] is Callable:
 				entry["from"] = (entry["from_fn"] as Callable).call()
+			# Einschlag beginnt: Teilchen fuer den kinetischen Anteil.
+			if not entry.has("burst") and entry["kind"] != "beam" \
+					and float(entry["age"]) >= float(entry["flight"]):
+				entry["burst"] = true
+				if _uses_particles():
+					particles.hit(entry["to"], 24.0, entry["color"], float(entry["energy"]),
+						bool(entry["heavy"]))
 		for entry in _texts:
 			entry["age"] = float(entry["age"]) + delta
 		_shots = _shots.filter(func(e): return float(e["age"]) < float(e["total"]))
 		_texts = _texts.filter(func(e): return float(e["age"]) < TEXT_TIME)
 		queue_redraw()
+		if floor_rings != null:
+			floor_rings.queue_redraw()
+
+	func _uses_particles() -> bool:
+		return particles != null and is_instance_valid(particles) and not Accessibility.reduce_motion
+
+	func shots() -> Array:
+		return _shots
 
 	func _draw() -> void:
 		for entry in _shots:
@@ -715,12 +780,20 @@ class EffectPainter extends Node2D:
 		var energy: float = entry["energy"]
 		var big := 1.5 if entry["heavy"] else 1.0
 		var fade := 1.0 - t
+		var on_floor := floor_rings != null and is_instance_valid(floor_rings)
 		if energy > 0.0:
-			var r := (6.0 + 18.0 * t) * big * maxf(1.0, s * 0.8)
-			var alpha := fade * clampf(0.4 + energy, 0.0, 1.0)
-			draw_arc(at, r, 0.0, TAU, 28, Color(color.lightened(0.4), alpha), 2.5 * maxf(1.0, s * 0.7), true)
-			draw_arc(at, r * 0.6, 0.0, TAU, 20, Color(1, 1, 1, alpha * 0.6), 1.2 * maxf(1.0, s * 0.7), true)
-		if energy < 1.0:
+			if on_floor:
+				# Der Ring liegt am Boden (FloorRings); hier nur ein kurzer
+				# Lichtblitz an der Trefferstelle.
+				if t < 0.4:
+					var flash := (1.0 - t / 0.4) * clampf(0.4 + energy, 0.0, 1.0)
+					draw_circle(at, 7.0 * big * maxf(1.0, s * 0.8), Color(color.lightened(0.6), 0.5 * flash))
+			else:
+				var r := (6.0 + 18.0 * t) * big * maxf(1.0, s * 0.8)
+				var alpha := fade * clampf(0.4 + energy, 0.0, 1.0)
+				draw_arc(at, r, 0.0, TAU, 28, Color(color.lightened(0.4), alpha), 2.5 * maxf(1.0, s * 0.7), true)
+				draw_arc(at, r * 0.6, 0.0, TAU, 20, Color(1, 1, 1, alpha * 0.6), 1.2 * maxf(1.0, s * 0.7), true)
+		if energy < 1.0 and not _uses_particles():
 			var count := 7 if entry["heavy"] else 5
 			for i in count:
 				var ang := float(entry["spin"]) + i * TAU / float(count) + sin(i * 1.7) * 0.4
@@ -729,7 +802,7 @@ class EffectPainter extends Node2D:
 				var to := at + dir * (8.0 + 22.0 * t) * big * maxf(1.0, s * 0.8)
 				draw_line(from, to, Color(1.0, 0.85 - 0.3 * t, 0.45, fade * (1.0 - energy * 0.5)),
 					2.0 * maxf(1.0, s * 0.6), true)
-		if int(entry["area"]) > 0:
+		if int(entry["area"]) > 0 and not on_floor:
 			var reach := float(entry["area"]) * 34.0 * (0.4 + 0.6 * t)
 			draw_arc(at + Vector2(0, 24), reach, 0.0, TAU, 40, Color(color, fade * 0.5), 3.0, true)
 
@@ -773,3 +846,46 @@ class EffectPainter extends Node2D:
 				HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(COLOR_SHADOW, alpha * 0.6))
 			font.draw_string(get_canvas_item(), origin, text,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(entry["color"], alpha))
+
+
+## Energie- und Flaechenringe liegend auf dem Boden (21. Nov. 2026, Kampfbild
+## mehr 3D B7): flache Ellipsen um die Fuesse des Getroffenen, UNTER den
+## DROMEs (z 3990, die 3D-Szene liegt bei 4000). Liest die Einschlaege des
+## EffectPainter, damit Zeit und Farbe genau passen.
+class FloorRings extends Node2D:
+	var painter: EffectPainter
+	var pixel_scale: float = 1.0
+
+	func _ready() -> void:
+		z_index = 3990
+		z_as_relative = false
+
+	func _draw() -> void:
+		if painter == null or not is_instance_valid(painter):
+			return
+		var s := maxf(1.0, pixel_scale * 0.8)
+		var squash := IsoView.DEPTH_SQUASH
+		for entry in painter.shots():
+			var flight := float(entry["flight"])
+			var age := float(entry["age"])
+			if entry["kind"] == "beam" or age < flight:
+				continue
+			var t := (age - flight) / EffectPainter.IMPACT_TIME
+			if t > 1.0:
+				continue
+			var at: Vector2 = entry["to"]
+			var color: Color = entry["color"]
+			var energy := float(entry["energy"])
+			var big := 1.5 if entry["heavy"] else 1.0
+			var fade := 1.0 - t
+			draw_set_transform(at, 0.0, Vector2(1.0, squash))
+			if energy > 0.0:
+				var r := (10.0 + 22.0 * t) * big * s
+				var alpha := fade * clampf(0.4 + energy, 0.0, 1.0)
+				draw_circle(Vector2.ZERO, r, Color(color, 0.12 * alpha))
+				draw_arc(Vector2.ZERO, r, 0.0, TAU, 32, Color(color.lightened(0.4), alpha), 2.6 * s, true)
+				draw_arc(Vector2.ZERO, r * 0.6, 0.0, TAU, 24, Color(1, 1, 1, alpha * 0.55), 1.2 * s, true)
+			if int(entry["area"]) > 0:
+				var reach := float(entry["area"]) * IsoView.TILE_W * (0.4 + 0.6 * t)
+				draw_arc(Vector2.ZERO, reach, 0.0, TAU, 48, Color(color, fade * 0.55), 3.0 * s, true)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

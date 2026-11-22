@@ -20,9 +20,12 @@ const CAMERA_SHAKE_TIME := 0.22
 ## nicht mehr lesbar.
 const SPEEDS := [1.0, 2.0]
 
-## Kamera (mobile first): sie haelt das Geschehen im Bild -- den Rahmen um alle
-## lebenden DROMEs, in einem lesbaren Zoom. Ein Finger zieht, zwei zoomen; wer
-## selbst schiebt, schaltet das Folgen ab, "Folgen" holt es zurueck.
+## Kamera (mobile first): seit 21. Nov. 2026 (Wunsch des Spielers) eine FESTE
+## Ansicht -- Zoom auf Feldbreite, kein Heranzoomen, kein Schwenk, keine
+## Kamera-Szenen; nur senkrecht gleitet sie sanft mit (_frame_board). Ein Finger zieht, zwei
+## zoomen; der Knopf "Kamera" holt die Uebersicht zurueck.
+## Die Kamerafahrten bleiben im Code und lassen sich hier wieder einschalten.
+const CAMERA_MOVES := false
 const ZOOM_MIN := 0.2
 const ZOOM_MAX := 1.2
 const DRAG_THRESHOLD := 10.0
@@ -86,6 +89,28 @@ var _log_panel: PanelContainer
 var _speed_button: Button
 var _pause_button: Button
 var _follow_button: Button
+## Kamera mit Gefuehl (21. Nov. 2026, Kampfbild mehr 3D C9): kurzer Zoom
+## bei grossen Faehigkeiten (_punch 0..1 zum Punkt _punch_at), Schwenk ueber
+## das Feld zu Beginn der Aufstellung (_intro). Das Folgen rechnet in eigenen
+## Werten (_follow_pos/_follow_scale), der Zoom kommt obendrauf.
+const PUNCH_ZOOM := 0.14
+const PUNCH_PULL := 0.3
+const PUNCH_IN := 0.18
+const PUNCH_OUT := 0.35
+const PUNCH_HOLD_MAX := 0.6
+const PUNCH_COOLDOWN_MS := 3500
+const INTRO_DELAY := 0.35
+const INTRO_TIME := 1.5
+var _punch := 0.0
+var _punch_at := Vector2.ZERO
+var _punch_ready_ms := 0
+var _follow_pos := Vector2.ZERO
+var _follow_scale := 1.0
+var _follow_seeded := false
+var _intro: Tween
+var _intro_end: Array = []
+## Eine Kamera-Szene laeuft (C10): die Zeit steht so lange.
+var _cinema_running := false
 ## Glitch ueber dem Bild: Vorwarnung vor dem Virus und je Viruspuls.
 var _glitch: Arcade.GlitchOverlay
 ## Kampfzeit des naechsten Warn-Flackerns (-1 = noch nicht gesetzt).
@@ -194,7 +219,7 @@ func _add_scenery() -> void:
 func _process(delta: float) -> void:
 	if battle == null or battle.grid == null:
 		return
-	if not _paused and not _over and not _deploying:
+	if not _paused and not _over and not _deploying and not _cinema_running:
 		_accumulator += delta
 		var dt := battle.step_seconds()
 		var steps := 0
@@ -208,7 +233,7 @@ func _process(delta: float) -> void:
 			_accumulator = 0.0
 	_refresh_badges()
 	_virus_flicker()
-	if _follow and not _over and not _deploying:
+	if _follow and not _over and (not _deploying or not CAMERA_MOVES):
 		_follow_fight(delta)
 
 
@@ -334,7 +359,29 @@ func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 ## Ausholen einer Faehigkeit (18. Nov. 2026): Ansage und Haltung, AbilityFx.
 func _on_ability_cast(unit: Unit, tile: Vector2i, action: ActionData, seconds: float, _target) -> void:
 	AbilityFx.on_cast(view, unit, tile, action, seconds, battle.units)
+	# Grosse Faehigkeit (Flaeche oder lange Ausholzeit): kurz heranzoomen.
+	if action != null and (action.aoe_radius > 0 or seconds >= 0.3):
+		_punch_camera(unit.visual_anchor().lerp(IsoView.map_to_local(tile), 0.5), seconds)
 
+
+## Kurzer Zoom zum Geschehen: rein, halten (hoechstens PUNCH_HOLD_MAX), raus.
+## Nur beim Folgen, nie zwei uebereinander, nicht mit "Bewegung reduzieren".
+func _punch_camera(at: Vector2, hold: float) -> void:
+	if not CAMERA_MOVES or Accessibility.reduce_motion or not _follow or _over or _deploying:
+		return
+	var now := Time.get_ticks_msec()
+	if now < _punch_ready_ms:
+		return
+	_punch_ready_ms = now + PUNCH_COOLDOWN_MS
+	_punch_at = at
+	var tween := create_tween()
+	tween.tween_property(self, "_punch", 1.0, PUNCH_IN).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(clampf(hold, 0.0, PUNCH_HOLD_MAX))
+	tween.tween_property(self, "_punch", 0.0, PUNCH_OUT).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+## Ab diesem Anteil der Integritaet qualmt ein Treffer.
+const HEAVY_SMOKE_SHARE := 0.15
 
 ## Dauer, in der ein gezogener oder gestossener DROME auf sein Feld rutscht.
 const FORCED_SLIDE := AbilityFx.FORCED_SLIDE
@@ -349,6 +396,9 @@ func _on_unit_damaged(unit: Unit, amount: int, _source) -> void:
 			Color(1.0, 0.45, 0.4) if unit.is_player else Color(1.0, 0.9, 0.5))
 	var maximum: int = maxi(1, unit.stat("hp_max"))
 	_shake_camera(clampf(float(amount) / float(maximum), 0.0, 1.0))
+	# Schwerer Treffer (ab 15 %): Rauch steigt auf (Kampfbild mehr 3D B7).
+	if float(amount) >= HEAVY_SMOKE_SHARE * float(maximum) and view.particles != null:
+		view.particles.smoke(unit.visual_anchor(), 30.0, 3)
 	# Haptik: nur schwere Treffer auf die eigenen DROMEs (ab 10 %).
 	if unit.is_player and float(amount) >= 0.1 * float(maximum):
 		Accessibility.vibrate(25)
@@ -364,8 +414,35 @@ func _on_unit_healed(unit: Unit, amount: int, _source) -> void:
 
 func _on_unit_died(unit: Unit) -> void:
 	unit.play_death()
+	# Truemmer und Rauch beim Zerfallen (Kampfbild mehr 3D B7).
+	if view.particles != null:
+		view.particles.debris(unit.visual_anchor(), [Color(0.24, 0.22, 0.3),
+			Color(0.42, 0.4, 0.5), Teams.color(unit.is_player)], 6 if unit.is_sentinel() else 10)
 	Accessibility.vibrate(70 if unit.is_player else 35, true)
 	_refresh_hud()
+
+
+## Kamera fuer Sonderszenen (C10): Blick tief auf die lebenden Einheiten einer
+## Seite; die Zeit steht, bis die Szene vorbei oder uebersprungen ist.
+func _play_cinema(which: String, players: bool, title: String, color: Color, done: Callable) -> void:
+	var group: Array = battle.units.filter(func(u): return u.is_alive() and u.is_player == players)
+	if group.is_empty() or view.arena3d == null:
+		if done.is_valid():
+			done.call()
+		return
+	var center := Vector2.ZERO
+	for unit in group:
+		center += unit.visual_anchor()
+	center /= float(group.size())
+	var spread := 0.0
+	for unit in group:
+		spread = maxf(spread, Arena3D.ground(unit.visual_anchor()).distance_to(Arena3D.ground(center)))
+	view.arena3d.build_cinema_floor(battle.grid)
+	_cinema_running = true
+	Cinema.play(self, view.arena3d, which, Arena3D.ground(center), title, color, func():
+		_cinema_running = false
+		if done.is_valid():
+			done.call(), spread)
 
 
 ## Kurzer Kamerastoss, der von selbst zur Ruhe kommt. ``severity`` ist der
@@ -394,7 +471,13 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	# Erst den letzten DROME zerfallen sehen, dann das Ergebnis (17. Nov. 2026).
 	var wait := (Unit.DEATH_TIME_CALM if Accessibility.reduce_motion else Unit.DEATH_TIME) + 0.4
 	get_tree().create_timer(wait).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
+		# Sieg: kurze Kreisfahrt um das eigene Squad, dann das Ergebnis (C10).
+		if CAMERA_MOVES and outcome == BattleManager.Outcome.VICTORY:
+			_play_cinema("victory", true, tr("SIEG"), UiKit.GOOD,
+				func(): _show_result(outcome))
+		else:
 			_show_result(outcome))
 
 
@@ -405,6 +488,9 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 ## Das Geschehen im Bild halten: Mitte und Zoom aus dem Rahmen um alle
 ## lebenden DROMEs, weich nachgefuehrt.
 func _follow_fight(delta: float) -> void:
+	if not CAMERA_MOVES:
+		_frame_board(delta)
+		return
 	var living: Array = battle.units.filter(func(u): return u.is_alive())
 	if living.is_empty():
 		return
@@ -419,8 +505,91 @@ func _follow_fight(delta: float) -> void:
 	var zoom := clampf(minf(usable.x / box.size.x, usable.y / box.size.y),
 		ZOOM_MIN, _follow_zoom())
 	var k := 1.0 if Accessibility.reduce_motion else clampf(delta * FOLLOW_EASE, 0.0, 1.0)
-	camera.position = camera.position.lerp(target, k)
-	_set_zoom(lerpf(camera.zoom.x, zoom, k))
+	if not _follow_seeded:
+		_follow_pos = camera.position
+		_follow_scale = camera.zoom.x
+		_follow_seeded = true
+	_follow_pos = _follow_pos.lerp(target, k)
+	_follow_scale = lerpf(_follow_scale, zoom, k)
+	camera.position = _follow_pos.lerp(_punch_at, PUNCH_PULL * _punch)
+	_set_zoom(_follow_scale * (1.0 + PUNCH_ZOOM * _punch))
+
+
+## Die feste Ansicht (21. Nov. 2026): der Zoom fuellt die Breite mit dem Feld
+## und aendert sich nie; waagerecht steht das Bild still. Nur senkrecht gleitet
+## es sanft zur Mitte zwischen oberstem und unterstem DROME, ohne ueber den
+## Feldrand hinaus zu fahren -- ein ganzes 9 x 15-Feld passt im Hochformat
+## nicht zwischen die Leisten, ohne dass die Felder klein werden.
+func _frame_board(delta: float = 1.0) -> void:
+	var grid := battle.grid
+	var box := Rect2(IsoView.map_to_local(Vector2i(0, 0)), Vector2.ZERO)
+	for tile in [Vector2i(grid.width - 1, 0), Vector2i(0, grid.height - 1),
+			Vector2i(grid.width - 1, grid.height - 1), Vector2i(1, grid.height - 1)]:
+		box = box.expand(IsoView.map_to_local(tile))
+	# Seitlich ein Rest des Randes, oben Platz fuer die Figuren der ersten Reihe.
+	box = box.grow_individual(IsoView.TILE_W * 0.4, IsoView.TILE_H * 2.2,
+		IsoView.TILE_W * 0.4, IsoView.TILE_H * 0.8)
+	var visible := get_viewport().get_visible_rect().size
+	var edges := _hud_edges()
+	var usable := Vector2(visible.x, maxf(100.0, visible.y - edges.x - edges.y))
+	var zoom := clampf(usable.x / box.size.x, ZOOM_MIN, ZOOM_MAX)
+	var half := usable.y * 0.5 / zoom
+	# Senkrecht: Mitte zwischen oberstem und unterstem lebenden DROME.
+	var want := box.get_center().y
+	var living: Array = battle.units.filter(func(u): return u.is_alive())
+	if not living.is_empty():
+		var low: float = living[0].visual_anchor().y
+		var high := low
+		for unit in living:
+			low = minf(low, unit.visual_anchor().y)
+			high = maxf(high, unit.visual_anchor().y)
+		want = (low - IsoView.TILE_H + high) * 0.5
+	# Beim Aufstellen zaehlt die eigene Zone unten -- sie muss ganz im Bild sein.
+	if _deploying:
+		want = box.end.y
+	if box.size.y > 2.0 * half:
+		want = clampf(want, box.position.y + half, box.end.y - half)
+	else:
+		want = box.get_center().y
+	var k := 1.0 if (Accessibility.reduce_motion or not _follow_seeded) \
+		else clampf(delta * 1.5, 0.0, 1.0)
+	_follow_seeded = true
+	var y := lerpf(camera.position.y + (edges.x - edges.y) * 0.5 / zoom, want, k)
+	# Die Mitte des freien Streifens liegt (oben - unten) / 2 unter der Bildmitte.
+	camera.position = Vector2(box.get_center().x, y - (edges.x - edges.y) * 0.5 / zoom)
+	_set_zoom(zoom)
+
+
+## Hoehe der Leisten oben bzw. unten (Bildschirm-Pixel): jede sichtbare Leiste
+## zaehlt zu der Haelfte, in der ihre Mitte liegt. Ohne Groesse (erstes Bild)
+## gelten Schaetzwerte.
+func _hud_top() -> float:
+	return _hud_edges().x
+
+
+func _hud_bottom() -> float:
+	return _hud_edges().y
+
+
+func _hud_edges() -> Vector2:
+	var visible := get_viewport().get_visible_rect().size
+	var top := 96.0
+	var bottom_edge := visible.y - 150.0
+	var measured := false
+	for node in [_top_box, _squad_tiles, _play_bar, _deploy_bar]:
+		var c := node as Control
+		if c == null or not c.is_visible_in_tree() or c.size.y <= 0.0:
+			continue
+		var rect := c.get_global_rect()
+		if not measured:
+			top = 0.0
+			bottom_edge = visible.y
+			measured = true
+		if rect.get_center().y < visible.y * 0.5:
+			top = maxf(top, rect.end.y)
+		else:
+			bottom_edge = minf(bottom_edge, rect.position.y)
+	return Vector2(top, visible.y - bottom_edge)
 
 
 ## Der naechste Zoom, den das Folgen zulaesst: rund zehn Hexfelder ueber die
@@ -445,6 +614,8 @@ func _look_at_unit(unit: Unit) -> void:
 	# Der angetippte DROME bekommt ein paar Sekunden einen groesseren Balken.
 	_focus_id = unit.unit_id
 	_focus_until = Time.get_ticks_msec() + FOCUS_MS
+	if not CAMERA_MOVES:
+		return
 	_set_follow(false)
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(camera, "position", unit.visual_anchor() + Vector2(0, -40), 0.4) \
@@ -456,6 +627,7 @@ func _look_at_unit(unit: Unit) -> void:
 
 func _set_follow(on: bool) -> void:
 	_follow = on
+	_follow_seeded = false
 	if _follow_button != null:
 		UiIcon.on_button(_follow_button, "camera_follow" if on else "camera_free", 20, Color.WHITE, "top")
 		_follow_button.modulate = UiKit.ACCENT if on else Color.WHITE
@@ -463,6 +635,9 @@ func _set_follow(on: bool) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	_track_touches(event)
+	if _intro != null and (event is InputEventScreenTouch or event is InputEventMouseButton) \
+			and event.pressed:
+		_skip_intro()
 	if _deploying and _deploy_input(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -486,6 +661,7 @@ func _begin_deployment() -> void:
 	_deploying = true
 	view.show_zone(battle.deployment_tiles(true), ZONE_COLOR)
 	_frame_deployment()
+	_intro_pan()
 	_deploy_bar.visible = true
 	_play_bar.visible = false
 	_refresh_hud()
@@ -494,6 +670,7 @@ func _begin_deployment() -> void:
 func _start_fight() -> void:
 	if not _deploying:
 		return
+	_skip_intro()
 	_deploying = false
 	_cancel_drag()
 	_selected = null
@@ -503,10 +680,48 @@ func _start_fight() -> void:
 	_play_bar.visible = true
 	_set_follow(true)
 	_refresh_hud()
+	# Elite-Kampf (spaeter Bosse): die Gegner treten kurz gross auf (C10).
+	var run = GameState.run if GameState.in_run_battle else null
+	if CAMERA_MOVES and run != null and int(run.tier) == RunState.Tier.ELITE:
+		_play_cinema("entrance", false, tr("ELITE-KAMPF"), Arcade.YELLOW, Callable())
+
+
+## Schwenk zu Beginn der Aufstellung: erst die Gegner etwas naeher, dann
+## langsam zum ganzen Feld mit dem eigenen Squad. Antippen beendet ihn.
+func _intro_pan() -> void:
+	if not CAMERA_MOVES or Accessibility.reduce_motion or not is_inside_tree():
+		return
+	var foes: Array = battle.deployment_tiles(false)
+	if foes.is_empty():
+		return
+	var box := Rect2(IsoView.map_to_local(foes[0]), Vector2.ZERO)
+	for tile in foes:
+		box = box.expand(IsoView.map_to_local(tile))
+	var end_pos := camera.position
+	var end_zoom := camera.zoom.x
+	_intro_end = [end_pos, end_zoom]
+	camera.position = box.get_center()
+	_set_zoom(end_zoom * 1.25)
+	_intro = create_tween().set_parallel(true)
+	_intro.tween_property(camera, "position", end_pos, INTRO_TIME).set_delay(INTRO_DELAY) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_intro.tween_method(_set_zoom, end_zoom * 1.25, end_zoom, INTRO_TIME).set_delay(INTRO_DELAY) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+func _skip_intro() -> void:
+	if _intro != null and _intro.is_valid() and _intro.is_running():
+		_intro.kill()
+		camera.position = _intro_end[0]
+		_set_zoom(_intro_end[1])
+	_intro = null
 
 
 ## Beide Aufstellungen im Bild.
 func _frame_deployment() -> void:
+	if not CAMERA_MOVES:
+		_frame_board()
+		return
 	var box := Rect2(IsoView.map_to_local(battle.deployment_tiles(true)[0]), Vector2.ZERO)
 	for side in [true, false]:
 		for tile in battle.deployment_tiles(side):
@@ -601,6 +816,7 @@ func _deploy_input(event: InputEvent) -> bool:
 	if moved and _grabbed != null:
 		if _dragged == null and at.distance_to(_grab_start) > DRAG_THRESHOLD:
 			_dragged = _grabbed
+			_dragged.held = true
 			_selected = null
 			_dragged.z_index = 4000
 		if _dragged != null:
@@ -639,6 +855,7 @@ func _deploy_input(event: InputEvent) -> bool:
 ## Setzt eine Figur auf ein Feld der Zone (oder zurueck, wenn es nicht geht)
 ## und raeumt Auswahl und Markierung ab.
 func _place(unit: Unit, tile: Vector2i) -> void:
+	unit.held = false
 	var other := battle.resolver.unit_at(tile)
 	if battle.place_unit(unit, tile):
 		Accessibility.vibrate(15)
@@ -654,6 +871,7 @@ func _place(unit: Unit, tile: Vector2i) -> void:
 
 func _cancel_drag() -> void:
 	if _dragged != null:
+		_dragged.held = false
 		_dragged.place_at(_dragged.tile)
 		view.refresh_unit_depth(_dragged)
 	_dragged = null

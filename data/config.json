@@ -295,9 +295,40 @@
   "figures": {
     "_kommentar": [
       "Groesse der DROMEs im Verhaeltnis zum Hexfeld (18. Nov. 2026, Entscheidung des",
-      "Spielers: 75 %). Bodenring und Balken skalieren mit (Arena3D.figure_scale)."
+      "Spielers: 75 %). Bodenring und Balken skalieren mit (Arena3D.figure_scale).",
+      "21. Nov. 2026 (Spieler: groessere Hexfelder, kleinere DROMEs): 62 %."
     ],
-    "scale": 0.75
+    "scale": 0.62
+  },
+
+  "motion": {
+    "_kommentar": [
+      "Kampfbild 'mehr 3D', Paket 1 + 2 (21. Nov. 2026, Design-Canvas Kampfbild mehr 3D).",
+      "Nur Darstellung -- die Logik laeuft weiter Feld fuer Feld (Unit, Arena3D).",
+      "omega       Federhaerte der Figur je Chassis (1/s): hoeher = folgt enger, schneidet",
+      "            Ecken weniger. Nachlauf bei Tempo v ungefaehr 2 v / omega.",
+      "turn_rate   hoechstes Drehtempo (rad/s); turn_time Zeitkonstante der Drehung (s)",
+      "lean        Neigung nach vorn je Tempo (rad bei ref_speed), lean_acc je Beschleunigung,",
+      "roll        Kippen in Kurven je Querbeschleunigung (rad bei ref_acc)",
+      "offset      lockere Aufstellung: Versatz im Feld (Anteil der Feldbreite)",
+      "nudge       Ausweichen beim Vorbeilaufen (Anteil der Feldbreite), nudge_reach Abstand in Feldern",
+      "particles_max  Obergrenze gleichzeitiger Teilchen (Funken, Rauch, Truemmer, Staub, Dampf)",
+      "rain        Regen in Neon City (false = aus); rain_drops Zahl der Striche im Bild"
+    ],
+    "ref_speed": 80.0,
+    "ref_acc": 420.0,
+    "omega": {"scout_body": 17.0, "jugg_body": 10.0, "mage_body": 12.0, "strix_body": 15.0, "_": 14.0},
+    "turn_rate": {"scout_body": 16.0, "jugg_body": 7.5, "mage_body": 11.0, "strix_body": 14.0, "_": 12.0},
+    "turn_time": 0.045,
+    "lean": {"scout_body": 0.16, "jugg_body": 0.06, "mage_body": 0.13, "strix_body": 0.1, "_": 0.1},
+    "lean_acc": {"scout_body": 0.12, "jugg_body": 0.08, "mage_body": 0.1, "strix_body": 0.1, "_": 0.1},
+    "roll": {"scout_body": 0.14, "jugg_body": 0.05, "mage_body": 0.2, "strix_body": 0.08, "_": 0.1},
+    "offset": 0.16,
+    "nudge": 0.18,
+    "nudge_reach": 0.95,
+    "particles_max": 240,
+    "rain": true,
+    "rain_drops": 70
   },
 
   "maps": {

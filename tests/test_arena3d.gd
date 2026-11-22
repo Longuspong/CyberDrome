@@ -85,7 +85,9 @@ func test_units_get_one_model_in_the_shared_scene() -> void:
 	t.ok(arena.get_node_or_null("Neon3D") != null, "Neon-Blaster: Leuchtebene da")
 	arena._sync_unit(a, arena.model_of(a))
 	t.ok(arena.model_of(a).position.is_equal_approx(
-		Arena3D.ground(IsoView.map_to_local(Vector2i(4, 10)))), "Modell steht auf dem Feld")
+		Arena3D.ground(IsoView.map_to_local(Vector2i(4, 10)) + a.stand_offset())),
+		"Modell steht auf dem Feld (mit lockerem Versatz)")
+	t.ok(a.stand_offset().length() < IsoView.TILE_W * 0.15, "Versatz bleibt klein")
 	a.set_facing("deg30")
 	t.ok(arena.turn_of(a).basis.is_equal_approx(DromeModel.facing_basis("deg30")),
 		"Drehen dreht nur das Modell")
@@ -140,9 +142,12 @@ func test_legs_alternate_while_walking() -> void:
 	if left != null and right != null and shin != null:
 		arena._animate(unit, node, 0.1)
 		t.ok(left.transform.is_equal_approx(left.get_meta("base")), "im Stand: Bein ruht")
-		unit._glide_total = 1.0
+		# Die Figur laeuft (seit 21. Nov. 2026 zaehlt das Tempo der Figur,
+		# ref_speed = ein Schrittzyklus wie bisher).
+		unit._vel = Vector2(float(Config.section("motion").get("ref_speed", 80.0)), 0.0)
 		arena._anim[unit]["phase"] = 0.0
 		arena._anim[unit]["time"] = 0.0
+		arena._anim[unit]["walk"] = 0.0
 		# Viertel Schrittzyklus: linkes Bein vorn, rechtes hinten.
 		arena._animate(unit, node, PI / 2.0 / Arena3D.WALK_SPEED)
 		var l_angle := left.transform.basis.get_euler().y

@@ -111,6 +111,16 @@ func _process(_delta: float) -> bool:
 				node.name = "Probe_%s" % scene
 				root.add_child(node)
 			print("SMOKE: Titel, Spielstände, Hauptmenü und Optionen instanziiert")
+			# Cache oeffnen (21. Nov. 2026): jede Stufe der Glitch-Abfolge einmal.
+			gs.roster.caches["city"] = int(gs.roster.caches.get("city", 0)) + 1
+			var opener = load("res://scripts/ui/cache_opener.gd").show_over(
+				root.get_node("Probe_shop"), "city")
+			opener._open()
+			opener._wind_up(0.7)
+			opener._glitch_jump(1)
+			opener._bang()
+			opener._show_results()
+			print("SMOKE: Cache geöffnet, %d Ergebnisse" % opener._results.size())
 		18:
 			for scene in ["title", "saves", "main", "settings", "shop", "upgrade"]:
 				root.get_node("Probe_%s" % scene).free()

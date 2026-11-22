@@ -30,6 +30,10 @@ Ausloeser). **Seit 20. Nov. 2026 gebaut:** 6 Amps, 15 Fusionen (2 entschieden, 1
 Vorschlaege), 6 Hyperfusionen mit Fusion Core. **Offene Logik (Charger + Amps) steht in
 `docs/design/UEBERGABEN_DESIGN.md`, Abschnitt „Offene Logik nach dem Bau“** -- vor neuer
 Arbeit daran lesen.
+**Skilltrees (22. Nov. 2026, Richtung entschieden, Schablone Entwurf): `docs/SKILLBAUM_KONZEPT.md`**
+-- keine Erfahrung mehr, DROMEs und Waffen je 5 Level ueber Ressourcen, Knoten 1-4 nur Werte,
+Knoten 5 aendert Passive bzw. Faehigkeit, Umskillen kostet Ressourcen, Fraktionsvarianten =
+Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegnen.
 **Waffen-Upgrades (20. Nov. 2026, entschieden und GEBAUT): `docs/CHARGER_KONZEPT.md`**
 -- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.
 **Bildschirme fuer Design-Sessions: `docs/design/UEBERGABEN_DESIGN.md`** -- Hangar
@@ -248,7 +252,8 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   Aufgestellt wird in einem Streifen 3 x 7 am Rand, ohne Zutun nach
   Rolle gestaffelt und verteilt (seit 10. Nov. 2026). Die
   Arena zeichnet `ArenaPainter` (Boden, Rand, Deko, Licht je Region). Die
-  Kamera folgt dem Geschehen, Zoomen und Ziehen per Finger.
+  Kamera steht seit 21. Nov. 2026 fest (Zoom auf Feldbreite, gleitet nur senkrecht mit;
+  Kamerafahrten aus, `BattleScreen.CAMERA_MOVES`), Zoomen und Ziehen per Finger.
 * Das Spiel ist ein **Autobattler in Echtzeit** (seit Nov. 2026): alle
   DROMEs handeln gleichzeitig, keine Zuege. `BattleManager.tick()` rechnet in
   festen Schritten (0,05 s, deterministisch je Seed), die KI (`AIController`)

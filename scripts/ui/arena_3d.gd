@@ -46,6 +46,17 @@ var _has_neon := false
 var _anim: Dictionary = {}
 ## Geschosse im Flug (21. Nov. 2026, add_shot).
 var _shots: Array = []
+## Lichtflecken der Laternen ([Vector2, Color, Radius] wie ArenaPainter.Lights)
+## fuer das vorgetaeuschte Licht auf den DROMEs (21. Nov. 2026).
+var light_spots: Array = []
+## Muendungsblitze, die kurz die Nachbarn aufhellen: {"at", "t"}.
+var _flashes: Array = []
+## Teilchen (ParticleFx im Kampfbild) -- fuer den Staub beim Auftreten.
+var fx = null
+## Mitte des sichtbaren Ausschnitts (2D-Welt), fuer die Wahl der Lichter.
+var _view_center := Vector2.ZERO
+var _real_on := false
+var _cinema_floor := false
 
 ## Bewegung (Schritt 5, 18. Nov. 2026). Laengen in Generator-Einheiten (ein
 ## DROME ist ~80 hoch), Zeiten in Sekunden.
@@ -53,7 +64,39 @@ const IDLE_BOB := 0.5            # Atmen im Stand
 const IDLE_SPEED := 2.2
 const WALK_BOB := 1.4            # Wippen beim Laufen
 const WALK_SPEED := 9.0
-const NIMBUS_TILT := 0.13        # Nimbus kippt beim Fahren nach vorn (rad)
+## Ab diesem Tempo der Figur (Bildpunkte/s) gilt sie als laufend.
+const WALK_MIN_SPEED := 10.0
+## Ab diesem Tempo schaut sie in Laufrichtung (sonst wie die Logik sagt).
+const TURN_WALK_SPEED := 22.0
+const STOMP_BOB := 1.9           # Molok setzt tiefer auf
+const GLIDE_BOB := 0.8           # Nimbus schwebt beim Fahren
+const GLIDE_SPEED := 2.6
+## Neigung weich nachziehen (Zeitkonstante, s) und begrenzen (rad).
+const LEAN_TIME := 0.08
+const LEAN_MAX := 0.3
+const LEAN_BACK_MAX := 0.22
+const ROLL_MAX := 0.26
+## Vorgetaeuschtes Licht (B6 Stufe 1): Staerke der Laternen und Blitze,
+## Reichweite der Laternen als Vielfaches ihres Lichtflecks.
+const LIGHT_GAIN := 0.26
+const LIGHT_REACH := 1.5
+const FLASH_GAIN := 0.55
+const FLASH_LIGHT_TIME := 0.12
+const FLASH_REACH := 2.0         # in Feldbreiten
+const FLASH_COLOR := Color(1.0, 0.86, 0.6)
+## Echtes Licht (B6 Stufe 2, Option "Echtes Licht"): bis zu acht Punktlichter
+## je Bild fuer den Flaechen-Shader (globale Werte arena_light_*). Hoehe der
+## Laternen und Reichweiten in Welteinheiten (ein DROME ist ~60 hoch).
+const REAL_LIGHTS := 8
+const REAL_FLASHES := 3
+const LAMP_HEIGHT := 52.0
+const LAMP_REACH := 1.25         # mal Lichtfleck-Radius (Bildpunkte -> Welt)
+const LAMP_ENERGY := 0.6
+const FLASH_REACH_3D := 95.0
+const FLASH_ENERGY := 1.5
+## Kamera-Szenen (C10): eigene Ebene fuer den Boden, den nur die Szenen-Kamera
+## sieht (der Kampf zeichnet seinen Boden einmal als Bild, ArenaFloor3D).
+const LAYER_CINEMA_FLOOR := 8
 const STRIX_HOP := 2.6           # die Eule huepft
 const RECOIL := 2.6              # Fernkampf: Rueckstoss
 const RANGED_TIME := 0.24
@@ -362,6 +405,9 @@ func attack(unit: Unit, action: ActionData, seconds: float = -1.0) -> bool:
 	if seconds > 0.0:
 		time = seconds
 	_anim[unit]["attack"] = {"slot": slot, "kind": kind, "t": 0.0, "time": time}
+	if kind == "ranged":
+		_flashes.append({"unit": unit, "at": unit.visual_anchor() + Vector2(0, -18),
+			"foot": unit.visual_anchor(), "t": 0.0})
 	return true
 
 
@@ -423,22 +469,39 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 	var t: float = state["time"] + state["phase"]
 	var calm := Accessibility.reduce_motion
 	var chassis := str(unit.build.body().id)
+	# Bewegung aus der gezeichneten Figur (Feder in Unit, 21. Nov. 2026):
+	# Tempo, Beschleunigung, Schrittlaenge.
+	var vel := unit.visual_velocity()
+	var speed := vel.length()
+	var ref_speed := float(Config.section("motion").get("ref_speed", 80.0))
+	var walking := speed > WALK_MIN_SPEED
+	var cadence := clampf(speed / ref_speed, 0.55, 1.7)
+	if walking:
+		state["walk"] = float(state.get("walk", 0.0)) + delta * WALK_SPEED * cadence
+	var stride: float = float(state.get("walk", 0.0)) + float(state["phase"]) * WALK_SPEED
 	var bob := 0.0
 	var tilt := 0.0
 	var hop := 0.0
-	var walking := false
 	if not calm:
-		if unit.is_gliding():
-			walking = true
+		if walking:
 			# Mit Beinen ist der Rumpf oben, wenn ein Bein senkrecht steht.
-			var wave := absf(cos(t * WALK_SPEED)) if LEG_SWING.has(chassis) \
-				else absf(sin(t * WALK_SPEED))
-			if chassis == "strix_body":
-				hop = wave * STRIX_HOP
-			else:
-				bob = wave * WALK_BOB
-			if chassis == "mage_body":
-				tilt = NIMBUS_TILT
+			var wave := absf(cos(stride)) if LEG_SWING.has(chassis) \
+				else absf(sin(stride))
+			match chassis:
+				"strix_body":
+					hop = wave * STRIX_HOP
+				"jugg_body":
+					# Molok stampft: tief und hart aufsetzen, Staub beim Auftritt.
+					bob = pow(wave, 3.0) * WALK_BOB * STOMP_BOB
+					var sign_now := cos(stride) >= 0.0
+					if state.has("foot") and bool(state["foot"]) != sign_now:
+						_footfall(unit)
+					state["foot"] = sign_now
+				"mage_body":
+					# Nimbus gleitet: kein Schritt, nur ein weiches Schweben.
+					bob = sin(t * GLIDE_SPEED) * GLIDE_BOB
+				_:
+					bob = wave * WALK_BOB
 		else:
 			bob = sin(t * IDLE_SPEED) * IDLE_BOB
 	# Treffer: kurz nach hinten kippen.
@@ -449,7 +512,10 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			state.erase("hit")
 		elif not calm:
 			tilt -= HIT_TILT * sin(PI * h)
-	turn.basis = DromeModel.facing_basis(unit.facing) * Basis(Vector3(0, 1, 0), tilt)
+	var yaw := _turn_toward(unit, state, vel, delta, calm)
+	var lean := _lean(unit, state, yaw, delta, calm)
+	turn.basis = DromeModel.angle_basis(yaw) * Basis(Vector3(0, 1, 0), tilt + lean.x) \
+		* Basis(Vector3(1, 0, 0), lean.y)
 	node.position.y += hop
 
 	# Angriff: Fortschritt 0..1, danach vorbei.
@@ -482,7 +548,7 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 		var bname := str(block.name)
 		if bname.begins_with("feet_leg_"):
 			if walking:
-				block.transform = _leg_pose(turn, block, chassis, t, bname)
+				block.transform = _leg_pose(turn, block, chassis, stride / WALK_SPEED, bname)
 			else:
 				block.transform = tr
 			continue
@@ -518,6 +584,261 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 	elif state.has("flash"):
 		_clear_flash(state)
 	_passive_glow(unit, turn, state, t, calm)
+
+
+## Drehen statt Springen (A3, 21. Nov. 2026): die Blickrichtung zieht weich
+## nach (Zeitkonstante motion.turn_time, Hoechsttempo je Chassis). Beim
+## Laufen schaut die Figur in ihre Laufrichtung, beim Zielen genau auf das
+## Ziel (unit.facing). Rueckgabe: Winkel in Grad (DromeModel.angle_basis).
+func _turn_toward(unit: Unit, state: Dictionary, vel: Vector2, delta: float, calm: bool) -> float:
+	var target := Arena3D.facing_degrees(unit.facing)
+	if vel.length() > TURN_WALK_SPEED and unit.aim_hold <= 0.0 and unit.cast.is_empty():
+		target = rad_to_deg(atan2(-vel.y / IsoView.DEPTH_SQUASH, vel.x))
+	if calm or not state.has("yaw"):
+		state["yaw"] = target
+		return target
+	var yaw: float = state["yaw"]
+	var diff := wrapf(target - yaw, -180.0, 180.0)
+	var chassis := str(unit.build.body().id)
+	var turn_time := maxf(0.005, float(Config.section("motion").get("turn_time", 0.045)))
+	var step := diff * (1.0 - exp(-delta / turn_time))
+	var limit := rad_to_deg(Unit.motion_for("turn_rate", chassis, 12.0)) * delta
+	yaw += clampf(step, -limit, limit)
+	state["yaw"] = wrapf(yaw, 0.0, 360.0)
+	return float(state["yaw"])
+
+
+## Blickrichtung als Winkel in Grad -- "deg<grad>" oder die alten Namen.
+static func facing_degrees(facing: String) -> float:
+	if facing.begins_with("deg"):
+		return float(facing.substr(3))
+	return float({"south": 225.0, "east": 315.0, "north": 45.0, "west": 135.0}.get(facing, 225.0))
+
+
+## Koerpersprache (A4): nach vorn lehnen je Tempo und Anlauf, zurueck beim
+## Bremsen, in Kurven zur Innenseite kippen. Rueckgabe (Nicken, Rollen) in rad.
+func _lean(unit: Unit, state: Dictionary, yaw: float, delta: float, calm: bool) -> Vector2:
+	if calm:
+		return Vector2.ZERO
+	var motion := Config.section("motion")
+	var ref_speed := float(motion.get("ref_speed", 80.0))
+	var ref_acc := float(motion.get("ref_acc", 420.0))
+	var chassis := str(unit.build.body().id)
+	var squash := IsoView.DEPTH_SQUASH
+	var vel := unit.visual_velocity()
+	var acc := unit.visual_accel()
+	var vg := Vector2(vel.x, vel.y / squash)
+	var ag := Vector2(acc.x, acc.y / squash)
+	var a := deg_to_rad(yaw)
+	var ahead := Vector2(cos(a), -sin(a))
+	var left := Vector2(-sin(a), -cos(a))
+	var pitch := Unit.motion_for("lean", chassis, 0.1) * vg.dot(ahead) / ref_speed \
+		+ Unit.motion_for("lean_acc", chassis, 0.1) * ag.dot(ahead) / ref_acc
+	var roll := -Unit.motion_for("roll", chassis, 0.1) * ag.dot(left) / ref_acc
+	var target := Vector2(clampf(pitch, -LEAN_BACK_MAX, LEAN_MAX), clampf(roll, -ROLL_MAX, ROLL_MAX))
+	var now: Vector2 = state.get("lean", Vector2.ZERO)
+	now = now.lerp(target, 1.0 - exp(-delta / LEAN_TIME))
+	state["lean"] = now
+	return now
+
+
+## Molok tritt auf: ein Staubwoelkchen am Fuss (B7-Teilchen).
+func _footfall(unit: Unit) -> void:
+	if fx != null and is_instance_valid(fx):
+		fx.dust(unit.visual_anchor())
+
+
+## Ausweichen beim Vorbeilaufen (A5): wer steht, rueckt ein Stueck von einem
+## nahen Laeufer weg -- nur im Bild (Unit.nudge), das Feld bleibt.
+func _update_nudges() -> void:
+	var motion := Config.section("motion")
+	var share := float(motion.get("nudge", 0.0))
+	var reach := float(motion.get("nudge_reach", 0.95)) * IsoView.TILE_W
+	var units: Array = []
+	for unit in _models.keys():
+		if is_instance_valid(unit) and unit.is_alive() and unit.is_inside_tree():
+			units.append(unit)
+	var push: Dictionary = {}
+	for unit in units:
+		push[unit] = Vector2.ZERO
+	if share > 0.0 and not Accessibility.reduce_motion:
+		for i in units.size():
+			var a: Unit = units[i]
+			var a_moves := a.visual_velocity().length() > TURN_WALK_SPEED
+			for j in range(i + 1, units.size()):
+				var b: Unit = units[j]
+				var b_moves := b.visual_velocity().length() > TURN_WALK_SPEED
+				if a_moves == b_moves:
+					continue
+				var d := a.visual_anchor() - b.visual_anchor()
+				var ground_d := Vector2(d.x, d.y / IsoView.DEPTH_SQUASH)
+				var dist := ground_d.length()
+				if dist >= reach or dist < 0.01:
+					continue
+				var away := ground_d / dist * (1.0 - dist / reach)
+				if not a_moves:
+					push[a] += away
+				else:
+					push[b] -= away
+	for unit in units:
+		var p: Vector2 = (push[unit] as Vector2).limit_length(1.0) * share * IsoView.TILE_W
+		unit.nudge = Vector2(p.x, p.y * IsoView.DEPTH_SQUASH)
+
+
+## Vorgetaeuschtes Licht (B6 Stufe 1): Farbe der Laternen in der Naehe und
+## kurzer Muendungsblitze, als Zusatzfarbe auf die Flaechen der Einheit.
+func _apply_light(unit: Unit, node: Node3D, state: Dictionary) -> void:
+	var at := unit.visual_anchor()
+	var sum := Vector3.ZERO
+	var dir := Vector3.ZERO
+	var here := ground(at)
+	# Mit echtem Licht (Stufe 2) uebernimmt der Shader -- hier nichts dazu.
+	var spots: Array = [] if Accessibility.real_light else light_spots
+	var flashes: Array = [] if Accessibility.real_light else _flashes
+	for spot in spots:
+		var radius := float(spot[2]) * LIGHT_REACH
+		var d: Vector2 = (spot[0] as Vector2) - at
+		var dist := Vector2(d.x, d.y / IsoView.DEPTH_SQUASH).length()
+		if dist >= radius:
+			continue
+		var w := pow(1.0 - dist / radius, 2.0) * LIGHT_GAIN
+		var c: Color = spot[1]
+		sum += Vector3(c.r, c.g, c.b) * w
+		dir += (ground(spot[0]) - here).normalized() * w
+	for flash in flashes:
+		if flash["unit"] == unit:
+			continue
+		var reach := FLASH_REACH * IsoView.TILE_W
+		var d: Vector2 = (flash["at"] as Vector2) - at
+		var dist := Vector2(d.x, d.y / IsoView.DEPTH_SQUASH).length()
+		if dist >= reach:
+			continue
+		var w := (1.0 - dist / reach) * FLASH_GAIN * (1.0 - float(flash["t"]) / FLASH_LIGHT_TIME)
+		sum += Vector3(FLASH_COLOR.r, FLASH_COLOR.g, FLASH_COLOR.b) * w
+		dir += (ground(flash["at"]) - here).normalized() * w
+	var last: Vector3 = state.get("glow", Vector3(-1, -1, -1))
+	if last.distance_to(sum) < 0.012:
+		return
+	state["glow"] = sum
+	var direction := (dir.normalized() + Vector3.UP * 0.35).normalized() if dir.length() > 0.0001 \
+		else Vector3.UP
+	if not state.has("face_mats"):
+		state["face_mats"] = _collect_faces(node, state.get("tint", Color.WHITE))
+	for mat in state["face_mats"]:
+		(mat as ShaderMaterial).set_shader_parameter("glow_in", sum)
+		(mat as ShaderMaterial).set_shader_parameter("glow_dir", direction)
+
+
+## Echtes Licht (B6 Stufe 2): Muendungsblitze zuerst, dann die Laternen, die
+## dem sichtbaren Ausschnitt am naechsten sind -- hoechstens REAL_LIGHTS.
+func _update_real_light() -> void:
+	if not Accessibility.real_light:
+		if _real_on:
+			Arena3D.clear_real_light()
+			_real_on = false
+		return
+	_real_on = true
+	var lights: Array = real_lights()
+	RenderingServer.global_shader_parameter_set("arena_light_count", lights.size())
+	for i in lights.size():
+		RenderingServer.global_shader_parameter_set("arena_light_pos_%d" % i, lights[i][0])
+		RenderingServer.global_shader_parameter_set("arena_light_col_%d" % i, lights[i][1])
+
+
+## Die Lichter dieses Bildes: [Vector4 (Weltpunkt, Reichweite), Vector4 Farbe].
+func real_lights() -> Array:
+	var out: Array = []
+	var flashes := _flashes.duplicate()
+	flashes.sort_custom(func(a, b): return float(a["t"]) < float(b["t"]))
+	for flash in flashes:
+		if out.size() >= REAL_FLASHES:
+			break
+		var k := 1.0 - float(flash["t"]) / FLASH_LIGHT_TIME
+		var p := ground(flash.get("foot", flash["at"])) + Vector3.UP * 30.0
+		out.append([Vector4(p.x, p.y, p.z, FLASH_REACH_3D),
+			Vector4(FLASH_COLOR.r, FLASH_COLOR.g, FLASH_COLOR.b, 1.0) * FLASH_ENERGY * k])
+	var lamps: Array = []
+	for spot in light_spots:
+		if float(spot[2]) < 80.0:
+			continue
+		lamps.append(spot)
+	var center := _view_center
+	lamps.sort_custom(func(a, b): return (a[0] as Vector2).distance_squared_to(center) \
+		< (b[0] as Vector2).distance_squared_to(center))
+	for spot in lamps:
+		if out.size() >= REAL_LIGHTS:
+			break
+		var p := ground(spot[0]) + Vector3.UP * LAMP_HEIGHT
+		var reach := float(spot[2]) * LAMP_REACH / DromeModel.SCALE * 2.0
+		var c: Color = spot[1]
+		out.append([Vector4(p.x, p.y, p.z, reach), Vector4(c.r, c.g, c.b, 1.0) * LAMP_ENERGY])
+	return out
+
+
+static func clear_real_light() -> void:
+	RenderingServer.global_shader_parameter_set("arena_light_count", 0)
+
+
+func _exit_tree() -> void:
+	if _real_on:
+		Arena3D.clear_real_light()
+		_real_on = false
+
+
+# ---------------------------------------------------------------------------
+# Kamera-Szenen (C10, 21. Nov. 2026)
+# ---------------------------------------------------------------------------
+
+## Den Boden des Feldes einmal in die Szene legen -- nur fuer die Kamera der
+## Szenen sichtbar (Ebene LAYER_CINEMA_FLOOR). Im Kampf bleibt der Boden ein
+## einmal gerendertes Bild (ArenaFloor3D).
+func build_cinema_floor(grid: Grid) -> void:
+	if _cinema_floor or grid == null:
+		return
+	_cinema_floor = true
+	var region_id := str(grid.region.id) if grid.region != null else "city"
+	var table := ArenaFloor3D.weights(region_id)
+	var basis := DromeModel.facing_basis("deg60")
+	DromeModel._edge = DromeModel.edge_px(256)
+	var apron := ArenaFloor3D.APRON
+	for y in range(-apron, grid.height + apron):
+		for x in range(-apron, grid.width + apron):
+			var tile := Vector2i(x, y)
+			var sort := ArenaFloor3D.sort_for(grid, tile, region_id, table)
+			var model := ArenaFloor3D._model(region_id, sort)
+			if model.is_empty():
+				continue
+			var mesh := DromeModel._mesh_for("floor|%s|%s" % [region_id, sort], model,
+				model.get("colors", {}))
+			if mesh == null:
+				continue
+			var inst := DromeModel.mesh_instance(mesh)
+			inst.layers = LAYER_CINEMA_FLOOR
+			inst.set_meta("cinema_floor", true)
+			inst.position = ground(IsoView.map_to_local(tile))
+			inst.basis = basis
+			_scene.add_child(inst)
+
+
+## Alle Flaechen-Materialien einer Einheit als eigene Kopien (wie beim
+## Farbstich), einmal gesammelt.
+static func _collect_faces(node: Node, color: Color) -> Array:
+	_tint_tree(node, color)
+	var out: Array = []
+	var stack: Array = [node]
+	while not stack.is_empty():
+		var current: Node = stack.pop_back()
+		stack.append_array(current.get_children())
+		if not current is MeshInstance3D or (current as MeshInstance3D).layers != DromeModel.LAYER_IMAGE:
+			continue
+		var inst := current as MeshInstance3D
+		if inst.mesh == null:
+			continue
+		for i in inst.mesh.get_surface_count():
+			var own := inst.get_surface_override_material(i) as ShaderMaterial
+			if own != null and own.shader == DromeModel.FACE_SHADER:
+				out.append(own)
+	return out
 
 
 ## Ein Bein im Schritt: der Oberschenkel schwingt um die Huefte, das linke
@@ -600,7 +921,7 @@ func _passive_glow(unit: Unit, turn: Node3D, state: Dictionary, t: float, calm: 
 	var factor := 1.0
 	match chassis:
 		"scout_body":
-			var strength := 1.0 if unit.is_gliding() else 0.45
+			var strength := 1.0 if unit.visual_velocity().length() > WALK_MIN_SPEED else 0.45
 			factor = 1.0 + strength * (0.3 * sin(t * 23.0) + 0.2 * sin(t * 37.0 + 1.3))
 		"jugg_body":
 			factor = 1.0 + 0.35 * sin(t * 3.0)
@@ -844,6 +1165,10 @@ func shots_in_flight() -> int:
 # ---------------------------------------------------------------------------
 
 func _process(_delta: float) -> void:
+	_update_nudges()
+	for flash in _flashes:
+		flash["t"] = float(flash["t"]) + _delta
+	_flashes = _flashes.filter(func(f): return float(f["t"]) < FLASH_LIGHT_TIME)
 	for unit in _models.keys():
 		if not is_instance_valid(unit):
 			forget(unit)
@@ -860,6 +1185,9 @@ func _process(_delta: float) -> void:
 				unit.visible = false
 				_models[unit].visible = false
 		_animate(unit, _models[unit], _delta)
+		if unit.is_alive() and _anim.has(unit):
+			_apply_light(unit, _models[unit], _anim[unit])
+	_update_real_light()
 	_fly_shots(_delta)
 	_sync_camera()
 
@@ -878,6 +1206,7 @@ func _sync_camera() -> void:
 	# Bis hier globale Koordinaten; die 3D-Welt rechnet in den lokalen der
 	# 2D-Welt (IsoView), also in denen dieses Knotens.
 	var local_center := to_local(center)
+	_view_center = local_center
 	var world_scale := get_global_transform().get_scale().x
 	var px_zoom := zoom * world_scale
 	var size := Vector2i(maxi(1, int(screen.x * OVERSAMPLE)), maxi(1, int(screen.y * OVERSAMPLE)))

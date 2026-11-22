@@ -155,6 +155,57 @@ static func text_button(text: String, color: Color) -> Button:
 
 
 ## Wie die Dekoration laeuft: 0 bei "Bewegung reduzieren" (Optionen).
+## Punktraster und Scanlines als kleine Kacheltextur (21. Nov. 2026): vorher
+## zeichnete jede Seite rund 1800 Kreise bzw. 270 Linien einzeln, und die Karte
+## musste sie bei jedem Bild (Scrollen!) wieder durch die Grafik schicken. Eine
+## gekachelte Textur ist ein einziges Viereck.
+static var _tiles := {}
+
+
+## Eine Kachel ``step`` x ``step`` mit einem weichen Punkt (Radius ``radius``)
+## in der Mitte -- gekachelt das Punktraster.
+static func dot_tile(step: int, radius: float) -> Texture2D:
+	var key := "dot%d_%.2f" % [step, radius]
+	if _tiles.has(key):
+		return _tiles[key]
+	var image := Image.create(step, step, false, Image.FORMAT_RGBA8)
+	var c := Vector2(step, step) * 0.5
+	for y in step:
+		for x in step:
+			var d := Vector2(x + 0.5, y + 0.5).distance_to(c)
+			image.set_pixel(x, y, Color(1, 1, 1, clampf(radius + 0.5 - d, 0.0, 1.0)))
+	var texture := ImageTexture.create_from_image(image)
+	_tiles[key] = texture
+	return texture
+
+
+## Eine Kachel 1 x 3 mit einer dunklen Zeile -- gekachelt die Scanlines.
+static func scanline_tile() -> Texture2D:
+	if _tiles.has("scan"):
+		return _tiles["scan"]
+	var image := Image.create(1, 3, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	image.set_pixel(0, 2, Color(0, 0, 0, 1))
+	var texture := ImageTexture.create_from_image(image)
+	_tiles["scan"] = texture
+	return texture
+
+
+## Zeichnet das Punktraster gekachelt in ``rect`` (``canvas.texture_repeat``
+## muss an sein). ``offset`` verschiebt das Raster.
+static func draw_dots(canvas: CanvasItem, rect: Rect2, step: float, radius: float, color: Color,
+		offset: Vector2 = Vector2.ZERO) -> void:
+	var px := maxi(4, roundi(step))
+	var texture := dot_tile(px, radius * float(px) / step)
+	var scale := step / float(px)
+	var local := rect.size / scale
+	canvas.draw_set_transform(rect.position, 0.0, Vector2(scale, scale))
+	# Quellbereich ueber die Textur hinaus: mit texture_repeat wird gekachelt.
+	canvas.draw_texture_rect_region(texture, Rect2(Vector2.ZERO, local),
+		Rect2(-offset / scale, local), color)
+	canvas.draw_set_transform(Vector2.ZERO)
+
+
 static func moving() -> bool:
 	return Accessibility.motion() > 0.0
 
@@ -179,6 +230,7 @@ class Backdrop extends Control:
 	func _init(is_title: bool = true) -> void:
 		title = is_title
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 		set_anchors_preset(Control.PRESET_FULL_RECT)
 		if title:
 			_sun = BackdropLayer.new(self, "sun")
@@ -208,15 +260,10 @@ class Backdrop extends Control:
 		var s := size.y / Arcade.DESIGN.y
 		draw_rect(Rect2(Vector2.ZERO, size), Arcade.NIGHT)
 		# Punktraster (14 px, r 1,6)
-		var dot := Color(Arcade.DOTS, 0.35 if title else 0.22)
 		var step := 14.0 * s
-		var y := 7.0 * s
-		while y < size.y:
-			var x := fmod(size.x * 0.5 - 7.0 * s, step)
-			while x < size.x:
-				draw_circle(Vector2(x, y), 1.6 * s, dot)
-				x += step
-			y += step
+		Arcade.draw_dots(self, Rect2(Vector2.ZERO, size), step, 1.6 * s,
+			Color(Arcade.DOTS, 0.35 if title else 0.22),
+			Vector2(fmod(size.x * 0.5 - 14.0 * s, step), 0.0))
 		if not title:
 			_draw_menu(self, s)
 
@@ -302,17 +349,17 @@ class Scanlines extends Control:
 	func _init(alpha: float = 0.18) -> void:
 		strength = alpha
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+		texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	func _ready() -> void:
 		resized.connect(queue_redraw)
 
+	## Eine gekachelte Textur statt einer Linie je 3 px (21. Nov. 2026).
 	func _draw() -> void:
-		var y := 2.0
-		var color := Color(0, 0, 0, strength)
-		while y < size.y:
-			draw_line(Vector2(0, y), Vector2(size.x, y), color, 1.0)
-			y += 3.0
+		draw_texture_rect(Arcade.scanline_tile(), Rect2(Vector2.ZERO, size), true,
+			Color(1, 1, 1, strength))
 
 
 ## Das Logo dreifach: Cyan und Magenta versetzt (additiv), dazwischen weiss

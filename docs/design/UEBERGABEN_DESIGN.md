@@ -120,6 +120,6 @@ dann bauen (Stand auch in der SPOT, Blatt Offene Punkte):
 
 14. **Squad-Code im Hangar**: der alte Squad-Reiter ist ausgeblendet, sein Code bleibt bis zum
     Assembler-Modus (DROME-Übersicht, Level, Skillbaum).
-15. **Neon-Cache-Shader auf schwachen Handys**: Raymarching im Shop -- falls es ruckelt, eine
-    kleinere Auflösung (SubViewport) oder ein Standbild nehmen.
-16. **Solar-, Mecha-, Hipstar-Cache** als 3D-Shader wie der Neon Cache? (Heute Zeichnung.)
+15. ~~**Neon-Cache-Shader auf schwachen Handys**~~ -- erledigt 21. Nov. 2026: Shader entfernt,
+    Neon Cache wieder Zeichnung, Oeffnen im Glitch-Stil.
+16. ~~**Solar-, Mecha-, Hipstar-Cache** als 3D-Shader~~ -- entfaellt (21. Nov. 2026).

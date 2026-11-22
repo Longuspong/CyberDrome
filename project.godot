@@ -64,3 +64,74 @@ theme/default_font_size=18
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+
+[shader_globals]
+
+arena_light_count={
+"type": "int",
+"value": 0
+}
+arena_light_pos_0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_col_0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_pos_1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_col_1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_pos_2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_col_2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_pos_3={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_col_3={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_pos_4={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_col_4={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_pos_5={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_col_5={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_pos_6={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_col_6={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_pos_7={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+arena_light_col_7={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}

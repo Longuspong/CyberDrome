@@ -29,6 +29,95 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Ruhige Kamera, groessere Hexfelder, Cache im Glitch-Stil, weniger Ruckeln (21. Nov. 2026, Wunsch des Spielers)
+
+Design-Canvas „CyberDrome Cache, Kampf, Hangar“ (https://claude.ai/artifact/AH1kw5G3KweJxjygGuFu33).
+
+* **Kamerafahrten aus** (`BattleScreen.CAMERA_MOVES = false`, Code bleibt): kein Schwenk in der
+  Aufstellung, kein Zoom bei grossen Faehigkeiten, keine Kamera-Szenen (`Cinema`), Kachel
+  antippen faehrt nicht mehr hin. Neue Ansicht `_frame_board`: Zoom fuellt die Breite mit dem
+  Feld und bleibt fest; nur senkrecht gleitet das Bild sanft zur Mitte der lebenden DROMEs
+  (ueber den Feldrand faehrt es nie); beim Aufstellen steht die eigene Zone ganz im Bild.
+  Die Leisten oben/unten misst `_hud_edges`. Finger ziehen/zoomen bleibt, „Kamera“ holt die
+  Ansicht zurueck.
+* **Hexfeld groesser:** `IsoView.HEX_R` 26 statt 22 (Bodenplatten neu mit
+  `tools/build_arena_models.py`), DROMEs gleich gross. Auf 450 px Breite ist ein Feld jetzt
+  rund 60 statt 50 px breit.
+* **Neon Cache wieder Zeichnung** (`CacheArt`, Shader `neon_cache.gdshader` entfernt).
+  **Oeffnen im Glitch-Stil** (`CacheOpener`): Anspannen 0,45 s, drei Glitch-Spruenge
+  (Cyan/Magenta-Umriss `CacheArt.flat`, Riss-Streifen), Knall bei 0,8 s (Blitz, Deckel,
+  Sechseck-Ringe, Pixel-Funken, Stoss), Beute ab 1,1 s; Ergebnisfelder ploppen ueberhell auf.
+  Nichts wird je Bild neu gezeichnet (Strahlen drehen als Knoten).
+* **Ruckeln:** Punktraster (`Arcade.draw_dots`) und Scanlines als gekachelte Textur statt
+  ~1800 Kreisen bzw. ~270 Linien -- betrifft jede Seite mit Arcade-Hintergrund (Optionen,
+  Shop, Hangar ...) und den Cache-Bildschirm, der das Raster vorher JEDES Bild neu zeichnete.
+* **Nachtrag (Spieler):** DROMEs kleiner (`figures.scale` 0,62 statt 0,75), Lebensbalken 8 px
+  hoch, Takt-Leiste als Kaestchen je Angriff mit pulsierendem Rahmen, wenn die Faehigkeit
+  als Naechstes kommt (`UnitBadgePainter._takt`). Level durch Erfahrung entfaellt (Upgrade
+  mit Ressourcen + Skilltrees kommen spaeter); Richtung fuer die Navigation: fuenf Tabs
+  (Shop, Ressourcen, Home in der Mitte, DROMEs, Inventar) -- SPOT-Eckpunkte, noch in Ueberlegung.
+* **Offen, im Canvas zur Wahl:** weniger Gewusel im Kampf (Balken schlanker, kurze
+  Schussspuren, nur grosse Zahlen, Gegner-Schuesse gedaempft) und der **Hangar** (Vorschlag
+  „ein DROME, eine Seite“, Werkbank in den Hangar, Fragen an den Spieler).
+
+### Kampfbild mehr 3D, Paket 1-3 ohne Höhenstufen (21. Nov. 2026, Entscheidung des Spielers)
+
+Grundlage: Design-Canvas „Kampfbild mehr 3D“
+(https://claude.ai/artifact/WrHqW9gAqkfgZUfsEL3At7), Spieler: „Paket 1 und 2
+direkt umsetzen, Paket 3 überlege ich mir noch“. Alles nur Bild, die Logik
+läuft weiter Feld für Feld. Werte in `data/config.json` -> `motion`.
+
+* **A1/A2 Kurven, Durchlaufen:** `Unit` trennt Führungspunkt (linear wie
+  bisher, `_track`) und Figur (`position`, gedämpfte Feder, `omega` je
+  Chassis). Die Figur läuft weich an, schneidet Ecken leicht, läuft über die
+  Feldmitten durch und bremst erst am Ziel. Sog/Stoß rutschen wie bisher.
+  `visual_velocity()`/`visual_accel()` für die Körpersprache; `held` beim
+  Ziehen in der Aufstellung.
+* **A3 Drehen:** `Arena3D._turn_toward` -- Blick zieht weich nach
+  (`turn_time`, `turn_rate`), beim Laufen in Laufrichtung, beim Zielen genau
+  aufs Ziel. `Unit.facing_at` misst jetzt auf dem Boden (vorher bis ~8 Grad
+  daneben).
+* **A4 Körpersprache:** `Arena3D._lean` -- nach vorn je Tempo/Anlauf, zurück
+  beim Bremsen, in Kurven nach innen; Schrittlänge folgt dem Tempo; Molok
+  stampft (Staub), Nimbus schwebt, Strix hüpft.
+* **A5 Lockere Aufstellung:** `Unit.stand_offset()` (fest je Kennung,
+  höchstens 8 % der Feldbreite), Ausweichen beim Vorbeilaufen
+  (`Arena3D._update_nudges`, `Unit.nudge`).
+* **B6 Stufe 1:** Blob-Schatten im `UnitRing`; vorgetäuschtes Licht über
+  `glow_in`/`glow_dir` im `drome_face.gdshader` aus den Laternen
+  (`Arena3D.light_spots`) und Mündungsblitzen -- kein Licht-Node.
+* **B7 Teilchen:** `ParticleFx` (neu) rechnet im Raum (Boden + Höhe, Schwerkraft,
+  Abprall) und zeichnet flach: Funken, Rauch ab 15 % Schaden, Trümmer beim
+  Zerfallen, Staub, Dampf; Obergrenze `particles_max`. Energie- und
+  Flächenringe liegen als Ellipsen am Boden (`BattleView.FloorRings`).
+* **C9 Kamera:** kurzer Zoom bei großen Fähigkeiten (Fläche oder Ausholzeit
+  ab 0,3 s, höchstens alle 3,5 s), Schwenk von den Gegnern zum eigenen Squad
+  zu Beginn der Aufstellung (Antippen überspringt). Wackeln gab es schon.
+* **D12 Ränder:** `EdgeLife` (neu): Regen in Neon City (`motion.rain`),
+  Gras im Park, Dampf in Factory 5; `ArenaPainter.Lights` flackern/atmen,
+  Glühwürmchen im Park.
+* Mit „Bewegung reduzieren“: keine Teilchen, kein Regen, kein Zoom/Schwenk,
+  keine Neigung.
+* **Paket 3 ohne Höhenstufen (21. Nov. 2026, Spieler: „Paket drei auch gern,
+  Höhenunterschiede erstmal weglassen“):**
+  * **B8 Bodenmarken als Felder:** `AbilityPainter.area_tiles`/`_draw_cells` --
+    Flächenmarken (Vortex, Sperrfeuer, Wirbel, Nahkampf-Ansage) färben genau
+    die getroffenen Hexfelder, die Außenkante leuchtet (Gegner: rot), die
+    Füllung wächst mit der Ausholzeit. Ringe, Runen, Pfeile bleiben obendrauf.
+  * **C10 Kamera-Szenen:** `Cinema` (neu) -- perspektivische Kamera auf dieselbe
+    3D-Welt, Boden dafür auf eigener Ebene (`Arena3D.build_cinema_floor`).
+    Auftritt der Gegner im Elite-Kampf, Kreisfahrt beim Sieg vor dem Ergebnis;
+    die Zeit steht, Antippen überspringt, höchstens 20 Grad neben der
+    Iso-Richtung (die Modelle sind für sie gebaut).
+  * **B6 Stufe 2 echtes Licht:** Option „Echtes Licht (Test)“ in den Optionen
+    (`Accessibility.real_light`, Standard aus). Bis zu 8 Punktlichter je Bild
+    (Mündungsblitze, nächste Laternen) als globale Shader-Werte
+    (`project.godot` -> `shader_globals`, `arena_light_*`), Licht je Bildpunkt
+    nach Abstand und Richtung im `drome_face.gdshader`. Keine Schatten.
+  * **D11 Höhenstufen:** zurückgestellt, steht als offener Punkt in der SPOT.
+* **Offen:** Leistung auf dem Handy messen (24 DROMEs, Ziel weiter ca. 41 B/s),
+  einmal mit und einmal ohne „Echtes Licht (Test)“. Tests: `tests/test_motion.gd`.
+
 ### Englisch vorbereitet, letzte Umlaute (19. Nov. 2026, Spieler)
 
 * Aufwand Englisch geschaetzt (rund 1.000 Anzeigetexte in `scripts/`, 750
