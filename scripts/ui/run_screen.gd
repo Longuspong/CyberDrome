@@ -1224,18 +1224,17 @@ func _drome_box(run: RunState, drome: int) -> Control:
 
 	var head_box := VBoxContainer.new()
 	head_box.add_theme_constant_override("separation", 2)
-	head_box.custom_minimum_size = Vector2(64, 0)
+	head_box.custom_minimum_size = Vector2(70, 0)
+	head_box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	head_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(head_box)
-	var head := TextureRect.new()
-	head.texture = UiKit.portrait_texture(build)
-	head.custom_minimum_size = Vector2(40, 40)
-	head.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	head.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# Der ganze DROME in seinen Farben (Fraktions-DROMEs mit Palette, 21. Nov.
+	# 2026 -- vorher nur das Kopf-Bauteil ohne Farben).
+	var head := UiKit.drome_view(build, 46)
 	head.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	head_box.add_child(head)
-	var name := Arcade.label(build.display_name.to_upper(), 10, UiKit.TEXT, "display")
-	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var name := SquadPicker.name_label(build.display_name, 9)
+	name.custom_minimum_size.x = 70
 	head_box.add_child(name)
 
 	if slots.is_empty():

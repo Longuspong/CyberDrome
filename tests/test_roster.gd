@@ -278,3 +278,21 @@ func test_a_new_game_starts_with_everything_once() -> void:
 	t.equal(roster.blanks(), 2, "2 Rohlinge")
 	t.equal(int(roster.caches.get("city", 0)), 5, "5 Neon Caches")
 	t.equal(roster.coins, 200, "200 Platzhaltercoin")
+
+
+func test_variants_keep_the_chassis_name_with_a_faction_subtitle() -> void:
+	# 21. Nov. 2026 (Spieler): Varianten heissen wie ihr Chassis, die Fraktion
+	# steht darunter; neue DROMEs behalten ihren eigenen Namen.
+	t.equal(Roster.faction_drome_name("mecha_molok"), "Molok", "Variante heisst Molok")
+	t.equal(Roster.faction_drome_name("neon_vireo"), "Neon Vireo", "neuer DROME behaelt seinen Namen")
+	t.equal(Roster.subtitle_for(""), "CyberDrome", "Standard-Untertitel")
+	t.equal(Roster.subtitle_for("Mecha"), "Mega Mechas", "Fraktion als Untertitel")
+	var roster := _fresh()
+	var data := roster.to_dict()
+	var entry: Dictionary = (data["roster"] as Array)[0]
+	entry["variant"] = "mecha_molok"
+	entry["name"] = "Mecha Molok"
+	var loaded := Roster.new()
+	loaded.load_dict(data)
+	t.equal(loaded.entries[0].name, "Molok", "alter Name wird beim Laden umbenannt")
+	t.equal(Roster.subtitle(loaded.entries[0]), "Mega Mechas", "mit Fraktion darunter")
