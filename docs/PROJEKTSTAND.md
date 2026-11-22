@@ -29,6 +29,23 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
+
+Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "Vorschlag").
+
+* **Fabrik** (`resources_screen.gd`) = herstellen: Reiter Linien (Platzhalter), Charger
+  (`ChargerCrafter`), DROMEs (`DromeForge`); Schalter fest unter der Kopfzeile.
+* **Inventar** (`shop_screen.gd`, `mode = "inventory"`) = lagern, eine Seite ohne Reiter:
+  Bestand, freie Waffen, Charger, Energy Phases, Lootcaches oeffnen.
+* **DROMEs** (`hangar_screen.gd`) = ausruesten und aufwerten: nur die Liste (Zeilen mit Bild,
+  Rolle, Waffe + Charger, gelber Hinweis "Waffenplatz frei" / "Charger-Platz frei");
+  antippen oeffnet die DROME-Seite. Fest oben Zurueck, Name, Kampfwert und die Reiter
+  **Uebersicht** (Karte, umbenennen, verwerten), **DROME** (Level/Skilltree, Platzhalter),
+  **Waffe** (fest: Bild + Werte der Waffe mit Vergleich; scrollt: Halter, Charger, Level der
+  Waffe zum Aufklappen, "Aus dem Inventar" Waffen | Charger, ein Hauptknopf einbauen /
+  einsetzen / entfernen). Charger lassen sich auf die Karte ziehen.
+* `UiKit.segmented(..., wide)` fuer Schalter ueber die ganze Breite.
+
 ### Fuenf Tabs: Shop, Fabrik, Home, DROMEs, Inventar (22. Nov. 2026, Entscheidung des Spielers)
 
 Design-Canvas https://claude.ai/artifact/AH1kw5G3KweJxjygGuFu33 (Boards „Fuenf Tabs“).

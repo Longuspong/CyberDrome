@@ -107,7 +107,7 @@ func _process(_delta: float) -> bool:
 			root.add_child(upgrade)
 			print("SMOKE: Hangar (Upgrade) mit Charger instanziiert")
 			# Tab DROMEs (22. Nov. 2026): Reiter und Unterseiten, Vergleich in der Ausruestung.
-			for t in ["dromes", "waffen", "umbau", "drome_up", "weapon_up"]:
+			for t in ["dromes", "overview", "umbau", "drome_up"]:
 				load("res://scripts/ui/hangar_screen.gd").open_tab(t)
 				var page = load("res://scenes/hangar.tscn").instantiate()
 				page.name = "Probe_h_" + t
@@ -133,7 +133,7 @@ func _process(_delta: float) -> bool:
 		18:
 			for scene in ["title", "saves", "main", "settings", "shop", "inventory", "resources", "upgrade"]:
 				root.get_node("Probe_%s" % scene).free()
-			for t in ["dromes", "waffen", "umbau", "drome_up", "weapon_up"]:
+			for t in ["dromes", "overview", "umbau", "drome_up"]:
 				root.get_node("Probe_h_" + t).free()
 			# Lauf vor dem Kampf: Story-Reihe, dann Endlos mit Chaos-Knoten.
 			gs.start_run(4242)

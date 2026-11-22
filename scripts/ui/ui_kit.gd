@@ -230,8 +230,11 @@ static func header_slot(root: Control) -> HBoxContainer:
 
 ## Reiter als Segmentknopf (Entwurf Hangar): violette Schiene, der aktive
 ## Reiter cyan gefuellt. ``options`` = [[id, Text], ...]; on_pick(id).
-static func segmented(options: Array, active: String, on_pick: Callable) -> Control:
+## ``wide``: die Schiene nimmt die ganze Breite, die Reiter teilen sie gleich.
+static func segmented(options: Array, active: String, on_pick: Callable, wide: bool = false) -> Control:
 	var rail := PanelContainer.new()
+	if wide:
+		rail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var box := Arcade.chamfer_box(Color("#3a1a6e"), 10)
 	box.set_content_margin_all(2)
 	rail.add_theme_stylebox_override("panel", box)
@@ -244,6 +247,8 @@ static func segmented(options: Array, active: String, on_pick: Callable) -> Cont
 		var button := Button.new()
 		button.text = str(option[1]).to_upper()
 		button.custom_minimum_size = Vector2(0, 44)
+		if wide:
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var font_size := 13 if options.size() <= 2 else 12
 		button.add_theme_font_override("font", Arcade.font("bold", font_size, spacing))
 		button.add_theme_font_size_override("font_size", font_size)

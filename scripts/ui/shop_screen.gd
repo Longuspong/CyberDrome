@@ -6,10 +6,12 @@ extends Control
 ##
 ##   shop       nur kaufen: Angebote fuer Platzhaltercoin -- Baukerne und Caches
 ##              (Roster.shop_offers, config hangar_shop)
-##   inventory  Reiter Inventar (Bestand: Coins, Baukerne, Kerne, Energy Phases,
-##              Rohlinge; Lootcaches oeffnen) und Charger (Charger-Crafter)
+##   inventory  lagern (seit 22. Nov. 2026, "ein Verb je Tab"): alles, was in
+##              keinem DROME steckt -- Bestand, freie Waffen, Charger, Energy
+##              Phases, Lootcaches (oeffnen). Eine Seite, kein Reiter.
 ##
-## Neue DROMEs bauen liegt seit 22. Nov. im Tab DROMEs (DromeForge).
+## Herstellen (Charger, neue DROMEs) liegt in der Fabrik, einbauen auf der
+## DROME-Seite im Tab DROMEs.
 ## Kacheln wie ueberall: tippen waehlt, nochmal tippen zeigt Details
 ## (blaetterbar), Doppeltipp handelt (kaufen, bauen).
 
@@ -18,7 +20,7 @@ const TILE_GAP := 10
 
 ## "shop" oder "inventory" (scenes/inventory.tscn setzt es).
 @export var mode := "shop"
-## Reiter im Inventar: "inventar" oder "charger".
+## Frueher Reiter im Inventar; bleibt fuer alte Aufrufer (open_tab).
 static var _tab := "inventar"
 ## Gewaehlter Cache im Reiter Caches (Entwurf: antippen waehlt, Knopf oeffnet).
 static var _cache_pick := "city"
@@ -52,23 +54,11 @@ func _refresh() -> void:
 	if mode != "inventory":
 		_shop_section()
 		return
-	if _tab not in ["inventar", "charger"]:
-		_tab = "inventar"
-	# Der Schalter als erste Zeile: neben dem Titel INVENTAR und dem Zahnrad
-	# waere er auf dem Handy zu breit.
-	var switch := UiKit.segmented([["inventar", "Inventar"], ["charger", "Charger"]],
-		_tab, func(id):
-			_tab = id
-			Tile.clear_choice()
-			_refresh())
-	switch.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_content.add_child(switch)
-	if _tab == "charger":
-		_charger_section()
-	else:
-		_content.add_child(_wallet())
-		_phase_section()
-		_caches_section()
+	_content.add_child(_wallet())
+	_free_weapons_section()
+	_chargers_section()
+	_phase_section()
+	_caches_section()
 
 
 ## Was man hat: Coins, Baukerne, Fraktionskerne, Caches -- eine Zeile Chips.
@@ -469,32 +459,70 @@ func _phase_section() -> void:
 		grid.add_child(panel)
 
 
-## Charger bauen (Charger-Crafter, 20. Nov. 2026); eingesetzt wird im Tab
-## DROMEs unter Waffen › Charger.
-func _charger_section() -> void:
-	var crafter := ChargerCrafter.new()
-	crafter.built.connect(_charger_built)
-	_content.add_child(crafter)
+## Freie Waffen: im Inventar, in keinem DROME. Antippen zeigt die Karte;
+## eingebaut wird auf der DROME-Seite unter Waffe.
+func _free_weapons_section() -> void:
+	var roster := GameState.roster
+	var parts: Array = []
+	for part_id in roster.owned_part_ids(PartData.Type.EQUIPMENT):
+		var part := PartDB.get_part(part_id)
+		if part != null and roster.free_count(part_id) > 0:
+			parts.append(part)
+	_content.add_child(_section_head("FREIE WAFFEN", "%d" % parts.size()))
+	if parts.is_empty():
+		_content.add_child(UiKit.label("Alle Waffen stecken in DROMEs.", 14, UiKit.MUTED))
+		return
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	_content.add_child(grid)
+	for part in parts:
+		var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), 48.0)
+		var tile := Tile.new("free:%s" % part.id, shape, part.display_name, Vector2(0, 104))
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var count := roster.free_count(part.id)
+		if count > 1:
+			tile.add_caption("×%d" % count, UiKit.MUTED, 11)
+		tile.on_info = func(): WeaponCard.open(self, part)
+		grid.add_child(tile)
 
 
-## Nach dem Bauen: der neue Charger, dazu der Weg in den Hangar (Upgrade).
-func _charger_built(charger: Dictionary) -> void:
-	_refresh()
-	var phases: Array = charger.get("phases", [])
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	for e in phases:
-		if str(e) != "":
-			row.add_child(PhaseGem.new(str(e), 40))
-	var dom := Charger.dominant(phases)
-	var lines: Array = [row]
-	lines.append("Die Phasen sind verbraucht. Einsetzen im Tab DROMEs unter Waffen › Charger.")
-	if dom != "":
-		lines.append(["Die Fähigkeit legt %s-Stapel an." % Charger.element_name(dom), UiKit.HEADING])
-	InfoPopup.open(self, Charger.display_name(phases).to_upper(), {"subtitle": "NEU IM LAGER",
-		"lines": lines, "actions": [{"text": "Einsetzen", "primary": true, "call": func():
-			HangarScreen.open_tab("upgrade")
-			Fader.go("res://scenes/hangar.tscn")}]})
+## Charger: alle, mit dem Ort, an dem sie stecken. Gebaut wird in der Fabrik.
+func _chargers_section() -> void:
+	var roster := GameState.roster
+	var free := 0
+	for c in roster.chargers:
+		free += 1 if str(c.get("on", "")) == "" else 0
+	_content.add_child(_section_head("CHARGER", "%d FREI" % free))
+	if roster.chargers.is_empty():
+		_content.add_child(UiKit.label("Noch kein Charger -- gebaut wird in der Fabrik.", 14, UiKit.MUTED))
+		return
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	_content.add_child(grid)
+	for c in roster.chargers:
+		var phases: Array = c["phases"]
+		var on := str(c.get("on", ""))
+		var tile := Tile.new("ch:%s" % str(c["uid"]), ChargerHex.new(phases, 60), Charger.display_name(phases),
+			Vector2(0, 104))
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var dom := Charger.dominant(phases)
+		tile.accent = Charger.element_color(dom) if dom != "" else UiKit.ACCENT
+		tile.add_caption("FREI" if on == "" else "EINGESETZT", UiKit.WARN if on == "" else UiKit.MUTED, 11)
+		grid.add_child(tile)
+
+
+## Zwischentitel mit Zahl rechts.
+func _section_head(title: String, right: String) -> Control:
+	var head := HBoxContainer.new()
+	var label := Arcade.label(title, 15, Arcade.CYAN, "bold", 0.2)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(label)
+	head.add_child(Arcade.label(right, 12, Arcade.MUTED, "bold", 0.16))
+	return head
 
 
 ## Ein Cache als Symbol: Kiste mit Neon-Rand (gezeichnet, bis es ein Bild gibt).

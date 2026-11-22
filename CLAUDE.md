@@ -228,9 +228,9 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   (Baukerne, Fraktionskerne, `Roster.salvage/craft_drome`).
 * Navigation: Tab-Leiste unten, seit 22. Nov. 2026 fuenf Tabs: Shop, Fabrik,
   Home (Mitte), DROMEs, Inventar (`UiKit.TABS`; Optionen am Zahnrad oben rechts).
-  Shop nur kaufen, Inventar = Bestand/Caches oeffnen + Charger bauen, DROMEs =
-  Reiter DROMEs (Ausruestung, Upgrade, neue DROMEs bauen) und Waffen (Charger,
-  Upgrade) -- Details `docs/PROJEKTSTAND.md`. Aelterer Stand: Der Hangar
+  Ein Verb je Tab: Shop kaufen, Fabrik herstellen (Linien, Charger, DROMEs),
+  Home spielen, DROMEs ausruesten/aufwerten (Liste -> DROME-Seite mit Uebersicht,
+  DROME, Waffe), Inventar lagern -- Details `docs/PROJEKTSTAND.md`. Aelterer Stand: Der Hangar
   vereint Squad (Karussell, max. 3 seit 16. Nov. 2026) und Umbau (ein Ausruestungsplatz je
   DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
   Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
