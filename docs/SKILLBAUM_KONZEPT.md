@@ -48,14 +48,14 @@ immer dieselbe Schablone aus.
 
 Fähigkeit heute: Doppelschuss, jeder 3. Angriff, 3 Salven à 2 Schüsse.
 
+Ohne Knoten 5 schießt der Blaster **Standard**: 6 Schüsse in 3 Salven à 2.
+Auf Level 5 stehen **3 Knoten** zur Wahl (Spieler 22. Nov. 2026):
+
 | Knoten 5 | Wirkung | wogegen |
 |---|---|---|
-| **Standard** | 6 Schüsse in 3 Salven à 2 | ausgewogen |
 | **Fokus** | 1 Salve, alle Schüsse auf ein Ziel, dafür nur 5 | einen Gegner herausnehmen (Elite-DROME) |
 | **Streuung** | alle Schüsse gleich verteilt auf alle Ziele in Reichweite | viele Gegner (Sentinel-Schwarm) |
-
-Vorschlag zu offener Frage: Ist "Standard" der Ausgangszustand ohne Punkt und
-Level 5 wählt zwischen Fokus und Streuung -- oder sind alle drei Knoten wählbar?
+| **Trippel** | Salven à 3 statt à 2 (Annahme: 2 Salven à 3, noch bestätigen) | gleichmäßiger Druck |
 
 ## 5. Beispiel Vireo / Neon Vireo (Spieler 22. Nov. 2026, Richtung entschieden)
 
@@ -83,7 +83,7 @@ Werte -- dazu zählen auch die Werte der Passive, z. B.:
 
 | Keynode | Kosten | Wirkung |
 |---|---|---|
-| Überladung | 2 Stapel | 10 s lang mehr Power |
+| Überladung | 2 Stapel | 10 s lang **+3 Power** (fester Wert statt Prozent, damit es mit Power-Amps nicht aufschaukelt) |
 | Blink | 3 Stapel | Teleport hinter das am weitesten entfernte Ziel, aber nur so weit, dass es in Reichweite der Waffe bleibt (Blaster/Bumerang: ein Feld dazwischen) |
 | Kettenschlag | alle Stapel, beim Einsatz der Fähigkeit | je Stapel 1 Sprung mit 10 % Schaden je Stapel: 1 Stapel = 1 weiteres Ziel mit 10 %, 2 = 2 Ziele mit 20 %, 3 = 3 Ziele mit 30 %, 4 = 4 Ziele mit 40 %. Bei zu wenigen Zielen springt sie aufs erste zurück. Reihenfolge: erst Stapel gewinnen, dann verbrauchen. |
 
