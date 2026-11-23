@@ -175,11 +175,9 @@ die Platine. Charger und DROMEs bleiben eigene Reiter und verbrauchen Lager-Ress
 2. *„Einheiten produzieren schneller, als sie weitergeben.“* Zwei Gründe: (a) mehr
    Herstellung als Verbrauch, der Überschuss geht über den Ausgangspuffer ins Lager;
    (b) die Anzeige zeigt höchstens einen Puls je Paar und Takt (und max. 80 Pulse) --
-   bei 3 Neon je Takt sieht man nur einen Punkt. **Zu entscheiden:** Überschuss weiter
-   ins Lager (bequem) **oder** bei vollem Ausgang pausiert das Gebäude (Stau), Uplink
-   nur für Waren ohne Abnehmer -- Empfehlung: **pausieren**, dann lohnen sich passende
-   Verhältnisse wirklich (clevere Automatismen), und „schneller als weitergegeben“ gibt
-   es nicht mehr. Der Spieler entscheidet zu Beginn der Logik-Sitzung.
+   bei 3 Neon je Takt sieht man nur einen Punkt. **Entschieden (Spieler 23. Nov. 2026):** der Überschuss
+   geht weiter **per Uplink ins Lager**, Gebäude pausieren nicht. Die Anzeige muss ihn
+   aber zeigen (z. B. „+0,5 Legierung/Takt → Lager“) und Pulse nach Menge zeichnen.
 
 ## 12. Übergabe Design (eigene Design-Sitzung)
 
