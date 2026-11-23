@@ -35,7 +35,7 @@ extends Control
 ## fest oben, der Rest scrollt):
 ##
 ##   dromes     die Liste: Bild, Name, Rolle, Waffe und Charger, Hinweis
-##   overview   Uebersicht: Bild, Kampfwert, Werte, Waffe; umbenennen, verwerten
+##   overview   Uebersicht: Bild, Kampfwert, Werte, Waffe; verwerten
 ##   drome_up   DROME: Level und Skilltree -- Platzhalter (SKILLBAUM_KONZEPT.md)
 ##   umbau      Waffe: oben fest Bild + Werte der Waffe (Vergleich beim Antippen
 ##              einer Waffe aus dem Inventar), Halter, Charger; darunter Level
@@ -345,18 +345,12 @@ func _todo(entry: RosterEntry) -> String:
 func _show_overview() -> void:
 	var entry: RosterEntry = _entries()[_selected]
 	_content.add_child(_primary_card(_selected))
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", TILE_GAP)
-	_content.add_child(row)
-	var rename := UiKit.outline_button("UMBENENNEN", Arcade.CYAN)
-	rename.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rename.pressed.connect(func(): _rename(entry))
-	row.add_child(rename)
+	# Umbenennen gibt es nicht (23. Nov. 2026, Spieler: nie gewollt, und das
+	# Eingabefeld zerschoss im Browser die Anzeige).
 	var scrap := UiKit.outline_button("VERWERTEN", Arcade.ROSE)
-	scrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scrap.tooltip_text = "Gibt einen %s; die Waffen kommen ins Inventar." % Roster.kit_name()
 	scrap.pressed.connect(func(): _confirm_salvage(entry))
-	row.add_child(scrap)
+	_content.add_child(scrap)
 
 
 ## Level und Skilltree (DROME und Waffe): entschieden ist die Richtung
@@ -1092,27 +1086,6 @@ func _mount(charger_uid: String) -> void:
 		Accessibility.vibrate(40, true)
 		_charger_pick = charger_uid
 		_changed()
-
-
-## Umbenennen im Popup (der Name ist im Umbau ein Knopf, Entwurf 15. Nov.).
-func _rename(entry: RosterEntry) -> void:
-	var field := LineEdit.new()
-	field.text = entry.name
-	field.custom_minimum_size = Vector2(0, 44)
-	field.max_length = 16
-	var popup: InfoPopup
-	var save := func():
-		var text := field.text.strip_edges()
-		if text != "" and text != entry.name:
-			entry.name = text
-			_changed()
-	field.text_submitted.connect(func(_t):
-		save.call()
-		if popup != null:
-			popup.close())
-	popup = InfoPopup.open(self, "Umbenennen", {"body": field,
-		"actions": [{"text": "Speichern", "primary": true, "call": save}]})
-	field.grab_focus.call_deferred()
 
 
 ## Die Karte des DROME im Umbau: etwas knapperer Innenabstand, damit oben

@@ -40,7 +40,7 @@ Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "
 * **DROMEs** (`hangar_screen.gd`) = ausruesten und aufwerten: nur die Liste (Zeilen mit Bild,
   Rolle, Waffe + Charger, gelber Hinweis "Waffenplatz frei" / "Charger-Platz frei");
   antippen oeffnet die DROME-Seite. Fest oben Zurueck, Name, Kampfwert und die Reiter
-  **Uebersicht** (Karte, umbenennen, verwerten), **DROME** (Level/Skilltree, Platzhalter),
+  **Uebersicht** (Karte, verwerten; Umbenennen entfernt 23. Nov. -- nie gewollt, das Eingabefeld zerschoss im Browser die Anzeige), **DROME** (Level/Skilltree, Platzhalter),
   **Waffe** (fest: Bild + Werte der Waffe mit Vergleich; scrollt: Halter, Charger, Level der
   Waffe zum Aufklappen, "Aus dem Inventar" Waffen | Charger, ein Hauptknopf einbauen /
   einsetzen / entfernen). Charger lassen sich auf die Karte ziehen.
