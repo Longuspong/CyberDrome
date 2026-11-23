@@ -155,6 +155,7 @@ details ol{margin:8px 0 0;padding-left:20px;font-size:13px;display:flex;flex-dir
     <ol>
       <li>Gebäude holen ihre Zutaten bei direkten Nachbarn ab. Es gibt keine Bänder. Verteilt wird reihum, keiner wird bevorzugt.</li>
       <li>Jeder Verarbeiter hat einen Eingangspuffer von 10 × Rezeptmenge, jedes Gebäude einen Ausgangspuffer von 10.</li>
+      <li>Anlauf: Ein Verarbeiter startet erst, wenn Vorrat für 3 Durchläufe im Puffer liegt. Dann läuft er durch, bis ihm etwas ausgeht, und sammelt danach wieder an. So stottert keine Kette.</li>
       <li>Uplink: Was kein Nachbar braucht oder über den Ausgangspuffer hinausgeht, verschwindet ins Lager.</li>
       <li>Strom kommt vom Netzanschluss in der Mitte (4 Strom, Reichweite 2), von Solarpanels und Öfen. Jede Quelle versorgt zuerst die nächsten Gebäude voll. Wer nur einen Teil bekommt, läuft anteilig langsamer.</li>
       <li>Solarpanels geben 1 Strom, direkt neben einem anderen Panel nur 0,5 (Schatten).</li>
@@ -178,6 +179,7 @@ const ringOf = (q,r) => Math.max(Math.abs(q), Math.abs(r), Math.abs(-q-r));
 const hexDist = (a,b) => { const [q1,r1]=unkey(a),[q2,r2]=unkey(b); return ringOf(q1-q2, r1-r2); };
 const NETZ = '0,0', NETZ_SUPPLY = 4, NETZ_RANGE = 2;
 const TAKTE_EINSATZ = 800;
+const ANLAUF = 3; // Verarbeiter starten erst mit Vorrat fuer 3 Durchlaeufe
 
 const ITEMS = {
   schrott:{n:'Schrott', c:'#c9b49c'}, neon:{n:'Neon', c:'#2ee3eb'}, daten:{n:'Daten', c:'#9d84ff'},
@@ -351,7 +353,10 @@ function tick(fast){
     if (d.relay) need = 1;
     else if (d.power){
       if (d.src) need = d.power;
-      else if (d.in && Object.keys(d.in).every(it => (b.inB[it]||0) >= d.in[it])) need = d.power;
+      else if (d.in){
+        if (!b.run && Object.keys(d.in).every(it => (b.inB[it]||0) >= d.in[it]*ANLAUF)) b.run = true;
+        if (b.run && Object.keys(d.in).every(it => (b.inB[it]||0) >= d.in[it])) need = d.power;
+      }
     }
     b.need = need; b.got = 0; demand += need;
   }
@@ -394,7 +399,11 @@ function tick(fast){
     } else {
       const missing = () => Object.keys(d.in).find(it => (b.inB[it]||0) < d.in[it]);
       const m = missing();
-      if (m){ b.status='wait'; b.miss=m; }
+      if (!b.run){
+        b.miss = Object.keys(d.in).find(it => (b.inB[it]||0) < d.in[it]*ANLAUF) || '';
+        b.status = Object.keys(d.in).some(it => (b.inB[it]||0) > 0) ? 'anlauf' : 'wait';
+      }
+      else if (m){ b.status='wait'; b.miss=m; b.run=false; }
       else {
         b.prog += d.rate*b.eff*(1+resonance(x.k,b.t));
         while (b.prog >= 1 && !missing()){
@@ -406,7 +415,7 @@ function tick(fast){
         if (b.eff < 1) b.status = 'strom';
       }
     }
-    b.wait.push(b.status==='wait' ? 1 : 0); if (b.wait.length>10) b.wait.shift();
+    b.wait.push(b.status==='wait'||b.status==='anlauf' ? 1 : 0); if (b.wait.length>10) b.wait.shift();
     b.inH.push(recv[x.k]); if (b.inH.length>30) b.inH.shift();
     b.outH.push(made); if (b.outH.length>30) b.outH.shift();
     if (!fast) anim[x.k] = {from, to: b.prog + made};
@@ -516,10 +525,11 @@ function draw(now){
       const a = anim[k], tt = speed ? Math.min(1, Math.max(0,(now-tickAt)/tickMs)) : 1;
       const v = a ? a.from + (a.to-a.from)*tt : b.prog;
       let p = v - Math.floor(v); if (v>0 && p<1e-6) p = 1;
-      bar(x,by,bw,p, b.status==='wait' ? '#ff2bd6' : b.status==='strom' ? '#ff6a3d' : d.col);
+      if (b.status==='anlauf') p = Math.min(...Object.keys(d.in).map(it => (b.inB[it]||0)/(d.in[it]*ANLAUF)));
+      bar(x,by,bw,p, b.status==='anlauf' ? '#9d84ff' : b.status==='wait' ? '#ff2bd6' : b.status==='strom' ? '#ff6a3d' : d.col);
     }
     if (!d.supply || d.fuel){
-      const sc = b.status==='wait' ? '#ff2bd6' : b.status==='strom' ? '#ff6a3d' : b.status==='uplink' ? '#ffe14d' : '#2ee3eb';
+      const sc = b.status==='anlauf' ? '#9d84ff' : b.status==='wait' ? '#ff2bd6' : b.status==='strom' ? '#ff6a3d' : b.status==='uplink' ? '#ffe14d' : '#2ee3eb';
       ctx.fillStyle=sc; ctx.beginPath(); ctx.arc(x+size*0.42, y-size*0.42, size*0.09, 0, 7); ctx.fill();
     }
     const res = resonance(k,b.t);
@@ -614,6 +624,7 @@ function buildTools(){
 }
 let infoTool = null;
 function statusText(b){
+  if (b.status==='anlauf'){ const d = DEF[b.t]; return `<span class="st" style="color:#9d84ff">Läuft an: sammelt Vorrat für ${ANLAUF} Durchläufe (${Object.keys(d.in).map(it=>ITEMS[it].n+' '+(b.inB[it]||0)+'/'+d.in[it]*ANLAUF).join(' · ')})</span>`; }
   if (b.status==='wait') return `<span class="st" style="color:#ff2bd6">Wartet auf ${ITEMS[b.miss].n}</span>`;
   if (b.status==='strom') return `<span class="st" style="color:#ff6a3d">Zu wenig Strom: ${fmt(b.got)} von ${b.need} → ${Math.round(b.eff*100)} % Tempo</span>`;
   if (b.status==='uplink') return `<span class="st" style="color:#ffe14d">Ausgang voll: Überschuss geht per Uplink ins Lager</span>`;
@@ -669,7 +680,7 @@ function renderInfo(){
   }
   if (sel && SOURCES[sel]){ const s = SRC[SOURCES[sel]]; el.innerHTML = `<h3>${s.n}</h3><p>Hier kann ein Förderer ${ITEMS[s.item].n} holen.</p>`; return; }
   el.innerHTML = `<h3>Platine</h3><p>Wähle unten ein Gebäude und tippe auf ein gelb markiertes Feld. Tippe Gebäude an, um Durchsatz, Puffer und Strom zu sehen. Gesperrte Felder lassen sich kaufen.</p>
-    <p class="small">Punkt oben rechts: cyan läuft, magenta wartet, orange zu wenig Strom, gelb Überschuss geht ins Lager. Rot blinkend = Engpass.</p>`;
+    <p class="small">Punkt oben rechts: cyan läuft, violett läuft an (sammelt Vorrat), magenta wartet, orange zu wenig Strom, gelb Überschuss geht ins Lager. Rot blinkend = Engpass.</p>`;
 }
 function needsHtml(need){
   let ok = true;

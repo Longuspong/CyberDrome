@@ -21,6 +21,10 @@ Strom. Clever anordnen wird belohnt, der Spieler baut immer auf das um, was er
 * **Keine Bänder:** Gebäude holen ihre Zutaten bei direkten Nachbarn ab, verteilt
   wird **reihum** (keiner wird bevorzugt).
 * **Puffer:** Eingang = 10 × Rezeptmenge, Ausgang = 10.
+* **Anlauf** (Spieler 23. Nov.): ein Verarbeiter startet erst, wenn Vorrat für
+  3 Durchläufe im Eingangspuffer liegt, läuft dann durch, bis ihm etwas ausgeht,
+  und sammelt danach wieder an -- die Kette stottert nicht. Wie beim Generator
+  (zündet bei halbem Puffer).
 * **Uplink** = der Weg ins Lager (kein Gebäude): was kein verbundenes Gebäude braucht
   oder über den Ausgangspuffer hinausgeht, verschwindet ins Lager.
 * **Relais:** verbinden Gebäude an ihren Rändern (auch als Kette), kosten kein Geld,
