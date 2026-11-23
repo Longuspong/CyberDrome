@@ -1,0 +1,751 @@
+<title>CyberDrome Factory</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;600;700&display=swap">
+<style>
+/* Layout: eine Spalte fuer Handy-Hochformat -- Kopf, Ziele, Strom, Platine, Info, Baukasten, Lager */
+:root{
+  --night:#0a0618; --deep:#12082a; --violet:#1b0b3a; --line:#3a2470;
+  --yellow:#ffe14d; --cyan:#2ee3eb; --magenta:#ff2bd6; --orange:#ff6a3d; --green:#6dffa8;
+  --text:#ecdfff; --muted:#9a86c4; --white:#fff7fe;
+  --display:'Bungee', Impact, 'Arial Black', sans-serif;
+  --body:'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  color-scheme:dark;
+}
+html,body{background:var(--night);color:var(--text)}
+body{font-family:var(--body);font-size:15px;line-height:1.4;
+  background-image:radial-gradient(rgba(255,61,187,.16) 1px,transparent 1.2px);background-size:14px 14px}
+.wrap{max-width:520px;margin:0 auto;padding-block:14px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:400;font-size:30px;line-height:1;margin:0;color:var(--yellow);
+  letter-spacing:.02em;text-shadow:-2px 0 var(--magenta),2px 0 var(--cyan)}
+.sub{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin-top:4px}
+.ctrl{display:flex;gap:4px;flex-wrap:wrap}
+button{font-family:var(--body);font-weight:700;cursor:pointer;color:var(--text);background:var(--violet);
+  border:1.5px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px}
+button:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+button.on{border-color:var(--yellow);color:var(--yellow)}
+button:disabled{opacity:.4;cursor:default}
+button.main{background:var(--yellow);color:var(--deep);border-color:var(--yellow)}
+button.hot{border-color:var(--magenta);color:var(--white);background:#3a0f4a}
+.panel{background:rgba(27,11,58,.88);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px}
+.label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+h2{margin:2px 0 6px;font-size:16px;font-weight:700;color:var(--white);text-wrap:balance}
+.needs{display:flex;flex-direction:column;gap:5px}
+.need{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;font-size:13px}
+.need span:last-child{font-variant-numeric:tabular-nums}
+.bar{height:8px;background:var(--deep);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;width:0;transition:width .3s}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.goal{border-color:var(--cyan)}
+.order{border-color:var(--magenta);box-shadow:0 0 16px rgba(255,43,214,.16)}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+.chips button{font-size:12px;padding:4px 8px;font-weight:600}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px;flex-wrap:wrap}
+.small{font-size:12px;color:var(--muted)}
+.warn{color:var(--orange);font-weight:700}
+/* Strom */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.pcell{background:var(--deep);border-radius:6px;padding:5px 7px;font-size:12px}
+.pcell b{display:block;font-size:17px;font-variant-numeric:tabular-nums;color:var(--white)}
+/* Platine */
+.board{position:relative;border-radius:10px;border:1.5px solid var(--line);
+  background:radial-gradient(ellipse at 50% 45%,#22104a 0%,var(--deep) 70%);overflow:hidden}
+canvas{display:block;width:100%;touch-action:manipulation;cursor:pointer}
+.stat{position:absolute;left:8px;top:6px;font-size:11px;color:var(--muted);letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.toast{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:var(--night);border:1px solid var(--yellow);
+  color:var(--yellow);padding:5px 10px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;
+  width:max-content;max-width:92%;text-align:center}
+.toast.show{opacity:1}
+/* Info */
+#info{min-height:96px}
+#info h3{margin:0 0 4px;font-size:16px;color:var(--white);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.code{font-family:var(--display);font-weight:400;font-size:13px;padding:1px 6px;border-radius:4px;background:var(--deep)}
+.tag{font-size:11px;padding:1px 6px;border-radius:10px;border:1px solid var(--line);color:var(--muted);font-weight:600}
+#info p{margin:3px 0;font-size:13px}
+#info table{border-collapse:collapse;font-size:12px;margin-top:4px;width:100%}
+#info td{padding:2px 6px 2px 0;font-variant-numeric:tabular-nums;vertical-align:top}
+#info td:first-child{color:var(--muted);white-space:nowrap}
+.st{font-weight:700}
+.act{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+/* Baukasten */
+.tiers{display:flex;flex-direction:column;gap:8px}
+.tools{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tool{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 7px;text-align:left;min-width:0;position:relative}
+.tool b{font-family:var(--display);font-weight:400;font-size:13px}
+.tool span{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tool small{font-size:10px;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+.tool.on{border-color:var(--yellow);background:#2a1450}
+.tool.locked{opacity:.38}
+.tool.empty small{color:var(--orange)}
+/* Lager */
+.store{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.item{display:grid;grid-template-columns:10px 1fr auto;gap:6px;align-items:center;font-size:12px;background:var(--deep);border-radius:6px;padding:5px 7px;min-width:0}
+.item span:not(.dot){min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item b{font-variant-numeric:tabular-nums;text-align:right}
+.item em{grid-column:2 / 4;font-style:normal;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.item.zero{opacity:.45}
+.item.want{outline:1.5px solid var(--magenta)}
+#result ul{margin:6px 0 0;padding-left:18px;font-size:13px;font-variant-numeric:tabular-nums}
+details summary{cursor:pointer;font-weight:700;color:var(--cyan)}
+details ol{margin:8px 0 0;padding-left:20px;font-size:13px;display:flex;flex-direction:column;gap:4px}
+@media (max-width:360px){ .tools{grid-template-columns:repeat(3,1fr)} .store{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ .bar i{transition:none} }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>FACTORY</h1>
+      <div class="sub">Prototyp v2 · Platine Neon City</div>
+    </div>
+    <div class="ctrl" role="group" aria-label="Tempo">
+      <button id="sp0">Pause</button><button id="sp1" class="on">1×</button><button id="sp3">3×</button><button id="sp10">10×</button>
+    </div>
+  </header>
+
+  <button id="mission" class="hot">Einsatz simulieren · 800 Takte (8 Kämpfe)</button>
+  <section class="panel" id="result" hidden></section>
+
+  <section class="panel goal">
+    <div class="row"><span class="label">Fabrik-Ziel</span><span class="small" id="tiernow"></span></div>
+    <h2 id="gtitle"></h2>
+    <div class="needs" id="gneeds"></div>
+    <div class="foot"><span class="small" id="gtext"></span><button id="gbtn" class="main">Freischalten</button></div>
+  </section>
+
+  <section class="panel order">
+    <div class="row"><span class="label">Bedarf · worauf du dich gerade konzentrierst</span></div>
+    <div class="chips" id="bchips"></div>
+    <div class="needs" id="bneeds"></div>
+    <div class="foot"><span class="small" id="bdone"></span><button id="bbtn" class="main">Abliefern</button></div>
+  </section>
+
+  <section class="panel">
+    <div class="row"><span class="label">Strom</span><span class="small" id="pwarn"></span></div>
+    <div class="pgrid">
+      <div class="pcell">Quellen<b id="psup">0</b></div>
+      <div class="pcell">Verbrauch<b id="pdem">0</b></div>
+      <div class="pcell">Batterien<b id="pbat">–</b></div>
+    </div>
+  </section>
+
+  <div class="board">
+    <canvas id="cv" aria-label="Fabrik-Platine"></canvas>
+    <div class="stat" id="tickinfo"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <section class="panel" id="info"></section>
+
+  <section style="display:flex;flex-direction:column;gap:6px">
+    <span class="label">Gebäude · gekaufte lassen sich beliebig umsetzen</span>
+    <div class="tiers" id="tools"></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:6px">
+    <div class="row"><span class="label">Lager (Uplink)</span><span class="small">grau: Hochrechnung je Einsatz</span></div>
+    <div class="store" id="store"></div>
+  </section>
+
+  <details class="panel">
+    <summary>Regeln der Platine</summary>
+    <ol>
+      <li>Gebäude holen ihre Zutaten bei direkten Nachbarn ab. Es gibt keine Bänder. Verteilt wird reihum, keiner wird bevorzugt.</li>
+      <li>Jeder Verarbeiter hat einen Eingangspuffer von 10 × Rezeptmenge, jedes Gebäude einen Ausgangspuffer von 10.</li>
+      <li>Anlauf: Ein Verarbeiter startet erst, wenn Vorrat für 3 Durchläufe im Puffer liegt. Dann läuft er durch, bis ihm etwas ausgeht, und sammelt danach wieder an. So stottert keine Kette.</li>
+      <li>Uplink: Was kein Nachbar braucht oder über den Ausgangspuffer hinausgeht, verschwindet ins Lager.</li>
+      <li>Strom kommt vom Netzanschluss in der Mitte (4 Strom, Reichweite 2), von Solarpanels und Öfen. Jede Quelle versorgt zuerst die nächsten Gebäude voll. Wer nur einen Teil bekommt, läuft anteilig langsamer.</li>
+      <li>Solarpanels geben 1 Strom, direkt neben einem anderen Panel nur 0,5 (Schatten).</li>
+      <li>Öfen und Generatoren zünden erst, wenn ihr Brennstoff-Puffer halb voll ist, und verbrennen nur, wenn jemand Strom braucht.</li>
+      <li>Relais verbinden Gebäude an ihren Rändern, brauchen aber 1 Strom. Ohne Strom leiten sie nichts.</li>
+      <li>Gleiche Verarbeiter nebeneinander: +25 % je Nachbar, höchstens +50 %. Tier-1-Förderer brauchen keinen Strom.</li>
+      <li>Gekaufte Gebäude gehören dir: Abreißen legt sie zurück ins Inventar. Mehr Exemplare und neue Felder kosten Ressourcen.</li>
+      <li>Live: 1 Takt je Sekunde (im Spiel später 1 Takt alle 6 s). Ein Einsatz bringt 800 Takte am Stück.</li>
+    </ol>
+    <p><button id="reset">Neu anfangen</button></p>
+  </details>
+</div>
+
+<script>
+(function(){
+const SQ3 = Math.sqrt(3);
+const DIRS = [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+const key = (q,r) => q + ',' + r;
+const unkey = k => k.split(',').map(Number);
+const ringOf = (q,r) => Math.max(Math.abs(q), Math.abs(r), Math.abs(-q-r));
+const hexDist = (a,b) => { const [q1,r1]=unkey(a),[q2,r2]=unkey(b); return ringOf(q1-q2, r1-r2); };
+const NETZ = '0,0', NETZ_SUPPLY = 4, NETZ_RANGE = 2;
+const TAKTE_EINSATZ = 800;
+const ANLAUF = 3; // Verarbeiter starten erst mit Vorrat fuer 3 Durchlaeufe
+
+const ITEMS = {
+  schrott:{n:'Schrott', c:'#c9b49c'}, neon:{n:'Neon', c:'#2ee3eb'}, daten:{n:'Daten', c:'#9d84ff'},
+  legierung:{n:'Legierung', c:'#ff6a3d'}, plasma:{n:'Plasma', c:'#ff2bd6'}, schaltkreis:{n:'Schaltkreis', c:'#6dffa8'},
+  schlacke:{n:'Schlacke', c:'#86739a'}, rohling:{n:'Charger-Rohling', c:'#ffe14d'},
+  platte:{n:'Panzerplatte', c:'#ffb347'}, chip:{n:'Upgrade-Chip', c:'#fff7fe'}
+};
+const SRC = { S:{n:'Schrottquelle', item:'schrott'}, N:{n:'Neonader', item:'neon'}, D:{n:'Datenknoten', item:'daten'} };
+const C = {cy:'#2ee3eb', or:'#ff6a3d', ye:'#ffe14d', gr:'#6dffa8', ro:'#ff8ce8', vi:'#9d84ff'};
+
+// Gebaeude. rate = Durchlaeufe je Takt bei vollem Strom; start = kostenlose Exemplare zu Beginn
+const DEF = {
+  sam:{n:'Sammler', code:'SAM', tier:1, src:'S', out:{schrott:1}, rate:1, power:0, col:C.cy, price:{legierung:8}, start:2},
+  zap:{n:'Zapfer', code:'ZAP', tier:1, src:'N', out:{neon:1}, rate:1, power:0, col:C.cy, price:{legierung:8}, start:1},
+  scn:{n:'Scanner', code:'SCN', tier:1, src:'D', out:{daten:1}, rate:0.5, power:0, col:C.cy, price:{legierung:10}, start:1},
+  smz:{n:'Schmelze', code:'SMZ', tier:1, in:{schrott:2}, out:{legierung:1, schlacke:1}, rate:0.5, power:1, col:C.or, price:{legierung:15}, start:1},
+  pls:{n:'Plasmakammer', code:'PLS', tier:1, in:{neon:2}, out:{plasma:1}, rate:0.5, power:1, col:C.or, price:{legierung:15}, start:1},
+  lot:{n:'Löter', code:'LÖT', tier:1, in:{legierung:1, daten:1}, out:{schaltkreis:1}, rate:0.5, power:1, col:C.or, price:{legierung:12, plasma:4}, start:1},
+  rpr:{n:'Rohlingpresse', code:'RPR', tier:1, in:{legierung:2, plasma:1}, out:{rohling:1}, rate:0.2, power:2, col:C.ye, price:{legierung:20, plasma:8}, start:1},
+  rec:{n:'Recycler', code:'REC', tier:1, in:{schlacke:2}, out:{schrott:1}, rate:0.5, power:1, col:C.ro, price:{legierung:12}, start:0},
+  sol:{n:'Solarpanel', code:'SOL', tier:1, supply:1, range:1, power:0, col:C.ye, price:{legierung:6, schaltkreis:3}, start:2},
+  ofn:{n:'Schlackeofen', code:'OFN', tier:1, in:{schlacke:1}, fuel:'schlacke', supply:2, range:1, power:0, col:C.gr, price:{legierung:15, schaltkreis:5}, start:0},
+  rel:{n:'Relais', code:'REL', tier:1, relay:true, power:1, col:C.vi, price:{legierung:5}, start:1},
+  gen:{n:'Generator', code:'GEN', tier:2, in:{neon:1}, fuel:'neon', supply:4, range:2, power:0, col:C.gr, price:{legierung:30, schaltkreis:10}, start:0},
+  bat:{n:'Batterie', code:'BAT', tier:2, battery:true, supply:2, range:1, store:20, power:0, col:C.gr, price:{legierung:20, schaltkreis:10}, start:0},
+  pmp:{n:'Neonpumpe', code:'PMP', tier:2, src:'N', out:{neon:1}, rate:3, power:2, col:C.cy, price:{legierung:30, schaltkreis:15}, start:0},
+  vdi:{n:'Verdichter', code:'VDI', tier:2, in:{legierung:10}, out:{platte:1}, rate:0.1, power:2, col:C.ye, price:{legierung:25, schaltkreis:5}, start:0},
+  chp:{n:'Chipfabrik', code:'CHP', tier:2, in:{schaltkreis:1, plasma:1}, out:{chip:1}, rate:0.2, power:3, col:C.ye, price:{legierung:25, schaltkreis:10, plasma:5}, start:0}
+};
+const DESC = {
+  sam:'Nur auf einer Schrottquelle. Braucht keinen Strom.', zap:'Nur auf einer Neonader. Braucht keinen Strom.',
+  scn:'Nur auf einem Datenknoten. Braucht keinen Strom.', sol:'Gibt 1 Strom an Gebäude im Abstand 1. Neben einem anderen Panel nur 0,5 (Schatten).',
+  ofn:'Verbrennt 1 Schlacke je Takt zu 2 Strom (Reichweite 1). Zündet, wenn sein Puffer halb voll ist, und brennt nur bei Bedarf.',
+  rel:'Verbindet alle Gebäude an seinen Rändern. Relais-Ketten gehen auch. Braucht 1 Strom, sonst leitet es nichts.',
+  gen:'Verbrennt 1 Neon je Takt zu 4 Strom (Reichweite 2). Zündet bei halbem Puffer, brennt nur bei Bedarf.',
+  bat:'Lädt sich mit Strom, den Quellen in Reichweite übrig haben (bis 20). Gibt bei Mangel bis 2 Strom je Takt ab (Reichweite 1).',
+  pmp:'Nur auf einer Neonader. Fördert 3 Neon je Takt, braucht 2 Strom.',
+  vdi:'Verdichtet 10 Legierung zu einer Panzerplatte. Stufe für die DROME-Teile.'
+};
+const TIER_ORDER = {1:['sam','zap','scn','smz','pls','lot','rpr','rec','sol','ofn','rel'], 2:['gen','bat','pmp','vdi','chp']};
+
+const SOURCES = {'1,-1':'S','-1,2':'S','-2,0':'S','2,0':'N','-1,-1':'N','0,2':'D',
+                 '3,-1':'D','3,-3':'S','-2,3':'N','0,3':'S','-1,-2':'S','1,-3':'D','-3,0':'N'};
+const CHUNKS = [
+  {n:'Osten', cells:['3,-3','3,-2','3,-1','3,0','2,1','1,2'], price:{legierung:40, plasma:10}, tier:1},
+  {n:'Süden', cells:['0,3','-1,3','-2,3','-3,3','-3,2','-3,1'], price:{legierung:60, schaltkreis:20}, tier:1},
+  {n:'Norden', cells:['-3,0','-2,-1','-1,-2','0,-3','1,-3','2,-3'], price:{platte:5, schaltkreis:30}, tier:2}
+];
+const TIERS = [
+  {to:2, t:'Tier 2 freischalten', need:{legierung:120, schaltkreis:30, rohling:3}, txt:'Bringt Generator, Batterie, Neonpumpe, Verdichter, Chipfabrik. Im Spiel: CyberDromes aus Teilen.'},
+  {to:3, t:'Tier 3 freischalten', need:{platte:10, chip:10}, txt:'Im Spiel: Fraktions-DROMEs und Aufträge für Coins (über die Story). Inhalt kommt in v3.'},
+  {to:4, t:'Tier 4 freischalten', need:{platte:25, chip:25, rohling:10}, txt:'Im Spiel: Phasen herstellen (über die Story). Inhalt kommt in v3.'}
+];
+const BEDARFE = [
+  {id:'blaster', tier:1, t:'Charger-Rohling für den Blaster', need:{rohling:2}},
+  {id:'hangar', tier:1, t:'Schaltkreise für den Hangar', need:{schaltkreis:15}},
+  {id:'harnisch', tier:2, t:'Molok-Harnisch', need:{platte:5}},
+  {id:'vireo', tier:2, t:'Skillpunkt Vireo · Level 2', need:{chip:3}},
+  {id:'squad', tier:2, t:'Squad aufrüsten', need:{platte:3, chip:3, rohling:2}}
+];
+const CELLS = [];
+for (let q=-3;q<=3;q++) for (let r=-3;r<=3;r++) if (ringOf(q,r)<=3) CELLS.push(key(q,r));
+
+const SAVE = 'cd-factory-v2';
+function mk(t,id){ return {id, t, inB:{}, outB:{}, prog:0, status:'ok', miss:'', wait:[], eff:1, need:0, got:0, on:false, charge:0, relOn:true, rr:0, inH:[], outH:[]}; }
+function fresh(){
+  const s = {v:2, b:{}, nextId:1, owned:{}, chunks:[], tier:1, lager:{}, tick:0, bedarf:'blaster', done:{}};
+  for (const t in DEF) s.owned[t] = DEF[t].start||0;
+  [['1,-1','sam'],['1,0','smz'],['-1,-1','zap'],['0,-1','pls']].forEach(([k,t])=>{ s.b[k]=mk(t,s.nextId++); });
+  return s;
+}
+let S;
+try { const raw = localStorage.getItem(SAVE); S = raw ? JSON.parse(raw) : fresh(); } catch(e){ S = fresh(); }
+if (!S || S.v!==2 || !S.b) S = fresh();
+function save(){ try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch(e){} }
+
+const unlocked = k => { const [q,r]=unkey(k); if (ringOf(q,r)<=2) return true; return S.chunks.some(i=>CHUNKS[i].cells.includes(k)); };
+const chunkOf = k => CHUNKS.findIndex(c=>c.cells.includes(k));
+const placed = t => Object.values(S.b).filter(b=>b.t===t).length;
+const fmt = n => (Math.round(n*10)/10).toString().replace('.',',');
+const priceText = p => Object.entries(p).map(([it,n])=>n+' '+ITEMS[it].n).join(' + ');
+const canPay = p => Object.entries(p).every(([it,n])=>(S.lager[it]||0)>=n);
+const pay = p => { for (const [it,n] of Object.entries(p)) S.lager[it] -= n; };
+
+// ---------- Verbindungen ----------
+let links = {}, traces = [];
+function computeLinks(){
+  links = {}; traces = [];
+  for (const k in S.b){
+    if (DEF[S.b[k].t].relay) continue;
+    const res = [], seen = new Set([k]), queue = [{k, path:[k]}];
+    while (queue.length){
+      const cur = queue.shift(); const [q,r] = unkey(cur.k);
+      for (const [dq,dr] of DIRS){
+        const nk = key(q+dq, r+dr), nb = S.b[nk];
+        if (seen.has(nk) || !nb) continue;
+        seen.add(nk);
+        const path = cur.path.concat(nk);
+        if (DEF[nb.t].relay){ if (nb.relOn) queue.push({k:nk, path}); }
+        else res.push({k:nk, path});
+      }
+    }
+    links[k] = res;
+  }
+  for (const k in links){
+    const outs = Object.keys(DEF[S.b[k].t].out || {});
+    for (const l of links[k]){
+      const it = outs.find(o => (DEF[S.b[l.k].t].in||{})[o]);
+      if (it) traces.push({path:l.path, item:it});
+    }
+  }
+}
+const hasConsumer = (k,it) => (links[k]||[]).some(l => (DEF[S.b[l.k].t].in||{})[it]);
+function neighborsOf(k){ const [q,r]=unkey(k); return DIRS.map(([dq,dr])=>key(q+dq,r+dr)); }
+function resonance(k,t){
+  const d = DEF[t]; if (!d.in || d.fuel) return 0;
+  const n = neighborsOf(k).filter(nk=>S.b[nk] && S.b[nk].t===t).length;
+  return Math.min(2,n)*0.25;
+}
+const shaded = k => neighborsOf(k).some(nk=>S.b[nk] && S.b[nk].t==='sol');
+
+// ---------- Takt ----------
+let power = {supply:0, demand:0, used:0, batt:0, battMax:0}, engpass = null, srcInfo = {};
+let lagerH = [], tickAt = 0, anim = {};
+function addLager(it,n,k,fast,gain){ S.lager[it]=(S.lager[it]||0)+n; gain[it]=(gain[it]||0)+n; if(!fast && k) floatUp(k,it,n); }
+
+function tick(fast){
+  S.tick++; if (!fast) tickAt = performance.now();
+  computeLinks();
+  const list = Object.keys(S.b).map(k=>({k, b:S.b[k], d:DEF[S.b[k].t]})).sort((a,b)=>a.b.id-b.b.id);
+  const gain = {}, recv = {};
+  list.forEach(x=>recv[x.k]={});
+
+  // 1. Abholen: reihum, jeder Verbraucher bekommt abwechselnd ein Stueck
+  const cons = list.filter(x=>x.d.in);
+  const wanted = new Set(); cons.forEach(x=>Object.keys(x.d.in).forEach(i=>wanted.add(i)));
+  for (const it of wanted){
+    const cs = cons.filter(x=>x.d.in[it]); if (!cs.length) continue;
+    const off = S.tick % cs.length; let moved = true, guard = 0;
+    const pulsed = new Set();
+    while (moved && guard++ < 60){
+      moved = false;
+      for (let j=0;j<cs.length;j++){
+        const x = cs[(j+off)%cs.length], cap = x.d.in[it]*10;
+        if ((x.b.inB[it]||0) >= cap) continue;
+        const sup = (links[x.k]||[]).filter(l => (S.b[l.k].outB[it]||0) > 0);
+        if (!sup.length) continue;
+        const l = sup[(x.b.rr++) % sup.length];
+        S.b[l.k].outB[it]--; x.b.inB[it] = (x.b.inB[it]||0)+1; recv[x.k][it] = (recv[x.k][it]||0)+1; moved = true;
+        if (!fast && !pulsed.has(l.k+x.k)){ pulsed.add(l.k+x.k); pulse(l.path.slice().reverse(), it); }
+      }
+    }
+  }
+
+  // 2. Strom: Quellen und Bedarf
+  const sources = [{k:NETZ, left:NETZ_SUPPLY, range:NETZ_RANGE, bat:false, id:0}];
+  for (const x of list){
+    const d = x.d, b = x.b;
+    if (d.battery) sources.push({k:x.k, left:Math.min(d.supply, b.charge), range:d.range, bat:true, id:b.id, x});
+    else if (d.fuel){
+      const f = b.inB[d.fuel]||0;
+      if (!b.on && f >= 5) b.on = true;
+      if (b.on && f < 1) b.on = false;
+      if (b.on) sources.push({k:x.k, left:d.supply, range:d.range, bat:false, id:b.id, x, fuel:true});
+    } else if (d.supply) sources.push({k:x.k, left:d.supply*(shaded(x.k)?0.5:1), range:d.range, bat:false, id:b.id, x});
+  }
+  sources.forEach(s=>{ s.cap = s.left; s.used = 0; });
+  let demand = 0;
+  for (const x of list){
+    const d = x.d, b = x.b; let need = 0;
+    if (d.relay) need = 1;
+    else if (d.power){
+      if (d.src) need = d.power;
+      else if (d.in){
+        if (!b.run && Object.keys(d.in).every(it => (b.inB[it]||0) >= d.in[it]*ANLAUF)) b.run = true;
+        if (b.run && Object.keys(d.in).every(it => (b.inB[it]||0) >= d.in[it])) need = d.power;
+      }
+    }
+    b.need = need; b.got = 0; demand += need;
+  }
+  const pairs = [];
+  for (const x of list){ if (!x.b.need) continue;
+    for (const s of sources){ const dist = hexDist(s.k, x.k); if (dist <= s.range) pairs.push({s, x, dist}); } }
+  pairs.sort((a,b)=> (a.s.bat-b.s.bat) || (a.dist-b.dist) || (a.s.id-b.s.id) || (a.x.b.id-b.x.b.id));
+  for (const p of pairs){
+    const want = p.x.b.need - p.x.b.got; if (want<=0 || p.s.left<=0) continue;
+    const g = Math.min(want, p.s.left); p.s.left -= g; p.s.used += g; p.x.b.got += g;
+  }
+  // Batterien laden mit dem, was uebrig ist
+  for (const s of sources.filter(s=>s.bat)) s.x.b.charge -= s.used;
+  for (const x of list.filter(x=>x.d.battery)){
+    let room = x.d.store - x.b.charge, rate = 2;
+    for (const s of sources){ if (s.bat || s.left<=0 || room<=0 || rate<=0) continue;
+      if (hexDist(s.k,x.k) > s.range) continue;
+      const c = Math.min(room, rate, s.left); s.left -= c; s.used += c; room -= c; rate -= c; x.b.charge += c; }
+  }
+  // Brennstoff nur verbrennen, wenn Strom gebraucht wurde
+  for (const s of sources) if (s.fuel && s.used > 0){ s.x.b.inB[s.x.d.fuel]--; }
+  srcInfo = {}; let supply = 0, used = 0;
+  for (const s of sources){ srcInfo[s.k] = {cap:s.cap, used:s.used}; if (!s.bat) supply += s.cap; used += s.used; }
+  for (const x of list){ x.b.eff = x.b.need>0 ? x.b.got/x.b.need : 1; if (x.d.relay) x.b.relOn = x.b.got >= 1; }
+  const bats = list.filter(x=>x.d.battery);
+  power = {supply, demand, used, batt:bats.reduce((a,x)=>a+x.b.charge,0), battMax:bats.reduce((a,x)=>a+x.d.store,0)};
+
+  // 3. Herstellen
+  for (const x of list){
+    const b = x.b, d = x.d; let made = 0; b.status='ok'; b.miss='';
+    const from = b.prog;
+    if (d.relay){ b.status = b.relOn ? 'relay' : 'strom'; }
+    else if (d.fuel){ b.status = b.on ? 'ok' : 'wait'; b.miss = b.on ? '' : d.fuel; }
+    else if (d.supply){ b.status = 'ok'; }
+    else if (!d.in){
+      const it = Object.keys(d.out)[0], eff = d.power ? b.eff : 1;
+      b.prog += d.rate*eff;
+      while (b.prog >= 1){ b.outB[it] = (b.outB[it]||0)+1; b.prog -= 1; made++; }
+      if (eff < 1) b.status = 'strom';
+    } else {
+      const missing = () => Object.keys(d.in).find(it => (b.inB[it]||0) < d.in[it]);
+      const m = missing();
+      if (!b.run){
+        b.miss = Object.keys(d.in).find(it => (b.inB[it]||0) < d.in[it]*ANLAUF) || '';
+        b.status = Object.keys(d.in).some(it => (b.inB[it]||0) > 0) ? 'anlauf' : 'wait';
+      }
+      else if (m){ b.status='wait'; b.miss=m; b.run=false; }
+      else {
+        b.prog += d.rate*b.eff*(1+resonance(x.k,b.t));
+        while (b.prog >= 1 && !missing()){
+          for (const it in d.in) b.inB[it] -= d.in[it];
+          for (const it in d.out) b.outB[it] = (b.outB[it]||0) + d.out[it];
+          b.prog -= 1; made++;
+        }
+        if (b.prog >= 1) b.prog = 0.999;
+        if (b.eff < 1) b.status = 'strom';
+      }
+    }
+    b.wait.push(b.status==='wait'||b.status==='anlauf' ? 1 : 0); if (b.wait.length>10) b.wait.shift();
+    b.inH.push(recv[x.k]); if (b.inH.length>30) b.inH.shift();
+    b.outH.push(made); if (b.outH.length>30) b.outH.shift();
+    if (!fast) anim[x.k] = {from, to: b.prog + made};
+  }
+  // 4. Uplink: was keiner braucht oder ueber den Ausgangspuffer geht
+  for (const x of list){
+    let up = false;
+    for (const it in x.b.outB){
+      const n = x.b.outB[it]; if (n<=0) continue;
+      if (!hasConsumer(x.k,it)){ addLager(it,n,x.k,fast,gain); x.b.outB[it]=0; }
+      else if (n > 10){ addLager(it,n-10,x.k,fast,gain); x.b.outB[it]=10; up = true; }
+    }
+    if (up && x.b.status==='ok') x.b.status = 'uplink';
+  }
+  lagerH.push(gain); if (lagerH.length>30) lagerH.shift();
+  // Engpass
+  engpass = null; let worst = 5;
+  for (const x of list){ if (!x.d.in || x.d.fuel) continue;
+    const w = x.b.wait.reduce((a,v)=>a+v,0); if (w > worst){ worst = w; engpass = x.k; } }
+  if (!fast){ if (S.tick % 5 === 0) save(); renderUi(); }
+}
+
+// ---------- Zeichnen ----------
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let size = 30, cx = 0, cy = 0, W = 0, H = 0, dpr = 1;
+function layout(){
+  dpr = window.devicePixelRatio || 1;
+  W = cv.parentElement.clientWidth; size = W / 11.2;
+  H = Math.round(size*SQ3*7 + size*0.6);
+  cv.style.height = H + 'px'; cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+  cx = W/2; cy = H/2;
+}
+const center = k => { const [q,r] = unkey(k); return [cx + size*1.5*q, cy + size*SQ3*(r + q/2)]; };
+function hexPath(x,y,s){ ctx.beginPath(); for (let i=0;i<6;i++){ const a=Math.PI/3*i; const px=x+s*Math.cos(a), py=y+s*Math.sin(a); i?ctx.lineTo(px,py):ctx.moveTo(px,py); } ctx.closePath(); }
+function pixelToKey(x,y){
+  x -= cx; y -= cy;
+  let q = (2/3*x)/size, r = (-1/3*x + SQ3/3*y)/size, s = -q-r;
+  let rq = Math.round(q), rr = Math.round(r), rs = Math.round(s);
+  const dq=Math.abs(rq-q), dr=Math.abs(rr-r), ds=Math.abs(rs-s);
+  if (dq>dr && dq>ds) rq=-rr-rs; else if (dr>ds) rr=-rq-rs;
+  return key(rq, rr);
+}
+let pulses = [], floats = [], speed = 1, tickMs = 1000;
+function pulse(path, it){ if (pulses.length > 80) return; pulses.push({pts:path.map(center), it, t0:performance.now(), dur:Math.min(900, tickMs*0.85)}); }
+function floatUp(k, it, n){ if (floats.length > 30) return; floats.push({k, it, n, t0:performance.now()}); }
+
+let sel = null, tool = null;
+function rangeOf(k){ if (k===NETZ) return NETZ_RANGE; const b=S.b[k]; return b && DEF[b.t].range ? DEF[b.t].range : -1; }
+function bar(x,y,w,p,col){
+  ctx.lineWidth = 3; ctx.strokeStyle='rgba(255,255,255,.12)';
+  ctx.beginPath(); ctx.moveTo(x-w/2,y); ctx.lineTo(x+w/2,y); ctx.stroke();
+  if (p>0){ ctx.strokeStyle=col; ctx.beginPath(); ctx.moveTo(x-w/2,y); ctx.lineTo(x-w/2+w*Math.min(1,p),y); ctx.stroke(); }
+}
+function draw(now){
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  const pa = 0.5 + 0.5*Math.sin(now/180);
+  const valid = tool ? (k => canPlace(k, tool)===true) : null;
+  const rr = sel ? rangeOf(sel) : -1;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for (const k of CELLS){
+    const [x,y] = center(k), open = unlocked(k), b = S.b[k], src = SOURCES[k];
+    hexPath(x,y,size*0.94);
+    if (!open){
+      ctx.fillStyle='rgba(10,6,24,.75)'; ctx.fill();
+      ctx.setLineDash([3,4]); ctx.strokeStyle = chunkOf(k)===selChunk ? 'rgba(255,225,77,.8)' : 'rgba(154,134,196,.35)'; ctx.lineWidth=1; ctx.stroke(); ctx.setLineDash([]);
+      if (src){ ctx.fillStyle=ITEMS[SRC[src].item].c; ctx.globalAlpha=.45; ctx.beginPath(); ctx.arc(x,y,size*0.17,0,7); ctx.fill(); ctx.globalAlpha=1; }
+      continue;
+    }
+    ctx.fillStyle = b ? '#160a30' : '#1b0b3a'; ctx.fill();
+    ctx.strokeStyle='rgba(46,227,235,.25)'; ctx.lineWidth=1; ctx.stroke();
+    if (rr>=0 && hexDist(sel,k)<=rr && k!==sel){ hexPath(x,y,size*0.94); ctx.fillStyle='rgba(255,225,77,.10)'; ctx.fill(); }
+    if (src && !b){
+      const c = ITEMS[SRC[src].item].c;
+      ctx.strokeStyle=c; ctx.lineWidth=2; ctx.globalAlpha=.8; ctx.beginPath(); ctx.arc(x,y,size*0.42,0,7); ctx.stroke();
+      ctx.globalAlpha=.16; ctx.fillStyle=c; ctx.fill(); ctx.globalAlpha=1;
+      ctx.fillStyle=c; ctx.font=`400 ${size*0.38}px Bungee, Impact, sans-serif`; ctx.fillText(src, x, y+1);
+    }
+    if (valid && valid(k)){ hexPath(x,y,size*0.8); ctx.strokeStyle=`rgba(255,225,77,${0.35+0.4*pa})`; ctx.setLineDash([4,3]); ctx.lineWidth=1.5; ctx.stroke(); ctx.setLineDash([]); }
+  }
+  // Netzanschluss
+  { const [x,y] = center(NETZ); hexPath(x,y,size*0.8); ctx.fillStyle='#241046'; ctx.fill();
+    ctx.shadowColor='#ffe14d'; ctx.shadowBlur=8+6*pa; ctx.strokeStyle='#ffe14d'; ctx.lineWidth=2; ctx.stroke(); ctx.shadowBlur=0;
+    if (sel===NETZ){ hexPath(x,y,size*0.96); ctx.strokeStyle='#fff7fe'; ctx.lineWidth=2.5; ctx.stroke(); }
+    ctx.fillStyle='#ffe14d'; ctx.font=`400 ${size*0.27}px Bungee, Impact, sans-serif`; ctx.fillText('NETZ', x, y-size*0.08);
+    const si = srcInfo[NETZ]; ctx.font=`700 ${size*0.22}px 'Chakra Petch', sans-serif`; ctx.fillText((si?fmt(si.used):0)+'/'+NETZ_SUPPLY, x, y+size*0.28); }
+  // Leiterbahnen
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  for (const tr of traces){ ctx.strokeStyle=ITEMS[tr.item].c; ctx.globalAlpha=.28; ctx.lineWidth=3;
+    ctx.beginPath(); tr.path.forEach((k,i)=>{ const [x,y]=center(k); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke(); }
+  ctx.globalAlpha=1;
+  // Gebaeude
+  for (const k in S.b){
+    const [x,y] = center(k), b = S.b[k], d = DEF[b.t];
+    hexPath(x,y,size*0.78); ctx.fillStyle='#0f0724'; ctx.fill();
+    const glow = (d.fuel && b.on) || (d.supply && !d.fuel && !d.battery) || (d.battery && b.charge>0);
+    if (glow){ ctx.shadowColor=d.col; ctx.shadowBlur=6+6*pa; }
+    if (d.relay && !b.relOn) ctx.setLineDash([3,3]);
+    ctx.strokeStyle=d.col; ctx.lineWidth=2; ctx.stroke(); ctx.shadowBlur=0; ctx.setLineDash([]);
+    if (engpass===k){ hexPath(x,y,size*0.9); ctx.strokeStyle=`rgba(255,43,214,${0.4+0.6*pa})`; ctx.lineWidth=3; ctx.stroke(); }
+    if (sel===k){ hexPath(x,y,size*0.96); ctx.strokeStyle='#ffe14d'; ctx.lineWidth=2.5; ctx.stroke(); }
+    ctx.fillStyle=d.col; ctx.font=`400 ${size*0.32}px Bungee, Impact, sans-serif`; ctx.fillText(d.code, x, y-size*0.06);
+    const bw = size*0.72, by = y+size*0.32;
+    if (d.battery) bar(x,by,bw,b.charge/d.store,C.gr);
+    else if (d.fuel) bar(x,by,bw,(b.inB[d.fuel]||0)/10, b.on?C.gr:'#ff2bd6');
+    else if (d.supply){ ctx.font=`700 ${size*0.22}px 'Chakra Petch', sans-serif`; ctx.fillStyle = shaded(k)?'#ff6a3d':'#ffe14d'; ctx.fillText(shaded(k)?'0,5 Strom':'1 Strom', x, by); }
+    else if (!d.relay){
+      const a = anim[k], tt = speed ? Math.min(1, Math.max(0,(now-tickAt)/tickMs)) : 1;
+      const v = a ? a.from + (a.to-a.from)*tt : b.prog;
+      let p = v - Math.floor(v); if (v>0 && p<1e-6) p = 1;
+      if (b.status==='anlauf') p = Math.min(...Object.keys(d.in).map(it => (b.inB[it]||0)/(d.in[it]*ANLAUF)));
+      bar(x,by,bw,p, b.status==='anlauf' ? '#9d84ff' : b.status==='wait' ? '#ff2bd6' : b.status==='strom' ? '#ff6a3d' : d.col);
+    }
+    if (!d.supply || d.fuel){
+      const sc = b.status==='anlauf' ? '#9d84ff' : b.status==='wait' ? '#ff2bd6' : b.status==='strom' ? '#ff6a3d' : b.status==='uplink' ? '#ffe14d' : '#2ee3eb';
+      ctx.fillStyle=sc; ctx.beginPath(); ctx.arc(x+size*0.42, y-size*0.42, size*0.09, 0, 7); ctx.fill();
+    }
+    const res = resonance(k,b.t);
+    if (res>0){ ctx.fillStyle='#6dffa8'; ctx.font=`700 ${size*0.22}px 'Chakra Petch', sans-serif`; ctx.fillText('+'+Math.round(res*100)+'%', x, y-size*0.47); }
+    if (b.need>0 && b.eff<1){ ctx.fillStyle='#ff6a3d'; ctx.font=`700 ${size*0.22}px 'Chakra Petch', sans-serif`; ctx.fillText(Math.round(b.eff*100)+'%', x-size*0.34, y-size*0.47); }
+  }
+  pulses = pulses.filter(p => now - p.t0 < p.dur);
+  for (const p of pulses){
+    const t = Math.max(0, Math.min(1,(now-p.t0)/p.dur)), segs=p.pts.length-1, f=t*segs, i=Math.min(segs-1,Math.floor(f)), u=f-i;
+    const x = p.pts[i][0]+(p.pts[i+1][0]-p.pts[i][0])*u, y = p.pts[i][1]+(p.pts[i+1][1]-p.pts[i][1])*u;
+    ctx.fillStyle=ITEMS[p.it].c; ctx.shadowColor=ITEMS[p.it].c; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(x,y,size*0.11,0,7); ctx.fill(); ctx.shadowBlur=0;
+  }
+  floats = floats.filter(f => now - f.t0 < 1100);
+  for (const f of floats){ if (!S.b[f.k]) continue;
+    const t = Math.max(0,(now-f.t0)/1100), [x,y] = center(f.k);
+    ctx.globalAlpha=1-t; ctx.fillStyle=ITEMS[f.it].c; ctx.font=`700 ${size*0.3}px 'Chakra Petch', sans-serif`;
+    ctx.fillText('+'+f.n, x+size*0.3, y-size*0.5-t*size*0.6); }
+  ctx.globalAlpha=1;
+}
+
+// ---------- Bauen ----------
+function canPlace(k,t){
+  if (!CELLS.includes(k)) return 'Außerhalb der Platine.';
+  if (k===NETZ) return 'Hier sitzt der Netzanschluss.';
+  if (!unlocked(k)) return 'Dieses Feld ist noch gesperrt.';
+  if (S.b[k]) return 'Hier steht schon etwas.';
+  const d = DEF[t], src = SOURCES[k];
+  if (placed(t) >= (S.owned[t]||0)) return 'Alle ' + d.n + ' stehen schon. Kauf ein weiteres oder setz eins um.';
+  if (d.src && src !== d.src) return d.n + ' geht nur auf ' + (d.src==='S'?'eine Schrottquelle (S)':d.src==='N'?'eine Neonader (N)':'einen Datenknoten (D)') + '.';
+  if (!d.src && src) return 'Quellen sind für Förderer reserviert.';
+  return true;
+}
+function place(k,t){
+  const ok = canPlace(k,t); if (ok !== true){ toast(ok); return; }
+  S.b[k] = mk(t, S.nextId++); computeLinks(); sel = k;
+  if (placed(t) >= S.owned[t]) tool = null;
+  save(); buildTools(); renderUi();
+}
+function removeAt(k){
+  const b = S.b[k]; if (!b) return;
+  for (const src of [b.inB, b.outB]) for (const it in src) if (src[it]>0) S.lager[it]=(S.lager[it]||0)+src[it];
+  delete S.b[k]; delete anim[k]; if (sel===k) sel = null; computeLinks(); save(); buildTools(); renderUi();
+  toast(DEF[b.t].n + ' zurück im Inventar. Pufferinhalt ging ins Lager.');
+}
+let selChunk = -1;
+cv.addEventListener('click', e => {
+  const rc = cv.getBoundingClientRect(), k = pixelToKey(e.clientX-rc.left, e.clientY-rc.top);
+  selChunk = -1;
+  if (!CELLS.includes(k)){ sel=null; renderUi(); return; }
+  if (!unlocked(k)){ sel=null; tool=null; selChunk = chunkOf(k); buildTools(); renderUi(); return; }
+  if (tool && !S.b[k] && k!==NETZ){ place(k, tool); return; }
+  sel = k; renderUi();
+});
+
+// ---------- Oberflaeche ----------
+const $ = id => document.getElementById(id);
+let toastT = 0;
+function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2400); }
+function recipe(d){
+  const f = o => Object.entries(o).map(([it,n])=>n+' '+ITEMS[it].n).join(' + ');
+  const every = d.rate>=1 ? (d.rate>1 ? d.rate+'× je Takt' : 'jeden Takt') : 'alle ' + fmt(1/d.rate) + ' Takte';
+  if (d.relay) return 'Leitet Waren weiter';
+  if (d.battery) return 'Speichert bis ' + d.store + ' Strom';
+  if (d.fuel) return '1 ' + ITEMS[d.fuel].n + ' → ' + d.supply + ' Strom je Takt, Reichweite ' + d.range;
+  if (d.supply) return d.supply + ' Strom, Reichweite ' + d.range;
+  if (!d.in) return '→ ' + f(d.out) + ', ' + every;
+  return f(d.in) + ' → ' + f(d.out) + ', ' + every;
+}
+function buildTools(){
+  const el = $('tools'); el.innerHTML = '';
+  for (const tier of [1,2]){
+    const lab = document.createElement('span'); lab.className='small';
+    lab.textContent = 'Tier ' + tier + (S.tier<tier ? ' · gesperrt' : ''); el.appendChild(lab);
+    const g = document.createElement('div'); g.className='tools';
+    for (const t of TIER_ORDER[tier]){
+      const d = DEF[t], bt = document.createElement('button'), own = S.owned[t]||0, pl = placed(t), locked = S.tier < d.tier;
+      bt.className = 'tool' + (tool===t?' on':'') + (locked?' locked':'') + (!locked && pl>=own?' empty':'');
+      bt.id = 'tool-'+t;
+      const pw = d.power ? d.power+' Strom' : d.supply ? '+'+d.supply+' Strom' : '0 Strom';
+      bt.innerHTML = `<b style="color:${d.col}">${d.code}</b><span>${d.n}</span><small>${locked?'Tier '+d.tier:pl+'/'+own+' gebaut'} · ${pw}</small>`;
+      bt.onclick = () => {
+        selChunk = -1;
+        if (locked){ tool=null; sel=null; infoTool=t; buildTools(); renderUi(); return; }
+        infoTool = t;
+        tool = (tool===t || pl>=own) ? null : t; if (tool) sel=null;
+        buildTools(); renderUi();
+      };
+      g.appendChild(bt);
+    }
+    el.appendChild(g);
+  }
+}
+let infoTool = null;
+function statusText(b){
+  if (b.status==='anlauf'){ const d = DEF[b.t]; return `<span class="st" style="color:#9d84ff">Läuft an: sammelt Vorrat für ${ANLAUF} Durchläufe (${Object.keys(d.in).map(it=>ITEMS[it].n+' '+(b.inB[it]||0)+'/'+d.in[it]*ANLAUF).join(' · ')})</span>`; }
+  if (b.status==='wait') return `<span class="st" style="color:#ff2bd6">Wartet auf ${ITEMS[b.miss].n}</span>`;
+  if (b.status==='strom') return `<span class="st" style="color:#ff6a3d">Zu wenig Strom: ${fmt(b.got)} von ${b.need} → ${Math.round(b.eff*100)} % Tempo</span>`;
+  if (b.status==='uplink') return `<span class="st" style="color:#ffe14d">Ausgang voll: Überschuss geht per Uplink ins Lager</span>`;
+  if (b.status==='relay') return `<span class="st" style="color:#9d84ff">Leitet weiter</span>`;
+  return `<span class="st" style="color:#2ee3eb">Läuft</span>`;
+}
+const avg = (arr, f) => arr.length ? arr.reduce((a,v)=>a+f(v),0)/arr.length : 0;
+function buildingInfo(k){
+  const b = S.b[k], d = DEF[b.t], res = resonance(k,b.t), rows = [];
+  if (d.in){
+    for (const [it,n] of Object.entries(d.in)){
+      const needRate = d.fuel ? 1 : n*d.rate*(1+res);
+      rows.push(`<tr><td>${ITEMS[it].n}</td><td>braucht ${fmt(needRate)}/Takt · kommt ${fmt(avg(b.inH,h=>h[it]||0))}/Takt · Puffer ${b.inB[it]||0}/${n*10}</td></tr>`);
+    }
+  }
+  if (d.out){
+    const per = avg(b.outH, v=>v);
+    rows.push(`<tr><td>Ausstoß</td><td>${fmt(per)} Durchläufe/Takt (max ${fmt(d.rate*(1+res))}) · ≈ ${Math.round(per*TAKTE_EINSATZ)} je Einsatz</td></tr>`);
+    rows.push(`<tr><td>Ausgang</td><td>${Object.keys(d.out).map(it=>ITEMS[it].n+' '+(b.outB[it]||0)+'/10').join(' · ')}</td></tr>`);
+  }
+  if (d.power) rows.push(`<tr><td>Strom</td><td>${b.need ? 'bekommt '+fmt(b.got)+' von '+b.need : 'braucht '+d.power+' (gerade nichts zu tun)'}</td></tr>`);
+  if (d.supply){ const si = srcInfo[k]; rows.push(`<tr><td>Abgabe</td><td>${si ? fmt(si.used)+' von '+fmt(si.cap) : '0'} Strom · Reichweite ${d.range} (gelb markiert)</td></tr>`); }
+  if (d.battery) rows.push(`<tr><td>Ladung</td><td>${fmt(b.charge)} / ${d.store}</td></tr>`);
+  if (d.fuel) rows.push(`<tr><td>Brenner</td><td>${b.on ? 'gezündet' : 'aus, zündet bei 5 '+ITEMS[d.fuel].n}</td></tr>`);
+  return `<h3><span class="code" style="color:${d.col}">${d.code}</span>${d.n}<span class="tag">Tier ${d.tier}</span></h3>
+    <p>${recipe(d)}</p><p>${statusText(b)}${res?` · <span style="color:#6dffa8">Resonanz +${Math.round(res*100)} %</span>`:''}${d.supply&&!d.fuel&&shaded(k)?' · <span class="warn">Schatten: nur 0,5 Strom</span>':''}</p>
+    <table>${rows.join('')}</table>
+    <div class="act"><button id="rm">Abreißen (zurück ins Inventar)</button></div>`;
+}
+function renderInfo(){
+  const el = $('info');
+  if (selChunk >= 0){
+    const c = CHUNKS[selChunk], srcs = c.cells.filter(k=>SOURCES[k]).map(k=>SRC[SOURCES[k]].n);
+    const lockedT = S.tier < c.tier;
+    el.innerHTML = `<h3>Felder ${c.n}</h3><p>6 neue Felder${srcs.length?' mit '+srcs.join(', '):''}.</p>
+      <p>Kostet ${priceText(c.price)}${lockedT?' · ab Tier '+c.tier:''}.</p>
+      <div class="act"><button id="buyc" class="main" ${lockedT||!canPay(c.price)?'disabled':''}>Felder kaufen</button></div>`;
+    $('buyc').onclick = () => { if (!canPay(c.price)) return; pay(c.price); S.chunks.push(selChunk); toast('Felder '+c.n+' gekauft.'); selChunk=-1; save(); renderUi(); };
+    return;
+  }
+  if (sel && S.b[sel]){ el.innerHTML = buildingInfo(sel); $('rm').onclick = () => removeAt(sel); return; }
+  if (sel===NETZ){ const si=srcInfo[NETZ];
+    el.innerHTML = `<h3><span class="code" style="color:#ffe14d">NETZ</span>Netzanschluss</h3><p>Hier kommt der Strom der Platine an: ${NETZ_SUPPLY} Strom, Reichweite ${NETZ_RANGE} (gelb markiert). Gebäude nah am Anschluss werden zuerst versorgt.</p><p>Gerade abgegeben: ${si?fmt(si.used):0} von ${NETZ_SUPPLY}.</p>`; return; }
+  const t = tool || infoTool;
+  if (t){
+    const d = DEF[t], own = S.owned[t]||0, pl = placed(t), locked = S.tier < d.tier;
+    el.innerHTML = `<h3><span class="code" style="color:${d.col}">${d.code}</span>${d.n}<span class="tag">Tier ${d.tier}</span></h3>
+      <p>${recipe(d)}${d.power?' · braucht '+d.power+' Strom':''}</p><p class="small">${DESC[t]||'Holt seine Zutaten bei den Nachbarn ab.'}</p>
+      <p>Besitz: ${own} · gebaut: ${pl}${tool?' · <span style="color:#ffe14d">tippe ein gelb markiertes Feld</span>':''}</p>
+      <div class="act"><button id="buyt" ${locked||!canPay(d.price)?'disabled':''}>Weiteres kaufen: ${priceText(d.price)}</button></div>`;
+    $('buyt').onclick = () => { if (!canPay(d.price)) return; pay(d.price); S.owned[t]=(S.owned[t]||0)+1; tool=t; sel=null; toast(d.n+' gekauft.'); save(); buildTools(); renderUi(); };
+    return;
+  }
+  if (sel && SOURCES[sel]){ const s = SRC[SOURCES[sel]]; el.innerHTML = `<h3>${s.n}</h3><p>Hier kann ein Förderer ${ITEMS[s.item].n} holen.</p>`; return; }
+  el.innerHTML = `<h3>Platine</h3><p>Wähle unten ein Gebäude und tippe auf ein gelb markiertes Feld. Tippe Gebäude an, um Durchsatz, Puffer und Strom zu sehen. Gesperrte Felder lassen sich kaufen.</p>
+    <p class="small">Punkt oben rechts: cyan läuft, violett läuft an (sammelt Vorrat), magenta wartet, orange zu wenig Strom, gelb Überschuss geht ins Lager. Rot blinkend = Engpass.</p>`;
+}
+function needsHtml(need){
+  let ok = true;
+  const html = Object.entries(need).map(([it,n])=>{ const have=S.lager[it]||0; if(have<n) ok=false;
+    return `<div class="need"><span class="dot" style="background:${ITEMS[it].c}"></span><div class="bar"><i style="width:${Math.min(100,have/n*100)}%;background:${ITEMS[it].c}"></i></div><span>${Math.floor(Math.min(have,n))} / ${n} ${ITEMS[it].n}</span></div>`; }).join('');
+  return {html, ok};
+}
+function renderUi(){
+  const g = TIERS.find(x=>x.to===S.tier+1);
+  $('tiernow').textContent = 'aktuell Tier ' + S.tier;
+  if (g){ const n = needsHtml(g.need); $('gtitle').textContent=g.t; $('gneeds').innerHTML=n.html; $('gtext').textContent=g.txt; $('gbtn').disabled=!n.ok; $('gbtn').hidden=false; }
+  else { $('gtitle').textContent='Alle Tiers frei'; $('gneeds').innerHTML=''; $('gtext').textContent='Ende des Prototyps v2.'; $('gbtn').hidden=true; }
+  const avail = BEDARFE.filter(b=>b.tier<=S.tier);
+  if (!avail.find(b=>b.id===S.bedarf)) S.bedarf = avail[0].id;
+  $('bchips').innerHTML = avail.map(b=>`<button class="${b.id===S.bedarf?'on':''}" data-b="${b.id}">${b.t}</button>`).join('');
+  $('bchips').querySelectorAll('button').forEach(bt=>bt.onclick=()=>{ S.bedarf=bt.dataset.b; save(); renderUi(); });
+  const bd = BEDARFE.find(b=>b.id===S.bedarf), bn = needsHtml(bd.need);
+  $('bneeds').innerHTML = bn.html; $('bbtn').disabled = !bn.ok;
+  $('bdone').textContent = 'Erledigt: ' + (S.done[bd.id]||0) + '×';
+  // Strom
+  $('psup').textContent = fmt(power.supply); $('pdem').textContent = fmt(power.demand);
+  $('pbat').textContent = power.battMax ? fmt(power.batt)+'/'+power.battMax : '–';
+  const short = Object.values(S.b).filter(b=>b.need>0 && b.eff<1).length;
+  $('pwarn').innerHTML = short ? `<span class="warn">${short} Gebäude mit zu wenig Strom</span>` : 'alles versorgt';
+  $('tickinfo').textContent = `TAKT ${S.tick}`;
+  // Lager
+  const want = bd.need, per = {};
+  for (const g2 of lagerH) for (const it in g2) per[it]=(per[it]||0)+g2[it];
+  $('store').innerHTML = Object.keys(ITEMS).map(it=>{
+    const n = Math.floor(S.lager[it]||0), proj = lagerH.length ? Math.round(per[it]/lagerH.length*TAKTE_EINSATZ) : 0;
+    return `<div class="item${n?'':' zero'}${want[it]?' want':''}"><span class="dot" style="background:${ITEMS[it].c}"></span><span>${ITEMS[it].n}</span><b>${n}</b>${proj?`<em>+${proj} je Einsatz</em>`:''}</div>`;
+  }).join('');
+  renderInfo();
+}
+$('gbtn').onclick = () => { const g = TIERS.find(x=>x.to===S.tier+1); if (!g || !canPay(g.need)) return; pay(g.need); S.tier = g.to; toast('Tier '+S.tier+' freigeschaltet!'); save(); buildTools(); renderUi(); };
+$('bbtn').onclick = () => { const bd = BEDARFE.find(b=>b.id===S.bedarf); if (!canPay(bd.need)) return; pay(bd.need); S.done[bd.id]=(S.done[bd.id]||0)+1; toast('Bedarf erfüllt: '+bd.t); save(); renderUi(); };
+$('mission').onclick = () => {
+  const before = Object.assign({}, S.lager);
+  for (let i=0;i<TAKTE_EINSATZ;i++) tick(true);
+  pulses = []; floats = []; anim = {}; save();
+  const rows = Object.keys(ITEMS).map(it=>[it, Math.floor((S.lager[it]||0)-(before[it]||0))]).filter(([,n])=>n>0);
+  const el = $('result'); el.hidden = false;
+  el.innerHTML = `<div class="row"><span class="label">Ertrag des Einsatzes</span><button id="rclose">Schließen</button></div>
+    ${rows.length ? '<ul>'+rows.map(([it,n])=>`<li><span style="color:${ITEMS[it].c}">${ITEMS[it].n}</span>: +${n}</li>`).join('')+'</ul>' : '<p class="small">Nichts im Lager angekommen. Läuft die Platine?</p>'}
+    <p class="small">800 Takte am Stück. Zum Vergleich: live wären das im Spiel ca. 80 Minuten.</p>`;
+  $('rclose').onclick = () => { el.hidden = true; };
+  renderUi();
+};
+function setSpeed(v){ speed=v; tickMs = v ? 1000/v : 1000; ['sp0','sp1','sp3','sp10'].forEach(id=>$(id).classList.toggle('on', id==='sp'+v)); }
+$('sp0').onclick=()=>setSpeed(0); $('sp1').onclick=()=>setSpeed(1); $('sp3').onclick=()=>setSpeed(3); $('sp10').onclick=()=>setSpeed(10);
+let resetArm = 0;
+$('reset').onclick = () => {
+  if (Date.now()-resetArm > 3000){ resetArm=Date.now(); $('reset').textContent='Nochmal tippen zum Löschen'; setTimeout(()=>$('reset').textContent='Neu anfangen',3000); return; }
+  S = fresh(); sel=null; tool=null; infoTool=null; lagerH=[]; anim={}; computeLinks(); save(); buildTools(); renderUi(); $('reset').textContent='Neu anfangen'; toast('Neue Platine.');
+};
+
+let last = performance.now(), acc = 0;
+function loop(now){
+  const dt = Math.min(250, now-last); last = now;
+  if (speed){ acc += dt*speed; let n = 0; while (acc >= 1000 && n++ < 12){ acc -= 1000; tick(false); } if (acc > 3000) acc = 0; }
+  draw(now); requestAnimationFrame(loop);
+}
+window.cdFactory = {get S(){return S}, set S(v){S=v}, place, removeAt, tick:()=>tick(true), get power(){return power}, fresh, computeLinks};
+window.addEventListener('resize', layout);
+layout(); computeLinks(); buildTools(); renderUi();
+requestAnimationFrame(loop);
+})();
+</script>
