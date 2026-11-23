@@ -984,6 +984,43 @@ def build_hangar(ws):
             "Credits bleiben die Währung des Shops im Einsatz.").font = BODY_FONT
 
 
+def build_fabrik(ws):
+    fab = load("data/factory.json")
+    waren = fab["waren"]
+    wn = lambda w: waren.get(w, {}).get("name", w)
+    amt = lambda d: " + ".join(f"{n} {wn(w)}" for w, n in d.items())
+    rows = []
+    for gid, g in fab["gebaeude"].items():
+        rows.append([g["name"], g["kurz"], g["tier"], g.get("gruppe", ""),
+                     fab["quellen_arten"].get(g.get("quelle", ""), {}).get("name", ""),
+                     amt(g.get("ein", {})), amt(g.get("aus", {})), g.get("rate"), g.get("strom", 0),
+                     g.get("liefert"), g.get("reichweite"), amt(g.get("preis", {})), g.get("start", 0),
+                     g.get("text", "")])
+    last = write_table(ws, ["Gebäude", "Kürzel", "Tier", "Gruppe", "Quelle", "Eingang", "Ausgang",
+                            "Durchläufe je Takt", "Strom (Bedarf)", "Strom (liefert)", "Reichweite", "Preis",
+                            "Startbestand", "Hinweis"], rows,
+                       [16, 8, 6, 13, 14, 22, 24, 10, 9, 9, 9, 30, 9, 50])
+    r = last + 3
+    ws.cell(row=r, column=1, value="Takte und Regeln").font = SUB_FONT
+    rows = [[k, v] for k, v in fab["takte"].items()]
+    rows.append(["netz_strom", fab["netz"]["strom"]])
+    rows.append(["netz_reichweite", fab["netz"]["reichweite"]])
+    last = write_table(ws, ["Wert", "Zahl"], rows, start_row=r + 1)
+    r = last + 3
+    ws.cell(row=r, column=1, value="Feldgruppen").font = SUB_FONT
+    rows = [[c["name"], len(c["felder"]), amt(c["preis"]), c["tier"]] for c in fab["feldgruppen"]]
+    last = write_table(ws, ["Feldgruppe", "Felder", "Preis", "ab Tier"], rows, start_row=r + 1)
+    r = last + 3
+    ws.cell(row=r, column=1, value="Tiers").font = SUB_FONT
+    rows = [[t["tier"], "Fabrik-Ziel" if t["weg"] == "fabrik" else "Story", amt(t["kosten"]), t["text"]]
+            for t in fab["tiers"]]
+    last = write_table(ws, ["Tier", "Freischalten über", "Kosten", "Bringt"], rows, start_row=r + 1)
+    r = last + 3
+    ws.cell(row=r, column=1, value="Aus dem Lager herstellen").font = SUB_FONT
+    rows = [[wn(w), amt(h["kosten"]), h.get("text", "")] for w, h in fab["herstellen"].items()]
+    write_table(ws, ["Ergebnis", "Kosten", "Hinweis"], rows, start_row=r + 1)
+
+
 def build_sentinels(ws):
     weapons = [w["name"] for w in WEAPONS]
     headers = ["Sentinel", "Fraktion", "Archetyp", "Waffe", "Gewichtsklasse", "Speed", "Lauftempo (Felder/s)",
@@ -1284,6 +1321,7 @@ FILES = [
         ("Lauf", "Heute gebaut: der Lauf Runde fuer Runde, Stufen und Beute -- abgeloest durch Einsatz", build_lauf),
         ("Lootcaches", "TEILS GEBAUT: Caches droppen und landen im Hangar; Inhalt und Oeffnen folgen", build_lootcaches),
         ("Hangar-Shop", "NEU (nicht gebaut): Upgrades und Caches fuer Platzhaltercoin", build_hangar),
+        ("Fabrik", "GEBAUT (23. Nov. 2026): Platine, Gebaeude, Strom, Tiers -- aus data/factory.json", build_fabrik),
         ("Design", "GEBAUT (14. Nov.): Arcade-Glitch-Stil auf allen Bildschirmen -- Farben, Schriften, Formen", build_design),
     ]},
 ]

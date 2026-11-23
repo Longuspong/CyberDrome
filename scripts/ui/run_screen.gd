@@ -1935,6 +1935,12 @@ func _show_end(run: RunState) -> void:
 		.map(func(item): return str(item["title"]))
 	if not parts.is_empty():
 		keep.add_child(_label("Teile in den Hangar: %s" % ", ".join(parts), 13, COLOR_GOOD))
+	# Fabrik (23. Nov. 2026): was die Platine waehrend des Einsatzes ins Lager schickte.
+	if not run.factory_gain.is_empty():
+		var made: Array = []
+		for ware in run.factory_gain:
+			made.append("+%d %s" % [int(run.factory_gain[ware]), FactorySim.ware_name(str(ware))])
+		keep.add_child(_label("Fabrik ins Lager: %s" % ", ".join(made), 13, Arcade.CYAN))
 	# Die EP des Laufs, jetzt zuhause gutgeschrieben (Leveling).
 	var drome_rows: Array = run.final_growth.filter(func(row): return row["kind"] == "drome")
 	if not drome_rows.is_empty():

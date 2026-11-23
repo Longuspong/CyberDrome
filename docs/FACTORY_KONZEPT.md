@@ -1,7 +1,8 @@
 # Factory-Builder -- Konzept (22./23. Nov. 2026)
 
 Stand: **Richtung entschieden (Spieler 22./23. Nov. 2026), Prototyp v2 gebaut,
-noch nichts im Spiel.** Prototyp als Artefakt:
+Logik seit 23. Nov. 2026 im Spiel** (`FactorySim`, `data/factory.json`, Reiter Linien --
+Abschnitt 11); die Optik folgt in der Design-Sitzung (Abschnitt 12). Prototyp als Artefakt:
 https://claude.ai/artifact/BU9arMAXSSSC18zgFEnQsd (Kopie:
 `docs/design/factory_prototyp/factory_v2.html`). Plan: Prototyp v2 testen,
 evtl. v3, dann ins Spiel (Godot/PWA).
@@ -143,6 +144,19 @@ Später: Tier 3/4 mit Inhalt, große Gebäude, Lager-Obergrenze, Rezept-Zahlen n
 * Fabrik-Stand muss in den echten Spielstand (`GameState`).
 
 ## 11. Übergabe Logik (nächste Sitzung: ins Spiel bauen)
+
+**GEBAUT (23. Nov. 2026)** -- Details in `docs/PROJEKTSTAND.md` („Fabrik-Logik“). Abweichungen
+und Ergänzungen zum Vorschlag unten:
+* Lager = `Roster.materials` mit Schlüssel `"res:<ware>"`; der Charger-Rohling bleibt `"rohling"`
+  und entsteht im Reiter Charger aus dem Lager (Vorschlag 2 Legierung + 1 Plasma) -- das
+  Tier-2-Ziel braucht weiter 3 Rohlinge.
+* Tier 3/4 stehen als Story-Ziel in den Daten, ohne Weg zum Freischalten (kommt mit der Story).
+* Bedarfe aus dem Prototyp sind nicht übernommen (der Bedarf kommt aus den anderen Reitern).
+* Playtest 1 umgesetzt: „Eingang X voll -- wartet auf Y“ im Gebäude-Info, Leiterbahn gedimmt,
+  wenn im letzten Takt nichts ankam. Playtest 2: Uplink-Menge je Takt im Gebäude-Info; Pulse
+  nach Menge zeichnen bleibt für die Design-Sitzung.
+* Abschnitt 10 (Verzögerung Strom/Bau-Reihenfolge) bewusst wie im Prototyp gelassen.
+* Neue Anzeigetexte noch ohne `tr()` -- mit der Design-Sitzung nachziehen.
 
 **Ort:** Fabrik-Tab (`resources_screen.gd`), Reiter **Linien** (heute Platzhalter) =
 die Platine. Charger und DROMEs bleiben eigene Reiter und verbrauchen Lager-Ressourcen.

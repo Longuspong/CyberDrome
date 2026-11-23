@@ -55,6 +55,7 @@ func _refresh() -> void:
 		_shop_section()
 		return
 	_content.add_child(_wallet())
+	_resources_section()
 	_free_weapons_section()
 	_chargers_section()
 	_phase_section()
@@ -78,6 +79,25 @@ func _wallet() -> Control:
 		total += int(roster.caches[key])
 	flow.add_child(_chip("%d Caches" % total, UiKit.MAGENTA, "cache"))
 	return flow
+
+
+## Fabrik-Lager (23. Nov. 2026): die Ressourcen aus der Fabrik, nur was da ist.
+func _resources_section() -> void:
+	var sim := GameState.roster.factory_sim()
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 8)
+	flow.add_theme_constant_override("v_separation", 8)
+	for ware in FactorySim.wares():
+		if bool((FactorySim.wares()[ware] as Dictionary).get("nur_lager", false)):
+			continue
+		var n := sim.have(str(ware))
+		if n > 0:
+			flow.add_child(_chip("%d %s" % [n, FactorySim.ware_name(str(ware))], FactorySim.ware_color(str(ware))))
+	if flow.get_child_count() == 0:
+		flow.queue_free()
+		return
+	_content.add_child(Arcade.label("RESSOURCEN", 15, Arcade.CYAN, "bold", 0.2))
+	_content.add_child(flow)
 
 
 func _chip(text: String, color: Color, icon: String = "") -> Control:

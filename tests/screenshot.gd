@@ -72,6 +72,11 @@ func _setup() -> void:
 					for i in state.roster.entries.size():
 						state.roster.entries[i].in_squad = i in picks
 					state.refresh_squad()
+				# factory=200 laesst die Fabrik so viele Takte laufen und oeffnet den
+				# Fabrik-Tab im Reiter Linien (die Platine).
+				"factory":
+					state.roster.run_factory(int(pair[1]))
+					load("res://scripts/ui/resources_screen.gd").open_tab("linien")
 				# material=phase:fire:3,rohling:2 legt Material ins Lager.
 				"material":
 					for item in pair[1].split(","):

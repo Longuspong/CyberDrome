@@ -61,6 +61,17 @@ func _rebuild() -> void:
 	head.add_child(title)
 	head.add_child(_chip("ROHLINGE %d" % roster.blanks(), "charger", Arcade.YELLOW))
 	add_child(head)
+	# Fabrik (23. Nov. 2026): Rohlinge entstehen aus Lager-Ressourcen.
+	var cost := FactorySim.craft_cost("rohling")
+	if not cost.is_empty():
+		var press := UiKit.outline_button("Rohling herstellen: " + FactorySim.amounts_text(cost))
+		var sim := roster.factory_sim()
+		press.disabled = not sim.can_pay(cost)
+		press.pressed.connect(func():
+			if sim.craft("rohling") == "":
+				GameState.save_roster()
+				_rebuild())
+		add_child(press)
 
 	var holder := CenterContainer.new()
 	add_child(holder)

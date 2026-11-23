@@ -4,8 +4,8 @@ extends Control
 ## Bildschirme", Vorschlag "ein Verb je Tab", vom Spieler abgesegnet). Drei
 ## Reiter in einer festen Zeile unter der Kopfzeile, der Inhalt scrollt:
 ##
-##   linien   das kommende Ressourcen-System (Linien produzieren ueber Zeit) --
-##            Platzhalter, Form noch offen
+##   linien   die Fabrik-Platine (FactoryView, seit 23. Nov. 2026): Gebaeude
+##            stellen Ressourcen her, die ins Lager (= Inventar) gehen
 ##   charger  Charger bauen (Rohling + Energy Phases, ChargerCrafter); fertige
 ##            Charger liegen im Inventar und werden auf der DROME-Seite
 ##            unter Waffe eingesetzt
@@ -59,20 +59,9 @@ func _refresh() -> void:
 			_content.add_child(crafter)
 
 
-## Ressourcen-Linien: noch nicht entschieden, bis dahin sagt die Seite, was kommt.
+## Die Fabrik-Platine (docs/FACTORY_KONZEPT.md).
 func _lines() -> void:
-	_content.add_child(UiKit.label(tr("Hier entstehen bald Ressourcen für Level und Skilltrees von "
-		+ "DROMEs und Waffen: Linien produzieren über Zeit, du sammelst ein."), UiKit.BODY, UiKit.TEXT))
-	for line in [[tr("LINIE 1"), tr("Ressource und Dauer noch offen")],
-			[tr("LINIE 2"), tr("Ressource und Dauer noch offen")],
-			[tr("LINIE 3"), tr("freischalten -- Kosten noch offen")]]:
-		var card := Arcade.Card.new(Arcade.EMPTY_LINE, Color.TRANSPARENT, true)
-		var box := VBoxContainer.new()
-		box.add_theme_constant_override("separation", 2)
-		card.add_child(box)
-		box.add_child(Arcade.label(str(line[0]), 15, Arcade.MUTED, "display"))
-		box.add_child(Arcade.label(str(line[1]), 14, Arcade.MUTED))
-		_content.add_child(card)
+	_content.add_child(FactoryView.new())
 
 
 ## Nach dem Bauen: der neue Charger, dazu der Weg zum Einsetzen.
