@@ -29,6 +29,48 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
+
+Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "Vorschlag").
+
+* **Fabrik** (`resources_screen.gd`) = herstellen: Reiter Linien (Platzhalter), Charger
+  (`ChargerCrafter`), DROMEs (`DromeForge`); Schalter fest unter der Kopfzeile.
+* **Inventar** (`shop_screen.gd`, `mode = "inventory"`) = lagern, eine Seite ohne Reiter:
+  Bestand, freie Waffen, Charger, Energy Phases, Lootcaches oeffnen.
+* **DROMEs** (`hangar_screen.gd`) = ausruesten und aufwerten: nur die Liste (Zeilen mit Bild,
+  Rolle, Waffe + Charger, gelber Hinweis "Waffenplatz frei" / "Charger-Platz frei");
+  antippen oeffnet die DROME-Seite. Fest oben Zurueck, Name, Kampfwert und die Reiter
+  **Uebersicht** (Karte, verwerten; Umbenennen entfernt 23. Nov. -- nie gewollt, das Eingabefeld zerschoss im Browser die Anzeige), **DROME** (Level/Skilltree, Platzhalter),
+  **Waffe** (fest: Bild + Werte der Waffe mit Vergleich; scrollt: Halter, Charger, Level der
+  Waffe zum Aufklappen, "Aus dem Inventar" Waffen | Charger, ein Hauptknopf einbauen /
+  einsetzen / entfernen). Charger lassen sich auf die Karte ziehen.
+* `UiKit.segmented(..., wide)` fuer Schalter ueber die ganze Breite.
+* 23. Nov.: Werte-Kasten der Waffe-Seite mit fester Hoehe (`WEAPON_BOX_HEIGHT`), damit beim
+  Halterwechsel (Molok) nichts springt; Faehigkeiten ohne Balken (Deflektor-Schild) zeigen ihren
+  Text. Startbestand eines neuen Spielstands: nur die vier CyberDrome-DROMEs, jede Waffe einmal
+  (`config.json -> new_game.faction_dromes = false`).
+
+### Fuenf Tabs: Shop, Fabrik, Home, DROMEs, Inventar (22. Nov. 2026, Entscheidung des Spielers)
+
+Design-Canvas https://claude.ai/artifact/AH1kw5G3KweJxjygGuFu33 (Boards „Fuenf Tabs“).
+
+* **Tab-Leiste** (`UiKit.TABS`, `TAB_*`): Shop · Fabrik · Home (Mitte, gelb) · DROMEs ·
+  Inventar; neue Symbole `tab_factory`, `tab_dromes`, `tab_inventory`.
+* **Shop** nur kaufen (`shop_screen.gd`, `mode = "shop"`). **Inventar** (`scenes/inventory.tscn`,
+  gleiches Skript, `mode = "inventory"`): Reiter Inventar (Bestand, Energy Phases, Caches oeffnen)
+  und Charger (Charger-Crafter).
+* **Fabrik** (`resources_screen.gd`): Platzhalter fuer das Ressourcen-System.
+* **DROMEs** (`hangar_screen.gd`): Reiter DROMEs (Liste, gewaehlter DROME gross, Knoepfe
+  Ausruestung / Upgrade, darunter neue DROMEs bauen -- `DromeForge`, vorher im Shop) und Waffen
+  (alle Waffen, Knoepfe Upgrade / Charger). Unterseiten mit Zurueck-Pfeil und Schalter in einer
+  eigenen Zeile. **Ausruestung**: Bild oben links, rechts die Werte der Waffe im gewaehlten
+  Halter; eine freie Waffe antippen zeigt den Vergleich als Balken mit Unterschied
+  (`_set_compare`, `WeaponCard.attack_bars/ability_bars`); darunter Halter und Charger.
+  **Upgrade** (DROME und Waffe) ist ein Platzhalter, bis Ressourcen-Upgrade und Skilltrees
+  entschieden sind; Level durch Erfahrung entfaellt.
+* Offen: Home nach dem Entwurf (Boss, Story-Stand, Missionswahl, Cyberwave) -- heute das
+  bisherige Hauptmenue; Squad-Wahl bleibt in der Einsatzvorbereitung.
+
 ### Ruhige Kamera, groessere Hexfelder, Cache im Glitch-Stil, weniger Ruckeln (21. Nov. 2026, Wunsch des Spielers)
 
 Design-Canvas „CyberDrome Cache, Kampf, Hangar“ (https://claude.ai/artifact/AH1kw5G3KweJxjygGuFu33).
@@ -51,8 +93,8 @@ Design-Canvas „CyberDrome Cache, Kampf, Hangar“ (https://claude.ai/artifact/
 * **Ruckeln:** Punktraster (`Arcade.draw_dots`) und Scanlines als gekachelte Textur statt
   ~1800 Kreisen bzw. ~270 Linien -- betrifft jede Seite mit Arcade-Hintergrund (Optionen,
   Shop, Hangar ...) und den Cache-Bildschirm, der das Raster vorher JEDES Bild neu zeichnete.
-* **Nachtrag (Spieler):** DROMEs kleiner (`figures.scale` 0,62 statt 0,75), Lebensbalken 8 px
-  hoch, Takt-Leiste als Kaestchen je Angriff mit pulsierendem Rahmen, wenn die Faehigkeit
+* **Nachtrag (Spieler):** DROMEs kleiner (`figures.scale` 0,62 statt 0,75), Lebensbalken 6 px
+  hoch nur mit schwarzem Umriss (abgeschraegt, ohne schwarzen Grund; 22. Nov.), Takt-Leiste als Kaestchen je Angriff mit pulsierendem Rahmen, wenn die Faehigkeit
   als Naechstes kommt (`UnitBadgePainter._takt`). Level durch Erfahrung entfaellt (Upgrade
   mit Ressourcen + Skilltrees kommen spaeter); Richtung fuer die Navigation: fuenf Tabs
   (Shop, Ressourcen, Home in der Mitte, DROMEs, Inventar) -- SPOT-Eckpunkte, noch in Ueberlegung.
