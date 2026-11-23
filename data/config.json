@@ -400,8 +400,11 @@
       "Startbestand eines neuen Spielstands (21. Nov. 2026, Spieler): jeder DROME einmal",
       "(Standard + Fraktion), jede Waffe einmal, phases_each je Energy Phase, blanks",
       "Charger-Rohlinge, caches_each Lootcaches je Gebiet, coins Platzhaltercoin.",
-      "weapon_order: welche freien Waffen die Fraktions-DROMEs zuerst bekommen."
+      "weapon_order: welche freien Waffen die Fraktions-DROMEs zuerst bekommen.",
+      "faction_dromes: Fraktions-DROMEs im Startbestand (23. Nov. 2026 aus: nur die vier",
+      "CyberDrome-DROMEs Vireo, Molok, Strix, Nimbus; jede Waffe einmal)."
     ],
+    "faction_dromes": false,
     "phases_each": 6,
     "blanks": 2,
     "caches_each": 5,

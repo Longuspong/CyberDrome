@@ -1,24 +1,27 @@
 extends Control
 
-## Der Shop (15. Nov. 2026, Wunsch des Spielers): der rechte Tab der Leiste,
-## anstelle der Optionen (die sitzen jetzt am Zahnrad oben rechts). Drei
-## Reiter:
+## Shop und Inventar (seit 22. Nov. 2026, Design-Canvas "Fuenf Tabs",
+## Entscheidung des Spielers: Shop und Crafting nie im selben Reiter). Ein
+## Skript fuer zwei Tabs, ``mode`` waehlt:
 ##
-##   Shop     Angebote fuer Platzhaltercoin -- Baukerne und Caches
-##            (Roster.shop_offers, config hangar_shop)
-##   Caches   die Lootcaches im Hangar; seit 20. Nov. 2026 zu oeffnen (vier Wuerfe).
-##            Caches und Bosse koennen spaeter Komponenten (Baukerne,
-##            Fraktionskerne) oder gleich ganze DROMEs enthalten.
-##   Bauen    Charger-Crafter (Rohling + Energy Phases, 20. Nov. 2026), dann
-##            Material (Baukerne, Fraktionskerne) und neue DROMEs daraus
+##   shop       nur kaufen: Angebote fuer Platzhaltercoin -- Baukerne und Caches
+##              (Roster.shop_offers, config hangar_shop)
+##   inventory  lagern (seit 22. Nov. 2026, "ein Verb je Tab"): alles, was in
+##              keinem DROME steckt -- Bestand, freie Waffen, Charger, Energy
+##              Phases, Lootcaches (oeffnen). Eine Seite, kein Reiter.
 ##
+## Herstellen (Charger, neue DROMEs) liegt in der Fabrik, einbauen auf der
+## DROME-Seite im Tab DROMEs.
 ## Kacheln wie ueberall: tippen waehlt, nochmal tippen zeigt Details
 ## (blaetterbar), Doppeltipp handelt (kaufen, bauen).
 
 const TILE_COLUMNS := 4
 const TILE_GAP := 10
 
-static var _tab := "shop"
+## "shop" oder "inventory" (scenes/inventory.tscn setzt es).
+@export var mode := "shop"
+## Frueher Reiter im Inventar; bleibt fuer alte Aufrufer (open_tab).
+static var _tab := "inventar"
 ## Gewaehlter Cache im Reiter Caches (Entwurf: antippen waehlt, Knopf oeffnet).
 static var _cache_pick := "city"
 
@@ -30,32 +33,32 @@ var _content: VBoxContainer
 var _tabs: HBoxContainer
 
 
-## Oeffnet den Shop beim naechsten Aufbau in diesem Reiter.
+## Oeffnet das Inventar beim naechsten Aufbau in diesem Reiter ("inventar",
+## "charger").
 static func open_tab(tab: String) -> void:
 	_tab = tab
 
 
 func _ready() -> void:
-	_content = UiKit.page(self, "Shop", "", 2, true)
+	if mode == "inventory":
+		_content = UiKit.page(self, "Inventar", "", UiKit.TAB_INVENTORY, true)
+	else:
+		_content = UiKit.page(self, "Shop", "", UiKit.TAB_SHOP, true)
 	# Die Reiter als Segmentknopf oben rechts in der Kopfzeile (Entwurf 15. Nov.).
 	_tabs = UiKit.header_slot(self)
 	_refresh()
 
 
 func _refresh() -> void:
-	UiKit.clear(_tabs)
-	_tabs.add_child(UiKit.segmented([["shop", "Shop"], ["caches", "Caches"], ["bauen", "Bauen"]],
-		_tab, func(id):
-			_tab = id
-			Tile.clear_choice()
-			_refresh()))
 	UiKit.clear(_content)
-	if _tab == "bauen":
-		_content.add_child(_wallet())
-	match _tab:
-		"shop": _shop_section()
-		"caches": _caches_section()
-		_: _build_section()
+	if mode != "inventory":
+		_shop_section()
+		return
+	_content.add_child(_wallet())
+	_free_weapons_section()
+	_chargers_section()
+	_phase_section()
+	_caches_section()
 
 
 ## Was man hat: Coins, Baukerne, Fraktionskerne, Caches -- eine Zeile Chips.
@@ -144,8 +147,8 @@ func _shop_section() -> void:
 	link.add_theme_font_size_override("font_size", 12)
 	link.add_theme_color_override("font_color", Arcade.YELLOW)
 	link.pressed.connect(func():
-		_tab = "caches"
-		_refresh())
+		_tab = "inventar"
+		Fader.go("res://scenes/inventory.tscn"))
 	head.add_child(link)
 	_content.add_child(head)
 	var offers := Roster.shop_offers()
@@ -420,144 +423,106 @@ func _cache_page(key: String) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
-# Bauen
+# Inventar: Energy Phases, Charger
 # ---------------------------------------------------------------------------
 
-## Neue DROMEs (15. Nov. 2026): aus Baukernen. Ein Standard-DROME kostet
-## kits_per_drome Baukerne, ein Fraktions-DROME dazu einen Fraktionskern.
-## Freie Chassis aus alter Beute lassen sich weiter ohne Kosten bauen.
-## Kacheln wie ueberall: tippen waehlt, nochmal tippen zeigt, Doppeltipp baut.
-func _build_section() -> void:
+## Energy Phases und Rohlinge im Bestand (Entwurf: je Element eine Kachel).
+func _phase_section() -> void:
 	var roster := GameState.roster
-	var need := Roster.kits_per_drome()
-	# Charger-Crafter (20. Nov. 2026, Design-Canvas Ue3) zuerst.
-	var crafter := ChargerCrafter.new()
-	crafter.built.connect(_charger_built)
-	_content.add_child(crafter)
-	_content.add_child(UiKit.heading("Neuen DROME bauen"))
-	_content.add_child(UiKit.label("%s: %d / %d  ·  Doppeltipp baut" % [Roster.kit_name(), roster.kits(),
-		need], UiKit.SMALL, UiKit.GOOD if roster.kits() >= need else UiKit.MUTED))
+	var head := HBoxContainer.new()
+	var title := Arcade.label("ENERGY PHASES", 15, Arcade.CYAN, "bold", 0.2)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	head.add_child(Arcade.label("%d ROHLINGE" % roster.blanks(), 12, Arcade.MUTED, "bold", 0.16))
+	_content.add_child(head)
 	var grid := GridContainer.new()
-	grid.columns = TILE_COLUMNS
-	grid.add_theme_constant_override("h_separation", TILE_GAP)
-	grid.add_theme_constant_override("v_separation", TILE_GAP)
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
 	_content.add_child(grid)
-	var specs := _build_specs()
-	var pages: Array = []
-	for spec in specs:
-		pages.append(func() -> Dictionary: return _build_page(spec))
-	for k in specs.size():
-		var spec: Dictionary = specs[k]
-		var body := PartDB.get_part(spec["chassis"])
-		if body == null:
-			continue
-		var tile := Tile.new("build:%s" % spec["id"], UiKit.chassis_view(body, 64), str(spec["name"]),
-			Vector2(0, 104))
+	for element in Charger.element_ids():
+		var count := roster.phases(str(element))
+		var panel := _framed(Charger.element_color(str(element)) if count > 0 else Arcade.EMPTY_LINE,
+			false)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(row)
+		row.add_child(PhaseGem.new(str(element), 30))
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override("separation", 0)
+		row.add_child(column)
+		column.add_child(Arcade.label(Charger.element_name(str(element)).to_upper(), 10,
+			Charger.element_color(str(element)), "bold", 0.1))
+		column.add_child(Arcade.label("×%d" % count, 14, Arcade.WHITE if count > 0 else Arcade.MUTED,
+			"display"))
+		grid.add_child(panel)
+
+
+## Freie Waffen: im Inventar, in keinem DROME. Antippen zeigt die Karte;
+## eingebaut wird auf der DROME-Seite unter Waffe.
+func _free_weapons_section() -> void:
+	var roster := GameState.roster
+	var parts: Array = []
+	for part_id in roster.owned_part_ids(PartData.Type.EQUIPMENT):
+		var part := PartDB.get_part(part_id)
+		if part != null and roster.free_count(part_id) > 0:
+			parts.append(part)
+	_content.add_child(_section_head("FREIE WAFFEN", "%d" % parts.size()))
+	if parts.is_empty():
+		_content.add_child(UiKit.label("Alle Waffen stecken in DROMEs.", 14, UiKit.MUTED))
+		return
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	_content.add_child(grid)
+	for part in parts:
+		var shape := SlotShape.new(part.mount_class, UiKit.part_texture(part), 48.0)
+		var tile := Tile.new("free:%s" % part.id, shape, part.display_name, Vector2(0, 104))
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tile.glow = bool(spec["ready"])
-		tile.accent = UiKit.GOOD if spec["ready"] else UiKit.ACCENT
-		tile.dimmed = not bool(spec["ready"])
-		tile.add_caption(str(spec["cost"]), UiKit.WARN if spec["ready"] else UiKit.MUTED, 11)
-		var page: int = k
-		tile.on_info = func(): InfoPopup.open_pages(self, pages, page)
-		tile.on_action = func(): _build_drome(spec)
+		var count := roster.free_count(part.id)
+		if count > 1:
+			tile.add_caption("×%d" % count, UiKit.MUTED, 11)
+		tile.on_info = func(): WeaponCard.open(self, part)
 		grid.add_child(tile)
 
 
-## Was sich bauen laesst: freie Chassis (kostenlos), die vier Standard-DROMEs
-## (Baukerne) und Fraktions-DROMEs, fuer deren Fraktion ein Kern da ist.
-func _build_specs() -> Array:
+## Charger: alle, mit dem Ort, an dem sie stecken. Gebaut wird in der Fabrik.
+func _chargers_section() -> void:
 	var roster := GameState.roster
-	var need := Roster.kits_per_drome()
-	var out: Array = []
-	for chassis_id in roster.free_chassis_types():
-		var body := PartDB.get_part(chassis_id)
-		out.append({"id": "free:%s" % chassis_id, "kind": "free", "chassis": chassis_id,
-			"name": body.display_name.replace(" Chassis", ""), "cost": "freies Chassis", "ready": true})
-	for row in Roster.STARTER_CHASSIS:
-		var body := PartDB.get_part(row["body"])
-		if body == null:
-			continue
-		out.append({"id": "std:%s" % row["body"], "kind": "standard", "chassis": row["body"],
-			"name": body.display_name.replace(" Chassis", ""), "cost": "%d %s" % [need, Roster.kit_name()],
-			"ready": roster.kits() >= need})
-	for variant in Roster.faction_variants():
-		var spec: Dictionary = Formations.data()["dromes"][variant]
-		var faction := str(spec.get("faction", ""))
-		if roster.faction_cores(faction) <= 0:
-			continue
-		out.append({"id": "fac:%s" % variant, "kind": "faction", "variant": variant,
-			"chassis": StringName(str(spec["chassis"])), "name": str(spec["name"]),
-			"cost": "%s + %d" % [Roster.core_name(faction), need],
-			"ready": roster.kits() >= need})
-	return out
-
-
-func _build_page(spec: Dictionary) -> Dictionary:
-	var roster := GameState.roster
-	var lines: Array = []
-	match str(spec["kind"]):
-		"free":
-			lines.append("Ein freies Chassis aus der Beute -- baut sich ohne Kosten.")
-		"standard":
-			lines.append("Standard-DROME aus %d %s (du hast %d). Chassis und Kern, ohne Waffe."
-				% [Roster.kits_per_drome(), Roster.kit_name(), roster.kits()])
-		"faction":
-			var data: Dictionary = Formations.data()["dromes"][spec["variant"]]
-			var st: Dictionary = data.get("stats", {})
-			lines.append("Fraktions-DROME: %s + %d %s. Feste Werte, ohne Waffe."
-				% [Roster.core_name(str(data["faction"])), Roster.kits_per_drome(), Roster.kit_name()])
-			lines.append(["Integrität %d · Schild %d · Speed %d · Rüstung %d · Power %d" % [
-				int(st.get("hp_max", 0)), int(st.get("shield", 0)), int(st.get("spd", 0)),
-				int(st.get("def", 0)), int(st.get("power", 0))], UiKit.HEADING])
-	lines.append(["Verwertete DROMEs geben Baukerne, Fraktions-DROMEs dazu ihren Kern. "
-		+ "Bald auch im Hangar-Shop.", UiKit.MUTED, UiKit.SMALL])
-	var body := PartDB.get_part(spec["chassis"])
-	return {"title": str(spec["name"]), "subtitle": str(spec["cost"]),
-		"picture": UiKit.chassis_view(body, 64) if body != null else null, "lines": lines,
-		"actions": [{"text": "Bauen", "primary": true, "disabled": not bool(spec["ready"]),
-			"why": "%s fehlen" % Roster.kit_name(), "call": func(): _build_drome(spec)}]}
-
-
-func _build_drome(spec: Dictionary) -> void:
-	if not bool(spec["ready"]):
-		InfoPopup.open(self, "Fehlt noch", {"lines": ["Dafür brauchst du %s." % spec["cost"]]})
+	var free := 0
+	for c in roster.chargers:
+		free += 1 if str(c.get("on", "")) == "" else 0
+	_content.add_child(_section_head("CHARGER", "%d FREI" % free))
+	if roster.chargers.is_empty():
+		_content.add_child(UiKit.label("Noch kein Charger -- gebaut wird in der Fabrik.", 14, UiKit.MUTED))
 		return
-	var roster := GameState.roster
-	var entry: RosterEntry = null
-	match str(spec["kind"]):
-		"free": entry = roster.new_drome(spec["chassis"])
-		"standard": entry = roster.craft_drome(spec["chassis"])
-		"faction": entry = roster.craft_faction_drome(str(spec["variant"]))
-	if entry == null:
-		return
-	Accessibility.vibrate(40, true)
-	GameState.save_roster()
-	GameState.refresh_squad()
-	# Gleich in den Umbau des neuen DROME -- er hat noch keine Waffe.
-	GameState.editing_index = GameState.roster.entries.size() - 1
-	Fader.go("res://scenes/hangar.tscn")
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	_content.add_child(grid)
+	for c in roster.chargers:
+		var phases: Array = c["phases"]
+		var on := str(c.get("on", ""))
+		var tile := Tile.new("ch:%s" % str(c["uid"]), ChargerHex.new(phases, 60), Charger.display_name(phases),
+			Vector2(0, 104))
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var dom := Charger.dominant(phases)
+		tile.accent = Charger.element_color(dom) if dom != "" else UiKit.ACCENT
+		tile.add_caption("FREI" if on == "" else "EINGESETZT", UiKit.WARN if on == "" else UiKit.MUTED, 11)
+		grid.add_child(tile)
 
 
-
-## Nach dem Bauen: der neue Charger, dazu der Weg in den Hangar (Upgrade).
-func _charger_built(charger: Dictionary) -> void:
-	_refresh()
-	var phases: Array = charger.get("phases", [])
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	for e in phases:
-		if str(e) != "":
-			row.add_child(PhaseGem.new(str(e), 40))
-	var dom := Charger.dominant(phases)
-	var lines: Array = [row]
-	lines.append("Die Phasen sind verbraucht. Einsetzen im Hangar unter Upgrade.")
-	if dom != "":
-		lines.append(["Die Fähigkeit legt %s-Stapel an." % Charger.element_name(dom), UiKit.HEADING])
-	InfoPopup.open(self, Charger.display_name(phases).to_upper(), {"subtitle": "NEU IM LAGER",
-		"lines": lines, "actions": [{"text": "Zum Hangar", "primary": true, "call": func():
-			HangarScreen.open_tab("upgrade")
-			Fader.go("res://scenes/hangar.tscn")}]})
+## Zwischentitel mit Zahl rechts.
+func _section_head(title: String, right: String) -> Control:
+	var head := HBoxContainer.new()
+	var label := Arcade.label(title, 15, Arcade.CYAN, "bold", 0.2)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(label)
+	head.add_child(Arcade.label(right, 12, Arcade.MUTED, "bold", 0.16))
+	return head
 
 
 ## Ein Cache als Symbol: Kiste mit Neon-Rand (gezeichnet, bis es ein Bild gibt).

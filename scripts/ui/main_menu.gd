@@ -19,7 +19,7 @@ var _endless: Button
 
 
 func _ready() -> void:
-	var content := UiKit.page(self, "", "", 0, false, Ambience.Kind.PLAIN)
+	var content := UiKit.page(self, "", "", UiKit.TAB_HOME, false, Ambience.Kind.PLAIN)
 	content.add_theme_constant_override("separation", 14)
 	var running: bool = GameState.run != null and not GameState.run.is_over()
 	var endless_running: bool = running and GameState.run.is_endless()
