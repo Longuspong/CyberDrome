@@ -45,6 +45,10 @@ Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "
   Waffe zum Aufklappen, "Aus dem Inventar" Waffen | Charger, ein Hauptknopf einbauen /
   einsetzen / entfernen). Charger lassen sich auf die Karte ziehen.
 * `UiKit.segmented(..., wide)` fuer Schalter ueber die ganze Breite.
+* 23. Nov.: Werte-Kasten der Waffe-Seite mit fester Hoehe (`WEAPON_BOX_HEIGHT`), damit beim
+  Halterwechsel (Molok) nichts springt; Faehigkeiten ohne Balken (Deflektor-Schild) zeigen ihren
+  Text. Startbestand eines neuen Spielstands: nur die vier CyberDrome-DROMEs, jede Waffe einmal
+  (`config.json -> new_game.faction_dromes = false`).
 
 ### Fuenf Tabs: Shop, Fabrik, Home, DROMEs, Inventar (22. Nov. 2026, Entscheidung des Spielers)
 

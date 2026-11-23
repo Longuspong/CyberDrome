@@ -813,6 +813,10 @@ func _show_umbau() -> void:
 	_weapon_box = VBoxContainer.new()
 	_weapon_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_weapon_box.add_theme_constant_override("separation", 2)
+	# Feste Hoehe (23. Nov. 2026, Spieler): beim Wechsel des Halters (Molok)
+	# oder beim Vergleich darf die feste Karte nicht springen -- sonst
+	# verschiebt sich alles darunter.
+	_weapon_box.custom_minimum_size.y = WEAPON_BOX_HEIGHT
 	head.add_child(_weapon_box)
 	_fill_weapon_box(build)
 
@@ -857,6 +861,9 @@ func _show_umbau() -> void:
 	_update_action()
 
 
+## Hoehe des Werte-Kastens auf der Waffe-Seite: Platz fuer Titel, Name, drei
+## Angriffs- und zwei Faehigkeits-Balken (gemessen: Hammer 231, Deflektor 222).
+const WEAPON_BOX_HEIGHT := 236.0
 ## Klappt "Level und Skilltree der Waffe" auf (merkt sich den Zustand).
 static var _weapon_level_open := false
 ## Der eine Hauptknopf der Waffen-Seite (einbauen / einsetzen / entfernen).
@@ -990,15 +997,23 @@ func _fill_weapon_box(build: DromeBuild) -> void:
 	if attack != null:
 		for row in WeaponCard.attack_bars(attack, other_attack, hint):
 			_weapon_box.add_child(row)
+	if attack != null and attack.support == "self":
+		# Ohne Reichweite (wirkt auf sich selbst, z. B. Deflektor-Schild): sagen statt weglassen.
+		_weapon_box.add_child(UiKit.label("Wirkt auf den DROME selbst", 13, UiKit.MUTED))
 	var ability := _first_ability(shown)
 	var other_ability := _first_ability(other) if other != null else null
 	if ability != null:
+		_weapon_box.add_child(Arcade.label("FÄHIGKEIT · " + ability.display_name.to_upper(), 10,
+			Arcade.CYAN, "bold", 0.12))
 		var rows := WeaponCard.ability_bars(ability, other_ability, hint)
-		if not rows.is_empty():
-			_weapon_box.add_child(Arcade.label("FÄHIGKEIT · " + ability.display_name.to_upper(), 10,
-				Arcade.CYAN, "bold", 0.12))
 		for row in rows:
 			_weapon_box.add_child(row)
+		if rows.is_empty():
+			# Keine Balken (Schild, Bewegung ...): der Text der Faehigkeit.
+			var text := UiKit.label(WeaponCard.short_text(ability), 13, UiKit.TEXT)
+			text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			text.custom_minimum_size.x = 60
+			_weapon_box.add_child(text)
 	_weapon_box.add_child(hint)
 
 

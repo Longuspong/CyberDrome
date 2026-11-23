@@ -693,18 +693,20 @@ func seed_starter() -> void:
 		add_instance(part_id)
 
 
-## Startbestand eines NEUEN Spielstands (21. Nov. 2026, Wunsch des Spielers):
-## jeder DROME einmal (die vier Standard-DROMEs mit ihrer Ausstattung und jeder
-## Fraktions-DROME), jede Waffe einmal, jede Energy Phase 6-mal, 2 Charger-
+## Startbestand eines NEUEN Spielstands (21. Nov. 2026, Wunsch des Spielers;
+## 23. Nov.: ohne Fraktions-DROMEs): die vier CyberDrome-DROMEs mit ihrer
+## Ausstattung, jede Waffe einmal (die uebrigen frei im Inventar), jede Energy Phase 6-mal, 2 Charger-
 ## Rohlinge, je Gebiet 5 Lootcaches und 200 Platzhaltercoin. Werte in
 ## config.json -> new_game. ``seed_starter`` bleibt der schlanke Bestand fuer
 ## Tests und den Standard-Squad.
 func seed_new_game() -> void:
 	seed_starter()
 	var cfg := Config.section("new_game")
-	# Fraktions-DROMEs (ohne Waffe gebaut, bekommen gleich eine).
+	# Fraktions-DROMEs (ohne Waffe gebaut, bekommen gleich eine). Seit 23. Nov.
+	# 2026 aus (Spieler: Start nur mit den vier CyberDrome-DROMEs, die
+	# Fraktions-DROMEs werden gerade ueberarbeitet) -- config new_game.faction_dromes.
 	var fresh: Array = []
-	for variant in faction_variants():
+	for variant in (faction_variants() if bool(cfg.get("faction_dromes", false)) else []):
 		var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(variant, {})
 		var entry := craft_drome_free(StringName(str(spec.get("chassis", ""))), faction_drome_name(variant))
 		if entry == null:

@@ -79,8 +79,8 @@ func test_three_slots_keep_their_own_hangar_run_and_progress() -> void:
 
 	var first := GameState.slot_summary(1)
 	t.ok(first["exists"], "Karte 1: belegt")
-	# Neuer Spielstand (21. Nov. 2026): jeder DROME einmal, Standard + Fraktion.
-	t.equal(first["dromes"], 4 + Roster.faction_variants().size(), "jeder DROME einmal")
+	# Neuer Spielstand (23. Nov. 2026): die vier CyberDrome-DROMEs.
+	t.equal(first["dromes"], 4, "die vier CyberDrome-DROMEs")
 	t.equal(first["squad"], 3, "drei im Squad")
 	t.ok(str(first["run"]).begins_with("Neon City"), "laufender Lauf steht drauf (%s)" % first["run"])
 	t.ok(first["story_cleared"], "Neon City bezwungen")
