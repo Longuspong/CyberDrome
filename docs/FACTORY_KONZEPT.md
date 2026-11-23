@@ -86,6 +86,15 @@ Verdichten als echter Bauschritt (Gebäude), **etwa 10 : 1** (10 Legierung →
 
 ## 7. Tiers -- was damit herstellbar wird
 
+**Wichtig (Spieler 23. Nov. 2026):** Die Fabrik stellt **nur Ressourcen** her
+(Rohstoffe, Zwischenprodukte wie Legierung, Plasma, Schaltkreis, Panzerplatte,
+Upgrade-Chip). Was im Spiel landet -- Charger-Rohlinge, DROME-Teile, DROMEs,
+später Phasen -- wird **aus dem Lager** im jeweiligen Bereich hergestellt
+(Charger-Bereich bzw. DROME-Bau, heute Reiter Charger/DROMEs im Fabrik-Tab:
+`ChargerCrafter`, `DromeForge`). Die **Rohlingpresse** im Prototyp war ein
+Missverständnis und fällt weg. Ein Tier schaltet dort die Rezepte frei und in
+der Fabrik die Gebäude für die nötigen Ressourcen.
+
 | Tier | Herstellbar | Freigeschaltet durch |
 |---|---|---|
 | 1 | Charger-Rohlinge (Phasen weiter nur aus Caches) | Start |
@@ -118,8 +127,9 @@ Tier 3/4 als Ziel ohne Inhalt, Bedarf selbst wählen, Durchsatz je Gebäude
 (braucht/kommt/Puffer/Strom), Hochrechnung je Einsatz im Lager, Knopf
 „Einsatz simulieren“ (800 Takte).
 
-**v3 (Vorschlag):** DROME-Teile und Verschmelzen, Tier 3/4 mit Inhalt, große
-Gebäude, Lager-Obergrenze, Rezept-Zahlen nach Abschnitt 5/6.
+**Kein v3 als Prototyp** (Spieler 23. Nov.): weiter geht es direkt im Spiel --
+eine Sitzung für die Logik, eine Design-Sitzung für die Optik (Übergaben in 11 und 12).
+Später: Tier 3/4 mit Inhalt, große Gebäude, Lager-Obergrenze, Rezept-Zahlen nach 5/6.
 
 ## 10. Kleinkram vor dem Go-live (aus den Reviews, 22. Nov. 2026)
 
@@ -131,3 +141,55 @@ Gebäude, Lager-Obergrenze, Rezept-Zahlen nach Abschnitt 5/6.
   oder Teillieferungen kommen.
 * Speicherstand mit Version und Umstellung (Prototyp: `cd-factory-v2`).
 * Fabrik-Stand muss in den echten Spielstand (`GameState`).
+
+## 11. Übergabe Logik (nächste Sitzung: ins Spiel bauen)
+
+**Ort:** Fabrik-Tab (`resources_screen.gd`), Reiter **Linien** (heute Platzhalter) =
+die Platine. Charger und DROMEs bleiben eigene Reiter und verbrauchen Lager-Ressourcen.
+
+**Vorschlag Aufbau:**
+* `data/factory.json`: Waren, Gebäude (Rezept, Rate, Strom, Tier, Preis, Startbestand),
+  Quellen, Feldgruppen, Tier-Ziele, Netzanschluss -- Werte aus dem Prototyp
+  (`docs/design/factory_prototyp/factory_v2.html`, `DEF`, `SOURCES`, `CHUNKS`, `TIERS`)
+  **ohne Rohlingpresse**. In die SPOT (Blatt Fabrik o. ä.) übernehmen.
+* `FactorySim` (RefCounted, reine Logik, deterministisch): `tick()` in der Reihenfolge
+  des Prototyps -- Verbindungen, Abholen reihum, Strom (Bedarf, Quellen nach Nähe,
+  Batterie, Brennstoff nur bei Verbrauch), Herstellen (Anlauf 3 Durchläufe, Resonanz,
+  Schatten), Uplink. `run(n)` für viele Takte ohne Anzeige.
+* Fabrik-Stand im Spielstand (`GameState`, mit Versionsnummer), Lager = Inventar.
+* Takte: live 1 Takt alle 6 s, nur solange der Reiter offen ist; nach jedem Kampf
+  `run(100)` (Vorschlag, Tabelle nach Einsatzlänge später). Ertrag am Einsatzende anzeigen.
+* Tests in `tests/run_tests.gd`: Nachbar-Lieferung, Relais ohne Strom, Strom nach Nähe,
+  Schatten, Anlauf, Uplink, Kaufen/Umsetzen, `run(800)` deterministisch.
+* Baukerne entfernen (Caches, Shop, `Roster.craft_drome`, SPOT, alte Spielstände umstellen)
+  erst, wenn die DROME-Teile stehen.
+
+**Aus dem Playtest v2 (Spieler 23. Nov.):**
+1. *„Eine Schmelze schickt keine Legierung an die Fabrik daneben.“* Nachgemessen: die
+   Übergabe selbst klappt an allen Seiten (Löter, Presse, Verdichter). Was passiert: der
+   Nachbar hat seinen Eingang für Legierung voll (10 × Rezept), weil ihm die **andere**
+   Zutat fehlt (z. B. Daten) -- dann holt er nichts mehr, die Schmelze staut und der Rest
+   geht per Uplink ins Lager. Das ist im Prototyp unsichtbar. Muss sichtbar werden:
+   „Eingang voll -- wartet auf Daten“, Leiterbahn gedimmt. (Zweite mögliche Ursache:
+   ein Relais ohne Strom -- gestrichelter Rand.)
+2. *„Einheiten produzieren schneller, als sie weitergeben.“* Zwei Gründe: (a) mehr
+   Herstellung als Verbrauch, der Überschuss geht über den Ausgangspuffer ins Lager;
+   (b) die Anzeige zeigt höchstens einen Puls je Paar und Takt (und max. 80 Pulse) --
+   bei 3 Neon je Takt sieht man nur einen Punkt. **Zu entscheiden:** Überschuss weiter
+   ins Lager (bequem) **oder** bei vollem Ausgang pausiert das Gebäude (Stau), Uplink
+   nur für Waren ohne Abnehmer -- Empfehlung: **pausieren**, dann lohnen sich passende
+   Verhältnisse wirklich (clevere Automatismen), und „schneller als weitergegeben“ gibt
+   es nicht mehr. Der Spieler entscheidet zu Beginn der Logik-Sitzung.
+
+## 12. Übergabe Design (eigene Design-Sitzung)
+
+Wünsche des Spielers (23. Nov.) zum Prototyp v2:
+* **Gebäude in Gruppen** statt einer langen Liste: Förderer, Verarbeitung, Strom,
+  Logistik (Relais), je Tier gesperrt sichtbar.
+* **Bauen, Abreißen und Ansehen als getrennte Modi** (z. B. Schalter über der Platine),
+  damit ein Tipp nie versehentlich baut oder abreißt.
+* Ansicht polieren: Platine größer und klarer, Symbole statt Kürzeln (SAM, SMZ ...),
+  Info als Blatt von unten, Strom-Reichweite und Engpässe lesbar, Fluss sichtbar
+  (Menge je Puls, gedimmte Bahn bei Stau), Ertrag nach dem Einsatz.
+* Stil: Arcade-Glitch über `UiKit`, Design-System-Tokens (`docs/design/tokens.json`),
+  Hochformat 400 px. Grundlage: Prototyp v2 (Artefakt und Kopie im Repo).

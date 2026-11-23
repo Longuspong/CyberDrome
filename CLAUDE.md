@@ -36,9 +36,9 @@ Knoten 5 aendert Passive bzw. Faehigkeit, Umskillen kostet Ressourcen, Fraktions
 Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegnen.
 **Factory-Builder (23. Nov. 2026, Richtung entschieden, Prototyp v2): `docs/FACTORY_KONZEPT.md`**
 -- Hex-Platine, Nachbar-Lieferung, Puffer + Uplink, Netzanschluss mit Strom nach Naehe,
-Tiers (Charger-Rohlinge, CyberDromes aus Teilen, Fraktions-DROMEs, Phasen), Baukerne fallen
+nur Ressourcen (Charger/DROMEs entstehen aus dem Lager in ihren Reitern), Tiers, Baukerne fallen
 weg; Takte vor allem aus dem Einsatz. Prototyp: https://claude.ai/artifact/BU9arMAXSSSC18zgFEnQsd
-(Kopie `docs/design/factory_prototyp/`). Noch nichts im Spiel.
+(Kopie `docs/design/factory_prototyp/`). Noch nichts im Spiel -- Uebergaben Logik/Design dort Abschnitt 11/12.
 **Waffen-Upgrades (20. Nov. 2026, entschieden und GEBAUT): `docs/CHARGER_KONZEPT.md`**
 -- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.
 **Bildschirme fuer Design-Sessions: `docs/design/UEBERGABEN_DESIGN.md`** -- Hangar
