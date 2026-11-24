@@ -1,0 +1,147 @@
+{
+  "_kommentar": "Fabrik (docs/FACTORY_KONZEPT.md, Werte aus Prototyp v2 ohne Rohlingpresse). rate = Durchlaeufe je Takt bei vollem Strom; start = kostenlose Exemplare. Felder q,r axial (flache Sechsecke).",
+  "version": 1,
+  "takte": {
+    "live_sekunden": 6,
+    "je_kampf": 20,
+    "anlauf": 3,
+    "eingang_mal_rezept": 10,
+    "ausgang": 10,
+    "zuenden_bei": 5,
+    "resonanz_je_nachbar": 0.25,
+    "resonanz_max_nachbarn": 2,
+    "schatten_faktor": 0.5,
+    "batterie_laden_je_takt": 2
+  },
+  "netz": {"feld": "0,0", "strom": 4, "reichweite": 2},
+  "platine_radius": 3,
+  "start_radius": 2,
+  "waren": {
+    "schrott": {"name": "Schrott", "farbe": "#c9b49c"},
+    "neon": {"name": "Neon", "farbe": "#2ee3eb"},
+    "daten": {"name": "Daten", "farbe": "#9d84ff"},
+    "legierung": {"name": "Legierung", "farbe": "#ff6a3d"},
+    "plasma": {"name": "Plasma", "farbe": "#ff2bd6"},
+    "schaltkreis": {"name": "Schaltkreis", "farbe": "#6dffa8"},
+    "schlacke": {"name": "Schlacke", "farbe": "#86739a"},
+    "platte": {"name": "Panzerplatte", "farbe": "#ffb347"},
+    "chip": {"name": "Upgrade-Chip", "farbe": "#fff7fe"},
+    "rohling": {"name": "Charger-Rohling", "farbe": "#ffe14d", "material": "rohling", "nur_lager": true},
+    "keynode": {"name": "Keynode-Chip", "farbe": "#ff8ce8", "material": "keynode", "nur_lager": true}
+  },
+  "quellen_arten": {
+    "S": {"name": "Schrottquelle", "ware": "schrott"},
+    "N": {"name": "Neonader", "ware": "neon"},
+    "D": {"name": "Datenknoten", "ware": "daten"}
+  },
+  "quellen": {
+    "1,-1": "S", "-1,2": "S", "-2,0": "S", "2,0": "N", "-1,-1": "N", "0,2": "D",
+    "3,-1": "D", "3,-3": "S", "-2,3": "N", "0,3": "S", "-1,-2": "S", "1,-3": "D", "-3,0": "N"
+  },
+  "gebaeude": {
+    "sam": {"name": "Sammler", "kurz": "SAM", "tier": 1, "gruppe": "foerderer", "quelle": "S", "aus": {"schrott": 1}, "rate": 1, "strom": 0, "farbe": "#2ee3eb", "preis": {"legierung": 8}, "start": 2,
+      "text": "Nur auf einer Schrottquelle. Braucht keinen Strom."},
+    "zap": {"name": "Zapfer", "kurz": "ZAP", "tier": 1, "gruppe": "foerderer", "quelle": "N", "aus": {"neon": 1}, "rate": 1, "strom": 0, "farbe": "#2ee3eb", "preis": {"legierung": 8}, "start": 1,
+      "text": "Nur auf einer Neonader. Braucht keinen Strom."},
+    "scn": {"name": "Scanner", "kurz": "SCN", "tier": 1, "gruppe": "foerderer", "quelle": "D", "aus": {"daten": 1}, "rate": 0.5, "strom": 0, "farbe": "#2ee3eb", "preis": {"legierung": 10}, "start": 1,
+      "text": "Nur auf einem Datenknoten. Braucht keinen Strom."},
+    "smz": {"name": "Schmelze", "kurz": "SMZ", "tier": 1, "gruppe": "verarbeitung", "ein": {"schrott": 2}, "aus": {"legierung": 1, "schlacke": 1}, "rate": 0.5, "strom": 1, "farbe": "#ff6a3d", "preis": {"legierung": 15}, "start": 1},
+    "pls": {"name": "Plasmakammer", "kurz": "PLS", "tier": 1, "gruppe": "verarbeitung", "ein": {"neon": 2}, "aus": {"plasma": 1}, "rate": 0.5, "strom": 1, "farbe": "#ff6a3d", "preis": {"legierung": 15}, "start": 1},
+    "lot": {"name": "Löter", "kurz": "LÖT", "tier": 1, "gruppe": "verarbeitung", "ein": {"legierung": 1, "daten": 1}, "aus": {"schaltkreis": 1}, "rate": 0.5, "strom": 1, "farbe": "#ff6a3d", "preis": {"legierung": 12, "plasma": 4}, "start": 1},
+    "rec": {"name": "Recycler", "kurz": "REC", "tier": 1, "gruppe": "verarbeitung", "ein": {"schlacke": 2}, "aus": {"schrott": 1}, "rate": 0.5, "strom": 1, "farbe": "#ff8ce8", "preis": {"legierung": 12}, "start": 0},
+    "sol": {"name": "Solarpanel", "kurz": "SOL", "tier": 1, "gruppe": "strom", "liefert": 1, "reichweite": 1, "strom": 0, "farbe": "#ffe14d", "preis": {"legierung": 6, "schaltkreis": 3}, "start": 2,
+      "text": "Gibt 1 Strom an Gebäude im Abstand 1. Neben einem anderen Panel nur 0,5 (Schatten)."},
+    "ofn": {"name": "Schlackeofen", "kurz": "OFN", "tier": 1, "gruppe": "strom", "ein": {"schlacke": 1}, "brennstoff": "schlacke", "liefert": 2, "reichweite": 1, "strom": 0, "farbe": "#6dffa8", "preis": {"legierung": 15, "schaltkreis": 5}, "start": 0,
+      "text": "Verbrennt 1 Schlacke je Takt zu 2 Strom (Reichweite 1). Zündet bei halbem Puffer und brennt nur bei Bedarf."},
+    "rel": {"name": "Relais", "kurz": "REL", "tier": 1, "gruppe": "logistik", "relais": true, "strom": 1, "farbe": "#9d84ff", "preis": {"legierung": 5}, "start": 1,
+      "text": "Verbindet alle Gebäude an seinen Rändern, auch als Kette. Braucht 1 Strom, sonst leitet es nichts."},
+    "gen": {"name": "Generator", "kurz": "GEN", "tier": 2, "gruppe": "strom", "ein": {"neon": 1}, "brennstoff": "neon", "liefert": 4, "reichweite": 2, "strom": 0, "farbe": "#6dffa8", "preis": {"legierung": 30, "schaltkreis": 10}, "start": 0,
+      "text": "Verbrennt 1 Neon je Takt zu 4 Strom (Reichweite 2). Zündet bei halbem Puffer und brennt nur bei Bedarf."},
+    "bat": {"name": "Batterie", "kurz": "BAT", "tier": 2, "gruppe": "strom", "batterie": true, "liefert": 2, "reichweite": 1, "speicher": 20, "strom": 0, "farbe": "#6dffa8", "preis": {"legierung": 20, "schaltkreis": 10}, "start": 0,
+      "text": "Lädt sich mit übrigem Strom der Quellen in Reichweite (bis 20). Gibt bei Mangel bis 2 Strom je Takt ab (Reichweite 1)."},
+    "pmp": {"name": "Neonpumpe", "kurz": "PMP", "tier": 2, "gruppe": "foerderer", "quelle": "N", "aus": {"neon": 1}, "rate": 3, "strom": 2, "farbe": "#2ee3eb", "preis": {"legierung": 30, "schaltkreis": 15}, "start": 0,
+      "text": "Nur auf einer Neonader. Fördert 3 Neon je Takt, braucht 2 Strom."},
+    "vdi": {"name": "Verdichter", "kurz": "VDI", "tier": 2, "gruppe": "verarbeitung", "ein": {"legierung": 10}, "aus": {"platte": 1}, "rate": 0.1, "strom": 2, "farbe": "#ffe14d", "preis": {"legierung": 25, "schaltkreis": 5}, "start": 0,
+      "text": "Verdichtet 10 Legierung zu einer Panzerplatte. Stufe für die DROME-Teile."},
+    "chp": {"name": "Chipfabrik", "kurz": "CHP", "tier": 2, "gruppe": "verarbeitung", "ein": {"schaltkreis": 1, "plasma": 1}, "aus": {"chip": 1}, "rate": 0.2, "strom": 3, "farbe": "#ffe14d", "preis": {"legierung": 25, "schaltkreis": 10, "plasma": 5}, "start": 0}
+  },
+  "startaufbau": [["1,-1", "sam"], ["1,0", "smz"], ["-1,-1", "zap"], ["0,-1", "pls"]],
+  "feldgruppen": [
+    {"id": "osten", "name": "Osten", "felder": ["3,-3", "3,-2", "3,-1", "3,0", "2,1", "1,2"], "preis": {"legierung": 40, "plasma": 10}, "tier": 1},
+    {"id": "sueden", "name": "Süden", "felder": ["0,3", "-1,3", "-2,3", "-3,3", "-3,2", "-3,1"], "preis": {"legierung": 60, "schaltkreis": 20}, "tier": 1},
+    {"id": "norden", "name": "Norden", "felder": ["-3,0", "-2,-1", "-1,-2", "0,-3", "1,-3", "2,-3"], "preis": {"platte": 5, "schaltkreis": 30}, "tier": 2}
+  ],
+  "tiers": [
+    {"tier": 2, "titel": "Tier 2 freischalten", "kosten": {"legierung": 110, "plasma": 100, "schaltkreis": 35}, "weg": "fabrik",
+      "text": "Bringt Generator, Batterie, Neonpumpe, Verdichter, Chipfabrik. Später: CyberDromes aus Teilen. Kosten = etwa 70 Takte (3-4 Kämpfe) eines starken Tier-1-Aufbaus (je Takt ca. 1,6 Legierung, 1,5 Plasma, 0,45 Schaltkreis)."},
+    {"tier": 3, "titel": "Tier 3", "kosten": {}, "weg": "story",
+      "text": "Fraktions-DROMEs und Aufträge für Coins -- schaltet der Story-Fortschritt frei (Inhalt kommt noch)."},
+    {"tier": 4, "titel": "Tier 4", "kosten": {}, "weg": "story",
+      "text": "Phasen herstellen -- schaltet der Story-Fortschritt frei (Ende Neon City; Inhalt kommt noch)."}
+  ],
+  "werkbank": {
+    "_kommentar": "Werkbank (Konzept Abschnitt 13, Teile abgesegnet 24. Nov. 2026). Je Chassis fuenf Teile (Molok zwei Waffenhalter, Strix Lafette), je Teil zwei Zutaten. Teile liegen im Lager als teil:<chassis>:<teil>. Fraktions-DROME: der Fraktionskern ersetzt das Kern-Teil.",
+    "spezialteile": {
+      "_kommentar": "Spezialteil je Fraktions-DROME (Spieler 24. Nov. 2026): Fraktionskern + Zutaten des Kern-Teils des Chassis. Ersetzt im Bauplan das Kern-Teil, liegt als spezial:<variante> im Lager.",
+      "neon_vireo": "Neon-Booster",
+      "neon_nimbus": "Neon-Fokuslinse",
+      "solar_nimbus": "Solar-Prisma",
+      "mecha_molok": "Mecha-Reaktor",
+      "mecha_strix": "Mecha-Zielrechner"
+    },
+    "verwerten": {
+      "_kommentar": "Verwerten (Spieler 24. Nov. 2026): die Zutaten der teuersten Teile zurueck (Wert: Platte 10, Chip 2, sonst 1), ein Fraktions-DROME dazu sein Spezialteil.",
+      "teile": 2,
+      "wert": {"platte": 10, "chip": 2}
+    },
+    "bauplaene_start": ["rohling", "drome:scout_body", "drome:jugg_body", "drome:mage_body", "drome:strix_body"],
+    "dromes": {
+      "scout_body": [
+        {"id": "kopf", "name": "Sensorkopf", "kosten": {"chip": 18, "schaltkreis": 30}},
+        {"id": "kern", "name": "Sprintkern", "kosten": {"chip": 15, "plasma": 90}},
+        {"id": "rumpf", "name": "Leichtrumpf", "kosten": {"platte": 12, "legierung": 45}},
+        {"id": "halter", "name": "Waffenarm", "kosten": {"platte": 12, "legierung": 45}},
+        {"id": "antrieb", "name": "Sprintbeine", "kosten": {"platte": 18, "plasma": 90}}
+      ],
+      "jugg_body": [
+        {"id": "kopf", "name": "Kopf", "kosten": {"chip": 12, "schaltkreis": 30}},
+        {"id": "kern", "name": "Leuchtfeuerreaktor", "kosten": {"chip": 15, "plasma": 90}},
+        {"id": "rumpf", "name": "Brustharnisch", "kosten": {"platte": 30, "legierung": 90}},
+        {"id": "halter", "name": "Waffenhalter", "anzahl": 2, "kosten": {"platte": 12, "legierung": 45}},
+        {"id": "antrieb", "name": "Gepanzerter Unterbau", "kosten": {"platte": 18, "legierung": 60}}
+      ],
+      "mage_body": [
+        {"id": "kopf", "name": "Runenkopf", "kosten": {"chip": 27, "schaltkreis": 45}},
+        {"id": "kern", "name": "Echokern", "kosten": {"chip": 24, "plasma": 120}},
+        {"id": "rumpf", "name": "Mantelrumpf", "kosten": {"platte": 12, "legierung": 45}},
+        {"id": "halter", "name": "Stabhalter", "kosten": {"platte": 12, "legierung": 45}},
+        {"id": "antrieb", "name": "Schwebeantrieb", "kosten": {"platte": 12, "plasma": 60}}
+      ],
+      "strix_body": [
+        {"id": "kopf", "name": "Eulenkopf", "kosten": {"chip": 24, "schaltkreis": 45}},
+        {"id": "kern", "name": "Zielkern", "kosten": {"chip": 15, "plasma": 90}},
+        {"id": "rumpf", "name": "Rumpf", "kosten": {"platte": 15, "legierung": 60}},
+        {"id": "halter", "name": "Lafette", "kosten": {"platte": 21, "chip": 15}},
+        {"id": "antrieb", "name": "Krallen", "kosten": {"platte": 12, "legierung": 45}}
+      ]
+    }
+  },
+  "level": {
+    "_kommentar": "Level fuer DROMEs und Waffen (Spieler 24. Nov. 2026, SKILLBAUM_KONZEPT.md 5d): Kosten je Level 1-5, steil (Faktor etwa 1 / 1,5 / 4 / 9 / 16), Mischung wie beim Bauen. Level 5 braucht einen Keynode-Chip. Waffen nach Gewichtsklasse, etwa die Haelfte. Drop-Raten sind Platzhalter (spaeter besprechen).",
+    "keynode": {"erster_einsatz": 1, "einsatz_chance": 0.15},
+    "drome": {
+      "scout_body": [{"plasma": 40, "schaltkreis": 20}, {"plasma": 60, "legierung": 40}, {"platte": 15, "chip": 15}, {"platte": 35, "chip": 35}, {"platte": 60, "chip": 60, "keynode": 1}],
+      "jugg_body": [{"legierung": 60, "schaltkreis": 10}, {"legierung": 90, "plasma": 20}, {"platte": 25, "chip": 8}, {"platte": 55, "chip": 20}, {"platte": 95, "chip": 30, "keynode": 1}],
+      "mage_body": [{"plasma": 50, "schaltkreis": 20}, {"plasma": 70, "schaltkreis": 30}, {"chip": 25, "platte": 8}, {"chip": 55, "platte": 18}, {"chip": 95, "platte": 30, "keynode": 1}],
+      "strix_body": [{"schaltkreis": 30, "legierung": 30}, {"schaltkreis": 40, "legierung": 50}, {"chip": 18, "platte": 15}, {"chip": 40, "platte": 35}, {"chip": 70, "platte": 60, "keynode": 1}]
+    },
+    "waffe": {
+      "light": [{"schaltkreis": 10, "plasma": 20}, {"schaltkreis": 15, "plasma": 30}, {"chip": 8, "platte": 4}, {"chip": 18, "platte": 8}, {"chip": 30, "platte": 14, "keynode": 1}],
+      "medium": [{"legierung": 20, "plasma": 15}, {"legierung": 30, "plasma": 25}, {"platte": 6, "chip": 6}, {"platte": 14, "chip": 14}, {"platte": 24, "chip": 24, "keynode": 1}],
+      "heavy": [{"legierung": 30, "schaltkreis": 5}, {"legierung": 45, "schaltkreis": 10}, {"platte": 10, "chip": 3}, {"platte": 22, "chip": 8}, {"platte": 38, "chip": 12, "keynode": 1}]
+    }
+  },
+  "herstellen": {
+    "rohling": {"kosten": {"legierung": 2, "plasma": 1}, "text": "Vorschlag: Werte der alten Rohlingpresse, als Tipp im Charger-Reiter."}
+  }
+}

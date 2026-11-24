@@ -120,6 +120,37 @@ func _process(_delta: float) -> bool:
 				node.name = "Probe_%s" % scene
 				root.add_child(node)
 			print("SMOKE: Titel, Spielstände, Hauptmenü und Optionen instanziiert")
+			# Fabrik-Platine (23. Nov. 2026): Reiter Linien, Feld, Werkzeug, Feldgruppe.
+			load("res://scripts/ui/resources_screen.gd").open_tab("linien")
+			var factory = load("res://scenes/resources.tscn").instantiate()
+			factory.name = "Probe_factory"
+			root.add_child(factory)
+			var board_view = factory.find_children("*", "FactoryView", true, false)
+			if board_view.is_empty():
+				push_error("SMOKE: FactoryView fehlt im Reiter Linien")
+			else:
+				board_view[0].tapped("1,0")
+				board_view[0].tool = "sol"
+				board_view[0].tapped("1,1")
+				board_view[0].tapped("3,0")
+				board_view[0]._live_tick()
+			# Werkbank (24. Nov. 2026): DROMEs mit Bauplan-Baum und Ziel, dann Charger.
+			gs.roster.factory_sim().set_goal("drome:jugg_body")
+			load("res://scripts/ui/resources_screen.gd").open_tab("dromes")
+			var bench_screen = load("res://scenes/resources.tscn").instantiate()
+			bench_screen.name = "Probe_bench"
+			root.add_child(bench_screen)
+			var benches = bench_screen.find_children("*", "WorkbenchView", true, false)
+			if benches.is_empty():
+				push_error("SMOKE: WorkbenchView fehlt im Reiter Werkbank")
+			else:
+				benches[0].selected = "drome:jugg_body"
+				benches[0].refresh()
+				benches[0].category = "charger"
+				benches[0].refresh()
+			gs.roster.factory_sim().set_goal("")
+			load("res://scripts/ui/resources_screen.gd").open_tab("charger")
+			print("SMOKE: Fabrik-Platine und Werkbank instanziiert und bedient")
 			# Cache oeffnen (21. Nov. 2026): jede Stufe der Glitch-Abfolge einmal.
 			gs.roster.caches["city"] = int(gs.roster.caches.get("city", 0)) + 1
 			var opener = load("res://scripts/ui/cache_opener.gd").show_over(
@@ -131,7 +162,7 @@ func _process(_delta: float) -> bool:
 			opener._show_results()
 			print("SMOKE: Cache geöffnet, %d Ergebnisse" % opener._results.size())
 		18:
-			for scene in ["title", "saves", "main", "settings", "shop", "inventory", "resources", "upgrade"]:
+			for scene in ["title", "saves", "main", "settings", "shop", "inventory", "resources", "upgrade", "factory", "bench"]:
 				root.get_node("Probe_%s" % scene).free()
 			for t in ["dromes", "overview", "umbau", "drome_up"]:
 				root.get_node("Probe_h_" + t).free()

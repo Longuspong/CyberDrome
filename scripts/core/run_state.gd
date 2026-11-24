@@ -132,6 +132,12 @@ var bios_given: int = 0
 ## bleibt), nur der Infinity-Einsatz verliert sie mit der Niederlage.
 var run_caches: Dictionary = {}
 var run_coins: int = 0
+## Fabrik (23. Nov. 2026): was die Fabrik waehrend dieses Einsatzes ins Lager
+## geschickt hat ({ware: menge}) -- nur zur Anzeige am Ende, die Waren liegen
+## schon zuhause.
+var factory_gain: Dictionary = {}
+## Keynode-Chip (24. Nov. 2026): schon gewuerfelt, ob dieser Einsatz einen gibt.
+var keynode_rolled: bool = false
 
 ## Der gewaehlte Knoten in der Reihe der aktuellen Runde (row). Die Reihen
 ## selbst entstehen aus Seed, Runde und Verlauf und stehen nicht im
@@ -253,6 +259,7 @@ func to_dict() -> Dictionary:
 		"start_counts": counts, "history": _plain(history),
 		"node": node,
 		"run_caches": run_caches.duplicate(), "run_coins": run_coins,
+		"factory_gain": factory_gain.duplicate(), "keynode_rolled": keynode_rolled,
 	}
 
 
@@ -305,6 +312,9 @@ static func from_dict(data: Dictionary) -> RunState:
 	for key in data.get("run_caches", {}):
 		run.run_caches[str(key)] = int(data["run_caches"][key])
 	run.run_coins = int(data.get("run_coins", 0))
+	run.keynode_rolled = bool(data.get("keynode_rolled", false))
+	for ware in data.get("factory_gain", {}):
+		run.factory_gain[str(ware)] = int(data["factory_gain"][ware])
 	return run
 
 
@@ -716,6 +726,10 @@ func record_result(outcome: int, enemy_pool: Array) -> void:
 ## nur Waffen aus dem Hangar (Exemplar-uid), die im Halter stecken.
 func collect_xp(fighters: Array, won: bool) -> void:
 	last_growth = []
+	# Seit 24. Nov. 2026 keine EP mehr (SKILLBAUM_KONZEPT.md): Level werden in der
+	# Werkbank-Logik mit Fabrik-Waren gekauft (Workbench.level_up_*).
+	if not Leveling.xp_enabled():
+		return
 	var records := {}
 	for row in fighters:
 		records[str(row.get("source_uid", ""))] = row.get("weapons", {})
@@ -2153,3 +2167,9 @@ func buy(index: int) -> bool:
 	storage.append(StringName(offer["module_id"]))
 	offer["sold"] = true
 	return true
+
+
+## Rechnet einen Fabrik-Ertrag zum Einsatz dazu ({ware: menge}).
+func add_factory_gain(gain: Dictionary) -> void:
+	for ware in gain:
+		factory_gain[str(ware)] = int(factory_gain.get(str(ware), 0)) + int(gain[ware])

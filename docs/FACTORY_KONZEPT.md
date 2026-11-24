@@ -1,7 +1,8 @@
 # Factory-Builder -- Konzept (22./23. Nov. 2026)
 
 Stand: **Richtung entschieden (Spieler 22./23. Nov. 2026), Prototyp v2 gebaut,
-noch nichts im Spiel.** Prototyp als Artefakt:
+Logik seit 23. Nov. 2026 im Spiel** (`FactorySim`, `data/factory.json`, Reiter Linien --
+Abschnitt 11); die Optik folgt in der Design-Sitzung (Abschnitt 12). Prototyp als Artefakt:
 https://claude.ai/artifact/BU9arMAXSSSC18zgFEnQsd (Kopie:
 `docs/design/factory_prototyp/factory_v2.html`). Plan: Prototyp v2 testen,
 evtl. v3, dann ins Spiel (Godot/PWA).
@@ -144,6 +145,22 @@ Später: Tier 3/4 mit Inhalt, große Gebäude, Lager-Obergrenze, Rezept-Zahlen n
 
 ## 11. Übergabe Logik (nächste Sitzung: ins Spiel bauen)
 
+**GEBAUT (23. Nov. 2026)** -- Details in `docs/PROJEKTSTAND.md` („Fabrik-Logik“). Abweichungen
+und Ergänzungen zum Vorschlag unten:
+* Lager = `Roster.materials` mit Schlüssel `"res:<ware>"`; der Charger-Rohling bleibt `"rohling"`
+  und entsteht im Reiter Charger aus dem Lager (Vorschlag 2 Legierung + 1 Plasma).
+* **Spieler 24. Nov. 2026:** **20 Takte je Kampf** (160 je Einsatz mit 8 Kämpfen). Das
+  **Tier-2-Ziel braucht nur Fabrikwaren**, so viel wie ein starker Tier-1-Aufbau in 3-4
+  Kämpfen schafft: gemessen je Takt ca. 1,6 Legierung, 1,5 Plasma, 0,45 Schaltkreis (Strom
+  ist der Engpass) → 70 Takte = **110 Legierung + 100 Plasma + 35 Schaltkreis**.
+* Tier 3/4 stehen als Story-Ziel in den Daten, ohne Weg zum Freischalten (kommt mit der Story).
+* Bedarfe aus dem Prototyp sind nicht übernommen (der Bedarf kommt aus den anderen Reitern).
+* Playtest 1 umgesetzt: „Eingang X voll -- wartet auf Y“ im Gebäude-Info, Leiterbahn gedimmt,
+  wenn im letzten Takt nichts ankam. Playtest 2: Uplink-Menge je Takt im Gebäude-Info; Pulse
+  nach Menge zeichnen bleibt für die Design-Sitzung.
+* Abschnitt 10 (Verzögerung Strom/Bau-Reihenfolge) bewusst wie im Prototyp gelassen.
+* Neue Anzeigetexte noch ohne `tr()` -- mit der Design-Sitzung nachziehen.
+
 **Ort:** Fabrik-Tab (`resources_screen.gd`), Reiter **Linien** (heute Platzhalter) =
 die Platine. Charger und DROMEs bleiben eigene Reiter und verbrauchen Lager-Ressourcen.
 
@@ -191,3 +208,62 @@ Wünsche des Spielers (23. Nov.) zum Prototyp v2:
   (Menge je Puls, gedimmte Bahn bei Stau), Ertrag nach dem Einsatz.
 * Stil: Arcade-Glitch über `UiKit`, Design-System-Tokens (`docs/design/tokens.json`),
   Hochformat 400 px. Grundlage: Prototyp v2 (Artefakt und Kopie im Repo).
+
+## 13. Werkbank (Richtung entschieden, Spieler 24. Nov. 2026)
+
+Alles, was aus dem Lager entsteht, bekommt **einen** Ort: die **Werkbank** im Fabrik-Tab.
+Die Fabrik hat dann zwei Reiter: **Platine** (heute „Linien“) und **Werkbank** (ersetzt die
+Reiter Charger und DROMEs).
+
+* **Kategorien** oben: Charger, DROME-Teile, DROMEs, später Waffen. Darunter Kacheln (`Tile`).
+* **Bauplan als Baum** beim Antippen: Produkt ← Teile ← Ressourcen, je Zeile „habe / brauche“.
+  Fehlt etwas: welches Gebäude es herstellt und wie viele Kämpfe das mit der aktuellen
+  Platine dauert (`FactorySim.projection`).
+* **„Als Ziel merken“**: die Platine hebt die nötigen Waren und Gebäude hervor -- das ist der
+  echte „Bedarf“ aus dem Prototyp (Abschnitt 1).
+* **Höchstens zwei Stufen** (Ressource → Teil → Produkt), lesbar auf dem Handy.
+* **Herstellen sofort per Tipp** -- die Zeit steckt in der Fabrik, keine zweite Wartezeit.
+* **Charger** behält seinen Bildschirm (Phasen ins Hexagon legen ist das Spiel); die
+  Werkbank führt dorthin. Der Charger-Rohling ist ein Rezept der Werkbank.
+* **Baupläne** für Waffen, DROME-Teile und Fraktions-DROMEs: einmal aus Lootcache oder Story,
+  danach beliebig oft aus Ressourcen. Caches bleiben das Entdecken, die Fabrik die Menge.
+* **Nicht** in die Werkbank: Aufwerten (Skilltree-Level, Umskillen) bleibt auf der DROME-Seite
+  (ein Verb je Tab).
+
+**Teile je Chassis (Spieler 24. Nov. 2026, abgesegnet):** fünf Teile für alle -- Kopf, Kern,
+Rumpf, Waffenhalter (Molok 2×, Strix: Lafette), Antrieb --, je Teil zwei Zutaten. Der Charakter
+steckt in der Waren-Mischung: Vireo Plasma (Sprint), Molok Platten + Legierung (der teuerste),
+Nimbus Chips + Plasma, Strix Chips + Platten. Zahlen in `data/factory.json` → `werkbank` und im
+SPOT-Blatt Fabrik. Gerechnet mit einer gut ausgebauten Tier-2-Platine (je Einsatz ca. 250
+Legierung, 240 Plasma, 70 Schaltkreis, je Verdichter 16 Platten, je Chipfabrik 30 Chips): reine
+Produktion Vireo/Nimbus ca. 2, Strix 2,5, Molok 4 Einsätze; mit Skilltrees und Ausbau nebenher
+4-5 / 5-6 / 7-8. Baupläne zu Beginn: die vier Standard-DROMEs und der Rohling. Fraktions-DROME =
+Standard-Bauplan, der Fraktionskern ersetzt das Kern-Teil. Waffen später über Baupläne aus Caches,
+aus Tier-1-Waren.
+
+**GEBAUT (24. Nov. 2026):** `Workbench` (Logik auf `Roster.materials`: Teile als
+`teil:<chassis>:<teil>`, Baupläne als `bauplan:<produkt>`), Reiter **Platine | Werkbank** im
+Fabrik-Tab (`WorkbenchView`, ersetzt Charger und DROMEs; `DromeForge` entfernt), Bauplan-Baum mit
+habe/brauche, Herkunft fehlender Waren, Schätzung in Kämpfen (`FactorySim.estimate_per_tick`),
+„Als Ziel“ (im Spielstand der Fabrik) mit Markierung auf der Platine, Teile im Inventar. Freie
+Chassis aus alter Beute bauen weiter kostenlos.
+
+**Spezialteile, Verwerten, Baukerne raus (Spieler 24. Nov. 2026, GEBAUT):**
+* Der **Fraktionskern** bleibt allgemeine Beute je Fraktion. In der Werkbank wird daraus mit den
+  Zutaten des Kern-Teils ein **Spezialteil** für genau einen Fraktions-DROME (Neon Vireo:
+  Neon-Booster, Neon Nimbus: Neon-Fokuslinse, Solar Nimbus: Solar-Prisma, Mecha Molok:
+  Mecha-Reaktor, Mecha Strix: Mecha-Zielrechner). Es ersetzt im Bauplan das Kern-Teil -- der
+  DROME ist damit einmalig in eine Richtung „geschweißt“.
+* **Verwerten** gibt die Zutaten der zwei teuersten Teile zurück (Wert: Platte 10, Chip 2, sonst 1),
+  ein Fraktions-DROME dazu sein Spezialteil. Zutaten statt Teile, weil Teile an ihr Chassis
+  gebunden sind -- die Zutaten passen in jeden DROME.
+* **Umskillen = verwerten und neu bauen** (relativ großer Einsatz), kein eigener Preis.
+* **Baukerne entfallen** (Caches: ihre 7 % gehen an die Energy Phases; Shop; Verwerten). Alte
+  Baukerne werden nicht umgerechnet -- Spielstände vor dem Android-Release werden gelöscht.
+
+**Offen:** weitere Baupläne (Cache-Inhalt, Story), Waffen, Level-Material (Skilltrees).
+
+**Ursprünglich offen (vor dem Bau):** Teile je Chassis und ihre Rezepte (Abschnitt 8, Ziel: ein Teil ≈
+ein Einsatz, ein DROME ≈ 5-8 Einsätze); welche Baupläne es zu Beginn gibt und wo die übrigen
+herkommen (Cache-Inhalt, Story); ob Waffen schon mit der ersten Werkbank kommen; Baukerne raus
+(Caches, Shop, `Roster.craft_drome`, alte Spielstände), sobald DROMEs aus Teilen entstehen.

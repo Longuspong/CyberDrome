@@ -33,12 +33,21 @@ Arbeit daran lesen.
 **Skilltrees (22. Nov. 2026, Richtung entschieden, Schablone Entwurf): `docs/SKILLBAUM_KONZEPT.md`**
 -- keine Erfahrung mehr, DROMEs und Waffen je 5 Level ueber Ressourcen, Knoten 1-4 nur Werte,
 Knoten 5 aendert Passive bzw. Faehigkeit, Umskillen kostet Ressourcen, Fraktionsvarianten =
-Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegnen.
+Identitaet + Twist, Charger bleiben an der Waffe. **Seit 24. Nov. 2026 gebaut:** keine EP mehr,
+Level werden mit Fabrik-Waren gekauft (Waffen bis 5, Level 5 mit Keynode-Chip, Abschnitt 5d);
+die Skilltree-Knoten selbst noch nicht bauen, erst absegnen. Seit 24. Nov.: Regeln sind
+Leitlinie, kein Korsett; Vireo-Baum + Neon-Strang als Vorschlag; Werte im Werkblatt
+`docs/spot/CyberDrome_Werkblatt_DROMEs_Waffen.xlsx`.
 **Factory-Builder (23. Nov. 2026, Richtung entschieden, Prototyp v2): `docs/FACTORY_KONZEPT.md`**
 -- Hex-Platine, Nachbar-Lieferung, Puffer + Uplink, Netzanschluss mit Strom nach Naehe,
 nur Ressourcen (Charger/DROMEs entstehen aus dem Lager in ihren Reitern), Tiers, Baukerne fallen
 weg; Takte vor allem aus dem Einsatz. Prototyp: https://claude.ai/artifact/BU9arMAXSSSC18zgFEnQsd
-(Kopie `docs/design/factory_prototyp/`). Noch nichts im Spiel -- Uebergaben Logik/Design dort Abschnitt 11/12.
+(Kopie `docs/design/factory_prototyp/`). **Logik seit 23. Nov. 2026 GEBAUT** (`FactorySim`,
+`data/factory.json`, Reiter Linien = Platine, Lager = `Roster.materials["res:<ware>"]`, 20 Takte je
+Kampf) -- Stand in `docs/PROJEKTSTAND.md`; die Optik folgt laut Abschnitt 12 in einer Design-Sitzung. **Werkbank (24. Nov. 2026, GEBAUT):**
+Abschnitt 13 -- Reiter Platine | Werkbank, DROMEs aus fuenf Teilen (`Workbench`, Rezepte in
+`data/factory.json` -> `werkbank`), Bauplan-Baum, Ziel merken; Fraktions-DROMEs mit Spezialteil
+(aus Fraktionskern), Verwerten gibt Zutaten zurueck, Baukerne gibt es nicht mehr.
 **Waffen-Upgrades (20. Nov. 2026, entschieden und GEBAUT): `docs/CHARGER_KONZEPT.md`**
 -- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.
 **Bildschirme fuer Design-Sessions: `docs/design/UEBERGABEN_DESIGN.md`** -- Hangar
@@ -140,17 +149,22 @@ bearbeitet, sondern von `tools/build_spot.py` aus `parts/`, `data/*.json` und
 den Texten unter `docs/spot/inhalte/` erzeugt (`entscheidungen.json`,
 `balance.json`, `welt.json`, `design.json`).
 
-* **Jede Aenderung** an Werten, Daten oder Entscheidungen: neue Texte
-  (Eckpunkte, Story, Fraktionen, offene Punkte) in der passenden Datei unter
-  `docs/spot/inhalte/` nachtragen, dann `python3 tools/build_spot.py` und die
-  xlsx mit einchecken.
-* Die CI (`.github/workflows/spot.yml`) prueft mit `--check`, dass alle vier
-  aktuell sind.
+* **SPOT nur noch auf Zuruf (Spieler 24. Nov. 2026).** Nicht mehr bei jedem PR
+  nachziehen -- vieles klaert der Spieler im Chat, das Nachziehen kostet nur
+  Tokens. Neu bauen (`python3 tools/build_spot.py`, Texte unter
+  `docs/spot/inhalte/`) nur, wenn der Spieler es verlangt. Die CI prueft die
+  SPOT nur noch beim Start von Hand (`workflow_dispatch`).
+* **Fuer Entscheidungen lieber ein Werkblatt:** wenn der Spieler Werte
+  vergleichen oder eintragen will, die noetigen Daten heraussuchen und als
+  kompakte Excel unter `docs/spot/` ablegen (von Hand bearbeitbar, kein Teil
+  der SPOT). Erstes Beispiel: `CyberDrome_Werkblatt_DROMEs_Waffen.xlsx`
+  (24. Nov. 2026: Leitlinien, alle DROME- und Waffenwerte, Passiven,
+  Skilltrees; hellblau = vom Spieler zu fuellen).
 * **Design-System** (seit 17. Nov. 2026): Artefakt „CyberDrome Arcade-Glitch“
   (https://claude.ai/artifact/M5RC8KNDTr5psmKSuJpdS2) mit Tokens, Brand-Book,
   Komponenten und Symbolen -- ebenfalls ein Spiegel. Seine Tokens erzeugt
   `build_spot.py` aus `design_farben` + `design_tokens` in `inhalte/design.json`
-  nach `docs/design/tokens.json` (CI prueft mit). Farben im Spiel aendern =
+  nach `docs/design/tokens.json` (nur auf Zuruf). Farben im Spiel aendern =
   dort nachtragen, neu bauen und `tokens.json` ins Design-System uebernehmen.
   Brand-Book und Komponenten liegen als Sicherung unter
   `docs/design/design_system/` (Anleitung dort in `LIESMICH.md`).
@@ -230,7 +244,7 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   Auswahl als Kacheln (`Tile`: tippen waehlt, nochmal tippen = Details,
   Doppeltipp = Handlung; seit 15. Nov. 2026), Erklaerungen als blaetterbares
   Popup (`InfoPopup.open_pages`). DROMEs werden verwertet, nicht aufgeloest
-  (Baukerne, Fraktionskerne, `Roster.salvage/craft_drome`).
+  (Zutaten + Spezialteil zurueck, `Roster.salvage`; gebaut wird in der Werkbank).
 * Navigation: Tab-Leiste unten, seit 22. Nov. 2026 fuenf Tabs: Shop, Fabrik,
   Home (Mitte), DROMEs, Inventar (`UiKit.TABS`; Optionen am Zahnrad oben rechts).
   Ein Verb je Tab: Shop kaufen, Fabrik herstellen (Linien, Charger, DROMEs),
@@ -305,6 +319,11 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 Je Punkt eine eigene Sitzung. Erst entscheiden (Spieler), dann bauen.
 Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
 
+- [ ] **PRIO 1 (seit 24. Nov. 2026): Werkblatt ausfuellen** -- der Spieler traegt in
+      `docs/spot/CyberDrome_Werkblatt_DROMEs_Waffen.xlsx` die offenen Werte und
+      Anpassungen ein (hellblau: Passiven Molok/Nimbus/Strix, Skilltrees, Takt neu,
+      Schild X). Danach ins Spiel und in `SKILLBAUM_KONZEPT.md` uebernehmen.
+      Wenn der Spieler eine neue Sitzung beginnt, daran erinnern.
 - [x] ~~Aufhaenger~~ -- ersetzt durch `docs/STORY_LEITFADEN.md` (14. Nov.)
 - [ ] **Level-Struktur Story-Modus** bauen: zehn Level fuer Neon City,
       Level 1 mit 2 und Level 2 mit 3 DROMEs als Training, ab Level 3 vier

@@ -623,3 +623,28 @@ func test_a_casting_drome_stands_still() -> void:
 	t.ok(strix.cast.is_empty(), "Ausholen vorbei")
 	t.ok(battle.units[1].hp + battle.units[1].shield < hp, "jetzt trifft der Schuss")
 	battle.free()
+
+
+## Bugfix 24. Nov. 2026: bleibt das Ziel vom neuen Feld aus in Reichweite,
+## schaut der DROME beim Laufen zum Ziel statt in die Laufrichtung -- vorher
+## drehte er sich zwischen zwei Schuessen jedes Mal weg und wieder zurueck.
+func test_walking_in_range_keeps_facing_the_target() -> void:
+	var battle := BattleManager.new()
+	battle.setup(4711, [_vireo()], [_molok()])
+	var vireo: Unit = battle.units[0]
+	var molok: Unit = battle.units[1]
+	battle.resolver.move_unit(vireo, Vector2i(4, 9))
+	battle.resolver.move_unit(molok, Vector2i(4, 6))
+	vireo.aim_hold = 0.0
+	# Seitwaerts, das Ziel bleibt in Reichweite 3.
+	var next := Vector2i(5, 8)
+	battle.brain._walk(vireo, next, molok)
+	t.equal(vireo.facing, Unit.facing_at(next, molok.tile), "schaut zum Ziel")
+	t.ok(vireo.aim_hold > 0.0, "und haelt den Blick")
+	# Weit weg: Blick in Laufrichtung wie bisher.
+	battle.resolver.move_unit(molok, Vector2i(4, 0))
+	vireo.aim_hold = 0.0
+	var away := Vector2i(4, 9)
+	battle.brain._walk(vireo, away, molok)
+	t.equal(vireo.facing, Unit.facing_toward(next, away), "ohne Ziel in Reichweite: Laufrichtung")
+	battle.free()

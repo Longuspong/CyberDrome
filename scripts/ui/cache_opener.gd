@@ -459,7 +459,7 @@ class _ResultCard extends PanelContainer:
 			"phase": return Charger.element_color(str(result.get("element", "")))
 			"blank": return Arcade.YELLOW
 			"coins": return Arcade.WHITE
-			"faction_drome", "faction_core": return Arcade.MAGENTA
+			"faction_drome", "faction_core", "keynode": return Arcade.MAGENTA
 		return Color("#5cf2a2")
 
 	func _kind_text() -> String:
@@ -469,7 +469,8 @@ class _ResultCard extends PanelContainer:
 			"coins": return "COIN"
 			"faction_drome": return "FRAKTIONS-DROME"
 			"faction_core": return "FRAKTIONSKERN"
-		return Roster.kit_name().to_upper()
+			"keynode": return "SELTEN"
+		return ""
 
 	func _name() -> String:
 		match str(result.get("kind", "")):
@@ -478,6 +479,7 @@ class _ResultCard extends PanelContainer:
 			"coins": return "%d COIN" % int(result.get("amount", 0))
 			"faction_drome": return str(result.get("name", "DROME")).to_upper()
 			"faction_core": return Roster.core_name(str(result.get("faction", ""))).to_upper()
+			"keynode": return "KEYNODE-CHIP"
 		return "+1"
 
 	func _picture() -> Control:
@@ -485,7 +487,7 @@ class _ResultCard extends PanelContainer:
 			"phase": return PhaseGem.new(str(result.get("element", "")), 52)
 			"blank": return UiIcon.rect("charger", 44, Arcade.YELLOW)
 			"coins": return UiIcon.rect("coin", 40, Arcade.YELLOW)
-			"faction_drome", "faction_core": return UiIcon.rect("material", 40, Arcade.MAGENTA)
+			"faction_drome", "faction_core", "keynode": return UiIcon.rect("material", 40, Arcade.MAGENTA)
 		return UiIcon.rect("kit", 40, Color("#5cf2a2"))
 
 	func icon_center() -> Vector2:
