@@ -93,6 +93,11 @@ func _resources_section() -> void:
 		var n := sim.have(str(ware))
 		if n > 0:
 			flow.add_child(_chip("%d %s" % [n, FactorySim.ware_name(str(ware))], FactorySim.ware_color(str(ware))))
+	# DROME-Teile aus der Werkbank (24. Nov. 2026).
+	for key in GameState.roster.materials:
+		if str(key).begins_with("teil:"):
+			flow.add_child(_chip("%d %s (%s)" % [int(GameState.roster.materials[key]), Workbench.key_name(str(key)),
+				Workbench.chassis_name(str(key).split(":")[1])], UiKit.ACCENT))
 	if flow.get_child_count() == 0:
 		flow.queue_free()
 		return

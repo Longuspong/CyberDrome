@@ -230,7 +230,29 @@ Reiter Charger und DROMEs).
 * **Nicht** in die Werkbank: Aufwerten (Skilltree-Level, Umskillen) bleibt auf der DROME-Seite
   (ein Verb je Tab).
 
-**Offen (vor dem Bau klären):** Teile je Chassis und ihre Rezepte (Abschnitt 8, Ziel: ein Teil ≈
+**Teile je Chassis (Spieler 24. Nov. 2026, abgesegnet):** fünf Teile für alle -- Kopf, Kern,
+Rumpf, Waffenhalter (Molok 2×, Strix: Lafette), Antrieb --, je Teil zwei Zutaten. Der Charakter
+steckt in der Waren-Mischung: Vireo Plasma (Sprint), Molok Platten + Legierung (der teuerste),
+Nimbus Chips + Plasma, Strix Chips + Platten. Zahlen in `data/factory.json` → `werkbank` und im
+SPOT-Blatt Fabrik. Gerechnet mit einer gut ausgebauten Tier-2-Platine (je Einsatz ca. 250
+Legierung, 240 Plasma, 70 Schaltkreis, je Verdichter 16 Platten, je Chipfabrik 30 Chips): reine
+Produktion Vireo/Nimbus ca. 2, Strix 2,5, Molok 4 Einsätze; mit Skilltrees und Ausbau nebenher
+4-5 / 5-6 / 7-8. Baupläne zu Beginn: die vier Standard-DROMEs und der Rohling. Fraktions-DROME =
+Standard-Bauplan, der Fraktionskern ersetzt das Kern-Teil. Waffen später über Baupläne aus Caches,
+aus Tier-1-Waren.
+
+**GEBAUT (24. Nov. 2026):** `Workbench` (Logik auf `Roster.materials`: Teile als
+`teil:<chassis>:<teil>`, Baupläne als `bauplan:<produkt>`), Reiter **Platine | Werkbank** im
+Fabrik-Tab (`WorkbenchView`, ersetzt Charger und DROMEs; `DromeForge` entfernt), Bauplan-Baum mit
+habe/brauche, Herkunft fehlender Waren, Schätzung in Kämpfen (`FactorySim.estimate_per_tick`),
+„Als Ziel“ (im Spielstand der Fabrik) mit Markierung auf der Platine, Teile im Inventar. Freie
+Chassis aus alter Beute bauen weiter kostenlos.
+
+**Offen:** Baukerne sind noch im Spiel (Caches, Shop, Verwerten), bauen aber keine DROMEs mehr --
+was Verwerten künftig gibt (Vorschlag: Teile zurück) und wie alte Baukerne umgestellt werden,
+ist zu entscheiden. Weitere Baupläne (Cache-Inhalt, Story), Waffen.
+
+**Ursprünglich offen (vor dem Bau):** Teile je Chassis und ihre Rezepte (Abschnitt 8, Ziel: ein Teil ≈
 ein Einsatz, ein DROME ≈ 5-8 Einsätze); welche Baupläne es zu Beginn gibt und wo die übrigen
 herkommen (Cache-Inhalt, Story); ob Waffen schon mit der ersten Werkbank kommen; Baukerne raus
 (Caches, Shop, `Roster.craft_drome`, alte Spielstände), sobald DROMEs aus Teilen entstehen.

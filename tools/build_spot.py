@@ -1016,6 +1016,13 @@ def build_fabrik(ws):
             for t in fab["tiers"]]
     last = write_table(ws, ["Tier", "Freischalten über", "Kosten", "Bringt"], rows, start_row=r + 1)
     r = last + 3
+    ws.cell(row=r, column=1, value="Werkbank: DROME-Teile (Spieler 24. Nov. 2026)").font = SUB_FONT
+    rows = []
+    for chassis, parts in fab["werkbank"]["dromes"].items():
+        for part in parts:
+            rows.append([chassis, part["name"], part["id"], part.get("anzahl", 1), amt(part["kosten"])])
+    last = write_table(ws, ["Chassis", "Teil", "Platz", "Anzahl", "Kosten je Stück"], rows, start_row=r + 1)
+    r = last + 3
     ws.cell(row=r, column=1, value="Aus dem Lager herstellen").font = SUB_FONT
     rows = [[wn(w), amt(h["kosten"]), h.get("text", "")] for w, h in fab["herstellen"].items()]
     write_table(ws, ["Ergebnis", "Kosten", "Hinweis"], rows, start_row=r + 1)

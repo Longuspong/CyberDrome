@@ -28,6 +28,9 @@ var _note: Label
 var selected := ""
 var tool := ""
 var chunk := ""
+## Waren, die dem Werkbank-Ziel fehlen ({ware: menge}) -- die Platine hebt ihre
+## Hersteller hervor.
+var goal_wares: Dictionary = {}
 
 
 func _ready() -> void:
@@ -74,6 +77,15 @@ func refresh() -> void:
 	_head.text = "TAKT %d · TIER %d · STROM %s/%s · alle %s s ein Takt, solange offen" % [
 		_sim.tick_count(), _sim.tier(), FactorySim.num(float(_sim.power["used"])),
 		FactorySim.num(float(_sim.power["supply"])), FactorySim.num(FactorySim.live_seconds())]
+	goal_wares = {}
+	if _sim.goal() != "":
+		var bench := Workbench.new(GameState.roster)
+		goal_wares = bench.raw_shortfall(_sim.goal())
+		var parts: Array = []
+		for ware in goal_wares:
+			parts.append("%d %s" % [int(goal_wares[ware]), FactorySim.ware_name(str(ware))])
+		_head.text += "\nZIEL %s: %s" % [bench.name_of(_sim.goal()).to_upper(),
+			"fehlt " + ", ".join(parts) if not parts.is_empty() else "alles da -- Werkbank"]
 	_board.queue_redraw()
 	_build_info()
 	_build_tools()
@@ -504,6 +516,11 @@ class Board extends Control:
 			if d.get("relais", false) and not b["rel_on"]:
 				line_col = Color(col, 0.4)
 			draw_polyline(hex, line_col, 2.0)
+			# Werkbank-Ziel: Hersteller fehlender Waren gelb markiert.
+			for ware in d.get("aus", {}):
+				if view.goal_wares.has(ware):
+					draw_circle(c + Vector2(_size * 0.5, -_size * 0.5), _size * 0.12, Color("#ffe14d"))
+					break
 			if sim.engpass == k:
 				draw_polyline(_hex(c, _size * 0.9), Color("#ff2bd6", 0.4 + 0.6 * pa), 3.0)
 			if sel == k:

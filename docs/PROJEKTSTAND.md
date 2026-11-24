@@ -54,6 +54,21 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * Offen: Rezept-Raten/Takte fuers Spiel, Tier 3/4 ueber die Story, Baukerne raus (erst mit den
   DROME-Teilen), Anzeigetexte noch ohne `tr()`.
 
+### Werkbank (24. Nov. 2026, `docs/FACTORY_KONZEPT.md` Abschnitt 13)
+
+* Fabrik-Tab hat zwei Reiter: **Platine** (`FactoryView`) und **Werkbank** (`WorkbenchView`,
+  Kategorien Charger und DROMEs). `resources_screen.open_tab("charger"/"dromes")` fuehrt in die
+  Werkbank. `DromeForge` ist entfernt.
+* Logik `Workbench` (`scripts/core/workbench.gd`): Produkte `rohling`, `teil:<chassis>:<teil>`,
+  `drome:<chassis>`, `faction:<variante>` (Fraktionskern statt Kern-Teil), `free:<chassis>`;
+  `needs`/`missing`/`raw_shortfall`/`craft`, `battles_for` mit `FactorySim.estimate_per_tick`.
+  Teile-Rezepte in `data/factory.json` -> `werkbank`, SPOT-Blatt Fabrik.
+* Ziel merken: `FactorySim.goal()` im Fabrik-Spielstand; die Platine zeigt "ZIEL ... fehlt ..."
+  und einen gelben Punkt an Gebaeuden, die Fehlendes herstellen.
+* Tests `tests/test_workbench.gd`, Smoke-Test bedient die Werkbank, Bild:
+  `screenshot.gd -- res://scenes/resources.tscn <png> 60 fabrik=dromes ziel=drome:jugg_body`.
+* Offen: Baukerne (bauen nichts mehr, liegen aber noch in Caches/Shop/Verwerten).
+
 ### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
 
 Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "Vorschlag").
