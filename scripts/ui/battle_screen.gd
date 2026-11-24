@@ -127,6 +127,7 @@ func _ready() -> void:
 	EventBus.unit_died.connect(_on_unit_died)
 	EventBus.unit_damaged.connect(_on_unit_damaged)
 	EventBus.unit_healed.connect(_on_unit_healed)
+	EventBus.shield_damaged.connect(_on_shield_damaged)
 	EventBus.action_used.connect(_on_action_used)
 	EventBus.ability_cast.connect(_on_ability_cast)
 	EventBus.virus_pulsed.connect(_on_virus_pulse)
@@ -402,6 +403,16 @@ func _on_unit_damaged(unit: Unit, amount: int, _source) -> void:
 	# Haptik: nur schwere Treffer auf die eigenen DROMEs (ab 10 %).
 	if unit.is_player and float(amount) >= 0.1 * float(maximum):
 		Accessibility.vibrate(25)
+	_refresh_hud()
+
+
+## Schildtreffer (24. Nov. 2026): die Zahl in der Schildfarbe -- vorher stand
+## nur die Integritaet da, ein Treffer auf den Schild sah aus wie keiner.
+func _on_shield_damaged(unit: Unit, amount: int, _source) -> void:
+	if amount <= 0:
+		return
+	view.show_float(unit.visual_anchor(), "-%d" % amount,
+		Teams.shield_color(unit.is_player).lightened(0.3))
 	_refresh_hud()
 
 

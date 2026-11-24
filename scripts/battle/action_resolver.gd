@@ -52,8 +52,15 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 ## Die EINZIGE Stelle, an der Schaden angewendet wird.
 ##
 ## ``action`` traegt die Schadensart. Sie darf fehlen (Overtime).
+##
+## Charger (24. Nov. 2026): ``charge_share`` ist der Anteil eines Treffers,
+## den dieser Schuss fuer die Elementarbelastung zaehlt (eine Salve aus drei
+## Schuessen = ein Treffer, je Schuss 1/3). ``ability_bonus`` false: der
+## Bonus der Faehigkeit (Belastung + Stapel) ist in diesem Einsatz an diesem
+## Ziel schon angelegt.
 func apply_damage(source: Unit, target: Unit, raw: int,
-		action: ActionData = null, guarded: bool = true, pierce_shield: bool = false) -> int:
+		action: ActionData = null, guarded: bool = true, pierce_shield: bool = false,
+		charge_share: float = 1.0, ability_bonus: bool = true) -> int:
 	# Zielsucher: Angriffe gegen markierte Gegner treffen haerter.
 	if action != null and action.bonus_vs_marked > 0.0 and is_marked(target):
 		raw = int(round(float(raw) * (1.0 + action.bonus_vs_marked)))
@@ -70,7 +77,9 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 				raw -= taken
 				EventBus.log_line("%s fängt %d Schaden für %s ab."
 					% [guard.display_name, taken, target.display_name])
-				apply_damage(source, guard, taken, action, false)
+				# Der Beschuetzer faengt Schaden ab, keine Elementarbelastung:
+				# sie sammelt sich nur am getroffenen Ziel.
+				apply_damage(source, guard, taken, action, false, false, 0.0, false)
 	var frac := action.energy_fraction if action != null else 0.0
 	# Ueberspannung: solange der eigene Schild steht, wird ein Teil des
 	# kinetischen Schadens zu Energie.
@@ -95,6 +104,10 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 			source.damage_by_action[action.id] = int(source.damage_by_action.get(action.id, 0)) + dealt
 
 	EventBus.unit_damaged.emit(target, amount, source)
+	# Was der Schild geschluckt hat, eigens melden -- sonst sieht ein Treffer
+	# auf den Schild aus wie kein Treffer (24. Nov. 2026).
+	if shield_before > target.shield:
+		EventBus.shield_damaged.emit(target, shield_before - target.shield, source)
 	# Was der Schild geschluckt hat, steht mit im Log. Vorher hiess ein
 	# Treffer auf den vollen Schild "fuer 0 Schaden" -- das las sich, als
 	# waere nichts passiert, obwohl der Schild gerade halbiert wurde.
@@ -118,8 +131,9 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		if heal > 0:
 			source.hp = mini(int(source.stats.get("hp_max", source.hp)), source.hp + heal)
 	if action != null and not action.charger.is_empty() and target.hp > 0 \
-			and source != null and source.is_player != target.is_player:
-		_charge(source, target, action)
+			and source != null and source.is_player != target.is_player \
+			and (charge_share > 0.0 or ability_bonus):
+		_charge(source, target, action, charge_share, ability_bonus)
 	if shield_before > 0 and target.shield <= 0 and target.hp > 0:
 		_shield_broken(target)
 	if target.hp <= 0:
@@ -596,17 +610,28 @@ func _multi_shot(source: Unit, tile: Vector2i, action: ActionData) -> void:
 		targets.append(unit)
 	while targets.size() < action.shots:
 		targets.append(primary)
+	# Der Bonus der Faehigkeit (Charger) gilt je Ziel einmal je Einsatz, nicht
+	# je Schuss -- vorher legte jede Kugel eines Doppelschusses ihn neu an.
+	var bonus_given: Array = []
 	if action.salvo > 1:
-		# Salven: die Schuesse treffen nacheinander, wenn sie ankommen.
+		# Salven: die Schuesse treffen nacheinander, wenn sie ankommen. Eine
+		# Salve zaehlt fuer die Elementarbelastung als EIN Treffer.
 		var bullet := maxi(1, int(round(float(source.raw_damage(action)) / action.salvo)))
 		for volley in targets.size():
 			for b in action.salvo:
+				var first: bool = not bonus_given.has(targets[volley])
+				if first:
+					bonus_given.append(targets[volley])
 				delayed.append({"left": salvo_time(action, volley, b), "source": source,
-					"target": targets[volley], "damage": bullet, "action": action})
+					"target": targets[volley], "damage": bullet, "action": action,
+					"share": 1.0 / float(action.salvo), "bonus": first})
 		return
 	for target in targets:
 		if target.is_alive():
-			apply_damage(source, target, source.raw_damage(action), action)
+			var first: bool = not bonus_given.has(target)
+			if first:
+				bonus_given.append(target)
+			apply_damage(source, target, source.raw_damage(action), action, true, false, 1.0, first)
 
 
 ## Laesst verzoegerte Wirkungen ablaufen. Gibt zurueck, ob eine ausgeloest hat.
@@ -627,7 +652,8 @@ func advance(dt: float) -> bool:
 			# Ein Schuss einer Salve.
 			var hit: Unit = entry["target"]
 			if hit.is_alive() and source.is_alive():
-				apply_damage(source, hit, int(entry["damage"]), action)
+				apply_damage(source, hit, int(entry["damage"]), action, true, false,
+					float(entry.get("share", 1.0)), bool(entry.get("bonus", true)))
 			continue
 		EventBus.log_line("%s: %s schlägt ein." % [source.display_name, action.display_name])
 		_apply_area(source, entry["tile"], action)
@@ -657,20 +683,28 @@ func _apply_area(source: Unit, tile: Vector2i, action: ActionData) -> void:
 ## Treffer; die Faehigkeit legt beim ueberwiegenden Element Stapel direkt an
 ## und ab Resonanz 2 zusaetzlich ``ability_load``. Volle Stapel wirken je
 ## Element (_element_stack).
-func _charge(source: Unit, target: Unit, action: ActionData) -> void:
+func _charge(source: Unit, target: Unit, action: ActionData, share: float = 1.0,
+		bonus: bool = true) -> void:
 	var spec := action.charger
-	spec["hits"] = int(spec.get("hits", 0)) + 1
-	var hits := int(spec["hits"])
-	var mult := 1.0
-	for every in spec.get("double_every", []):
-		if int(every) > 0 and hits % int(every) == 0:
-			mult = 2.0
+	# Treffer zaehlen auch in Bruchteilen (Salve); ein Treffer ist voll, wenn
+	# die Summe eine ganze Zahl ueberschreitet.
+	var before := float(spec.get("hits", 0))
+	spec["hits"] = before + maxf(0.0, share)
+	var done := int(floor(float(spec["hits"]) + 0.0001))
+	var completed := done > int(floor(before + 0.0001))
+	# Resonanz 4/6: der volle Treffer legt doppelt an -- der Zuschlag kommt
+	# einmal ganz mit dem Schuss, der den Treffer voll macht.
+	var extra := 0.0
+	if completed:
+		for every in spec.get("double_every", []):
+			if int(every) > 0 and done % int(every) == 0:
+				extra = 1.0
 	var stack_at := float(spec.get("stack_at", 100))
 	var dominant := str(spec.get("dominant", ""))
-	var is_ability := bool(spec.get("ability", false))
+	var is_ability := bool(spec.get("ability", false)) and bonus
 	var loads: Dictionary = spec.get("load", {})
 	for element in loads:
-		var amount := float(loads[element]) * mult
+		var amount := float(loads[element]) * (maxf(0.0, share) + extra)
 		if is_ability and str(element) == dominant:
 			amount += float(spec.get("ability_load", 0))
 		var stacks := target.add_element_load(str(element), amount, stack_at)
@@ -735,6 +769,12 @@ func burn_cable_fire(unit: Unit) -> int:
 	return (shield_before - unit.shield) + (hp_before - unit.hp)
 
 
+## Festhalten im Sog: Statuskennung und etwas Luft ueber die Verzoegerung
+## hinaus, damit der Einschlag sicher noch alle trifft.
+const HOLD_STATUS := &"vortex_hold"
+const HOLD_SLACK := 0.1
+
+
 ## Sog: die Gegner im Radius ruecken Feld fuer Feld zum Zielfeld, die
 ## naechsten zuerst, damit sie sich dicht an dicht packen. Wer blockiert ist,
 ## bleibt stehen.
@@ -760,6 +800,14 @@ func _gather(source: Unit, center: Vector2i, action: ActionData) -> void:
 	forcing = false
 	if not pulled.is_empty():
 		EventBus.log_line("%s zieht %d Gegner zusammen." % [source.display_name, pulled.size()])
+	# Der Sog haelt fest bis zur Schockwelle (24. Nov. 2026): vorher liefen die
+	# Gezogenen in der Verzoegerung gleich wieder heraus, der Sog war kaum zu
+	# sehen. Wer schon vor dem Wurf weglaeuft, entkommt weiter (Ausholzeit).
+	if action.delay > 0.0:
+		for unit in units:
+			if unit.is_alive() and unit.is_player != source.is_player \
+					and Grid.distance(unit.tile, center) <= action.aoe_radius:
+				unit.apply_status(HOLD_STATUS, action.delay + HOLD_SLACK, {"rooted": true})
 
 
 ## Ein Feld naeher an ``center``, wenn frei -- erst die Richtung, die am

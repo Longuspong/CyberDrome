@@ -28,7 +28,7 @@
     "eq_neon_blaster": "Mehr Energie: knackt Schilde. Beim Leveln wächst nur der Energieanteil.",
     "eq_plasma_blade": "Nahkampf. Aufschlitzen macht das Ziel 5 s verwundbar (+50 % Schaden von allen).",
     "eq_boomerang": "Zwei Treffer je Wurf; +30 % Schaden, wenn der Träger in der letzten Sekunde gelaufen ist.",
-    "eq_rune_staff": "Energie auf Distanz. Vortex trifft eine Fläche, zieht zusammen und verlangsamt.",
+    "eq_rune_staff": "Energie auf Distanz. Vortex trifft eine Fläche, zieht zusammen, hält bis zum Einschlag fest und verlangsamt.",
     "eq_drone_pod": "Support-Werkzeug: heilt Verbündete und gibt ihnen Schild, kitzelt Gegner nur.",
     "eq_hammer": "Nahkampf. Jeder 3. Schlag betäubt 1 s.",
     "eq_bulwark_ram": "Nahkampf. Der Rammstoß skaliert mit der eigenen max. Integrität (ohne Power) und stößt zurück -- für Off-Tanks.",

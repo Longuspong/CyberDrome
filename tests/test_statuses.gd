@@ -147,3 +147,51 @@ func test_efficiency_also_raises_the_strength() -> void:
 	molok.apply_status(&"slow", 2.5, {"move_mult": 0.6})
 	t.ok(is_equal_approx(float(molok.statuses[&"slow"]["move_mult"]), 0.6), "ohne Auslöser unverändert")
 	battle.free()
+
+
+func _nimbus() -> DromeBuild:
+	return DromeBuild.create("Nimbus", {"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core", "equip_left": &"eq_rune_staff"})
+
+
+## Bugfix 24. Nov. 2026: der Sog des Vortex haelt die Gegner im Radius bis zur
+## Schockwelle fest -- vorher liefen sie in der Verzoegerung wieder heraus.
+func test_the_vortex_holds_until_the_shock() -> void:
+	var battle := BattleManager.new()
+	battle.setup(4711, [_nimbus()], [_molok(), _molok()])
+	var nimbus: Unit = battle.units[0]
+	var near: Unit = battle.units[1]
+	var far: Unit = battle.units[2]
+	var center := Vector2i(4, 6)
+	battle.resolver.move_unit(nimbus, Vector2i(4, 10))
+	battle.resolver.move_unit(near, center)
+	battle.resolver.move_unit(far, Vector2i(4, 8))
+	var vortex: ActionData = nimbus.mounts[0]["ability"]
+	t.ok(vortex.gather and vortex.delay > 0.0, "Vortex zieht und schlaegt verzoegert ein")
+	t.ok(battle.resolver.execute(nimbus, center, vortex, true), "Vortex geworfen")
+	t.equal(Grid.distance(far.tile, center), 1, "der Aeussere wird herangezogen")
+	t.ok(near.is_rooted() and far.is_rooted(), "beide festgehalten")
+	t.ok(not nimbus.is_rooted(), "der Werfer nicht")
+	t.ok(not far.status_names().has("vortex_hold"), "kein eigenes Symbol")
+	for i in int(ceil((vortex.delay + 0.2) / 0.05)):
+		battle.resolver.advance(0.05)
+		near.tick_statuses(0.05)
+		far.tick_statuses(0.05)
+	t.ok(not near.is_rooted() and not far.is_rooted(), "nach dem Einschlag wieder frei")
+	battle.free()
+
+
+## Bugfix 24. Nov. 2026: ein Treffer auf den Schild meldet sich eigens.
+func test_a_shield_hit_is_reported() -> void:
+	var battle := _battle()
+	var vireo: Unit = battle.units[0]
+	var molok: Unit = battle.units[1]
+	molok.shield = 50
+	var seen := []
+	var hook := func(unit, amount, _source): seen.append([unit, amount])
+	EventBus.shield_damaged.connect(hook)
+	battle.resolver.apply_damage(vireo, molok, 10, vireo.mounts[0]["attack"])
+	EventBus.shield_damaged.disconnect(hook)
+	t.equal(seen.size(), 1, "eine Meldung")
+	t.ok(not seen.is_empty() and seen[0][0] == molok and int(seen[0][1]) > 0, "mit dem geschluckten Schaden")
+	battle.free()

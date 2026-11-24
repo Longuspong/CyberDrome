@@ -29,6 +29,35 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Bugfix-Runde Kampf (24. Nov. 2026, Meldung des Spielers)
+
+Gemeldet: Elementarladung nicht zu merken, Vortex zieht kaum und betaeubt nicht,
+Flaeche wirkt nur auf Mitte + einen Ring, Animationen und Blickrichtung falsch.
+Selbst nachgespielt (Kampfbild per xvfb, Seeds 5003/7001/7002) und gemessen:
+
+* **Charger bei Salven:** jede Kugel einer Salve (Doppelschuss 2 x 3) legte die volle
+  Belastung und den Faehigkeits-Bonus (+100, +1 Stapel) an -- ein Doppelschuss mit zwei
+  Feuer-Phasen gab ~14 Stapel statt 2. Jetzt zaehlt eine Salve als **ein** Treffer
+  (je Kugel 1/salvo, Resonanz-Zuschlag mit der Kugel, die den Treffer voll macht), der
+  Bonus kommt je Ziel **einmal je Einsatz** (`ActionResolver._multi_shot`, `_charge`).
+  Der Beschuetzer (Praesenz) bekommt beim Abfangen keine Belastung mehr.
+* **Andere Elemente als Feuer** wirken weiter noch nicht (CHARGER_KONZEPT 4) -- das
+  Bau-Popup des Chargers sagt das jetzt.
+* **Schildtreffer unsichtbar:** Zahlen gab es nur fuer Integritaet. Wer am Rand des
+  Vortex mit Schild stand, wurde getroffen, ohne dass eine Zahl kam -- so sah die Flaeche
+  wie Mitte + ein Ring aus. Logik war richtig (Radius 2 trifft). Neu:
+  `EventBus.shield_damaged`, Zahl in Schildfarbe (`BattleScreen._on_shield_damaged`).
+* **Vortex-Sog:** die Gezogenen liefen in den 0,6 s bis zur Schockwelle gleich wieder
+  heraus. Jetzt haelt der Sog alle Gegner im Radius bis zum Einschlag fest
+  (`vortex_hold`, gewurzelt, ohne eigenes Symbol). Wer waehrend der Ausholzeit
+  weglaeuft, entkommt weiter. Messung `playtest.gd -- 200`: 155 -> 157 Siege.
+  Betaeuben tut der Vortex laut Daten nicht (verlangsamt 40 % fuer 2,5 s) -- offen.
+* **Blickrichtung:** Angriffe feuerten, bevor die Figur zum Ziel gedreht war (Molok bis
+  0,4 s fuer eine halbe Drehung) -- beim Angriff dreht sie jetzt 5x schneller
+  (`Arena3D.ATTACK_TURN_BOOST`). Wer laeuft und sein Ziel vom neuen Feld aus in
+  Reichweite hat, schaut beim Laufen zum Ziel statt sich zwischen zwei Schuessen
+  wegzudrehen (`AIController._walk`). Das Echo haelt den Blick ueber die ganze Ausholzeit.
+
 ### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
 
 Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "Vorschlag").
