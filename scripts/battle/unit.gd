@@ -1225,6 +1225,9 @@ func tick_statuses(dt: float) -> bool:
 func status_names() -> Array[String]:
 	var names: Array[String] = []
 	for id in statuses:
+		# Das kurze Festhalten im Sog zeigt der Vortex selbst.
+		if id == &"vortex_hold":
+			continue
 		names.append(str(id))
 	if cable_fire_stacks() > 0:
 		names.append("cable_fire")

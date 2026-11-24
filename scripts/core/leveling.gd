@@ -24,6 +24,13 @@ static func cfg() -> Dictionary:
 	return Config.section("levels")
 
 
+## EP gibt es seit 24. Nov. 2026 nicht mehr -- Level kauft man mit Fabrik-Waren
+## (Workbench.level_up_drome/level_up_weapon). Die EP-Rechnung bleibt fuer alte
+## Auswertungen stehen, wirkt aber nicht.
+static func xp_enabled() -> bool:
+	return false
+
+
 static func drome_cfg() -> Dictionary:
 	return cfg().get("drome", {})
 

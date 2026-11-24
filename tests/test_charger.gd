@@ -126,7 +126,7 @@ func test_open_cache_rolls_four_times() -> void:
 	var phases := 0
 	for id in Charger.element_ids():
 		phases += roster.phases(id)
-	var gained := phases + roster.blanks() + roster.kits() + roster.faction_cores("neon")
+	var gained := phases + roster.blanks() + roster.faction_cores("neon")
 	t.ok(gained > 0 or roster.coins > 0 or roster.entries.size() > 0, "Beute gutgeschrieben")
 	t.equal(roster.open_cache("city", rng).size(), 0, "leeres Lager: nichts")
 
@@ -135,3 +135,36 @@ func test_resonance_six_upgrades_fifth_to_third() -> void:
 	t.equal(Charger.double_every(["fire", "fire", "fire", "fire", "", ""]), [5], "Stufe 4: jeder 5.")
 	t.equal(Charger.double_every(["fire", "fire", "fire", "fire", "fire", "fire"]), [3],
 		"Stufe 6: jeder 3. statt jeder 5.")
+
+
+## Bugfix 24. Nov. 2026: eine Salve (Doppelschuss = 2 x 3 Schuesse) zaehlt je
+## Salve als EIN Treffer, und der Bonus der Faehigkeit kommt je Ziel nur
+## einmal -- vorher legte jede Kugel ihn neu an (rund 14 Stapel statt 2).
+func test_a_salvo_counts_as_one_hit_and_the_bonus_once() -> void:
+	var battle := _battle(["fire", "fire", "", "", "", ""])
+	var vireo: Unit = battle.units[0]
+	var molok: Unit = battle.units[1]
+	molok.stats["hp_max"] = 9999
+	molok.hp = 9999
+	battle.resolver.move_unit(molok, Grid.neighbor(vireo.tile, 1))
+	var ability: ActionData = vireo.mounts[0]["ability"]
+	t.equal(ability.salvo, 3, "Doppelschuss: Salven aus 3 Schuessen")
+	t.ok(battle.resolver.execute(vireo, molok.tile, ability), "Doppelschuss ausgefuehrt")
+	for i in 40:
+		battle.resolver.advance(0.05)
+	# 2 Salven x 40 + 100 (Stufe 2) = 180 -> 1 Stapel, dazu 1 Stapel direkt.
+	t.equal(molok.cable_fire_stacks(), 2, "zwei Stapel je Doppelschuss")
+	t.ok(is_equal_approx(float(molok.element_load.get("fire", 0.0)), 80.0), "Rest 80 Belastung")
+	battle.free()
+
+
+func test_the_guard_takes_no_element_load() -> void:
+	var battle := _battle(["fire", "fire", "fire", "fire", "fire", ""])
+	var vireo: Unit = battle.units[0]
+	var molok: Unit = battle.units[1]
+	molok.stats["hp_max"] = 9999
+	molok.hp = 9999
+	var attack: ActionData = vireo.mounts[0]["attack"]
+	battle.resolver.apply_damage(vireo, molok, 10, attack, false, false, 0.0, false)
+	t.equal(molok.cable_fire_stacks(), 0, "ohne Anteil keine Belastung")
+	battle.free()

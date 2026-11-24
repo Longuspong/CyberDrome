@@ -529,6 +529,12 @@ func deliver_run_home() -> Array:
 				roster.add_faction_core(str(item.get("faction", "")))
 				delivered.append(item)
 	run.home_queue.clear()
+	# Keynode-Chip (24. Nov. 2026, Raten vorlaeufig): nach einem gewonnenen Einsatz --
+	# der allererste gibt sicher einen, danach eine Chance.
+	if run.is_over() and run.phase == RunState.Phase.WON and not run.keynode_rolled:
+		run.keynode_rolled = true
+		if roll_keynode(run.run_seed):
+			delivered.append({"kind": "keynode", "amount": 1, "title": "Keynode-Chip"})
 	# Lootcaches und Platzhaltercoin (14. Nov. 2026): am Ende nach Hause.
 	if run.is_over() and (not run.run_caches.is_empty() or run.run_coins > 0):
 		for key in run.run_caches:
@@ -546,6 +552,24 @@ func deliver_run_home() -> Array:
 		save_roster()
 	save_run()
 	return delivered
+
+
+## Wuerfelt den Keynode-Chip eines gewonnenen Einsatzes und legt ihn ins Lager.
+## Der allererste gewonnene Einsatz gibt sicher einen (progress.keynode_first).
+func roll_keynode(seed_value: int) -> bool:
+	var rule: Dictionary = (FactorySim.data().get("level", {}) as Dictionary).get("keynode", {})
+	var hit := false
+	if not bool(progress.get("keynode_first", false)) and int(rule.get("erster_einsatz", 1)) > 0:
+		progress["keynode_first"] = true
+		save_progress()
+		hit = true
+	else:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("keynode:%d" % seed_value)
+		hit = rng.randf() < float(rule.get("einsatz_chance", 0.15))
+	if hit:
+		roster.materials["keynode"] = int(roster.materials.get("keynode", 0)) + 1
+	return hit
 
 
 ## Richtet den Kampf der aktuellen Runde ein. Der Lauf-Squad wird KOPIERT:

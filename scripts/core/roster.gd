@@ -40,7 +40,7 @@ var _next_uid: int = 1
 var caches: Dictionary = {}
 ## Platzhaltercoin (Arbeitsname): Waehrung fuer den Hangar-Shop.
 var coins: int = 0
-## Baumaterial (15. Nov. 2026): "baukern" und "kern:<fraktion>" -> Anzahl.
+## Baumaterial: "kern:<fraktion>" -> Anzahl (Baukerne bis 24. Nov. 2026).
 ## Seit 20. Nov. 2026 auch "phase:<element>" (Energy Phases) und "rohling"
 ## (Charger-Rohlinge).
 var materials: Dictionary = {}
@@ -312,21 +312,9 @@ static func crafting_cfg() -> Dictionary:
 	return Config.section("crafting")
 
 
-static func kits_per_drome() -> int:
-	return int(crafting_cfg().get("kits_per_drome", 3))
-
-
-static func kit_name() -> String:
-	return str(crafting_cfg().get("kit_name", "Baukern"))
-
-
 static func core_name(faction: String) -> String:
 	return str((crafting_cfg().get("faction_core_names", {}) as Dictionary).get(faction,
 		"%s-Kern" % faction.capitalize()))
-
-
-func kits() -> int:
-	return int(materials.get("baukern", 0))
 
 
 func faction_cores(faction: String) -> int:
@@ -473,13 +461,13 @@ func _cache_roll(table: Array, faction: String, rng: RandomNumberGenerator) -> D
 			return {"kind": "faction_core", "faction": faction}
 		"faction_core":
 			if faction == "":
-				_add_material("baukern", 1)
-				return {"kind": "baukern", "amount": 1}
+				add_blanks(1)
+				return {"kind": "blank"}
 			add_faction_core(faction)
 			return {"kind": "faction_core", "faction": faction}
-		"baukern":
-			_add_material("baukern", 1)
-			return {"kind": "baukern", "amount": 1}
+		"keynode":
+			_add_material("keynode", 1)
+			return {"kind": "keynode"}
 		"phase":
 			var ids := Charger.element_ids()
 			var e: String = ids[rng.randi() % ids.size()]
@@ -510,26 +498,26 @@ func salvage_blocker(entry: RosterEntry) -> String:
 
 
 ## Verwertet einen DROME (statt ihn aufzuloesen): Chassis und Kern
-## verschwinden, die Waffen kommen frei in den Hangar, Level und EP gehen
-## verloren. Dafuer gibt es Baukerne, bei einem Fraktions-DROME zusaetzlich
-## einen Fraktionskern. Gibt zurueck, was es gab: {kits, faction}.
+## verschwinden, die Waffen kommen frei in den Hangar, Level gehen verloren.
+## Seit 24. Nov. 2026 (Werkbank): zurueck kommen die Zutaten der teuersten Teile
+## (``Workbench.salvage_yield``), ein Fraktions-DROME gibt dazu sein Spezialteil.
+## Gibt zurueck, was es gab: {wares: {ware: menge}, special: variante oder ""}.
 func salvage(entry: RosterEntry) -> Dictionary:
 	if salvage_blocker(entry) != "":
 		return {}
+	var body_uid := str(entry.assignments.get("body", ""))
+	var chassis := str(_instances[body_uid].part_id) if _instances.has(body_uid) else ""
+	var got := Workbench.salvage_yield(chassis, entry.variant)
 	for slot in ["body", "core"]:
 		var uid := str(entry.assignments.get(slot, ""))
 		if uid != "":
 			_instances.erase(uid)
 	entries.erase(entry)
-	var kits_gained := int(crafting_cfg().get("salvage_kits", 1))
-	_add_material("baukern", kits_gained)
-	var faction := ""
-	if entry.variant != "":
-		var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(entry.variant, {})
-		faction = str(spec.get("faction", ""))
-		if faction != "":
-			_add_material("kern:" + faction, 1)
-	return {"kits": kits_gained, "faction": faction}
+	for ware in got["wares"]:
+		_add_material(FactorySim.material_key(str(ware)), int(got["wares"][ware]))
+	if str(got["special"]) != "":
+		_add_material("spezial:" + str(got["special"]), 1)
+	return got
 
 
 ## Der Kern, der zu einem Standard-Chassis gehoert (Startbestand).
@@ -538,22 +526,6 @@ static func core_for(chassis_id: StringName) -> StringName:
 		if row["body"] == chassis_id:
 			return row["core"]
 	return &""
-
-
-## Baut einen Standard-DROME aus kits_per_drome Baukernen: Chassis und Kern
-## neu, ohne Waffe. null, wenn die Baukerne fehlen.
-func craft_drome(chassis_id: StringName, entry_name: String = "") -> RosterEntry:
-	if kits() < kits_per_drome() or PartDB.get_part(chassis_id) == null:
-		return null
-	_add_material("baukern", -kits_per_drome())
-	var chassis_uid := add_instance(chassis_id)
-	var entry := RosterEntry.create(entry_name if entry_name != "" else _starter_name(chassis_id),
-		chassis_uid)
-	var core := core_for(chassis_id)
-	if core != &"":
-		entry.assignments["core"] = add_instance(core)
-	entries.append(entry)
-	return entry
 
 
 ## Name eines Fraktions-DROME (21. Nov. 2026, Spieler): eine Variante heisst wie
@@ -597,24 +569,7 @@ static func faction_variants() -> Array:
 	return out
 
 
-## Baut einen Fraktions-DROME: ein Fraktionskern + kits_per_drome Baukerne.
-## Werte, Name und Fraktion aus data/formations.json, ohne Waffe.
-func craft_faction_drome(variant_id: String) -> RosterEntry:
-	var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(variant_id, {})
-	var faction := str(spec.get("faction", ""))
-	if faction == "" or faction_cores(faction) < 1 or kits() < kits_per_drome():
-		return null
-	var chassis_id := StringName(str(spec.get("chassis", "")))
-	if PartDB.get_part(chassis_id) == null:
-		return null
-	_add_material("kern:" + faction, -1)
-	var entry := craft_drome_free(chassis_id, faction_drome_name(variant_id))
-	_add_material("baukern", -kits_per_drome())
-	entry.variant = variant_id
-	return entry
-
-
-## Chassis und Kern ohne Kosten (intern fuer craft_faction_drome).
+## Chassis und Kern ohne Kosten (Werkbank, Cache-Beute).
 func craft_drome_free(chassis_id: StringName, entry_name: String) -> RosterEntry:
 	var entry := RosterEntry.create(entry_name, add_instance(chassis_id))
 	var core := core_for(chassis_id)
@@ -639,13 +594,11 @@ func offer_blocker(offer: Dictionary) -> String:
 	return ""
 
 
-## Kauft ein Angebot: Coins weg, Baukern oder Cache dazu.
+## Kauft ein Angebot: Coins weg, Cache dazu.
 func buy_offer(offer: Dictionary) -> bool:
 	if offer_blocker(offer) != "":
 		return false
 	match str(offer.get("kind", "")):
-		"kit":
-			_add_material("baukern", 1)
 		"cache":
 			var key := str(offer.get("cache", "city"))
 			caches[key] = int(caches.get(key, 0)) + 1

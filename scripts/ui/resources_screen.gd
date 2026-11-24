@@ -6,19 +6,23 @@ extends Control
 ##
 ##   linien   die Fabrik-Platine (FactoryView, seit 23. Nov. 2026): Gebaeude
 ##            stellen Ressourcen her, die ins Lager (= Inventar) gehen
-##   charger  Charger bauen (Rohling + Energy Phases, ChargerCrafter); fertige
-##            Charger liegen im Inventar und werden auf der DROME-Seite
-##            unter Waffe eingesetzt
-##   dromes   neue DROMEs aus Baukernen (DromeForge)
+##   werkbank alles, was aus dem Lager entsteht (WorkbenchView, seit 24. Nov. 2026):
+##            Charger (Rohling + ChargerCrafter) und DROMEs aus Teilen. Ersetzt
+##            die frueheren Reiter Charger und DROMEs (DromeForge mit Baukernen).
 
 ## Oeffnet die Fabrik beim naechsten Aufbau in diesem Reiter.
-static var _tab := "charger"
+static var _tab := "werkbank"
 
 var _content: VBoxContainer
 var _fixed: VBoxContainer
 
 
 static func open_tab(tab: String) -> void:
+	# Alte Reiter (bis 24. Nov. 2026) fuehren in die Werkbank.
+	if tab in ["charger", "dromes"]:
+		WorkbenchView.category = tab
+		WorkbenchView.selected = ""
+		tab = "werkbank"
 	_tab = tab
 
 
@@ -39,11 +43,11 @@ func _ready() -> void:
 
 
 func _refresh() -> void:
-	if _tab not in ["linien", "charger", "dromes"]:
-		_tab = "charger"
+	if _tab not in ["linien", "werkbank"]:
+		_tab = "werkbank"
 	UiKit.clear(_fixed)
 	UiKit.clear(_content)
-	var switch := UiKit.segmented([["linien", "Linien"], ["charger", "Charger"], ["dromes", "DROMEs"]],
+	var switch := UiKit.segmented([["linien", "Platine"], ["werkbank", "Werkbank"]],
 		_tab, func(id):
 			_tab = id
 			Tile.clear_choice()
@@ -52,11 +56,10 @@ func _refresh() -> void:
 	_fixed.add_child(switch)
 	match _tab:
 		"linien": _lines()
-		"dromes": DromeForge.add_to(_content, self)
 		_:
-			var crafter := ChargerCrafter.new()
-			crafter.built.connect(_charger_built)
-			_content.add_child(crafter)
+			var bench := WorkbenchView.new()
+			bench.charger_built.connect(_charger_built)
+			_content.add_child(bench)
 
 
 ## Die Fabrik-Platine (docs/FACTORY_KONZEPT.md).
@@ -78,6 +81,15 @@ func _charger_built(charger: Dictionary) -> void:
 	lines.append("Liegt jetzt im Inventar. Einsetzen: DROMEs › DROME antippen › Waffe.")
 	if dom != "":
 		lines.append(["Die Fähigkeit legt %s-Stapel an." % Charger.element_name(dom), UiKit.HEADING])
+	# Bisher wirkt nur Feuer (CHARGER_KONZEPT 4) -- sonst sieht man im Kampf
+	# nichts und haelt es fuer einen Fehler (24. Nov. 2026).
+	var silent: Array = []
+	for e in Charger.counts(phases):
+		if str(e) != "" and not Charger.is_built(str(e)):
+			silent.append(Charger.element_name(str(e)))
+	if not silent.is_empty():
+		lines.append(tr("%s: Stapel werden gezählt, wirken im Kampf aber noch nicht (bisher nur Feuer).")
+			% ", ".join(silent))
 	InfoPopup.open(self, Charger.display_name(phases).to_upper(), {"subtitle": "NEU IM INVENTAR",
 		"lines": lines, "actions": [{"text": "Zu den DROMEs", "primary": true, "call": func():
 			Fader.go("res://scenes/hangar.tscn")}]})

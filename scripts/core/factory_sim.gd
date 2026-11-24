@@ -147,7 +147,7 @@ func _init(saved: Dictionary = {}, store = null) -> void:
 ## Neue Platine: Startgebaeude stehen, Startbestand gehoert dem Spieler.
 static func fresh_state() -> Dictionary:
 	var s := {"version": SAVE_VERSION, "tick": 0, "next_id": 1, "tier": 1, "owned": {},
-		"chunks": [], "b": {}}
+		"chunks": [], "b": {}, "ziel": ""}
 	for type in defs():
 		s["owned"][type] = int(def(type).get("start", 0))
 	for pair in data().get("startaufbau", []):
@@ -165,7 +165,7 @@ static func _new_building(type: String, id: int) -> Dictionary:
 static func _normalized(saved: Dictionary) -> Dictionary:
 	var s := {"version": SAVE_VERSION, "tick": int(saved.get("tick", 0)),
 		"next_id": int(saved.get("next_id", 1)), "tier": int(saved.get("tier", 1)), "owned": {},
-		"chunks": [], "b": {}}
+		"chunks": [], "b": {}, "ziel": str(saved.get("ziel", ""))}
 	for type in defs():
 		s["owned"][type] = int((saved.get("owned", {}) as Dictionary).get(type, def(type).get("start", 0)))
 	for id in saved.get("chunks", []):
@@ -194,6 +194,15 @@ static func _normalized(saved: Dictionary) -> Dictionary:
 
 func to_dict() -> Dictionary:
 	return state.duplicate(true)
+
+
+## Das in der Werkbank gemerkte Ziel (Produkt-id, "" = keins).
+func goal() -> String:
+	return str(state.get("ziel", ""))
+
+
+func set_goal(id: String) -> void:
+	state["ziel"] = id
 
 
 func tier() -> int:
@@ -872,6 +881,29 @@ func avg_up(k: String) -> Dictionary:
 			out[ware] = float(out.get(ware, 0.0)) + float(h[ware])
 	for ware in out:
 		out[ware] = float(out[ware]) / hist.size()
+	return out
+
+
+## Was die Platine im Dauerlauf je Takt ins Lager schickt ({ware: menge}):
+## eine Kopie laeuft ``warmup`` Takte an und wird dann ``ticks`` Takte gemessen.
+## Der echte Stand bleibt unberuehrt.
+func estimate_per_tick(warmup: int = 30, ticks: int = 60) -> Dictionary:
+	var copy = get_script().new(to_dict(), {})
+	copy.run(warmup)
+	var gain: Dictionary = copy.run(ticks)
+	var out := {}
+	for ware in gain:
+		out[ware] = float(gain[ware]) / ticks
+	return out
+
+
+## Welche Gebaeude eine Ware herstellen: [{name, tier}].
+static func producers(ware: String) -> Array:
+	var out: Array = []
+	for type in defs():
+		var d := def(type)
+		if (d.get("aus", {}) as Dictionary).has(ware):
+			out.append({"name": str(d["name"]), "tier": int(d.get("tier", 1))})
 	return out
 
 

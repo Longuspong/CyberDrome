@@ -29,6 +29,37 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Bugfix-Runde Kampf (24. Nov. 2026, Meldung des Spielers)
+
+Gemeldet: Elementarladung nicht zu merken, Vortex zieht kaum und betaeubt nicht,
+Flaeche wirkt nur auf Mitte + einen Ring, Animationen und Blickrichtung falsch.
+Selbst nachgespielt (Kampfbild per xvfb, Seeds 5003/7001/7002) und gemessen:
+
+* **Charger bei Salven:** jede Kugel einer Salve (Doppelschuss 2 x 3) legte die volle
+  Belastung und den Faehigkeits-Bonus (+100, +1 Stapel) an -- ein Doppelschuss mit zwei
+  Feuer-Phasen gab ~14 Stapel statt 2. Jetzt zaehlt eine Salve als **ein** Treffer
+  (je Kugel 1/salvo, Resonanz-Zuschlag mit der Kugel, die den Treffer voll macht), der
+  Bonus kommt je Ziel **einmal je Einsatz** (`ActionResolver._multi_shot`, `_charge`).
+  Der Beschuetzer (Praesenz) bekommt beim Abfangen keine Belastung mehr.
+* **Andere Elemente als Feuer** wirken weiter noch nicht (CHARGER_KONZEPT 4) -- das
+  Bau-Popup des Chargers sagt das jetzt.
+* **Schildtreffer unsichtbar:** Zahlen gab es nur fuer Integritaet. Wer am Rand des
+  Vortex mit Schild stand, wurde getroffen, ohne dass eine Zahl kam -- so sah die Flaeche
+  wie Mitte + ein Ring aus. Logik war richtig (Radius 2 trifft). Neu:
+  `EventBus.shield_damaged`, Zahl in Schildfarbe (`BattleScreen._on_shield_damaged`).
+* **Vortex-Sog** (Vorgabe des Spielers, gleicher Tag -- "wie ein schwarzes Loch"): beim
+  Aufprall werden alle Gegner im Radius zum Zielfeld gezogen; der Naechste kommt auf das
+  Zielfeld selbst, die anderen bis zu 2 Felder so weit, wie in ihrer Richtung Platz ist.
+  Bis zur Schockwelle sind alle Erfassten festgehalten (`vortex_hold`: kein Laufen, kein
+  Schiessen, ohne eigenes Symbol), das Heranrutschen ist ueber die Sog-Zeit zu sehen
+  (`ActionResolver.forced_seconds`). Nach dem Schaden sind sie frei und verlangsamt.
+  Wer waehrend der Ausholzeit weglaeuft, entkommt weiter.
+* **Blickrichtung:** Angriffe feuerten, bevor die Figur zum Ziel gedreht war (Molok bis
+  0,4 s fuer eine halbe Drehung) -- beim Angriff dreht sie jetzt 5x schneller
+  (`Arena3D.ATTACK_TURN_BOOST`). Wer laeuft und sein Ziel vom neuen Feld aus in
+  Reichweite hat, schaut beim Laufen zum Ziel statt sich zwischen zwei Schuessen
+  wegzudrehen (`AIController._walk`). Das Echo haelt den Blick ueber die ganze Ausholzeit.
+
 ### Fabrik-Logik (23. Nov. 2026, `docs/FACTORY_KONZEPT.md` Abschnitt 11)
 
 * **`FactorySim`** (`scripts/core/factory_sim.gd`, RefCounted, deterministisch): Takt in der
@@ -53,6 +84,35 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   `tests/screenshot.gd -- res://scenes/resources.tscn <png> 60 factory=200`.
 * Offen: Rezept-Raten/Takte fuers Spiel, Tier 3/4 ueber die Story, Baukerne raus (erst mit den
   DROME-Teilen), Anzeigetexte noch ohne `tr()`.
+
+### Werkbank (24. Nov. 2026, `docs/FACTORY_KONZEPT.md` Abschnitt 13)
+
+* Fabrik-Tab hat zwei Reiter: **Platine** (`FactoryView`) und **Werkbank** (`WorkbenchView`,
+  Kategorien Charger und DROMEs). `resources_screen.open_tab("charger"/"dromes")` fuehrt in die
+  Werkbank. `DromeForge` ist entfernt.
+* Logik `Workbench` (`scripts/core/workbench.gd`): Produkte `rohling`, `teil:<chassis>:<teil>`,
+  `drome:<chassis>`, `faction:<variante>` (Fraktionskern statt Kern-Teil), `free:<chassis>`;
+  `needs`/`missing`/`raw_shortfall`/`craft`, `battles_for` mit `FactorySim.estimate_per_tick`.
+  Teile-Rezepte in `data/factory.json` -> `werkbank`, SPOT-Blatt Fabrik.
+* Ziel merken: `FactorySim.goal()` im Fabrik-Spielstand; die Platine zeigt "ZIEL ... fehlt ..."
+  und einen gelben Punkt an Gebaeuden, die Fehlendes herstellen.
+* Tests `tests/test_workbench.gd`, Smoke-Test bedient die Werkbank, Bild:
+  `screenshot.gd -- res://scenes/resources.tscn <png> 60 fabrik=dromes ziel=drome:jugg_body`.
+* Spezialteile (`spezial:<variante>`, Fraktionskern + Zutaten des Kern-Teils) ersetzen bei
+  Fraktions-DROMEs das Kern-Teil. Verwerten (`Roster.salvage`, `Workbench.salvage_yield`) gibt die
+  Zutaten der zwei teuersten Teile zurueck, Fraktions-DROMEs dazu ihr Spezialteil. Baukerne sind
+  raus (Caches, Shop, Verwerten, `craft_drome`), ohne Umrechnung alter Spielstaende.
+
+### Level kaufen statt EP (24. Nov. 2026, `docs/SKILLBAUM_KONZEPT.md` 5d)
+
+* Keine EP mehr (`Leveling.xp_enabled()`; `RunState.collect_xp` sammelt nichts). Level werden auf
+  der DROME-Seite gekauft: Reiter **DROME** (`_level_card`) und die Klappe „Level und Skilltree der
+  Waffe“ im Reiter Waffe. Kosten in `data/factory.json` -> `level` (je Chassis, Waffen je
+  Gewichtsklasse), Level 5 braucht einen **Keynode-Chip** (`materials["keynode"]`).
+* Waffen bis Level 5 (`config.json` -> `levels.weapon.max`, Schaden +14 % je Level).
+* Keynode-Chip: erster gewonnener Einsatz garantiert (`progress.keynode_first`), danach 15 %
+  (`GameState.roll_keynode`), Caches 5 % je Wurf. Raten vorlaeufig.
+* Tests in `tests/test_leveling.gd`; Bild: `screenshot.gd -- res://scenes/hangar.tscn <png> 60 hangar=drome_up`.
 
 ### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
 

@@ -15,18 +15,54 @@ func _molok() -> DromeBuild:
 		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_hammer"})
 
 
-func test_xp_tables_give_levels() -> void:
-	t.equal(Leveling.drome_level_for(99), 0, "99 EP: Level 0")
-	t.equal(Leveling.drome_level_for(100), 1, "100 EP: Level 1")
-	t.equal(Leveling.drome_level_for(300), 2, "100 + 200 EP: Level 2")
-	t.equal(Leveling.drome_table(), [100, 300, 600, 1000, 1500], "100, 200, 300 ... je Level")
-	var costs: Array = Leveling.weapon_cfg()["xp_per_level"]
-	t.ok(costs[4] < costs[5] and costs[7] < costs[8], "Waffen: 1-5 schnell, 6-8 mittel, 9-10 langsam")
-	t.equal(Leveling.drome_level_for(99999), Leveling.drome_max(), "nie über das Höchstlevel")
-	t.equal(Leveling.weapon_level_for(99999), Leveling.weapon_max(), "Waffe höchstens 10")
+func test_levels_are_bought_not_earned() -> void:
+	t.ok(not Leveling.xp_enabled(), "keine EP mehr (24. Nov. 2026)")
+	t.equal(Leveling.drome_max(), 5, "DROMEs bis Level 5")
+	t.equal(Leveling.weapon_max(), 5, "Waffen bis Level 5")
+	var roster := Roster.new()
+	roster.seed_starter()
+	var bench := Workbench.new(roster)
+	var entry: RosterEntry = roster.entries[0]
+	t.ok(bench.level_up_drome(entry) != "", "ohne Waren kein Level")
+	var cost := bench.drome_next_cost(entry)
+	for key in cost:
+		roster.materials[key] = int(cost[key])
+	t.equal(bench.level_up_drome(entry), "", "Level 1 gekauft")
+	t.equal(entry.level, 1, "jetzt Level 1")
+	t.ok(roster.materials.keys().all(func(k): return not str(k).begins_with("res:")), "Waren verbraucht")
+	entry.level = 4
+	t.equal(int(bench.drome_next_cost(entry).get("keynode", 0)), 1, "Level 5 braucht einen Keynode-Chip")
+	entry.level = 5
+	t.ok(bench.drome_next_cost(entry).is_empty(), "über Level 5 nichts mehr")
 
 
-func test_a_level_ten_weapon_hits_seventy_percent_harder() -> void:
+func test_level_costs_grow_steeply() -> void:
+	var l2 := Workbench.drome_level_cost("scout_body", 2)
+	var l5 := Workbench.drome_level_cost("scout_body", 5)
+	t.ok(l2.has("res:plasma") and not l2.has("res:platte"), "Level 1-2: Tier-1-Waren")
+	t.ok(int(l5.get("res:platte", 0)) > 3 * int(Workbench.drome_level_cost("scout_body", 3).get("res:platte", 0)),
+		"Level 5 deutlich teurer als Level 3")
+	var weapon := Workbench.weapon_level_cost("heavy", 1)
+	t.ok(weapon.has("res:legierung"), "schwere Waffe levelt mit Legierung")
+
+
+func test_weapon_level_up() -> void:
+	var roster := Roster.new()
+	roster.seed_starter()
+	var bench := Workbench.new(roster)
+	var uid := ""
+	for slot in roster.entries[0].assignments:
+		if str(slot).begins_with("equip_"):
+			uid = str(roster.entries[0].assignments[slot])
+	var cost := bench.weapon_next_cost(uid)
+	t.ok(not cost.is_empty(), "Waffe hat Level-Kosten")
+	for key in cost:
+		roster.materials[key] = int(cost[key])
+	t.equal(bench.level_up_weapon(uid), "", "Waffenlevel gekauft")
+	t.equal(roster.instance(uid).level, 1, "Waffe auf Level 1")
+
+
+func test_a_top_level_weapon_hits_seventy_percent_harder() -> void:
 	var part := PartDB.get_part(&"eq_hammer")
 	var attack: ActionData = part.actions[0]
 	var stun: ActionData = part.actions[1]
@@ -106,39 +142,25 @@ func test_the_roster_carries_levels_into_the_build() -> void:
 	t.equal(inst.level, 3, "Waffenlevel übersteht Speichern")
 
 
-func test_run_xp_is_collected_and_credited_at_home_at_the_end() -> void:
+func test_runs_give_no_xp_but_a_keynode_on_the_first_win() -> void:
 	var saved_roster = GameState.roster
 	var saved_run = GameState.run
+	var saved_progress = GameState.progress
 	var roster := Roster.new()
 	roster.seed_starter()
 	GameState.roster = roster
+	GameState.progress = {}
 	GameState.run = RunState.start(55, roster.squad_builds())
 	var run: RunState = GameState.run
 	var first: DromeBuild = run.squad[0]
-	var slot: String = first.instance_uids.keys()[0]
-	var fighters := [{"source_uid": first.source_uid,
-		"weapons": {slot: {"damage": 200, "kills": 2}}}]
-	# Die Stufe direkt: Elite steht nicht in jeder Reihe zur Wahl.
-	run.tier = RunState.Tier.ELITE
-	run.collect_xp(fighters, true)
-	var entry := roster.entry_by_chassis(first.source_uid)
-	var owned := roster.instance(str(first.instance_uids[slot]))
-	t.equal(entry.xp, 0, "im Lauf noch nichts gutgeschrieben")
-	t.equal(int(run.pending_xp["dromes"][first.source_uid]), Leveling.drome_win_xp("elite", 1),
-		"der DROME sammelt EP für den Sieg")
-	t.equal(int(run.pending_xp["weapons"][str(first.instance_uids[slot])]), 50 + 50,
-		"die Waffe: 200 Schaden x 0,25 + 2 Abschüsse x 25")
-	run.collect_xp(fighters, false)
-	t.equal(int(run.pending_xp["dromes"][first.source_uid]), Leveling.drome_win_xp("elite", 1),
-		"eine Niederlage gibt dem DROME nichts")
-	t.equal(int(run.pending_xp["weapons"][str(first.instance_uids[slot])]), 200,
-		"der Waffe schon (Schaden ist Schaden)")
-	run.abandon()
+	run.collect_xp([{"source_uid": first.source_uid, "weapons": {}}], true)
+	t.ok(run.pending_xp["dromes"].is_empty(), "keine EP im Lauf")
+	run.phase = RunState.Phase.WON
+	var got := GameState.deliver_run_home()
+	t.ok(got.any(func(i): return i.get("kind", "") == "keynode"), "erster gewonnener Einsatz: Keynode-Chip")
+	t.equal(int(roster.materials.get("keynode", 0)), 1, "liegt im Lager")
 	GameState.deliver_run_home()
-	t.equal(entry.xp, Leveling.drome_win_xp("elite", 1), "am Ende zuhause gutgeschrieben")
-	t.equal(owned.xp, 200, "die Waffe auch")
-	t.equal(owned.level, 1, "200 EP: Waffenlevel 1")
-	GameState.deliver_run_home()
-	t.equal(owned.xp, 200, "nur einmal")
+	t.equal(int(roster.materials.get("keynode", 0)), 1, "nur einmal je Einsatz")
 	GameState.roster = saved_roster
 	GameState.run = saved_run
+	GameState.progress = saved_progress

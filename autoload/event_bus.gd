@@ -14,6 +14,9 @@ signal battle_finished(outcome: int, seconds: int)
 signal unit_moved(unit, from_tile: Vector2i, to_tile: Vector2i)
 signal unit_damaged(unit, amount: int, source)
 signal unit_healed(unit, amount: int, source)
+## Was der Schild eines Treffers geschluckt hat (24. Nov. 2026) -- unit_damaged
+## meldet nur die Integritaet, ein reiner Schildtreffer sah sonst aus wie keiner.
+signal shield_damaged(unit, amount: int, source)
 signal unit_died(unit)
 ## Ein Viruspuls hat alle Einheiten getroffen (Virusschaden, 14. Nov. 2026).
 signal virus_pulsed

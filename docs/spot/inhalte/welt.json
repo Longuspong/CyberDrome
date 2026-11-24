@@ -97,7 +97,6 @@
     {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
     {"cache": "Hipstar Cache", "art": "", "gegenstand": "", "menge": null, "gewicht": null, "status": "offen"},
     {"cache": "Neon Cache", "art": "Fraktionskern", "gegenstand": "Neon-Kern", "menge": 1, "gewicht": 3, "status": "Vorschlag"},
-    {"cache": "Neon Cache", "art": "Baukern", "gegenstand": "Baukern", "menge": 1, "gewicht": 8, "status": "Vorschlag"},
     {"cache": "Neon Cache", "art": "DROME", "gegenstand": "Neon Vireo", "menge": 1, "gewicht": 1, "status": "Vorschlag"}
   ],
 
@@ -108,8 +107,7 @@
     {"angebot": "Hipstar Cache", "art": "Cache", "preis": 50, "wirkung": "ein Hipstar Cache", "status": "Vorschlag"},
     {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "welche Upgrades? -> Offene Punkte", "status": "offen"},
     {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
-    {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"},
-    {"angebot": "Baukern", "art": "Upgrade", "preis": 20, "wirkung": "1 Baukern (3 = ein Standard-DROME)", "status": "gebaut"}
+    {"angebot": "", "art": "Upgrade", "preis": null, "wirkung": "", "status": "offen"}
   ],
 
   "formationen": [
