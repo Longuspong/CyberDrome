@@ -12,7 +12,12 @@ immer dieselbe Schablone aus.
 * **DROMEs und Waffen: je 5 Level** (Waffen bisher 10 -- sonst wird der Baum zu groß).
 * **Je Level ein Punkt im Skilltree.** Der Baum hat mehr Knoten als Punkte:
   man wählt, nicht alles ist zu haben.
-* **Knoten 1-4: nur Werte.** Keine kleinen Regeln.
+* **Leitlinie, kein Korsett (Spieler 24. Nov. 2026).** Die Regeln hier sind
+  Rahmen und Inspiration; die Form bleibt einheitlich, im Einzelfall darf man
+  abweichen. Keine Regel, die im Kampf nichts aendert.
+* **Knoten 1, 2, 4: Werte** -- duerfen sich auf die Ressource beziehen (je Stapel,
+  ab 2 Stapeln). **Knoten 3 ist ein bedeutender Knoten** und darf eine kleine
+  Regel sein, die den Strang festigt (24. Nov. 2026).
 * **Knoten 5 verändert die Identität:**
   DROME -> die **Passive**, Waffe -> die **aktive Fähigkeit**.
 * **Umskillen geht, kostet Ressourcen.** Spieler 24. Nov. 2026: Umskillen = den DROME **verwerten
@@ -32,8 +37,8 @@ immer dieselbe Schablone aus.
 | Werte (Level 0) | Speed, Integrität, Schild, Schildpuls, Rüstung, Power, Effizienz, Modulplätze |
 | Passive | eine Regel, die den Spielstil trägt |
 | Twist (nur Variante) | fester Zusatz zur Passive, z. B. Ninja-Einschlag |
-| Baum Level 1-4 | je Level 2 Werte-Knoten zur Wahl (Vorschlag) |
-| Baum Level 5 | 2 Knoten, die die Passive verändern (Spielstil A / B) |
+| Baum | 2 Stränge (Spielstil A / B), je Level 1 Knoten je Strang; L1, 2, 4 Werte, L3 bedeutend, L5 Keynode |
+| Nische | jeder Strang lohnt sich gegen eine andere Gegnerart (Einzelziel / Schwarm / Tank) |
 
 ## 3. Schablone Waffe
 
@@ -89,7 +94,47 @@ Werte -- dazu zählen auch die Werte der Passive, z. B.:
 | Blink | 3 Stapel | Teleport hinter das am weitesten entfernte Ziel, aber nur so weit, dass es in Reichweite der Waffe bleibt (Blaster/Bumerang: ein Feld dazwischen) |
 | Kettenschlag | alle Stapel, beim Einsatz der Fähigkeit | je Stapel 1 Sprung mit 10 % Schaden je Stapel: 1 Stapel = 1 weiteres Ziel mit 10 %, 2 = 2 Ziele mit 20 %, 3 = 3 Ziele mit 30 %, 4 = 4 Ziele mit 40 %. Bei zu wenigen Zielen springt sie aufs erste zurück. Reihenfolge: erst Stapel gewinnen, dann verbrauchen. |
 
-### Neon Vireo (Twist im Baum)
+### Vireo-Baum (Vorschlag 24. Nov. 2026, nicht entschieden)
+
+Ersetzt die Mittleren Knoten und Keynodes oben. Zwei Stränge: **Halten** (zäh,
+konstant) und **Ausgeben** (Burst). Mischen erlaubt.
+
+| Level | Halten | Ausgeben |
+| --- | --- | --- |
+| 1 | +1 Rüstung je Stapel | Stapel schon nach 2 Angriffen |
+| 2 | Lauftempo je Stapel 20 % statt 10 % | Angriffstempo je Stapel 15 % statt 10 % |
+| 3 ★ | Obergrenze 4, Stapel verfallen einzeln statt alle | +10 % Schaden je Stapel |
+| 4 | +X Schild je Stapel (X offen) | ab 2 Stapeln +1 Power, fest |
+| 5 | **Doppelschlag:** ab 3 Stapeln trifft jeder Grundangriff ein zweites Mal mit 40 %; der zweite Treffer zählt nicht für Takt, Stapel oder Effekte. Stapel bleiben. | **Schnitt:** bei vollem Stapel verbraucht der nächste Angriff alle, +25 % je Stapel; Vireo läuft durch das Ziel aufs Feld dahinter (belegt: bleibt stehen), der Treffer springt mit 50 % auf einen Nachbarn. |
+
+Gestrichen gegenüber dem ersten Entwurf: Dauer 4 s (wirkungslos, jede Waffe ist
+schneller als 3 s) und „Treffer aus maximaler Reichweite“ (Regel statt Wert,
+bei der Plasmaklinge immer aktiv). „Doppelpuls“ heißt Doppelschlag, weil Puls
+der 3-s-Takt ist.
+
+### Neon Vireo: Neon-Strang ersetzt Halten (Vorschlag 24. Nov. 2026)
+
+Neon heißt „Ehrkodex, kein Kiten, kein Zurückweichen“, der Neon Vireo hat mehr
+Energieschaden und Schild (STORY_LEITFADEN). Halten (Lauftempo, Rüstung) passt
+eher zu Mecha, also ersetzt der Neon-Strang Halten; Ausgeben bleibt.
+
+| Level | Neon |
+| --- | --- |
+| 1 | +X Schild je Stapel |
+| 2 | +8 % Energieschaden je Stapel |
+| 3 ★ | Obergrenze 4. **Ehrkodex:** kitet nicht, wechselt das Ziel nicht, bis es fällt; gegen dieses Ziel +5 % je Stapel |
+| 4 | +2 Effizienz |
+| 5 | **Schattenschritt:** 4 Stapel verbrauchen, 3 s unsichtbar, zum am stärksten verwundeten Gegner; erster Treffer +30 % als Energieschaden. Fällt das Ziel, kommen 2 Stapel zurück. |
+
+**Warum dann noch zwei Stränge?** Weil jeder Strang eine Nische über die
+Gegnerart hat, nicht über den DROME: Neon ist Einzelziel (Elite, Boss) und hängt
+an Tanks fest, Ausgeben/Schnitt springt und taugt gegen Schwärme. Wäre Neon
+immer besser, wäre es ein Fehler und nur eine Keynode wert. Mit nur einem
+Strang gäbe es auf Level 1-4 keine Wahl mehr.
+
+Werte zum Vergleichen und Eintragen: `docs/spot/CyberDrome_Werkblatt_DROMEs_Waffen.xlsx`.
+
+### Neon Vireo (Twist im Baum) -- älterer Gedanke (22. Nov.)
 
 * Verstärkt den Blink, **oder** eine Keynode wird ersetzt durch
   **Schattenschritt**: 4 Stapel (braucht also den Knoten +1 Stapel) -> 3 s
@@ -111,13 +156,16 @@ Werte -- dazu zählen auch die Werte der Passive, z. B.:
 Der Takt der Fähigkeiten wird beim Waffen-Rework etwa verdoppelt (Spieler
 22. Nov. 2026) -- dann fallen Stapel-Angriff und Fähigkeit seltener zusammen.
 
-## 5b. Regel für alle DROMEs: eine Ressource je DROME
+## 5b. Leitlinie für alle DROMEs: eine Ressource je DROME (wo es passt)
 
 Jeder DROME bekommt eine eigene Ressource nach demselben Muster wie Cyberspeed:
 **Gewinn** (z. B. jeder N-te Angriff), **Obergrenze**, **Dauer** (hält bei
 Aktivität), **Wirkung je Stapel**. Mittlere Knoten verändern Gewinn und
-Obergrenze, Keynodes **verbrauchen** die Ressource, der Fraktions-Twist ist
-eine eigene Keynode oder verstärkt eine. Molok, Nimbus und Strix bekommen
+Obergrenze, Keynodes **dürfen** die Ressource verbrauchen (kein Muss, 24. Nov.).
+Der Fraktions-Twist ersetzt einen Strang (bei schwächerer Identität nur eine
+Keynode). Nicht jeder DROME braucht eine komplexe Ressource: der Molok steht
+ohnehin vorn (Locken läuft ins Leere), seine Passive soll ihn mehr aushalten
+lassen (Vorschlag „Standfest“ im Werkblatt). Molok, Nimbus und Strix bekommen
 neue, wirksamere Passiven nach diesem Muster (noch zu besprechen).
 
 ## 5c. Anzeige von Effekten im Kampf (erster Gedanke des Spielers, noch zu besprechen)
