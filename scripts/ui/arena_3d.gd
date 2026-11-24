@@ -68,6 +68,8 @@ const WALK_SPEED := 9.0
 const WALK_MIN_SPEED := 10.0
 ## Ab diesem Tempo schaut sie in Laufrichtung (sonst wie die Logik sagt).
 const TURN_WALK_SPEED := 22.0
+## Waehrend eines Angriffs dreht sie so viel schneller zum Ziel.
+const ATTACK_TURN_BOOST := 5.0
 const STOMP_BOB := 1.9           # Molok setzt tiefer auf
 const GLIDE_BOB := 0.8           # Nimbus schwebt beim Fahren
 const GLIDE_SPEED := 2.6
@@ -601,8 +603,14 @@ func _turn_toward(unit: Unit, state: Dictionary, vel: Vector2, delta: float, cal
 	var diff := wrapf(target - yaw, -180.0, 180.0)
 	var chassis := str(unit.build.body().id)
 	var turn_time := maxf(0.005, float(Config.section("motion").get("turn_time", 0.045)))
-	var step := diff * (1.0 - exp(-delta / turn_time))
 	var limit := rad_to_deg(Unit.motion_for("turn_rate", chassis, 12.0)) * delta
+	# Beim Angriff schnell herumreissen (24. Nov. 2026): die Waffe feuert bzw.
+	# schlaegt sofort -- mit dem normalen Drehtempo (Molok bis 0,4 s fuer eine
+	# halbe Drehung) zeigte sie dabei noch zur Seite oder nach hinten.
+	if not (state.get("attack", {}) as Dictionary).is_empty():
+		limit *= ATTACK_TURN_BOOST
+		turn_time /= ATTACK_TURN_BOOST
+	var step := diff * (1.0 - exp(-delta / turn_time))
 	yaw += clampf(step, -limit, limit)
 	state["yaw"] = wrapf(yaw, 0.0, 360.0)
 	return float(state["yaw"])

@@ -120,7 +120,7 @@ func update(unit: Unit, dt: float) -> void:
 		return
 	var next := next_step(unit, target)
 	if next != unit.tile:
-		_walk(unit, next)
+		_walk(unit, next, target)
 
 
 func _retarget(unit: Unit, target: Unit) -> void:
@@ -795,6 +795,8 @@ func _tick_echoes(unit: Unit, dt: float) -> void:
 		if ability.windup > 0.0:
 			var tile: Vector2i = again["tile"]
 			_aim_at(unit, tile)
+			# Waehrend des Wurfs zum Ziel schauen, auch wenn er weiterlaeuft.
+			unit.aim_hold = maxf(unit.aim_hold, ability.windup + 0.2)
 			EventBus.ability_cast.emit(unit, tile, ability, ability.windup, again["target"])
 			unit.echoes.append({"action": ability, "target": again["target"], "tile": tile,
 				"left": ability.windup, "flying": true})
@@ -1115,14 +1117,23 @@ func _approach(unit: Unit, target: Unit) -> Vector2i:
 
 ## Einen Schritt beginnen. Das Feld gilt sofort (es ist damit belegt), die
 ## Figur gleitet in der Schrittzeit hinterher.
-func _walk(unit: Unit, next: Vector2i) -> void:
+func _walk(unit: Unit, next: Vector2i, target: Unit = null) -> void:
+	# Bleibt das Ziel vom neuen Feld aus in Reichweite (Abstand halten,
+	# Stellung wechseln), schaut er beim Laufen weiter zum Ziel (24. Nov.
+	# 2026) -- vorher drehte er sich zwischen zwei Schuessen jedes Mal in die
+	# Laufrichtung und zum Schuss wieder zurueck.
+	var step_time := 1.0 / unit.move_speed()
+	if target != null and target.is_alive() and next != target.tile \
+			and Grid.distance(next, target.tile) <= unit.attack_range():
+		unit.set_facing(Unit.facing_at(next, target.tile))
+		unit.aim_hold = maxf(unit.aim_hold, step_time + 0.1)
 	# Kurz nach dem Schuss schaut er weiter zum Ziel (laeuft seitlich/rueckwaerts).
-	if unit.aim_hold <= 0.0:
+	elif unit.aim_hold <= 0.0:
 		unit.set_facing(Unit.facing_toward(unit.tile, next))
 	# Die Schrittzeit steht VOR dem Versetzen fest: move_unit meldet den
 	# Schritt (unit_moved), und die Szene liest daran ab, wie lange die Figur
 	# gleitet.
-	unit.step_left = 1.0 / unit.move_speed()
+	unit.step_left = step_time
 	battle.resolver.move_unit(unit, next)
 
 

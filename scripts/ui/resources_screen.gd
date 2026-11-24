@@ -81,6 +81,15 @@ func _charger_built(charger: Dictionary) -> void:
 	lines.append("Liegt jetzt im Inventar. Einsetzen: DROMEs › DROME antippen › Waffe.")
 	if dom != "":
 		lines.append(["Die Fähigkeit legt %s-Stapel an." % Charger.element_name(dom), UiKit.HEADING])
+	# Bisher wirkt nur Feuer (CHARGER_KONZEPT 4) -- sonst sieht man im Kampf
+	# nichts und haelt es fuer einen Fehler (24. Nov. 2026).
+	var silent: Array = []
+	for e in Charger.counts(phases):
+		if str(e) != "" and not Charger.is_built(str(e)):
+			silent.append(Charger.element_name(str(e)))
+	if not silent.is_empty():
+		lines.append(tr("%s: Stapel werden gezählt, wirken im Kampf aber noch nicht (bisher nur Feuer).")
+			% ", ".join(silent))
 	InfoPopup.open(self, Charger.display_name(phases).to_upper(), {"subtitle": "NEU IM INVENTAR",
 		"lines": lines, "actions": [{"text": "Zu den DROMEs", "primary": true, "call": func():
 			Fader.go("res://scenes/hangar.tscn")}]})
