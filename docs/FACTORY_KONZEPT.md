@@ -208,3 +208,29 @@ Wünsche des Spielers (23. Nov.) zum Prototyp v2:
   (Menge je Puls, gedimmte Bahn bei Stau), Ertrag nach dem Einsatz.
 * Stil: Arcade-Glitch über `UiKit`, Design-System-Tokens (`docs/design/tokens.json`),
   Hochformat 400 px. Grundlage: Prototyp v2 (Artefakt und Kopie im Repo).
+
+## 13. Werkbank (Richtung entschieden, Spieler 24. Nov. 2026)
+
+Alles, was aus dem Lager entsteht, bekommt **einen** Ort: die **Werkbank** im Fabrik-Tab.
+Die Fabrik hat dann zwei Reiter: **Platine** (heute „Linien“) und **Werkbank** (ersetzt die
+Reiter Charger und DROMEs).
+
+* **Kategorien** oben: Charger, DROME-Teile, DROMEs, später Waffen. Darunter Kacheln (`Tile`).
+* **Bauplan als Baum** beim Antippen: Produkt ← Teile ← Ressourcen, je Zeile „habe / brauche“.
+  Fehlt etwas: welches Gebäude es herstellt und wie viele Kämpfe das mit der aktuellen
+  Platine dauert (`FactorySim.projection`).
+* **„Als Ziel merken“**: die Platine hebt die nötigen Waren und Gebäude hervor -- das ist der
+  echte „Bedarf“ aus dem Prototyp (Abschnitt 1).
+* **Höchstens zwei Stufen** (Ressource → Teil → Produkt), lesbar auf dem Handy.
+* **Herstellen sofort per Tipp** -- die Zeit steckt in der Fabrik, keine zweite Wartezeit.
+* **Charger** behält seinen Bildschirm (Phasen ins Hexagon legen ist das Spiel); die
+  Werkbank führt dorthin. Der Charger-Rohling ist ein Rezept der Werkbank.
+* **Baupläne** für Waffen, DROME-Teile und Fraktions-DROMEs: einmal aus Lootcache oder Story,
+  danach beliebig oft aus Ressourcen. Caches bleiben das Entdecken, die Fabrik die Menge.
+* **Nicht** in die Werkbank: Aufwerten (Skilltree-Level, Umskillen) bleibt auf der DROME-Seite
+  (ein Verb je Tab).
+
+**Offen (vor dem Bau klären):** Teile je Chassis und ihre Rezepte (Abschnitt 8, Ziel: ein Teil ≈
+ein Einsatz, ein DROME ≈ 5-8 Einsätze); welche Baupläne es zu Beginn gibt und wo die übrigen
+herkommen (Cache-Inhalt, Story); ob Waffen schon mit der ersten Werkbank kommen; Baukerne raus
+(Caches, Shop, `Roster.craft_drome`, alte Spielstände), sobald DROMEs aus Teilen entstehen.
