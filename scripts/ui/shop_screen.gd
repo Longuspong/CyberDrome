@@ -4,7 +4,7 @@ extends Control
 ## Entscheidung des Spielers: Shop und Crafting nie im selben Reiter). Ein
 ## Skript fuer zwei Tabs, ``mode`` waehlt:
 ##
-##   shop       nur kaufen: Angebote fuer Platzhaltercoin -- Baukerne und Caches
+##   shop       nur kaufen: Angebote fuer Platzhaltercoin -- Caches
 ##              (Roster.shop_offers, config hangar_shop)
 ##   inventory  lagern (seit 22. Nov. 2026, "ein Verb je Tab"): alles, was in
 ##              keinem DROME steckt -- Bestand, freie Waffen, Charger, Energy
@@ -62,18 +62,17 @@ func _refresh() -> void:
 	_caches_section()
 
 
-## Was man hat: Coins, Baukerne, Fraktionskerne, Caches -- eine Zeile Chips.
+## Was man hat: Coins, Fraktionskerne, Spezialteile, Caches -- eine Zeile Chips.
 func _wallet() -> Control:
 	var roster := GameState.roster
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 8)
 	flow.add_theme_constant_override("v_separation", 8)
 	flow.add_child(_chip("%d %s" % [roster.coins, RunState.coin_name()], UiKit.WARN, "coin"))
-	flow.add_child(_chip("%d %s" % [roster.kits(), Roster.kit_name()], UiKit.GOOD, "kit"))
 	for key in roster.materials:
-		if str(key).begins_with("kern:"):
+		if str(key).begins_with("kern:") or str(key).begins_with("spezial:"):
 			flow.add_child(_chip("%d %s" % [int(roster.materials[key]),
-				Roster.core_name(str(key).substr(5))], UiKit.MAGENTA, "material"))
+				Workbench.key_name(str(key))], UiKit.MAGENTA, "material"))
 	var total := 0
 	for key in roster.caches:
 		total += int(roster.caches[key])
@@ -93,6 +92,11 @@ func _resources_section() -> void:
 		var n := sim.have(str(ware))
 		if n > 0:
 			flow.add_child(_chip("%d %s" % [n, FactorySim.ware_name(str(ware))], FactorySim.ware_color(str(ware))))
+	# DROME-Teile aus der Werkbank (24. Nov. 2026).
+	for key in GameState.roster.materials:
+		if str(key).begins_with("teil:"):
+			flow.add_child(_chip("%d %s (%s)" % [int(GameState.roster.materials[key]), Workbench.key_name(str(key)),
+				Workbench.chassis_name(str(key).split(":")[1])], UiKit.ACCENT))
 	if flow.get_child_count() == 0:
 		flow.queue_free()
 		return
@@ -140,20 +144,16 @@ func _changed() -> void:
 # ---------------------------------------------------------------------------
 
 func _offer_name(offer: Dictionary) -> String:
-	if str(offer.get("kind", "")) == "kit":
-		return Roster.kit_name()
 	return RunState.cache_name(StringName(str(offer.get("cache", "city"))))
 
 
 func _offer_icon(offer: Dictionary) -> Control:
-	if str(offer.get("kind", "")) == "kit":
-		return UiIcon.rect("kit", 30, UiKit.GOOD)
 	return _cache_icon()
 
 
 func _shop_section() -> void:
 	# Entwurf 15. Nov. 2026: Bestand oben, Caches als Karten mit KAUFEN,
-	# darunter Baukerne und die Upgrades (folgen).
+	# darunter die Upgrades (folgen). Baukerne gibt es seit 24. Nov. 2026 nicht mehr.
 	_content.add_child(_stock_card())
 	var head := HBoxContainer.new()
 	var title := Arcade.label("CACHES", 15, Arcade.CYAN, "bold", 0.2)
@@ -185,9 +185,6 @@ func _shop_section() -> void:
 	for kind in CACHE_KINDS:
 		if not shown.has(kind):
 			grid.add_child(_locked_card(kind))
-	for offer in offers:
-		if str(offer.get("kind", "")) == "kit":
-			_content.add_child(_kit_offer(offer))
 	var upgrades := HBoxContainer.new()
 	var up_title := Arcade.label("UPGRADES", 15, Arcade.CYAN, "bold", 0.2)
 	up_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -301,33 +298,6 @@ func _locked_card(kind: String) -> Control:
 	return card
 
 
-func _kit_offer(offer: Dictionary) -> Control:
-	var blocker := GameState.roster.offer_blocker(offer)
-	var panel := _framed(UiKit.GOOD, false)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	panel.add_child(row)
-	row.add_child(UiIcon.rect("kit", 30, UiKit.GOOD))
-	var column := VBoxContainer.new()
-	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 0)
-	row.add_child(column)
-	column.add_child(Arcade.label(Roster.kit_name().to_upper(), 14, Arcade.WHITE, "display"))
-	var kit_text := Arcade.label("%d bauen einen Standard-DROME · du hast %d" % [Roster.kits_per_drome(),
-		GameState.roster.kits()], 12, Arcade.MUTED)
-	kit_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(kit_text)
-	var buy := UiKit.button("%d" % int(offer.get("price", 0)), true)
-	UiIcon.on_button(buy, "kit", 18, UiKit.ON_PRIMARY)
-	buy.custom_minimum_size = Vector2(96, 44)
-	buy.size_flags_horizontal = Control.SIZE_SHRINK_END
-	buy.disabled = blocker != ""
-	buy.tooltip_text = blocker
-	buy.pressed.connect(func(): _buy(offer))
-	row.add_child(buy)
-	return panel
-
-
 func _centered(label: Label) -> Label:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.clip_text = true
@@ -336,9 +306,7 @@ func _centered(label: Label) -> Label:
 
 func _offer_page(offer: Dictionary) -> Dictionary:
 	var blocker := GameState.roster.offer_blocker(offer)
-	var text := "Ein %s für den Bau neuer DROMEs (%d = ein Standard-DROME)." % [Roster.kit_name(),
-		Roster.kits_per_drome()] if str(offer.get("kind", "")) == "kit" \
-		else "Ein Lootcache der Fraktion. Öffnen kommt mit dem nächsten Bauschritt."
+	var text := "Ein Lootcache der Fraktion."
 	return {"title": _offer_name(offer), "subtitle": "%d %s" % [int(offer.get("price", 0)),
 		RunState.coin_name()], "subtitle_color": UiKit.WARN, "picture": _offer_icon(offer),
 		"lines": [text, ["Du hast %d %s." % [GameState.roster.coins, RunState.coin_name()],
@@ -434,7 +402,7 @@ func _caches_section() -> void:
 func _cache_page(key: String) -> Dictionary:
 	return {"title": RunState.cache_name(StringName(key)), "picture": _cache_icon(),
 		"lines": ["%d Stück im Hangar." % int(GameState.roster.caches.get(key, 0)),
-			["Vier Würfe je Cache: Energy Phases, Charger-Rohlinge, Baukerne, selten ein "
+			["Vier Würfe je Cache: Energy Phases, Charger-Rohlinge, selten ein "
 			+ "Fraktionskern oder ein ganzer Fraktions-DROME, sonst Coins.",
 			UiKit.MUTED, UiKit.SMALL]],
 		"actions": [{"text": "Öffnen", "primary": true, "call": func():

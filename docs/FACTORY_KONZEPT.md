@@ -230,7 +230,40 @@ Reiter Charger und DROMEs).
 * **Nicht** in die Werkbank: Aufwerten (Skilltree-Level, Umskillen) bleibt auf der DROME-Seite
   (ein Verb je Tab).
 
-**Offen (vor dem Bau klären):** Teile je Chassis und ihre Rezepte (Abschnitt 8, Ziel: ein Teil ≈
+**Teile je Chassis (Spieler 24. Nov. 2026, abgesegnet):** fünf Teile für alle -- Kopf, Kern,
+Rumpf, Waffenhalter (Molok 2×, Strix: Lafette), Antrieb --, je Teil zwei Zutaten. Der Charakter
+steckt in der Waren-Mischung: Vireo Plasma (Sprint), Molok Platten + Legierung (der teuerste),
+Nimbus Chips + Plasma, Strix Chips + Platten. Zahlen in `data/factory.json` → `werkbank` und im
+SPOT-Blatt Fabrik. Gerechnet mit einer gut ausgebauten Tier-2-Platine (je Einsatz ca. 250
+Legierung, 240 Plasma, 70 Schaltkreis, je Verdichter 16 Platten, je Chipfabrik 30 Chips): reine
+Produktion Vireo/Nimbus ca. 2, Strix 2,5, Molok 4 Einsätze; mit Skilltrees und Ausbau nebenher
+4-5 / 5-6 / 7-8. Baupläne zu Beginn: die vier Standard-DROMEs und der Rohling. Fraktions-DROME =
+Standard-Bauplan, der Fraktionskern ersetzt das Kern-Teil. Waffen später über Baupläne aus Caches,
+aus Tier-1-Waren.
+
+**GEBAUT (24. Nov. 2026):** `Workbench` (Logik auf `Roster.materials`: Teile als
+`teil:<chassis>:<teil>`, Baupläne als `bauplan:<produkt>`), Reiter **Platine | Werkbank** im
+Fabrik-Tab (`WorkbenchView`, ersetzt Charger und DROMEs; `DromeForge` entfernt), Bauplan-Baum mit
+habe/brauche, Herkunft fehlender Waren, Schätzung in Kämpfen (`FactorySim.estimate_per_tick`),
+„Als Ziel“ (im Spielstand der Fabrik) mit Markierung auf der Platine, Teile im Inventar. Freie
+Chassis aus alter Beute bauen weiter kostenlos.
+
+**Spezialteile, Verwerten, Baukerne raus (Spieler 24. Nov. 2026, GEBAUT):**
+* Der **Fraktionskern** bleibt allgemeine Beute je Fraktion. In der Werkbank wird daraus mit den
+  Zutaten des Kern-Teils ein **Spezialteil** für genau einen Fraktions-DROME (Neon Vireo:
+  Neon-Booster, Neon Nimbus: Neon-Fokuslinse, Solar Nimbus: Solar-Prisma, Mecha Molok:
+  Mecha-Reaktor, Mecha Strix: Mecha-Zielrechner). Es ersetzt im Bauplan das Kern-Teil -- der
+  DROME ist damit einmalig in eine Richtung „geschweißt“.
+* **Verwerten** gibt die Zutaten der zwei teuersten Teile zurück (Wert: Platte 10, Chip 2, sonst 1),
+  ein Fraktions-DROME dazu sein Spezialteil. Zutaten statt Teile, weil Teile an ihr Chassis
+  gebunden sind -- die Zutaten passen in jeden DROME.
+* **Umskillen = verwerten und neu bauen** (relativ großer Einsatz), kein eigener Preis.
+* **Baukerne entfallen** (Caches: ihre 7 % gehen an die Energy Phases; Shop; Verwerten). Alte
+  Baukerne werden nicht umgerechnet -- Spielstände vor dem Android-Release werden gelöscht.
+
+**Offen:** weitere Baupläne (Cache-Inhalt, Story), Waffen, Level-Material (Skilltrees).
+
+**Ursprünglich offen (vor dem Bau):** Teile je Chassis und ihre Rezepte (Abschnitt 8, Ziel: ein Teil ≈
 ein Einsatz, ein DROME ≈ 5-8 Einsätze); welche Baupläne es zu Beginn gibt und wo die übrigen
 herkommen (Cache-Inhalt, Story); ob Waffen schon mit der ersten Werkbank kommen; Baukerne raus
 (Caches, Shop, `Roster.craft_drome`, alte Spielstände), sobald DROMEs aus Teilen entstehen.

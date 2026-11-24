@@ -54,6 +54,35 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 * Offen: Rezept-Raten/Takte fuers Spiel, Tier 3/4 ueber die Story, Baukerne raus (erst mit den
   DROME-Teilen), Anzeigetexte noch ohne `tr()`.
 
+### Werkbank (24. Nov. 2026, `docs/FACTORY_KONZEPT.md` Abschnitt 13)
+
+* Fabrik-Tab hat zwei Reiter: **Platine** (`FactoryView`) und **Werkbank** (`WorkbenchView`,
+  Kategorien Charger und DROMEs). `resources_screen.open_tab("charger"/"dromes")` fuehrt in die
+  Werkbank. `DromeForge` ist entfernt.
+* Logik `Workbench` (`scripts/core/workbench.gd`): Produkte `rohling`, `teil:<chassis>:<teil>`,
+  `drome:<chassis>`, `faction:<variante>` (Fraktionskern statt Kern-Teil), `free:<chassis>`;
+  `needs`/`missing`/`raw_shortfall`/`craft`, `battles_for` mit `FactorySim.estimate_per_tick`.
+  Teile-Rezepte in `data/factory.json` -> `werkbank`, SPOT-Blatt Fabrik.
+* Ziel merken: `FactorySim.goal()` im Fabrik-Spielstand; die Platine zeigt "ZIEL ... fehlt ..."
+  und einen gelben Punkt an Gebaeuden, die Fehlendes herstellen.
+* Tests `tests/test_workbench.gd`, Smoke-Test bedient die Werkbank, Bild:
+  `screenshot.gd -- res://scenes/resources.tscn <png> 60 fabrik=dromes ziel=drome:jugg_body`.
+* Spezialteile (`spezial:<variante>`, Fraktionskern + Zutaten des Kern-Teils) ersetzen bei
+  Fraktions-DROMEs das Kern-Teil. Verwerten (`Roster.salvage`, `Workbench.salvage_yield`) gibt die
+  Zutaten der zwei teuersten Teile zurueck, Fraktions-DROMEs dazu ihr Spezialteil. Baukerne sind
+  raus (Caches, Shop, Verwerten, `craft_drome`), ohne Umrechnung alter Spielstaende.
+
+### Level kaufen statt EP (24. Nov. 2026, `docs/SKILLBAUM_KONZEPT.md` 5d)
+
+* Keine EP mehr (`Leveling.xp_enabled()`; `RunState.collect_xp` sammelt nichts). Level werden auf
+  der DROME-Seite gekauft: Reiter **DROME** (`_level_card`) und die Klappe „Level und Skilltree der
+  Waffe“ im Reiter Waffe. Kosten in `data/factory.json` -> `level` (je Chassis, Waffen je
+  Gewichtsklasse), Level 5 braucht einen **Keynode-Chip** (`materials["keynode"]`).
+* Waffen bis Level 5 (`config.json` -> `levels.weapon.max`, Schaden +14 % je Level).
+* Keynode-Chip: erster gewonnener Einsatz garantiert (`progress.keynode_first`), danach 15 %
+  (`GameState.roll_keynode`), Caches 5 % je Wurf. Raten vorlaeufig.
+* Tests in `tests/test_leveling.gd`; Bild: `screenshot.gd -- res://scenes/hangar.tscn <png> 60 hangar=drome_up`.
+
 ### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
 
 Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "Vorschlag").

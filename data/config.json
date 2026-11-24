@@ -149,8 +149,10 @@
       "weapon: EP je Kampf = damage_xp * angerichteter Schaden (Schild + Integritaet)",
       "+ kill_xp je Abschuss mit dieser Waffe. Nur Waffen in Squad-DROMEs, die aus dem",
       "Hangar stammen. EP sammeln sich im Lauf und werden am Ende zuhause gutgeschrieben.",
-      "damage_per_level (Level 10 = +70 %).",
-      "bonus_at_max: Endwert des Bonus-Werts auf Level 10 je Waffe (linear vom",
+      "damage_per_level (Level 5 = +70 %; seit 24. Nov. 2026 Waffen nur noch bis Level 5).",
+      "Seit 24. Nov. 2026 keine EP mehr: Level werden mit Fabrik-Waren gekauft",
+      "(data/factory.json -> level); die EP-Werte hier sind ohne Wirkung.",
+      "bonus_at_max: Endwert des Bonus-Werts auf dem Hoechstlevel je Waffe (linear vom",
       "Grundwert). energy_only: nur der Energieanteil waechst (Neon-Blaster)."
     ],
     "drome": {
@@ -169,11 +171,11 @@
       }
     },
     "weapon": {
-      "max": 10,
-      "xp_per_level": [100, 150, 200, 250, 300, 500, 650, 800, 1200, 1600],
+      "max": 5,
+      "xp_per_level": [100, 150, 200, 250, 300],
       "damage_xp": 0.25,
       "kill_xp": 25,
-      "damage_per_level": 0.07,
+      "damage_per_level": 0.14,
       "energy_only": ["eq_neon_blaster"],
       "bonus_at_max": {
         "eq_pulse_blaster": {"spd": 3},
@@ -204,11 +206,10 @@
   "hangar_shop": {
     "_kommentar": [
       "Hangar-Shop (15. Nov. 2026, Tab Shop): Angebote fuer Platzhaltercoin. Preise sind",
-      "der Vorschlag aus dem SPOT-Blatt Hangar-Shop. kind: kit (ein Baukern), cache (ein",
+      "der Vorschlag aus dem SPOT-Blatt Hangar-Shop. kind: cache (ein",
       "Lootcache des Gebiets cache). Upgrades folgen mit Bauschritt 5."
     ],
     "offers": [
-      {"id": "kit", "kind": "kit", "price": 20},
       {"id": "cache_city", "kind": "cache", "cache": "city", "price": 50},
       {"id": "cache_green", "kind": "cache", "cache": "green", "price": 50},
       {"id": "cache_plant7", "kind": "cache", "cache": "plant7", "price": 50}
@@ -217,16 +218,10 @@
 
   "crafting": {
     "_kommentar": [
-      "DROMEs verwerten und bauen (15. Nov. 2026, Wunsch des Spielers): ein verwerteter",
-      "DROME gibt salvage_kits Baukern(e) -- ein Fraktions-DROME dazu einen Fraktionskern",
-      "seiner Fraktion. Waffen kommen frei in den Hangar, Level und EP gehen verloren.",
-      "kits_per_drome Baukerne bauen einen Standard-DROME (Chassis waehlbar),",
-      "ein Fraktionskern + kits_per_drome Baukerne einen Fraktions-DROME (Werte aus",
-      "data/formations.json -> dromes). Spaeter auch im Hangar-Shop."
+      "DROMEs verwerten und bauen: seit 24. Nov. 2026 in der Werkbank aus Teilen",
+      "(data/factory.json -> werkbank); Baukerne gibt es nicht mehr. Hier nur noch die",
+      "Namen der Fraktionskerne."
     ],
-    "salvage_kits": 1,
-    "kits_per_drome": 3,
-    "kit_name": "Baukern",
     "faction_core_names": {"neon": "Neon-Kern", "solar": "Solar-Kern", "mecha": "Mecha-Kern", "hipstar": "Hipstar-Kern"}
   },
 
@@ -452,8 +447,8 @@
       "table": [
         {"kind": "faction_drome", "chance": 0.005},
         {"kind": "faction_core", "chance": 0.025},
-        {"kind": "baukern", "chance": 0.07},
-        {"kind": "phase", "chance": 0.72},
+        {"kind": "keynode", "chance": 0.05},
+        {"kind": "phase", "chance": 0.74},
         {"kind": "blank", "chance": 0.12},
         {"kind": "coins", "chance": 0.06, "min": 10, "max": 20}
       ]

@@ -15,7 +15,9 @@ immer dieselbe Schablone aus.
 * **Knoten 1-4: nur Werte.** Keine kleinen Regeln.
 * **Knoten 5 verändert die Identität:**
   DROME -> die **Passive**, Waffe -> die **aktive Fähigkeit**.
-* **Umskillen geht, kostet Ressourcen.**
+* **Umskillen geht, kostet Ressourcen.** Spieler 24. Nov. 2026: Umskillen = den DROME **verwerten
+  und neu bauen** (relativ großer Einsatz; Verwerten gibt Zutaten zurück, Fraktions-DROMEs ihr
+  Spezialteil -- `FACTORY_KONZEPT.md` 13). Kein eigener Umskillen-Preis.
 * **Fraktionsvarianten** haben die Identität des Standard-DROME **plus einen Twist**
   (z. B. Neon Vireo = Vireo mit Ninja-Einschlag).
 * **Charger bleiben** das individuelle Upgrade einer Waffe -- an der Waffe, wie heute.
@@ -129,12 +131,48 @@ neue, wirksamere Passiven nach diesem Muster (noch zu besprechen).
 * Später: Elemente, die miteinander reagieren, ziehen sich wie magnetisch an
   und verschmelzen zum Effekt.
 
+## 5d. Level-Material (Spieler 24. Nov. 2026, entschieden; Zahlen Vorschlag)
+
+* **Bezahlt wird mit Fabrik-Waren, steil ansteigend:** Level 1-2 machbar (Tier-1-Waren:
+  Legierung, Plasma, Schaltkreis), Level 3 ein deutlicher Sprung (Tier 2: Panzerplatten,
+  Upgrade-Chips), Level 4-5 „nochmal eine Schippe drauf“ -- man soll sich überlegen, welchen
+  DROME man zuerst hochzieht und wie viele man braucht.
+* **Mischung wie beim Bauen** (`FACTORY_KONZEPT.md` 13): Molok vor allem Platten + Legierung,
+  Nimbus Chips + Plasma, Vireo Plasma, Strix Chips + Platten. Waffen etwa die Hälfte, nach
+  Gewichtsklasse (leicht Schaltkreis/Plasma, schwer Legierung/Platten).
+* **Level 5 braucht zusätzlich einen Keynode-Chip** -- seltene Belohnung:
+  * nach einem **Einsatz**: beim ersten Abschluss eines Einsatzes garantiert einer, danach je
+    Einsatz eine Chance von 10-20 % (Vorschlag 15 %);
+  * aus **Caches**: häufiger als der Fraktionskern (2,5 %), seltener als Rohlinge (12 %) --
+    Vorschlag 5 % je Wurf.
+* **Zahlen-Vorschlag Vireo** (Faktor je Level etwa 1 / 1,5 / 4 / 9 / 16):
+
+  | Level | Kosten |
+  |---|---|
+  | 1 | 40 Plasma + 20 Schaltkreis |
+  | 2 | 60 Plasma + 40 Legierung |
+  | 3 | 15 Panzerplatten + 15 Upgrade-Chips |
+  | 4 | 35 Panzerplatten + 35 Upgrade-Chips |
+  | 5 | 60 Panzerplatten + 60 Upgrade-Chips + 1 Keynode-Chip |
+
+  Level 3-5 zusammen ≈ 2,5 × die Platten eines ganzen Vireo -- mit einem Verdichter rund
+  7 Einsätze, mit gut ausgebauter Platine 3-4.
+* **Umskillen = verwerten und neu bauen** (Abschnitt 1): der DROME beginnt wieder bei Level 0.
+* **GEBAUT (24. Nov. 2026):** keine EP mehr (`Leveling.xp_enabled()` = false), Level kaufen auf der
+  DROME-Seite (Reiter DROME und die Klappe „Level und Skilltree der Waffe“, `Workbench.level_up_*`),
+  Waffen bis Level 5 (Schaden +14 % je Level, Endwerte wie vorher auf Level 10). Kosten für alle vier
+  Chassis und je Gewichtsklasse in `data/factory.json` → `level`, SPOT-Blatt Fabrik. Jedes Level
+  wirkt vorerst wie bisher auf die Werte; die Skilltree-Knoten folgen.
+* **Keynode-Chip-Raten vorläufig** (Spieler: „zu häufig“ bei jedem ersten Abschluss, später
+  besprechen): nur der **allererste** gewonnene Einsatz gibt sicher einen, danach 15 % je
+  gewonnenem Einsatz, Caches 5 % je Wurf.
+
 ## 6. Offen (SPOT-Blatt Offene Punkte)
 
-1. Ressourcen: Sorten, Factory-Builder, ersetzen sie die Platzhaltercoins?
+1. Ressourcen: Sorten und Zahlen je DROME/Waffe nach 5d festlegen (Platzhaltercoins bleiben vorerst).
 2. Form des Baums: Knoten je Level (Vorschlag 2, Level 5 Standard + 2).
    Knoten 1-4 sind Werte -- auch Werte der Passive (Stapelzahl, Gewinn-Takt).
-3. Kosten fürs Umskillen.
+3. ~~Kosten fürs Umskillen~~ -- verwerten und neu bauen (24. Nov. 2026).
 4. Identitäten aller DROMEs und Waffen neu fassen; Twist je Fraktionsvariante.
 5. Passiven Molok, Nimbus, Strix nach 5b; Unsichtbar-Regel (5) bestätigen;
    Anzeige der Effekte (5c) besprechen; Takt der Fähigkeiten beim Waffen-Rework.

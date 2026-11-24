@@ -114,9 +114,9 @@ func test_new_drome_needs_a_free_chassis() -> void:
 	t.equal(roster.entries.size(), 4, "der Roster ist wieder bei vier")
 
 
-## Verwerten statt Aufloesen (15. Nov. 2026): Chassis und Kern verschwinden,
-## die Waffen kommen frei in den Hangar, dafuer gibt es einen Baukern.
-func test_salvaging_a_drome_gives_a_kit_and_frees_the_weapons() -> void:
+## Verwerten (seit 24. Nov. 2026, Werkbank): Chassis und Kern verschwinden, die
+## Waffen kommen frei in den Hangar, dafuer die Zutaten der zwei teuersten Teile.
+func test_salvaging_a_drome_gives_ingredients_and_frees_the_weapons() -> void:
 	var roster := _fresh()
 	var molok: RosterEntry = roster.entries[1]
 	var chassis := molok.chassis_uid()
@@ -126,8 +126,10 @@ func test_salvaging_a_drome_gives_a_kit_and_frees_the_weapons() -> void:
 			weapons.append(str(molok.assignments[slot]))
 	var free_before := roster.free_count(&"eq_hammer")
 	var got := roster.salvage(molok)
-	t.equal(got.get("kits", 0), 1, "ein Baukern")
-	t.equal(roster.kits(), 1, "liegt im Hangar")
+	# Molok: Brustharnisch (30 Platten + 90 Legierung) und Unterbau (18 + 60).
+	t.equal(int(got["wares"].get("platte", 0)), 48, "48 Panzerplatten")
+	t.equal(int(got["wares"].get("legierung", 0)), 150, "150 Legierung")
+	t.equal(int(roster.materials.get("res:platte", 0)), 48, "liegen im Lager")
 	t.equal(roster.entries.size(), 3, "der DROME ist weg")
 	t.ok(roster.instance(chassis) == null, "sein Chassis auch")
 	for uid in weapons:
@@ -135,7 +137,7 @@ func test_salvaging_a_drome_gives_a_kit_and_frees_the_weapons() -> void:
 	t.equal(roster.free_count(&"eq_hammer"), free_before + 1, "und ist frei")
 	var back := Roster.new()
 	t.ok(back.load_dict(roster.to_dict()), "Spielstand lädt")
-	t.equal(back.kits(), 1, "der Baukern übersteht das Speichern")
+	t.equal(int(back.materials.get("res:platte", 0)), 48, "die Platten überstehen das Speichern")
 
 
 func test_the_last_drome_cannot_be_salvaged() -> void:
@@ -146,40 +148,28 @@ func test_the_last_drome_cannot_be_salvaged() -> void:
 	t.equal(roster.salvage(roster.entries[0]), {}, "und wird nicht verwertet")
 
 
-## Drei Baukerne bauen einen Standard-DROME, ein Fraktionskern dazu einen
-## Fraktions-DROME mit festen Werten.
-func test_kits_build_standard_and_faction_dromes() -> void:
+## Fraktions-DROME verwertet: sein Spezialteil kommt zurueck (24. Nov. 2026) --
+## damit laesst sich genau dieser DROME wieder bauen.
+func test_salvaging_a_faction_drome_returns_its_special_part() -> void:
 	var roster := _fresh()
-	t.equal(roster.craft_drome(&"strix_body"), null, "ohne Baukerne nichts")
-	roster.materials["baukern"] = 3
-	var made := roster.craft_drome(&"strix_body")
-	t.ok(made != null, "drei Baukerne: ein Strix")
-	t.equal(roster.kits(), 0, "die Baukerne sind verbraucht")
-	t.equal(roster.build_for(made).body().id, &"strix_body", "mit Strix-Chassis")
-	roster.materials["baukern"] = 3
-	t.equal(roster.craft_faction_drome("neon_vireo"), null, "ohne Neon-Kern kein Neon Vireo")
-	roster.materials["kern:neon"] = 1
-	var neon := roster.craft_faction_drome("neon_vireo")
-	t.ok(neon != null, "Neon-Kern + drei Baukerne: Neon Vireo")
-	t.equal(neon.variant, "neon_vireo", "als Fraktions-DROME")
-	t.equal(int(roster.build_for(neon).stats()["hp_max"]), 80, "mit den festen Werten")
-	t.equal(roster.faction_cores("neon"), 0, "der Kern ist verbraucht")
+	var neon := roster.craft_drome_free(&"scout_body", "Neon Vireo")
+	neon.variant = "neon_vireo"
 	var got := roster.salvage(neon)
-	t.equal(got.get("faction", ""), "neon", "verwertet gibt er seinen Kern zurück")
-	t.equal(roster.faction_cores("neon"), 1, "einen Neon-Kern")
+	t.equal(str(got["special"]), "neon_vireo", "Spezialteil zurück")
+	t.equal(int(roster.materials.get("spezial:neon_vireo", 0)), 1, "Neon-Booster im Lager")
+	t.equal(int(got["wares"].get("platte", 0)), 30, "dazu Sprintbeine + Rumpf: 30 Platten")
+	t.ok(Workbench.new(roster).known("faction:neon_vireo"), "Bauplan bleibt bekannt")
 
 
-## Hangar-Shop (15. Nov. 2026): Baukerne und Caches fuer Platzhaltercoin.
-func test_the_shop_sells_kits_and_caches_for_coins() -> void:
+## Hangar-Shop: Caches fuer Platzhaltercoin (Baukerne seit 24. Nov. 2026 nicht mehr).
+func test_the_shop_sells_caches_for_coins() -> void:
 	var roster := _fresh()
 	var offers := Roster.shop_offers()
-	var kit: Dictionary = offers.filter(func(o): return o["kind"] == "kit")[0]
+	t.ok(offers.all(func(o): return o["kind"] != "kit"), "keine Baukerne mehr")
 	var cache: Dictionary = offers.filter(func(o): return o["kind"] == "cache")[0]
-	t.ok(roster.offer_blocker(kit) != "", "ohne Coins kein Kauf")
-	t.ok(not roster.buy_offer(kit), "und nichts passiert")
-	roster.coins = int(kit["price"]) + int(cache["price"])
-	t.ok(roster.buy_offer(kit), "Baukern gekauft")
-	t.equal(roster.kits(), 1, "liegt im Hangar")
+	t.ok(roster.offer_blocker(cache) != "", "ohne Coins kein Kauf")
+	t.ok(not roster.buy_offer(cache), "und nichts passiert")
+	roster.coins = int(cache["price"])
 	t.ok(roster.buy_offer(cache), "Cache gekauft")
 	t.equal(int(roster.caches.get(str(cache["cache"]), 0)), 1, "Cache im Hangar")
 	t.equal(roster.coins, 0, "die Coins sind ausgegeben")

@@ -889,7 +889,7 @@ def build_glossar(ws):
 # ---------------------------------------------------------------------------
 
 VIRUS = {}  # id -> Zelle auf "Einsatz" (fuer Formeln)
-ART_NAMES = ["Waffe", "DROME", "Modul", "BIOS", "Baukern", "Fraktionskern", "Credits", "Platzhaltercoin"]
+ART_NAMES = ["Waffe", "DROME", "Modul", "BIOS", "Fraktionskern", "Credits", "Platzhaltercoin"]
 
 
 def item_name(pid):
@@ -1015,6 +1015,38 @@ def build_fabrik(ws):
     rows = [[t["tier"], "Fabrik-Ziel" if t["weg"] == "fabrik" else "Story", amt(t["kosten"]), t["text"]]
             for t in fab["tiers"]]
     last = write_table(ws, ["Tier", "Freischalten über", "Kosten", "Bringt"], rows, start_row=r + 1)
+    r = last + 3
+    ws.cell(row=r, column=1, value="Werkbank: DROME-Teile (Spieler 24. Nov. 2026)").font = SUB_FONT
+    rows = []
+    for chassis, parts in fab["werkbank"]["dromes"].items():
+        for part in parts:
+            rows.append([chassis, part["name"], part["id"], part.get("anzahl", 1), amt(part["kosten"])])
+    last = write_table(ws, ["Chassis", "Teil", "Platz", "Anzahl", "Kosten je Stück"], rows, start_row=r + 1)
+    r = last + 3
+    ws.cell(row=r, column=1, value="Spezialteile (Fraktions-DROMEs, Spieler 24. Nov. 2026)").font = SUB_FONT
+    rows = [[v, n, "Fraktionskern + Zutaten des Kern-Teils"] for v, n in fab["werkbank"]["spezialteile"].items()
+            if not v.startswith("_")]
+    last = write_table(ws, ["Fraktions-DROME", "Spezialteil", "Kosten"], rows, start_row=r + 1)
+    r = last + 3
+    ws.cell(row=r, column=1, value="Verwerten").font = SUB_FONT
+    v = fab["werkbank"]["verwerten"]
+    rows = [["Teile, deren Zutaten zurückkommen", v["teile"]]] + [[f"Wert je {wn(w)}", n] for w, n in v["wert"].items()]
+    last = write_table(ws, ["Regel", "Zahl"], rows, start_row=r + 1)
+    r = last + 3
+    ws.cell(row=r, column=1, value="Level-Kosten (Spieler 24. Nov. 2026, steil; Level 5 mit Keynode-Chip)").font = SUB_FONT
+    lv = fab["level"]
+    rows = []
+    for group, key in (("DROME", "drome"), ("Waffe", "waffe")):
+        for who, steps in lv[key].items():
+            rows.append([group, who] + [amt(c) for c in steps])
+    last = write_table(ws, ["Art", "Chassis / Klasse", "Level 1", "Level 2", "Level 3", "Level 4", "Level 5"], rows,
+                       start_row=r + 1)
+    r = last + 3
+    ws.cell(row=r, column=1, value="Keynode-Chip (Raten vorläufig)").font = SUB_FONT
+    rows = [["Erster gewonnener Einsatz", "garantiert" if lv["keynode"]["erster_einsatz"] else "nein"],
+            ["Jeder weitere gewonnene Einsatz", f'{int(lv["keynode"]["einsatz_chance"] * 100)} %'],
+            ["Je Cache-Wurf", "5 % (config.json -> charger.cache.table)"]]
+    last = write_table(ws, ["Quelle", "Chance"], rows, start_row=r + 1)
     r = last + 3
     ws.cell(row=r, column=1, value="Aus dem Lager herstellen").font = SUB_FONT
     rows = [[wn(w), amt(h["kosten"]), h.get("text", "")] for w, h in fab["herstellen"].items()]

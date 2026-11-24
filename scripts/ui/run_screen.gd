@@ -1935,6 +1935,9 @@ func _show_end(run: RunState) -> void:
 		.map(func(item): return str(item["title"]))
 	if not parts.is_empty():
 		keep.add_child(_label("Teile in den Hangar: %s" % ", ".join(parts), 13, COLOR_GOOD))
+	if _delivered.any(func(item): return item.get("kind", "") == "keynode"):
+		keep.add_child(_label("Keynode-Chip erhalten -- für Level 5 eines DROME oder einer Waffe.", 13,
+			Arcade.MAGENTA))
 	# Fabrik (23. Nov. 2026): was die Platine waehrend des Einsatzes ins Lager schickte.
 	if not run.factory_gain.is_empty():
 		var made: Array = []
