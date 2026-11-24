@@ -299,8 +299,10 @@ class UnitBadgePainter extends Node2D:
 	const HEIGHT := 6.0
 	## Deckkraft des leeren Teils (nur ein Hauch, kein schwarzer Balken).
 	const EMPTY_ALPHA := 0.22
-	## Unterkante des Balkens ueber der Feldmitte -- in WELT-Einheiten.
-	const BASE_Y := -72.0
+	## Unterkante von Balken samt Takt-Leisten ueber der Feldmitte -- in
+	## WELT-Einheiten, mal Figurgroesse. Seit 24. Nov. 2026 (Spieler: "die
+	## Balken verdecken den halben DROME") ueber dem Kopf statt auf der Brust.
+	const BASE_Y := -106.0
 
 	const COLOR_TRACK := Color(0.04, 0.05, 0.08, 0.9)
 	const COLOR_OUTLINE := Color(0.0, 0.0, 0.0, 0.9)
@@ -379,7 +381,7 @@ class UnitBadgePainter extends Node2D:
 			base *= 0.62
 			takt_rows = 0
 		var total := height + float(takt_rows) * (TAKT_HEIGHT + TAKT_GAP) * s
-		var top := center.y + base - height
+		var top := center.y + base - total
 		return {"s": s, "width": width, "height": height, "center": center,
 			"rect": Rect2(center.x - width * 0.5, top, width, total)}
 
@@ -484,8 +486,7 @@ class UnitBadgePainter extends Node2D:
 		var width: float = box["width"]
 		var height: float = box["height"]
 		var left := center.x - width * 0.5
-		var top := center.y + (BASE_Y * 0.62 if entry.get("small", false) else BASE_Y) \
-			* Arena3D.figure_scale() - height - lift
+		var top: float = (box["rect"] as Rect2).position.y - lift
 
 		var parts := split(int(entry.get("hp", 0)), int(entry.get("hp_max", 0)),
 			int(entry.get("shield", 0)), int(entry.get("shield_max", 0)))

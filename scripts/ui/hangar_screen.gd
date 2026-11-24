@@ -303,7 +303,11 @@ func _drome_row(index: int) -> Control:
 	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	column.add_child(_quiet(name))
 	column.add_child(_quiet(role_label(build, role_text(build), 13)))
-	column.add_child(_quiet(Arcade.label(_loadout_text(entry, build), 13, Arcade.MUTED)))
+	# Umbrechen statt die Seite breiter zu schieben (24. Nov. 2026: Molok mit
+	# zwei Waffen samt Chargern schob die Tab-Leiste rechts aus dem Bild).
+	var loadout := Arcade.label(_loadout_text(entry, build), 13, Arcade.MUTED)
+	loadout.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(_quiet(loadout))
 	if todo != "":
 		column.add_child(_quiet(Arcade.label(todo, 11, Arcade.YELLOW, "bold", 0.12)))
 	return panel
