@@ -60,12 +60,67 @@ Selbst nachgespielt (Kampfbild per xvfb, Seeds 5003/7001/7002) und gemessen:
   Reichweite hat, schaut beim Laufen zum Ziel statt sich zwischen zwei Schuessen
   wegzudrehen (`AIController._walk`). Das Echo haelt den Blick ueber die ganze Ausholzeit.
 
+### Fabrik-Logik (23. Nov. 2026, `docs/FACTORY_KONZEPT.md` Abschnitt 11)
+
+* **`FactorySim`** (`scripts/core/factory_sim.gd`, RefCounted, deterministisch): Takt in der
+  Reihenfolge des Prototyps v2 -- Verbindungen (Relais nur mit Strom), Abholen reihum,
+  Strom nach Naehe (Netz 4/Rw 2, Solar mit Schatten, Ofen/Generator zuenden bei halbem Puffer und
+  brennen nur bei Bedarf, Batterie), Herstellen (Anlauf 3 Durchlaeufe, Resonanz), Uplink.
+  `run(n)` fuer viele Takte. Werte in **`data/factory.json`** (ohne Rohlingpresse), SPOT-Blatt
+  **Fabrik** (Welt).
+* **Spielstand:** `Roster.factory` (eigene Version 1) im roster.json; **Lager = Inventar**:
+  `Roster.materials["res:<ware>"]`, der Charger-Rohling bleibt `"rohling"`.
+  `Roster.factory_sim()` arbeitet direkt darauf.
+* **Takte:** live 1 Takt alle 6 s, nur solange der Reiter Linien offen ist; nach jedem Kampf
+  `run(20)` (seit 24. Nov. 2026, vorher 100; `GameState.finish_run_battle`, auch nach Niederlage), Summe in
+  `RunState.factory_gain`, am Einsatzende unter "Was bleibt" ("Fabrik ins Lager").
+* **Bedienung (schlicht, Optik folgt in der Design-Sitzung):** Platine zeichnen und antippen,
+  Gebaeude nach Gruppen, Info mit Durchsatz/Puffer/Strom/Uplink-Menge, "Eingang X voll --
+  wartet auf Y" (Playtest v2), gedimmte Leiterbahn ohne Lieferung, Feldgruppen und weitere
+  Gebaeude kaufen, Abreissen (Besitz bleibt, Puffer ins Lager), Tier-2-Ziel, Lager mit
+  Hochrechnung je Einsatz. Inventar zeigt "Ressourcen"; im Reiter Charger "Rohling herstellen"
+  (Vorschlag 2 Legierung + 1 Plasma, `factory.json` -> `herstellen`).
+* Tests `tests/test_factory.gd`, Smoke-Test bedient die Platine, Bild:
+  `tests/screenshot.gd -- res://scenes/resources.tscn <png> 60 factory=200`.
+* Offen: Rezept-Raten/Takte fuers Spiel, Tier 3/4 ueber die Story, Baukerne raus (erst mit den
+  DROME-Teilen), Anzeigetexte noch ohne `tr()`.
+
+### Werkbank (24. Nov. 2026, `docs/FACTORY_KONZEPT.md` Abschnitt 13)
+
+* Fabrik-Tab hat zwei Reiter: **Platine** (`FactoryView`) und **Werkbank** (`WorkbenchView`,
+  Kategorien Charger und DROMEs). `resources_screen.open_tab("charger"/"dromes")` fuehrt in die
+  Werkbank. `DromeForge` ist entfernt.
+* Logik `Workbench` (`scripts/core/workbench.gd`): Produkte `rohling`, `teil:<chassis>:<teil>`,
+  `drome:<chassis>`, `faction:<variante>` (Fraktionskern statt Kern-Teil), `free:<chassis>`;
+  `needs`/`missing`/`raw_shortfall`/`craft`, `battles_for` mit `FactorySim.estimate_per_tick`.
+  Teile-Rezepte in `data/factory.json` -> `werkbank`, SPOT-Blatt Fabrik.
+* Ziel merken: `FactorySim.goal()` im Fabrik-Spielstand; die Platine zeigt "ZIEL ... fehlt ..."
+  und einen gelben Punkt an Gebaeuden, die Fehlendes herstellen.
+* Tests `tests/test_workbench.gd`, Smoke-Test bedient die Werkbank, Bild:
+  `screenshot.gd -- res://scenes/resources.tscn <png> 60 fabrik=dromes ziel=drome:jugg_body`.
+* Spezialteile (`spezial:<variante>`, Fraktionskern + Zutaten des Kern-Teils) ersetzen bei
+  Fraktions-DROMEs das Kern-Teil. Verwerten (`Roster.salvage`, `Workbench.salvage_yield`) gibt die
+  Zutaten der zwei teuersten Teile zurueck, Fraktions-DROMEs dazu ihr Spezialteil. Baukerne sind
+  raus (Caches, Shop, Verwerten, `craft_drome`), ohne Umrechnung alter Spielstaende.
+
+### Level kaufen statt EP (24. Nov. 2026, `docs/SKILLBAUM_KONZEPT.md` 5d)
+
+* Keine EP mehr (`Leveling.xp_enabled()`; `RunState.collect_xp` sammelt nichts). Level werden auf
+  der DROME-Seite gekauft: Reiter **DROME** (`_level_card`) und die Klappe „Level und Skilltree der
+  Waffe“ im Reiter Waffe. Kosten in `data/factory.json` -> `level` (je Chassis, Waffen je
+  Gewichtsklasse), Level 5 braucht einen **Keynode-Chip** (`materials["keynode"]`).
+* Waffen bis Level 5 (`config.json` -> `levels.weapon.max`, Schaden +14 % je Level).
+* Keynode-Chip: erster gewonnener Einsatz garantiert (`progress.keynode_first`), danach 15 %
+  (`GameState.roll_keynode`), Caches 5 % je Wurf. Raten vorlaeufig.
+* Tests in `tests/test_leveling.gd`; Bild: `screenshot.gd -- res://scenes/hangar.tscn <png> 60 hangar=drome_up`.
+
 ### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
 
 Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "Vorschlag").
 
-* **Fabrik** (`resources_screen.gd`) = herstellen: Reiter Linien (Platzhalter), Charger
-  (`ChargerCrafter`), DROMEs (`DromeForge`); Schalter fest unter der Kopfzeile.
+* **Fabrik** (`resources_screen.gd`) = herstellen: Reiter Linien (seit 23. Nov. 2026 die
+  Fabrik-Platine, `FactoryView`), Charger (`ChargerCrafter`), DROMEs (`DromeForge`); Schalter
+  fest unter der Kopfzeile.
 * **Inventar** (`shop_screen.gd`, `mode = "inventory"`) = lagern, eine Seite ohne Reiter:
   Bestand, freie Waffen, Charger, Energy Phases, Lootcaches oeffnen.
 * **DROMEs** (`hangar_screen.gd`) = ausruesten und aufwerten: nur die Liste (Zeilen mit Bild,

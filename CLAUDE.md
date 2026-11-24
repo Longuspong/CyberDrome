@@ -33,12 +33,19 @@ Arbeit daran lesen.
 **Skilltrees (22. Nov. 2026, Richtung entschieden, Schablone Entwurf): `docs/SKILLBAUM_KONZEPT.md`**
 -- keine Erfahrung mehr, DROMEs und Waffen je 5 Level ueber Ressourcen, Knoten 1-4 nur Werte,
 Knoten 5 aendert Passive bzw. Faehigkeit, Umskillen kostet Ressourcen, Fraktionsvarianten =
-Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegnen.
+Identitaet + Twist, Charger bleiben an der Waffe. **Seit 24. Nov. 2026 gebaut:** keine EP mehr,
+Level werden mit Fabrik-Waren gekauft (Waffen bis 5, Level 5 mit Keynode-Chip, Abschnitt 5d);
+die Skilltree-Knoten selbst noch nicht bauen, erst absegnen.
 **Factory-Builder (23. Nov. 2026, Richtung entschieden, Prototyp v2): `docs/FACTORY_KONZEPT.md`**
 -- Hex-Platine, Nachbar-Lieferung, Puffer + Uplink, Netzanschluss mit Strom nach Naehe,
 nur Ressourcen (Charger/DROMEs entstehen aus dem Lager in ihren Reitern), Tiers, Baukerne fallen
 weg; Takte vor allem aus dem Einsatz. Prototyp: https://claude.ai/artifact/BU9arMAXSSSC18zgFEnQsd
-(Kopie `docs/design/factory_prototyp/`). Noch nichts im Spiel -- Uebergaben Logik/Design dort Abschnitt 11/12.
+(Kopie `docs/design/factory_prototyp/`). **Logik seit 23. Nov. 2026 GEBAUT** (`FactorySim`,
+`data/factory.json`, Reiter Linien = Platine, Lager = `Roster.materials["res:<ware>"]`, 20 Takte je
+Kampf) -- Stand in `docs/PROJEKTSTAND.md`; die Optik folgt laut Abschnitt 12 in einer Design-Sitzung. **Werkbank (24. Nov. 2026, GEBAUT):**
+Abschnitt 13 -- Reiter Platine | Werkbank, DROMEs aus fuenf Teilen (`Workbench`, Rezepte in
+`data/factory.json` -> `werkbank`), Bauplan-Baum, Ziel merken; Fraktions-DROMEs mit Spezialteil
+(aus Fraktionskern), Verwerten gibt Zutaten zurueck, Baukerne gibt es nicht mehr.
 **Waffen-Upgrades (20. Nov. 2026, entschieden und GEBAUT): `docs/CHARGER_KONZEPT.md`**
 -- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.
 **Bildschirme fuer Design-Sessions: `docs/design/UEBERGABEN_DESIGN.md`** -- Hangar
@@ -230,7 +237,7 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   Auswahl als Kacheln (`Tile`: tippen waehlt, nochmal tippen = Details,
   Doppeltipp = Handlung; seit 15. Nov. 2026), Erklaerungen als blaetterbares
   Popup (`InfoPopup.open_pages`). DROMEs werden verwertet, nicht aufgeloest
-  (Baukerne, Fraktionskerne, `Roster.salvage/craft_drome`).
+  (Zutaten + Spezialteil zurueck, `Roster.salvage`; gebaut wird in der Werkbank).
 * Navigation: Tab-Leiste unten, seit 22. Nov. 2026 fuenf Tabs: Shop, Fabrik,
   Home (Mitte), DROMEs, Inventar (`UiKit.TABS`; Optionen am Zahnrad oben rechts).
   Ein Verb je Tab: Shop kaufen, Fabrik herstellen (Linien, Charger, DROMEs),

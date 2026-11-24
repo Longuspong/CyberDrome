@@ -72,6 +72,20 @@ func _setup() -> void:
 					for i in state.roster.entries.size():
 						state.roster.entries[i].in_squad = i in picks
 					state.refresh_squad()
+				# factory=200 laesst die Fabrik so viele Takte laufen und oeffnet den
+				# Fabrik-Tab im Reiter Linien (die Platine).
+				"factory":
+					state.roster.run_factory(int(pair[1]))
+					load("res://scripts/ui/resources_screen.gd").open_tab("linien")
+				# fabrik=dromes oeffnet den Fabrik-Tab in diesem Reiter (linien, dromes,
+				# charger); ziel=drome:jugg_body merkt ein Werkbank-Ziel.
+				"fabrik":
+					load("res://scripts/ui/resources_screen.gd").open_tab(pair[1])
+				"ziel":
+					state.roster.factory_sim().set_goal(pair[1])
+				# hangar=drome_up oeffnet den DROMEs-Tab in diesem Reiter (erster DROME).
+				"hangar":
+					load("res://scripts/ui/hangar_screen.gd").open_tab(pair[1])
 				# material=phase:fire:3,rohling:2 legt Material ins Lager.
 				"material":
 					for item in pair[1].split(","):
