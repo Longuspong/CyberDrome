@@ -39,7 +39,7 @@ Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegn
 nur Ressourcen (Charger/DROMEs entstehen aus dem Lager in ihren Reitern), Tiers, Baukerne fallen
 weg; Takte vor allem aus dem Einsatz. Prototyp: https://claude.ai/artifact/BU9arMAXSSSC18zgFEnQsd
 (Kopie `docs/design/factory_prototyp/`). **Logik seit 23. Nov. 2026 GEBAUT** (`FactorySim`,
-`data/factory.json`, Reiter Linien = Platine, Lager = `Roster.materials["res:<ware>"]`, 100 Takte je
+`data/factory.json`, Reiter Linien = Platine, Lager = `Roster.materials["res:<ware>"]`, 20 Takte je
 Kampf) -- Stand in `docs/PROJEKTSTAND.md`; die Optik folgt laut Abschnitt 12 in einer Design-Sitzung.
 **Waffen-Upgrades (20. Nov. 2026, entschieden und GEBAUT): `docs/CHARGER_KONZEPT.md`**
 -- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.

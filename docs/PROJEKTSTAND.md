@@ -41,7 +41,7 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   `Roster.materials["res:<ware>"]`, der Charger-Rohling bleibt `"rohling"`.
   `Roster.factory_sim()` arbeitet direkt darauf.
 * **Takte:** live 1 Takt alle 6 s, nur solange der Reiter Linien offen ist; nach jedem Kampf
-  `run(100)` (`GameState.finish_run_battle`, auch nach Niederlage), Summe in
+  `run(20)` (seit 24. Nov. 2026, vorher 100; `GameState.finish_run_battle`, auch nach Niederlage), Summe in
   `RunState.factory_gain`, am Einsatzende unter "Was bleibt" ("Fabrik ins Lager").
 * **Bedienung (schlicht, Optik folgt in der Design-Sitzung):** Platine zeichnen und antippen,
   Gebaeude nach Gruppen, Info mit Durchsatz/Puffer/Strom/Uplink-Menge, "Eingang X voll --

@@ -3,7 +3,7 @@
   "version": 1,
   "takte": {
     "live_sekunden": 6,
-    "je_kampf": 100,
+    "je_kampf": 20,
     "anlauf": 3,
     "eingang_mal_rezept": 10,
     "ausgang": 10,
@@ -71,8 +71,8 @@
     {"id": "norden", "name": "Norden", "felder": ["-3,0", "-2,-1", "-1,-2", "0,-3", "1,-3", "2,-3"], "preis": {"platte": 5, "schaltkreis": 30}, "tier": 2}
   ],
   "tiers": [
-    {"tier": 2, "titel": "Tier 2 freischalten", "kosten": {"legierung": 120, "schaltkreis": 30, "rohling": 3}, "weg": "fabrik",
-      "text": "Bringt Generator, Batterie, Neonpumpe, Verdichter, Chipfabrik. Später: CyberDromes aus Teilen."},
+    {"tier": 2, "titel": "Tier 2 freischalten", "kosten": {"legierung": 110, "plasma": 100, "schaltkreis": 35}, "weg": "fabrik",
+      "text": "Bringt Generator, Batterie, Neonpumpe, Verdichter, Chipfabrik. Später: CyberDromes aus Teilen. Kosten = etwa 70 Takte (3-4 Kämpfe) eines starken Tier-1-Aufbaus (je Takt ca. 1,6 Legierung, 1,5 Plasma, 0,45 Schaltkreis)."},
     {"tier": 3, "titel": "Tier 3", "kosten": {}, "weg": "story",
       "text": "Fraktions-DROMEs und Aufträge für Coins -- schaltet der Story-Fortschritt frei (Inhalt kommt noch)."},
     {"tier": 4, "titel": "Tier 4", "kosten": {}, "weg": "story",

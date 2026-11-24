@@ -148,8 +148,11 @@ Später: Tier 3/4 mit Inhalt, große Gebäude, Lager-Obergrenze, Rezept-Zahlen n
 **GEBAUT (23. Nov. 2026)** -- Details in `docs/PROJEKTSTAND.md` („Fabrik-Logik“). Abweichungen
 und Ergänzungen zum Vorschlag unten:
 * Lager = `Roster.materials` mit Schlüssel `"res:<ware>"`; der Charger-Rohling bleibt `"rohling"`
-  und entsteht im Reiter Charger aus dem Lager (Vorschlag 2 Legierung + 1 Plasma) -- das
-  Tier-2-Ziel braucht weiter 3 Rohlinge.
+  und entsteht im Reiter Charger aus dem Lager (Vorschlag 2 Legierung + 1 Plasma).
+* **Spieler 24. Nov. 2026:** **20 Takte je Kampf** (160 je Einsatz mit 8 Kämpfen). Das
+  **Tier-2-Ziel braucht nur Fabrikwaren**, so viel wie ein starker Tier-1-Aufbau in 3-4
+  Kämpfen schafft: gemessen je Takt ca. 1,6 Legierung, 1,5 Plasma, 0,45 Schaltkreis (Strom
+  ist der Engpass) → 70 Takte = **110 Legierung + 100 Plasma + 35 Schaltkreis**.
 * Tier 3/4 stehen als Story-Ziel in den Daten, ohne Weg zum Freischalten (kommt mit der Story).
 * Bedarfe aus dem Prototyp sind nicht übernommen (der Bedarf kommt aus den anderen Reitern).
 * Playtest 1 umgesetzt: „Eingang X voll -- wartet auf Y“ im Gebäude-Info, Leiterbahn gedimmt,

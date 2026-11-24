@@ -115,15 +115,23 @@ func test_buy_and_move() -> void:
 	t.ok(sim.buy_building("gen") != "", "Generator erst ab Tier 2")
 
 
-func test_tier_goal_needs_blanks() -> void:
-	var lager := {"res:legierung": 120, "res:schaltkreis": 30}
+func test_tier_goal_only_factory_wares() -> void:
+	var goal: Dictionary = _sim().next_tier_goal()
+	for ware in goal.get("kosten", {}):
+		t.ok(not bool((FactorySim.wares()[ware] as Dictionary).get("nur_lager", false)),
+			"Tier-2-Ziel nur aus Fabrikwaren: " + str(ware))
+	var lager := {"res:legierung": 109, "res:plasma": 100, "res:schaltkreis": 35}
 	var sim := _sim(lager)
-	t.ok(sim.unlock_tier() != "", "ohne Rohlinge kein Tier 2")
-	lager["rohling"] = 3
+	t.ok(sim.unlock_tier() != "", "eine Legierung zu wenig: kein Tier 2")
+	lager["res:legierung"] = 110
 	t.equal(sim.unlock_tier(), "", "Tier 2 frei")
 	t.equal(sim.tier(), 2, "jetzt Tier 2")
-	t.equal(int(lager.get("rohling", 0)), 0, "Rohlinge verbraucht")
+	t.ok(lager.is_empty(), "Kosten verbraucht")
 	t.ok(sim.unlock_tier() != "", "Tier 3 nur über die Story")
+
+
+func test_ticks_per_battle() -> void:
+	t.equal(FactorySim.ticks_per_battle(), 20, "20 Takte je Kampf (160 je Einsatz)")
 
 
 func test_craft_blank_from_lager() -> void:
