@@ -39,6 +39,7 @@ PartDB="*res://autoload/part_db.gd"
 GameState="*res://autoload/game_state.gd"
 Accessibility="*res://autoload/accessibility.gd"
 Fader="*res://autoload/scene_fader.gd"
+Music="*res://autoload/music.gd"
 
 [display]
 

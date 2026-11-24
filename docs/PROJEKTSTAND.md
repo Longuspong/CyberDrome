@@ -1148,6 +1148,14 @@ Nach dem Design-Canvas „CyberDrome Charger & Hangar“
 * `run_bench 20`: Siegquoten praktisch wie vorher.
 * Offene Logik: `docs/design/UEBERGABEN_DESIGN.md`, Abschnitt „Offene Logik nach dem Bau“.
 
+### Musik (24. Nov. 2026)
+
+* Zwei BeepBox-Stuecke des Spielers: das dunklere (D, 96 BPM) im Kampf, das hellere (A-Moll,
+  128 BPM) auf allen anderen Bildschirmen. Autoload `Music` folgt der aktuellen Szene und
+  blendet ueber; Intro (4 Takte) einmal, danach Schleife ab Takt 5 (`loop_offset` im Import).
+  OGG statt WAV: 2,4 MB statt 33 MB. Schalter Optionen -> Ton -> Musik. Details und Tausch:
+  `docs/musik/LIESMICH.md`.
+
 ## 3. Messungen und gefundene Fehler (lohnt sich zu wissen)
 
 * **KI griff abgeschirmte Ziele nie an.** Sie bewertete nur HP-Schaden; ein
