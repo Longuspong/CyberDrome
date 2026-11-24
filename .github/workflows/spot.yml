@@ -1,8 +1,8 @@
-# Prueft, dass die SPOT-Tabellen (docs/spot/CyberDrome_SPOT_*.xlsx) zu den
-# Spieldaten passen. Rot heisst: python3 tools/build_spot.py ausfuehren und
-# die neuen Tabellen einchecken.
+# Prueft die Hindernis-Modelle bei jedem PR. Die SPOT-Tabellen
+# (docs/spot/CyberDrome_SPOT_*.xlsx) nur beim Start von Hand -- seit 24. Nov.
+# 2026 werden sie nur auf Zuruf des Spielers nachgezogen.
 
-name: SPOT-Tabelle aktuell
+name: SPOT und Modelle aktuell
 
 on:
   push:
@@ -22,7 +22,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install openpyxl
-      - run: python3 tools/build_spot.py --check
+      - if: github.event_name == 'workflow_dispatch'
+        run: python3 tools/build_spot.py --check
       # Hindernis-Modelle der 3D-Kampfszene (18. Nov. 2026): Rot heisst
       # python3 tools/build_arena_models.py ausfuehren und assets/arena3d einchecken.
       - run: python3 tools/build_arena_models.py --check

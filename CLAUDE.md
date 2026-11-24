@@ -33,7 +33,9 @@ Arbeit daran lesen.
 **Skilltrees (22. Nov. 2026, Richtung entschieden, Schablone Entwurf): `docs/SKILLBAUM_KONZEPT.md`**
 -- keine Erfahrung mehr, DROMEs und Waffen je 5 Level ueber Ressourcen, Knoten 1-4 nur Werte,
 Knoten 5 aendert Passive bzw. Faehigkeit, Umskillen kostet Ressourcen, Fraktionsvarianten =
-Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegnen.
+Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegnen. Seit 24. Nov.: Regeln sind
+Leitlinie, kein Korsett; Vireo-Baum + Neon-Strang als Vorschlag; Werte im Werkblatt
+`docs/spot/CyberDrome_Werkblatt_DROMEs_Waffen.xlsx`.
 **Factory-Builder (23. Nov. 2026, Richtung entschieden, Prototyp v2): `docs/FACTORY_KONZEPT.md`**
 -- Hex-Platine, Nachbar-Lieferung, Puffer + Uplink, Netzanschluss mit Strom nach Naehe,
 nur Ressourcen (Charger/DROMEs entstehen aus dem Lager in ihren Reitern), Tiers, Baukerne fallen
@@ -144,17 +146,22 @@ bearbeitet, sondern von `tools/build_spot.py` aus `parts/`, `data/*.json` und
 den Texten unter `docs/spot/inhalte/` erzeugt (`entscheidungen.json`,
 `balance.json`, `welt.json`, `design.json`).
 
-* **Jede Aenderung** an Werten, Daten oder Entscheidungen: neue Texte
-  (Eckpunkte, Story, Fraktionen, offene Punkte) in der passenden Datei unter
-  `docs/spot/inhalte/` nachtragen, dann `python3 tools/build_spot.py` und die
-  xlsx mit einchecken.
-* Die CI (`.github/workflows/spot.yml`) prueft mit `--check`, dass alle vier
-  aktuell sind.
+* **SPOT nur noch auf Zuruf (Spieler 24. Nov. 2026).** Nicht mehr bei jedem PR
+  nachziehen -- vieles klaert der Spieler im Chat, das Nachziehen kostet nur
+  Tokens. Neu bauen (`python3 tools/build_spot.py`, Texte unter
+  `docs/spot/inhalte/`) nur, wenn der Spieler es verlangt. Die CI prueft die
+  SPOT nur noch beim Start von Hand (`workflow_dispatch`).
+* **Fuer Entscheidungen lieber ein Werkblatt:** wenn der Spieler Werte
+  vergleichen oder eintragen will, die noetigen Daten heraussuchen und als
+  kompakte Excel unter `docs/spot/` ablegen (von Hand bearbeitbar, kein Teil
+  der SPOT). Erstes Beispiel: `CyberDrome_Werkblatt_DROMEs_Waffen.xlsx`
+  (24. Nov. 2026: Leitlinien, alle DROME- und Waffenwerte, Passiven,
+  Skilltrees; hellblau = vom Spieler zu fuellen).
 * **Design-System** (seit 17. Nov. 2026): Artefakt „CyberDrome Arcade-Glitch“
   (https://claude.ai/artifact/M5RC8KNDTr5psmKSuJpdS2) mit Tokens, Brand-Book,
   Komponenten und Symbolen -- ebenfalls ein Spiegel. Seine Tokens erzeugt
   `build_spot.py` aus `design_farben` + `design_tokens` in `inhalte/design.json`
-  nach `docs/design/tokens.json` (CI prueft mit). Farben im Spiel aendern =
+  nach `docs/design/tokens.json` (nur auf Zuruf). Farben im Spiel aendern =
   dort nachtragen, neu bauen und `tokens.json` ins Design-System uebernehmen.
   Brand-Book und Komponenten liegen als Sicherung unter
   `docs/design/design_system/` (Anleitung dort in `LIESMICH.md`).
