@@ -15,7 +15,9 @@ immer dieselbe Schablone aus.
 * **Knoten 1-4: nur Werte.** Keine kleinen Regeln.
 * **Knoten 5 verändert die Identität:**
   DROME -> die **Passive**, Waffe -> die **aktive Fähigkeit**.
-* **Umskillen geht, kostet Ressourcen.**
+* **Umskillen geht, kostet Ressourcen.** Spieler 24. Nov. 2026: Umskillen = den DROME **verwerten
+  und neu bauen** (relativ großer Einsatz; Verwerten gibt Zutaten zurück, Fraktions-DROMEs ihr
+  Spezialteil -- `FACTORY_KONZEPT.md` 13). Kein eigener Umskillen-Preis.
 * **Fraktionsvarianten** haben die Identität des Standard-DROME **plus einen Twist**
   (z. B. Neon Vireo = Vireo mit Ninja-Einschlag).
 * **Charger bleiben** das individuelle Upgrade einer Waffe -- an der Waffe, wie heute.

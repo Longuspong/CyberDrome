@@ -67,7 +67,10 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   und einen gelben Punkt an Gebaeuden, die Fehlendes herstellen.
 * Tests `tests/test_workbench.gd`, Smoke-Test bedient die Werkbank, Bild:
   `screenshot.gd -- res://scenes/resources.tscn <png> 60 fabrik=dromes ziel=drome:jugg_body`.
-* Offen: Baukerne (bauen nichts mehr, liegen aber noch in Caches/Shop/Verwerten).
+* Spezialteile (`spezial:<variante>`, Fraktionskern + Zutaten des Kern-Teils) ersetzen bei
+  Fraktions-DROMEs das Kern-Teil. Verwerten (`Roster.salvage`, `Workbench.salvage_yield`) gibt die
+  Zutaten der zwei teuersten Teile zurueck, Fraktions-DROMEs dazu ihr Spezialteil. Baukerne sind
+  raus (Caches, Shop, Verwerten, `craft_drome`), ohne Umrechnung alter Spielstaende.
 
 ### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
 

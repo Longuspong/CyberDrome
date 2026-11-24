@@ -469,7 +469,7 @@ class _ResultCard extends PanelContainer:
 			"coins": return "COIN"
 			"faction_drome": return "FRAKTIONS-DROME"
 			"faction_core": return "FRAKTIONSKERN"
-		return Roster.kit_name().to_upper()
+		return ""
 
 	func _name() -> String:
 		match str(result.get("kind", "")):

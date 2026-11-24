@@ -348,7 +348,7 @@ func _show_overview() -> void:
 	# Umbenennen gibt es nicht (23. Nov. 2026, Spieler: nie gewollt, und das
 	# Eingabefeld zerschoss im Browser die Anzeige).
 	var scrap := UiKit.outline_button("VERWERTEN", Arcade.ROSE)
-	scrap.tooltip_text = "Gibt einen %s; die Waffen kommen ins Inventar." % Roster.kit_name()
+	scrap.tooltip_text = "Gibt Zutaten zurück; die Waffen kommen ins Inventar."
 	scrap.pressed.connect(func(): _confirm_salvage(entry))
 	_content.add_child(scrap)
 
@@ -755,18 +755,20 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 func _confirm_salvage(entry: RosterEntry) -> void:
 	var roster := GameState.roster
 	var blocker := roster.salvage_blocker(entry)
-	var gain := "1 %s" % Roster.kit_name()
-	if entry.variant != "":
-		var faction := str((Formations.data()["dromes"] as Dictionary).get(entry.variant, {}).get("faction", ""))
-		if faction != "":
-			gain += " und 1 %s" % Roster.core_name(faction)
+	var body := roster.instance(str(entry.assignments.get("body", "")))
+	var yield_info := Workbench.salvage_yield(str(body.part_id) if body != null else "", entry.variant)
+	var parts: Array = []
+	for ware in yield_info["wares"]:
+		parts.append("%d %s" % [int(yield_info["wares"][ware]), FactorySim.ware_name(str(ware))])
+	if str(yield_info["special"]) != "":
+		parts.append("das Spezialteil %s" % Workbench.special_name(str(yield_info["special"])))
+	var gain := ", ".join(parts)
 	InfoPopup.open(self, "%s verwerten?" % entry.name, {"picture":
 		UiKit.drome_view(roster.build_for(entry), 64), "lines": [
 			"Du bekommst %s." % gain,
-			["Die Waffen kommen frei in den Hangar. Chassis, Level und EP gehen verloren.",
+			["Die Waffen kommen frei in den Hangar. Chassis und Level gehen verloren.",
 				UiKit.MUTED, UiKit.SMALL],
-			["%d %s bauen einen neuen Standard-DROME." % [Roster.kits_per_drome(), Roster.kit_name()],
-				UiKit.MUTED, UiKit.SMALL]],
+			["Neue DROMEs entstehen in der Werkbank (Fabrik) aus Teilen.", UiKit.MUTED, UiKit.SMALL]],
 		"actions": [{"text": "Verwerten", "disabled": blocker != "", "why": blocker, "call": func():
 			var got := roster.salvage(entry)
 			if got.is_empty():

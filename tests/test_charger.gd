@@ -126,7 +126,7 @@ func test_open_cache_rolls_four_times() -> void:
 	var phases := 0
 	for id in Charger.element_ids():
 		phases += roster.phases(id)
-	var gained := phases + roster.blanks() + roster.kits() + roster.faction_cores("neon")
+	var gained := phases + roster.blanks() + roster.faction_cores("neon")
 	t.ok(gained > 0 or roster.coins > 0 or roster.entries.size() > 0, "Beute gutgeschrieben")
 	t.equal(roster.open_cache("city", rng).size(), 0, "leeres Lager: nichts")
 

@@ -204,11 +204,10 @@
   "hangar_shop": {
     "_kommentar": [
       "Hangar-Shop (15. Nov. 2026, Tab Shop): Angebote fuer Platzhaltercoin. Preise sind",
-      "der Vorschlag aus dem SPOT-Blatt Hangar-Shop. kind: kit (ein Baukern), cache (ein",
+      "der Vorschlag aus dem SPOT-Blatt Hangar-Shop. kind: cache (ein",
       "Lootcache des Gebiets cache). Upgrades folgen mit Bauschritt 5."
     ],
     "offers": [
-      {"id": "kit", "kind": "kit", "price": 20},
       {"id": "cache_city", "kind": "cache", "cache": "city", "price": 50},
       {"id": "cache_green", "kind": "cache", "cache": "green", "price": 50},
       {"id": "cache_plant7", "kind": "cache", "cache": "plant7", "price": 50}
@@ -217,16 +216,10 @@
 
   "crafting": {
     "_kommentar": [
-      "DROMEs verwerten und bauen (15. Nov. 2026, Wunsch des Spielers): ein verwerteter",
-      "DROME gibt salvage_kits Baukern(e) -- ein Fraktions-DROME dazu einen Fraktionskern",
-      "seiner Fraktion. Waffen kommen frei in den Hangar, Level und EP gehen verloren.",
-      "kits_per_drome Baukerne bauen einen Standard-DROME (Chassis waehlbar),",
-      "ein Fraktionskern + kits_per_drome Baukerne einen Fraktions-DROME (Werte aus",
-      "data/formations.json -> dromes). Spaeter auch im Hangar-Shop."
+      "DROMEs verwerten und bauen: seit 24. Nov. 2026 in der Werkbank aus Teilen",
+      "(data/factory.json -> werkbank); Baukerne gibt es nicht mehr. Hier nur noch die",
+      "Namen der Fraktionskerne."
     ],
-    "salvage_kits": 1,
-    "kits_per_drome": 3,
-    "kit_name": "Baukern",
     "faction_core_names": {"neon": "Neon-Kern", "solar": "Solar-Kern", "mecha": "Mecha-Kern", "hipstar": "Hipstar-Kern"}
   },
 
@@ -452,8 +445,7 @@
       "table": [
         {"kind": "faction_drome", "chance": 0.005},
         {"kind": "faction_core", "chance": 0.025},
-        {"kind": "baukern", "chance": 0.07},
-        {"kind": "phase", "chance": 0.72},
+        {"kind": "phase", "chance": 0.79},
         {"kind": "blank", "chance": 0.12},
         {"kind": "coins", "chance": 0.06, "min": 10, "max": 20}
       ]

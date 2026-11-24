@@ -128,8 +128,9 @@ func _detail(id: String) -> void:
 		card.add_child(_wrap("Ein freies Chassis aus der Beute -- baut sich ohne Kosten.", UiKit.MUTED))
 	else:
 		if id.begins_with("faction:"):
-			card.add_child(_wrap("Fraktions-DROME: der %s ersetzt das Kern-Teil." % Workbench.key_name(
-				"kern:" + str(Formations.data()["dromes"][id.substr(8)].get("faction", ""))), UiKit.MUTED))
+			card.add_child(_wrap("Fraktions-DROME: das Spezialteil %s ersetzt das Kern-Teil. Es entsteht aus dem %s und legt sich auf genau diesen DROME fest." % [
+				Workbench.special_name(id.substr(8)), Roster.core_name(Workbench.faction_of(id.substr(8)))],
+				UiKit.MUTED))
 		var need := _bench.needs(id)
 		for key in need:
 			_part_row(card, str(key), int(need[key]))
@@ -161,9 +162,7 @@ func _part_row(card: VBoxContainer, key: String, amount: int) -> void:
 		UiKit.GOOD if done else UiKit.TEXT)
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	line.add_child(name)
-	if not key.begins_with("teil:"):
-		if not done and key.begins_with("kern:"):
-			card.add_child(_wrap("  Fraktionskerne gibt es beim Verwerten von Fraktions-DROMEs.", UiKit.MUTED))
+	if not key.begins_with("teil:") and not key.begins_with("spezial:"):
 		return
 	if not done:
 		var make := UiKit.outline_button("Herstellen")
@@ -189,7 +188,9 @@ func _cost_lines(card: VBoxContainer, id: String) -> void:
 		if have < int(need[key]):
 			color = UiKit.MAGENTA
 			var makers: Array = FactorySim.producers(ware)
-			if not makers.is_empty():
+			if str(key).begins_with("kern:"):
+				text += " -- seltene Beute aus Caches des Gebiets"
+			elif not makers.is_empty():
 				var names: Array = makers.map(func(m): return str(m["name"]) + (
 					" (ab Tier %d)" % int(m["tier"]) if int(m["tier"]) > _sim.tier() else ""))
 				text += " -- " + ", ".join(names)

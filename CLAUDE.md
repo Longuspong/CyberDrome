@@ -42,7 +42,8 @@ weg; Takte vor allem aus dem Einsatz. Prototyp: https://claude.ai/artifact/BU9ar
 `data/factory.json`, Reiter Linien = Platine, Lager = `Roster.materials["res:<ware>"]`, 20 Takte je
 Kampf) -- Stand in `docs/PROJEKTSTAND.md`; die Optik folgt laut Abschnitt 12 in einer Design-Sitzung. **Werkbank (24. Nov. 2026, GEBAUT):**
 Abschnitt 13 -- Reiter Platine | Werkbank, DROMEs aus fuenf Teilen (`Workbench`, Rezepte in
-`data/factory.json` -> `werkbank`), Bauplan-Baum, Ziel merken; offen: Baukerne raus.
+`data/factory.json` -> `werkbank`), Bauplan-Baum, Ziel merken; Fraktions-DROMEs mit Spezialteil
+(aus Fraktionskern), Verwerten gibt Zutaten zurueck, Baukerne gibt es nicht mehr.
 **Waffen-Upgrades (20. Nov. 2026, entschieden und GEBAUT): `docs/CHARGER_KONZEPT.md`**
 -- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.
 **Bildschirme fuer Design-Sessions: `docs/design/UEBERGABEN_DESIGN.md`** -- Hangar
@@ -234,7 +235,7 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   Auswahl als Kacheln (`Tile`: tippen waehlt, nochmal tippen = Details,
   Doppeltipp = Handlung; seit 15. Nov. 2026), Erklaerungen als blaetterbares
   Popup (`InfoPopup.open_pages`). DROMEs werden verwertet, nicht aufgeloest
-  (Baukerne, Fraktionskerne, `Roster.salvage/craft_drome`).
+  (Zutaten + Spezialteil zurueck, `Roster.salvage`; gebaut wird in der Werkbank).
 * Navigation: Tab-Leiste unten, seit 22. Nov. 2026 fuenf Tabs: Shop, Fabrik,
   Home (Mitte), DROMEs, Inventar (`UiKit.TABS`; Optionen am Zahnrad oben rechts).
   Ein Verb je Tab: Shop kaufen, Fabrik herstellen (Linien, Charger, DROMEs),

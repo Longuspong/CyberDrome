@@ -7,8 +7,11 @@ extends RefCounted
 ##   "rohling"               Charger-Rohling aus Ressourcen
 ##   "teil:<chassis>:<teil>" ein DROME-Teil aus Ressourcen (liegt danach im Lager)
 ##   "drome:<chassis>"       Standard-DROME aus seinen fuenf Teilen
-##   "faction:<variante>"    Fraktions-DROME: die Teile, aber der Fraktionskern
-##                           ersetzt das Kern-Teil
+##   "spezial:<variante>"    Spezialteil eines Fraktions-DROME (Neon-Booster ...):
+##                           Fraktionskern + Zutaten des Kern-Teils; einmal
+##                           festgelegt auf genau diesen DROME
+##   "faction:<variante>"    Fraktions-DROME: die Teile, das Spezialteil ersetzt
+##                           das Kern-Teil
 ##   "free:<chassis>"        freies Chassis aus alter Beute (kostenlos)
 ##
 ## Alles liegt in ``Roster.materials``: Ressourcen als "res:<ware>", Teile als
@@ -46,6 +49,40 @@ static func part_spec(key: String) -> Dictionary:
 	return {}
 
 
+## Name des Spezialteils eines Fraktions-DROME.
+static func special_name(variant: String) -> String:
+	return str((cfg().get("spezialteile", {}) as Dictionary).get(variant, variant))
+
+
+static func faction_of(variant: String) -> String:
+	var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(variant, {})
+	return str(spec.get("faction", ""))
+
+
+## Was Verwerten zurueckgibt (Spieler 24. Nov. 2026): die Zutaten der teuersten
+## Teile (Wert: Platte 10, Chip 2, sonst 1; ein Teil mit Anzahl 2 zaehlt einmal),
+## bei einem Fraktions-DROME ohne das Kern-Teil, dafuer sein Spezialteil.
+## {wares: {ware: menge}, special: variante oder ""}.
+static func salvage_yield(chassis: String, variant: String = "") -> Dictionary:
+	var rule: Dictionary = cfg().get("verwerten", {})
+	var worth: Dictionary = rule.get("wert", {})
+	var candidates: Array = []
+	for part in parts_of(chassis):
+		if variant != "" and str(part["id"]) == "kern":
+			continue
+		var value := 0
+		for ware in part["kosten"]:
+			value += int(part["kosten"][ware]) * int(worth.get(ware, 1))
+		candidates.append([value, part])
+	candidates.sort_custom(func(a, b): return a[0] > b[0])
+	var wares := {}
+	for i in mini(int(rule.get("teile", 2)), candidates.size()):
+		var cost: Dictionary = candidates[i][1]["kosten"]
+		for ware in cost:
+			wares[ware] = int(wares.get(ware, 0)) + int(cost[ware])
+	return {"wares": wares, "special": variant}
+
+
 static func chassis_name(chassis: String) -> String:
 	var body := PartDB.get_part(StringName(chassis)) if PartDB != null else null
 	return body.display_name.replace(" Chassis", "") if body != null else chassis
@@ -61,6 +98,8 @@ static func key_name(key: String) -> String:
 		return str(part_spec(key).get("name", key))
 	if key.begins_with("kern:"):
 		return Roster.core_name(key.substr(5))
+	if key.begins_with("spezial:"):
+		return special_name(key.substr(8))
 	return key
 
 
@@ -87,14 +126,10 @@ func _add(key: String, amount: int) -> void:
 func known(id: String) -> bool:
 	if id.begins_with("free:") or id.begins_with("teil:"):
 		return true
-	if id.begins_with("faction:"):
-		return roster.faction_cores(_faction_of(id.substr(8))) > 0
+	if id.begins_with("faction:") or id.begins_with("spezial:"):
+		var variant := id.substr(id.find(":") + 1)
+		return roster.faction_cores(faction_of(variant)) > 0 or have("spezial:" + variant) > 0
 	return id in (cfg().get("bauplaene_start", []) as Array) or have("bauplan:" + id) > 0
-
-
-func _faction_of(variant: String) -> String:
-	var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(variant, {})
-	return str(spec.get("faction", ""))
 
 
 ## Das Chassis hinter einem Produkt ("" = keins).
@@ -103,8 +138,9 @@ static func chassis_of(id: String) -> String:
 		return id.split(":")[1]
 	if id.begins_with("teil:"):
 		return id.split(":")[1]
-	if id.begins_with("faction:"):
-		var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(id.substr(8), {})
+	if id.begins_with("faction:") or id.begins_with("spezial:"):
+		var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(
+			id.substr(id.find(":") + 1), {})
 		return str(spec.get("chassis", ""))
 	return ""
 
@@ -112,7 +148,7 @@ static func chassis_of(id: String) -> String:
 func name_of(id: String) -> String:
 	if id == "rohling":
 		return FactorySim.ware_name("rohling")
-	if id.begins_with("teil:"):
+	if id.begins_with("teil:") or id.begins_with("spezial:"):
 		return key_name(id)
 	if id.begins_with("faction:"):
 		return Roster.faction_drome_name(id.substr(8))
@@ -146,11 +182,17 @@ func needs(id: String) -> Dictionary:
 		var cost: Dictionary = part_spec(id).get("kosten", {})
 		for ware in cost:
 			out[ware_key(str(ware))] = int(cost[ware])
+	elif id.begins_with("spezial:"):
+		var variant := id.substr(8)
+		out["kern:" + faction_of(variant)] = 1
+		var kern_cost: Dictionary = part_spec(part_key(chassis_of(id), "kern")).get("kosten", {})
+		for ware in kern_cost:
+			out[ware_key(str(ware))] = int(kern_cost[ware])
 	elif id.begins_with("drome:") or id.begins_with("faction:"):
 		var chassis := chassis_of(id)
 		for part in parts_of(chassis):
 			if id.begins_with("faction:") and str(part["id"]) == "kern":
-				out["kern:" + _faction_of(id.substr(8))] = 1
+				out["spezial:" + id.substr(8)] = 1
 				continue
 			out[part_key(chassis, str(part["id"]))] = int(part.get("anzahl", 1))
 	return out
@@ -181,8 +223,9 @@ func raw_shortfall(id: String) -> Dictionary:
 			total[str(key).substr(4)] = int(total.get(str(key).substr(4), 0)) + int(need[key])
 	var miss := missing(id)
 	for key in miss:
-		if str(key).begins_with("teil:"):
-			var cost: Dictionary = part_spec(str(key)).get("kosten", {})
+		if str(key).begins_with("teil:") or str(key).begins_with("spezial:"):
+			var cost: Dictionary = part_spec(str(key)).get("kosten", {}) if str(key).begins_with("teil:") \
+				else part_spec(part_key(chassis_of(str(key)), "kern")).get("kosten", {})
 			for ware in cost:
 				total[ware] = int(total.get(ware, 0)) + int(cost[ware]) * int(miss[key])
 	var out := {}
@@ -220,7 +263,7 @@ func craft(id: String) -> Dictionary:
 		_add(str(key), -int(need[key]))
 	if id == "rohling":
 		_add("rohling", 1)
-	elif id.begins_with("teil:"):
+	elif id.begins_with("teil:") or id.begins_with("spezial:"):
 		_add(id, 1)
 	elif id.begins_with("drome:"):
 		var chassis := StringName(chassis_of(id))

@@ -47,28 +47,38 @@ func test_part_then_drome() -> void:
 	t.ok(roster.materials.keys().all(func(k): return not str(k).begins_with("teil:")), "Teile verbraucht")
 
 
-func test_faction_core_replaces_core_part() -> void:
+func test_special_part_replaces_core_part() -> void:
 	var roster := _roster()
 	var bench := Workbench.new(roster)
-	var variant := str(Roster.faction_variants()[0])
-	var spec: Dictionary = Formations.data()["dromes"][variant]
-	var faction := str(spec["faction"])
-	t.ok(not bench.known("faction:" + variant), "ohne Fraktionskern kein Bauplan")
-	roster.add_faction_core(faction)
-	t.ok(bench.known("faction:" + variant), "mit Fraktionskern bekannt")
+	var variant := "neon_vireo"
+	var chassis := "scout_body"
+	t.ok(not bench.known("faction:" + variant), "ohne Neon-Kern kein Bauplan")
+	roster.add_faction_core("neon")
+	t.ok(bench.known("faction:" + variant), "mit Neon-Kern bekannt")
 	var need := bench.needs("faction:" + variant)
-	var chassis := str(spec["chassis"])
 	t.ok(not need.has(Workbench.part_key(chassis, "kern")), "kein Kern-Teil")
-	t.equal(int(need.get("kern:" + faction, 0)), 1, "dafür der Fraktionskern")
+	t.equal(int(need.get("spezial:" + variant, 0)), 1, "dafür das Spezialteil")
+	t.equal(Workbench.key_name("spezial:" + variant), "Neon-Booster", "heißt Neon-Booster")
+	var special := bench.needs("spezial:" + variant)
+	t.equal(int(special.get("kern:neon", 0)), 1, "Spezialteil braucht den Neon-Kern")
+	t.equal(int(special.get("res:chip", 0)), 15, "und die Zutaten des Kern-Teils")
 	_stock_parts_for(roster, chassis)
+	t.ok(bool(bench.craft("spezial:" + variant)["ok"]), "Neon-Booster hergestellt")
+	t.equal(roster.faction_cores("neon"), 0, "Neon-Kern verbraucht")
+	t.ok(bench.known("faction:" + variant), "Bauplan bleibt über das Spezialteil bekannt")
 	for part in Workbench.parts_of(chassis):
 		if str(part["id"]) != "kern":
-			for i in int(part.get("anzahl", 1)):
-				bench.craft(Workbench.part_key(chassis, str(part["id"])))
+			bench.craft(Workbench.part_key(chassis, str(part["id"])))
 	var result := bench.craft("faction:" + variant)
-	t.ok(bool(result["ok"]), "Fraktions-DROME gebaut")
+	t.ok(bool(result["ok"]), "Neon Vireo gebaut")
 	t.equal(result["entry"].variant, variant, "mit Variante")
-	t.equal(roster.faction_cores(faction), 0, "Fraktionskern verbraucht")
+
+
+func test_salvage_yield() -> void:
+	var molok := Workbench.salvage_yield("jugg_body")
+	t.equal(molok["wares"], {"platte": 48, "legierung": 150}, "Molok: Brustharnisch + Unterbau")
+	var neon := Workbench.salvage_yield("scout_body", "neon_vireo")
+	t.equal(str(neon["special"]), "neon_vireo", "Fraktions-DROME: Spezialteil zurück")
 
 
 func test_shortfall_and_battles() -> void:

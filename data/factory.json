@@ -80,6 +80,19 @@
   ],
   "werkbank": {
     "_kommentar": "Werkbank (Konzept Abschnitt 13, Teile abgesegnet 24. Nov. 2026). Je Chassis fuenf Teile (Molok zwei Waffenhalter, Strix Lafette), je Teil zwei Zutaten. Teile liegen im Lager als teil:<chassis>:<teil>. Fraktions-DROME: der Fraktionskern ersetzt das Kern-Teil.",
+    "spezialteile": {
+      "_kommentar": "Spezialteil je Fraktions-DROME (Spieler 24. Nov. 2026): Fraktionskern + Zutaten des Kern-Teils des Chassis. Ersetzt im Bauplan das Kern-Teil, liegt als spezial:<variante> im Lager.",
+      "neon_vireo": "Neon-Booster",
+      "neon_nimbus": "Neon-Fokuslinse",
+      "solar_nimbus": "Solar-Prisma",
+      "mecha_molok": "Mecha-Reaktor",
+      "mecha_strix": "Mecha-Zielrechner"
+    },
+    "verwerten": {
+      "_kommentar": "Verwerten (Spieler 24. Nov. 2026): die Zutaten der teuersten Teile zurueck (Wert: Platte 10, Chip 2, sonst 1), ein Fraktions-DROME dazu sein Spezialteil.",
+      "teile": 2,
+      "wert": {"platte": 10, "chip": 2}
+    },
     "bauplaene_start": ["rohling", "drome:scout_body", "drome:jugg_body", "drome:mage_body", "drome:strix_body"],
     "dromes": {
       "scout_body": [
