@@ -657,6 +657,8 @@ func advance(dt: float) -> bool:
 			continue
 		EventBus.log_line("%s: %s schlägt ein." % [source.display_name, action.display_name])
 		_apply_area(source, entry["tile"], action)
+		if action.gather:
+			_release_hold(entry["tile"], action)
 	delayed = keep
 	return fired
 
@@ -769,45 +771,61 @@ func burn_cable_fire(unit: Unit) -> int:
 	return (shield_before - unit.shield) + (hp_before - unit.hp)
 
 
-## Festhalten im Sog: Statuskennung und etwas Luft ueber die Verzoegerung
-## hinaus, damit der Einschlag sicher noch alle trifft.
+## Festhalten im Sog: Statuskennung. Die Dauer reicht sicher bis zur
+## Schockwelle; dort wird das Festhalten aufgehoben (_release_hold).
 const HOLD_STATUS := &"vortex_hold"
-const HOLD_SLACK := 0.1
+const HOLD_SLACK := 0.5
+## Anteil der Verzoegerung, ueber den die Gezogenen sichtbar heranrutschen.
+const PULL_SHARE := 0.85
+
+## Wie lange eine erzwungene Versetzung gerade zu sehen sein soll (0 = die
+## Vorgabe der Anzeige). Der Sog setzt sie auf seine Sog-Zeit.
+var forced_seconds := 0.0
 
 
-## Sog: die Gegner im Radius ruecken Feld fuer Feld zum Zielfeld, die
-## naechsten zuerst, damit sie sich dicht an dicht packen. Wer blockiert ist,
-## bleibt stehen.
+## Sog (24. Nov. 2026, Vorgabe des Spielers -- "wie ein schwarzes Loch"):
+## beim Aufprall werden alle Gegner im Radius zum Zielfeld gezogen. Der
+## naechste kommt auf das Zielfeld selbst (wenn es frei ist), die uebrigen so
+## weit, wie in ihrer Richtung Platz ist -- bis zu ``aoe_radius`` Felder. Bis
+## zur Schockwelle sind alle Erfassten festgehalten: kein Laufen, kein
+## Schiessen. Danach sind sie frei, aber verlangsamt (Statuseffekt).
 func _gather(source: Unit, center: Vector2i, action: ActionData) -> void:
-	var pulled: Array = []
+	var caught: Array = []
 	for unit in units:
 		if not unit.is_alive() or unit.is_player == source.is_player:
 			continue
-		var gap := Grid.distance(unit.tile, center)
-		if gap >= 2 and gap <= action.aoe_radius:
-			pulled.append(unit)
-	pulled.sort_custom(func(a, b):
+		if Grid.distance(unit.tile, center) <= action.aoe_radius:
+			caught.append(unit)
+	caught.sort_custom(func(a, b):
 		return Grid.distance(a.tile, center) < Grid.distance(b.tile, center))
 	forcing = true
-	for unit in pulled:
+	forced_seconds = action.delay * PULL_SHARE if action.delay > 0.0 else 0.0
+	var moved := 0
+	for unit in caught:
+		var start: Vector2i = unit.tile
 		for _i in action.aoe_radius:
-			if Grid.distance(unit.tile, center) <= 1:
+			if unit.tile == center:
 				break
 			var next := _step_toward(unit, center)
 			if next == unit.tile:
 				break
 			move_unit(unit, next)
+		if unit.tile != start:
+			moved += 1
 	forcing = false
-	if not pulled.is_empty():
-		EventBus.log_line("%s zieht %d Gegner zusammen." % [source.display_name, pulled.size()])
-	# Der Sog haelt fest bis zur Schockwelle (24. Nov. 2026): vorher liefen die
-	# Gezogenen in der Verzoegerung gleich wieder heraus, der Sog war kaum zu
-	# sehen. Wer schon vor dem Wurf weglaeuft, entkommt weiter (Ausholzeit).
+	forced_seconds = 0.0
+	if moved > 0:
+		EventBus.log_line("%s zieht %d Gegner zusammen." % [source.display_name, moved])
 	if action.delay > 0.0:
-		for unit in units:
-			if unit.is_alive() and unit.is_player != source.is_player \
-					and Grid.distance(unit.tile, center) <= action.aoe_radius:
-				unit.apply_status(HOLD_STATUS, action.delay + HOLD_SLACK, {"rooted": true})
+		for unit in caught:
+			unit.apply_status(HOLD_STATUS, action.delay + HOLD_SLACK, {"stunned": true})
+
+
+## Nach der Schockwelle: die Festgehaltenen sind wieder frei.
+func _release_hold(center: Vector2i, action: ActionData) -> void:
+	for unit in units:
+		if unit.statuses.has(HOLD_STATUS) and Grid.distance(unit.tile, center) <= action.aoe_radius:
+			unit.statuses.erase(HOLD_STATUS)
 
 
 ## Ein Feld naeher an ``center``, wenn frei -- erst die Richtung, die am

@@ -341,7 +341,8 @@ func _on_log(text: String) -> void:
 func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 	# Sog und Stoss (18. Nov. 2026): sichtbar rutschen statt springen.
 	if battle.resolver.forcing:
-		unit.animate_last_move(FORCED_SLIDE, true)
+		var slide := battle.resolver.forced_seconds
+		unit.animate_last_move(slide if slide > 0.0 else FORCED_SLIDE, true)
 		view.refresh_unit_depth(unit)
 		return
 	var seconds := unit.step_left if unit.step_left > 0.0 else 0.18

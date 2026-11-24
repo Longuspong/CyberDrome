@@ -154,30 +154,33 @@ func _nimbus() -> DromeBuild:
 		"feet": &"mage_drive", "core": &"mage_core", "equip_left": &"eq_rune_staff"})
 
 
-## Bugfix 24. Nov. 2026: der Sog des Vortex haelt die Gegner im Radius bis zur
-## Schockwelle fest -- vorher liefen sie in der Verzoegerung wieder heraus.
-func test_the_vortex_holds_until_the_shock() -> void:
+## Vortex wie ein schwarzes Loch (24. Nov. 2026, Vorgabe des Spielers): der
+## Naechste kommt aufs Zielfeld, die anderen so weit es in ihrer Richtung
+## geht; bis zur Schockwelle festgehalten (kein Laufen, kein Schiessen),
+## danach frei und verlangsamt.
+func test_the_vortex_pulls_like_a_black_hole() -> void:
 	var battle := BattleManager.new()
 	battle.setup(4711, [_nimbus()], [_molok(), _molok()])
 	var nimbus: Unit = battle.units[0]
-	var near: Unit = battle.units[1]
-	var far: Unit = battle.units[2]
+	var a: Unit = battle.units[1]
+	var b: Unit = battle.units[2]
 	var center := Vector2i(4, 6)
-	battle.resolver.move_unit(nimbus, Vector2i(4, 10))
-	battle.resolver.move_unit(near, center)
-	battle.resolver.move_unit(far, Vector2i(4, 8))
+	battle.resolver.move_unit(nimbus, Vector2i(4, 12))
+	# Das Ziel ist schon ein Feld weiter, ein zweites steht zwei Felder weg.
+	battle.resolver.move_unit(a, Grid.neighbor(center, 3))
+	battle.resolver.move_unit(b, Grid.neighbor(Grid.neighbor(center, 0), 0))
 	var vortex: ActionData = nimbus.mounts[0]["ability"]
 	t.ok(vortex.gather and vortex.delay > 0.0, "Vortex zieht und schlaegt verzoegert ein")
 	t.ok(battle.resolver.execute(nimbus, center, vortex, true), "Vortex geworfen")
-	t.equal(Grid.distance(far.tile, center), 1, "der Aeussere wird herangezogen")
-	t.ok(near.is_rooted() and far.is_rooted(), "beide festgehalten")
-	t.ok(not nimbus.is_rooted(), "der Werfer nicht")
-	t.ok(not far.status_names().has("vortex_hold"), "kein eigenes Symbol")
-	for i in int(ceil((vortex.delay + 0.2) / 0.05)):
+	t.equal(a.tile, center, "der Naechste landet auf dem Zielfeld")
+	t.equal(Grid.distance(b.tile, center), 1, "der Zweite direkt daneben (2 Felder gezogen)")
+	t.ok(a.is_stunned() and b.is_stunned(), "beide festgehalten: kein Laufen, kein Schiessen")
+	t.ok(not nimbus.is_stunned(), "der Werfer nicht")
+	t.ok(not b.status_names().has("vortex_hold"), "kein eigenes Symbol")
+	for i in int(ceil((vortex.delay + 0.05) / 0.05)):
 		battle.resolver.advance(0.05)
-		near.tick_statuses(0.05)
-		far.tick_statuses(0.05)
-	t.ok(not near.is_rooted() and not far.is_rooted(), "nach dem Einschlag wieder frei")
+	t.ok(not a.is_stunned() and not b.is_stunned(), "nach dem Einschlag wieder frei")
+	t.ok(a.statuses.has(&"slow") and b.statuses.has(&"slow"), "und verlangsamt")
 	battle.free()
 
 

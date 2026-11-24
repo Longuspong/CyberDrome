@@ -323,7 +323,7 @@ func effect_summary() -> String:
 	if is_move():
 		parts.append("Boost %d gerade" % range_tiles)
 	if gather:
-		parts.append("zieht zusammen, hält bis zum Einschlag" if delay > 0.0 else "zieht zusammen")
+		parts.append("zieht zum Zielfeld, hält bis zum Einschlag" if delay > 0.0 else "zieht zusammen")
 	if push_tiles > 0:
 		parts.append("stößt %d" % push_tiles)
 	elif push_tiles < 0:

@@ -47,11 +47,13 @@ Selbst nachgespielt (Kampfbild per xvfb, Seeds 5003/7001/7002) und gemessen:
   Vortex mit Schild stand, wurde getroffen, ohne dass eine Zahl kam -- so sah die Flaeche
   wie Mitte + ein Ring aus. Logik war richtig (Radius 2 trifft). Neu:
   `EventBus.shield_damaged`, Zahl in Schildfarbe (`BattleScreen._on_shield_damaged`).
-* **Vortex-Sog:** die Gezogenen liefen in den 0,6 s bis zur Schockwelle gleich wieder
-  heraus. Jetzt haelt der Sog alle Gegner im Radius bis zum Einschlag fest
-  (`vortex_hold`, gewurzelt, ohne eigenes Symbol). Wer waehrend der Ausholzeit
-  weglaeuft, entkommt weiter. Messung `playtest.gd -- 200`: 155 -> 157 Siege.
-  Betaeuben tut der Vortex laut Daten nicht (verlangsamt 40 % fuer 2,5 s) -- offen.
+* **Vortex-Sog** (Vorgabe des Spielers, gleicher Tag -- "wie ein schwarzes Loch"): beim
+  Aufprall werden alle Gegner im Radius zum Zielfeld gezogen; der Naechste kommt auf das
+  Zielfeld selbst, die anderen bis zu 2 Felder so weit, wie in ihrer Richtung Platz ist.
+  Bis zur Schockwelle sind alle Erfassten festgehalten (`vortex_hold`: kein Laufen, kein
+  Schiessen, ohne eigenes Symbol), das Heranrutschen ist ueber die Sog-Zeit zu sehen
+  (`ActionResolver.forced_seconds`). Nach dem Schaden sind sie frei und verlangsamt.
+  Wer waehrend der Ausholzeit weglaeuft, entkommt weiter.
 * **Blickrichtung:** Angriffe feuerten, bevor die Figur zum Ziel gedreht war (Molok bis
   0,4 s fuer eine halbe Drehung) -- beim Angriff dreht sie jetzt 5x schneller
   (`Arena3D.ATTACK_TURN_BOOST`). Wer laeuft und sein Ziel vom neuen Feld aus in
