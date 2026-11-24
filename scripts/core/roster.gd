@@ -49,6 +49,11 @@ var materials: Dictionary = {}
 ## Ein Charger sitzt an hoechstens einer Waffe, eine Waffe traegt hoechstens einen.
 var chargers: Array = []
 var _next_charger: int = 1
+## Fabrik (23. Nov. 2026, docs/FACTORY_KONZEPT.md): der gespeicherte Stand der
+## Platine (``FactorySim.state``, eigene Versionsnummer). Die Waren liegen in
+## ``materials`` ("res:<ware>"), das Lager IST das Inventar.
+var factory: Dictionary = {}
+var _factory_sim: FactorySim = null
 
 ## Die vier Standard-DROMEs mit ihrer VOLLEN Standard-Ausstattung -- der
 ## handgesetzte Startbestand (§10g/§12c). Reihenfolge = Reihenfolge im frischen
@@ -675,6 +680,8 @@ func seed_starter() -> void:
 	caches = {}
 	coins = 0
 	materials = {}
+	factory = {}
+	_factory_sim = null
 
 	for row in STARTER_CHASSIS:
 		var chassis_uid := add_instance(row["body"])
@@ -785,6 +792,7 @@ func to_dict() -> Dictionary:
 		"coins": coins,
 		"materials": materials.duplicate(),
 		"chargers": chargers.duplicate(true),
+		"factory": factory_state(),
 	}
 
 
@@ -804,6 +812,8 @@ func load_dict(data: Dictionary) -> bool:
 	materials = {}
 	for key in data.get("materials", {}):
 		materials[str(key)] = int(data["materials"][key])
+	factory = data.get("factory", {}) if data.get("factory", {}) is Dictionary else {}
+	_factory_sim = null
 	chargers = []
 	_next_charger = 1
 	for c in data.get("chargers", []):
@@ -846,6 +856,26 @@ func load_dict(data: Dictionary) -> bool:
 			c["on"] = ""
 	trim_squad()
 	return true
+
+
+## Die Fabrik dieses Spielstands. Arbeitet direkt auf ``materials`` (Lager).
+func factory_sim() -> FactorySim:
+	if _factory_sim == null or not is_same(_factory_sim.lager, materials):
+		_factory_sim = FactorySim.new(factory, materials)
+	return _factory_sim
+
+
+## Der Stand zum Speichern (ohne Sim: so, wie er geladen wurde).
+func factory_state() -> Dictionary:
+	if _factory_sim != null:
+		factory = _factory_sim.to_dict()
+	return factory.duplicate(true)
+
+
+## Laesst die Fabrik ``ticks`` Takte laufen (nach einem Kampf). Gibt zurueck,
+## was ins Lager ging: {ware: menge}.
+func run_factory(ticks: int) -> Dictionary:
+	return factory_sim().run(ticks)
 
 
 ## Der Squad ist seit 16. Nov. 2026 hoechstens drei DROMEs gross (Vorgabe des

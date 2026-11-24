@@ -38,7 +38,11 @@ Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegn
 -- Hex-Platine, Nachbar-Lieferung, Puffer + Uplink, Netzanschluss mit Strom nach Naehe,
 nur Ressourcen (Charger/DROMEs entstehen aus dem Lager in ihren Reitern), Tiers, Baukerne fallen
 weg; Takte vor allem aus dem Einsatz. Prototyp: https://claude.ai/artifact/BU9arMAXSSSC18zgFEnQsd
-(Kopie `docs/design/factory_prototyp/`). Noch nichts im Spiel -- Uebergaben Logik/Design dort Abschnitt 11/12.
+(Kopie `docs/design/factory_prototyp/`). **Logik seit 23. Nov. 2026 GEBAUT** (`FactorySim`,
+`data/factory.json`, Reiter Linien = Platine, Lager = `Roster.materials["res:<ware>"]`, 20 Takte je
+Kampf) -- Stand in `docs/PROJEKTSTAND.md`; die Optik folgt laut Abschnitt 12 in einer Design-Sitzung. **Werkbank (24. Nov. 2026, Richtung
+entschieden, nicht gebaut):** Abschnitt 13 -- ein Reiter fuer alles Herstellbare mit Bauplan-Baum,
+Ziel merken und Bauplaenen; offene Fragen dort.
 **Waffen-Upgrades (20. Nov. 2026, entschieden und GEBAUT): `docs/CHARGER_KONZEPT.md`**
 -- Charger je Waffe aus Energy Phases, Elementarbelastung, Resonanz, Cache-Inhalt.
 **Bildschirme fuer Design-Sessions: `docs/design/UEBERGABEN_DESIGN.md`** -- Hangar

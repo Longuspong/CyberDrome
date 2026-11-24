@@ -565,6 +565,10 @@ func begin_run_battle() -> void:
 ## weg -- sonst erbte ein spaeterer Chaos-Kampf Seed und Gegnerstaerke.
 func finish_run_battle(outcome: int, enemy_pool: Array, fighters: Array = []) -> void:
 	if run != null:
+		# Fabrik (23. Nov. 2026): je Kampf laeuft die Platine zuhause ein Stueck
+		# weiter (FactorySim.ticks_per_battle) -- auch nach einer Niederlage.
+		run.add_factory_gain(roster.run_factory(FactorySim.ticks_per_battle()))
+		save_roster()
 		run.collect_xp(fighters, outcome == BattleManager.Outcome.VICTORY)
 		run.record_result(outcome, enemy_pool)
 		# Beute, die nicht mehr in Lager oder Squad passte, gleich nach Hause --

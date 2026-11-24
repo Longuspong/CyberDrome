@@ -29,12 +29,38 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Fabrik-Logik (23. Nov. 2026, `docs/FACTORY_KONZEPT.md` Abschnitt 11)
+
+* **`FactorySim`** (`scripts/core/factory_sim.gd`, RefCounted, deterministisch): Takt in der
+  Reihenfolge des Prototyps v2 -- Verbindungen (Relais nur mit Strom), Abholen reihum,
+  Strom nach Naehe (Netz 4/Rw 2, Solar mit Schatten, Ofen/Generator zuenden bei halbem Puffer und
+  brennen nur bei Bedarf, Batterie), Herstellen (Anlauf 3 Durchlaeufe, Resonanz), Uplink.
+  `run(n)` fuer viele Takte. Werte in **`data/factory.json`** (ohne Rohlingpresse), SPOT-Blatt
+  **Fabrik** (Welt).
+* **Spielstand:** `Roster.factory` (eigene Version 1) im roster.json; **Lager = Inventar**:
+  `Roster.materials["res:<ware>"]`, der Charger-Rohling bleibt `"rohling"`.
+  `Roster.factory_sim()` arbeitet direkt darauf.
+* **Takte:** live 1 Takt alle 6 s, nur solange der Reiter Linien offen ist; nach jedem Kampf
+  `run(20)` (seit 24. Nov. 2026, vorher 100; `GameState.finish_run_battle`, auch nach Niederlage), Summe in
+  `RunState.factory_gain`, am Einsatzende unter "Was bleibt" ("Fabrik ins Lager").
+* **Bedienung (schlicht, Optik folgt in der Design-Sitzung):** Platine zeichnen und antippen,
+  Gebaeude nach Gruppen, Info mit Durchsatz/Puffer/Strom/Uplink-Menge, "Eingang X voll --
+  wartet auf Y" (Playtest v2), gedimmte Leiterbahn ohne Lieferung, Feldgruppen und weitere
+  Gebaeude kaufen, Abreissen (Besitz bleibt, Puffer ins Lager), Tier-2-Ziel, Lager mit
+  Hochrechnung je Einsatz. Inventar zeigt "Ressourcen"; im Reiter Charger "Rohling herstellen"
+  (Vorschlag 2 Legierung + 1 Plasma, `factory.json` -> `herstellen`).
+* Tests `tests/test_factory.gd`, Smoke-Test bedient die Platine, Bild:
+  `tests/screenshot.gd -- res://scenes/resources.tscn <png> 60 factory=200`.
+* Offen: Rezept-Raten/Takte fuers Spiel, Tier 3/4 ueber die Story, Baukerne raus (erst mit den
+  DROME-Teilen), Anzeigetexte noch ohne `tr()`.
+
 ### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
 
 Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "Vorschlag").
 
-* **Fabrik** (`resources_screen.gd`) = herstellen: Reiter Linien (Platzhalter), Charger
-  (`ChargerCrafter`), DROMEs (`DromeForge`); Schalter fest unter der Kopfzeile.
+* **Fabrik** (`resources_screen.gd`) = herstellen: Reiter Linien (seit 23. Nov. 2026 die
+  Fabrik-Platine, `FactoryView`), Charger (`ChargerCrafter`), DROMEs (`DromeForge`); Schalter
+  fest unter der Kopfzeile.
 * **Inventar** (`shop_screen.gd`, `mode = "inventory"`) = lagern, eine Seite ohne Reiter:
   Bestand, freie Waffen, Charger, Energy Phases, Lootcaches oeffnen.
 * **DROMEs** (`hangar_screen.gd`) = ausruesten und aufwerten: nur die Liste (Zeilen mit Bild,

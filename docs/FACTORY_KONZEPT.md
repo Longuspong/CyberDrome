@@ -1,7 +1,8 @@
 # Factory-Builder -- Konzept (22./23. Nov. 2026)
 
 Stand: **Richtung entschieden (Spieler 22./23. Nov. 2026), Prototyp v2 gebaut,
-noch nichts im Spiel.** Prototyp als Artefakt:
+Logik seit 23. Nov. 2026 im Spiel** (`FactorySim`, `data/factory.json`, Reiter Linien --
+Abschnitt 11); die Optik folgt in der Design-Sitzung (Abschnitt 12). Prototyp als Artefakt:
 https://claude.ai/artifact/BU9arMAXSSSC18zgFEnQsd (Kopie:
 `docs/design/factory_prototyp/factory_v2.html`). Plan: Prototyp v2 testen,
 evtl. v3, dann ins Spiel (Godot/PWA).
@@ -144,6 +145,22 @@ Später: Tier 3/4 mit Inhalt, große Gebäude, Lager-Obergrenze, Rezept-Zahlen n
 
 ## 11. Übergabe Logik (nächste Sitzung: ins Spiel bauen)
 
+**GEBAUT (23. Nov. 2026)** -- Details in `docs/PROJEKTSTAND.md` („Fabrik-Logik“). Abweichungen
+und Ergänzungen zum Vorschlag unten:
+* Lager = `Roster.materials` mit Schlüssel `"res:<ware>"`; der Charger-Rohling bleibt `"rohling"`
+  und entsteht im Reiter Charger aus dem Lager (Vorschlag 2 Legierung + 1 Plasma).
+* **Spieler 24. Nov. 2026:** **20 Takte je Kampf** (160 je Einsatz mit 8 Kämpfen). Das
+  **Tier-2-Ziel braucht nur Fabrikwaren**, so viel wie ein starker Tier-1-Aufbau in 3-4
+  Kämpfen schafft: gemessen je Takt ca. 1,6 Legierung, 1,5 Plasma, 0,45 Schaltkreis (Strom
+  ist der Engpass) → 70 Takte = **110 Legierung + 100 Plasma + 35 Schaltkreis**.
+* Tier 3/4 stehen als Story-Ziel in den Daten, ohne Weg zum Freischalten (kommt mit der Story).
+* Bedarfe aus dem Prototyp sind nicht übernommen (der Bedarf kommt aus den anderen Reitern).
+* Playtest 1 umgesetzt: „Eingang X voll -- wartet auf Y“ im Gebäude-Info, Leiterbahn gedimmt,
+  wenn im letzten Takt nichts ankam. Playtest 2: Uplink-Menge je Takt im Gebäude-Info; Pulse
+  nach Menge zeichnen bleibt für die Design-Sitzung.
+* Abschnitt 10 (Verzögerung Strom/Bau-Reihenfolge) bewusst wie im Prototyp gelassen.
+* Neue Anzeigetexte noch ohne `tr()` -- mit der Design-Sitzung nachziehen.
+
 **Ort:** Fabrik-Tab (`resources_screen.gd`), Reiter **Linien** (heute Platzhalter) =
 die Platine. Charger und DROMEs bleiben eigene Reiter und verbrauchen Lager-Ressourcen.
 
@@ -191,3 +208,29 @@ Wünsche des Spielers (23. Nov.) zum Prototyp v2:
   (Menge je Puls, gedimmte Bahn bei Stau), Ertrag nach dem Einsatz.
 * Stil: Arcade-Glitch über `UiKit`, Design-System-Tokens (`docs/design/tokens.json`),
   Hochformat 400 px. Grundlage: Prototyp v2 (Artefakt und Kopie im Repo).
+
+## 13. Werkbank (Richtung entschieden, Spieler 24. Nov. 2026)
+
+Alles, was aus dem Lager entsteht, bekommt **einen** Ort: die **Werkbank** im Fabrik-Tab.
+Die Fabrik hat dann zwei Reiter: **Platine** (heute „Linien“) und **Werkbank** (ersetzt die
+Reiter Charger und DROMEs).
+
+* **Kategorien** oben: Charger, DROME-Teile, DROMEs, später Waffen. Darunter Kacheln (`Tile`).
+* **Bauplan als Baum** beim Antippen: Produkt ← Teile ← Ressourcen, je Zeile „habe / brauche“.
+  Fehlt etwas: welches Gebäude es herstellt und wie viele Kämpfe das mit der aktuellen
+  Platine dauert (`FactorySim.projection`).
+* **„Als Ziel merken“**: die Platine hebt die nötigen Waren und Gebäude hervor -- das ist der
+  echte „Bedarf“ aus dem Prototyp (Abschnitt 1).
+* **Höchstens zwei Stufen** (Ressource → Teil → Produkt), lesbar auf dem Handy.
+* **Herstellen sofort per Tipp** -- die Zeit steckt in der Fabrik, keine zweite Wartezeit.
+* **Charger** behält seinen Bildschirm (Phasen ins Hexagon legen ist das Spiel); die
+  Werkbank führt dorthin. Der Charger-Rohling ist ein Rezept der Werkbank.
+* **Baupläne** für Waffen, DROME-Teile und Fraktions-DROMEs: einmal aus Lootcache oder Story,
+  danach beliebig oft aus Ressourcen. Caches bleiben das Entdecken, die Fabrik die Menge.
+* **Nicht** in die Werkbank: Aufwerten (Skilltree-Level, Umskillen) bleibt auf der DROME-Seite
+  (ein Verb je Tab).
+
+**Offen (vor dem Bau klären):** Teile je Chassis und ihre Rezepte (Abschnitt 8, Ziel: ein Teil ≈
+ein Einsatz, ein DROME ≈ 5-8 Einsätze); welche Baupläne es zu Beginn gibt und wo die übrigen
+herkommen (Cache-Inhalt, Story); ob Waffen schon mit der ersten Werkbank kommen; Baukerne raus
+(Caches, Shop, `Roster.craft_drome`, alte Spielstände), sobald DROMEs aus Teilen entstehen.
