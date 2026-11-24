@@ -172,7 +172,7 @@ func _refresh() -> void:
 		"squad": _show_squad()
 		"dromes": _show_dromes()
 		"overview": _show_overview()
-		"drome_up": _show_soon("drome")
+		"drome_up": _content.add_child(_level_card("drome", _entries()[_selected]))
 		_: _show_umbau()
 
 
@@ -358,6 +358,57 @@ func _show_overview() -> void:
 ## was kommt.
 func _show_soon(kind: String) -> void:
 	_content.add_child(_soon_card(kind))
+
+
+## Level kaufen (24. Nov. 2026, SKILLBAUM_KONZEPT.md 5d): aktuelles Level, was das
+## naechste kostet (habe/brauche) und "Aufsteigen". Skilltree-Knoten folgen.
+func _level_card(kind: String, entry: RosterEntry, uid: String = "") -> Control:
+	var bench := Workbench.new(GameState.roster)
+	var inst := GameState.roster.instance(uid) if kind == "weapon" else null
+	var level: int = inst.level if inst != null else entry.level
+	var top := Leveling.weapon_max() if kind == "weapon" else Leveling.drome_max()
+	var cost := bench.weapon_next_cost(uid) if kind == "weapon" else bench.drome_next_cost(entry)
+	var card := Arcade.Card.new(Arcade.YELLOW, Color.TRANSPARENT, false)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	card.add_child(box)
+	var name := inst.part().display_name if inst != null and inst.part() != null else entry.name
+	box.add_child(Arcade.label("%s · LEVEL %d / %d" % [name.to_upper(), level, top], 15, Arcade.YELLOW,
+		"display"))
+	box.add_child(HangarPips.new(level, top, Arcade.YELLOW))
+	var effect := ("Jedes Level: Schaden +%d %%, dazu wächst der Bonus-Wert der Waffe." % int(roundf(
+		float(Leveling.weapon_cfg().get("damage_per_level", 0.14)) * 100.0))) if kind == "weapon" \
+		else ("Jedes Level: die zwei Hauptwerte des Chassis +%d %%, Integrität, Schild, Schildpuls "
+		+ "und Rüstung sonst +%d %%.") % [int(roundf(float(Leveling.drome_cfg().get("main_per_level", 0.1)) * 100.0)),
+		int(roundf(float(Leveling.drome_cfg().get("other_per_level", 0.04)) * 100.0))]
+	var effect_label := UiKit.label(effect, UiKit.SMALL, UiKit.TEXT)
+	effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(effect_label)
+	if cost.is_empty():
+		box.add_child(UiKit.label("Höchstlevel erreicht.", UiKit.SMALL, UiKit.GOOD))
+	else:
+		box.add_child(Arcade.label("LEVEL %d KOSTET" % (level + 1), 12, Arcade.MUTED, "bold", 0.16))
+		for key in cost:
+			var have := bench.have(str(key))
+			var line := "%s  %d / %d" % [Workbench.key_name(str(key)), mini(have, int(cost[key])), int(cost[key])]
+			if have < int(cost[key]) and str(key) == "keynode":
+				line += "  -- selten nach einem Einsatz oder aus Caches"
+			box.add_child(UiKit.label(line, UiKit.SMALL, UiKit.GOOD if have >= int(cost[key]) else UiKit.MAGENTA))
+		var up := UiKit.button("Aufsteigen", true)
+		up.disabled = not bench.can_pay(cost)
+		up.pressed.connect(func():
+			var why := bench.level_up_weapon(uid) if kind == "weapon" else bench.level_up_drome(entry)
+			if why == "":
+				Accessibility.vibrate(40, true)
+				GameState.save_roster()
+				GameState.refresh_squad()
+			_refresh())
+		box.add_child(up)
+	var note := UiKit.label("Die Knoten im Skilltree kommen noch -- bis dahin wirkt jedes Level auf die Werte.",
+		UiKit.SMALL, UiKit.MUTED)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(note)
+	return card
 
 
 func _soon_card(kind: String) -> Control:
@@ -737,10 +788,9 @@ func _drome_info(entry: RosterEntry, build: DromeBuild) -> VBoxContainer:
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_theme_constant_override("separation", 4)
 	info.add_child(UiKit.label(entry.name, UiKit.H2))
-	# Level und EP (Leveling): "Level 2 · EP 6/9".
-	var step := Leveling.progress(entry.xp, Leveling.drome_table())
-	info.add_child(UiKit.label("Level %d · %s" % [entry.level,
-		"EP %d/%d" % [step[0], step[1]] if step[1] > 0 else "Höchstlevel"], UiKit.SMALL, UiKit.GOOD))
+	# Level (seit 24. Nov. 2026 mit Fabrik-Waren gekauft, keine EP mehr).
+	info.add_child(UiKit.label("Level %d / %d" % [entry.level, Leveling.drome_max()], UiKit.SMALL,
+		UiKit.GOOD))
 	info.add_child(UiKit.label("Kampfwert %d" % int(build.power_score()), UiKit.SMALL,
 		UiKit.ACCENT))
 	# Werte als Balken (10. Nov. 2026) -- zwischen DROMEs vergleichbar.
@@ -839,7 +889,8 @@ func _show_umbau() -> void:
 		_weapon_level_open = not _weapon_level_open
 		_refresh()))
 	if _weapon_level_open:
-		_content.add_child(_soon_card("weapon"))
+		_content.add_child(_level_card("weapon", entry, _weapon_uid) if _weapon_uid != ""
+			else _soon_card("weapon"))
 	var stock_head := HBoxContainer.new()
 	var stock_title := Arcade.label("AUS DEM INVENTAR", 14, Arcade.CYAN, "bold", 0.16)
 	stock_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL

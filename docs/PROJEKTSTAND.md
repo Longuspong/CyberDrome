@@ -72,6 +72,17 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
   Zutaten der zwei teuersten Teile zurueck, Fraktions-DROMEs dazu ihr Spezialteil. Baukerne sind
   raus (Caches, Shop, Verwerten, `craft_drome`), ohne Umrechnung alter Spielstaende.
 
+### Level kaufen statt EP (24. Nov. 2026, `docs/SKILLBAUM_KONZEPT.md` 5d)
+
+* Keine EP mehr (`Leveling.xp_enabled()`; `RunState.collect_xp` sammelt nichts). Level werden auf
+  der DROME-Seite gekauft: Reiter **DROME** (`_level_card`) und die Klappe „Level und Skilltree der
+  Waffe“ im Reiter Waffe. Kosten in `data/factory.json` -> `level` (je Chassis, Waffen je
+  Gewichtsklasse), Level 5 braucht einen **Keynode-Chip** (`materials["keynode"]`).
+* Waffen bis Level 5 (`config.json` -> `levels.weapon.max`, Schaden +14 % je Level).
+* Keynode-Chip: erster gewonnener Einsatz garantiert (`progress.keynode_first`), danach 15 %
+  (`GameState.roll_keynode`), Caches 5 % je Wurf. Raten vorlaeufig.
+* Tests in `tests/test_leveling.gd`; Bild: `screenshot.gd -- res://scenes/hangar.tscn <png> 60 hangar=drome_up`.
+
 ### Ein Verb je Tab (22. Nov. 2026, Entscheidung des Spielers)
 
 Ersetzt die Aufteilung darunter (Design-Canvas "CyberDrome Bildschirme", Reihe "Vorschlag").

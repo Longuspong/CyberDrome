@@ -149,8 +149,10 @@
       "weapon: EP je Kampf = damage_xp * angerichteter Schaden (Schild + Integritaet)",
       "+ kill_xp je Abschuss mit dieser Waffe. Nur Waffen in Squad-DROMEs, die aus dem",
       "Hangar stammen. EP sammeln sich im Lauf und werden am Ende zuhause gutgeschrieben.",
-      "damage_per_level (Level 10 = +70 %).",
-      "bonus_at_max: Endwert des Bonus-Werts auf Level 10 je Waffe (linear vom",
+      "damage_per_level (Level 5 = +70 %; seit 24. Nov. 2026 Waffen nur noch bis Level 5).",
+      "Seit 24. Nov. 2026 keine EP mehr: Level werden mit Fabrik-Waren gekauft",
+      "(data/factory.json -> level); die EP-Werte hier sind ohne Wirkung.",
+      "bonus_at_max: Endwert des Bonus-Werts auf dem Hoechstlevel je Waffe (linear vom",
       "Grundwert). energy_only: nur der Energieanteil waechst (Neon-Blaster)."
     ],
     "drome": {
@@ -169,11 +171,11 @@
       }
     },
     "weapon": {
-      "max": 10,
-      "xp_per_level": [100, 150, 200, 250, 300, 500, 650, 800, 1200, 1600],
+      "max": 5,
+      "xp_per_level": [100, 150, 200, 250, 300],
       "damage_xp": 0.25,
       "kill_xp": 25,
-      "damage_per_level": 0.07,
+      "damage_per_level": 0.14,
       "energy_only": ["eq_neon_blaster"],
       "bonus_at_max": {
         "eq_pulse_blaster": {"spd": 3},
@@ -445,7 +447,8 @@
       "table": [
         {"kind": "faction_drome", "chance": 0.005},
         {"kind": "faction_core", "chance": 0.025},
-        {"kind": "phase", "chance": 0.79},
+        {"kind": "keynode", "chance": 0.05},
+        {"kind": "phase", "chance": 0.74},
         {"kind": "blank", "chance": 0.12},
         {"kind": "coins", "chance": 0.06, "min": 10, "max": 20}
       ]

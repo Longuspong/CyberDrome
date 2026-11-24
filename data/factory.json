@@ -26,7 +26,8 @@
     "schlacke": {"name": "Schlacke", "farbe": "#86739a"},
     "platte": {"name": "Panzerplatte", "farbe": "#ffb347"},
     "chip": {"name": "Upgrade-Chip", "farbe": "#fff7fe"},
-    "rohling": {"name": "Charger-Rohling", "farbe": "#ffe14d", "material": "rohling", "nur_lager": true}
+    "rohling": {"name": "Charger-Rohling", "farbe": "#ffe14d", "material": "rohling", "nur_lager": true},
+    "keynode": {"name": "Keynode-Chip", "farbe": "#ff8ce8", "material": "keynode", "nur_lager": true}
   },
   "quellen_arten": {
     "S": {"name": "Schrottquelle", "ware": "schrott"},
@@ -123,6 +124,21 @@
         {"id": "halter", "name": "Lafette", "kosten": {"platte": 21, "chip": 15}},
         {"id": "antrieb", "name": "Krallen", "kosten": {"platte": 12, "legierung": 45}}
       ]
+    }
+  },
+  "level": {
+    "_kommentar": "Level fuer DROMEs und Waffen (Spieler 24. Nov. 2026, SKILLBAUM_KONZEPT.md 5d): Kosten je Level 1-5, steil (Faktor etwa 1 / 1,5 / 4 / 9 / 16), Mischung wie beim Bauen. Level 5 braucht einen Keynode-Chip. Waffen nach Gewichtsklasse, etwa die Haelfte. Drop-Raten sind Platzhalter (spaeter besprechen).",
+    "keynode": {"erster_einsatz": 1, "einsatz_chance": 0.15},
+    "drome": {
+      "scout_body": [{"plasma": 40, "schaltkreis": 20}, {"plasma": 60, "legierung": 40}, {"platte": 15, "chip": 15}, {"platte": 35, "chip": 35}, {"platte": 60, "chip": 60, "keynode": 1}],
+      "jugg_body": [{"legierung": 60, "schaltkreis": 10}, {"legierung": 90, "plasma": 20}, {"platte": 25, "chip": 8}, {"platte": 55, "chip": 20}, {"platte": 95, "chip": 30, "keynode": 1}],
+      "mage_body": [{"plasma": 50, "schaltkreis": 20}, {"plasma": 70, "schaltkreis": 30}, {"chip": 25, "platte": 8}, {"chip": 55, "platte": 18}, {"chip": 95, "platte": 30, "keynode": 1}],
+      "strix_body": [{"schaltkreis": 30, "legierung": 30}, {"schaltkreis": 40, "legierung": 50}, {"chip": 18, "platte": 15}, {"chip": 40, "platte": 35}, {"chip": 70, "platte": 60, "keynode": 1}]
+    },
+    "waffe": {
+      "light": [{"schaltkreis": 10, "plasma": 20}, {"schaltkreis": 15, "plasma": 30}, {"chip": 8, "platte": 4}, {"chip": 18, "platte": 8}, {"chip": 30, "platte": 14, "keynode": 1}],
+      "medium": [{"legierung": 20, "plasma": 15}, {"legierung": 30, "plasma": 25}, {"platte": 6, "chip": 6}, {"platte": 14, "chip": 14}, {"platte": 24, "chip": 24, "keynode": 1}],
+      "heavy": [{"legierung": 30, "schaltkreis": 5}, {"legierung": 45, "schaltkreis": 10}, {"platte": 10, "chip": 3}, {"platte": 22, "chip": 8}, {"platte": 38, "chip": 12, "keynode": 1}]
     }
   },
   "herstellen": {

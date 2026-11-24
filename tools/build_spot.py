@@ -1033,6 +1033,21 @@ def build_fabrik(ws):
     rows = [["Teile, deren Zutaten zurückkommen", v["teile"]]] + [[f"Wert je {wn(w)}", n] for w, n in v["wert"].items()]
     last = write_table(ws, ["Regel", "Zahl"], rows, start_row=r + 1)
     r = last + 3
+    ws.cell(row=r, column=1, value="Level-Kosten (Spieler 24. Nov. 2026, steil; Level 5 mit Keynode-Chip)").font = SUB_FONT
+    lv = fab["level"]
+    rows = []
+    for group, key in (("DROME", "drome"), ("Waffe", "waffe")):
+        for who, steps in lv[key].items():
+            rows.append([group, who] + [amt(c) for c in steps])
+    last = write_table(ws, ["Art", "Chassis / Klasse", "Level 1", "Level 2", "Level 3", "Level 4", "Level 5"], rows,
+                       start_row=r + 1)
+    r = last + 3
+    ws.cell(row=r, column=1, value="Keynode-Chip (Raten vorläufig)").font = SUB_FONT
+    rows = [["Erster gewonnener Einsatz", "garantiert" if lv["keynode"]["erster_einsatz"] else "nein"],
+            ["Jeder weitere gewonnene Einsatz", f'{int(lv["keynode"]["einsatz_chance"] * 100)} %'],
+            ["Je Cache-Wurf", "5 % (config.json -> charger.cache.table)"]]
+    last = write_table(ws, ["Quelle", "Chance"], rows, start_row=r + 1)
+    r = last + 3
     ws.cell(row=r, column=1, value="Aus dem Lager herstellen").font = SUB_FONT
     rows = [[wn(w), amt(h["kosten"]), h.get("text", "")] for w, h in fab["herstellen"].items()]
     write_table(ws, ["Ergebnis", "Kosten", "Hinweis"], rows, start_row=r + 1)

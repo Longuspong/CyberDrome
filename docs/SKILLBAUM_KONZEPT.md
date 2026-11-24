@@ -158,6 +158,14 @@ neue, wirksamere Passiven nach diesem Muster (noch zu besprechen).
   Level 3-5 zusammen ≈ 2,5 × die Platten eines ganzen Vireo -- mit einem Verdichter rund
   7 Einsätze, mit gut ausgebauter Platine 3-4.
 * **Umskillen = verwerten und neu bauen** (Abschnitt 1): der DROME beginnt wieder bei Level 0.
+* **GEBAUT (24. Nov. 2026):** keine EP mehr (`Leveling.xp_enabled()` = false), Level kaufen auf der
+  DROME-Seite (Reiter DROME und die Klappe „Level und Skilltree der Waffe“, `Workbench.level_up_*`),
+  Waffen bis Level 5 (Schaden +14 % je Level, Endwerte wie vorher auf Level 10). Kosten für alle vier
+  Chassis und je Gewichtsklasse in `data/factory.json` → `level`, SPOT-Blatt Fabrik. Jedes Level
+  wirkt vorerst wie bisher auf die Werte; die Skilltree-Knoten folgen.
+* **Keynode-Chip-Raten vorläufig** (Spieler: „zu häufig“ bei jedem ersten Abschluss, später
+  besprechen): nur der **allererste** gewonnene Einsatz gibt sicher einen, danach 15 % je
+  gewonnenem Einsatz, Caches 5 % je Wurf.
 
 ## 6. Offen (SPOT-Blatt Offene Punkte)
 

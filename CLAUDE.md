@@ -33,7 +33,9 @@ Arbeit daran lesen.
 **Skilltrees (22. Nov. 2026, Richtung entschieden, Schablone Entwurf): `docs/SKILLBAUM_KONZEPT.md`**
 -- keine Erfahrung mehr, DROMEs und Waffen je 5 Level ueber Ressourcen, Knoten 1-4 nur Werte,
 Knoten 5 aendert Passive bzw. Faehigkeit, Umskillen kostet Ressourcen, Fraktionsvarianten =
-Identitaet + Twist, Charger bleiben an der Waffe. Noch nichts bauen, erst absegnen.
+Identitaet + Twist, Charger bleiben an der Waffe. **Seit 24. Nov. 2026 gebaut:** keine EP mehr,
+Level werden mit Fabrik-Waren gekauft (Waffen bis 5, Level 5 mit Keynode-Chip, Abschnitt 5d);
+die Skilltree-Knoten selbst noch nicht bauen, erst absegnen.
 **Factory-Builder (23. Nov. 2026, Richtung entschieden, Prototyp v2): `docs/FACTORY_KONZEPT.md`**
 -- Hex-Platine, Nachbar-Lieferung, Puffer + Uplink, Netzanschluss mit Strom nach Naehe,
 nur Ressourcen (Charger/DROMEs entstehen aus dem Lager in ihren Reitern), Tiers, Baukerne fallen

@@ -465,6 +465,9 @@ func _cache_roll(table: Array, faction: String, rng: RandomNumberGenerator) -> D
 				return {"kind": "blank"}
 			add_faction_core(faction)
 			return {"kind": "faction_core", "faction": faction}
+		"keynode":
+			_add_material("keynode", 1)
+			return {"kind": "keynode"}
 		"phase":
 			var ids := Charger.element_ids()
 			var e: String = ids[rng.randi() % ids.size()]

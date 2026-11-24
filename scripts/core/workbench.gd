@@ -273,3 +273,80 @@ func craft(id: String) -> Dictionary:
 		entry = roster.craft_drome_free(StringName(chassis_of(id)), Roster.faction_drome_name(variant))
 		entry.variant = variant
 	return {"ok": true, "entry": entry, "why": ""}
+
+
+# ---------------------------------------------------------------- Level
+
+## Level kosten Fabrik-Waren (24. Nov. 2026, SKILLBAUM_KONZEPT.md 5d). Keine EP mehr.
+static func level_cfg() -> Dictionary:
+	return FactorySim.data().get("level", {})
+
+
+## Was das Level ``next`` (1-5) eines DROME kostet: {lager-schluessel: menge}; {} = kein Level mehr.
+static func drome_level_cost(chassis: String, next: int) -> Dictionary:
+	var table: Array = (level_cfg().get("drome", {}) as Dictionary).get(chassis, [])
+	return _keyed(table[next - 1]) if next >= 1 and next <= table.size() else {}
+
+
+## Was das Level ``next`` einer Waffe kostet (nach Gewichtsklasse light/medium/heavy).
+static func weapon_level_cost(mount_class: String, next: int) -> Dictionary:
+	var table: Array = (level_cfg().get("waffe", {}) as Dictionary).get(mount_class, [])
+	return _keyed(table[next - 1]) if next >= 1 and next <= table.size() else {}
+
+
+static func _keyed(cost: Dictionary) -> Dictionary:
+	var out := {}
+	for ware in cost:
+		out[ware_key(str(ware))] = int(cost[ware])
+	return out
+
+
+func can_pay(cost: Dictionary) -> bool:
+	if cost.is_empty():
+		return false
+	for key in cost:
+		if have(str(key)) < int(cost[key]):
+			return false
+	return true
+
+
+func _pay(cost: Dictionary) -> void:
+	for key in cost:
+		_add(str(key), -int(cost[key]))
+
+
+func drome_next_cost(entry: RosterEntry) -> Dictionary:
+	var body := roster.instance(str(entry.assignments.get("body", "")))
+	if body == null or entry.level >= Leveling.drome_max():
+		return {}
+	return drome_level_cost(str(body.part_id), entry.level + 1)
+
+
+func weapon_next_cost(uid: String) -> Dictionary:
+	var inst := roster.instance(uid)
+	if inst == null or inst.part() == null or inst.level >= Leveling.weapon_max():
+		return {}
+	return weapon_level_cost(inst.part().mount_class, inst.level + 1)
+
+
+## Steigt ein Level auf. "" = geklappt, sonst der Grund.
+func level_up_drome(entry: RosterEntry) -> String:
+	var cost := drome_next_cost(entry)
+	if cost.is_empty():
+		return "Höchstlevel erreicht."
+	if not can_pay(cost):
+		return "Es fehlt noch etwas."
+	_pay(cost)
+	entry.level += 1
+	return ""
+
+
+func level_up_weapon(uid: String) -> String:
+	var cost := weapon_next_cost(uid)
+	if cost.is_empty():
+		return "Höchstlevel erreicht."
+	if not can_pay(cost):
+		return "Es fehlt noch etwas."
+	_pay(cost)
+	roster.instance(uid).level += 1
+	return ""
