@@ -63,6 +63,10 @@ func _ready() -> void:
 		+ "beleuchten die DROMEs wirklich. Kann auf schwachen Handys ruckeln – zum Ausprobieren."),
 		Accessibility.real_light, Accessibility.set_real_light))
 
+	var sound := _card(content, "Ton")
+	sound.add_child(_switch(tr("Musik"), tr("Hintergrundmusik: ein Stück im Kampf, eins "
+		+ "auf allen anderen Bildschirmen."), Accessibility.music, Accessibility.set_music))
+
 	var screen := _card(content, "Bildschirm")
 	var full_row := HBoxContainer.new()
 	full_row.add_theme_constant_override("separation", 10)

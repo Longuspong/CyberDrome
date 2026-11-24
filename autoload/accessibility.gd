@@ -58,6 +58,8 @@ var reduce_motion: bool = false
 ## Haptik (10. Nov. 2026, Wunsch des Spielers): kurzes Vibrieren bei
 ## Treffern, Abschuessen, Kampfende und beim Einbauen. Abschaltbar.
 var haptics: bool = true
+## Hintergrundmusik (24. Nov. 2026, autoload/music.gd). Abschaltbar.
+var music: bool = true
 ## Echtes Licht im Kampf (21. Nov. 2026, Kampfbild mehr 3D B6 Stufe 2):
 ## Laternen und Muendungsblitze beleuchten DROMEs und Hindernisse je
 ## Bildpunkt (Abstand, Richtung). Teststufe, Standard aus -- erst auf dem
@@ -136,6 +138,12 @@ func set_real_light(value: bool) -> void:
 	settings_changed.emit()
 
 
+func set_music(value: bool) -> void:
+	music = value
+	_save()
+	settings_changed.emit()
+
+
 func set_haptics(value: bool) -> void:
 	haptics = value
 	_save()
@@ -186,6 +194,7 @@ func _load() -> void:
 	size_option = clampi(int(data.get("font_option", 0)), 0, SIZE_OPTIONS.size() - 1)
 	reduce_motion = bool(data.get("reduce_motion", reduce_motion))
 	haptics = bool(data.get("haptics", haptics))
+	music = bool(data.get("music", music))
 	real_light = bool(data.get("real_light", real_light))
 	var lang := str(data.get("language", language))
 	if lang in LANGUAGES:
@@ -203,6 +212,7 @@ func _save() -> void:
 		"font_option": size_option,
 		"reduce_motion": reduce_motion,
 		"haptics": haptics,
+		"music": music,
 		"real_light": real_light,
 		"language": language,
 	}))
