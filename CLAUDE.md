@@ -316,6 +316,11 @@ Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 Je Punkt eine eigene Sitzung. Erst entscheiden (Spieler), dann bauen.
 Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
 
+- [ ] **PRIO 1 (seit 24. Nov. 2026): Werkblatt ausfuellen** -- der Spieler traegt in
+      `docs/spot/CyberDrome_Werkblatt_DROMEs_Waffen.xlsx` die offenen Werte und
+      Anpassungen ein (hellblau: Passiven Molok/Nimbus/Strix, Skilltrees, Takt neu,
+      Schild X). Danach ins Spiel und in `SKILLBAUM_KONZEPT.md` uebernehmen.
+      Wenn der Spieler eine neue Sitzung beginnt, daran erinnern.
 - [x] ~~Aufhaenger~~ -- ersetzt durch `docs/STORY_LEITFADEN.md` (14. Nov.)
 - [ ] **Level-Struktur Story-Modus** bauen: zehn Level fuer Neon City,
       Level 1 mit 2 und Level 2 mit 3 DROMEs als Training, ab Level 3 vier
