@@ -76,3 +76,17 @@ func test_a_long_press_finds_the_tooltip_of_a_parent() -> void:
 	t.equal(Accessibility.tooltip_for(lone), "", "ohne Tooltip: nichts")
 	row.free()
 	lone.free()
+
+
+## Schalter aus der Einstellungsdatei (25. Nov. 2026): ``null`` oder Text
+## duerfen nie als NIL in reduce_motion landen -- im Web-Release brach dann
+## jede Funktion mit ``calm: bool`` ab, und alle DROMEs schauten nach rechts.
+func test_a_broken_flag_falls_back_to_a_real_bool() -> void:
+	var flag := Accessibility._flag
+	t.equal(flag.call(null, false), false, "null -> Vorgabe false")
+	t.equal(flag.call(null, true), true, "null -> Vorgabe true")
+	t.equal(flag.call("ja", false), false, "Text -> Vorgabe")
+	t.equal(flag.call(true, false), true, "true bleibt true")
+	t.equal(flag.call(0, true), false, "0 (so liefert der Browser) -> false")
+	t.equal(flag.call(1, false), true, "1 -> true")
+	t.equal(typeof(Accessibility.reduce_motion), TYPE_BOOL, "reduce_motion ist ein bool")

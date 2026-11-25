@@ -192,13 +192,23 @@ func _load() -> void:
 	# Die Optionen haben sich geaendert (vorher vier, mit "Klein" an Stelle 1):
 	# alte Werte landen sicher auf "Normal".
 	size_option = clampi(int(data.get("font_option", 0)), 0, SIZE_OPTIONS.size() - 1)
-	reduce_motion = bool(data.get("reduce_motion", reduce_motion))
-	haptics = bool(data.get("haptics", haptics))
-	music = bool(data.get("music", music))
-	real_light = bool(data.get("real_light", real_light))
+	reduce_motion = _flag(data.get("reduce_motion"), reduce_motion)
+	haptics = _flag(data.get("haptics"), haptics)
+	music = _flag(data.get("music"), music)
+	real_light = _flag(data.get("real_light"), real_light)
 	var lang := str(data.get("language", language))
 	if lang in LANGUAGES:
 		language = lang
+
+
+## Ein Schalter aus der Datei: nur true/false oder eine Zahl zaehlen, alles
+## andere (z. B. ``null``) gibt ``fallback``. Bis 25. Nov. 2026 stand im Web
+## "reduce_motion": null in der Datei, und bool(null) gab im Release-Build
+## wieder NIL statt false.
+static func _flag(value, fallback: bool) -> bool:
+	if typeof(value) in [TYPE_BOOL, TYPE_INT, TYPE_FLOAT]:
+		return int(value) != 0
+	return fallback
 
 
 ## Einstellungen werden IMMER gespeichert -- unabhaengig von save_enabled.
@@ -266,10 +276,14 @@ func _pixel_ratio() -> float:
 func _system_prefers_reduced_motion() -> bool:
 	if not OS.has_feature("web"):
 		return false
+	# Der Browser liefert hier eine Zahl (0/1), kein bool. ``result == true``
+	# ergab im Release-Build NIL statt false -- das landete in reduce_motion,
+	# und jede Funktion mit ``calm: bool`` brach still ab: im Web schauten alle
+	# DROMEs nach rechts (25. Nov. 2026).
 	var result = JavaScriptBridge.eval(
-		"window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches",
+		"(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 1 : 0",
 		true)
-	return result == true
+	return typeof(result) in [TYPE_BOOL, TYPE_INT, TYPE_FLOAT] and int(result) != 0
 
 
 # ---------------------------------------------------------------------------
