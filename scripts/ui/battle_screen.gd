@@ -478,8 +478,9 @@ func _shake_camera(severity: float) -> void:
 func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	_over = true
 	view.show_unit_badges([])
-	_status.text = "%s nach %d s  ·  Seed %d" % [
-		BattleManager.outcome_label(outcome), int(battle.time), battle.battle_seed]
+	# Nur das Ergebnis (25. Nov. 2026): "Sieg nach 19 s · Seed 7" passte nicht
+	# unter die Uhr und wurde links abgeschnitten; die Zeit steht schon darueber.
+	_status.text = BattleManager.outcome_label(outcome).to_upper()
 	# Erst den letzten DROME zerfallen sehen, dann das Ergebnis (17. Nov. 2026).
 	var wait := (Unit.DEATH_TIME_CALM if Accessibility.reduce_motion else Unit.DEATH_TIME) + 0.4
 	get_tree().create_timer(wait).timeout.connect(func():
@@ -1087,7 +1088,7 @@ func _build_ui() -> void:
 	hint_column.add_theme_constant_override("separation", 0)
 	hint_card.add_child(hint_column)
 	hint_column.add_child(Arcade.label("Ziehe deine DROMEs in Position", 15, Arcade.WHITE, "bold"))
-	var hint := UiKit.label("Nur innerhalb der markierten Zone -- oder erst die Figur antippen, "
+	var hint := UiKit.label("Nur innerhalb der markierten Zone – oder erst die Figur antippen, "
 		+ "dann das Feld. Danach kämpft dein Squad selbstständig.", 13, UiKit.MUTED)
 	hint_column.add_child(hint)
 	deploy.add_child(hint_card)
@@ -1201,7 +1202,7 @@ func _loot_card(run: RunState, won: bool) -> Control:
 	if not won:
 		column.add_child(Arcade.label("−1 LEBEN", 20, Arcade.MAGENTA, "display"))
 		column.add_child(UiKit.label("Der Einsatz geht mit %d Leben weiter." % run.lives
-			if run.lives > 0 else "Keine Leben mehr -- der Einsatz ist vorbei.", 14, UiKit.MUTED))
+			if run.lives > 0 else "Keine Leben mehr – der Einsatz ist vorbei.", 14, UiKit.MUTED))
 	for item in run.last_loot:
 		var kind := str(item.get("kind", ""))
 		if kind == "cache":

@@ -396,7 +396,7 @@ func _level_card(kind: String, entry: RosterEntry, uid: String = "") -> Control:
 			var have := bench.have(str(key))
 			var line := "%s  %d / %d" % [Workbench.key_name(str(key)), mini(have, int(cost[key])), int(cost[key])]
 			if have < int(cost[key]) and str(key) == "keynode":
-				line += "  -- selten nach einem Einsatz oder aus Caches"
+				line += "  – selten nach einem Einsatz oder aus Caches"
 			box.add_child(UiKit.label(line, UiKit.SMALL, UiKit.GOOD if have >= int(cost[key]) else UiKit.MAGENTA))
 		var up := UiKit.button("Aufsteigen", true)
 		up.disabled = not bench.can_pay(cost)
@@ -408,7 +408,7 @@ func _level_card(kind: String, entry: RosterEntry, uid: String = "") -> Control:
 				GameState.refresh_squad()
 			_refresh())
 		box.add_child(up)
-	var note := UiKit.label("Die Knoten im Skilltree kommen noch -- bis dahin wirkt jedes Level auf die Werte.",
+	var note := UiKit.label("Die Knoten im Skilltree kommen noch – bis dahin wirkt jedes Level auf die Werte.",
 		UiKit.SMALL, UiKit.MUTED)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(note)
@@ -536,7 +536,7 @@ func _drome_tile(index: int, squad_toggle: bool = true) -> Control:
 	toggle.disabled = not entry.in_squad and full
 	toggle.tooltip_text = ("%s aus dem Squad" if entry.in_squad else "%s in den Squad") % entry.name
 	if toggle.disabled:
-		toggle.tooltip_text = "Squad voll (%d) -- erst einen herausnehmen" % _squad_max()
+		toggle.tooltip_text = "Squad voll (%d) – erst einen herausnehmen" % _squad_max()
 	toggle.position = Vector2(stack.custom_minimum_size.x - 30.0, -4)
 	toggle.size = toggle.custom_minimum_size
 	toggle.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -950,7 +950,7 @@ func _fold(title: String, open: bool, toggle: Callable) -> Control:
 func _charger_stock() -> void:
 	var roster := GameState.roster
 	if _weapon_uid == "":
-		_content.add_child(UiKit.label("Erst eine Waffe einbauen -- der Charger sitzt in der Waffe.",
+		_content.add_child(UiKit.label("Erst eine Waffe einbauen – der Charger sitzt in der Waffe.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
 	_content.add_child(_quiet(UiKit.label("Antippen wählt · Doppeltipp oder auf die Karte ziehen setzt ein",
@@ -1039,7 +1039,7 @@ func _fill_weapon_box(build: DromeBuild) -> void:
 	_weapon_box.add_child(Arcade.label(title, 11, Arcade.YELLOW if _compare_part != null else Arcade.CYAN,
 		"bold", 0.2))
 	if shown == null:
-		_weapon_box.add_child(Arcade.label("Halter leer -- unten eine Waffe antippen.", 13, Arcade.MUTED))
+		_weapon_box.add_child(Arcade.label("Halter leer – unten eine Waffe antippen.", 13, Arcade.MUTED))
 		return
 	var name := shown.display_name.to_upper()
 	if other != null:

@@ -189,7 +189,7 @@ func _slot_card(which: int, info: Dictionary) -> Control:
 			state += " · Neon City bezwungen"
 		text.add_child(_wrap(Arcade.label(state, 15, Arcade.MUTED)))
 	else:
-		text.add_child(_wrap(Arcade.label("Leer – startet mit drei Standard-DROMEs.", 15,
+		text.add_child(_wrap(Arcade.label("Leer – startet mit vier Standard-DROMEs.", 15,
 			Arcade.MUTED)))
 
 	var play := Arcade.button("Weiterspielen" if used else "Neues Spiel", used)

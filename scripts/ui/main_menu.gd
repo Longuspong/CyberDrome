@@ -60,7 +60,7 @@ func _ready() -> void:
 	# erst, wenn er zu Ende ist.
 	var story_text := "Einsatz starten"
 	if running and not endless_running:
-		story_text = "Einsatz fortsetzen · Kampf %d/%d" % [GameState.run.round, RunState.rounds_total()]
+		story_text = "Einsatz fortsetzen · Kampf %d/%d" % [GameState.run.next_fight(), RunState.rounds_total()]
 	var story := UiKit.button(story_text, not endless_running)
 	story.custom_minimum_size = Vector2(0, 60)
 	if story_text == "Einsatz starten":
@@ -195,7 +195,7 @@ func _info_card(running: bool, region_name: String, region) -> Control:
 	line.scroll_active = false
 	line.autowrap_mode = TextServer.AUTOWRAP_OFF
 	line.add_theme_font_size_override("normal_font_size", 14)
-	var count := ("Kampf %d/%d" % [GameState.run.round, RunState.rounds_total()]) if running \
+	var count := ("Kampf %d/%d" % [GameState.run.next_fight(), RunState.rounds_total()]) if running \
 		else ("%d Kämpfe" % RunState.rounds_total())
 	line.text = "[color=#c3b3e6]Fraktion: [/color][color=#ff2bd6]%s[/color][color=#c3b3e6] · %s[/color]" \
 		% [faction_name, count]

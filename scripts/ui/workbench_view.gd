@@ -125,7 +125,7 @@ func _detail(id: String) -> void:
 	var head := Arcade.label(_bench.name_of(id).to_upper(), 16, Arcade.CYAN, "bold", 0.1)
 	card.add_child(head)
 	if id.begins_with("free:"):
-		card.add_child(_wrap("Ein freies Chassis aus der Beute -- baut sich ohne Kosten.", UiKit.MUTED))
+		card.add_child(_wrap("Ein freies Chassis aus der Beute – baut sich ohne Kosten.", UiKit.MUTED))
 	else:
 		if id.begins_with("faction:"):
 			card.add_child(_wrap("Fraktions-DROME: das Spezialteil %s ersetzt das Kern-Teil. Es entsteht aus dem %s und legt sich auf genau diesen DROME fest." % [
@@ -189,11 +189,11 @@ func _cost_lines(card: VBoxContainer, id: String) -> void:
 			color = UiKit.MAGENTA
 			var makers: Array = FactorySim.producers(ware)
 			if str(key).begins_with("kern:"):
-				text += " -- seltene Beute aus Caches des Gebiets"
+				text += " – seltene Beute aus Caches des Gebiets"
 			elif not makers.is_empty():
 				var names: Array = makers.map(func(m): return str(m["name"]) + (
 					" (ab Tier %d)" % int(m["tier"]) if int(m["tier"]) > _sim.tier() else ""))
-				text += " -- " + ", ".join(names)
+				text += " – " + ", ".join(names)
 		card.add_child(UiKit.label(text, 13, color))
 
 
@@ -218,7 +218,7 @@ func _goal_button(id: String) -> Button:
 	button.pressed.connect(func():
 		_sim.set_goal("" if aimed else id)
 		GameState.save_roster()
-		_say("" if aimed else "Gemerkt -- die Platine hebt hervor, was dafür fehlt.")
+		_say("" if aimed else "Gemerkt – die Platine hebt hervor, was dafür fehlt.")
 		refresh())
 	return button
 
@@ -240,7 +240,7 @@ func _never_text(short: Dictionary) -> String:
 			parts.append("%s ab Tier %d (%s)" % [FactorySim.ware_name(str(ware)), best, ", ".join(names)])
 		else:
 			parts.append("%s: baue %s" % [FactorySim.ware_name(str(ware)), " oder ".join(names)])
-	return "noch nicht -- " + "; ".join(parts)
+	return "noch nicht – " + "; ".join(parts)
 
 
 func _wrap(text: String, color: Color) -> Label:

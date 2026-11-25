@@ -254,7 +254,7 @@ static func attack_chips(action: ActionData) -> Array:
 			var e := int(round(action.power * action.energy_fraction))
 			what = "%d kinetisch + %d Energie" % [action.power - e, e]
 		out.append([type, value, "%s, Stärke %d%s" % [what, action.power,
-			(" -- %d Treffer" % action.shots) if action.shots > 1 else ""]])
+			(" – %d Treffer" % action.shots) if action.shots > 1 else ""]])
 	if action.heal > 0:
 		out.append(["heal", str(action.heal), "Repariert %d Integrität" % action.heal])
 	if action.shield_gain > 0:
@@ -338,7 +338,7 @@ static func _chip(kind: String, value: String, hint: Label, title: String) -> Co
 	chip.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and not event.pressed \
 				and event.button_index == MOUSE_BUTTON_LEFT and hint != null:
-			hint.text = "%s -- %s" % [title, StatIcon.explain(kind)]
+			hint.text = "%s – %s" % [title, StatIcon.explain(kind)]
 			hint.modulate = Color.WHITE)
 	return chip
 

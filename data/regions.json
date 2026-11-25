@@ -4,7 +4,7 @@
     "und die passende Kulisse (scripts/ui/ambience.gd). Gelaende gibt es",
     "seit dem Umbau zum Autobattler (Nov. 2026) nicht mehr.",
     "faction (9. Nov. 2026, docs/MODULE_KONZEPT.md 9): die Fraktion des Gebiets und ihr",
-    "Profil -- wie sich ihre Gegner zusammensetzen (EnemyGenerator.profile, RunState._arm_enemies):",
+    "Profil – wie sich ihre Gegner zusammensetzen (EnemyGenerator.profile, RunState._arm_enemies):",
     "  chassis   Gewicht je Chassis beim Wuerfeln (fehlt = 1)",
     "  weapons   bevorzugte Waffen, zaehlen weapon_weight-mal so viel",
     "  modules   bevorzugte Grundmodule, recipes bevorzugte Rezepte (module_weight-mal)",

@@ -4,7 +4,7 @@
   "Gegner-DROMEs, Formationen). Gelesen von scripts/core/formations.gd.",
   "sentinels: Basic-Werte je Sentinel (feste Waffe, nur Auto-Angriff, keine Passive, kein Level).",
   "  look: Chassis fuer die Platzhalter-Grafik (verkleinert, 60 %). elite_modules: die festen",
-  "  Module der Elite (1) und Heavy Elite (2) -- VORSCHLAG.",
+  "  Module der Elite (1) und Heavy Elite (2) – VORSCHLAG.",
   "ranks: Faktoren auf die Basic-Werte (Blatt Sentinels, Varianten).",
   "dromes: Gegner-DROMEs. Mit stats feste Werte (Blatt Gegner-DROMEs), ohne stats ein",
   "  Standard-DROME des Chassis. Module wuerfelt der Seed nach dem Reinforcement-Level.",
@@ -455,7 +455,7 @@
    {
     "id": "neon_intro_vireo",
     "name": "Einführung: Vireo",
-    "idea": "Ein einzelner Vireo mit zwei Klingen-Sentinels -- lerne, wie ein DROME eine Squad führt. Kein zweiter DROME.",
+    "idea": "Ein einzelner Vireo mit zwei Klingen-Sentinels – lerne, wie ein DROME eine Squad führt. Kein zweiter DROME.",
     "map": "kurz",
     "intro": true,
     "steps": [
@@ -722,7 +722,7 @@
    {
     "id": "neon_clinic",
     "name": "Neon-Lazarett",
-    "idea": "Ausdauer: Supports heilen eine zähe Front. Wer nicht bündelt, kämpft ewig -- bis der Virus kommt.",
+    "idea": "Ausdauer: Supports heilen eine zähe Front. Wer nicht bündelt, kämpft ewig – bis der Virus kommt.",
     "map": "gassen",
     "steps": [
      {

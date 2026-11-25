@@ -464,7 +464,7 @@ func build_result() -> Dictionary:
 		})
 	return {
 		"outcome": outcome,
-		"seconds": int(round(time)),
+		"seconds": int(time),   # wie die Uhr im Kampf (abgeschnitten)
 		"seed": battle_seed,
 		"region": region.display_name if region else "",
 		"units": rows,

@@ -385,3 +385,29 @@ func test_a_story_dialog_walks_through_its_lines() -> void:
 		dialog._gui_input(tap)
 	t.ok(ended["done"], "vier Tipps: zwei Zeilen zeigen, zwei weiter -- dann zu Ende")
 	host.free()
+
+
+## Schadenszahlen laufen zusammen (25. Nov. 2026): viele kleine Treffer am
+## selben Ort ergeben eine Zahl statt einer Saeule.
+func test_damage_numbers_merge() -> void:
+	var m = BattleView.TextMerge
+	t.equal(m.amount("-3"), -3, "-3 ist -3")
+	t.equal(m.amount("+4"), 4, "+4 ist 4")
+	t.equal(m.amount("Vortex!"), 0, "Text ohne Zahl zaehlt nicht")
+	t.equal(m.amount("-"), 0, "nur ein Zeichen zaehlt nicht")
+	t.equal(m.format(-5, "-3"), "-5", "Schaden bleibt mit Minus")
+	t.equal(m.format(7, "+4"), "+7", "Reparatur bleibt mit Plus")
+	var painter := BattleView.EffectPainter.new()
+	painter.add_text(Vector2(10, 10), "-1", Color.WHITE, false)
+	painter.add_text(Vector2(10, 10), "-2", Color.WHITE, false)
+	painter.add_text(Vector2(10, 10), "-4", Color.RED, false)
+	for i in 6:
+		painter.add_text(Vector2(10, 10), "Blitz%d!" % i, Color.YELLOW, true)
+	var texts: Array = painter._texts
+	t.equal(str(texts[0]["text"]), "-3", "gleiche Farbe am selben Ort: zusammengefasst")
+	t.equal(str(texts[1]["text"]), "-4", "andere Farbe bleibt fuer sich")
+	var highest := 0
+	for entry in texts:
+		highest = maxi(highest, int(entry["stack"]))
+	t.ok(highest <= BattleView.EffectPainter.MAX_STACK, "Stapel bleibt flach (%d)" % highest)
+	painter.free()
