@@ -3,6 +3,12 @@
 Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 `docs/GAME_DESIGN.md`, Bedienung und Struktur in `README.md`.
 
+**Leitplan seit 25. Nov. 2026: `docs/KERNPLAN.md`** -- was zum Kern gehoert (Autobattler +
+Lauf, Molok/Vireo/Strix mit Passiven, Fusions und BIOS ueberarbeiten statt neu bauen), was
+in den Ideen-Branch wartet (Nimbus, Endlos, Story, Fraktionen, Android, Gegnerkurve), in
+kleinen Runden arbeiten, Fragmente verworfener Systeme im selben PR entfernen. Neue Ideen
+nicht auf main. Stand: Vireo-Passive **Cyberspeed** gebaut (25. Nov.).
+
 **Ganz zuerst (seit 17. Nov. 2026, zuletzt 18. Nov. abends): `docs/UEBERGABE_3D.md`, Abschnitt „Stand 18. Nov.“** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung und 3D-Boden `ArenaFloor3D` seit 18. Nov.; sichtbare Passiven, Muendungsblitz und 3D-Deko seit 18. Nov.; Beine im Wechsel, alle Faehigkeiten lesbar (`AbilityPainter`), Waffenfarben mit Glanzkante (`WEAPON_FINISH`), Generator-Bausteine BP/SW/EX und Redesign aller Chassis seit 18. Nov. -- `DROME_UMSETZUNG.md` 4g; Fraktions-Paletten fuer Gegner und Faehigkeiten mit Ausholzeit/Abfolge (`AbilityFx`, `ActionData.windup`) seit 18. Nov.; alle Faehigkeiten animiert; Echo nacheinander und Flaechen am Wurfort seit 18. Nov., Balance gemessen; offen: Story-Level).
 
 **Technik-Prüfung (20. Nov. 2026): `docs/TECHNIK_PRUEFUNG.md`** -- Godot bleibt;
@@ -360,7 +366,7 @@ Aelterer Stand (5. November 2026):
 0. **Neuentwurf umsetzen** (`docs/NEUANFANG.md`, Reihenfolge in Abschnitt 8).
    Erledigt: KI-Grundlagen (Ziel halten, Rolle je Chassis, Fokus); Nimbus
    (Runenstab Rw 3, Vortex nach Zeit, Passive Echo); ein Platz je DROME;
-   Vireo (Sprint, Doppelschuss, Plasmaklinge, Neon-Blaster); Neon-Leuchten
+   Vireo (Sprint -- seit 25. Nov. 2026 Cyberspeed --, Doppelschuss, Plasmaklinge, Neon-Blaster); Neon-Leuchten
    als Prototyp; Molok (Tank 200/10, Praesenz, Hammer); Aufstellung vor
    dem Kampf per Ziehen (Zone 3 x 5); Zielregel je Rolle statt Aggro-Tabelle,
    Locken (Molok, Koedersender). Strix bleibt wie er ist, Ausgleich spaeter
