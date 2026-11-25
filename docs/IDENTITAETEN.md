@@ -15,7 +15,7 @@ und Werte klaeren, daraus folgt, was ein Levelaufstieg bringt). Zahlen aus
 | Panzerung (DEF) | 1 | 14 (mit Deflektor) | 2 | 2 |
 | SPD (Tempo) | 14 (1,88 Felder/s) | 6 (1,20) | 13 (1,79) | 8 (1,37) |
 | ATK | 0 | 0 | 0 | 4 (Kopf) |
-| Passive | Sprint: Treffer -> 2 s +40 % Tempo | Praesenz: lockt im Umkreis 2, faengt 30 % Schaden von Nachbarn ab | Echo: Faehigkeiten wirken doppelt, Takt +50 % | **keine** |
+| Passive | Cyberspeed (seit 25. Nov. 2026): jeder 3. Angriff 1 Stapel, max. 3, je +10 % Angriffs- und Lauftempo (frueher Sprint) | Praesenz: lockt im Umkreis 2, faengt 30 % Schaden von Nachbarn ab | Echo: Faehigkeiten wirken doppelt, Takt +50 % | **keine** |
 | Waffenhalter | 1 (bis mittel) | 2 (schwer + Schild/Support) | 1 (bis mittel) | 1 (bis schwer) |
 | Standardwaffe | Puls-Blaster | Hammer + Deflektor | Runenstab | Schienen-Lanze |
 | Kampfwert | 130 | 362 | 168 | 186 |

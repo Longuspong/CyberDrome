@@ -90,6 +90,11 @@ var _still_tile: Vector2i = Vector2i(-9999, -9999)
 var retaliation_stacks: int = 0
 ## Modul Entladung: Sekunden bis zur naechsten Entladung (tick_statuses).
 var burst_cooldown: float = 0.0
+## Cyberspeed (Vireo-Passive, 25. Nov. 2026): liegende Stapel, Angriffe seit
+## dem letzten Stapel und Restdauer (jeder Angriff startet sie neu).
+var cyberspeed_stacks: int = 0
+var cyberspeed_count: int = 0
+var cyberspeed_left: float = 0.0
 ## Kabelbrand (Statuseffekt mit Stapeln, 20. Nov. 2026): liegende Stapel,
 ## mit Bruchteil aus der Effizienz; wer zuletzt angesteckt hat.
 var cable_fire: float = 0.0
@@ -937,7 +942,7 @@ func lure_radius() -> int:
 
 ## Faktor aufs Angriffstempo aus Statuseffekten.
 func attack_speed_mult() -> float:
-	var mult := 1.0
+	var mult := 1.0 + float(cyberspeed_stacks) * float(_cyberspeed().get("attack_speed", 0.1))
 	for status in statuses.values():
 		mult *= float(status.get("attack_speed_mult", 1.0))
 	return maxf(0.1, mult)
@@ -985,6 +990,7 @@ func move_speed() -> float:
 	var section := Config.section("realtime")
 	var speed := maxf(float(section.get("move_min", 1.2)),
 		float(section.get("move_base", 1.0)) + float(spd()) * float(section.get("move_per_spd", 0.12)))
+	speed *= 1.0 + float(cyberspeed_stacks) * float(_cyberspeed().get("move", 0.1))
 	# Verlangsamung und Beschleunigung wirken als Faktor (move_mult).
 	for status in statuses.values():
 		speed *= float(status.get("move_mult", 1.0))
@@ -1159,6 +1165,26 @@ static func _scale_strength(status: Dictionary, factor: float) -> void:
 		status["move_mult"] = maxf(1.0 - cap, float(status["move_mult"]))
 
 
+## Cyberspeed (Vireo-Passive, Spieler 22. Nov. 2026, gebaut 25. Nov.): jeder
+## ``every``-te Angriff gibt einen Stapel (hoechstens ``max_stacks``), je
+## Stapel mehr Angriffs- und Lauftempo. Jeder Angriff startet die Dauer
+## ``seconds`` neu (mit der Effizienz gestreckt); laeuft sie ab, fallen alle
+## Stapel und der Zaehler. Die Faehigkeit zaehlt als Angriff.
+func on_attack() -> void:
+	if passive() != "cyberspeed" or not is_alive():
+		return
+	var rule := _cyberspeed()
+	cyberspeed_count += 1
+	if cyberspeed_count >= maxi(1, int(rule.get("every", 3))):
+		cyberspeed_count = 0
+		cyberspeed_stacks = mini(int(rule.get("max_stacks", 3)), cyberspeed_stacks + 1)
+	cyberspeed_left = float(rule.get("seconds", 3.0)) * efficiency_factor()
+
+
+static func _cyberspeed() -> Dictionary:
+	return Config.section("passives").get("cyberspeed", {}) as Dictionary
+
+
 ## Effizienz (20. Nov. 2026): versteckter Wert, Grundwert
 ## ``statuses.efficiency.base`` (10 = 100 %). Streckt Dauer und Wirkung der
 ## Statuseffekte, die dieser DROME ausloest -- nie die Schadenszahl.
@@ -1214,6 +1240,13 @@ func take_cable_fire(limit: int) -> int:
 func tick_statuses(dt: float) -> bool:
 	burst_cooldown = maxf(0.0, burst_cooldown - dt)
 	var changed := false
+	if cyberspeed_left > 0.0:
+		cyberspeed_left -= dt
+		if cyberspeed_left <= 0.0:
+			changed = cyberspeed_stacks > 0
+			cyberspeed_left = 0.0
+			cyberspeed_stacks = 0
+			cyberspeed_count = 0
 	for id in statuses.keys():
 		statuses[id]["seconds_left"] = float(statuses[id]["seconds_left"]) - dt
 		if float(statuses[id]["seconds_left"]) <= 0.0:
@@ -1229,6 +1262,9 @@ func status_names() -> Array[String]:
 		if id == &"vortex_hold":
 			continue
 		names.append(str(id))
+	# Cyberspeed: ein Sprint-Symbol je Stapel.
+	for i in cyberspeed_stacks:
+		names.append("rush")
 	if cable_fire_stacks() > 0:
 		names.append("cable_fire")
 	return names

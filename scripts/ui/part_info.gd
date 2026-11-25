@@ -81,11 +81,12 @@ static func traits(part: PartData) -> Array[String]:
 	if part.lure_radius > 0:
 		out.append("Lockt: Gegner im Umkreis %d greifen den Träger an." % part.lure_radius)
 	match part.passive:
-		"hit_rush":
-			var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
-			out.append("Sprint: jeder Treffer macht %s s lang %d %% schneller." % [
-				ActionData._seconds(float(rush.get("seconds", 2.0))),
-				int(round((float(rush.get("move_mult", 1.4)) - 1.0) * 100.0))])
+		"cyberspeed":
+			var cs := Config.section("passives").get("cyberspeed", {}) as Dictionary
+			out.append("Cyberspeed: jeder %d. Angriff gibt einen Stapel (höchstens %d), je Stapel +%d %% Angriffs- und Lauftempo. Jeder Angriff hält die Stapel %s s." % [
+				int(cs.get("every", 3)), int(cs.get("max_stacks", 3)),
+				int(round(float(cs.get("attack_speed", 0.1)) * 100.0)),
+				ActionData._seconds(float(cs.get("seconds", 3.0)))])
 		"presence":
 			var p := Config.section("passives").get("presence", {}) as Dictionary
 			out.append("Präsenz: Gegner im Umkreis %d greifen ihn an; %d %% des Schadens an Verbündeten im Umkreis %d fängt er ab." % [

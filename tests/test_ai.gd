@@ -391,19 +391,29 @@ func test_the_double_shot_hits_a_lone_foe_twice() -> void:
 	battle.free()
 
 
-func test_a_hit_makes_the_vireo_sprint() -> void:
+func test_cyberspeed_stacks_with_attacks() -> void:
 	var tiles := [Vector2i(10, 12), Vector2i(10, 10)]
 	var battle := _battle([_vireo()], [_molok()], tiles)
 	var vireo: Unit = battle.units[0]
-	var foe: Unit = battle.units[1]
-	t.equal(vireo.passive(), "hit_rush", "der Vireo hat die Sprint-Passive")
-	var before := vireo.move_speed()
-	battle.resolver.execute(vireo, foe.tile, _action(vireo, &"act_pulse"))
-	t.ok(vireo.move_speed() > before * 1.3, "nach dem Treffer läuft er schneller (%.2f -> %.2f)"
-		% [before, vireo.move_speed()])
-	var seconds := float((Config.section("passives").get("hit_rush", {}) as Dictionary).get("seconds", 2.0))
-	vireo.tick_statuses(seconds + 0.1)
-	t.ok(is_equal_approx(vireo.move_speed(), before), "nach %.0f s ist es vorbei" % seconds)
+	t.equal(vireo.passive(), "cyberspeed", "der Vireo hat die Passive Cyberspeed")
+	var rule := Config.section("passives").get("cyberspeed", {}) as Dictionary
+	var move := vireo.move_speed()
+	var speed := vireo.attack_speed_mult()
+	vireo.on_attack()
+	vireo.on_attack()
+	t.equal(vireo.cyberspeed_stacks, 0, "nach 2 Angriffen noch kein Stapel")
+	vireo.on_attack()
+	t.equal(vireo.cyberspeed_stacks, 1, "der 3. Angriff gibt einen Stapel")
+	t.ok(is_equal_approx(vireo.attack_speed_mult(), speed * 1.1), "+10 % Angriffstempo")
+	t.ok(is_equal_approx(vireo.move_speed(), move * 1.1), "+10 % Lauftempo")
+	for i in 9:
+		vireo.tick_statuses(float(rule.get("seconds", 3.0)) - 0.5)
+		vireo.on_attack()
+	t.equal(vireo.cyberspeed_stacks, 3, "Dauerbeschuss hält die Stapel, höchstens 3")
+	t.equal(vireo.status_names().count("rush"), 3, "ein Symbol je Stapel")
+	vireo.tick_statuses(float(rule.get("seconds", 3.0)) + 0.1)
+	t.equal(vireo.cyberspeed_stacks, 0, "ohne Angriff fallen alle Stapel")
+	t.ok(is_equal_approx(vireo.move_speed(), move), "danach wieder normal schnell")
 	battle.free()
 
 

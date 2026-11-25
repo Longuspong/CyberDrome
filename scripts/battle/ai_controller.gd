@@ -282,6 +282,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 			else:
 				_resolve_ability(unit, ability, aim, mount, fx)
 			mount["instant"] = bool(fx.get("ready_after_ability", false))
+			unit.on_attack()
 			# Ueberladung: die naechsten Angriffe treffen haerter.
 			if float(fx.get("post_ability_power", 0.0)) > 0.0:
 				mount["overload"] = int(ModuleData.rule("overload_attacks", 3))
@@ -308,6 +309,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		mount["overload"] = overload - 1
 	if ability != null and not due:
 		mount["count"] = float(mount["count"]) + unit.takt_step(mount)
+	unit.on_attack()
 	return true
 
 

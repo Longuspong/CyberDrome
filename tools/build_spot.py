@@ -161,7 +161,8 @@ def num(x):
 
 
 PASSIVE_INFO = {
-    "hit_rush": ("Sprint", lambda p: f"Jeder Treffer gibt {num(p['seconds'])} s lang +{pct(p['move_mult'] - 1)} Lauftempo."),
+    "cyberspeed": ("Cyberspeed", lambda p: f"Jeder {p['every']}. Angriff gibt einen Stapel (hoechstens {p['max_stacks']}), "
+                   f"je Stapel +{pct(p['attack_speed'])} Angriffs- und Lauftempo; jeder Angriff haelt die Stapel {num(p['seconds'])} s."),
     "presence": ("Praesenz", lambda p: f"Gegner im Umkreis {p['lure_radius']} greifen ihn an statt ihres Ziels (Locken). "
                  f"{pct(p['guard_share'])} des Schadens an Verbuendeten im Umkreis {p['guard_radius']} gehen auf ihn."),
     "echo": ("Echo", lambda p: f"Jede Faehigkeit wirkt doppelt, dafuer ist ihr Takt {num(p['slower'])}-mal so lang."),

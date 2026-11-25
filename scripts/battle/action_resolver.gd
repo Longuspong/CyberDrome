@@ -123,7 +123,6 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		EventBus.log_line("%s trifft %s für %d Schaden."
 			% [who, target.display_name, amount])
 
-	_on_hit(source, dealt)
 	# Lebensraub (Fusion Attack + Integrity): der Treffer heilt den Schuetzen.
 	if action != null and action.lifesteal > 0.0 and source != null and source.is_alive() \
 			and dealt > 0 and source != target:
@@ -266,16 +265,6 @@ func _guard_for(target: Unit) -> Unit:
 			best = unit
 			best_gap = gap
 	return best
-
-
-## Passiven, die an einem Treffer haengen. Vireo (hit_rush): kurz schneller.
-func _on_hit(source: Unit, dealt: int) -> void:
-	if source == null or dealt <= 0 or not source.is_alive():
-		return
-	if source.passive() == "hit_rush":
-		var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
-		var mods := {"move_mult": float(rush.get("move_mult", 1.4))}
-		source.apply_status(&"rush", float(rush.get("seconds", 2.0)), mods, source)
 
 
 ## Das Zwei-Verteidigungs-System (§11) als reine Rechnung -- was von ``raw`` auf
