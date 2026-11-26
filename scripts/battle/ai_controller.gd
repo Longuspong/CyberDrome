@@ -15,10 +15,10 @@ extends RefCounted
 ##   * WAFFEN: jede laedt fuer sich (``interval``). Ist sie geladen und ein
 ##     Gegner in Reichweite, schiesst sie -- auf das Ziel, sonst auf den besten
 ##     erreichbaren. Jeder N-te Angriff ist die Faehigkeit der Waffe.
-##   * GADGETS: nach Zeit (Orbit-Sog) oder Ereignis (Boost, wenn ein Gegner
+##   * GADGETS: nach Ereignis (Hologramm, wenn ein Gegner
 ##     danebensteht).
 ##   * BEWEGUNG nach der Rolle des CHASSIS (``PartData.ai_role``), nicht nach
-##     der Waffe -- ein Molok mit Kanone bleibt Frontlinie:
+##     der Waffe -- ein Molok bleibt mit jeder Waffe Frontlinie:
 ##       vanguard    rueckt vor, weicht nie aus
 ##       skirmisher  mit Fernwaffe kiten, mit Nahkampfwaffe am Ziel bleiben
 ##       sniper      haelt Abstand, weicht nur aus, wenn jemand danebensteht

@@ -4,7 +4,6 @@ extends Control
 ## Ein Halter -- oder ein Ausruestungsteil -- als Form.
 ##
 ##     Dreieck  = leicht      Viereck = mittel      Fuenfeck = schwer
-##     Kreis    = Kern
 ##
 ## Mehr Ecken heisst mehr Platz. Dieselben Formen tragen die Halter am DROME
 ## und die Teile im Inventar: ein Teil passt in jeden Halter mit mindestens so
@@ -15,7 +14,7 @@ const LINE := Color(0.8, 0.86, 0.94)
 const FILL := Color(0.12, 0.15, 0.21)
 const FILL_EMPTY := Color(0.07, 0.09, 0.13)
 
-## "light", "medium", "heavy" oder "core".
+## "light", "medium" oder "heavy".
 var shape: String = "light":
 	set(value):
 		shape = value
@@ -154,8 +153,6 @@ static func polygon(kind: String, rect: Rect2) -> PackedVector2Array:
 			])
 		"heavy":
 			corners = 5
-		"core":
-			corners = 28
 	var points := PackedVector2Array()
 	for i in corners:
 		var angle := -PI * 0.5 + TAU * float(i) / float(corners)

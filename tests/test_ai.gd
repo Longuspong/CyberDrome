@@ -56,9 +56,8 @@ func test_every_chassis_names_its_role() -> void:
 	t.equal(Unit.create(_strix(), &"D", true).ai_role(), "sniper", "Strix ist Scharfschütze")
 
 
-func test_a_molok_with_a_cannon_never_backs_off() -> void:
-	# Frueher hing die Rolle an der Waffenreichweite: mit der Kanone (Rw 6)
-	# galt der Molok als Fernkaempfer und wich jedem aus, der naeher kam.
+func test_a_molok_never_backs_off() -> void:
+	# Die Rolle haengt am Chassis, nicht an der Waffenreichweite.
 	var battle := _battle([_molok()], [_nimbus()], [Vector2i(10, 10), Vector2i(10, 9)])
 	var molok: Unit = battle.units[0]
 	var foe: Unit = battle.units[1]

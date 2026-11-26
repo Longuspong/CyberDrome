@@ -5,15 +5,14 @@ extends RefCounted
 ##
 ## Die Regel selbst steht in PartData.accepts(): jeder Halter hat eine
 ## Hoechstklasse (``max_class``), und alles BIS zu dieser Klasse passt hinein.
-## Ein leichter Blaster sitzt also auch in einem schweren Halter, eine
-## Belagerungskanone (schwer) aber nicht in einem mittleren. Manche Halter
-## nehmen zusaetzlich nur bestimmte Arten (die Molok-Schulter nur Support).
+## Ein leichter Blaster sitzt also auch in einem schweren Halter, ein schwerer
+## Moerser aber nicht in einem mittleren.
 ##
 ## Hier steht nur, wie man das dem Spieler SAGT: welche Halter es gibt, was
 ## drinsteckt und -- wenn es nicht passt -- warum nicht.
 ##
 ## Die Formen dazu (SlotShape): Dreieck = leicht, Viereck = mittel,
-## Fuenfeck = schwer, Kreis = Kern. Mehr Ecken heisst mehr Platz.
+## Fuenfeck = schwer. Mehr Ecken heisst mehr Platz.
 
 const SLOT_LABEL := {
 	"body": "Chassis", "head": "Sensorik", "feet": "Antrieb", "core": "Kern",

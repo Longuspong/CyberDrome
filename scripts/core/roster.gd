@@ -58,14 +58,7 @@ var _factory_sim: FactorySim = null
 ## Die vier Standard-DROMEs mit ihrer VOLLEN Standard-Ausstattung -- der
 ## handgesetzte Startbestand (§10g/§12c). Reihenfolge = Reihenfolge im frischen
 ## Roster. Die Ausruestung wird der Reihe nach in den ersten passenden freien
-## Slot gelegt (``_seed_equip``), damit ein support-only-Schulterpod nicht die
-## Waffe schluckt.
-##
-## Die Kits stehen so im Konzept:
-##   Vireo   Hologramm-Boost (Dash) + Puls-Blaster
-##   Molok   Belagerungskanone + Deflektor-Schild + Drohnen-Pod (Reparatur)
-##   Nimbus  Orbit-Fokus (Orbital) + Runenstab
-##   Strix   Schienen-Lanze (nur ein Slot)
+## Slot gelegt (``_seed_equip``).
 const STARTER_CHASSIS := [
 	{"body": &"scout_body", "core": &"scout_core",
 	 "equipment": [&"eq_pulse_blaster"]},
@@ -695,8 +688,7 @@ func seed_new_game() -> void:
 
 
 ## Legt eine neue Instanz von ``part_id`` in den ersten Ausruestungsslot dieses
-## Eintrags, der noch frei ist UND das Teil annimmt. So landet der support-only
-## Drohnen-Pod im Schulterpod und nicht auf einem Waffenarm. Findet sich kein
+## Eintrags, der noch frei ist UND das Teil annimmt. Findet sich kein
 ## Slot, bleibt das Teil aussen vor (der Aufbau ist trotzdem gueltig).
 func _seed_equip(entry: RosterEntry, part_id: StringName) -> void:
 	var build := build_for(entry)

@@ -1131,8 +1131,8 @@ func _head_style() -> StyleBoxFlat:
 	return style
 
 
-## Die Halter als Formen: die Ausruestungshalter in ihrer Klassenform (den
-## Kern-Halter gibt es seit 6g nicht mehr); darin die Waffe oder leer. Der
+## Die Halter als Formen: die Ausruestungshalter in ihrer Klassenform; darin
+## die Waffe oder leer. Der
 ## gewaehlte Halter steht in einem hervorgehobenen Kasten; unter jedem Halter
 ## seine Klasse. Antippen waehlt den Halter, nochmal antippen oeffnet die
 ## Karte der Waffe darin (mit "Ausbauen"), Doppeltipp baut sie aus.
@@ -1143,7 +1143,7 @@ func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 	var chassis := build.body()
 	for slot in build.equip_slots():
 		var part := build.part_in(slot)
-		var kind := "core" if slot == "core" else SlotRules.slot_class(chassis, slot)
+		var kind := SlotRules.slot_class(chassis, slot)
 		var chosen: bool = slot == _selected_slot
 		var style := UiKit.card_style(chosen)
 		style.set_content_margin_all(6)
@@ -1181,14 +1181,6 @@ func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 		box.add_child(shape)
 		# Unter dem Halter steht nur seine Klasse -- keine Richtung mehr
 		# (links, rechts): sie sagte nichts, was man nicht sieht.
-		if kind == "core":
-			var label := _quiet(UiKit.label(SlotRules.slot_label(slot), UiKit.SMALL,
-				Color.WHITE if chosen else UiKit.MUTED))
-			label.autowrap_mode = TextServer.AUTOWRAP_OFF
-			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			box.add_child(label)
-			row.add_child(holder)
-			continue
 		var weight := _quiet(UiKit.label(_class_name(kind), UiKit.SMALL,
 			_class_color(kind) if chosen else Color(_class_color(kind), 0.6)))
 		weight.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -1198,9 +1190,9 @@ func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 	return row
 
 
-## "Kern", "leicht", "mittel", "schwer".
+## "leicht", "mittel", "schwer".
 func _class_name(kind: String) -> String:
-	return "Kern" if kind == "core" else SlotRules.class_label(kind)
+	return SlotRules.class_label(kind)
 
 
 ## Eine Farbe je Klasse -- zusaetzlich zur Form, nie statt ihr.
