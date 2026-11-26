@@ -4,7 +4,7 @@ extends RefCounted
 ## Ein zusammengebauter DROME: Slots -> Stats, Validierung, Kampfwert.
 ##
 ## Keine Godot-Knoten, keine UI. Diese Klasse muss ohne laufende Szene testbar
-## sein -- sie ist die Grundlage fuer Werkstatt, Gegner-Generator und KI
+## sein -- sie ist die Grundlage fuer Hangar, Gegner-Generator und KI
 ## gleichermassen, und ein Fehler hier faellt sonst erst im Kampf auf.
 ##
 ## Slotmodell des Repos (nicht die sechs festen Slots des Entwurfs):
@@ -33,7 +33,7 @@ var display_name: String = "DROME"
 ## slot -> part_id. Slots ohne Eintrag sind leer.
 var slots: Dictionary = {}
 
-## Optional: abweichende Palette je Slot, wie die Werkstatt sie exportiert.
+## Optional: abweichende Palette je Slot.
 var palette: Dictionary = {}
 
 ## Blickrichtung fuer die Darstellung
@@ -154,8 +154,6 @@ func equip_slots() -> Array[String]:
 ## ersten passenden ueberhaupt. Leerer String heisst: nirgendwo, dieses Chassis
 ## hat keinen Halter dafuer.
 ##
-## Dieselbe Reihenfolge wie in der SVG-Werkstatt (README: "angewaehlter Slot,
-## sonst erster freier"), damit ein Klick in beiden Werkstaetten dasselbe tut.
 ## Steht hier und nicht in der Oberflaeche, weil es eine Aussage ueber den
 ## Aufbau ist und nicht ueber die Bedienung -- und weil es sich hier ohne
 ## laufende Szene pruefen laesst.
@@ -344,48 +342,6 @@ static func _add_stats(total: Dictionary, bonus: Dictionary) -> void:
 func power_factor() -> float:
 	var points := int(stats().get("power", 0))
 	return 1.0 if points <= 0 else float(points) / 10.0
-
-
-## Was ein einzelnes Teil an den Stats aendern wuerde -- fuer die Delta-Anzeige
-## beim Hovern in der Werkstatt. Gibt nur die Felder zurueck, die sich
-## tatsaechlich unterscheiden.
-func preview_delta(slot: String, candidate_id: StringName) -> Dictionary:
-	var before := stats()
-	var probe := clone()
-	if candidate_id == &"":
-		probe.slots.erase(slot)
-	else:
-		probe.slots[slot] = candidate_id
-	# Ein Chassiswechsel kann Ausruestungsslots wegnehmen. Was nicht mehr
-	# passt, faellt ab -- sonst zeigte die Vorschau Werte fuer einen Aufbau,
-	# den man so gar nicht bauen kann.
-	probe._drop_invalid_equipment()
-	var after := probe.stats()
-
-	var delta := {}
-	for key in after:
-		if after[key] != before[key]:
-			delta[key] = {"before": before[key], "after": after[key]}
-	return delta
-
-
-func _drop_invalid_equipment() -> void:
-	var chassis := body()
-	if chassis == null:
-		for slot in slots.keys():
-			if str(slot).begins_with("equip_"):
-				slots.erase(slot)
-		return
-	var allowed := chassis.equip_slots()
-	for slot in slots.keys():
-		if not str(slot).begins_with("equip_"):
-			continue
-		if slot not in allowed:
-			slots.erase(slot)
-			continue
-		var part := part_in(slot)
-		if part != null and not chassis.accepts(part, slot):
-			slots.erase(slot)
 
 
 func clone() -> DromeBuild:
@@ -675,7 +631,7 @@ static func squad_power(builds: Array) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Persistenz -- dasselbe Loadout-Format, das die SVG-Werkstatt exportiert
+# Persistenz -- das Loadout-Format (nur Teile-IDs, Werte werden neu gerechnet)
 # ---------------------------------------------------------------------------
 
 func to_loadout() -> Dictionary:

@@ -229,32 +229,6 @@ func test_next_uid_does_not_collide_after_loading() -> void:
 	t.ok(restored.instance(fresh_uid) != null, "und sie ist auffindbar")
 
 
-func test_migration_from_the_old_throwaway_squad() -> void:
-	# Der alte Wegwerf-Squad (v1) muss beim Umstieg erhalten bleiben.
-	var v1 := {
-		"squad_size": 2,
-		"squad": [
-			{
-				"name": "ALPHA",
-				"slots": {
-					"body": {"part_id": "scout_body"},
-					"head": {"part_id": "scout_head"},
-					"feet": {"part_id": "scout_feet"},
-					"core": {"part_id": "scout_core"},
-					"equip_left": {"part_id": "eq_pulse_blaster"},
-				},
-			},
-		],
-	}
-	var roster := Roster.new()
-	t.ok(roster.migrate_v1(v1), "der v1-Squad migriert")
-	t.equal(roster.entries.size(), 1, "der eine Bot wird ein Roster-Eintrag")
-	var build := roster.build_for(roster.entries[0])
-	t.equal(build.display_name, "ALPHA", "der Name kommt mit")
-	t.ok(build.validate().is_empty(), "und der DROME ist kampftauglich")
-	t.ok(roster.entries[0].in_squad, "migrierte DROMEs ziehen ins Gefecht")
-
-
 func test_a_new_game_starts_with_everything_once() -> void:
 	var roster := Roster.new()
 	roster.seed_new_game()

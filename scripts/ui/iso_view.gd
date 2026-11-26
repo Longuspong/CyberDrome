@@ -8,7 +8,7 @@ extends RefCounted
 ## zweite Umrechnung anlegt, bekommt Bots, die neben ihrem Feld stehen, und
 ## einen Fehler, den man erst bei 400 Feldern als System erkennt.
 ##
-## Die Zahlen stammen aus der Werkstatt: ``tools/build_sample_parts.py``
+## Die Zahlen stammen aus dem Generator: ``tools/build_sample_parts.py``
 ## projiziert jedes Bauteil mit 1,35 Bildpunkten je Einheit in ein 128x128-
 ## Bild, die Feldmitte liegt dort auf (64, 96). Bis 17. Nov. 2026 war das
 ## Feld eine Bodenraute von 76 x 54 px (Quadrat 40 x 40, diagonal gesehen).

@@ -137,16 +137,10 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.ai_role = str(stats.get("ai_role", ""))
 	part.passive = str(stats.get("passive", ""))
 
-	# Ein Teil gewaehrt eine LISTE von Aktionen. ``action`` (Einzahl) bleibt als
-	# Altformat lesbar, damit ein aelterer Datensatz nicht stumm seine Aktion
-	# verliert.
+	# Ein Teil gewaehrt eine LISTE von Aktionen.
 	for action_meta in stats.get("actions", []):
 		part.actions.append(
 			ActionData.from_meta(action_meta, part.display_name, part.code))
-	var legacy = stats.get("action")
-	if legacy != null and part.actions.is_empty():
-		part.actions.append(
-			ActionData.from_meta(legacy, part.display_name, part.code))
 	return part
 
 
@@ -246,7 +240,7 @@ func reach_kind() -> String:
 
 
 ## Darf dieses Ausruestungsteil in diesen Slot dieses Chassis?
-## Spiegelt fits_rule() aus tools/build_sample_parts.py -- die Werkstatt prueft
+## Spiegelt fits_rule() aus tools/build_sample_parts.py -- der Hangar prueft
 ## das beim Bauen, aber ein Loadout kann von Hand entstehen oder aus einem
 ## aelteren Stand kommen. Die Regel muss deshalb auch hier gelten.
 func accepts(equipment: PartData, slot: String) -> bool:

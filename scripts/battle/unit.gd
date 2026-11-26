@@ -3,7 +3,7 @@ extends Node2D
 
 ## Ein DROME im Kampf: Darstellung und Laufzeitwerte.
 ##
-## Zusammengesetzt wird er wie in der Werkstatt -- ein Sprite2D je Bauteil,
+## Ohne Arena (Tests, Bench) wird er als 2D-Bild zusammengesetzt -- ein Sprite2D je Bauteil,
 ## ``centered = false``, auf den Sockel des Chassis verschoben,
 ## Zeichenreihenfolge aus ``slot_z``. Beides rechnet DromeSprites.
 ##
@@ -160,7 +160,7 @@ var _rig: Node2D
 
 ## Die gemeinsame 3D-Kampfszene (seit 18. Nov. 2026). Gesetzt, bevor die
 ## Einheit in den Baum kommt -- dann baut sie kein eigenes Bild, sondern ihr
-## Modell steht in der Arena. Ohne Arena (Tests, Werkstatt) wie bisher.
+## Modell steht in der Arena. Ohne Arena (Tests, Bench) als 2D-Bild.
 var arena: Arena3D = null
 
 ## Der Bodenring in Fraktionsfarbe, UNTER den Bauteilen (z_index -1).
@@ -216,9 +216,7 @@ func _ensure_chrome() -> void:
 # ---------------------------------------------------------------------------
 
 func _build_sprites() -> void:
-	# Zusammengesetzt wird ueber DromeSprites -- dieselbe Funktion, die auch
-	# die Werkstatt-Vorschau benutzt. Zwei Zusammenbauten waeren zwei
-	# Gelegenheiten, dass der Bot im Kampf anders aussieht als beim Bauen.
+	# Zusammengesetzt wird ueber DromeSprites (wie im Bench-Bildschirm).
 	_ensure_chrome()
 	if arena != null:
 		# Gemeinsame 3D-Szene: ein 2D-Bild aus der Zeit vor dem Einhaengen

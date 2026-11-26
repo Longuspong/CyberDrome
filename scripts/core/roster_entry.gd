@@ -15,8 +15,8 @@ extends RefCounted
 ## ``assignments["body"]`` ist die uid einer Chassis-Instanz -- und die macht den
 ## DROME aus. Kopf und Fuesse werden daraus abgeleitet (die Huelle, §9), nie
 ## einzeln zugewiesen. Ein anderes Chassis ist deshalb ein ANDERER DROME, kein
-## Umbau: neue Chassis-Beute eroeffnet einen neuen Roster-Platz (§10g). Die
-## Werkstatt tauscht darum Kern und Ausruestung, nie den Rahmen.
+## Umbau: neue Chassis-Beute eroeffnet einen neuen Roster-Platz (§10g). Der
+## Hangar tauscht darum Kern und Ausruestung, nie den Rahmen.
 
 ## Anzeigename (vom Spiel vergeben; umbenennen gibt es seit 23. Nov. 2026 nicht mehr).
 var name: String = "DROME"

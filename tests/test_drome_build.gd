@@ -287,24 +287,6 @@ func test_equip_slots_come_from_anchors() -> void:
 	t.equal(PartDB.get_part(&"strix_body").equip_slots().size(), 1, "Strix: 1 Platz")
 
 
-func test_chassis_swap_drops_equipment_that_no_longer_fits() -> void:
-	# Molok mit Kanone -> auf den Vireo gewechselt. Der Vireo nimmt nur bis
-	# medium, die Kanone faellt ab. Die Vorschau muss das zeigen, sonst
-	# verspricht sie Werte fuer einen Aufbau, den es nicht geben kann.
-	var build := DromeBuild.create("WECHSEL", {
-		"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer",
-	})
-	var delta := build.preview_delta("body", &"scout_body")
-	t.ok(delta.has("hp_max"), "Chassiswechsel ändert die Werte")
-	var swapped := build.clone()
-	swapped.slots["body"] = &"scout_body"
-	swapped._drop_invalid_equipment()
-	t.ok(swapped.part_in("equip_left") == null,
-		"der mittlere Hammer passt nicht an den leichten Vireo und fällt ab")
-
-
 func test_power_score_is_100_for_the_average_starter() -> void:
 	var squad := RunState.standard_squad()
 	var mean := DromeBuild.squad_power(squad) / float(squad.size())
