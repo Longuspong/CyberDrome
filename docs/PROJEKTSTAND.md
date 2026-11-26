@@ -29,6 +29,26 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Kernplan, Cyberspeed, Aufraeumen (25./26. Nov. 2026, Spieler)
+
+Leitplan seit 25. Nov.: `docs/KERNPLAN.md`. Gebaut:
+
+* **Vireo-Passive Cyberspeed** ersetzt den Sprint: jeder 3. Angriff 1 Stapel
+  (max. 3), je Stapel +10 % Angriffs- und Lauftempo, jeder Angriff haelt die
+  Stapel 3 s (Effizienz streckt). `Unit.on_attack`, `config.json` ->
+  `passives.cyberspeed`. Anzeige: ein Sprint-Symbol je Stapel, Booster heller.
+  `run_bench -- 30` vorher/nachher praktisch gleich.
+* **Aufraeumen nach dem Kernplan** (ein Commit je Thema): Molok-Praesenz und
+  das ganze Locken (Lockradius, Spott-Effekt, Symbol "gelockt"); Werkstatt-
+  Export, `preview_delta`, Altformate der Spielstaende (v1-Squad, Einzeldateien
+  vor den drei Spielstaenden); 40 Funktionen ohne Aufrufer; alte Modul-Symbole,
+  `art/arena_city/`, `tab_hangar.svg`; Kern-Halter (Kreisform) und
+  Belagerungskanone im Code; zufaellige Hindernisse (`place_obstacles`) und
+  tote Config-Werte (`squad_size`, `grid_*`); alte Box-Modelle im Generator
+  (Ausgabe vorher/nachher byte-gleich); README, `parts/README.md`, `CLAUDE.md`.
+* Der **Molok hat vorerst keine Passive**; die neue steht im Kernplan als
+  Entwurf.
+
 ### Bugfix-Runde Kampf (24. Nov. 2026, Meldung des Spielers)
 
 Gemeldet: Elementarladung nicht zu merken, Vortex zieht kaum und betaeubt nicht,
@@ -672,6 +692,10 @@ und Offene Punkte.
   entfernt.
 
 ### Arena und Hindernisse (7. Nov. 2026, Wunsch des Spielers)
+
+> Ueberholt: zufaellige Hindernisse gibt es seit 18. Nov. 2026 nicht mehr
+> (feste Kartenformen), der Code dazu ist seit 26. Nov. entfernt.
+
 * **Hindernisse** sperren nur Laufwege, Schuesse gehen darueber
   (`Grid.obstacles`, `can_stand_on`). 3-5 Gruppen (einzeln, kurze Mauer,
   Ecke), punktsymmetrisch zur Feldmitte, nie in oder direkt an den Zonen,
@@ -1263,44 +1287,21 @@ Nach dem Design-Canvas „CyberDrome Charger & Hangar“
 
 ## 4. Bekannte Schwaechen / Altlasten
 
-* Alle Tests gruen seit dem Aufraeumen (5. Nov. 2026). Die frueheren roten
-  Pruefungen waren Provokation (entfernt) und Tests aus der Zeit vor dem
-  Energieschild (repariert).
-* KI (5. Nov. 2026 umgebaut): Ziel wird gehalten (neu gewaehlt nur bei Tod,
-  > 2 s unerreichbar oder sicherem Abschuss), Verhalten haengt an der Rolle
-  des Chassis (`ai_role`: vanguard/skirmisher/sniper/controller), Fokus-Bonus
-  fuer Ziele der Verbuendeten. Zielwechsel 11,3 -> 5,5 je Minute. Offen: der
-  Nimbus faellt in ~80 % der Kaempfe zuerst (Runenstab Rw 1) -- seit dem
-  Runenstab-Umbau (6. Nov., Rw 3, Vortex, Zauberwirker) noch in 58 %.
-* Seit 6. Nov. 2026: ein Ausruestungsplatz je DROME (Molok zwei), Vireo mit
-  Sprint, Doppelschuss, Plasmaklinge und Neon-Blaster, Neon-Leuchten als
-  Prototyp. Details und Messung: `docs/NEUANFANG.md` Abschnitt 6c.
-* Ebenfalls 6. Nov.: Molok als Tank (200/10, Praesenz, Hammer mit
-  Betaeubung) und die Aufstellung vor dem Kampf per Ziehen (Zone 3 x 5).
-  Abschnitte 6d und 6e.
-* Ebenfalls 6. Nov.: Aggro-Tabelle raus, sichtbare Zielregel je Rolle und
-  Locken (Molok-Praesenz, Koedersender). Abschnitt 6f.
-* Ebenfalls 6. Nov., Aufraeumen nach `docs/NEUANFANG.md` 6g: Schild laedt
-  nur nach 4 s ohne Schaden (10 % je Sekunde), Ueberschuss am Schild richtig
-  gerechnet, Kerne ohne Werte (fest am Chassis, kein Kern-Halter), Kanone
-  entfernt, Gegnerstaerke nach fester Bezugsstaerke, Nimbus-Passive Echo
-  (seit 7. Nov.: Takt +50 %, Faehigkeit wirkt zweimal), Vortex alle 3 s mit Rw 5, Angriffe heissen "Angriff". Messung in 6g.
-  Am 7. Nov.: Deflektor (Stoss + Schildladung) und Drohnen-Pod (Heil-Angriff
-  + Schutzdrohne) sind Waffen mit Angriff und Faehigkeit.
-  Playtest kann jetzt auch Spiegelkaempfe (`... playtest.gd -- 200 0 spiegel`).
-* ~~Namensschilder/Balken schweben beim Herauszoomen und ueberlappen~~ --
-  behoben 7. Nov. 2026 (siehe "Lesbarkeit im Kampf").
-* ~~Module: Gegner tragen keine, der Kampfwert sieht nur DEF und Schild~~
-  -- Gegner tragen Module (8. Nov.), der Kampfwert rechnet sie mit
-  (10. Nov.). Die alten Teile
-  Koedersender (`eq_bait_beacon`), Hologramm-Boost und Orbit-Fokus sind
-  noch Ausruestung, obwohl sie laut 6g Module werden sollen.
-* ~~Spielstand-Auswahl vor dem Hauptmenue~~ -- gebaut 10. Nov. 2026 (drei
-  Spielstaende).
-* Die Anzeige schreibt ohne Umlaute ("Kaempfe", "waehlen"), obwohl die
-  Schrift sie kann -- offen (`VORSCHLAG_STORY.md` 6).
-* `docs/GAME_DESIGN.md` und Teile der `README.md` beschreiben noch die alte
-  Querformat-Werkstatt.
+Stand 26. Nov. 2026 (nach dem Aufraeumen):
+
+* **Modul-Effekte ohne Modul:** der Code wertet noch 16 Effekte aus, die
+  kein Modul mehr hat (u. a. `ability_fork`, `chain_jumps`, `cleave`,
+  `field_shot_every`, `gravity`, `root`, `post_ability_power`, `takt_time`)
+  -- Reste der Module vor den Amps. Ob sie fuer Fusionen oder Keynodes
+  (Kettenschlag) wiederverwendet oder entfernt werden, entscheidet der
+  Spieler.
+* **Leerer Molok-Kopf** (`jugg_head` ohne Formen): Platzhalter, weil jeder
+  DROME fuenf Teile hat (Werkbank, Spielstaende, Tests).
+* **2D-Zusammenbau** (`DromeSprites`) lebt nur noch fuer Tests und den
+  Bench-Bildschirm; im Spiel zeichnet `Arena3D`.
+* Chronik-Dokumente (`NEUANFANG.md`, `IDENTITAETEN.md`, `MODULE_KONZEPT.md`,
+  `GAME_DESIGN.md`, `BRAINSTORMING_MODULE.md`, `PLAYTEST_2026-11.md`) sind
+  teils ueberholt; gueltig ist, was hier und im Kernplan steht.
 
 ## 5. Offen -- mit dem Spieler zu besprechen
 

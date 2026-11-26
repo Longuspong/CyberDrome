@@ -32,7 +32,7 @@ Der Kernmoment: Nach dem Theorycrafting im Hangar bekommt man im Lauf die erhoff
    alten Sprint `hit_rush`; Werte in `data/config.json` -> `passives.cyberspeed`).
    Nächster Schritt: mit den vorhandenen Amps testen und nachschärfen.
 3. Fusions und BIOS **überarbeiten, nicht neu bauen**. Das Modulsystem wird kein drittes Mal komplett aufgerissen.
-4. Veraltete Fragmente entfernen, sobald ein System steht (zum Beispiel den Kern-Halter in der README).
+4. Veraltete Fragmente entfernen, sobald ein System steht (zum Beispiel den Kern-Halter in der README). **Erste große Runde am 26. Nov. 2026** (Stand in `PROJEKTSTAND.md`).
 
 ## Fragmente finden und entfernen
 
@@ -78,7 +78,7 @@ Der Molok ist ein reiner Frontliner: Er hält vorne, macht wenig eigenen Schaden
 - On-Hit-Effekte lösen durch die zwei Arme doppelt aus. Bewusst als Belohnung lassen oder über einen Proc-Koeffizienten am Chassis abschwächen?
 - Kontrolleffekte (Hammer-Stun) bei doppelter Frequenz und voller Dauer: Gefahr von Dauer-Stun prüfen.
 - Rammbock-Fusion (Rüstung zu Schaden) im Zuge des Fusions-Umbaus prüfen.
-- Fragmente entfernen: Präsenz in Code, Config, Tests und NEUANFANG.md, Bollwerkkern, veraltete Lebenspunkte in CLAUDE.md (200 statt 250), leerer Molok-Kopf als Platzhalter.
+- Fragmente entfernen: ~~Präsenz in Code, Config und Tests~~ (26. Nov.), ~~veraltete Lebenspunkte in CLAUDE.md~~ (26. Nov., Abschnitt entfernt); offen: Präsenz in NEUANFANG.md (Chronik), leerer Molok-Kopf als Platzhalter (hängt an Werkbank und Spielständen). Einen Bollwerkkern gibt es im Repo nicht mehr.
 
 ## Fertig, wenn
 
