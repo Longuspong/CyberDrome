@@ -283,7 +283,6 @@ func stats() -> Dictionary:
 	if not modules.is_empty():
 		var fx := all_module_effects()
 		total["def"] += int(fx.get("def", 0))
-		total["shield"] += int(fx.get("shield", 0))
 		# Amps (20. Nov. 2026): Power und Effizienz fest, Integritaet und
 		# Schild in Prozent (MODULE_AMP_FUSION.md 2).
 		total["power"] += int(round(float(fx.get("power", 0))))
@@ -294,16 +293,11 @@ func stats() -> Dictionary:
 		total["thorns_melee"] = int(fx.get("thorns_melee", 0))
 		total["shield_delay"] = float(fx.get("shield_delay", 0.0))
 		total["retaliation"] = float(fx.get("retaliation", 0.0))
-		# Konter, die am Traeger haengen (nicht an einer Waffe): Splitterpanzer,
-		# Brandmarke, Entladung. Der Zusatztreffer der Stacheln nutzt den
-		# Doppellauf des Traegers.
-		total["thorns_true"] = bool(fx.get("thorns_true", false))
+		# Konter, die am Traeger haengen (nicht an einer Waffe): Brandmarke,
+		# Entladung.
 		total["mark_on_hit_taken"] = float(fx.get("mark", 0.0)) \
 			if bool(fx.get("mark_on_hit_taken", false)) else 0.0
 		total["shield_break_burst"] = int(fx.get("shield_break_burst", 0))
-		total["thorn_ricochet"] = float(fx.get("ricochet_chance", 0.0)) \
-			if bool(fx.get("thorns_true", false)) else 0.0
-		total["thorn_ricochet_share"] = float(fx.get("ricochet_share", 0.25))
 		# BIOS-Rezepte am Traeger: Berserker, Treibjagd.
 		total["retaliation_max"] = int(fx.get("retaliation_max", 3))
 		total["berserk"] = bool(fx.get("berserk", false))
@@ -605,7 +599,7 @@ func power_parts() -> Dictionary:
 			match str(ability.status.get("id", "")):
 				"stun":
 					control += times * seconds / cycle
-				"slow", "vulnerable", "root":
+				"slow", "vulnerable":
 					control += float(weights["soft_control"]) * times * seconds / cycle
 		firepower += per_attack / attack.interval * float(maxi(1, attack.range_tiles))
 		support += float(weights["attack_heal"]) * float(attack.heal) / attack.interval

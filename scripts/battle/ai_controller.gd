@@ -110,9 +110,6 @@ func update(unit: Unit, dt: float) -> void:
 				return
 	if fired:
 		return
-	# Gewurzelt (Orbit-Fokus): schiessen ja, laufen nein.
-	if unit.is_rooted():
-		return
 	var next := next_step(unit, target)
 	if next != unit.tile:
 		_walk(unit, next, target)
@@ -251,18 +248,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 				_resolve_ability(unit, ability, aim, mount, fx)
 			mount["instant"] = bool(fx.get("ready_after_ability", false))
 			unit.on_attack()
-			# Ueberladung: die naechsten Angriffe treffen haerter.
-			if float(fx.get("post_ability_power", 0.0)) > 0.0:
-				mount["overload"] = int(ModuleData.rule("overload_attacks", 3))
 			return true
-	# Ueberladung: eine aufgeladene Kopie des Angriffs.
-	var overload := int(mount.get("overload", 0))
-	if overload > 0:
-		if not mount.has("overload_attack"):
-			var strong := attack.copy()
-			strong.power = int(round(float(attack.power) * (1.0 + float(fx.get("post_ability_power", 0.0)))))
-			mount["overload_attack"] = strong
-		attack = mount["overload_attack"]
 	var shot := {}
 	if attack.heal > 0:
 		shot = _support_aim(unit, attack)
@@ -273,8 +259,6 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	_execute(unit, shot["tile"], attack, shot["target"])
 	_attack_modules(unit, mount, attack, shot.get("target"))
 	_tick_extras(unit, mount, target)
-	if overload > 0:
-		mount["overload"] = overload - 1
 	if ability != null and not due:
 		mount["count"] = float(mount["count"]) + unit.takt_step(mount)
 	unit.on_attack()
@@ -387,11 +371,9 @@ func _tick_extras(unit: Unit, mount: Dictionary, target: Unit) -> void:
 		_after_ability(unit, ability, aim, mount.get("fx", {}))
 
 
-## Module, die an einem Angriff haengen (NEUANFANG 6g): Doppellauf (Chance
-## auf einen Querschlaeger aufs selbe Ziel), Raufbold (Vergeltung), Rundum-
-## schlag (Nachbarn) und Gunslinger (jeder N-te Angriff trifft dazu einen
-## Gegner irgendwo auf dem Feld). Nur auf Angriffe
-## gegen Gegner, nicht auf Heilstrahlen.
+## Module, die an einem Angriff haengen: Doppellauf (Chance auf einen
+## Zusatztreffer aufs selbe Ziel), Raufbold (Vergeltung) und Abrissbirne
+## (Rueckstoss). Nur auf Angriffe gegen Gegner, nicht auf Heilstrahlen.
 func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) -> void:
 	var fx: Dictionary = mount.get("fx", {})
 	if fx.is_empty() or attack.power <= 0 or battle.outcome != BattleManager.Outcome.RUNNING:
@@ -400,20 +382,12 @@ func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) 
 		return
 	mount["shots"] = int(mount.get("shots", 0)) + 1
 	var raw := unit.raw_damage(attack)
-	# Doppellauf: Zusatztreffer. Kettenreaktion: er kann erneut ausloesen
-	# und springt bevorzugt auf markierte Gegner.
+	# Doppellauf: Zusatztreffer aufs selbe Ziel.
 	var chance := float(fx.get("ricochet_chance", 0.0))
-	if chance > 0.0:
+	if chance > 0.0 and target.is_alive() and battle.rng.randf() < chance:
 		var bounce := maxi(1, int(round(float(raw) * float(fx.get("ricochet_share", 0.25)))))
-		var jumps := int(fx.get("chain_jumps", 0))
-		var at: Unit = target
-		for hop in jumps + 1:
-			if at == null or not at.is_alive() or battle.rng.randf() >= chance:
-				break
-			EventBus.log_line("%s: Zusatztreffer auf %s." % [unit.display_name, at.display_name])
-			battle.resolver.apply_damage(unit, at, bounce, attack)
-			if jumps > 0:
-				at = _chain_next(unit, at)
+		EventBus.log_line("%s: Zusatztreffer auf %s." % [unit.display_name, target.display_name])
+		battle.resolver.apply_damage(unit, target, bounce, attack)
 	# Raufbold: aufgeladene Vergeltung entlaedt sich auf das Ziel.
 	var payback := float(fx.get("retaliation", 0.0))
 	if payback > 0.0 and unit.retaliation_stacks > 0 and target.is_alive():
@@ -427,67 +401,11 @@ func _attack_modules(unit: Unit, mount: Dictionary, attack: ActionData, target) 
 			for foe in battle.enemies_of(unit):
 				if foe != target and foe.is_alive() and Grid.distance(unit.tile, foe.tile) <= 1:
 					battle.resolver.apply_damage(unit, foe, extra_dmg, attack)
-	# Rundumschlag: alle anderen Gegner direkt neben dem Traeger.
-	var cleave := float(fx.get("cleave", 0.0))
-	if cleave > 0.0:
-		var side := maxi(1, int(round(float(raw) * cleave)))
-		for foe in battle.enemies_of(unit):
-			if foe == target or not foe.is_alive() or Grid.distance(unit.tile, foe.tile) > 1:
-				continue
-			battle.resolver.apply_damage(unit, foe, side, attack)
 	# Abrissbirne (BIOS): jeder N-te Angriff stoesst zurueck.
 	var knock := int(fx.get("knockback_every", 0))
 	if knock > 0 and int(mount["shots"]) % knock == 0 and target.is_alive():
 		battle.resolver._shove(unit, target, 1)
-	var every := int(fx.get("field_shot_every", 0))
-	if every > 0 and int(mount["shots"]) % every == 0:
-		var extra := _field_shot_target(unit, target, bool(fx.get("field_shot_marked", false)))
-		if extra != null:
-			EventBus.log_line("%s trifft quer übers Feld %s." % [unit.display_name, extra.display_name])
-			battle.resolver.apply_damage(unit, extra, raw, attack)
-			EventBus.action_used.emit(unit, extra.tile, attack)
 	battle._check_victory()
-
-
-## Kettenreaktion: wohin springt der naechste Zusatztreffer? Ein markierter
-## Gegner nahe dem letzten (Reichweite 3), sonst wieder derselbe.
-func _chain_next(unit: Unit, last: Unit) -> Unit:
-	var best: Unit = null
-	var best_gap := 1 << 30
-	for foe in battle.enemies_of(unit):
-		if foe == last or not foe.is_alive() or not ActionResolver.is_marked(foe):
-			continue
-		var gap := Grid.distance(foe.tile, last.tile)
-		if gap <= 3 and gap < best_gap:
-			best = foe
-			best_gap = gap
-	return best if best != null else last
-
-
-## Gunslinger: ein ANDERER Gegner irgendwo auf dem Feld -- der mit dem
-## geringsten Anteil Integritaet. Ist nur das Ziel uebrig, dieses.
-func _field_shot_target(unit: Unit, target: Unit, marked_first: bool = false) -> Unit:
-	var best: Unit = null
-	var best_share := 2.0
-	# Revolverheld (BIOS): markierte Gegner zuerst.
-	if marked_first:
-		for foe in battle.enemies_of(unit):
-			if foe.is_alive() and foe != target and ActionResolver.is_marked(foe) \
-					and foe.hp_fraction() < best_share:
-				best_share = foe.hp_fraction()
-				best = foe
-		if best != null:
-			return best
-	for foe in battle.enemies_of(unit):
-		if not foe.is_alive() or foe == target:
-			continue
-		var share: float = foe.hp_fraction()
-		if share < best_share:
-			best_share = share
-			best = foe
-	if best == null and target != null and target.is_alive():
-		return target
-	return best
 
 
 ## Fesselkette: Reichweite und Betaeubung (die Zahl der Gegner steht am Modul).
@@ -524,10 +442,8 @@ func _shackle(unit: Unit, mount: Dictionary) -> void:
 
 
 ## Nach einer Faehigkeit -- die Module des Halters (``fx``):
-##   * Peilsender: das Ziel wird markiert.
-##     Hat die Faehigkeit kein Gegnerziel (Schildgaben), wirken beide auf den
-##     naechsten Gegner in rules.fallback_range.
-##   * Gabelung: die Faehigkeit noch einmal auf ein zweites Ziel, schwaecher.
+##   * Peilsender: das Ziel wird markiert. Hat die Faehigkeit kein Gegnerziel
+##     (Schildgaben), wirkt es auf den naechsten Gegner in rules.fallback_range.
 ##   * Schutzimpuls: Panzerung fuer alle Verbuendeten in der Naehe.
 func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictionary = {}) -> void:
 	if not unit.is_alive() or battle.outcome != BattleManager.Outcome.RUNNING:
@@ -537,20 +453,10 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 	if target is Unit and target.is_alive() and target.is_player != unit.is_player:
 		foe = target
 	var mark_seconds := float(fx.get("mark", 0.0))
-	var root_seconds := float(fx.get("root", 0.0))
-	if foe == null and (mark_seconds > 0.0 or root_seconds > 0.0):
+	if foe == null and mark_seconds > 0.0:
 		foe = _nearest_enemy(unit, int(ModuleData.rule("fallback_range", 3)))
 	if foe != null and mark_seconds > 0.0:
 		battle.resolver.mark(foe, mark_seconds)
-	# Orbit-Fokus: das Ziel ist gewurzelt. Gravitation (BIOS): dazu der
-	# naechste Gegner an ihm.
-	if foe != null and root_seconds > 0.0:
-		foe.apply_status(&"root", root_seconds, {"rooted": true}, unit)
-		if bool(fx.get("gravity", false)):
-			_gravity(foe, root_seconds, unit)
-	var fork := float(fx.get("ability_fork", 0.0))
-	if fork > 0.0:
-		_fork(unit, ability, aim, fork)
 	var aura := int(fx.get("ability_armor_aura", 0))
 	if aura > 0:
 		var reach := int(ModuleData.rule("aura_range", 2))
@@ -558,20 +464,6 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 		for ally in battle.allies_of(unit):
 			if ally.is_alive() and Grid.distance(unit.tile, ally.tile) <= reach:
 				ally.apply_status(&"guard_pulse", seconds, {"def": aura}, unit)
-
-
-func _gravity(first: Unit, seconds: float, source: Unit = null) -> void:
-	var second: Unit = null
-	var best_gap := 1 << 30
-	for other in battle.allies_of(first):
-		if other == first or not other.is_alive():
-			continue
-		var gap := Grid.distance(first.tile, other.tile)
-		if gap <= 2 and gap < best_gap:
-			best_gap = gap
-			second = other
-	if second != null:
-		second.apply_status(&"root", seconds, {"rooted": true}, source)
 
 
 func _nearest_enemy(unit: Unit, reach: int) -> Unit:
@@ -585,46 +477,6 @@ func _nearest_enemy(unit: Unit, reach: int) -> Unit:
 			best = foe
 			best_gap = gap
 	return best
-
-
-## Gabelung: die Faehigkeit wird mit ``share`` Wirkung auf ein zweites Ziel
-## wiederholt -- ein anderer Gegner nahe dem ersten (rules.fork_range), bei
-## Schildgaben und Heilung ein anderer Verbuendeter in Reichweite.
-func _fork(unit: Unit, ability: ActionData, aim: Dictionary, share: float) -> void:
-	var first = aim.get("target")
-	var half := ability.copy()
-	half.power = int(round(float(ability.power) * share))
-	half.heal = int(round(float(ability.heal) * share))
-	half.shield_gain = int(round(float(ability.shield_gain) * share))
-	var second: Unit = null
-	if ability.support != "":
-		var best_share := 2.0
-		for ally in battle.allies_of(unit):
-			if ally == first or not ally.is_alive():
-				continue
-			if Grid.distance(unit.tile, ally.tile) > maxi(1, ability.range_tiles):
-				continue
-			if ally.hp_fraction() < best_share:
-				best_share = ally.hp_fraction()
-				second = ally
-	else:
-		var from_tile: Vector2i = aim.get("tile", unit.tile)
-		var reach := int(ModuleData.rule("fork_range", 3))
-		var best_gap := 1 << 30
-		for foe in battle.enemies_of(unit):
-			if foe == first or not foe.is_alive():
-				continue
-			var gap := Grid.distance(from_tile, foe.tile)
-			if gap <= reach and gap < best_gap:
-				best_gap = gap
-				second = foe
-	if second == null:
-		return
-	# Die Gabelung springt vom ersten Ziel weiter -- die Reichweite der Waffe
-	# zaehlt dafuer nicht.
-	half.range_tiles = maxi(ability.range_tiles, Grid.distance(unit.tile, second.tile))
-	EventBus.log_line("%s: Gabelung auf %s." % [unit.display_name, second.display_name])
-	_execute(unit, second.tile, half, second)
 
 
 ## Wen unterstuetzt ``action``? "self": den Traeger. "ally" (und Angriffe mit

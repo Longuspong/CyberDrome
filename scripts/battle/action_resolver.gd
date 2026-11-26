@@ -159,12 +159,7 @@ func _thorns(source: Unit, target: Unit, action: ActionData) -> void:
 		spikes += int(target.stats.get("thorns_melee", 0))
 	if spikes <= 0:
 		return
-	var pierce := bool(target.stats.get("thorns_true", false))
-	apply_damage(target, source, spikes, null, pierce)
-	var chance := float(target.stats.get("thorn_ricochet", 0.0))
-	if pierce and chance > 0.0 and rng != null and source.is_alive() and rng.randf() < chance:
-		var extra := maxi(1, int(round(float(spikes) * float(target.stats.get("thorn_ricochet_share", 0.25)))))
-		apply_damage(target, source, extra, null, true)
+	apply_damage(target, source, spikes)
 
 
 # ---------------------------------------------------------------------------
