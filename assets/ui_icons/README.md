@@ -106,13 +106,11 @@ Zeilennummern unten sind der Stand vor dem Umbau.
 | `ability.svg` | Fähigkeit | Blitz | `scripts/ui/stat_icon.gd:102` |
 | `speed.svg` | Angriffstempo | Doppelpfeil | `scripts/ui/stat_icon.gd:87` |
 | `range.svg` | Reichweite | Pfeil mit Fuß | `scripts/ui/stat_icon.gd:92` |
-| `time.svg` | Takt nach Zeit | Uhr | `scripts/ui/stat_icon.gd:107` |
 | `hits.svg` | Takt nach Angriffen | Zahnrad | `scripts/ui/stat_icon.gd:111` |
 | `adjacent.svg` | Gegner daneben | zwei Punkte | `scripts/ui/stat_icon.gd:118` |
 | `heal.svg` | Reparatur | Kreuz | `scripts/ui/stat_icon.gd:121` |
 | `shield.svg` | Schild | Schildform | `scripts/ui/stat_icon.gd:124` |
 | `def.svg` | Panzerung | Platte | `scripts/ui/stat_icon.gd:124` |
-| `weight.svg` | Gewicht | Gewichtsklotz | `scripts/ui/stat_icon.gd:139` |
 | `hp.svg` | Integrität | Herz | `scripts/ui/stat_icon.gd:134` |
 | `area.svg` | Flächenwirkung | Ringe | `scripts/ui/stat_icon.gd:144` |
 | `power.svg` | Power | Power | `scripts/ui/run_screen.gd:471`<br>`scripts/ui/shop_screen.gd:491` |

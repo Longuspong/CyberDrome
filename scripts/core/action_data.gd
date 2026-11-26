@@ -238,8 +238,6 @@ func trigger_text() -> String:
 	match trigger_kind:
 		"attacks":
 			return "jeder %d. Angriff" % int(trigger_every)
-		"time":
-			return "alle %s s" % _seconds(trigger_every)
 		"adjacent":
 			return "wenn ein Gegner direkt daneben steht (höchstens alle %s s)" \
 				% _seconds(trigger_every)

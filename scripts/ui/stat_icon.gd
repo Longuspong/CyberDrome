@@ -30,14 +30,12 @@ const EXPLAIN := {
 	"range": "Reichweite in Feldern. 1 heißt Nahkampf.",
 	"attack": "Angriff: der normale Angriff der Waffe. Er kommt von selbst, sobald ein Ziel in Reichweite ist.",
 	"ability": "Fähigkeit: die besondere Aktion der Waffe. Sie kommt von selbst, wenn ihr Takt erreicht ist.",
-	"time": "Takt nach Zeit (Uhr): die Fähigkeit kommt nach dieser Zeit, auch ohne Angriff.",
 	"hits": "Takt nach Angriffen (Zahnrad): der so-vielte Angriff IST die Fähigkeit.",
 	"adjacent": "Takt: sobald ein Gegner direkt daneben steht.",
 	"heal": "Reparatur: stellt Integrität beim Verbündeten mit dem geringsten Anteil wieder her.",
 	"shield": "Schild: fängt Schaden ab, bevor er die Integrität trifft.",
 	"area": "Fläche: trifft auch alles im Umkreis um das Ziel.",
 	"def": "Panzerung (DEF): zieht von jedem Treffer etwas ab.",
-	"weight": "Gewicht: schwere Waffen bremsen den Träger (weniger SPD).",
 	"hp": "Integrität: fällt sie auf 0, ist der DROME zerstört.",
 }
 
@@ -45,10 +43,10 @@ const COLORS := {
 	"kinetic": Color(0.86, 0.88, 0.92), "energy": Color(0.38, 0.85, 1.0),
 	"speed": Color(1.0, 0.78, 0.4), "range": Color(0.75, 0.8, 0.9),
 	"attack": Color(1.0, 0.55, 0.45), "ability": Color(1.0, 0.86, 0.35),
-	"time": Color(0.8, 0.9, 1.0), "hits": Color(0.8, 0.9, 1.0),
+	"hits": Color(0.8, 0.9, 1.0),
 	"adjacent": Color(1.0, 0.62, 0.15), "heal": Color(0.46, 0.86, 0.52),
 	"shield": Color(0.45, 0.65, 1.0), "area": Color(0.95, 0.6, 1.0),
-	"def": Color(0.75, 0.78, 0.85), "weight": Color(1.0, 0.5, 0.46),
+	"def": Color(0.75, 0.78, 0.85),
 	"hp": Color(0.46, 0.86, 0.52),
 }
 

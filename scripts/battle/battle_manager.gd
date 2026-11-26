@@ -119,10 +119,6 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 		var late := jitter_rng.randf() * spread
 		for mount in unit.mounts:
 			mount["ready"] = float(mount["ready"]) + late
-		# Nur Zeit-Faehigkeiten -- Ereignisse (Hologramm) bleiben sofort bereit.
-		for gadget in unit.gadgets:
-			if (gadget["ability"] as ActionData).trigger_kind == "time":
-				gadget["ready"] = float(gadget["ready"]) + late
 
 	resolver = ActionResolver.new(grid, units)
 	resolver.rng = self.rng

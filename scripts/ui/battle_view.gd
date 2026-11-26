@@ -598,24 +598,17 @@ class UnitBadgePainter extends Node2D:
 				var glow := 1.0 if Accessibility.reduce_motion else 0.55 + 0.45 * sin(now * TAU * 2.5)
 				draw_rect(Rect2(Vector2(left - 2.5 * s, y - 2.5 * s), Vector2(width + 5.0 * s, h + 5.0 * s)),
 					Color(COLOR_TAKT_READY, 0.9 * glow), false, 1.5 * s)
-			if bar["kind"] == "hits":
-				var n: int = maxi(1, int(bar["segments"]))
-				var gap := TAKT_PIP_GAP * s
-				var piece := (width - gap * float(n - 1)) / float(n)
-				for i in n:
-					var rect := Rect2(Vector2(left + (piece + gap) * float(i), y), Vector2(piece, h))
-					draw_rect(rect.grow(s), COLOR_OUTLINE)
-					if ready or i < int(bar["filled"]):
-						draw_rect(rect, color)
-					else:
-						draw_rect(rect, COLOR_TRACK)
-						draw_rect(rect, Color(COLOR_TAKT, 0.45), false, 1.0 * s)
-			else:
-				draw_rect(Rect2(Vector2(left - s, y - s), Vector2(width + 2.0 * s, h + 2.0 * s)),
-					COLOR_OUTLINE)
-				draw_rect(Rect2(Vector2(left, y), Vector2(width, h)), COLOR_TRACK)
-				draw_rect(Rect2(Vector2(left, y), Vector2(width * float(bar["fill"]), h)),
-					color)
+			var n: int = maxi(1, int(bar["segments"]))
+			var gap := TAKT_PIP_GAP * s
+			var piece := (width - gap * float(n - 1)) / float(n)
+			for i in n:
+				var rect := Rect2(Vector2(left + (piece + gap) * float(i), y), Vector2(piece, h))
+				draw_rect(rect.grow(s), COLOR_OUTLINE)
+				if ready or i < int(bar["filled"]):
+					draw_rect(rect, color)
+				else:
+					draw_rect(rect, COLOR_TRACK)
+					draw_rect(rect, Color(COLOR_TAKT, 0.45), false, 1.0 * s)
 			y += h + TAKT_GAP * s
 
 

@@ -275,7 +275,6 @@ func test_every_takt_counts_attacks() -> void:
 	battle.setup(4712, [nimbus], _squad())
 	var unit: Unit = battle.living(true)[0]
 	var bars: Array = unit.takt_bars()
-	t.ok(bars.filter(func(b): return b["kind"] == "time").is_empty(), "keine Zeit-Leiste")
 	t.equal(bars.filter(func(b): return b["kind"] == "hits").size(), 1, "der Vortex zählt Angriffe")
 	battle.free()
 

@@ -258,7 +258,6 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		return false
 	_execute(unit, shot["tile"], attack, shot["target"])
 	_attack_modules(unit, mount, attack, shot.get("target"))
-	_tick_extras(unit, mount, target)
 	if ability != null and not due:
 		mount["count"] = float(mount["count"]) + unit.takt_step(mount)
 	unit.on_attack()
@@ -349,26 +348,6 @@ func _throw_blocker(unit: Unit, tile: Vector2i, ability: ActionData,
 	if standing != null and standing.is_player == unit.is_player and standing != unit:
 		return "Verbündeter"
 	return ""
-
-
-## Modul-Faehigkeiten nach Angriffen (Orbit-Fokus, 9. Nov. 2026): jeder
-## Angriff der Waffe zaehlt mit (Taktchip 1,25); ist der Takt voll, loest die
-## Faehigkeit dazu aus. Mit Echo laenger wie jeder Treffer-Takt.
-func _tick_extras(unit: Unit, mount: Dictionary, target: Unit) -> void:
-	for extra in mount.get("extras", []):
-		if not unit.is_alive() or battle.outcome != BattleManager.Outcome.RUNNING:
-			return
-		var ability: ActionData = extra["ability"]
-		extra["count"] = float(extra["count"]) + unit.takt_step(mount)
-		if float(extra["count"]) < float(unit.takt_every(ability)) - 0.001:
-			continue
-		var aim := _aim(unit, ability, target)
-		if aim.is_empty():
-			continue
-		extra["count"] = maxf(0.0, float(extra["count"]) - float(unit.takt_every(ability)))
-		_execute(unit, aim["tile"], ability, aim["target"])
-		_echo(unit, ability, aim)
-		_after_ability(unit, ability, aim, mount.get("fx", {}))
 
 
 ## Module, die an einem Angriff haengen: Doppellauf (Chance auf einen
@@ -560,12 +539,6 @@ func trigger_every(unit: Unit, ability: ActionData) -> int:
 	return unit.takt_every(ability)
 
 
-## Der Takt einer Zeit-Faehigkeit in Sekunden -- mit Echo ebenso laenger
-## (Runenstab: 3 s -> 4,5 s).
-func _time_after_ability(unit: Unit, ability: ActionData) -> float:
-	return unit.takt_seconds(ability)
-
-
 ## Passive Echo (Nimbus, 7. Nov. 2026): die Faehigkeit wirkt noch einmal --
 ## aufs selbe Ziel, ist es gefallen, aufs naechstbeste. Seit 18. Nov. 2026
 ## (Wunsch des Spielers) nacheinander statt im selben Augenblick: das Echo
@@ -669,7 +642,7 @@ func _execute(unit: Unit, tile: Vector2i, action: ActionData, target: Unit,
 # Gadgets
 # ---------------------------------------------------------------------------
 
-## Zeit- und Ereignis-Faehigkeiten. Gibt true zurueck, wenn eine ausgeloest
+## Ereignis-Faehigkeiten (Hologramm). Gibt true zurueck, wenn eine ausgeloest
 ## hat -- dann ist der Augenblick verbraucht.
 func _use_gadgets(unit: Unit, target: Unit) -> bool:
 	for gadget in unit.gadgets:
@@ -677,15 +650,6 @@ func _use_gadgets(unit: Unit, target: Unit) -> bool:
 			continue
 		var ability: ActionData = gadget["ability"]
 		match ability.trigger_kind:
-			"time":
-				var aim := _aim(unit, ability, target)
-				if aim.is_empty():
-					continue
-				_execute(unit, aim["tile"], ability, aim["target"])
-				_echo(unit, ability, aim)
-				_after_ability(unit, ability, aim, gadget.get("fx", {}))
-				gadget["ready"] = _time_after_ability(unit, ability)
-				return true
 			"adjacent":
 				if not _enemy_adjacent(unit):
 					continue

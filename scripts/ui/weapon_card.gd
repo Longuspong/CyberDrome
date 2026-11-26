@@ -272,11 +272,10 @@ static func attack_chips(action: ActionData) -> Array:
 
 
 ## Das Takt-Symbol einer Faehigkeit: Zahnrad mit "3." (jeder 3. Angriff),
-## Uhr mit "3 s", zwei Punkte fuer "Gegner daneben".
+## zwei Punkte fuer "Gegner daneben".
 static func takt_chip(ability: ActionData) -> Array:
 	match ability.trigger_kind:
 		"attacks": return ["hits", "%d." % int(ability.trigger_every)]
-		"time": return ["time", "%s s" % ActionData._seconds(ability.trigger_every)]
 		"adjacent": return ["adjacent", ""]
 	return []
 

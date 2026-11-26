@@ -763,23 +763,13 @@ func init_realtime(pulse_offset: float) -> void:
 			if action.trigger_kind == "attacks" and attack != null:
 				continue
 			var gadget_action: ActionData = Leveling.level_action(action, part, level).with_modules(fx)
-			var first := float(gadget_action.trigger_every) * echo_slower() \
-				if gadget_action.trigger_kind == "time" else 0.0
-			gadgets.append({"part": part, "ability": gadget_action, "ready": first, "fx": fx})
-		# Module mit eigener Faehigkeit (Orbit-Fokus, Hologramm). Seit 9. Nov.
-		# 2026 zaehlen sie die Angriffe der Waffe in ihrem Halter ("extras"
-		# am Halter); nur Ereignisse (Hologramm: Gegner daneben) bleiben Gadgets.
-		var extras: Array = []
+			gadgets.append({"part": part, "ability": gadget_action, "ready": 0.0, "fx": fx})
+		# Module mit eigener Faehigkeit (Hologramm): ein Ereignis (Gegner
+		# daneben), kein Takt.
 		for module in build.active_modules(slot):
 			var granted := ModuleData.gadget_action(module.gadget)
 			if granted != null:
-				granted = granted.with_modules(fx)
-				if granted.trigger_kind == "attacks":
-					extras.append({"ability": granted, "count": 0.0})
-					continue
-				var first_ready := float(granted.trigger_every) * echo_slower() \
-					if granted.trigger_kind == "time" else 0.0
-				gadgets.append({"part": part, "ability": granted, "ready": first_ready, "fx": fx})
+				gadgets.append({"part": part, "ability": granted.with_modules(fx), "ready": 0.0, "fx": fx})
 		if attack == null:
 			continue
 		var ability: ActionData = null
@@ -790,8 +780,7 @@ func init_realtime(pulse_offset: float) -> void:
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
-			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability,
-			"extras": extras})
+			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
@@ -820,19 +809,12 @@ func takt_due(mount: Dictionary) -> bool:
 	return float(mount["count"]) + takt_step(mount) >= float(takt_every(ability)) - 0.001
 
 
-## Der Takt einer Zeit-Faehigkeit in Sekunden -- mit Echo ebenso laenger.
-func takt_seconds(ability: ActionData) -> float:
-	return float(ability.trigger_every) * echo_slower()
-
-
 ## Wann kommen die Faehigkeiten? Je Faehigkeit ein Eintrag fuer die Leiste
 ## unter dem Lebensbalken:
 ##   {"kind": "hits", "segments": N, "filled": k, "ready": bool}
 ##       Treffer-Takt: N Abschnitte, k gefuellt; ready = der naechste
 ##       Angriff ist die Faehigkeit (dann sind alle gefuellt).
-##   {"kind": "time", "fill": 0..1, "ready": bool}
-##       Zeit-Takt: fuellt sich in Schritten von ``step`` Sekunden.
-func takt_bars(step: float = 0.5) -> Array:
+func takt_bars() -> Array:
 	var out: Array = []
 	for mount in mounts:
 		var ability = mount.get("ability")
@@ -843,23 +825,6 @@ func takt_bars(step: float = 0.5) -> Array:
 		var ready := takt_due(mount)
 		out.append({"kind": "hits", "segments": every,
 			"filled": every if ready else mini(every - 1, int(count)), "ready": ready})
-	# Modul-Faehigkeiten nach Angriffen (Orbit-Fokus).
-	for mount in mounts:
-		for extra in mount.get("extras", []):
-			var each := takt_every(extra["ability"])
-			var have := int(float(extra["count"]))
-			out.append({"kind": "hits", "segments": each,
-				"filled": mini(each, have), "ready": have >= each - 1})
-	for gadget in gadgets:
-		var ability: ActionData = gadget["ability"]
-		if ability.trigger_kind != "time":
-			continue
-		var total := takt_seconds(ability)
-		var passed := clampf(total - float(gadget["ready"]), 0.0, total)
-		if step > 0.0:
-			passed = floorf(passed / step) * step
-		out.append({"kind": "time", "fill": passed / maxf(0.01, total),
-			"ready": float(gadget["ready"]) <= 0.0})
 	return out
 
 
