@@ -75,7 +75,7 @@ var gadgets: Array = []
 ## Restzeit des laufenden Schritts. Solange > 0, laeuft der DROME und schiesst
 ## nicht; das Feld (``tile``) ist schon das Zielfeld.
 var step_left: float = 0.0
-## Bis zum naechsten Puls (Schild, Reparatur, Overtime ...).
+## Bis zum naechsten Puls (Reparatur, Kabelbrand, Virus ...).
 var pulse_left: float = 0.0
 ## Sekunden seit dem letzten Schaden, und der Bruchteil Schild, der beim
 ## Nachladen noch nicht ganz voll ist.

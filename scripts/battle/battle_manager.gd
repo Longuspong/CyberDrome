@@ -83,7 +83,6 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 
 	region = _region_for(rng, region_id)
 	grid = MapGenerator.generate(region, map_id)
-	MapGenerator.place_obstacles(grid, battle_seed)
 
 	# Ohne feste Gegner (Direktstart der Kampfszene, Tests, Werkzeuge) wird
 	# ein Squad in der Staerke des eigenen gewuerfelt. Im Spiel selbst kommen
@@ -335,7 +334,7 @@ func pulse_seconds() -> float:
 	return _pulse
 
 
-## Was je Puls laeuft: Reparatur, Overtime. Der Schild laedt nicht mehr je
+## Was je Puls laeuft: Reparatur, Kabelbrand. Der Schild laedt nicht mehr je
 ## Puls, sondern nach Ruhe (Unit.recharge_shield, jeden Schritt).
 func _pulse_unit(unit: Unit) -> void:
 	resolver.burn_cable_fire(unit)

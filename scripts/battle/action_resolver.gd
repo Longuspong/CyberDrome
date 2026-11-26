@@ -51,7 +51,7 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 
 ## Die EINZIGE Stelle, an der Schaden angewendet wird.
 ##
-## ``action`` traegt die Schadensart. Sie darf fehlen (Overtime).
+## ``action`` traegt die Schadensart. Sie darf fehlen (Virus, Stacheln).
 ##
 ## Charger (24. Nov. 2026): ``charge_share`` ist der Anteil eines Treffers,
 ## den dieser Schuss fuer die Elementarbelastung zaehlt (eine Salve aus drei

@@ -16,11 +16,7 @@
   ],
   "save_enabled": true,
 
-  "squad_size": 2,
-  "squad_size_max": 3,
 
-  "grid_width": 9,
-  "grid_height": 17,
 
   "run": {
     "_kommentar": [
@@ -232,8 +228,7 @@
       "move_base/per_spd Laufgeschwindigkeit in Feldern je Sekunde = base + spd * per_spd",
       "move_min          Untergrenze der Laufgeschwindigkeit",
       "                  (8. Nov. 2026: alle drei um 30 % gesenkt, Wunsch des Spielers)",
-      "pulse             Sekunden je Puls: Schild- und Integritaetsregeneration,",
-      "                  Overtime",
+      "pulse             Sekunden je Puls: Integritaetsregeneration, Kabelbrand, Virus",
       "think_interval    wie oft ein DROME prueft, ob ein sicherer Abschuss in Reichweite ist",
       "retarget_after    so lange darf das Ziel unerreichbar sein, dann wird neu gewaehlt",
       "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist",
@@ -343,20 +338,12 @@
 
   "obstacles": {
     "_kommentar": [
-      "Hindernisse (7. Nov. 2026, scripts/generation/map_generator.gd): sperren nur",
-      "Laufwege, Schuesse gehen darueber. groups_min..groups_max Gruppen, jede",
-      "punktsymmetrisch gespiegelt (also doppelt so viele auf dem Feld), nie in",
-      "den Aufstellungszonen oder zone_margin Felder daneben. kinds: Optik je Region.",
+      "Hindernisse: feste Bloecke der Kartenformen (maps), sperren nur Laufwege,",
+      "Schuesse gehen darueber. kinds: Optik je Region.",
       "props: Deko auf dem Randstreifen je Region (sonst wie kinds), in 3D aus",
       "assets/arena3d (Arena3D.build_props; die Bilder von 9. Nov. 2026 sind seit 20. Nov. weg).",
-      "Seit 18. Nov. 2026 aus (enabled false, Wunsch des Spielers): die Karten haben feste",
-      "Formen (maps), zufaellige Hindernisse machten Kaempfe unberechenbar. kinds bleibt",
-      "fuer die festen Bloecke der Formen, props fuer die Randdeko."
+      "Zufaellige Hindernisse gibt es seit 18. Nov. 2026 nicht mehr (Wunsch des Spielers)."
     ],
-    "enabled": false,
-    "groups_min": 3,
-    "groups_max": 5,
-    "zone_margin": 1,
     "kinds": {
       "city": ["barrier", "crates", "server", "vending", "generator", "bollards", "holo", "spool"],
       "green": ["ruin", "rock", "ruin"],

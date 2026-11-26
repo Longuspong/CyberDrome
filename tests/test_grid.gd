@@ -125,7 +125,6 @@ func test_every_map_is_mirrored_connected_and_keeps_the_zones() -> void:
 	t.ok(_map_ids().size() >= 5, "mindestens fünf Karten (%s)" % [_map_ids()])
 	for map_id in _map_ids():
 		var grid := MapGenerator.generate(TerrainDB.get_region(&"city"), map_id)
-		MapGenerator.place_obstacles(grid, 42)
 		t.equal(grid.map_id, map_id, "%s: Karte gewählt" % map_id)
 		t.equal(grid.height % 2, 1, "%s: ungerade Reihenzahl (exakte Spiegelung)" % map_id)
 		for tile in grid.holes:
@@ -156,11 +155,10 @@ func test_map_shapes_do_what_they_promise() -> void:
 		"unbekannte Karte: die Standardkarte")
 
 
-func test_random_obstacles_are_off_and_every_formation_has_a_map() -> void:
+func test_the_standard_map_is_open_and_every_formation_has_a_map() -> void:
 	# 18. Nov. 2026 (Spieler): keine zufaelligen Hindernisse mehr.
 	var grid := MapGenerator.generate(TerrainDB.get_region(&"city"))
-	MapGenerator.place_obstacles(grid, 2026)
-	t.ok(grid.obstacles.is_empty(), "Standardkarte ohne zufällige Hindernisse")
+	t.ok(grid.obstacles.is_empty(), "Standardkarte ohne Hindernisse")
 	for entry in Formations.all():
 		var map_id := str(entry.get("map", ""))
 		t.ok(map_id == "" or map_id in _map_ids(), "%s: Karte %s gibt es" % [entry.get("id"), map_id])
