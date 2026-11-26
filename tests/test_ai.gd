@@ -515,38 +515,6 @@ func test_the_hammer_stuns_and_a_stunned_drome_does_nothing() -> void:
 	battle.free()
 
 
-func test_presence_takes_a_share_of_the_damage_aimed_at_allies() -> void:
-	var tiles := [Vector2i(10, 12), Vector2i(11, 12), Vector2i(10, 8)]
-	var battle := _battle([_hammer_molok(), _strix()], [_vireo()], tiles)
-	var molok: Unit = battle.units[0]
-	var strix: Unit = battle.units[1]
-	var foe: Unit = battle.units[2]
-	strix.shield = 0
-	molok.shield = 0
-	battle.resolver.apply_damage(foe, strix, 40, _action(foe, &"act_pulse"))
-	t.ok(molok.hp < molok.stat("hp_max"), "der Molok fängt einen Teil ab")
-	t.ok(strix.stat("hp_max") - strix.hp < 40, "der Strix nimmt weniger als den vollen Treffer")
-	battle.free()
-
-
-func test_presence_lures_nearby_foes() -> void:
-	# Der Vireo hat einen Strix als Ziel; kommt er dem Molok zu nahe, greift
-	# er den Molok an.
-	var tiles := [Vector2i(10, 12), Vector2i(4, 4), Vector2i(10, 10)]
-	var battle := _battle([_hammer_molok(), _strix()], [_vireo()], tiles)
-	var molok: Unit = battle.units[0]
-	var foe: Unit = battle.units[2]
-	t.equal(battle.brain.lured_by(foe), molok, "zwei Felder vom Molok: gelockt")
-	t.equal(battle.brain.choose_target(foe), molok, "und wählt ihn als Ziel")
-	foe.target_id = battle.units[1].unit_id
-	foe.think_left = 0.0
-	for mount in foe.mounts:
-		mount["ready"] = 99.0
-	battle.brain.update(foe, battle.step_seconds())
-	t.equal(foe.target_id, molok.unit_id, "ein laufendes Ziel wird für den Locker aufgegeben")
-	battle.free()
-
-
 func test_each_role_picks_by_its_own_rule() -> void:
 	# Ein naher, voller Vireo und ein ferner, angeschlagener Vireo.
 	var tiles := [Vector2i(10, 14), Vector2i(12, 14), Vector2i(10, 12), Vector2i(13, 9)]

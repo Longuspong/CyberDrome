@@ -84,10 +84,6 @@ var shield_bonus: float = 0.0
 ## Der Drohnen-Pod traegt sie -- eine Passive statt einer aktiven Heilung.
 var hp_regen_pct: int = 0
 
-## Lockradius in Feldern: Gegner so nah greifen den Traeger an statt ihres
-## eigenen Ziels (Koedersender). Sichtbar ueber den Gelockten.
-var lure_radius: int = 0
-
 ## Nur body: wie die KI diesen DROME fuehrt (vanguard, skirmisher, sniper,
 ## controller -- siehe AIController). Leer = nach Waffenreichweite.
 var ai_role: String = ""
@@ -138,7 +134,6 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.shield_regen = stats.get("shield_regen", 0)
 	part.shield_bonus = float(stats.get("shield_bonus", 0.0))
 	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
-	part.lure_radius = int(stats.get("lure_radius", 0))
 	part.ai_role = str(stats.get("ai_role", ""))
 	part.passive = str(stats.get("passive", ""))
 

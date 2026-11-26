@@ -102,9 +102,8 @@
     "efficiency": 14,
     "module_slots": 2,
     "hp_regen_pct": 0,
-    "lure_radius": 0,
     "ai_role": "vanguard",
-    "passive": "presence",
+    "passive": "",
     "actions": []
   }
 }

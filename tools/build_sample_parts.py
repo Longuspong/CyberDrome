@@ -471,9 +471,6 @@ STAT_DEFAULTS = {
     "module_slots": 0,
     # Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet.
     "hp_regen_pct": 0,
-    # Lockradius in Feldern: Gegner so nah greifen den Traeger an statt ihres
-    # Ziels (Koedersender). Die Molok-Praesenz lockt ebenso (passives.presence).
-    "lure_radius": 0,
     # Nur body: wie die KI diesen DROME fuehrt (scripts/battle/ai_controller.gd).
     #   vanguard     Frontlinie: rueckt vor, weicht nie aus (Molok)
     #   skirmisher   wendig: mit Fernwaffe kiten, mit Nahkampfwaffe dranbleiben (Vireo)
@@ -484,8 +481,6 @@ STAT_DEFAULTS = {
     #   echo         jede Faehigkeit wirkt zweimal, ihr Takt ist 50 % laenger
     #                (Nimbus)
     #   cyberspeed   jeder 3. Angriff gibt einen Stapel Angriffs- und Lauftempo (Vireo)
-    #   presence     lockt Gegner in der Naehe an und faengt Schaden fuer
-    #                Verbuendete ab (Molok)
     #   steady       Anlegen: nach 4 s ohne Bewegung +20 % Schaden und
     #                Reichweite (Strix)
     # Die Zahlen der Passiven stehen in data/config.json unter "passives".
@@ -515,7 +510,7 @@ STATS = {
     # Molok: der harte Zweihaender fuer die Frontlinie, wenig Power.
     "jugg_body":   {"spd": 10, "hp": 250, "shield": 50, "shield_pulse":  3, "def": 10,
                     "power":  6, "efficiency": 14, "module_slots": 2,
-                    "ai_role": "vanguard", "passive": "presence"},
+                    "ai_role": "vanguard", "passive": ""},
     # Nimbus: fragil, schildlastig, Richtung Faehigkeiten.
     "mage_body":   {"spd": 12, "hp":  60, "shield": 60, "shield_pulse": 10, "def":  0,
                     "power": 12, "efficiency": 12, "module_slots": 3,
@@ -2049,77 +2044,6 @@ EQ_DRONE_POD = [
     D(27.2, -3.6, 40, 1.0, "glow"),
     D(27.2, 3.6, 40, 1.0, "glow"),
 ]
-
-# Koedersender -- laut, aber ausdruecklich KEINE Waffe.
-#
-# Das Modul ist der einzige Weg im Bestand, Aufmerksamkeit zu erzeugen, ohne
-# dafuer zu handeln (GAME_DESIGN 6b), und der einzige, der provozieren kann.
-# Genau das muss die Silhouette sagen -- und zwar OHNE die Formensprache einer
-# Waffe zu benutzen:
-#
-#   * kein Rohr, keine Muendung, nichts, was nach vorn zeigt. Jede Waffe im
-#     Bestand greift nach vorn; dieses Teil tut es an keiner Stelle.
-#   * ein duenner MAST nach oben, der ueber den Kopf hinausreicht -- die
-#     einzige Ausruestung, die das tut;
-#   * drei KREUZE aus flachen Streben am Mast, nach oben kuerzer werdend --
-#     Sendeantennen, keine Laeufe, und mit deutlichem Abstand voneinander;
-#   * ein GEGENGEWICHT nach hinten-unten: das Teil ist kopflastig, und man
-#     sieht ihm an, dass es getragen und nicht gehalten wird.
-#
-# Der Runenstab ist der Nachbar, gegen den sich das abgrenzen muss -- auch er
-# laeuft senkrecht nach oben. Er ist aber ein Stab AM ARM mit einer Glut obenauf
-# (Rotationskoerper, rund, durchgehend schlank); der Sender hat keinen Arm,
-# dafuer die Kreuztreppe und das Gewicht hinten.
-#
-# Zwei verworfene Anlaeufe, beide lehrreich genug, um sie aufzuschreiben:
-#
-# 1. Die Kreuze waren zuerst waagerechte SCHEIBEN. Ein waagerechter Kreis mit
-#    Radius r projiziert unter dieser Kamera aber immer zur Ellipse mit der
-#    Halbhoehe 0.5*r*SCALE -- er liest sich als praller Koerper, nie als
-#    duenner Schirm. Gekreuzte Streben behalten ihre Duenne, weil zwischen
-#    den Armen der Hintergrund steht.
-# 2. Die Abstaende waren zu klein. Zwei waagerechte Formen trennen sich auf
-#    dem Bildschirm nur um dz*COS45*SCALE, brauchen also
-#
-#        dz  >  0.71 * (r1 + r2)
-#
-#    um sich nicht zu ueberlappen. Mit dz = 4 und Radien um 8 verschmolzen die
-#    drei zu einem Kegel -- das Teil sah aus wie eine Laterne.
-#
-# Beides hat der Silhouetten-Test NICHT gefangen, und das ist kein Mangel: er
-# misst den Umriss, und eine Laterne ist ein ebenso einmaliger Umriss wie eine
-# Antenne. Er haette also zu Recht bestanden. Genau der Fall, fuer den in
-# GAME_DESIGN 3d steht, dass der Test das Hinsehen nicht ersetzt -- er faengt
-# "abgeschrieben und groesser gezogen", nicht "sagt die falsche Funktion".
-EQ_BAIT_BEACON = [
-    # Halterung am Anker -- derselbe kurze Stumpf wie bei Blaster und Schild.
-    B((-3, 3), (-4, 4), (46, 54), "metal"),
-    # Gegengewicht nach hinten-unten: das Modul ist kopflastig, und man sieht
-    # ihm an, dass es getragen und nicht gehalten wird.
-    B((-10, -2.5), (-5.5, 5.5), (38.5, 46.5), "plate"),
-    B((-10.5, -3), (-6, 6), (46.5, 48), "light"),
-    B((-10.8, -10.2), (-3.5, 3.5), (40, 45), "accent"),
-    # Mast -- laeuft ueber jede Kopfhoehe im Bestand hinaus (61 bis 72).
-    L((0, 0), [(1.5, 50), (1.5, 80)], "metal", segments=10),
-    # Drei KREUZE aus flachen Streben statt Scheiben. Ein waagerechter Kreis
-    # projiziert unter dieser Kamera immer zur 2:1-Ellipse und liest sich als
-    # praller Koerper, nie als duenner Schirm -- drei davon uebereinander
-    # ergaben eine Pagode. Gekreuzte Streben behalten dagegen ihre Duenne,
-    # weil zwischen den Armen der Hintergrund steht.
-    B((-7.6, 7.6), (-1.1, 1.1), (56.5, 57.4), "plate"),
-    B((-1.1, 1.1), (-7.6, 7.6), (56.5, 57.4), "plate"),
-    B((-6.8, 6.8), (-0.5, 0.5), (57.4, 57.7), "accent"),
-    B((-0.5, 0.5), (-6.8, 6.8), (57.4, 57.7), "accent"),
-    B((-5.6, 5.6), (-1.0, 1.0), (67.0, 67.9), "plate"),
-    B((-1.0, 1.0), (-5.6, 5.6), (67.0, 67.9), "plate"),
-    B((-4.9, 4.9), (-0.5, 0.5), (67.9, 68.2), "accent"),
-    B((-0.5, 0.5), (-4.9, 4.9), (67.9, 68.2), "accent"),
-    B((-3.6, 3.6), (-0.9, 0.9), (76.0, 76.9), "plate"),
-    B((-0.9, 0.9), (-3.6, 3.6), (76.0, 76.9), "plate"),
-    # Signalspitze auf dem Mast, nicht auf dem obersten Schirm
-    L((0, 0), [(0, 83.4), (1.9, 81.4), (1.9, 79.8), (0, 79.2)], "glow", segments=12),
-]
-
 
 # ===========================================================================
 # AR-Nimbus // Technomant  (parts/bot3) -- Rundungen statt Kanten

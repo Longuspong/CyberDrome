@@ -127,7 +127,6 @@ Zeilennummern unten sind der Stand vor dem Umbau.
 | `slow.svg` | Verlangsamt | Pfeil runter | `scripts/ui/battle_view.gd:465` |
 | `vulnerable.svg` | Verwundbar | Riss | `scripts/ui/battle_view.gd:468` |
 | `rush.svg` | Sprint | Pfeil vor | `scripts/ui/battle_view.gd:471` |
-| `lured.svg` | Angelockt (Köder) | ! im Kreis | `scripts/ui/battle_view.gd:445` |
 
 ### Leiste, Karte, Rollen, Modulklassen
 

@@ -191,7 +191,7 @@ static func build_sentinel(sentinel_id: String, rank_id: String = "basic") -> Dr
 		"spd": int(base.get("spd", 8)) + int(rank.get("spd", 0)),
 		"shield_pulse": int(base.get("shield_pulse", 0)),
 		"module_slots": int(rank.get("modules", 0)),
-		"hp_regen_pct": 0, "lure_radius": 0, "shield_bonus": 0.0,
+		"hp_regen_pct": 0, "shield_bonus": 0.0,
 	}
 	build.unit_kind = "sentinel"
 	build.rank = rank_id

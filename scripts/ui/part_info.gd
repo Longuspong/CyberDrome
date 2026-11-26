@@ -78,8 +78,6 @@ static func traits(part: PartData) -> Array[String]:
 	var out: Array[String] = []
 	if part.hp_regen_pct > 0:
 		out.append("Repariert jeden Puls (alle 3 s) %d %% der Integrität." % part.hp_regen_pct)
-	if part.lure_radius > 0:
-		out.append("Lockt: Gegner im Umkreis %d greifen den Träger an." % part.lure_radius)
 	match part.passive:
 		"cyberspeed":
 			var cs := Config.section("passives").get("cyberspeed", {}) as Dictionary
@@ -87,11 +85,6 @@ static func traits(part: PartData) -> Array[String]:
 				int(cs.get("every", 3)), int(cs.get("max_stacks", 3)),
 				int(round(float(cs.get("attack_speed", 0.1)) * 100.0)),
 				ActionData._seconds(float(cs.get("seconds", 3.0)))])
-		"presence":
-			var p := Config.section("passives").get("presence", {}) as Dictionary
-			out.append("Präsenz: Gegner im Umkreis %d greifen ihn an; %d %% des Schadens an Verbündeten im Umkreis %d fängt er ab." % [
-				int(p.get("lure_radius", 2)), int(round(float(p.get("guard_share", 0.3)) * 100.0)),
-				int(p.get("guard_radius", 3))])
 		"echo":
 			out.append("Echo: jede Fähigkeit wirkt zweimal, ihr Takt ist dafür 50 % länger.")
 		"steady":

@@ -107,10 +107,6 @@ var trigger_kind: String = ""
 var trigger_every: float = 0.0
 var trigger_weapon: StringName = &""
 
-## Modul Koedersender: die Faehigkeit lockt ihr Ziel so viele Sekunden auf
-## den Traeger. 0 = nicht.
-var taunt_seconds: float = 0.0
-
 ## Module (MODULE_KONZEPT.md), als Kopie gesetzt (with_modules):
 ## Ueberspannung -- solange der Schild des Traegers steht, wird dieser Anteil
 ## des kinetischen Schadens zu Energie (ActionResolver.apply_damage).
@@ -235,9 +231,6 @@ func with_modules(fx: Dictionary) -> ActionData:
 		var faster := float(fx.get("takt_time", 0.0))
 		if trigger_kind == "time" and faster > 0.0:
 			out.trigger_every = trigger_every * maxf(0.2, 1.0 - faster)
-		# Koedersender: ein Exemplar 2 s, jedes weitere +1 s.
-		var taunt := float(fx.get("taunt", 0.0))
-		out.taunt_seconds = 1.0 + taunt if taunt > 0.0 else 0.0
 		# Verstaerker: Faehigkeit +Anteil Wirkung.
 		var stronger := float(fx.get("ability_power", 0.0))
 		if stronger > 0.0:

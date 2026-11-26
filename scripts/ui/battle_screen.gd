@@ -318,7 +318,6 @@ func _refresh_badges() -> void:
 			"hp": unit.hp, "hp_max": unit.stat("hp_max"),
 			"shield": unit.shield, "shield_max": unit.shield_max(),
 			"is_player": unit.is_player,
-			"lured": battle.brain != null and battle.brain.lured_by(unit) != null,
 			"takt": unit.takt_bars(),
 			"id": unit.unit_id,
 			"statuses": unit.status_names(),

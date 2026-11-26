@@ -930,16 +930,6 @@ func passive() -> String:
 	return build.body().passive
 
 
-## Lockradius: Gegner so nah greifen diesen DROME an statt ihres Ziels.
-## Koedersender (lure_radius) oder Molok-Praesenz (passives.presence).
-func lure_radius() -> int:
-	var radius := int(stats.get("lure_radius", 0))
-	if passive() == "presence":
-		var p := Config.section("passives").get("presence", {}) as Dictionary
-		radius = maxi(radius, int(p.get("lure_radius", 2)))
-	return radius
-
-
 ## Faktor aufs Angriffstempo aus Statuseffekten.
 func attack_speed_mult() -> float:
 	var mult := 1.0 + float(cyberspeed_stacks) * float(_cyberspeed().get("attack_speed", 0.1))

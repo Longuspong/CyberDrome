@@ -59,7 +59,7 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 ## Bonus der Faehigkeit (Belastung + Stapel) ist in diesem Einsatz an diesem
 ## Ziel schon angelegt.
 func apply_damage(source: Unit, target: Unit, raw: int,
-		action: ActionData = null, guarded: bool = true, pierce_shield: bool = false,
+		action: ActionData = null, pierce_shield: bool = false,
 		charge_share: float = 1.0, ability_bonus: bool = true) -> int:
 	# Zielsucher: Angriffe gegen markierte Gegner treffen haerter.
 	if action != null and action.bonus_vs_marked > 0.0 and is_marked(target):
@@ -67,19 +67,6 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	# Phasenbruch: gegen Gegner ohne Schild.
 	if action != null and action.bonus_vs_unshielded > 0.0 and target.shield <= 0:
 		raw = int(round(float(raw) * (1.0 + action.bonus_vs_unshielded)))
-	# Praesenz (Molok): ein Teil des Treffers geht auf den Beschuetzer.
-	if guarded and raw > 0:
-		var guard := _guard_for(target)
-		if guard != null:
-			var share := float((Config.section("passives").get("presence", {}) as Dictionary).get("guard_share", 0.3))
-			var taken := int(round(float(raw) * share))
-			if taken > 0:
-				raw -= taken
-				EventBus.log_line("%s fängt %d Schaden für %s ab."
-					% [guard.display_name, taken, target.display_name])
-				# Der Beschuetzer faengt Schaden ab, keine Elementarbelastung:
-				# sie sammelt sich nur am getroffenen Ziel.
-				apply_damage(source, guard, taken, action, false, false, 0.0, false)
 	var frac := action.energy_fraction if action != null else 0.0
 	# Ueberspannung: solange der eigene Schild steht, wird ein Teil des
 	# kinetischen Schadens zu Energie.
@@ -173,11 +160,11 @@ func _thorns(source: Unit, target: Unit, action: ActionData) -> void:
 	if spikes <= 0:
 		return
 	var pierce := bool(target.stats.get("thorns_true", false))
-	apply_damage(target, source, spikes, null, false, pierce)
+	apply_damage(target, source, spikes, null, pierce)
 	var chance := float(target.stats.get("thorn_ricochet", 0.0))
 	if pierce and chance > 0.0 and rng != null and source.is_alive() and rng.randf() < chance:
 		var extra := maxi(1, int(round(float(spikes) * float(target.stats.get("thorn_ricochet_share", 0.25)))))
-		apply_damage(target, source, extra, null, false, true)
+		apply_damage(target, source, extra, null, true)
 
 
 # ---------------------------------------------------------------------------
@@ -244,27 +231,9 @@ func _shield_broken(unit: Unit) -> void:
 			continue
 		if Grid.distance(unit.tile, foe.tile) > reach:
 			continue
-		apply_damage(unit, foe, burst, spark, false)
+		apply_damage(unit, foe, burst, spark)
 		if foe.is_alive():
 			foe.apply_status(&"stun", stun, {"id": "stun", "stunned": true}, unit)
-
-
-## Der naechste lebende Verbuendete mit Praesenz im Schutzradius -- nicht das
-## Ziel selbst.
-func _guard_for(target: Unit) -> Unit:
-	var radius := int((Config.section("passives").get("presence", {}) as Dictionary).get("guard_radius", 3))
-	var best: Unit = null
-	var best_gap := 1 << 30
-	for unit in units:
-		if unit == target or not unit.is_alive() or unit.is_player != target.is_player:
-			continue
-		if unit.passive() != "presence":
-			continue
-		var gap := Grid.distance(unit.tile, target.tile)
-		if gap <= radius and gap < best_gap:
-			best = unit
-			best_gap = gap
-	return best
 
 
 ## Das Zwei-Verteidigungs-System (§11) als reine Rechnung -- was von ``raw`` auf
@@ -620,7 +589,7 @@ func _multi_shot(source: Unit, tile: Vector2i, action: ActionData) -> void:
 			var first: bool = not bonus_given.has(target)
 			if first:
 				bonus_given.append(target)
-			apply_damage(source, target, source.raw_damage(action), action, true, false, 1.0, first)
+			apply_damage(source, target, source.raw_damage(action), action, false, 1.0, first)
 
 
 ## Laesst verzoegerte Wirkungen ablaufen. Gibt zurueck, ob eine ausgeloest hat.
@@ -641,7 +610,7 @@ func advance(dt: float) -> bool:
 			# Ein Schuss einer Salve.
 			var hit: Unit = entry["target"]
 			if hit.is_alive() and source.is_alive():
-				apply_damage(source, hit, int(entry["damage"]), action, true, false,
+				apply_damage(source, hit, int(entry["damage"]), action, false,
 					float(entry.get("share", 1.0)), bool(entry.get("bonus", true)))
 			continue
 		EventBus.log_line("%s: %s schlägt ein." % [source.display_name, action.display_name])
@@ -756,7 +725,7 @@ func burn_cable_fire(unit: Unit) -> int:
 	EventBus.log_line("%s: Kabelbrand, %d Stapel." % [unit.display_name, stacks])
 	var shield_before := unit.shield
 	var hp_before := unit.hp
-	apply_damage(source, unit, raw, burn, false)
+	apply_damage(source, unit, raw, burn)
 	return (shield_before - unit.shield) + (hp_before - unit.hp)
 
 

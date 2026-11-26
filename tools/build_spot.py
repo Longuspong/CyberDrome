@@ -163,8 +163,6 @@ def num(x):
 PASSIVE_INFO = {
     "cyberspeed": ("Cyberspeed", lambda p: f"Jeder {p['every']}. Angriff gibt einen Stapel (hoechstens {p['max_stacks']}), "
                    f"je Stapel +{pct(p['attack_speed'])} Angriffs- und Lauftempo; jeder Angriff haelt die Stapel {num(p['seconds'])} s."),
-    "presence": ("Praesenz", lambda p: f"Gegner im Umkreis {p['lure_radius']} greifen ihn an statt ihres Ziels (Locken). "
-                 f"{pct(p['guard_share'])} des Schadens an Verbuendeten im Umkreis {p['guard_radius']} gehen auf ihn."),
     "echo": ("Echo", lambda p: f"Jede Faehigkeit wirkt doppelt, dafuer ist ihr Takt {num(p['slower'])}-mal so lang."),
     "steady": ("Anlegen", lambda p: f"Nach {num(p['seconds'])} s ohne Feldwechsel +{pct(p['damage_mult'] - 1)} Schaden "
                f"und +{pct(p['range_mult'] - 1)} Reichweite (mind. +1 Feld)."),
@@ -201,7 +199,6 @@ def effect_text(key, val):
         "thorns_melee": lambda v: f"+{num(v)} Stacheln gegen Nahkampf",
         "ability_power": lambda v: f"Faehigkeit +{pct(v)} Wirkung",
         "status_time": lambda v: f"Statuseffekte {pct(v)} laenger",
-        "taunt": lambda v: f"Faehigkeit lockt ihr Ziel {num(1 + v)} s auf den Traeger",
         "mark": lambda v: f"Faehigkeit markiert ihr Ziel {num(v)} s (+{pct(r['mark_damage_taken'])} Schaden von allen)",
         "field_shot_every": lambda v: f"jeder {v}. Angriff trifft dazu den schwaechsten anderen Gegner",
         "kinetic_to_energy": lambda v: f"solange der Schild steht: {pct(v)} des kinetischen Schadens wird Energie",

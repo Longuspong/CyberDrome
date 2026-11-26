@@ -8,11 +8,10 @@ extends RefCounted
 ## ausloesen oder einen Schritt laufen:
 ##
 ##   * ZIEL: nach einer SICHTBAREN Regel je Rolle (choose_target, Nov. 2026 --
-##     die versteckte Aggro-Tabelle ist raus). Wer in den Lockradius eines
-##     Gegners geraet (Molok-Praesenz, Koedersender), greift den an. Das Ziel
-##     wird GEHALTEN: neu gewaehlt nur, wenn es faellt, laenger als
-##     ``realtime.retarget_after`` Sekunden nicht angreifbar ist, ein sicherer
-##     Abschuss in Reichweite steht oder ein Locken einsetzt.
+##     die versteckte Aggro-Tabelle ist raus). Das Ziel wird GEHALTEN: neu
+##     gewaehlt nur, wenn es faellt, laenger als ``realtime.retarget_after``
+##     Sekunden nicht angreifbar ist oder ein sicherer Abschuss in Reichweite
+##     steht.
 ##   * WAFFEN: jede laedt fuer sich (``interval``). Ist sie geladen und ein
 ##     Gegner in Reichweite, schiesst sie -- auf das Ziel, sonst auf den besten
 ##     erreichbaren. Jeder N-te Angriff ist die Faehigkeit der Waffe.
@@ -88,12 +87,8 @@ func update(unit: Unit, dt: float) -> void:
 		target = _current_target(unit)
 	elif unit.think_left <= 0.0:
 		unit.think_left = float(_realtime.get("think_interval", 0.5))
-		var lure := lured_by(unit)
-		var kill := _sure_kill(unit) if lure == null else null
-		if lure != null and lure != target:
-			_retarget(unit, lure)
-			target = lure
-		elif kill != null and kill != target:
+		var kill := _sure_kill(unit)
+		if kill != null and kill != target:
 			_retarget(unit, kill)
 			target = kill
 	if target == null:
@@ -170,12 +165,7 @@ func _current_target(unit: Unit) -> Unit:
 ##
 ## Gleichstand: wen Verbuendete schon angreifen (Fokus), dann wer weniger
 ## aushaelt, dann die Reihenfolge der Einheiten -- deterministisch.
-## Vor allem anderen gilt das Locken: steht ``unit`` im Lockradius eines
-## Gegners, greift es ihn an.
 func choose_target(unit: Unit) -> Unit:
-	var lure := lured_by(unit)
-	if lure != null:
-		return lure
 	var foes := battle.enemies_of(unit)
 	if foes.is_empty():
 		return null
@@ -218,28 +208,6 @@ func _key_less(a: Array, b: Array) -> bool:
 		if a[i] != b[i]:
 			return a[i] < b[i]
 	return false
-
-
-## Wer lockt ``unit`` gerade? Der naechste lebende Gegner, in dessen Lockradius
-## (Molok-Praesenz, Koedersender) ``unit`` steht -- sonst null.
-func lured_by(unit: Unit) -> Unit:
-	# Modul Koedersender: wer angelockt wurde, greift den Traeger an.
-	var taunt = unit.statuses.get(&"taunt")
-	if taunt is Dictionary:
-		var lurer := battle.resolver.unit_by_id(taunt.get("taunt_by"))
-		if lurer != null and lurer.is_alive():
-			return lurer
-	var best: Unit = null
-	var best_gap := 1 << 30
-	for foe in battle.enemies_of(unit):
-		var radius: int = foe.lure_radius()
-		if radius <= 0:
-			continue
-		var gap := Grid.distance(unit.tile, foe.tile)
-		if gap <= radius and gap < best_gap:
-			best = foe
-			best_gap = gap
-	return best
 
 
 ## Wie viele Verbuendete greifen ``foe`` gerade an? Grundlage des Fokus:
@@ -556,8 +524,6 @@ func _shackle(unit: Unit, mount: Dictionary) -> void:
 
 
 ## Nach einer Faehigkeit -- die Module des Halters (``fx``):
-##   * Koedersender: das Ziel muss eine Weile den Traeger angreifen (Status
-##     "taunt", lured_by liest ihn).
 ##   * Peilsender: das Ziel wird markiert.
 ##     Hat die Faehigkeit kein Gegnerziel (Schildgaben), wirken beide auf den
 ##     naechsten Gegner in rules.fallback_range.
@@ -572,11 +538,8 @@ func _after_ability(unit: Unit, ability: ActionData, aim: Dictionary, fx: Dictio
 		foe = target
 	var mark_seconds := float(fx.get("mark", 0.0))
 	var root_seconds := float(fx.get("root", 0.0))
-	if foe == null and (ability.taunt_seconds > 0.0 or mark_seconds > 0.0 or root_seconds > 0.0):
+	if foe == null and (mark_seconds > 0.0 or root_seconds > 0.0):
 		foe = _nearest_enemy(unit, int(ModuleData.rule("fallback_range", 3)))
-	if foe != null and ability.taunt_seconds > 0.0:
-		foe.apply_status(&"taunt", ability.taunt_seconds, {"taunt_by": unit.unit_id}, unit)
-		EventBus.log_line("%s lockt %s an." % [unit.display_name, foe.display_name])
 	if foe != null and mark_seconds > 0.0:
 		battle.resolver.mark(foe, mark_seconds)
 	# Orbit-Fokus: das Ziel ist gewurzelt. Gravitation (BIOS): dazu der
@@ -633,7 +596,6 @@ func _fork(unit: Unit, ability: ActionData, aim: Dictionary, share: float) -> vo
 	half.power = int(round(float(ability.power) * share))
 	half.heal = int(round(float(ability.heal) * share))
 	half.shield_gain = int(round(float(ability.shield_gain) * share))
-	half.taunt_seconds = 0.0
 	var second: Unit = null
 	if ability.support != "":
 		var best_share := 2.0

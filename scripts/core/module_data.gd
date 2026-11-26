@@ -528,8 +528,6 @@ static func effect_text(key: String, value) -> String:
 			return "Zeit-Takt %d %% kürzer" % _pct(v)
 		"status_time":
 			return "Statuseffekte %d %% länger" % _pct(v)
-		"taunt":
-			return "Fähigkeit lockt ihr Ziel %s s auf den Träger" % _seconds(1.0 + v)
 		"field_shot_every":
 			return "jeder %d. Angriff trifft dazu einen Gegner irgendwo auf dem Feld" % int(v)
 		"shield_delay":

@@ -94,7 +94,6 @@
     "efficiency": 10,
     "module_slots": 3,
     "hp_regen_pct": 0,
-    "lure_radius": 0,
     "ai_role": "skirmisher",
     "passive": "cyberspeed",
     "actions": []

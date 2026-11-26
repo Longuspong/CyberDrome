@@ -306,7 +306,6 @@ class UnitBadgePainter extends Node2D:
 
 	const COLOR_TRACK := Color(0.04, 0.05, 0.08, 0.9)
 	const COLOR_OUTLINE := Color(0.0, 0.0, 0.0, 0.9)
-	const COLOR_LURED := Color(1.0, 0.62, 0.15)
 	const COLOR_GHOST := Color(1.0, 0.95, 0.85)
 	const COLOR_DANGER := Color(1.0, 0.25, 0.2)
 	## Takt-Leiste unter dem Lebensbalken: wann kommt die Faehigkeit?
@@ -554,13 +553,6 @@ class UnitBadgePainter extends Node2D:
 			_takt(entry.get("takt", []), left, below, width, s, now)
 		if level == "near":
 			_statuses(entry.get("statuses", []), left + width + 5.0 * s, top + height * 0.5, s)
-
-		# Gelockt (Molok-Praesenz, Koedersender): ein kleines Ausrufezeichen
-		# in Orange links neben dem Balken -- "der greift gerade den Locker an".
-		if entry.get("lured", false) and level != "far":
-			var at := Vector2(left - 7.0 * s, top + height * 0.5)
-			draw_circle(at, 5.0 * s, COLOR_OUTLINE)
-			_icon("lured", at, 5.0 * s, COLOR_LURED)
 
 	## Rechteck mit abgeschraegten Ecken oben rechts und unten links.
 	static func _chamfer(x: float, y: float, w: float, h: float, cut: float) -> PackedVector2Array:

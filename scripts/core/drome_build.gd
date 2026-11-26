@@ -254,7 +254,6 @@ func stats() -> Dictionary:
 		"spd": 0, "def": 0, "power": 0, "shield_pulse": 0, "module_slots": 0,
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
 		"hp_regen_pct": 0,
-		"lure_radius": 0,
 		"efficiency": 0,
 	}
 	for part in all_parts():
@@ -269,7 +268,6 @@ func stats() -> Dictionary:
 		total["shield_regen"] += part.shield_regen
 		total["shield_bonus"] += part.shield_bonus
 		total["hp_regen_pct"] += part.hp_regen_pct
-		total["lure_radius"] = maxi(int(total["lure_radius"]), part.lure_radius)
 
 	# Level: DROME-Werte des Chassis und Bonus-Werte der Waffen.
 	var chassis := body()
