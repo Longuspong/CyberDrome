@@ -206,7 +206,6 @@ PALETTE_ROLES = [
 #   hot    Emission: dieselbe Farbe, additiv Richtung Weiss gezogen
 SHADES = {"base": (1.0, 0), "light": (1.62, 6), "dark": (0.56, 0), "hot": (1.0, 45)}
 
-PALETTE_TYPES = ("body", "head", "feet", "core", "equipment")
 
 _HULL = ("hull", "Panzerung",
          {"plate": "base", "plate_light": "light", "plate_dark": "dark"})
@@ -304,10 +303,6 @@ NEON_EQUIPMENT = {"hull": "#140b24", "mech": "#3a2a5c", "neon": "#ff2bd6",
 # Gewaehlt am 18. Nov. 2026 (siehe unten) --
 # zum Umfaerben nur hier aendern, dann build_sample_parts.py und
 # bake_godot_assets.py laufen lassen.
-def _eq(base: dict) -> dict:
-    return dict(base["equipment"])
-
-
 def _w(hull, mech, neon, line="#07090d"):
     return {"hull": hull, "mech": mech, "neon": neon, "line": line}
 
@@ -1609,11 +1604,6 @@ def mirror_obox(s):
     return ("obox", (f, -l, z), size, (-gy, ni, -ro), mat)
 
 
-def shift_obox(s, df=0, dl=0, dz=0):
-    _, (f, l, z), size, rot, mat = s
-    return ("obox", (f + df, l + dl, z + dz), size, rot, mat)
-
-
 def _mirror_l(shapes):
     """Spiegelt Formen an l = 0 (fuer Beinpaare und Fluegel)."""
     out = []
@@ -1750,31 +1740,6 @@ EQ_BLASTER = [
     B((-4, 5), (-6.1, -5.5), (42.5, 44), "accent"),
 ]
 
-# Plasmaklinge (EQP-010): Nahkampfwaffe des Vireo. Kurzer Griff mit
-# Parierstange, davor eine LANGE, DUENNE leuchtende Klinge -- lang und duenn
-# gegen das kurze, dicke Rohr des Blasters (Lesbarkeitsregel).
-EQ_PLASMA_BLADE = [
-    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Oberarm am Anker
-    B((-3.5, 4), (-3.5, 3.5), (34, 46), "plate"),        # Unterarm
-    B((3, 5), (-4.5, 4.5), (33, 39), "dark"),            # Parierstange
-    B((5, 27), (-0.6, 0.6), (34.5, 37.5), "glow"),       # Klinge
-    B((5, 27.5), (-0.8, 0.8), (37.5, 38.3), "accent"),   # Schneide oben
-    B((5, 22), (-0.8, 0.8), (33.7, 34.5), "accent"),     # Schneide unten
-]
-
-# Klingenbumerang (EQP-013): am Arm wie der Blaster, aber statt Lauf eine
-# flache, winklige Klinge -- ein "L" aus zwei leuchtenden Schenkeln, quer zur
-# Laufrichtung, damit sie sich klar vom langen Stich der Plasmaklinge abhebt.
-EQ_BOOMERANG = [
-    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Oberarm am Anker
-    B((-3.5, 4), (-3.5, 3.5), (34, 46), "plate"),        # Unterarm
-    B((3, 6), (-2.5, 2.5), (35, 39), "dark"),            # Griffhalter
-    B((6, 15), (-1.2, 1.2), (36, 37.6), "glow"),         # Schenkel nach vorn
-    B((13, 15), (-11, -1.2), (36, 37.6), "glow"),        # Schenkel quer
-    B((6, 15), (-1.4, 1.4), (37.6, 38.2), "accent"),
-    B((13, 15.2), (-11.2, -1.2), (37.6, 38.2), "accent"),
-    B((12.6, 15.4), (-11.6, -9.6), (35.6, 38.4), "plate"),   # Spitze
-]
 
 # Pruefstein, kein Teil.
 #
@@ -1794,15 +1759,6 @@ EQ_CANNON_V1 = [
     D(21.3, 0, 35, 2.5, "glow"),
     B((-5, 6), (7, 7.6), (39.5, 41.5), "accent"),
     B((-5, 6), (-7.6, -7), (39.5, 41.5), "accent"),
-]
-
-EQ_SHIELD = [
-    B((-3, 3), (-4, 4), (45, 54), "metal"),
-    B((7, 10), (-7, 7), (31, 58), "plate"),
-    B((10, 10.6), (-5, 5), (35, 54), "dark"),
-    B((10.6, 11.1), (-1.2, 1.2), (38, 51), "accent"),
-    B((6.6, 10.2), (-7.6, -6.6), (31, 58), "light"),     # Kantenprofil
-    B((6.6, 10.2), (6.6, 7.6), (31, 58), "light"),
 ]
 
 
@@ -1949,101 +1905,6 @@ JUGG_CORE = [
     B((12.0, 12.3), (-1.8, 1.8), (47.2, 54.2), "glow"),
 ]
 
-# Belagerungskanone -- ausdruecklich KEIN vergroesserter Blaster.
-#
-# Der Blaster ist ein Rohr am Arm: schmal, glatt, ein Lauf. Diese hier bekommt
-# drei Merkmale, die kein Handrohr je hat, und jedes davon liegt auf der
-# Silhouette statt in der Flaeche:
-#
-#   * eine MUENDUNGSBREMSE mit zwei Fluegeln quer zum Rohr -- sie gibt der
-#     Waffe vorn eine Breite, die man auch bei halber Groesse noch erkennt;
-#   * ein liegendes TROMMELMAGAZIN hinter dem Verschluss, das nach hinten
-#     ueber den Bot hinausragt;
-#   * eine ABSTUETZSTREBE nach unten -- das Bauteil sagt "wird abgestuetzt",
-#     also "schwer, kurze Reichweite pro Zug".
-#
-# Der Lauf ist dabei bewusst KUERZER im Verhaeltnis zur Masse als beim
-# Blaster: gedrungen liest sich als Artillerie, lang und duenn als Praezision
-# (siehe eq_rail_lance).
-EQ_CANNON = [
-    # Halterung am Anker: kurzer Stumpf, kein ausmodellierter Arm
-    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),
-    # Verschlussblock -- die Masse sitzt hinten
-    B((-8, 5), (-7.5, 7.5), (34, 45.5), "plate"),
-    B((-8.5, 5.5), (-8, 8), (45.5, 47.5), "light"),
-    B((5, 5.6), (-5.5, 5.5), (37, 43), "dark"),
-    # Trommelmagazin, liegend quer zum Bot und weit hinten
-    L((-10.5, 40), [(4.4, -7), (4.8, -6), (4.8, 6), (4.4, 7)],
-      "dark", axis="l", segments=14),
-    L((-10.5, 40), [(5.1, -3), (5.1, -2)], "accent", axis="l",
-      caps=False, segments=14),
-    L((-10.5, 40), [(5.1, 2), (5.1, 3)], "accent", axis="l",
-      caps=False, segments=14),
-    # Rohr: Ruecklaufhuelse, dann ein deutlich duenneres Stueck. Die
-    # Verjuengung ist noetig, damit die Muendungsbremse davor ueberhaupt als
-    # eigene Form lesbar wird -- an einem durchgehend dicken Rohr verschwindet
-    # sie in der Silhouette.
-    B((5.6, 11), (-4.6, 4.6), (36.5, 43.5), "plate"),
-    B((11, 20), (-2.8, 2.8), (37.6, 42.4), "dark"),
-    # Muendungsbremse: DAS Silhouetten-Merkmal. Die Fluegel liegen flach und
-    # greifen tief nach vorn, damit sie als quer stehende Finnen lesen und
-    # nicht als angeklebte Blechlaschen.
-    B((20, 24), (-3.6, 3.6), (36.8, 43.2), "plate"),
-    B((18.8, 24.5), (-9.5, -3.6), (38.6, 41.4), "dark"),
-    B((18.8, 24.5), (3.6, 9.5), (38.6, 41.4), "dark"),
-    B((24, 24.6), (-3, 3), (37.5, 42.5), "accent"),
-    D(24.9, 0, 40, 2.2, "glow"),
-    # Abstuetzstrebe nach unten
-    B((-1, 3), (-2.6, 2.6), (26, 34), "metal"),
-    B((-4, 6), (-4, 4), (23, 26.5), "dark"),
-]
-
-# Hammer (EQP-012): Nahkampfwaffe des Molok. Kurzer Schaft nach vorn, davor
-# ein grosser, quer stehender Hammerkopf -- ein Block, kein Rohr (gegen die
-# Kanone mit Muendungsbremse und die duenne Plasmaklinge).
-EQ_HAMMER = [
-    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),          # Halterung am Anker
-    B((-4.5, 4.5), (-5, 5), (35, 46), "plate"),          # Unterarm
-    B((4, 15), (-1.4, 1.4), (38, 41), "metal"),          # Schaft
-    B((15, 23), (-7, 7), (30, 48), "plate"),             # Hammerkopf
-    B((23, 23.8), (-6, 6), (32, 46), "dark"),            # Schlagflaeche
-    B((15, 23), (-7.3, 7.3), (38, 40), "accent"),        # Leuchtband
-    D(24.0, 0, 39, 2.0, "glow"),
-]
-
-# Bollwerk-Ramme (EQP-014): kein Stiel wie beim Hammer, sondern ein dicker
-# Kolben direkt vor dem Unterarm mit einer breiten, flachen Rammplatte --
-# kurz und massig, mit Hydraulikzylindern oben und unten.
-EQ_BULWARK_RAM = [
-    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),          # Halterung am Anker
-    B((-4.5, 4.5), (-5, 5), (33, 46), "plate"),          # Unterarm
-    B((4.5, 15), (-2.6, 2.6), (35.5, 42.5), "metal"),    # langer Kolben
-    B((4.5, 13), (-1.2, 1.2), (42.5, 45), "dark"),       # Hydraulik oben
-    B((4.5, 13), (-1.2, 1.2), (33, 35.5), "dark"),       # Hydraulik unten
-    B((6, 7), (-4, 4), (34, 44), "light"),               # Manschette
-    B((15, 19), (-6, 6), (32, 46), "plate"),             # Rammkopf, kompakt
-    B((19, 19.8), (-5, 5), (33.5, 44.5), "dark"),        # Stirn
-    B((19.8, 20.6), (-1.6, 1.6), (37.4, 40.6), "glow"),  # Stoesselkern
-    B((15, 19), (-6.3, 6.3), (38.4, 39.6), "accent"),    # Leuchtband
-]
-
-# Elektronischer Schraubenschluessel (9. Nov. 2026, Wunsch des Spielers;
-# frueher Drohnen-Pod): ein Werkzeug am Arm wie der Hammer, aber schlank --
-# langer Griff mit Wicklung, vorn ein offenes Maul aus zwei Backen, dazwischen
-# ein leuchtender Kern, aus dem Heilstrahl und Energiekugel kommen.
-EQ_DRONE_POD = [
-    B((-3.5, 3.5), (-4.5, 4.5), (45, 53), "metal"),        # Halterung am Anker
-    B((-4, 4), (-4.5, 4.5), (36, 46), "plate"),            # Unterarm
-    B((3, 17), (-1.6, 1.6), (38, 41.5), "plate"),          # Griff
-    B((5, 10), (-2.0, 2.0), (37.5, 42), "dark"),           # Wicklung
-    B((17, 21), (-5, 5), (35, 45), "metal"),               # Kopf
-    B((17, 21), (-5.3, 5.3), (39, 41), "accent"),          # Leuchtband
-    B((21, 27), (-5, -2.2), (35, 45), "metal"),            # Backe links
-    B((21, 27), (2.2, 5), (35, 45), "metal"),              # Backe rechts
-    B((21, 24), (-1.4, 1.4), (38.3, 41.7), "glow"),        # Kern im Maul
-    D(27.2, -3.6, 40, 1.0, "glow"),
-    D(27.2, 3.6, 40, 1.0, "glow"),
-]
 
 # ===========================================================================
 # AR-Nimbus // Technomant  (parts/bot3) -- Rundungen statt Kanten
@@ -2166,53 +2027,6 @@ MAGE_CORE = [
     D(11.75, 0, 44, 2.9, "glow"),
     L((0, 44), [(4.6, 11.5), (4.6, 11.9)], "accent", axis="f", caps=False, segments=20),
     L((0, 44), [(3.3, 11.6), (3.3, 11.9)], "accent", axis="f", caps=False, segments=20),
-]
-
-EQ_RUNE_STAFF = [
-    L((0, 0), [(3.4, 41), (3.8, 47), (3.4, 50)], "metal", segments=12),   # Oberarm
-    L((1.0, 0), [(3.0, 31), (3.6, 40)], "plate", segments=12),            # Unterarm
-    L((1.0, 0), [(4.2, 29), (4.2, 31.6)], "dark", segments=12),           # Faust
-    # Der Stab laeuft VOR dem Arm nach oben. Nach vorn gerichtet wuerde er in
-    # der Iso-Ansicht mit Torso und Fahrgestell verschmelzen.
-    L((7.6, 0), [(1.1, 22), (1.1, 55)], "metal", segments=10),
-    L((7.6, 0), [(2.3, 33), (2.3, 34.4)], "accent", caps=False, segments=10),
-    L((7.6, 0), [(2.9, 54), (3.6, 56.2), (2.9, 58.4)], "plate", segments=12),
-    L((7.6, 0), [(0, 58.6), (2.2, 59.6), (3.0, 61.0), (2.2, 62.4), (0, 63.4)], "glow"),
-    L((7.6, 0), [(4.4, 60.4), (4.4, 61.6)], "accent", caps=False, segments=18),
-]
-
-EQ_ORBIT_FOCUS = [
-    L((0, 0), [(3.4, 41), (3.8, 47), (3.4, 50)], "metal", segments=12),
-    L((1.2, 0), [(3.2, 33), (3.8, 40)], "plate", segments=12),
-    L((1.2, 0), [(4.6, 30), (5.0, 32), (4.4, 33.6)], "dark", segments=12),
-    # Schwebender Fokusring vor der Hand. Geschlossenes Profil (erster Punkt
-    # == letzter) -> Mantel ohne Deckel, also ein echter Ring mit Loch.
-    L((0, 30.5), [(6.4, 6.5), (7.6, 7.6), (6.4, 8.7), (6.4, 6.5)],
-      "accent", axis="f", segments=18),
-    L((0, 30.5), [(0, 6.4), (1.9, 6.9), (2.6, 7.6), (1.9, 8.3), (0, 8.8)],
-      "glow", axis="f", segments=12),
-]
-
-
-# Hologramm-Boost (EQP-009) -- das Signatur-Gadget des Vireo. Ein Unterarm-
-# Projektor, der einen schwebenden Hologramm-PFEIL nach vorn wirft: an ihm
-# entlang blinkt der Scout ein Stueck weit (die Dash-Aktion). Die Silhouette ist
-# bewusst ein DREIECK (nach vorn zeigender Kegel) -- unverkennbar anders als der
-# Ring des Orbit-Fokus, das Rohr des Blasters oder die Platte des Deflektors, und
-# genau das verlangt die Lesbarkeitsregel (check_silhouettes).
-EQ_HOLO_BOOST = [
-    # -- Unterarm-Projektor: kompaktes Gehaeuse auf dem Handruecken ----------
-    L((0, 0), [(3.2, 41), (3.6, 46), (3.0, 49)], "metal", segments=12),
-    L((1.0, 0), [(2.6, 33), (3.4, 40)], "plate", segments=12),
-    # Emitterlinse, leicht nach vorn geneigt
-    D(4.4, 0, 45, 1.6, "glow"),
-    # -- Schwebender Hologramm-Pfeil vor der Hand ---------------------------
-    # Ein nach VORN zeigender Kegel: breite Basis hinten (Radius 5.2 bei f=4.5),
-    # Spitze vorn (Radius 0 bei f=12.5). Seitlich projiziert ergibt das ein
-    # Dreieck -- der Boost-Pfeil.
-    L((0, 47), [(5.2, 4.5), (0.0, 12.5)], "accent", axis="f", segments=16, caps=False),
-    # Innerer, hellerer Kegel -- gibt dem Hologramm Tiefe.
-    L((0, 47), [(2.8, 5.6), (0.0, 11.6)], "glow", axis="f", segments=12, caps=False),
 ]
 
 

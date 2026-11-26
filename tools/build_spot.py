@@ -364,7 +364,6 @@ STATUS_FILL = {
 }
 INPUT_FILL = PatternFill("solid", fgColor="E3F4F8")  # Eingabefelder fuer den Spieler
 
-TABLES = []
 
 
 def sheet(wb, title):
