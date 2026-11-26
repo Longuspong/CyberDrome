@@ -13,14 +13,12 @@ extends Control
 ##   range    Pfeil mit Fuss  Reichweite
 ##   attack   Fadenkreuz      Angriff (kommt von selbst)
 ##   ability  Blitz           Faehigkeit
-##   time     Uhr             Takt nach Zeit
 ##   hits     Zahnrad         Takt nach Angriffen
 ##   adjacent zwei Punkte     Takt: Gegner daneben
 ##   heal     Kreuz           Reparatur
 ##   shield   Schildform      Schild
 ##   area     Ringe           Flaechenwirkung
 ##   def      Platte          Panzerung (DEF)
-##   weight   Gewichtsklotz   Gewicht, bremst den Traeger
 ##   hp       Herz            Integritaet
 
 const EXPLAIN := {
