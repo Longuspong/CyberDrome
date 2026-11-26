@@ -169,16 +169,6 @@ func owned_part_ids(type: int) -> Array:
 # Zuweisung -- die Eindeutigkeit lebt hier
 # ---------------------------------------------------------------------------
 
-## Wie viele Exemplare eines Typs in DIESEM Eintrag stecken. Fuer die Werkstatt:
-## "ist das hier verbaut" und "an wie vielen Haltern".
-func count_in_entry(entry: RosterEntry, part_id: StringName) -> int:
-	var n := 0
-	for slot in entry.assignments:
-		if instance_part_id(str(entry.assignments[slot])) == part_id:
-			n += 1
-	return n
-
-
 ## Weist dem Slot eine FREIE Instanz des Typs zu (§10g). Was vorher im Slot
 ## steckte, wird dadurch automatisch frei -- "frei" ist ja nur "in keiner
 ## Zuweisung". Steckt bereits eine Instanz dieses Typs im Slot, oder ist keine

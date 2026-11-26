@@ -426,16 +426,6 @@ func battle_seed(index: int = -1) -> int:
 	return absi(hash([run_seed, round, "knoten", index])) % 2000000000 + 1
 
 
-## Die Stufe eines Knotens dieser Runde (ohne Angabe: des gewaehlten).
-func node_tier(index: int = -1) -> int:
-	var nodes := row()
-	if index < 0:
-		index = node
-	if index < 0 or index >= nodes.size():
-		return tier
-	return int(nodes[index]["tier"])
-
-
 ## Wie viele Gegner: so viele, wie man mitgebracht hat, plus/minus der
 ## Verschiebung dieser Runde (run.enemy_offsets) und der Stufe. Ein kleinerer
 ## Squad trifft also auf weniger Gegner.
@@ -1105,27 +1095,6 @@ func roll_loot(enemy_pool: Array) -> Array:
 	return out
 
 
-## Ein Teil als Beute: aus der Gegnerausruestung; Elite nur mittel/schwer,
-## ergaenzt aus dem ganzen Katalog. Leerer Gegnerpool: der ganze Katalog.
-func _loot_part(rng: RandomNumberGenerator, enemy_pool: Array) -> PartData:
-	var pool: Array = enemy_pool.duplicate()
-	if tier == Tier.ELITE:
-		pool = pool.filter(func(id): return _is_rare(PartDB.get_part(id)))
-		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-			if _is_rare(part) and not pool.has(part.id):
-				pool.append(part.id)
-	elif pool.is_empty():
-		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-			pool.append(part.id)
-	while not pool.is_empty():
-		var index := rng.randi() % pool.size()
-		var part := PartDB.get_part(pool[index])
-		if part != null:
-			return part
-		pool.remove_at(index)
-	return null
-
-
 ## Verteilt einen Beute-Eintrag und schreibt hinein, wo er gelandet ist:
 ## Teile in die Tasche (gehen am Ende nach Hause), ein DROME in den Squad
 ## (voll: nach Hause), Credits und Notstrom sofort.
@@ -1227,10 +1196,6 @@ static func cache_name(region: StringName) -> String:
 
 static func coin_name() -> String:
 	return str(loot_cfg().get("coin_name", "Platzhaltercoin"))
-
-
-static func _is_rare(part: PartData) -> bool:
-	return part != null and part.mount_class != "light"
 
 
 ## Ein neuer DROME kommt MIT einer passenden Waffe: ohne waere er im

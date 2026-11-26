@@ -180,14 +180,6 @@ func refresh_unit_depth(unit: Unit) -> void:
 	unit.z_index = IsoView.depth(unit.tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET
 
 
-func refresh_all_depths(units: Array) -> void:
-	for unit in units:
-		if unit.is_alive():
-			refresh_unit_depth(unit)
-		else:
-			unit.visible = false
-
-
 # ---------------------------------------------------------------------------
 # Anzeige ueber den Einheiten
 # ---------------------------------------------------------------------------
@@ -211,12 +203,6 @@ func set_pixel_scale(camera_zoom: float) -> void:
 		particles.pixel_scale = factor
 	if _floor_rings != null:
 		_floor_rings.pixel_scale = factor
-
-
-## Echtzeit: eine Schussspur von ``from`` nach ``to`` (Weltkoordinaten der
-## Feldmitten), kurz und in Teamfarbe. Alter Weg ohne Stil (gerader Schuss).
-func show_shot(from: Vector2, to: Vector2, color: Color, heavy: bool = false) -> void:
-	_effects.add_attack(from, to, color, {"projectile": "bolt", "energy": 0.0, "heavy": heavy})
 
 
 ## Ein Angriff mit Stil (9. Nov. 2026, Wunsch des Spielers):

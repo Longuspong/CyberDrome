@@ -247,11 +247,3 @@ static func arm_drome(build: DromeBuild, count: int, rng: RandomNumberGenerator)
 	if not picked.is_empty():
 		build.modules[slot] = picked
 
-
-## Symbole fuer die Vorschau: je Einheit {kind, archetype, rank, name}.
-static func roster_icons(builds: Array) -> Array:
-	var out: Array = []
-	for build in builds:
-		out.append({"kind": build.unit_kind, "archetype": build.archetype, "rank": build.rank,
-			"name": build.display_name})
-	return out

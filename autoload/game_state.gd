@@ -317,15 +317,6 @@ func _wipe_saves() -> void:
 # Gueltigkeit
 # ---------------------------------------------------------------------------
 
-func squad_is_valid() -> bool:
-	if squad.size() < 1:
-		return false
-	for build in squad:
-		if not build.is_valid():
-			return false
-	return true
-
-
 # ---------------------------------------------------------------------------
 # Kampfbereit
 # ---------------------------------------------------------------------------

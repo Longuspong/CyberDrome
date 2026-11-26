@@ -188,26 +188,6 @@ func view(direction: String) -> Dictionary:
 	return views.get(direction, views.get("south", {}))
 
 
-## Die Ansicht fuer ein bestimmtes Chassis: hat das Teil die Variante, die das
-## Chassis verlangt (``weapon_variant``), gelten deren Bild und Anker, sonst
-## die Grundform.
-func view_for(direction: String, variant: String) -> Dictionary:
-	var base := view(direction)
-	if variant == "":
-		return base
-	var all_variants: Dictionary = base.get("variants", {})
-	var v: Dictionary = all_variants.get(variant, {})
-	# "heavy_right" ohne eigene Fassung: die linke tut es auch.
-	if v.is_empty() and variant.ends_with("_right"):
-		v = all_variants.get(variant.trim_suffix("_right"), {})
-	if v.is_empty():
-		return base
-	var merged := base.duplicate()
-	for key in v:
-		merged[key] = v[key]
-	return merged
-
-
 ## Die Ausruestungsslots eines Chassis sind seine equip_*-Anker -- ausser
 ## denen, die ``slot_rules`` mit ``off`` abschaltet. Seit Nov. 2026 hat jeder
 ## DROME einen Platz, der Molok zwei; die uebrigen Anker sind reine Optik.

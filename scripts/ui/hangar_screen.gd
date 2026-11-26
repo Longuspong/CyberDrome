@@ -47,8 +47,6 @@ extends Control
 ## Regeln, Werte und Validierung kommen wie ueberall aus Roster, DromeBuild und
 ## PartData (SlotRules sagt sie in Worten). Der Hangar haelt nichts davon selbst.
 
-const PORTRAIT := 124.0
-const PRIMARY_EDGE := 120.0
 const TILE_EDGE := 128.0
 const TILE_COLUMNS := 3
 const TILE_GAP := 10
@@ -357,13 +355,6 @@ func _show_overview() -> void:
 	_content.add_child(scrap)
 
 
-## Level und Skilltree (DROME und Waffe): entschieden ist die Richtung
-## (docs/SKILLBAUM_KONZEPT.md), gebaut noch nicht. Bis dahin sagt die Seite,
-## was kommt.
-func _show_soon(kind: String) -> void:
-	_content.add_child(_soon_card(kind))
-
-
 ## Level kaufen (24. Nov. 2026, SKILLBAUM_KONZEPT.md 5d): aktuelles Level, was das
 ## naechste kostet (habe/brauche) und "Aufsteigen". Skilltree-Knoten folgen.
 func _level_card(kind: String, entry: RosterEntry, uid: String = "") -> Control:
@@ -472,34 +463,6 @@ func _squad_first_order() -> Array:
 		if not _entries()[i].in_squad:
 			order.append(i)
 	return order
-
-
-## Kacheln in Reihen zu TILE_COLUMNS; die letzte Reihe wird mit Luecken
-## aufgefuellt, damit alle Kacheln gleich breit bleiben. Gibt die Reihen zurueck.
-func _add_tile_rows(parent: Control, tiles: Array) -> Array:
-	var rows: Array = []
-	for start in range(0, tiles.size(), TILE_COLUMNS):
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", TILE_GAP)
-		for k in TILE_COLUMNS:
-			if start + k < tiles.size():
-				row.add_child(tiles[start + k])
-			else:
-				var gap := Control.new()
-				gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				row.add_child(gap)
-		parent.add_child(row)
-		rows.append(row)
-	return rows
-
-
-func _tile_style(highlight: bool, in_squad: bool) -> StyleBoxFlat:
-	var style := UiKit.card_style(highlight)
-	if in_squad and not highlight:
-		style.border_color = Color(UiKit.GOOD, 0.7)
-	style.set_content_margin_all(6)
-	return style
 
 
 ## Eine Kachel: das Bild des DROME, so wie er gerade gebaut ist. Im Squad:
@@ -1166,50 +1129,6 @@ func _head_style() -> StyleBoxFlat:
 	var style := UiKit.card_style(false)
 	style.set_content_margin_all(10)
 	return style
-
-
-## Die DROME-Auswahl oben: der Squad zuerst, dann der Rest.
-func _picker() -> Control:
-	var scroll := ScrollContainer.new()
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.custom_minimum_size = Vector2(0, 70)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	scroll.add_child(row)
-	for index in _squad_first_order():
-		var entry: RosterEntry = _entries()[index]
-		var panel := _tappable(UiKit.card_style(index == _selected), func():
-			_selected = index
-			_selected_slot = ""
-			_refresh())
-		var box := VBoxContainer.new()
-		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		box.add_theme_constant_override("separation", 0)
-		box.custom_minimum_size = Vector2(112, 0)
-		panel.add_child(box)
-		# Entwurf: Name und "LV n · #01" statt Bild -- spart Hoehe.
-		# Feste Breite: lange Namen (NEON NIMBUS) brechen um statt zu schieben.
-		var dname := SquadPicker.name_label(entry.name, 12)
-		dname.add_theme_color_override("font_color",
-			Arcade.CYAN if index == _selected else (Arcade.WHITE if entry.in_squad else Arcade.MUTED))
-		dname.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		dname.custom_minimum_size = Vector2(80, 28)
-		box.add_child(_quiet(dname))
-		var dsub := SquadPicker.subtitle_label(Roster.subtitle(entry), 9, 112.0)
-		dsub.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		box.add_child(_quiet(dsub))
-		box.add_child(_quiet(Arcade.label("LV %d · %s" % [entry.level, _code(index)], 12,
-			Arcade.MUTED, "medium")))
-		row.add_child(panel)
-		if index == _selected:
-			# Der gewaehlte DROME steht im Blick, auch weit hinten in der Reihe.
-			var bring := func():
-				await scroll.get_tree().process_frame
-				await scroll.get_tree().process_frame
-				if is_instance_valid(panel):
-					scroll.ensure_control_visible(panel)
-			bring.call_deferred()
-	return scroll
 
 
 ## Die Halter als Formen: die Ausruestungshalter in ihrer Klassenform (den

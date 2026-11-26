@@ -14,7 +14,6 @@ extends RefCounted
 
 # --- Masse -----------------------------------------------------------------
 
-const H1 := 28
 const H2 := 22
 const BODY := 18
 const SMALL := 16

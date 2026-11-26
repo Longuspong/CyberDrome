@@ -355,12 +355,6 @@ func _spring_step(delta: float) -> void:
 		_spring_on = false
 
 
-## Gleitet die Figur gerade zu ihrem Feld (laeuft sie)? Die Logik-Sicht:
-## der Fuehrungspunkt ist unterwegs.
-func is_gliding() -> bool:
-	return _glide_total > 0.0
-
-
 ## Tempo und Beschleunigung der gezeichneten Figur (Bildpunkte je s bzw. s^2)
 ## -- fuer Neigung, Schrittlaenge und Blick in Laufrichtung (Arena3D).
 func visual_velocity() -> Vector2:
@@ -492,13 +486,6 @@ func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tween.tween_property(_rig, "position", home, RECOIL_TIME * 2.2) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-
-
-## Waffe hochhalten (Runenstab vor dem Vortex, 18. Nov. 2026). Nur in der
-## gemeinsamen 3D-Szene; ohne sie bleibt der DROME ruhig.
-func play_raise(action: ActionData, seconds: float) -> void:
-	if arena != null:
-		arena.raise(self, action, seconds)
 
 
 ## Ein Wurf (Runenstab-Faehigkeit, Bumerang): hoch, Schwung, loslassen in der
@@ -1021,11 +1008,6 @@ func def() -> int:
 ## Das Schild-Maximum, inklusive Statuseffekten.
 func shield_max() -> int:
 	return maxi(0, stat("shield_max"))
-
-
-func shield_fraction() -> float:
-	var maximum := shield_max()
-	return 0.0 if maximum <= 0 else float(shield) / float(maximum)
 
 
 ## Schild-Nachfuellung nach dem SCHILDPULS (8. Nov. 2026): ein Wert S regelt

@@ -25,32 +25,6 @@ static func build_drome(entry: Dictionary) -> DromeBuild:
 	return build
 
 
-## Die Module eines Team-DROME bei ``count`` Plaetzen: die ersten der Liste;
-## mit ``with_recipe`` und mindestens zwei Plaetzen steht vorn sein Rezept.
-## Nur was zur Waffe im ersten Halter passt (ruhende Module traegt kein
-## Gegner) und was es gibt.
-static func modules_for(entry: Dictionary, build: DromeBuild, count: int, with_recipe: bool) -> Array:
-	var picked: Array = []
-	if count <= 0 or build == null:
-		return picked
-	var slot := first_weapon_slot(build)
-	if slot == "":
-		return picked
-	var weapon := build.part_in(slot)
-	var recipe_id := str(entry.get("recipe", ""))
-	if with_recipe and count >= 2 and recipe_id != "":
-		var recipe := ModuleData.get_module(StringName(recipe_id))
-		if recipe != null and recipe.fits(weapon):
-			picked.append(recipe.id)
-	for module_id in entry.get("modules", []):
-		if picked.size() >= count:
-			break
-		var module := ModuleData.get_module(StringName(str(module_id)))
-		if module != null and module.fits(weapon) and not picked.has(module.id):
-			picked.append(module.id)
-	return picked
-
-
 ## Der Halter mit der ersten Waffe -- dort stecken die Module der Gegner.
 static func first_weapon_slot(build: DromeBuild) -> String:
 	for slot in build.equip_slots():

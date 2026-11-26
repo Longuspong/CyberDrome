@@ -266,14 +266,6 @@ static func bios_items() -> Array:
 	return out
 
 
-## Die Ergebnisse der Rezept-BIOS (Taktgeber ...).
-static func bios_results() -> Array:
-	var out: Array = []
-	for key in data().get("bios_recipes", {}):
-		out.append(_modules[StringName(key)])
-	return out
-
-
 func is_bios_item() -> bool:
 	return bios_kind != ""
 

@@ -27,10 +27,6 @@ func _ready() -> void:
 	add_child(_cover)
 
 
-func is_busy() -> bool:
-	return _busy
-
-
 ## Wechselt zur Szene ``path`` mit Blende.
 func go(path: String) -> void:
 	if _busy:

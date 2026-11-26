@@ -61,15 +61,6 @@ static func fit_sprite(sprite: Sprite2D) -> void:
 	sprite.scale = Vector2(factor, factor)
 
 
-## Setzt den Drehpunkt eines Sprites auf die Feldmitte. Nur fuer die Teile, die
-## sich drehen -- der Drift-Pfeil. ``offset`` zaehlt in Texturpixeln und muss
-## deshalb durch denselben Faktor, den fit_sprite() gesetzt hat.
-static func pivot_on_tile_center(sprite: Sprite2D) -> void:
-	var factor: float = sprite.scale.x if sprite.scale.x != 0.0 else 1.0
-	sprite.offset = -SPRITE_ORIGIN / factor
-	sprite.position += SPRITE_ORIGIN
-
-
 ## Feld -> Bildschirmposition der Feldmitte.
 static func map_to_local(cell: Vector2i) -> Vector2:
 	return Vector2(float(cell.x) * COL_W, (float(cell.y) + 0.5 * float(cell.x & 1)) * ROW_H)

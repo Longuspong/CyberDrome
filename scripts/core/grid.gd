@@ -20,7 +20,6 @@ extends RefCounted
 ## axiale Koordinaten -- jeder Schritt in eine der sechs Richtungen kostet 1.
 const DEFAULT_WIDTH := 9
 const DEFAULT_HEIGHT := 15
-const DEFAULT_SIZE := DEFAULT_WIDTH     # alter Name, nur noch fuer die Breite
 
 ## Die sechs Richtungen, axial (dq, dr). Seit 18. Nov. 2026 liegen die
 ## Sechsecke flach (Kante oben und unten, Wunsch des Spielers): Spalten laufen
@@ -166,13 +165,6 @@ func is_occupied(tile: Vector2i, exclude_id = null) -> bool:
 	return who != null and who != exclude_id
 
 
-func tile_of(unit_id) -> Vector2i:
-	for tile in _occupants:
-		if _occupants[tile] == unit_id:
-			return tile
-	return Vector2i(-1, -1)
-
-
 ## Darf ``unit_id`` hier stehen? Im Feld, kein Hindernis und nicht von
 ## jemand anderem belegt.
 func can_stand_on(tile: Vector2i, unit_id = null) -> bool:
@@ -182,12 +174,3 @@ func can_stand_on(tile: Vector2i, unit_id = null) -> bool:
 func is_blocked(tile: Vector2i) -> bool:
 	return obstacles.has(tile)
 
-
-func duplicate_grid() -> Grid:
-	var copy := Grid.new(width, height)
-	copy._occupants = _occupants.duplicate()
-	copy.obstacles = obstacles.duplicate()
-	copy.holes = holes.duplicate()
-	copy.map_id = map_id
-	copy.region = region
-	return copy

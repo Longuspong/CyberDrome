@@ -571,17 +571,6 @@ func _frame_board(delta: float = 1.0) -> void:
 	_set_zoom(zoom)
 
 
-## Hoehe der Leisten oben bzw. unten (Bildschirm-Pixel): jede sichtbare Leiste
-## zaehlt zu der Haelfte, in der ihre Mitte liegt. Ohne Groesse (erstes Bild)
-## gelten Schaetzwerte.
-func _hud_top() -> float:
-	return _hud_edges().x
-
-
-func _hud_bottom() -> float:
-	return _hud_edges().y
-
-
 func _hud_edges() -> Vector2:
 	var visible := get_viewport().get_visible_rect().size
 	var top := 96.0
