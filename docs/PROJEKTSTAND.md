@@ -143,8 +143,17 @@ Selbst nachgespielt (Kampfbild per xvfb, Seeds 5003/7001/7002) und gemessen:
   Gebaeude kaufen, Abreissen (Besitz bleibt, Puffer ins Lager), Tier-2-Ziel, Lager mit
   Hochrechnung je Einsatz. Inventar zeigt "Ressourcen"; im Reiter Charger "Rohling herstellen"
   (Vorschlag 2 Legierung + 1 Plasma, `factory.json` -> `herstellen`).
+* **Bedienung ueber das Feld (27. Nov. 2026, Wunsch des Spielers):** die Werkzeugleiste unter
+  der Platine ist weg. Tipp auf ein freies Feld -> Baumenue als Blatt von unten (Kacheln nach
+  Gruppen; im Besitz und frei = hell, kaufbar = grau, hoeheres Tier = grau "ab Tier N"); Tipp
+  waehlt, darunter Bauen bzw. Kaufen + Details (Doppeltipp = Bauen/Kaufen, nochmal tippen =
+  Details). Freies Quellfeld: nur die passenden Foerderer, leuchtend umrandet, eine einzige Art
+  ist gleich gewaehlt. Nach dem Kauf bleibt das Menue offen, die Art ist bereit zum Bauen.
+  Bebautes Feld -> Details oder Abreissen. Gesperrte Felder und Netz weiter ueber die Karte
+  unter der Platine (zeigt das gewaehlte Feld live).
 * Tests `tests/test_factory.gd`, Smoke-Test bedient die Platine, Bild:
-  `tests/screenshot.gd -- res://scenes/resources.tscn <png> 60 factory=200`.
+  `tests/screenshot.gd -- res://scenes/resources.tscn <png> 60 factory=200` (mit
+  `fabriktipp=1,1[:sol]` ein Feld antippen, optional eine Art waehlen).
 * Offen: Rezept-Raten/Takte fuers Spiel, Tier 3/4 ueber die Story, Baukerne raus (erst mit den
   DROME-Teilen), Anzeigetexte noch ohne `tr()`.
 

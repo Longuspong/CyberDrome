@@ -144,6 +144,16 @@ func _process(_delta: float) -> bool:
 				var opener = load("res://scripts/ui/cache_opener.gd").show_over(current_scene, bits[0])
 				if bits.size() > 1:
 					opener.call_deferred("_open")
+			# fabriktipp=1,1[:sol]: auf der Fabrik-Platine dieses Feld antippen
+			# (oeffnet Bau- bzw. Gebaeudemenue), optional eine Art im Baumenue waehlen.
+			if str(extra).begins_with("fabriktipp="):
+				var bits := str(extra).substr(11).split(":")
+				var views := current_scene.find_children("*", "FactoryView", true, false)
+				if not views.is_empty():
+					views[0].tapped(bits[0])
+					if bits.size() > 1:
+						views[0].pick = bits[1]
+						views[0]._open_build_menu(bits[0])
 			# kampf=los: im Kampfbildschirm die Aufstellung beenden, der Kampf laeuft.
 			if str(extra) == "kampf=los" and current_scene.has_method("_start_fight"):
 				current_scene.call("_start_fight")

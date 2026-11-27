@@ -129,10 +129,26 @@ func _process(_delta: float) -> bool:
 			if board_view.is_empty():
 				push_error("SMOKE: FactoryView fehlt im Reiter Linien")
 			else:
-				board_view[0].tapped("1,0")
-				board_view[0].tool = "sol"
-				board_view[0].tapped("1,1")
-				board_view[0].tapped("3,0")
+				# Bedienung ueber das Feld (27. Nov. 2026): freies Feld -> Baumenue,
+				# Kachel waehlen, bauen; bebautes Feld -> Details/Abreissen; Quelle.
+				var fv = board_view[0]
+				fv.tapped("1,1")
+				fv.pick = "sol"
+				fv._open_build_menu("1,1")
+				fv._open_type_details("1,1", "sol")
+				fv._build("1,1", "sol")
+				fv.tapped("1,1")
+				fv._open_building_details("1,1")
+				fv._demolish("1,1")
+				fv._buy("1,1", "rec")
+				var fsim = load("res://scripts/core/factory_sim.gd")
+				for cell in fsim.cells():
+					if fsim.source_at(cell) != "" and gs.roster.factory_sim().unlocked(cell) \
+							and gs.roster.factory_sim().building_at(cell).is_empty():
+						fv.tapped(cell)
+						break
+				fv.tapped("3,0")
+				load("res://scripts/ui/info_popup.gd").close_all(fv)
 				board_view[0]._live_tick()
 			# Werkbank (24. Nov. 2026): DROMEs mit Bauplan-Baum und Ziel, dann Charger.
 			gs.roster.factory_sim().set_goal("drome:jugg_body")

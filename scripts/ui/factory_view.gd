@@ -7,8 +7,16 @@ extends VBoxContainer
 ## bewusst schlicht, die Optik kommt aus der Design-Sitzung (Abschnitt 12).
 ##
 ## Live laeuft alle ``FactorySim.live_seconds()`` ein Takt, aber nur, solange
-## der Reiter offen ist. Tippen: Feld waehlen; mit gewaehltem Gebaeude unten
-## baut ein Tipp auf ein freies, passendes Feld.
+## der Reiter offen ist.
+##
+## Bedienung (27. Nov. 2026, Wunsch des Spielers) -- alles ueber das Feld:
+##   * freies Feld: Baumenue als Blatt von unten. Gekaufte, freie Gebaeude
+##     normal, kaufbare ausgegraut. Tipp waehlt, darunter Bauen bzw. Kaufen
+##     und Details (wie ``Tile``: nochmal tippen = Details, Doppeltipp = Bauen).
+##   * freies Quellfeld: dasselbe Menue nur mit den passenden Foerderern,
+##     leuchtend umrandet.
+##   * bebautes Feld: Details oder Abreissen.
+##   * gesperrtes Feld: die Karte unter der Platine bietet die Feldgruppe an.
 
 const GROUPS := [["foerderer", "Förderer"], ["verarbeitung", "Verarbeitung"], ["strom", "Strom"],
 	["logistik", "Logistik"]]
@@ -17,17 +25,18 @@ var _sim: FactorySim
 var _board: Board
 var _head: Label
 var _info: VBoxContainer
-var _tools: VBoxContainer
 var _store: VBoxContainer
 var _goal: VBoxContainer
 var _timer: Timer
 var _note: Label
+## Ziel der Zeilen von ``_row``/``_title`` (Karte unter der Platine oder ein Popup).
+var _box: VBoxContainer
 
-## Gewaehltes Feld ("" = keins), Bauwerkzeug (Gebaeudeart, "" = keins),
-## angetippte gesperrte Feldgruppe (id, "" = keine).
+## Gewaehltes Feld ("" = keins), angetippte gesperrte Feldgruppe (id, "" = keine).
 var selected := ""
-var tool := ""
 var chunk := ""
+## Im Baumenue gewaehlte Gebaeudeart ("" = keine).
+var pick := ""
 ## Waren, die dem Werkbank-Ziel fehlen ({ware: menge}) -- die Platine hebt ihre
 ## Hersteller hervor.
 var goal_wares: Dictionary = {}
@@ -45,9 +54,6 @@ func _ready() -> void:
 	_note.visible = false
 	add_child(_note)
 	_info = UiKit.card(self)
-	_tools = VBoxContainer.new()
-	_tools.add_theme_constant_override("separation", 6)
-	add_child(_tools)
 	_store = UiKit.card(self)
 	_goal = UiKit.card(self)
 	_timer = Timer.new()
@@ -88,7 +94,6 @@ func refresh() -> void:
 			"fehlt " + ", ".join(parts) if not parts.is_empty() else "alles da -- Werkbank"]
 	_board.queue_redraw()
 	_build_info()
-	_build_tools()
 	_build_store()
 	_build_goal()
 
@@ -102,24 +107,221 @@ func _say(text: String) -> void:
 func tapped(k: String) -> void:
 	_say("")
 	chunk = ""
-	_show_type = ""
 	if k not in FactorySim.cells():
 		selected = ""
 	elif not _sim.unlocked(k):
 		selected = ""
-		tool = ""
 		chunk = str(FactorySim.chunk_of(k).get("id", ""))
-	elif tool != "" and _sim.building_at(k).is_empty() and k != FactorySim.net_cell():
-		var why := _sim.place(k, tool)
-		if why != "":
-			_say(why)
-		else:
-			selected = k
-			if _sim.placed(tool) >= _sim.owned(tool):
-				tool = ""
-			GameState.save_roster()
 	else:
 		selected = k
+		if not _sim.building_at(k).is_empty():
+			_open_building_menu(k)
+		elif k != FactorySim.net_cell():
+			# Passt nur eine Art (meist auf einer Quelle), ist sie gleich gewaehlt.
+			var types := types_for(k)
+			pick = str(types[0]) if types.size() == 1 else ""
+			_open_build_menu(k)
+	refresh()
+
+
+# ---------------------------------------------------------------- Baumenue
+
+## Gebaeudearten, die auf das freie Feld ``k`` passen: auf einer Quelle nur
+## ihre Foerderer, sonst alles ohne Quelle.
+func types_for(k: String) -> Array:
+	var src := FactorySim.source_at(k)
+	var out: Array = []
+	for group in GROUPS:
+		for type in FactorySim.defs():
+			var d := FactorySim.def(type)
+			if str(d.get("gruppe", "")) != group[0]:
+				continue
+			if (src != "" and str(d.get("quelle", "")) == src) or (src == "" and not d.has("quelle")):
+				out.append(type)
+	return out
+
+
+## "bereit" = freies Exemplar im Besitz, "kaufen" = Tier frei, aber keins
+## uebrig, "gesperrt" = erst ab hoeherem Tier.
+func type_state(type: String) -> String:
+	var d := FactorySim.def(type)
+	if int(d.get("tier", 1)) > _sim.tier():
+		return "gesperrt"
+	return "bereit" if _sim.owned(type) > _sim.placed(type) else "kaufen"
+
+
+func _open_build_menu(k: String) -> InfoPopup:
+	var src := FactorySim.source_at(k)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 8)
+	var types := types_for(k)
+	var group := ""
+	var flow: HFlowContainer = null
+	for type in types:
+		var d := FactorySim.def(type)
+		if src == "" and str(d["gruppe"]) != group:
+			group = str(d["gruppe"])
+			for g in GROUPS:
+				if g[0] == group:
+					body.add_child(Arcade.label(str(g[1]).to_upper(), 12, Arcade.MUTED, "bold", 0.16))
+			flow = null
+		if flow == null:
+			flow = HFlowContainer.new()
+			flow.add_theme_constant_override("h_separation", 6)
+			flow.add_theme_constant_override("v_separation", 6)
+			body.add_child(flow)
+		flow.add_child(_type_tile(k, type, src != ""))
+	if types.is_empty():
+		body.add_child(UiKit.label("Hier passt kein Gebäude.", UiKit.SMALL, UiKit.MUTED))
+	# Handlungen zur gewaehlten Art unter den Kacheln.
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	body.add_child(actions)
+	var popup := InfoPopup.open(self, "Bauen" if src == "" else FactorySim.source_name(src), {
+		"sheet": true, "animate": pick == "",
+		"subtitle": ("Feld %s · im Besitz: hell · kaufbar: grau" % k) if src == ""
+			else "Quelle für %s · passende Förderer leuchten" % FactorySim.ware_name(FactorySim.source_ware(src)),
+		"subtitle_color": UiKit.MUTED if src == "" else FactorySim.ware_color(FactorySim.source_ware(src)),
+		"body": body})
+	if pick == "":
+		var hint := UiKit.label("Tippe ein Gebäude an.", UiKit.SMALL, UiKit.MUTED)
+		hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		actions.add_child(hint)
+		return popup
+	var state := type_state(pick)
+	var name := str(FactorySim.def(pick)["name"])
+	var details := UiKit.outline_button("Details", UiKit.CARD_LINE)
+	details.pressed.connect(func(): _open_type_details(k, pick))
+	if state == "bereit":
+		var build := UiKit.button("%s bauen" % name, true)
+		build.pressed.connect(func():
+			popup.close()
+			_build(k, pick))
+		actions.add_child(build)
+	elif state == "kaufen":
+		var price: Dictionary = FactorySim.def(pick).get("preis", {})
+		var buy := UiKit.button("Kaufen\n%s" % FactorySim.amounts_text(price), true)
+		buy.disabled = not _sim.can_pay(price)
+		buy.pressed.connect(func(): _buy(k, pick))
+		actions.add_child(buy)
+	else:
+		var later := UiKit.label("Erst ab Tier %d." % int(FactorySim.def(pick)["tier"]), UiKit.SMALL, UiKit.WARN)
+		later.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		actions.add_child(later)
+	actions.add_child(details)
+	return popup
+
+
+func _type_tile(k: String, type: String, at_source: bool) -> Tile:
+	var d := FactorySim.def(type)
+	var state := type_state(type)
+	var col := Color(str(d["farbe"]))
+	var tile := Tile.new("fab:" + type, null, "", Vector2(92, 76))
+	tile.managed = true
+	var code := Arcade.label(str(d["kurz"]), 18, col if state == "bereit" else UiKit.MUTED, "display", 0.04)
+	code.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tile.add_extra(code)
+	tile.add_caption(str(d["name"]), UiKit.TEXT, 12)
+	var line := "%d frei" % (_sim.owned(type) - _sim.placed(type))
+	if state == "kaufen":
+		line = "kaufbar" if _sim.can_pay(d.get("preis", {})) else "zu teuer"
+	elif state == "gesperrt":
+		line = "ab Tier %d" % int(d["tier"])
+	tile.add_caption(line, UiKit.WARN if state == "bereit" else UiKit.MUTED, 11)
+	tile.accent = col
+	tile.glow = at_source or state == "bereit"
+	tile.dimmed = state != "bereit" and pick != type
+	tile.selected = pick == type
+	tile.on_select = func():
+		pick = type
+		_open_build_menu(k)
+	tile.on_info = func(): _open_type_details(k, type)
+	tile.on_action = func():
+		match type_state(type):
+			"bereit":
+				InfoPopup.close_all(self)
+				_build(k, type)
+			"kaufen":
+				_buy(k, type)
+	return tile
+
+
+func _build(k: String, type: String) -> void:
+	var why := _sim.place(k, type)
+	_say(why if why != "" else "")
+	if why == "":
+		selected = k
+		pick = ""
+		GameState.save_roster()
+	refresh()
+
+
+func _buy(k: String, type: String) -> void:
+	var why := _sim.buy_building(type)
+	_say(why if why != "" else "%s gekauft -- jetzt bauen." % str(FactorySim.def(type)["name"]))
+	if why == "":
+		GameState.save_roster()
+	pick = type
+	refresh()
+	_open_build_menu(k)
+
+
+func _open_type_details(k: String, type: String) -> void:
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 6)
+	_box = body
+	_tool_info(type)
+	_box = _info
+	var state := type_state(type)
+	var actions: Array = [{"text": "Zurück", "call": func():
+		pick = type
+		_open_build_menu(k)}]
+	if state == "bereit":
+		actions.append({"text": "Bauen", "primary": true, "call": func(): _build(k, type)})
+	elif state == "kaufen":
+		var price: Dictionary = FactorySim.def(type).get("preis", {})
+		actions.append({"text": "Kaufen", "primary": true, "disabled": not _sim.can_pay(price),
+			"call": func(): _buy(k, type)})
+	InfoPopup.open(self, "", {"sheet": true, "animate": false, "body": body, "actions": actions})
+
+
+# ---------------------------------------------------------------- Bebautes Feld
+
+func _open_building_menu(k: String) -> void:
+	var d := FactorySim.def(str(_sim.building_at(k)["t"]))
+	InfoPopup.open(self, str(d["name"]), {"sheet": true,
+		"kicker": str(d["kurz"]),
+		"subtitle": _sim.status_text(k),
+		"subtitle_color": _status_color(str(_sim.info_of(k).get("status", "ok"))),
+		"actions": [
+			{"text": "Details", "call": func(): _open_building_details(k)},
+			{"text": "Abreißen", "call": func(): _demolish(k)},
+		]})
+
+
+func _open_building_details(k: String) -> void:
+	var b := _sim.building_at(k)
+	if b.is_empty():
+		return
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 6)
+	_box = body
+	_building_info(k, b)
+	_box = _info
+	InfoPopup.open(self, "", {"sheet": true, "animate": false, "body": body, "actions": [
+		{"text": "Zurück", "call": func(): _open_building_menu(k)},
+		{"text": "Abreißen", "call": func(): _demolish(k)},
+	]})
+
+
+func _demolish(k: String) -> void:
+	var b := _sim.building_at(k)
+	if b.is_empty():
+		return
+	var name := str(FactorySim.def(str(b["t"]))["name"])
+	_sim.remove(k)
+	_say("%s zurück im Besitz, Pufferinhalt im Lager." % name)
+	GameState.save_roster()
 	refresh()
 
 
@@ -128,16 +330,18 @@ func tapped(k: String) -> void:
 func _row(text: String, color: Color = UiKit.TEXT, size: int = UiKit.SMALL) -> Label:
 	var label := UiKit.label(text, size, color)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_info.add_child(label)
+	_box.add_child(label)
 	return label
 
 
 func _title(code: String, name: String, color: Color) -> void:
-	_info.add_child(Arcade.label(("%s  %s" % [code, name]).strip_edges().to_upper(), 16, color, "bold", 0.1))
+	_box.add_child(Arcade.label(("%s  %s" % [code, name]).strip_edges().to_upper(), 16, color, "bold", 0.1))
 
 
+## Karte unter der Platine: das gewaehlte Feld, live mit jedem Takt.
 func _build_info() -> void:
 	UiKit.clear(_info)
+	_box = _info
 	if chunk != "":
 		_chunk_info()
 		return
@@ -154,16 +358,13 @@ func _build_info() -> void:
 		_row("Gerade abgegeben: %s von %d." % [FactorySim.num(float(si.get("used", 0.0))),
 			int(netz.get("strom", 4))], UiKit.MUTED)
 		return
-	if tool != "" or _show_type != "":
-		_tool_info(tool if tool != "" else _show_type)
-		return
 	var src := FactorySim.source_at(selected)
 	if selected != "" and src != "":
 		_title(src, FactorySim.source_name(src), FactorySim.ware_color(FactorySim.source_ware(src)))
-		_row("Hier kann ein Förderer %s holen." % FactorySim.ware_name(FactorySim.source_ware(src)))
+		_row("Hier kann ein Förderer %s holen. Tippe das Feld an, um einen zu bauen." % FactorySim.ware_name(FactorySim.source_ware(src)))
 		return
 	_title("", "Platine", UiKit.HEADING)
-	_row("Wähle unten ein Gebäude und tippe auf ein gelb markiertes Feld. Tippe Gebäude an, um Durchsatz, Puffer und Strom zu sehen. Gesperrte Felder lassen sich kaufen.")
+	_row("Tippe ein freies Feld, um zu bauen -- auf einer Quelle stehen die passenden Förderer zur Wahl. Tippe ein Gebäude für Details oder zum Abreißen. Gesperrte Felder lassen sich kaufen.")
 	_row("Unterm Gebäude: cyan läuft, violett läuft an, magenta wartet, orange zu wenig Strom, gelb Überschuss ins Lager. Magenta blinkend = Engpass.",
 		UiKit.MUTED)
 
@@ -217,40 +418,20 @@ func _building_info(k: String, b: Dictionary) -> void:
 	if d.has("brennstoff"):
 		_row("Brenner: " + ("gezündet" if b["on"] else "aus, zündet bei %d %s" % [
 			int(FactorySim.setting("zuenden_bei", 5)), FactorySim.ware_name(str(d["brennstoff"]))]), UiKit.MUTED)
-	var remove := UiKit.outline_button("Abreißen (zurück in den Besitz)", UiKit.BAD)
-	remove.pressed.connect(func():
-		_sim.remove(k)
-		selected = ""
-		_say("%s zurück im Besitz, Pufferinhalt im Lager." % str(d["name"]))
-		GameState.save_roster()
-		refresh())
-	_info.add_child(remove)
 
 
 func _tool_info(type: String) -> void:
 	var d := FactorySim.def(type)
-	var locked := int(d.get("tier", 1)) > _sim.tier()
 	_title(str(d["kurz"]), "%s · Tier %d" % [str(d["name"]), int(d.get("tier", 1))], Color(str(d["farbe"])))
 	var power := ""
 	if float(d.get("strom", 0)) > 0.0:
 		power = " · braucht %d Strom" % int(d["strom"])
 	_row(FactorySim.recipe_text(type) + power)
 	_row(str(d.get("text", "Holt seine Zutaten bei den Nachbarn ab.")), UiKit.MUTED)
-	var line := "Besitz %d · gebaut %d" % [_sim.owned(type), _sim.placed(type)]
-	if tool == type and not locked:
-		line += " · tippe ein gelb markiertes Feld"
-	_row(line, UiKit.WARN if tool == type else UiKit.MUTED)
-	var buy := UiKit.outline_button("Weiteres kaufen: " + FactorySim.amounts_text(d.get("preis", {})))
-	buy.disabled = locked or not _sim.can_pay(d.get("preis", {}))
-	buy.pressed.connect(func():
-		var why := _sim.buy_building(type)
-		_say(why if why != "" else "%s gekauft." % str(d["name"]))
-		if why == "":
-			tool = type
-			selected = ""
-			GameState.save_roster()
-		refresh())
-	_info.add_child(buy)
+	_row("Besitz %d · gebaut %d · Preis je Stück %s" % [_sim.owned(type), _sim.placed(type),
+		FactorySim.amounts_text(d.get("preis", {}))], UiKit.MUTED)
+	if int(d.get("tier", 1)) > _sim.tier():
+		_row("Erst ab Tier %d." % int(d["tier"]), UiKit.WARN)
 
 
 func _chunk_info() -> void:
@@ -280,7 +461,7 @@ func _chunk_info() -> void:
 			chunk = ""
 			GameState.save_roster()
 		refresh())
-	_info.add_child(buy)
+	_box.add_child(buy)
 
 
 static func _status_color(status: String) -> Color:
@@ -291,52 +472,6 @@ static func _status_color(status: String) -> Color:
 		"uplink": return UiKit.WARN
 		"relay": return Color("#9d84ff")
 	return UiKit.ACCENT
-
-
-# ---------------------------------------------------------------- Gebaeude
-
-func _build_tools() -> void:
-	UiKit.clear(_tools)
-	for group in GROUPS:
-		var types: Array = []
-		for type in FactorySim.defs():
-			if str(FactorySim.def(type).get("gruppe", "")) == group[0]:
-				types.append(type)
-		if types.is_empty():
-			continue
-		_tools.add_child(Arcade.label(str(group[1]).to_upper(), 12, Arcade.MUTED, "bold", 0.16))
-		var flow := HFlowContainer.new()
-		flow.add_theme_constant_override("h_separation", 6)
-		flow.add_theme_constant_override("v_separation", 6)
-		_tools.add_child(flow)
-		for type in types:
-			flow.add_child(_tool_button(type))
-
-
-func _tool_button(type: String) -> Button:
-	var d := FactorySim.def(type)
-	var locked := int(d.get("tier", 1)) > _sim.tier()
-	var free := _sim.owned(type) - _sim.placed(type)
-	var text := "%s  %s\n%s" % [str(d["kurz"]), str(d["name"]),
-		("ab Tier %d" % int(d["tier"])) if locked else "%d/%d gebaut" % [_sim.placed(type), _sim.owned(type)]]
-	var button := UiKit.outline_button(text, Color(str(d["farbe"])) if tool == type else UiKit.CARD_LINE)
-	button.custom_minimum_size = Vector2(118, 52)
-	button.add_theme_font_size_override("font_size", 13)
-	if locked or free <= 0:
-		button.modulate = Color(1, 1, 1, 0.55)
-	button.pressed.connect(func():
-		chunk = ""
-		_say("")
-		# Ohne freies Exemplar (oder gesperrt) zeigt der Knopf nur die Info mit Kaufen.
-		tool = "" if tool == type or locked or free <= 0 else type
-		_show_type = type
-		selected = ""
-		refresh())
-	return button
-
-
-## Gebaeudeart, deren Info gezeigt wird, ohne dass gebaut werden kann.
-var _show_type := ""
 
 
 # ---------------------------------------------------------------- Lager + Ziel
@@ -414,7 +549,7 @@ class Board extends Control:
 
 	func _process(delta: float) -> void:
 		_pulse += delta
-		if view._sim.engpass != "" or view.tool != "":
+		if view._sim.engpass != "":
 			queue_redraw()
 
 	func center(k: String) -> Vector2:
@@ -480,8 +615,8 @@ class Board extends Control:
 				draw_arc(c, _size * 0.42, 0, TAU, 24, Color(col, 0.8), 2.0)
 				draw_string(font, c + Vector2(-_size, _size * 0.14), src, HORIZONTAL_ALIGNMENT_CENTER,
 					_size * 2.0, int(_size * 0.38), col)
-			if view.tool != "" and sim.can_place(k, view.tool) == "":
-				draw_polyline(_hex(c, _size * 0.8), Color("#ffe14d", 0.35 + 0.4 * pa), 1.5)
+			if sel == k and b.is_empty():
+				draw_polyline(_hex(c, _size * 0.96), Color("#ffe14d"), 2.5)
 		# Netzanschluss
 		var nc := center(FactorySim.net_cell())
 		draw_colored_polygon(_hex(nc, _size * 0.8), Color("#241046"))
