@@ -13,7 +13,11 @@ reduziert (27. Nov., Ramme/Schraubenschluessel/Bumerang/Neon-Blaster/Moerser ent
 **Werkblatt vom 27. Nov. uebernommen** (`SKILLBAUM_KONZEPT.md` 5e): Molok als **Gunship**
 (ein Halter, Waffe an beiden Armen, `mirror` in `slot_rules`), Strix-Passive **Focuslense**,
 neue Tempo-/Schildpulswerte, Echo-Takt aufgerundet, Halter-Kuerzel S/M/X + -F/-N.
-Nimbus (Kernspieler) wird ein Supporter und wartet; der heutige Nimbus lebt als Neon Nimbus.
+Nimbus (Kernspieler) wird ein Supporter; der heutige Nimbus lebt als Neon Nimbus. Seit 27. Nov.
+abends: Nimbus traegt das **Repair-Kit** (speichert angerichteten Schaden, gibt ihn dem Team
+als Schild + Reparatur zurueck), Hammer ohne Integritaetsschaden; **Spielstand 3 ist ein
+Testspielstand** (1000 von allem, jede Waffe extra), den jede neue Version neu schreibt
+(`GameState.refresh_test_slot`, Versionskennung `data/build.json` aus `tools/build_web.sh`).
 
 **Ganz zuerst (seit 17. Nov. 2026, zuletzt 18. Nov. abends): `docs/UEBERGABE_3D.md`, Abschnitt „Stand 18. Nov.“** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung und 3D-Boden `ArenaFloor3D` seit 18. Nov.; sichtbare Passiven, Muendungsblitz und 3D-Deko seit 18. Nov.; Beine im Wechsel, alle Faehigkeiten lesbar (`AbilityPainter`), Waffenfarben mit Glanzkante (`WEAPON_FINISH`), Generator-Bausteine BP/SW/EX und Redesign aller Chassis seit 18. Nov. -- `DROME_UMSETZUNG.md` 4g; Fraktions-Paletten fuer Gegner und Faehigkeiten mit Ausholzeit/Abfolge (`AbilityFx`, `ActionData.windup`) seit 18. Nov.; alle Faehigkeiten animiert; Echo nacheinander und Flaechen am Wurfort seit 18. Nov., Balance gemessen; offen: Story-Level).
 

@@ -65,7 +65,7 @@ const STARTER_CHASSIS := [
 	{"body": &"jugg_body", "core": &"jugg_core",
 	 "equipment": [&"eq_deflector"]},
 	{"body": &"mage_body", "core": &"mage_core",
-	 "equipment": [&"eq_rune_staff"]},
+	 "equipment": [&"eq_repair_kit"]},
 	{"body": &"strix_body", "core": &"strix_core",
 	 "equipment": [&"eq_rail_lance"]},
 ]
@@ -74,7 +74,7 @@ const STARTER_CHASSIS := [
 ## Seit es nur noch einen Platz je DROME gibt (Molok seit 27. Nov. 2026 als
 ## Gunship auch), liegen die uebrigen Waffen hier und laden zum Umbauen ein.
 const STARTER_LOOSE_EQUIPMENT := [
-	&"eq_plasma_blade", &"eq_hammer",
+	&"eq_plasma_blade", &"eq_hammer", &"eq_rune_staff",
 ]
 
 
@@ -634,6 +634,29 @@ func seed_starter() -> void:
 
 	for part_id in STARTER_LOOSE_EQUIPMENT:
 		add_instance(part_id)
+
+
+## Testbestand (Spieler 27. Nov. 2026) fuer Spielstand 3, der sich mit jeder
+## neuen Version neu schreibt (GameState.refresh_test_slot): der Startbestand
+## eines neuen Spielstands, dazu je ``amount`` von jeder Ware der Fabrik
+## (auch Charger-Rohlinge und Keynode-Chips), jeder Energy Phase, jedem
+## Fraktionskern, jedem DROME-Teil und Spezialteil, und jede Waffe einmal extra.
+func seed_test_stock(amount: int = 1000) -> void:
+	seed_new_game()
+	for ware in FactorySim.wares():
+		materials[FactorySim.material_key(str(ware))] = amount
+	for element in Charger.element_ids():
+		materials["phase:" + str(element)] = amount
+	var dromes: Dictionary = Formations.data().get("dromes", {})
+	for variant in faction_variants():
+		materials["kern:" + Workbench.faction_of(variant)] = amount
+		materials["spezial:" + str(variant)] = amount
+	for chassis in (Workbench.cfg().get("dromes", {}) as Dictionary):
+		for part in Workbench.parts_of(str(chassis)):
+			materials[Workbench.part_key(str(chassis), str(part["id"]))] = amount
+	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+		add_instance(part.id)
+	coins = amount
 
 
 ## Startbestand eines NEUEN Spielstands (21. Nov. 2026, Wunsch des Spielers;

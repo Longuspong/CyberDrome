@@ -20,11 +20,12 @@ func test_starter_stock_matches_the_design() -> void:
 	var roster := _fresh()
 	# Vier Standard-Chassis = vier DROMEs.
 	t.equal(roster.entries.size(), 4, "vier Start-DROMEs")
-	# Vier Chassis + vier Kerne + sechs Ausruestungsteile (vier in den Kits:
-	# Blaster, Deflektor, Runenstab, Lanze; frei: Plasmaklinge, Hammer) = 14.
-	t.equal(roster.all_instances().size(), 14, "14 Instanzen im Startbestand")
+	# Vier Chassis + vier Kerne + sieben Ausruestungsteile (vier in den Kits:
+	# Blaster, Deflektor, Repair-Kit, Lanze; frei: Plasmaklinge, Hammer,
+	# Runenstab) = 15.
+	t.equal(roster.all_instances().size(), 15, "15 Instanzen im Startbestand")
 	for part_id in [&"eq_pulse_blaster", &"eq_hammer", &"eq_plasma_blade",
-			&"eq_rune_staff", &"eq_rail_lance", &"eq_deflector"]:
+			&"eq_rune_staff", &"eq_rail_lance", &"eq_deflector", &"eq_repair_kit"]:
 		t.equal(roster.total_count(part_id), 1,
 			"genau eine %s im Bestand" % part_id)
 	# Ein neuer Spielstand zieht mit jedem Standard-DROME einmal ins Gefecht.

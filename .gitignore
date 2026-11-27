@@ -11,6 +11,8 @@ venv/
 # Er enthaelt keine Geheimnisse -- ein Android-Keystore gehoerte NICHT hinein.
 build/
 .cache/
+# Versionskennung, schreibt tools/build_web.sh (Testspielstand Platz 3)
+data/build.json
 .vercel/
 
 # Editor / OS

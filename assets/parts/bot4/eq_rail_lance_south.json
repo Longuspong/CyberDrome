@@ -79,8 +79,9 @@
         "support": "",
         "damage_pct": 0.0,
         "base_action": "",
-        "hp_scaling": 0.0,
         "lifesteal": 0.0,
+        "stores_damage": false,
+        "release_store": false,
         "windup": 0.0,
         "salvo": 1
       },
@@ -109,8 +110,9 @@
         "support": "",
         "damage_pct": 1.2,
         "base_action": "act_raillance",
-        "hp_scaling": 0.0,
         "lifesteal": 0.0,
+        "stores_damage": false,
+        "release_store": false,
         "windup": 0.55,
         "salvo": 1
       }

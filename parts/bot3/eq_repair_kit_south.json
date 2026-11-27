@@ -1,0 +1,122 @@
+{
+  "id": "eq_repair_kit",
+  "code": "EQP-004",
+  "set": "bot3",
+  "type": "equipment",
+  "name": "Repair-Kit",
+  "direction": "south",
+  "svg": "eq_repair_kit_south.svg",
+  "view_box": [
+    0,
+    0,
+    128,
+    128
+  ],
+  "z_index": 30,
+  "anchors": [
+    {
+      "name": "mount",
+      "x": 64.0,
+      "y": 46.36
+    },
+    {
+      "name": "muzzle",
+      "x": 64.0,
+      "y": 26.31
+    }
+  ],
+  "color_scheme": {
+    "plate": "#55504a",
+    "plate_light": "#90887e",
+    "plate_dark": "#302d29",
+    "metal": "#b0a89a",
+    "accent": "#6dff9f",
+    "glow": "#9affcc",
+    "visor": "#9affcc",
+    "outline": "#07090d"
+  },
+  "tags": [
+    "weapon",
+    "support",
+    "tool",
+    "ranged"
+  ],
+  "mount_class": "medium",
+  "category": "weapon",
+  "pose": "hold",
+  "stats": {
+    "hp": 0,
+    "spd": 0,
+    "def": 0,
+    "shield": 10,
+    "shield_regen": 0,
+    "shield_bonus": 0.0,
+    "shield_pulse": 0,
+    "power": 0,
+    "efficiency": 0,
+    "module_slots": 0,
+    "hp_regen_pct": 0,
+    "ai_role": "",
+    "passive": "",
+    "actions": [
+      {
+        "id": "act_repair_bolt",
+        "display_name": "Angriff",
+        "category": "attack",
+        "targeting": "single",
+        "range_tiles": 4,
+        "aoe_radius": 0,
+        "power": 9,
+        "push_tiles": 0,
+        "energy_fraction": 0.5,
+        "interval": 1.2,
+        "trigger": null,
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null,
+        "heal": 0,
+        "shield_gain": 0,
+        "support": "",
+        "damage_pct": 0.0,
+        "base_action": "",
+        "lifesteal": 0.0,
+        "stores_damage": true,
+        "release_store": false,
+        "windup": 0.0,
+        "salvo": 1
+      },
+      {
+        "id": "act_repair_release",
+        "display_name": "Reparaturwelle",
+        "category": "ability",
+        "targeting": "single",
+        "range_tiles": 0,
+        "aoe_radius": 0,
+        "power": 0,
+        "push_tiles": 0,
+        "energy_fraction": 0.0,
+        "interval": 2.0,
+        "trigger": {
+          "kind": "attacks",
+          "every": 6,
+          "weapon": "act_repair_bolt"
+        },
+        "shots": 1,
+        "gather": false,
+        "delay": 0.0,
+        "status": null,
+        "heal": 100,
+        "shield_gain": 100,
+        "support": "team",
+        "damage_pct": 0.0,
+        "base_action": "",
+        "lifesteal": 0.0,
+        "stores_damage": false,
+        "release_store": true,
+        "windup": 0.4,
+        "salvo": 1
+      }
+    ]
+  }
+}

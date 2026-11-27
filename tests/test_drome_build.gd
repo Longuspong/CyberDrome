@@ -36,7 +36,8 @@ func _stock(set_id: String) -> DromeBuild:
 func test_library_loaded() -> void:
 	# 8. Nov. 2026: Orbit-Fokus und Hologramm-Boost sind Module.
 	# 9. Nov. 2026: Bollwerk-Ramme, Moerser, Klingenbumerang dazu.
-	t.equal(PartDB.parts.size(), 22, "22 Bauteile erwartet")
+	# 27. Nov. 2026: Repair-Kit (Nimbus) dazu.
+	t.equal(PartDB.parts.size(), 23, "23 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausätze erwartet")
 	for part in PartDB.parts.values():
 		# Seit 20. Nov. 2026 nur noch die Suedansicht als Symbol (Schritt C).

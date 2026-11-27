@@ -43,6 +43,13 @@ echo "Godot: $("${GODOT}" --version | tail -1)"
 
 python3 tools/fetch_web_templates.py
 
+# Versionskennung fuer den Testspielstand (Platz 3 schreibt sich mit jeder
+# neuen Version neu, GameState.refresh_test_slot): Commit von Vercel bzw.
+# GitHub, sonst der lokale Commit, sonst die Uhrzeit.
+BUILD_ID="${VERCEL_GIT_COMMIT_SHA:-${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || date +%s)}}"
+printf '{"build": "%s"}\n' "${BUILD_ID}" > data/build.json
+echo "Version: ${BUILD_ID}"
+
 echo "Assets importieren ..."
 "${GODOT}" --headless --path . --import
 

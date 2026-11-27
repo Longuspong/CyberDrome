@@ -269,8 +269,8 @@ func test_takt_bars_follow_the_ability_counter() -> void:
 func test_every_takt_counts_attacks() -> void:
 	# Seit 9. Nov. 2026 gibt es keinen Zeit-Takt mehr: der Runenstab zaehlt
 	# Angriffe, die Leiste zeigt Abschnitte.
-	var nimbus: DromeBuild = RunState.standard_squad().filter(func(b):
-		return b.equipment().any(func(p): return p.id == &"eq_rune_staff"))[0]
+	var nimbus := DromeBuild.create("Nimbus", {"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core", "equip_left": &"eq_rune_staff"})
 	var battle := BattleManager.new()
 	battle.setup(4712, [nimbus], _squad())
 	var unit: Unit = battle.living(true)[0]

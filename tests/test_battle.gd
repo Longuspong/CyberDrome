@@ -249,7 +249,7 @@ func _ability_squad() -> Array:
 		DromeBuild.create("KÖDER", {
 			"body": &"jugg_body", "head": &"jugg_head",
 			"feet": &"jugg_feet", "core": &"jugg_core",
-			"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"}),
+			"equip_left": &"eq_hammer"}),
 		_with_modules(DromeBuild.create("SANI", {
 			"body": &"mage_body", "head": &"mage_head",
 			"feet": &"mage_drive", "core": &"mage_core",
@@ -455,3 +455,41 @@ func test_shield_recharges_only_after_a_calm_spell() -> void:
 	unit.recharge_shield(0.05)
 	t.equal(unit.shield, before, "ein neuer Treffer stoppt das Nachladen")
 	unit.free()
+
+
+func test_the_repair_kit_stores_damage_and_gives_it_to_the_team() -> void:
+	# Repair-Kit (Spieler 27. Nov. 2026): der Angriff speichert Schild- und
+	# Integritaetsschaden, die Welle gibt jedem Teammitglied den Speicher mal
+	# Effizienz als Schild und Reparatur.
+	var medic := DromeBuild.create("SANI", {"body": &"mage_body", "head": &"mage_head",
+		"feet": &"mage_drive", "core": &"mage_core", "equip_left": &"eq_repair_kit"})
+	var sani := Unit.create(medic, &"P0", true)
+	var mate := Unit.create(_squad()[0], &"P1", true)
+	var foe := Unit.create(_squad()[0], &"E0", false)
+	sani.tile = Vector2i(2, 2)
+	mate.tile = Vector2i(2, 3)
+	foe.tile = Vector2i(5, 2)
+	var resolver := ActionResolver.new(Grid.new(10, 10), [sani, mate, foe])
+	var bolt := _action_by_id(sani, &"act_repair_bolt")
+	var wave := _action_by_id(sani, &"act_repair_release")
+	t.ok(bolt != null and bolt.stores_damage and bolt.range_tiles == 4, "Angriff auf Reichweite 4 speichert")
+	t.ok(is_equal_approx(bolt.energy_fraction, 0.5), "halb Energie, halb kinetisch")
+	t.equal(wave.trigger_every, 6, "die Welle kommt nach 5 Treffern")
+	foe.shield = 10
+	resolver.apply_damage(sani, foe, 30, bolt)
+	t.equal(sani.store_shield, 10, "der Schildschaden ist gespeichert")
+	t.ok(sani.store_hp > 0, "der Rest als Integrität (%d)" % sani.store_hp)
+	var stored_hp := sani.store_hp
+	mate.hp = 10
+	mate.shield = 0
+	sani.hp = sani.stat("hp_max") - 1
+	var eff := sani.efficiency_factor()
+	t.ok(resolver.execute(sani, sani.tile, wave), "die Welle geht los")
+	t.equal(mate.shield, int(round(10.0 * eff)), "Schild = Speicher mal Effizienz")
+	t.equal(mate.hp, 10 + int(round(float(stored_hp) * eff)), "Reparatur = Speicher mal Effizienz")
+	t.equal(sani.hp, sani.stat("hp_max"), "auch der Träger bekommt etwas")
+	t.equal(foe.hp, foe.stat("hp_max") - stored_hp, "der Gegner nicht")
+	t.equal(sani.store_shield + sani.store_hp, 0, "danach ist der Speicher leer")
+	sani.free()
+	mate.free()
+	foe.free()

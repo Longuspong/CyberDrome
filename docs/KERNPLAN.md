@@ -13,7 +13,8 @@ Der Kernmoment: Nach dem Theorycrafting im Hangar bekommt man im Lauf die erhoff
   - **LR-Strix**: fragiler Scharfschütze mit großer Reichweite, eine Variante mit direktem und eine mit indirektem Schaden
 - Passiven der drei DROMEs ausformulieren und umsetzen
 - **Waffen (27. Nov. 2026):** zuerst je DROME eine passende Kernwaffe -- Vireo Puls-Blaster,
-  Molok Hammer + Deflektor, Strix Schienen-Lanze, Nimbus Runenstab --, die Alternativen zum
+  Molok Deflektor (Gunship; Hammer als Alternative), Strix Schienen-Lanze, Nimbus Repair-Kit
+  (seit 27. Nov. abends, der E-Schraubenschlüssel kehrt als Heilwaffe zurück; Runenstab beim Neon Nimbus) --, die Alternativen zum
   Builden kommen danach (die Plasmaklinge des Vireo ist die erste). Entfernt als
   Brainstorming-Reste: Bollwerk-Ramme, E-Schraubenschlüssel (Drohnen-Pod), Klingenbumerang,
   Neon-Blaster, Mörser -- mit Code, Daten und Tests.
@@ -73,11 +74,11 @@ Der Molok ist ein reiner Frontliner: Er hält vorne, macht wenig eigenen Schaden
 **Passive (gebaut 27. Nov. 2026, Arbeitsname „Festung“)**
 
 - Der Molok erhält alle Heilungen, Regenerationen und Schildgaben um 20 % verstärkt (`passives.fortress`).
-- Die Quelle dafür sind seine Tankwaffen: Der Hammer-Betäubungsschlag (kinetisch) macht +20 % der eigenen max. Integrität als Schaden und heilt um 100 % des Schadens (Spieler 27. Nov.; ersetzt die 50 % aus dem Entwurf und ist eine bewusste Ausnahme von „Kein Schaden aus Verteidigung“, vom Spieler bestätigt: der Schlag kommt nur jeden 3. Angriff, und ein Hammer lohnt sich für jeden Nahkämpfer, mit wenig Integrität eben weniger), der Deflektor liefert Schild. So wird das Tragen der Tankwaffen belohnt; ein Molok mit anderen Waffen verzichtet bewusst darauf.
+- Die Quelle dafür sind seine Tankwaffen: Der Hammer-Betäubungsschlag (kinetisch) heilt um 100 % des Schadens (Spieler 27. Nov.; ersetzt die 50 % aus dem Entwurf). Die +20 % der eigenen max. Integrität als Schaden gab es nur wenige Stunden -- am Abend wieder entfernt (Hammer zu stark), damit gilt „Kein Schaden aus Verteidigung“ wieder ohne Ausnahme. Der Deflektor liefert Schild. So wird das Tragen der Tankwaffen belohnt; ein Molok mit anderen Waffen verzichtet bewusst darauf.
 - Keine eigene Regeneration pro Puls (verworfen, die Tankwaffen übernehmen das).
 - Ein richtiger Heiler oder Support kommt später.
 - Virusschaden wird von der Passive nicht ausgeglichen.
-- Im Playtest prüfen: Die Hammer-Heilung hängt am Schaden und wächst mit der Power mit. Testfall: zwei Hämmer plus Lebensentzug-Fusion, damit er nicht unknackbar wird.
+- Im Playtest prüfen: Die Hammer-Heilung hängt am Schaden und wächst mit der Power mit. Testfall: Gunship-Hammer (zwei Arme) plus Lebensentzug-Fusion, damit er nicht unknackbar wird.
 
 **Offen**
 
