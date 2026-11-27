@@ -1822,11 +1822,6 @@ JUGG_BODY = [
     EX([(-9, 56), (9, 56), (9, 67), (6.5, 70), (-9, 70)], (-25, -13), "plate", bevel=0.9),
     EX([(-9.5, 70), (6.5, 70), (5, 73), (-9.5, 73)], (-25.5, -12.5), "light", bevel=0.5),
     B((9, 9.6), (-23, -15), (62, 65), "accent"),
-    # -- Bunkerkopf, tief zwischen den Schultern (gehoert zum Rumpf) ------
-    B((-5, 7), (-7, 7), (61, 68), "plate"),
-    B((-5.5, 7.5), (-7.5, 7.5), (68, 70), "light"),
-    B((7, 7.6), (-5, 5), (63.5, 65.6), "visor"),
-    B((7, 8.2), (-7, 7), (60.5, 62.5), "metal"),         # Kinnschutz
     # Lockfeuer direkt hinter dem Kopf (Passive Praesenz)
     L((-9.5, 0), [(3.0, 62.5), (3.0, 65)], "metal", segments=12),
     L((-9.5, 0), [(2.6, 65), (2.6, 69), (1.6, 70.6), (0, 71.2)], "glow", segments=14),
@@ -1839,13 +1834,15 @@ JUGG_BODY = [
 ] + _JUGG_HOSES + _mirror_l(_JUGG_HOSES)
 
 # Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
-# Der Molok-Kopf ist Teil des Rumpfs (17. Nov. 2026, Wunsch des Spielers).
-# Er sitzt tief zwischen Schultern, die HOEHER sind als er -- von hinten muss
-# die nahe Schulter ihn teilweise verdecken, von vorn verdeckt er Auspuffe und
-# Lockfeuer. Als eigenes Sprite laege er immer oben und klebte ueber der
-# Schulter; nur in EINEM Teil sortiert die Tiefe alle Flaechen richtig. Das
-# Kopfteil bleibt als Platzhalter ohne Formen (der Bauplan verlangt eins).
-JUGG_HEAD = []
+# Von 17. bis 26. Nov. 2026 steckte er im Rumpf, weil die 2D-Zeichnung ihn als
+# eigenes Bild immer ueber die Schulter legte; in 3D sortiert die Tiefe die
+# Flaechen, er ist wieder ein eigenes Teil (Wunsch des Spielers).
+JUGG_HEAD = [
+    B((-5, 7), (-7, 7), (61, 68), "plate"),
+    B((-5.5, 7.5), (-7.5, 7.5), (68, 70), "light"),
+    B((7, 7.6), (-5, 5), (63.5, 65.6), "visor"),
+    B((7, 8.2), (-7, 7), (60.5, 62.5), "metal"),         # Kinnschutz
+]
 
 
 # Standbeine, nicht "Sprintbeine in gross".
@@ -2738,7 +2735,7 @@ SETS = [
         "dir": "bot2",
         "id": "bot2",
         "name": "HX-Molok // Juggernaut",
-        "description": "Schwerer Rahmen. Drei Ausruestungsanker (inkl. Schulterpod).",
+        "description": "Schwerer Rahmen. Zwei Waffen.",
         "palette": JUGG_PALETTE,
         "parts": [
             {
@@ -3465,8 +3462,6 @@ def check_silhouettes() -> None:
     for spec, part in all_parts():
         if part.get("variant_of"):
             continue    # Varianten teilen die Form ihrer Grundwaffe mit Absicht
-        if not part["shapes"]:
-            continue    # Platzhalter ohne Formen (Molok-Kopf sitzt im Rumpf)
         key = "equipment" if part["type"].startswith("equipment") else part["type"]
         by_type.setdefault(key, []).append(
             (f"{spec['id']}/{part['id']}", silhouette(part["shapes"])))

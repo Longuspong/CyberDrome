@@ -11,6 +11,17 @@
     Farben ausschliesslich ueber CSS Custom Properties (siehe parts/README.md).
   -->
 <g stroke="var(--c-outline)" stroke-width="0.9" stroke-linejoin="round">
-
+  <path d="M62.09 22.99 L50.64 31.09 L64.0 40.54 L75.46 32.44 Z" fill="var(--c-plate-light)"/>
+  <path d="M49.49 39.06 L62.85 48.51 L62.85 46.6 L49.49 37.15 Z" fill="var(--c-metal)"/>
+  <path d="M50.64 36.34 L49.49 37.15 L62.85 46.6 L64.0 45.79 Z" fill="var(--c-metal)"/>
+  <path d="M62.09 20.4 L49.68 29.18 L64.0 39.3 L76.41 30.53 Z" fill="var(--c-plate-light)"/>
+  <path d="M50.64 37.77 L64.0 47.22 L64.0 40.54 L50.64 31.09 Z" fill="var(--c-plate)"/>
+  <path d="M51.97 37.14 L61.52 43.89 L61.52 41.88 L51.97 35.13 Z" fill="var(--c-visor)"/>
+  <path d="M64.0 47.22 L75.46 39.12 L75.46 32.44 L64.0 40.54 Z" fill="var(--c-plate-dark)"/>
+  <path d="M52.54 34.73 L51.97 35.13 L61.52 41.88 L62.09 41.48 Z" fill="var(--c-visor)"/>
+  <path d="M62.85 48.51 L64.0 47.7 L64.0 45.79 L62.85 46.6 Z" fill="var(--c-plate-dark)"/>
+  <path d="M49.68 31.09 L64.0 41.21 L64.0 39.3 L49.68 29.18 Z" fill="var(--c-plate-light)"/>
+  <path d="M61.52 43.89 L62.09 43.48 L62.09 41.48 L61.52 41.88 Z" fill="var(--c-visor)"/>
+  <path d="M64.0 41.21 L76.41 32.44 L76.41 30.53 L64.0 39.3 Z" fill="var(--c-plate)"/>
 </g>
 </svg>

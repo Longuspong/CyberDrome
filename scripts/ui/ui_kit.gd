@@ -603,8 +603,7 @@ static func _cropped(path: String) -> Texture2D:
 			atlas.region = Rect2(used)
 			result = atlas
 		else:
-			# Leeres Teil (z. B. jugg_head seit 17. Nov. 2026: der Kopf steckt
-			# im Rumpf) -- kein Bild, damit der Aufrufer ausweichen kann.
+			# Leeres Bild -- keins, damit der Aufrufer ausweichen kann.
 			result = null
 	_crops[path] = result
 	return result
