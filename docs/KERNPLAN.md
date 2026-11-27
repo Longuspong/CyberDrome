@@ -78,7 +78,7 @@ Der Molok ist ein reiner Frontliner: Er hält vorne, macht wenig eigenen Schaden
 - On-Hit-Effekte lösen durch die zwei Arme doppelt aus. Bewusst als Belohnung lassen oder über einen Proc-Koeffizienten am Chassis abschwächen?
 - Kontrolleffekte (Hammer-Stun) bei doppelter Frequenz und voller Dauer: Gefahr von Dauer-Stun prüfen.
 - Rammbock-Fusion (Rüstung zu Schaden) im Zuge des Fusions-Umbaus prüfen.
-- Fragmente entfernen: ~~Präsenz in Code, Config und Tests~~ (26. Nov.), ~~veraltete Lebenspunkte in CLAUDE.md~~ (26. Nov., Abschnitt entfernt); offen: Präsenz in NEUANFANG.md (Chronik), leerer Molok-Kopf als Platzhalter (hängt an Werkbank und Spielständen). Einen Bollwerkkern gibt es im Repo nicht mehr.
+- Fragmente entfernen: ~~Präsenz in Code, Config und Tests~~ (26. Nov.), ~~veraltete Lebenspunkte in CLAUDE.md~~ (26. Nov., Abschnitt entfernt); ~~Präsenz in NEUANFANG.md~~, ~~Bollwerkkern~~, ~~leerer Molok-Kopf als Platzhalter~~ (26. Nov., der Kopf ist wieder ein eigenes Teil).
 
 ## Fertig, wenn
 

@@ -47,7 +47,14 @@ Leitplan seit 25. Nov.: `docs/KERNPLAN.md`. Gebaut:
   tote Config-Werte (`squad_size`, `grid_*`); alte Box-Modelle im Generator
   (Ausgabe vorher/nachher byte-gleich); README, `parts/README.md`, `CLAUDE.md`.
 * Der **Molok hat vorerst keine Passive**; die neue steht im Kernplan als
-  Entwurf.
+  Entwurf. Sein **Bunkerkopf** ist wieder ein eigenes Teil (steckte fuer die
+  2D-Zeichnung im Rumpf).
+* **26. Nov., zweite Runde (Entscheidungen des Spielers):** 16 Modul-Effekte
+  ohne Modul entfernt (Gabelung, Kettensprung, Feldschuss, Wurzeln ...), der
+  Zeit-Takt samt Uhr-Leiste, `MODULE_KONZEPT.md`, `BRAINSTORMING_MODULE.md`,
+  `PLAYTEST_2026-11.md` geloescht (gueltige Regeln jetzt in
+  `MODULE_AMP_FUSION.md` 6), `GAME_DESIGN.md`, `NEUANFANG.md`,
+  `IDENTITAETEN.md` entruempelt.
 
 ### Bugfix-Runde Kampf (24. Nov. 2026, Meldung des Spielers)
 
@@ -1293,20 +1300,12 @@ Nach dem Design-Canvas „CyberDrome Charger & Hangar“
 
 Stand 26. Nov. 2026 (nach dem Aufraeumen):
 
-* **Modul-Effekte ohne Modul:** der Code wertet noch 16 Effekte aus, die
-  kein Modul mehr hat (u. a. `ability_fork`, `chain_jumps`, `cleave`,
-  `field_shot_every`, `gravity`, `root`, `post_ability_power`, `takt_time`)
-  -- Reste der Module vor den Amps. Ob sie fuer Fusionen oder Keynodes
-  (Kettenschlag) wiederverwendet oder entfernt werden, entscheidet der
-  Spieler.
-* **Leerer Molok-Kopf** (`jugg_head` ohne Formen): Platzhalter, weil jeder
-  DROME fuenf Teile hat (Werkbank, Spielstaende, Tests).
 * **2D-Zusammenbau** (`DromeSprites`) lebt nur noch fuer Tests und den
   Bench-Bildschirm; im Spiel zeichnet `Arena3D`.
 * Chronik-Dokumente (`NEUANFANG.md`, `IDENTITAETEN.md`, `GAME_DESIGN.md`)
-  sind teils ueberholt; ihr Kopf sagt, was noch gilt. `MODULE_KONZEPT.md`,
-  `BRAINSTORMING_MODULE.md` und `PLAYTEST_2026-11.md` sind seit 26. Nov.
-  geloescht (gueltige Modul-Regeln: `MODULE_AMP_FUSION.md` 6).
+  sind entruempelt, aber Entwurfsstand; ihr Kopf sagt, was noch gilt.
+* Das **Lockfeuer** auf dem Molok-Ruecken (sichtbare Passive) zeigte die
+  Praesenz; es bleibt als Optik, bis die neue Passive steht.
 
 ## 5. Offen -- mit dem Spieler zu besprechen
 
