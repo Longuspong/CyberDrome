@@ -1801,8 +1801,7 @@ _JUGG_HOSES = [
 JUGG_BODY = [
     # Umbau 16. Nov. 2026 nach den DROME-Designregeln (Entwurf v4.py,
     # new_dromes.py M_BODY): Schultern HOEHER, der Kopf sitzt tief dazwischen,
-    # ein Frontpanzer vor der Brust und das Lockfeuer auf dem Ruecken (Passive
-    # Praesenz, sitzt am Kopf). Arme gibt es am Rumpf keine mehr: beide Unterarme kommen mit
+    # ein Frontpanzer vor der Brust und zwei Auspuffstapel auf dem Ruecken. Arme gibt es am Rumpf keine mehr: beide Unterarme kommen mit
     # den Waffen an die Schulteranker.
     # -- Huefte und Torso als Keil ---------------------------------------
     B((-7, 7), (-11, 11), (31, 38), "metal"),
@@ -1822,15 +1821,12 @@ JUGG_BODY = [
     EX([(-9, 56), (9, 56), (9, 67), (6.5, 70), (-9, 70)], (-25, -13), "plate", bevel=0.9),
     EX([(-9.5, 70), (6.5, 70), (5, 73), (-9.5, 73)], (-25.5, -12.5), "light", bevel=0.5),
     B((9, 9.6), (-23, -15), (62, 65), "accent"),
-    # Lockfeuer direkt hinter dem Kopf (Passive Praesenz)
-    L((-9.5, 0), [(3.0, 62.5), (3.0, 65)], "metal", segments=12),
-    L((-9.5, 0), [(2.6, 65), (2.6, 69), (1.6, 70.6), (0, 71.2)], "glow", segments=14),
-    L((-9.5, 0), [(3.2, 67.2), (3.2, 67.9)], "accent", caps=False, segments=14),
-    # Auspuffstapel links und rechts davon
-    L((-9.5, 8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
-    L((-9.5, -8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
-    L((-9.5, 8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
-    L((-9.5, -8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
+    # Auspuffstapel links und rechts hinter dem Kopf (seit 27. Nov. 2026 etwas
+    # dicker; das Lockfeuer der Praesenz dazwischen ist weg, Wunsch des Spielers)
+    L((-9.5, 8), [(2.9, 62.5), (2.9, 76), (3.5, 76), (3.5, 78)], "metal", segments=12),
+    L((-9.5, -8), [(2.9, 62.5), (2.9, 76), (3.5, 76), (3.5, 78)], "metal", segments=12),
+    L((-9.5, 8), [(3.6, 72), (3.6, 73.5)], "accent", caps=False, segments=12),
+    L((-9.5, -8), [(3.6, 72), (3.6, 73.5)], "accent", caps=False, segments=12),
 ] + _JUGG_HOSES + _mirror_l(_JUGG_HOSES)
 
 # Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.

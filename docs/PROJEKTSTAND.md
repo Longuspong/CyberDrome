@@ -48,7 +48,8 @@ Leitplan seit 25. Nov.: `docs/KERNPLAN.md`. Gebaut:
   (Ausgabe vorher/nachher byte-gleich); README, `parts/README.md`, `CLAUDE.md`.
 * Der **Molok hat vorerst keine Passive**; die neue steht im Kernplan als
   Entwurf. Sein **Bunkerkopf** ist wieder ein eigenes Teil (steckte fuer die
-  2D-Zeichnung im Rumpf).
+  2D-Zeichnung im Rumpf). Das Lockfeuer der Praesenz auf dem Ruecken ist weg,
+  die beiden Auspuffstapel daneben sind etwas dicker (27. Nov., Spieler).
 * **26. Nov., zweite Runde (Entscheidungen des Spielers):** 16 Modul-Effekte
   ohne Modul entfernt (Gabelung, Kettensprung, Feldschuss, Wurzeln ...), der
   Zeit-Takt samt Uhr-Leiste, `MODULE_KONZEPT.md`, `BRAINSTORMING_MODULE.md`,
@@ -1304,8 +1305,6 @@ Stand 26. Nov. 2026 (nach dem Aufraeumen):
   Bench-Bildschirm; im Spiel zeichnet `Arena3D`.
 * Chronik-Dokumente (`NEUANFANG.md`, `IDENTITAETEN.md`, `GAME_DESIGN.md`)
   sind entruempelt, aber Entwurfsstand; ihr Kopf sagt, was noch gilt.
-* Das **Lockfeuer** auf dem Molok-Ruecken (sichtbare Passive) zeigte die
-  Praesenz; es bleibt als Optik, bis die neue Passive steht.
 
 ## 5. Offen -- mit dem Spieler zu besprechen
 

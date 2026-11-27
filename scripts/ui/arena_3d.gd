@@ -916,7 +916,7 @@ func _clear_flash(state: Dictionary) -> void:
 
 ## Leuchtteile der Passiven: Vireo-Booster flackern (beim Laufen staerker,
 ## je Cyberspeed-Stapel heller),
-## Molok-Lockfeuer pulsiert, Nimbus-Kugel glimmt, Strix-Linsen blinzeln.
+## Molok-Leitungen pulsieren, Nimbus-Kugel glimmt, Strix-Linsen blinzeln.
 ## Ueber die Materialkopien der Einheit (Farbstich je Flaeche).
 func _passive_glow(unit: Unit, turn: Node3D, state: Dictionary, t: float, calm: bool) -> void:
 	if calm:
