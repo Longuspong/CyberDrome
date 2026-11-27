@@ -11,7 +11,7 @@ so gross -- 128 Pixel auf 300 hochgezogen sind sichtbar verpixelt, und zwar
 genau an den langen Diagonalen, aus denen die Iso-Ansicht besteht.
 
 Das ist kein Stilmittel. Der Grafikstil dieses Projekts ist ausdruecklich
-*kein* Pixelart (docs/GAME_DESIGN.md, Abschnitt 2): SVG wurde gewaehlt, damit
+*kein* Pixelart: SVG wurde gewaehlt, damit
 Teile aufloesungsfrei skalieren. Ein zu grob gerasterter Import gibt genau
 diesen Vorteil wieder her.
 

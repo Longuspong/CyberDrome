@@ -649,19 +649,6 @@ func _air_shell(mark: Dictionary) -> void:
 	_air.draw_circle(base, r * 2.4 * (1.0 - t), Color(FIRE_COLOR, 0.6 * (1.0 - t)))
 
 
-## Doppelschuss, Wirkung: der zweite Schuss kurz hinter dem ersten.
-func _air_double_shot(mark: Dictionary) -> void:
-	var targets: Array = mark.get("targets", [])
-	if targets.size() < 2:
-		return
-	var k: float = float(mark["age"]) / _life(mark)
-	var from := _muzzle(mark)
-	var to: Vector2 = targets[1] + _lift(CHEST)
-	var head := from.lerp(to, clampf(k * 1.6, 0.0, 1.0))
-	var tail := from.lerp(to, clampf(k * 1.6 - 0.3, 0.0, 1.0))
-	_air.draw_line(tail, head, Color(mark["color"].lightened(0.4), 1.0 - k * 0.5), _width(3.0), true)
-
-
 ## Schildbrecher, Ansage: das Schild des Ziels leuchtet als Sechseck auf.
 func _air_breaker_cast(mark: Dictionary) -> void:
 	var t: float = float(mark["age"]) / _life(mark)

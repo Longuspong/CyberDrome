@@ -41,11 +41,6 @@ func setup(max_count: int) -> void:
 	_rebuild()
 
 
-## Alle waehlbaren Aufbauten.
-func all_builds() -> Array:
-	return _items.map(func(item): return item["build"])
-
-
 func chosen_builds() -> Array:
 	return _items.filter(func(item): return item["entry"].in_squad) \
 		.map(func(item): return item["build"])
@@ -262,21 +257,6 @@ class _TapPanel extends PanelContainer:
 	func _init(on_tap: Callable) -> void:
 		_on_tap = on_tap
 		mouse_filter = Control.MOUSE_FILTER_STOP
-
-	## Legt ``child`` in eine Ecke (anchor 0/1 je Achse) ueber die Kachel.
-	func add_overlay(child: Control, corner: Vector2) -> void:
-		var holder := Control.new()
-		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		holder.set_anchors_preset(Control.PRESET_FULL_RECT)
-		add_child(holder)
-		holder.add_child(child)
-		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		child.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT if corner == Vector2(1, 1)
-			else Control.PRESET_TOP_RIGHT)
-		child.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-		child.grow_vertical = Control.GROW_DIRECTION_BEGIN if corner.y > 0.5 else Control.GROW_DIRECTION_END
-		if corner.y < 0.5:
-			child.position.y -= 22
 
 	var _down := Vector2(-9999, -9999)
 

@@ -109,8 +109,8 @@ func test_units_get_one_model_in_the_shared_scene() -> void:
 
 func test_obstacles_stand_in_the_scene() -> void:
 	var arena := Arena3D.new()
-	var grid := MapGenerator.generate(TerrainDB.get_region(&"city"))
-	MapGenerator.place_obstacles(grid, 42)
+	# Zwei Gassen: eine Mauer aus festen Bloecken in der Mitte.
+	var grid := MapGenerator.generate(TerrainDB.get_region(&"city"), "gassen")
 	arena.build_obstacles(grid)
 	var count := 0
 	for child in arena.get_node("Bild3D/Szene").get_children():

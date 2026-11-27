@@ -2,17 +2,14 @@ extends Node
 
 ## Was zwischen den Bildschirmen ueberlebt: der Roster, der Seed, das Ergebnis.
 ##
-## Die Werkstatt kennt die Kampfszene nicht und umgekehrt. Beide reden nur
+## Die Bildschirme kennen die Kampfszene nicht und umgekehrt. Sie reden nur
 ## hierueber -- sonst haengt der Rueckweg vom Ergebnisbildschirm an einem
 ## Szenenpfad, und ein zweiter Einstieg in den Kampf ist nicht mehr moeglich.
 ##
-## ### Vom Wegwerf-Squad zum Roster (§10g)
-##
-## Frueher hielt der GameState EINEN fluechtigen Squad frisch gebauter DROMEs.
-## Jetzt liegt darunter der ``roster`` -- der bleibende Besitz (Inventar +
-## DROMEs). Der ``squad`` ist nur noch die abgeleitete Auswahl derer, die ins
-## naechste Gefecht ziehen (``in_squad``). Der Kampf liest weiter ``squad`` und
-## merkt von der Besitz-Schicht nichts.
+## Der ``roster`` ist der bleibende Besitz (Inventar + DROMEs). Der ``squad``
+## ist die abgeleitete Auswahl derer, die ins naechste Gefecht ziehen
+## (``in_squad``). Der Kampf liest ``squad`` und merkt von der Besitz-Schicht
+## nichts.
 
 ## ### Spielstaende (10. Nov. 2026, Wunsch des Spielers)
 ##
@@ -28,18 +25,6 @@ const RUN_FILE := "run.json"
 const PROGRESS_FILE := "progress.json"
 const META_FILE := "slots.json"
 
-## Der Stand vor den Spielstaenden: eine Datei je Art direkt in user://. Wird
-## beim ersten Start einmal in Spielstand 1 ueberfuehrt.
-const LEGACY_ROSTER_PATH := "user://roster.json"
-const LEGACY_RUN_PATH := "user://run.json"
-
-## Altformat v1 (Wegwerf-Squad) und der Export der SVG-Werkstatt
-## (python3 main.py). Der neuere von Spielstand und Werkstatt-Export gewinnt
-## beim Laden, damit ein frisch gebauter Squad nicht von einem alten Stand
-## verdeckt wird -- ein v1-Squad wird dabei einmalig in den Roster ueberfuehrt.
-const SQUAD_PATH := "user://squad.json"
-const WORKSHOP_SQUAD_PATH := "res://builds/squad.json"
-
 ## Wo die Spielstaende liegen. Tests legen sie in einen eigenen Ordner.
 var save_root: String = "user://"
 
@@ -54,8 +39,8 @@ var persistence_override = null
 ## Der Besitz: Inventar (Instanzen) + Roster (DROMEs). Quelle der Wahrheit.
 var roster: Roster = Roster.new()
 
-## Welchen Roster-Eintrag die Werkstatt gerade anpasst. Die Garage setzt ihn vor
-## dem Szenenwechsel; -1 heisst "keiner gewaehlt".
+## Welchen Roster-Eintrag der Hangar beim Oeffnen zeigen soll (z. B. ein frisch
+## gebauter DROME aus der Werkbank); -1 heisst "keiner gewaehlt".
 var editing_index: int = -1
 
 ## Die DROMEs des naechsten Gefechts -- abgeleitet aus den ``in_squad``-Eintraegen
@@ -108,7 +93,6 @@ func boot() -> void:
 		print("[GameState] Persistenz aus -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
 			% [roster.entries.size(), roster.all_instances().size()])
 		return
-	_migrate_legacy()
 	var last := int(_read_meta().get("last", 0))
 	if last >= 1 and last <= SLOT_COUNT and slot_exists(last):
 		select_slot(last)
@@ -121,14 +105,6 @@ func boot() -> void:
 func new_seed() -> int:
 	battle_seed = randi()
 	return battle_seed
-
-
-## Der Werkstatt-Eintrag, den die Garage ausgewaehlt hat. null bei ungueltigem
-## Index -- die Werkstatt schickt den Spieler dann in die Garage zurueck.
-func editing_entry() -> RosterEntry:
-	if editing_index < 0 or editing_index >= roster.entries.size():
-		return null
-	return roster.entries[editing_index]
 
 
 ## Materialisiert den Kampf-Squad aus dem Roster. Nach jeder Aenderung an der
@@ -252,8 +228,8 @@ func load_roster() -> void:
 		refresh_squad()
 		return
 
-	var path := _newest_save_file()
-	if path == "":
+	var path := _slot_file(slot, ROSTER_FILE)
+	if not FileAccess.file_exists(path):
 		# Ein frischer Spielstand: der handgesetzte Startbestand (§10g), gleich
 		# abgelegt -- sonst gaebe es ihn in der Auswahl noch nicht.
 		roster.seed_new_game()
@@ -265,16 +241,7 @@ func load_roster() -> void:
 		return
 
 	var parsed = _read_json(path)
-	# v2 (Roster) direkt laden; ein v1-Stand (Wegwerf-Squad, auch der SVG-Export)
-	# wird migriert und beim naechsten Speichern als v2 abgelegt.
-	var loaded := false
-	if parsed != null:
-		if int(parsed.get("version", 0)) >= 2:
-			loaded = roster.load_dict(parsed)
-		else:
-			loaded = roster.migrate_v1(parsed)
-			if loaded:
-				print("[GameState] v1-Squad aus %s in den Roster überführt" % path)
+	var loaded: bool = parsed != null and roster.load_dict(parsed)
 	if not loaded:
 		roster = Roster.new()
 		roster.seed_starter()
@@ -338,60 +305,17 @@ func _read_meta() -> Dictionary:
 	return parsed if parsed != null else {}
 
 
-## Der Stand von vor den Spielstaenden (eine Datei direkt in user://) zieht
-## einmal in Spielstand 1 um -- wer schon gespielt hat, verliert nichts.
-func _migrate_legacy() -> void:
-	if save_root != "user://" or not FileAccess.file_exists(LEGACY_ROSTER_PATH):
-		return
-	if not slot_exists(1):
-		for pair in [[LEGACY_ROSTER_PATH, ROSTER_FILE], [LEGACY_RUN_PATH, RUN_FILE]]:
-			var data = _read_json(pair[0]) if FileAccess.file_exists(pair[0]) else null
-			if data != null:
-				_write_json(_slot_file(1, pair[1]), data)
-		_write_json(save_root + META_FILE, {"last": 1})
-		print("[GameState] alter Spielstand nach Spielstand 1 überführt")
-	_remove(LEGACY_ROSTER_PATH)
-	_remove(LEGACY_RUN_PATH)
-
-
-## Raeumt alle Spielstaende weg (Persistenz in der Konfiguration aus). Nur
-## die ``user://``-Dateien: der Werkstatt-Export unter ``res://builds`` ist
-## Entwickler-Material und im Export ohnehin schreibgeschuetzt.
+## Raeumt alle Spielstaende weg (Persistenz in der Konfiguration aus).
 func _wipe_saves() -> void:
 	for which in range(1, SLOT_COUNT + 1):
 		for file_name in [ROSTER_FILE, RUN_FILE, PROGRESS_FILE]:
 			_remove(_slot_file(which, file_name))
-	for path in [save_root + META_FILE, LEGACY_ROSTER_PATH, LEGACY_RUN_PATH, SQUAD_PATH]:
-		_remove(path)
-
-
-## Der neuere von Spielstand und Werkstatt-Export -- so muss der Spieler nicht
-## wissen, welche Datei gewinnt. "" wenn keine existiert.
-func _newest_save_file() -> String:
-	var newest := ""
-	var newest_time := -1
-	for path in [_slot_file(slot, ROSTER_FILE), WORKSHOP_SQUAD_PATH]:
-		if not FileAccess.file_exists(path):
-			continue
-		var mtime := FileAccess.get_modified_time(ProjectSettings.globalize_path(path))
-		if mtime > newest_time:
-			newest_time = mtime
-			newest = path
-	return newest
+	_remove(save_root + META_FILE)
 
 
 # ---------------------------------------------------------------------------
 # Gueltigkeit
 # ---------------------------------------------------------------------------
-
-func squad_is_valid() -> bool:
-	if squad.size() < 1:
-		return false
-	for build in squad:
-		if not build.is_valid():
-			return false
-	return true
-
 
 # ---------------------------------------------------------------------------
 # Kampfbereit

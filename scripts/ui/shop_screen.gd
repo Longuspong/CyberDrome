@@ -143,14 +143,6 @@ func _changed() -> void:
 # Shop
 # ---------------------------------------------------------------------------
 
-func _offer_name(offer: Dictionary) -> String:
-	return RunState.cache_name(StringName(str(offer.get("cache", "city"))))
-
-
-func _offer_icon(offer: Dictionary) -> Control:
-	return _cache_icon()
-
-
 func _shop_section() -> void:
 	# Entwurf 15. Nov. 2026: Bestand oben, Caches als Karten mit KAUFEN,
 	# darunter die Upgrades (folgen). Baukerne gibt es seit 24. Nov. 2026 nicht mehr.
@@ -302,17 +294,6 @@ func _centered(label: Label) -> Label:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.clip_text = true
 	return label
-
-
-func _offer_page(offer: Dictionary) -> Dictionary:
-	var blocker := GameState.roster.offer_blocker(offer)
-	var text := "Ein Lootcache der Fraktion."
-	return {"title": _offer_name(offer), "subtitle": "%d %s" % [int(offer.get("price", 0)),
-		RunState.coin_name()], "subtitle_color": UiKit.WARN, "picture": _offer_icon(offer),
-		"lines": [text, ["Du hast %d %s." % [GameState.roster.coins, RunState.coin_name()],
-			UiKit.MUTED, UiKit.SMALL]],
-		"actions": [{"text": "Kaufen", "primary": true, "disabled": blocker != "", "why": blocker,
-			"call": func(): _buy(offer)}]}
 
 
 func _buy(offer: Dictionary) -> void:

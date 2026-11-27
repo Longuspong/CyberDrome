@@ -44,7 +44,7 @@ Zeilennummern unten sind der Stand vor dem Umbau.
 
 | Datei | Bedeutung | ersetzt | Fundstellen |
 |---|---|---|---|
-| `arrow_right.svg` | Pfeil rechts | → | `scripts/ui/run_screen.gd:687`<br>`scripts/ui/run_screen.gd:688`<br>`scripts/ui/run_screen.gd:689`<br>`scripts/ui/run_screen.gd:690`<br>`scripts/ui/run_screen.gd:733`<br>`scripts/ui/run_screen.gd:1501` |
+| `arrow_right.svg` | Pfeil rechts | → | Reserve |
 | `arrow_left.svg` | Pfeil links | ← | Reserve |
 | `arrow_up.svg` | Pfeil hoch | ↑ | Reserve |
 | `arrow_down.svg` | Pfeil runter | ↓ | Reserve |
@@ -52,15 +52,15 @@ Zeilennummern unten sind der Stand vor dem Umbau.
 | `play_left.svg` | Zurück-Blättern | ◀ | `scripts/ui/info_popup.gd:155` |
 | `caret_right.svg` | Mehr zeigen | ▸ | `scripts/ui/run_screen.gd:629`<br>`scripts/ui/run_screen.gd:637`<br>`scripts/ui/run_screen.gd:639`<br>`scripts/ui/settings_screen.gd:170` |
 | `caret_left.svg` | Zurück (klein) | ◂ | `scripts/ui/run_screen.gd:1349` |
-| `caret_down.svg` | Weiterlesen | ▼ | `scripts/ui/story_dialog.gd:121` |
-| `chevron_right.svg` | Weiter / Link | › | `scripts/ui/settings_screen.gd:108`<br>`scripts/ui/shop_screen.gd:130` |
+| `caret_down.svg` | Weiterlesen | ▼ | Reserve |
+| `chevron_right.svg` | Weiter / Link | › | Reserve |
 | `chevron_left.svg` | Zurück | ‹ | Reserve |
 | `chevron_down.svg` | Aufklappen | ⌄ | Reserve |
 | `chevron_up.svg` | Zuklappen | ⌃ | Reserve |
 | `double_chevron_right.svg` | Im Squad | >> | `scripts/ui/hangar_screen.gd:321` |
 | `level_up.svg` | Aufstieg | ▲ | `scripts/ui/run_screen.gd:1501` |
 | `skip.svg` | Überspringen | ⏩ | `scripts/ui/story_dialog.gd:73` |
-| `fast_forward.svg` | Tempo | » | `scripts/ui/battle_screen.gd:879`<br>`scripts/ui/battle_screen.gd:930` |
+| `fast_forward.svg` | Tempo | » | Reserve |
 | `pause.svg` | Pause | ❚❚ | `scripts/ui/battle_screen.gd:882`<br>`scripts/ui/battle_screen.gd:942` |
 | `reroll.svg` | Neu würfeln | ↻ | `scripts/ui/run_screen.gd:517` |
 | `close.svg` | Schließen | ✕ | `scripts/ui/info_popup.gd:176` |
@@ -74,7 +74,7 @@ Zeilennummern unten sind der Stand vor dem Umbau.
 | `camera_free.svg` | Kamera frei | ○ | `scripts/ui/battle_screen.gd:466` |
 | `bullet_square.svg` | Aufzählung | ■ | `scripts/ui/main_menu.gd:146`<br>`scripts/ui/run_screen.gd:1399` |
 | `location.svg` | Gebiet | ◉ | `scripts/ui/main_menu.gd:46` |
-| `average.svg` | Durchschnitt | Ø | `scripts/ui/main_menu.gd:182`<br>`scripts/ui/saves_screen.gd:186` |
+| `average.svg` | Durchschnitt | Ø | Reserve |
 | `unknown.svg` | Unbekannt / Chaos | ? | `scripts/ui/map_view.gd:124`<br>`scripts/ui/run_screen.gd:361` |
 | `settings.svg` | Optionen | ⚙ | `scripts/ui/arcade.gd:520` |
 
@@ -106,13 +106,11 @@ Zeilennummern unten sind der Stand vor dem Umbau.
 | `ability.svg` | Fähigkeit | Blitz | `scripts/ui/stat_icon.gd:102` |
 | `speed.svg` | Angriffstempo | Doppelpfeil | `scripts/ui/stat_icon.gd:87` |
 | `range.svg` | Reichweite | Pfeil mit Fuß | `scripts/ui/stat_icon.gd:92` |
-| `time.svg` | Takt nach Zeit | Uhr | `scripts/ui/stat_icon.gd:107` |
 | `hits.svg` | Takt nach Angriffen | Zahnrad | `scripts/ui/stat_icon.gd:111` |
 | `adjacent.svg` | Gegner daneben | zwei Punkte | `scripts/ui/stat_icon.gd:118` |
 | `heal.svg` | Reparatur | Kreuz | `scripts/ui/stat_icon.gd:121` |
 | `shield.svg` | Schild | Schildform | `scripts/ui/stat_icon.gd:124` |
 | `def.svg` | Panzerung | Platte | `scripts/ui/stat_icon.gd:124` |
-| `weight.svg` | Gewicht | Gewichtsklotz | `scripts/ui/stat_icon.gd:139` |
 | `hp.svg` | Integrität | Herz | `scripts/ui/stat_icon.gd:134` |
 | `area.svg` | Flächenwirkung | Ringe | `scripts/ui/stat_icon.gd:144` |
 | `power.svg` | Power | Power | `scripts/ui/run_screen.gd:471`<br>`scripts/ui/shop_screen.gd:491` |
@@ -127,14 +125,12 @@ Zeilennummern unten sind der Stand vor dem Umbau.
 | `slow.svg` | Verlangsamt | Pfeil runter | `scripts/ui/battle_view.gd:465` |
 | `vulnerable.svg` | Verwundbar | Riss | `scripts/ui/battle_view.gd:468` |
 | `rush.svg` | Sprint | Pfeil vor | `scripts/ui/battle_view.gd:471` |
-| `lured.svg` | Angelockt (Köder) | ! im Kreis | `scripts/ui/battle_view.gd:445` |
 
 ### Leiste, Karte, Rollen, Modulklassen
 
 | Datei | Bedeutung | ersetzt | Fundstellen |
 |---|---|---|---|
 | `tab_play.svg` | Tab Spielen | Dreieck | `scripts/ui/ui_kit.gd:284` |
-| `tab_hangar.svg` | Tab Hangar | Halle | `scripts/ui/ui_kit.gd:284` |
 | `tab_shop.svg` | Tab Shop | Sechseck-Coin | `scripts/ui/ui_kit.gd:284` |
 | `tier_light.svg` | Karte: Leicht | L | `scripts/ui/map_view.gd:19` |
 | `tier_normal.svg` | Karte: Normal | N | `scripts/ui/map_view.gd:19` |

@@ -16,11 +16,7 @@
   ],
   "save_enabled": true,
 
-  "squad_size": 2,
-  "squad_size_max": 3,
 
-  "grid_width": 9,
-  "grid_height": 17,
 
   "run": {
     "_kommentar": [
@@ -232,8 +228,7 @@
       "move_base/per_spd Laufgeschwindigkeit in Feldern je Sekunde = base + spd * per_spd",
       "move_min          Untergrenze der Laufgeschwindigkeit",
       "                  (8. Nov. 2026: alle drei um 30 % gesenkt, Wunsch des Spielers)",
-      "pulse             Sekunden je Puls: Schild- und Integritaetsregeneration,",
-      "                  Overtime",
+      "pulse             Sekunden je Puls: Integritaetsregeneration, Kabelbrand, Virus",
       "think_interval    wie oft ein DROME prueft, ob ein sicherer Abschuss in Reichweite ist",
       "retarget_after    so lange darf das Ziel unerreichbar sein, dann wird neu gewaehlt",
       "kite_distance     Fernkaempfer weichen aus, wenn ein Gegner so nah ist",
@@ -253,10 +248,9 @@
   "passives": {
     "_kommentar": [
       "Zahlen der Passiven am Chassis (PartData.passive).",
-      "hit_rush (Vireo): jeder Treffer gibt seconds lang move_mult auf das Lauftempo.",
-      "presence (Molok): Gegner im lure_radius greifen ihn an statt ihres Ziels",
-      "(Locken, sichtbar ueber den Gelockten); guard_share des Schadens an",
-      "Verbuendeten im guard_radius geht stattdessen auf ihn.",
+      "cyberspeed (Vireo, 25. Nov. 2026): jeder every-te Angriff gibt einen Stapel",
+      "(hoechstens max_stacks), je Stapel +attack_speed Angriffstempo und +move",
+      "Lauftempo; jeder Angriff haelt die Stapel seconds lang (Effizienz streckt).",
       "echo (Nimbus, 7. Nov. 2026): der Takt der Faehigkeiten ist slower-mal so",
       "lang (normale Angriffe dazwischen gerundet, oder die Zeit), dafuer wirkt",
       "jede Faehigkeit zweimal -- seit 18. Nov. 2026 nacheinander: das Echo kommt",
@@ -264,8 +258,7 @@
       "steady (Strix, 8. Nov. 2026): nach seconds ohne Feldwechsel damage_mult",
       "auf den Schaden und range_mult auf die Reichweite (mind. +1 Feld)."
     ],
-    "hit_rush": {"seconds": 2.0, "move_mult": 1.4},
-    "presence": {"lure_radius": 2, "guard_radius": 3, "guard_share": 0.3},
+    "cyberspeed": {"every": 3, "max_stacks": 3, "seconds": 3.0, "attack_speed": 0.1, "move": 0.1},
     "echo": {"slower": 1.5, "gap": 0.5},
     "steady": {"seconds": 4.0, "damage_mult": 1.2, "range_mult": 1.2}
   },
@@ -345,20 +338,12 @@
 
   "obstacles": {
     "_kommentar": [
-      "Hindernisse (7. Nov. 2026, scripts/generation/map_generator.gd): sperren nur",
-      "Laufwege, Schuesse gehen darueber. groups_min..groups_max Gruppen, jede",
-      "punktsymmetrisch gespiegelt (also doppelt so viele auf dem Feld), nie in",
-      "den Aufstellungszonen oder zone_margin Felder daneben. kinds: Optik je Region.",
+      "Hindernisse: feste Bloecke der Kartenformen (maps), sperren nur Laufwege,",
+      "Schuesse gehen darueber. kinds: Optik je Region.",
       "props: Deko auf dem Randstreifen je Region (sonst wie kinds), in 3D aus",
       "assets/arena3d (Arena3D.build_props; die Bilder von 9. Nov. 2026 sind seit 20. Nov. weg).",
-      "Seit 18. Nov. 2026 aus (enabled false, Wunsch des Spielers): die Karten haben feste",
-      "Formen (maps), zufaellige Hindernisse machten Kaempfe unberechenbar. kinds bleibt",
-      "fuer die festen Bloecke der Formen, props fuer die Randdeko."
+      "Zufaellige Hindernisse gibt es seit 18. Nov. 2026 nicht mehr (Wunsch des Spielers)."
     ],
-    "enabled": false,
-    "groups_min": 3,
-    "groups_max": 5,
-    "zone_margin": 1,
     "kinds": {
       "city": ["barrier", "crates", "server", "vending", "generator", "bollards", "holo", "spool"],
       "green": ["ruin", "rock", "ruin"],

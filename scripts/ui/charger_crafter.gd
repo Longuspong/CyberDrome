@@ -116,10 +116,6 @@ func _add_slots() -> void:
 	_stage.add_child(core)
 
 
-func _scale() -> float:
-	return _stage.size.x / STAGE.x if _stage != null and _stage.size.x > 0 else 1.0
-
-
 func free_count(element: String) -> int:
 	var used := 0
 	for e in _slots:

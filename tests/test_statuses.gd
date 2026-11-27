@@ -57,15 +57,13 @@ func test_efficiency_stretches_the_duration() -> void:
 	battle.free()
 
 
-func test_the_vireo_sprint_uses_its_own_efficiency() -> void:
+func test_cyberspeed_lasts_longer_with_efficiency() -> void:
 	var battle := _battle()
 	var vireo: Unit = battle.units[0]
-	var molok: Unit = battle.units[1]
 	vireo.stats["efficiency"] = 15
-	battle.resolver.apply_damage(vireo, molok, 5, vireo.mounts[0]["attack"])
-	var rush := float((Config.section("passives").get("hit_rush", {}) as Dictionary).get("seconds", 2.0))
-	t.ok(vireo.statuses.has(&"rush"), "Treffer löst den Sprint aus")
-	t.ok(is_equal_approx(float(vireo.statuses[&"rush"]["seconds_left"]), rush * 1.5), "Sprint 50 % länger")
+	vireo.on_attack()
+	var seconds := float((Config.section("passives").get("cyberspeed", {}) as Dictionary).get("seconds", 3.0))
+	t.ok(is_equal_approx(vireo.cyberspeed_left, seconds * 1.5), "Cyberspeed hält 50 % länger")
 	battle.free()
 
 

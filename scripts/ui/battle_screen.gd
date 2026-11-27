@@ -318,7 +318,6 @@ func _refresh_badges() -> void:
 			"hp": unit.hp, "hp_max": unit.stat("hp_max"),
 			"shield": unit.shield, "shield_max": unit.shield_max(),
 			"is_player": unit.is_player,
-			"lured": battle.brain != null and battle.brain.lured_by(unit) != null,
 			"takt": unit.takt_bars(),
 			"id": unit.unit_id,
 			"statuses": unit.status_names(),
@@ -570,17 +569,6 @@ func _frame_board(delta: float = 1.0) -> void:
 	# Die Mitte des freien Streifens liegt (oben - unten) / 2 unter der Bildmitte.
 	camera.position = Vector2(box.get_center().x, y - (edges.x - edges.y) * 0.5 / zoom)
 	_set_zoom(zoom)
-
-
-## Hoehe der Leisten oben bzw. unten (Bildschirm-Pixel): jede sichtbare Leiste
-## zaehlt zu der Haelfte, in der ihre Mitte liegt. Ohne Groesse (erstes Bild)
-## gelten Schaetzwerte.
-func _hud_top() -> float:
-	return _hud_edges().x
-
-
-func _hud_bottom() -> float:
-	return _hud_edges().y
 
 
 func _hud_edges() -> Vector2:

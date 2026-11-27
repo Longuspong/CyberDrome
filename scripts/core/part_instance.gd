@@ -44,7 +44,7 @@ func part() -> PartData:
 
 
 ## Zu welchem Bauteiltyp gehoert die Instanz? Bestimmt, in welche Bibliotheks-
-## gruppe der Werkstatt sie faellt und in welchen Slot sie darf.
+## gruppe des Hangars sie faellt und in welchen Slot sie darf.
 func type() -> int:
 	var p := part()
 	return p.type if p != null else -1

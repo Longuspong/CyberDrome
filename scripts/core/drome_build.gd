@@ -4,7 +4,7 @@ extends RefCounted
 ## Ein zusammengebauter DROME: Slots -> Stats, Validierung, Kampfwert.
 ##
 ## Keine Godot-Knoten, keine UI. Diese Klasse muss ohne laufende Szene testbar
-## sein -- sie ist die Grundlage fuer Werkstatt, Gegner-Generator und KI
+## sein -- sie ist die Grundlage fuer Hangar, Gegner-Generator und KI
 ## gleichermassen, und ein Fehler hier faellt sonst erst im Kampf auf.
 ##
 ## Slotmodell des Repos (nicht die sechs festen Slots des Entwurfs):
@@ -33,7 +33,7 @@ var display_name: String = "DROME"
 ## slot -> part_id. Slots ohne Eintrag sind leer.
 var slots: Dictionary = {}
 
-## Optional: abweichende Palette je Slot, wie die Werkstatt sie exportiert.
+## Optional: abweichende Palette je Slot.
 var palette: Dictionary = {}
 
 ## Blickrichtung fuer die Darstellung
@@ -154,8 +154,6 @@ func equip_slots() -> Array[String]:
 ## ersten passenden ueberhaupt. Leerer String heisst: nirgendwo, dieses Chassis
 ## hat keinen Halter dafuer.
 ##
-## Dieselbe Reihenfolge wie in der SVG-Werkstatt (README: "angewaehlter Slot,
-## sonst erster freier"), damit ein Klick in beiden Werkstaetten dasselbe tut.
 ## Steht hier und nicht in der Oberflaeche, weil es eine Aussage ueber den
 ## Aufbau ist und nicht ueber die Bedienung -- und weil es sich hier ohne
 ## laufende Szene pruefen laesst.
@@ -254,7 +252,6 @@ func stats() -> Dictionary:
 		"spd": 0, "def": 0, "power": 0, "shield_pulse": 0, "module_slots": 0,
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
 		"hp_regen_pct": 0,
-		"lure_radius": 0,
 		"efficiency": 0,
 	}
 	for part in all_parts():
@@ -269,7 +266,6 @@ func stats() -> Dictionary:
 		total["shield_regen"] += part.shield_regen
 		total["shield_bonus"] += part.shield_bonus
 		total["hp_regen_pct"] += part.hp_regen_pct
-		total["lure_radius"] = maxi(int(total["lure_radius"]), part.lure_radius)
 
 	# Level: DROME-Werte des Chassis und Bonus-Werte der Waffen.
 	var chassis := body()
@@ -287,7 +283,6 @@ func stats() -> Dictionary:
 	if not modules.is_empty():
 		var fx := all_module_effects()
 		total["def"] += int(fx.get("def", 0))
-		total["shield"] += int(fx.get("shield", 0))
 		# Amps (20. Nov. 2026): Power und Effizienz fest, Integritaet und
 		# Schild in Prozent (MODULE_AMP_FUSION.md 2).
 		total["power"] += int(round(float(fx.get("power", 0))))
@@ -298,16 +293,11 @@ func stats() -> Dictionary:
 		total["thorns_melee"] = int(fx.get("thorns_melee", 0))
 		total["shield_delay"] = float(fx.get("shield_delay", 0.0))
 		total["retaliation"] = float(fx.get("retaliation", 0.0))
-		# Konter, die am Traeger haengen (nicht an einer Waffe): Splitterpanzer,
-		# Brandmarke, Entladung. Der Zusatztreffer der Stacheln nutzt den
-		# Doppellauf des Traegers.
-		total["thorns_true"] = bool(fx.get("thorns_true", false))
+		# Konter, die am Traeger haengen (nicht an einer Waffe): Brandmarke,
+		# Entladung.
 		total["mark_on_hit_taken"] = float(fx.get("mark", 0.0)) \
 			if bool(fx.get("mark_on_hit_taken", false)) else 0.0
 		total["shield_break_burst"] = int(fx.get("shield_break_burst", 0))
-		total["thorn_ricochet"] = float(fx.get("ricochet_chance", 0.0)) \
-			if bool(fx.get("thorns_true", false)) else 0.0
-		total["thorn_ricochet_share"] = float(fx.get("ricochet_share", 0.25))
 		# BIOS-Rezepte am Traeger: Berserker, Treibjagd.
 		total["retaliation_max"] = int(fx.get("retaliation_max", 3))
 		total["berserk"] = bool(fx.get("berserk", false))
@@ -346,48 +336,6 @@ static func _add_stats(total: Dictionary, bonus: Dictionary) -> void:
 func power_factor() -> float:
 	var points := int(stats().get("power", 0))
 	return 1.0 if points <= 0 else float(points) / 10.0
-
-
-## Was ein einzelnes Teil an den Stats aendern wuerde -- fuer die Delta-Anzeige
-## beim Hovern in der Werkstatt. Gibt nur die Felder zurueck, die sich
-## tatsaechlich unterscheiden.
-func preview_delta(slot: String, candidate_id: StringName) -> Dictionary:
-	var before := stats()
-	var probe := clone()
-	if candidate_id == &"":
-		probe.slots.erase(slot)
-	else:
-		probe.slots[slot] = candidate_id
-	# Ein Chassiswechsel kann Ausruestungsslots wegnehmen. Was nicht mehr
-	# passt, faellt ab -- sonst zeigte die Vorschau Werte fuer einen Aufbau,
-	# den man so gar nicht bauen kann.
-	probe._drop_invalid_equipment()
-	var after := probe.stats()
-
-	var delta := {}
-	for key in after:
-		if after[key] != before[key]:
-			delta[key] = {"before": before[key], "after": after[key]}
-	return delta
-
-
-func _drop_invalid_equipment() -> void:
-	var chassis := body()
-	if chassis == null:
-		for slot in slots.keys():
-			if str(slot).begins_with("equip_"):
-				slots.erase(slot)
-		return
-	var allowed := chassis.equip_slots()
-	for slot in slots.keys():
-		if not str(slot).begins_with("equip_"):
-			continue
-		if slot not in allowed:
-			slots.erase(slot)
-			continue
-		var part := part_in(slot)
-		if part != null and not chassis.accepts(part, slot):
-			slots.erase(slot)
 
 
 func clone() -> DromeBuild:
@@ -651,7 +599,7 @@ func power_parts() -> Dictionary:
 			match str(ability.status.get("id", "")):
 				"stun":
 					control += times * seconds / cycle
-				"slow", "vulnerable", "root":
+				"slow", "vulnerable":
 					control += float(weights["soft_control"]) * times * seconds / cycle
 		firepower += per_attack / attack.interval * float(maxi(1, attack.range_tiles))
 		support += float(weights["attack_heal"]) * float(attack.heal) / attack.interval
@@ -677,7 +625,7 @@ static func squad_power(builds: Array) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Persistenz -- dasselbe Loadout-Format, das die SVG-Werkstatt exportiert
+# Persistenz -- das Loadout-Format (nur Teile-IDs, Werte werden neu gerechnet)
 # ---------------------------------------------------------------------------
 
 func to_loadout() -> Dictionary:

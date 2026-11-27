@@ -107,11 +107,7 @@ var trigger_kind: String = ""
 var trigger_every: float = 0.0
 var trigger_weapon: StringName = &""
 
-## Modul Koedersender: die Faehigkeit lockt ihr Ziel so viele Sekunden auf
-## den Traeger. 0 = nicht.
-var taunt_seconds: float = 0.0
-
-## Module (MODULE_KONZEPT.md), als Kopie gesetzt (with_modules):
+## Module (MODULE_AMP_FUSION.md), als Kopie gesetzt (with_modules):
 ## Ueberspannung -- solange der Schild des Traegers steht, wird dieser Anteil
 ## des kinetischen Schadens zu Energie (ActionResolver.apply_damage).
 var kinetic_to_energy: float = 0.0
@@ -212,9 +208,8 @@ func with_charger(spec: Dictionary, is_ability: bool) -> ActionData:
 ## Die Aktion mit den Wirkungen der Module eines Halters (ModuleData).
 ## Ohne Wirkung die Aktion selbst, sonst eine Kopie.
 ##
-## Angriffstempo, Schaden, Reichweite, Zielsucher und Rammbock wirken nur
-## auf Angriffe; Takt, Wirkung (Verstaerker) und Locken nur auf
-## Faehigkeiten; Statusdauer und Ueberspannung auf beides.
+## Angriffstempo, Zielsucher, Rammbock und Lebensraub wirken nur auf
+## Angriffe; Heilverstaerker, Virus, Ueberspannung und Phasenbruch auf beides.
 func with_modules(fx: Dictionary) -> ActionData:
 	if fx.is_empty():
 		return self
@@ -223,27 +218,8 @@ func with_modules(fx: Dictionary) -> ActionData:
 		var speed := float(fx.get("attack_speed", 0.0))
 		if speed > 0.0:
 			out.interval = interval / (1.0 + speed)
-		var more := float(fx.get("attack_power", 0.0))
-		if more > 0.0 and power > 0:
-			out.power = int(round(float(power) * (1.0 + more)))
-		out.range_tiles += int(fx.get("range", 0))
 		out.bonus_vs_marked = float(fx.get("bonus_vs_marked", 0.0))
 		out.armor_to_damage = float(fx.get("armor_to_damage", 0.0))
-	else:
-		# Treffer-Takt: Taktchip zaehlt jeden Angriff mehr (Unit.takt_step),
-		# hier aendert sich nur der Zeit-Takt.
-		var faster := float(fx.get("takt_time", 0.0))
-		if trigger_kind == "time" and faster > 0.0:
-			out.trigger_every = trigger_every * maxf(0.2, 1.0 - faster)
-		# Koedersender: ein Exemplar 2 s, jedes weitere +1 s.
-		var taunt := float(fx.get("taunt", 0.0))
-		out.taunt_seconds = 1.0 + taunt if taunt > 0.0 else 0.0
-		# Verstaerker: Faehigkeit +Anteil Wirkung.
-		var stronger := float(fx.get("ability_power", 0.0))
-		if stronger > 0.0:
-			out.power = int(round(float(power) * (1.0 + stronger)))
-			out.heal = int(round(float(heal) * (1.0 + stronger)))
-			out.shield_gain = int(round(float(shield_gain) * (1.0 + stronger)))
 	# Heilverstaerker: Heilung und Schildgabe aller Aktionen der Waffe.
 	var support := float(fx.get("support_power", 0.0))
 	if support > 0.0:
@@ -254,9 +230,6 @@ func with_modules(fx: Dictionary) -> ActionData:
 	out.virus_fraction = float(fx.get("virus_fraction", 0.0))
 	out.kinetic_to_energy = float(fx.get("kinetic_to_energy", 0.0))
 	out.bonus_vs_unshielded = float(fx.get("bonus_vs_unshielded", 0.0))
-	var longer := float(fx.get("status_time", 0.0))
-	if longer > 0.0 and status.has("seconds"):
-		out.status["seconds"] = float(status["seconds"]) * (1.0 + longer)
 	return out
 
 
@@ -265,8 +238,6 @@ func trigger_text() -> String:
 	match trigger_kind:
 		"attacks":
 			return "jeder %d. Angriff" % int(trigger_every)
-		"time":
-			return "alle %s s" % _seconds(trigger_every)
 		"adjacent":
 			return "wenn ein Gegner direkt daneben steht (höchstens alle %s s)" \
 				% _seconds(trigger_every)

@@ -41,11 +41,6 @@ static func element_color(id: String) -> Color:
 	return Color(str(element(id).get("color", "#ffffff")))
 
 
-## Name des Statuseffekts, den Stapel des Elements ausloesen.
-static func status_name(id: String) -> String:
-	return str(element(id).get("status", ""))
-
-
 ## Wirken Stapel dieses Elements schon (heute nur Feuer)?
 static func is_built(id: String) -> bool:
 	return bool(element(id).get("built", false))

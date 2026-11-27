@@ -914,8 +914,9 @@ func _clear_flash(state: Dictionary) -> void:
 	state.erase("flash")
 
 
-## Leuchtteile der Passiven: Vireo-Booster flackern (beim Laufen staerker),
-## Molok-Lockfeuer pulsiert, Nimbus-Kugel glimmt, Strix-Linsen blinzeln.
+## Leuchtteile der Passiven: Vireo-Booster flackern (beim Laufen staerker,
+## je Cyberspeed-Stapel heller),
+## Molok-Leitungen pulsieren, Nimbus-Kugel glimmt, Strix-Linsen blinzeln.
 ## Ueber die Materialkopien der Einheit (Farbstich je Flaeche).
 func _passive_glow(unit: Unit, turn: Node3D, state: Dictionary, t: float, calm: bool) -> void:
 	if calm:
@@ -930,7 +931,9 @@ func _passive_glow(unit: Unit, turn: Node3D, state: Dictionary, t: float, calm: 
 	match chassis:
 		"scout_body":
 			var strength := 1.0 if unit.visual_velocity().length() > WALK_MIN_SPEED else 0.45
-			factor = 1.0 + strength * (0.3 * sin(t * 23.0) + 0.2 * sin(t * 37.0 + 1.3))
+			# Cyberspeed: je Stapel leuchten die Booster heller.
+			factor = 1.0 + 0.25 * float(unit.cyberspeed_stacks) \
+				+ strength * (0.3 * sin(t * 23.0) + 0.2 * sin(t * 37.0 + 1.3))
 		"jugg_body":
 			factor = 1.0 + 0.35 * sin(t * 3.0)
 		"mage_body":

@@ -68,6 +68,10 @@ Auf Level 5 stehen **3 Knoten** zur Wahl (Spieler 22. Nov. 2026):
 
 ### Passive Cyberspeed
 
+**Gebaut 25. Nov. 2026** (Grundform, `Unit.on_attack`, `config.json` -> `passives.cyberspeed`;
+ersetzt den Sprint `hit_rush`). Die Faehigkeit zaehlt als Angriff; laeuft die Dauer ab,
+fallen Stapel und Zaehler. Im Kampf: ein Sprint-Symbol je Stapel, Booster heller.
+
 * Jeder **3. Angriff** gibt Vireo **1 Stapel Cyberspeed**, höchstens **3 Stapel**.
 * **Dauer 3 s** (eigener Zeitgeber, nicht der globale Puls): jeder Angriff
   innerhalb der Dauer hält die Stapel am Leben und startet die Dauer neu.

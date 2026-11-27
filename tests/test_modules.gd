@@ -1,6 +1,6 @@
 extends RefCounted
 
-## Module und Rezepte (MODULE_KONZEPT.md): Katalog, Wirkung im Kampf, Lager.
+## Module und Fusionen (MODULE_AMP_FUSION.md): Katalog, Wirkung im Kampf, Lager.
 
 var t
 
@@ -626,7 +626,7 @@ func test_late_shops_sometimes_offer_a_recipe() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Matrix-BIOS (MODULE_KONZEPT.md 6)
+# Matrix-BIOS (MODULE_AMP_FUSION.md 6)
 # ---------------------------------------------------------------------------
 
 func test_the_bios_catalog() -> void:

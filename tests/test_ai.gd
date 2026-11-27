@@ -56,9 +56,8 @@ func test_every_chassis_names_its_role() -> void:
 	t.equal(Unit.create(_strix(), &"D", true).ai_role(), "sniper", "Strix ist Scharfschütze")
 
 
-func test_a_molok_with_a_cannon_never_backs_off() -> void:
-	# Frueher hing die Rolle an der Waffenreichweite: mit der Kanone (Rw 6)
-	# galt der Molok als Fernkaempfer und wich jedem aus, der naeher kam.
+func test_a_molok_never_backs_off() -> void:
+	# Die Rolle haengt am Chassis, nicht an der Waffenreichweite.
 	var battle := _battle([_molok()], [_nimbus()], [Vector2i(10, 10), Vector2i(10, 9)])
 	var molok: Unit = battle.units[0]
 	var foe: Unit = battle.units[1]
@@ -391,19 +390,29 @@ func test_the_double_shot_hits_a_lone_foe_twice() -> void:
 	battle.free()
 
 
-func test_a_hit_makes_the_vireo_sprint() -> void:
+func test_cyberspeed_stacks_with_attacks() -> void:
 	var tiles := [Vector2i(10, 12), Vector2i(10, 10)]
 	var battle := _battle([_vireo()], [_molok()], tiles)
 	var vireo: Unit = battle.units[0]
-	var foe: Unit = battle.units[1]
-	t.equal(vireo.passive(), "hit_rush", "der Vireo hat die Sprint-Passive")
-	var before := vireo.move_speed()
-	battle.resolver.execute(vireo, foe.tile, _action(vireo, &"act_pulse"))
-	t.ok(vireo.move_speed() > before * 1.3, "nach dem Treffer läuft er schneller (%.2f -> %.2f)"
-		% [before, vireo.move_speed()])
-	var seconds := float((Config.section("passives").get("hit_rush", {}) as Dictionary).get("seconds", 2.0))
-	vireo.tick_statuses(seconds + 0.1)
-	t.ok(is_equal_approx(vireo.move_speed(), before), "nach %.0f s ist es vorbei" % seconds)
+	t.equal(vireo.passive(), "cyberspeed", "der Vireo hat die Passive Cyberspeed")
+	var rule := Config.section("passives").get("cyberspeed", {}) as Dictionary
+	var move := vireo.move_speed()
+	var speed := vireo.attack_speed_mult()
+	vireo.on_attack()
+	vireo.on_attack()
+	t.equal(vireo.cyberspeed_stacks, 0, "nach 2 Angriffen noch kein Stapel")
+	vireo.on_attack()
+	t.equal(vireo.cyberspeed_stacks, 1, "der 3. Angriff gibt einen Stapel")
+	t.ok(is_equal_approx(vireo.attack_speed_mult(), speed * 1.1), "+10 % Angriffstempo")
+	t.ok(is_equal_approx(vireo.move_speed(), move * 1.1), "+10 % Lauftempo")
+	for i in 9:
+		vireo.tick_statuses(float(rule.get("seconds", 3.0)) - 0.5)
+		vireo.on_attack()
+	t.equal(vireo.cyberspeed_stacks, 3, "Dauerbeschuss hält die Stapel, höchstens 3")
+	t.equal(vireo.status_names().count("rush"), 3, "ein Symbol je Stapel")
+	vireo.tick_statuses(float(rule.get("seconds", 3.0)) + 0.1)
+	t.equal(vireo.cyberspeed_stacks, 0, "ohne Angriff fallen alle Stapel")
+	t.ok(is_equal_approx(vireo.move_speed(), move), "danach wieder normal schnell")
 	battle.free()
 
 
@@ -502,38 +511,6 @@ func test_the_hammer_stuns_and_a_stunned_drome_does_nothing() -> void:
 	t.ok(foe.is_stunned(), "mit Effizienz 14 haelt es etwas laenger als eine Sekunde")
 	foe.tick_statuses(0.2)
 	t.ok(not foe.is_stunned(), "nach 1,4 s ist es vorbei")
-	battle.free()
-
-
-func test_presence_takes_a_share_of_the_damage_aimed_at_allies() -> void:
-	var tiles := [Vector2i(10, 12), Vector2i(11, 12), Vector2i(10, 8)]
-	var battle := _battle([_hammer_molok(), _strix()], [_vireo()], tiles)
-	var molok: Unit = battle.units[0]
-	var strix: Unit = battle.units[1]
-	var foe: Unit = battle.units[2]
-	strix.shield = 0
-	molok.shield = 0
-	battle.resolver.apply_damage(foe, strix, 40, _action(foe, &"act_pulse"))
-	t.ok(molok.hp < molok.stat("hp_max"), "der Molok fängt einen Teil ab")
-	t.ok(strix.stat("hp_max") - strix.hp < 40, "der Strix nimmt weniger als den vollen Treffer")
-	battle.free()
-
-
-func test_presence_lures_nearby_foes() -> void:
-	# Der Vireo hat einen Strix als Ziel; kommt er dem Molok zu nahe, greift
-	# er den Molok an.
-	var tiles := [Vector2i(10, 12), Vector2i(4, 4), Vector2i(10, 10)]
-	var battle := _battle([_hammer_molok(), _strix()], [_vireo()], tiles)
-	var molok: Unit = battle.units[0]
-	var foe: Unit = battle.units[2]
-	t.equal(battle.brain.lured_by(foe), molok, "zwei Felder vom Molok: gelockt")
-	t.equal(battle.brain.choose_target(foe), molok, "und wählt ihn als Ziel")
-	foe.target_id = battle.units[1].unit_id
-	foe.think_left = 0.0
-	for mount in foe.mounts:
-		mount["ready"] = 99.0
-	battle.brain.update(foe, battle.step_seconds())
-	t.equal(foe.target_id, molok.unit_id, "ein laufendes Ziel wird für den Locker aufgegeben")
 	battle.free()
 
 

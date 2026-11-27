@@ -16,7 +16,7 @@ extends RefCounted
 ## ### Eindeutigkeit faellt von selbst
 ##
 ## Eine uid steckt in HOECHSTENS einer Zuweisung im ganzen Roster. "Frei" heisst
-## darum schlicht: in keiner Zuweisung. Die Werkstatt bietet fuer einen Slot nur
+## darum schlicht: in keiner Zuweisung. Der Hangar bietet fuer einen Slot nur
 ## freie Instanzen an -- "Schienen-Lanze nur waehlbar, wenn nicht woanders
 ## verbaut" ist damit kein Sonderfall, sondern die Grundregel.
 ##
@@ -58,14 +58,7 @@ var _factory_sim: FactorySim = null
 ## Die vier Standard-DROMEs mit ihrer VOLLEN Standard-Ausstattung -- der
 ## handgesetzte Startbestand (§10g/§12c). Reihenfolge = Reihenfolge im frischen
 ## Roster. Die Ausruestung wird der Reihe nach in den ersten passenden freien
-## Slot gelegt (``_seed_equip``), damit ein support-only-Schulterpod nicht die
-## Waffe schluckt.
-##
-## Die Kits stehen so im Konzept:
-##   Vireo   Hologramm-Boost (Dash) + Puls-Blaster
-##   Molok   Belagerungskanone + Deflektor-Schild + Drohnen-Pod (Reparatur)
-##   Nimbus  Orbit-Fokus (Orbital) + Runenstab
-##   Strix   Schienen-Lanze (nur ein Slot)
+## Slot gelegt (``_seed_equip``).
 const STARTER_CHASSIS := [
 	{"body": &"scout_body", "core": &"scout_core",
 	 "equipment": [&"eq_pulse_blaster"]},
@@ -132,7 +125,7 @@ func total_count(part_id: StringName) -> int:
 
 
 ## Wie viele Exemplare eines Typs FREI sind -- in keiner Zuweisung. Das ist die
-## Zahl, die die Werkstatt zeigt: so viele kann ich noch einbauen.
+## Zahl, die der Hangar zeigt: so viele kann ich noch einbauen.
 func free_count(part_id: StringName) -> int:
 	var used := assigned_uids()
 	var n := 0
@@ -152,7 +145,7 @@ func free_instance(part_id: StringName) -> PartInstance:
 
 
 ## Die distinkten Bauteiltypen eines Typs, die der Spieler BESITZT -- nach Code
-## sortiert, damit die Bibliothek stabil steht. Grundlage der Werkstatt-Ansicht:
+## sortiert, damit die Bibliothek stabil steht. Grundlage der Hangar-Ansicht:
 ## sie zeigt die eigene Sammlung, nicht den freien Katalog.
 func owned_part_ids(type: int) -> Array:
 	var seen := {}
@@ -168,16 +161,6 @@ func owned_part_ids(type: int) -> Array:
 # ---------------------------------------------------------------------------
 # Zuweisung -- die Eindeutigkeit lebt hier
 # ---------------------------------------------------------------------------
-
-## Wie viele Exemplare eines Typs in DIESEM Eintrag stecken. Fuer die Werkstatt:
-## "ist das hier verbaut" und "an wie vielen Haltern".
-func count_in_entry(entry: RosterEntry, part_id: StringName) -> int:
-	var n := 0
-	for slot in entry.assignments:
-		if instance_part_id(str(entry.assignments[slot])) == part_id:
-			n += 1
-	return n
-
 
 ## Weist dem Slot eine FREIE Instanz des Typs zu (§10g). Was vorher im Slot
 ## steckte, wird dadurch automatisch frei -- "frei" ist ja nur "in keiner
@@ -282,7 +265,7 @@ func squad_count() -> int:
 # ---------------------------------------------------------------------------
 
 ## Baut aus einer FREIEN Chassis-Instanz einen neuen DROME (einen neuen Roster-
-## Platz, §10g). Kern und Ausruestung bleiben leer -- die waehlt die Werkstatt.
+## Platz, §10g). Kern und Ausruestung bleiben leer -- die waehlt der Hangar.
 ## null, wenn kein freies Chassis dieses Typs vorhanden ist.
 func new_drome(chassis_part_id: StringName, entry_name: String = "") -> RosterEntry:
 	var free := free_instance(chassis_part_id)
@@ -705,8 +688,7 @@ func seed_new_game() -> void:
 
 
 ## Legt eine neue Instanz von ``part_id`` in den ersten Ausruestungsslot dieses
-## Eintrags, der noch frei ist UND das Teil annimmt. So landet der support-only
-## Drohnen-Pod im Schulterpod und nicht auf einem Waffenarm. Findet sich kein
+## Eintrags, der noch frei ist UND das Teil annimmt. Findet sich kein
 ## Slot, bleibt das Teil aussen vor (der Aufbau ist trotzdem gueltig).
 func _seed_equip(entry: RosterEntry, part_id: StringName) -> void:
 	var build := build_for(entry)
@@ -852,37 +834,3 @@ func _bump_uid(uid: String) -> void:
 		var n := int(uid.substr(5))
 		if n >= _next_uid:
 			_next_uid = n + 1
-
-
-## Migriert den alten Wegwerf-Squad (v1: {squad_size, squad:[loadout]}) in
-## Inventar + Roster. Fuer jeden alten Bot entstehen frische Instanzen fuer
-## Chassis, Kern und Ausruestung; Kopf und Fuesse fallen weg (sie sind Teil der
-## Huelle). So verliert niemand seinen gebauten Squad beim Umstieg auf §10g.
-func migrate_v1(data: Dictionary) -> bool:
-	if not data is Dictionary or not data.has("squad"):
-		return false
-	_instances.clear()
-	entries.clear()
-	_next_uid = 1
-
-	for loadout in data.get("squad", []):
-		var build := DromeBuild.from_loadout(loadout)
-		if build == null:
-			continue
-		var chassis := build.body()
-		if chassis == null:
-			continue
-		var entry := RosterEntry.create(build.display_name,
-			add_instance(chassis.id))
-		entry.direction = build.direction
-		entry.palette = build.palette.duplicate(true)
-		var core := build.part_in("core")
-		if core != null:
-			entry.assignments["core"] = add_instance(core.id)
-		for slot in build.equip_slots():
-			var part := build.part_in(slot)
-			if part != null:
-				entry.assignments[slot] = add_instance(part.id)
-		entry.in_squad = true
-		entries.append(entry)
-	return not entries.is_empty()

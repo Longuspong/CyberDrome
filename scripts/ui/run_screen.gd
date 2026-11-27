@@ -527,15 +527,6 @@ func _enemy_page(build: DromeBuild) -> Dictionary:
 	return {"title": build.display_name, "picture": UiKit.drome_view(build, 64), "lines": lines}
 
 
-## "+10 Credits fuer den Sieg  ·  jetzt 24"
-func _credit_line(run: RunState) -> String:
-	if run.history.is_empty():
-		return "Credits: %d" % run.credits
-	var last: Dictionary = run.history[-1]
-	return "+%d Credits %s  ·  jetzt %d" % [int(last.get("credits", 0)),
-		"für den Sieg" if last["won"] else "Trostgeld", run.credits]
-
-
 # ---------------------------------------------------------------------------
 # Zwischenstopp (NEUANFANG 7d)
 # ---------------------------------------------------------------------------
@@ -822,7 +813,7 @@ func _bag_page(run: RunState) -> Dictionary:
 		+ "Einsatz in den Hangar. Im Einsatz bleiben die Waffen fest.", COLOR_MUTED, UiKit.SMALL]]}
 
 
-## Die BIOS-Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): drei Kacheln,
+## Die BIOS-Wahl nach einem Elite-Sieg (MODULE_AMP_FUSION.md 6): drei Kacheln,
 ## Antippen zeigt das BIOS mit "Nehmen".
 func _bios_row(run: RunState) -> Control:
 	var box := VBoxContainer.new()
@@ -1325,11 +1316,6 @@ func _tap_holder(run: RunState, drome: int, slot: String) -> void:
 		InfoPopup.open_pages(self, pages, 0)
 
 
-## Nimmt diese Waffe das Modul aus Lagerplatz ``index``?
-func _holder_allows(run: RunState, index: int, drome: int, slot: String) -> bool:
-	return bool(_option_for(run, index, drome, slot).get("allowed", false))
-
-
 func _option_for(run: RunState, index: int, drome: int, slot: String) -> Dictionary:
 	var options: Array = run.bios_options(index) if run.is_bios_at(index) \
 		else (run.module_options(index) if run.is_module_at(index) else [])
@@ -1374,27 +1360,6 @@ class FreeSlot extends Control:
 			var a: Vector2 = corners[i]
 			var b: Vector2 = corners[(i + 1) % 4]
 			draw_dashed_line(a, b, color, width, 3.0)
-
-
-## Das freie Kaestchen unter ``at`` als [FreeSlot, Platz]; liegt der Finger
-## auf keinem, das erste freie (bzw. [null, -1] ohne freie).
-static func _free_under(frees: Array, at: Vector2) -> Array:
-	if frees.is_empty():
-		return [null, -1]
-	var nearest: Array = frees[0]
-	var best := INF
-	for entry in frees:
-		var rect := (entry[0] as Control).get_global_rect()
-		if rect.grow(4.0).has_point(at):
-			return entry
-		# Daneben: das naechste Kaestchen in der Zeile, wenn der Finger in
-		# ihrer Hoehe liegt -- sonst bleibt es beim ersten freien.
-		if at.y >= rect.position.y - 12.0 and at.y <= rect.end.y + 12.0:
-			var d := absf(rect.get_center().x - at.x)
-			if d < best:
-				best = d
-				nearest = entry
-	return nearest
 
 
 ## Setzt Lagerplatz ``index`` in diese Waffe (auf Platz ``position``, wenn

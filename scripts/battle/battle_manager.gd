@@ -83,7 +83,6 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 
 	region = _region_for(rng, region_id)
 	grid = MapGenerator.generate(region, map_id)
-	MapGenerator.place_obstacles(grid, battle_seed)
 
 	# Ohne feste Gegner (Direktstart der Kampfszene, Tests, Werkzeuge) wird
 	# ein Squad in der Staerke des eigenen gewuerfelt. Im Spiel selbst kommen
@@ -120,10 +119,6 @@ func setup(seed_value: int, player_builds: Array, enemy_override: Array = [],
 		var late := jitter_rng.randf() * spread
 		for mount in unit.mounts:
 			mount["ready"] = float(mount["ready"]) + late
-		# Nur Zeit-Faehigkeiten -- Ereignisse (Hologramm) bleiben sofort bereit.
-		for gadget in unit.gadgets:
-			if (gadget["ability"] as ActionData).trigger_kind == "time":
-				gadget["ready"] = float(gadget["ready"]) + late
 
 	resolver = ActionResolver.new(grid, units)
 	resolver.rng = self.rng
@@ -335,7 +330,7 @@ func pulse_seconds() -> float:
 	return _pulse
 
 
-## Was je Puls laeuft: Reparatur, Overtime. Der Schild laedt nicht mehr je
+## Was je Puls laeuft: Reparatur, Kabelbrand. Der Schild laedt nicht mehr je
 ## Puls, sondern nach Ruhe (Unit.recharge_shield, jeden Schritt).
 func _pulse_unit(unit: Unit) -> void:
 	resolver.burn_cable_fire(unit)
@@ -393,11 +388,6 @@ func virus_start() -> float:
 	return float(Config.section("virus").get("start_seconds", 300.0))
 
 
-## Laeuft der Virus schon? Fuer die Anzeige.
-func in_virus() -> bool:
-	return virus_enabled and time >= virus_start()
-
-
 ## Sekunden bis zum Virus (negativ: laeuft schon) -- fuer das Flackern.
 func virus_in() -> float:
 	return virus_start() - time
@@ -424,13 +414,6 @@ func enemies_of(unit: Unit) -> Array:
 
 func allies_of(unit: Unit) -> Array:
 	return units.filter(func(u): return u.is_alive() and u.is_player == unit.is_player)
-
-
-func _handle_death(unit: Unit) -> void:
-	grid.clear_occupant(unit.tile)
-	resolver.forget_unit(unit)
-	EventBus.unit_died.emit(unit)
-	_check_victory()
 
 
 func _check_victory() -> void:

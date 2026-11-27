@@ -160,7 +160,7 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 
 ## Ein Aufbau mit Flaechenwaffe und Flaechenheilung -- beides auf einem Molok,
 ## damit ein einziger DROME beide Seiten der Frage stellt: wen trifft ein Radius?
-func _siege_and_drones(display_name: String) -> DromeBuild:
+func _hammer_and_drones(display_name: String) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
@@ -175,13 +175,13 @@ func _action_by_id(unit: Unit, id: StringName) -> ActionData:
 
 
 func test_an_area_hit_only_touches_who_it_means() -> void:
-	# Ein Flaechenschuss mit Radius 1 (frueher die Kanone). Zielte er auf ein Nachbarfeld, lag der
+	# Ein Flaechenschuss mit Radius 1. Zielte er auf ein Nachbarfeld, lag der
 	# Schuetze SELBST im Radius -- und execute() wendete die Wirkung auf jeden an,
 	# der auf einem getroffenen Feld stand, ohne nach der Seite zu fragen. Ein
 	# Molok im Handgemenge schoss sich so selbst zusammen, und weder
 	# Vorschau noch KI zeigten es an: beide bewerten das anvisierte Ziel.
-	var build := _siege_and_drones("BELAGERER")
-	t.ok(build.is_valid(), "der Belagerer ist baubar: %s" % ", ".join(build.validate()))
+	var build := _hammer_and_drones("FLAECHE")
+	t.ok(build.is_valid(), "der Aufbau ist baubar: %s" % ", ".join(build.validate()))
 
 	var grid := Grid.new(12, 12)
 	var shooter := Unit.create(build, &"E0", false)
@@ -194,20 +194,19 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	second_foe.tile = Vector2i(6, 4)   # im Radius, gegnerische Seite
 	var resolver := ActionResolver.new(grid, [shooter, comrade, foe, second_foe])
 
-	# Seit die Kanone weg ist (6g), traegt kein Teil mehr einen reinen
-	# Flaechenschuss -- die Regel gilt trotzdem, also mit einer eigenen Aktion.
-	var siege := ActionData.from_meta({"id": "act_test_area", "category": "attack",
+	# Eine eigene Test-Aktion: ein reiner Flaechenschuss um das Ziel.
+	var area := ActionData.from_meta({"id": "act_test_area", "category": "attack",
 		"targeting": "aoe_around_target", "range_tiles": 6, "aoe_radius": 1, "power": 20,
 		"interval": 2.0})
-	t.ok(siege != null and siege.aoe_radius > 0, "der Testschuss ist eine Fläche")
-	t.ok(shooter.tile in resolver.affected_tiles(foe.tile, siege),
+	t.ok(area != null and area.aoe_radius > 0, "der Testschuss ist eine Fläche")
+	t.ok(shooter.tile in resolver.affected_tiles(foe.tile, area),
 		"und der Schütze steht bei diesem Ziel wirklich in der eigenen Fläche")
 
 	# Geprueft wird die Flaeche, nicht der Energieschild davor.
 	foe.shield = 0
 	second_foe.shield = 0
-	var expected := resolver.preview_damage(shooter, foe, siege)
-	t.ok(resolver.execute(shooter, foe.tile, siege), "der Schuss geht raus")
+	var expected := resolver.preview_damage(shooter, foe, area)
+	t.ok(resolver.execute(shooter, foe.tile, area), "der Schuss geht raus")
 
 	t.equal(shooter.hp, shooter.stat("hp_max"), "der Schütze nimmt keinen eigenen Schaden")
 	t.equal(comrade.hp, comrade.stat("hp_max"), "der Verbündete im Radius bleibt heil")
