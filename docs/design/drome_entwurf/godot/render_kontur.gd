@@ -14,7 +14,7 @@ func _stock(chassis: PartData, neon: bool) -> DromeBuild:
 				assignment[part.slot_name()] = part.id
 	for slot in chassis.equip_slots():
 		for part in PartDB.equipment_for(chassis, slot):
-			if neon and part.id != "eq_neon_blaster":
+			if neon and part.id != "eq_rune_staff":
 				continue
 			if neon or part.set_id == chassis.set_id:
 				assignment[slot] = part.id

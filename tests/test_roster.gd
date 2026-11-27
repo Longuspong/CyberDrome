@@ -20,12 +20,11 @@ func test_starter_stock_matches_the_design() -> void:
 	var roster := _fresh()
 	# Vier Standard-Chassis = vier DROMEs.
 	t.equal(roster.entries.size(), 4, "vier Start-DROMEs")
-	# Vier Chassis + vier Kerne + sieben Ausruestungsteile (fuenf in den Kits:
-	# Blaster, Hammer + Deflektor, Runenstab, Lanze; zwei frei: Drohnen-Pod,
-	# Plasmaklinge) = 15 Instanzen. Die Gadgets sind seit 8. Nov. 2026 Module.
-	t.equal(roster.all_instances().size(), 15, "15 Instanzen im Startbestand")
+	# Vier Chassis + vier Kerne + sechs Ausruestungsteile (fuenf in den Kits:
+	# Blaster, Hammer + Deflektor, Runenstab, Lanze; frei: Plasmaklinge) = 14.
+	t.equal(roster.all_instances().size(), 14, "14 Instanzen im Startbestand")
 	for part_id in [&"eq_pulse_blaster", &"eq_hammer", &"eq_plasma_blade",
-			&"eq_rune_staff", &"eq_rail_lance", &"eq_deflector", &"eq_drone_pod"]:
+			&"eq_rune_staff", &"eq_rail_lance", &"eq_deflector"]:
 		t.equal(roster.total_count(part_id), 1,
 			"genau eine %s im Bestand" % part_id)
 	# Ein neuer Spielstand zieht mit jedem Standard-DROME einmal ins Gefecht.
@@ -54,21 +53,21 @@ func test_a_part_cannot_be_in_two_dromes_at_once() -> void:
 		seen[uid] = true
 
 	# Das freie Teil an einen DROME haengen -> es ist nicht mehr frei, und ein
-	# zweiter DROME bekommt kein zweites Exemplar desselben Teils. Frei liegen
-	# zum Start Drohnen-Pod und Plasmaklinge.
-	t.equal(roster.free_count(&"eq_drone_pod"), 1,
-		"der Drohnen-Pod liegt zunächst frei")
+	# zweiter DROME bekommt kein zweites Exemplar desselben Teils. Frei liegt
+	# zum Start die Plasmaklinge.
+	t.equal(roster.free_count(&"eq_plasma_blade"), 1,
+		"die Plasmaklinge liegt zunächst frei")
 	var molok: RosterEntry = roster.entries[1]
 	var molok_slot: String = roster.build_for(molok).equip_slots()[1]
-	t.ok(roster.assign(molok, molok_slot, &"eq_drone_pod"), "erste Zuweisung greift")
-	t.equal(roster.free_count(&"eq_drone_pod"), 0,
-		"danach ist kein Drohnen-Pod mehr frei")
+	t.ok(roster.assign(molok, molok_slot, &"eq_plasma_blade"), "erste Zuweisung greift")
+	t.equal(roster.free_count(&"eq_plasma_blade"), 0,
+		"danach ist keine Plasmaklinge mehr frei")
 
 	var vireo: RosterEntry = roster.entries[0]
 	var vireo_slot: String = roster.build_for(vireo).equip_slots()[0]
-	t.ok(not roster.assign(vireo, vireo_slot, &"eq_drone_pod"),
+	t.ok(not roster.assign(vireo, vireo_slot, &"eq_plasma_blade"),
 		"ein zweiter DROME bekommt kein zweites Exemplar")
-	t.ok(roster.instance_part_id(str(vireo.assignments.get(vireo_slot, ""))) != &"eq_drone_pod",
+	t.ok(roster.instance_part_id(str(vireo.assignments.get(vireo_slot, ""))) != &"eq_plasma_blade",
 		"und der Slot bleibt leer statt still doppelt belegt")
 
 

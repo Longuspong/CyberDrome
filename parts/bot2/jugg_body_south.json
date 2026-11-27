@@ -103,7 +103,7 @@
     "module_slots": 2,
     "hp_regen_pct": 0,
     "ai_role": "vanguard",
-    "passive": "",
+    "passive": "fortress",
     "actions": []
   }
 }

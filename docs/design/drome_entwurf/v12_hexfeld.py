@@ -97,8 +97,8 @@ def dromes(zones):
     for (q, r), (ch, wp) in zip(ps, [("scout_body", "eq_pulse_blaster"), ("jugg_body", "eq_hammer"),
                                      ("mage_body", "eq_rune_staff")]):
         out.append({"chassis": ch, "weapon": wp, "fl": fl(q, r), "yaw": 180.0})
-    for (q, r), (ch, wp) in zip(gs, [("strix_body", "eq_rail_lance"), ("jugg_body", "eq_bulwark_ram"),
-                                     ("scout_body", "eq_plasma_blade"), ("mage_body", "eq_drone_pod")]):
+    for (q, r), (ch, wp) in zip(gs, [("strix_body", "eq_rail_lance"), ("jugg_body", "eq_hammer"),
+                                     ("scout_body", "eq_plasma_blade"), ("mage_body", "eq_rune_staff")]):
         out.append({"chassis": ch, "weapon": wp, "fl": fl(q, r), "yaw": 0.0})
     return out
 

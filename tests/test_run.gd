@@ -455,8 +455,7 @@ func test_neon_city_brings_neon_squads() -> void:
 	var counts: Dictionary = _faction_counts(&"city")
 	t.note("Chassis Neon City %s" % [counts["bodies"]])
 	var blades := int(counts["weapons"].get(&"eq_plasma_blade", 0))
-	var guns := int(counts["weapons"].get(&"eq_pulse_blaster", 0)) \
-		+ int(counts["weapons"].get(&"eq_neon_blaster", 0))
+	var guns := int(counts["weapons"].get(&"eq_pulse_blaster", 0))
 	t.ok(blades > guns, "die Neon Ninjas kämpfen eher nah (%d gegen %d)" % [blades, guns])
 	for seed_value in 20:
 		var run := RunState.start(9300 + seed_value)
@@ -486,7 +485,7 @@ func test_a_run_survives_saving_and_loading() -> void:
 	var run := RunState.start(5150)
 	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_hammer", &"eq_deflector"])
 	run.storage.append_array([&"amp_attack", &"bios_metronome"])
-	run.bag.append(&"eq_mortar")
+	run.bag.append(&"eq_rail_lance")
 	run.squad[0].modules[run.squad[0].equip_slots()[0]] = [&"amp_shield", &"mod_seeker"]
 	run.bios_given = 2
 	run.set_target_recipe(&"mod_twin")
@@ -675,7 +674,7 @@ func test_the_endless_run_never_ends_by_winning() -> void:
 
 func test_losing_an_endless_run_costs_the_loot() -> void:
 	var run := RunState.start(31001, [], "endless")
-	run.bag.append(&"eq_mortar")
+	run.bag.append(&"eq_rail_lance")
 	run.home_queue.append({"kind": "part", "part_id": &"eq_hammer", "title": "Hammer", "text": ""})
 	run.record_result(BattleManager.Outcome.DEFEAT, [])
 	t.equal(run.phase, RunState.Phase.LOST, "die erste Niederlage beendet den Lauf")
@@ -685,10 +684,10 @@ func test_losing_an_endless_run_costs_the_loot() -> void:
 func test_cashing_out_of_an_endless_run_keeps_the_loot() -> void:
 	var run := RunState.start(31002, [], "endless")
 	run.record_result(BattleManager.Outcome.VICTORY, [])
-	run.bag.append(&"eq_mortar")
+	run.bag.append(&"eq_rail_lance")
 	t.ok(run.cash_out(), "aussteigen geht")
 	t.equal(run.phase, RunState.Phase.WON, "zählt als gewonnenes Ende")
-	t.ok(run.home_queue.any(func(item): return item.get("part_id") == &"eq_mortar"),
+	t.ok(run.home_queue.any(func(item): return item.get("part_id") == &"eq_rail_lance"),
 		"die Beute geht nach Hause")
 	var story := RunState.start(31003)
 	t.ok(not story.cash_out(), "im Story-Lauf gibt es kein Aussteigen")

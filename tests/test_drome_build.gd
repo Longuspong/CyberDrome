@@ -36,7 +36,7 @@ func _stock(set_id: String) -> DromeBuild:
 func test_library_loaded() -> void:
 	# 8. Nov. 2026: Orbit-Fokus und Hologramm-Boost sind Module.
 	# 9. Nov. 2026: Bollwerk-Ramme, Moerser, Klingenbumerang dazu.
-	t.equal(PartDB.parts.size(), 27, "27 Bauteile erwartet")
+	t.equal(PartDB.parts.size(), 22, "22 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausätze erwartet")
 	for part in PartDB.parts.values():
 		# Seit 20. Nov. 2026 nur noch die Suedansicht als Symbol (Schritt C).
@@ -153,7 +153,7 @@ func test_the_molok_has_two_holders() -> void:
 	t.ok(not lance.is_valid(), "das schwere Gewehr nicht")
 
 	var shoulder := molok.clone()
-	shoulder.slots["equip_shoulder"] = &"eq_drone_pod"
+	shoulder.slots["equip_shoulder"] = &"eq_pulse_blaster"
 	t.ok(not shoulder.is_valid(), "die Schulter ist kein Halter mehr")
 	t.equal(shoulder.equipment().size(), 2, "und was dort steckt, zählt nicht")
 
@@ -240,16 +240,16 @@ func test_the_frame_is_one_hull() -> void:
 func test_slot_rules_are_enforced() -> void:
 	var jugg := PartDB.get_part(&"jugg_body")
 	var cannon := PartDB.get_part(&"eq_hammer")
-	var pod := PartDB.get_part(&"eq_drone_pod")
+	var shield := PartDB.get_part(&"eq_deflector")
 	t.ok(jugg.accepts(cannon, "equip_left"), "der Hammer passt an den linken Arm")
 	t.ok(jugg.accepts(cannon, "equip_right"), "und an den rechten")
 	t.ok(not jugg.accepts(PartDB.get_part(&"eq_rail_lance"), "equip_left"), "schwer passt nicht")
-	t.ok(jugg.accepts(pod, "equip_right"), "der Drohnen-Pod passt rechts")
-	t.ok(not jugg.accepts(pod, "equip_shoulder"), "die Schulter ist reine Optik")
+	t.ok(jugg.accepts(shield, "equip_right"), "der Deflektor passt rechts")
+	t.ok(not jugg.accepts(shield, "equip_shoulder"), "die Schulter ist reine Optik")
 
 	var scout := PartDB.get_part(&"scout_body")
 	t.ok(not scout.accepts(cannon, "equip_left"),
-		"ein Sprinter trägt keine Belagerungskanone")
+		"ein Vireo trägt keinen Hammer")
 	t.ok(not scout.accepts(PartDB.get_part(&"eq_deflector"), "equip_left"),
 		"und keinen Schild")
 
@@ -257,10 +257,8 @@ func test_slot_rules_are_enforced() -> void:
 ## Nahkampf bis 2 Felder, Fernkampf ab 3 (16. Nov. 2026) -- und die Lafette
 ## des Strix nimmt nur Fernkampf (docs/DROME_DESIGNREGELN.md).
 func test_reach_decides_melee_or_ranged() -> void:
-	t.equal(PartDB.get_part(&"eq_boomerang").reach_kind(), "melee", "Bumerang (2 Felder) ist Nahkampf")
 	t.equal(PartDB.get_part(&"eq_deflector").reach_kind(), "melee", "Deflektor ist Nahkampf")
 	t.equal(PartDB.get_part(&"eq_rune_staff").reach_kind(), "ranged", "Runenstab (3) ist Fernkampf")
-	t.equal(PartDB.get_part(&"eq_drone_pod").reach_kind(), "ranged", "E-Schraubenschlüssel ist Fernkampf")
 	t.equal(PartDB.get_part(&"eq_rail_lance").reach_kind(), "ranged", "Lanze ist Fernkampf")
 	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
 		t.ok(part.tags.has("melee") != part.tags.has("ranged"),
@@ -275,7 +273,6 @@ func test_the_strix_mount_takes_only_ranged() -> void:
 	t.ok(strix.accepts(PartDB.get_part(&"eq_rail_lance"), "equip_center"), "Lanze passt")
 	t.ok(strix.accepts(PartDB.get_part(&"eq_rune_staff"), "equip_center"), "Runenstab passt")
 	t.ok(not strix.accepts(PartDB.get_part(&"eq_plasma_blade"), "equip_center"), "Plasmaklinge nicht")
-	t.ok(not strix.accepts(PartDB.get_part(&"eq_boomerang"), "equip_center"), "Bumerang (2 Felder) nicht")
 	t.equal(SlotRules.rejection(PartDB.get_part(&"eq_hammer"), strix.slot_rules["equip_center"], "heavy"),
 		"nur Fernkampf", "der Grund steht dabei")
 
@@ -454,7 +451,7 @@ func _overloaded_molok() -> DromeBuild:
 	return DromeBuild.create("VOLLBESTÜCKT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_drone_pod",
+		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector",
 	})
 
 

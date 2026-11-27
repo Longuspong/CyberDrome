@@ -12,6 +12,11 @@ Der Kernmoment: Nach dem Theorycrafting im Hangar bekommt man im Lauf die erhoff
   - **RX-Vireo**: agiler Kämpfer auf mittlerer Distanz, stapelt Buffs durch Angriffe (Passive Cyberspeed, Booster auf dem Rücken), in verschiedene Richtungen skillbar
   - **LR-Strix**: fragiler Scharfschütze mit großer Reichweite, eine Variante mit direktem und eine mit indirektem Schaden
 - Passiven der drei DROMEs ausformulieren und umsetzen
+- **Waffen (27. Nov. 2026):** zuerst je DROME eine passende Kernwaffe -- Vireo Puls-Blaster,
+  Molok Hammer + Deflektor, Strix Schienen-Lanze, Nimbus Runenstab --, die Alternativen zum
+  Builden kommen danach (die Plasmaklinge des Vireo ist die erste). Entfernt als
+  Brainstorming-Reste: Bollwerk-Ramme, E-Schraubenschlüssel (Drohnen-Pod), Klingenbumerang,
+  Neon-Blaster, Mörser -- mit Code, Daten und Tests.
 - Amps: bereits fertig, es fehlt nur noch die Grafik für den Armor Amp
 - Fusions überarbeiten
 - BIOS überprüfen
@@ -62,10 +67,10 @@ Der Molok ist ein reiner Frontliner: Er hält vorne, macht wenig eigenen Schaden
 - **Kein Schaden aus Verteidigung:** Keine Passive, die Rüstung oder Integrität in Schaden umwandelt, damit Abwehr kein Gewinn auf beiden Seiten wird.
 - **Strix-Verhalten bleibt:** Gegnerische Strix wechseln auf Damage-Dealer, sobald diese in Reichweite sind. Das ist gewollt, weil es das Risiko des Vireo und die Rolle des Strix stärkt.
 
-**Passive (Entwurf)**
+**Passive (gebaut 27. Nov. 2026, Arbeitsname „Festung“)**
 
-- Der Molok erhält alle Heilungen, Regenerationen und Schildgaben um 20 % verstärkt.
-- Die Quelle dafür sind seine Tankwaffen: Der Hammer gibt beim Betäubungsschlag 50 % des Schlagschadens als Integrität zurück, der Deflektor liefert Schild. So wird das Tragen der Tankwaffen belohnt; ein Molok mit anderen Waffen verzichtet bewusst darauf.
+- Der Molok erhält alle Heilungen, Regenerationen und Schildgaben um 20 % verstärkt (`passives.fortress`).
+- Die Quelle dafür sind seine Tankwaffen: Der Hammer-Betäubungsschlag (kinetisch) macht +20 % der eigenen max. Integrität als Schaden und heilt um 100 % des Schadens (Spieler 27. Nov.; ersetzt die 50 % aus dem Entwurf und ist eine bewusste Ausnahme von „Kein Schaden aus Verteidigung“, vom Spieler bestätigt: der Schlag kommt nur jeden 3. Angriff, und ein Hammer lohnt sich für jeden Nahkämpfer, mit wenig Integrität eben weniger), der Deflektor liefert Schild. So wird das Tragen der Tankwaffen belohnt; ein Molok mit anderen Waffen verzichtet bewusst darauf.
 - Keine eigene Regeneration pro Puls (verworfen, die Tankwaffen übernehmen das).
 - Ein richtiger Heiler oder Support kommt später.
 - Virusschaden wird von der Passive nicht ausgeglichen.
@@ -73,7 +78,7 @@ Der Molok ist ein reiner Frontliner: Er hält vorne, macht wenig eigenen Schaden
 
 **Offen**
 
-- Name der Passive (verworfen: Lockdown, weil Stehenbleiben nicht mehr belohnt wird)
+- Name der Passive: Arbeitsname „Festung“ (verworfen: Lockdown, weil Stehenbleiben nicht mehr belohnt wird)
 - Höhe der eigenen Regeneration pro Puls
 - On-Hit-Effekte lösen durch die zwei Arme doppelt aus. Bewusst als Belohnung lassen oder über einen Proc-Koeffizienten am Chassis abschwächen?
 - Kontrolleffekte (Hammer-Stun) bei doppelter Frequenz und voller Dauer: Gefahr von Dauer-Stun prüfen.

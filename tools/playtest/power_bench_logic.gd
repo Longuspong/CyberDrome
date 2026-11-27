@@ -130,13 +130,12 @@ func _describe(build: DromeBuild) -> Dictionary:
 			var a: ActionData = Leveling.level_action(action, part, level).with_modules(fx)
 			entry["actions"].append({
 				"attack": a.is_attack(), "power": a.power, "shots": a.shots,
-				"interval": a.interval, "range": a.range_tiles, "min_range": a.min_range,
+				"interval": a.interval, "range": a.range_tiles,
 				"aoe": a.aoe_radius, "targeting": a.targeting, "energy": a.energy_fraction,
 				"heal": a.heal, "shield_gain": a.shield_gain, "support": a.support,
 				"trigger": a.trigger_kind, "every": a.trigger_every,
 				"status": str(a.status.get("id", "")), "status_s": float(a.status.get("seconds", 0.0)),
 				"gather": a.gather, "push": a.push_tiles, "hp_scaling": a.hp_scaling,
-				"moving_bonus": a.moving_bonus, "shield_mult": a.shield_mult,
 				"is_move": a.is_move(),
 			})
 		weapons.append(entry)

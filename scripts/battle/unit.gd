@@ -488,11 +488,11 @@ func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-## Ein Wurf (Runenstab-Faehigkeit, Bumerang): hoch, Schwung, loslassen in der
-## Mitte des Schwungs; ``hide`` Sekunden ist die Waffe danach nicht in der Hand.
-func play_throw(action: ActionData, seconds: float, hide: float = 0.0) -> void:
+## Ein Wurf (Runenstab-Faehigkeit): hoch, Schwung, loslassen in der Mitte des
+## Schwungs.
+func play_throw(action: ActionData, seconds: float) -> void:
 	if arena != null:
-		arena.throw(self, action, seconds, hide)
+		arena.throw(self, action, seconds)
 
 
 ## Das Ziel zuckt und blendet kurz hell auf. Die Erschuetterung laeuft ueber
@@ -988,7 +988,7 @@ func recharge_shield(dt: float) -> int:
 		delay = minf(delay, quick)
 	if calm_time < delay:
 		return 0
-	var per_pulse := float(rule.get("gain_per_point", 2.0)) * pulse_points
+	var per_pulse := float(rule.get("gain_per_point", 2.0)) * pulse_points * care_mult()
 	_recharge_carry += per_pulse / maxf(0.1, float(rule.get("pulse", 3.0))) * dt
 	var gain := mini(int(_recharge_carry), maximum - shield)
 	_recharge_carry -= float(gain)
@@ -1008,11 +1008,6 @@ func power_factor() -> float:
 	return 1.0 if points <= 0 else float(points) / 10.0
 
 
-## So lange nach dem letzten Feldwechsel gilt ein DROME als "in Bewegung"
-## (Klingenbumerang, ActionData.moving_bonus).
-const MOVING_WINDOW := 1.0
-
-
 ## Rohschaden einer Aktion: ihr Schaden mal Power. Davor kommt nichts, danach
 ## Schild und Ruestung (ActionResolver.resolve_damage).
 func raw_damage(action: ActionData) -> int:
@@ -1021,13 +1016,10 @@ func raw_damage(action: ActionData) -> int:
 	var raw := float(action.power) * power_factor()
 	if steady:
 		raw *= float(steady_rule().get("damage_mult", 1.2))
-	# Klingenbumerang: wer gerade gelaufen ist, wirft haerter.
-	if action.moving_bonus > 0.0 and still_time < MOVING_WINDOW:
-		raw *= 1.0 + action.moving_bonus
 	# Rammbock: ein Teil der eigenen Panzerung kommt dazu, ohne Power.
 	if action.armor_to_damage > 0.0:
 		raw += float(def()) * action.armor_to_damage
-	# Bollwerk-Ramme: ein Teil der eigenen maximalen Integritaet, ohne Power.
+	# Hammer-Betaeubungsschlag: ein Teil der eigenen maximalen Integritaet, ohne Power.
 	if action.hp_scaling > 0.0:
 		raw += float(stat("hp_max")) * action.hp_scaling
 	return maxi(1, int(round(raw)))
@@ -1051,7 +1043,7 @@ func regenerate_hp() -> int:
 	if pct <= 0 or hp <= 0:
 		return 0
 	var maximum := stat("hp_max")
-	var amount := int(floor(float(maximum) * float(pct) / 100.0))
+	var amount := int(floor(float(maximum) * float(pct) / 100.0 * care_mult()))
 	if amount <= 0:
 		return 0
 	var before := hp
@@ -1106,6 +1098,16 @@ func on_attack() -> void:
 		cyberspeed_count = 0
 		cyberspeed_stacks = mini(int(rule.get("max_stacks", 3)), cyberspeed_stacks + 1)
 	cyberspeed_left = float(rule.get("seconds", 3.0)) * efficiency_factor()
+
+
+## Festung (Molok-Passive, 27. Nov. 2026): Faktor auf alles, was diesen DROME
+## heilt oder ihm Schild gibt -- Heilung, Lebensraub, Regeneration, Schildladung
+## und Schildgaben (``passives.fortress.care_mult``). Virusschaden gleicht sie
+## nicht aus.
+func care_mult() -> float:
+	if passive() != "fortress":
+		return 1.0
+	return float((Config.section("passives").get("fortress", {}) as Dictionary).get("care_mult", 1.2))
 
 
 static func _cyberspeed() -> Dictionary:

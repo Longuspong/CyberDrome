@@ -164,7 +164,7 @@ func _hammer_and_drones(display_name: String) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_drone_pod"})
+		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"})
 
 
 func _action_by_id(unit: Unit, id: StringName) -> ActionData:
@@ -220,61 +220,6 @@ func test_an_area_hit_only_touches_who_it_means() -> void:
 	second_foe.free()
 
 
-func test_the_drone_pod_repairs_the_most_hurt_ally() -> void:
-	# 7. Nov. 2026: der Drohnen-Pod ist eine Heil-Waffe. Sein Angriff repariert
-	# den Verbuendeten mit dem geringsten Anteil Integritaet in Reichweite;
-	# ist niemand verletzt, schiesst er auf Gegner.
-	var medic := DromeBuild.create("SANI", {
-		"body": &"mage_body", "head": &"mage_head",
-		"feet": &"mage_drive", "core": &"mage_core",
-		"equip_left": &"eq_drone_pod"})
-	var tiles := [Vector2i(10, 15), Vector2i(11, 15), Vector2i(12, 15), Vector2i(10, 12)]
-	var battle := BattleManager.new()
-	battle.setup(4242, [medic, _squad()[0], _squad()[1]], [_squad()[0]])
-	for i in tiles.size():
-		var unit: Unit = battle.units[i]
-		battle.grid.clear_occupant(unit.tile)
-	for i in tiles.size():
-		var unit: Unit = battle.units[i]
-		unit.place_at(tiles[i])
-		battle.grid.set_occupant(unit.tile, unit.unit_id)
-	var sani: Unit = battle.units[0]
-	var light: Unit = battle.units[1]
-	var heavy: Unit = battle.units[2]
-	var foe: Unit = battle.units[3]
-	var repair := _action_by_id(sani, &"act_drone_repair")
-	t.ok(repair != null and repair.heal > 0, "der Pod hat einen Heil-Angriff")
-
-	var aim: Dictionary = battle.brain._support_aim(sani, repair)
-	t.ok(aim.is_empty(), "niemand verletzt: keine Heilung")
-	light.hp -= 10
-	heavy.hp = heavy.stat("hp_max") / 2
-	aim = battle.brain._support_aim(sani, repair)
-	t.equal(aim.get("target"), heavy, "geheilt wird, wer den geringsten Anteil hat")
-	var before := heavy.hp
-	t.ok(battle.resolver.execute(sani, heavy.tile, repair), "die Heilung geht raus")
-	var amount := ActionResolver.support_amount(sani, heavy, repair.heal)
-	t.equal(heavy.hp, before + amount,
-		"und repariert %d (Grundwert x Power + 3 %% der Integrität des Ziels)" % amount)
-
-	# Ueber die volle Integritaet hinaus wird die Heilung zu Schild -- aber
-	# nur bis zum normalen Maximum; ist beides voll, verpufft sie.
-	heavy.hp = heavy.stat("hp_max") - 1
-	heavy.shield = heavy.shield_max() - 3
-	battle.resolver.execute(sani, heavy.tile, repair)
-	t.equal(heavy.hp, heavy.stat("hp_max"), "Integrität voll")
-	t.equal(heavy.shield, heavy.shield_max(), "der Rest fuellt den Schild, kein Überschild")
-	battle.resolver.execute(sani, heavy.tile, repair)
-	t.equal(heavy.shield, heavy.shield_max(), "beides voll: die Heilung geht ins Leere")
-
-	heavy.hp = heavy.stat("hp_max")
-	light.hp = light.stat("hp_max")
-	var foe_before := foe.shield + foe.hp
-	t.ok(battle.brain._fire(sani, sani.mounts[0], foe), "niemand verletzt: er schießt")
-	t.ok(foe.shield + foe.hp < foe_before, "und trifft den Gegner")
-	battle.free()
-
-
 func test_the_deflector_charges_its_own_shield() -> void:
 	var tank := DromeBuild.create("WALL", {
 		"body": &"jugg_body", "head": &"jugg_head",
@@ -287,8 +232,10 @@ func test_the_deflector_charges_its_own_shield() -> void:
 	t.ok(charge != null and charge.shield_gain > 0, "der Deflektor hat die Schildladung")
 	unit.shield = unit.shield_max()
 	t.ok(resolver.execute(unit, unit.tile, charge), "sie wirkt auf den Träger")
-	t.equal(unit.shield, unit.shield_max() + ActionResolver.support_amount(unit, unit, charge.shield_gain),
-		"auch über das Maximum")
+	# Festung (Molok-Passive): Schildgaben am Molok +20 %.
+	var expected := int(round(float(ActionResolver.support_amount(unit, unit, charge.shield_gain)) * unit.care_mult()))
+	t.ok(unit.care_mult() > 1.0, "die Festung verstärkt die Schildgabe")
+	t.equal(unit.shield, unit.shield_max() + expected, "auch über das Maximum")
 	for _i in 6:
 		resolver.execute(unit, unit.tile, charge)
 	t.equal(unit.shield, ActionResolver.shield_cap(unit), "aber höchstens Maximum + 50 %")
@@ -472,22 +419,21 @@ func test_generated_enemies_are_always_valid() -> void:
 
 func test_shield_overflow_is_not_multiplied_onto_integrity() -> void:
 	# Bricht ein Treffer den Schild, trifft nur der Rest die Integritaet --
-	# ohne Schildfaktor. Frueher ging der Schildbrecher (Energie x1,2, Schild
-	# x2) mit dem vollen Faktor auf die HP durch.
+	# ohne Schildfaktor (Energie x1,2 am Schild).
 	var grid := Grid.new(10, 10)
 	var target := Unit.create(_squad()[0], &"E0", false)
 	var resolver := ActionResolver.new(grid, [target])
 	target.shield = 0
-	var bare: int = resolver.resolve_damage(target, 12, 1.0, 2.0)["hp"]
+	var bare: int = resolver.resolve_damage(target, 12, 1.0)["hp"]
 	target.shield = 5
-	var broken: Dictionary = resolver.resolve_damage(target, 12, 1.0, 2.0)
+	var broken: Dictionary = resolver.resolve_damage(target, 12, 1.0)
 	t.equal(int(broken["shield_after"]), 0, "der Schild ist weg")
 	t.ok(int(broken["hp"]) < bare,
 		"ein Rest Schild fängt etwas ab: %d < %d" % [broken["hp"], bare])
 	target.shield = 0
-	var rest: int = resolver.resolve_damage(target, 10, 1.0, 2.0)["hp"]
+	var rest: int = resolver.resolve_damage(target, 10, 1.0)["hp"]
 	t.ok(int(broken["hp"]) <= rest,
-		"5 Schild kosten den Schildbrecher gut 2 Rohschaden: %d <= %d" % [broken["hp"], rest])
+		"5 Schild kosten gut 4 Rohschaden: %d <= %d" % [broken["hp"], rest])
 	target.free()
 
 

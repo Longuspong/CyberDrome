@@ -163,6 +163,7 @@ def num(x):
 PASSIVE_INFO = {
     "cyberspeed": ("Cyberspeed", lambda p: f"Jeder {p['every']}. Angriff gibt einen Stapel (hoechstens {p['max_stacks']}), "
                    f"je Stapel +{pct(p['attack_speed'])} Angriffs- und Lauftempo; jeder Angriff haelt die Stapel {num(p['seconds'])} s."),
+    "fortress": ("Festung", lambda p: f"Heilung, Regeneration und Schildgaben am Molok +{pct(p['care_mult'] - 1)}."),
     "echo": ("Echo", lambda p: f"Jede Faehigkeit wirkt doppelt, dafuer ist ihr Takt {num(p['slower'])}-mal so lang."),
     "steady": ("Anlegen", lambda p: f"Nach {num(p['seconds'])} s ohne Feldwechsel +{pct(p['damage_mult'] - 1)} Schaden "
                f"und +{pct(p['range_mult'] - 1)} Reichweite (mind. +1 Feld)."),
@@ -276,8 +277,6 @@ def ability_effect(a, attack):
         parts.append(f"Flaeche Radius {a.get('aoe_radius', 0)}")
     if a.get("hp_scaling"):
         parts.append(f"+{pct(a['hp_scaling'])} der eigenen max. Integritaet (ohne Power)")
-    if a.get("shield_mult", 1.0) != 1.0:
-        parts.append(f"x{num(a['shield_mult'])} gegen Schild")
     if a.get("push_tiles", 0) > 0:
         parts.append(f"stoesst {a['push_tiles']} Feld zurueck")
     if a.get("push_tiles", 0) < 0:
@@ -301,10 +300,6 @@ def attack_extra(a):
     parts = []
     if a.get("heal"):
         parts.append(f"heilt Verbuendete um {a['heal']}")
-    if a.get("moving_bonus"):
-        parts.append(f"+{pct(a['moving_bonus'])} in Bewegung")
-    if a.get("min_range"):
-        parts.append(f"Mindestreichweite {a['min_range']}")
     if a.get("delay"):
         parts.append(f"Einschlag nach {num(a['delay'])} s")
     if a.get("targeting") == "aoe_around_target":

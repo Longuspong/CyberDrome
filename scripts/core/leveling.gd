@@ -11,8 +11,7 @@ extends RefCounted
 ## Waffe: es steigen immer zwei Werte -- der Schaden (Level 10 = +70 %) und
 ## ihr Bonus-Wert (je Waffe ein eigener Endwert, damit z. B. Speed nicht
 ## explodiert). Faehigkeit und Takt bleiben; der Faehigkeitsschaden waechst
-## mit, weil er ein Anteil des Waffenschadens ist. Beim Neon-Blaster steigt nur
-## der Energieanteil.
+## mit, weil er ein Anteil des Waffenschadens ist.
 ##
 ## Alle Zahlen: data/config.json -> levels.
 
@@ -142,8 +141,7 @@ static func weapon_bonus(part: PartData, level: int) -> Dictionary:
 
 
 ## Eine Aktion der Waffe auf ihrem Level -- als Kopie, die PartDB bleibt
-## unberuehrt. Schaden (und Reparatur) wachsen; beim Neon-Blaster nur der
-## Energieanteil.
+## unberuehrt. Schaden (und Reparatur) wachsen.
 static func level_action(action: ActionData, part: PartData, level: int) -> ActionData:
 	if action == null or part == null or level <= 0:
 		return action
@@ -151,14 +149,7 @@ static func level_action(action: ActionData, part: PartData, level: int) -> Acti
 		return action
 	var mult := weapon_damage_mult(level)
 	var out := action.copy()
-	if str(part.id) in weapon_cfg().get("energy_only", []):
-		var energy := float(action.power) * action.energy_fraction
-		var kinetic := float(action.power) - energy
-		var grown := energy * mult
-		out.power = int(round(kinetic + grown))
-		out.energy_fraction = grown / maxf(1.0, kinetic + grown)
-	else:
-		out.power = int(round(float(action.power) * mult))
+	out.power = int(round(float(action.power) * mult))
 	if action.heal > 0:
 		out.heal = int(round(float(action.heal) * mult))
 	return out

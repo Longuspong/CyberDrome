@@ -113,9 +113,9 @@ const MELEE_HIT_AT := 0.6
 const RAISE_ANGLE := -1.15
 const RAISE_UP := 0.35
 const RAISE_DOWN := 0.25
-## Wurf (Runenstab-Faehigkeit, Bumerang): hoch, halten, schneller Schwung
-## nach vorn-unten bis ueber die Ruhelage hinaus, zurueck. Die Kugel bzw. der
-## Bumerang loest sich in der Mitte des Schwungs (THROW_RELEASE, Anteil).
+## Wurf (Runenstab-Faehigkeit): hoch, halten, schneller Schwung nach
+## vorn-unten bis ueber die Ruhelage hinaus, zurueck. Die Kugel loest sich in
+## der Mitte des Schwungs (THROW_RELEASE, Anteil).
 const THROW_UP := 0.32
 const THROW_HOLD := 0.42
 const THROW_SWING := 0.58
@@ -413,17 +413,11 @@ func attack(unit: Unit, action: ActionData, seconds: float = -1.0) -> bool:
 	return true
 
 
-## Ein Wurf: hoch, halten, Schwung nach vorn-unten (``seconds`` insgesamt);
-## mit ``hide`` verschwindet die Waffe ab dem Loslassen fuer so viele
-## Sekunden (der Bumerang ist unterwegs).
-func throw(unit: Unit, action: ActionData, seconds: float, hide: float = 0.0) -> bool:
+## Ein Wurf: hoch, halten, Schwung nach vorn-unten (``seconds`` insgesamt).
+func throw(unit: Unit, action: ActionData, seconds: float) -> bool:
 	if not raise(unit, action, seconds):
 		return false
-	var attack: Dictionary = _anim[unit]["attack"]
-	attack["kind"] = "throw"
-	if hide > 0.0:
-		_anim[unit]["hidden"] = {"slot": attack["slot"], "from": seconds * THROW_RELEASE,
-			"to": seconds * THROW_RELEASE + hide, "t": 0.0}
+	_anim[unit]["attack"]["kind"] = "throw"
 	return true
 
 
@@ -565,16 +559,6 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			tr = _attack_pose(tr, kind, k, pivot)
 		block.transform = tr
 
-	# Geworfene Waffe (Bumerang): zwischen Loslassen und Fangen nicht in der Hand.
-	if state.has("hidden"):
-		var hidden: Dictionary = state["hidden"]
-		hidden["t"] = float(hidden["t"]) + delta
-		var thrown := turn.get_node_or_null(str(hidden["slot"])) as Node3D
-		var away: bool = float(hidden["t"]) >= float(hidden["from"]) and float(hidden["t"]) < float(hidden["to"])
-		if thrown != null:
-			thrown.visible = not away
-		if float(hidden["t"]) >= float(hidden["to"]):
-			state.erase("hidden")
 	# Muendungsblitz: an der Waffenspitze ein Lichtball, die Waffe leuchtet auf.
 	if slot != "" and kind == "ranged":
 		var weapon := turn.get_node_or_null(slot) as Node3D

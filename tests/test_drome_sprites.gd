@@ -191,11 +191,11 @@ func test_rim_per_part_and_neon_layer() -> void:
 	var root := Node2D.new()
 	var build := _stock(PartDB.get_part(&"scout_body"))
 	var slot: String = PartDB.get_part(&"scout_body").equip_slots()[0]
-	build.slots[slot] = &"eq_neon_blaster"
+	build.slots[slot] = &"eq_rune_staff"
 	var sprites := DromeSprites.assemble(root, build, "south")
 	var signal_view := root.get_node_or_null("Signal3D") as SubViewport
 	t.ok(signal_view != null, "Signalebene da")
-	t.ok(root.get_node_or_null("Neon3D") != null, "Leuchtebene da (Neon-Blaster)")
+	t.ok(root.get_node_or_null("Neon3D") != null, "Leuchtebene da (Runenstab)")
 	t.ok(sprites["drome"].get_node_or_null("Neon") is NeonGlow, "Leuchten liegt auf dem Bild")
 	var view := root.get_node("Ansicht3D") as SubViewport
 	t.ok(signal_view.world_3d == view.world_3d, "Signalebene sieht dieselbe 3D-Welt")
@@ -203,7 +203,7 @@ func test_rim_per_part_and_neon_layer() -> void:
 	t.ok(weapon != null, "Waffe als eigener Block")
 	if weapon != null:
 		var sig := weapon.get_node("Signal") as MeshInstance3D
-		var model := DromeModel.model_of(PartDB.get_part(&"eq_neon_blaster"))
+		var model := DromeModel.model_of(PartDB.get_part(&"eq_rune_staff"))
 		t.ok(sig.layers == DromeModel.LAYER_SIGNAL, "Signal nur auf seiner Ebene")
 		t.ok((sig.material_override as StandardMaterial3D).albedo_color.is_equal_approx(
 			Color.html(model["colors"]["accent"])), "Waffe traegt ihre eigene Signalfarbe")

@@ -9,14 +9,14 @@ extends RefCounted
 ## Abfolge einer Faehigkeit mit Ausholzeit (ActionData.windup):
 ##   on_cast  Name, Ansage (AbilityPainter "<art>_cast") und Haltung des DROME:
 ##            Nahkampf holt so aus, dass der Schlag beim Wirken sitzt, der
-##            Runenstab wird hochgehalten, der Moerser feuert die Granate ab.
+##            Runenstab wird hochgehalten.
 ##   on_used  die Wirkung: Schuss bzw. Aufprall, dann die Form der Faehigkeit.
 
 ## Dauer, in der ein gezogener oder gestossener DROME auf sein Feld rutscht.
 const FORCED_SLIDE := 0.38
 ## Faehigkeiten, deren Haltung schon mit der Ansage beginnt -- beim Wirken
 ## keine zweite Bewegung.
-const CAST_POSED := ["stun", "push", "slash", "whirl", "vortex", "barrage"]
+const CAST_POSED := ["stun", "slash", "vortex"]
 const NAME_COLOR := Color(1.0, 0.86, 0.3)
 
 
@@ -54,23 +54,16 @@ static func on_cast(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 	var data := ability_data(unit, tile, action, color, kind, units)
 	data["ability"] = kind
 	data["release"] = Arena3D.THROW_RELEASE
-	if kind in ["vortex", "whirl"] and unit.arena != null:
-		# Kugel bzw. Bumerang: an der Waffenspitze, bis sie den Schwung verlassen.
+	if kind == "vortex" and unit.arena != null:
+		# Kugel: an der Waffenspitze, bis sie den Schwung verlaesst.
 		data["tip"] = func() -> Vector2: return unit.arena.weapon_tip(unit, action)
 	view.show_cast(kind, data, seconds)
 	match kind:
-		"stun", "push", "slash":
+		"stun", "slash":
 			# Ausholen so getaktet, dass der Schlag beim Wirken sitzt.
 			unit.play_attack(tile, action, seconds / Arena3D.MELEE_HIT_AT)
 		"vortex":
 			unit.play_throw(action, seconds)
-		"whirl":
-			# Der Bumerang verlaesst die Hand, kreist und kommt zurueck.
-			var away := seconds * (1.0 - Arena3D.THROW_RELEASE) + AbilityPainter.LIFE["whirl"]
-			unit.play_throw(action, seconds, away)
-
-		"barrage":
-			unit.play_attack(tile, action)
 
 
 ## Salven (Doppelschuss): jeder Schuss fliegt einzeln, zu denselben Zeiten,
@@ -118,11 +111,6 @@ static func _show_ability(view: BattleView, unit: Unit, tile: Vector2i, action: 
 	if kind == "vortex":
 		view.show_vortex(tile, action.aoe_radius, action.delay, color, not unit.is_player)
 		return
-	if kind == "breaker":
-		data["wait"] = 0.12                   # erst der Schuss, dann zerspringt das Schild
-	if kind == "whirl" and unit.arena != null:
-		# Zurueck in die Hand: dorthin, wo die Hand dann ist.
-		data["tip"] = func() -> Vector2: return unit.arena.weapon_tip(unit, action)
 	view.show_ability(kind, data)
 
 
@@ -132,12 +120,9 @@ static func ability_data(unit: Unit, tile: Vector2i, action: ActionData, color: 
 	var at := IsoView.map_to_local(tile)
 	var data := {"at": at, "color": color, "enemy": not unit.is_player,
 		"radius": action.aoe_radius, "delay": action.delay, "from": unit.visual_anchor()}
-	if unit.arena != null and kind in ["lock", "double", "barrage"]:
+	if unit.arena != null and kind in ["lock", "double"]:
 		data["muzzle"] = func() -> Vector2: return unit.arena.weapon_tip(unit, action)
 	match kind:
-		"push":
-			var dir := (at - IsoView.map_to_local(unit.tile)).normalized()
-			data["dir"] = dir if dir != Vector2.ZERO else Vector2.UP
 		"double":
 			data["targets"] = double_targets(unit, tile, action, units)
 		"shield":
@@ -168,8 +153,8 @@ static func double_targets(unit: Unit, tile: Vector2i, action: ActionData, units
 
 
 ## Wie ein Angriff aussieht (Wunsch des Spielers, 9. Nov. 2026): Nahkampf ohne
-## Projektil; Blaster gerader Schuss, Lanze schweres Geschoss, Runenstab und
-## E-Schraubenschluessel eine Energiekugel, die Reparatur ein Heilstrahl. Die
+## Projektil; Blaster gerader Schuss, Lanze schweres Geschoss, Runenstab eine
+## Energiekugel, eine Reparatur ein Heilstrahl. Die
 ## Schadensart steuert Leuchten und Einschlag (BattleView.show_attack).
 static func attack_style(unit: Unit, tile: Vector2i, action: ActionData, target: Unit = null) -> Dictionary:
 	var style := {"energy": action.energy_fraction, "area": action.aoe_radius,
@@ -181,9 +166,8 @@ static func attack_style(unit: Unit, tile: Vector2i, action: ActionData, target:
 		style["energy"] = 1.0
 	elif action.range_tiles <= 1 or reach <= 1:
 		style["projectile"] = ""
-	elif id.begins_with("act_rune") or id.begins_with("act_drone"):
+	elif id.begins_with("act_rune"):
 		style["projectile"] = "orb"
-	elif id.begins_with("act_rail") or id.begins_with("act_mortar"):
-		# Moerser: schweres Geschoss wie die Lanze, schlaegt als Flaeche ein.
+	elif id.begins_with("act_rail"):
 		style["projectile"] = "slug"
 	return style

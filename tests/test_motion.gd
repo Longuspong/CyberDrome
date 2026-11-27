@@ -34,7 +34,7 @@ func _run(unit: Unit, seconds: float, dt: float = 1.0 / 60.0) -> float:
 
 
 func test_feld_gilt_sofort_bild_laeuft_nach() -> void:
-	var unit := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
+	var unit := Unit.create(_build(&"scout_body", &"eq_pulse_blaster"), &"P0", true)
 	unit.place_at(Vector2i(4, 10))
 	var start := unit.position
 	_step(unit, Vector2i(4, 9), 0.5)
@@ -50,7 +50,7 @@ func test_feld_gilt_sofort_bild_laeuft_nach() -> void:
 func test_durchlaufen_ohne_absetzen() -> void:
 	# Drei Schritte hintereinander: zwischen den Feldern faellt das Tempo der
 	# Figur nicht auf null (vorher: Halt an jeder Feldmitte je Richtungswechsel).
-	var unit := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
+	var unit := Unit.create(_build(&"scout_body", &"eq_pulse_blaster"), &"P0", true)
 	unit.place_at(Vector2i(4, 10))
 	var path := [Vector2i(4, 9), Vector2i(5, 8), Vector2i(5, 7)]
 	var slowest := INF
@@ -85,7 +85,7 @@ func test_kurve_schneidet_ecken_nur_leicht() -> void:
 
 
 func test_stoss_rutscht_weiter_gerade() -> void:
-	var unit := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
+	var unit := Unit.create(_build(&"scout_body", &"eq_pulse_blaster"), &"P0", true)
 	unit.place_at(Vector2i(4, 10))
 	unit.place_at(Vector2i(4, 7))
 	unit.animate_last_move(0.2, true)
@@ -96,7 +96,7 @@ func test_stoss_rutscht_weiter_gerade() -> void:
 
 
 func test_gehaltene_figur_bleibt_am_finger() -> void:
-	var unit := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
+	var unit := Unit.create(_build(&"scout_body", &"eq_pulse_blaster"), &"P0", true)
 	unit.place_at(Vector2i(4, 10))
 	unit.held = true
 	unit.position = Vector2(300, 300)
@@ -107,8 +107,8 @@ func test_gehaltene_figur_bleibt_am_finger() -> void:
 
 
 func test_versatz_fest_und_klein() -> void:
-	var a := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
-	var b := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P1", true)
+	var a := Unit.create(_build(&"scout_body", &"eq_pulse_blaster"), &"P0", true)
+	var b := Unit.create(_build(&"scout_body", &"eq_pulse_blaster"), &"P1", true)
 	t.ok(a.stand_offset() == a.stand_offset(), "gleicher Versatz bei jedem Aufruf")
 	t.ok(a.stand_offset() != b.stand_offset(), "je Figur ein anderer")
 	t.ok(a.stand_offset().length() <= IsoView.TILE_W * 0.1, "bleibt im Feld")
@@ -129,7 +129,7 @@ func test_drehen_statt_springen() -> void:
 	var calm := Accessibility.reduce_motion
 	Accessibility.reduce_motion = false
 	var arena := Arena3D.new()
-	var unit := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
+	var unit := Unit.create(_build(&"scout_body", &"eq_pulse_blaster"), &"P0", true)
 	unit.arena = arena
 	unit.place_at(Vector2i(4, 10))
 	unit._build_sprites()
@@ -160,7 +160,7 @@ func test_lehnt_beim_anlaufen_nach_vorn() -> void:
 	var calm := Accessibility.reduce_motion
 	Accessibility.reduce_motion = false
 	var arena := Arena3D.new()
-	var unit := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
+	var unit := Unit.create(_build(&"scout_body", &"eq_pulse_blaster"), &"P0", true)
 	unit.arena = arena
 	unit.place_at(Vector2i(4, 10))
 	unit._build_sprites()
@@ -183,7 +183,7 @@ func test_lehnt_beim_anlaufen_nach_vorn() -> void:
 
 func test_laterne_toent_die_figur() -> void:
 	var arena := Arena3D.new()
-	var unit := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
+	var unit := Unit.create(_build(&"scout_body", &"eq_pulse_blaster"), &"P0", true)
 	unit.arena = arena
 	unit.place_at(Vector2i(4, 10))
 	unit._build_sprites()

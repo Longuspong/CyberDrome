@@ -342,8 +342,6 @@ func _throw_blocker(unit: Unit, tile: Vector2i, ability: ActionData,
 		pass
 	elif reach > ability.range_tiles:
 		return "Außer Reichweite"
-	elif ability.min_range > 0 and reach < ability.min_range:
-		return "Zu nah"
 	var standing := battle.resolver.unit_at(tile)
 	if standing != null and standing.is_player == unit.is_player and standing != unit:
 		return "Verbündeter"
@@ -945,7 +943,7 @@ func _shield_damage(unit: Unit, target: Unit, action: ActionData) -> int:
 	if target.shield <= 0 or action.power <= 0:
 		return 0
 	var outcome := battle.resolver.resolve_damage(target,
-		unit.raw_damage(action), action.energy_fraction, action.shield_mult)
+		unit.raw_damage(action), action.energy_fraction)
 	return maxi(0, target.shield - int(outcome["shield_after"]))
 
 

@@ -48,11 +48,11 @@ func _view(root: Window, px: int, cam_size: float, yaw_board: float) -> SubViewp
 	# DROMEs: Spieler unten (r = 4), Gegner oben (r = -4); Blick in Hex-Richtungen
 	var R := 22.0
 	var dromes := [
-		[&"scout_body", &"eq_neon_blaster", -1, 4, 180.0],
+		[&"scout_body", &"eq_pulse_blaster", -1, 4, 180.0],
 		[&"jugg_body", &"eq_deflector", 0, 4, 180.0],
 		[&"mage_body", &"eq_rune_staff", 1, 4, 240.0],
 		[&"strix_body", &"eq_rail_lance", -1, -4, 0.0],
-		[&"jugg_body", &"eq_bulwark_ram", 1, -4, 0.0],
+		[&"jugg_body", &"eq_hammer", 1, -4, 0.0],
 		[&"scout_body", &"eq_plasma_blade", 3, -4, 60.0],
 	]
 	for d in dromes:

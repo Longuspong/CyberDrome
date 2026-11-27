@@ -74,7 +74,7 @@ const STARTER_CHASSIS := [
 ## Seit es nur noch einen Platz je DROME gibt (Molok zwei), liegen die
 ## Gadgets hier und laden zum Umbauen ein.
 const STARTER_LOOSE_EQUIPMENT := [
-	&"eq_drone_pod", &"eq_plasma_blade",
+	&"eq_plasma_blade",
 ]
 
 

@@ -49,8 +49,8 @@ Vorschlag: die höhere ersetzt die niedrigere (in der Tabelle so formuliert).
 
 **Overgrow:** Fähigkeit der Solar Sentients, eine Art Überschild nur für Integrität (noch nicht gebaut).
 
-**Zuerst gebaut wird nur Feuer.** Es ersetzt dann den übergangsweisen Kabelbrand am
-Bumerang-Wirbelwurf.
+**Zuerst gebaut wird nur Feuer.** Es ist seit 27. Nov. 2026 der einzige Auslöser für
+Kabelbrand (der Bumerang ist entfernt).
 
 ## 5. Caches (Inhalt entschieden)
 
