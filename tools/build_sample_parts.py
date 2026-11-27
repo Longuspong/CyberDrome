@@ -461,12 +461,11 @@ STAT_DEFAULTS = {
     #   controller   bleibt hinter der Frontlinie, bis sie im Kampf ist (Nimbus)
     "ai_role": "",
     # Nur body: die Passive des DROME (Unit.passive()).
-    #   echo         jede Faehigkeit wirkt zweimal, ihr Takt ist 50 % laenger
-    #                (Nimbus)
+    #   echo         jede Faehigkeit wirkt zweimal, ihr Takt ist 1,5-mal so lang
+    #                (aufgerundet; Nimbus)
     #   cyberspeed   jeder 3. Angriff gibt einen Stapel Angriffs- und Lauftempo (Vireo)
-    #   fortress     Festung: Heilung, Regeneration und Schildgaben am Traeger +20 % (Molok)
-    #   steady       Anlegen: nach 4 s ohne Bewegung +20 % Schaden und
-    #                Reichweite (Strix)
+    #   safe_haven   Safe Haven: Heilung, Regeneration und Schildgaben am Traeger +20 % (Molok)
+    #   focuslense   +20 % kinetisch, -70 % Energie, anvisiertes Ziel +20 % (Strix)
     # Die Zahlen der Passiven stehen in data/config.json unter "passives".
     "passive": "",
 }
@@ -488,21 +487,21 @@ STATS = {
     # Alle Werte des DROME stehen hier (8. Nov. 2026). ATK und Gewicht
     # gibt es nicht mehr.
     # Vireo: der schnelle Allrounder, nur eine leichte Waffe.
-    "scout_body":  {"spd": 12, "hp":  80, "shield": 50, "shield_pulse":  7, "def":  2,
+    "scout_body":  {"spd":  8, "hp":  80, "shield": 50, "shield_pulse":  5, "def":  2,
                     "power": 10, "efficiency": 10, "module_slots": 3,
                     "ai_role": "skirmisher", "passive": "cyberspeed"},
     # Molok: der harte Zweihaender fuer die Frontlinie, wenig Power.
-    "jugg_body":   {"spd": 10, "hp": 250, "shield": 50, "shield_pulse":  3, "def": 10,
+    "jugg_body":   {"spd":  6, "hp": 250, "shield": 50, "shield_pulse":  2, "def": 10,
                     "power":  6, "efficiency": 14, "module_slots": 2,
-                    "ai_role": "vanguard", "passive": "fortress"},
+                    "ai_role": "vanguard", "passive": "safe_haven"},
     # Nimbus: fragil, schildlastig, Richtung Faehigkeiten.
     "mage_body":   {"spd": 12, "hp":  60, "shield": 60, "shield_pulse": 10, "def":  0,
                     "power": 12, "efficiency": 12, "module_slots": 3,
                     "ai_role": "controller", "passive": "echo"},
     # Strix: Langstrecke, langsam, viel Power.
-    "strix_body":  {"spd":  7, "hp": 100, "shield": 30, "shield_pulse":  5, "def":  2,
+    "strix_body":  {"spd":  3, "hp": 100, "shield": 30, "shield_pulse":  5, "def":  2,
                     "power": 15, "efficiency": 10, "module_slots": 3,
-                    "ai_role": "sniper", "passive": "steady"},
+                    "ai_role": "sniper", "passive": "focuslense"},
 
     # --- KERN, ANTRIEB, KOPF -------------------------------------------------
     # Nur noch Optik am Chassis -- keine Werte.

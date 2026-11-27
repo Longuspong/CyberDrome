@@ -531,8 +531,8 @@ func _patient_out_of_reach(unit: Unit) -> Unit:
 
 
 ## Der Takt einer Faehigkeit (wie viele Angriffe bis zu ihr) an diesem DROME.
-## Mit der Passive Echo (Nimbus) laenger: die normalen Angriffe dazwischen
-## mal ``passives.echo.slower`` (gerundet) -- Blaster jeder 3. -> jeder 4.
+## Mit der Passive Echo (Nimbus) laenger: der Takt mal ``passives.echo.slower``,
+## aufgerundet -- Runenstab jeder 3. -> jeder 5.
 func trigger_every(unit: Unit, ability: ActionData) -> int:
 	return unit.takt_every(ability)
 

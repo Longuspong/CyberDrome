@@ -80,11 +80,9 @@ var pulse_left: float = 0.0
 ## Sekunden seit dem letzten Schaden, und der Bruchteil Schild, der beim
 ## Nachladen noch nicht ganz voll ist.
 var calm_time: float = 0.0
-## Passive "steady" (Strix, 8. Nov. 2026): Sekunden ohne Feldwechsel und ob
-## er gerade angelegt hat (+Schaden, +Reichweite).
-var still_time: float = 0.0
-var steady: bool = false
-var _still_tile: Vector2i = Vector2i(-9999, -9999)
+## Passive Focuslense (Strix, 27. Nov. 2026): das Ziel, das sein letzter
+## Schuss traf -- es gilt als anvisiert (immer nur eins).
+var focus_target: Unit = null
 ## Modul Raufbold (Vergeltung): eingesteckte Treffer, die den naechsten
 ## Angriff aufladen (max. 3, Berserker 5).
 var retaliation_stacks: int = 0
@@ -736,9 +734,7 @@ func init_realtime(pulse_offset: float) -> void:
 	target_blocked = 0.0
 	calm_time = 0.0
 	_recharge_carry = 0.0
-	still_time = 0.0
-	steady = false
-	_still_tile = Vector2i(-9999, -9999)
+	focus_target = null
 	if build == null:
 		return
 	for slot in build.equip_slots():
@@ -780,18 +776,18 @@ func init_realtime(pulse_offset: float) -> void:
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
-			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability})
+			"fx": fx, "shots": 0})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
-## sie ist. Mit der Passive Echo (Nimbus) laenger: die normalen Angriffe
-## dazwischen mal ``passives.echo.slower`` (gerundet) -- Blaster jeder 3. ->
-## jeder 4.
+## sie ist. Mit der Passive Echo (Nimbus) laenger: der Takt mal
+## ``passives.echo.slower``, ein halber Takt wird aufgerundet (Spieler
+## 27. Nov. 2026) -- Runenstab jeder 3. -> jeder 5., Lanze jeder 4. -> jeder 6.
 func takt_every(ability: ActionData) -> int:
 	var every := int(ability.trigger_every)
 	if ability.trigger_kind != "attacks" or passive() != "echo":
 		return every
-	return int(round(float(every - 1) * echo_slower())) + 1
+	return int(ceil(float(every) * echo_slower() - 0.001))
 
 
 ## Wie viel ein Angriff im Treffer-Takt zaehlt: 1, mit Taktchip 1,25
@@ -836,41 +832,22 @@ func echo_slower() -> float:
 	return float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
 
 
-## Passive "steady" (Strix): wer passives.steady.seconds lang das Feld nicht
-## wechselt, legt an -- mehr Schaden (raw_damage) und mehr Reichweite (die
-## Aktionen der Halter werden als Kopie verlaengert). Jeder Feldwechsel setzt
-## zurueck. Jeden Schritt vom BattleManager gerufen.
-func track_stillness(dt: float) -> void:
-	if tile != _still_tile:
-		_still_tile = tile
-		still_time = 0.0
-	else:
-		still_time += dt
-	var rule := steady_rule()
-	var needed := float(rule.get("seconds", 4.0))
-	var now := passive() == "steady" and still_time >= needed
-	if now == steady:
-		return
-	steady = now
-	if steady:
-		EventBus.log_line("%s legt an." % display_name)
-	var mult := float(rule.get("range_mult", 1.2))
-	for mount in mounts:
-		mount["attack"] = _steady_copy(mount["base_attack"], mult)
-		mount["ability"] = _steady_copy(mount.get("base_ability"), mult)
-
-
-func _steady_copy(action, mult: float):
-	if action == null or not steady:
-		return action
-	var out: ActionData = (action as ActionData).copy()
-	if out.range_tiles > 0:
-		out.range_tiles += maxi(1, int(round(float(out.range_tiles) * (mult - 1.0))))
-	return out
-
-
-static func steady_rule() -> Dictionary:
-	return Config.section("passives").get("steady", {}) as Dictionary
+## Passive Focuslense (Strix, 27. Nov. 2026): kinetischer Anteil mal
+## ``kinetic_mult``, Energie-Anteil mal ``energy_mult``; traf der letzte Schuss
+## dasselbe Ziel, kommt ``focus_mult`` dazu. Gibt {raw, energy_fraction} zurueck
+## und merkt sich das Ziel. Nur gegen Gegner (ActionResolver.apply_damage).
+func focuslense(target: Unit, raw: int, energy_fraction: float) -> Dictionary:
+	if passive() != "focuslense" or target == null or target.is_player == is_player:
+		return {"raw": raw, "energy_fraction": energy_fraction}
+	var rule := Config.section("passives").get("focuslense", {}) as Dictionary
+	var e := float(raw) * clampf(energy_fraction, 0.0, 1.0) * float(rule.get("energy_mult", 0.3))
+	var k := float(raw) * (1.0 - clampf(energy_fraction, 0.0, 1.0)) * float(rule.get("kinetic_mult", 1.2))
+	var total := e + k
+	if focus_target == target:
+		total *= float(rule.get("focus_mult", 1.2))
+	focus_target = target
+	return {"raw": maxi(1, int(round(total))),
+		"energy_fraction": e / (e + k) if e + k > 0.0 else 0.0}
 
 
 ## Die Passive des Chassis ("echo" ...). Leer = keine.
@@ -1014,8 +991,6 @@ func raw_damage(action: ActionData) -> int:
 	if action == null or action.power <= 0:
 		return 0
 	var raw := float(action.power) * power_factor()
-	if steady:
-		raw *= float(steady_rule().get("damage_mult", 1.2))
 	# Rammbock: ein Teil der eigenen Panzerung kommt dazu, ohne Power.
 	if action.armor_to_damage > 0.0:
 		raw += float(def()) * action.armor_to_damage
@@ -1100,14 +1075,14 @@ func on_attack() -> void:
 	cyberspeed_left = float(rule.get("seconds", 3.0)) * efficiency_factor()
 
 
-## Festung (Molok-Passive, 27. Nov. 2026): Faktor auf alles, was diesen DROME
+## Safe Haven (Molok-Passive, 27. Nov. 2026): Faktor auf alles, was diesen DROME
 ## heilt oder ihm Schild gibt -- Heilung, Lebensraub, Regeneration, Schildladung
-## und Schildgaben (``passives.fortress.care_mult``). Virusschaden gleicht sie
+## und Schildgaben (``passives.safe_haven.care_mult``). Virusschaden gleicht sie
 ## nicht aus.
 func care_mult() -> float:
-	if passive() != "fortress":
+	if passive() != "safe_haven":
 		return 1.0
-	return float((Config.section("passives").get("fortress", {}) as Dictionary).get("care_mult", 1.2))
+	return float((Config.section("passives").get("safe_haven", {}) as Dictionary).get("care_mult", 1.2))
 
 
 static func _cyberspeed() -> Dictionary:

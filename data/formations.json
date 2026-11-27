@@ -309,10 +309,10 @@
     "eq_plasma_blade"
    ],
    "stats": {
-    "spd": 12,
+    "spd": 8,
     "hp_max": 80,
     "shield": 50,
-    "shield_pulse": 7,
+    "shield_pulse": 10,
     "def": 2,
     "power": 10,
     "module_slots": 3
@@ -327,13 +327,13 @@
     "eq_rune_staff"
    ],
    "stats": {
-    "spd": 12,
+    "spd": 7,
     "hp_max": 60,
     "shield": 60,
-    "shield_pulse": 10,
+    "shield_pulse": 5,
     "def": 0,
-    "power": 14,
-    "efficiency": 7,
+    "power": 12,
+    "efficiency": 12,
     "module_slots": 3
    },
    "faction": "neon"

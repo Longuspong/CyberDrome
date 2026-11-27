@@ -83,16 +83,17 @@ static func traits(part: PartData) -> Array[String]:
 				int(cs.get("every", 3)), int(cs.get("max_stacks", 3)),
 				int(round(float(cs.get("attack_speed", 0.1)) * 100.0)),
 				ActionData._seconds(float(cs.get("seconds", 3.0)))])
-		"fortress":
-			var fo := Config.section("passives").get("fortress", {}) as Dictionary
-			out.append("Festung: Heilung, Regeneration und Schildgaben am Molok +%d %%." % int(round((float(fo.get("care_mult", 1.2)) - 1.0) * 100.0)))
+		"safe_haven":
+			var fo := Config.section("passives").get("safe_haven", {}) as Dictionary
+			out.append("Safe Haven: Heilung, Regeneration und Schildgaben am Molok +%d %%." % int(round((float(fo.get("care_mult", 1.2)) - 1.0) * 100.0)))
 		"echo":
-			out.append("Echo: jede Fähigkeit wirkt zweimal, ihr Takt ist dafür 50 % länger.")
-		"steady":
-			var st := Config.section("passives").get("steady", {}) as Dictionary
-			out.append("Anlegen: nach %s s ohne Bewegung +%d %% Schaden und Reichweite." % [
-				ActionData._seconds(float(st.get("seconds", 4.0))),
-				int(round((float(st.get("damage_mult", 1.2)) - 1.0) * 100.0))])
+			out.append("Echo: jede Fähigkeit wirkt zweimal, ihr Takt ist dafür 1,5-mal so lang (aufgerundet).")
+		"focuslense":
+			var fl := Config.section("passives").get("focuslense", {}) as Dictionary
+			out.append("Focuslense: +%d %% kinetischer, -%d %% Energieschaden; das anvisierte Ziel (vom letzten Schuss getroffen) nimmt +%d %%." % [
+				int(round((float(fl.get("kinetic_mult", 1.2)) - 1.0) * 100.0)),
+				int(round((1.0 - float(fl.get("energy_mult", 0.3))) * 100.0)),
+				int(round((float(fl.get("focus_mult", 1.2)) - 1.0) * 100.0))])
 	return out
 
 
