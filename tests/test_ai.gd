@@ -262,9 +262,9 @@ func test_echo_lengthens_the_takt_and_casts_twice() -> void:
 	t.equal(nimbus.passive(), "echo", "der Nimbus hat Echo")
 	t.equal(vortex.trigger_kind, "attacks", "der Vortex löst nach Angriffen aus")
 	t.equal(vortex.range_tiles, 5, "mit Reichweite 5")
-	t.equal(battle.brain.trigger_every(nimbus, vortex), 4, "mit Echo jeder 4. statt jeder 3. Angriff")
-	t.equal(battle.brain.trigger_every(nimbus, scatter), 4,
-		"Blaster am Nimbus: jeder 4. statt jeder 3. Angriff")
+	t.equal(battle.brain.trigger_every(nimbus, vortex), 5, "mit Echo jeder 5. statt jeder 3. Angriff (3 x 1,5 aufgerundet)")
+	t.equal(battle.brain.trigger_every(nimbus, scatter), 5,
+		"Blaster am Nimbus: jeder 5. statt jeder 3. Angriff")
 	t.equal(battle.brain.trigger_every(vireo, scatter), 3, "ohne Echo bleibt es beim 3.")
 	battle.free()
 
@@ -456,8 +456,7 @@ func test_the_rend_makes_the_target_vulnerable() -> void:
 
 func _hammer_molok() -> DromeBuild:
 	return DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_hammer",
-		"equip_right": &"eq_deflector"})
+		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_hammer"})
 
 
 func test_the_molok_is_a_tank_with_little_shield() -> void:
@@ -465,7 +464,7 @@ func test_the_molok_is_a_tank_with_little_shield() -> void:
 	# 8. Nov. 2026: 250 Integritaet, 50 Schild, Ruestung 10 (+ Deflektor).
 	t.equal(stats["hp_max"], 270, "250 Integrität + 20 vom Hammer")
 	t.ok(stats["def"] >= 10, "viel Rüstung (%d)" % stats["def"])
-	t.ok(_hammer_molok().is_valid(), "Hammer und Deflektor sind baubar")
+	t.ok(_hammer_molok().is_valid(), "der Hammer-Molok ist baubar")
 
 
 func test_the_hammer_stuns_and_a_stunned_drome_does_nothing() -> void:
@@ -505,27 +504,23 @@ func test_each_role_picks_by_its_own_rule() -> void:
 	battle.free()
 
 
-func test_the_strix_steadies_after_standing_still() -> void:
-	# Passive "steady" (8. Nov. 2026): 4 s ohne Feldwechsel -> +20 % Schaden
-	# und Reichweite; ein Schritt setzt zurueck.
-	var battle := _battle([_strix()], [_vireo()], [Vector2i(2, 2), Vector2i(17, 17)])
+func test_the_strix_focuslense() -> void:
+	# Passive Focuslense (27. Nov. 2026): kinetisch +20 %, Energie -70 %; traf
+	# der letzte Schuss dasselbe Ziel, +20 % dazu. Immer nur ein Ziel.
+	var battle := _battle([_strix()], [_vireo(), _vireo()], [Vector2i(2, 2), Vector2i(17, 17), Vector2i(15, 17)])
 	var strix: Unit = battle.units[0]
-	var lance: ActionData = strix.mounts[0]["base_attack"]
-	var plain := strix.raw_damage(lance)
-	for _i in 70:   # 3,5 s
-		strix.track_stillness(0.05)
-	t.ok(not strix.steady, "nach 3,5 s noch nicht angelegt")
-	for _i in 12:
-		strix.track_stillness(0.05)
-	t.ok(strix.steady, "nach 4 s angelegt")
-	t.equal(strix.raw_damage(lance), int(round(plain * 1.2)), "+20 % Schaden")
-	t.equal((strix.mounts[0]["attack"] as ActionData).range_tiles,
-		lance.range_tiles + 2, "Reichweite 8 -> 10")
-	strix.place_at(Vector2i(3, 2))
-	strix.track_stillness(0.05)
-	t.ok(not strix.steady, "ein Schritt setzt zurück")
-	t.equal((strix.mounts[0]["attack"] as ActionData).range_tiles, lance.range_tiles,
-		"Reichweite wieder normal")
+	var first: Unit = battle.units[1]
+	var second: Unit = battle.units[2]
+	var lens := strix.focuslense(first, 100, 0.0)
+	t.equal(lens["raw"], 120, "kinetisch +20 %")
+	t.equal(strix.focus_target, first, "das Ziel ist anvisiert")
+	t.equal(strix.focuslense(first, 100, 0.0)["raw"], 144, "dasselbe Ziel noch einmal: +20 % dazu")
+	t.equal(strix.focuslense(second, 100, 1.0)["raw"], 30, "Energie -70 %, neues Ziel ohne Bonus")
+	t.equal(strix.focus_target, second, "immer nur ein Ziel")
+	var mixed := strix.focuslense(first, 100, 0.5)
+	t.equal(mixed["raw"], 75, "halb und halb: 60 + 15")
+	t.ok(absf(float(mixed["energy_fraction"]) - 0.2) < 0.001, "Energieanteil danach 15/75")
+	t.equal(first.focuslense(strix, 100, 0.0)["raw"], 100, "ohne die Passive keine Wirkung")
 	battle.free()
 
 

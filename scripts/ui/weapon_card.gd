@@ -66,7 +66,7 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label, compare: PartD
 	right.add_theme_constant_override("separation", 4)
 	top.add_child(right)
 	right.add_child(Arcade.label(part.display_name.to_upper(), 22, Arcade.WHITE, "display"))
-	right.add_child(Arcade.label(SlotRules.class_label(part.mount_class).to_upper(), 12,
+	right.add_child(Arcade.label(SlotRules.class_code(part.mount_class), 12,
 		_class_color(part.mount_class), "bold", 0.16))
 
 	var attack: ActionData = null

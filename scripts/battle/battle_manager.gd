@@ -285,7 +285,6 @@ func tick() -> void:
 			continue
 		unit.tick_statuses(_dt)
 		unit.recharge_shield(_dt)
-		unit.track_stillness(_dt)
 		brain.update(unit, _dt)
 		if outcome != Outcome.RUNNING:
 			return

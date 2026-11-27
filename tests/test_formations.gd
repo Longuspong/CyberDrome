@@ -87,7 +87,7 @@ func test_enemy_dromes_have_fixed_values() -> void:
 	var stats := vireo.stats()
 	t.equal(int(stats["hp_max"]), 80, "Neon Vireo: Integrität 80")
 	t.equal(int(stats["shield_max"]), 50, "Schild 50")
-	t.equal(int(stats["spd"]), 12, "Speed 12")
+	t.equal(int(stats["spd"]), 8, "Speed 8")
 	t.ok(not vireo.is_sentinel(), "ein DROME")
 	var plain := Formations.build_drome("molok")
 	t.ok(plain.stat_override.is_empty(), "Standard-Molok rechnet wie ein Spieler-DROME")

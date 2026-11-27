@@ -127,7 +127,7 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	var bunker := DromeBuild.create("BUNKER", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"})
+		"equip_left": &"eq_deflector"})
 	t.ok(bunker.is_valid(), "der Bunker ist baubar: %s" % ", ".join(bunker.validate()))
 	t.equal(bunker.stats()["def"], 14, "und kommt auf Rüstung 14 (Molok 10 + Schild 4)")
 
@@ -158,13 +158,12 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	wall.free()
 
 
-## Ein Aufbau mit Flaechenwaffe und Flaechenheilung -- beides auf einem Molok,
-## damit ein einziger DROME beide Seiten der Frage stellt: wen trifft ein Radius?
+## Ein Molok mit Hammer -- der Test gibt ihm eine eigene Flaechenaktion.
 func _hammer_and_drones(display_name: String) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"})
+		"equip_left": &"eq_hammer"})
 
 
 func _action_by_id(unit: Unit, id: StringName) -> ActionData:
@@ -224,7 +223,7 @@ func test_the_deflector_charges_its_own_shield() -> void:
 	var tank := DromeBuild.create("WALL", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"})
+		"equip_left": &"eq_deflector"})
 	var unit := Unit.create(tank, &"P0", true)
 	var resolver := ActionResolver.new(Grid.new(10, 10), [unit])
 	unit.tile = Vector2i(3, 3)
@@ -232,9 +231,9 @@ func test_the_deflector_charges_its_own_shield() -> void:
 	t.ok(charge != null and charge.shield_gain > 0, "der Deflektor hat die Schildladung")
 	unit.shield = unit.shield_max()
 	t.ok(resolver.execute(unit, unit.tile, charge), "sie wirkt auf den Träger")
-	# Festung (Molok-Passive): Schildgaben am Molok +20 %.
+	# Safe Haven (Molok-Passive): Schildgaben am Molok +20 %.
 	var expected := int(round(float(ActionResolver.support_amount(unit, unit, charge.shield_gain)) * unit.care_mult()))
-	t.ok(unit.care_mult() > 1.0, "die Festung verstärkt die Schildgabe")
+	t.ok(unit.care_mult() > 1.0, "Safe Haven verstärkt die Schildgabe")
 	t.equal(unit.shield, unit.shield_max() + expected, "auch über das Maximum")
 	for _i in 6:
 		resolver.execute(unit, unit.tile, charge)

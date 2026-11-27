@@ -163,10 +163,10 @@ def num(x):
 PASSIVE_INFO = {
     "cyberspeed": ("Cyberspeed", lambda p: f"Jeder {p['every']}. Angriff gibt einen Stapel (hoechstens {p['max_stacks']}), "
                    f"je Stapel +{pct(p['attack_speed'])} Angriffs- und Lauftempo; jeder Angriff haelt die Stapel {num(p['seconds'])} s."),
-    "fortress": ("Festung", lambda p: f"Heilung, Regeneration und Schildgaben am Molok +{pct(p['care_mult'] - 1)}."),
-    "echo": ("Echo", lambda p: f"Jede Faehigkeit wirkt doppelt, dafuer ist ihr Takt {num(p['slower'])}-mal so lang."),
-    "steady": ("Anlegen", lambda p: f"Nach {num(p['seconds'])} s ohne Feldwechsel +{pct(p['damage_mult'] - 1)} Schaden "
-               f"und +{pct(p['range_mult'] - 1)} Reichweite (mind. +1 Feld)."),
+    "safe_haven": ("Safe Haven", lambda p: f"Heilung, Regeneration und Schildgaben am Molok +{pct(p['care_mult'] - 1)}."),
+    "echo": ("Echo", lambda p: f"Jede Faehigkeit wirkt doppelt, dafuer ist ihr Takt {num(p['slower'])}-mal so lang (aufgerundet)."),
+    "focuslense": ("Focuslense", lambda p: f"+{pct(p['kinetic_mult'] - 1)} kinetischer und -{pct(1 - p['energy_mult'])} Energieschaden; "
+                   f"traf der letzte Schuss dasselbe Ziel (anvisiert), +{pct(p['focus_mult'] - 1)}."),
 }
 
 

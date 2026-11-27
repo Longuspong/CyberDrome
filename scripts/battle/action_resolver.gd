@@ -72,6 +72,11 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	# kinetischen Schadens zu Energie.
 	if action != null and action.kinetic_to_energy > 0.0 and source != null and source.shield > 0:
 		frac += (1.0 - frac) * clampf(action.kinetic_to_energy, 0.0, 1.0)
+	# Focuslense (Strix): kinetisch staerker, Energie schwaecher, anvisiertes Ziel +20 %.
+	if source != null:
+		var lens := source.focuslense(target, raw, frac)
+		raw = lens["raw"]
+		frac = lens["energy_fraction"]
 	var shield_before := target.shield
 	var res := resolve_damage(target, raw, frac, pierce_shield,
 		action.virus_fraction if action != null else 0.0)

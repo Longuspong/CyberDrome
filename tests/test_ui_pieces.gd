@@ -143,7 +143,7 @@ func test_holders_are_named_without_a_direction() -> void:
 	# mehr. Ein einzelner Halter heisst "Halter", mehrere bekommen eine Nummer.
 	var molok := _molok()
 	var names: Array = molok.equip_slots().map(func(slot): return SlotRules.holder_label(molok, slot))
-	t.equal(names, ["Halter 1", "Halter 2"], "der Molok hat Halter 1 und 2")
+	t.equal(names, ["Halter"], "auch der Molok hat seit dem Gunship nur einen Halter")
 	var vireo := DromeBuild.create("Vireo", {"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core"})
 	t.equal(SlotRules.holder_label(vireo, vireo.equip_slots()[0]), "Halter", "ein einzelner heißt nur Halter")
@@ -153,28 +153,28 @@ func test_holders_are_named_without_a_direction() -> void:
 	t.equal(SlotRules.slot_label("core"), "Kern", "Sockel behalten ihren Namen")
 
 func test_every_mount_of_the_chassis_is_offered_with_its_verdict() -> void:
-	# Der Molok hat zwei Halter, beide bis mittel (8. Nov. 2026). Das schwere
-	# Gewehr passt in keinen -- beide stehen zur Wahl, beide mit Grund.
+	# Der Molok hat einen Halter bis mittel (Gunship, 27. Nov. 2026). Das
+	# schwere Gewehr passt nicht -- der Halter steht trotzdem zur Wahl, mit Grund.
 	var choices := Workshop.slot_choices(_molok(),
 		PartDB.get_part(&"eq_rail_lance"))
-	t.equal(choices.size(), 2, "beide Halter stehen zur Wahl")
+	t.equal(choices.size(), 1, "der Halter steht zur Wahl")
 	t.equal(choices[0]["slot"], "equip_left", "Slot 1 ist der linke Arm")
 	t.equal(choices[0]["number"], 1, "und wird als 1 gezählt")
-	t.ok(not choices[0]["allowed"], "der linke Arm nimmt das Gewehr nicht")
-	t.ok(not choices[1]["allowed"], "der rechte auch nicht")
-	t.ok(choices[1]["detail"].contains("mittel"),
-		"und sagt, woran es liegt: %s" % choices[1]["detail"])
+	t.ok(not choices[0]["allowed"], "er nimmt das Gewehr nicht")
+	t.ok(choices[0]["detail"].contains("mittel"),
+		"und sagt, woran es liegt: %s" % choices[0]["detail"])
 
 
 func test_the_offer_says_what_a_mount_currently_holds() -> void:
 	# Der Unterschied zwischen "frei" und "ersetzt X" ist der ganze Grund, die
 	# Liste ueberhaupt zu zeigen: sonst raeumte der Klick blind um.
 	var build := _molok()
+	var empty := Workshop.slot_choices(build, PartDB.get_part(&"eq_deflector"))
+	t.equal(empty[0]["detail"], "frei", "der leere Halter heißt frei")
 	build.slots["equip_left"] = &"eq_pulse_blaster"
 	var shield := Workshop.slot_choices(build, PartDB.get_part(&"eq_deflector"))
 	t.ok(shield[0]["detail"].contains("Puls-Blaster"),
 		"der belegte Halter nennt, was weichen würde: %s" % shield[0]["detail"])
-	t.equal(shield[1]["detail"], "frei", "der leere Halter heißt frei")
 
 	var same := Workshop.slot_choices(build, PartDB.get_part(&"eq_pulse_blaster"))
 	t.equal(same[0]["detail"], "steckt schon drin",
@@ -384,3 +384,14 @@ func test_a_story_dialog_walks_through_its_lines() -> void:
 		dialog._gui_input(tap)
 	t.ok(ended["done"], "vier Tipps: zwei Zeilen zeigen, zwei weiter -- dann zu Ende")
 	host.free()
+
+
+func test_holder_codes_are_language_neutral() -> void:
+	# Halter-Kuerzel (Spieler 27. Nov. 2026): S/M/X, dahinter -F/-N bei fester Reichweite.
+	t.equal(SlotRules.class_code("light"), "S", "leicht = S")
+	t.equal(SlotRules.class_code("medium"), "M", "mittel = M")
+	t.equal(SlotRules.class_code("heavy"), "X", "schwer = X")
+	t.equal(SlotRules.holder_code(PartDB.get_part(&"scout_body"), "equip_left"), "S", "Vireo: S")
+	t.equal(SlotRules.holder_code(PartDB.get_part(&"jugg_body"), "equip_left"), "M", "Molok: M")
+	t.equal(SlotRules.holder_code(PartDB.get_part(&"strix_body"), "equip_center"), "X-F",
+		"Strix: schwer, nur Fernkampf")

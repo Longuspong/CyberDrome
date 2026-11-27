@@ -183,8 +183,8 @@ func test_the_takt_chip_counts_each_attack_as_one_and_a_quarter() -> void:
 
 func test_the_mender_strengthens_heals_and_shield_gifts() -> void:
 	var wall := _molok()
-	wall.slots["equip_right"] = &"eq_deflector"
-	var tank := Unit.create(_with(wall, "equip_right", [&"mod_mender"]), &"M", true)
+	wall.slots["equip_left"] = &"eq_deflector"
+	var tank := Unit.create(_with(wall, "equip_left", [&"mod_mender"]), &"M", true)
 	tank.init_realtime(0.0)
 	var field: ActionData = tank.mounts.filter(func(m): return m["slot"] == "equip_right")[0]["ability"]
 	var original: ActionData = PartDB.get_part(&"eq_deflector").actions[1]
@@ -688,7 +688,7 @@ func test_bios_offers_are_always_there() -> void:
 
 
 ## Seit 18. Nov. 2026: ein BIOS wertet ein Rezept in einer Waffe auf -- an
-## seinem Platz, beim Molok nur in einer der zwei Waffen. Kein Extraplatz.
+## seinem Platz. Kein Extraplatz, ein BIOS-Rezept je DROME.
 func test_a_recipe_bios_upgrades_a_recipe_in_its_weapon() -> void:
 	var run := _stop_run()
 	var drome := -1
@@ -696,22 +696,22 @@ func test_a_recipe_bios_upgrades_a_recipe_in_its_weapon() -> void:
 		if run.squad[i].body().id == &"jugg_body":
 			drome = i
 	var build: DromeBuild = run.squad[drome]
-	var left: String = build.equip_slots()[0]
-	var right: String = build.equip_slots()[1]
-	build.modules[right] = [&"amp_armor", &"mod_brand"]
+	var slot: String = build.equip_slots()[0]
+	build.modules[slot] = [&"amp_armor"]
 	run.bios_offers = [&"bios_hunt", &"bios_wrecker", &"bios_phase"]
 	t.ok(run.choose_bios(0), "gewaehlt")
 	t.equal(run.storage, [&"bios_hunt"], "liegt im Lager")
 	t.ok(run.bios_offers.is_empty(), "die anderen verfallen")
-	t.ok(not run.install_module(0, drome, left), "ein BIOS steckt nicht wie ein Modul")
-	t.ok(not run.install_bios(0, drome, left), "nicht in die Waffe ohne Brandmarke")
-	t.ok(run.install_bios(0, drome, right), "wertet die Brandmarke auf")
-	t.equal(build.modules[right], [&"amp_armor", &"mod_hunt"], "an ihrem Platz")
+	t.ok(not run.install_module(0, drome, slot), "ein BIOS steckt nicht wie ein Modul")
+	t.ok(not run.install_bios(0, drome, slot), "nicht in die Waffe ohne Brandmarke")
+	build.modules[slot] = [&"amp_armor", &"mod_brand"]
+	t.ok(run.install_bios(0, drome, slot), "wertet die Brandmarke auf")
+	t.equal(build.modules[slot], [&"amp_armor", &"mod_hunt"], "an ihrem Platz")
 	t.ok(run.storage.is_empty(), "das BIOS ist verbraucht")
-	t.equal(ModuleData.slots_for(build, right), 2, "kein Extraplatz")
-	build.modules[left] = [&"mod_brand"]
+	t.equal(ModuleData.slots_for(build, slot), 2, "kein Extraplatz")
+	build.modules[slot] = [&"mod_hunt", &"mod_brand"]
 	run.storage.append(&"bios_hunt")
-	t.ok(not run.install_bios(0, drome, left), "nur ein BIOS-Rezept je DROME")
+	t.ok(not run.install_bios(0, drome, slot), "nur ein BIOS-Rezept je DROME")
 
 
 # ---------------------------------------------------------------------------

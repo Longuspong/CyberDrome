@@ -235,6 +235,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	var attack: ActionData = mount["attack"]
 	var ability = mount["ability"]
 	var fx: Dictionary = mount.get("fx", {})
+	unit.firing_slot = str(mount.get("slot", ""))
 	var due := ability != null and unit.takt_due(mount)
 	if due:
 		var aim := _support_aim(unit, ability) if (ability as ActionData).support != "" \
@@ -531,8 +532,8 @@ func _patient_out_of_reach(unit: Unit) -> Unit:
 
 
 ## Der Takt einer Faehigkeit (wie viele Angriffe bis zu ihr) an diesem DROME.
-## Mit der Passive Echo (Nimbus) laenger: die normalen Angriffe dazwischen
-## mal ``passives.echo.slower`` (gerundet) -- Blaster jeder 3. -> jeder 4.
+## Mit der Passive Echo (Nimbus) laenger: der Takt mal ``passives.echo.slower``,
+## aufgerundet -- Runenstab jeder 3. -> jeder 5.
 func trigger_every(unit: Unit, ability: ActionData) -> int:
 	return unit.takt_every(ability)
 
