@@ -70,7 +70,7 @@ Der Molok ist ein reiner Frontliner: Er hält vorne, macht wenig eigenen Schaden
 **Passive (gebaut 27. Nov. 2026, Arbeitsname „Festung“)**
 
 - Der Molok erhält alle Heilungen, Regenerationen und Schildgaben um 20 % verstärkt (`passives.fortress`).
-- Die Quelle dafür sind seine Tankwaffen: Der Hammer-Betäubungsschlag (kinetisch) macht +20 % der eigenen max. Integrität als Schaden und heilt um 100 % des Schadens (Spieler 27. Nov.; ersetzt die 50 % aus dem Entwurf und ist eine bewusste Ausnahme von „Kein Schaden aus Verteidigung“, weil es an der Waffe hängt, nicht an der Passive), der Deflektor liefert Schild. So wird das Tragen der Tankwaffen belohnt; ein Molok mit anderen Waffen verzichtet bewusst darauf.
+- Die Quelle dafür sind seine Tankwaffen: Der Hammer-Betäubungsschlag (kinetisch) macht +20 % der eigenen max. Integrität als Schaden und heilt um 100 % des Schadens (Spieler 27. Nov.; ersetzt die 50 % aus dem Entwurf und ist eine bewusste Ausnahme von „Kein Schaden aus Verteidigung“, vom Spieler bestätigt: der Schlag kommt nur jeden 3. Angriff, und ein Hammer lohnt sich für jeden Nahkämpfer, mit wenig Integrität eben weniger), der Deflektor liefert Schild. So wird das Tragen der Tankwaffen belohnt; ein Molok mit anderen Waffen verzichtet bewusst darauf.
 - Keine eigene Regeneration pro Puls (verworfen, die Tankwaffen übernehmen das).
 - Ein richtiger Heiler oder Support kommt später.
 - Virusschaden wird von der Passive nicht ausgeglichen.
