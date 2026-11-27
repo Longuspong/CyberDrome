@@ -99,10 +99,41 @@ static func create(name: String, assignment: Dictionary) -> DromeBuild:
 # ---------------------------------------------------------------------------
 
 func part_in(slot: String) -> PartData:
+	var source := mirror_source(slot)
+	if source != "":
+		return part_in(source)
 	var part_id = slots.get(slot)
 	if part_id == null:
 		return null
 	return PartDB.get_part(part_id)
+
+
+## Gunship (Molok, 27. Nov. 2026): ein abgeschalteter Anker mit ``mirror``
+## zeigt die Waffe eines anderen Halters -- gleiches Teil, gleiche Module,
+## gleiches Level. Gibt den Halter zurueck, den er spiegelt, sonst "".
+func mirror_source(slot: String) -> String:
+	if not slot.begins_with("equip_"):
+		return ""
+	var chassis_id = slots.get("body")
+	if chassis_id == null:
+		return ""
+	var chassis := PartDB.get_part(chassis_id)
+	if chassis == null:
+		return ""
+	return str((chassis.slot_rules.get(slot, {}) as Dictionary).get("mirror", ""))
+
+
+## Die Spiegel-Anker dieses DROME: {anker: halter}. Leer ohne Gunship.
+func mirror_slots() -> Dictionary:
+	var out := {}
+	var chassis := body()
+	if chassis == null:
+		return out
+	for slot in chassis.slot_rules:
+		var source := str((chassis.slot_rules[slot] as Dictionary).get("mirror", ""))
+		if source != "":
+			out[str(slot)] = source
+	return out
 
 
 func body() -> PartData:
@@ -534,7 +565,7 @@ func _slot_label(slot: String) -> String:
 ## Was sie nicht kann: Zusammenspiel. Ein Molok ist allein wenig wert und
 ## macht einen Strix dahinter erst stark; der Wert eines Squads ist hier
 ## trotzdem die Summe seiner DROMEs.
-const POWER_SCALE := 0.911   # 27. Nov. 2026 neu geeicht (Hammer staerker), Schnitt Standard = 100
+const POWER_SCALE := 1.064   # 27. Nov. 2026 neu geeicht (Gunship-Molok mit Deflektor), Schnitt Standard = 100
 const POWER_WEIGHTS := {
 	"shield": 3.0,          # ein Punkt Schild gegen einen Punkt Integritaet
 	"support": 20.0,        # Reparatur/Schildgabe je Sekunde als Standhaftigkeit
@@ -564,10 +595,13 @@ func power_parts() -> Dictionary:
 	var chassis := body()
 	var echo := chassis != null and chassis.passive == "echo" and not is_sentinel()
 	var slower := float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
+	var mirrors := {} if is_sentinel() else mirror_slots()
 	for slot in equip_slots():
 		var part := part_in(slot)
 		if part == null:
 			continue
+		# Gunship: jeder Spiegel-Arm feuert dieselbe Waffe noch einmal.
+		var arms := 1.0 + float(mirrors.values().count(slot))
 		var fx := module_effects(slot)
 		var level := weapon_level(slot)
 		var attack: ActionData = null
@@ -588,20 +622,20 @@ func power_parts() -> Dictionary:
 			var every := float(ability.trigger_every)
 			var times := 1.0
 			if echo:
-				every = round((every - 1.0) * slower) + 1.0
+				every = ceilf(every * slower - 0.001)
 				times = 2.0
 			every = maxf(1.0, every / maxf(1.0, float(fx.get("takt_count", 1.0))))
 			per_attack = ((every - 1.0) * hit + times * _expected_damage(ability, factor, total)) / every
 			var cycle := every * attack.interval
-			support += times * float(ability.heal + ability.shield_gain) / cycle
+			support += arms * times * float(ability.heal + ability.shield_gain) / cycle
 			var seconds := float(ability.status.get("seconds", 0.0))
 			match str(ability.status.get("id", "")):
 				"stun":
-					control += times * seconds / cycle
+					control += arms * times * seconds / cycle
 				"slow", "vulnerable":
-					control += float(weights["soft_control"]) * times * seconds / cycle
-		firepower += per_attack / attack.interval * float(maxi(1, attack.range_tiles))
-		support += float(weights["attack_heal"]) * float(attack.heal) / attack.interval
+					control += float(weights["soft_control"]) * arms * times * seconds / cycle
+		firepower += arms * per_attack / attack.interval * float(maxi(1, attack.range_tiles))
+		support += arms * float(weights["attack_heal"]) * float(attack.heal) / attack.interval
 	firepower += control * float(weights["stun"]) + float(total.get("thorns", 0)) * float(weights["thorns"])
 	staying += support * float(weights["support"])
 	return {"staying": staying, "firepower": maxf(0.1, firepower)}

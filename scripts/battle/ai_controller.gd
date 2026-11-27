@@ -235,6 +235,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	var attack: ActionData = mount["attack"]
 	var ability = mount["ability"]
 	var fx: Dictionary = mount.get("fx", {})
+	unit.firing_slot = str(mount.get("slot", ""))
 	var due := ability != null and unit.takt_due(mount)
 	if due:
 		var aim := _support_aim(unit, ability) if (ability as ActionData).support != "" \

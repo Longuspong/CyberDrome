@@ -436,6 +436,14 @@ func raise(unit: Unit, action: ActionData, seconds: float) -> bool:
 
 ## Der Waffenplatz, dessen Waffe die Aktion mitbringt (sonst der erste).
 static func _slot_for(unit: Unit, action: ActionData) -> String:
+	# Gunship (Molok): der Arm, der gerade feuert -- die Arme wechseln sich ab.
+	if action != null and unit.firing_slot != "" \
+			and unit.build.mirror_slots().has(unit.firing_slot):
+		var twin: PartData = unit.build.part_in(unit.firing_slot)
+		if twin != null:
+			for own in twin.actions:
+				if own.id == action.id:
+					return unit.firing_slot
 	var first := ""
 	for slot in unit.build.body().equip_slots():
 		var part: PartData = unit.build.part_in(slot)

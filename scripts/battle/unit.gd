@@ -83,6 +83,8 @@ var calm_time: float = 0.0
 ## Passive Focuslense (Strix, 27. Nov. 2026): das Ziel, das sein letzter
 ## Schuss traf -- es gilt als anvisiert (immer nur eins).
 var focus_target: Unit = null
+## Der Halter, der gerade feuert (Gunship: welcher Arm). Nur fuer das Bild.
+var firing_slot: String = ""
 ## Modul Raufbold (Vergeltung): eingesteckte Treffer, die den naechsten
 ## Angriff aufladen (max. 3, Berserker 5).
 var retaliation_stacks: int = 0
@@ -777,6 +779,16 @@ func init_realtime(pulse_offset: float) -> void:
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
 			"fx": fx, "shots": 0})
+		# Gunship (Molok, 27. Nov. 2026): der Spiegel-Arm feuert dieselbe Waffe
+		# mit vollen Werten, versetzt um ein halbes Intervall, mit eigenem
+		# Takt-Zaehler. Sentinels haben keinen Gunship.
+		if build.is_sentinel():
+			continue
+		for twin in build.mirror_slots():
+			if str(build.mirror_slots()[twin]) == slot:
+				mounts.append({"slot": str(twin), "part": part, "attack": attack,
+					"ability": ability, "ready": attack.interval, "count": 0,
+					"fx": fx, "shots": 0})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff

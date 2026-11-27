@@ -456,8 +456,7 @@ func test_the_rend_makes_the_target_vulnerable() -> void:
 
 func _hammer_molok() -> DromeBuild:
 	return DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_hammer",
-		"equip_right": &"eq_deflector"})
+		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_hammer"})
 
 
 func test_the_molok_is_a_tank_with_little_shield() -> void:
@@ -465,7 +464,7 @@ func test_the_molok_is_a_tank_with_little_shield() -> void:
 	# 8. Nov. 2026: 250 Integritaet, 50 Schild, Ruestung 10 (+ Deflektor).
 	t.equal(stats["hp_max"], 270, "250 Integrität + 20 vom Hammer")
 	t.ok(stats["def"] >= 10, "viel Rüstung (%d)" % stats["def"])
-	t.ok(_hammer_molok().is_valid(), "Hammer und Deflektor sind baubar")
+	t.ok(_hammer_molok().is_valid(), "der Hammer-Molok ist baubar")
 
 
 func test_the_hammer_stuns_and_a_stunned_drome_does_nothing() -> void:

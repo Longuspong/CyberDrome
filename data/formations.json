@@ -361,14 +361,13 @@
    "name": "Mecha Molok",
    "chassis": "jugg_body",
    "weapons": [
-    "eq_hammer",
-    "eq_deflector"
+    "eq_hammer"
    ],
    "stats": {
-    "spd": 10,
+    "spd": 6,
     "hp_max": 250,
     "shield": 50,
-    "shield_pulse": 3,
+    "shield_pulse": 2,
     "def": 10,
     "power": 6,
     "module_slots": 2
@@ -404,8 +403,7 @@
    "name": "Molok",
    "chassis": "jugg_body",
    "weapons": [
-    "eq_hammer",
-    "eq_deflector"
+    "eq_hammer"
    ]
   },
   "nimbus": {

@@ -20,8 +20,8 @@ func test_starter_stock_matches_the_design() -> void:
 	var roster := _fresh()
 	# Vier Standard-Chassis = vier DROMEs.
 	t.equal(roster.entries.size(), 4, "vier Start-DROMEs")
-	# Vier Chassis + vier Kerne + sechs Ausruestungsteile (fuenf in den Kits:
-	# Blaster, Hammer + Deflektor, Runenstab, Lanze; frei: Plasmaklinge) = 14.
+	# Vier Chassis + vier Kerne + sechs Ausruestungsteile (vier in den Kits:
+	# Blaster, Deflektor, Runenstab, Lanze; frei: Plasmaklinge, Hammer) = 14.
 	t.equal(roster.all_instances().size(), 14, "14 Instanzen im Startbestand")
 	for part_id in [&"eq_pulse_blaster", &"eq_hammer", &"eq_plasma_blade",
 			&"eq_rune_staff", &"eq_rail_lance", &"eq_deflector"]:
@@ -58,7 +58,7 @@ func test_a_part_cannot_be_in_two_dromes_at_once() -> void:
 	t.equal(roster.free_count(&"eq_plasma_blade"), 1,
 		"die Plasmaklinge liegt zunächst frei")
 	var molok: RosterEntry = roster.entries[1]
-	var molok_slot: String = roster.build_for(molok).equip_slots()[1]
+	var molok_slot: String = roster.build_for(molok).equip_slots()[0]
 	t.ok(roster.assign(molok, molok_slot, &"eq_plasma_blade"), "erste Zuweisung greift")
 	t.equal(roster.free_count(&"eq_plasma_blade"), 0,
 		"danach ist keine Plasmaklinge mehr frei")
@@ -123,7 +123,7 @@ func test_salvaging_a_drome_gives_ingredients_and_frees_the_weapons() -> void:
 	for slot in molok.assignments:
 		if str(slot).begins_with("equip_"):
 			weapons.append(str(molok.assignments[slot]))
-	var free_before := roster.free_count(&"eq_hammer")
+	var free_before := roster.free_count(&"eq_deflector")
 	var got := roster.salvage(molok)
 	# Molok: Brustharnisch (30 Platten + 90 Legierung) und Unterbau (18 + 60).
 	t.equal(int(got["wares"].get("platte", 0)), 48, "48 Panzerplatten")
@@ -133,7 +133,7 @@ func test_salvaging_a_drome_gives_ingredients_and_frees_the_weapons() -> void:
 	t.ok(roster.instance(chassis) == null, "sein Chassis auch")
 	for uid in weapons:
 		t.ok(roster.instance(uid) != null, "die Waffe %s bleibt" % uid)
-	t.equal(roster.free_count(&"eq_hammer"), free_before + 1, "und ist frei")
+	t.equal(roster.free_count(&"eq_deflector"), free_before + 1, "und ist frei")
 	var back := Roster.new()
 	t.ok(back.load_dict(roster.to_dict()), "Spielstand lädt")
 	t.equal(int(back.materials.get("res:platte", 0)), 48, "die Platten überstehen das Speichern")

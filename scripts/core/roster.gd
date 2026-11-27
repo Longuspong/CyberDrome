@@ -63,7 +63,7 @@ const STARTER_CHASSIS := [
 	{"body": &"scout_body", "core": &"scout_core",
 	 "equipment": [&"eq_pulse_blaster"]},
 	{"body": &"jugg_body", "core": &"jugg_core",
-	 "equipment": [&"eq_hammer", &"eq_deflector"]},
+	 "equipment": [&"eq_deflector"]},
 	{"body": &"mage_body", "core": &"mage_core",
 	 "equipment": [&"eq_rune_staff"]},
 	{"body": &"strix_body", "core": &"strix_core",
@@ -71,10 +71,10 @@ const STARTER_CHASSIS := [
 ]
 
 ## Ausruestung, die KEINEM Start-DROME zugeteilt ist und frei im Inventar liegt.
-## Seit es nur noch einen Platz je DROME gibt (Molok zwei), liegen die
-## Gadgets hier und laden zum Umbauen ein.
+## Seit es nur noch einen Platz je DROME gibt (Molok seit 27. Nov. 2026 als
+## Gunship auch), liegen die uebrigen Waffen hier und laden zum Umbauen ein.
 const STARTER_LOOSE_EQUIPMENT := [
-	&"eq_plasma_blade",
+	&"eq_plasma_blade", &"eq_hammer",
 ]
 
 
@@ -778,6 +778,12 @@ func load_dict(data: Dictionary) -> bool:
 		# Leere waere eine stille Luege ueber den Aufbau.
 		for slot in entry.assignments.keys():
 			if not _instances.has(str(entry.assignments[slot])):
+				entry.assignments.erase(slot)
+		# Halter, die es nicht mehr gibt (Molok-Gunship seit 27. Nov. 2026: der
+		# rechte Arm spiegelt nur noch): die Waffe kommt zurueck ins Lager.
+		var holders := build_for(entry).equip_slots()
+		for slot in entry.assignments.keys():
+			if str(slot).begins_with("equip_") and not holders.has(str(slot)):
 				entry.assignments.erase(slot)
 		# Varianten hiessen bis 21. Nov. 2026 "Mecha Molok" -- jetzt "Molok"
 		# mit der Fraktion als Untertitel (selbst vergebene Namen bleiben).

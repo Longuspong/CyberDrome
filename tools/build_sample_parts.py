@@ -368,7 +368,9 @@ DEFAULT_Z = {
 #
 # Fehlt eine Regel, nimmt der Slot alles an -- importierte Teile funktionieren
 # damit unveraendert weiter. ``{"off": True}`` macht einen Anker zur reinen
-# Optik: er ist kein Halter (seit Nov. 2026 ein Platz je DROME, Molok zwei).
+# Optik: er ist kein Halter (seit 27. Nov. 2026 ein Platz je DROME). Mit
+# ``"mirror": "<halter>"`` traegt der Anker eine Kopie der Waffe jenes Halters
+# (Molok-Gunship: beide Arme, voller Schaden, eigener Takt).
 MOUNT_CLASSES = ("light", "medium", "heavy")
 EQUIP_CATEGORIES = ("weapon", "shield", "support")
 DEFAULT_MOUNT_CLASS = "light"
@@ -2548,11 +2550,12 @@ SETS = [
                 # woran sich ein Schild abstuetzen koennte -- dort gehoert
                 # Sensorik und Support hin, nichts Schweres und nichts, was
                 # gehalten werden muss.
-                # Zwei Plaetze, beide bis mittel (8. Nov. 2026): schwer ist nur
-                # das Scharfschuetzengewehr des Strix.
+                # Gunship (KERNPLAN, gebaut 27. Nov. 2026): EIN Halter bis
+                # mittel; die Waffe erscheint gespiegelt am rechten Arm
+                # (``mirror``), mit vollen Werten und eigenem Takt.
                 "slot_rules": {
                     "equip_left": {"max_class": "medium"},
-                    "equip_right": {"max_class": "medium"},
+                    "equip_right": {"off": True, "mirror": "equip_left"},
                     "equip_shoulder": {"off": True},
                 },
             },

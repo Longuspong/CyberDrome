@@ -127,7 +127,7 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	var bunker := DromeBuild.create("BUNKER", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_pulse_blaster", "equip_right": &"eq_deflector"})
+		"equip_left": &"eq_deflector"})
 	t.ok(bunker.is_valid(), "der Bunker ist baubar: %s" % ", ".join(bunker.validate()))
 	t.equal(bunker.stats()["def"], 14, "und kommt auf Rüstung 14 (Molok 10 + Schild 4)")
 
@@ -158,13 +158,12 @@ func test_armour_can_never_swallow_a_whole_hit() -> void:
 	wall.free()
 
 
-## Ein Aufbau mit Flaechenwaffe und Flaechenheilung -- beides auf einem Molok,
-## damit ein einziger DROME beide Seiten der Frage stellt: wen trifft ein Radius?
+## Ein Molok mit Hammer -- der Test gibt ihm eine eigene Flaechenaktion.
 func _hammer_and_drones(display_name: String) -> DromeBuild:
 	return DromeBuild.create(display_name, {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"})
+		"equip_left": &"eq_hammer"})
 
 
 func _action_by_id(unit: Unit, id: StringName) -> ActionData:
@@ -224,7 +223,7 @@ func test_the_deflector_charges_its_own_shield() -> void:
 	var tank := DromeBuild.create("WALL", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"})
+		"equip_left": &"eq_deflector"})
 	var unit := Unit.create(tank, &"P0", true)
 	var resolver := ActionResolver.new(Grid.new(10, 10), [unit])
 	unit.tile = Vector2i(3, 3)

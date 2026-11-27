@@ -84,7 +84,8 @@
       "max_class": "medium"
     },
     "equip_right": {
-      "max_class": "medium"
+      "off": true,
+      "mirror": "equip_left"
     },
     "equip_shoulder": {
       "off": true
