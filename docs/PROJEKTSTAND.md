@@ -29,6 +29,24 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Werkblatt uebernommen: Gunship, Focuslense, neue Werte (27. Nov. 2026, Spieler)
+
+Details und Tabelle in `docs/SKILLBAUM_KONZEPT.md` 5e.
+
+* **Molok als Gunship:** ein Halter bis mittel, der rechte Arm spiegelt die Waffe
+  (`slot_rules` `mirror`, `DromeBuild.mirror_source`/`mirror_slots`); im Kampf zwei
+  Halterungen, versetzt, je eigener Takt (`Unit.init_realtime`), Arm im Bild nach
+  `Unit.firing_slot`. Standardwaffe Deflektor, Hammer frei im Lager, Gegner-Moloks mit
+  Hammer. Kampfwert zaehlt den zweiten Arm, `POWER_SCALE` 1,064.
+* **Passiven:** Molok heisst **Safe Haven** (`passives.safe_haven`), Strix **Focuslense**
+  statt Anlegen (`Unit.focuslense`, in `ActionResolver.apply_damage`), Echo-Takt
+  aufgerundet (jeder 3. -> 5.).
+* **Werte:** Speed Vireo 8, Molok 6, Strix 3; Schildpuls Vireo 5, Molok 2; Neon Vireo
+  8 / 10, Neon Nimbus 7 / 5 mit Power und Effizienz 12.
+* **Halter-Kuerzel** S/M/X, -F/-N (`SlotRules.holder_code`).
+* Noch nicht gebaut: Nimbus als Supporter (Repair-Kit, Cleancode, Shieldgate), Zielregel
+  „Most Damage“ fuer den Neon Nimbus, Halter M-N fuer den Neon Vireo.
+
 ### Molok-Passive Festung, Hammer, Kernwaffen (27. Nov. 2026, Spieler)
 
 * **Passive Festung** (Arbeitsname): Heilung, Lebensraub, Regeneration, Schildladung und
@@ -1154,7 +1172,7 @@ Spielstand). Vorschlaege zu Story, Fraktionen, Klassen und Anstieg stehen in
 * Jede Waffe gibt einen DROME-Wert als Bonus, Faehigkeitsschaden ist ein
   Anteil des Waffenschadens (`damage_pct`). Hammer und Schild mittel, schwer
   nur die Schienen-Lanze; Vireo nur leicht, Molok zwei Halter bis mittel.
-* Strix-Passive Anlegen (`steady`, `Unit.track_stillness`).
+* Strix-Passive Anlegen (`steady`, `Unit.track_stillness`) -- seit 27. Nov. 2026 ersetzt durch Focuslense.
 * Orbit-Fokus, Hologramm-Boost, Koedersender sind keine Ausruestung mehr,
   sondern Module (`gadget` in `modules.json`).
 * Level (`Leveling`): DROME 0-5, Waffe 0-10, gespeichert an `RosterEntry`

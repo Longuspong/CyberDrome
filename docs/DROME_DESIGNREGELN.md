@@ -16,7 +16,7 @@ tauschbar. Damit kann jedes Chassis als Ganzes gestaltet werden.
 
 | Körperart | DROMEs | Kennzeichen |
 |---|---|---|
-| **humanoid** | Vireo, Nimbus, Molok | zwei Arme; ein Waffenarm (Molok zwei), der andere Arm zeigt die Passive |
+| **humanoid** | Vireo, Nimbus, Molok | zwei Arme; ein Waffenarm (Molok seit 27. Nov. 2026 Gunship: dieselbe Waffe gespiegelt an beiden Armen), der andere Arm zeigt die Passive |
 | **nicht-humanoid** | Strix (Eule) | kein Waffenarm, eigene Halterung am Körper |
 
 ## 2. Anker und Halter
@@ -57,7 +57,7 @@ Der Waffenarm **hängt nie gerade nach unten**.
 | Vireo | Sprint | **Booster an Helm und Rücken**, der leere Arm liegt am Körper an |
 | Nimbus | Echo | Passiv-Arm: **Unterarm 90° nach vorn mit Energiekugel**; dazu der **Ring hinter dem Kopf**, als Leuchtelement (Energie) |
 | Molok | Präsenz | Lockfeuer auf dem Rücken |
-| Strix (Eule) | Anlegen | große Linsen an der Kapuze |
+| Strix (Eule) | Focuslense (bis 27. Nov. 2026 Anlegen) | große Linsen an der Kapuze |
 
 ## 5. Licht und Kontur
 

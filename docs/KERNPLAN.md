@@ -23,7 +23,7 @@ Der Kernmoment: Nach dem Theorycrafting im Hangar bekommt man im Lauf die erhoff
 
 ## Was erst mal wartet (Ideen-Branch)
 
-- AR-Nimbus
+- AR-Nimbus -- wird laut Werkblatt (27. Nov. 2026) ein **Supporter** (Repair-Kit, Passive Cleancode); der heutige Nimbus (Runenstab, Echo, Skill-DPS) lebt als **Neon Nimbus** weiter
 - Endlos-Modus, Story, Fraktionen
 - Android-Version
 - Feinabstimmung von Gegnerzahl und Gegnerkurve
@@ -36,6 +36,9 @@ Der Kernmoment: Nach dem Theorycrafting im Hangar bekommt man im Lauf die erhoff
    **Stand 25. Nov. 2026:** Cyberspeed gebaut (Grundform ohne Skillknoten, ersetzt den
    alten Sprint `hit_rush`; Werte in `data/config.json` -> `passives.cyberspeed`).
    Nächster Schritt: mit den vorhandenen Amps testen und nachschärfen.
+   **Stand 27. Nov. 2026:** Molok-Passive Safe Haven, Molok als Gunship und Strix-Passive
+   Focuslense gebaut (Werkblatt, `SKILLBAUM_KONZEPT.md` 5e). Damit haben alle drei Kern-DROMEs
+   ihre Passive; als Nächstes im Playtest nachschärfen.
 3. Fusions und BIOS **überarbeiten, nicht neu bauen**. Das Modulsystem wird kein drittes Mal komplett aufgerissen.
 4. Veraltete Fragmente entfernen, sobald ein System steht (zum Beispiel den Kern-Halter in der README). **Erste große Runde am 26. Nov. 2026** (Stand in `PROJEKTSTAND.md`).
 
@@ -60,7 +63,7 @@ Der Molok ist ein reiner Frontliner: Er hält vorne, macht wenig eigenen Schaden
 **Entschieden**
 
 - **Alte Passive raus:** Präsenz (Locken und Abfangen) entfällt komplett. Sie stammt aus der Tactics-Zeit und arbeitet gegen seine Vanguard-KI.
-- **Doppelwaffe (Gunship-Prinzip):** Eine Waffe wird ausgerüstet und erscheint an beiden Armen, jeweils mit vollen Werten. Die Arme feuern versetzt im Wechsel. Jeder Arm hat seinen eigenen Takt-Zähler und löst seine Fähigkeit selbst aus.
+- **Doppelwaffe (Gunship-Prinzip, GEBAUT 27. Nov. 2026):** Eine Waffe wird ausgerüstet und erscheint an beiden Armen, jeweils mit vollen Werten. Die Arme feuern versetzt im Wechsel. Jeder Arm hat seinen eigenen Takt-Zähler und löst seine Fähigkeit selbst aus. Standardwaffe ist der Deflektor (Werkblatt).
 - **Gemeinsame Modulreihe:** 2 Modulplätze statt 3. In der Ansicht: Waffe, 2 Mods, Waffe. Waffenmods wirken auf beide Waffen.
 - **Werte-Amps zählen einmal:** Power, Panzerung, Integrität und Schild gehen einmal aufs Chassis und nicht pro Arm.
 - **Power auf 4:** Ausgleich für die doppelte Waffe. Wird bei Bedarf nach Playtests angehoben.
@@ -78,7 +81,7 @@ Der Molok ist ein reiner Frontliner: Er hält vorne, macht wenig eigenen Schaden
 
 **Offen**
 
-- Name der Passive: Arbeitsname „Festung“ (verworfen: Lockdown, weil Stehenbleiben nicht mehr belohnt wird)
+- ~~Name der Passive~~: **Safe Haven** (Werkblatt 27. Nov. 2026; Arbeitsname war Festung, verworfen: Lockdown)
 - Höhe der eigenen Regeneration pro Puls
 - On-Hit-Effekte lösen durch die zwei Arme doppelt aus. Bewusst als Belohnung lassen oder über einen Proc-Koeffizienten am Chassis abschwächen?
 - Kontrolleffekte (Hammer-Stun) bei doppelter Frequenz und voller Dauer: Gefahr von Dauer-Stun prüfen.

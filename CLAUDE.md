@@ -7,9 +7,13 @@ Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 Lauf, Molok/Vireo/Strix mit Passiven, Fusions und BIOS ueberarbeiten statt neu bauen), was
 in den Ideen-Branch wartet (Nimbus, Endlos, Story, Fraktionen, Android, Gegnerkurve), in
 kleinen Runden arbeiten, Fragmente verworfener Systeme im selben PR entfernen. Neue Ideen
-nicht auf main. Stand: Vireo-Passive **Cyberspeed** (25. Nov.), Molok-Passive **Festung**
-(Arbeitsname) und Hammer mit Heilung (27. Nov.); Waffen auf eine Kernwaffe je DROME
+nicht auf main. Stand: Vireo-Passive **Cyberspeed** (25. Nov.), Molok-Passive **Safe Haven**
+(vorher Arbeitsname Festung) und Hammer mit Heilung (27. Nov.); Waffen auf eine Kernwaffe je DROME
 reduziert (27. Nov., Ramme/Schraubenschluessel/Bumerang/Neon-Blaster/Moerser entfernt).
+**Werkblatt vom 27. Nov. uebernommen** (`SKILLBAUM_KONZEPT.md` 5e): Molok als **Gunship**
+(ein Halter, Waffe an beiden Armen, `mirror` in `slot_rules`), Strix-Passive **Focuslense**,
+neue Tempo-/Schildpulswerte, Echo-Takt aufgerundet, Halter-Kuerzel S/M/X + -F/-N.
+Nimbus (Kernspieler) wird ein Supporter und wartet; der heutige Nimbus lebt als Neon Nimbus.
 
 **Ganz zuerst (seit 17. Nov. 2026, zuletzt 18. Nov. abends): `docs/UEBERGABE_3D.md`, Abschnitt „Stand 18. Nov.“** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung und 3D-Boden `ArenaFloor3D` seit 18. Nov.; sichtbare Passiven, Muendungsblitz und 3D-Deko seit 18. Nov.; Beine im Wechsel, alle Faehigkeiten lesbar (`AbilityPainter`), Waffenfarben mit Glanzkante (`WEAPON_FINISH`), Generator-Bausteine BP/SW/EX und Redesign aller Chassis seit 18. Nov. -- `DROME_UMSETZUNG.md` 4g; Fraktions-Paletten fuer Gegner und Faehigkeiten mit Ausholzeit/Abfolge (`AbilityFx`, `ActionData.windup`) seit 18. Nov.; alle Faehigkeiten animiert; Echo nacheinander und Flaechen am Wurfort seit 18. Nov., Balance gemessen; offen: Story-Level).
 
@@ -73,15 +77,15 @@ Bilder ohne Web-Export: `xvfb-run ... tests/screenshot.gd -- <szene> <png> 90
 **DROME-Designregeln (16. Nov. 2026, abgesegnet; gebaut: Licht + Kontur je Teil,
 Koerperart, Nah/Fern-Tags, Strix-Lafette, Halter-Symbole, Strix als Eule):**
 `docs/DROME_DESIGNREGELN.md` -- Koerperarten (humanoid / Strix als Eule mit
-Lafette, nur Fernkampf), ein Waffenarm je Chassis (Molok zwei, nie
-gespiegelt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt
+Lafette, nur Fernkampf), ein Waffenarm je Chassis (Molok seit 27. Nov. 2026
+Gunship: eine Waffe, an beiden Armen gezeigt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt
 den Arm mit), sichtbare Passive, Kontur je Teil, Bewegung, lesbare
 Faehigkeiten, Fraktions-Paletten. Entwurfs-Skripte unter
 `docs/design/drome_entwurf/`. **Stand und Plan der Umsetzung (Haken):
 `docs/DROME_UMSETZUNG.md`** -- dort weitermachen (Chassis, Waffen-Posen und 4b Arme am Chassis gebaut -- zwei Haltungen halten/zielen, Manschette, Molok-Arme; **seit 17. Nov. 2026 echtes 3D**: Generator schreibt je Teil ein Modell `<id>.m3d`, `DromeModel` rendert den ganzen DROME per SubViewport mit Iso-Kamera; naechster Schritt: 5 Bewegung in 3D).
 
 **Module und BIOS (18. Nov. 2026, entschieden und gebaut):** Modulplaetze sind
-fest (3 je Waffe, Molok 2 + 2) -- kein Level und kein BIOS gibt Plaetze dazu.
+fest (3 je Waffe, Molok 2) -- kein Level und kein BIOS gibt Plaetze dazu.
 Kein Chassis-BIOS mehr. BIOS-Wahl fest nach jedem gewonnenen Elite-Kampf (bis
 3, eins je DROME), danach ein Lootcache; ein BIOS wertet ein Rezept in einer
 Waffe auf. Zwischenstopp: DROMEs als Zeilen, Module ueberall 52 px als
@@ -252,9 +256,10 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   Ein Verb je Tab: Shop kaufen, Fabrik herstellen (Linien, Charger, DROMEs),
   Home spielen, DROMEs ausruesten/aufwerten (Liste -> DROME-Seite mit Uebersicht,
   DROME, Waffe), Inventar lagern -- Details `docs/PROJEKTSTAND.md`. Squad max. 3,
-  ein Ausruestungsplatz je DROME, Molok zwei; Halter als Formen: Dreieck leicht,
+  ein Ausruestungsplatz je DROME (Molok als Gunship ebenso); Halter als Formen: Dreieck leicht,
   Viereck mittel, Fuenfeck schwer; leicht passt nach oben in groessere Halter,
-  schwer nur in schwer.
+  schwer nur in schwer. Kuerzel im Text (seit 27. Nov. 2026, sprachneutral):
+  S/M/X, dahinter -F nur Fernkampf, -N nur Nahkampf (`SlotRules.holder_code`).
 * Spielfeld ist seit 17. Nov. 2026 ein **Hexfeld**, seit 18. Nov. 2026 **je
   Formation eine eigene Karte** (`config.json` -> `maps`, Formation -> `map`;
   Standard 9 x 15, dazu kurz 9 x 13, lang 9 x 21, Zwei Gassen, Bauch 11 x 17;
@@ -307,7 +312,7 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
    2026 nicht mehr, Zielwahl nach Regel je Rolle). Der Spieler denkt das noch durch --
    nichts davon bauen, bevor es besprochen ist.
 4. **Waffen-Slots und Gewichtsklassen -- ENTSCHIEDEN.** Ein Platz je DROME,
-   Molok zwei (gebaut); leicht/mittel/schwer bleibt als Halterregel, keine
+   auch der Molok (Gunship seit 27. Nov. 2026, gebaut); leicht/mittel/schwer bleibt als Halterregel, keine
    Liste "wer darf was" (6g).
 
 Bis diese Punkte entschieden sind: keine groesseren Umbauten an
@@ -320,10 +325,9 @@ Erst entscheiden (Spieler), dann bauen. Was laut `docs/KERNPLAN.md` wartet
 steht dort im Abschnitt „Was erst mal wartet“ -- nicht anfangen, bevor der
 Kernplan fertig ist.
 
-- [ ] **PRIO 1 (seit 24. Nov. 2026): Werkblatt ausfuellen** -- der Spieler traegt in
-      `docs/spot/CyberDrome_Werkblatt_DROMEs_Waffen.xlsx` die offenen Werte und
-      Anpassungen ein (hellblau: Passiven Molok/Nimbus/Strix, Skilltrees, Takt neu,
-      Schild X). Danach ins Spiel und in `SKILLBAUM_KONZEPT.md` uebernehmen.
+- [ ] **Werkblatt weiter ausfuellen** -- erste Runde am 27. Nov. 2026 uebernommen
+      (`SKILLBAUM_KONZEPT.md` 5e). Noch offen dort: Skilltrees, Takt neu, Nimbus-Supporter
+      (Repair-Kit, Cleancode, Shieldgate), Neon-Vireo-Halter M-N, Zielregel Neon Nimbus.
       Wenn der Spieler eine neue Sitzung beginnt, daran erinnern.
 - [ ] Designpunkt 3 **Eingreifen des Spielers** (siehe oben) besprechen.
 
