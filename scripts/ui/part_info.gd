@@ -85,6 +85,9 @@ static func traits(part: PartData) -> Array[String]:
 				int(cs.get("every", 3)), int(cs.get("max_stacks", 3)),
 				int(round(float(cs.get("attack_speed", 0.1)) * 100.0)),
 				ActionData._seconds(float(cs.get("seconds", 3.0)))])
+		"fortress":
+			var fo := Config.section("passives").get("fortress", {}) as Dictionary
+			out.append("Festung: Heilung, Regeneration und Schildgaben am Molok +%d %%." % int(round((float(fo.get("care_mult", 1.2)) - 1.0) * 100.0)))
 		"echo":
 			out.append("Echo: jede Fähigkeit wirkt zweimal, ihr Takt ist dafür 50 % länger.")
 		"steady":
@@ -148,6 +151,8 @@ static func action_lines(action: ActionData) -> Array[String]:
 		out.append("Trifft erst ab %d Feldern Abstand." % action.min_range)
 	if action.hp_scaling > 0.0:
 		out.append("Dazu %d %% der eigenen maximalen Integrität als Schaden." % int(round(action.hp_scaling * 100.0)))
+	if action.lifesteal > 0.0:
+		out.append("Heilt den Träger um %d %% des Schadens." % int(round(action.lifesteal * 100.0)))
 	if action.moving_bonus > 0.0:
 		out.append("+%d %% Schaden, wenn der Träger gerade gelaufen ist." % int(round(action.moving_bonus * 100.0)))
 	if action.push_tiles > 0:

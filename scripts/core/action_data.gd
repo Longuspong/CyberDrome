@@ -169,6 +169,7 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.damage_pct = float(meta.get("damage_pct", 0.0))
 	action.base_action = StringName(str(meta.get("base_action", "")))
 	action.hp_scaling = float(meta.get("hp_scaling", 0.0))
+	action.lifesteal = float(meta.get("lifesteal", 0.0))
 	action.min_range = int(meta.get("min_range", 0))
 	action.moving_bonus = float(meta.get("moving_bonus", 0.0))
 	var status_meta = meta.get("status")
@@ -226,7 +227,8 @@ func with_modules(fx: Dictionary) -> ActionData:
 		out.heal = int(round(float(out.heal) * (1.0 + support)))
 		out.shield_gain = int(round(float(out.shield_gain) * (1.0 + support)))
 	if is_attack():
-		out.lifesteal = float(fx.get("lifesteal", 0.0))
+		# Lebensraub der Waffe selbst bleibt, die Fusion legt nicht drauf.
+		out.lifesteal = maxf(lifesteal, float(fx.get("lifesteal", 0.0)))
 	out.virus_fraction = float(fx.get("virus_fraction", 0.0))
 	out.kinetic_to_energy = float(fx.get("kinetic_to_energy", 0.0))
 	out.bonus_vs_unshielded = float(fx.get("bonus_vs_unshielded", 0.0))

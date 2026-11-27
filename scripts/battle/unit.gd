@@ -988,7 +988,7 @@ func recharge_shield(dt: float) -> int:
 		delay = minf(delay, quick)
 	if calm_time < delay:
 		return 0
-	var per_pulse := float(rule.get("gain_per_point", 2.0)) * pulse_points
+	var per_pulse := float(rule.get("gain_per_point", 2.0)) * pulse_points * care_mult()
 	_recharge_carry += per_pulse / maxf(0.1, float(rule.get("pulse", 3.0))) * dt
 	var gain := mini(int(_recharge_carry), maximum - shield)
 	_recharge_carry -= float(gain)
@@ -1051,7 +1051,7 @@ func regenerate_hp() -> int:
 	if pct <= 0 or hp <= 0:
 		return 0
 	var maximum := stat("hp_max")
-	var amount := int(floor(float(maximum) * float(pct) / 100.0))
+	var amount := int(floor(float(maximum) * float(pct) / 100.0 * care_mult()))
 	if amount <= 0:
 		return 0
 	var before := hp
@@ -1106,6 +1106,16 @@ func on_attack() -> void:
 		cyberspeed_count = 0
 		cyberspeed_stacks = mini(int(rule.get("max_stacks", 3)), cyberspeed_stacks + 1)
 	cyberspeed_left = float(rule.get("seconds", 3.0)) * efficiency_factor()
+
+
+## Festung (Molok-Passive, 27. Nov. 2026): Faktor auf alles, was diesen DROME
+## heilt oder ihm Schild gibt -- Heilung, Lebensraub, Regeneration, Schildladung
+## und Schildgaben (``passives.fortress.care_mult``). Virusschaden gleicht sie
+## nicht aus.
+func care_mult() -> float:
+	if passive() != "fortress":
+		return 1.0
+	return float((Config.section("passives").get("fortress", {}) as Dictionary).get("care_mult", 1.2))
 
 
 static func _cyberspeed() -> Dictionary:

@@ -287,8 +287,10 @@ func test_the_deflector_charges_its_own_shield() -> void:
 	t.ok(charge != null and charge.shield_gain > 0, "der Deflektor hat die Schildladung")
 	unit.shield = unit.shield_max()
 	t.ok(resolver.execute(unit, unit.tile, charge), "sie wirkt auf den Träger")
-	t.equal(unit.shield, unit.shield_max() + ActionResolver.support_amount(unit, unit, charge.shield_gain),
-		"auch über das Maximum")
+	# Festung (Molok-Passive): Schildgaben am Molok +20 %.
+	var expected := int(round(float(ActionResolver.support_amount(unit, unit, charge.shield_gain)) * unit.care_mult()))
+	t.ok(unit.care_mult() > 1.0, "die Festung verstärkt die Schildgabe")
+	t.equal(unit.shield, unit.shield_max() + expected, "auch über das Maximum")
 	for _i in 6:
 		resolver.execute(unit, unit.tile, charge)
 	t.equal(unit.shield, ActionResolver.shield_cap(unit), "aber höchstens Maximum + 50 %")

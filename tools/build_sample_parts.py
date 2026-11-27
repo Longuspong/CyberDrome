@@ -476,6 +476,7 @@ STAT_DEFAULTS = {
     #   echo         jede Faehigkeit wirkt zweimal, ihr Takt ist 50 % laenger
     #                (Nimbus)
     #   cyberspeed   jeder 3. Angriff gibt einen Stapel Angriffs- und Lauftempo (Vireo)
+    #   fortress     Festung: Heilung, Regeneration und Schildgaben am Traeger +20 % (Molok)
     #   steady       Anlegen: nach 4 s ohne Bewegung +20 % Schaden und
     #                Reichweite (Strix)
     # Die Zahlen der Passiven stehen in data/config.json unter "passives".
@@ -505,7 +506,7 @@ STATS = {
     # Molok: der harte Zweihaender fuer die Frontlinie, wenig Power.
     "jugg_body":   {"spd": 10, "hp": 250, "shield": 50, "shield_pulse":  3, "def": 10,
                     "power":  6, "efficiency": 14, "module_slots": 2,
-                    "ai_role": "vanguard", "passive": ""},
+                    "ai_role": "vanguard", "passive": "fortress"},
     # Nimbus: fragil, schildlastig, Richtung Faehigkeiten.
     "mage_body":   {"spd": 12, "hp":  60, "shield": 60, "shield_pulse": 10, "def":  0,
                     "power": 12, "efficiency": 12, "module_slots": 3,
@@ -604,9 +605,12 @@ STATS = {
             {"id": "act_hammer", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 16, "interval": 1.8},
+            # Seit 27. Nov. 2026 (Spieler): +20 % der eigenen maximalen
+            # Integritaet als Schaden, und der Schlag heilt den Molok um 100 %
+            # des Schadens. Kinetisch wie der Angriff.
             {"id": "act_hammer_stun", "windup": 0.35, "display_name": "Betaeubungsschlag",
              "category": "ability", "targeting": "single",
-             "range_tiles": 1, "damage_pct": 1.0,
+             "range_tiles": 1, "damage_pct": 1.0, "hp_scaling": 0.2, "lifesteal": 1.0,
              "status": {"id": "stun", "seconds": 1.0, "stunned": True},
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_hammer"}},
         ],
@@ -760,6 +764,9 @@ ACTION_DEFAULTS = {
     # moving_bonus +Anteil Schaden, wenn der Traeger gerade gelaufen ist
     #              (Klingenbumerang)
     "hp_scaling": 0.0,
+    # lifesteal    der Treffer heilt den Traeger um diesen Anteil des Schadens
+    #              (Hammer-Betaeubungsschlag 1,0, 27. Nov. 2026)
+    "lifesteal": 0.0,
     "min_range": 0,
     "moving_bonus": 0.0,
     # Ausholzeit (18. Nov. 2026): Sekunden zwischen Ansage und Wirkung einer

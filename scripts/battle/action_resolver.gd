@@ -110,12 +110,16 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		EventBus.log_line("%s trifft %s für %d Schaden."
 			% [who, target.display_name, amount])
 
-	# Lebensraub (Fusion Attack + Integrity): der Treffer heilt den Schuetzen.
+	# Lebensraub (Fusion Attack + Integrity, Hammer-Betaeubungsschlag): der
+	# Treffer heilt den Schuetzen.
 	if action != null and action.lifesteal > 0.0 and source != null and source.is_alive() \
 			and dealt > 0 and source != target:
-		var heal := int(round(float(dealt) * action.lifesteal))
+		var heal := int(round(float(dealt) * action.lifesteal * source.care_mult()))
 		if heal > 0:
+			var before_hp := source.hp
 			source.hp = mini(int(source.stats.get("hp_max", source.hp)), source.hp + heal)
+			if source.hp > before_hp:
+				EventBus.unit_healed.emit(source, source.hp - before_hp, source)
 	if action != null and not action.charger.is_empty() and target.hp > 0 \
 			and source != null and source.is_player != target.is_player \
 			and (charge_share > 0.0 or ability_bonus):
@@ -523,7 +527,7 @@ func support(source: Unit, target: Unit, action: ActionData) -> int:
 	var charged := 0
 	var before_shield := target.shield
 	if action.heal > 0:
-		var amount := support_amount(source, target, action.heal)
+		var amount := int(round(float(support_amount(source, target, action.heal)) * target.care_mult()))
 		var before := target.hp
 		target.hp = mini(target.stat("hp_max"), target.hp + amount)
 		healed = target.hp - before
@@ -533,7 +537,7 @@ func support(source: Unit, target: Unit, action: ActionData) -> int:
 		if healed > 0:
 			EventBus.unit_healed.emit(target, healed, source)
 	if action.shield_gain > 0:
-		var gain := support_amount(source, target, action.shield_gain)
+		var gain := int(round(float(support_amount(source, target, action.shield_gain)) * target.care_mult()))
 		target.shield = maxi(target.shield, mini(shield_cap(target), target.shield + gain))
 	charged = target.shield - before_shield
 	if healed > 0 or charged > 0:

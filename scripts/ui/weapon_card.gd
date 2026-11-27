@@ -295,6 +295,10 @@ static func short_text(action: ActionData) -> String:
 		parts.append("Schockwelle nach %s s" % ActionData._seconds(action.delay))
 	if not action.status.is_empty():
 		parts.append(action.status_text())
+	if action.hp_scaling > 0.0:
+		parts.append("+%d %% der eigenen max. Integrität als Schaden" % int(round(action.hp_scaling * 100.0)))
+	if action.lifesteal > 0.0:
+		parts.append("heilt um %d %% des Schadens" % int(round(action.lifesteal * 100.0)))
 	if action.push_tiles > 0:
 		parts.append("stößt %d Feld weg" % action.push_tiles)
 	elif action.push_tiles < 0:

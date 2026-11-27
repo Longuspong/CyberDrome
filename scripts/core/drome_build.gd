@@ -534,7 +534,7 @@ func _slot_label(slot: String) -> String:
 ## Was sie nicht kann: Zusammenspiel. Ein Molok ist allein wenig wert und
 ## macht einen Strix dahinter erst stark; der Wert eines Squads ist hier
 ## trotzdem die Summe seiner DROMEs.
-const POWER_SCALE := 0.979
+const POWER_SCALE := 0.911   # 27. Nov. 2026 neu geeicht (Hammer staerker), Schnitt Standard = 100
 const POWER_WEIGHTS := {
 	"shield": 3.0,          # ein Punkt Schild gegen einen Punkt Integritaet
 	"support": 20.0,        # Reparatur/Schildgabe je Sekunde als Standhaftigkeit
