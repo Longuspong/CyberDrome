@@ -47,11 +47,11 @@ func build(root: Window, region_arg: String) -> Array:
 	world.add_child(cam)
 	cam.make_current()
 	var squad := [
-		[&"scout_body", &"eq_neon_blaster", Vector2i(2, 14), true],
+		[&"scout_body", &"eq_pulse_blaster", Vector2i(2, 14), true],
 		[&"jugg_body", &"eq_deflector", Vector2i(4, 15), true],
 		[&"mage_body", &"eq_rune_staff", Vector2i(6, 14), true],
 		[&"strix_body", &"eq_rail_lance", Vector2i(2, 2), false],
-		[&"jugg_body", &"eq_bulwark_ram", Vector2i(4, 1), false],
+		[&"jugg_body", &"eq_hammer", Vector2i(4, 1), false],
 		[&"scout_body", &"eq_plasma_blade", Vector2i(6, 2), false],
 	]
 	var units: Array = []

@@ -425,11 +425,6 @@ func _blade_vireo() -> DromeBuild:
 		"feet": &"scout_feet", "core": &"scout_core", "equip_left": &"eq_plasma_blade"})
 
 
-func _neon_vireo() -> DromeBuild:
-	return DromeBuild.create("Neon", {"body": &"scout_body", "head": &"scout_head",
-		"feet": &"scout_feet", "core": &"scout_core", "equip_left": &"eq_neon_blaster"})
-
-
 func test_the_blade_is_a_faster_harder_kinetic_melee_weapon() -> void:
 	var blade := _action(Unit.create(_blade_vireo(), &"K", true), &"act_plasma_slash")
 	var shot := _action(Unit.create(_vireo(), &"V", true), &"act_pulse")
@@ -453,24 +448,6 @@ func test_the_rend_makes_the_target_vulnerable() -> void:
 	foe.tick_statuses(5.1)
 	t.equal(battle.resolver.preview_damage(vireo, foe, slash), before, "nach 5 s ist es vorbei")
 	battle.free()
-
-
-func test_the_neon_breaker_hits_shields_twice_as_hard() -> void:
-	var battle := _battle([_neon_vireo(), _vireo()], [_strix()],
-		[Vector2i(10, 13), Vector2i(11, 13), Vector2i(10, 10)])
-	var neon: Unit = battle.units[0]
-	var foe: Unit = battle.units[2]
-	var breaker := _action(neon, &"act_neon_breaker")
-	var plain := ActionData.from_meta({"id": "t", "power": breaker.power,
-		"energy_fraction": breaker.energy_fraction, "range_tiles": 3})
-	var full := foe.shield
-	var normal_hit := full - int(battle.resolver.resolve_damage(foe, plain.power, plain.energy_fraction)["shield_after"])
-	var breaker_hit := full - int(battle.resolver.resolve_damage(foe, breaker.power,
-		breaker.energy_fraction, breaker.shield_mult)["shield_after"])
-	t.ok(breaker_hit >= normal_hit * 2 - 1, "der Schildbrecher trägt doppelt so viel Schild ab (%d gegen %d)"
-		% [breaker_hit, normal_hit])
-	battle.free()
-
 
 
 # ---------------------------------------------------------------------------

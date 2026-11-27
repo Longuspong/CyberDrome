@@ -73,8 +73,7 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	if action != null and action.kinetic_to_energy > 0.0 and source != null and source.shield > 0:
 		frac += (1.0 - frac) * clampf(action.kinetic_to_energy, 0.0, 1.0)
 	var shield_before := target.shield
-	var res := resolve_damage(target, raw, frac,
-		action.shield_mult if action != null else 1.0, pierce_shield,
+	var res := resolve_damage(target, raw, frac, pierce_shield,
 		action.virus_fraction if action != null else 0.0)
 	target.shield = res["shield_after"]
 	var amount: int = res["hp"]
@@ -262,7 +261,7 @@ func _shield_broken(unit: Unit) -> void:
 ##
 ## Erst das Schild vollstaendig, dann die HP: das Schild wird immer zuerst leer.
 func resolve_damage(target: Unit, raw: int, energy_fraction: float,
-		shield_mult: float = 1.0, pierce_shield: bool = false, virus_fraction: float = 0.0) -> Dictionary:
+		pierce_shield: bool = false, virus_fraction: float = 0.0) -> Dictionary:
 	var section := Config.section("combat")
 	# Verwundbar (Plasmaklinge): der Statuseffekt vergroessert jeden Treffer.
 	raw = int(round(float(raw) * target.damage_taken_mult()))
@@ -288,8 +287,7 @@ func resolve_damage(target: Unit, raw: int, energy_fraction: float,
 		if amt <= 0:
 			continue
 		if shield > 0:
-			# shield_mult: Schildbrecher (Neon-Blaster) trifft den Schild doppelt.
-			var factor := float(portion["sf"]) * shield_mult
+			var factor := float(portion["sf"])
 			var eff := int(round(float(amt) * factor))
 			if eff <= shield:
 				shield -= eff
@@ -339,9 +337,8 @@ static func armor_multiplier(armor: float) -> float:
 
 
 ## Duenner Vorschau-Zugang: nur der HP-Schaden. Fuer alte Aufrufer und Tests.
-func mitigate(source: Unit, target: Unit, raw: int, energy_fraction: float = 0.0,
-		shield_mult: float = 1.0) -> int:
-	return resolve_damage(target, raw, energy_fraction, shield_mult)["hp"]
+func mitigate(source: Unit, target: Unit, raw: int, energy_fraction: float = 0.0) -> int:
+	return resolve_damage(target, raw, energy_fraction)["hp"]
 
 
 func _kill(unit: Unit) -> void:
@@ -372,8 +369,7 @@ func forget_unit(unit: Unit) -> void:
 func preview_damage(source: Unit, target: Unit, action: ActionData) -> int:
 	if action.power <= 0:
 		return 0
-	return mitigate(source, target, source.raw_damage(action), action.energy_fraction,
-		action.shield_mult)
+	return mitigate(source, target, source.raw_damage(action), action.energy_fraction)
 
 
 # ---------------------------------------------------------------------------
@@ -427,9 +423,6 @@ func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
 		return "Weg blockiert"
 	if Grid.distance(source.tile, tile) > action.range_tiles:
 		return "Außer Reichweite"
-	# Moerser: zu nah kann er nicht feuern.
-	if action.min_range > 0 and Grid.distance(source.tile, tile) < action.min_range:
-		return "Zu nah"
 	if unit_at(tile) == null:
 		return "Kein Ziel"
 	return ""
@@ -690,9 +683,6 @@ func _element_stack(source: Unit, target: Unit, element: String, stacks: int) ->
 ## Effizienz des Ausloesers.
 func apply_action_status(source: Unit, target: Unit, action: ActionData) -> void:
 	var status := action.status
-	if str(status.get("id", "")) == "cable_fire":
-		target.add_cable_fire(float(status.get("stacks", 1)), source)
-		return
 	target.apply_status(StringName(str(status.get("id", "status"))),
 		float(status.get("seconds", 1.0)), status, source)
 

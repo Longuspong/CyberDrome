@@ -38,8 +38,8 @@ const HEAD_HEIGHT := 92.0
 ## Brusthoehe fuer Strahlen und Schilde.
 const CHEST := 40.0
 ## Dauer der Formen ohne Verzoegerung (Sekunden).
-const LIFE := {"lock": 0.35, "breaker": 0.4, "double": 0.25,
-	"stun": 0.45, "push": 0.5, "slash": 0.35, "whirl": 0.8,
+const LIFE := {"lock": 0.35, "double": 0.25,
+	"stun": 0.45, "slash": 0.35,
 	"shield": 0.75}
 ## Fussring eines Zustands (Halbachse waagerecht).
 const FOOT_RING := 26.0
@@ -75,21 +75,13 @@ static func kind_for(action: ActionData) -> String:
 		return "shield"
 	if action.gather and action.aoe_radius > 0:
 		return "vortex"
-	if action.aoe_radius > 0 and action.delay > 0.0:
-		return "barrage"
-	if action.aoe_radius > 0:
-		return "whirl"
 	if action.shots > 1:
 		return "double"
-	if action.shield_mult > 1.0:
-		return "breaker"
 	var status := str(action.status.get("id", ""))
 	if status == "stun":
 		return "stun"
 	if status == "vulnerable":
 		return "slash"
-	if action.push_tiles > 0:
-		return "push"
 	if action.range_tiles >= 3:
 		return "lock"
 	return ""
@@ -104,16 +96,12 @@ func add_vortex(center: Vector2, radius: int, delay: float, color: Color, enemy:
 
 ## Eine Form allgemein. Felder je Art:
 ##   alle      at (Feldmitte des Ziels), color, enemy
-##   barrage   radius, delay          whirl  radius
 ##   lock      from (Fusspunkt des Schuetzen)
-##   push      dir (Einheitsvektor der Stossrichtung, 2D)
 ##   double    targets (Feldmitten, 1-2)
 ##   shield    from (Fusspunkt des Helfers, nur bei Verbuendetem)
 func add(kind: String, data: Dictionary) -> void:
 	var mark := data.duplicate()
 	mark["kind"] = kind
-	if kind == "barrage":
-		mark["delay"] = maxf(0.05, float(mark.get("delay", 0.8)))
 	_add(mark)
 
 
@@ -134,8 +122,6 @@ func _life(mark: Dictionary) -> float:
 	match str(mark["kind"]):
 		"vortex":
 			return float(mark["delay"]) + SHOCK_TIME
-		"barrage":
-			return float(mark["delay"]) + 0.45
 	return float(LIFE.get(str(mark["kind"]), 0.5))
 
 
@@ -182,11 +168,11 @@ static func foot_axes(scale: float = 1.0) -> Vector2:
 
 ## Ansage (18. Nov. 2026): laeuft waehrend der Ausholzeit einer Faehigkeit,
 ## ``time`` Sekunden lang. Arten: "<art>_cast" zu den Arten von kind_for;
-## Nahkampf (stun, push, slash) teilt sich "melee_cast".
+## Nahkampf (stun, slash) teilt sich "melee_cast".
 func add_cast(kind: String, data: Dictionary, seconds: float) -> void:
 	var mark := data.duplicate()
 	mark["time"] = maxf(0.05, seconds)
-	mark["kind"] = ("melee" if kind in ["stun", "push", "slash"] else kind) + "_cast"
+	mark["kind"] = ("melee" if kind in ["stun", "slash"] else kind) + "_cast"
 	_add(mark)
 
 
@@ -197,14 +183,8 @@ func _draw() -> void:
 		match str(mark["kind"]):
 			"vortex":
 				_draw_vortex(mark)
-			"barrage":
-				_draw_barrage(mark)
-			"whirl":
-				_draw_whirl_ground(mark)
 			"stun":
 				_draw_stun_wave(mark)
-			"push":
-				_draw_push(mark)
 			"lock_cast":
 				_draw_lock_ground(mark)
 			"double_cast":
@@ -213,8 +193,6 @@ func _draw() -> void:
 				_draw_shield_ground(mark)
 			"melee_cast":
 				_draw_melee_cast(mark)
-			"whirl_cast":
-				_draw_whirl_cast(mark)
 	for unit in units:
 		if not _shows_status(unit):
 			continue
@@ -332,64 +310,6 @@ func _draw_vortex(mark: Dictionary) -> void:
 			bool(mark.get("enemy", false)))
 
 
-## Drei Einschlagstellen im Ring -- fest je Ziel, damit nichts springt.
-func _barrage_spots(mark: Dictionary, axes: Vector2) -> Array:
-	var spots := []
-	for i in 3:
-		var ang := float(mark["spin"]) + i * TAU / 3.0
-		var reach := 0.32 + 0.18 * float(i % 2)
-		spots.append(Vector2(cos(ang) * axes.x, sin(ang) * axes.y) * reach)
-	return spots
-
-
-## Sperrfeuer: Ring mit drei Fadenkreuzen waehrend der Verzoegerung, dann
-## drei Feuerringe und Stoss-Pfeile nach aussen.
-func _draw_barrage(mark: Dictionary) -> void:
-	var at: Vector2 = mark["at"]
-	var axes := ellipse_axes(float(mark["radius"]))
-	var color: Color = mark["color"]
-	var age: float = mark["age"]
-	var delay: float = mark["delay"]
-	var spots := _barrage_spots(mark, axes)
-	if age < delay:
-		var fade_in := clampf(age / 0.12, 0.0, 1.0)
-		var k := age / delay
-		_draw_cells(_cells_of(mark), color, (0.06 + 0.18 * k) * fade_in, fade_in,
-			bool(mark.get("enemy", false)))
-		_dashed_ellipse(at, axes, Color(color.lightened(0.2), fade_in), _width(3.0),
-			float(mark["spin"]), 16)
-		for spot in spots:
-			# Fadenkreuze ziehen sich bis zum Einschlag zusammen.
-			_crosshair(at + spot, lerpf(1.6, 1.0, k), Color(color.lightened(0.35), fade_in))
-	else:
-		var t := (age - delay) / 0.45
-		var fade := 1.0 - t
-		_draw_cells(_cells_of(mark), FIRE_COLOR, 0.22 * fade, fade, bool(mark.get("enemy", false)))
-		for spot in spots:
-			var r := foot_axes(lerpf(0.5, 1.2, ease(t, 0.4)))
-			_ellipse(at + spot, r, Color(FIRE_COLOR, fade), _width(3.5))
-			_fill_ellipse(at + spot, r * 0.5, Color(1.0, 0.95, 0.75, 0.7 * fade))
-		for i in 4:
-			var ang := float(mark["spin"]) + PI / 4.0 + i * TAU / 4.0
-			var dir := Vector2(cos(ang) * axes.x, sin(ang) * axes.y)
-			_arrow(at + dir * lerpf(0.5, 0.75, t), at + dir * lerpf(0.75, 1.05, t),
-				Color(color, fade), _width(3.0))
-
-
-func _draw_whirl_ground(mark: Dictionary) -> void:
-	var at: Vector2 = mark["at"]
-	var axes := ellipse_axes(float(mark["radius"]))
-	var color: Color = mark["color"]
-	var t: float = float(mark["age"]) / _life(mark)
-	var fade := 1.0 - maxf(0.0, t - 0.7) / 0.3
-	_draw_cells(_cells_of(mark), color, 0.14 * fade, fade, bool(mark.get("enemy", false)))
-	_dashed_ellipse(at, axes, Color(color.lightened(0.2), fade), _width(2.6), float(mark["spin"]), 14)
-	# Kreisspur hinter dem Bumerang (zeichnet die Luftebene).
-	var head := float(mark["spin"]) + minf(t / 0.7, 1.0) * TAU * 1.1
-	draw_polyline(_ellipse_points(at, axes * 0.9, head - 2.4, head, 16),
-		Color(color.lightened(0.4), 0.85 * fade), _width(4.0), true)
-
-
 ## Nahkampf, Ansage: gestrichelter Ring am Ziel, waehrend ausgeholt wird;
 ## beim Rammstoss dazu der Pfeil der Stossrichtung.
 func _draw_melee_cast(mark: Dictionary) -> void:
@@ -398,21 +318,6 @@ func _draw_melee_cast(mark: Dictionary) -> void:
 	var color: Color = mark["color"]
 	_draw_cells(_cells_of(mark), color, 0.05 + 0.22 * t, 0.4 + 0.6 * t, bool(mark.get("enemy", false)))
 	_dashed_ellipse(at, foot_axes(lerpf(1.6, 1.15, ease(t, 0.5))), color, _width(2.8), _time * 2.5, 10)
-	if mark.has("dir") and str(mark.get("ability", "")) == "push":
-		var dir: Vector2 = mark["dir"]
-		var step := dir * IsoView.TILE_W
-		_arrow(at + step * 0.35, at + step * 0.85, Color(color, 0.6 + 0.4 * t), _width(2.4))
-
-
-## Wirbelwurf, Ansage: Ring um das Ziel.
-func _draw_whirl_cast(mark: Dictionary) -> void:
-	var t: float = float(mark["age"]) / _life(mark)
-	var at: Vector2 = mark["at"]
-	var axes := ellipse_axes(float(mark.get("radius", 1)))
-	if not mark.has("radius"):
-		mark["radius"] = 1
-	_draw_cells(_cells_of(mark), mark["color"], 0.04 + 0.2 * t, 0.5 + 0.5 * t, bool(mark.get("enemy", false)))
-	_dashed_ellipse(at, axes, Color(mark["color"], 0.5 + 0.5 * t), _width(2.6), float(mark["spin"]) - _time, 14)
 
 
 func _draw_stun_wave(mark: Dictionary) -> void:
@@ -424,20 +329,6 @@ func _draw_stun_wave(mark: Dictionary) -> void:
 			continue
 		_ellipse(at, foot_axes(lerpf(0.6, 2.2, ease(k, 0.5))),
 			Color(mark["color"], (1.0 - k) * (1.0 - i * 0.25)), _width(3.0 - i * 0.6))
-
-
-func _draw_push(mark: Dictionary) -> void:
-	var at: Vector2 = mark["at"]
-	var dir: Vector2 = mark.get("dir", Vector2.UP)
-	var t: float = float(mark["age"]) / _life(mark)
-	var fade := 1.0 - t
-	var step := dir * IsoView.TILE_W
-	_arrow(at - step * 0.15, at + step * lerpf(0.55, 0.95, ease(t, 0.4)),
-		Color(mark["color"], fade), _width(4.0))
-	# Staubspur hinter dem Gestossenen.
-	for i in 3:
-		var p := at + step * (0.2 + 0.25 * i) + Vector2(0, -2)
-		draw_circle(p, (5.0 - i) * maxf(1.0, pixel_scale * 0.6), Color(0.56, 0.5, 0.74, 0.55 * fade * (1.0 - i * 0.25)))
 
 
 func _draw_lock_ground(mark: Dictionary) -> void:
@@ -487,24 +378,14 @@ func _draw_air() -> void:
 				_air_beam(mark)
 			"vortex_cast":
 				_air_vortex_cast(mark)
-			"whirl_cast":
-				_air_whirl_throw(mark)
-			"barrage_cast":
-				_air_shell(mark)
 			"double_cast":
 				_air_double(mark)
-			"breaker_cast":
-				_air_breaker_cast(mark)
 			"shield_cast":
 				_air_shield_link(mark)
 			"slash":
 				_air_slash(mark)
-			"whirl":
-				_air_whirl(mark)
 			"double":
 				pass                      # die Schuesse zeichnet EffectPainter
-			"breaker":
-				_air_breaker(mark)
 			"shield":
 				_air_shield(mark)
 	for unit in units:
@@ -637,27 +518,6 @@ func _air_vortex_cast(mark: Dictionary) -> void:
 	_air.draw_circle(head, r * 0.5, Color(1, 1, 1, 0.95))
 
 
-## Sperrfeuer, Ansage: die Granate steigt aus dem Moerser steil nach oben.
-func _air_shell(mark: Dictionary) -> void:
-	var t: float = float(mark["age"]) / _life(mark)
-	var base: Vector2 = _muzzle(mark) if mark.has("muzzle") \
-		else mark.get("from", mark["at"]) + _lift(HEAD_HEIGHT - 10.0)
-	var p := base + Vector2(0, -260.0 * ease(t, 0.6))
-	var r := 4.0 * maxf(1.0, pixel_scale * 0.6)
-	_air.draw_line(base, p, Color(FIRE_COLOR, 0.45 * (1.0 - t)), _width(3.0), true)
-	_air.draw_circle(p, r, Color(1.0, 0.95, 0.75))
-	_air.draw_circle(base, r * 2.4 * (1.0 - t), Color(FIRE_COLOR, 0.6 * (1.0 - t)))
-
-
-## Schildbrecher, Ansage: das Schild des Ziels leuchtet als Sechseck auf.
-func _air_breaker_cast(mark: Dictionary) -> void:
-	var t: float = float(mark["age"]) / _life(mark)
-	var at: Vector2 = mark["at"] + _lift(CHEST)
-	var r := 26.0 * maxf(1.0, pixel_scale * 0.6)
-	var pulse := 0.6 + 0.4 * sin(_time * 18.0)
-	_air_hex(at, r * lerpf(1.3, 1.0, ease(t, 0.4)), Color(SHIELD_COLOR, 0.9 * pulse), 2.6)
-
-
 ## Schildfeld, Ansage: gestrichelter Bogen zum Verbuendeten.
 func _air_shield_link(mark: Dictionary) -> void:
 	if not mark.has("from"):
@@ -691,78 +551,12 @@ func _air_slash(mark: Dictionary) -> void:
 			Color(VULN_COLOR, 1.0 - maxf(0.0, t - 0.6) / 0.4), 3.6)
 
 
-## Der Bumerang selbst: zwei Fluegel, die sich drehen.
-func _draw_boomerang(at: Vector2) -> void:
-	var size := 13.0 * maxf(1.0, pixel_scale * 0.7)
-	var turn := _time * 16.0
-	# Wirbelspur: ein heller Kreisbogen um die Drehmitte.
-	_air.draw_arc(at, size * 1.25, turn, turn + 2.2, 12, Color(1.0, 0.75, 0.2, 0.55), _width(2.4), true)
-	var wing := PackedVector2Array()
-	for p in [Vector2(-1.2, 0.2), Vector2(-0.15, -0.45), Vector2(0, -0.5), Vector2(1.2, 0.2),
-			Vector2(0, -0.1)]:
-		wing.append(at + p.rotated(turn) * size)
-	_air.draw_colored_polygon(wing, Color(0.86, 0.9, 0.95))
-	wing.append(wing[0])
-	_air.draw_polyline(wing, Color(1.0, 0.69, 0.0), _width(2.4), true)
-	_air.draw_polyline(wing, SHADE, _width(1.0), true)
-
-
-## Wo der Bumerang in seine Kreisbahn um das Ziel einfaedelt.
-func _orbit_point(mark: Dictionary, turns: float) -> Vector2:
-	var axes := ellipse_axes(float(mark.get("radius", 1))) * 0.9
-	var ang := float(mark["spin"]) + turns * TAU
-	return mark["at"] + Vector2(cos(ang) * axes.x, sin(ang) * axes.y) + _lift(14.0)
-
-
-## Wirbelwurf, Ansage: nach dem Loslassen fliegt der Bumerang zum Ziel.
-func _air_whirl_throw(mark: Dictionary) -> void:
-	var t: float = float(mark["age"]) / _life(mark)
-	var release := float(mark.get("release", 0.5))
-	if mark.has("tip") and (t < release or not mark.has("tip_at")):
-		mark["tip_at"] = (mark["tip"] as Callable).call()
-	if t < release:
-		return
-	var k := (t - release) / (1.0 - release)
-	var start: Vector2 = mark.get("tip_at", mark.get("from", mark["at"]) + _lift(CHEST))
-	var end := _orbit_point(mark, 0.0)
-	var mid := (start + end) * 0.5 + _lift(30.0)
-	_draw_boomerang(start.lerp(mid, k).lerp(mid.lerp(end, k), k))
-
-
-## Wirbelwurf, Wirkung: der Bumerang kreist einmal um das Ziel und fliegt
-## zurueck in die Hand.
-func _air_whirl(mark: Dictionary) -> void:
-	var t: float = float(mark["age"]) / _life(mark)
-	if t < 0.7:
-		_draw_boomerang(_orbit_point(mark, t / 0.7 * 1.1))
-		return
-	var k := (t - 0.7) / 0.3
-	var start := _orbit_point(mark, 1.1)
-	var hand: Vector2 = (mark["tip"] as Callable).call() if mark.has("tip") \
-		else mark.get("from", mark["at"]) + _lift(CHEST)
-	_draw_boomerang(start.lerp(hand, ease(k, 0.8)))
-
-
 func _air_double(mark: Dictionary) -> void:
 	var t: float = float(mark["age"]) / _life(mark)
 	var fade := 1.0 - maxf(0.0, t - 0.6) / 0.4
 	var targets: Array = mark.get("targets", [])
 	for i in targets.size():
 		_air_text(targets[i] + _lift(HEAD_HEIGHT - 6.0), str(i + 1), Color(mark["color"], fade), 16)
-
-
-func _air_breaker(mark: Dictionary) -> void:
-	var t: float = float(mark["age"]) / _life(mark)
-	var at: Vector2 = mark["at"] + _lift(CHEST)
-	var r := 26.0 * maxf(1.0, pixel_scale * 0.6)
-	# Das Schild-Sechseck zerspringt: sechs Scherben fliegen nach aussen.
-	var k := t
-	for i in 6:
-		var ang := deg_to_rad(60.0 * i + 30.0)
-		var p := at + Vector2(cos(ang), sin(ang)) * r * lerpf(1.0, 1.9, ease(k, 0.4))
-		var shard := PackedVector2Array([p, p + Vector2(cos(ang + 1.0), sin(ang + 1.0)) * r * 0.35,
-			p + Vector2(cos(ang), sin(ang)) * r * 0.45])
-		_air.draw_colored_polygon(shard, Color(SHIELD_COLOR, 1.0 - k))
 
 
 func _air_shield(mark: Dictionary) -> void:
@@ -828,18 +622,6 @@ func _air_text(at: Vector2, text: String, color: Color, size_base: int) -> void:
 	font.draw_string_outline(_air.get_canvas_item(), origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1,
 		size, maxi(2, int(round(4.0 * pixel_scale))), Color(SHADE, color.a))
 	font.draw_string(_air.get_canvas_item(), origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
-
-
-## Fadenkreuz am Boden (Iso-gestaucht).
-func _crosshair(at: Vector2, scale: float, color: Color) -> void:
-	var axes := foot_axes(0.55 * scale)
-	_ellipse(at, axes, Color(SHADE, color.a * 0.6), _width(4.4))
-	_ellipse(at, axes, color, _width(2.2))
-	for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
-		var a := at + Vector2(d.x * axes.x * 0.5, d.y * axes.y * 0.5)
-		var b := at + Vector2(d.x * axes.x * 1.5, d.y * axes.y * 1.5)
-		draw_line(a, b, Color(SHADE, color.a * 0.6), _width(4.4), true)
-		draw_line(a, b, color, _width(2.2), true)
 
 
 # ---------------------------------------------------------------------------

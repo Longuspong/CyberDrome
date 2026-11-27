@@ -149,7 +149,7 @@
       "Seit 24. Nov. 2026 keine EP mehr: Level werden mit Fabrik-Waren gekauft",
       "(data/factory.json -> level); die EP-Werte hier sind ohne Wirkung.",
       "bonus_at_max: Endwert des Bonus-Werts auf dem Hoechstlevel je Waffe (linear vom",
-      "Grundwert). energy_only: nur der Energieanteil waechst (Neon-Blaster)."
+      "Grundwert)."
     ],
     "drome": {
       "max": 5,
@@ -172,16 +172,13 @@
       "damage_xp": 0.25,
       "kill_xp": 25,
       "damage_per_level": 0.14,
-      "energy_only": ["eq_neon_blaster"],
       "bonus_at_max": {
         "eq_pulse_blaster": {"spd": 3},
-        "eq_neon_blaster": {"shield_pulse": 4},
         "eq_plasma_blade": {"power": 2},
         "eq_rail_lance": {"power": 2},
         "eq_deflector": {"def": 8},
         "eq_hammer": {"hp": 40},
-        "eq_drone_pod": {"hp": 20},
-        "eq_rune_staff": {"shield": 20}, "eq_bulwark_ram": {"hp": 40}, "eq_mortar": {"def": 4}, "eq_boomerang": {"spd": 2}
+        "eq_rune_staff": {"shield": 20}
       }
     }
   },
@@ -392,7 +389,7 @@
     "blanks": 2,
     "caches_each": 5,
     "coins": 200,
-    "weapon_order": ["eq_plasma_blade", "eq_neon_blaster", "eq_boomerang", "eq_bulwark_ram", "eq_mortar", "eq_drone_pod"]
+    "weapon_order": ["eq_plasma_blade"]
   },
 
   "charger": {

@@ -10,13 +10,11 @@ extends RefCounted
 
 const PX := 384
 const GLANZ := preload("res://docs/design/drome_entwurf/godot/drome_face_glanz.gdshader")
-const ORDER := ["eq_pulse_blaster", "eq_neon_blaster", "eq_plasma_blade", "eq_boomerang",
-	"eq_deflector", "eq_hammer", "eq_bulwark_ram", "eq_drone_pod", "eq_rune_staff",
-	"eq_rail_lance", "eq_mortar"]
-const CHASSIS := {"eq_pulse_blaster": &"scout_body", "eq_neon_blaster": &"scout_body",
-	"eq_plasma_blade": &"scout_body", "eq_boomerang": &"scout_body", "eq_deflector": &"scout_body",
-	"eq_hammer": &"jugg_body", "eq_bulwark_ram": &"jugg_body", "eq_drone_pod": &"jugg_body",
-	"eq_rune_staff": &"mage_body", "eq_rail_lance": &"strix_body", "eq_mortar": &"strix_body"}
+const ORDER := ["eq_pulse_blaster", "eq_plasma_blade", "eq_deflector", "eq_hammer",
+	"eq_rune_staff", "eq_rail_lance"]
+const CHASSIS := {"eq_pulse_blaster": &"scout_body", "eq_plasma_blade": &"scout_body",
+	"eq_deflector": &"jugg_body", "eq_hammer": &"jugg_body",
+	"eq_rune_staff": &"mage_body", "eq_rail_lance": &"strix_body"}
 
 func _build(chassis: StringName, weapon: StringName) -> DromeBuild:
 	var b := DromeBuild.create("X", {})

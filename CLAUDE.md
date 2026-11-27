@@ -7,7 +7,9 @@ Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 Lauf, Molok/Vireo/Strix mit Passiven, Fusions und BIOS ueberarbeiten statt neu bauen), was
 in den Ideen-Branch wartet (Nimbus, Endlos, Story, Fraktionen, Android, Gegnerkurve), in
 kleinen Runden arbeiten, Fragmente verworfener Systeme im selben PR entfernen. Neue Ideen
-nicht auf main. Stand: Vireo-Passive **Cyberspeed** gebaut (25. Nov.).
+nicht auf main. Stand: Vireo-Passive **Cyberspeed** (25. Nov.), Molok-Passive **Festung**
+(Arbeitsname) und Hammer mit Heilung (27. Nov.); Waffen auf eine Kernwaffe je DROME
+reduziert (27. Nov., Ramme/Schraubenschluessel/Bumerang/Neon-Blaster/Moerser entfernt).
 
 **Ganz zuerst (seit 17. Nov. 2026, zuletzt 18. Nov. abends): `docs/UEBERGABE_3D.md`, Abschnitt „Stand 18. Nov.“** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung und 3D-Boden `ArenaFloor3D` seit 18. Nov.; sichtbare Passiven, Muendungsblitz und 3D-Deko seit 18. Nov.; Beine im Wechsel, alle Faehigkeiten lesbar (`AbilityPainter`), Waffenfarben mit Glanzkante (`WEAPON_FINISH`), Generator-Bausteine BP/SW/EX und Redesign aller Chassis seit 18. Nov. -- `DROME_UMSETZUNG.md` 4g; Fraktions-Paletten fuer Gegner und Faehigkeiten mit Ausholzeit/Abfolge (`AbilityFx`, `ActionData.windup`) seit 18. Nov.; alle Faehigkeiten animiert; Echo nacheinander und Flaechen am Wurfort seit 18. Nov., Balance gemessen; offen: Story-Level).
 
@@ -26,8 +28,7 @@ Hyperfusion (zwei gleiche + Fusion Core, 1 je DROME, je Sorte 1x je Einsatz),
 BIOS darueber; Armor +3, Tech +2 **Effizienz** (versteckter Wert 10 = 100 %,
 Dauer/Stapel von Statuseffekten, nie Schaden). Gebaut seit 20. Nov.: Effizienz
 (`Unit.efficiency`, `apply_status(..., source)`) und **Kabelbrand** (Stapel, je
-Puls max. 10, `ActionResolver.burn_cable_fire`; Bumerang-Wirbelwurf als
-Ausloeser). **Seit 20. Nov. 2026 gebaut:** 6 Amps, 15 Fusionen (2 entschieden, 13
+Puls max. 10, `ActionResolver.burn_cable_fire`; Ausloeser: Feuer-Charger). **Seit 20. Nov. 2026 gebaut:** 6 Amps, 15 Fusionen (2 entschieden, 13
 Vorschlaege), 6 Hyperfusionen mit Fusion Core. **Offene Logik (Charger + Amps) steht in
 `docs/design/UEBERGABEN_DESIGN.md`, Abschnitt „Offene Logik nach dem Bau“** -- vor neuer
 Arbeit daran lesen.

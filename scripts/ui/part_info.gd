@@ -15,13 +15,11 @@ extends RefCounted
 ## Ein Satz je Teil: wozu ist es da? Fehlt ein Eintrag, entfaellt die Zeile.
 const ROLE := {
 	&"eq_pulse_blaster": "Leichte Allzweckwaffe auf mittlere Distanz. Halb Energieschaden -- gut gegen Schilde.",
-	&"eq_deflector": "Ein Energieschild zum Umschnallen: mehr Schild, der sich jeden Puls (alle 3 s) wieder auflädt. Keine eigene Aktion.",
-	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integrität zurück.",
-	&"eq_rune_staff": "Nahkampfstab mit reinem Energieschaden. Trifft das Ziel und die vier geraden Nachbarfelder.",
+	&"eq_plasma_blade": "Nahkampfklinge des Vireo: schnelle Schnitte, das Aufschlitzen macht das Ziel verwundbar.",
+	&"eq_hammer": "Nahkampfwaffe des Molok: der Betäubungsschlag trifft mit der eigenen Integrität und heilt.",
+	&"eq_deflector": "Schild zum Umschnallen: stößt zu und lädt dem Träger Schild auf, auch über das Maximum.",
+	&"eq_rune_staff": "Energiestab auf mittlere Distanz. Der Vortex zieht Gegner zusammen und verlangsamt sie.",
 	&"eq_rail_lance": "Scharfschützenwaffe mit der größten Reichweite.",
-	&"eq_bulwark_ram": "Rammkolben für die Frontlinie: der Rammstoß wächst mit der eigenen Integrität und stößt zurück.",
-	&"eq_mortar": "Schwerer Schultermörser: Fläche aus der zweiten Reihe, trifft aber nicht auf kurze Distanz.",
-	&"eq_boomerang": "Wurfklinge für den Plänkler: trifft hin und zurück, wer läuft, wirft härter.",
 }
 
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
@@ -129,8 +127,6 @@ static func action_lines(action: ActionData) -> Array[String]:
 			out.append("%d %% Energieschaden -- gut gegen Schilde." % int(round(action.energy_fraction * 100.0)))
 		else:
 			out.append("Kinetischer Schaden -- stark gegen Integrität, schwach gegen Schilde.")
-	if action.shield_mult > 1.0:
-		out.append("Schildbrecher: macht %d %% Schaden an Schilden." % int(round(action.shield_mult * 100.0)))
 	if action.shots > 1 and action.salvo > 1:
 		out.append("%d Salven zu je %d Schüssen (je 1/%d Schaden): erst aufs Ziel, dann auf den nächsten Gegner in Reichweite; ist nur einer da, alle auf ihn." % [action.shots, action.salvo, action.salvo])
 	elif action.shots > 1:
@@ -147,14 +143,10 @@ static func action_lines(action: ActionData) -> Array[String]:
 		var who := "dem Träger" if action.support == "self" \
 			else "dem am stärksten verletzten Verbündeten"
 		out.append("Gibt %s %d Schild (auch über das Maximum)." % [who, action.shield_gain])
-	if action.min_range > 0:
-		out.append("Trifft erst ab %d Feldern Abstand." % action.min_range)
 	if action.hp_scaling > 0.0:
 		out.append("Dazu %d %% der eigenen maximalen Integrität als Schaden." % int(round(action.hp_scaling * 100.0)))
 	if action.lifesteal > 0.0:
 		out.append("Heilt den Träger um %d %% des Schadens." % int(round(action.lifesteal * 100.0)))
-	if action.moving_bonus > 0.0:
-		out.append("+%d %% Schaden, wenn der Träger gerade gelaufen ist." % int(round(action.moving_bonus * 100.0)))
 	if action.push_tiles > 0:
 		out.append("Stößt das Ziel %d Feld(er) weg." % action.push_tiles)
 	elif action.push_tiles < 0:

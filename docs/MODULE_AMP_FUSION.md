@@ -113,8 +113,8 @@ gibt **+2** (= +20 %). Trennung: **Power = wie viel** (Schaden, Heilung, Schildg
 * Jeder Puls des Ziels (alle 3 s) verbraucht **höchstens 10 Stapel**. Je Stapel
   **5 kinetischer + 5 Energieschaden**, ohne Power, durch Schild und Panzerung wie ein Treffer.
 * Nicht verbrauchte Stapel bleiben liegen und brennen im nächsten Puls.
-* Auslöser übergangsweise: der **Wirbelwurf des Klingenbumerangs** gibt jedem getroffenen Gegner
-  einen Stapel. Später kommen die Auslöser über die **Firecharger-Upgrades** des neuen Waffensystems.
+* Auslöser: der **Feuer-Charger** (Elementarstapel Feuer, `CHARGER_KONZEPT.md`). Der frühere
+  Auslöser, der Wirbelwurf des Klingenbumerangs, ist mit dem Bumerang entfernt (27. Nov. 2026).
 * Werte in `config.json` -> `statuses.cable_fire`, Rechnung in `ActionResolver.burn_cable_fire`.
 
 ## 6. Was aus dem Modulsystem v2 weiter gilt (9.–19. Nov. 2026)

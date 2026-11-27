@@ -277,8 +277,6 @@ def ability_effect(a, attack):
         parts.append(f"Flaeche Radius {a.get('aoe_radius', 0)}")
     if a.get("hp_scaling"):
         parts.append(f"+{pct(a['hp_scaling'])} der eigenen max. Integritaet (ohne Power)")
-    if a.get("shield_mult", 1.0) != 1.0:
-        parts.append(f"x{num(a['shield_mult'])} gegen Schild")
     if a.get("push_tiles", 0) > 0:
         parts.append(f"stoesst {a['push_tiles']} Feld zurueck")
     if a.get("push_tiles", 0) < 0:
@@ -302,10 +300,6 @@ def attack_extra(a):
     parts = []
     if a.get("heal"):
         parts.append(f"heilt Verbuendete um {a['heal']}")
-    if a.get("moving_bonus"):
-        parts.append(f"+{pct(a['moving_bonus'])} in Bewegung")
-    if a.get("min_range"):
-        parts.append(f"Mindestreichweite {a['min_range']}")
     if a.get("delay"):
         parts.append(f"Einschlag nach {num(a['delay'])} s")
     if a.get("targeting") == "aoe_around_target":

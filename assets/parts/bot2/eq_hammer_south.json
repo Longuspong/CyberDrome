@@ -70,7 +70,6 @@
         "energy_fraction": 0.0,
         "interval": 1.8,
         "trigger": null,
-        "shield_mult": 1.0,
         "shots": 1,
         "gather": false,
         "delay": 0.0,
@@ -82,8 +81,6 @@
         "base_action": "",
         "hp_scaling": 0.0,
         "lifesteal": 0.0,
-        "min_range": 0,
-        "moving_bonus": 0.0,
         "windup": 0.0,
         "salvo": 1
       },
@@ -103,7 +100,6 @@
           "every": 3,
           "weapon": "act_hammer"
         },
-        "shield_mult": 1.0,
         "shots": 1,
         "gather": false,
         "delay": 0.0,
@@ -119,8 +115,6 @@
         "base_action": "act_hammer",
         "hp_scaling": 0.2,
         "lifesteal": 1.0,
-        "min_range": 0,
-        "moving_bonus": 0.0,
         "windup": 0.35,
         "salvo": 1
       }

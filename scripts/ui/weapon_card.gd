@@ -285,8 +285,6 @@ static func short_text(action: ActionData) -> String:
 	var parts: Array[String] = []
 	if action.is_move():
 		parts.append("springt bis %d Felder geradeaus weg" % action.range_tiles)
-	if action.shield_mult > 1.0:
-		parts.append("%d %% Schaden am Schild" % int(round(action.shield_mult * 100.0)))
 	if action.shots > 1:
 		parts.append("trifft bis zu %d Gegner" % action.shots)
 	if action.gather:

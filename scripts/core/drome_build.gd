@@ -542,7 +542,6 @@ const POWER_WEIGHTS := {
 	"stun": 15.0,           # Sekunden Betaeubung je Sekunde als Feuerkraft
 	"soft_control": 0.3,    # Verlangsamen/Wurzeln/Verwundbar gegen Betaeubung
 	"thorns": 6.0,          # Stacheln je Punkt
-	"moving": 0.5,          # Anteil der Zeit, in der der Bewegungsbonus gilt
 }
 
 
@@ -609,12 +608,10 @@ func power_parts() -> Dictionary:
 
 
 ## Erwarteter Schaden eines Ausloesens: Staerke mal Treffer mal Power, dazu
-## der Anteil der eigenen Integritaet (Bollwerk-Ramme) und der halbe
-## Bewegungsbonus (Klingenbumerang).
+## der Anteil der eigenen Integritaet (Hammer-Betaeubungsschlag).
 func _expected_damage(action: ActionData, factor: float, total: Dictionary) -> float:
-	var damage := float(action.power * maxi(1, action.shots)) * factor \
+	return float(action.power * maxi(1, action.shots)) * factor \
 		+ action.hp_scaling * float(total["hp_max"])
-	return damage * (1.0 + float(POWER_WEIGHTS["moving"]) * action.moving_bonus)
 
 
 static func squad_power(builds: Array) -> float:

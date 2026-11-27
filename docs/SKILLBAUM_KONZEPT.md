@@ -79,7 +79,7 @@ fallen Stapel und Zaehler. Im Kampf: ein Sprint-Symbol je Stapel, Booster heller
   3. Angriff -> 2. Stapel usw. Bei vollen Stapeln wird nur die Dauer neu
   gestartet -- bei Dauerbeschuss bleiben alle Stapel.
 * Je Stapel **+10 % Angriffstempo** (wie der Amp) und **+10 % Lauftempo**.
-* Damit hält es mit jeder Waffe (Blaster 1,4 s, Bumerang 1,3 s < 3 s).
+* Damit hält es mit jeder Waffe (Blaster 1,4 s, Plasmaklinge 1,0 s < 3 s).
 * **Effizienz verlängert die Dauer** (wie bei allen Statuseffekten).
   Neon Vireo als Tech-Plänkler: Angriffstempo + Effizienz, die Schwächung der
   Plasmaklinge hält länger und schwächt stärker.
@@ -95,7 +95,7 @@ Werte -- dazu zählen auch die Werte der Passive, z. B.:
 | Keynode | Kosten | Wirkung |
 |---|---|---|
 | Überladung | 2 Stapel | 10 s lang **+3 Power** (fester Wert statt Prozent, damit es mit Power-Amps nicht aufschaukelt) |
-| Blink | 3 Stapel | Teleport hinter das am weitesten entfernte Ziel, aber nur so weit, dass es in Reichweite der Waffe bleibt (Blaster/Bumerang: ein Feld dazwischen) |
+| Blink | 3 Stapel | Teleport hinter das am weitesten entfernte Ziel, aber nur so weit, dass es in Reichweite der Waffe bleibt (Blaster/Klingeang: ein Feld dazwischen) |
 | Kettenschlag | alle Stapel, beim Einsatz der Fähigkeit | je Stapel 1 Sprung mit 10 % Schaden je Stapel: 1 Stapel = 1 weiteres Ziel mit 10 %, 2 = 2 Ziele mit 20 %, 3 = 3 Ziele mit 30 %, 4 = 4 Ziele mit 40 %. Bei zu wenigen Zielen springt sie aufs erste zurück. Reihenfolge: erst Stapel gewinnen, dann verbrauchen. |
 
 ### Vireo-Baum (Vorschlag 24. Nov. 2026, nicht entschieden)
@@ -150,7 +150,7 @@ Werte zum Vergleichen und Eintragen: `docs/spot/CyberDrome_Werkblatt_DROMEs_Waff
 
 * Kann nicht als Ziel gewählt werden; wer ihn im Visier hat, sucht sich ein
   neues Ziel.
-* Flächen (Vortex, Mörser) treffen ihn weiter -- so bleibt Gegenspiel.
+* Flächen (Vortex) treffen ihn weiter -- so bleibt Gegenspiel.
 * Der erste eigene Angriff beendet die Unsichtbarkeit vorzeitig und bekommt
   einen kleinen Bonus (Vorschlag: +30 % Schaden).
 * Dieselbe Regel gilt später für jeden (Bosse, Sentinels).

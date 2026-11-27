@@ -29,6 +29,23 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Molok-Passive Festung, Hammer, Kernwaffen (27. Nov. 2026, Spieler)
+
+* **Passive Festung** (Arbeitsname): Heilung, Lebensraub, Regeneration, Schildladung und
+  Schildgaben am Molok +20 % (`Unit.care_mult`, `passives.fortress`).
+* **Hammer-Betaeubungsschlag:** +20 % der eigenen max. Integritaet als Schaden (`hp_scaling`),
+  heilt um 100 % des Schadens (neues Aktionsfeld `lifesteal`), kinetisch. Kampfwert neu
+  geeicht (`POWER_SCALE` 0,911), Standard-Squad wieder im Schnitt 100.
+* **Eine Kernwaffe je DROME:** entfernt mit Code, Daten, Grafik und Tests: Bollwerk-Ramme,
+  E-Schraubenschluessel (Drohnen-Pod), Klingenbumerang, Neon-Blaster, Moerser. Mit ihnen
+  gingen Bewegungsbonus, Mindestreichweite, Schildbrecher-Faktor, Kabelbrand als
+  Aktionsstatus (Kabelbrand bleibt ueber den Feuer-Charger) und die Formen Sperrfeuer,
+  Wirbel, Rammstoss, Schildbrecher. Support-Sentinels tragen jetzt den Deflektor, Solar-
+  und Hipstar-Sniper die Lanze, der Solar-Assault die Plasmaklinge. Alte Spielstaende laden
+  weiter (unbekannte Teile werden uebersprungen).
+* Die Heil-Unterstuetzung fuer Verbuendete (`support: "ally"`, Heilregel) bleibt im Code,
+  hat aber keine Waffe mehr -- fuer den spaeteren Heiler.
+
 ### Kernplan, Cyberspeed, Aufraeumen (25./26. Nov. 2026, Spieler)
 
 Leitplan seit 25. Nov.: `docs/KERNPLAN.md`. Gebaut:

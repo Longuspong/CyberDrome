@@ -74,16 +74,6 @@ func test_a_top_level_weapon_hits_seventy_percent_harder() -> void:
 	t.equal(Leveling.level_action(attack, part, 0), attack, "Level 0 ändert nichts")
 
 
-func test_the_neon_blaster_grows_only_in_energy() -> void:
-	var part := PartDB.get_part(&"eq_neon_blaster")
-	var attack: ActionData = part.actions[0]
-	var kinetic := attack.power * (1.0 - attack.energy_fraction)
-	var top := Leveling.level_action(attack, part, 10)
-	t.ok(abs(top.power * (1.0 - top.energy_fraction) - kinetic) < 0.6,
-		"der kinetische Anteil bleibt (%0.1f)" % (top.power * (1.0 - top.energy_fraction)))
-	t.ok(top.power > attack.power, "der Energieanteil wächst")
-
-
 func test_the_weapon_bonus_grows_to_its_own_end_value() -> void:
 	var build := _vireo()
 	var base: int = build.stats()["spd"]
