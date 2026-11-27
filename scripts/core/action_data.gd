@@ -107,7 +107,7 @@ var trigger_kind: String = ""
 var trigger_every: float = 0.0
 var trigger_weapon: StringName = &""
 
-## Module (MODULE_KONZEPT.md), als Kopie gesetzt (with_modules):
+## Module (MODULE_AMP_FUSION.md), als Kopie gesetzt (with_modules):
 ## Ueberspannung -- solange der Schild des Traegers steht, wird dieser Anteil
 ## des kinetischen Schadens zu Energie (ActionResolver.apply_damage).
 var kinetic_to_energy: float = 0.0

@@ -813,7 +813,7 @@ func _bag_page(run: RunState) -> Dictionary:
 		+ "Einsatz in den Hangar. Im Einsatz bleiben die Waffen fest.", COLOR_MUTED, UiKit.SMALL]]}
 
 
-## Die BIOS-Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): drei Kacheln,
+## Die BIOS-Wahl nach einem Elite-Sieg (MODULE_AMP_FUSION.md 6): drei Kacheln,
 ## Antippen zeigt das BIOS mit "Nehmen".
 func _bios_row(run: RunState) -> Control:
 	var box := VBoxContainer.new()

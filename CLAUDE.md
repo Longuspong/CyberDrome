@@ -18,8 +18,8 @@ entfernt + Generator schreibt nur Modell + Suedansicht-Symbol -- alles GEBAUT 20
 
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
-als Handy testet. `docs/NEUANFANG.md` und `docs/MODULE_KONZEPT.md` sind
-Hintergrund (Neuentwurf vom Nov. 2026, groesstenteils umgesetzt oder ueberholt).
+als Handy testet. `docs/NEUANFANG.md` ist Hintergrund (Neuentwurf vom Nov. 2026,
+groesstenteils umgesetzt oder ueberholt; Kopf sagt, was noch gilt).
 **Module (seit 20. Nov. 2026 GEBAUT): `docs/MODULE_AMP_FUSION.md`** -- Amp (Grundmodul,
 ein Wert, Abwehr in Prozent), Fusion (zwei verschiedene Amps, kostenlos),
 Hyperfusion (zwei gleiche + Fusion Core, 1 je DROME, je Sorte 1x je Einsatz),
@@ -86,7 +86,7 @@ Kein Chassis-BIOS mehr. BIOS-Wahl fest nach jedem gewonnenen Elite-Kampf (bis
 Waffe auf. Zwischenstopp: DROMEs als Zeilen, Module ueberall 52 px als
 Kartusche (`ModuleChip`). **Begriff (19. Nov.):** ein Rezept-Modul heisst im
 Spiel **Fusion** (mit BIOS: BIOS-Fusion), "Rezept" ist nur die Anleitung im
-Rezeptbuch; im Code bleibt `recipe`. Details `docs/PROJEKTSTAND.md`, `MODULE_KONZEPT.md` 6.
+Rezeptbuch; im Code bleibt `recipe`. Details `docs/PROJEKTSTAND.md`, `MODULE_AMP_FUSION.md` 6.
 
 **Englisch vorbereitet (19. Nov. 2026):** neue Anzeigetexte ueber `tr("Deutscher
 Text")` (statisch: `TranslationServer.translate`), Englisch in `i18n/texte.csv`

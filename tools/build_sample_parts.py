@@ -753,7 +753,7 @@ ACTION_DEFAULTS = {
     # aus base_action (Faehigkeiten nach Zeit).
     "damage_pct": 0.0,
     "base_action": "",
-    # Neue Waffen (9. Nov. 2026, docs/MODULE_KONZEPT.md 11.8):
+    # Neue Waffen (9. Nov. 2026):
     # hp_scaling   Zusatzschaden als Anteil der EIGENEN maximalen Integritaet,
     #              ohne Power (Bollwerk-Ramme)
     # min_range    naeher als so viele Felder kann die Waffe nicht treffen (Moerser)

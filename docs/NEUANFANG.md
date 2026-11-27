@@ -1,35 +1,13 @@
 # Neuanfang: CyberDrome als Autobattler
 
-Stand 6. November 2026. **Zur Besprechung.** Gebaut sind bisher: die
-KI-Grundlage (Abschnitt 5), der Nimbus (6a), ein Ausruestungsplatz je DROME
-mit Molok zwei (6c), der Vireo mit Passive, Doppelschuss, Plasmaklinge und
-Neon-Blaster (6c), der Leucht-Prototyp fuer Neon (7c), der Molok (6d) und
-die Aufstellung vor dem Kampf (6e) und die Zielregel je Rolle (6f).
-Entschieden, aber noch nicht gebaut: Begriffe, Module, Level, Karte (6g).
-Hier steht, was der Spieler im Gespraech vorgegeben hat, was ich daraus
-vorschlage und welche Fragen offen sind. Entschiedenes wandert danach in
-`PROJEKTSTAND.md` und `CLAUDE.md`.
-
----
-
-## 0. Was schon weg ist (Aufraeumen, PR "Taktik-Reste entfernt")
-
-Das Feld ist ein **freies Gitter** mit Iso-Optik -- das Gitter bleibt, weil
-Reichweite, Bewegung und Aufstellung darauf rechnen.
-
-Geloescht: Gelaende (Stufen, Pfeiler, Oel/Drift, Nebel), Sichtlinie,
-Antriebsflags (durch DROMEs laufen, Stufen, Drift, Blick durch Nebel),
-Provokation, aktive Reparatur-Aktionen, Feldmarkierungen/Weg-/Schadens-
-vorschau und Aktionssymbole des manuellen Kampfs, Zug-/Zyklus-/Kartenwerte
-in der Konfiguration, veraltete Werkzeuge und Planungsdokumente. Davor (PR
-#37) schon: Energie, Abklingzeiten, MOV, Strom, Traglast, Mutatoren.
-
-Bewusst **noch drin**, weil sie zum neuen Entwurf gehoeren oder erst mit ihm
-fallen sollten: Kopf und Antrieb als eigene Teile, die Halterklassen
-(leicht/mittel/schwer), die heutigen Waffen und Gadgets, die Aggro-Tabelle,
-der Chaos-Virus als zweiter Modus.
-
----
+> **Stand 26. Nov. 2026: Chronik, nicht Leitplan.** Der Neuentwurf vom 5.–9. Nov. 2026 ist
+> groesstenteils gebaut oder ueberholt. Leitplan ist `docs/KERNPLAN.md`, der Stand steht in
+> `docs/PROJEKTSTAND.md`. Gestrichen wurden die erledigten oder verworfenen Teile (Taktik-Reste,
+> Kerne als Synergie-Teil samt Bollwerkkern, KI-Befund mit Aggro-Tabelle, alte offene Fragen,
+> Brainstorming, Reihenfolge). Ueberholt in dem, was bleibt: die Molok-Passive **Praesenz** und
+> das Locken (entfernt 26. Nov. 2026), der Vireo-**Sprint** (seit 25. Nov. Cyberspeed), die
+> Grundmodule und Rezepte (seit 20. Nov. Amps und Fusionen, `MODULE_AMP_FUSION.md`). Die
+> Abschnitte 6g, 6h, 6i und 7d werden aus dem Code zitiert.
 
 ## 1. Spielprinzip: der Lauf
 
@@ -62,8 +40,8 @@ KI. Die Waffe entscheidet, WIE er sie ausspielt.
 
 | DROME | Rolle | Passive (Vorgabe/Vorschlag) | KI |
 |---|---|---|---|
-| **Vireo** | wendig, Assassine oder Kiter | **Sprint** (Vorgabe, gebaut): jeder Treffer gibt 2 s lang +40 % Lauftempo (`data/config.json` -> `passives`) | schnittig: mit Fernwaffe Abstand halten und kiten, mit Klinge am Ziel kleben |
-| **Molok** | Tank, Frontlinie | **Praesenz: zieht Aggro und faengt Schaden fuer Verbuendete ab** (Vorgabe). Vorschlag: Gegner in 2 Feldern Umkreis bekommen Aggro auf ihn gebucht, und 30 % des Schadens an Verbuendeten neben ihm gehen auf ihn | geht IN den Schadensbereich, stellt sich zwischen Gegner und die eigene Hinterreihe, weicht nie aus |
+| **Vireo** | wendig, Assassine oder Kiter | ~~Sprint~~ -- seit 25. Nov. 2026 **Cyberspeed** (`SKILLBAUM_KONZEPT.md` 5) | schnittig: mit Fernwaffe Abstand halten und kiten, mit Klinge am Ziel kleben |
+| **Molok** | Tank, Frontlinie | ~~Praesenz~~ -- entfernt 26. Nov. 2026, neue Passive im Kernplan (Entwurf) | geht IN den Schadensbereich, stellt sich zwischen Gegner und die eigene Hinterreihe, weicht nie aus |
 | **Strix** | Scharfschuetze | **+30 % Schaden auf maximaler Reichweite** (Vorgabe, "koennte ich mir vorstellen") | sucht das Feld auf genau maximaler Reichweite und bleibt dort; weicht nur aus, wenn jemand direkt danebensteht |
 | **Nimbus** | Magier, Kontrolle | **Echo** (gebaut 7. Nov., ersetzt den Zauberwirker): Takt 50 % laenger, jede Faehigkeit wirkt zweimal (6g) | wartet hinter der Frontlinie, dann auf Blaster-Reichweite |
 
@@ -97,79 +75,6 @@ Offen: was aus Belagerungskanone, Schienen-Lanze, Runenstab, Deflektor,
 Hologramm-Boost, Orbit-Fokus, Drohnen-Pod und Koedersender wird (Frage 3).
 Der Hologramm-Boost (Sprung weg, wenn ein Gegner danebensteht) ueberschneidet
 sich mit der neuen Vireo-Passive.
-
-## 4. Kerne als Synergie-Teil
-
-**Vorgabe (Beispiel):** Ein Kern, der jeden 5. Nahkampfangriff doppelt
-treffen laesst -- auf einem Vireo mit Plasmaklinge extrem viel Schaden.
-
-**Vorschlag:** Der Kern verliert die Schildwerte als Hauptaufgabe und wird
-das Synergie-Teil. Ein paar Startkerne, je einer Bauart zugeordnet:
-
-* **Klingenkern** -- jeder 5. Nahkampfangriff trifft doppelt.
-* **Zielrechner** -- Faehigkeiten kommen einen Angriff frueher.
-* **Bollwerkkern** -- +X % Schild, Praesenz reicht ein Feld weiter.
-* **Fluxkern** -- Kontrolleffekte halten 1 s laenger.
-
-Damit liegt die Skill-Tiefe im *Womit* (Designpunkt 2): DROME x Waffe x Kern
-x Lauf-Verbesserungen.
-
-## 5. KI: Befund und Vorschlag
-
-Gemessen (30 Spiegelkaempfe mit dem Standard-Squad, nach dem Aufraeumen):
-**jeder DROME wechselt im Schnitt 11-mal pro Minute sein Ziel**, also etwa
-alle 5 Sekunden.
-
-| Beobachtung des Spielers | Ursache im Code |
-|---|---|
-| "Wenn man ein Ziel hat, sollte man es erstmal angreifen" | Das Ziel wird alle 0,5 s neu bewertet. Der Bonus fuers aktuelle Ziel (3 bzw. 5 Punkte) ist klein gegen die Schadenspunkte (10-26), jede kleine Aenderung kippt die Wahl. |
-| Es entstehen keine Teamkaempfe, eher Zweikaempfe | Die Zielwahl zieht je Feld Abstand 2 Punkte ab -- jeder nimmt "seinen" naechsten Gegner, und durch das Wechseln zerfasert es weiter. Es gibt keine Abstimmung im Team. |
-| Molok laeuft vor dem Nimbus weg | Die Rolle wird aus der **Waffenreichweite** abgeleitet: ab Reichweite 3 gilt man als Fernkaempfer und weicht aus, wenn jemand naeher als 2 Felder kommt. Der Molok mit Belagerungskanone (Rw 6) gilt deshalb als Fernkaempfer. |
-| Molok neben Strix mit Deflektor faengt nichts ab | Der Deflektor gibt nur DEF auf den Molok selbst. Abfangen gibt es als Mechanik nicht. |
-| Nimbus verhaelt sich wie ein Assassine | Runenstab = Reichweite 1 = Nahkaempfer -> rueckt bis zum Kontakt vor. |
-
-**Gebaut (5. Nov. 2026)** -- Punkte 1 bis 3. Messung ueber 200 Spiegelkaempfe
-mit dem Standard-Squad, vorher -> nachher: Zielwechsel je DROME und Minute
-11,3 -> 5,5; Molok-Schritte weg vom Gegner 21 % -> 4 %; Kampfdauer 41 -> 32 s.
-**Noch offen:** der Nimbus faellt weiter in rund 80 % der Kaempfe zuerst --
-mit dem Runenstab (Rw 1) bleibt er Nahkaempfer mit wenig Integritaet. Das ist
-eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
-
-1. **Ziel halten:** Ein gewaehltes Ziel bleibt, bis es faellt, laenger als
-   ca. 2 s nicht erreichbar ist oder ein sicherer Abschuss in Reichweite
-   steht. Kein Neubewerten im Halbsekundentakt.
-2. **KI je DROME statt je Waffenreichweite:** Das Verhalten (vorruecken,
-   halten, kiten, abschirmen) haengt am Chassis; die Waffe gibt nur die
-   Reichweite vor. So rennt ein Molok nie weg, egal was er traegt.
-3. **Teamkampf:** Ziele, die ein Verbuendeter schon angreift, bekommen einen
-   Bonus (Fokus). Dazu eine lose Formation: Molok vorn, Nimbus und Strix
-   dahinter, Vireo flankiert.
-4. **Aggro-Tabelle:** bleibt als Grundlage, aber mit der Molok-Praesenz als
-   wichtigster Quelle. Spaeter der Hebel fuer "Aggro-Platz 1" (Designpunkt 3).
-
-## 6. Offene Fragen an den Spieler
-
-1. **Was bleibt zwischen Laeufen?** Nur freigeschaltete DROMEs/Waffen/Kerne,
-   oder auch Erfahrung/Stufen? Gibt es Geld oder einen Laden im Lauf?
-2. ~~Kopf und Antrieb~~ -- **entschieden:** fest am Chassis. Ein DROME ist
-   ein ganzes, immer gesamt gestaltetes Modell, nichts davon austauschbar.
-3. **Die uebrigen Teile** (Belagerungskanone, Schienen-Lanze, Runenstab,
-   Deflektor, Hologramm-Boost, Orbit-Fokus, Drohnen-Pod, Koedersender): Welche
-   behalten, umbauen oder streichen? Vorschlag: Strix behaelt die Lanze,
-   Nimbus behaelt Runenstab und Orbit-Fokus als Kontrollwaffen, die Kanone
-   und der Koedersender fallen weg (der Molok bekommt den Hammer und die
-   Praesenz), Deflektor und Drohnen-Pod werden Molok-Zweitteile.
-4. **Darf jeder DROME jede Waffe tragen?** Oder gibt es je DROME eine
-   Auswahl (Vireo: Blaster oder Klinge)? Vorschlag: je DROME 2-3 passende
-   Waffen, damit Passive und Waffe immer zusammenpassen.
-5. **Halterklassen leicht/mittel/schwer:** Bei einem Platz pro DROME
-   ueberfluessig. Vorschlag: streichen, stattdessen "passt zu Vireo/Molok/...".
-6. ~~Nimbus-Passive~~ -- **entschieden und gebaut:** Zauberwirker (siehe
-   Tabelle in Abschnitt 2).
-7. **Chaos-Virus** als zweiter Modus: behalten, oder alles auf den Lauf?
-8. **Zahlen:** Vireo-Tempo +40 % fuer 2 s, Strix +30 % auf maximaler
-   Reichweite, Verwundbar +50 % fuer 5 s, Betaeubung 1 s -- passt das als
-   Startpunkt?
 
 ## 6a. Runenstab und Vortex (entschieden und gebaut, 6. Nov. 2026)
 
@@ -218,9 +123,7 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
 ## 6d. Molok (gebaut, 6. Nov. 2026)
 
 * **Tank:** 200 Integritaet, 10 Schild (Tanks: viel Integritaet, kaum Schild).
-* **Praesenz:** je Puls buchen Gegner im Umkreis 2 Aggro auf ihn; 30 % des
-  Schadens an Verbuendeten im Umkreis 3 gehen auf ihn
-  (`data/config.json` -> `passives.presence`).
+* ~~Praesenz~~ (entfernt 26. Nov. 2026).
 * **Hammer** (EQP-012, neues Modell): schwer, Nahkampf, kinetisch, 16 alle
   1,8 s; jeder 3. Schlag betaeubt 1 s. Startbestand: Hammer + Deflektor,
   die Kanone liegt frei.
@@ -273,10 +176,7 @@ eine Designfrage (Nimbus-Waffe, Frage 3/6), keine KI-Frage.
   | hunter (geplante Jaegerklasse) | den verwundbarsten: wenig Integritaet, verwundbar oder betaeubt |
 
   Gleichstand: wen Verbuendete schon angreifen, dann wer weniger aushaelt.
-* **Locken** vor allem anderen: wer im Lockradius eines Gegners steht
-  (Molok-Praesenz 2 Felder, Koedersender 2 Felder), greift ihn an -- sichtbar
-  als oranges Ausrufezeichen am Balken. Der Koedersender lockt jetzt statt
-  einen Aggro-Bonus zu geben.
+* ~~Locken~~ (Molok-Praesenz, Koedersender) -- entfernt 26. Nov. 2026.
 * Entfernt: AggroTable, Aggro-Buchung und -Verfall, `aggro_coeff`/
   `aggro_flat` (leise/laute Waffen), `aggro_bonus`, Konfigurationsteil
   `aggro`, die Aggro-Gewichte der KI.
@@ -611,38 +511,6 @@ und Rezepten vor). Kurz:
 * **Laden:** 3 Angebote, Neuwuerfeln, Ziel-Rezept, **kein Sperren**.
 * Neue Waffen zuerst: Bollwerk-Ramme, Moerser, Klingenbumerang.
 
-## 6b. Brainstorming -- als Naechstes zu besprechen
-
-Vom Spieler angestossen (6. Nov. 2026):
-
-1. **Die vier Identitaeten** im Ganzen: Passive, KI, passende Waffen.
-2. **Die Zusatzidentitaet der Neon-DROMEs** (Schild als Ressource fuer
-   Faehigkeiten, leuchtende Roehren).
-3. **Schadensarten:** kinetisch, Energie -- und "Faehigkeitsschaden"? Im
-   Cyber-Setting gibt es keine Magie. Vorschlag zur Diskussion: es bleibt bei
-   **zwei Schadensarten** (kinetisch, Energie), jede Aktion hat ihre Art.
-   Dazu ein neuer Wert **Leistung (LST)** am DROME, der nur
-   Faehigkeitsschaden verstaerkt (+X % je Punkt). Der Nimbus hat viel
-   Leistung, der Strix kaum. So bleibt eine kinetische Faehigkeit gut gegen
-   Integritaet, und "Faehigkeitsschaden" ist eine Skalierung, keine dritte
-   Art.
-
-4. **Tanks: viel Integritaet, kaum Schild** (Gedanke des Spielers, 6. Nov.).
-   Durchgerechnet (je 200 Kaempfe, Molok mit Kanone + Deflektor):
-
-   | Molok | Siege | Molok lebt |
-   |---|---|---|
-   | heute 145 HP / 55 Schild (Spiegel) | 101:99 | 20,6 s |
-   | 200 HP / 10 Schild gegen heute | 115:85 | 21,3 s |
-   | 185 HP / 15 Schild gegen heute | 104:96 | 20,6 s |
-   | heute gegen Neon-Blaster-Gegner | 84:116 | 19,9 s |
-   | 200 HP / 10 Schild gegen Neon-Blaster-Gegner | 97:103 | 20,4 s |
-
-   Lesart: die Summe bleibt fast gleich, aber die Rollen werden klar -- Energie
-   und Schildbrecher fuer Schild-DROMEs, kinetisch (Lanze, Klinge, Hammer) fuer
-   Tanks. Laenger leben tut der Molok erst mit der Praesenz, die Schaden auf
-   ihn zieht. Neon-Blaster bleibt wie er ist (Entscheidung 6. Nov.).
-
 ## 7. Ausruestung, Module und Lager im Lauf (Vorschlag, Stand 5. Nov.)
 
 **Vorgabe des Spielers:** kein fester Gegenstand je DROME, sondern modular mit
@@ -771,31 +639,3 @@ kommen sie in den Beutetopf. Das ist das "pokern auf Items, die man kennt".
    gleich oder aehnlich wichtig wie der Laden.
 3. **Ausruestung bleibt** und geht nach dem Lauf mit ins Lager/den Hangar;
    nur die Module verfallen.
-
-## 8. Vorgeschlagene Reihenfolge
-
-Erledigt: 1-5 (KI, ein Platz, Vireo, Molok, Strix/Nimbus). Die Kerne (alt 6)
-entfallen (6g). Weiter:
-
-1. ~~Aufraeumen nach 6g~~ (gebaut 6. Nov.), dazu Nimbus-Passive Echo und
-   Deflektor/Drohnen-Pod als Waffen (gebaut 7. Nov.); der Nimbus bleibt
-   vorerst so stark.
-2. ~~Zwischenstopp nach dem Kampf: Lager, Credits, Ausruesten~~ (gebaut
-   7. Nov.: Phase STOP in `RunState`, Lager 8 Plaetze, Credits je Kampf und
-   fuer Verkaeufe, Beute geht am Ende nach Hause). Credits werden erst mit
-   dem Laden (Punkt 3) ausgegeben.
-3. ~~Module und Rezepte (6g)~~ (gebaut 7. Nov.: zehn Grundmodule, vier
-   Rezepte, Plaetze im Waffenhalter, Rezeptbuch im Lager -- Werte
-   vorlaeufig, Stand in `PROJEKTSTAND.md`), ~~dann der Laden~~ (gebaut
-   8. Nov.: 2 Grundmodule je Stopp, 6 Credits, Mitleid fuer angefangene
-   Rezepte), ~~Beute gewuerfelt ohne Auswahl~~ und ~~Gegner tragen
-   Module~~ (beides gebaut 8. Nov.).
-4. ~~Level fuer DROMEs und Waffen~~ (gebaut 9. Nov., mit neuem Werte-Satz
-   und Identitaeten -- `docs/IDENTITAETEN.md`). Als Naechstes laut Spieler:
-   die Waffen ueberarbeiten.
-5. **Neues Modulsystem nach `MODULE_KONZEPT.md`** (6j, 9. Nov.): Module
-   und Rezepte, Laden mit Neuwuerfeln, Waffen fest im Lauf, BIOS, Profile,
-   neue Waffen -- Bauplan dort in Abschnitt 14.
-6. Karte wie bei FTL mit Chaos-Kaempfen.
-7. Neon City als erste Region mit Neon-Gegnern und Neon-Varianten.
-8. Spaeter: Skillbaeume.

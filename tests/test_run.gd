@@ -307,7 +307,7 @@ func test_a_won_mission_brings_the_completion_cache() -> void:
 
 
 func test_weapons_are_fixed_during_the_run() -> void:
-	# MODULE_KONZEPT.md: im Lauf wird keine Waffe getauscht.
+	# MODULE_AMP_FUSION.md 6: im Lauf wird keine Waffe getauscht.
 	var run := RunState.start(21)
 	var before: Array = run.squad.map(func(b): return b.slots.duplicate())
 	run.record_result(BattleManager.Outcome.VICTORY, [&"eq_plasma_blade"])
@@ -415,7 +415,7 @@ func test_enemies_level_up_with_round_and_tier() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Fraktionen und Profile (MODULE_KONZEPT.md 9, 9. Nov. 2026)
+# Fraktionen und Profile (MODULE_AMP_FUSION.md 6, 9. Nov. 2026)
 # ---------------------------------------------------------------------------
 
 ## Zaehlt Chassis und Waffen der Gegner ueber viele Runden eines Gebiets.

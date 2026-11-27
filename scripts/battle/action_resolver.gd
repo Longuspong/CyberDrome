@@ -163,7 +163,7 @@ func _thorns(source: Unit, target: Unit, action: ActionData) -> void:
 
 
 # ---------------------------------------------------------------------------
-# Markierung und Entladung (Module, MODULE_KONZEPT.md)
+# Markierung und Entladung (Module, MODULE_AMP_FUSION.md)
 # ---------------------------------------------------------------------------
 
 ## Markiert ``foe`` (Peilsender, Brandmarke): nimmt ``rules.mark_damage_taken``

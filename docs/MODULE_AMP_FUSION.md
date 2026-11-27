@@ -1,9 +1,9 @@
 # CyberDrome – Module v3: Amp, Fusion, Hyperfusion
 
 Stand 20. Nov. 2026 · Status: **gebaut** (20. Nov. 2026): 6 Amps, 15 Fusionen (2 entschieden, 13 Vorschläge), 6 Hyperfusionen mit Fusion Core (Sondereffekt nur Power), BIOS für Fusionen. Offene Punkte: `docs/design/UEBERGABEN_DESIGN.md`, Abschnitt „Offene Logik“.
-Ersetzt die Grundmodule und Rezepte aus `MODULE_KONZEPT.md` (Abschnitte 4 und 5). Was dort zu
-Modulplätzen, BIOS-Vergabe, Laden und Gegner-Profilen steht, gilt weiter, soweit hier nichts
-anderes steht. Zahlen sind Startwerte für den Bench.
+Ersetzt das Modulsystem v2 (`MODULE_KONZEPT.md`, gelöscht 26. Nov. 2026). Was davon weiter gilt
+-- Modulplätze, BIOS, Laden, Lager, Gegner-Profile --, steht jetzt in Abschnitt 6. Zahlen sind
+Startwerte für den Bench.
 
 ## 1. Die vier Stufen
 
@@ -117,7 +117,49 @@ gibt **+2** (= +20 %). Trennung: **Power = wie viel** (Schaden, Heilung, Schildg
   einen Stapel. Später kommen die Auslöser über die **Firecharger-Upgrades** des neuen Waffensystems.
 * Werte in `config.json` -> `statuses.cable_fire`, Rechnung in `ActionResolver.burn_cable_fire`.
 
-## 6. Offen
+## 6. Was aus dem Modulsystem v2 weiter gilt (9.–19. Nov. 2026)
+
+**Rahmen**
+
+* Module gibt es nur im Einsatz, am Ende verfallen sie. Sie stecken im Waffenhalter: **3 Plätze je
+  Waffe** (Molok 2 + 2), fest -- kein Level und kein BIOS gibt Plätze dazu.
+* **Waffen sind im Einsatz fest.** Erbeutete Waffen gehen in die Tasche und wirken erst danach.
+  Deshalb weiß der Laden, in welchem Halter ein Modul wirkt.
+* Eine Fusion nur einmal je Halter, Amps dürfen sich stapeln.
+
+**BIOS** (voller Name Matrix-BIOS; Daten `modules.json` -> `bios`, `bios_recipes`)
+
+* Nach **jedem gewonnenen Elite-Kampf** fest eine Wahl 1 aus 3 (`rules.bios_offers`), nie nach dem
+  letzten Kampf, bis drei BIOS vergeben sind (`rules.bios_elite_wins`, eins je DROME). Danach statt
+  der Wahl ein Lootcache. Chaos-Kämpfe geben mit 33 % eine Wahl.
+* Angeboten wird nur, was nutzbar ist, in dieser Rangfolge: **sofort** (die Fusion steckt in einem
+  Halter), **bald** (beide Amps vorhanden), **angefangen** (ein Amp vorhanden). Nie leer.
+* Ein BIOS liegt im Lager und wird im Rezeptbuch verschmolzen (Fusion + BIOS oder Amp + Amp +
+  BIOS). Nicht trennbar, **höchstens eins je DROME**. Kein Chassis-BIOS, keine Extra-Plätze
+  (seit 18. Nov. 2026).
+* Heute fünf: Taktgeber (Taktchip: nach der Fähigkeit sofort geladen), Berserker (Raufbold:
+  Vergeltung bis 5×, volle Ladung trifft alle daneben), Treibjagd (Brandmarke: die Markierung
+  springt weiter), Abrissbirne (Rammbock: jeder 3. Angriff stößt zurück), Phasenbruch
+  (Überspannung: +15 % gegen Gegner ohne Schild).
+
+**Laden, Lager, Verkauf** (`modules.json` -> `shop`, `sell_value`; `config.json` -> `run`)
+
+* 3 Angebote je Stopp, Neuwürfeln 2 Credits (+1 je weiterem Wurf). Ziel-Fusion im Rezeptbuch
+  markieren: ihre fehlenden Amps kommen 3× so oft, ohne Ziel 2×. Ab Runde 5 gelegentlich eine
+  fertige Fusion, selten ein Fusion Core.
+* Lager 8 Plätze. Verkauf: Amp 2, Fusion 6, BIOS 8, Core 4 Credits.
+
+**Gegner-Profile = Fraktionen** (`regions.json` -> `faction`)
+
+| Gebiet / Fraktion | Profil | Handschrift |
+|---|---|---|
+| Neon City / Neon Ninja's | Kämpfer | Nahkämpfer, die dicht ranrücken: Klingen, Hämmer, Rammen |
+| Parkanlage / Solar Sentients | Rudel | viele leichte DROMEs, die sich gegenseitig verstärken |
+| Factory 5 / Mega Mechas | Festung | schwere Panzer, Schilde, Artillerie aus der zweiten Reihe |
+| Dachterrassen / Hipstar Hackers | offen | -- |
+
+
+## 7. Offen
 
 1. Sondereffekte der übrigen fünf Hyperfusionen (Abschnitt 3).
 2. Auswahl der Fusionen (Abschnitt 4).

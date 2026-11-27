@@ -861,7 +861,11 @@ und Offene Punkte.
 * Entscheidungen nach den Gutachten (Laden statt Modul-Beute, Gegner-Module,
   Gebietsnamen): `NEUANFANG.md` Abschnitt 6i.
 
-### Neues Modulsystem und BIOS (9. Nov. 2026) -- `docs/MODULE_KONZEPT.md`
+### Neues Modulsystem und BIOS (9. Nov. 2026)
+
+> Ueberholt durch die Amps (20. Nov. 2026); was weiter gilt, steht in
+> `docs/MODULE_AMP_FUSION.md` Abschnitt 6.
+
 * **Module:** 9 Grundmodule (wirken auf jede Waffe) und 18 Rezepte aus genau
   zwei verschiedenen Zutaten, jedes Grundmodul in genau 4 Rezepten, keine
   Ketten. Feste Zahlen in `modules.json` -> `rules`. Nicht stapelnde Werte:
@@ -1299,9 +1303,10 @@ Stand 26. Nov. 2026 (nach dem Aufraeumen):
   DROME fuenf Teile hat (Werkbank, Spielstaende, Tests).
 * **2D-Zusammenbau** (`DromeSprites`) lebt nur noch fuer Tests und den
   Bench-Bildschirm; im Spiel zeichnet `Arena3D`.
-* Chronik-Dokumente (`NEUANFANG.md`, `IDENTITAETEN.md`, `MODULE_KONZEPT.md`,
-  `GAME_DESIGN.md`, `BRAINSTORMING_MODULE.md`, `PLAYTEST_2026-11.md`) sind
-  teils ueberholt; gueltig ist, was hier und im Kernplan steht.
+* Chronik-Dokumente (`NEUANFANG.md`, `IDENTITAETEN.md`, `GAME_DESIGN.md`)
+  sind teils ueberholt; ihr Kopf sagt, was noch gilt. `MODULE_KONZEPT.md`,
+  `BRAINSTORMING_MODULE.md` und `PLAYTEST_2026-11.md` sind seit 26. Nov.
+  geloescht (gueltige Modul-Regeln: `MODULE_AMP_FUSION.md` 6).
 
 ## 5. Offen -- mit dem Spieler zu besprechen
 
@@ -1342,10 +1347,6 @@ Gebaut (Nov. 2026, auf Wunsch des Spielers):
   Reichweite, Wirkung, Schadensart und Einsatz.
 * **KI**: Fernkaempfer laufen nach dem Angriff nicht mehr in den Gegner,
   sondern suchen ein sichereres Feld in Reichweite (`_settle_step`).
-
-**Playtest und Vorschlaege zu Bewegung und Faehigkeiten:**
-`docs/PLAYTEST_2026-11.md` (mit `tools/playtest/playtest.gd`). Dort stehen die
-offenen Fragen an den Spieler.
 
 Weitere Vorschlaege aus der Sitzung (unbewertet):
 

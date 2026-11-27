@@ -11,7 +11,7 @@ class Region extends RefCounted:
 	var display_name: String
 	var floor_name: String = ""          ## "Asphalt", "Wiese" ...
 	var floor_texture: String = ""
-	## Die Fraktion des Gebiets und ihr Profil (MODULE_KONZEPT.md 9): wie
+	## Die Fraktion des Gebiets und ihr Profil (MODULE_AMP_FUSION.md 6): wie
 	## sich ihre Gegner zusammensetzen. Leer = frei gewuerfelt.
 	var faction: Dictionary = {}
 

@@ -60,7 +60,7 @@ var is_hyper: bool = false
 ## Der Fusion Core selbst (steckt nie im Halter, wird beim Verschmelzen verbraucht).
 var is_core_item: bool = false
 
-## Matrix-BIOS (MODULE_KONZEPT.md 6). Ein BIOS-Gegenstand hat ``bios_kind``
+## Matrix-BIOS (MODULE_AMP_FUSION.md 6). Ein BIOS-Gegenstand hat ``bios_kind``
 ## "recipe": er verwandelt ``bios_recipe`` in ``bios_result`` und steckt nie
 ## selbst in einem Halter. Chassis-BIOS gibt es seit 18. Nov. 2026 nicht mehr.
 var bios_kind: String = ""

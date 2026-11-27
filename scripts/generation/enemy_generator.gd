@@ -20,7 +20,7 @@ var rng := RandomNumberGenerator.new()
 var attempts_used: int = 0
 var achieved_power: float = 0.0
 
-## Profil der Fraktion (data/regions.json -> faction, MODULE_KONZEPT.md 9):
+## Profil der Fraktion (data/regions.json -> faction, MODULE_AMP_FUSION.md 6):
 ## Gewichte je Chassis, bevorzugte Waffen (weapon_weight-mal). Leer = frei
 ## gewuerfelt wie bisher.
 var profile: Dictionary = {}

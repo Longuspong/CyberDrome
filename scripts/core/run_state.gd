@@ -99,7 +99,7 @@ var credits: int = 0
 var shop_offers: Array = []
 ## Wie oft im aktuellen Zwischenstopp neu gewuerfelt wurde (Preis steigt).
 var rerolls: int = 0
-## Ziel-Rezept (MODULE_KONZEPT.md 7): nur dessen fehlende Zutaten bekommen das
+## Ziel-Rezept (MODULE_AMP_FUSION.md 6): nur dessen fehlende Zutaten bekommen das
 ## volle Mitleid im Laden. Leer = keins, dann gilt das schwaechere Mitleid fuer
 ## alle angefangenen Rezepte.
 var target_recipe: StringName = &""
@@ -112,11 +112,11 @@ var storage: Array = []
 var hyper_made: Array = []
 
 ## Die Tasche (6h): Beute-Teile (Waffen) dieses Laufs. Waffen sind im Lauf
-## fest (MODULE_KONZEPT.md) -- die Teile werden nicht eingebaut, belegen keinen
+## fest (MODULE_AMP_FUSION.md 6) -- die Teile werden nicht eingebaut, belegen keinen
 ## Lagerplatz und gehen am Ende nach Hause.
 var bag: Array = []
 
-## Matrix-BIOS zur Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): BIOS-IDs,
+## Matrix-BIOS zur Wahl nach einem Elite-Sieg (MODULE_AMP_FUSION.md 6): BIOS-IDs,
 ## eines davon kommt ins Lager. Verfaellt beim Weitergehen.
 var bios_offers: Array = []
 ## Credit-Booster aus dem Chaos-Kampf (19. Nov. 2026): so viele Kaempfe
@@ -1746,7 +1746,7 @@ static func has_hyper(build: DromeBuild) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Matrix-BIOS (MODULE_KONZEPT.md 6)
+# Matrix-BIOS (MODULE_AMP_FUSION.md 6)
 # ---------------------------------------------------------------------------
 
 ## Was der Lauf an Modulen hat, um ``item`` (Rezept-BIOS) zu verschmelzen:
@@ -1953,7 +1953,7 @@ static func shop_price(module: ModuleData) -> int:
 
 
 ## Wuerfelt die Angebote dieses Zwischenstopps: shop.offers Grundmodule,
-## keines doppelt. Unsichtbares Mitleid (6i, MODULE_KONZEPT.md 7): mit
+## keines doppelt. Unsichtbares Mitleid (6i, MODULE_AMP_FUSION.md 6): mit
 ## Ziel-Rezept zaehlen nur dessen fehlende Zutaten shop.recipe_weight-mal so
 ## viel, ohne Ziel jede Zutat, die einem angefangenen Rezept fehlt,
 ## shop.recipe_weight_open-mal. Ab shop.recipe_from_round ist mit

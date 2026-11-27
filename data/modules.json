@@ -395,7 +395,7 @@
     }
   },
   "bios_kommentar": [
-    "Matrix-BIOS (MODULE_KONZEPT.md 6): späte Schicht. Fest nach jedem gewonnenen Elite-Kampf",
+    "Matrix-BIOS (MODULE_AMP_FUSION.md 6): späte Schicht. Fest nach jedem gewonnenen Elite-Kampf",
     "eine Wahl 1 aus rules.bios_offers, bis rules.bios_elite_wins BIOS vergeben sind (eins je",
     "DROME), danach statt der Wahl ein Lootcache; nie nach dem letzten Kampf. Ein BIOS liegt im",
     "Lager. Seit 18. Nov. 2026 nur noch Rezept-BIOS (kein Chassis-BIOS, kein Extra-Platz). kind 'recipe':",

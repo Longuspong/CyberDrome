@@ -2,7 +2,7 @@ extends RefCounted
 
 ## Siehe module_bench.gd.
 
-## Standardliste (MODULE_KONZEPT.md Abschnitt 10): je Chassis jedes
+## Standardliste: je Chassis jedes
 ## Grundmodul einmal, dazu jedes Rezept auf den Chassis, zu denen es laut
 ## Abschnitt 5.4 passt -- einmal als Rezept (1 Platz), einmal als seine zwei
 ## Zutaten lose (2 Plaetze). Mit "base" oder "recipes" als erstem Aufbau nur
