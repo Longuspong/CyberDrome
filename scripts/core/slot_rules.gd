@@ -37,6 +37,26 @@ static func holder_label(build: DromeBuild, slot: String) -> String:
 	return "Halter %d" % (index + 1)
 
 
+## Halter-Kuerzel (Spieler 27. Nov. 2026): sprachneutral, damit sie in jeder
+## Sprache gleich bleiben -- S leicht, M mittel, X schwer.
+const CLASS_CODE := {"light": "S", "medium": "M", "heavy": "X"}
+## Dahinter, wenn der Halter nur eine Reichweite nimmt: F Fernkampf, N Nahkampf.
+const REACH_CODE := {"ranged": "F", "melee": "N"}
+
+
+static func class_code(mount_class: String) -> String:
+	return str(CLASS_CODE.get(mount_class, mount_class))
+
+
+## Das Kuerzel eines Halters: "M", "X-F" (Strix-Lafette), "M-N" ...
+static func holder_code(chassis: PartData, slot: String) -> String:
+	var code := class_code(slot_class(chassis, slot))
+	var reach := slot_reach(chassis, slot)
+	if REACH_CODE.has(reach):
+		code += "-" + str(REACH_CODE[reach])
+	return code
+
+
 static func class_label(mount_class: String) -> String:
 	match mount_class:
 		"light": return "leicht"
@@ -108,7 +128,7 @@ static func slot_choices(build: DromeBuild, part: PartData) -> Array:
 		choices.append({
 			"slot": slot,
 			"number": number,
-			"label": "Halter %d (%s)" % [number, class_label(limit)],
+			"label": "Halter %d (%s)" % [number, holder_code(chassis, slot)],
 			"detail": detail,
 			"allowed": allowed,
 		})

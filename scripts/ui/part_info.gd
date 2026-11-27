@@ -43,7 +43,7 @@ static func lines(part: PartData) -> Array:
 
 	var head: Array[String] = []
 	if part.type == PartData.Type.EQUIPMENT:
-		head.append(SlotRules.class_label(part.mount_class))
+		head.append("%s (%s)" % [SlotRules.class_code(part.mount_class), SlotRules.class_label(part.mount_class)])
 		head.append(SlotRules.category_label(part.category))
 	if not head.is_empty():
 		out.append([" · ".join(head), "detail"])

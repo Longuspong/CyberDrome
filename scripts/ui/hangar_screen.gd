@@ -1179,20 +1179,15 @@ func _slots(entry: RosterEntry, build: DromeBuild) -> Control:
 		shape.highlight = chosen
 		shape.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		box.add_child(shape)
-		# Unter dem Halter steht nur seine Klasse -- keine Richtung mehr
-		# (links, rechts): sie sagte nichts, was man nicht sieht.
-		var weight := _quiet(UiKit.label(_class_name(kind), UiKit.SMALL,
+		# Unter dem Halter steht nur sein Kuerzel (S/M/X, -F/-N; 27. Nov. 2026)
+		# -- keine Richtung mehr (links, rechts): sie sagte nichts, was man nicht sieht.
+		var weight := _quiet(UiKit.label(SlotRules.holder_code(build.body(), slot), UiKit.SMALL,
 			_class_color(kind) if chosen else Color(_class_color(kind), 0.6)))
 		weight.autowrap_mode = TextServer.AUTOWRAP_OFF
 		weight.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(weight)
 		row.add_child(holder)
 	return row
-
-
-## "leicht", "mittel", "schwer".
-func _class_name(kind: String) -> String:
-	return SlotRules.class_label(kind)
 
 
 ## Eine Farbe je Klasse -- zusaetzlich zur Form, nie statt ihr.

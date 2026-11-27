@@ -384,3 +384,14 @@ func test_a_story_dialog_walks_through_its_lines() -> void:
 		dialog._gui_input(tap)
 	t.ok(ended["done"], "vier Tipps: zwei Zeilen zeigen, zwei weiter -- dann zu Ende")
 	host.free()
+
+
+func test_holder_codes_are_language_neutral() -> void:
+	# Halter-Kuerzel (Spieler 27. Nov. 2026): S/M/X, dahinter -F/-N bei fester Reichweite.
+	t.equal(SlotRules.class_code("light"), "S", "leicht = S")
+	t.equal(SlotRules.class_code("medium"), "M", "mittel = M")
+	t.equal(SlotRules.class_code("heavy"), "X", "schwer = X")
+	t.equal(SlotRules.holder_code(PartDB.get_part(&"scout_body"), "equip_left"), "S", "Vireo: S")
+	t.equal(SlotRules.holder_code(PartDB.get_part(&"jugg_body"), "equip_left"), "M", "Molok: M")
+	t.equal(SlotRules.holder_code(PartDB.get_part(&"strix_body"), "equip_center"), "X-F",
+		"Strix: schwer, nur Fernkampf")
