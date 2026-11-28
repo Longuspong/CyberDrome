@@ -49,7 +49,7 @@ func run(count: int, drome_level: int, weapon_level: int) -> void:
 				for squad in SQUADS:
 					var wins := 0
 					for i in count:
-						var seed_value := 7000 + i * 31 + round
+						var seed_value: int = 7000 + i * 31 + round
 						var foes: Array = Formations.build(v[1], state.reinforcement(), "elite", seed_value)
 						state._apply_levels(foes.filter(func(b): return not b.is_sentinel()), 2)
 						var ours := _squad(stock, squad, seed_value)
