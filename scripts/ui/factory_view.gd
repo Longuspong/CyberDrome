@@ -702,9 +702,8 @@ func _open_basis() -> void:
 	_box = body
 	var netz: Dictionary = FactorySim.data().get("netz", {})
 	var si: Dictionary = _sim.source_info.get(FactorySim.net_cell(), {})
-	_row("Liefert %d Strom, Reichweite %d -- gerade abgegeben %s. Gebäude nah an der Basis werden zuerst versorgt."
-		% [int(netz.get("strom", 4)), int(netz.get("reichweite", 2)), FactorySim.num(float(si.get("used", 0.0)))],
-		UiKit.MUTED)
+	_row("Strom %s/%d · Reichweite %d" % [FactorySim.num(float(si.get("used", 0.0))), int(netz.get("strom", 4)),
+		int(netz.get("reichweite", 2))], UiKit.MUTED)
 	_store_into(body)
 	var actions: Array = []
 	var goal := _sim.next_tier_goal()
@@ -712,15 +711,22 @@ func _open_basis() -> void:
 		body.add_child(Arcade.label("ALLE TIERS FREI", 14, Arcade.CYAN, "bold", 0.2))
 	else:
 		body.add_child(Arcade.label(("Aufrüsten: %s" % str(goal["titel"])).to_upper(), 14, Arcade.CYAN, "bold", 0.2))
-		_row(str(goal.get("text", "")), UiKit.MUTED)
+		# Statt des Datentexts (mit Designnotizen) nur, was neu dazukommt.
+		var fresh: Array = []
+		for type in FactorySim.defs():
+			if int(FactorySim.def(type).get("tier", 1)) == int(goal["tier"]):
+				fresh.append(str(FactorySim.def(type)["name"]))
+		if not fresh.is_empty():
+			_row("Neu: " + ", ".join(fresh), UiKit.MUTED)
 		if str(goal.get("weg", "fabrik")) == "fabrik":
 			var cost: Dictionary = goal.get("kosten", {})
 			for ware in cost:
 				var have := _sim.have(str(ware))
 				_row("%s  %d / %d" % [FactorySim.ware_name(str(ware)), mini(have, int(cost[ware])), int(cost[ware])],
 					UiKit.GOOD if have >= int(cost[ware]) else UiKit.TEXT, 14)
-			actions.append({"text": "Basis aufrüsten → Tier %d" % int(goal["tier"]), "primary": true,
-				"disabled": not _sim.can_pay(cost), "why": "fehlt " + FactorySim.amounts_text(_sim.missing(cost)),
+			# Gelb erst, wenn es geht; die Voraussetzungen stehen darueber.
+			var ready := _sim.can_pay(cost)
+			actions.append({"text": "Aufrüsten", "primary": ready, "disabled": not ready,
 				"call": func():
 					var why := _sim.unlock_tier()
 					_say(why if why != "" else "Basis aufgerüstet: Tier %d!" % _sim.tier(),
@@ -747,8 +753,6 @@ func _store_into(box: VBoxContainer) -> void:
 		var label := UiKit.label(line, 14, FactorySim.ware_color(str(ware)) if n > 0 else UiKit.MUTED)
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(label)
-	box.add_child(UiKit.label("(+n) = Hochrechnung je Einsatz. Charger-Rohlinge entstehen in der Werkbank.",
-		12, UiKit.MUTED))
 
 
 # ---------------------------------------------------------------- Info-Zeilen
