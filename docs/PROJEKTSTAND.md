@@ -200,12 +200,27 @@ Selbst nachgespielt (Kampfbild per xvfb, Seeds 5003/7001/7002) und gemessen:
   Ohne Modus: Gebaeude = Details-Popup; der Netzanschluss heisst **Basis** und zeigt Strom, Lager
   und "Basis aufruesten" = naechstes Tier. Gesperrte Felder: einmal tippen = Kauf-Vorschau,
   nochmal = kaufen. Symbole sind Platzhalter aus `assets/ui_icons` (Grafik folgt mit Claude Design).
+* **Fabrikstadt (28. Nov. 2026, `docs/FACTORY_KONZEPT.md` Abschnitt 14, GEBAUT):** die Platine
+  ist eine 3D-Stadt (`FactoryCity`: Felder, Quellen, Gebaeude T1-T3, Leiterbahnen aus Grundformen
+  nach `docs/design/fabrik_stadt/fabrikstadt.py`; Shader `factory_face`/`factory_hull` = matte
+  Platten, Kante je Flaeche, Kontur je Teil in der Linienfarbe). Feste Kamera steil von Sueden,
+  50 px je Einheit (Feld ~92 px), die Platine scrollt per Finger. Leuchtflaechen ohne Strom grau,
+  Schilder nur bei Stau, kein Strom und fuer das Werkbank-Ziel, Schloss je gesperrter Feldgruppe,
+  Pulse wandern ueber die Leiterbahnen. Bau-Menue: Plus · Bauen (Sechseck) · Abreissen (Fuenfeck)
+  · Verschieben (Viereck); Bauen klappt die Gruppen Foerdern/Veredeln/Herstellen/Strom/Logistik
+  nach oben auf, eine Gruppe ihre Typen als Gebaeude (eigene kleine 3D-Ansicht, freigeschaltete
+  nah am Knopf, gesperrte grau "AB BASIS T2", ueber T1 klein T2). **Logik:** `stufen` je Typ in
+  `factory.json` (T2/T3, Werte VORSCHLAG), `FactorySim.def_at`, `upgrade`/`can_upgrade`
+  (Kaufpreis x2 bzw. x4, ab Basis-Stufe, im Gebaeude-Blatt), Stufe bleibt beim Exemplar
+  (`lv_owned`, Abreissen/Setzen), neu gekauft = T1; Typ-Freischaltung ueber `basis`; der Zapfer
+  ist in der Neonpumpe aufgegangen (T1 = Zapfer, T2 = alte Pumpe); Spielstand Version 2 mit
+  Umstellung. Testspielstand 3: Basis T3. Blicktest aller Stufen: `tools/render_city.gd`.
 * Tests `tests/test_factory.gd`, Smoke-Test bedient die Platine, Bild:
   `tests/screenshot.gd -- res://scenes/resources.tscn <png> 60 factory=200` (dazu
   `fabrik_bau=strom:sol:1,1` = Plus, Bauen, Kategorie, Art, Feld; `fabrik_modus=move|remove`;
   `fabriktipp=0,0` tippt ein Feld).
-* Offen: Rezept-Raten/Takte fuers Spiel, Tier 3/4 ueber die Story, Baukerne raus (erst mit den
-  DROME-Teilen), Anzeigetexte noch ohne `tr()`.
+* Offen: Rezept-Raten/Takte fuers Spiel, Werte und Kosten je Stufe (T2/T3 sind Vorschlag),
+  Inhalte fuer T3, Tier 3/4 ueber die Story, Anzeigetexte noch ohne `tr()`.
 
 ### Werkbank (24. Nov. 2026, `docs/FACTORY_KONZEPT.md` Abschnitt 13)
 

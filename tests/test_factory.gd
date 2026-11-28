@@ -204,3 +204,84 @@ func test_roster_keeps_factory() -> void:
 	copy.load_dict(JSON.parse_string(JSON.stringify(roster.to_dict())))
 	t.equal(copy.factory_sim().tick_count(), 100, "Takte im Spielstand")
 	t.equal(copy.factory_sim().buildings().size(), 4, "Gebäude im Spielstand")
+
+
+## Fabrikstadt (28. Nov. 2026, Abschnitt 14): Zapfer in der Neonpumpe, neue Gruppen.
+func test_pump_replaces_tapper_and_groups() -> void:
+	t.ok(not FactorySim.defs().has("zap"), "kein Zapfer mehr")
+	var pump := FactorySim.def("pmp")
+	t.equal(FactorySim.basis_of("pmp"), 1, "Neonpumpe ab Basis T1")
+	t.equal(float(pump["rate"]), 1.0, "T1 = alter Zapfer: 1 Neon")
+	t.equal(float(pump["strom"]), 0.0, "T1 ohne Strom")
+	t.equal(float(FactorySim.def_at("pmp", 2)["rate"]), 3.0, "T2 = alte Pumpe: 3 Neon")
+	t.equal(float(FactorySim.def_at("pmp", 2)["strom"]), 2.0, "T2 braucht 2 Strom")
+	var ids: Array = FactorySim.groups().map(func(g): return str(g["id"]))
+	t.equal(ids, ["foerdern", "veredeln", "herstellen", "strom", "logistik"], "fünf Gruppen")
+	for type in FactorySim.defs():
+		t.ok(str(FactorySim.def(type)["gruppe"]) in ids, "Gruppe bekannt: " + str(type))
+		t.ok(not FactorySim.lines_of(str(type)).is_empty(), "Linie gesetzt: " + str(type))
+	for type in ["gen", "bat", "vdi", "chp"]:
+		t.equal(FactorySim.basis_of(type), 2, type + " ab Basis T2")
+	t.equal(FactorySim.types_in("herstellen"), ["lot", "chp"], "Herstellen: Löter, Chipfabrik")
+
+
+func test_upgrade_on_board() -> void:
+	var lager := {}
+	var sim := _sim(lager)
+	t.equal(sim.level_at("1,0"), 1, "Startgebäude auf T1")
+	t.ok(sim.can_upgrade("1,0") != "", "T2 erst ab Basis T2")
+	sim.state["tier"] = 2
+	t.ok(sim.can_upgrade("1,0") != "", "ohne Ware kein Aufrüsten")
+	var cost := FactorySim.upgrade_cost("smz", 2)
+	t.equal(cost, {"legierung": 30}, "T2 kostet Kaufpreis mal 2")
+	lager["res:legierung"] = 30
+	t.equal(sim.upgrade("1,0"), "", "Schmelze auf T2")
+	t.equal(sim.level_at("1,0"), 2, "jetzt T2")
+	t.ok(lager.is_empty(), "bezahlt")
+	t.ok(sim.can_upgrade("1,0") != "", "T3 erst ab Basis T3")
+	t.equal(float(FactorySim.def_at("smz", 2)["rate"]), 0.75, "T2 schneller")
+	t.equal(FactorySim.def_at("smz", 2)["ein"], FactorySim.def("smz")["ein"], "gleiche Funktion")
+	# Abreissen und wieder setzen: die Stufe bleibt beim Exemplar.
+	sim.remove("1,0")
+	t.equal(sim.free_at("smz", 2), 1, "T2-Schmelze liegt im Besitz")
+	t.equal(sim.place("1,1", "smz"), "", "wieder gesetzt")
+	t.equal(sim.level_at("1,1"), 2, "kommt als T2 zurück")
+	# Neu gekauft wird immer T1.
+	lager["res:legierung"] = 15
+	t.equal(sim.buy_building("smz"), "", "zweite Schmelze gekauft")
+	t.equal(sim.place("-1,1", "smz"), "", "gesetzt")
+	t.equal(sim.level_at("-1,1"), 1, "neu = T1")
+	# Gespeichert und geladen bleibt die Stufe.
+	var saved = JSON.parse_string(JSON.stringify(sim.to_dict()))
+	var again := FactorySim.new(saved, lager)
+	t.equal(again.level_at("1,1"), 2, "Stufe im Spielstand")
+	t.equal(again.free_at("smz", 2), 0, "Besitz je Stufe im Spielstand")
+
+
+func test_upgrade_changes_output() -> void:
+	var a_lager := {}
+	var b_lager := {}
+	var a := _sim(a_lager)
+	var b := _sim(b_lager)
+	b.state["tier"] = 3
+	b_lager["res:legierung"] = 1000
+	t.equal(b.upgrade("-1,-1"), "", "Pumpe T2")
+	t.equal(b.upgrade("0,-1"), "", "Plasmakammer T2")
+	b_lager.clear()
+	a.run(120)
+	b.run(120)
+	t.ok(int(b_lager.get("res:plasma", 0)) > int(a_lager.get("res:plasma", 0)), "T2 macht mehr Plasma")
+
+
+func test_migrate_old_save() -> void:
+	var old := {"version": 1, "tick": 5, "next_id": 4, "tier": 2, "owned": {"zap": 1, "pmp": 1, "sam": 2},
+		"chunks": [], "ziel": "",
+		"b": {"-1,-1": {"id": 1, "t": "zap"}, "2,0": {"id": 2, "t": "pmp"}, "1,-1": {"id": 3, "t": "sam"}}}
+	var sim := FactorySim.new(old, {})
+	t.equal(str(sim.building_at("-1,-1")["t"]), "pmp", "Zapfer wird Neonpumpe")
+	t.equal(sim.level_at("-1,-1"), 1, "als T1")
+	t.equal(sim.level_at("2,0"), 2, "alte Neonpumpe wird T2")
+	t.equal(sim.owned("pmp"), 2, "Besitz zusammengelegt")
+	t.equal(sim.owned_at("pmp", 2), 1, "eine davon T2")
+	t.equal(sim.tier(), 2, "Basis-Stufe bleibt")
+	t.equal(int(sim.to_dict()["version"]), FactorySim.SAVE_VERSION, "neue Version")

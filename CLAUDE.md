@@ -56,7 +56,7 @@ Leitlinie, kein Korsett; Vireo-Baum + Neon-Strang als Vorschlag; Werte im Werkbl
 -- Hex-Platine, Nachbar-Lieferung, Puffer + Uplink, Netzanschluss mit Strom nach Naehe,
 nur Ressourcen (Charger/DROMEs entstehen aus dem Lager in ihren Reitern), Tiers, Baukerne fallen
 weg; Takte vor allem aus dem Einsatz. Prototyp: https://claude.ai/artifact/BU9arMAXSSSC18zgFEnQsd
-(Kopie `docs/design/factory_prototyp/`). **Design Fabrikstadt (28. Nov. 2026, Richtung entschieden, noch nicht gebaut):** Abschnitt 14 --
+(Kopie `docs/design/factory_prototyp/`). **Fabrikstadt (28. Nov. 2026, entschieden und GEBAUT -- `FactoryCity`, Stufen T1-T3, `FactorySim.upgrade`):** Abschnitt 14 --
 3D-Platine im DROME-Stil, Farbe je Linie, Gruppen Veredeln/Herstellen, jeder Typ T1-T3 (gleiche Funktion,
 Aufrüsten ab Basis-Stufe), Bau-Menü klappt nach oben; Entwürfe unter `docs/design/fabrik_stadt/`. **Logik seit 23. Nov. 2026 GEBAUT** (`FactorySim`,
 `data/factory.json`, Reiter Linien = Platine, Lager = `Roster.materials["res:<ware>"]`, 20 Takte je

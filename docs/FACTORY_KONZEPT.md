@@ -271,9 +271,19 @@ herkommen (Cache-Inhalt, Story); ob Waffen schon mit der ersten Werkbank kommen;
 ## 14. Fabrikstadt -- Design und neue Tier-Logik (Design-Sitzung 28. Nov. 2026, Richtung entschieden)
 
 Entwürfe, Prototyp und Zeichen-Skript: `docs/design/fabrik_stadt/` (LIESMICH dort), Canvas
-https://claude.ai/artifact/RdYTr9e3QabvCAVY9Q3Ct1. **Noch nicht gebaut** -- Optik und Menü
-sind abgesegnet, die Regel-Änderungen unten müssen ins Spiel (`data/factory.json`, `FactorySim`,
-`FactoryView`).
+https://claude.ai/artifact/RdYTr9e3QabvCAVY9Q3Ct1.
+
+**GEBAUT (28. Nov. 2026)** -- Details in `docs/PROJEKTSTAND.md` („Fabrikstadt“). 3D über
+`FactoryCity` (Grundformen aus `fabrikstadt.py`), Bau-Menü in `FactoryView`, Stufen in
+`data/factory.json` (`stufen`, `basis`, `linien`, `gruppen`) und `FactorySim` (`def_at`, `upgrade`).
+Vorschläge, bis der Spieler sie festlegt:
+* **Werte je Stufe:** Durchläufe etwa ×1,5 (T2) und ×2 (T3) bei gleichem Strom; Neonpumpe
+  T1 1 Neon ohne Strom (alter Zapfer), T2 3 Neon/2 Strom (alte Pumpe), T3 4 Neon/2 Strom;
+  Solar 1 / 1,5 / 2 (T3 Reichweite 2), Ofen 2/3/4, Generator 4/6/8 (T3 Reichweite 3), Batterie
+  20/40/60 Speicher, Relais braucht 1 / 0,5 / 0 Strom.
+* **Aufrüsten:** Kaufpreis ×2 (T2) bzw. ×4 (T3), sofort, im Gebäude-Blatt; die Stufe bleibt beim
+  Exemplar (Abreißen und neu Setzen behält sie), neu gekauft wird immer T1.
+* **Basis T3** kommt weiter über die Story; im Testspielstand 3 steht die Basis auf T3.
 
 **Ansicht**
 * Die Platine ist eine kleine **Fabrikstadt in 3D**: Kamera steil von Süden (wie der Kampf, nur

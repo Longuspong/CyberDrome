@@ -14,13 +14,22 @@ extends RefCounted
 ##   Schatten)  4 Uplink.
 ## Deterministisch: alles in der Reihenfolge der Gebaeude-ids, kein Zufall.
 ##
+## Fabrikstadt (28. Nov. 2026, Abschnitt 14): jeder Typ hat die Stufen T1-T3
+## mit gleicher Funktion (``stufen`` in den Daten ueberschreibt die Werte),
+## neu gebaut wird immer T1, aufgeruestet auf der Platine (``upgrade``),
+## sobald die Basis die Stufe hat. Die Basis-Stufe ist ``tier()``; sie
+## schaltet auch neue Typen frei (``basis`` am Typ). Der Zapfer ist in der
+## Neonpumpe aufgegangen (T1 = alter Zapfer, T2 = alte Pumpe).
+##
 ## ``state`` ist der gespeicherte Stand (JSON-tauglich, mit Version), ``lager``
 ## das Woerterbuch, in dem die Waren liegen -- im Spiel ``Roster.materials``
 ## (Schluessel ueber ``material_key``: "res:<ware>", der Charger-Rohling als
 ## "rohling"). Alles uebrige (Status, Verlauf, Strom) lebt nur zur Laufzeit.
 
 const PATH := "res://data/factory.json"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
+## Hoechste Stufe eines Gebaeudes.
+const MAX_LEVEL := 3
 ## Die sechs Nachbarn in axialen Koordinaten.
 const DIRS := [Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1), Vector2i(-1, 0),
 	Vector2i(-1, 1), Vector2i(0, 1)]
@@ -28,6 +37,7 @@ const DIRS := [Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1), Vector2i(-1, 0)
 const HISTORY := 30
 
 static var _data: Dictionary = {}
+static var _level_defs: Dictionary = {}
 
 var state: Dictionary = {}
 var lager: Dictionary = {}
@@ -64,6 +74,61 @@ static func def(type: String) -> Dictionary:
 	return defs().get(type, {})
 
 
+## Die Werte eines Typs auf Stufe ``lv`` (1-3): T1 wie in den Daten, darueber
+## mit den Ueberschreibungen aus ``stufen``.
+static func def_at(type: String, lv: int) -> Dictionary:
+	var d := def(type)
+	if lv <= 1 or d.is_empty():
+		return d
+	var key := "%s@%d" % [type, lv]
+	if _level_defs.has(key):
+		return _level_defs[key]
+	var out := d.duplicate(true)
+	for step in range(2, mini(lv, MAX_LEVEL) + 1):
+		var patch: Dictionary = (d.get("stufen", {}) as Dictionary).get(str(step), {})
+		for field in patch:
+			out[field] = patch[field]
+	_level_defs[key] = out
+	return out
+
+
+## Ab welcher Basis-Stufe es den Typ gibt.
+static func basis_of(type: String) -> int:
+	return int(def(type).get("basis", 1))
+
+
+static func lines_of(type: String) -> Array:
+	return def(type).get("linien", ["logistik"])
+
+
+static func line_color(line: String) -> Color:
+	return Color(str(((data().get("linien", {}) as Dictionary).get(line, {}) as Dictionary).get("farbe", "#fff7fe")))
+
+
+## Die Gruppen des Bau-Menues ([{id, name, symbol}]).
+static func groups() -> Array:
+	return data().get("gruppen", [])
+
+
+## Typen einer Gruppe in Datenreihenfolge.
+static func types_in(group: String) -> Array:
+	var out: Array = []
+	for type in defs():
+		if str(def(type).get("gruppe", "")) == group:
+			out.append(str(type))
+	return out
+
+
+## Was das Aufruesten auf Stufe ``to_lv`` kostet (Kaufpreis mal Faktor).
+static func upgrade_cost(type: String, to_lv: int) -> Dictionary:
+	var factor := float((setting("aufruesten_faktor", {}) as Dictionary).get(str(to_lv), to_lv))
+	var out := {}
+	var price: Dictionary = def(type).get("preis", {})
+	for ware in price:
+		out[str(ware)] = int(ceilf(float(price[ware]) * factor))
+	return out
+
+
 static func wares() -> Dictionary:
 	return data().get("waren", {})
 
@@ -95,8 +160,8 @@ static func live_seconds() -> float:
 
 
 ## "Kurz", wie viele Durchlaeufe: "jeden Takt", "alle 2 Takte", "3× je Takt".
-static func recipe_text(type: String) -> String:
-	var d := def(type)
+static func recipe_text(type: String, lv: int = 1) -> String:
+	var d := def_at(type, lv)
 	var rate := float(d.get("rate", 0))
 	var every := ""
 	if rate >= 1.0:
@@ -108,10 +173,10 @@ static func recipe_text(type: String) -> String:
 	if d.get("batterie", false):
 		return "Speichert bis %d Strom" % int(d.get("speicher", 0))
 	if d.has("brennstoff"):
-		return "1 %s → %d Strom je Takt, Reichweite %d" % [ware_name(str(d["brennstoff"])),
-			int(d.get("liefert", 0)), int(d.get("reichweite", 0))]
+		return "1 %s → %s Strom je Takt, Reichweite %d" % [ware_name(str(d["brennstoff"])),
+			_num(float(d.get("liefert", 0))), int(d.get("reichweite", 0))]
 	if d.has("liefert"):
-		return "%d Strom, Reichweite %d" % [int(d["liefert"]), int(d.get("reichweite", 0))]
+		return "%s Strom, Reichweite %d" % [_num(float(d["liefert"])), int(d.get("reichweite", 0))]
 	if not d.has("ein"):
 		return "→ %s, %s" % [amounts_text(d.get("aus", {})), every]
 	return "%s → %s, %s" % [amounts_text(d["ein"]), amounts_text(d.get("aus", {})), every]
@@ -140,14 +205,18 @@ static func num(value: float) -> String:
 
 func _init(saved: Dictionary = {}, store = null) -> void:
 	lager = store if store is Dictionary else {}
-	state = _normalized(saved) if int(saved.get("version", 0)) == SAVE_VERSION else fresh_state()
+	var version := int(saved.get("version", 0))
+	if version == 1:
+		saved = _migrate_v1(saved)
+		version = SAVE_VERSION
+	state = _normalized(saved) if version == SAVE_VERSION else fresh_state()
 	compute_links()
 
 
 ## Neue Platine: Startgebaeude stehen, Startbestand gehoert dem Spieler.
 static func fresh_state() -> Dictionary:
 	var s := {"version": SAVE_VERSION, "tick": 0, "next_id": 1, "tier": 1, "owned": {},
-		"chunks": [], "b": {}, "ziel": ""}
+		"lv_owned": {}, "chunks": [], "b": {}, "ziel": ""}
 	for type in defs():
 		s["owned"][type] = int(def(type).get("start", 0))
 	for pair in data().get("startaufbau", []):
@@ -157,17 +226,45 @@ static func fresh_state() -> Dictionary:
 
 
 static func _new_building(type: String, id: int) -> Dictionary:
-	return {"id": id, "t": type, "in": {}, "out": {}, "prog": 0.0, "run": false, "on": false,
+	return {"id": id, "t": type, "lv": 1, "in": {}, "out": {}, "prog": 0.0, "run": false, "on": false,
 		"charge": 0.0, "rel_on": true, "rr": 0}
+
+
+## Stand vor der Fabrikstadt (Version 1): der Zapfer wird zur Neonpumpe T1,
+## die alte Neonpumpe (Tier 2, 3 Neon) zur Neonpumpe T2.
+static func _migrate_v1(saved: Dictionary) -> Dictionary:
+	var s: Dictionary = saved.duplicate(true)
+	var owned: Dictionary = s.get("owned", {})
+	var old_pumps := int(owned.get("pmp", 0))
+	owned["pmp"] = int(owned.get("zap", 0)) + old_pumps
+	owned.erase("zap")
+	s["owned"] = owned
+	s["lv_owned"] = {"pmp": {"2": old_pumps}} if old_pumps > 0 else {}
+	var buildings: Dictionary = s.get("b", {})
+	for k in buildings:
+		var b: Dictionary = buildings[k]
+		if str(b.get("t", "")) == "zap":
+			b["t"] = "pmp"
+			b["lv"] = 1
+		elif str(b.get("t", "")) == "pmp":
+			b["lv"] = 2
+	s["version"] = SAVE_VERSION
+	return s
 
 
 ## JSON macht aus ganzen Zahlen Kommazahlen -- hier wieder geraderuecken.
 static func _normalized(saved: Dictionary) -> Dictionary:
 	var s := {"version": SAVE_VERSION, "tick": int(saved.get("tick", 0)),
 		"next_id": int(saved.get("next_id", 1)), "tier": int(saved.get("tier", 1)), "owned": {},
-		"chunks": [], "b": {}, "ziel": str(saved.get("ziel", ""))}
+		"lv_owned": {}, "chunks": [], "b": {}, "ziel": str(saved.get("ziel", ""))}
 	for type in defs():
 		s["owned"][type] = int((saved.get("owned", {}) as Dictionary).get(type, def(type).get("start", 0)))
+		var lvs: Dictionary = (saved.get("lv_owned", {}) as Dictionary).get(type, {})
+		for lv in lvs:
+			if int(lvs[lv]) > 0:
+				if not s["lv_owned"].has(type):
+					s["lv_owned"][type] = {}
+				s["lv_owned"][type][str(int(float(lv)))] = int(lvs[lv])
 	for id in saved.get("chunks", []):
 		s["chunks"].append(str(id))
 	var buildings: Dictionary = saved.get("b", {})
@@ -177,6 +274,7 @@ static func _normalized(saved: Dictionary) -> Dictionary:
 		if not defs().has(type):
 			continue
 		var b := _new_building(type, int(raw.get("id", 0)))
+		b["lv"] = clampi(int(raw.get("lv", 1)), 1, MAX_LEVEL)
 		for side in ["in", "out"]:
 			var buf: Dictionary = raw.get(side, {})
 			for ware in buf:
@@ -351,6 +449,79 @@ func placed(type: String) -> int:
 	return n
 
 
+## Stufe des Gebaeudes auf ``k`` (0 = keins).
+func level_at(k: String) -> int:
+	var b := building_at(k)
+	return int(b.get("lv", 1)) if not b.is_empty() else 0
+
+
+## Wie viele Exemplare der Art auf Stufe ``lv`` dem Spieler gehoeren.
+func owned_at(type: String, lv: int) -> int:
+	var lvs: Dictionary = (state["lv_owned"] as Dictionary).get(type, {})
+	if lv > 1:
+		return int(lvs.get(str(lv), 0))
+	var higher := 0
+	for key in lvs:
+		higher += int(lvs[key])
+	return maxi(0, owned(type) - higher)
+
+
+func placed_at(type: String, lv: int) -> int:
+	var n := 0
+	for k in state["b"]:
+		var b: Dictionary = state["b"][k]
+		if str(b["t"]) == type and int(b.get("lv", 1)) == lv:
+			n += 1
+	return n
+
+
+## Freie Exemplare (im Besitz, nicht gesetzt) auf Stufe ``lv``.
+func free_at(type: String, lv: int) -> int:
+	return maxi(0, owned_at(type, lv) - placed_at(type, lv))
+
+
+## Die hoechste Stufe, von der ein Exemplar frei ist (0 = keins frei).
+func best_free_level(type: String) -> int:
+	for lv in range(MAX_LEVEL, 0, -1):
+		if free_at(type, lv) > 0:
+			return lv
+	return 0
+
+
+## "" = darf aufgeruestet werden, sonst der Grund.
+func can_upgrade(k: String) -> String:
+	var b := building_at(k)
+	if b.is_empty():
+		return "Hier steht nichts."
+	var lv := int(b.get("lv", 1))
+	if lv >= MAX_LEVEL:
+		return "Schon T%d." % MAX_LEVEL
+	if tier() < lv + 1:
+		return "T%d erst ab Basis T%d." % [lv + 1, lv + 1]
+	if not can_pay(upgrade_cost(str(b["t"]), lv + 1)):
+		return "Nicht genug im Lager."
+	return ""
+
+
+## Aufruesten auf der Platine (Abschnitt 14): eine Stufe hoeher, sofort.
+## Puffer und Fortschritt bleiben. "" = geklappt.
+func upgrade(k: String) -> String:
+	var why := can_upgrade(k)
+	if why != "":
+		return why
+	var b := building_at(k)
+	var type := str(b["t"])
+	var lv := int(b.get("lv", 1))
+	pay(upgrade_cost(type, lv + 1))
+	var lvs: Dictionary = (state["lv_owned"] as Dictionary).get(type, {})
+	if lv > 1:
+		lvs[str(lv)] = maxi(0, int(lvs.get(str(lv), 0)) - 1)
+	lvs[str(lv + 1)] = int(lvs.get(str(lv + 1), 0)) + 1
+	state["lv_owned"][type] = lvs
+	b["lv"] = lv + 1
+	return ""
+
+
 ## "" = darf, sonst der Grund in Worten.
 func can_place(k: String, type: String) -> String:
 	var why := fits(k, type)
@@ -358,7 +529,7 @@ func can_place(k: String, type: String) -> String:
 		return why
 	if (state["b"] as Dictionary).has(k):
 		return "Hier steht schon etwas."
-	if placed(type) >= owned(type):
+	if best_free_level(type) == 0:
 		var d := def(type)
 		return "Alle %s stehen schon. Kauf ein weiteres oder setz eins um." % str(d["name"])
 	return ""
@@ -376,8 +547,8 @@ func fits(k: String, type: String) -> String:
 	var d := def(type)
 	if d.is_empty():
 		return "Unbekanntes Gebäude."
-	if int(d.get("tier", 1)) > tier():
-		return "%s gibt es erst ab Tier %d." % [str(d["name"]), int(d["tier"])]
+	if basis_of(type) > tier():
+		return "%s gibt es erst ab Basis T%d." % [str(d["name"]), basis_of(type)]
 	var src := source_at(k)
 	if d.has("quelle") and src != str(d["quelle"]):
 		return "%s geht nur auf %s." % [str(d["name"]), source_name(str(d["quelle"]))]
@@ -455,7 +626,9 @@ func place(k: String, type: String) -> String:
 	var why := can_place(k, type)
 	if why != "":
 		return why
-	state["b"][k] = _new_building(type, int(state["next_id"]))
+	var b := _new_building(type, int(state["next_id"]))
+	b["lv"] = best_free_level(type)
+	state["b"][k] = b
 	state["next_id"] = int(state["next_id"]) + 1
 	compute_links()
 	return ""
@@ -480,8 +653,8 @@ func buy_building(type: String) -> String:
 	var d := def(type)
 	if d.is_empty():
 		return "Unbekanntes Gebäude."
-	if int(d.get("tier", 1)) > tier():
-		return "Erst ab Tier %d." % int(d["tier"])
+	if basis_of(type) > tier():
+		return "Erst ab Basis T%d." % basis_of(type)
 	if not pay(d.get("preis", {})):
 		return "Nicht genug im Lager."
 	state["owned"][type] = owned(type) + 1
@@ -495,7 +668,7 @@ func buy_chunk(id: String) -> String:
 		if id in (state["chunks"] as Array):
 			return "Schon gekauft."
 		if int(chunk.get("tier", 1)) > tier():
-			return "Erst ab Tier %d." % int(chunk["tier"])
+			return "Erst ab Basis T%d." % int(chunk["tier"])
 		if not pay(chunk.get("preis", {})):
 			return "Nicht genug im Lager."
 		state["chunks"].append(id)
@@ -569,7 +742,7 @@ func range_of(k: String) -> int:
 	var b := building_at(k)
 	if b.is_empty():
 		return -1
-	return int(def(str(b["t"])).get("reichweite", -1))
+	return int(def_at(str(b["t"]), int(b.get("lv", 1))).get("reichweite", -1))
 
 
 # ---------------------------------------------------------------- Verbindungen
@@ -624,7 +797,7 @@ func _sorted() -> Array:
 	var list: Array = []
 	for k in state["b"]:
 		var b: Dictionary = state["b"][k]
-		list.append({"k": k, "b": b, "d": def(str(b["t"]))})
+		list.append({"k": k, "b": b, "d": def_at(str(b["t"]), int(b.get("lv", 1)))})
 	list.sort_custom(func(x, y): return int(x["b"]["id"]) < int(y["b"]["id"]))
 	return list
 
@@ -972,13 +1145,13 @@ func estimate_per_tick(warmup: int = 30, ticks: int = 60) -> Dictionary:
 	return out
 
 
-## Welche Gebaeude eine Ware herstellen: [{name, tier}].
+## Welche Gebaeude eine Ware herstellen: [{name, tier}] (tier = ab Basis-Stufe).
 static func producers(ware: String) -> Array:
 	var out: Array = []
 	for type in defs():
 		var d := def(type)
 		if (d.get("aus", {}) as Dictionary).has(ware):
-			out.append({"name": str(d["name"]), "tier": int(d.get("tier", 1))})
+			out.append({"name": str(d["name"]), "tier": basis_of(str(type))})
 	return out
 
 
@@ -1000,7 +1173,7 @@ func status_text(k: String) -> String:
 	var b := building_at(k)
 	if b.is_empty():
 		return ""
-	var d := def(str(b["t"]))
+	var d := def_at(str(b["t"]), int(b.get("lv", 1)))
 	var inf := info_of(k)
 	var anlauf := int(setting("anlauf", 3))
 	match str(inf.get("status", "ok")):

@@ -639,7 +639,8 @@ func seed_starter() -> void:
 ## neuen Version neu schreibt (GameState.refresh_test_slot): der Startbestand
 ## eines neuen Spielstands, dazu je ``amount`` von jeder Ware der Fabrik
 ## (auch Charger-Rohlinge und Keynode-Chips), jeder Energy Phase, jedem
-## Fraktionskern, jedem DROME-Teil und Spezialteil, und jede Waffe einmal extra.
+## Fraktionskern, jedem DROME-Teil und Spezialteil, und jede Waffe einmal extra;
+## die Fabrik-Basis steht auf T3.
 func seed_test_stock(amount: int = 1000) -> void:
 	seed_new_game()
 	for ware in FactorySim.wares():
@@ -656,6 +657,11 @@ func seed_test_stock(amount: int = 1000) -> void:
 	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
 		add_instance(part.id)
 	coins = amount
+	# Fabrikstadt (28. Nov. 2026): Basis gleich auf T3, damit sich jedes
+	# Gebaeude bis T3 aufruesten laesst (T3 kommt sonst erst mit der Story).
+	factory = FactorySim.fresh_state()
+	factory["tier"] = 3
+	_factory_sim = null
 
 
 ## Startbestand eines NEUEN Spielstands (21. Nov. 2026, Wunsch des Spielers;
