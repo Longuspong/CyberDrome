@@ -21,6 +21,8 @@ var delayed: Array = []
 ## Waehrend Sog oder Stoss gesetzt (18. Nov. 2026): die Versetzung ist
 ## erzwungen -- die Anzeige laesst den DROME sichtbar rutschen.
 var forcing := false
+## Die Aktion, die gerade zieht oder stoesst (Fallrichtung, nur Bild).
+var forcing_action: ActionData = null
 
 ## Salven (18. Nov. 2026): Abstand der Schuesse einer Salve, Pause zwischen
 ## zwei Salven und die Flugzeit bis zum Treffer -- dieselben Zeiten nutzt die
@@ -77,6 +79,7 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		var lens := source.focuslense(target, raw, frac)
 		raw = lens["raw"]
 		frac = lens["energy_fraction"]
+	_note_fall(source, target, action)
 	var shield_before := target.shield
 	var res := resolve_damage(target, raw, frac, pierce_shield,
 		action.virus_fraction if action != null else 0.0)
@@ -353,6 +356,22 @@ static func armor_multiplier(armor: float) -> float:
 ## Duenner Vorschau-Zugang: nur der HP-Schaden. Fuer alte Aufrufer und Tests.
 func mitigate(source: Unit, target: Unit, raw: int, energy_fraction: float = 0.0) -> int:
 	return resolve_damage(target, raw, energy_fraction)["hp"]
+
+
+## Fallrichtung fuer den Fall, dass dieser Treffer toedlich ist (nur Bild):
+## weg vom Schuetzen; hat dieselbe Aktion das Ziel gezogen/gestossen (Vortex),
+## in die Zugrichtung; ein Zug, der noch kommt, zieht zum Schuetzen hin.
+func _note_fall(source: Unit, target: Unit, action: ActionData) -> void:
+	if action != null and target.forced_by == action and target.forced_dir != Vector2.ZERO:
+		target.fall_dir = target.forced_dir.normalized()
+		return
+	if source == null or source == target:
+		return
+	var away := IsoView.map_to_local(target.tile) - IsoView.map_to_local(source.tile)
+	if action != null and action.push_tiles < 0:
+		away = -away
+	if away.length() > 0.01:
+		target.fall_dir = away.normalized()
 
 
 func _kill(unit: Unit) -> void:
@@ -681,7 +700,7 @@ func _apply_area(source: Unit, tile: Vector2i, action: ActionData) -> void:
 		if action.power > 0:
 			apply_damage(source, target, source.raw_damage(action), action)
 		if action.push_tiles != 0 and target.is_alive():
-			_shove(source, target, action.push_tiles)
+			_shove(source, target, action.push_tiles, action)
 		if not action.status.is_empty() and target.is_alive():
 			apply_action_status(source, target, action)
 
@@ -802,6 +821,7 @@ func _gather(source: Unit, center: Vector2i, action: ActionData) -> void:
 	caught.sort_custom(func(a, b):
 		return Grid.distance(a.tile, center) < Grid.distance(b.tile, center))
 	forcing = true
+	forcing_action = action
 	forced_seconds = action.delay * PULL_SHARE if action.delay > 0.0 else 0.0
 	var moved := 0
 	for unit in caught:
@@ -816,6 +836,7 @@ func _gather(source: Unit, center: Vector2i, action: ActionData) -> void:
 		if unit.tile != start:
 			moved += 1
 	forcing = false
+	forcing_action = null
 	forced_seconds = 0.0
 	if moved > 0:
 		EventBus.log_line("%s zieht %d Gegner zusammen." % [source.display_name, moved])
@@ -846,7 +867,7 @@ func _step_toward(unit: Unit, center: Vector2i) -> Vector2i:
 
 
 ## Stossen und Ziehen. Positiv = weg, negativ = heran.
-func _shove(source: Unit, target: Unit, tiles: int) -> void:
+func _shove(source: Unit, target: Unit, tiles: int, action: ActionData = null) -> void:
 	# Die Hexrichtung von der Quelle zum Ziel; ziehen = Gegenrichtung.
 	var dir := Grid.direction_toward(source.tile, target.tile)
 	if dir < 0:
@@ -856,6 +877,7 @@ func _shove(source: Unit, target: Unit, tiles: int) -> void:
 
 	var moved := 0
 	forcing = true
+	forcing_action = action
 	for _i in absi(tiles):
 		var nxt := Grid.neighbor(target.tile, dir)
 		if not grid.can_stand_on(nxt, target.unit_id):
@@ -863,6 +885,7 @@ func _shove(source: Unit, target: Unit, tiles: int) -> void:
 		move_unit(target, nxt)
 		moved += 1
 	forcing = false
+	forcing_action = null
 	if moved > 0:
 		EventBus.log_line("%s wird %d Feld(er) %s."
 			% [target.display_name, moved,
@@ -872,6 +895,11 @@ func _shove(source: Unit, target: Unit, tiles: int) -> void:
 ## Die EINZIGE Stelle, an der die Position eines DROME gesetzt wird.
 func move_unit(unit: Unit, to_tile: Vector2i, _entry_dir: Vector2i = Vector2i.ZERO) -> Vector2i:
 	var from := unit.tile
+	if forcing and to_tile != from:
+		unit.forced_dir = IsoView.map_to_local(to_tile) - IsoView.map_to_local(from)
+		unit.forced_by = forcing_action
+	elif not forcing:
+		unit.forced_by = null
 	grid.clear_occupant(from)
 	unit.place_at(to_tile)
 	grid.set_occupant(to_tile, unit.unit_id)

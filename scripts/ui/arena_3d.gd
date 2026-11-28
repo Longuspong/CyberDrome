@@ -126,7 +126,7 @@ const SHIELD_TIME := 0.3
 ## Ausholen auch von vorn lesbar: die Schwungachse kippt zur Seite.
 const SWING_AXIS := Vector3(0, 1, 0.5)
 const RECOIL_LIFT := 0.9         # Rueckstoss hebt die Waffe leicht
-const HIT_TILT := 0.16           # Treffer: der DROME kippt kurz nach hinten
+const HIT_TILT := 0.08           # Treffer: der DROME kippt kurz nach hinten (28. Nov.: halbiert)
 const HIT_TIME := 0.28
 ## Sichtbare Passiven (DROME_DESIGNREGELN Abschnitt 6).
 const ORB_FLOAT := 1.6           # Nimbus-Kugel schwebt

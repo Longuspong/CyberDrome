@@ -29,6 +29,31 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Kampfgefuehl: Molok abwechselnd, Fallrichtung, Toene, Hexfeld 31,2 (28. Nov. 2026, Spieler)
+
+* **Molok (Gunship) schlaegt abwechselnd:** beide Arme zaehlen auf EINEN Takt
+  (`takt_of` am Spiegelarm, `Unit.takt_holder`), jeder Schlag zaehlt -- eine
+  Takt-Leiste im Kampf. Nach jedem Schlag (auch nach einer Faehigkeit mit
+  Ausholzeit) wartet der andere Arm mindestens ein halbes Intervall
+  (`AIController._stagger_twins`); vorher luden beide beim Anlaufen voll und
+  trafen gleichzeitig. Faehigkeiten kommen gleich oft wie vorher (alle N
+  Schlaege insgesamt statt je Arm alle N eigenen).
+* **Fallrichtung:** ein zerstoerter DROME kippt weg vom toedlichen Treffer
+  (`Unit.fall_dir`, gesetzt in `ActionResolver.apply_damage`); hat dieselbe
+  Aktion ihn gezogen oder gestossen (Vortex), in die Zugrichtung
+  (`forced_dir`/`forced_by`). Hohe Teile fliegen weiter als die Fuesse. Ohne
+  Schuetzen (Virus, Kabelbrand) streuen die Teile wie bisher rundum.
+* **Weniger Erschuetterung:** Zucken 3 statt 7 px, Kippen halbiert, Kamerastoss
+  nur noch ab der halben Integritaet (`CAMERA_SHAKE_MAX` 3).
+* **Toene:** ein Ton je Waffe, selbst synthetisiert (`tools/build_sfx.py` ->
+  `assets/sfx/*.wav`), gespielt von `BattleSfx`; Nahkampf beim Treffen,
+  Faehigkeit tiefer und lauter, Gegner leiser. Schalter Optionen -> Ton -> Effekte.
+* **Kampfmusik ohne langes Intro:** startet bei 7,5 s (letzter Intro-Takt), die
+  Schleife ab 10 s bleibt (`Music.START_AT`).
+* **Hexfeld 20 % groesser:** `IsoView.HEX_R` 31,2 statt 26, Bodenplatten neu
+  (`tools/build_arena_models.py`). Das Feld fuellt weiter die Bildbreite -- die
+  DROMEs wirken dadurch kleiner, haben aber mehr Platz.
+
 ### Nimbus als Supporter, Neon-Varianten, Fraktionsvarianten raus (28. Nov. 2026, Spieler)
 
 Details in `docs/SKILLBAUM_KONZEPT.md` 5f.

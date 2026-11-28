@@ -15,12 +15,12 @@ extends RefCounted
 
 ## Hexfeld (seit 17. Nov. 2026). Gemessen in derselben Projektion wie die
 ## DROMEs (1,35 Bildpunkte je Generator-Einheit, Iso-Kamera 45 Grad); in der
-## Tiefe staucht die Kamera auf cos 45. Ein Sechseck hat 22 Einheiten
+## Tiefe staucht die Kamera auf cos 45. Ein Sechseck hat 31,2 Einheiten (seit 28. Nov. 2026; 22 -> 26 -> 31,2)
 ## Eckradius, so gross wie die Platten aus dem 3D-Entwurf
 ## (docs/design/drome_entwurf/v10_hexboden.py). Seit 18. Nov. 2026 liegen die
 ## Sechsecke flach (Kante oben und unten, Spitze links und rechts): Spalten
 ## laufen senkrecht, ungerade Spalten ein halbes Feld tiefer (Grid "odd-q").
-const HEX_R := 26.0
+const HEX_R := 31.2
 const PX_PER_UNIT := 1.35
 const DEPTH_SQUASH := 0.70710678
 ## Abstand zweier Nachbarn quer im Bild (Mitte zu Mitte, sqrt(3) * R) -- die

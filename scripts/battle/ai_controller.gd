@@ -106,6 +106,7 @@ func update(unit: Unit, dt: float) -> void:
 				else (mount["attack"] as ActionData).interval / unit.attack_speed_mult()
 			mount["instant"] = false
 			fired = true
+			_stagger_twins(unit, mount)
 			if battle.outcome != BattleManager.Outcome.RUNNING:
 				return
 	if fired:
@@ -113,6 +114,18 @@ func update(unit: Unit, dt: float) -> void:
 	var next := next_step(unit, target)
 	if next != unit.tile:
 		_walk(unit, next, target)
+
+
+## Gunship (Molok): die Arme schlagen abwechselnd (Spieler 28. Nov. 2026).
+## Nach einem Schlag wartet der andere Arm mindestens ein halbes Intervall --
+## sonst laden beide beim Anlaufen voll und treffen im selben Augenblick.
+func _stagger_twins(unit: Unit, fired: Dictionary) -> void:
+	var holder := Unit.takt_holder(fired)
+	var half := (fired["attack"] as ActionData).interval * 0.5 / unit.attack_speed_mult()
+	for other in unit.mounts:
+		if is_same(other, fired) or not is_same(Unit.takt_holder(other), holder):
+			continue
+		other["ready"] = maxf(float(other["ready"]), half)
 
 
 func _retarget(unit: Unit, target: Unit) -> void:
@@ -243,7 +256,8 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		var aim := _support_aim(unit, ability) if (ability as ActionData).support != "" \
 			else _aim(unit, ability, target)
 		if not aim.is_empty():
-			mount["count"] = maxf(0.0, float(mount["count"]) + unit.takt_step(mount)
+			var holder := Unit.takt_holder(mount)
+			holder["count"] = maxf(0.0, float(holder["count"]) + unit.takt_step(mount)
 				- float(trigger_every(unit, ability)))
 			if (ability as ActionData).windup > 0.0:
 				_begin_cast(unit, ability, aim, mount, fx)
@@ -262,7 +276,8 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 	_execute(unit, shot["tile"], attack, shot["target"])
 	_attack_modules(unit, mount, attack, shot.get("target"))
 	if ability != null and not due:
-		mount["count"] = float(mount["count"]) + unit.takt_step(mount)
+		var holder := Unit.takt_holder(mount)
+		holder["count"] = float(holder["count"]) + unit.takt_step(mount)
 	unit.on_attack()
 	return true
 
@@ -299,10 +314,12 @@ func _finish_cast(unit: Unit) -> void:
 	var ability: ActionData = cast["action"]
 	var aim := _landing(unit, ability, cast["aim"], cast.get("target"))
 	if aim.is_empty():
-		var mount: Dictionary = cast["mount"]
+		var mount: Dictionary = Unit.takt_holder(cast["mount"])
 		mount["count"] = float(mount["count"]) + float(trigger_every(unit, ability))
 		return
 	_resolve_ability(unit, ability, aim, cast["mount"], cast["fx"])
+	# Nach der Ausholzeit wieder versetzt: der andere Arm wartet ab dem Schlag.
+	_stagger_twins(unit, cast["mount"])
 	battle._check_victory()
 
 

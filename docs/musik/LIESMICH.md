@@ -5,7 +5,7 @@ Zwei BeepBox-Stuecke des Spielers (24. Nov. 2026). Abspielen und Wechsel:
 
 | Datei | Quelle | Wo | Tempo | Intro | Schleife |
 |---|---|---|---|---|---|
-| `assets/music/kampf.ogg` | `kampf.beepbox.json` (D, expert) | Kampf (`battle.tscn`) | 96 BPM, Takt 2,5 s | Takt 1-4 = 10 s | Takt 5-32 (10-80 s) |
+| `assets/music/kampf.ogg` | `kampf.beepbox.json` (D, expert) | Kampf (`battle.tscn`) | 96 BPM, Takt 2,5 s | Takt 1-4 = 10 s, gespielt ab 7,5 s (nur Takt 4, `Music.START_AT`, seit 28. Nov. 2026) | Takt 5-32 (10-80 s) |
 | `assets/music/menue.ogg` | `menue.beepbox.json` (A, Moll) | alle anderen Bildschirme | 128 BPM, Takt 1,875 s | Takt 1-4 = 7,5 s | Takt 5-48 (7,5-90 s) |
 
 Warum diese Punkte: kampf Takt 32 -> 5 ist dieselbe Folge wie 12 -> 13

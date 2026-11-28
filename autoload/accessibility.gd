@@ -60,6 +60,8 @@ var reduce_motion: bool = false
 var haptics: bool = true
 ## Hintergrundmusik (24. Nov. 2026, autoload/music.gd). Abschaltbar.
 var music: bool = true
+## Toene im Kampf (Schuesse, Schlaege; 28. Nov. 2026, scripts/ui/battle_sfx.gd).
+var sounds: bool = true
 ## Echtes Licht im Kampf (21. Nov. 2026, Kampfbild mehr 3D B6 Stufe 2):
 ## Laternen und Muendungsblitze beleuchten DROMEs und Hindernisse je
 ## Bildpunkt (Abstand, Richtung). Teststufe, Standard aus -- erst auf dem
@@ -144,6 +146,12 @@ func set_music(value: bool) -> void:
 	settings_changed.emit()
 
 
+func set_sounds(value: bool) -> void:
+	sounds = value
+	_save()
+	settings_changed.emit()
+
+
 func set_haptics(value: bool) -> void:
 	haptics = value
 	_save()
@@ -195,6 +203,7 @@ func _load() -> void:
 	reduce_motion = _flag(data.get("reduce_motion"), reduce_motion)
 	haptics = _flag(data.get("haptics"), haptics)
 	music = _flag(data.get("music"), music)
+	sounds = _flag(data.get("sounds"), sounds)
 	real_light = _flag(data.get("real_light"), real_light)
 	var lang := str(data.get("language", language))
 	if lang in LANGUAGES:
@@ -223,6 +232,7 @@ func _save() -> void:
 		"reduce_motion": reduce_motion,
 		"haptics": haptics,
 		"music": music,
+		"sounds": sounds,
 		"real_light": real_light,
 		"language": language,
 	}))

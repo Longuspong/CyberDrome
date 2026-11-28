@@ -176,8 +176,10 @@ func test_the_gunship_fires_from_both_arms() -> void:
 	t.equal(str(molok.mounts[1]["slot"]), "equip_right", "der zweite ist der rechte Arm")
 	t.equal(molok.mounts[0]["attack"], molok.mounts[1]["attack"], "mit derselben Waffe")
 	t.ok(float(molok.mounts[1]["ready"]) > float(molok.mounts[0]["ready"]), "versetzt")
+	# Seit 28. Nov. 2026: ein Takt fuer beide Arme, jeder Schlag zaehlt.
 	molok.mounts[0]["count"] = 2
-	t.equal(float(molok.mounts[1]["count"]), 0.0, "jeder Arm zählt seinen Takt selbst")
+	t.ok(is_same(Unit.takt_holder(molok.mounts[1]), molok.mounts[0]), "ein Takt für beide Arme")
+	t.equal(molok.takt_bars().size(), 1, "eine Takt-Leiste")
 
 
 func test_apply_chassis_sets_the_whole_frame() -> void:
