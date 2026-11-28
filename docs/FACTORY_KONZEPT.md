@@ -267,3 +267,56 @@ Chassis aus alter Beute bauen weiter kostenlos.
 ein Einsatz, ein DROME ≈ 5-8 Einsätze); welche Baupläne es zu Beginn gibt und wo die übrigen
 herkommen (Cache-Inhalt, Story); ob Waffen schon mit der ersten Werkbank kommen; Baukerne raus
 (Caches, Shop, `Roster.craft_drome`, alte Spielstände), sobald DROMEs aus Teilen entstehen.
+
+## 14. Fabrikstadt -- Design und neue Tier-Logik (Design-Sitzung 28. Nov. 2026, Richtung entschieden)
+
+Entwürfe, Prototyp und Zeichen-Skript: `docs/design/fabrik_stadt/` (LIESMICH dort), Canvas
+https://claude.ai/artifact/RdYTr9e3QabvCAVY9Q3Ct1. **Noch nicht gebaut** -- Optik und Menü
+sind abgesegnet, die Regel-Änderungen unten müssen ins Spiel (`data/factory.json`, `FactorySim`,
+`FactoryView`).
+
+**Ansicht**
+* Die Platine ist eine kleine **Fabrikstadt in 3D**: Kamera steil von Süden (wie der Kampf, nur
+  steiler), Gebäude stehen sichtbar, schneiden aber höchstens den Rand des Feldes dahinter an.
+* Stil wie die DROMEs: matte Platten, oben heller als vorn, **Kontur je Teil** in der Linienfarbe,
+  Leuchtteile nur als flache Farbflächen -- kein Glühen, keine Transparenz.
+* **Näher dran**: ein Feld ca. 92 px breit, die Platine scrollt (lieber scrollen als fummeln).
+* Ohne Strom werden die Leuchtflächen grau; Schilder nur bei Problemen (Stau, kein Strom) und Ziel.
+  Gesperrte Felder gestrichelt, ein Schloss je Feldgruppe.
+
+**Linien: Farbe und Bauweise**
+* **Schrott** rostrot, kantig, Schornsteine, Magnet: Sammler, Schmelze, Recycler, Verdichter,
+  Schlackeofen. **Neon** cyan, runde Tanks, Glas, Ringe: Neonpumpe, Plasmakammer, Generator.
+  **Daten** violett, schlanke Masten, Schüsseln: Scanner.
+* **Hersteller mischen** Teile und Farben ihrer Linien (Feldrand wechselt die Farben): Löter
+  (Schrott + Daten), Chipfabrik (Schrott + Daten + Neon).
+* Ohne Linie: Strom grün (Solarpanel, Batterie), Logistik und Basis weiß. Öfen/Generatoren tragen
+  die Farbe ihres Brennstoffs.
+
+**Gruppen (neu)**: Fördern · **Veredeln** (eine Linie rein, dieselbe Linie besser raus: Schmelze,
+Recycler, Plasmakammer, Verdichter) · **Herstellen** (mehrere Linien rein, etwas Neues raus: Löter,
+Chipfabrik) · Strom · Logistik.
+
+**Tiers (neu, ändert die Logik)**
+* **Jeder Typ hat T1-T3 mit gleicher Funktion**, nur besser/effizienter. Ein Solarpanel wird nie
+  zum Generator. Am Gebäude lesbar: T1 ohne Sockel mit Rost, T2 auf Sockel mit hellerem Blech,
+  T3 auf Doppelsockel mit Dach in Linienfarbe; dazu 1-3 Kerben an der Südkante; je Stufe ein
+  Detail mehr (Schornstein, Kolben, Paneel ...).
+* **Zapfer entfällt**: die Neonpumpe ist der Neon-Förderer (T1 = heutiger Zapfer).
+* Neue Typen werden über die **Basis-Stufe** freigeschaltet (Generator, Batterie, Verdichter,
+  Chipfabrik ab Basis T2) und kommen dann als T1.
+* Neu gebaut wird immer **T1**; T2/T3 entstehen durch **Aufrüsten auf der Platine**, sobald die
+  Basis die Stufe hat. Kosten und Werte je Stufe: offen ("Logik später verfeinern").
+* Die Basis wächst mit ihrer Stufe um ein Stockwerk.
+
+**Bau-Menü**
+* Untere Leiste fest: Plus · **Bauen** (Sechseck, Symbol Kran) · **Abreißen** (Fünfeck, roter
+  Hammer) · **Verschieben** (Viereck).
+* Bauen klappt **nach oben** eine waagerechte Reihe mit den fünf Gruppen aus (Sechsecke).
+* Eine Gruppe klappt darüber eine **waagerechte Reihe ihrer Typen** aus -- ohne Kacheln, nur die
+  Gebäude in Platinengröße mit Name und Stand. **Freigeschaltete stehen nah am Gruppenknopf**,
+  gesperrte grau weiter außen ("AB BASIS T2"). Über jedem T1 ist T2 klein und grau angedeutet.
+* T1 antippen wählt (gelbe Kontur), Feld antippen = Vorschau, nochmal = bauen (wie heute).
+
+**Offen**: Werte und Kosten je Tier, Aufrüsten (Preis, Dauer), Inhalte für T3, ob Gebäude-Blatt,
+Werkbank und Ertrag-Popup aus den älteren Canvas-Reihen übernommen werden.
