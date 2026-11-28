@@ -280,7 +280,10 @@ func _drome_row(index: int) -> Control:
 	row.add_theme_constant_override("separation", 12)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(row)
-	row.add_child(_quiet(_tile_stack(build, 76.0, entry.in_squad)))
+	var stack := _tile_stack(build, 76.0, entry.in_squad)
+	if todo != "":
+		stack.add_child(_todo_badge(todo, 76.0))
+	row.add_child(_quiet(stack))
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 2)
@@ -296,9 +299,20 @@ func _drome_row(index: int) -> Control:
 	var loadout := Arcade.label(_loadout_text(entry, build), 13, Arcade.MUTED)
 	loadout.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_quiet(loadout))
-	if todo != "":
-		column.add_child(_quiet(Arcade.label(todo, 11, Arcade.YELLOW, "bold", 0.12)))
 	return panel
+
+
+## Gelbes Abzeichen unten rechts am Bild statt "WAFFENPLATZ FREI" /
+## "CHARGER-PLATZ FREI" (28. Nov. 2026): Plus fuer den Halter, Charger-Symbol
+## fuer den Charger; der Satz steht im Tooltip.
+static func _todo_badge(todo: String, edge: float) -> Control:
+	var badge := PanelContainer.new()
+	badge.add_theme_stylebox_override("panel", Arcade.chamfer_box(Arcade.YELLOW, 4))
+	badge.add_child(UiIcon.rect("plus" if todo == "WAFFENPLATZ FREI" else "charger", 14, Arcade.NIGHT))
+	badge.size = Vector2(22, 22)
+	badge.position = Vector2(edge - 22, edge - 22)
+	badge.tooltip_text = "Waffenplatz frei" if todo == "WAFFENPLATZ FREI" else "Charger-Platz frei"
+	return badge
 
 
 ## Waffe(n) mit Charger in Worten: "Neon-Blaster · Feuer 2".

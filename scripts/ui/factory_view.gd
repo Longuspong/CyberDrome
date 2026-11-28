@@ -37,6 +37,10 @@ const GREEN := Color("#5cf2a2")
 var _sim: FactorySim
 var _board: Board
 var _head: Label
+## Kopf als Symbole (28. Nov. 2026): "T1", Strom, Takt.
+var _tier_label: Label
+var _power_label: Label
+var _tick_label: Label
 var _stage: Control
 var _hint: Label
 var _plus: Button
@@ -71,6 +75,23 @@ func _ready() -> void:
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 6)
+	var stats := HBoxContainer.new()
+	stats.add_theme_constant_override("separation", 14)
+	add_child(stats)
+	_tier_label = Arcade.label("", 14, UiKit.MUTED, "bold", 0.1)
+	_tier_label.tooltip_text = "Tier"
+	_tier_label.mouse_filter = Control.MOUSE_FILTER_PASS
+	stats.add_child(_tier_label)
+	var power := UiIcon.text("energy", "", 14, UiKit.MUTED, "bold")
+	power.tooltip_text = "Strom: gebraucht / vorhanden"
+	power.mouse_filter = Control.MOUSE_FILTER_PASS
+	_power_label = power.get_child(1)
+	stats.add_child(power)
+	var tick := UiIcon.text("reroll", "", 14, UiKit.MUTED, "bold")
+	tick.tooltip_text = "Takte"
+	tick.mouse_filter = Control.MOUSE_FILTER_PASS
+	_tick_label = tick.get_child(1)
+	stats.add_child(tick)
 	_head = UiKit.label("", UiKit.SMALL, UiKit.MUTED)
 	add_child(_head)
 	# Hinweiszeile: fest zwei Zeilen hoch, damit die Platine nicht springt.
@@ -142,8 +163,11 @@ func _live_tick() -> void:
 
 ## Nach jedem Takt und jeder Handlung: Kopfzeile und Platine.
 func refresh() -> void:
-	_head.text = "TIER %d · STROM %s/%s · TAKT %d" % [_sim.tier(), FactorySim.num(float(_sim.power["used"])),
-		FactorySim.num(float(_sim.power["supply"])), _sim.tick_count()]
+	_tier_label.text = "T%d" % _sim.tier()
+	_power_label.text = "%s/%s" % [FactorySim.num(float(_sim.power["used"])),
+		FactorySim.num(float(_sim.power["supply"]))]
+	_tick_label.text = str(_sim.tick_count())
+	_head.text = ""
 	goal_wares = {}
 	if _sim.goal() != "":
 		var bench := Workbench.new(GameState.roster)
@@ -151,8 +175,9 @@ func refresh() -> void:
 		var parts: Array = []
 		for ware in goal_wares:
 			parts.append("%d %s" % [int(goal_wares[ware]), FactorySim.ware_name(str(ware))])
-		_head.text += "\nZIEL %s: %s" % [bench.name_of(_sim.goal()).to_upper(),
+		_head.text = "ZIEL %s: %s" % [bench.name_of(_sim.goal()).to_upper(),
 			"fehlt " + ", ".join(parts) if not parts.is_empty() else "alles da -- Werkbank"]
+	_head.visible = _head.text != ""
 	_board.queue_redraw()
 
 

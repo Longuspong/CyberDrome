@@ -70,6 +70,7 @@ var _pinch_zoom := 1.0
 # UI
 var _ui: CanvasLayer
 var _status: Label
+var _virus_icon: Control
 var _clock: Label
 var _foes: Label
 var _where: Label
@@ -296,11 +297,14 @@ func _refresh_hud() -> void:
 	var until := battle.virus_in()
 	var color := Arcade.WHITE
 	_status.text = ""
+	_virus_icon.visible = false
 	if until <= 0.0:
-		_status.text = "VIRUS −%d %%" % int(round(float(Config.section("virus").get("pct_of_max", 0.1)) * 100.0))
+		_status.text = "−%d %%" % int(round(float(Config.section("virus").get("pct_of_max", 0.1)) * 100.0))
+		_virus_icon.visible = true
 		color = Arcade.MAGENTA
 	elif until <= _virus_warn():
-		_status.text = "VIRUS IN %d S" % int(ceil(until))
+		_status.text = "%d S" % int(ceil(until))
+		_virus_icon.visible = true
 		color = Arcade.MAGENTA
 	_clock.add_theme_color_override("font_color", color)
 	_status.add_theme_color_override("font_color", Arcade.MAGENTA)
@@ -477,6 +481,7 @@ func _shake_camera(severity: float) -> void:
 func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	_over = true
 	view.show_unit_badges([])
+	_virus_icon.visible = false
 	_status.text = "%s nach %d s  ·  Seed %d" % [
 		BattleManager.outcome_label(outcome), int(battle.time), battle.battle_seed]
 	# Erst den letzten DROME zerfallen sehen, dann das Ergebnis (17. Nov. 2026).
@@ -1005,10 +1010,18 @@ func _build_ui() -> void:
 	_clock = Arcade.label("00:00", 26, Arcade.WHITE, "display")
 	_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	clock_box.add_child(_clock)
+	# Virus als Symbol + Zahl (28. Nov. 2026) statt "VIRUS IN 30 S".
+	var status_row := HBoxContainer.new()
+	status_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	status_row.add_theme_constant_override("separation", 4)
+	clock_box.add_child(status_row)
+	_virus_icon = UiIcon.rect("virus", 14, Arcade.MAGENTA)
+	_virus_icon.visible = false
+	status_row.add_child(_virus_icon)
 	_status = Arcade.label("", 11, Arcade.MAGENTA, "bold", 0.16)
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status.clip_text = true
-	clock_box.add_child(_status)
+	status_row.add_child(_status)
 	var foes := VBoxContainer.new()
 	foes.add_theme_constant_override("separation", 0)
 	foes.size_flags_horizontal = Control.SIZE_EXPAND_FILL

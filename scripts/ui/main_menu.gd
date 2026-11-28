@@ -242,8 +242,9 @@ func _money(title: String, value: String, color: Color, icon: String) -> Control
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 2)
 	panel.add_child(column)
-	column.add_child(Arcade.label(title.to_upper(), 11, Arcade.MUTED, "bold", 0.18))
-	column.add_child(UiIcon.text(icon, value, 18, color, "display"))
+	# Seit 28. Nov. 2026 ohne Beschriftung: das Symbol sagt, welche Waehrung.
+	panel.tooltip_text = title
+	column.add_child(UiIcon.text(icon, value, 20, color, "display"))
 	return panel
 
 

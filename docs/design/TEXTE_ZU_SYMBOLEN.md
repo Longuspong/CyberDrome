@@ -1,7 +1,9 @@
 # Texte, die ein Symbol sein koennten (28. Nov. 2026)
 
-Durchgang ueber alle Bildschirme. Vorschlaege, noch nicht umgesetzt -- erst
-absegnen. "Da" = das SVG liegt schon in `assets/ui_icons/`, "neu" = muesste
+Durchgang ueber alle Bildschirme. **Alle A-Punkte sind seit 28. Nov. 2026
+umgesetzt** (dazu `SETUP`-Etikett und `AN/AUS` in den Optionen weg); B und C
+sind Vorschlaege, erst absegnen. Wo die Beschriftung wegfiel, steht sie als
+Tooltip. "Da" = das SVG liegt schon in `assets/ui_icons/`, "neu" = muesste
 gezeichnet werden. Prioritaet: **A** viel Platz/Klarheit gewonnen, **B** nett,
 **C** Geschmackssache.
 
@@ -55,7 +57,7 @@ gezeichnet werden. Prioritaet: **A** viel Platz/Klarheit gewonnen, **B** nett,
 
 | Wo | Heute | Vorschlag | SVG | Prio |
 |---|---|---|---|---|
-| Platine, Kopf | `TIER 1 · STROM 0/4 · TAKT 1` | `T1 · ⚡0/4 · ⟳1` | energy (da), Takt neu | A |
+| Platine, Kopf | `TIER 1 · STROM 0/4 · TAKT 1` | `T1 · ⚡0/4 · ⟳1` | energy, reroll (da); eigenes Takt-Symbol waere schoener | A |
 | Werkbank, DROME-Kacheln | `0/5 Teile` | Fuenf Kaestchen (Pips) | gezeichnet | B |
 | Werkbank, Zutaten | `Upgrade-Chip 0/18 -- Chipfabrik (ab Tier 2)` | `0/18` + Kuerzel-Badge `CHP` + Schloss `T2` | Gebaeude-Kuerzel (da), Schloss neu | B |
 | Charger-Crafter | Energy-Phases-Reihe: Edelstein **und** `FEUER` darunter | nur Edelstein + Zahl | phase_* (da) | A |
@@ -65,9 +67,9 @@ gezeichnet werden. Prioritaet: **A** viel Platz/Klarheit gewonnen, **B** nett,
 
 | Wo | Heute | Vorschlag | SVG | Prio |
 |---|---|---|---|---|
-| Optionen | `AN` / `AUS` neben jedem Schalter | weglassen, der Schalter zeigt es | -- | B |
+| Optionen | `AN` / `AUS` neben jedem Schalter | weglassen, der Schalter zeigt es | -- | erledigt |
 | Optionen | Schriftgroesse `A NORMAL / A GROSS / A SEHR GROSS` | nur drei unterschiedlich grosse `A` | -- | C |
-| Optionen, Spielstaende | schraeges Etikett `SETUP` / `SAVE SELECT` (Englisch, doppelt zum Titel) | weglassen oder Zahnrad/Diskette | settings (da) | C |
+| Optionen, Spielstaende | schraeges Etikett `SETUP` / `SAVE SELECT` (Englisch, doppelt zum Titel) | `SETUP` weg (erledigt); `SAVE SELECT` offen | -- | C |
 | Spielstaende | `01` **und** `SLOT 1` | nur `01` | -- | B |
 | Story-Dialog | `ANTIPPEN · WEITER` | blinkender Pfeil unten rechts | chevron_right (da) | B |
 | Cache oeffnen | `TIPPEN ZUM OEFFNEN` | pulsierende Hand/Finger | neu (tap) | C |
