@@ -623,6 +623,10 @@ class EffectPainter extends Node2D:
 	const TEXT_SIZE := 16
 	const BIG_SIZE := 18
 	const RISE := 34.0
+	## Gleiche Zahlen am selben Ort so lange zusammenfassen (Sekunden).
+	const MERGE_TIME := 0.45
+	## Hoechstens so viele Zahlen uebereinander.
+	const MAX_STACK := 2
 	const COLOR_SHADOW := Color(0.0, 0.0, 0.0, 0.85)
 	## Flugzeit je Projektil (Sekunden) und Dauer des Einschlags.
 	const FLIGHT := {"": 0.0, "bolt": 0.12, "slug": 0.08, "orb": 0.26, "beam": 0.0}
@@ -654,13 +658,29 @@ class EffectPainter extends Node2D:
 			"from_fn": style.get("from_fn", null), "in_3d": bool(style.get("in_3d", false))})
 
 	func add_text(at: Vector2, text: String, color: Color, big: bool) -> void:
-		# Mehrere Zahlen am selben Ort stapeln sich, statt sich zu ueberdecken.
+		# Gleiche Zahlen am selben Ort laufen zusammen (25. Nov. 2026): viele
+		# kleine Treffer (-1 -1 -1 ...) bauten sonst eine Saeule quer uebers
+		# Feld. Aus "-1" und "-2" wird "-3", die Zahl springt kurz neu auf.
+		var amount := TextMerge.amount(text)
+		for entry in _texts:
+			if (entry["at"] as Vector2).distance_to(at) >= 8.0 or float(entry["age"]) >= MERGE_TIME:
+				continue
+			if amount == 0 or entry["color"] != color:
+				continue
+			var before := TextMerge.amount(str(entry["text"]))
+			if before == 0 or signi(before) != signi(amount):
+				continue
+			entry["text"] = TextMerge.format(before + amount, str(entry["text"]))
+			entry["age"] = 0.0
+			entry["big"] = bool(entry["big"]) or big
+			return
+		# Verschiedene Zahlen am selben Ort stapeln sich -- hoechstens drei hoch.
 		var stack := 0
 		for entry in _texts:
 			if (entry["at"] as Vector2).distance_to(at) < 8.0 and float(entry["age"]) < 0.3:
 				stack += 1
 		_texts.append({"at": at, "text": text, "color": color, "age": 0.0,
-			"big": big, "stack": stack})
+			"big": big, "stack": mini(stack, MAX_STACK)})
 
 	func _process(delta: float) -> void:
 		if _shots.is_empty() and _texts.is_empty():
@@ -876,3 +896,17 @@ class FloorRings extends Node2D:
 				var reach := float(entry["area"]) * IsoView.TILE_W * (0.4 + 0.6 * t)
 				draw_arc(Vector2.ZERO, reach, 0.0, TAU, 48, Color(color, fade * 0.55), 3.0 * s, true)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## Schadens-/Heilzahlen zusammenfassen: "-3" und "-2" -> "-5", "+4" und "+1"
+## -> "+5". Text ohne Zahl (z. B. "AUSGEWICHEN") gibt 0 und bleibt fuer sich.
+class TextMerge:
+	static func amount(text: String) -> int:
+		var t := text.strip_edges().replace("−", "-")
+		if t.length() < 2 or not (t[0] in ["-", "+"]) or not t.substr(1).is_valid_int():
+			return 0
+		return int(t)
+
+	static func format(value: int, like: String) -> String:
+		var minus := "−" if like.strip_edges().begins_with("−") else "-"
+		return (minus + str(-value)) if value < 0 else ("+" + str(value))

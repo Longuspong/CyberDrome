@@ -176,7 +176,7 @@ func refresh() -> void:
 		for ware in goal_wares:
 			parts.append("%d %s" % [int(goal_wares[ware]), FactorySim.ware_name(str(ware))])
 		_head.text = "ZIEL %s: %s" % [bench.name_of(_sim.goal()).to_upper(),
-			"fehlt " + ", ".join(parts) if not parts.is_empty() else "alles da -- Werkbank"]
+			"fehlt " + ", ".join(parts) if not parts.is_empty() else "alles da – Werkbank"]
 	_head.visible = _head.text != ""
 	_board.queue_redraw()
 

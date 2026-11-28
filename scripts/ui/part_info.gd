@@ -14,7 +14,7 @@ extends RefCounted
 
 ## Ein Satz je Teil: wozu ist es da? Fehlt ein Eintrag, entfaellt die Zeile.
 const ROLE := {
-	&"eq_pulse_blaster": "Leichte Allzweckwaffe auf mittlere Distanz. Halb Energieschaden -- gut gegen Schilde.",
+	&"eq_pulse_blaster": "Leichte Allzweckwaffe auf mittlere Distanz. Halb Energieschaden – gut gegen Schilde.",
 	&"eq_plasma_blade": "Nahkampfklinge des Vireo: schnelle Schnitte, das Aufschlitzen macht das Ziel verwundbar.",
 	&"eq_hammer": "Nahkampfwaffe des Molok: der Betäubungsschlag betäubt und heilt den Träger um den Schaden.",
 	&"eq_repair_kit": "Heilgerät des Nimbus: kleine Energieblitze speichern den angerichteten Schaden, die Reparaturwelle gibt ihn dem ganzen Team als Schild und Integrität zurück.",
@@ -124,11 +124,11 @@ static func action_lines(action: ActionData) -> Array[String]:
 			out.append("Kreuz: trifft das Ziel und die vier geraden Nachbarfelder.")
 	if action.power > 0:
 		if action.energy_fraction >= 1.0:
-			out.append("Reiner Energieschaden -- stark gegen Schilde.")
+			out.append("Reiner Energieschaden – stark gegen Schilde.")
 		elif action.energy_fraction > 0.0:
-			out.append("%d %% Energieschaden -- gut gegen Schilde." % int(round(action.energy_fraction * 100.0)))
+			out.append("%d %% Energieschaden – gut gegen Schilde." % int(round(action.energy_fraction * 100.0)))
 		else:
-			out.append("Kinetischer Schaden -- stark gegen Integrität, schwach gegen Schilde.")
+			out.append("Kinetischer Schaden – stark gegen Integrität, schwach gegen Schilde.")
 	if action.shots > 1 and action.salvo > 1:
 		out.append("%d Salven zu je %d Schüssen (je 1/%d Schaden): erst aufs Ziel, dann auf den nächsten Gegner in Reichweite; ist nur einer da, alle auf ihn." % [action.shots, action.salvo, action.salvo])
 	elif action.shots > 1:

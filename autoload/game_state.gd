@@ -95,7 +95,7 @@ func boot() -> void:
 		roster = Roster.new()
 		roster.seed_starter()
 		refresh_squad()
-		print("[GameState] Persistenz aus -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
+		print("[GameState] Persistenz aus – Startbestand gesetzt: %d DROMEs, %d Instanzen"
 			% [roster.entries.size(), roster.all_instances().size()])
 		return
 	refresh_test_slot()
@@ -273,7 +273,7 @@ func load_roster() -> void:
 		# abgelegt -- sonst gaebe es ihn in der Auswahl noch nicht.
 		roster.seed_new_game()
 		save_roster()
-		print("[GameState] Spielstand %d neu -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
+		print("[GameState] Spielstand %d neu – Startbestand gesetzt: %d DROMEs, %d Instanzen"
 			% [slot, roster.entries.size(), roster.all_instances().size()])
 		load_progress()
 		load_run()
@@ -438,7 +438,7 @@ func load_run() -> void:
 		return
 	run = RunState.from_dict(parsed)
 	if run == null:
-		push_warning("GameState: gespeicherter Lauf passt nicht zur Version -- verworfen")
+		push_warning("GameState: gespeicherter Lauf passt nicht zur Version – verworfen")
 		save_run()
 	else:
 		print("[GameState] Lauf fortgesetzt: Runde %d, %d Leben" % [run.round, run.lives])

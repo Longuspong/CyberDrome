@@ -75,9 +75,9 @@
     {"tier": 2, "titel": "Tier 2 freischalten", "kosten": {"legierung": 110, "plasma": 100, "schaltkreis": 35}, "weg": "fabrik",
       "text": "Bringt Generator, Batterie, Neonpumpe, Verdichter, Chipfabrik. Später: CyberDromes aus Teilen. Kosten = etwa 70 Takte (3-4 Kämpfe) eines starken Tier-1-Aufbaus (je Takt ca. 1,6 Legierung, 1,5 Plasma, 0,45 Schaltkreis)."},
     {"tier": 3, "titel": "Tier 3", "kosten": {}, "weg": "story",
-      "text": "Fraktions-DROMEs und Aufträge für Coins -- schaltet der Story-Fortschritt frei (Inhalt kommt noch)."},
+      "text": "Fraktions-DROMEs und Aufträge für Coins – schaltet der Story-Fortschritt frei (Inhalt kommt noch)."},
     {"tier": 4, "titel": "Tier 4", "kosten": {}, "weg": "story",
-      "text": "Phasen herstellen -- schaltet der Story-Fortschritt frei (Ende Neon City; Inhalt kommt noch)."}
+      "text": "Phasen herstellen – schaltet der Story-Fortschritt frei (Ende Neon City; Inhalt kommt noch)."}
   ],
   "werkbank": {
     "_kommentar": "Werkbank (Konzept Abschnitt 13, Teile abgesegnet 24. Nov. 2026). Je Chassis fuenf Teile (Molok zwei Waffenhalter, Strix Lafette), je Teil zwei Zutaten. Teile liegen im Lager als teil:<chassis>:<teil>. Fraktions-DROME: der Fraktionskern ersetzt das Kern-Teil.",

@@ -633,7 +633,7 @@ func preview(index: int = -1) -> Dictionary:
 	conditions["type_hint"] = ""
 	conditions["reinforcement"] = reinforcement()
 	if chaos:
-		conditions["reward_text"] = "%s sicher, mehr Credits -- Gegner unbekannt" % cache_name(region_id)
+		conditions["reward_text"] = "%s sicher, mehr Credits – Gegner unbekannt" % cache_name(region_id)
 	var own_faction := faction()
 	var training := is_training() and not chaos
 	conditions["faction"] = "" if training else str(own_faction.get("name", ""))
@@ -1139,7 +1139,7 @@ func _apply_loot(item: Dictionary) -> void:
 
 func _bios_entry() -> Dictionary:
 	return {"kind": "bios", "rare": true, "title": "Matrix-BIOS",
-		"text": "Wähle eines von %d -- es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))}
+		"text": "Wähle eines von %d – es kommt ins Lager." % int(ModuleData.rule("bios_offers", 3))}
 
 
 ## Beute eines gewonnenen Chaos-Kampfs (loot.chaos): ein Wurf ueber BIOS,
@@ -1162,7 +1162,7 @@ func _chaos_roll(rng: RandomNumberGenerator, bios_open: bool) -> Dictionary:
 	var faction := faction_core_key()
 	return {"kind": "faction_core", "rare": true, "faction": faction,
 		"title": Roster.core_name(faction),
-		"text": "Fraktionskern -- kommt am Ende nach Hause (Bauen im Shop)."}
+		"text": "Fraktionskern – kommt am Ende nach Hause (Bauen im Shop)."}
 
 
 ## Die Fraktion des Gebiets als Schluessel der Fraktionskerne (neon ...).
@@ -1179,7 +1179,7 @@ func _cache_roll(rng: RandomNumberGenerator, rare: bool, sure: bool = false) -> 
 		var count := int(loot.get("final_caches", 2)) if is_last_round() else 1
 		return {"kind": "cache", "cache": str(region_id), "count": count, "rare": count > 1,
 			"title": "%s%s" % ["%d× " % count if count > 1 else "", cache_name(region_id)],
-			"text": "Lootcache der Fraktion -- öffnen kommt mit dem Hangar-Shop."}
+			"text": "Lootcache der Fraktion – öffnen kommt mit dem Hangar-Shop."}
 	var amount := int((loot.get("coins", {}) as Dictionary).get(key, 5))
 	return {"kind": "coins", "amount": amount, "title": "%d %s" % [amount, coin_name()],
 		"text": "Für Upgrades und Caches im Hangar."}
@@ -1250,6 +1250,12 @@ func storage_full() -> bool:
 	return storage.size() >= storage_size()
 
 
+## Der Kampf, der als Naechstes ansteht (1-basiert, hoechstens die letzte
+## Runde): im Zwischenstopp steht ``round`` noch auf dem gewonnenen Kampf.
+func next_fight() -> int:
+	return mini(round + (1 if phase == Phase.STOP else 0), RunState.rounds_total())
+
+
 ## Weiter zum naechsten Kampf.
 func continue_run() -> void:
 	if phase == Phase.STOP:
@@ -1311,7 +1317,7 @@ func module_options(index: int) -> Array:
 			elif used >= room:
 				entry["detail"] = "Modulplätze voll (%d/%d)" % [used, room]
 			elif weapon == null:
-				entry["detail"] = "Halter leer -- ruht, bis eine Waffe drin ist"
+				entry["detail"] = "Halter leer – ruht, bis eine Waffe drin ist"
 			elif not entry["active"]:
 				entry["detail"] = "ruht: %s" % module.blocker(weapon)
 			else:
@@ -1487,7 +1493,7 @@ func buy_into(offer: int, drome: int, slot: String, position: int, apply: bool =
 			return "Modulplätze voll"
 		if old != &"":
 			if storage_full():
-				return "Lager voll -- das alte Modul hätte keinen Platz"
+				return "Lager voll – das alte Modul hätte keinen Platz"
 			storage.append(old)
 		credits -= shop_price(module)
 		entry["sold"] = true
@@ -1856,7 +1862,7 @@ func bios_blocker() -> String:
 	if phase != Phase.STOP or bios_offers.is_empty():
 		return "keine Wahl"
 	if storage_full():
-		return "Lager voll -- erst verkaufen"
+		return "Lager voll – erst verkaufen"
 	return ""
 
 

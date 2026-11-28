@@ -1017,11 +1017,11 @@ func status_text(k: String) -> String:
 			for ware in d.get("ein", {}):
 				if str(ware) != miss and int(b["in"].get(ware, 0)) \
 						>= int(d["ein"][ware]) * int(setting("eingang_mal_rezept", 10)):
-					return "Eingang %s voll -- wartet auf %s" % [ware_name(str(ware)), ware_name(miss)]
+					return "Eingang %s voll – wartet auf %s" % [ware_name(str(ware)), ware_name(miss)]
 			return "Wartet auf %s" % ware_name(miss) if miss != "" else "Wartet"
 		"strom":
 			if d.get("relais", false):
-				return "Kein Strom -- leitet nichts"
+				return "Kein Strom – leitet nichts"
 			return "Zu wenig Strom: %s von %s → %d %% Tempo" % [num(float(inf["got"])),
 				num(float(inf["need"])), int(roundf(float(inf["eff"]) * 100.0))]
 		"uplink":

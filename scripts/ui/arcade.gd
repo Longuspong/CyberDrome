@@ -274,13 +274,26 @@ class Backdrop extends Control:
 			var cuts := [[304, 318], [324, 336], [342, 351], [357, 364], [370, 375]]
 			_sun_stripes(canvas, Vector2(225, 297), 150.0, 1.0, 297.0, cuts, s)
 			return
-		var hills := PackedVector2Array()
-		hills.append(Vector2(0, 420 * s))
+		if size.x < 1.0 or size.y < 1.0:
+			return
+		# Punkte auf die Breite begrenzt und ohne Doppelte (25. Nov. 2026): bei
+		# schmalen/breiten Fenstern lagen sie aufeinander oder ausserhalb, und
+		# die Flaeche liess sich nicht zerlegen ("triangulation failed").
+		var raw: Array = [Vector2(0, 420 * s)]
 		for point in [[0, 420], [70, 330], [120, 372], [190, 300], [250, 360], [310, 312],
 				[380, 380], [450, 340], [450, 420]]:
-			hills.append(_p(point[0], point[1]))
-		hills.append(Vector2(size.x, 340 * s))
-		hills.append(Vector2(size.x, 420 * s))
+			var at := _p(point[0], point[1])
+			raw.append(Vector2(clampf(at.x, 0.0, size.x), at.y))
+		raw.append(Vector2(size.x, 340 * s))
+		raw.append(Vector2(size.x, 420 * s))
+		var hills := PackedVector2Array()
+		for at in raw:
+			if hills.is_empty() or (hills[hills.size() - 1] as Vector2).distance_to(at) > 0.01:
+				hills.append(at)
+		if hills.size() > 2 and hills[0].distance_to(hills[hills.size() - 1]) < 0.01:
+			hills.remove_at(hills.size() - 1)
+		if Geometry2D.triangulate_polygon(hills).is_empty():
+			return
 		canvas.draw_colored_polygon(hills, Color("#1b0b3a"))
 		canvas.draw_rect(Rect2(0, 420 * s, size.x, size.y - 420 * s), Arcade.DEEP)
 		_grid(canvas, 420, [[420, 0.75], [436, 0.375], [462, 0.34], [502, 0.3], [562, 0.26], [650, 0.22]],

@@ -813,3 +813,17 @@ func test_the_loot_text_follows_the_cache_rules() -> void:
 	t.ok(easy.contains("%"), "Leicht nennt die Chance: %s" % easy)
 	t.ok(elite.ends_with("sicher"), "Elite: Cache sicher (%s)" % elite)
 	t.ok(not str(run.preview()["reward_text"]).contains("Teil"), "kein alter Beutetext mehr")
+
+
+## Im Zwischenstopp steht als Naechstes der folgende Kampf an (25. Nov. 2026:
+## das Hauptmenue zeigte nach Kampf 2 "fortsetzen · Kampf 2/8").
+func test_next_fight_after_a_win() -> void:
+	var run := RunState.start(4242)
+	t.equal(run.next_fight(), 1, "vor dem ersten Kampf: Kampf 1")
+	run.record_result(BattleManager.Outcome.VICTORY, [])
+	if run.phase == RunState.Phase.REWARD:
+		run.phase = RunState.Phase.STOP
+	t.equal(run.phase, RunState.Phase.STOP, "nach dem Sieg im Zwischenstopp")
+	t.equal(run.next_fight(), 2, "im Zwischenstopp: als Naechstes Kampf 2")
+	run.continue_run()
+	t.equal(run.next_fight(), 2, "nach Weiter: weiter Kampf 2")

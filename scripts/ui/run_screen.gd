@@ -762,7 +762,7 @@ func _loot_page(run: RunState) -> Dictionary:
 
 ## Was der Einsatz bisher an Caches und Platzhaltercoin gesammelt hat.
 func _caches_page(run: RunState) -> Dictionary:
-	var lines: Array = [["Geht am Ende des Einsatzes ins Inventar -- auch wenn er scheitert.",
+	var lines: Array = [["Geht am Ende des Einsatzes ins Inventar – auch wenn er scheitert.",
 		COLOR_MUTED, UiKit.SMALL]]
 	for key in run.run_caches:
 		lines.append(UiIcon.text("cache", "%d× %s" % [int(run.run_caches[key]),
@@ -1807,7 +1807,7 @@ func _recipe_page(run: RunState, entry: Dictionary) -> Dictionary:
 		parts.add_child(piece)
 	var lines: Array = [parts]
 	if bool(entry.get("used", false)):
-		lines.append(["In diesem Einsatz schon verschmolzen -- jede Hyperfusion einmal je Einsatz.",
+		lines.append(["In diesem Einsatz schon verschmolzen – jede Hyperfusion einmal je Einsatz.",
 			COLOR_MUTED, UiKit.SMALL])
 	if module.is_hyper:
 		lines.append(["Höchstens eine Hyperfusion je DROME.", COLOR_MUTED, UiKit.SMALL])
@@ -1864,7 +1864,7 @@ func _show_end(run: RunState) -> void:
 			_side.add_child(_bonus_banner("Neon City bezwungen", "Infinity-Einsatz freigeschaltet"))
 	else:
 		_side.add_child(_label("Die Beute kommt mit nach Hause." if won
-			else "Die Beute dieses Einsatzes ist verloren -- was zuhause liegt, ist sicher.", 14,
+			else "Die Beute dieses Einsatzes ist verloren – was zuhause liegt, ist sicher.", 14,
 			COLOR_MUTED))
 
 	# Verlauf als Kette: je Kampf ein Kaestchen in der Farbe der Stufe,
@@ -1904,7 +1904,7 @@ func _show_end(run: RunState) -> void:
 	if not parts.is_empty():
 		keep.add_child(_label("Teile ins Inventar: %s" % ", ".join(parts), 13, COLOR_GOOD))
 	if _delivered.any(func(item): return item.get("kind", "") == "keynode"):
-		keep.add_child(_label("Keynode-Chip erhalten -- für Level 5 eines DROME oder einer Waffe.", 13,
+		keep.add_child(_label("Keynode-Chip erhalten – für Level 5 eines DROME oder einer Waffe.", 13,
 			Arcade.MAGENTA))
 	# Fabrik (23. Nov. 2026): was die Platine waehrend des Einsatzes ins Lager schickte.
 	if not run.factory_gain.is_empty():
@@ -2458,7 +2458,7 @@ func _show_bios_choice(run: RunState) -> void:
 		_bios_pick = -1
 		_refresh())
 	if blocker != "" and blocker != "keine Wahl":
-		var note := _label("%s -- im Zwischenstopp Platz schaffen, dann wählen." % blocker,
+		var note := _label("%s – im Zwischenstopp Platz schaffen, dann wählen." % blocker,
 			UiKit.SMALL, COLOR_BAD)
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_side.add_child(note)

@@ -286,7 +286,11 @@ func _locked_card(kind: String) -> Control:
 	box.add_child(art)
 	box.add_child(_centered(Arcade.label(RunState.cache_name(StringName(kind)).to_upper()
 		if kind != "hip" else "HIPSTAR CACHE", 13, Arcade.MUTED, "display")))
-	box.add_child(_centered(Arcade.label("%s erreichen" % _region_name(kind), 12, Arcade.MUTED)))
+	# Umbrechen statt abschneiden (25. Nov. 2026: "Jachterrassen erreicher").
+	var hint := _centered(Arcade.label("%s erreichen" % _region_name(kind), 12, Arcade.MUTED))
+	hint.clip_text = false
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(hint)
 	box.add_child(_centered(Arcade.label("GESPERRT", 12, Arcade.MUTED, "bold", 0.2)))
 	return card
 
@@ -457,7 +461,7 @@ func _chargers_section() -> void:
 		free += 1 if str(c.get("on", "")) == "" else 0
 	_content.add_child(_section_head("CHARGER", "%d FREI" % free))
 	if roster.chargers.is_empty():
-		_content.add_child(UiKit.label("Noch kein Charger -- gebaut wird in der Fabrik.", 14, UiKit.MUTED))
+		_content.add_child(UiKit.label("Noch kein Charger – gebaut wird in der Fabrik.", 14, UiKit.MUTED))
 		return
 	var grid := GridContainer.new()
 	grid.columns = 3

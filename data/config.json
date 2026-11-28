@@ -1,7 +1,7 @@
 {
   "_kommentar": [
     "Alle Stellschrauben ausserhalb der Bauteile. Der Code liest hier und",
-    "hartkodiert nichts -- Balancing laeuft ohne Codeaenderung.",
+    "hartkodiert nichts – Balancing laeuft ohne Codeaenderung.",
     "Die Bauteilwerte selbst stehen NICHT hier, sondern in der Tabelle STATS",
     "in tools/build_sample_parts.py, weil sie zum Bauteil gehoeren und mit",
     "ihm erzeugt werden."
@@ -35,7 +35,7 @@
       "part_chance ein Teil (Elite: mittel/schwer), sonst loot_credits Credits.",
       "life_chance: Chance auf 'Notstrom' (+1 Leben) obendrauf, wenn eines fehlt.",
       "region: das Gebiet des Laufs (Id aus data/regions.json). Alle Kaempfe",
-      "des Laufs finden dort statt -- keine gewuerfelte Region (9. Nov. 2026).",
+      "des Laufs finden dort statt – keine gewuerfelte Region (9. Nov. 2026).",
       "Zwischenstopp (NEUANFANG 7d): storage_size Plaetze im Lager; Credits je",
       "Sieg nach tiers.<stufe>.credits, loss_credits bei einer Niederlage;",
       "sell_value: Verkaufspreis einer Waffe nach Gewichtsklasse.",
@@ -68,7 +68,7 @@
         "sonst coins Platzhaltercoin. Elite und Chaos sicher. Der letzte Kampf gibt",
         "final_caches, ein geschaffter Einsatz zusaetzlich complete_caches, eine",
         "Niederlage loss_coins. Caches sind noch nicht zu oeffnen (Hangar-Shop folgt).",
-        "chaos (19. Nov. 2026, Spieler): ein Wurf je gewonnenem Chaos-Kampf -- bios BIOS-Wahl",
+        "chaos (19. Nov. 2026, Spieler): ein Wurf je gewonnenem Chaos-Kampf – bios BIOS-Wahl",
         "(zaehlt zu rules.bios_elite_wins; ist die Grenze erreicht oder ist es der letzte",
         "Kampf, wird es ein Cache), cache Lootcache, booster Credit-Booster (die naechsten",
         "booster_fights Kaempfe booster_mult-fache Credits), faction_core ein Fraktionskern",
@@ -91,7 +91,7 @@
         "chaos_chance: Chance auf einen Chaos-Knoten obendrauf (ab Runde 2).",
         "Nach dem Ende der Rundentabellen (enemy_levels, enemy_modules) steigen die",
         "Gegner weiter: alle drome_level_every / weapon_level_every Runden ein Level,",
-        "alle module_every Runden ein Modul mehr -- bis zum Hoechstwert. VORLAEUFIG."
+        "alle module_every Runden ein Modul mehr – bis zum Hoechstwert. VORLAEUFIG."
       ],
       "lives": 1, "chaos_chance": 0.25,
       "drome_level_every": 3, "weapon_level_every": 2, "module_every": 4
@@ -187,7 +187,7 @@
     "_kommentar": [
       "Virusschaden (14. Nov. 2026, SPOT-Blatt Einsatz, ersetzt Overtime und Zeitlimit):",
       "ab start_seconds trifft jeder Puls ALLE Einheiten gleichzeitig mit",
-      "ceil((hp_max + shield_max) * pct_of_max) -- erst Schild, dann Integritaet,",
+      "ceil((hp_max + shield_max) * pct_of_max) – erst Schild, dann Integritaet,",
       "an der Ruestung vorbei. Fallen beide Seiten im selben Puls: Niederlage.",
       "warn_seconds: so lange vorher flackert das Bild (Glitch, immer schneller)."
     ],
@@ -248,11 +248,11 @@
       "cyberspeed (Vireo, 25. Nov. 2026): jeder every-te Angriff gibt einen Stapel",
       "(hoechstens max_stacks), je Stapel +attack_speed Angriffstempo und +move",
       "Lauftempo; jeder Angriff haelt die Stapel seconds lang (Effizienz streckt).",
-      "safe_haven (Molok, 27. Nov. 2026): Safe Haven (Arbeitsname war Festung) -- Heilung, Lebensraub, Regeneration,",
+      "safe_haven (Molok, 27. Nov. 2026): Safe Haven (Arbeitsname war Festung) – Heilung, Lebensraub, Regeneration,",
       "Schildladung und Schildgaben am Molok mal care_mult.",
       "echo (Nimbus, 7. Nov. 2026): der Takt der Faehigkeiten ist slower-mal so",
       "lang (seit 27. Nov. 2026: Takt mal slower, halber Takt aufgerundet), dafuer wirkt",
-      "jede Faehigkeit zweimal -- seit 18. Nov. 2026 nacheinander: das Echo kommt",
+      "jede Faehigkeit zweimal – seit 18. Nov. 2026 nacheinander: das Echo kommt",
       "gap Sekunden spaeter (mit Ausholzeit holt der DROME erneut aus).",
       "focuslense (Strix, 27. Nov. 2026): kinetischer Schaden mal kinetic_mult,",
       "Energieschaden mal energy_mult; traf der letzte Schuss dasselbe Ziel (anvisiert,",
@@ -293,7 +293,7 @@
   "motion": {
     "_kommentar": [
       "Kampfbild 'mehr 3D', Paket 1 + 2 (21. Nov. 2026, Design-Canvas Kampfbild mehr 3D).",
-      "Nur Darstellung -- die Logik laeuft weiter Feld fuer Feld (Unit, Arena3D).",
+      "Nur Darstellung – die Logik laeuft weiter Feld fuer Feld (Unit, Arena3D).",
       "omega       Federhaerte der Figur je Chassis (1/s): hoeher = folgt enger, schneidet",
       "            Ecken weniger. Nachlauf bei Tempo v ungefaehr 2 v / omega.",
       "turn_rate   hoechstes Drehtempo (rad/s); turn_time Zeitkonstante der Drehung (s)",
@@ -450,7 +450,7 @@
       "  energy_vs_shield   1.2  Energie zerlegt Schilde ueberproportional.",
       "  physical_vs_hp / energy_vs_hp 1.0  direkter HP-Treffer ohne Schild.",
       "PANZERUNG als effektive-HP-Multiplikator mit abnehmendem Ertrag:",
-      "  armor_ehp_cap 0.5  Obergrenze des eHP-Zuwachses -- nie mehr als +50 %.",
+      "  armor_ehp_cap 0.5  Obergrenze des eHP-Zuwachses – nie mehr als +50 %.",
       "                     Asymptotisch, also nie ganz erreicht.",
       "  armor_ehp_k   15   wie schnell die Panzerung an den Deckel laeuft",
       "                     (m = 1 + cap * A/(A+K)). Kleiner K = frueher satt.",
@@ -481,7 +481,7 @@
       "worauf eine geladene Waffe schiesst, wenn das Ziel nicht erreichbar ist.",
       "shield_damage_weight: was ein Punkt abgetragener Energieschild wert",
       "ist, relativ zu einem Punkt Integritaet. Unter 1, weil der Schild sich",
-      "je Puls wieder auffuellt -- ueber 0, weil sonst ein",
+      "je Puls wieder auffuellt – ueber 0, weil sonst ein",
       "voller Schild jeden Einzeltreffer auf 0 bewertet und die KI",
       "abgeschirmte Ziele nie angreift."
     ],

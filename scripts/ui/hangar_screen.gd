@@ -391,7 +391,7 @@ func _level_card(kind: String, entry: RosterEntry, uid: String = "") -> Control:
 			var have := bench.have(str(key))
 			var line := "%s  %d / %d" % [Workbench.key_name(str(key)), mini(have, int(cost[key])), int(cost[key])]
 			if have < int(cost[key]) and str(key) == "keynode":
-				line += "  -- selten nach einem Einsatz oder aus Caches"
+				line += "  – selten nach einem Einsatz oder aus Caches"
 			box.add_child(UiKit.label(line, UiKit.SMALL, UiKit.GOOD if have >= int(cost[key]) else UiKit.MAGENTA))
 		var up := UiKit.button("Aufsteigen", true)
 		up.disabled = not bench.can_pay(cost)
@@ -496,7 +496,7 @@ func _drome_tile(index: int, squad_toggle: bool = true) -> Control:
 	toggle.disabled = not entry.in_squad and full
 	toggle.tooltip_text = ("%s aus dem Squad" if entry.in_squad else "%s in den Squad") % entry.name
 	if toggle.disabled:
-		toggle.tooltip_text = "Squad voll (%d) -- erst einen herausnehmen" % _squad_max()
+		toggle.tooltip_text = "Squad voll (%d) – erst einen herausnehmen" % _squad_max()
 	toggle.position = Vector2(stack.custom_minimum_size.x - 30.0, -4)
 	toggle.size = toggle.custom_minimum_size
 	toggle.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -909,11 +909,11 @@ func _fold(title: String, open: bool, toggle: Callable) -> Control:
 func _charger_stock() -> void:
 	var roster := GameState.roster
 	if _weapon_uid == "":
-		_content.add_child(UiKit.label("Erst eine Waffe einbauen -- der Charger sitzt in der Waffe.",
+		_content.add_child(UiKit.label("Erst eine Waffe einbauen – der Charger sitzt in der Waffe.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
 	if roster.chargers.is_empty():
-		_content.add_child(UiKit.label("Noch kein Charger -- gebaut wird in der Fabrik.",
+		_content.add_child(UiKit.label("Noch kein Charger – gebaut wird in der Fabrik.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
 	var names := {}
