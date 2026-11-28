@@ -71,7 +71,7 @@ func run(count: int, drome_level: int, weapon_level: int) -> void:
 	keys.sort()
 	for key in keys:
 		var rec: Array = recipe_wins[key]
-		print("  %-32s %5.1f %%  (%d)" % [key, 100.0 * rec[0] / maxf(1, rec[1]), rec[1]])
+		print("FUSION %-32s %5.1f %%  (%d)" % [key, 100.0 * rec[0] / maxf(1, rec[1]), rec[1]])
 	print("\nKampfdauer im Schnitt %.1f s (%d Kaempfe)" % [seconds_sum / maxf(1, fights), fights])
 
 
