@@ -707,14 +707,7 @@ func _open_basis() -> void:
 	if goal.is_empty():
 		body.add_child(Arcade.label("ALLE TIERS FREI", 14, Arcade.CYAN, "bold", 0.2))
 	else:
-		body.add_child(Arcade.label(("Aufrüsten: %s" % str(goal["titel"])).to_upper(), 14, Arcade.CYAN, "bold", 0.2))
-		# Statt des Datentexts (mit Designnotizen) nur, was neu dazukommt.
-		var fresh: Array = []
-		for type in FactorySim.defs():
-			if int(FactorySim.def(type).get("tier", 1)) == int(goal["tier"]):
-				fresh.append(str(FactorySim.def(type)["name"]))
-		if not fresh.is_empty():
-			_row("Neu: " + ", ".join(fresh), UiKit.MUTED)
+		body.add_child(Arcade.label("TIER %d" % int(goal["tier"]), 14, Arcade.CYAN, "bold", 0.2))
 		if str(goal.get("weg", "fabrik")) == "fabrik":
 			var cost: Dictionary = goal.get("kosten", {})
 			for ware in cost:
@@ -742,6 +735,8 @@ func _store_into(box: VBoxContainer) -> void:
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 2)
 	box.add_child(grid)
+	var note := UiKit.label("", 13, UiKit.MUTED)
+	note.visible = false
 	for ware in FactorySim.wares():
 		var n := _sim.have(str(ware))
 		var line := "%s  %d" % [FactorySim.ware_name(str(ware)), n]
@@ -750,6 +745,16 @@ func _store_into(box: VBoxContainer) -> void:
 		var label := UiKit.label(line, 14, FactorySim.ware_color(str(ware)) if n > 0 else UiKit.MUTED)
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(label)
+		# Die Zahl in Klammern erklaert sich erst auf Tipp (Wunsch des Spielers).
+		if int(proj.get(ware, 0)) > 0:
+			var amount := int(proj[ware])
+			var name := FactorySim.ware_name(str(ware))
+			label.mouse_filter = Control.MOUSE_FILTER_STOP
+			label.gui_input.connect(func(event: InputEvent):
+				if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+					note.text = "+%d %s je Einsatz (Hochrechnung)" % [amount, name]
+					note.visible = true)
+	box.add_child(note)
 
 
 # ---------------------------------------------------------------- Info-Zeilen
