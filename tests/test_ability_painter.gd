@@ -63,7 +63,7 @@ func test_every_ability_has_a_form() -> void:
 		&"act_rail_pierce": "lock", &"act_hammer_stun": "stun",
 		&"act_plasma_rend": "slash",
 		&"act_pulse_double": "double",
-		&"act_deflector_charge": "shield"}
+		&"act_deflector_charge": "shield", &"act_repair_release": "shield"}
 	var seen := {}
 	for part: PartData in PartDB.of_type(PartData.Type.EQUIPMENT):
 		for action in part.actions:

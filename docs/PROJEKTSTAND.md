@@ -29,6 +29,21 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Repair-Kit, Hammer, Testspielstand (27. Nov. 2026 abends, Spieler)
+
+* **Repair-Kit** (Nimbus-Standardwaffe, `SKILLBAUM_KONZEPT.md` 5e): Angriff speichert den
+  angerichteten Schild-/Integritaetsschaden, die Reparaturwelle (jeder 6. Angriff) gibt jedem
+  Teammitglied Speicher x Effizienz als Schild und Reparatur. Werte selbst gewaehlt: 9 Schaden,
+  1,2 s, Reichweite 4, 50/50.
+* **Hammer** ohne Integritaetsschaden (`hp_scaling` entfernt). Kampfwert neu geeicht
+  (`POWER_SCALE` 0,922), die Welle zaehlt als gespeicherter Schaden x Effizienz x 3.
+* **Testspielstand Platz 3:** `Roster.seed_test_stock` (Startbestand + 1000 je Ware, Phase,
+  Rohling, Keynode, Fraktionskern, Spezialteil, DROME-Teil, Coins; jede Waffe einmal extra).
+  `GameState.refresh_test_slot` schreibt ihn beim Start neu, wenn die Versionskennung
+  (`data/build.json`, schreibt `tools/build_web.sh` aus dem Commit) sich geaendert hat.
+* Messung `run_bench -- 30` (Elite, mit/ohne Module): Runde 3 6/12 und 8/12, Runde 5 1/18
+  und 3/18, Runde 8 1/30 und 0/30 -- schwaecher als mit Runenstab (Vortex fehlt).
+
 ### Werkblatt uebernommen: Gunship, Focuslense, neue Werte (27. Nov. 2026, Spieler)
 
 Details und Tabelle in `docs/SKILLBAUM_KONZEPT.md` 5e.

@@ -253,10 +253,25 @@ Neon Nimbus hat jetzt Power 12 / Effizienz 12 wie der heutige Nimbus (vorher 14 
 * **Halter-Kürzel** sprachneutral: S leicht, M mittel, X schwer; dahinter -F nur Fernkampf,
   -N nur Nahkampf (`SlotRules.holder_code`). Im Hangar unter dem Halter und auf der Waffenkarte.
 
+**Am Abend nachgezogen (Spieler 27. Nov. 2026, gebaut):**
+
+* **Repair-Kit** (`eq_repair_kit`, Halter M, Standardwaffe des Nimbus; Grafik vom alten
+  E-Schraubenschlüssel): kleiner Energieblitz, Reichweite 4, 9 Schaden je 1,2 s, halb Energie,
+  halb kinetisch. Was er am Schild der Gegner abzieht, speichert er als Schild, was er an
+  Integrität abzieht, als Integrität (`stores_damage`, `Unit.store_shield`/`store_hp`). Nach
+  5 Treffern (jeder 6. Angriff) die **Reparaturwelle**: jedes Teammitglied (auch der Träger)
+  bekommt Speicher × Effizienz als Schildgabe (bis Maximum + 50 %) und als Reparatur (bis
+  Maximum), danach ist der Speicher leer (`ActionResolver.release_store`). Safe Haven wirkt
+  mit, der Mender skaliert über `heal`/`shield_gain` (100 = 100 %). Der Runenstab liegt frei.
+  Das Echo des Nimbus lässt die Welle erst jeden 9. Angriff kommen, und das Echo findet den
+  Speicher leer -- erledigt sich mit Cleancode.
+* **Hammer:** kein Zusatzschaden aus der eigenen Integrität mehr (`hp_scaling` ganz entfernt);
+  der Betäubungsschlag heilt weiter um 100 % des Schadens.
+
 **Geklärt, noch nicht gebaut:**
 
-* **Nimbus wird ein Supporter** (Kernplan: wartet): Speed 8, Integrität 60, Schild 60,
-  Schildpuls 5, Rüstung 0, Power 12, Effizienz 12, Halter M, Waffe **Repair-Kit**, Zielregel
+* **Nimbus als Supporter** -- Werte und Passive (Kernplan: wartet): Speed 8, Integrität 60, Schild 60,
+  Schildpuls 5, Rüstung 0, Power 12, Effizienz 12, Halter M, Waffe **Repair-Kit** (gebaut), Zielregel
   „Teammates buffen und helfen, Helfen vor Schaden“. Passive **Cleancode**: wer von Nimbus
   einen Buff, eine Heilung oder Schildgabe bekommt, erhält einen Stapel **Bug-Fix** (5 s,
   max. 3, auch auf sich selbst): je Stapel +2 Rüstung und +2 **Shieldgate** (neu: Rüstung für

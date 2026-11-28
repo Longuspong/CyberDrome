@@ -166,7 +166,7 @@ static func attack_style(unit: Unit, tile: Vector2i, action: ActionData, target:
 		style["energy"] = 1.0
 	elif action.range_tiles <= 1 or reach <= 1:
 		style["projectile"] = ""
-	elif id.begins_with("act_rune"):
+	elif id.begins_with("act_rune") or id.begins_with("act_repair"):
 		style["projectile"] = "orb"
 	elif id.begins_with("act_rail"):
 		style["projectile"] = "slug"

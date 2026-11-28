@@ -114,10 +114,6 @@ var armor_to_damage: float = 0.0
 ## Phasenbruch (BIOS): +Anteil Schaden gegen Gegner ohne Schild.
 var bonus_vs_unshielded: float = 0.0
 
-## Zusatzschaden als Anteil der EIGENEN maximalen
-## Integritaet, ohne Power (Hammer-Betaeubungsschlag).
-var hp_scaling: float = 0.0
-
 ## Faehigkeitsschaden als Anteil des Waffenschadens (8. Nov. 2026). power ist
 ## daraus schon berechnet; der Anteil bleibt fuer die Anzeige.
 var damage_pct: float = 0.0
@@ -130,6 +126,13 @@ var charger: Dictionary = {}
 ## und Virusschaden (Anteil, an Panzerung und Schild-Faktoren vorbei).
 var lifesteal: float = 0.0
 var virus_fraction: float = 0.0
+## Repair-Kit (27. Nov. 2026): der Angriff speichert den angerichteten Schild-
+## und Integritaetsschaden beim Schuetzen (``stores_damage``); die Faehigkeit
+## (``release_store``, support "team") gibt jedem Teammitglied den Speicher mal
+## Effizienz als Schildgabe und Reparatur -- ``shield_gain``/``heal`` sind dabei
+## Prozent des Speichers (100 = alles), damit Module sie skalieren.
+var stores_damage: bool = false
+var release_store: bool = false
 
 
 static func from_meta(meta: Dictionary, owner_name: String = "",
@@ -157,8 +160,9 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.support = str(meta.get("support", ""))
 	action.damage_pct = float(meta.get("damage_pct", 0.0))
 	action.base_action = StringName(str(meta.get("base_action", "")))
-	action.hp_scaling = float(meta.get("hp_scaling", 0.0))
 	action.lifesteal = float(meta.get("lifesteal", 0.0))
+	action.stores_damage = bool(meta.get("stores_damage", false))
+	action.release_store = bool(meta.get("release_store", false))
 	var status_meta = meta.get("status")
 	if status_meta is Dictionary:
 		action.status = status_meta

@@ -312,6 +312,7 @@ WEAPON_COLORS = {
     "eq_deflector": _w("#39404c", "#8a93a3", "#5ad1ff"),
     "eq_hammer": _w("#4a4e56", "#a0a6b0", "#ff8a3d"),
     "eq_rune_staff": _w("#3a3550", "#a59ac8", "#b06bff"),
+    "eq_repair_kit": _w("#55504a", "#b0a89a", "#6dff9f"),
     "eq_rail_lance": _w("#1d2430", "#6f7d92", "#3df2ff"),
 }
 
@@ -325,6 +326,7 @@ WEAPON_FINISH = {
     "eq_deflector": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
     "eq_hammer": {"shine": {"plate": 0.4, "light": 0.4}},
     "eq_rune_staff": {"shine": {"plate": 0.35}, "neon": True},
+    "eq_repair_kit": {"shine": {"metal": 0.4}, "neon": True},
     "eq_rail_lance": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
 }
 
@@ -577,12 +579,12 @@ STATS = {
             {"id": "act_hammer", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 16, "interval": 1.8},
-            # Seit 27. Nov. 2026 (Spieler): +20 % der eigenen maximalen
-            # Integritaet als Schaden, und der Schlag heilt den Molok um 100 %
-            # des Schadens. Kinetisch wie der Angriff.
+            # Seit 27. Nov. 2026 (Spieler): der Schlag heilt den Molok um 100 %
+            # des Schadens. Kinetisch wie der Angriff. Der Zusatzschaden aus der
+            # eigenen Integritaet ist am selben Tag wieder weg (Hammer zu stark).
             {"id": "act_hammer_stun", "windup": 0.35, "display_name": "Betaeubungsschlag",
              "category": "ability", "targeting": "single",
-             "range_tiles": 1, "damage_pct": 1.0, "hp_scaling": 0.2, "lifesteal": 1.0,
+             "range_tiles": 1, "damage_pct": 1.0, "lifesteal": 1.0,
              "status": {"id": "stun", "seconds": 1.0, "stunned": True},
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_hammer"}},
         ],
@@ -608,6 +610,29 @@ STATS = {
              # Seit 9. Nov. 2026 nach Angriffen statt alle 3 s (Vorgabe des
              # Spielers: Takt immer ueber Angriffe).
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_runestaff"}},
+        ],
+    },
+    # Repair-Kit (Spieler 27. Nov. 2026): die Heilwaffe des Nimbus. Ein kleiner
+    # Energieblitz (halb Energie, halb kinetisch) auf Reichweite 4; was er am
+    # Schild der Gegner abzieht, speichert das Kit als Schild, was er an
+    # Integritaet abzieht, als Integritaet (``stores_damage``). Nach 5 Treffern
+    # (jeder 6. Angriff) bekommt jedes Teammitglied den Speicher mal Effizienz
+    # als Schildgabe und Reparatur (``release_store``), danach ist er leer.
+    # Bonus Schild.
+    "eq_repair_kit": {
+        "shield": 10,
+        "actions": [
+            {"id": "act_repair_bolt", "display_name": "Angriff",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 4, "power": 9, "energy_fraction": 0.5,
+             "interval": 1.2, "stores_damage": True},
+            # heal/shield_gain 100 = 100 % des Speichers (Module wie der
+            # Mender skalieren das mit).
+            {"id": "act_repair_release", "windup": 0.4, "display_name": "Reparaturwelle",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 0, "power": 0, "heal": 100, "shield_gain": 100,
+             "support": "team", "release_store": True,
+             "trigger": {"kind": "attacks", "every": 6, "weapon": "act_repair_bolt"}},
         ],
     },
     "eq_rail_lance": {
@@ -657,12 +682,15 @@ ACTION_DEFAULTS = {
     # aus base_action (Faehigkeiten nach Zeit).
     "damage_pct": 0.0,
     "base_action": "",
-    # hp_scaling   Zusatzschaden als Anteil der EIGENEN maximalen Integritaet,
-    #              ohne Power (Hammer-Betaeubungsschlag)
-    "hp_scaling": 0.0,
     # lifesteal    der Treffer heilt den Traeger um diesen Anteil des Schadens
     #              (Hammer-Betaeubungsschlag 1,0, 27. Nov. 2026)
     "lifesteal": 0.0,
+    # Repair-Kit (27. Nov. 2026): stores_damage am Angriff speichert den
+    # angerichteten Schild- und Integritaetsschaden beim Schuetzen;
+    # release_store an der Faehigkeit (support "team") gibt jedem Teammitglied
+    # den Speicher mal Effizienz (heal/shield_gain in Prozent davon).
+    "stores_damage": False,
+    "release_store": False,
     # Ausholzeit (18. Nov. 2026): Sekunden zwischen Ansage und Wirkung einer
     # Faehigkeit -- der DROME steht still, die Ansage ist zu sehen.
     "windup": 0.0,
@@ -2385,6 +2413,38 @@ def lafette_blaster(neon=False):
     return s, (17.1, 0, z + 5.2)
 
 
+def _head_wrench(h, k):
+    """Repair-Kit (bis 27. Nov. 2026 E-Schraubenschluessel): Schluessel mit Maul."""
+    f, l, z = h
+    return [
+        B((f - 1.2 * k, f + 1.2 * k), (l - 1.2 * k, l + 1.2 * k), (z - 9 * k, z + 14 * k), "plate"),
+        B((f - 1.7 * k, f + 1.7 * k), (l - 1.7 * k, l + 1.7 * k), (z - 11 * k, z - 9 * k), "dark"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z - 8 * k, z - 6.8 * k), "accent"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 3.2 * k, z + 4.4 * k), "accent"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 6.0 * k, z + 7.2 * k), "accent"),
+        # Maul als Profil der Vorderansicht: echte Schluesselform mit Oeffnung
+        EX([(l - 4.6 * k, z + 14 * k), (l + 4.6 * k, z + 14 * k), (l + 4.8 * k, z + 21 * k),
+            (l + 3.4 * k, z + 24.4 * k), (l + 1.7 * k, z + 24.4 * k), (l + 1.9 * k, z + 19.6 * k),
+            (l - 1.9 * k, z + 19.6 * k), (l - 1.7 * k, z + 24.4 * k), (l - 3.4 * k, z + 24.4 * k),
+            (l - 4.8 * k, z + 21 * k)], (f - 2.0 * k, f + 2.0 * k), "metal", bevel=0.5 * k, axis="f"),
+        B((f - 2.2 * k, f + 2.2 * k), (l - 4.75 * k, l + 4.75 * k), (z + 15.4 * k, z + 16.6 * k), "accent"),
+        B((f - 1.3 * k, f + 1.3 * k), (l - 1.3 * k, l + 1.3 * k), (z + 18 * k, z + 21 * k), "glow"),
+        D(f + 2.2 * k, l - 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
+        D(f + 2.2 * k, l + 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
+    ], (f, l, z + 21 * k)
+
+
+def lafette_wrench():
+    """Repair-Kit auf der Lafette: ohne Griff, nur der Kopf mit dem Maul
+    nach oben auf einem kurzen Sockel."""
+    z = LAFETTE_Z
+    base = z + 5
+    head, point = _head_wrench((0, 0, base - 14), 1.0)
+    return side_holder(z) + [
+        B((-1.2, 1.2), (-1.2, 1.2), (z + 1, base), "plate"),
+    ] + head[5:], point
+
+
 def lafette_staff():
     """Runenstab auf der Lafette: ohne Griff, nur die Kugel in ihrer Fassung
     auf einem kurzen Sockel (Spieler 17. Nov. 2026)."""
@@ -2428,6 +2488,7 @@ W_BLADE = weapon_set("hold", _head_blade)
 W_SHIELD = weapon_set("guard", _head_shield)
 W_HAMMER = weapon_set("hold", _head_hammer)
 W_STAFF = weapon_set("hold", _head_staff, lafette=lafette_staff())
+W_WRENCH = weapon_set("hold", _head_wrench, lafette=lafette_wrench())
 
 
 # ===========================================================================
@@ -2636,6 +2697,12 @@ SETS = [
                 "name": "Runenstab", "tags": ["weapon", "arcane", "round"],
                 **W_STAFF,
                 "mount_class": "light", "category": "weapon",
+            },
+            {
+                "id": "eq_repair_kit", "code": "EQP-004", "type": "equipment",
+                "name": "Repair-Kit", "tags": ["weapon", "support", "tool"],
+                **W_WRENCH,
+                "mount_class": "medium", "category": "weapon",
             },
         ],
     },

@@ -24,6 +24,11 @@ const ROSTER_FILE := "roster.json"
 const RUN_FILE := "run.json"
 const PROGRESS_FILE := "progress.json"
 const META_FILE := "slots.json"
+## Testspielstand (Spieler 27. Nov. 2026): dieser Platz wird mit jeder neuen
+## Version (jedem Push, BUILD_FILE schreibt tools/build_web.sh) mit dem
+## Testbestand ueberschrieben (Roster.seed_test_stock).
+const TEST_SLOT := 3
+const BUILD_FILE := "res://data/build.json"
 
 ## Wo die Spielstaende liegen. Tests legen sie in einen eigenen Ordner.
 var save_root: String = "user://"
@@ -93,6 +98,7 @@ func boot() -> void:
 		print("[GameState] Persistenz aus -- Startbestand gesetzt: %d DROMEs, %d Instanzen"
 			% [roster.entries.size(), roster.all_instances().size()])
 		return
+	refresh_test_slot()
 	var last := int(_read_meta().get("last", 0))
 	if last >= 1 and last <= SLOT_COUNT and slot_exists(last):
 		select_slot(last)
@@ -159,8 +165,41 @@ func select_slot(which: int) -> void:
 	editing_index = -1
 	if _persistence_enabled():
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(slot_dir(slot)))
-		_write_json(save_root + META_FILE, {"last": slot})
+		var meta := _read_meta()
+		meta["last"] = slot
+		_write_json(save_root + META_FILE, meta)
 	load_roster()
+
+
+## Die Kennung dieser Version (Commit, von tools/build_web.sh nach BUILD_FILE
+## geschrieben). Ohne Datei (Editor, lokal) "dev".
+static func build_id() -> String:
+	if not FileAccess.file_exists(BUILD_FILE):
+		return "dev"
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(BUILD_FILE))
+	return str(parsed.get("build", "dev")) if parsed is Dictionary else "dev"
+
+
+## Schreibt den Testspielstand (TEST_SLOT) neu, wenn diese Version ihn noch
+## nicht geschrieben hat. Ein laufender Einsatz und der Fortschritt dort
+## fallen weg. Gibt zurueck, ob neu geschrieben wurde.
+func refresh_test_slot() -> bool:
+	if not _persistence_enabled():
+		return false
+	var meta := _read_meta()
+	var id := build_id()
+	if str(meta.get("test_build", "")) == id and slot_exists(TEST_SLOT):
+		return false
+	var stock := Roster.new()
+	stock.seed_test_stock()
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(slot_dir(TEST_SLOT)))
+	for file_name in [RUN_FILE, PROGRESS_FILE]:
+		_remove(_slot_file(TEST_SLOT, file_name))
+	_write_json(_slot_file(TEST_SLOT, ROSTER_FILE), stock.to_dict())
+	meta["test_build"] = id
+	_write_json(save_root + META_FILE, meta)
+	print("[GameState] Testspielstand %d neu geschrieben (Version %s)" % [TEST_SLOT, id])
+	return true
 
 
 ## Loescht einen Spielstand ganz. War es der gewaehlte, ist danach keiner

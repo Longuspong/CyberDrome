@@ -275,8 +275,6 @@ def ability_effect(a, attack):
         parts.append(f"{a['shots']} Schuesse")
     if a.get("targeting") == "aoe_around_target":
         parts.append(f"Flaeche Radius {a.get('aoe_radius', 0)}")
-    if a.get("hp_scaling"):
-        parts.append(f"+{pct(a['hp_scaling'])} der eigenen max. Integritaet (ohne Power)")
     if a.get("push_tiles", 0) > 0:
         parts.append(f"stoesst {a['push_tiles']} Feld zurueck")
     if a.get("push_tiles", 0) < 0:

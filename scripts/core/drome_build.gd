@@ -565,7 +565,7 @@ func _slot_label(slot: String) -> String:
 ## Was sie nicht kann: Zusammenspiel. Ein Molok ist allein wenig wert und
 ## macht einen Strix dahinter erst stark; der Wert eines Squads ist hier
 ## trotzdem die Summe seiner DROMEs.
-const POWER_SCALE := 1.064   # 27. Nov. 2026 neu geeicht (Gunship-Molok mit Deflektor), Schnitt Standard = 100
+const POWER_SCALE := 0.922   # 27. Nov. 2026 neu geeicht (Repair-Kit am Nimbus, Hammer ohne Integritaetsschaden), Schnitt Standard = 100
 const POWER_WEIGHTS := {
 	"shield": 3.0,          # ein Punkt Schild gegen einen Punkt Integritaet
 	"support": 20.0,        # Reparatur/Schildgabe je Sekunde als Standhaftigkeit
@@ -627,7 +627,15 @@ func power_parts() -> Dictionary:
 			every = maxf(1.0, every / maxf(1.0, float(fx.get("takt_count", 1.0))))
 			per_attack = ((every - 1.0) * hit + times * _expected_damage(ability, factor, total)) / every
 			var cycle := every * attack.interval
-			support += arms * times * float(ability.heal + ability.shield_gain) / cycle
+			if ability.release_store:
+				# Repair-Kit: der Schaden der Angriffe dazwischen kommt mal Effizienz
+				# an jedes der drei Teammitglieder zurueck (das Echo findet den
+				# Speicher leer).
+				var eff := float(total.get("efficiency", 10)) / 10.0
+				var pct := float(ability.heal + ability.shield_gain) / 200.0
+				support += arms * (every - 1.0) * hit * eff * 3.0 * pct / cycle
+			else:
+				support += arms * times * float(ability.heal + ability.shield_gain) / cycle
 			var seconds := float(ability.status.get("seconds", 0.0))
 			match str(ability.status.get("id", "")):
 				"stun":
@@ -641,11 +649,9 @@ func power_parts() -> Dictionary:
 	return {"staying": staying, "firepower": maxf(0.1, firepower)}
 
 
-## Erwarteter Schaden eines Ausloesens: Staerke mal Treffer mal Power, dazu
-## der Anteil der eigenen Integritaet (Hammer-Betaeubungsschlag).
-func _expected_damage(action: ActionData, factor: float, total: Dictionary) -> float:
-	return float(action.power * maxi(1, action.shots)) * factor \
-		+ action.hp_scaling * float(total["hp_max"])
+## Erwarteter Schaden eines Ausloesens: Staerke mal Treffer mal Power.
+func _expected_damage(action: ActionData, factor: float, _total: Dictionary) -> float:
+	return float(action.power * maxi(1, action.shots)) * factor
 
 
 static func squad_power(builds: Array) -> float:
