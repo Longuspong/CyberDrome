@@ -482,8 +482,9 @@ func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	_over = true
 	view.show_unit_badges([])
 	_virus_icon.visible = false
-	_status.text = "%s nach %d s  ·  Seed %d" % [
-		BattleManager.outcome_label(outcome), int(battle.time), battle.battle_seed]
+	# Nur das Ergebnis (25. Nov. 2026): "Sieg nach 19 s · Seed 7" passte nicht
+	# unter die Uhr und wurde links abgeschnitten; die Zeit steht schon darueber.
+	_status.text = BattleManager.outcome_label(outcome).to_upper()
 	# Erst den letzten DROME zerfallen sehen, dann das Ergebnis (17. Nov. 2026).
 	var wait := (Unit.DEATH_TIME_CALM if Accessibility.reduce_motion else Unit.DEATH_TIME) + 0.4
 	get_tree().create_timer(wait).timeout.connect(func():
@@ -1201,7 +1202,7 @@ func _loot_card(run: RunState, won: bool) -> Control:
 	if not won:
 		column.add_child(Arcade.label("−1 LEBEN", 20, Arcade.MAGENTA, "display"))
 		if run.lives <= 0:
-			column.add_child(UiKit.label("Keine Leben mehr -- der Einsatz ist vorbei.", 14, UiKit.MUTED))
+			column.add_child(UiKit.label("Keine Leben mehr – der Einsatz ist vorbei.", 14, UiKit.MUTED))
 	for item in run.last_loot:
 		var kind := str(item.get("kind", ""))
 		if kind == "cache":

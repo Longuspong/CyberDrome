@@ -72,7 +72,7 @@ func _ready() -> void:
 	full_row.add_child(full_text)
 	full_text.add_child(Arcade.label("Vollbild", 15, Arcade.WHITE, "bold"))
 	full_text.add_child(UiKit.label("Blendet die Leisten des Browsers aus. Noch besser: \"Zum "
-		+ "Startbildschirm hinzufügen\" -- dann startet das Spiel wie eine App.", 13, UiKit.MUTED))
+		+ "Startbildschirm hinzufügen\" – dann startet das Spiel wie eine App.", 13, UiKit.MUTED))
 	var fullscreen := UiKit.outline_button("An", Arcade.CYAN)
 	fullscreen.custom_minimum_size = Vector2(72, 44)
 	fullscreen.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -112,7 +112,7 @@ func _ready() -> void:
 	switch_row.add_child(arrow)
 	save.add_child(switch)
 	if GameState.slot <= 0:
-		save.add_child(UiKit.label("Kein Spielstand gewählt -- nichts wird gespeichert.", 13, UiKit.MUTED))
+		save.add_child(UiKit.label("Kein Spielstand gewählt – nichts wird gespeichert.", 13, UiKit.MUTED))
 	var reset := UiKit.outline_button("Spielstand zurücksetzen", UiKit.BAD)
 	reset.custom_minimum_size = Vector2(0, 48)
 	reset.add_theme_font_size_override("font_size", 13)
