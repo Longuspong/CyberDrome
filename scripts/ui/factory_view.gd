@@ -159,12 +159,9 @@ func refresh() -> void:
 	_board.queue_redraw()
 
 
-const IDLE_HINT := "Gebäude antippen = Details, Basis = Lager und Tier. Bauen, Verschieben, Abreißen über das Plus."
-
-
 func _say(text: String, color: Color = UiKit.WARN) -> void:
-	_hint.text = text if text != "" else IDLE_HINT
-	_hint.modulate = color if text != "" else UiKit.MUTED
+	_hint.text = text
+	_hint.modulate = color
 
 
 # ---------------------------------------------------------------- Knoepfe
@@ -302,7 +299,7 @@ func _toggle_menu() -> void:
 	if not menu_open:
 		_leave_mode()
 	else:
-		_say("Verschieben, Abreißen oder Bauen?", UiKit.MUTED)
+		_say("")
 	_restyle_controls()
 	_layout()
 	refresh()
@@ -324,12 +321,8 @@ func _choose_mode(id: String) -> void:
 	_leave_mode()
 	if was != id:
 		mode = id
-		match id:
-			"build": _say("Wähle eine Kategorie.", UiKit.MUTED)
-			"remove": _say("ABREISSEN: tippe ein Gebäude -- es geht zurück in den Besitz.", UiKit.BAD)
-			"move": _say("VERSCHIEBEN: Gebäude ziehen oder antippen und dann das Zielfeld.", UiKit.MUTED)
 	else:
-		_say("Verschieben, Abreißen oder Bauen?", UiKit.MUTED)
+		_say("")
 	_restyle_controls()
 	_layout()
 	refresh()
@@ -344,9 +337,7 @@ func _choose_category(id: String) -> void:
 	if category != "":
 		_build_tray()
 		_tray.visible = false    # damit es neu hochfaehrt
-		_say("%s: Gebäude wählen oder aufs Feld ziehen." % _group(id)[1], UiKit.MUTED)
-	else:
-		_say("Wähle eine Kategorie.", UiKit.MUTED)
+	_say("")
 	_restyle_controls()
 	_layout()
 	refresh()
@@ -437,15 +428,12 @@ func _arm(type: String) -> void:
 	var d := FactorySim.def(type)
 	match type_state(type):
 		"bereit":
-			_say("%s: tippe ein markiertes Feld (%d frei)." % [str(d["name"]).to_upper(),
-				_sim.owned(type) - _sim.placed(type)], Arcade.YELLOW)
+			_say("%s · %d frei" % [str(d["name"]), _sim.owned(type) - _sim.placed(type)], Arcade.YELLOW)
 		"kaufen":
-			_say("%s: kostet %s -- tippe ein markiertes Feld." % [str(d["name"]).to_upper(),
-				FactorySim.amounts_text(d.get("preis", {}))], Arcade.YELLOW)
+			_say("%s · %s" % [str(d["name"]), FactorySim.amounts_text(d.get("preis", {}))], Arcade.YELLOW)
 		_:
 			armed = ""
-			_say("%s gibt es erst ab Tier %d. Nochmal tippen = Details." % [str(d["name"]), int(d["tier"])],
-				UiKit.MUTED)
+			_say("")
 			_open_type_details.call_deferred(type)
 	_build_tray()
 	_layout(false)
@@ -486,11 +474,8 @@ func _tap_look(k: String) -> void:
 		_open_building_details(k)
 	else:
 		var src := FactorySim.source_at(k)
-		if src != "":
-			_say("%s: hier holt ein Förderer %s. Bauen über das Plus unten rechts." % [
-				FactorySim.source_name(src), FactorySim.ware_name(FactorySim.source_ware(src))], UiKit.MUTED)
-		else:
-			_say("Freies Feld. Bauen über das Plus unten rechts.", UiKit.MUTED)
+		_say("%s · %s" % [FactorySim.source_name(src), FactorySim.ware_name(FactorySim.source_ware(src))]
+			if src != "" else "", UiKit.MUTED)
 
 
 func _tap_locked(k: String) -> void:
@@ -519,16 +504,15 @@ func _tap_locked(k: String) -> void:
 	selected = ""
 	var gap := _sim.missing(price)
 	if gap.is_empty():
-		_say("Felder %s kaufen für %s? Nochmal tippen." % [str(c["name"]), FactorySim.amounts_text(price)], GREEN)
+		_say("Felder %s · %s" % [str(c["name"]), FactorySim.amounts_text(price)], GREEN)
 	else:
-		_say("Felder %s kosten %s -- fehlt %s." % [str(c["name"]), FactorySim.amounts_text(price),
+		_say("Felder %s · %s · fehlt %s" % [str(c["name"]), FactorySim.amounts_text(price),
 			FactorySim.amounts_text(gap)], UiKit.BAD)
 
 
 func _tap_build(k: String) -> void:
 	if armed == "":
-		_say("Erst unten eine Kategorie und ein Gebäude wählen." if category == "" else "Erst ein Gebäude wählen.",
-			UiKit.MUTED)
+		_say("")
 		return
 	if str(pending.get("k", "")) == k and str(pending.get("type", "")) == armed:
 		_confirm_build()
@@ -553,12 +537,11 @@ func show_build_preview(k: String, type: String) -> void:
 	var links := _preview_text()
 	match pending_state():
 		"own":
-			_say("%s hier setzen?%s Nochmal tippen." % [str(d["name"]), links], GREEN)
+			_say("%s%s" % [str(d["name"]), links], GREEN)
 		"buy":
-			_say("%s kaufen (%s) und hier setzen?%s Nochmal tippen." % [str(d["name"]),
-				FactorySim.amounts_text(d.get("preis", {})), links], GREEN)
+			_say("%s · %s%s" % [str(d["name"]), FactorySim.amounts_text(d.get("preis", {})), links], GREEN)
 		_:
-			_say("%s: fehlt %s.%s" % [str(d["name"]), FactorySim.amounts_text(pending_missing()), links], UiKit.BAD)
+			_say("%s · fehlt %s%s" % [str(d["name"]), FactorySim.amounts_text(pending_missing()), links], UiKit.BAD)
 
 
 func _preview_text() -> String:
@@ -571,8 +554,8 @@ func _preview_text() -> String:
 		parts.append("%s %s" % [FactorySim.ware_name(str(tr["ware"])),
 			"von " + name if str(path[0]) != str(pending.get("k", "")) else "an " + _name_at(str(path[path.size() - 1]))])
 	if parts.is_empty():
-		return " Noch keine Verbindung."
-	return " " + ", ".join(parts) + "."
+		return " · keine Verbindung"
+	return " · " + ", ".join(parts)
 
 
 func _name_at(k: String) -> String:
@@ -620,7 +603,7 @@ func _confirm_build() -> void:
 	preview = []
 	selected = k
 	GameState.save_roster()
-	_say("%s gebaut. Nächstes Feld tippen oder anderes Gebäude wählen." % name, GREEN)
+	_say("%s gebaut" % name, GREEN)
 	_build_tray()
 	_layout(false)
 
@@ -628,30 +611,29 @@ func _confirm_build() -> void:
 func _tap_remove(k: String) -> void:
 	var b := _sim.building_at(k)
 	if b.is_empty():
-		_say("ABREISSEN: tippe ein Gebäude." if k != FactorySim.net_cell() else "Die Basis bleibt stehen.",
-			UiKit.MUTED)
+		_say("Die Basis bleibt stehen." if k == FactorySim.net_cell() else "", UiKit.MUTED)
 		return
 	var name := str(FactorySim.def(str(b["t"]))["name"])
 	_sim.remove(k)
 	Accessibility.vibrate(15)
 	selected = ""
 	GameState.save_roster()
-	_say("%s abgerissen -- zurück im Besitz, Puffer im Lager." % name, UiKit.BAD)
+	_say("%s abgerissen" % name, UiKit.BAD)
 
 
 func _tap_move(k: String) -> void:
 	if move_from == "":
 		if _sim.building_at(k).is_empty():
-			_say("VERSCHIEBEN: erst ein Gebäude antippen oder ziehen.", UiKit.MUTED)
+			_say("")
 			return
 		move_from = k
 		selected = k
-		_say("%s: wohin? Belegtes Feld = tauschen." % _name_at(k).to_upper(), Arcade.YELLOW)
+		_say(_name_at(k), Arcade.YELLOW)
 		return
 	if k == move_from:
 		move_from = ""
 		selected = ""
-		_say("VERSCHIEBEN: Gebäude ziehen oder antippen und dann das Zielfeld.", UiKit.MUTED)
+		_say("")
 		return
 	move_to(move_from, k)
 
