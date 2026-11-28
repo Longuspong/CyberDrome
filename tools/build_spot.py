@@ -960,18 +960,19 @@ def build_fabrik(ws):
     amt = lambda d: " + ".join(f"{n} {wn(w)}" for w, n in d.items())
     rows = []
     for gid, g in fab["gebaeude"].items():
-        rows.append([g["name"], g["kurz"], g["tier"], g.get("gruppe", ""),
+        rows.append([g["name"], g["kurz"], g.get("basis", 1), g.get("gruppe", ""),
                      fab["quellen_arten"].get(g.get("quelle", ""), {}).get("name", ""),
                      amt(g.get("ein", {})), amt(g.get("aus", {})), g.get("rate"), g.get("strom", 0),
                      g.get("liefert"), g.get("reichweite"), amt(g.get("preis", {})), g.get("start", 0),
                      g.get("text", "")])
-    last = write_table(ws, ["Gebäude", "Kürzel", "Tier", "Gruppe", "Quelle", "Eingang", "Ausgang",
+    last = write_table(ws, ["Gebäude", "Kürzel", "ab Basis", "Gruppe", "Quelle", "Eingang", "Ausgang",
                             "Durchläufe je Takt", "Strom (Bedarf)", "Strom (liefert)", "Reichweite", "Preis",
                             "Startbestand", "Hinweis"], rows,
                        [16, 8, 6, 13, 14, 22, 24, 10, 9, 9, 9, 30, 9, 50])
     r = last + 3
     ws.cell(row=r, column=1, value="Takte und Regeln").font = SUB_FONT
-    rows = [[k, v] for k, v in fab["takte"].items()]
+    rows = [[k, v if not isinstance(v, dict) else ", ".join(f"T{s}: x{n}" for s, n in v.items() if not s.startswith("_"))]
+            for k, v in fab["takte"].items()]
     rows.append(["netz_strom", fab["netz"]["strom"]])
     rows.append(["netz_reichweite", fab["netz"]["reichweite"]])
     last = write_table(ws, ["Wert", "Zahl"], rows, start_row=r + 1)

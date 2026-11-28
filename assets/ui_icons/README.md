@@ -155,3 +155,21 @@ Zeilennummern unten sind der Stand vor dem Umbau.
 | `phase_chaos.svg` | Phase Chaos | Wirbel | `scripts/ui/phase_gem.gd` |
 | `hammer.svg` | Charger bauen | Hammer | `scripts/ui/charger_crafter.gd` |
 | `charger.svg` | Charger / Rohling | Hex mit Blitz | `scripts/ui/charger_crafter.gd` |
+
+### Fabrikstadt (28. Nov. 2026)
+
+Aus `docs/design/fabrik_stadt/symbole/` (Bau-Menue) und den Schildern des Entwurfs.
+
+| Datei | Bedeutung | Fundstellen |
+|---|---|---|
+| `fab_bauen.svg` | Bauen (Kran) | `scripts/ui/factory_view.gd` |
+| `fab_foerdern.svg` | Gruppe Foerdern (Bohrturm) | `data/factory.json` -> `gruppen` |
+| `fab_veredeln.svg` | Gruppe Veredeln | `data/factory.json` -> `gruppen` |
+| `fab_herstellen.svg` | Gruppe Herstellen | `data/factory.json` -> `gruppen` |
+| `fab_strom.svg` | Gruppe Strom | `data/factory.json` -> `gruppen` |
+| `fab_logistik.svg` | Gruppe Logistik | `data/factory.json` -> `gruppen` |
+| `fab_move.svg` | Verschieben | `scripts/ui/factory_view.gd` |
+| `fab_jam.svg` | Schild: Stau | `scripts/ui/factory_view.gd` |
+| `fab_off.svg` | Schild: kein Strom | `scripts/ui/factory_view.gd` |
+| `fab_flag.svg` | Schild: Ziel der Werkbank | `scripts/ui/factory_view.gd` |
+| `fab_lock.svg` | Schloss je gesperrter Feldgruppe | `scripts/ui/factory_view.gd` |
