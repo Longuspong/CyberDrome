@@ -419,7 +419,8 @@ func _soon_card(kind: String) -> Control:
 
 ## Rolle in Worten (Entwurf), aus der KI-Rolle des Chassis.
 const ROLE_TEXT := {"vanguard": "Vorhut · Tank", "skirmisher": "Plänkler · Nahkampf",
-	"controller": "Kontrolle · Fähigkeiten", "sniper": "Scharfschütze"}
+	"controller": "Kontrolle · Fähigkeiten", "support": "Supporter · Hilfe",
+	"sniper": "Scharfschütze"}
 
 
 static func role_text(build: DromeBuild) -> String:

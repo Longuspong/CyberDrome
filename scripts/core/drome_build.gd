@@ -78,6 +78,12 @@ var auto_only: bool = false
 var sprite_scale: float = 1.0
 var role_override: String = ""
 var faction: String = ""
+## Fraktions-DROME (data/formations.json -> dromes, 28. Nov. 2026): die
+## Variante und ihr Chassis mit eigener Passive, KI-Rolle oder Halterregel
+## (Formations.apply_variant). body() gibt dann diese Kopie zurueck, damit
+## Halter, Passive und Rolle ueberall gleich gelten.
+var variant: String = ""
+var variant_body: PartData = null
 
 
 func is_sentinel() -> bool:
@@ -99,6 +105,8 @@ static func create(name: String, assignment: Dictionary) -> DromeBuild:
 # ---------------------------------------------------------------------------
 
 func part_in(slot: String) -> PartData:
+	if slot == "body" and variant_body != null and slots.get("body") == variant_body.id:
+		return variant_body
 	var source := mirror_source(slot)
 	if source != "":
 		return part_in(source)
@@ -389,6 +397,8 @@ func clone() -> DromeBuild:
 	copy.sprite_scale = sprite_scale
 	copy.role_override = role_override
 	copy.faction = faction
+	copy.variant = variant
+	copy.variant_body = variant_body
 	return copy
 
 
@@ -565,7 +575,7 @@ func _slot_label(slot: String) -> String:
 ## Was sie nicht kann: Zusammenspiel. Ein Molok ist allein wenig wert und
 ## macht einen Strix dahinter erst stark; der Wert eines Squads ist hier
 ## trotzdem die Summe seiner DROMEs.
-const POWER_SCALE := 0.922   # 27. Nov. 2026 neu geeicht (Repair-Kit am Nimbus, Hammer ohne Integritaetsschaden), Schnitt Standard = 100
+const POWER_SCALE := 0.941   # 28. Nov. 2026 neu geeicht (Nimbus-Supporter mit Speicher-Repair-Kit, Hammer ohne Integritaetsschaden), Schnitt Standard = 100
 const POWER_WEIGHTS := {
 	"shield": 3.0,          # ein Punkt Schild gegen einen Punkt Integritaet
 	"support": 20.0,        # Reparatur/Schildgabe je Sekunde als Standhaftigkeit

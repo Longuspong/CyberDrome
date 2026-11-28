@@ -24,6 +24,14 @@ func _nimbus() -> DromeBuild:
 		"feet": &"mage_drive", "core": &"mage_core", "equip_left": &"eq_rune_staff"})
 
 
+## Der fruehere Nimbus (Runenstab, Echo) als Neon Nimbus (28. Nov. 2026).
+func _neon_nimbus() -> DromeBuild:
+	var build := _nimbus()
+	build.display_name = "Neon Nimbus"
+	Formations.apply_variant(build, "neon_nimbus")
+	return build
+
+
 func _strix() -> DromeBuild:
 	return DromeBuild.create("Strix", {"body": &"strix_body", "head": &"strix_head",
 		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_rail_lance"})
@@ -52,7 +60,8 @@ func _battle(players: Array, enemies: Array, tiles: Array) -> BattleManager:
 func test_every_chassis_names_its_role() -> void:
 	t.equal(Unit.create(_vireo(), &"A", true).ai_role(), "skirmisher", "Vireo ist wendig")
 	t.equal(Unit.create(_molok(), &"B", true).ai_role(), "vanguard", "Molok ist Frontlinie")
-	t.equal(Unit.create(_nimbus(), &"C", true).ai_role(), "controller", "Nimbus ist Kontrolle")
+	t.equal(Unit.create(_nimbus(), &"C", true).ai_role(), "support", "Nimbus ist Supporter")
+	t.equal(Unit.create(_neon_nimbus(), &"C2", true).ai_role(), "controller", "Neon Nimbus ist Kontrolle")
 	t.equal(Unit.create(_strix(), &"D", true).ai_role(), "sniper", "Strix ist Scharfschütze")
 
 
@@ -252,14 +261,14 @@ func test_the_vortex_gathers_then_strikes_then_slows() -> void:
 
 
 func test_echo_lengthens_the_takt_and_casts_twice() -> void:
-	# Echo (Nimbus, 7. Nov. 2026): Takt 50 % laenger, Faehigkeit wirkt zweimal.
-	var battle := _battle([_nimbus(), _vireo()], [_vireo()],
+	# Echo (Neon Nimbus seit 28. Nov. 2026): Takt 50 % laenger, Faehigkeit wirkt zweimal.
+	var battle := _battle([_neon_nimbus(), _vireo()], [_vireo()],
 		[Vector2i(4, 16), Vector2i(6, 16), Vector2i(10, 4)])
 	var nimbus: Unit = battle.units[0]
 	var vireo: Unit = battle.units[1]
 	var vortex := _action(nimbus, &"act_rune_vortex")
 	var scatter := _action(vireo, &"act_pulse_double")
-	t.equal(nimbus.passive(), "echo", "der Nimbus hat Echo")
+	t.equal(nimbus.passive(), "echo", "der Neon Nimbus hat Echo")
 	t.equal(vortex.trigger_kind, "attacks", "der Vortex löst nach Angriffen aus")
 	t.equal(vortex.range_tiles, 5, "mit Reichweite 5")
 	t.equal(battle.brain.trigger_every(nimbus, vortex), 5, "mit Echo jeder 5. statt jeder 3. Angriff (3 x 1,5 aufgerundet)")
@@ -275,18 +284,18 @@ func test_echo_casts_the_vortex_twice_in_a_row() -> void:
 	var times := []
 	var clock := {"battle": null}
 	var record := func(unit, _tile, action):
-		if unit.display_name == "Nimbus" and unit.is_player and action.id == &"act_rune_vortex":
+		if unit.display_name == "Neon Nimbus" and unit.is_player and action.id == &"act_rune_vortex":
 			times.append(clock["battle"].time)
 	EventBus.action_used.connect(record)
 	var battle := BattleManager.new()
 	clock["battle"] = battle
-	battle.setup(6060, [_nimbus(), _molok()], [_molok(), _molok()])
+	battle.setup(6060, [_neon_nimbus(), _molok()], [_molok(), _molok()])
 	battle.run_to_end(40.0)
 	battle.free()
 	EventBus.action_used.disconnect(record)
 	t.ok(times.size() >= 4, "der Nimbus zaubert mehrmals (%d)" % times.size())
 	if times.size() >= 4:
-		var probe := Unit.create(_nimbus(), &"N", true)
+		var probe := Unit.create(_neon_nimbus(), &"N", true)
 		var gap := AIController.echo_gap() + _action(probe, &"act_rune_vortex").windup
 		probe.free()
 		t.ok(absf(times[1] - times[0] - gap) < 0.11,

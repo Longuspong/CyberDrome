@@ -125,6 +125,13 @@ static func ability_data(unit: Unit, tile: Vector2i, action: ActionData, color: 
 	match kind:
 		"double":
 			data["targets"] = double_targets(unit, tile, action, units)
+		"drones":
+			# Je lebendem Teammitglied (auch der Traeger) eine Drohne.
+			var goals: Array = []
+			for ally in units:
+				if ally.is_alive() and ally.is_player == unit.is_player:
+					goals.append(ally.visual_anchor())
+			data["targets"] = goals
 		"shield":
 			var aimed := unit_at(units, tile)
 			if aimed == null or tile == unit.tile:

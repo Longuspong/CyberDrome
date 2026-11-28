@@ -85,18 +85,18 @@
   },
   "stats": {
     "hp": 60,
-    "spd": 12,
+    "spd": 8,
     "def": 0,
     "shield": 60,
     "shield_regen": 0,
     "shield_bonus": 0.0,
-    "shield_pulse": 10,
+    "shield_pulse": 5,
     "power": 12,
     "efficiency": 12,
     "module_slots": 3,
     "hp_regen_pct": 0,
-    "ai_role": "controller",
-    "passive": "echo",
+    "ai_role": "support",
+    "passive": "cleancode",
     "actions": []
   }
 }

@@ -18,7 +18,10 @@
   "art (21. Nov. 2026, Spieler): 'variante' = ein bekannter DROME im Look einer Fraktion,",
   "  heisst wie sein Chassis (Molok) mit der Fraktion als Untertitel (Mega Mechas);",
   "  'neu' = ein eigener DROME mit eigenem Namen (Neon Vireo). Standard-DROMEs tragen",
-  "  den Untertitel CyberDrome."
+  "  den Untertitel CyberDrome. Abweichungen vom Chassis (28. Nov. 2026):",
+  "  passive, ai_role und holder (Halterregel je Halter, z. B. Neon Vireo M-N) gelten nur",
+  "  fuer diese Variante (Formations.apply_variant). Weitere Fraktionsvarianten (Solar Nimbus,",
+  "  Mecha Molok, Mecha Strix) kommen erst nach dem Kernspiel (docs/KERNPLAN.md)."
  ],
  "sentinels": {
   "neon_assault": {
@@ -308,6 +311,12 @@
    "weapons": [
     "eq_plasma_blade"
    ],
+   "holder": {
+    "equip_left": {
+     "max_class": "medium",
+     "reach": "melee"
+    }
+   },
    "stats": {
     "spd": 8,
     "hp_max": 80,
@@ -326,71 +335,19 @@
    "weapons": [
     "eq_rune_staff"
    ],
+   "passive": "echo",
+   "ai_role": "controller",
    "stats": {
     "spd": 7,
     "hp_max": 60,
     "shield": 60,
     "shield_pulse": 5,
     "def": 0,
-    "power": 12,
-    "efficiency": 12,
+    "power": 15,
+    "efficiency": 5,
     "module_slots": 3
    },
    "faction": "neon"
-  },
-  "solar_nimbus": {
-   "art": "variante",
-   "name": "Solar Nimbus",
-   "chassis": "mage_body",
-   "weapons": [
-    "eq_rune_staff"
-   ],
-   "stats": {
-    "spd": 12,
-    "hp_max": 60,
-    "shield": 60,
-    "shield_pulse": 10,
-    "def": 0,
-    "power": 12,
-    "module_slots": 3
-   },
-   "faction": "solar"
-  },
-  "mecha_molok": {
-   "art": "variante",
-   "name": "Mecha Molok",
-   "chassis": "jugg_body",
-   "weapons": [
-    "eq_hammer"
-   ],
-   "stats": {
-    "spd": 6,
-    "hp_max": 250,
-    "shield": 50,
-    "shield_pulse": 2,
-    "def": 10,
-    "power": 6,
-    "module_slots": 2
-   },
-   "faction": "mecha"
-  },
-  "mecha_strix": {
-   "art": "variante",
-   "name": "Mecha Strix",
-   "chassis": "strix_body",
-   "weapons": [
-    "eq_rail_lance"
-   ],
-   "stats": {
-    "spd": 7,
-    "hp_max": 100,
-    "shield": 30,
-    "shield_pulse": 5,
-    "def": 2,
-    "power": 15,
-    "module_slots": 3
-   },
-   "faction": "mecha"
   },
   "vireo": {
    "name": "Vireo",
@@ -410,7 +367,7 @@
    "name": "Nimbus",
    "chassis": "mage_body",
    "weapons": [
-    "eq_rune_staff"
+    "eq_repair_kit"
    ]
   },
   "strix": {

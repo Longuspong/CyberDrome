@@ -250,18 +250,25 @@
       "Lauftempo; jeder Angriff haelt die Stapel seconds lang (Effizienz streckt).",
       "safe_haven (Molok, 27. Nov. 2026): Safe Haven (Arbeitsname war Festung) – Heilung, Lebensraub, Regeneration,",
       "Schildladung und Schildgaben am Molok mal care_mult.",
-      "echo (Nimbus, 7. Nov. 2026): der Takt der Faehigkeiten ist slower-mal so",
+      "echo (Neon Nimbus, 7. Nov. 2026; bis 28. Nov. am Nimbus): der Takt der Faehigkeiten ist slower-mal so",
       "lang (seit 27. Nov. 2026: Takt mal slower, halber Takt aufgerundet), dafuer wirkt",
       "jede Faehigkeit zweimal – seit 18. Nov. 2026 nacheinander: das Echo kommt",
       "gap Sekunden spaeter (mit Ausholzeit holt der DROME erneut aus).",
       "focuslense (Strix, 27. Nov. 2026): kinetischer Schaden mal kinetic_mult,",
       "Energieschaden mal energy_mult; traf der letzte Schuss dasselbe Ziel (anvisiert,",
-      "immer nur eins), kommt focus_mult dazu."
+      "immer nur eins), kommt focus_mult dazu.",
+      "cleancode (Nimbus-Supporter, 28. Nov. 2026): wer vom Nimbus Heilung oder Schild",
+      "bekommt (auch er selbst), erhaelt einen Stapel Bug-Fix: haelt stack_seconds (Effizienz",
+      "des Nimbus streckt), hoechstens max_stacks, jeder Stapel laeuft fuer sich ab (der",
+      "vierte frischt den aeltesten auf). Je Stapel +def Ruestung und +shieldgate Shieldgate",
+      "(Ruestung fuer den Schild: Schaden am Schild geteilt durch denselben eHP-Faktor wie",
+      "die Ruestung, combat.armor_ehp_*)."
     ],
     "cyberspeed": {"every": 3, "max_stacks": 3, "seconds": 3.0, "attack_speed": 0.1, "move": 0.1},
     "safe_haven": {"care_mult": 1.2},
     "echo": {"slower": 1.5, "gap": 0.5},
-    "focuslense": {"kinetic_mult": 1.2, "energy_mult": 0.3, "focus_mult": 1.2}
+    "focuslense": {"kinetic_mult": 1.2, "energy_mult": 0.3, "focus_mult": 1.2},
+    "cleancode": {"stack_seconds": 5.0, "max_stacks": 3, "def": 2, "shieldgate": 2}
   },
 
   "power_tolerance": 0.12,
@@ -365,7 +372,7 @@
       "  Abweichung von 1 bei move_mult, attack_speed_mult und damage_taken_mult",
       "  wächst mit (Verlangsamen 40 % bei Effizienz 12: 48 %), Verlangsamen",
       "  höchstens slow_cap. Sichtbarer Wert am Chassis wie Power (Vireo 10,",
-      "  Molok 14, Nimbus 12, Strix 10; Neon Nimbus 7 bei Power 14).",
+      "  Molok 14, Nimbus 12, Strix 10; Neon Nimbus 5 bei Power 15).",
       "KABELBRAND (cable_fire): Stapel am Ziel. Jeder Puls des Ziels verbraucht",
       "  höchstens max_per_pulse Stapel; je Stapel kinetic + energy Schaden (ohne",
       "  Power, durch Schild und Panzerung wie ein Treffer). Der Rest bleibt",

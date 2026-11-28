@@ -99,6 +99,9 @@ var burst_cooldown: float = 0.0
 var cyberspeed_stacks: int = 0
 var cyberspeed_count: int = 0
 var cyberspeed_left: float = 0.0
+## Bug-Fix (Cleancode, Nimbus-Passive, 28. Nov. 2026): je Stapel die
+## Restdauer in Sekunden; jeder Stapel laeuft fuer sich ab.
+var bug_fix: Array[float] = []
 ## Kabelbrand (Statuseffekt mit Stapeln, 20. Nov. 2026): liegende Stapel,
 ## mit Bruchteil aus der Effizienz; wer zuletzt angesteckt hat.
 var cable_fire: float = 0.0
@@ -946,6 +949,8 @@ func stat(key: String) -> int:
 		var bonus = status.get(key, 0)
 		if bonus is int or bonus is float:
 			value += int(bonus)
+	if not bug_fix.is_empty() and (key == "def" or key == "shieldgate"):
+		value += bug_fix.size() * int(_cleancode().get(key, 2))
 	return value
 
 
@@ -1104,6 +1109,38 @@ static func _cyberspeed() -> Dictionary:
 	return Config.section("passives").get("cyberspeed", {}) as Dictionary
 
 
+static func _cleancode() -> Dictionary:
+	return Config.section("passives").get("cleancode", {}) as Dictionary
+
+
+## Cleancode (Nimbus-Passive, 28. Nov. 2026): ``source`` hat diesem DROME
+## Heilung, Schild oder einen Buff gegeben -- traegt die Quelle Cleancode,
+## kommt ein Stapel Bug-Fix dazu (``passives.cleancode``): je Stapel mehr
+## Ruestung und Shieldgate, ``stack_seconds`` lang (Effizienz der Quelle
+## streckt), hoechstens ``max_stacks``; ist alles voll, frischt der neue
+## Stapel den aeltesten auf. Gibt zurueck, ob ein Stapel kam.
+func receive_care(source: Unit) -> bool:
+	if source == null or source.passive() != "cleancode" or not is_alive():
+		return false
+	var rule := _cleancode()
+	var seconds := float(rule.get("stack_seconds", 5.0)) * source.efficiency_factor()
+	if bug_fix.size() < maxi(1, int(rule.get("max_stacks", 3))):
+		bug_fix.append(seconds)
+	else:
+		var oldest := 0
+		for i in bug_fix.size():
+			if bug_fix[i] < bug_fix[oldest]:
+				oldest = i
+		bug_fix[oldest] = seconds
+	return true
+
+
+## Shieldgate (28. Nov. 2026): Ruestung fuer den Schild. Kein Standardwert der
+## DROMEs, kommt bisher nur aus Bug-Fix (Cleancode).
+func shieldgate() -> int:
+	return maxi(0, stat("shieldgate"))
+
+
 ## Effizienz (20. Nov. 2026): versteckter Wert, Grundwert
 ## ``statuses.efficiency.base`` (10 = 100 %). Streckt Dauer und Wirkung der
 ## Statuseffekte, die dieser DROME ausloest -- nie die Schadenszahl.
@@ -1166,6 +1203,13 @@ func tick_statuses(dt: float) -> bool:
 			cyberspeed_left = 0.0
 			cyberspeed_stacks = 0
 			cyberspeed_count = 0
+	if not bug_fix.is_empty():
+		var left: Array[float] = []
+		for seconds in bug_fix:
+			if seconds - dt > 0.0:
+				left.append(seconds - dt)
+		changed = changed or left.size() != bug_fix.size()
+		bug_fix = left
 	for id in statuses.keys():
 		statuses[id]["seconds_left"] = float(statuses[id]["seconds_left"]) - dt
 		if float(statuses[id]["seconds_left"]) <= 0.0:
@@ -1184,6 +1228,9 @@ func status_names() -> Array[String]:
 	# Cyberspeed: ein Sprint-Symbol je Stapel.
 	for i in cyberspeed_stacks:
 		names.append("rush")
+	# Cleancode: ein Bug-Fix-Symbol je Stapel.
+	for i in bug_fix.size():
+		names.append("bug_fix")
 	if cable_fire_stacks() > 0:
 		names.append("cable_fire")
 	return names

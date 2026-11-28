@@ -268,7 +268,7 @@ Neon Nimbus hat jetzt Power 12 / Effizienz 12 wie der heutige Nimbus (vorher 14 
 * **Hammer:** kein Zusatzschaden aus der eigenen Integrität mehr (`hp_scaling` ganz entfernt);
   der Betäubungsschlag heilt weiter um 100 % des Schadens.
 
-**Geklärt, noch nicht gebaut:**
+**Geklärt, noch nicht gebaut** (Nimbus-Supporter und M-N seit 28. Nov. gebaut, 5f):
 
 * **Nimbus als Supporter** -- Werte und Passive (Kernplan: wartet): Speed 8, Integrität 60, Schild 60,
   Schildpuls 5, Rüstung 0, Power 12, Effizienz 12, Halter M, Waffe **Repair-Kit** (gebaut), Zielregel
@@ -281,6 +281,30 @@ Neon Nimbus hat jetzt Power 12 / Effizienz 12 wie der heutige Nimbus (vorher 14 
 * **Neon Vireo** Halter M-N (mittel, nur Nahkampf): braucht Halterregeln je Variante, heute
   gilt der Halter des Vireo-Chassis.
 * Strix-Rolle heißt im Blatt **AA-DPS** (Schaden über Auto-Angriffe), Nimbus **Skill-DPS**.
+
+## 5f. Nimbus-Supporter, Neon-Varianten (Spieler 28. Nov. 2026, gebaut)
+
+| DROME | Speed | Schildpuls | Power | Effizienz | Halter | Standardwaffe | Passive | Rolle |
+|---|---|---|---|---|---|---|---|---|
+| Nimbus (Supporter) | 8 | 5 | 12 | 12 | M | Repair-Kit (Speicher) | **Cleancode** | support |
+| Neon Nimbus (Gegner, Skill-DPS) | 7 | 5 | **15** | **5** | M | Runenstab | Echo | controller |
+| Neon Vireo (Gegner) | 8 | 10 | 10 | 10 | **M-N** | Plasmaklinge | Cyberspeed | skirmisher |
+
+* **Repair-Kit** wie am 27. Nov. abends (oben, PR #114): Energieblitze speichern den
+  Schaden, die Reparaturwelle gibt ihn mal Effizienz allen zurueck -- kein reines
+  Heilwerkzeug, damit ein Nimbus als Letzter nicht nutzlos ist. Seit 28. Nov. als
+  **Drohnenschwarm** zu sehen (eine Drohne steigt auf, teilt sich, fliegt zu jedem
+  Verbuendeten), und die Welle gibt Bug-Fix.
+* **Cleancode/Bug-Fix/Shieldgate** wie im Werkblatt; Bug-Fix kommt bei Heilung und
+  Schildgabe vom Nimbus (Buffs, sobald der Nimbus welche gibt). Dauer 5 s mal Effizienz
+  des Nimbus (12 = 6 s), jeder Stapel laeuft fuer sich ab, der vierte frischt den aeltesten
+  auf. Shieldgate teilt den Schaden am Schild durch denselben eHP-Faktor wie die Ruestung.
+* **Neon Nimbus:** soll Schaden machen, kein CC-Meister sein (Spieler) -- Effizienz 5
+  halbiert Dauer und Staerke der Verlangsamung.
+* **Halter-Sondernamen:** keine. Die Kuerzel S/M/X mit -F/-N reichen; „Lafette“ bleibt nur
+  die Bauform des Strix, kein Haltername.
+* Die Zielregel „Most Damage“ des Neon Nimbus ist weiter offen (heute: wo die meisten
+  Gegner stehen).
 
 ## 6. Offen (SPOT-Blatt Offene Punkte)
 

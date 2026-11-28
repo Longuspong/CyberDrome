@@ -283,6 +283,10 @@ func resolve_damage(target: Unit, raw: int, energy_fraction: float,
 	var p := raw - e
 	# Splitterpanzer: die Stacheln gehen am Schild vorbei.
 	var shield := 0 if pierce_shield else target.shield
+	# Shieldgate (Bug-Fix, 28. Nov. 2026): Ruestung fuer den Schild -- der
+	# Schaden am Schild wird durch denselben eHP-Faktor geteilt wie bei der
+	# Ruestung. Was durchschlaegt, rechnet in Rohschaden zurueck (s. u.).
+	var gate := armor_multiplier(float(target.shieldgate()))
 	var to_hp := 0.0
 	# Feste Reihenfolge physisch -> Energie, damit die Rechnung reproduzierbar
 	# bleibt (bei gemischtem Schaden wie dem Puls-Blaster).
@@ -297,7 +301,7 @@ func resolve_damage(target: Unit, raw: int, energy_fraction: float,
 		if amt <= 0:
 			continue
 		if shield > 0:
-			var factor := float(portion["sf"])
+			var factor := float(portion["sf"]) / gate
 			var eff := int(round(float(amt) * factor))
 			if eff <= shield:
 				shield -= eff
@@ -530,6 +534,9 @@ func release_store(source: Unit, action: ActionData) -> int:
 		if ally.hp > before_hp:
 			EventBus.unit_healed.emit(ally, ally.hp - before_hp, source)
 		var got := (ally.hp - before_hp) + (ally.shield - before_shield)
+		# Cleancode (Nimbus): wer aus der Welle etwas bekommt, erhaelt Bug-Fix.
+		if got > 0:
+			ally.receive_care(source)
 		if got > 0:
 			EventBus.log_line("%s: %s +%d Integrität, +%d Schild."
 				% [source.display_name, ally.display_name, ally.hp - before_hp, ally.shield - before_shield])
@@ -579,6 +586,9 @@ func support(source: Unit, target: Unit, action: ActionData) -> int:
 		var gain := int(round(float(support_amount(source, target, action.shield_gain)) * target.care_mult()))
 		target.shield = maxi(target.shield, mini(shield_cap(target), target.shield + gain))
 	charged = target.shield - before_shield
+	# Cleancode (Nimbus): wer etwas bekommt, erhaelt einen Stapel Bug-Fix.
+	if healed > 0 or charged > 0:
+		target.receive_care(source)
 	if healed > 0 or charged > 0:
 		EventBus.log_line("%s: %s +%d Integrität, +%d Schild."
 			% [source.display_name, target.display_name, healed, charged])

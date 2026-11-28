@@ -250,16 +250,31 @@ func test_a_new_game_starts_with_everything_once() -> void:
 func test_variants_keep_the_chassis_name_with_a_faction_subtitle() -> void:
 	# 21. Nov. 2026 (Spieler): Varianten heissen wie ihr Chassis, die Fraktion
 	# steht darunter; neue DROMEs behalten ihren eigenen Namen.
-	t.equal(Roster.faction_drome_name("mecha_molok"), "Molok", "Variante heisst Molok")
 	t.equal(Roster.faction_drome_name("neon_vireo"), "Neon Vireo", "neuer DROME behaelt seinen Namen")
 	t.equal(Roster.subtitle_for(""), "CyberDrome", "Standard-Untertitel")
 	t.equal(Roster.subtitle_for("Mecha"), "Mega Mechas", "Fraktion als Untertitel")
 	var roster := _fresh()
 	var data := roster.to_dict()
 	var entry: Dictionary = (data["roster"] as Array)[0]
-	entry["variant"] = "mecha_molok"
-	entry["name"] = "Mecha Molok"
+	entry["variant"] = "neon_vireo"
 	var loaded := Roster.new()
 	loaded.load_dict(data)
-	t.equal(loaded.entries[0].name, "Molok", "alter Name wird beim Laden umbenannt")
-	t.equal(Roster.subtitle(loaded.entries[0]), "Mega Mechas", "mit Fraktion darunter")
+	t.equal(Roster.subtitle(loaded.entries[0]), Roster.subtitle_for("neon"), "mit Fraktion darunter")
+	t.ok(Roster.subtitle_for("neon") != "CyberDrome", "Neon hat eigenen Untertitel")
+
+
+func test_removed_variants_load_as_standard_dromes() -> void:
+	# 28. Nov. 2026 (Spieler): Solar Nimbus, Mecha Molok und Mecha Strix kommen
+	# erst nach dem Kernspiel -- alte Spielstaende behalten den DROME als
+	# Standard-DROME seines Chassis.
+	t.ok(not Roster.faction_variants().has("mecha_molok"), "Mecha Molok ist raus")
+	var roster := _fresh()
+	var data := roster.to_dict()
+	var entry: Dictionary = (data["roster"] as Array)[0]
+	var plain: String = str(entry["name"])
+	entry["variant"] = "mecha_molok"
+	entry["name"] = "Mecha " + plain
+	var loaded := Roster.new()
+	loaded.load_dict(data)
+	t.equal(loaded.entries[0].variant, "", "Variante entfaellt")
+	t.equal(loaded.entries[0].name, plain, "Name wie das Chassis")

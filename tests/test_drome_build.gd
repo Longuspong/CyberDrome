@@ -36,6 +36,7 @@ func _stock(set_id: String) -> DromeBuild:
 func test_library_loaded() -> void:
 	# 8. Nov. 2026: Orbit-Fokus und Hologramm-Boost sind Module.
 	# 9. Nov. 2026: Bollwerk-Ramme, Moerser, Klingenbumerang dazu.
+	# 28. Nov. 2026: 16 Chassis-Teile und 7 Waffen (Repair-Kit neu).
 	# 27. Nov. 2026: Repair-Kit (Nimbus) dazu.
 	t.equal(PartDB.parts.size(), 23, "23 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausätze erwartet")
@@ -110,7 +111,8 @@ func test_the_dromes_carry_the_agreed_values() -> void:
 	var expected := {
 		"bot1": {"spd": 8, "hp_max": 80, "shield_max": 50, "shield_pulse": 5, "def": 2, "power": 10, "module_slots": 3},
 		"bot2": {"spd": 6, "hp_max": 250, "shield_max": 50, "shield_pulse": 2, "def": 10, "power": 6, "module_slots": 2},
-		"bot3": {"spd": 12, "hp_max": 60, "shield_max": 60, "shield_pulse": 10, "def": 0, "power": 12, "module_slots": 3},
+		# Nimbus als Supporter (Werkblatt 27. Nov. 2026, gebaut 28. Nov.).
+		"bot3": {"spd": 8, "hp_max": 60, "shield_max": 60, "shield_pulse": 5, "def": 0, "power": 12, "module_slots": 3},
 		"bot4": {"spd": 3, "hp_max": 100, "shield_max": 30, "shield_pulse": 5, "def": 2, "power": 15, "module_slots": 3},
 	}
 	for set_id in expected:

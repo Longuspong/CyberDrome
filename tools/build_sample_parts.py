@@ -498,10 +498,12 @@ STATS = {
     "jugg_body":   {"spd":  6, "hp": 250, "shield": 50, "shield_pulse":  2, "def": 10,
                     "power":  6, "efficiency": 14, "module_slots": 2,
                     "ai_role": "vanguard", "passive": "safe_haven"},
-    # Nimbus: fragil, schildlastig, Richtung Faehigkeiten.
-    "mage_body":   {"spd": 12, "hp":  60, "shield": 60, "shield_pulse": 10, "def":  0,
+    # Nimbus: der Supporter (Werkblatt 27. Nov. 2026, gebaut 28. Nov.) --
+    # fragil, schildlastig, hilft vor Schaden. Der fruehere Nimbus (Runenstab,
+    # Echo) lebt als Neon Nimbus weiter (data/formations.json).
+    "mage_body":   {"spd":  8, "hp":  60, "shield": 60, "shield_pulse":  5, "def":  0,
                     "power": 12, "efficiency": 12, "module_slots": 3,
-                    "ai_role": "controller", "passive": "echo"},
+                    "ai_role": "support", "passive": "cleancode"},
     # Strix: Langstrecke, langsam, viel Power.
     "strix_body":  {"spd":  3, "hp": 100, "shield": 30, "shield_pulse":  5, "def":  2,
                     "power": 15, "efficiency": 10, "module_slots": 3,

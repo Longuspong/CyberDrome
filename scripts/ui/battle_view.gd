@@ -572,7 +572,7 @@ class UnitBadgePainter extends Node2D:
 	## (assets/ui_icons/<id>.svg, seit 15. Nov. 2026).
 	const STATUS_COLOR := {"stun": Color(1.0, 0.9, 0.3), "slow": Color(0.45, 0.7, 1.0),
 		"vulnerable": Color(1.0, 0.4, 0.35), "rush": Color(0.5, 0.95, 0.55),
-		"cable_fire": Color(1.0, 0.55, 0.15)}
+		"cable_fire": Color(1.0, 0.55, 0.15), "bug_fix": Color(0.49, 1.0, 0.69)}
 
 	func _statuses(ids: Array, x: float, y: float, s: float) -> void:
 		for id in ids:
