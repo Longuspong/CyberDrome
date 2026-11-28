@@ -40,14 +40,18 @@ Details in `docs/SKILLBAUM_KONZEPT.md` 5f.
   eigene Dauer): +2 Ruestung, +2 **Shieldgate** (`Unit.shieldgate`, in
   `ActionResolver.resolve_damage`: Schaden am Schild durch den eHP-Faktor der Ruestung).
   Symbol `assets/ui_icons/bug_fix.svg`.
-* **Repair-Kit** (`eq_repair_kit`, EQP-004, leicht, Support, Modell aus dem frueheren
-  E-Schraubenschluessel): Angriff repariert nach der Heilregel (heal 6, Reichweite 3,
-  1,5 s), sonst 5 Energieschaden am Gegner; jeder 4. Angriff **Patch** (15 Schild an einen
-  Verbuendeten, auch ueber das Maximum). Startwaffe des Nimbus, der Runenstab liegt frei.
+* **Repair-Kit** aus PR #114 uebernommen (kein reines Heilwerkzeug, Spieler): Energieblitze
+  speichern den angerichteten Schaden, die Reparaturwelle (jeder 6. Angriff) gibt jedem
+  Teammitglied Speicher x Effizienz als Schild und Reparatur. Neu: die Welle ist ein
+  **Drohnenschwarm** (`AbilityPainter` Art `drones`: beim Ausholen steigt eine Drohne auf,
+  beim Wirken teilt sie sich und fliegt zu jedem Verbuendeten), und wer etwas bekommt,
+  erhaelt Bug-Fix (Cleancode in `ActionResolver.release_store`).
 * **Start-Squad:** Vireo, Molok, Strix (Kern-Trio), der Nimbus wartet als Vierter.
   `run_bench -- 20`: mit dem Supporter statt des Strix fiel Runde 1 Normal auf 7/19,
   mit dem Kern-Trio wieder 19/19 (vorher 19/19); Elite Runde 5 2/14 statt 6/14 (Neon
-  Nimbus mit Power 15). `POWER_SCALE` 1,199 (Schnitt Standard wieder 100).
+  Nimbus mit Power 15). Mit dem Speicher-Kit (#114) `run_bench -- 20`: Kern-Trio wie oben;
+  Vireo/Molok/Nimbus gewinnt Leicht und Normal bis Runde 3 alles, Runde 5 Normal 11-14/16.
+  `POWER_SCALE` 0,941 (Schnitt Standard wieder 100).
 * **Fraktionsvarianten mit Abweichung vom Chassis** (`Formations.apply_variant`,
   `DromeBuild.variant_body`, `PartData.duplicate_part`): `passive`, `ai_role`, `holder` in
   `data/formations.json`. Neon Nimbus: Echo, Kontrolle, **Power 15, Effizienz 5** (Schaden
@@ -55,6 +59,20 @@ Details in `docs/SKILLBAUM_KONZEPT.md` 5f.
 * **Raus bis nach dem Kernspiel:** Solar Nimbus, Mecha Molok, Mecha Strix (Daten +
   Spezialteile). Alte Spielstaende laden sie als Standard-DROME ihres Chassis. Werte zum
   Wiederherstellen in `docs/KERNPLAN.md`.
+### Repair-Kit, Hammer, Testspielstand (27. Nov. 2026 abends, Spieler)
+
+* **Repair-Kit** (Nimbus-Standardwaffe, `SKILLBAUM_KONZEPT.md` 5e): Angriff speichert den
+  angerichteten Schild-/Integritaetsschaden, die Reparaturwelle (jeder 6. Angriff) gibt jedem
+  Teammitglied Speicher x Effizienz als Schild und Reparatur. Werte selbst gewaehlt: 9 Schaden,
+  1,2 s, Reichweite 4, 50/50.
+* **Hammer** ohne Integritaetsschaden (`hp_scaling` entfernt). Kampfwert neu geeicht
+  (`POWER_SCALE` 0,922), die Welle zaehlt als gespeicherter Schaden x Effizienz x 3.
+* **Testspielstand Platz 3:** `Roster.seed_test_stock` (Startbestand + 1000 je Ware, Phase,
+  Rohling, Keynode, Fraktionskern, Spezialteil, DROME-Teil, Coins; jede Waffe einmal extra).
+  `GameState.refresh_test_slot` schreibt ihn beim Start neu, wenn die Versionskennung
+  (`data/build.json`, schreibt `tools/build_web.sh` aus dem Commit) sich geaendert hat.
+* Messung `run_bench -- 30` (Elite, mit/ohne Module): Runde 3 6/12 und 8/12, Runde 5 1/18
+  und 3/18, Runde 8 1/30 und 0/30 -- schwaecher als mit Runenstab (Vortex fehlt).
 
 ### Werkblatt uebernommen: Gunship, Focuslense, neue Werte (27. Nov. 2026, Spieler)
 

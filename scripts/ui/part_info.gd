@@ -16,11 +16,11 @@ extends RefCounted
 const ROLE := {
 	&"eq_pulse_blaster": "Leichte Allzweckwaffe auf mittlere Distanz. Halb Energieschaden -- gut gegen Schilde.",
 	&"eq_plasma_blade": "Nahkampfklinge des Vireo: schnelle Schnitte, das Aufschlitzen macht das Ziel verwundbar.",
-	&"eq_hammer": "Nahkampfwaffe des Molok: der Betäubungsschlag trifft mit der eigenen Integrität und heilt.",
+	&"eq_hammer": "Nahkampfwaffe des Molok: der Betäubungsschlag betäubt und heilt den Träger um den Schaden.",
+	&"eq_repair_kit": "Werkzeug des Nimbus: kleine Energieblitze speichern den angerichteten Schaden, ein Drohnenschwarm bringt ihn dem ganzen Team als Schild und Integrität zurück.",
 	&"eq_deflector": "Schild zum Umschnallen: stößt zu und lädt dem Träger Schild auf, auch über das Maximum.",
 	&"eq_rune_staff": "Energiestab auf mittlere Distanz. Der Vortex zieht Gegner zusammen und verlangsamt sie.",
 	&"eq_rail_lance": "Scharfschützenwaffe mit der größten Reichweite.",
-	&"eq_repair_kit": "Werkzeug des Nimbus: repariert Verbündete, bevor es schießt. Der Patch gibt Schild, auch über das Maximum.",
 }
 
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
@@ -144,14 +144,16 @@ static func action_lines(action: ActionData) -> Array[String]:
 		out.append("Danach schlägt nach %s s eine Schockwelle zu." % ActionData._seconds(action.delay))
 	if not action.status.is_empty():
 		out.append("Getroffene: %s." % action.status_text())
-	if action.heal > 0:
+	if action.stores_damage:
+		out.append("Speichert den angerichteten Schild- und Integritätsschaden für die Reparaturwelle.")
+	if action.release_store:
+		out.append("Jedes Teammitglied bekommt den Speicher mal Effizienz zurück: Schildschaden als Schild (auch über das Maximum), Integritätsschaden als Reparatur. Danach ist der Speicher leer.")
+	elif action.heal > 0:
 		out.append("Repariert %d Integrität beim Verbündeten mit dem geringsten Anteil; ist niemand verletzt, schießt er auf Gegner." % action.heal)
-	if action.shield_gain > 0:
+	if action.shield_gain > 0 and not action.release_store:
 		var who := "dem Träger" if action.support == "self" \
 			else "dem am stärksten verletzten Verbündeten"
 		out.append("Gibt %s %d Schild (auch über das Maximum)." % [who, action.shield_gain])
-	if action.hp_scaling > 0.0:
-		out.append("Dazu %d %% der eigenen maximalen Integrität als Schaden." % int(round(action.hp_scaling * 100.0)))
 	if action.lifesteal > 0.0:
 		out.append("Heilt den Träger um %d %% des Schadens." % int(round(action.lifesteal * 100.0)))
 	if action.push_tiles > 0:

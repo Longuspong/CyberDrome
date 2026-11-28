@@ -135,7 +135,7 @@ func _describe(build: DromeBuild) -> Dictionary:
 				"heal": a.heal, "shield_gain": a.shield_gain, "support": a.support,
 				"trigger": a.trigger_kind, "every": a.trigger_every,
 				"status": str(a.status.get("id", "")), "status_s": float(a.status.get("seconds", 0.0)),
-				"gather": a.gather, "push": a.push_tiles, "hp_scaling": a.hp_scaling,
+				"gather": a.gather, "push": a.push_tiles,
 				"is_move": a.is_move(),
 			})
 		weapons.append(entry)

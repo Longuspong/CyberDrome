@@ -253,10 +253,25 @@ Neon Nimbus hat jetzt Power 12 / Effizienz 12 wie der heutige Nimbus (vorher 14 
 * **Halter-Kürzel** sprachneutral: S leicht, M mittel, X schwer; dahinter -F nur Fernkampf,
   -N nur Nahkampf (`SlotRules.holder_code`). Im Hangar unter dem Halter und auf der Waffenkarte.
 
+**Am Abend nachgezogen (Spieler 27. Nov. 2026, gebaut):**
+
+* **Repair-Kit** (`eq_repair_kit`, Halter M, Standardwaffe des Nimbus; Grafik vom alten
+  E-Schraubenschlüssel): kleiner Energieblitz, Reichweite 4, 9 Schaden je 1,2 s, halb Energie,
+  halb kinetisch. Was er am Schild der Gegner abzieht, speichert er als Schild, was er an
+  Integrität abzieht, als Integrität (`stores_damage`, `Unit.store_shield`/`store_hp`). Nach
+  5 Treffern (jeder 6. Angriff) die **Reparaturwelle**: jedes Teammitglied (auch der Träger)
+  bekommt Speicher × Effizienz als Schildgabe (bis Maximum + 50 %) und als Reparatur (bis
+  Maximum), danach ist der Speicher leer (`ActionResolver.release_store`). Safe Haven wirkt
+  mit, der Mender skaliert über `heal`/`shield_gain` (100 = 100 %). Der Runenstab liegt frei.
+  Das Echo des Nimbus lässt die Welle erst jeden 9. Angriff kommen, und das Echo findet den
+  Speicher leer -- erledigt sich mit Cleancode.
+* **Hammer:** kein Zusatzschaden aus der eigenen Integrität mehr (`hp_scaling` ganz entfernt);
+  der Betäubungsschlag heilt weiter um 100 % des Schadens.
+
 **Geklärt, noch nicht gebaut** (Nimbus-Supporter und M-N seit 28. Nov. gebaut, 5f):
 
-* **Nimbus wird ein Supporter** (Kernplan: wartet): Speed 8, Integrität 60, Schild 60,
-  Schildpuls 5, Rüstung 0, Power 12, Effizienz 12, Halter M, Waffe **Repair-Kit**, Zielregel
+* **Nimbus als Supporter** -- Werte und Passive (Kernplan: wartet): Speed 8, Integrität 60, Schild 60,
+  Schildpuls 5, Rüstung 0, Power 12, Effizienz 12, Halter M, Waffe **Repair-Kit** (gebaut), Zielregel
   „Teammates buffen und helfen, Helfen vor Schaden“. Passive **Cleancode**: wer von Nimbus
   einen Buff, eine Heilung oder Schildgabe bekommt, erhält einen Stapel **Bug-Fix** (5 s,
   max. 3, auch auf sich selbst): je Stapel +2 Rüstung und +2 **Shieldgate** (neu: Rüstung für
@@ -271,14 +286,15 @@ Neon Nimbus hat jetzt Power 12 / Effizienz 12 wie der heutige Nimbus (vorher 14 
 
 | DROME | Speed | Schildpuls | Power | Effizienz | Halter | Standardwaffe | Passive | Rolle |
 |---|---|---|---|---|---|---|---|---|
-| Nimbus (Supporter) | 8 | 5 | 12 | 12 | M | Repair-Kit | **Cleancode** | support |
+| Nimbus (Supporter) | 8 | 5 | 12 | 12 | M | Repair-Kit (Speicher) | **Cleancode** | support |
 | Neon Nimbus (Gegner, Skill-DPS) | 7 | 5 | **15** | **5** | M | Runenstab | Echo | controller |
 | Neon Vireo (Gegner) | 8 | 10 | 10 | 10 | **M-N** | Plasmaklinge | Cyberspeed | skirmisher |
 
-* **Repair-Kit** (Vorschlag von Claude, Werte in `tools/build_sample_parts.py`): Angriff
-  heilt 6 (x Power/10, + 3 % der max. Integritaet des Ziels) auf Reichweite 3 alle 1,5 s
-  nach der Heilregel; braucht niemand Hilfe, 5 Energieschaden am Gegner. Jeder 4. Angriff
-  **Patch**: 15 Schild an einen Verbuendeten, bis Maximum + 50 %. Bonus +10 Integritaet.
+* **Repair-Kit** wie am 27. Nov. abends (oben, PR #114): Energieblitze speichern den
+  Schaden, die Reparaturwelle gibt ihn mal Effizienz allen zurueck -- kein reines
+  Heilwerkzeug, damit ein Nimbus als Letzter nicht nutzlos ist. Seit 28. Nov. als
+  **Drohnenschwarm** zu sehen (eine Drohne steigt auf, teilt sich, fliegt zu jedem
+  Verbuendeten), und die Welle gibt Bug-Fix.
 * **Cleancode/Bug-Fix/Shieldgate** wie im Werkblatt; Bug-Fix kommt bei Heilung und
   Schildgabe vom Nimbus (Buffs, sobald der Nimbus welche gibt). Dauer 5 s mal Effizienz
   des Nimbus (12 = 6 s), jeder Stapel laeuft fuer sich ab, der vierte frischt den aeltesten

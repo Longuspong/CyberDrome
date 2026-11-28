@@ -464,7 +464,8 @@ func _nearest_enemy(unit: Unit, reach: int) -> Unit:
 ## (heal) bzw. Schild brauchen kann (shield_gain) und in Reichweite steht.
 ## Leer, wenn niemand Hilfe braucht.
 func _support_aim(unit: Unit, action: ActionData) -> Dictionary:
-	if action.support == "self":
+	# "team" (Repair-Kit): wirkt auf alle, ausgeloest am eigenen Feld.
+	if action.support == "self" or action.support == "team":
 		return {"tile": unit.tile, "target": unit}
 	var best := _care_choice(unit, action.range_tiles, func(ally: Unit) -> bool:
 		var hp_max := maxi(1, ally.stat("hp_max"))

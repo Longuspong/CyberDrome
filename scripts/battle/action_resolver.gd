@@ -87,6 +87,11 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	target.damage_taken += amount
 	if source != null:
 		source.damage_dealt += amount
+	# Repair-Kit: was der Schuss am Gegner anrichtet, wandert in den Speicher.
+	if action != null and action.stores_damage and source != null \
+			and source.is_player != target.is_player:
+		source.store_shield += maxi(0, shield_before - target.shield)
+		source.store_hp += amount
 
 	var dealt := (shield_before - target.shield) + amount
 	if dealt > 0:
@@ -480,6 +485,9 @@ func execute(source: Unit, tile: Vector2i, action: ActionData, thrown: bool = fa
 
 	# Unterstuetzung: auf einen Verbuendeten (oder sich selbst) gezielt heilt
 	# bzw. laedt sie, statt Schaden zu machen.
+	if action.release_store:
+		release_store(source, action)
+		return true
 	var aimed := unit_at(tile)
 	if aimed != null and aimed.is_player == source.is_player:
 		if action.heal <= 0 and action.shield_gain <= 0:
@@ -498,6 +506,42 @@ func execute(source: Unit, tile: Vector2i, action: ActionData, thrown: bool = fa
 		return true
 	_apply_area(source, tile, action)
 	return true
+
+
+## Reparaturwelle des Repair-Kits (27. Nov. 2026, Spieler): jedes lebende
+## Teammitglied (auch der Traeger) bekommt den gespeicherten Schildschaden mal
+## Effizienz als Schildgabe (bis Maximum + Ueberschild) und den gespeicherten
+## Integritaetsschaden mal Effizienz als Reparatur (bis zum Maximum). Danach
+## ist der Speicher leer. Gibt zurueck, wie viel insgesamt dazukam.
+func release_store(source: Unit, action: ActionData) -> int:
+	var eff := source.efficiency_factor()
+	var shield_base := float(source.store_shield) * eff * float(action.shield_gain) / 100.0
+	var hp_base := float(source.store_hp) * eff * float(action.heal) / 100.0
+	source.store_shield = 0
+	source.store_hp = 0
+	var total := 0
+	for ally: Unit in units:
+		if not ally.is_alive() or ally.is_player != source.is_player:
+			continue
+		var before_shield := ally.shield
+		var before_hp := ally.hp
+		var gain := int(round(shield_base * ally.care_mult()))
+		if gain > 0:
+			ally.shield = maxi(ally.shield, mini(shield_cap(ally), ally.shield + gain))
+		var repair := int(round(hp_base * ally.care_mult()))
+		if repair > 0:
+			ally.hp = mini(ally.stat("hp_max"), ally.hp + repair)
+		if ally.hp > before_hp:
+			EventBus.unit_healed.emit(ally, ally.hp - before_hp, source)
+		var got := (ally.hp - before_hp) + (ally.shield - before_shield)
+		# Cleancode (Nimbus): wer aus der Welle etwas bekommt, erhaelt Bug-Fix.
+		if got > 0:
+			ally.receive_care(source)
+		if got > 0:
+			EventBus.log_line("%s: %s +%d Integrität, +%d Schild."
+				% [source.display_name, ally.display_name, ally.hp - before_hp, ally.shield - before_shield])
+		total += got
+	return total
 
 
 ## Wie viel eine Heilung oder Schildgabe bewirkt (9. Nov. 2026, Vorgabe des

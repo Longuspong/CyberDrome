@@ -13,11 +13,15 @@ reduziert (27. Nov., Ramme/Schraubenschluessel/Bumerang/Neon-Blaster/Moerser ent
 **Werkblatt vom 27. Nov. uebernommen** (`SKILLBAUM_KONZEPT.md` 5e): Molok als **Gunship**
 (ein Halter, Waffe an beiden Armen, `mirror` in `slot_rules`), Strix-Passive **Focuslense**,
 neue Tempo-/Schildpulswerte, Echo-Takt aufgerundet, Halter-Kuerzel S/M/X + -F/-N.
-Nimbus seit 28. Nov. als Supporter gebaut (Repair-Kit, Cleancode/Bug-Fix/Shieldgate, `SKILLBAUM_KONZEPT.md`
-5f), wartet im Hangar (Start-Squad = Kern-Trio); der fruehere Nimbus lebt als Neon Nimbus (Power 15,
-Effizienz 5). Varianten weichen ueber `passive`/`ai_role`/`holder` in `formations.json` vom Chassis ab
-(`Formations.apply_variant`, Neon Vireo Halter M-N). Solar Nimbus, Mecha Molok, Mecha Strix bis nach
-dem Kernspiel entfernt (Werte im Kernplan).
+Nimbus seit 28. Nov. als Supporter gebaut (Cleancode/Bug-Fix/Shieldgate, `SKILLBAUM_KONZEPT.md` 5f)
+mit dem **Repair-Kit** aus PR #114 (speichert angerichteten Schaden, Reparaturwelle als Drohnenschwarm
+gibt ihn dem Team mal Effizienz als Schild + Reparatur zurueck); er wartet im Hangar (Start-Squad =
+Kern-Trio). Der fruehere Nimbus lebt als Neon Nimbus (Power 15, Effizienz 5). Varianten weichen ueber
+`passive`/`ai_role`/`holder` in `formations.json` vom Chassis ab (`Formations.apply_variant`, Neon Vireo
+Halter M-N). Solar Nimbus, Mecha Molok, Mecha Strix bis nach dem Kernspiel entfernt (Werte im
+Kernplan). Hammer ohne Integritaetsschaden (27. Nov.); **Spielstand 3 ist ein Testspielstand** (1000
+von allem, jede Waffe extra), den jede neue Version neu schreibt
+(`GameState.refresh_test_slot`, Versionskennung `data/build.json` aus `tools/build_web.sh`).
 
 **Ganz zuerst (seit 17. Nov. 2026, zuletzt 18. Nov. abends): `docs/UEBERGABE_3D.md`, Abschnitt „Stand 18. Nov.“** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung und 3D-Boden `ArenaFloor3D` seit 18. Nov.; sichtbare Passiven, Muendungsblitz und 3D-Deko seit 18. Nov.; Beine im Wechsel, alle Faehigkeiten lesbar (`AbilityPainter`), Waffenfarben mit Glanzkante (`WEAPON_FINISH`), Generator-Bausteine BP/SW/EX und Redesign aller Chassis seit 18. Nov. -- `DROME_UMSETZUNG.md` 4g; Fraktions-Paletten fuer Gegner und Faehigkeiten mit Ausholzeit/Abfolge (`AbilityFx`, `ActionData.windup`) seit 18. Nov.; alle Faehigkeiten animiert; Echo nacheinander und Flaechen am Wurfort seit 18. Nov., Balance gemessen; offen: Story-Level).
 
@@ -331,7 +335,7 @@ Kernplan fertig ist.
 
 - [ ] **Werkblatt weiter ausfuellen** -- erste Runde am 27. Nov. 2026 uebernommen
       (`SKILLBAUM_KONZEPT.md` 5e, 5f). Noch offen dort: Skilltrees, Takt neu, Zielregel
-      Neon Nimbus, Werte des Repair-Kit bestaetigen.
+      Neon Nimbus, Werte des Repair-Kit bestaetigen (9 Schaden, 1,2 s, Reichweite 4, Welle jeder 6.).
       Wenn der Spieler eine neue Sitzung beginnt, daran erinnern.
 - [ ] Designpunkt 3 **Eingreifen des Spielers** (siehe oben) besprechen.
 

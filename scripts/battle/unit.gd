@@ -85,6 +85,10 @@ var calm_time: float = 0.0
 var focus_target: Unit = null
 ## Der Halter, der gerade feuert (Gunship: welcher Arm). Nur fuer das Bild.
 var firing_slot: String = ""
+## Repair-Kit (27. Nov. 2026): gespeicherter Schild- und Integritaetsschaden,
+## den die Reparaturwelle an das Team zurueckgibt.
+var store_shield: int = 0
+var store_hp: int = 0
 ## Modul Raufbold (Vergeltung): eingesteckte Treffer, die den naechsten
 ## Angriff aufladen (max. 3, Berserker 5).
 var retaliation_stacks: int = 0
@@ -740,6 +744,8 @@ func init_realtime(pulse_offset: float) -> void:
 	calm_time = 0.0
 	_recharge_carry = 0.0
 	focus_target = null
+	store_shield = 0
+	store_hp = 0
 	if build == null:
 		return
 	for slot in build.equip_slots():
@@ -1011,9 +1017,6 @@ func raw_damage(action: ActionData) -> int:
 	# Rammbock: ein Teil der eigenen Panzerung kommt dazu, ohne Power.
 	if action.armor_to_damage > 0.0:
 		raw += float(def()) * action.armor_to_damage
-	# Hammer-Betaeubungsschlag: ein Teil der eigenen maximalen Integritaet, ohne Power.
-	if action.hp_scaling > 0.0:
-		raw += float(stat("hp_max")) * action.hp_scaling
 	return maxi(1, int(round(raw)))
 
 

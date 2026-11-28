@@ -312,7 +312,7 @@ WEAPON_COLORS = {
     "eq_deflector": _w("#39404c", "#8a93a3", "#5ad1ff"),
     "eq_hammer": _w("#4a4e56", "#a0a6b0", "#ff8a3d"),
     "eq_rune_staff": _w("#3a3550", "#a59ac8", "#b06bff"),
-    "eq_repair_kit": _w("#55504a", "#b0a89a", "#7dffb0"),
+    "eq_repair_kit": _w("#55504a", "#b0a89a", "#6dff9f"),
     "eq_rail_lance": _w("#1d2430", "#6f7d92", "#3df2ff"),
 }
 
@@ -581,12 +581,12 @@ STATS = {
             {"id": "act_hammer", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 16, "interval": 1.8},
-            # Seit 27. Nov. 2026 (Spieler): +20 % der eigenen maximalen
-            # Integritaet als Schaden, und der Schlag heilt den Molok um 100 %
-            # des Schadens. Kinetisch wie der Angriff.
+            # Seit 27. Nov. 2026 (Spieler): der Schlag heilt den Molok um 100 %
+            # des Schadens. Kinetisch wie der Angriff. Der Zusatzschaden aus der
+            # eigenen Integritaet ist am selben Tag wieder weg (Hammer zu stark).
             {"id": "act_hammer_stun", "windup": 0.35, "display_name": "Betaeubungsschlag",
              "category": "ability", "targeting": "single",
-             "range_tiles": 1, "damage_pct": 1.0, "hp_scaling": 0.2, "lifesteal": 1.0,
+             "range_tiles": 1, "damage_pct": 1.0, "lifesteal": 1.0,
              "status": {"id": "stun", "seconds": 1.0, "stunned": True},
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_hammer"}},
         ],
@@ -614,22 +614,27 @@ STATS = {
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_runestaff"}},
         ],
     },
-    # Repair-Kit (Nimbus-Supporter, 28. Nov. 2026): der Angriff repariert den
-    # Verbuendeten nach der Heilregel (der naechste, der Hilfe braucht -- oder
-    # ein deutlich schwaecherer dahinter); braucht niemand Hilfe, trifft er
-    # schwach einen Gegner. Jeder 4. Angriff ist ein Patch: Schildgabe fuer
-    # einen Verbuendeten, auch ueber das Maximum. Bonus Integritaet.
+    # Repair-Kit (Spieler 27. Nov. 2026): die Heilwaffe des Nimbus. Ein kleiner
+    # Energieblitz (halb Energie, halb kinetisch) auf Reichweite 4; was er am
+    # Schild der Gegner abzieht, speichert das Kit als Schild, was er an
+    # Integritaet abzieht, als Integritaet (``stores_damage``). Nach 5 Treffern
+    # (jeder 6. Angriff) bekommt jedes Teammitglied den Speicher mal Effizienz
+    # als Schildgabe und Reparatur (``release_store``), danach ist er leer.
+    # Bonus Schild.
     "eq_repair_kit": {
-        "hp": 10,
+        "shield": 10,
         "actions": [
-            {"id": "act_repair", "display_name": "Angriff",
+            {"id": "act_repair_bolt", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
-             "range_tiles": 3, "power": 5, "heal": 6, "support": "ally",
-             "energy_fraction": 1.0, "interval": 1.5},
-            {"id": "act_repair_patch", "windup": 0.3, "display_name": "Patch",
+             "range_tiles": 4, "power": 9, "energy_fraction": 0.5,
+             "interval": 1.2, "stores_damage": True},
+            # heal/shield_gain 100 = 100 % des Speichers (Module wie der
+            # Mender skalieren das mit).
+            {"id": "act_repair_release", "windup": 0.4, "display_name": "Reparaturwelle",
              "category": "ability", "targeting": "single",
-             "range_tiles": 3, "power": 0, "shield_gain": 15, "support": "ally",
-             "trigger": {"kind": "attacks", "every": 4, "weapon": "act_repair"}},
+             "range_tiles": 0, "power": 0, "heal": 100, "shield_gain": 100,
+             "support": "team", "release_store": True,
+             "trigger": {"kind": "attacks", "every": 6, "weapon": "act_repair_bolt"}},
         ],
     },
     "eq_rail_lance": {
@@ -679,12 +684,15 @@ ACTION_DEFAULTS = {
     # aus base_action (Faehigkeiten nach Zeit).
     "damage_pct": 0.0,
     "base_action": "",
-    # hp_scaling   Zusatzschaden als Anteil der EIGENEN maximalen Integritaet,
-    #              ohne Power (Hammer-Betaeubungsschlag)
-    "hp_scaling": 0.0,
     # lifesteal    der Treffer heilt den Traeger um diesen Anteil des Schadens
     #              (Hammer-Betaeubungsschlag 1,0, 27. Nov. 2026)
     "lifesteal": 0.0,
+    # Repair-Kit (27. Nov. 2026): stores_damage am Angriff speichert den
+    # angerichteten Schild- und Integritaetsschaden beim Schuetzen;
+    # release_store an der Faehigkeit (support "team") gibt jedem Teammitglied
+    # den Speicher mal Effizienz (heal/shield_gain in Prozent davon).
+    "stores_damage": False,
+    "release_store": False,
     # Ausholzeit (18. Nov. 2026): Sekunden zwischen Ansage und Wirkung einer
     # Faehigkeit -- der DROME steht still, die Ansage ist zu sehen.
     "windup": 0.0,
@@ -2408,8 +2416,7 @@ def lafette_blaster(neon=False):
 
 
 def _head_wrench(h, k):
-    """Repair-Kit: Schraubenschluessel mit Leuchtring (Form des frueheren
-    E-Schraubenschluessels)."""
+    """Repair-Kit (bis 27. Nov. 2026 E-Schraubenschluessel): Schluessel mit Maul."""
     f, l, z = h
     return [
         B((f - 1.2 * k, f + 1.2 * k), (l - 1.2 * k, l + 1.2 * k), (z - 9 * k, z + 14 * k), "plate"),
@@ -2694,11 +2701,10 @@ SETS = [
                 "mount_class": "light", "category": "weapon",
             },
             {
-                # Kernwaffe des Nimbus-Supporters (28. Nov. 2026).
                 "id": "eq_repair_kit", "code": "EQP-004", "type": "equipment",
-                "name": "Repair-Kit", "tags": ["support", "tool"],
+                "name": "Repair-Kit", "tags": ["weapon", "support", "tool"],
                 **W_WRENCH,
-                "mount_class": "light", "category": "support",
+                "mount_class": "medium", "category": "weapon",
             },
         ],
     },

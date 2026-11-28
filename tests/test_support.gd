@@ -65,37 +65,31 @@ func test_the_nimbus_is_a_supporter_with_the_repair_kit() -> void:
 	t.equal(roster.free_count(&"eq_rune_staff"), 1, "der Runenstab liegt frei im Lager")
 
 
-func test_the_repair_kit_helps_before_it_shoots() -> void:
+func test_the_repair_wave_is_a_drone_swarm_with_cleancode() -> void:
+	# Spieler 28. Nov. 2026: kein reines Heilwerkzeug -- das Kit schiesst,
+	# speichert den Schaden und gibt ihn per Drohnenschwarm allen zurueck.
 	var battle := _battle([_nimbus(), _molok()], [_vireo()],
-		[Vector2i(4, 16), Vector2i(4, 14), Vector2i(4, 13)])
+		[Vector2i(4, 16), Vector2i(4, 14), Vector2i(4, 12)])
 	var nimbus: Unit = battle.units[0]
 	var molok: Unit = battle.units[1]
 	var foe: Unit = battle.units[2]
-	molok.hp -= 60
-	var hurt := molok.hp
-	var foe_hp := foe.hp + foe.shield
-	var mount: Dictionary = nimbus.mounts[0]
-	t.ok(battle.brain._fire(nimbus, mount, foe), "der Nimbus handelt")
-	t.ok(molok.hp > hurt, "erst repariert er den Molok (%d -> %d)" % [hurt, molok.hp])
-	t.equal(foe.hp + foe.shield, foe_hp, "der Gegner bleibt dabei unberuehrt")
-	molok.hp = molok.stat("hp_max")
-	nimbus.hp = nimbus.stat("hp_max")
-	t.ok(battle.brain._fire(nimbus, mount, foe), "niemand braucht Hilfe")
-	t.ok(foe.hp + foe.shield < foe_hp, "dann trifft er den Gegner")
-	battle.free()
-
-
-func test_the_patch_gives_shield_over_the_maximum() -> void:
-	var battle := _battle([_nimbus(), _molok()], [_vireo()],
-		[Vector2i(4, 16), Vector2i(4, 14), Vector2i(4, 4)])
-	var nimbus: Unit = battle.units[0]
-	var molok: Unit = battle.units[1]
-	var patch := _action(nimbus, &"act_repair_patch")
-	t.ok(patch != null and patch.shield_gain > 0, "Patch ist eine Schildgabe")
-	t.equal(patch.trigger_every, 4, "jeder 4. Angriff")
-	t.equal(AbilityPainter.kind_for(patch), "shield", "mit der Schild-Form")
-	t.ok(battle.resolver.execute(nimbus, molok.tile, patch), "der Patch geht raus")
-	t.ok(molok.shield > molok.shield_max(), "ueber das Maximum (%d / %d)" % [molok.shield, molok.shield_max()])
+	var bolt := _action(nimbus, &"act_repair_bolt")
+	var wave := _action(nimbus, &"act_repair_release")
+	t.ok(bolt != null and bolt.power > 0, "der Angriff macht Schaden")
+	t.equal(AbilityPainter.kind_for(wave), "drones", "die Welle zeigt den Drohnenschwarm")
+	battle.resolver.apply_damage(nimbus, foe, 30, bolt)
+	t.ok(nimbus.store_shield > 0, "Schildschaden wird gespeichert (%d)" % nimbus.store_shield)
+	molok.hp -= 80
+	molok.shield = 0
+	var hp_before := molok.hp
+	var stored := nimbus.store_shield
+	battle.resolver.execute(nimbus, nimbus.tile, wave)
+	t.ok(molok.shield >= int(floor(stored * nimbus.efficiency_factor())),
+		"Schild = Speicher mal Effizienz (%d)" % molok.shield)
+	t.equal(nimbus.store_shield, 0, "der Speicher ist danach leer")
+	t.ok(molok.bug_fix.size() == 1 and nimbus.bug_fix.size() == 1,
+		"Cleancode: jeder, der etwas bekommt, erhaelt Bug-Fix (auch der Nimbus)")
+	t.ok(molok.hp >= hp_before, "Integritaet sinkt nicht")
 	battle.free()
 
 
@@ -104,23 +98,17 @@ func test_cleancode_gives_bug_fix_stacks() -> void:
 		[Vector2i(4, 16), Vector2i(4, 14), Vector2i(4, 4)])
 	var nimbus: Unit = battle.units[0]
 	var molok: Unit = battle.units[1]
-	var foe: Unit = battle.units[2]
-	var repair := _action(nimbus, &"act_repair")
 	var armor := molok.def()
-	molok.hp -= 100
-	battle.resolver.support(nimbus, molok, repair)
-	t.equal(molok.bug_fix.size(), 1, "ein Stapel Bug-Fix")
-	t.equal(molok.def(), armor + int(_rule("def")), "+%d Ruestung" % int(_rule("def")))
-	t.equal(molok.shieldgate(), int(_rule("shieldgate")), "+%d Shieldgate" % int(_rule("shieldgate")))
 	for i in 4:
-		molok.hp -= 20
-		battle.resolver.support(nimbus, molok, repair)
+		molok.receive_care(nimbus)
+		if i == 0:
+			t.equal(molok.bug_fix.size(), 1, "ein Stapel Bug-Fix")
+			t.equal(molok.def(), armor + int(_rule("def")), "+%d Ruestung" % int(_rule("def")))
+			t.equal(molok.shieldgate(), int(_rule("shieldgate")), "+%d Shieldgate" % int(_rule("shieldgate")))
 	t.equal(molok.bug_fix.size(), int(_rule("max_stacks")), "hoechstens %d Stapel" % int(_rule("max_stacks")))
 	t.ok(molok.status_names().count("bug_fix") == molok.bug_fix.size(), "ein Symbol je Stapel")
-	# Nur der Nimbus gibt Bug-Fix -- ein anderer Heiler nicht.
-	foe.hp -= 30
-	battle.resolver.support(battle.units[2], foe, repair)
-	t.equal(foe.bug_fix.size(), 0, "ohne Cleancode kein Bug-Fix")
+	# Nur Cleancode gibt Bug-Fix -- ein anderer Helfer (Molok) nicht.
+	t.ok(not nimbus.receive_care(molok), "ohne Cleancode kein Bug-Fix")
 	# Dauer: stack_seconds mal Effizienz des Nimbus (12 = 120 %).
 	var seconds := _rule("stack_seconds") * nimbus.efficiency_factor()
 	molok.tick_statuses(seconds - 0.1)

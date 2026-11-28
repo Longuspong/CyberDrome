@@ -23,6 +23,10 @@ const STUN_COLOR := Color(1.0, 0.88, 0.3)
 const VULN_COLOR := Color(1.0, 0.37, 0.78)
 const SHIELD_COLOR := Color(0.49, 0.98, 1.0)
 const FIRE_COLOR := Color(1.0, 0.69, 0.34)
+## Reparaturdrohnen (Repair-Kit, 28. Nov. 2026).
+const REPAIR_COLOR := Color(0.43, 1.0, 0.62)
+## Wie hoch die Drohne beim Ausholen ueber den Kopf steigt (Bildpunkte).
+const DRONE_RISE := 46.0
 ## Gegner-Faehigkeiten: durchgehender roter Aussenrand um die Bodenmarke --
 ## "das kommt auf MICH zu".
 const ENEMY_RIM := Color(1.0, 0.23, 0.23)
@@ -40,7 +44,7 @@ const CHEST := 40.0
 ## Dauer der Formen ohne Verzoegerung (Sekunden).
 const LIFE := {"lock": 0.35, "double": 0.25,
 	"stun": 0.45, "slash": 0.35,
-	"shield": 0.75}
+	"shield": 0.75, "drones": 0.95}
 ## Fussring eines Zustands (Halbachse waagerecht).
 const FOOT_RING := 26.0
 
@@ -71,6 +75,9 @@ func _init() -> void:
 static func kind_for(action: ActionData) -> String:
 	if action == null or action.is_attack() or action.is_move():
 		return ""
+	# Reparaturwelle (Repair-Kit): Drohne steigt auf, teilt sich, fliegt zu allen.
+	if action.release_store:
+		return "drones"
 	if action.shield_gain > 0:
 		return "shield"
 	if action.gather and action.aoe_radius > 0:
@@ -388,6 +395,10 @@ func _draw_air() -> void:
 				pass                      # die Schuesse zeichnet EffectPainter
 			"shield":
 				_air_shield(mark)
+			"drones_cast":
+				_air_drone_rise(mark)
+			"drones":
+				_air_drone_swarm(mark)
 	for unit in units:
 		if _shows_status(unit):
 			_air_status(unit)
@@ -588,6 +599,65 @@ func _air_shield(mark: Dictionary) -> void:
 		_air_hex(at + p * rx, rx * 0.2, Color(SHIELD_COLOR, 0.75 * fade), 1.6)
 	if t < 0.9:
 		_air_text(at + _lift(HEAD_HEIGHT + 22.0) , "+", Color(SHIELD_COLOR, fade), 18)
+
+
+## Ansage der Reparaturwelle: eine kleine Drohne loest sich vom Kit und steigt
+## ueber den Kopf des Nimbus, die Rotoren drehen.
+func _air_drone_rise(mark: Dictionary) -> void:
+	var t: float = clampf(float(mark["age"]) / _life(mark), 0.0, 1.0)
+	var base: Vector2 = mark.get("from", mark["at"])
+	var at := base + _lift(CHEST + ease(t, 0.5) * (HEAD_HEIGHT - CHEST + DRONE_RISE))
+	_air_drone(at, 1.25, Color(REPAIR_COLOR, 0.4 + 0.6 * t))
+	# Leuchtspur vom Kit nach oben.
+	_air_line(PackedVector2Array([base + _lift(CHEST), at]), Color(REPAIR_COLOR, 0.25 * t), 1.4)
+
+
+## Wirkung: die Drohne oben teilt sich, je Verbuendetem fliegt eine kleine
+## Drohne im Bogen hin und laesst dort einen Reparaturring mit "+" aufgehen.
+func _air_drone_swarm(mark: Dictionary) -> void:
+	var t: float = clampf(float(mark["age"]) / _life(mark), 0.0, 1.0)
+	var top: Vector2 = mark.get("from", mark["at"]) + _lift(HEAD_HEIGHT + DRONE_RISE)
+	var split := 0.15
+	if t < split:
+		# Kurzes Aufleuchten, bevor sie sich teilt.
+		_air_drone(top, 1.25 + 0.6 * t / split, REPAIR_COLOR)
+		return
+	var u := (t - split) / (1.0 - split)
+	var fly := ease(clampf(u / 0.6, 0.0, 1.0), -1.6)
+	var fade := 1.0 - maxf(0.0, u - 0.8) / 0.2
+	var targets: Array = mark.get("targets", [])
+	for i in targets.size():
+		var goal: Vector2 = targets[i] + _lift(CHEST + 6.0)
+		var bend := _lift(30.0) + Vector2((float(i) - (targets.size() - 1) * 0.5) * 14.0, 0)
+		var mid := (top + goal) * 0.5 + bend
+		var pos := top.lerp(mid, fly).lerp(mid.lerp(goal, fly), fly)
+		if fly < 1.0:
+			_air_drone(pos, 0.75, Color(REPAIR_COLOR, fade))
+		else:
+			# Angekommen: Reparaturring und "+".
+			var ring := clampf((u - 0.6) / 0.4, 0.0, 1.0)
+			var r := (10.0 + 22.0 * ring) * maxf(1.0, pixel_scale * 0.5)
+			var points := PackedVector2Array()
+			for k in 17:
+				var ang := TAU * float(k) / 16.0
+				points.append(goal + Vector2(cos(ang) * r, sin(ang) * r * 0.5))
+			_air_line(points, Color(REPAIR_COLOR, 0.9 * fade * (1.0 - ring * 0.5)), 2.0)
+			_air_text(goal + _lift(HEAD_HEIGHT - CHEST + 16.0), "+", Color(REPAIR_COLOR, fade), 16)
+
+
+## Eine kleine Drohne: Rumpf als Raute, zwei Rotoren, die sich drehen.
+func _air_drone(at: Vector2, scale: float, color: Color) -> void:
+	var s := 5.0 * scale * maxf(1.0, pixel_scale * 0.5)
+	var body := PackedVector2Array([at + Vector2(0, -s * 0.7), at + Vector2(s, 0),
+		at + Vector2(0, s * 0.7), at + Vector2(-s, 0)])
+	_air.draw_colored_polygon(body, Color(color, color.a * 0.85))
+	body.append(body[0])
+	_air_line(body, color, 1.4)
+	var spin := _time * 18.0
+	for side in [-1.0, 1.0]:
+		var hub := at + Vector2(side * s * 1.5, -s * 0.5)
+		var arm := Vector2(cos(spin), sin(spin) * 0.35) * s * 0.9
+		_air_line(PackedVector2Array([hub - arm, hub + arm]), color, 1.2)
 
 
 func _air_line(points: PackedVector2Array, color: Color, width: float) -> void:

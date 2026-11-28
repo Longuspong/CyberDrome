@@ -37,6 +37,7 @@ func test_library_loaded() -> void:
 	# 8. Nov. 2026: Orbit-Fokus und Hologramm-Boost sind Module.
 	# 9. Nov. 2026: Bollwerk-Ramme, Moerser, Klingenbumerang dazu.
 	# 28. Nov. 2026: 16 Chassis-Teile und 7 Waffen (Repair-Kit neu).
+	# 27. Nov. 2026: Repair-Kit (Nimbus) dazu.
 	t.equal(PartDB.parts.size(), 23, "23 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausätze erwartet")
 	for part in PartDB.parts.values():
