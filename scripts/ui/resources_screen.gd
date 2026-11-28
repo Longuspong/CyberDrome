@@ -15,6 +15,8 @@ static var _tab := "werkbank"
 
 var _content: VBoxContainer
 var _fixed: VBoxContainer
+## Die Platine liegt ohne Scrollen ueber der ganzen Hoehe (28. Nov. 2026).
+var _factory: FactoryView
 
 
 static func open_tab(tab: String) -> void:
@@ -54,17 +56,19 @@ func _refresh() -> void:
 			_refresh(), true)
 	switch.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_fixed.add_child(switch)
+	var scroller := _content.get_parent() as Control
+	if _factory != null:
+		_factory.queue_free()
+		_factory = null
+	scroller.visible = _tab != "linien"
 	match _tab:
-		"linien": _lines()
+		"linien":
+			_factory = FactoryView.new()
+			scroller.get_parent().add_child(_factory)
 		_:
 			var bench := WorkbenchView.new()
 			bench.charger_built.connect(_charger_built)
 			_content.add_child(bench)
-
-
-## Die Fabrik-Platine (docs/FACTORY_KONZEPT.md).
-func _lines() -> void:
-	_content.add_child(FactoryView.new())
 
 
 ## Nach dem Bauen: der neue Charger, dazu der Weg zum Einsetzen.

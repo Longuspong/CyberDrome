@@ -353,27 +353,102 @@ func placed(type: String) -> int:
 
 ## "" = darf, sonst der Grund in Worten.
 func can_place(k: String, type: String) -> String:
+	var why := fits(k, type)
+	if why != "":
+		return why
+	if (state["b"] as Dictionary).has(k):
+		return "Hier steht schon etwas."
+	if placed(type) >= owned(type):
+		var d := def(type)
+		return "Alle %s stehen schon. Kauf ein weiteres oder setz eins um." % str(d["name"])
+	return ""
+
+
+## Passt die Art grundsaetzlich auf das Feld (Platine, Quelle, Tier)? Ohne
+## Blick auf Besitz und Belegung -- fuer Vorschau, Verschieben und Tauschen.
+func fits(k: String, type: String) -> String:
 	if k not in cells():
 		return "Außerhalb der Platine."
 	if k == net_cell():
-		return "Hier sitzt der Netzanschluss."
+		return "Hier sitzt die Basis."
 	if not unlocked(k):
 		return "Dieses Feld ist noch gesperrt."
-	if (state["b"] as Dictionary).has(k):
-		return "Hier steht schon etwas."
 	var d := def(type)
 	if d.is_empty():
 		return "Unbekanntes Gebäude."
 	if int(d.get("tier", 1)) > tier():
 		return "%s gibt es erst ab Tier %d." % [str(d["name"]), int(d["tier"])]
-	if placed(type) >= owned(type):
-		return "Alle %s stehen schon. Kauf ein weiteres oder setz eins um." % str(d["name"])
 	var src := source_at(k)
 	if d.has("quelle") and src != str(d["quelle"]):
 		return "%s geht nur auf %s." % [str(d["name"]), source_name(str(d["quelle"]))]
 	if not d.has("quelle") and src != "":
 		return "Quellen sind für Förderer reserviert."
 	return ""
+
+
+## Was dem Preis im Lager fehlt ({ware: menge}, leer = bezahlbar).
+func missing(price: Dictionary) -> Dictionary:
+	var out := {}
+	for ware in price:
+		var gap := int(price[ware]) - have(str(ware))
+		if gap > 0:
+			out[str(ware)] = gap
+	return out
+
+
+## Verschieben (27. Nov. 2026): auf ein freies Feld umsetzen, auf ein
+## belegtes tauschen -- wenn beide Arten auf das jeweils andere Feld passen.
+## Puffer und Fortschritt ziehen mit. "" = geklappt.
+func move(from: String, to: String) -> String:
+	var a := building_at(from)
+	if a.is_empty():
+		return "Hier steht nichts."
+	if from == to:
+		return "Gleiches Feld."
+	var why := fits(to, str(a["t"]))
+	if why != "":
+		return why
+	var b := building_at(to)
+	if not b.is_empty():
+		why = fits(from, str(b["t"]))
+		if why != "":
+			return "Tauschen geht nicht: " + why
+		state["b"][from] = b
+	else:
+		(state["b"] as Dictionary).erase(from)
+	state["b"][to] = a
+	compute_links()
+	return ""
+
+
+## Kaufen und gleich setzen (Bau-Vorschau mit Einkaufswagen).
+func buy_and_place(k: String, type: String) -> String:
+	var why := fits(k, type)
+	if why == "" and (state["b"] as Dictionary).has(k):
+		why = "Hier steht schon etwas."
+	if why != "":
+		return why
+	why = buy_building(type)
+	if why != "":
+		return why
+	return place(k, type)
+
+
+## Leiterbahnen, die ein Gebaeude der Art ``type`` auf ``k`` haette
+## ([{path, ware}], nur die mit ``k``). Rechnet kurz mit einem Probe-Gebaeude.
+func preview_traces(k: String, type: String) -> Array:
+	var all: Dictionary = state["b"]
+	if all.has(k) or def(type).is_empty():
+		return []
+	all[k] = _new_building(type, -1)
+	compute_links()
+	var out: Array = []
+	for tr in traces():
+		if k in (tr["path"] as Array):
+			out.append(tr)
+	all.erase(k)
+	compute_links()
+	return out
 
 
 func place(k: String, type: String) -> String:
