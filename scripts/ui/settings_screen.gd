@@ -52,20 +52,18 @@ func _ready() -> void:
 
 	var motion := _card(content, "Bewegung")
 	motion.add_child(_switch("Bewegung reduzieren", "Kein Glitch, kein Flackern, keine Wackler, "
-		+ "keine Kamerafahrten. Folgt beim ersten Start der Systemeinstellung.",
+		+ "keine Kamerafahrten.",
 		Accessibility.reduce_motion, Accessibility.set_reduce_motion))
 	motion.add_child(_rule())
 	motion.add_child(_switch("Vibration", "Kurzes Rütteln bei schweren Treffern, Abschüssen, "
-		+ "Kampfende, Caches und beim Einbauen. Nur auf Geräten, die es können.",
+		+ "Kampfende, Caches und beim Einbauen.",
 		Accessibility.haptics, Accessibility.set_haptics))
 	motion.add_child(_rule())
-	motion.add_child(_switch(tr("Echtes Licht (Test)"), tr("Laternen und Mündungsblitze "
-		+ "beleuchten die DROMEs wirklich. Kann auf schwachen Handys ruckeln – zum Ausprobieren."),
+	motion.add_child(_switch(tr("Echtes Licht (Test)"), tr("Kann auf schwachen Handys ruckeln."),
 		Accessibility.real_light, Accessibility.set_real_light))
 
 	var sound := _card(content, "Ton")
-	sound.add_child(_switch(tr("Musik"), tr("Hintergrundmusik: ein Stück im Kampf, eins "
-		+ "auf allen anderen Bildschirmen."), Accessibility.music, Accessibility.set_music))
+	sound.add_child(_switch(tr("Musik"), "", Accessibility.music, Accessibility.set_music))
 
 	var screen := _card(content, "Bildschirm")
 	var full_row := HBoxContainer.new()
@@ -112,14 +110,12 @@ func _ready() -> void:
 	switch_row.add_child(switch_text)
 	switch_text.add_child(Arcade.label(("Slot %02d · Spielstand wechseln" % GameState.slot)
 		if GameState.slot > 0 else "Spielstand wählen", 15, Arcade.WHITE, "bold"))
-	switch_text.add_child(Arcade.label("Öffnet die Spielstand-Wahl", 13, Arcade.MUTED))
 	var arrow := Arcade.label("›", 26, Arcade.CYAN, "bold")
 	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	switch_row.add_child(arrow)
 	save.add_child(switch)
-	save.add_child(UiKit.label("Hangar, Level und ein laufender Einsatz werden automatisch "
-		+ "gespeichert." if GameState.slot > 0 else "Kein Spielstand gewählt -- nichts wird "
-		+ "gespeichert.", 13, UiKit.MUTED))
+	if GameState.slot <= 0:
+		save.add_child(UiKit.label("Kein Spielstand gewählt -- nichts wird gespeichert.", 13, UiKit.MUTED))
 	var reset := UiKit.outline_button("Spielstand zurücksetzen", UiKit.BAD)
 	reset.custom_minimum_size = Vector2(0, 48)
 	reset.add_theme_font_size_override("font_size", 13)
@@ -136,8 +132,6 @@ func _ready() -> void:
 
 	# Zum Testen: alles freischalten, ohne es erst zu erspielen.
 	var test := _card(content, "Zum Testen", "Debug")
-	test.add_child(UiKit.label("Nur für Testversionen. Schaltet den Infinity-Einsatz frei, ohne "
-		+ "Neon City zu bezwingen.", 14, UiKit.TEXT))
 	var unlocked := bool(GameState.progress.get("unlock_all", false))
 	var unlock_row := HBoxContainer.new()
 	unlock_row.add_theme_constant_override("separation", 8)
@@ -200,7 +194,8 @@ func _switch(title: String, hint: String, on: bool, on_toggle: Callable) -> Cont
 	text.add_theme_constant_override("separation", 2)
 	row.add_child(text)
 	text.add_child(Arcade.label(title, 15, Arcade.WHITE, "bold"))
-	text.add_child(UiKit.label(hint, 13, UiKit.MUTED))
+	if hint != "":
+		text.add_child(UiKit.label(hint, 13, UiKit.MUTED))
 	var toggle := CheckButton.new()
 	toggle.button_pressed = on
 	toggle.tooltip_text = title

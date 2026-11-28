@@ -240,8 +240,6 @@ func _show_squad() -> void:
 	head.add_child(number)
 	head.add_child(HangarPips.new(count, _squad_max(), Arcade.CYAN))
 	_content.add_child(head)
-	_content.add_child(_quiet(UiKit.label("Antippen zeigt Details · Doppeltipp: Umbau · + nimmt auf, − nimmt heraus.",
-		13, UiKit.MUTED)))
 	var grid := GridContainer.new()
 	grid.columns = TILE_COLUMNS
 	grid.add_theme_constant_override("h_separation", TILE_GAP)
@@ -251,9 +249,6 @@ func _show_squad() -> void:
 		var tile := _drome_tile(index)
 		_squad_tiles[index] = tile
 		grid.add_child(tile)
-	# Neue DROMEs, Beute und Shop stehen seit 15. Nov. 2026 im Tab Shop.
-	_content.add_child(UiKit.label("Neue DROMEs bauen, Caches und Shop: Tab Shop unten.",
-		UiKit.SMALL, UiKit.MUTED))
 
 
 # ---------------------------------------------------------------------------
@@ -265,13 +260,8 @@ func _show_dromes() -> void:
 		_content.add_child(UiKit.label("Noch kein DROME. Neue DROMEs entstehen in der Fabrik.",
 			UiKit.BODY, UiKit.MUTED))
 		return
-	_content.add_child(_quiet(UiKit.label("Antippen öffnet den DROME. Gelb: hier gibt es etwas zu tun.",
-		13, UiKit.MUTED)))
 	for index in _squad_first_order():
 		_content.add_child(_drome_row(index))
-	var note := Arcade.Card.new(Arcade.EMPTY_LINE, Color.TRANSPARENT, true)
-	note.add_child(_quiet(UiKit.label("Neue DROMEs entstehen in der Fabrik.", 13, UiKit.MUTED)))
-	_content.add_child(note)
 
 
 ## Eine Zeile der Liste: Bild, Name, Rolle, Waffe mit Charger, Hinweis.
@@ -399,10 +389,6 @@ func _level_card(kind: String, entry: RosterEntry, uid: String = "") -> Control:
 				GameState.refresh_squad()
 			_refresh())
 		box.add_child(up)
-	var note := UiKit.label("Die Knoten im Skilltree kommen noch -- bis dahin wirkt jedes Level auf die Werte.",
-		UiKit.SMALL, UiKit.MUTED)
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(note)
 	return card
 
 
@@ -411,12 +397,9 @@ func _soon_card(kind: String) -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	card.add_child(box)
-	box.add_child(Arcade.label("LEVEL UND SKILLTREE · KOMMT NOCH", 14, Arcade.YELLOW, "display"))
-	var what := "diesen DROME" if kind == "drome" else "diese Waffe"
-	box.add_child(UiKit.label(("Bis Level 5 wertest du %s mit Ressourcen aus der Fabrik auf. Jedes Level "
-		+ "gibt einen Punkt im Skilltree; Level 1-4 Werte, Level 5 verändert die %s.") % [what,
-		"Passive" if kind == "drome" else "Fähigkeit"], UiKit.SMALL, UiKit.TEXT))
-	box.add_child(UiKit.label("Ein Level durch Erfahrung gibt es nicht mehr.", UiKit.SMALL, UiKit.MUTED))
+	# Seit 28. Nov. 2026 nur noch der Hinweis (vorher Erklaerung "kommt noch").
+	box.add_child(UiKit.label("Erst eine Waffe einbauen." if kind == "weapon" else "Noch kein Level.",
+		UiKit.SMALL, UiKit.MUTED))
 	return card
 
 
@@ -596,7 +579,7 @@ func _primary_card(index: int) -> Control:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", UiKit.card_style(index >= 0))
 	if index < 0:
-		var empty := UiKit.label("Noch kein DROME. Unten einen bauen.",
+		var empty := UiKit.label("Noch kein DROME.",
 			UiKit.BODY, UiKit.MUTED)
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		panel.add_child(empty)
@@ -783,9 +766,8 @@ func _confirm_salvage(entry: RosterEntry) -> void:
 	InfoPopup.open(self, "%s verwerten?" % entry.name, {"picture":
 		UiKit.drome_view(roster.build_for(entry), 64), "lines": [
 			"Du bekommst %s." % gain,
-			["Die Waffen kommen frei in den Hangar. Chassis und Level gehen verloren.",
-				UiKit.MUTED, UiKit.SMALL],
-			["Neue DROMEs entstehen in der Werkbank (Fabrik) aus Teilen.", UiKit.MUTED, UiKit.SMALL]],
+			["Die Waffen kommen ins Inventar. Chassis und Level gehen verloren.",
+				UiKit.MUTED, UiKit.SMALL]],
 		"actions": [{"text": "Verwerten", "disabled": blocker != "", "why": blocker, "call": func():
 			var got := roster.salvage(entry)
 			if got.is_empty():
@@ -852,7 +834,7 @@ func _show_umbau() -> void:
 	left.add_child(Arcade.label("HALTER", 11, Arcade.CYAN, "bold", 0.2))
 	left.add_child(_slots(entry, build))
 	foot.add_child(_charger_box(entry))
-	_content.add_child(_fold("LEVEL UND SKILLTREE DER WAFFE", _weapon_level_open, func():
+	_content.add_child(_fold("LEVEL DER WAFFE", _weapon_level_open, func():
 		_weapon_level_open = not _weapon_level_open
 		_refresh()))
 	if _weapon_level_open:
@@ -884,7 +866,7 @@ func _show_umbau() -> void:
 ## Hoehe des Werte-Kastens auf der Waffe-Seite: Platz fuer Titel, Name, drei
 ## Angriffs- und zwei Faehigkeits-Balken (gemessen: Hammer 231, Deflektor 222).
 const WEAPON_BOX_HEIGHT := 236.0
-## Klappt "Level und Skilltree der Waffe" auf (merkt sich den Zustand).
+## Klappt "Level der Waffe" auf (merkt sich den Zustand).
 static var _weapon_level_open := false
 ## Der eine Hauptknopf der Waffen-Seite (einbauen / einsetzen / entfernen).
 var _action_box: VBoxContainer
@@ -916,10 +898,8 @@ func _charger_stock() -> void:
 		_content.add_child(UiKit.label("Erst eine Waffe einbauen -- der Charger sitzt in der Waffe.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
-	_content.add_child(_quiet(UiKit.label("Antippen wählt · Doppeltipp oder auf die Karte ziehen setzt ein",
-		13, UiKit.MUTED)))
 	if roster.chargers.is_empty():
-		_content.add_child(UiKit.label("Noch kein Charger. Charger entstehen in der Fabrik.",
+		_content.add_child(UiKit.label("Noch kein Charger -- gebaut wird in der Fabrik.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
 	var names := {}
@@ -1002,7 +982,7 @@ func _fill_weapon_box(build: DromeBuild) -> void:
 	_weapon_box.add_child(Arcade.label(title, 11, Arcade.YELLOW if _compare_part != null else Arcade.CYAN,
 		"bold", 0.2))
 	if shown == null:
-		_weapon_box.add_child(Arcade.label("Halter leer -- unten eine Waffe antippen.", 13, Arcade.MUTED))
+		_weapon_box.add_child(Arcade.label("Halter leer", 13, Arcade.MUTED))
 		return
 	var name := shown.display_name.to_upper()
 	if other != null:
@@ -1072,8 +1052,6 @@ func _charger_box(entry: RosterEntry) -> Control:
 	box.add_child(_quiet(Arcade.label("CHARGER", 11, Arcade.CYAN, "bold", 0.2)))
 	if on.is_empty():
 		box.add_child(_quiet(Arcade.label("keiner" if uid != "" else "--", 13, Arcade.MUTED)))
-		if uid != "":
-			box.add_child(_quiet(Arcade.label("antippen: einsetzen", 11, Arcade.MUTED)))
 		return panel
 	var phases: Array = on.get("phases", [])
 	var hex := ChargerHex.new(phases, 52)
@@ -1234,8 +1212,6 @@ func _parts_strip(entry: RosterEntry, build: DromeBuild) -> void:
 		_content.add_child(UiKit.label("Keine freie Waffe im Inventar passt in diesen DROME.",
 			UiKit.SMALL, UiKit.MUTED))
 		return
-	_content.add_child(_quiet(UiKit.label("%d passen · antippen vergleicht oben · Doppeltipp baut ein"
-		% parts.size(), 13, UiKit.MUTED)))
 	var scroll := ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.custom_minimum_size = Vector2(0, STRIP_TILE + 8.0)
@@ -1324,10 +1300,10 @@ func _card_page(entry: RosterEntry, build: DromeBuild, part: PartData,
 			return
 		var where := SlotRules.holder_label(build, slot)
 		if replaced != null:
-			box.add_child(UiKit.label("%s: ersetzt %s (zurück in den Hangar)"
+			box.add_child(UiKit.label("%s: ersetzt %s (zurück ins Inventar)"
 				% [where, replaced.display_name], UiKit.SMALL, UiKit.WARN))
 		else:
-			box.add_child(UiKit.label("%s ist frei  ·  %d frei im Hangar"
+			box.add_child(UiKit.label("%s ist frei  ·  %d frei im Inventar"
 				% [where, GameState.roster.free_count(part.id)], UiKit.SMALL, UiKit.MUTED))
 		_delta_lines(build, slot, part, box)
 	return WeaponCard.page(part, extra, [{"text": "Einbauen", "primary": true,

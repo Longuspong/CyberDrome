@@ -128,7 +128,7 @@ func _detail(id: String) -> void:
 		card.add_child(_wrap("Ein freies Chassis aus der Beute -- baut sich ohne Kosten.", UiKit.MUTED))
 	else:
 		if id.begins_with("faction:"):
-			card.add_child(_wrap("Fraktions-DROME: das Spezialteil %s ersetzt das Kern-Teil. Es entsteht aus dem %s und legt sich auf genau diesen DROME fest." % [
+			card.add_child(_wrap("Spezialteil %s statt Kern-Teil, aus dem %s." % [
 				Workbench.special_name(id.substr(8)), Roster.core_name(Workbench.faction_of(id.substr(8)))],
 				UiKit.MUTED))
 		var need := _bench.needs(id)

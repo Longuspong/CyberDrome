@@ -406,13 +406,8 @@ func _show_prepare(run: RunState) -> void:
 			+ "Kampf zu sehen.", 13, COLOR_MUTED))
 	else:
 		box.add_child(Arcade.label(str(info["team"]).to_upper(), 20, Arcade.WHITE, "display"))
-		var leader := ""
-		for foe in foes:
-			if not foe.is_sentinel():
-				leader = foe.display_name
-				break
-		if leader != "":
-			box.add_child(_label("Anführer: %s" % leader.to_upper(), 14, Arcade.TEXT))
+		# Kein "Anfuehrer: X" mehr (28. Nov. 2026): steht schon im Titel und als
+		# erste Kachel darunter.
 		if str(info.get("team_text", "")) != "":
 			box.add_child(_label(str(info["team_text"]), 13, COLOR_MUTED))
 		if str(info.get("map", "")) != "":
@@ -466,7 +461,7 @@ func _show_prepare(run: RunState) -> void:
 	abandon.add_theme_color_override("font_color", COLOR_MUTED)
 	abandon.pressed.connect(func():
 		InfoPopup.open(self, "Einsatz aufgeben?", {"lines": ["Module und Credits verfallen. "
-			+ "Erfahrung und Beute in der Tasche nimmst du mit."],
+			+ "Beute in der Tasche nimmst du mit."],
 			"actions": [{"text": "Aufgeben", "call": func():
 				run.abandon()
 				GameState.deliver_run_home()
@@ -740,7 +735,7 @@ func _loot_page(run: RunState) -> Dictionary:
 			Arcade.CYAN))
 	for item in run.last_loot:
 		var where: String = {"lager": "  →  Lager", "squad": "  →  Squad",
-			"tasche": "  →  Tasche (nach dem Einsatz in den Hangar)",
+			"tasche": "  →  Tasche (nach dem Einsatz ins Inventar)",
 			"home": "  →  nach Hause", "caches": "  →  Einsatz-Beute",
 			"coins": "  →  Einsatz-Beute", "booster": "  →  aktiv"}.get(str(item.get("where", "")), "")
 		lines.append(["%s%s%s" % ["[Selten] " if item.get("rare", false) else "", item["title"], where],
@@ -757,14 +752,13 @@ func _loot_page(run: RunState) -> Dictionary:
 
 ## Was der Einsatz bisher an Caches und Platzhaltercoin gesammelt hat.
 func _caches_page(run: RunState) -> Dictionary:
-	var lines: Array = [["Geht am Ende des Einsatzes in den Hangar -- auch wenn er scheitert.",
+	var lines: Array = [["Geht am Ende des Einsatzes ins Inventar -- auch wenn er scheitert.",
 		COLOR_MUTED, UiKit.SMALL]]
 	for key in run.run_caches:
 		lines.append(UiIcon.text("cache", "%d× %s" % [int(run.run_caches[key]),
 			RunState.cache_name(StringName(key))], UiKit.BODY - 1, UiKit.MAGENTA))
 	lines.append(UiIcon.text("coin", "%d %s" % [run.run_coins, RunState.coin_name()], UiKit.BODY - 1,
 		COLOR_WARN))
-	lines.append(["Caches öffnen kommt mit dem Hangar-Shop.", COLOR_MUTED, UiKit.SMALL])
 	return {"title": "Einsatz-Beute", "lines": lines}
 
 
@@ -810,7 +804,7 @@ func _bag_page(run: RunState) -> Dictionary:
 		flow.add_child(Tile.new("", SlotShape.new(part.mount_class, UiKit.part_texture(part), 44.0),
 			part.display_name, Vector2(84, 80)))
 	return {"title": "Tasche", "body": flow, "lines": [["Beute-Waffen gehen nach dem "
-		+ "Einsatz in den Hangar. Im Einsatz bleiben die Waffen fest.", COLOR_MUTED, UiKit.SMALL]]}
+		+ "Einsatz ins Inventar. Im Einsatz bleiben die Waffen fest.", COLOR_MUTED, UiKit.SMALL]]}
 
 
 ## Die BIOS-Wahl nach einem Elite-Sieg (MODULE_AMP_FUSION.md 6): drei Kacheln,
@@ -902,8 +896,7 @@ func _bios_pages(run: RunState, blocker: String) -> Array:
 		pages.append(func() -> Dictionary:
 			return {"title": item.display_name, "subtitle": item.headline(),
 				"subtitle_color": item.color(), "picture": ModuleChip.new(item, 52.0),
-				"lines": item.effect_lines() + [["Die anderen verfallen, wenn du weitergehst.  ·  "
-					+ "Doppeltipp auf die Kachel: nehmen.", COLOR_MUTED, UiKit.SMALL]],
+				"lines": item.effect_lines() + [["Die anderen verfallen, wenn du weitergehst.", COLOR_MUTED, UiKit.SMALL]],
 				"actions": [{"text": "Nehmen", "primary": true, "disabled": blocker != "",
 					"why": blocker, "call": func():
 						if run.choose_bios(at):
@@ -1400,7 +1393,8 @@ func _mark_targets(run: RunState, index: int) -> void:
 				"Waffe oder Modul" if _stores.any(func(s): return s["tile"].glow) else "eine Waffe"]
 			_hint.add_theme_color_override("font_color", COLOR_GOOD)
 		else:
-			_hint.text = "Auf Waffe = einsetzen/tauschen  ·  Schrott = verkaufen"
+			# Ohne Zug kein Hinweis: das Schrott-Feld sagt selbst "hierher ziehen".
+			_hint.text = ""
 			_hint.add_theme_color_override("font_color", COLOR_MUTED)
 
 
@@ -1722,8 +1716,7 @@ func _open_recipes(run: RunState) -> void:
 		shown += 1
 	if shown == 0:
 		body.add_child(_label("Nichts in dieser Auswahl.", UiKit.SMALL, COLOR_MUTED))
-	body.add_child(_label("Tippen wählt, nochmal tippen zeigt das Rezept, Doppeltipp fügt zusammen. "
-		+ "Zwei verschiedene Amps ergeben eine Fusion: beide Werte und ein eigener Effekt. "
+	body.add_child(_label("Zwei verschiedene Amps ergeben eine Fusion: beide Werte und ein eigener Effekt. "
 		+ "Zwei gleiche Amps und ein Fusion Core ergeben eine Hyperfusion: dreifacher Wert.",
 		13, COLOR_MUTED))
 	_recipes_open = true
@@ -1899,7 +1892,7 @@ func _show_end(run: RunState) -> void:
 	var parts: Array = _delivered.filter(func(item): return item.get("kind", "") == "part") \
 		.map(func(item): return str(item["title"]))
 	if not parts.is_empty():
-		keep.add_child(_label("Teile in den Hangar: %s" % ", ".join(parts), 13, COLOR_GOOD))
+		keep.add_child(_label("Teile ins Inventar: %s" % ", ".join(parts), 13, COLOR_GOOD))
 	if _delivered.any(func(item): return item.get("kind", "") == "keynode"):
 		keep.add_child(_label("Keynode-Chip erhalten -- für Level 5 eines DROME oder einer Waffe.", 13,
 			Arcade.MAGENTA))
@@ -1926,7 +1919,7 @@ func _show_end(run: RunState) -> void:
 
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
-	var hangar := UiKit.outline_button("Zum Hangar")
+	var hangar := UiKit.outline_button("Zu den DROMEs")
 	hangar.size_flags_stretch_ratio = 0.8
 	hangar.pressed.connect(func():
 		GameState.deliver_run_home()

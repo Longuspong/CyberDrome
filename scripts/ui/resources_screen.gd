@@ -82,7 +82,6 @@ func _charger_built(charger: Dictionary) -> void:
 			row.add_child(PhaseGem.new(str(e), 40))
 	var dom := Charger.dominant(phases)
 	var lines: Array = [row]
-	lines.append("Liegt jetzt im Inventar. Einsetzen: DROMEs › DROME antippen › Waffe.")
 	if dom != "":
 		lines.append(["Die Fähigkeit legt %s-Stapel an." % Charger.element_name(dom), UiKit.HEADING])
 	# Bisher wirkt nur Feuer (CHARGER_KONZEPT 4) -- sonst sieht man im Kampf
