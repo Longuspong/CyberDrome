@@ -165,6 +165,8 @@ PASSIVE_INFO = {
                    f"je Stapel +{pct(p['attack_speed'])} Angriffs- und Lauftempo; jeder Angriff haelt die Stapel {num(p['seconds'])} s."),
     "safe_haven": ("Safe Haven", lambda p: f"Heilung, Regeneration und Schildgaben am Molok +{pct(p['care_mult'] - 1)}."),
     "echo": ("Echo", lambda p: f"Jede Faehigkeit wirkt doppelt, dafuer ist ihr Takt {num(p['slower'])}-mal so lang (aufgerundet)."),
+    "cleancode": ("Cleancode", lambda p: f"Wer vom Nimbus Heilung oder Schild bekommt, erhaelt einen Stapel Bug-Fix ({num(p['stack_seconds'])} s, "
+                  f"hoechstens {p['max_stacks']}): je Stapel +{p['def']} Ruestung und +{p['shieldgate']} Shieldgate."),
     "focuslense": ("Focuslense", lambda p: f"+{pct(p['kinetic_mult'] - 1)} kinetischer und -{pct(1 - p['energy_mult'])} Energieschaden; "
                    f"traf der letzte Schuss dasselbe Ziel (anvisiert), +{pct(p['focus_mult'] - 1)}."),
 }

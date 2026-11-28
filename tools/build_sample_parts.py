@@ -312,6 +312,7 @@ WEAPON_COLORS = {
     "eq_deflector": _w("#39404c", "#8a93a3", "#5ad1ff"),
     "eq_hammer": _w("#4a4e56", "#a0a6b0", "#ff8a3d"),
     "eq_rune_staff": _w("#3a3550", "#a59ac8", "#b06bff"),
+    "eq_repair_kit": _w("#55504a", "#b0a89a", "#7dffb0"),
     "eq_rail_lance": _w("#1d2430", "#6f7d92", "#3df2ff"),
 }
 
@@ -325,6 +326,7 @@ WEAPON_FINISH = {
     "eq_deflector": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
     "eq_hammer": {"shine": {"plate": 0.4, "light": 0.4}},
     "eq_rune_staff": {"shine": {"plate": 0.35}, "neon": True},
+    "eq_repair_kit": {"shine": {"metal": 0.4}, "neon": True},
     "eq_rail_lance": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
 }
 
@@ -496,10 +498,12 @@ STATS = {
     "jugg_body":   {"spd":  6, "hp": 250, "shield": 50, "shield_pulse":  2, "def": 10,
                     "power":  6, "efficiency": 14, "module_slots": 2,
                     "ai_role": "vanguard", "passive": "safe_haven"},
-    # Nimbus: fragil, schildlastig, Richtung Faehigkeiten.
-    "mage_body":   {"spd": 12, "hp":  60, "shield": 60, "shield_pulse": 10, "def":  0,
+    # Nimbus: der Supporter (Werkblatt 27. Nov. 2026, gebaut 28. Nov.) --
+    # fragil, schildlastig, hilft vor Schaden. Der fruehere Nimbus (Runenstab,
+    # Echo) lebt als Neon Nimbus weiter (data/formations.json).
+    "mage_body":   {"spd":  8, "hp":  60, "shield": 60, "shield_pulse":  5, "def":  0,
                     "power": 12, "efficiency": 12, "module_slots": 3,
-                    "ai_role": "controller", "passive": "echo"},
+                    "ai_role": "support", "passive": "cleancode"},
     # Strix: Langstrecke, langsam, viel Power.
     "strix_body":  {"spd":  3, "hp": 100, "shield": 30, "shield_pulse":  5, "def":  2,
                     "power": 15, "efficiency": 10, "module_slots": 3,
@@ -608,6 +612,24 @@ STATS = {
              # Seit 9. Nov. 2026 nach Angriffen statt alle 3 s (Vorgabe des
              # Spielers: Takt immer ueber Angriffe).
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_runestaff"}},
+        ],
+    },
+    # Repair-Kit (Nimbus-Supporter, 28. Nov. 2026): der Angriff repariert den
+    # Verbuendeten nach der Heilregel (der naechste, der Hilfe braucht -- oder
+    # ein deutlich schwaecherer dahinter); braucht niemand Hilfe, trifft er
+    # schwach einen Gegner. Jeder 4. Angriff ist ein Patch: Schildgabe fuer
+    # einen Verbuendeten, auch ueber das Maximum. Bonus Integritaet.
+    "eq_repair_kit": {
+        "hp": 10,
+        "actions": [
+            {"id": "act_repair", "display_name": "Angriff",
+             "category": "attack", "targeting": "single",
+             "range_tiles": 3, "power": 5, "heal": 6, "support": "ally",
+             "energy_fraction": 1.0, "interval": 1.5},
+            {"id": "act_repair_patch", "windup": 0.3, "display_name": "Patch",
+             "category": "ability", "targeting": "single",
+             "range_tiles": 3, "power": 0, "shield_gain": 15, "support": "ally",
+             "trigger": {"kind": "attacks", "every": 4, "weapon": "act_repair"}},
         ],
     },
     "eq_rail_lance": {
@@ -2385,6 +2407,39 @@ def lafette_blaster(neon=False):
     return s, (17.1, 0, z + 5.2)
 
 
+def _head_wrench(h, k):
+    """Repair-Kit: Schraubenschluessel mit Leuchtring (Form des frueheren
+    E-Schraubenschluessels)."""
+    f, l, z = h
+    return [
+        B((f - 1.2 * k, f + 1.2 * k), (l - 1.2 * k, l + 1.2 * k), (z - 9 * k, z + 14 * k), "plate"),
+        B((f - 1.7 * k, f + 1.7 * k), (l - 1.7 * k, l + 1.7 * k), (z - 11 * k, z - 9 * k), "dark"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z - 8 * k, z - 6.8 * k), "accent"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 3.2 * k, z + 4.4 * k), "accent"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 6.0 * k, z + 7.2 * k), "accent"),
+        # Maul als Profil der Vorderansicht: echte Schluesselform mit Oeffnung
+        EX([(l - 4.6 * k, z + 14 * k), (l + 4.6 * k, z + 14 * k), (l + 4.8 * k, z + 21 * k),
+            (l + 3.4 * k, z + 24.4 * k), (l + 1.7 * k, z + 24.4 * k), (l + 1.9 * k, z + 19.6 * k),
+            (l - 1.9 * k, z + 19.6 * k), (l - 1.7 * k, z + 24.4 * k), (l - 3.4 * k, z + 24.4 * k),
+            (l - 4.8 * k, z + 21 * k)], (f - 2.0 * k, f + 2.0 * k), "metal", bevel=0.5 * k, axis="f"),
+        B((f - 2.2 * k, f + 2.2 * k), (l - 4.75 * k, l + 4.75 * k), (z + 15.4 * k, z + 16.6 * k), "accent"),
+        B((f - 1.3 * k, f + 1.3 * k), (l - 1.3 * k, l + 1.3 * k), (z + 18 * k, z + 21 * k), "glow"),
+        D(f + 2.2 * k, l - 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
+        D(f + 2.2 * k, l + 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
+    ], (f, l, z + 21 * k)
+
+
+def lafette_wrench():
+    """Repair-Kit auf der Lafette: ohne Griff, nur der Kopf mit dem Maul
+    nach oben auf einem kurzen Sockel."""
+    z = LAFETTE_Z
+    base = z + 5
+    head, point = _head_wrench((0, 0, base - 14), 1.0)
+    return side_holder(z) + [
+        B((-1.2, 1.2), (-1.2, 1.2), (z + 1, base), "plate"),
+    ] + head[5:], point
+
+
 def lafette_staff():
     """Runenstab auf der Lafette: ohne Griff, nur die Kugel in ihrer Fassung
     auf einem kurzen Sockel (Spieler 17. Nov. 2026)."""
@@ -2428,6 +2483,7 @@ W_BLADE = weapon_set("hold", _head_blade)
 W_SHIELD = weapon_set("guard", _head_shield)
 W_HAMMER = weapon_set("hold", _head_hammer)
 W_STAFF = weapon_set("hold", _head_staff, lafette=lafette_staff())
+W_WRENCH = weapon_set("hold", _head_wrench, lafette=lafette_wrench())
 
 
 # ===========================================================================
@@ -2636,6 +2692,13 @@ SETS = [
                 "name": "Runenstab", "tags": ["weapon", "arcane", "round"],
                 **W_STAFF,
                 "mount_class": "light", "category": "weapon",
+            },
+            {
+                # Kernwaffe des Nimbus-Supporters (28. Nov. 2026).
+                "id": "eq_repair_kit", "code": "EQP-004", "type": "equipment",
+                "name": "Repair-Kit", "tags": ["support", "tool"],
+                **W_WRENCH,
+                "mount_class": "light", "category": "support",
             },
         ],
     },

@@ -31,6 +31,7 @@ const SUITES := [
 	"res://tests/test_run.gd",
 	"res://tests/test_modules.gd",
 	"res://tests/test_statuses.gd",
+	"res://tests/test_support.gd",
 	"res://tests/test_charger.gd",
 	"res://tests/test_factory.gd",
 	"res://tests/test_workbench.gd",

@@ -84,10 +84,7 @@
     "spezialteile": {
       "_kommentar": "Spezialteil je Fraktions-DROME (Spieler 24. Nov. 2026): Fraktionskern + Zutaten des Kern-Teils des Chassis. Ersetzt im Bauplan das Kern-Teil, liegt als spezial:<variante> im Lager.",
       "neon_vireo": "Neon-Booster",
-      "neon_nimbus": "Neon-Fokuslinse",
-      "solar_nimbus": "Solar-Prisma",
-      "mecha_molok": "Mecha-Reaktor",
-      "mecha_strix": "Mecha-Zielrechner"
+      "neon_nimbus": "Neon-Fokuslinse"
     },
     "verwerten": {
       "_kommentar": "Verwerten (Spieler 24. Nov. 2026): die Zutaten der teuersten Teile zurueck (Wert: Platte 10, Chip 2, sonst 1), ein Fraktions-DROME dazu sein Spezialteil.",

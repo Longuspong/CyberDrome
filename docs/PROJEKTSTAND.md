@@ -29,6 +29,33 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Nimbus als Supporter, Neon-Varianten, Fraktionsvarianten raus (28. Nov. 2026, Spieler)
+
+Details in `docs/SKILLBAUM_KONZEPT.md` 5f.
+
+* **Nimbus-Supporter:** Speed 8, Schildpuls 5, KI-Rolle `support` (wie Kontrolle hinter
+  der Front, laeuft zum Verletzten), Passive **Cleancode** (`passives.cleancode`,
+  `Unit.receive_care`, Hook in `ActionResolver.support`): wer vom Nimbus Heilung oder
+  Schild bekommt, erhaelt einen Stapel **Bug-Fix** (5 s mal Effizienz, max. 3, je Stapel
+  eigene Dauer): +2 Ruestung, +2 **Shieldgate** (`Unit.shieldgate`, in
+  `ActionResolver.resolve_damage`: Schaden am Schild durch den eHP-Faktor der Ruestung).
+  Symbol `assets/ui_icons/bug_fix.svg`.
+* **Repair-Kit** (`eq_repair_kit`, EQP-004, leicht, Support, Modell aus dem frueheren
+  E-Schraubenschluessel): Angriff repariert nach der Heilregel (heal 6, Reichweite 3,
+  1,5 s), sonst 5 Energieschaden am Gegner; jeder 4. Angriff **Patch** (15 Schild an einen
+  Verbuendeten, auch ueber das Maximum). Startwaffe des Nimbus, der Runenstab liegt frei.
+* **Start-Squad:** Vireo, Molok, Strix (Kern-Trio), der Nimbus wartet als Vierter.
+  `run_bench -- 20`: mit dem Supporter statt des Strix fiel Runde 1 Normal auf 7/19,
+  mit dem Kern-Trio wieder 19/19 (vorher 19/19); Elite Runde 5 2/14 statt 6/14 (Neon
+  Nimbus mit Power 15). `POWER_SCALE` 1,199 (Schnitt Standard wieder 100).
+* **Fraktionsvarianten mit Abweichung vom Chassis** (`Formations.apply_variant`,
+  `DromeBuild.variant_body`, `PartData.duplicate_part`): `passive`, `ai_role`, `holder` in
+  `data/formations.json`. Neon Nimbus: Echo, Kontrolle, **Power 15, Effizienz 5** (Schaden
+  statt CC). Neon Vireo: Halter **M-N** (mittel, nur Nahkampf).
+* **Raus bis nach dem Kernspiel:** Solar Nimbus, Mecha Molok, Mecha Strix (Daten +
+  Spezialteile). Alte Spielstaende laden sie als Standard-DROME ihres Chassis. Werte zum
+  Wiederherstellen in `docs/KERNPLAN.md`.
+
 ### Werkblatt uebernommen: Gunship, Focuslense, neue Werte (27. Nov. 2026, Spieler)
 
 Details und Tabelle in `docs/SKILLBAUM_KONZEPT.md` 5e.
@@ -44,8 +71,8 @@ Details und Tabelle in `docs/SKILLBAUM_KONZEPT.md` 5e.
 * **Werte:** Speed Vireo 8, Molok 6, Strix 3; Schildpuls Vireo 5, Molok 2; Neon Vireo
   8 / 10, Neon Nimbus 7 / 5 mit Power und Effizienz 12.
 * **Halter-Kuerzel** S/M/X, -F/-N (`SlotRules.holder_code`).
-* Noch nicht gebaut: Nimbus als Supporter (Repair-Kit, Cleancode, Shieldgate), Zielregel
-  „Most Damage“ fuer den Neon Nimbus, Halter M-N fuer den Neon Vireo.
+* Noch nicht gebaut: Zielregel „Most Damage“ fuer den Neon Nimbus. (Nimbus-Supporter und
+  Halter M-N seit 28. Nov. 2026 gebaut.)
 
 ### Molok-Passive Festung, Hammer, Kernwaffen (27. Nov. 2026, Spieler)
 

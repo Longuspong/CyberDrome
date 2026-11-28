@@ -23,7 +23,11 @@ Der Kernmoment: Nach dem Theorycrafting im Hangar bekommt man im Lauf die erhoff
 
 ## Was erst mal wartet (Ideen-Branch)
 
-- AR-Nimbus -- wird laut Werkblatt (27. Nov. 2026) ein **Supporter** (Repair-Kit, Passive Cleancode); der heutige Nimbus (Runenstab, Echo, Skill-DPS) lebt als **Neon Nimbus** weiter
+- AR-Nimbus -- seit 28. Nov. 2026 als **Supporter** gebaut (Repair-Kit, Passive Cleancode, `SKILLBAUM_KONZEPT.md` 5f), wartet aber im Hangar: der Start-Squad ist das Kern-Trio. Der fruehere Nimbus (Runenstab, Echo) lebt als **Neon Nimbus** weiter (Power 15, Effizienz 5: Schaden statt CC)
+- **Fraktionsvarianten** kommen erst nach dem Kernspiel (Spieler 28. Nov. 2026). Neon Vireo und Neon Nimbus bleiben (Gegner der Neon-Formationen); ihr Chassis ist bewusst nur eine andere Faerbung -- eigene DROMEs, die nicht von den vier CyberDrome-DROMEs abstammen (Shogun, Kage ...), kommen erst, wenn der Kern steht. Entfernt am 28. Nov. (Daten zum Wiederherstellen, `data/formations.json` -> `dromes`, Spezialteil in `data/factory.json` -> `werkbank.spezialteile`):
+  - Solar Nimbus: art variante, mage_body, Runenstab, spd 12, hp_max 60, shield 60, shield_pulse 10, def 0, power 12, module_slots 3, faction solar; Spezialteil Solar-Prisma
+  - Mecha Molok: art variante, jugg_body, Hammer, spd 6, hp_max 250, shield 50, shield_pulse 2, def 10, power 6, module_slots 2, faction mecha; Spezialteil Mecha-Reaktor
+  - Mecha Strix: art variante, strix_body, Schienen-Lanze, spd 7, hp_max 100, shield 30, shield_pulse 5, def 2, power 15, module_slots 3, faction mecha; Spezialteil Mecha-Zielrechner
 - Endlos-Modus, Story, Fraktionen
 - Android-Version
 - Feinabstimmung von Gegnerzahl und Gegnerkurve

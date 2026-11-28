@@ -33,8 +33,9 @@ Symbol. `tools/bake_godot_assets.py` legt den Satz fuer Godot unter
 * Jede Waffe hat ihr **Schussintervall**, SPD ist die Laufgeschwindigkeit.
   Der N-te Angriff einer Waffe IST ihre Faehigkeit (**Takt**).
 * Je **Puls** (3 s): Reparatur, Kabelbrand, ab Minute 5 der Virusschaden.
-* Passiven: Vireo **Cyberspeed**, Molok **Safe Haven**, Nimbus **Echo**, Strix
-  **Focuslense**. Der Molok ist ein **Gunship**: ein Halter, die Waffe feuert von
+* Passiven: Vireo **Cyberspeed**, Molok **Safe Haven**, Nimbus **Cleancode**
+  (Supporter mit Repair-Kit, 28. Nov. 2026), Strix **Focuslense**; der Neon Nimbus
+  behaelt **Echo**. Der Molok ist ein **Gunship**: ein Halter, die Waffe feuert von
   beiden Armen (27. Nov. 2026).
 
 ### Einsatz (Roguelike, Code-Name "Lauf")

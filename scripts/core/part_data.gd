@@ -244,6 +244,17 @@ func accepts(equipment: PartData, slot: String) -> bool:
 	return equipment.category in allowed
 
 
+## Eine flache Kopie mit eigenen ``slot_rules`` (Fraktions-DROMEs,
+## Formations.apply_variant). Aktionen und Ansichten teilt sie mit dem Original.
+func duplicate_part() -> PartData:
+	var copy := PartData.new()
+	for prop in get_property_list():
+		if int(prop["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			copy.set(prop["name"], get(prop["name"]))
+	copy.slot_rules = slot_rules.duplicate(true)
+	return copy
+
+
 func slot_name() -> String:
 	match type:
 		Type.BODY: return "body"

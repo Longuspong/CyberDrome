@@ -156,6 +156,8 @@ func _current_target(unit: Unit) -> Unit:
 ##
 ##   vanguard, skirmisher   den naechsten Gegner
 ##   controller             den, um den die meisten Gegner stehen (Vortex)
+##   support                den naechsten Gegner -- geschossen wird nur,
+##                          wenn kein Verbuendeter Hilfe braucht (_fire)
 ##   sniper                 in Reichweite den, der am meisten Schaden macht
 ##   hunter                 den verwundbarsten (wenig Integritaet, verwundbar
 ##                          oder betaeubt) -- fuer die geplante Jaegerklasse
@@ -713,7 +715,7 @@ func _safety(unit: Unit, tile: Vector2i, target: Unit) -> float:
 func next_step(unit: Unit, target: Unit) -> Vector2i:
 	if target == null or unit.mounts.is_empty():
 		return unit.tile
-	# Heiler (Drohnen-Pod): erst zum Verletzten, der ausser Reichweite steht.
+	# Heiler (Repair-Kit): erst zum Verletzten, der ausser Reichweite steht.
 	var patient := _patient_out_of_reach(unit)
 	if patient != null:
 		return _approach(unit, patient)
@@ -731,7 +733,10 @@ func next_step(unit: Unit, target: Unit) -> Vector2i:
 			if shooting:
 				return _kite_step(unit, target, 1)
 			return _approach(unit, target)
-		"controller":
+		"controller", "support":
+			# Supporter (Nimbus, 28. Nov. 2026) wie Kontrolle: hilft zuerst
+			# (Heil-Angriff, _fire), laeuft zum Verletzten (_patient_out_of_reach)
+			# und bleibt sonst hinter der Front.
 			# Laeuft hinter der Frontlinie mit, bis die im Kampf ist: ein
 			# Schritt nur, wenn er danach noch weiter vom Gegner weg steht
 			# als die vorderste Frontlinie. Frueher stand er bis zum ersten

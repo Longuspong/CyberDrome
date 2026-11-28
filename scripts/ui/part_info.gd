@@ -20,6 +20,7 @@ const ROLE := {
 	&"eq_deflector": "Schild zum Umschnallen: stößt zu und lädt dem Träger Schild auf, auch über das Maximum.",
 	&"eq_rune_staff": "Energiestab auf mittlere Distanz. Der Vortex zieht Gegner zusammen und verlangsamt sie.",
 	&"eq_rail_lance": "Scharfschützenwaffe mit der größten Reichweite.",
+	&"eq_repair_kit": "Werkzeug des Nimbus: repariert Verbündete, bevor es schießt. Der Patch gibt Schild, auch über das Maximum.",
 }
 
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
@@ -88,6 +89,11 @@ static func traits(part: PartData) -> Array[String]:
 			out.append("Safe Haven: Heilung, Regeneration und Schildgaben am Molok +%d %%." % int(round((float(fo.get("care_mult", 1.2)) - 1.0) * 100.0)))
 		"echo":
 			out.append("Echo: jede Fähigkeit wirkt zweimal, ihr Takt ist dafür 1,5-mal so lang (aufgerundet).")
+		"cleancode":
+			var cc := Config.section("passives").get("cleancode", {}) as Dictionary
+			out.append("Cleancode: wer vom Nimbus Heilung oder Schild bekommt, erhält einen Stapel Bug-Fix (%s s, höchstens %d): je Stapel +%d Rüstung und +%d Shieldgate (Rüstung für den Schild)." % [
+				ActionData._seconds(float(cc.get("stack_seconds", 5.0))), int(cc.get("max_stacks", 3)),
+				int(cc.get("def", 2)), int(cc.get("shieldgate", 2))])
 		"focuslense":
 			var fl := Config.section("passives").get("focuslense", {}) as Dictionary
 			out.append("Focuslense: +%d %% kinetischer, -%d %% Energieschaden; das anvisierte Ziel (vom letzten Schuss getroffen) nimmt +%d %%." % [

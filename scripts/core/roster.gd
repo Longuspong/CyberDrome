@@ -58,23 +58,25 @@ var _factory_sim: FactorySim = null
 ## Die vier Standard-DROMEs mit ihrer VOLLEN Standard-Ausstattung -- der
 ## handgesetzte Startbestand (§10g/§12c). Reihenfolge = Reihenfolge im frischen
 ## Roster. Die Ausruestung wird der Reihe nach in den ersten passenden freien
-## Slot gelegt (``_seed_equip``).
+## Slot gelegt (``_seed_equip``). Seit 28. Nov. 2026 zieht das Kern-Trio
+## (Vireo, Molok, Strix, docs/KERNPLAN.md) ins Gefecht, der Nimbus-Supporter
+## mit dem Repair-Kit wartet als Vierter im Hangar.
 const STARTER_CHASSIS := [
 	{"body": &"scout_body", "core": &"scout_core",
 	 "equipment": [&"eq_pulse_blaster"]},
 	{"body": &"jugg_body", "core": &"jugg_core",
 	 "equipment": [&"eq_deflector"]},
-	{"body": &"mage_body", "core": &"mage_core",
-	 "equipment": [&"eq_rune_staff"]},
 	{"body": &"strix_body", "core": &"strix_core",
 	 "equipment": [&"eq_rail_lance"]},
+	{"body": &"mage_body", "core": &"mage_core",
+	 "equipment": [&"eq_repair_kit"]},
 ]
 
 ## Ausruestung, die KEINEM Start-DROME zugeteilt ist und frei im Inventar liegt.
 ## Seit es nur noch einen Platz je DROME gibt (Molok seit 27. Nov. 2026 als
 ## Gunship auch), liegen die uebrigen Waffen hier und laden zum Umbauen ein.
 const STARTER_LOOSE_EQUIPMENT := [
-	&"eq_plasma_blade", &"eq_hammer",
+	&"eq_plasma_blade", &"eq_hammer", &"eq_rune_staff",
 ]
 
 
@@ -209,10 +211,7 @@ func build_for(entry: RosterEntry) -> DromeBuild:
 	build.source_uid = entry.chassis_uid()
 	# Fraktions-DROME: feste Werte aus data/formations.json.
 	if entry.variant != "":
-		var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(entry.variant, {})
-		for key in spec.get("stats", {}):
-			build.stat_override[key] = int(spec["stats"][key])
-		build.faction = str(spec.get("faction", ""))
+		Formations.apply_variant(build, entry.variant)
 
 	for slot in entry.assignments:
 		if slot == "body":
@@ -789,7 +788,15 @@ func load_dict(data: Dictionary) -> bool:
 		# mit der Fraktion als Untertitel (selbst vergebene Namen bleiben).
 		if entry.variant != "":
 			var spec: Dictionary = (Formations.data().get("dromes", {}) as Dictionary).get(entry.variant, {})
-			if str(spec.get("art", "")) == "variante" and entry.name == str(spec.get("name", "")):
+			if spec.is_empty():
+				# Varianten, die es nicht mehr gibt (Solar Nimbus, Mecha Molok, Mecha
+				# Strix seit 28. Nov. 2026 bis nach dem Kernspiel): der DROME bleibt
+				# als Standard-DROME seines Chassis ("Mecha Molok" -> "Molok").
+				var plain := _starter_name(instance_part_id(entry.chassis_uid()))
+				if entry.name.ends_with(" " + plain):
+					entry.name = plain
+				entry.variant = ""
+			elif str(spec.get("art", "")) == "variante" and entry.name == str(spec.get("name", "")):
 				entry.name = faction_drome_name(entry.variant)
 		entries.append(entry)
 	for c in chargers:

@@ -188,7 +188,7 @@ static func deployment_tile(grid: Grid, is_player: bool, row: int, column: int) 
 ##
 ## Vorher standen alle Schulter an Schulter auf den vordersten Feldern --
 ## vier Figuren uebereinander, die man mit dem Finger nicht auseinanderbekam.
-const ROLE_ROW := {"vanguard": 0, "skirmisher": 1, "": 1, "controller": 2, "sniper": 2}
+const ROLE_ROW := {"vanguard": 0, "skirmisher": 1, "": 1, "controller": 2, "support": 2, "sniper": 2}
 
 static func default_formation(grid: Grid, roles: Array) -> Array:
 	var rows := deployment_rows(grid)

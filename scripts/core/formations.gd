@@ -158,11 +158,40 @@ static func build_drome(drome_id: String) -> DromeBuild:
 		"chassis": spec.get("chassis", ""), "weapons": spec.get("weapons", [])})
 	if build == null:
 		return null
+	apply_variant(build, drome_id)
+	return build
+
+
+## Fraktions-DROME (Spieler 28. Nov. 2026): feste Werte (``stats``), Fraktion
+## und, wo die Variante vom Chassis abweicht, eine eigene ``passive``, KI-Rolle
+## (``ai_role``) und Halterregel (``holder``: je Halter die Schluessel, die
+## sie aendert, z. B. {"equip_left": {"max_class": "medium", "reach": "melee"}}).
+## Ohne Fraktion (Vireo, Molok ...) bleibt der Build unberuehrt.
+static func apply_variant(build: DromeBuild, drome_id: String) -> void:
+	var spec: Dictionary = (data().get("dromes", {}) as Dictionary).get(drome_id, {})
+	if build == null or spec.is_empty():
+		return
 	var stats: Dictionary = spec.get("stats", {})
 	for key in stats:
 		build.stat_override[key] = int(stats[key])
 	build.faction = str(spec.get("faction", ""))
-	return build
+	if build.faction == "":
+		return
+	build.variant = drome_id
+	var chassis := build.body()
+	if chassis == null or not (spec.has("passive") or spec.has("ai_role") or spec.has("holder")):
+		return
+	var copy := chassis.duplicate_part()
+	if spec.has("passive"):
+		copy.passive = str(spec["passive"])
+	if spec.has("ai_role"):
+		copy.ai_role = str(spec["ai_role"])
+	var holder: Dictionary = spec.get("holder", {})
+	for slot in holder:
+		var rule: Dictionary = (copy.slot_rules.get(slot, {}) as Dictionary).duplicate(true)
+		rule.merge(holder[slot] as Dictionary, true)
+		copy.slot_rules[slot] = rule
+	build.variant_body = copy
 
 
 ## Ein Sentinel: Platzhalter-Chassis, feste Waffe im ersten Halter, feste

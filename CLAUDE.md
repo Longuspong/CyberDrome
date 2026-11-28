@@ -13,7 +13,11 @@ reduziert (27. Nov., Ramme/Schraubenschluessel/Bumerang/Neon-Blaster/Moerser ent
 **Werkblatt vom 27. Nov. uebernommen** (`SKILLBAUM_KONZEPT.md` 5e): Molok als **Gunship**
 (ein Halter, Waffe an beiden Armen, `mirror` in `slot_rules`), Strix-Passive **Focuslense**,
 neue Tempo-/Schildpulswerte, Echo-Takt aufgerundet, Halter-Kuerzel S/M/X + -F/-N.
-Nimbus (Kernspieler) wird ein Supporter und wartet; der heutige Nimbus lebt als Neon Nimbus.
+Nimbus seit 28. Nov. als Supporter gebaut (Repair-Kit, Cleancode/Bug-Fix/Shieldgate, `SKILLBAUM_KONZEPT.md`
+5f), wartet im Hangar (Start-Squad = Kern-Trio); der fruehere Nimbus lebt als Neon Nimbus (Power 15,
+Effizienz 5). Varianten weichen ueber `passive`/`ai_role`/`holder` in `formations.json` vom Chassis ab
+(`Formations.apply_variant`, Neon Vireo Halter M-N). Solar Nimbus, Mecha Molok, Mecha Strix bis nach
+dem Kernspiel entfernt (Werte im Kernplan).
 
 **Ganz zuerst (seit 17. Nov. 2026, zuletzt 18. Nov. abends): `docs/UEBERGABE_3D.md`, Abschnitt „Stand 18. Nov.“** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung und 3D-Boden `ArenaFloor3D` seit 18. Nov.; sichtbare Passiven, Muendungsblitz und 3D-Deko seit 18. Nov.; Beine im Wechsel, alle Faehigkeiten lesbar (`AbilityPainter`), Waffenfarben mit Glanzkante (`WEAPON_FINISH`), Generator-Bausteine BP/SW/EX und Redesign aller Chassis seit 18. Nov. -- `DROME_UMSETZUNG.md` 4g; Fraktions-Paletten fuer Gegner und Faehigkeiten mit Ausholzeit/Abfolge (`AbilityFx`, `ActionData.windup`) seit 18. Nov.; alle Faehigkeiten animiert; Echo nacheinander und Flaechen am Wurfort seit 18. Nov., Balance gemessen; offen: Story-Level).
 
@@ -326,8 +330,8 @@ steht dort im Abschnitt „Was erst mal wartet“ -- nicht anfangen, bevor der
 Kernplan fertig ist.
 
 - [ ] **Werkblatt weiter ausfuellen** -- erste Runde am 27. Nov. 2026 uebernommen
-      (`SKILLBAUM_KONZEPT.md` 5e). Noch offen dort: Skilltrees, Takt neu, Nimbus-Supporter
-      (Repair-Kit, Cleancode, Shieldgate), Neon-Vireo-Halter M-N, Zielregel Neon Nimbus.
+      (`SKILLBAUM_KONZEPT.md` 5e, 5f). Noch offen dort: Skilltrees, Takt neu, Zielregel
+      Neon Nimbus, Werte des Repair-Kit bestaetigen.
       Wenn der Spieler eine neue Sitzung beginnt, daran erinnern.
 - [ ] Designpunkt 3 **Eingreifen des Spielers** (siehe oben) besprechen.
 
