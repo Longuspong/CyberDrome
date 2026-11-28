@@ -145,7 +145,7 @@ func _changed() -> void:
 
 func _shop_section() -> void:
 	# Entwurf 15. Nov. 2026: Bestand oben, Caches als Karten mit KAUFEN,
-	# darunter die Upgrades (folgen). Baukerne gibt es seit 24. Nov. 2026 nicht mehr.
+	# Upgrades erst, wenn es welche gibt. Baukerne gibt es seit 24. Nov. 2026 nicht mehr.
 	_content.add_child(_stock_card())
 	var head := HBoxContainer.new()
 	var title := Arcade.label("CACHES", 15, Arcade.CYAN, "bold", 0.2)
@@ -177,16 +177,8 @@ func _shop_section() -> void:
 	for kind in CACHE_KINDS:
 		if not shown.has(kind):
 			grid.add_child(_locked_card(kind))
-	var upgrades := HBoxContainer.new()
-	var up_title := Arcade.label("UPGRADES", 15, Arcade.CYAN, "bold", 0.2)
-	up_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	upgrades.add_child(up_title)
-	upgrades.add_child(Arcade.label("INHALTE FOLGEN", 12, Arcade.MUTED, "bold", 0.16))
-	_content.add_child(upgrades)
-	var soon := Arcade.Card.new(Arcade.EMPTY_LINE, Color.TRANSPARENT, true)
-	soon.add_child(UiKit.label("Upgrades kommen mit dem Ausbau des Hangar-Shops (Bauschritt 5).",
-		14, UiKit.MUTED))
-	_content.add_child(soon)
+	# Der Platzhalter "Upgrades -- Inhalte folgen" ist seit 28. Nov. 2026 raus;
+	# die Sektion kommt wieder, wenn es Upgrades gibt.
 
 
 ## Der Bestand an Platzhaltercoin (Entwurf: Sechseck-Coin, grosse Zahl).
@@ -202,9 +194,8 @@ func _stock_card() -> Control:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 0)
 	row.add_child(column)
-	column.add_child(Arcade.label("BESTAND", 11, Arcade.MUTED, "bold", 0.2))
 	column.add_child(Arcade.label(str(GameState.roster.coins), 28, Arcade.YELLOW, "display"))
-	column.add_child(Arcade.label("%s (Arbeitsname)" % RunState.coin_name(), 13, Arcade.MUTED))
+	column.add_child(Arcade.label(RunState.coin_name(), 13, Arcade.MUTED))
 	return panel
 
 
@@ -321,8 +312,6 @@ func _caches_section() -> void:
 	head.add_child(title)
 	head.add_child(Arcade.label("%d UNGEÖFFNET" % total, 12, Arcade.MUTED, "bold", 0.16))
 	_content.add_child(head)
-	_content.add_child(UiKit.label("Im Einsatz gesammelt, hier geöffnet. Je Fraktion eine eigene Sorte.",
-		14, UiKit.MUTED))
 	if int(roster.caches.get(_cache_pick, 0)) <= 0:
 		for kind in CACHE_KINDS:
 			if int(roster.caches.get(kind, 0)) > 0:
@@ -363,13 +352,8 @@ func _caches_section() -> void:
 		var name := RunState.cache_name(StringName(kind)) if kind != "hip" else "Hipstar Cache"
 		box.add_child(_centered(Arcade.label(name.to_upper(), 14,
 			Arcade.WHITE if count > 0 else Arcade.MUTED, "display")))
-		box.add_child(_centered(Arcade.label(_region_name(kind) if count > 0 else "Noch keiner", 13,
-			Arcade.MUTED)))
+		box.add_child(_centered(Arcade.label(_region_name(kind), 13, Arcade.MUTED)))
 		grid.add_child(panel)
-	var note := Arcade.Card.new(Color("#3a1a6e"), Color.TRANSPARENT, true)
-	note.add_child(UiKit.label("Caches findest du im Einsatz -- jeder Kampf hat eine Chance auf den "
-		+ "Cache seiner Fraktion. Oder du kaufst sie im Shop.", 14, UiKit.TEXT))
-	_content.add_child(note)
 	var have := int(roster.caches.get(_cache_pick, 0))
 	if have > 0:
 		var open := UiKit.button("%s öffnen" % RunState.cache_name(StringName(_cache_pick)), true)
@@ -382,8 +366,7 @@ func _caches_section() -> void:
 
 func _cache_page(key: String) -> Dictionary:
 	return {"title": RunState.cache_name(StringName(key)), "picture": _cache_icon(),
-		"lines": ["%d Stück im Hangar." % int(GameState.roster.caches.get(key, 0)),
-			["Vier Würfe je Cache: Energy Phases, Charger-Rohlinge, selten ein "
+		"lines": [["Vier Würfe je Cache: Energy Phases, Charger-Rohlinge, selten ein "
 			+ "Fraktionskern oder ein ganzer Fraktions-DROME, sonst Coins.",
 			UiKit.MUTED, UiKit.SMALL]],
 		"actions": [{"text": "Öffnen", "primary": true, "call": func():

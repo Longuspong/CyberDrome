@@ -1075,8 +1075,7 @@ func _build_ui() -> void:
 	hint_column.add_theme_constant_override("separation", 0)
 	hint_card.add_child(hint_column)
 	hint_column.add_child(Arcade.label("Ziehe deine DROMEs in Position", 15, Arcade.WHITE, "bold"))
-	var hint := UiKit.label("Nur innerhalb der markierten Zone -- oder erst die Figur antippen, "
-		+ "dann das Feld. Danach kämpft dein Squad selbstständig.", 13, UiKit.MUTED)
+	var hint := UiKit.label("Oder erst die Figur antippen, dann das Feld.", 13, UiKit.MUTED)
 	hint_column.add_child(hint)
 	deploy.add_child(hint_card)
 	var start := UiKit.button("Los", true)
@@ -1188,16 +1187,14 @@ func _loot_card(run: RunState, won: bool) -> Control:
 		Arcade.CYAN if won else Arcade.MAGENTA, "bold", 0.2))
 	if not won:
 		column.add_child(Arcade.label("−1 LEBEN", 20, Arcade.MAGENTA, "display"))
-		column.add_child(UiKit.label("Der Einsatz geht mit %d Leben weiter." % run.lives
-			if run.lives > 0 else "Keine Leben mehr -- der Einsatz ist vorbei.", 14, UiKit.MUTED))
+		if run.lives <= 0:
+			column.add_child(UiKit.label("Keine Leben mehr -- der Einsatz ist vorbei.", 14, UiKit.MUTED))
 	for item in run.last_loot:
 		var kind := str(item.get("kind", ""))
 		if kind == "cache":
 			column.add_child(Arcade.label(RunState.cache_name(StringName(str(item.get("cache", "city"))))
 				.to_upper() + (" ×%d" % int(item.get("count", 1)) if int(item.get("count", 1)) > 1 else ""),
 				20, Arcade.WHITE, "display"))
-			column.add_child(UiKit.label("Geschlossen. Kommt zu deinen gesammelten Caches.", 14,
-				UiKit.MUTED))
 		else:
 			column.add_child(Arcade.label(str(item.get("title", "")).to_upper(), 18, Arcade.YELLOW,
 				"display"))
@@ -1336,7 +1333,7 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		onward.grab_focus.call_deferred()
 		return
 
-	var back := UiKit.button("Zum Hangar", true)
+	var back := UiKit.button("Zu den DROMEs", true)
 	back.pressed.connect(func():
 		GameState.battle_seed = 0
 		Fader.go("res://scenes/hangar.tscn"))

@@ -159,12 +159,6 @@ func _boss_card() -> Control:
 	faction.add_theme_color_override("font_shadow_color", Arcade.NIGHT)
 	faction.add_theme_constant_override("shadow_offset_y", 2)
 	text.add_child(faction)
-	var line := Arcade.label("Wartet am Ende von Neon City. Wer ihn schlägt, öffnet den Infinity-Einsatz.",
-		13, Arcade.TEXT, "medium")
-	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	line.add_theme_color_override("font_shadow_color", Arcade.NIGHT)
-	line.add_theme_constant_override("shadow_offset_y", 2)
-	text.add_child(line)
 	var tag := Arcade.tag("BOSS · NEON CITY", 12, -3.0)
 	tag.position = Vector2(12, 0)
 	wrap.add_child(tag)
@@ -197,7 +191,7 @@ func _info_card(running: bool, region_name: String, region) -> Control:
 	line.add_theme_font_size_override("normal_font_size", 14)
 	var count := ("Kampf %d/%d" % [GameState.run.round, RunState.rounds_total()]) if running \
 		else ("%d Kämpfe" % RunState.rounds_total())
-	line.text = "[color=#c3b3e6]Fraktion: [/color][color=#ff2bd6]%s[/color][color=#c3b3e6] · %s[/color]" \
+	line.text = "[color=#ff2bd6]%s[/color][color=#c3b3e6] · %s[/color]" \
 		% [faction_name, count]
 	left.add_child(line)
 	var hex := HexBadge.new()
@@ -221,8 +215,8 @@ func _info_card(running: bool, region_name: String, region) -> Control:
 		var levels := 0
 		for build in squad:
 			levels += build.drome_level
-		summary = "%d DROMEs · Ø Level %s" % [squad.size(),
-			("%.1f" % (float(levels) / squad.size())).replace(".", ",")]
+		# Anzahl zeigen die Kaestchen rechts daneben.
+		summary = "Ø Level %s" % ("%.1f" % (float(levels) / squad.size())).replace(".", ",")
 	var summary_label := Arcade.label(summary, 14, Arcade.TEXT)
 	summary_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	squad_row.add_child(summary_label)
@@ -368,5 +362,5 @@ func _refresh_status() -> void:
 	var ready := not GameState.battle_ready_builds().is_empty()
 	_status.visible = not ready
 	if not ready:
-		_status.text = "Noch kein kampftauglicher DROME – im Hangar einen bauen."
+		_status.text = "Noch kein kampftauglicher DROME."
 		_status.modulate = UiKit.BAD

@@ -63,7 +63,7 @@ func _rebuild() -> void:
 	UiKit.clear(self)
 
 	if _items.is_empty():
-		add_child(UiKit.label("Keine kampftauglichen DROMEs. Bau im Hangar welche zusammen.",
+		add_child(UiKit.label("Keine kampftauglichen DROMEs. Neue entstehen in der Fabrik.",
 			UiKit.BODY, UiKit.BAD))
 		return
 

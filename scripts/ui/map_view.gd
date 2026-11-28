@@ -82,9 +82,6 @@ func _draw() -> void:
 			var reachable := k > 0 or open.has(i)
 			_draw_node(_rect(i, nodes.size(), k), nodes[i], reachable and k == 0,
 				k == 0 and i == run.node, k > 0, font)
-	if rows.size() > 1:
-		draw_string(font, Vector2(0, size.y - 6.0), "darunter: die Wege danach",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(UiKit.MUTED, 0.7))
 
 
 func _draw_node(box: Rect2, data: Dictionary, reachable: bool, chosen: bool, ahead: bool,
