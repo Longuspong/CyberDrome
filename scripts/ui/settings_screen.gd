@@ -11,9 +11,6 @@ extends Control
 func _ready() -> void:
 	var content := UiKit.page(self, "Optionen", UiKit.return_scene, -1)
 	content.add_theme_constant_override("separation", 16)
-	var slot := UiKit.header_slot(self)
-	if slot != null:
-		slot.add_child(Arcade.tilt(Arcade.tag("SETUP", 12, 0.0), 2.0))
 
 	var display := _card(content, "Anzeige")
 	display.add_child(Arcade.label("Schriftgröße", 15, Arcade.WHITE, "bold"))
@@ -201,14 +198,8 @@ func _switch(title: String, hint: String, on: bool, on_toggle: Callable) -> Cont
 	toggle.tooltip_text = title
 	toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(toggle)
-	var state := Arcade.label("AN" if on else "AUS", 12, Arcade.CYAN if on else Arcade.MUTED, "bold", 0.16)
-	state.custom_minimum_size = Vector2(30, 0)
-	state.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(state)
-	toggle.toggled.connect(func(value: bool):
-		on_toggle.call(value)
-		state.text = "AN" if value else "AUS"
-		state.add_theme_color_override("font_color", Arcade.CYAN if value else Arcade.MUTED))
+	# Kein "AN/AUS" mehr daneben (28. Nov. 2026): der Schalter zeigt es.
+	toggle.toggled.connect(func(value: bool): on_toggle.call(value))
 	return row
 
 

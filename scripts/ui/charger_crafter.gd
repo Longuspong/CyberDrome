@@ -366,7 +366,7 @@ class _Source extends PanelContainer:
 		style.set_content_margin_all(4)
 		add_theme_stylebox_override("panel", style)
 		modulate.a = 1.0 if count > 0 else 0.4
-		custom_minimum_size = Vector2(0, 86)
+		custom_minimum_size = Vector2(0, 72)
 		tooltip_text = "%s, %d im Lager" % [Charger.element_name(e), count]
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 2)
@@ -375,9 +375,8 @@ class _Source extends PanelContainer:
 		var gem := PhaseGem.new(e, 42)
 		gem.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		box.add_child(gem)
-		var name := Arcade.label(Charger.element_name(e).to_upper(), 10, Charger.element_color(e), "bold", 0.08)
-		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(name)
+		# Kein Name mehr unter dem Edelstein (28. Nov. 2026): Farbe + Symbol
+		# sagen es, der Name steht im Tooltip.
 		var n := Arcade.label("×%d" % count, 12, Arcade.WHITE, "display")
 		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(n)

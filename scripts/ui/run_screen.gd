@@ -275,7 +275,10 @@ func _hud_cell(title: String, value: Control) -> Control:
 	var box := VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 2)
-	box.add_child(Arcade.label(title.to_upper(), 11, Arcade.MUTED, "bold", 0.16))
+	# Seit 28. Nov. 2026 ohne Beschriftung (Symbole sagen es); der Titel bleibt
+	# als Tooltip.
+	box.tooltip_text = title
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_child(value)
 	return box
 
@@ -425,13 +428,20 @@ func _show_prepare(run: RunState) -> void:
 	var ratio := own / maxf(1.0, foe)
 	var verdict := "überlegen" if ratio >= 1.1 else ("ausgeglichen" if ratio >= 0.9 else "unterlegen")
 	var color := COLOR_GOOD if ratio >= 1.1 else (COLOR_WARN if ratio >= 0.9 else COLOR_BAD)
+	# Kampfwert als Symbol (28. Nov. 2026): "241 : 169" und ein Pfeil hoch
+	# (ueberlegen) bzw. runter (unterlegen); der Satz steht im Tooltip.
 	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 6)
 	box.add_child(line)
 	if chaos:
-		line.add_child(_flow_label("Kampfwert: du %d  ·  Gegner ???" % int(own), 14, COLOR_WARN))
+		line.add_child(UiIcon.text("power_score", "%d : ???" % int(own), 15, COLOR_WARN, "bold"))
+		line.tooltip_text = "Kampfwert: du %d · Gegner unbekannt" % int(own)
 	else:
-		line.add_child(_flow_label("Kampfwert: du %d · Gegner %d · %s" % [int(own), int(foe), verdict],
-			14, color))
+		line.add_child(UiIcon.text("power_score", "%d : %d" % [int(own), int(foe)], 15, color, "bold"))
+		if ratio >= 1.1 or ratio < 0.9:
+			line.add_child(UiIcon.rect("arrow_up" if ratio >= 1.1 else "arrow_down", 16, color))
+		line.tooltip_text = "Kampfwert: du %d · Gegner %d · %s" % [int(own), int(foe), verdict]
+	line.mouse_filter = Control.MOUSE_FILTER_PASS
 	var loot := PanelContainer.new()
 	var loot_box := StyleBoxFlat.new()
 	loot_box.bg_color = Arcade.DEEP
@@ -2366,6 +2376,7 @@ func _scrap_zone(run: RunState) -> ScrapZone:
 ## Verkaufswert.
 class ScrapZone extends PanelContainer:
 	var _value: Label
+	var _arrow: Control
 	var _hot: bool = false
 
 	func _init() -> void:
@@ -2378,21 +2389,30 @@ class ScrapZone extends PanelContainer:
 		box.add_theme_constant_override("separation", 2)
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(box)
-		var icon := UiIcon.rect("scrap", 24, Arcade.ROSE)
+		# Seit 28. Nov. 2026 nur Symbole: Schrott, darunter Pfeil + Credits
+		# (beim Ziehen "+N" statt Pfeil). Der Satz steht im Tooltip.
+		tooltip_text = "Schrott: Modul hierher ziehen = verkaufen"
+		var icon := UiIcon.rect("scrap", 32, Arcade.ROSE)
 		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		box.add_child(icon)
-		var title := Arcade.label("SCHROTT", 14, Arcade.ROSE, "display")
-		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(title)
-		_value = Arcade.label("hierher ziehen\n= verkaufen", 12, UiKit.TEXT, "medium")
-		_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(_value)
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 4)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(row)
+		_arrow = UiIcon.rect("arrow_right", 16, UiKit.TEXT)
+		row.add_child(_arrow)
+		row.add_child(UiIcon.rect("credits", 16, Arcade.CYAN))
+		_value = Arcade.label("", 14, Arcade.CYAN, "display")
+		_value.visible = false
+		row.add_child(_value)
 
 	## Wert des gezogenen Moduls (-1 = nichts Verkaufbares in der Hand).
 	func set_offer(value: int) -> void:
 		_hot = value >= 0
-		_value.text = ("+%d Credits" % value) if _hot else "hierher ziehen\n= verkaufen"
-		_value.add_theme_color_override("font_color", Arcade.CYAN if _hot else UiKit.TEXT)
+		_value.text = ("+%d" % value) if _hot else ""
+		_value.visible = _hot
+		_arrow.visible = not _hot
 		queue_redraw()
 
 	func _draw() -> void:

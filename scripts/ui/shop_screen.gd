@@ -68,7 +68,9 @@ func _wallet() -> Control:
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 8)
 	flow.add_theme_constant_override("v_separation", 8)
-	flow.add_child(_chip("%d %s" % [roster.coins, RunState.coin_name()], UiKit.WARN, "coin"))
+	# Coins und Caches nur als Symbol + Zahl (28. Nov. 2026); Kerne behalten den
+	# Namen, weil sie sich ein Symbol teilen.
+	flow.add_child(_chip(str(roster.coins), UiKit.WARN, "coin", RunState.coin_name()))
 	for key in roster.materials:
 		if str(key).begins_with("kern:") or str(key).begins_with("spezial:"):
 			flow.add_child(_chip("%d %s" % [int(roster.materials[key]),
@@ -76,7 +78,7 @@ func _wallet() -> Control:
 	var total := 0
 	for key in roster.caches:
 		total += int(roster.caches[key])
-	flow.add_child(_chip("%d Caches" % total, UiKit.MAGENTA, "cache"))
+	flow.add_child(_chip(str(total), UiKit.MAGENTA, "cache", "Caches"))
 	return flow
 
 
@@ -104,10 +106,11 @@ func _resources_section() -> void:
 	_content.add_child(flow)
 
 
-func _chip(text: String, color: Color, icon: String = "") -> Control:
+func _chip(text: String, color: Color, icon: String = "", tip: String = "") -> Control:
 	var label := UiKit.label(text, 15, color)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	var panel := PanelContainer.new()
+	panel.tooltip_text = tip
 	var box := Arcade.chamfer_box(Color(UiKit.BG, 0.85), 8, Color(color, 0.8), 2)
 	box.content_margin_left = 10
 	box.content_margin_right = 10
@@ -218,14 +221,21 @@ func _framed(line: Color, chosen: bool, on_tap: Callable = Callable()) -> PanelC
 
 
 ## Kleines Etikett oben links ("IM LAGER ×3").
-func _badge(text: String, color: Color) -> Control:
+func _badge(text: String, color: Color, icon: String = "") -> Control:
 	var panel := PanelContainer.new()
 	var box := StyleBoxFlat.new()
 	box.bg_color = color
 	box.content_margin_left = 5
 	box.content_margin_right = 5
 	panel.add_theme_stylebox_override("panel", box)
-	panel.add_child(Arcade.label(text, 10, Arcade.NIGHT, "bold", 0.1))
+	if icon != "":
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 3)
+		row.add_child(UiIcon.rect(icon, 12, Arcade.NIGHT))
+		row.add_child(Arcade.label(text, 11, Arcade.NIGHT, "bold", 0.1))
+		panel.add_child(row)
+	else:
+		panel.add_child(Arcade.label(text, 10, Arcade.NIGHT, "bold", 0.1))
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	return panel
 
@@ -245,7 +255,7 @@ func _cache_offer_card(offer: Dictionary) -> Control:
 	box.add_theme_constant_override("separation", 4)
 	panel.add_child(box)
 	var have := int(GameState.roster.caches.get(kind, 0))
-	box.add_child(_badge("IM LAGER ×%d" % have, CacheArt.color(kind)) if have > 0 else Control.new())
+	box.add_child(_badge("×%d" % have, CacheArt.color(kind), "storage") if have > 0 else Control.new())
 	var art := CacheArt.new(kind, 64.0)
 	art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(art)
@@ -400,14 +410,13 @@ func _phase_section() -> void:
 		row.add_theme_constant_override("separation", 6)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(row)
+		# Nur Edelstein + Zahl (28. Nov. 2026), Name als Tooltip.
+		panel.tooltip_text = Charger.element_name(str(element))
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		row.add_child(PhaseGem.new(str(element), 30))
-		var column := VBoxContainer.new()
-		column.add_theme_constant_override("separation", 0)
-		row.add_child(column)
-		column.add_child(Arcade.label(Charger.element_name(str(element)).to_upper(), 10,
-			Charger.element_color(str(element)), "bold", 0.1))
-		column.add_child(Arcade.label("×%d" % count, 14, Arcade.WHITE if count > 0 else Arcade.MUTED,
-			"display"))
+		var n := Arcade.label("×%d" % count, 16, Arcade.WHITE if count > 0 else Arcade.MUTED, "display")
+		n.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(n)
 		grid.add_child(panel)
 
 
