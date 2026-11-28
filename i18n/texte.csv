@@ -13,3 +13,6 @@ SIEG,VICTORY
 ELITE-KAMPF,ELITE FIGHT
 Musik,Music
 "%s: Stapel werden gezählt, wirken im Kampf aber noch nicht (bisher nur Feuer).","%s: stacks are counted but have no effect in battle yet (fire only so far)."
+Effekte,Effects
+Schüsse und Schläge im Kampf.,Shots and hits in battle.
+VERFEHLT,MISSED

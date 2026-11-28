@@ -24,7 +24,9 @@ static func on_used(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 		units: Array) -> void:
 	var cast := action.windup > 0.0 and not action.is_attack()
 	var kind := AbilityPainter.kind_for(action)
-	if tile != unit.tile and not (cast and kind in CAST_POSED):
+	# Hat der DROME schon ausgeholt (Auto-Angriff mit Ausholen), sitzt jetzt
+	# nur der Treffer -- kein zweiter Schwung.
+	if tile != unit.tile and not (cast and kind in CAST_POSED) and unit.swung != action:
 		unit.play_attack(tile, action)
 	var color := Teams.color(unit.is_player)
 	if not action.is_move() and (action.power > 0 or action.heal > 0):
@@ -53,6 +55,7 @@ static func on_cast(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 		return
 	var data := ability_data(unit, tile, action, color, kind, units)
 	data["ability"] = kind
+	data["owner"] = unit
 	data["release"] = Arena3D.THROW_RELEASE
 	if kind == "vortex" and unit.arena != null:
 		# Kugel: an der Waffenspitze, bis sie den Schwung verlaesst.
@@ -60,8 +63,13 @@ static func on_cast(view: BattleView, unit: Unit, tile: Vector2i, action: Action
 	view.show_cast(kind, data, seconds)
 	match kind:
 		"stun", "slash":
-			# Ausholen so getaktet, dass der Schlag beim Wirken sitzt.
-			unit.play_attack(tile, action, seconds / Arena3D.MELEE_HIT_AT)
+			# Ausholen so getaktet, dass der Schlag beim Wirken sitzt; danach
+			# der Nachlauf, in dem der DROME steht (AIController.ability_recover).
+			var recover := float(unit.cast.get("recover", 0.0))
+			if recover <= 0.0:
+				unit.play_attack(tile, action, seconds / Arena3D.MELEE_HIT_AT)
+			else:
+				unit.play_attack(tile, action, seconds + recover, seconds / (seconds + recover))
 		"vortex":
 			unit.play_throw(action, seconds)
 

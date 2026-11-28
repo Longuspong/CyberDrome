@@ -5,8 +5,8 @@ extends Node
 ## jedem Angriff. Die Dateien baut ``tools/build_sfx.py`` (eigener
 ## Synthesizer, kein BeepBox). Abschaltbar in den Optionen (Ton -> Effekte).
 ##
-## Nahkampf klingt, wenn der Schlag sitzt (Arena3D.MELEE_HIT_AT), nicht beim
-## Ausholen. Faehigkeiten spielen denselben Ton tiefer und lauter. Gegen
+## Der Ton kommt mit action_used, also wenn der Treffer sitzt (nach dem
+## Ausholen). Faehigkeiten spielen denselben Ton tiefer und lauter. Gegen
 ## Gewusel: wenige Stimmen, derselbe Ton hoechstens alle MIN_GAP_MS, Gegner
 ## etwas leiser als das eigene Squad.
 
@@ -55,13 +55,7 @@ func on_action(unit: Unit, action: ActionData) -> void:
 	var ability := not action.is_attack()
 	var db := VOLUME_DB + (0.0 if unit.is_player else FOE_DB) + (ABILITY_DB if ability else 0.0)
 	var pitch := (ABILITY_PITCH if ability else 1.0) * randf_range(1.0 - PITCH_JITTER, 1.0 + PITCH_JITTER)
-	if part.reach_kind() == "melee" and is_inside_tree():
-		# Erst klingen, wenn der Schlag sitzt (der Zeitgeber folgt dem Tempo).
-		# Gebundene Methode statt Lambda: endet der Kampf vorher, faellt die
-		# Verbindung mit dem Knoten weg.
-		get_tree().create_timer(Arena3D.MELEE_TIME * Arena3D.MELEE_HIT_AT).timeout.connect(
-			play.bind(stream, db, pitch))
-		return
+	# action_used kommt, wenn der Treffer sitzt (nach dem Ausholen).
 	play(stream, db, pitch)
 
 

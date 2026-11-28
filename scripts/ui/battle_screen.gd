@@ -137,6 +137,9 @@ func _ready() -> void:
 	EventBus.shield_damaged.connect(_on_shield_damaged)
 	EventBus.action_used.connect(_on_action_used)
 	EventBus.ability_cast.connect(_on_ability_cast)
+	EventBus.attack_started.connect(_on_attack_started)
+	EventBus.attack_missed.connect(_on_attack_missed)
+	EventBus.cast_broken.connect(_on_cast_broken)
 	EventBus.virus_pulsed.connect(_on_virus_pulse)
 	battle.battle_over.connect(_on_battle_over)
 
@@ -367,6 +370,27 @@ func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 	if _sfx != null:
 		_sfx.on_action(unit, action)
 	_refresh_hud()
+
+
+## Auto-Angriff holt aus (28. Nov. 2026): die Bewegung dauert Ausholen +
+## Nachlauf, der Schlag bzw. Schuss sitzt am Ende des Ausholens.
+func _on_attack_started(unit: Unit, tile: Vector2i, action: ActionData, windup: float,
+		recover: float) -> void:
+	var total := windup + recover
+	unit.play_attack(tile, action, total, windup / total if total > 0.0 else 0.0)
+
+
+## Betaeubt beim Ausholen: Bewegung und Ansage enden.
+func _on_cast_broken(unit: Unit) -> void:
+	if unit.arena != null:
+		unit.arena.stop_attack(unit)
+	view.abilities.cancel_casts(unit)
+
+
+## Weggelaufen: der Schlag geht ins Leere.
+func _on_attack_missed(_unit: Unit, target: Unit) -> void:
+	if target != null and target.is_alive():
+		view.show_float(target.visual_anchor(), tr("VERFEHLT"), Arcade.MUTED)
 
 
 ## Ausholen einer Faehigkeit (18. Nov. 2026): Ansage und Haltung, AbilityFx.

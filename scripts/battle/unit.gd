@@ -75,6 +75,12 @@ var gadgets: Array = []
 ## Restzeit des laufenden Schritts. Solange > 0, laeuft der DROME und schiesst
 ## nicht; das Feld (``tile``) ist schon das Zielfeld.
 var step_left: float = 0.0
+## Nachlauf eines Angriffs oder einer Faehigkeit (28. Nov. 2026): solange
+## steht der DROME und greift nicht an -- die Animation laeuft zu Ende.
+var recover_left: float = 0.0
+## Die Aktion, deren Ausholen gerade endet (nur waehrend action_used gesetzt):
+## die Anzeige holt dann nicht ein zweites Mal aus.
+var swung: ActionData = null
 ## Bis zum naechsten Puls (Reparatur, Kabelbrand, Virus ...).
 var pulse_left: float = 0.0
 ## Sekunden seit dem letzten Schaden, und der Bruchteil Schild, der beim
@@ -488,10 +494,11 @@ const SHAKE_AMPLITUDE := 3.0
 ## In der gemeinsamen 3D-Szene bewegt sich statt des ganzen DROME die Waffe
 ## (Arena3D.attack, 18. Nov. 2026): Nahkampf holt aus und schlaegt zu,
 ## Fernkampf mit Rueckstoss und Muendungsblitz, Schild stoesst vor.
-func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -1.0) -> void:
+func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -1.0,
+		hit_at: float = -1.0) -> void:
 	if _rig == null:
 		return
-	if arena != null and arena.attack(self, action, seconds):
+	if arena != null and arena.attack(self, action, seconds, hit_at):
 		return
 	var delta := IsoView.map_to_local(toward) - IsoView.map_to_local(tile)
 	var push := Vector2.ZERO if delta == Vector2.ZERO \
@@ -765,6 +772,7 @@ func init_realtime(pulse_offset: float) -> void:
 	mounts.clear()
 	gadgets.clear()
 	step_left = 0.0
+	recover_left = 0.0
 	pulse_left = maxf(0.05, pulse_offset)
 	think_left = 0.0
 	cast = {}
@@ -850,6 +858,18 @@ func takt_every(ability: ActionData) -> int:
 ## eine Kommazahl; der Rest ueber den Takt hinaus bleibt nach der Faehigkeit.
 func takt_step(mount: Dictionary) -> float:
 	return maxf(1.0, float((mount.get("fx", {}) as Dictionary).get("takt_count", 1.0)))
+
+
+## Zeiten eines Auto-Angriffs mit ``part``: x = Ausholen bis zum Treffer,
+## y = Nachlauf (config.json -> realtime.attack_timing).
+static func attack_timing(part: PartData) -> Vector2:
+	var table := (Config.section("realtime").get("attack_timing", {}) as Dictionary)
+	var entry = null
+	if part != null:
+		entry = table.get(str(part.id), table.get(part.reach_kind()))
+	if not entry is Array or (entry as Array).size() < 2:
+		return Vector2.ZERO
+	return Vector2(maxf(0.0, float(entry[0])), maxf(0.0, float(entry[1])))
 
 
 ## Der Halter, der den Takt zaehlt: beim Gunship-Spiegelarm der Halter, den

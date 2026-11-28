@@ -394,7 +394,9 @@ func _sync_unit(unit: Unit, node: Node3D) -> void:
 
 ## Angriff mit der Waffe, die ``action`` ausloest. false, wenn es nichts zu
 ## bewegen gibt (dann ruckt der ganze DROME wie bisher).
-func attack(unit: Unit, action: ActionData, seconds: float = -1.0) -> bool:
+## ``hit_at``: Anteil der Bewegung, an dem der Treffer sitzt (Ausholen, 28. Nov.
+## 2026); ohne Angabe Nahkampf MELEE_HIT_AT, Fernkampf sofort.
+func attack(unit: Unit, action: ActionData, seconds: float = -1.0, hit_at: float = -1.0) -> bool:
 	var turn := turn_of(unit)
 	if turn == null or not _anim.has(unit):
 		return false
@@ -406,11 +408,26 @@ func attack(unit: Unit, action: ActionData, seconds: float = -1.0) -> bool:
 	var time: float = {"melee": MELEE_TIME, "shield": SHIELD_TIME}.get(kind, RANGED_TIME)
 	if seconds > 0.0:
 		time = seconds
-	_anim[unit]["attack"] = {"slot": slot, "kind": kind, "t": 0.0, "time": time}
-	if kind == "ranged":
-		_flashes.append({"unit": unit, "at": unit.visual_anchor() + Vector2(0, -18),
-			"foot": unit.visual_anchor(), "t": 0.0})
+	if hit_at < 0.0:
+		hit_at = MELEE_HIT_AT if kind == "melee" else 0.0
+	_anim[unit]["attack"] = {"slot": slot, "kind": kind, "t": 0.0, "time": time,
+		"hit": clampf(hit_at, 0.0, 0.95), "flashed": false}
 	return true
+
+
+## Ausholen abgebrochen: die Waffe geht sofort in Ruhe.
+func stop_attack(unit: Unit) -> void:
+	if _anim.has(unit):
+		_anim[unit]["attack"] = {}
+	var turn := turn_of(unit)
+	if turn == null:
+		return
+	for block in turn.get_children():
+		if block is Node3D and block.has_meta("base") and not str(block.name).begins_with("feet_leg_"):
+			block.transform = block.get_meta("base")
+		var flash = block.get_node_or_null("Blitz")
+		if flash != null:
+			flash.queue_free()
 
 
 ## Ein Wurf: hoch, halten, Schwung nach vorn-unten (``seconds`` insgesamt).
@@ -534,6 +551,12 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			k = -1.0
 	var slot: String = attack.get("slot", "")
 	var kind: String = attack.get("kind", "")
+	var hit: float = attack.get("hit", 0.0)
+	# Licht am Boden, wenn der Schuss bricht (nicht schon beim Zielen).
+	if kind == "ranged" and k >= hit and not attack.get("flashed", true):
+		attack["flashed"] = true
+		_flashes.append({"unit": unit, "at": unit.visual_anchor() + Vector2(0, -18),
+			"foot": unit.visual_anchor(), "t": 0.0})
 	var pivot := Vector3.ZERO
 	var arm := turn.get_node_or_null(slot + "_arm") as Node3D if slot != "" else null
 	if arm != null:
@@ -564,14 +587,15 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			tr.origin.z += sin(t * ORB_SPEED) * ORB_FLOAT
 			tr.origin.y += sin(t * ORB_SPEED * 0.6) * ORB_FLOAT * 0.4
 		if k >= 0.0 and (bname == slot or bname == slot + "_arm"):
-			tr = _attack_pose(tr, kind, k, pivot)
+			tr = _attack_pose(tr, kind, k, pivot, hit)
 		block.transform = tr
 
 	# Muendungsblitz: an der Waffenspitze ein Lichtball, die Waffe leuchtet auf.
 	if slot != "" and kind == "ranged":
 		var weapon := turn.get_node_or_null(slot) as Node3D
 		if weapon != null:
-			var bright: bool = attack["t"] < FLASH_TIME
+			var since: float = attack["t"] - hit * float(attack["time"])
+			var bright: bool = since >= 0.0 and since < FLASH_TIME
 			var base_tint: Color = state["tint"]
 			_tint_tree_self(weapon, base_tint * (1.6 if bright else 1.0))
 			_muzzle_flash(weapon, attack, bright)
@@ -898,7 +922,8 @@ func _muzzle_flash(weapon: Node3D, attack: Dictionary, bright: bool) -> void:
 			ball.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			flash.add_child(ball)
 		weapon.add_child(flash)
-	var grow: float = clampf(attack["t"] / FLASH_TIME, 0.0, 1.0)
+	var since: float = attack["t"] - float(attack.get("hit", 0.0)) * float(attack["time"])
+	var grow: float = clampf(since / FLASH_TIME, 0.0, 1.0)
 	flash.scale = Vector3.ONE * lerpf(0.6, 1.3, grow)
 
 
@@ -968,17 +993,21 @@ func hit(unit: Unit) -> void:
 
 
 ## Haltung eines Waffenblocks im Angriff (k = 0..1).
-static func _attack_pose(tr: Transform3D, kind: String, k: float, pivot: Vector3) -> Transform3D:
+static func _attack_pose(tr: Transform3D, kind: String, k: float, pivot: Vector3,
+		hit: float = MELEE_HIT_AT) -> Transform3D:
 	match kind:
 		"melee":
-			# ausholen (bis 35 %), zuschlagen (bis 60 %), zurueck
+			# ausholen, zuschlagen (sitzt bei ``hit``), zurueck
+			if hit <= 0.0:
+				hit = MELEE_HIT_AT
+			var back := hit * 0.58
 			var angle := 0.0
-			if k < 0.35:
-				angle = lerpf(0.0, SWING_BACK, ease(k / 0.35, 0.5))
-			elif k < 0.6:
-				angle = lerpf(SWING_BACK, SWING_HIT, ease((k - 0.35) / 0.25, 2.0))
+			if k < back:
+				angle = lerpf(0.0, SWING_BACK, ease(k / back, 0.5))
+			elif k < hit:
+				angle = lerpf(SWING_BACK, SWING_HIT, ease((k - back) / (hit - back), 2.0))
 			else:
-				angle = lerpf(SWING_HIT, 0.0, ease((k - 0.6) / 0.4, 0.5))
+				angle = lerpf(SWING_HIT, 0.0, ease((k - hit) / maxf(0.01, 1.0 - hit), 0.5))
 			var turn := Transform3D(Basis(SWING_AXIS.normalized(), angle), Vector3.ZERO)
 			return Transform3D(Basis.IDENTITY, pivot) * turn \
 				* Transform3D(Basis.IDENTITY, -pivot) * tr
@@ -1005,13 +1034,22 @@ static func _attack_pose(tr: Transform3D, kind: String, k: float, pivot: Vector3
 			return Transform3D(Basis.IDENTITY, pivot) * turn \
 				* Transform3D(Basis.IDENTITY, -pivot) * tr
 		"shield":
-			var push := sin(PI * k) * SHIELD_PUSH
-			tr.origin.x += push
+			# Vorstoss mit Spitze beim Treffer (``hit``, sonst in der Mitte).
+			var peak := hit if hit > 0.0 else 0.5
+			var push := sin(PI * 0.5 * k / peak) if k < peak \
+				else cos(PI * 0.5 * (k - peak) / maxf(0.01, 1.0 - peak))
+			tr.origin.x += push * SHIELD_PUSH
 			return tr
 		_:
-			var kick := k / 0.2 if k < 0.2 else 1.0 - (k - 0.2) / 0.8
+			# Fernkampf: erst zielen (Waffe hebt sich leicht), beim Treffer
+			# Rueckstoss.
+			if k < hit:
+				tr.origin.z += RECOIL_LIFT * 0.6 * ease(k / hit, 0.5)
+				return tr
+			var u := (k - hit) / maxf(0.01, 1.0 - hit)
+			var kick := u / 0.2 if u < 0.2 else 1.0 - (u - 0.2) / 0.8
 			tr.origin.x -= RECOIL * kick
-			tr.origin.z += RECOIL_LIFT * kick
+			tr.origin.z += RECOIL_LIFT * (kick + 0.6 * (1.0 - u) * (1.0 if hit > 0.0 else 0.0))
 			return tr
 
 

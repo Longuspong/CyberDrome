@@ -29,6 +29,26 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Ausholen, Treffer, Nachlauf -- Animation und Schlag gehoeren zusammen (28. Nov. 2026 abends, Spieler)
+
+* **Auto-Angriffe holen aus:** der Treffer sitzt erst am Ende des Ausholens,
+  danach folgt ein Nachlauf; die ganze Zeit steht der DROME und greift nicht an
+  (`unit.cast` mit `swing`, `Unit.recover_left`). Wer beim Treffer ausser
+  Reichweite ist, wird **verfehlt** (Anzeige „VERFEHLT“, zaehlt nicht im Takt) --
+  weglaufen lohnt sich. Zeiten je Waffe in `config.json -> realtime.attack_timing`
+  (Hammer 0,45 + 0,3 s, Plasmaklinge 0,3 + 0,2, Lanze 0,4 + 0,2, sonst Nahkampf
+  0,35 + 0,3 / Fernkampf 0,25 + 0,15). Nimbus-Waffen (Runenstab, Repair-Kit)
+  ohne Ausholen -- der Energieball kommt sofort.
+* **Faehigkeiten:** der letzte Auto-Angriff fuellt den Takt, dann Ausholen der
+  Faehigkeit, Wirkung, Nachlauf (`AIController.ability_recover`: Nachlauf der
+  Waffe, mind. 0,2 s; Wurf/Vortex 0,3 s; Salven bis zum letzten Schuss). Erst
+  danach wieder Auto-Angriffe oder Laufen. Vorher lief die Schlag-Animation
+  nach dem Treffer weiter, waehrend schon der naechste Angriff kam, und im
+  selben Schritt konnte ein zweiter Halter feuern.
+* **Betaeubung bricht das Ausholen ab** (vorher pausierte es, die Animation lief
+  weiter): Angriff faellt aus, eine Faehigkeit bleibt faellig.
+* Messung `run_bench -- 20`: praktisch unveraendert.
+
 ### Kampfgefuehl: Molok abwechselnd, Fallrichtung, Toene, Hexfeld 31,2 (28. Nov. 2026, Spieler)
 
 * **Molok (Gunship) schlaegt abwechselnd:** beide Arme zaehlen auf EINEN Takt

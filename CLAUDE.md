@@ -13,7 +13,7 @@ reduziert (27. Nov., Ramme/Schraubenschluessel/Bumerang/Neon-Blaster/Moerser ent
 **Werkblatt vom 27. Nov. uebernommen** (`SKILLBAUM_KONZEPT.md` 5e): Molok als **Gunship**
 (ein Halter, Waffe an beiden Armen, `mirror` in `slot_rules`), Strix-Passive **Focuslense**,
 neue Tempo-/Schildpulswerte, Echo-Takt aufgerundet, Halter-Kuerzel S/M/X + -F/-N.
-Seit 28. Nov. abends: Molok schlaegt abwechselnd (ein Takt fuer beide Arme), Fallrichtung beim Tod, Waffentoene (`tools/build_sfx.py`, `BattleSfx`), Hexfeld 31,2 -- `PROJEKTSTAND.md`.
+Seit 28. Nov. abends: Molok schlaegt abwechselnd (ein Takt fuer beide Arme), Fallrichtung beim Tod, Waffentoene (`tools/build_sfx.py`, `BattleSfx`), Hexfeld 31,2; Auto-Angriffe mit Ausholen + Nachlauf, waehrend Faehigkeit/Nachlauf kein Angriff, Verfehlen beim Weglaufen (`realtime.attack_timing`) -- `PROJEKTSTAND.md`.
 Nimbus seit 28. Nov. als Supporter gebaut (Cleancode/Bug-Fix/Shieldgate, `SKILLBAUM_KONZEPT.md` 5f)
 mit dem **Repair-Kit** aus PR #114 (speichert angerichteten Schaden, Reparaturwelle als Drohnenschwarm
 gibt ihn dem Team mal Effizienz als Schild + Reparatur zurueck); er wartet im Hangar (Start-Squad =

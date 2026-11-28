@@ -239,7 +239,27 @@
     "pulse": 3.0,
     "think_interval": 0.5,
     "retarget_after": 2.0,
-    "kite_distance": 2
+    "kite_distance": 2,
+    "attack_timing": {
+      "_kommentar": [
+        "Angriff in drei Teilen (28. Nov. 2026, Wunsch des Spielers): Ausholen [0],",
+        "dann sitzt der Treffer, dann Nachlauf [1] (Sekunden). Die ganze Zeit steht",
+        "der DROME still und greift nicht an. Wer beim Treffer ausser Reichweite ist,",
+        "wird verfehlt (weglaufen lohnt sich). Je Waffe, sonst nach Reichweite.",
+        "Faehigkeiten: Ausholzeit aus der Aktion (windup), danach der Nachlauf der",
+        "Waffe, mindestens ability_recover_min; Wurf (Vortex) throw_recover, Salven",
+        "bis zum letzten Schuss."
+      ],
+      "melee": [0.35, 0.3],
+      "ranged": [0.25, 0.15],
+      "eq_hammer": [0.45, 0.3],
+      "eq_plasma_blade": [0.3, 0.2],
+      "eq_rail_lance": [0.4, 0.2],
+      "eq_rune_staff": [0.0, 0.0],
+      "eq_repair_kit": [0.0, 0.0],
+      "ability_recover_min": 0.2,
+      "throw_recover": 0.3
+    }
   },
 
   "passives": {

@@ -67,10 +67,20 @@ func update(unit: Unit, dt: float) -> void:
 		unit.step_left -= dt
 		if unit.step_left > 0.0:
 			return
+	# Nachlauf eines Schlags oder einer Faehigkeit (28. Nov. 2026): die
+	# Animation laeuft zu Ende, erst dann wird wieder gelaufen und angegriffen.
+	if unit.recover_left > 0.0:
+		unit.recover_left -= dt
+		if unit.recover_left > 0.0:
+			return
 	# Betaeubt: weder laufen noch schiessen, die Waffen laden aber weiter.
+	# Ein Ausholen bricht ab (28. Nov. 2026) -- vorher pausierte es, waehrend
+	# die Animation weiterlief.
 	if unit.is_stunned():
+		if not unit.cast.is_empty():
+			_break_cast(unit)
 		return
-	# Holt zu einer Faehigkeit aus: steht still, bis sie wirkt.
+	# Holt aus (Faehigkeit oder Auto-Angriff): steht still, bis es wirkt.
 	if not unit.cast.is_empty():
 		unit.cast["left"] = float(unit.cast["left"]) - dt
 		if float(unit.cast["left"]) <= 0.0:
@@ -108,6 +118,9 @@ func update(unit: Unit, dt: float) -> void:
 			fired = true
 			_stagger_twins(unit, mount)
 			if battle.outcome != BattleManager.Outcome.RUNNING:
+				return
+			# Holt aus oder laeuft nach: in diesem Augenblick keine zweite Waffe.
+			if not unit.cast.is_empty() or unit.recover_left > 0.0:
 				return
 	if fired:
 		return
@@ -263,6 +276,7 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 				_begin_cast(unit, ability, aim, mount, fx)
 			else:
 				_resolve_ability(unit, ability, aim, mount, fx)
+				unit.recover_left = maxf(unit.recover_left, ability_recover(mount, ability))
 			mount["instant"] = bool(fx.get("ready_after_ability", false))
 			unit.on_attack()
 			return true
@@ -273,13 +287,43 @@ func _fire(unit: Unit, mount: Dictionary, target: Unit) -> bool:
 		shot = _aim(unit, attack, target)
 	if shot.is_empty():
 		return false
-	_execute(unit, shot["tile"], attack, shot["target"])
+	var timing := Unit.attack_timing(mount["part"])
+	unit.on_attack()
+	if timing.x > 0.0:
+		# Ausholen (28. Nov. 2026): der Treffer sitzt erst nach timing.x.
+		unit.cast = {"action": attack, "aim": shot, "mount": mount, "fx": fx,
+			"left": timing.x, "target": shot.get("target"), "swing": true,
+			"recover": timing.y, "count": ability != null and not due}
+		_aim_at(unit, shot["tile"])
+		EventBus.attack_started.emit(unit, shot["tile"], attack, timing.x, timing.y)
+		return true
+	_land_attack(unit, mount, attack, shot, ability != null and not due)
+	unit.recover_left = maxf(unit.recover_left, timing.y)
+	return true
+
+
+## Der Auto-Angriff trifft: Wirkung, Module, Takt.
+func _land_attack(unit: Unit, mount: Dictionary, attack: ActionData, shot: Dictionary,
+		count: bool) -> void:
+	_execute(unit, shot["tile"], attack, shot.get("target"))
 	_attack_modules(unit, mount, attack, shot.get("target"))
-	if ability != null and not due:
+	if count:
 		var holder := Unit.takt_holder(mount)
 		holder["count"] = float(holder["count"]) + unit.takt_step(mount)
-	unit.on_attack()
-	return true
+
+
+## Nachlauf einer Faehigkeit: der Nachlauf der Waffe (mindestens
+## ability_recover_min), ein Wurf throw_recover, eine Salve bis zum letzten Schuss.
+func ability_recover(mount: Dictionary, ability: ActionData) -> float:
+	var table := (_realtime.get("attack_timing", {}) as Dictionary)
+	var recover := maxf(Unit.attack_timing(mount.get("part")).y,
+		float(table.get("ability_recover_min", 0.2)))
+	if lands_on_tile(ability) and ability.gather:
+		recover = maxf(recover, float(table.get("throw_recover", 0.3)))
+	if ability.salvo > 1 or ability.shots > 1:
+		recover = maxf(recover, ActionResolver.salvo_time(ability, maxi(0, ability.salvo - 1),
+			maxi(0, ability.shots - 1)))
+	return recover
 
 
 ## Die Faehigkeit wirkt: ausfuehren, Echo, Nachwirkungen der Module.
@@ -297,7 +341,7 @@ func _begin_cast(unit: Unit, ability: ActionData, aim: Dictionary, mount: Dictio
 		fx: Dictionary) -> void:
 	var target = aim.get("target")
 	unit.cast = {"action": ability, "aim": aim, "mount": mount, "fx": fx,
-		"left": ability.windup, "target": target}
+		"left": ability.windup, "target": target, "recover": ability_recover(mount, ability)}
 	var tile: Vector2i = aim["tile"]
 	_aim_at(unit, tile)
 	EventBus.ability_cast.emit(unit, tile, ability, ability.windup, target)
@@ -312,14 +356,51 @@ func _finish_cast(unit: Unit) -> void:
 	var cast := unit.cast
 	unit.cast = {}
 	var ability: ActionData = cast["action"]
+	if cast.get("swing", false):
+		_finish_swing(unit, cast)
+		return
 	var aim := _landing(unit, ability, cast["aim"], cast.get("target"))
 	if aim.is_empty():
 		var mount: Dictionary = Unit.takt_holder(cast["mount"])
 		mount["count"] = float(mount["count"]) + float(trigger_every(unit, ability))
 		return
+	unit.swung = ability
 	_resolve_ability(unit, ability, aim, cast["mount"], cast["fx"])
-	# Nach der Ausholzeit wieder versetzt: der andere Arm wartet ab dem Schlag.
-	_stagger_twins(unit, cast["mount"])
+	unit.swung = null
+	unit.recover_left = float(cast.get("recover", 0.0))
+	battle._check_victory()
+
+
+## Betaeubt beim Ausholen: der Angriff faellt aus; eine Faehigkeit bleibt
+## faellig (der Takt bleibt voll) und kommt mit dem naechsten Angriff.
+func _break_cast(unit: Unit) -> void:
+	var cast := unit.cast
+	unit.cast = {}
+	if not cast.get("swing", false):
+		# Genau zurueck auf den Stand vor dem Ausholen: der Takt ist voll.
+		var holder := Unit.takt_holder(cast["mount"])
+		holder["count"] = float(holder["count"]) + float(trigger_every(unit, cast["action"])) \
+			- unit.takt_step(cast["mount"])
+	EventBus.cast_broken.emit(unit)
+
+
+## Ende des Ausholens eines Auto-Angriffs: trifft das Ziel dort, wo es jetzt
+## steht -- ist es tot oder ausser Reichweite, geht der Schlag ins Leere
+## (zaehlt nicht im Takt). Danach der Nachlauf.
+func _finish_swing(unit: Unit, cast: Dictionary) -> void:
+	var attack: ActionData = cast["action"]
+	var mount: Dictionary = cast["mount"]
+	var aim := _landing(unit, attack, cast["aim"], cast.get("target"))
+	if aim.is_empty():
+		var target = cast.get("target")
+		if target is Unit and target.is_alive():
+			EventBus.log_line("%s verfehlt %s." % [unit.display_name, target.display_name])
+			EventBus.attack_missed.emit(unit, target)
+	else:
+		unit.swung = attack
+		_land_attack(unit, mount, attack, aim, bool(cast.get("count", false)))
+		unit.swung = null
+	unit.recover_left = float(cast.get("recover", 0.0))
 	battle._check_victory()
 
 
