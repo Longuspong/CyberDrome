@@ -89,12 +89,9 @@ func _ready() -> void:
 	_board.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_stage.add_child(_board)
 	_tray = PanelContainer.new()
-	var tray_style := StyleBoxFlat.new()
-	tray_style.bg_color = Color("#160930", 0.96)
-	tray_style.border_color = Arcade.MAGENTA
-	tray_style.border_width_top = 2
-	tray_style.set_content_margin_all(8)
-	_tray.add_theme_stylebox_override("panel", tray_style)
+	# Ohne Kasten (Wunsch des Spielers): nur die Gebaeude selbst verdecken die Platine.
+	_tray.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tray.visible = false
 	_stage.add_child(_tray)
 	for m in MODES:
@@ -275,18 +272,22 @@ func _layout(animate: bool = true) -> void:
 	# Die Gebaeude der Kategorie schieben sich ueber der Leiste hoch.
 	var show_tray := menu_open and mode == "build" and category != ""
 	if show_tray:
-		_tray.custom_minimum_size = Vector2(w, 0)
-		_tray.size = Vector2(w, 0)
-		var th := _tray.get_combined_minimum_size().y
+		# Ueber dem Knopf der Kategorie, am Rand gehalten.
+		var tsize := _tray.get_combined_minimum_size()
+		_tray.size = tsize
+		var under: Button = _cat_buttons[category]
+		var cat_x := w - BTN - (row.find(under) + 1) * (BTN + GAP) + BTN / 2.0
+		var tx := clampf(cat_x - tsize.x / 2.0, 0.0, maxf(0.0, w - tsize.x))
+		var th := tsize.y
 		var target_y := y - th - 6.0
 		if not _tray.visible and moving:
-			_tray.position = Vector2(0, h)
+			_tray.position = Vector2(tx, h)
 			_tray.visible = true
 			_tray.create_tween().tween_property(_tray, "position:y", target_y, 0.2) \
 				.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		else:
 			_tray.visible = true
-			_tray.position = Vector2(0, target_y)
+			_tray.position = Vector2(tx, target_y)
 	else:
 		_tray.visible = false
 
@@ -380,10 +381,6 @@ func _build_tray() -> void:
 		line.add_theme_constant_override("separation", 6)
 		line.alignment = BoxContainer.ALIGNMENT_CENTER
 		rows.add_child(line)
-		var tag := Arcade.label("T%d" % int(t), 12, UiKit.MUTED if int(t) > _sim.tier() else Arcade.CYAN, "bold", 0.1)
-		tag.custom_minimum_size = Vector2(26, 0)
-		tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		line.add_child(tag)
 		for type in tiers[t]:
 			line.add_child(_item_button(str(type)))
 
@@ -408,10 +405,10 @@ func _item_button(type: String) -> ItemButton:
 	if armed == type:
 		_button_style(button, Arcade.YELLOW, false)
 		button.add_theme_color_override("font_color", Arcade.YELLOW)
-	if state == "kaufen":
-		button.modulate = Color(1, 1, 1, 0.6)
-	elif state == "gesperrt":
-		button.modulate = Color(1, 1, 1, 0.3)
+	# Grau ueber die Farben, nicht ueber Transparenz -- ohne Kasten dahinter
+	# bliebe die Schrift sonst schlecht lesbar.
+	if state == "gesperrt":
+		button.modulate = Color(0.55, 0.55, 0.6, 1.0)
 	button.pressed.connect(func(): _arm(type))
 	return button
 
