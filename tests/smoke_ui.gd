@@ -129,24 +129,30 @@ func _process(_delta: float) -> bool:
 			if board_view.is_empty():
 				push_error("SMOKE: FactoryView fehlt im Reiter Linien")
 			else:
-				# Bedienung ueber das Feld (27. Nov. 2026): freies Feld -> Baumenue,
-				# Kachel waehlen, bauen; bebautes Feld -> Details/Abreissen; Quelle.
+				# Bedienung ueber Plus + Modi (28. Nov. 2026): Bauen mit Vorschau und
+				# Bestaetigen, Kaufen und Setzen, Verschieben/Tauschen, Abreissen,
+				# Basis, gesperrte Felder, Ziehen aus der Leiste.
 				var fv = board_view[0]
+				fv._toggle_menu()
+				fv._choose_mode("build")
+				fv._choose_category("strom")
+				fv._arm("sol")
 				fv.tapped("1,1")
-				fv.pick = "sol"
-				fv._open_build_menu("1,1")
-				fv._open_type_details("1,1", "sol")
-				fv._build("1,1", "sol")
 				fv.tapped("1,1")
-				fv._open_building_details("1,1")
-				fv._demolish("1,1")
-				fv._buy("1,1", "rec")
-				var fsim = load("res://scripts/core/factory_sim.gd")
-				for cell in fsim.cells():
-					if fsim.source_at(cell) != "" and gs.roster.factory_sim().unlocked(cell) \
-							and gs.roster.factory_sim().building_at(cell).is_empty():
-						fv.tapped(cell)
-						break
+				fv._arm("ofn")
+				fv.tapped("-1,1")
+				fv.tapped("-1,1")
+				fv.drop_type("0,1", "sol")
+				fv._choose_mode("move")
+				fv.tapped("1,1")
+				fv.tapped("1,2")
+				fv.move_to("1,0", "1,2")
+				fv._choose_mode("remove")
+				fv.tapped("1,2")
+				fv._toggle_menu()
+				fv.tapped("0,0")
+				fv.tapped("0,-1")
+				fv.tapped("3,0")
 				fv.tapped("3,0")
 				load("res://scripts/ui/info_popup.gd").close_all(fv)
 				board_view[0]._live_tick()
