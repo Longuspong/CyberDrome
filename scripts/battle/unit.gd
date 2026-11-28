@@ -75,6 +75,12 @@ var gadgets: Array = []
 ## Restzeit des laufenden Schritts. Solange > 0, laeuft der DROME und schiesst
 ## nicht; das Feld (``tile``) ist schon das Zielfeld.
 var step_left: float = 0.0
+## Nachlauf eines Angriffs oder einer Faehigkeit (28. Nov. 2026): solange
+## steht der DROME und greift nicht an -- die Animation laeuft zu Ende.
+var recover_left: float = 0.0
+## Die Aktion, deren Ausholen gerade endet (nur waehrend action_used gesetzt):
+## die Anzeige holt dann nicht ein zweites Mal aus.
+var swung: ActionData = null
 ## Bis zum naechsten Puls (Reparatur, Kabelbrand, Virus ...).
 var pulse_left: float = 0.0
 ## Sekunden seit dem letzten Schaden, und der Bruchteil Schild, der beim
@@ -85,6 +91,14 @@ var calm_time: float = 0.0
 var focus_target: Unit = null
 ## Der Halter, der gerade feuert (Gunship: welcher Arm). Nur fuer das Bild.
 var firing_slot: String = ""
+## Wohin die Einheit faellt, wenn sie zerstoert wird (28. Nov. 2026, Wunsch
+## des Spielers): weg von dem, der zuletzt getroffen hat; vom Vortex
+## gezogen/gestossen in die Zugrichtung. Bildschirmrichtung (IsoView), ZERO =
+## keine (Virus, Kabelbrand) -- dann streuen die Teile rundum. Nur fuer das Bild.
+var fall_dir: Vector2 = Vector2.ZERO
+## Die letzte erzwungene Bewegung (ziehen/stossen) und die Aktion dazu.
+var forced_dir: Vector2 = Vector2.ZERO
+var forced_by: ActionData = null
 ## Repair-Kit (27. Nov. 2026): gespeicherter Schild- und Integritaetsschaden,
 ## den die Reparaturwelle an das Team zurueckgibt.
 var store_shield: int = 0
@@ -469,8 +483,9 @@ func _apply_tint(color: Color) -> void:
 
 const RECOIL_DISTANCE := 9.0
 const RECOIL_TIME := 0.09
-const SHAKE_TIME := 0.30
-const SHAKE_AMPLITUDE := 7.0
+const SHAKE_TIME := 0.22
+## Weniger Erschuetterung (Spieler 28. Nov. 2026): 3 statt 7 px, kuerzer.
+const SHAKE_AMPLITUDE := 3.0
 
 ## Der Angreifer stemmt sich kurz gegen sein Ziel und faellt zurueck. Die
 ## Richtung kommt aus dem Feld, nicht aus ``facing``: bei einer Flaechenaktion
@@ -479,10 +494,11 @@ const SHAKE_AMPLITUDE := 7.0
 ## In der gemeinsamen 3D-Szene bewegt sich statt des ganzen DROME die Waffe
 ## (Arena3D.attack, 18. Nov. 2026): Nahkampf holt aus und schlaegt zu,
 ## Fernkampf mit Rueckstoss und Muendungsblitz, Schild stoesst vor.
-func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -1.0) -> void:
+func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -1.0,
+		hit_at: float = -1.0) -> void:
 	if _rig == null:
 		return
-	if arena != null and arena.attack(self, action, seconds):
+	if arena != null and arena.attack(self, action, seconds, hit_at):
 		return
 	var delta := IsoView.map_to_local(toward) - IsoView.map_to_local(tile)
 	var push := Vector2.ZERO if delta == Vector2.ZERO \
@@ -622,6 +638,10 @@ func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 		# ein Zug weg von der Koerpermitte -- so streuen die Teile rundum.
 		var base := rng.randf() * TAU
 		var index := 0
+		# Fallrichtung (28. Nov. 2026): weg vom toedlichen Treffer bzw. in
+		# die Zugrichtung des Vortex. Die Figur kippt in diese Richtung --
+		# hohe Teile (Kopf, Waffe) fliegen weiter als die Fuesse.
+		var fall := _fall_local(turn)
 		for block in turn.get_children():
 			if not block is MeshInstance3D:
 				continue
@@ -632,6 +652,10 @@ func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 			away = away.normalized()
 			index += 1
 			var reach := rng.randf_range(12.0, 22.0) * unit_m
+			var topple := fall != Vector2.ZERO
+			if topple:
+				away = (fall + away * 0.3).normalized()
+				reach = rng.randf_range(4.0, 9.0) * unit_m + maxf(0.0, mid.z) * 0.9
 			var start := inst.position
 			var pivot := box.get_center()          # gedreht wird um die Blockmitte
 			var hop := start + Vector3(away.x, away.y, 0) * reach * 0.35 \
@@ -641,6 +665,9 @@ func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 			land.z = minf(box.size.z, box.size.x) * 0.4 - pivot.z
 			var axis := Vector3(-away.y, away.x, 0).normalized()
 			var angle := rng.randf_range(0.6, 1.4) * (1.0 if rng.randf() < 0.5 else -1.0)
+			if topple:
+				# Achse quer zur Fallrichtung: die Oberseite kippt nach ``away``.
+				angle = rng.randf_range(1.1, 1.6)
 			create_tween().tween_method(func(t: float) -> void:
 				var p: Vector3
 				if t < 1.0 / 3.0:
@@ -676,6 +703,17 @@ func _death_3d(turn: Node3D, total: float, calm: bool) -> void:
 		if arena == null:
 			DromeSprites.redraw(_rig)
 		visible = false)
+
+
+## ``fall_dir`` (Bildschirm) in Richtung unter "Ausrichtung" (f, l). ZERO,
+## wenn es keine gibt.
+func _fall_local(turn: Node3D) -> Vector2:
+	if fall_dir == Vector2.ZERO:
+		return Vector2.ZERO
+	var world := Arena3D.ground(fall_dir) - Arena3D.ground(Vector2.ZERO)
+	var local := turn.global_transform.basis.orthonormalized().inverse() * world
+	var flat := Vector2(local.x, local.y)
+	return flat.normalized() if flat.length() > 0.0001 else Vector2.ZERO
 
 
 ## Der Bodenring: eine flache Ellipse in Fraktionsfarbe unter den Fuessen.
@@ -734,6 +772,7 @@ func init_realtime(pulse_offset: float) -> void:
 	mounts.clear()
 	gadgets.clear()
 	step_left = 0.0
+	recover_left = 0.0
 	pulse_left = maxf(0.05, pulse_offset)
 	think_left = 0.0
 	cast = {}
@@ -793,11 +832,14 @@ func init_realtime(pulse_offset: float) -> void:
 		# Takt-Zaehler. Sentinels haben keinen Gunship.
 		if build.is_sentinel():
 			continue
+		# Seit 28. Nov. 2026 (Spieler): beide Arme zaehlen auf EINEN Takt
+		# (``takt_of`` zeigt auf den Halter), jeder Schlag zaehlt -- eine Leiste.
+		var main: Dictionary = mounts[mounts.size() - 1]
 		for twin in build.mirror_slots():
 			if str(build.mirror_slots()[twin]) == slot:
 				mounts.append({"slot": str(twin), "part": part, "attack": attack,
 					"ability": ability, "ready": attack.interval, "count": 0,
-					"fx": fx, "shots": 0})
+					"fx": fx, "shots": 0, "takt_of": main})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
@@ -818,12 +860,30 @@ func takt_step(mount: Dictionary) -> float:
 	return maxf(1.0, float((mount.get("fx", {}) as Dictionary).get("takt_count", 1.0)))
 
 
+## Zeiten eines Auto-Angriffs mit ``part``: x = Ausholen bis zum Treffer,
+## y = Nachlauf (config.json -> realtime.attack_timing).
+static func attack_timing(part: PartData) -> Vector2:
+	var table := (Config.section("realtime").get("attack_timing", {}) as Dictionary)
+	var entry = null
+	if part != null:
+		entry = table.get(str(part.id), table.get(part.reach_kind()))
+	if not entry is Array or (entry as Array).size() < 2:
+		return Vector2.ZERO
+	return Vector2(maxf(0.0, float(entry[0])), maxf(0.0, float(entry[1])))
+
+
+## Der Halter, der den Takt zaehlt: beim Gunship-Spiegelarm der Halter, den
+## er spiegelt (gemeinsamer Zaehler), sonst der Halter selbst.
+static func takt_holder(mount: Dictionary) -> Dictionary:
+	return mount.get("takt_of", mount)
+
+
 ## Ist der naechste Angriff dieses Halters die Faehigkeit?
 func takt_due(mount: Dictionary) -> bool:
 	var ability = mount.get("ability")
 	if ability == null:
 		return false
-	return float(mount["count"]) + takt_step(mount) >= float(takt_every(ability)) - 0.001
+	return float(takt_holder(mount)["count"]) + takt_step(mount) >= float(takt_every(ability)) - 0.001
 
 
 ## Wann kommen die Faehigkeiten? Je Faehigkeit ein Eintrag fuer die Leiste
@@ -835,7 +895,7 @@ func takt_bars() -> Array:
 	var out: Array = []
 	for mount in mounts:
 		var ability = mount.get("ability")
-		if ability == null:
+		if ability == null or mount.has("takt_of"):
 			continue
 		var every := takt_every(ability)
 		var count := float(mount["count"])

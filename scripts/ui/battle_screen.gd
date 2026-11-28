@@ -12,7 +12,9 @@ extends Node2D
 
 ## Kamerastoss beim Treffer. Der Ausschlag skaliert mit dem Anteil der
 ## Integritaet, den der Treffer gekostet hat.
-const CAMERA_SHAKE_MAX := 7.0
+## 28. Nov. 2026 (Spieler: weniger Erschuetterung): 3 statt 7 -- unter 1,5 px
+## wackelt nichts, also nur noch bei Treffern ab der halben Integritaet.
+const CAMERA_SHAKE_MAX := 3.0
 const CAMERA_SHAKE_TIME := 0.22
 
 ## Tempo. Laeuft ueber Engine.time_scale, damit Simulation, Gleiten und Tweens
@@ -109,6 +111,7 @@ var _follow_pos := Vector2.ZERO
 var _follow_scale := 1.0
 var _follow_seeded := false
 var _intro: Tween
+var _sfx: BattleSfx
 var _intro_end: Array = []
 ## Eine Kamera-Szene laeuft (C10): die Zeit steht so lange.
 var _cinema_running := false
@@ -121,6 +124,9 @@ var _next_flicker: float = -1.0
 func _ready() -> void:
 	battle = BattleManager.new()
 	add_child(battle)
+	_sfx = BattleSfx.new()
+	_sfx.name = "Toene"
+	add_child(_sfx)
 	_build_ui()
 
 	EventBus.log_message.connect(_on_log)
@@ -131,6 +137,9 @@ func _ready() -> void:
 	EventBus.shield_damaged.connect(_on_shield_damaged)
 	EventBus.action_used.connect(_on_action_used)
 	EventBus.ability_cast.connect(_on_ability_cast)
+	EventBus.attack_started.connect(_on_attack_started)
+	EventBus.attack_missed.connect(_on_attack_missed)
+	EventBus.cast_broken.connect(_on_cast_broken)
 	EventBus.virus_pulsed.connect(_on_virus_pulse)
 	battle.battle_over.connect(_on_battle_over)
 
@@ -358,7 +367,30 @@ func _on_unit_moved(unit: Unit, _from: Vector2i, _to: Vector2i) -> void:
 ## die Doppelschuss war.
 func _on_action_used(unit: Unit, tile: Vector2i, action: ActionData) -> void:
 	AbilityFx.on_used(view, unit, tile, action, battle.units)
+	if _sfx != null:
+		_sfx.on_action(unit, action)
 	_refresh_hud()
+
+
+## Auto-Angriff holt aus (28. Nov. 2026): die Bewegung dauert Ausholen +
+## Nachlauf, der Schlag bzw. Schuss sitzt am Ende des Ausholens.
+func _on_attack_started(unit: Unit, tile: Vector2i, action: ActionData, windup: float,
+		recover: float) -> void:
+	var total := windup + recover
+	unit.play_attack(tile, action, total, windup / total if total > 0.0 else 0.0)
+
+
+## Betaeubt beim Ausholen: Bewegung und Ansage enden.
+func _on_cast_broken(unit: Unit) -> void:
+	if unit.arena != null:
+		unit.arena.stop_attack(unit)
+	view.abilities.cancel_casts(unit)
+
+
+## Weggelaufen: der Schlag geht ins Leere.
+func _on_attack_missed(_unit: Unit, target: Unit) -> void:
+	if target != null and target.is_alive():
+		view.show_float(target.visual_anchor(), tr("VERFEHLT"), Arcade.MUTED)
 
 
 ## Ausholen einer Faehigkeit (18. Nov. 2026): Ansage und Haltung, AbilityFx.

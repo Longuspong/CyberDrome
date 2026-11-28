@@ -176,6 +176,12 @@ static func foot_axes(scale: float = 1.0) -> Vector2:
 ## Ansage (18. Nov. 2026): laeuft waehrend der Ausholzeit einer Faehigkeit,
 ## ``time`` Sekunden lang. Arten: "<art>_cast" zu den Arten von kind_for;
 ## Nahkampf (stun, slash) teilt sich "melee_cast".
+## Die Ansagen von ``unit`` verschwinden (Ausholen abgebrochen).
+func cancel_casts(unit) -> void:
+	_marks = _marks.filter(func(m): return not (str(m["kind"]).ends_with("_cast") \
+		and m.get("owner") == unit))
+
+
 func add_cast(kind: String, data: Dictionary, seconds: float) -> void:
 	var mark := data.duplicate()
 	mark["time"] = maxf(0.05, seconds)

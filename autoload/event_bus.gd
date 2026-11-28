@@ -28,6 +28,13 @@ signal action_used(unit, tile: Vector2i, action)
 ## Ein DROME holt zu einer Faehigkeit aus (Ausholzeit, 18. Nov. 2026): die
 ## Ansage laeuft ``seconds`` lang, dann folgt action_used mit der Wirkung.
 signal ability_cast(unit, tile: Vector2i, action, seconds: float, target)
+## Auto-Angriff mit Ausholen (28. Nov. 2026): ``windup`` Sekunden bis zum
+## Treffer (dann action_used), danach ``recover`` Nachlauf.
+signal attack_started(unit, tile: Vector2i, action, windup: float, recover: float)
+## Ausholen abgebrochen (Betaeubung): keine Wirkung, die Anzeige stoppt.
+signal cast_broken(unit)
+## Der Treffer sass ins Leere: das Ziel ist weggelaufen.
+signal attack_missed(unit, target)
 
 # --- Protokoll ---
 signal log_message(text: String)

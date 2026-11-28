@@ -7,7 +7,7 @@ extends Node
 ##
 ## Jedes Stueck spielt sein Intro einmal und loopt danach ab einer Taktgrenze
 ## (``loop_offset`` in der .import-Datei, Ende = Dateiende):
-## kampf Intro Takt 1-4 (10 s), Schleife Takt 5-32; menue Intro Takt 1-4
+## kampf Intro Takt 1-4 (10 s, gespielt wird nur Takt 4), Schleife Takt 5-32; menue Intro Takt 1-4
 ## (7,5 s), Schleife Takt 5-48. Herleitung und Austausch: docs/musik/LIESMICH.md.
 ##
 ## Welches Stueck laeuft, folgt der aktuellen Szene -- so braucht kein
@@ -23,6 +23,10 @@ const SCENE_TRACKS := {
 	"res://scenes/battle.tscn": "kampf",
 }
 const DEFAULT_TRACK := "menue"
+## Wo ein Stueck beginnt (Sekunden). Kampf seit 28. Nov. 2026 (Spieler: das
+## Intro dauerte laenger als ein Kampf auf x2): nur der letzte Intro-Takt
+## (96 BPM, ein Takt 2,5 s), dann die Schleife ab 10 s.
+const START_AT := {"kampf": 7.5}
 
 const VOLUME_DB := -6.0
 const SILENT_DB := -60.0
@@ -86,9 +90,10 @@ func play(id: String) -> void:
 
 
 func _start(player: AudioStreamPlayer) -> void:
-	# Immer von vorn: das Intro gehoert zum Stueck, die Schleife folgt von selbst.
+	# Von vorn bzw. ab START_AT: das Intro gehoert zum Stueck, die Schleife
+	# folgt von selbst.
 	player.volume_db = SILENT_DB
-	player.play()
+	player.play(float(START_AT.get(_current, 0.0)))
 	_fade(player, VOLUME_DB, FADE_IN_SECONDS, false)
 
 

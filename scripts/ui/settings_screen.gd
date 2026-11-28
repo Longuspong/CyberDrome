@@ -61,6 +61,9 @@ func _ready() -> void:
 
 	var sound := _card(content, "Ton")
 	sound.add_child(_switch(tr("Musik"), "", Accessibility.music, Accessibility.set_music))
+	sound.add_child(_rule())
+	sound.add_child(_switch(tr("Effekte"), tr("Schüsse und Schläge im Kampf."),
+		Accessibility.sounds, Accessibility.set_sounds))
 
 	var screen := _card(content, "Bildschirm")
 	var full_row := HBoxContainer.new()
