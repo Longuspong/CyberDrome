@@ -16,7 +16,7 @@ extends RefCounted
 ## ### Eindeutigkeit faellt von selbst
 ##
 ## Eine uid steckt in HOECHSTENS einer Zuweisung im ganzen Roster. "Frei" heisst
-## darum schlicht: in keiner Zuweisung. Die Werkstatt bietet fuer einen Slot nur
+## darum schlicht: in keiner Zuweisung. Der Hangar bietet fuer einen Slot nur
 ## freie Instanzen an -- "Schienen-Lanze nur waehlbar, wenn nicht woanders
 ## verbaut" ist damit kein Sonderfall, sondern die Grundregel.
 ##
@@ -58,30 +58,23 @@ var _factory_sim: FactorySim = null
 ## Die vier Standard-DROMEs mit ihrer VOLLEN Standard-Ausstattung -- der
 ## handgesetzte Startbestand (§10g/§12c). Reihenfolge = Reihenfolge im frischen
 ## Roster. Die Ausruestung wird der Reihe nach in den ersten passenden freien
-## Slot gelegt (``_seed_equip``), damit ein support-only-Schulterpod nicht die
-## Waffe schluckt.
-##
-## Die Kits stehen so im Konzept:
-##   Vireo   Hologramm-Boost (Dash) + Puls-Blaster
-##   Molok   Belagerungskanone + Deflektor-Schild + Drohnen-Pod (Reparatur)
-##   Nimbus  Orbit-Fokus (Orbital) + Runenstab
-##   Strix   Schienen-Lanze (nur ein Slot)
+## Slot gelegt (``_seed_equip``).
 const STARTER_CHASSIS := [
 	{"body": &"scout_body", "core": &"scout_core",
 	 "equipment": [&"eq_pulse_blaster"]},
 	{"body": &"jugg_body", "core": &"jugg_core",
-	 "equipment": [&"eq_hammer", &"eq_deflector"]},
+	 "equipment": [&"eq_deflector"]},
 	{"body": &"mage_body", "core": &"mage_core",
-	 "equipment": [&"eq_rune_staff"]},
+	 "equipment": [&"eq_repair_kit"]},
 	{"body": &"strix_body", "core": &"strix_core",
 	 "equipment": [&"eq_rail_lance"]},
 ]
 
 ## Ausruestung, die KEINEM Start-DROME zugeteilt ist und frei im Inventar liegt.
-## Seit es nur noch einen Platz je DROME gibt (Molok zwei), liegen die
-## Gadgets hier und laden zum Umbauen ein.
+## Seit es nur noch einen Platz je DROME gibt (Molok seit 27. Nov. 2026 als
+## Gunship auch), liegen die uebrigen Waffen hier und laden zum Umbauen ein.
 const STARTER_LOOSE_EQUIPMENT := [
-	&"eq_drone_pod", &"eq_plasma_blade",
+	&"eq_plasma_blade", &"eq_hammer", &"eq_rune_staff",
 ]
 
 
@@ -132,7 +125,7 @@ func total_count(part_id: StringName) -> int:
 
 
 ## Wie viele Exemplare eines Typs FREI sind -- in keiner Zuweisung. Das ist die
-## Zahl, die die Werkstatt zeigt: so viele kann ich noch einbauen.
+## Zahl, die der Hangar zeigt: so viele kann ich noch einbauen.
 func free_count(part_id: StringName) -> int:
 	var used := assigned_uids()
 	var n := 0
@@ -152,7 +145,7 @@ func free_instance(part_id: StringName) -> PartInstance:
 
 
 ## Die distinkten Bauteiltypen eines Typs, die der Spieler BESITZT -- nach Code
-## sortiert, damit die Bibliothek stabil steht. Grundlage der Werkstatt-Ansicht:
+## sortiert, damit die Bibliothek stabil steht. Grundlage der Hangar-Ansicht:
 ## sie zeigt die eigene Sammlung, nicht den freien Katalog.
 func owned_part_ids(type: int) -> Array:
 	var seen := {}
@@ -168,16 +161,6 @@ func owned_part_ids(type: int) -> Array:
 # ---------------------------------------------------------------------------
 # Zuweisung -- die Eindeutigkeit lebt hier
 # ---------------------------------------------------------------------------
-
-## Wie viele Exemplare eines Typs in DIESEM Eintrag stecken. Fuer die Werkstatt:
-## "ist das hier verbaut" und "an wie vielen Haltern".
-func count_in_entry(entry: RosterEntry, part_id: StringName) -> int:
-	var n := 0
-	for slot in entry.assignments:
-		if instance_part_id(str(entry.assignments[slot])) == part_id:
-			n += 1
-	return n
-
 
 ## Weist dem Slot eine FREIE Instanz des Typs zu (§10g). Was vorher im Slot
 ## steckte, wird dadurch automatisch frei -- "frei" ist ja nur "in keiner
@@ -282,7 +265,7 @@ func squad_count() -> int:
 # ---------------------------------------------------------------------------
 
 ## Baut aus einer FREIEN Chassis-Instanz einen neuen DROME (einen neuen Roster-
-## Platz, §10g). Kern und Ausruestung bleiben leer -- die waehlt die Werkstatt.
+## Platz, §10g). Kern und Ausruestung bleiben leer -- die waehlt der Hangar.
 ## null, wenn kein freies Chassis dieses Typs vorhanden ist.
 func new_drome(chassis_part_id: StringName, entry_name: String = "") -> RosterEntry:
 	var free := free_instance(chassis_part_id)
@@ -653,6 +636,29 @@ func seed_starter() -> void:
 		add_instance(part_id)
 
 
+## Testbestand (Spieler 27. Nov. 2026) fuer Spielstand 3, der sich mit jeder
+## neuen Version neu schreibt (GameState.refresh_test_slot): der Startbestand
+## eines neuen Spielstands, dazu je ``amount`` von jeder Ware der Fabrik
+## (auch Charger-Rohlinge und Keynode-Chips), jeder Energy Phase, jedem
+## Fraktionskern, jedem DROME-Teil und Spezialteil, und jede Waffe einmal extra.
+func seed_test_stock(amount: int = 1000) -> void:
+	seed_new_game()
+	for ware in FactorySim.wares():
+		materials[FactorySim.material_key(str(ware))] = amount
+	for element in Charger.element_ids():
+		materials["phase:" + str(element)] = amount
+	var dromes: Dictionary = Formations.data().get("dromes", {})
+	for variant in faction_variants():
+		materials["kern:" + Workbench.faction_of(variant)] = amount
+		materials["spezial:" + str(variant)] = amount
+	for chassis in (Workbench.cfg().get("dromes", {}) as Dictionary):
+		for part in Workbench.parts_of(str(chassis)):
+			materials[Workbench.part_key(str(chassis), str(part["id"]))] = amount
+	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+		add_instance(part.id)
+	coins = amount
+
+
 ## Startbestand eines NEUEN Spielstands (21. Nov. 2026, Wunsch des Spielers;
 ## 23. Nov.: ohne Fraktions-DROMEs): die vier CyberDrome-DROMEs mit ihrer
 ## Ausstattung, jede Waffe einmal (die uebrigen frei im Inventar), jede Energy Phase 6-mal, 2 Charger-
@@ -705,8 +711,7 @@ func seed_new_game() -> void:
 
 
 ## Legt eine neue Instanz von ``part_id`` in den ersten Ausruestungsslot dieses
-## Eintrags, der noch frei ist UND das Teil annimmt. So landet der support-only
-## Drohnen-Pod im Schulterpod und nicht auf einem Waffenarm. Findet sich kein
+## Eintrags, der noch frei ist UND das Teil annimmt. Findet sich kein
 ## Slot, bleibt das Teil aussen vor (der Aufbau ist trotzdem gueltig).
 func _seed_equip(entry: RosterEntry, part_id: StringName) -> void:
 	var build := build_for(entry)
@@ -797,6 +802,12 @@ func load_dict(data: Dictionary) -> bool:
 		for slot in entry.assignments.keys():
 			if not _instances.has(str(entry.assignments[slot])):
 				entry.assignments.erase(slot)
+		# Halter, die es nicht mehr gibt (Molok-Gunship seit 27. Nov. 2026: der
+		# rechte Arm spiegelt nur noch): die Waffe kommt zurueck ins Lager.
+		var holders := build_for(entry).equip_slots()
+		for slot in entry.assignments.keys():
+			if str(slot).begins_with("equip_") and not holders.has(str(slot)):
+				entry.assignments.erase(slot)
 		# Varianten hiessen bis 21. Nov. 2026 "Mecha Molok" -- jetzt "Molok"
 		# mit der Fraktion als Untertitel (selbst vergebene Namen bleiben).
 		if entry.variant != "":
@@ -852,37 +863,3 @@ func _bump_uid(uid: String) -> void:
 		var n := int(uid.substr(5))
 		if n >= _next_uid:
 			_next_uid = n + 1
-
-
-## Migriert den alten Wegwerf-Squad (v1: {squad_size, squad:[loadout]}) in
-## Inventar + Roster. Fuer jeden alten Bot entstehen frische Instanzen fuer
-## Chassis, Kern und Ausruestung; Kopf und Fuesse fallen weg (sie sind Teil der
-## Huelle). So verliert niemand seinen gebauten Squad beim Umstieg auf §10g.
-func migrate_v1(data: Dictionary) -> bool:
-	if not data is Dictionary or not data.has("squad"):
-		return false
-	_instances.clear()
-	entries.clear()
-	_next_uid = 1
-
-	for loadout in data.get("squad", []):
-		var build := DromeBuild.from_loadout(loadout)
-		if build == null:
-			continue
-		var chassis := build.body()
-		if chassis == null:
-			continue
-		var entry := RosterEntry.create(build.display_name,
-			add_instance(chassis.id))
-		entry.direction = build.direction
-		entry.palette = build.palette.duplicate(true)
-		var core := build.part_in("core")
-		if core != null:
-			entry.assignments["core"] = add_instance(core.id)
-		for slot in build.equip_slots():
-			var part := build.part_in(slot)
-			if part != null:
-				entry.assignments[slot] = add_instance(part.id)
-		entry.in_squad = true
-		entries.append(entry)
-	return not entries.is_empty()

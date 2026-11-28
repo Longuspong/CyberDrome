@@ -74,7 +74,7 @@ func test_salvo_shot_waits_and_takes_the_muzzle_late() -> void:
 
 func test_units_get_one_model_in_the_shared_scene() -> void:
 	var arena := Arena3D.new()
-	var a := Unit.create(_build(&"scout_body", &"eq_neon_blaster"), &"P0", true)
+	var a := Unit.create(_build(&"scout_body", &"eq_rune_staff"), &"P0", true)
 	var b := Unit.create(_build(&"jugg_body", &"eq_hammer"), &"E0", false)
 	for unit in [a, b]:
 		unit.arena = arena
@@ -82,7 +82,7 @@ func test_units_get_one_model_in_the_shared_scene() -> void:
 		unit._build_sprites()
 	t.ok(arena.model_of(a) != null and arena.model_of(b) != null, "je Einheit ein Modell")
 	t.ok(a.get_node_or_null("Rig/Ansicht3D") == null, "keine eigene 3D-Ansicht mehr")
-	t.ok(arena.get_node_or_null("Neon3D") != null, "Neon-Blaster: Leuchtebene da")
+	t.ok(arena.get_node_or_null("Neon3D") != null, "Runenstab: Leuchtebene da")
 	arena._sync_unit(a, arena.model_of(a))
 	t.ok(arena.model_of(a).position.is_equal_approx(
 		Arena3D.ground(IsoView.map_to_local(Vector2i(4, 10)) + a.stand_offset())),
@@ -109,8 +109,8 @@ func test_units_get_one_model_in_the_shared_scene() -> void:
 
 func test_obstacles_stand_in_the_scene() -> void:
 	var arena := Arena3D.new()
-	var grid := MapGenerator.generate(TerrainDB.get_region(&"city"))
-	MapGenerator.place_obstacles(grid, 42)
+	# Zwei Gassen: eine Mauer aus festen Bloecken in der Mitte.
+	var grid := MapGenerator.generate(TerrainDB.get_region(&"city"), "gassen")
 	arena.build_obstacles(grid)
 	var count := 0
 	for child in arena.get_node("Bild3D/Szene").get_children():

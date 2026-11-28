@@ -66,7 +66,7 @@
    "faction": "Neon",
    "archetype": "support",
    "look": "mage_body",
-   "weapon": "eq_drone_pod",
+   "weapon": "eq_deflector",
    "stats": {
     "spd": 10,
     "hp_max": 40,
@@ -86,7 +86,7 @@
    "faction": "Solar",
    "archetype": "assault",
    "look": "scout_body",
-   "weapon": "eq_boomerang",
+   "weapon": "eq_plasma_blade",
    "stats": {
     "spd": 10,
     "hp_max": 60,
@@ -106,7 +106,7 @@
    "faction": "Solar",
    "archetype": "sniper",
    "look": "strix_body",
-   "weapon": "eq_mortar",
+   "weapon": "eq_rail_lance",
    "stats": {
     "spd": 8,
     "hp_max": 45,
@@ -126,7 +126,7 @@
    "faction": "Solar",
    "archetype": "support",
    "look": "mage_body",
-   "weapon": "eq_drone_pod",
+   "weapon": "eq_deflector",
    "stats": {
     "spd": 10,
     "hp_max": 40,
@@ -186,7 +186,7 @@
    "faction": "Mecha",
    "archetype": "support",
    "look": "mage_body",
-   "weapon": "eq_drone_pod",
+   "weapon": "eq_deflector",
    "stats": {
     "spd": 8,
     "hp_max": 70,
@@ -226,7 +226,7 @@
    "faction": "Hipstar",
    "archetype": "sniper",
    "look": "strix_body",
-   "weapon": "eq_neon_blaster",
+   "weapon": "eq_rail_lance",
    "stats": {
     "spd": 8,
     "hp_max": 45,
@@ -246,7 +246,7 @@
    "faction": "Hipstar",
    "archetype": "support",
    "look": "mage_body",
-   "weapon": "eq_drone_pod",
+   "weapon": "eq_deflector",
    "stats": {
     "spd": 10,
     "hp_max": 40,
@@ -309,10 +309,10 @@
     "eq_plasma_blade"
    ],
    "stats": {
-    "spd": 12,
+    "spd": 8,
     "hp_max": 80,
     "shield": 50,
-    "shield_pulse": 7,
+    "shield_pulse": 10,
     "def": 2,
     "power": 10,
     "module_slots": 3
@@ -327,13 +327,13 @@
     "eq_rune_staff"
    ],
    "stats": {
-    "spd": 12,
+    "spd": 7,
     "hp_max": 60,
     "shield": 60,
-    "shield_pulse": 10,
+    "shield_pulse": 5,
     "def": 0,
-    "power": 14,
-    "efficiency": 7,
+    "power": 12,
+    "efficiency": 12,
     "module_slots": 3
    },
    "faction": "neon"
@@ -361,14 +361,13 @@
    "name": "Mecha Molok",
    "chassis": "jugg_body",
    "weapons": [
-    "eq_hammer",
-    "eq_deflector"
+    "eq_hammer"
    ],
    "stats": {
-    "spd": 10,
+    "spd": 6,
     "hp_max": 250,
     "shield": 50,
-    "shield_pulse": 3,
+    "shield_pulse": 2,
     "def": 10,
     "power": 6,
     "module_slots": 2
@@ -404,8 +403,7 @@
    "name": "Molok",
    "chassis": "jugg_body",
    "weapons": [
-    "eq_hammer",
-    "eq_deflector"
+    "eq_hammer"
    ]
   },
   "nimbus": {

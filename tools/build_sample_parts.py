@@ -150,6 +150,7 @@ FACINGS = {
     "north": ((1, 0), (0, 1)),     # blickt nach oben-rechts
     "west":  ((0, 1), (-1, 0)),    # blickt nach oben-links
 }
+# Die vier Blickrichtungen (fuer die Entwurfs-Skripte unter docs/design/drome_entwurf).
 DIRECTIONS = ["south", "west", "east", "north"]
 ## Die Richtung des Symbols je Teil (die einzige, die noch als Bild entsteht).
 SYMBOL_DIRECTION = "south"
@@ -206,7 +207,6 @@ PALETTE_ROLES = [
 #   hot    Emission: dieselbe Farbe, additiv Richtung Weiss gezogen
 SHADES = {"base": (1.0, 0), "light": (1.62, 6), "dark": (0.56, 0), "hot": (1.0, 45)}
 
-PALETTE_TYPES = ("body", "head", "feet", "core", "equipment")
 
 _HULL = ("hull", "Panzerung",
          {"plate": "base", "plate_light": "light", "plate_dark": "dark"})
@@ -294,20 +294,12 @@ STRIX_PALETTE = make_palette(
     ember="#6dff9f", rings="#2fbf8c", line="#060f0d",
 )
 
-# Neon City: dunkle Panzerung, grelle Roehren. Teile mit dieser Palette sind
-# Neon-Varianten (Tag "neon") und leuchten im Spiel (DromeSprites).
-NEON_EQUIPMENT = {"hull": "#140b24", "mech": "#3a2a5c", "neon": "#ff2bd6",
-                  "line": "#05020a"}
 
 # Waffenfarben, unabhaengig vom DROME (17. Nov. 2026, Wunsch des Spielers):
 # jede Waffe hat hier ihre EIGENE Palette, egal an welchem Chassis sie haengt.
 # Gewaehlt am 18. Nov. 2026 (siehe unten) --
 # zum Umfaerben nur hier aendern, dann build_sample_parts.py und
 # bake_godot_assets.py laufen lassen.
-def _eq(base: dict) -> dict:
-    return dict(base["equipment"])
-
-
 def _w(hull, mech, neon, line="#07090d"):
     return {"hull": hull, "mech": mech, "neon": neon, "line": line}
 
@@ -316,16 +308,12 @@ def _w(hull, mech, neon, line="#07090d"):
 # Satz A "Waffenstahl" fuer alle, der Puls-Blaster aus Satz B "Chrom".
 WEAPON_COLORS = {
     "eq_pulse_blaster": _w("#7a8494", "#d6dde6", "#2de2e6", "#0a0d12"),
-    "eq_neon_blaster": dict(NEON_EQUIPMENT),
     "eq_plasma_blade": _w("#2a2f3a", "#9aa3b3", "#ff5a3d"),
-    "eq_boomerang": _w("#46505f", "#b8c0cc", "#ffb000"),
     "eq_deflector": _w("#39404c", "#8a93a3", "#5ad1ff"),
     "eq_hammer": _w("#4a4e56", "#a0a6b0", "#ff8a3d"),
-    "eq_bulwark_ram": _w("#3f444c", "#979ca6", "#ffd447"),
-    "eq_drone_pod": _w("#55504a", "#b0a89a", "#ffd447"),        # E-Schraubenschluessel
     "eq_rune_staff": _w("#3a3550", "#a59ac8", "#b06bff"),
+    "eq_repair_kit": _w("#55504a", "#b0a89a", "#6dff9f"),
     "eq_rail_lance": _w("#1d2430", "#6f7d92", "#3df2ff"),
-    "eq_mortar": _w("#3d4636", "#8e9688", "#ff6a2a"),
 }
 
 # Oberflaeche je Waffe (18. Nov. 2026): ``shine`` = Glanzkante je Material
@@ -335,14 +323,11 @@ WEAPON_COLORS = {
 WEAPON_FINISH = {
     "eq_pulse_blaster": {"shine": {"plate": 0.7, "light": 0.7, "metal": 0.6}},
     "eq_plasma_blade": {"neon": True},
-    "eq_boomerang": {"shine": {"blade": 0.75}},
     "eq_deflector": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
     "eq_hammer": {"shine": {"plate": 0.4, "light": 0.4}},
-    "eq_bulwark_ram": {"shine": {"plate": 0.4, "light": 0.4}},
-    "eq_drone_pod": {"shine": {"metal": 0.4}},
     "eq_rune_staff": {"shine": {"plate": 0.35}, "neon": True},
+    "eq_repair_kit": {"shine": {"metal": 0.4}, "neon": True},
     "eq_rail_lance": {"shine": {"plate": 0.3, "light": 0.3}, "neon": True},
-    "eq_mortar": {"shine": {"plate": 0.3, "light": 0.3}},
 }
 
 C = {role: f"var(--c-{role.replace('_', '-')})" for role in PALETTE_ROLES}
@@ -385,7 +370,9 @@ DEFAULT_Z = {
 #
 # Fehlt eine Regel, nimmt der Slot alles an -- importierte Teile funktionieren
 # damit unveraendert weiter. ``{"off": True}`` macht einen Anker zur reinen
-# Optik: er ist kein Halter (seit Nov. 2026 ein Platz je DROME, Molok zwei).
+# Optik: er ist kein Halter (seit 27. Nov. 2026 ein Platz je DROME). Mit
+# ``"mirror": "<halter>"`` traegt der Anker eine Kopie der Waffe jenes Halters
+# (Molok-Gunship: beide Arme, voller Schaden, eigener Takt).
 MOUNT_CLASSES = ("light", "medium", "heavy")
 EQUIP_CATEGORIES = ("weapon", "shield", "support")
 DEFAULT_MOUNT_CLASS = "light"
@@ -471,9 +458,6 @@ STAT_DEFAULTS = {
     "module_slots": 0,
     # Passive Selbstheilung je Puls, in Prozent der maximalen Integritaet.
     "hp_regen_pct": 0,
-    # Lockradius in Feldern: Gegner so nah greifen den Traeger an statt ihres
-    # Ziels (Koedersender). Die Molok-Praesenz lockt ebenso (passives.presence).
-    "lure_radius": 0,
     # Nur body: wie die KI diesen DROME fuehrt (scripts/battle/ai_controller.gd).
     #   vanguard     Frontlinie: rueckt vor, weicht nie aus (Molok)
     #   skirmisher   wendig: mit Fernwaffe kiten, mit Nahkampfwaffe dranbleiben (Vireo)
@@ -481,13 +465,11 @@ STAT_DEFAULTS = {
     #   controller   bleibt hinter der Frontlinie, bis sie im Kampf ist (Nimbus)
     "ai_role": "",
     # Nur body: die Passive des DROME (Unit.passive()).
-    #   echo         jede Faehigkeit wirkt zweimal, ihr Takt ist 50 % laenger
-    #                (Nimbus)
-    #   hit_rush     jeder Treffer gibt kurz mehr Lauftempo (Vireo)
-    #   presence     lockt Gegner in der Naehe an und faengt Schaden fuer
-    #                Verbuendete ab (Molok)
-    #   steady       Anlegen: nach 4 s ohne Bewegung +20 % Schaden und
-    #                Reichweite (Strix)
+    #   echo         jede Faehigkeit wirkt zweimal, ihr Takt ist 1,5-mal so lang
+    #                (aufgerundet; Nimbus)
+    #   cyberspeed   jeder 3. Angriff gibt einen Stapel Angriffs- und Lauftempo (Vireo)
+    #   safe_haven   Safe Haven: Heilung, Regeneration und Schildgaben am Traeger +20 % (Molok)
+    #   focuslense   +20 % kinetisch, -70 % Energie, anvisiertes Ziel +20 % (Strix)
     # Die Zahlen der Passiven stehen in data/config.json unter "passives".
     "passive": "",
 }
@@ -509,21 +491,21 @@ STATS = {
     # Alle Werte des DROME stehen hier (8. Nov. 2026). ATK und Gewicht
     # gibt es nicht mehr.
     # Vireo: der schnelle Allrounder, nur eine leichte Waffe.
-    "scout_body":  {"spd": 12, "hp":  80, "shield": 50, "shield_pulse":  7, "def":  2,
+    "scout_body":  {"spd":  8, "hp":  80, "shield": 50, "shield_pulse":  5, "def":  2,
                     "power": 10, "efficiency": 10, "module_slots": 3,
-                    "ai_role": "skirmisher", "passive": "hit_rush"},
+                    "ai_role": "skirmisher", "passive": "cyberspeed"},
     # Molok: der harte Zweihaender fuer die Frontlinie, wenig Power.
-    "jugg_body":   {"spd": 10, "hp": 250, "shield": 50, "shield_pulse":  3, "def": 10,
+    "jugg_body":   {"spd":  6, "hp": 250, "shield": 50, "shield_pulse":  2, "def": 10,
                     "power":  6, "efficiency": 14, "module_slots": 2,
-                    "ai_role": "vanguard", "passive": "presence"},
+                    "ai_role": "vanguard", "passive": "safe_haven"},
     # Nimbus: fragil, schildlastig, Richtung Faehigkeiten.
     "mage_body":   {"spd": 12, "hp":  60, "shield": 60, "shield_pulse": 10, "def":  0,
                     "power": 12, "efficiency": 12, "module_slots": 3,
                     "ai_role": "controller", "passive": "echo"},
     # Strix: Langstrecke, langsam, viel Power.
-    "strix_body":  {"spd":  7, "hp": 100, "shield": 30, "shield_pulse":  5, "def":  2,
+    "strix_body":  {"spd":  3, "hp": 100, "shield": 30, "shield_pulse":  5, "def":  2,
                     "power": 15, "efficiency": 10, "module_slots": 3,
-                    "ai_role": "sniper", "passive": "steady"},
+                    "ai_role": "sniper", "passive": "focuslense"},
 
     # --- KERN, ANTRIEB, KOPF -------------------------------------------------
     # Nur noch Optik am Chassis -- keine Werte.
@@ -555,23 +537,6 @@ STATS = {
              "salvo": 3,
              "energy_fraction": 0.5,
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_pulse"}},
-        ],
-    },
-    # Neon-Variante: gleicher Angriff, aber die Faehigkeit ist ein aufgeladener
-    # Schuss mit doppeltem Schaden AM SCHILD (Vorgabe des Spielers, Nov. 2026).
-    # 4 kinetisch + 6 Energie, Bonus Schildpuls.
-    "eq_neon_blaster": {
-        "shield_pulse": 2,
-        "actions": [
-            {"id": "act_neon_pulse", "display_name": "Angriff",
-             "category": "attack", "targeting": "single",
-             "range_tiles": 3, "power": 10, "energy_fraction": 0.6,
-             "interval": 1.4},
-            {"id": "act_neon_breaker", "windup": 0.35, "display_name": "Schildbrecher",
-             "category": "ability", "targeting": "single",
-             "range_tiles": 3, "damage_pct": 1.2, "energy_fraction": 1.0,
-             "shield_mult": 2.0,
-             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_neon_pulse"}},
         ],
     },
     # Plasmaklinge: Nahkampf, nur kinetisch, etwas mehr Schaden, schneller als
@@ -614,29 +579,14 @@ STATS = {
             {"id": "act_hammer", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
              "range_tiles": 1, "power": 16, "interval": 1.8},
+            # Seit 27. Nov. 2026 (Spieler): der Schlag heilt den Molok um 100 %
+            # des Schadens. Kinetisch wie der Angriff. Der Zusatzschaden aus der
+            # eigenen Integritaet ist am selben Tag wieder weg (Hammer zu stark).
             {"id": "act_hammer_stun", "windup": 0.35, "display_name": "Betaeubungsschlag",
              "category": "ability", "targeting": "single",
-             "range_tiles": 1, "damage_pct": 1.0,
+             "range_tiles": 1, "damage_pct": 1.0, "lifesteal": 1.0,
              "status": {"id": "stun", "seconds": 1.0, "stunned": True},
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_hammer"}},
-        ],
-    },
-    # Heil-Waffe (7. Nov. 2026): der Angriff repariert den Verbuendeten mit
-    # dem geringsten Anteil Integritaet in Reichweite; ist niemand verletzt,
-    # schiessen die Drohnen schwach auf Gegner. Jeder 4. Angriff setzt eine
-    # Schutzdrohne: 15 Schild fuer den am staerksten Verletzten.
-    # Bonus Integritaet.
-    "eq_drone_pod": {
-        "hp": 10,
-        "actions": [
-            {"id": "act_drone_repair", "display_name": "Angriff",
-             "category": "attack", "targeting": "single",
-             "range_tiles": 3, "power": 4, "heal": 6, "support": "ally",
-             "energy_fraction": 1.0, "interval": 1.5},
-            {"id": "act_drone_guard", "windup": 0.3, "display_name": "Schildfeld",
-             "category": "ability", "targeting": "single",
-             "range_tiles": 3, "power": 0, "shield_gain": 15, "support": "ally",
-             "trigger": {"kind": "attacks", "every": 4, "weapon": "act_drone_repair"}},
         ],
     },
 
@@ -662,55 +612,27 @@ STATS = {
              "trigger": {"kind": "attacks", "every": 3, "weapon": "act_runestaff"}},
         ],
     },
-    # Schwer -- das einzige schwere Teil. Bonus Power.
-    # Bollwerk-Ramme (9. Nov. 2026): der Molok schlaegt mit seiner Masse.
-    # Der Rammstoss skaliert mit der eigenen Integritaet statt mit Power und
-    # stoesst zurueck. Bonus Integritaet.
-    "eq_bulwark_ram": {
-        "hp": 20,
+    # Repair-Kit (Spieler 27. Nov. 2026): die Heilwaffe des Nimbus. Ein kleiner
+    # Energieblitz (halb Energie, halb kinetisch) auf Reichweite 4; was er am
+    # Schild der Gegner abzieht, speichert das Kit als Schild, was er an
+    # Integritaet abzieht, als Integritaet (``stores_damage``). Nach 5 Treffern
+    # (jeder 6. Angriff) bekommt jedes Teammitglied den Speicher mal Effizienz
+    # als Schildgabe und Reparatur (``release_store``), danach ist er leer.
+    # Bonus Schild.
+    "eq_repair_kit": {
+        "shield": 10,
         "actions": [
-            {"id": "act_ram", "display_name": "Angriff",
+            {"id": "act_repair_bolt", "display_name": "Angriff",
              "category": "attack", "targeting": "single",
-             "range_tiles": 1, "power": 10, "interval": 1.6},
-            {"id": "act_ram_slam", "windup": 0.35, "display_name": "Rammstoss",
+             "range_tiles": 4, "power": 9, "energy_fraction": 0.5,
+             "interval": 1.2, "stores_damage": True},
+            # heal/shield_gain 100 = 100 % des Speichers (Module wie der
+            # Mender skalieren das mit).
+            {"id": "act_repair_release", "windup": 0.4, "display_name": "Reparaturwelle",
              "category": "ability", "targeting": "single",
-             "range_tiles": 1, "damage_pct": 1.0, "hp_scaling": 0.08, "push_tiles": 1,
-             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_ram"}},
-        ],
-    },
-    # Moerser (9. Nov. 2026): zweite schwere Waffe. Flaeche mit Verzoegerung,
-    # trifft nicht auf kurze Distanz. Bonus Ruestung.
-    "eq_mortar": {
-        "def": 2,
-        "actions": [
-            {"id": "act_mortar", "display_name": "Angriff",
-             "category": "attack", "targeting": "aoe_around_target",
-             "range_tiles": 6, "min_range": 2, "aoe_radius": 1, "power": 14,
-             "interval": 2.8, "delay": 0.8},
-            {"id": "act_mortar_barrage", "windup": 0.3, "display_name": "Sperrfeuer",
-             "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 6, "min_range": 2, "aoe_radius": 2, "damage_pct": 1.0,
-             "push_tiles": 1, "delay": 0.8,
-             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_mortar"}},
-        ],
-    },
-    # Klingenbumerang (9. Nov. 2026): die Vireo-Waffe, die das Laufen belohnt.
-    # Trifft auf Hin- und Rueckweg (2 Treffer), nach Bewegung haerter.
-    # Bonus Speed.
-    "eq_boomerang": {
-        "spd": 1,
-        "actions": [
-            {"id": "act_boomerang", "display_name": "Angriff",
-             "category": "attack", "targeting": "single",
-             "range_tiles": 2, "power": 6, "shots": 2, "interval": 1.3,
-             "moving_bonus": 0.3},
-            {"id": "act_boomerang_whirl", "windup": 0.55, "display_name": "Wirbelwurf",
-             "category": "ability", "targeting": "aoe_around_target",
-             "range_tiles": 2, "aoe_radius": 1, "damage_pct": 1.4, "moving_bonus": 0.3,
-             # Kabelbrand (20. Nov. 2026, Spieler): uebergangsweise, bis die
-             # Firecharger-Upgrades mit dem neuen Waffensystem kommen.
-             "status": {"id": "cable_fire", "stacks": 1},
-             "trigger": {"kind": "attacks", "every": 3, "weapon": "act_boomerang"}},
+             "range_tiles": 0, "power": 0, "heal": 100, "shield_gain": 100,
+             "support": "team", "release_store": True,
+             "trigger": {"kind": "attacks", "every": 6, "weapon": "act_repair_bolt"}},
         ],
     },
     "eq_rail_lance": {
@@ -738,9 +660,6 @@ ACTION_DEFAULTS = {
     "energy_fraction": 0.0,
     "interval": 2.0,
     "trigger": None,
-    # Schadensfaktor am SCHILD (Schildbrecher 2.0); auf die Integritaet wirkt
-    # er nicht.
-    "shield_mult": 1.0,
     # Treffer je Ausloesen: verteilt auf bis zu so viele Gegner in Reichweite,
     # der Rest geht wieder aufs Ziel (Doppelschuss).
     "shots": 1,
@@ -763,15 +682,15 @@ ACTION_DEFAULTS = {
     # aus base_action (Faehigkeiten nach Zeit).
     "damage_pct": 0.0,
     "base_action": "",
-    # Neue Waffen (9. Nov. 2026, docs/MODULE_KONZEPT.md 11.8):
-    # hp_scaling   Zusatzschaden als Anteil der EIGENEN maximalen Integritaet,
-    #              ohne Power (Bollwerk-Ramme)
-    # min_range    naeher als so viele Felder kann die Waffe nicht treffen (Moerser)
-    # moving_bonus +Anteil Schaden, wenn der Traeger gerade gelaufen ist
-    #              (Klingenbumerang)
-    "hp_scaling": 0.0,
-    "min_range": 0,
-    "moving_bonus": 0.0,
+    # lifesteal    der Treffer heilt den Traeger um diesen Anteil des Schadens
+    #              (Hammer-Betaeubungsschlag 1,0, 27. Nov. 2026)
+    "lifesteal": 0.0,
+    # Repair-Kit (27. Nov. 2026): stores_damage am Angriff speichert den
+    # angerichteten Schild- und Integritaetsschaden beim Schuetzen;
+    # release_store an der Faehigkeit (support "team") gibt jedem Teammitglied
+    # den Speicher mal Effizienz (heal/shield_gain in Prozent davon).
+    "stores_damage": False,
+    "release_store": False,
     # Ausholzeit (18. Nov. 2026): Sekunden zwischen Ansage und Wirkung einer
     # Faehigkeit -- der DROME steht still, die Ansage ist zu sehen.
     "windup": 0.0,
@@ -1614,11 +1533,6 @@ def mirror_obox(s):
     return ("obox", (f, -l, z), size, (-gy, ni, -ro), mat)
 
 
-def shift_obox(s, df=0, dl=0, dz=0):
-    _, (f, l, z), size, rot, mat = s
-    return ("obox", (f + df, l + dl, z + dz), size, rot, mat)
-
-
 def _mirror_l(shapes):
     """Spiegelt Formen an l = 0 (fuer Beinpaare und Fluegel)."""
     out = []
@@ -1755,31 +1669,6 @@ EQ_BLASTER = [
     B((-4, 5), (-6.1, -5.5), (42.5, 44), "accent"),
 ]
 
-# Plasmaklinge (EQP-010): Nahkampfwaffe des Vireo. Kurzer Griff mit
-# Parierstange, davor eine LANGE, DUENNE leuchtende Klinge -- lang und duenn
-# gegen das kurze, dicke Rohr des Blasters (Lesbarkeitsregel).
-EQ_PLASMA_BLADE = [
-    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Oberarm am Anker
-    B((-3.5, 4), (-3.5, 3.5), (34, 46), "plate"),        # Unterarm
-    B((3, 5), (-4.5, 4.5), (33, 39), "dark"),            # Parierstange
-    B((5, 27), (-0.6, 0.6), (34.5, 37.5), "glow"),       # Klinge
-    B((5, 27.5), (-0.8, 0.8), (37.5, 38.3), "accent"),   # Schneide oben
-    B((5, 22), (-0.8, 0.8), (33.7, 34.5), "accent"),     # Schneide unten
-]
-
-# Klingenbumerang (EQP-013): am Arm wie der Blaster, aber statt Lauf eine
-# flache, winklige Klinge -- ein "L" aus zwei leuchtenden Schenkeln, quer zur
-# Laufrichtung, damit sie sich klar vom langen Stich der Plasmaklinge abhebt.
-EQ_BOOMERANG = [
-    B((-3, 3), (-4, 4), (45, 54), "metal"),              # Oberarm am Anker
-    B((-3.5, 4), (-3.5, 3.5), (34, 46), "plate"),        # Unterarm
-    B((3, 6), (-2.5, 2.5), (35, 39), "dark"),            # Griffhalter
-    B((6, 15), (-1.2, 1.2), (36, 37.6), "glow"),         # Schenkel nach vorn
-    B((13, 15), (-11, -1.2), (36, 37.6), "glow"),        # Schenkel quer
-    B((6, 15), (-1.4, 1.4), (37.6, 38.2), "accent"),
-    B((13, 15.2), (-11.2, -1.2), (37.6, 38.2), "accent"),
-    B((12.6, 15.4), (-11.6, -9.6), (35.6, 38.4), "plate"),   # Spitze
-]
 
 # Pruefstein, kein Teil.
 #
@@ -1799,15 +1688,6 @@ EQ_CANNON_V1 = [
     D(21.3, 0, 35, 2.5, "glow"),
     B((-5, 6), (7, 7.6), (39.5, 41.5), "accent"),
     B((-5, 6), (-7.6, -7), (39.5, 41.5), "accent"),
-]
-
-EQ_SHIELD = [
-    B((-3, 3), (-4, 4), (45, 54), "metal"),
-    B((7, 10), (-7, 7), (31, 58), "plate"),
-    B((10, 10.6), (-5, 5), (35, 54), "dark"),
-    B((10.6, 11.1), (-1.2, 1.2), (38, 51), "accent"),
-    B((6.6, 10.2), (-7.6, -6.6), (31, 58), "light"),     # Kantenprofil
-    B((6.6, 10.2), (6.6, 7.6), (31, 58), "light"),
 ]
 
 
@@ -1850,8 +1730,7 @@ _JUGG_HOSES = [
 JUGG_BODY = [
     # Umbau 16. Nov. 2026 nach den DROME-Designregeln (Entwurf v4.py,
     # new_dromes.py M_BODY): Schultern HOEHER, der Kopf sitzt tief dazwischen,
-    # ein Frontpanzer vor der Brust und das Lockfeuer auf dem Ruecken (Passive
-    # Praesenz, sitzt am Kopf). Arme gibt es am Rumpf keine mehr: beide Unterarme kommen mit
+    # ein Frontpanzer vor der Brust und zwei Auspuffstapel auf dem Ruecken. Arme gibt es am Rumpf keine mehr: beide Unterarme kommen mit
     # den Waffen an die Schulteranker.
     # -- Huefte und Torso als Keil ---------------------------------------
     B((-7, 7), (-11, 11), (31, 38), "metal"),
@@ -1871,30 +1750,24 @@ JUGG_BODY = [
     EX([(-9, 56), (9, 56), (9, 67), (6.5, 70), (-9, 70)], (-25, -13), "plate", bevel=0.9),
     EX([(-9.5, 70), (6.5, 70), (5, 73), (-9.5, 73)], (-25.5, -12.5), "light", bevel=0.5),
     B((9, 9.6), (-23, -15), (62, 65), "accent"),
-    # -- Bunkerkopf, tief zwischen den Schultern (gehoert zum Rumpf) ------
+    # Auspuffstapel links und rechts hinter dem Kopf (seit 27. Nov. 2026 etwas
+    # dicker; das Lockfeuer der Praesenz dazwischen ist weg, Wunsch des Spielers)
+    L((-9.5, 8), [(2.9, 62.5), (2.9, 76), (3.5, 76), (3.5, 78)], "metal", segments=12),
+    L((-9.5, -8), [(2.9, 62.5), (2.9, 76), (3.5, 76), (3.5, 78)], "metal", segments=12),
+    L((-9.5, 8), [(3.6, 72), (3.6, 73.5)], "accent", caps=False, segments=12),
+    L((-9.5, -8), [(3.6, 72), (3.6, 73.5)], "accent", caps=False, segments=12),
+] + _JUGG_HOSES + _mirror_l(_JUGG_HOSES)
+
+# Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
+# Von 17. bis 26. Nov. 2026 steckte er im Rumpf, weil die 2D-Zeichnung ihn als
+# eigenes Bild immer ueber die Schulter legte; in 3D sortiert die Tiefe die
+# Flaechen, er ist wieder ein eigenes Teil (Wunsch des Spielers).
+JUGG_HEAD = [
     B((-5, 7), (-7, 7), (61, 68), "plate"),
     B((-5.5, 7.5), (-7.5, 7.5), (68, 70), "light"),
     B((7, 7.6), (-5, 5), (63.5, 65.6), "visor"),
     B((7, 8.2), (-7, 7), (60.5, 62.5), "metal"),         # Kinnschutz
-    # Lockfeuer direkt hinter dem Kopf (Passive Praesenz)
-    L((-9.5, 0), [(3.0, 62.5), (3.0, 65)], "metal", segments=12),
-    L((-9.5, 0), [(2.6, 65), (2.6, 69), (1.6, 70.6), (0, 71.2)], "glow", segments=14),
-    L((-9.5, 0), [(3.2, 67.2), (3.2, 67.9)], "accent", caps=False, segments=14),
-    # Auspuffstapel links und rechts davon
-    L((-9.5, 8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
-    L((-9.5, -8), [(2.4, 62.5), (2.4, 76), (3.0, 76), (3.0, 78)], "metal", segments=12),
-    L((-9.5, 8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
-    L((-9.5, -8), [(3.1, 72), (3.1, 73.5)], "accent", caps=False, segments=12),
-] + _JUGG_HOSES + _mirror_l(_JUGG_HOSES)
-
-# Bunkerkopf, tief zwischen den Schultern: kein Hals, ein Kinnschutz vorn.
-# Der Molok-Kopf ist Teil des Rumpfs (17. Nov. 2026, Wunsch des Spielers).
-# Er sitzt tief zwischen Schultern, die HOEHER sind als er -- von hinten muss
-# die nahe Schulter ihn teilweise verdecken, von vorn verdeckt er Auspuffe und
-# Lockfeuer. Als eigenes Sprite laege er immer oben und klebte ueber der
-# Schulter; nur in EINEM Teil sortiert die Tiefe alle Flaechen richtig. Das
-# Kopfteil bleibt als Platzhalter ohne Formen (der Bauplan verlangt eins).
-JUGG_HEAD = []
+]
 
 
 # Standbeine, nicht "Sprintbeine in gross".
@@ -1952,172 +1825,6 @@ JUGG_CORE = [
     D(11.7, 0, 50.7, 4.4, "dark", 6),
     B((12.0, 12.3), (-3.2, 3.2), (49.2, 52.2), "glow"),
     B((12.0, 12.3), (-1.8, 1.8), (47.2, 54.2), "glow"),
-]
-
-# Belagerungskanone -- ausdruecklich KEIN vergroesserter Blaster.
-#
-# Der Blaster ist ein Rohr am Arm: schmal, glatt, ein Lauf. Diese hier bekommt
-# drei Merkmale, die kein Handrohr je hat, und jedes davon liegt auf der
-# Silhouette statt in der Flaeche:
-#
-#   * eine MUENDUNGSBREMSE mit zwei Fluegeln quer zum Rohr -- sie gibt der
-#     Waffe vorn eine Breite, die man auch bei halber Groesse noch erkennt;
-#   * ein liegendes TROMMELMAGAZIN hinter dem Verschluss, das nach hinten
-#     ueber den Bot hinausragt;
-#   * eine ABSTUETZSTREBE nach unten -- das Bauteil sagt "wird abgestuetzt",
-#     also "schwer, kurze Reichweite pro Zug".
-#
-# Der Lauf ist dabei bewusst KUERZER im Verhaeltnis zur Masse als beim
-# Blaster: gedrungen liest sich als Artillerie, lang und duenn als Praezision
-# (siehe eq_rail_lance).
-EQ_CANNON = [
-    # Halterung am Anker: kurzer Stumpf, kein ausmodellierter Arm
-    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),
-    # Verschlussblock -- die Masse sitzt hinten
-    B((-8, 5), (-7.5, 7.5), (34, 45.5), "plate"),
-    B((-8.5, 5.5), (-8, 8), (45.5, 47.5), "light"),
-    B((5, 5.6), (-5.5, 5.5), (37, 43), "dark"),
-    # Trommelmagazin, liegend quer zum Bot und weit hinten
-    L((-10.5, 40), [(4.4, -7), (4.8, -6), (4.8, 6), (4.4, 7)],
-      "dark", axis="l", segments=14),
-    L((-10.5, 40), [(5.1, -3), (5.1, -2)], "accent", axis="l",
-      caps=False, segments=14),
-    L((-10.5, 40), [(5.1, 2), (5.1, 3)], "accent", axis="l",
-      caps=False, segments=14),
-    # Rohr: Ruecklaufhuelse, dann ein deutlich duenneres Stueck. Die
-    # Verjuengung ist noetig, damit die Muendungsbremse davor ueberhaupt als
-    # eigene Form lesbar wird -- an einem durchgehend dicken Rohr verschwindet
-    # sie in der Silhouette.
-    B((5.6, 11), (-4.6, 4.6), (36.5, 43.5), "plate"),
-    B((11, 20), (-2.8, 2.8), (37.6, 42.4), "dark"),
-    # Muendungsbremse: DAS Silhouetten-Merkmal. Die Fluegel liegen flach und
-    # greifen tief nach vorn, damit sie als quer stehende Finnen lesen und
-    # nicht als angeklebte Blechlaschen.
-    B((20, 24), (-3.6, 3.6), (36.8, 43.2), "plate"),
-    B((18.8, 24.5), (-9.5, -3.6), (38.6, 41.4), "dark"),
-    B((18.8, 24.5), (3.6, 9.5), (38.6, 41.4), "dark"),
-    B((24, 24.6), (-3, 3), (37.5, 42.5), "accent"),
-    D(24.9, 0, 40, 2.2, "glow"),
-    # Abstuetzstrebe nach unten
-    B((-1, 3), (-2.6, 2.6), (26, 34), "metal"),
-    B((-4, 6), (-4, 4), (23, 26.5), "dark"),
-]
-
-# Hammer (EQP-012): Nahkampfwaffe des Molok. Kurzer Schaft nach vorn, davor
-# ein grosser, quer stehender Hammerkopf -- ein Block, kein Rohr (gegen die
-# Kanone mit Muendungsbremse und die duenne Plasmaklinge).
-EQ_HAMMER = [
-    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),          # Halterung am Anker
-    B((-4.5, 4.5), (-5, 5), (35, 46), "plate"),          # Unterarm
-    B((4, 15), (-1.4, 1.4), (38, 41), "metal"),          # Schaft
-    B((15, 23), (-7, 7), (30, 48), "plate"),             # Hammerkopf
-    B((23, 23.8), (-6, 6), (32, 46), "dark"),            # Schlagflaeche
-    B((15, 23), (-7.3, 7.3), (38, 40), "accent"),        # Leuchtband
-    D(24.0, 0, 39, 2.0, "glow"),
-]
-
-# Bollwerk-Ramme (EQP-014): kein Stiel wie beim Hammer, sondern ein dicker
-# Kolben direkt vor dem Unterarm mit einer breiten, flachen Rammplatte --
-# kurz und massig, mit Hydraulikzylindern oben und unten.
-EQ_BULWARK_RAM = [
-    B((-3.5, 3.5), (-5, 5), (45, 53), "metal"),          # Halterung am Anker
-    B((-4.5, 4.5), (-5, 5), (33, 46), "plate"),          # Unterarm
-    B((4.5, 15), (-2.6, 2.6), (35.5, 42.5), "metal"),    # langer Kolben
-    B((4.5, 13), (-1.2, 1.2), (42.5, 45), "dark"),       # Hydraulik oben
-    B((4.5, 13), (-1.2, 1.2), (33, 35.5), "dark"),       # Hydraulik unten
-    B((6, 7), (-4, 4), (34, 44), "light"),               # Manschette
-    B((15, 19), (-6, 6), (32, 46), "plate"),             # Rammkopf, kompakt
-    B((19, 19.8), (-5, 5), (33.5, 44.5), "dark"),        # Stirn
-    B((19.8, 20.6), (-1.6, 1.6), (37.4, 40.6), "glow"),  # Stoesselkern
-    B((15, 19), (-6.3, 6.3), (38.4, 39.6), "accent"),    # Leuchtband
-]
-
-# Elektronischer Schraubenschluessel (9. Nov. 2026, Wunsch des Spielers;
-# frueher Drohnen-Pod): ein Werkzeug am Arm wie der Hammer, aber schlank --
-# langer Griff mit Wicklung, vorn ein offenes Maul aus zwei Backen, dazwischen
-# ein leuchtender Kern, aus dem Heilstrahl und Energiekugel kommen.
-EQ_DRONE_POD = [
-    B((-3.5, 3.5), (-4.5, 4.5), (45, 53), "metal"),        # Halterung am Anker
-    B((-4, 4), (-4.5, 4.5), (36, 46), "plate"),            # Unterarm
-    B((3, 17), (-1.6, 1.6), (38, 41.5), "plate"),          # Griff
-    B((5, 10), (-2.0, 2.0), (37.5, 42), "dark"),           # Wicklung
-    B((17, 21), (-5, 5), (35, 45), "metal"),               # Kopf
-    B((17, 21), (-5.3, 5.3), (39, 41), "accent"),          # Leuchtband
-    B((21, 27), (-5, -2.2), (35, 45), "metal"),            # Backe links
-    B((21, 27), (2.2, 5), (35, 45), "metal"),              # Backe rechts
-    B((21, 24), (-1.4, 1.4), (38.3, 41.7), "glow"),        # Kern im Maul
-    D(27.2, -3.6, 40, 1.0, "glow"),
-    D(27.2, 3.6, 40, 1.0, "glow"),
-]
-
-# Koedersender -- laut, aber ausdruecklich KEINE Waffe.
-#
-# Das Modul ist der einzige Weg im Bestand, Aufmerksamkeit zu erzeugen, ohne
-# dafuer zu handeln (GAME_DESIGN 6b), und der einzige, der provozieren kann.
-# Genau das muss die Silhouette sagen -- und zwar OHNE die Formensprache einer
-# Waffe zu benutzen:
-#
-#   * kein Rohr, keine Muendung, nichts, was nach vorn zeigt. Jede Waffe im
-#     Bestand greift nach vorn; dieses Teil tut es an keiner Stelle.
-#   * ein duenner MAST nach oben, der ueber den Kopf hinausreicht -- die
-#     einzige Ausruestung, die das tut;
-#   * drei KREUZE aus flachen Streben am Mast, nach oben kuerzer werdend --
-#     Sendeantennen, keine Laeufe, und mit deutlichem Abstand voneinander;
-#   * ein GEGENGEWICHT nach hinten-unten: das Teil ist kopflastig, und man
-#     sieht ihm an, dass es getragen und nicht gehalten wird.
-#
-# Der Runenstab ist der Nachbar, gegen den sich das abgrenzen muss -- auch er
-# laeuft senkrecht nach oben. Er ist aber ein Stab AM ARM mit einer Glut obenauf
-# (Rotationskoerper, rund, durchgehend schlank); der Sender hat keinen Arm,
-# dafuer die Kreuztreppe und das Gewicht hinten.
-#
-# Zwei verworfene Anlaeufe, beide lehrreich genug, um sie aufzuschreiben:
-#
-# 1. Die Kreuze waren zuerst waagerechte SCHEIBEN. Ein waagerechter Kreis mit
-#    Radius r projiziert unter dieser Kamera aber immer zur Ellipse mit der
-#    Halbhoehe 0.5*r*SCALE -- er liest sich als praller Koerper, nie als
-#    duenner Schirm. Gekreuzte Streben behalten ihre Duenne, weil zwischen
-#    den Armen der Hintergrund steht.
-# 2. Die Abstaende waren zu klein. Zwei waagerechte Formen trennen sich auf
-#    dem Bildschirm nur um dz*COS45*SCALE, brauchen also
-#
-#        dz  >  0.71 * (r1 + r2)
-#
-#    um sich nicht zu ueberlappen. Mit dz = 4 und Radien um 8 verschmolzen die
-#    drei zu einem Kegel -- das Teil sah aus wie eine Laterne.
-#
-# Beides hat der Silhouetten-Test NICHT gefangen, und das ist kein Mangel: er
-# misst den Umriss, und eine Laterne ist ein ebenso einmaliger Umriss wie eine
-# Antenne. Er haette also zu Recht bestanden. Genau der Fall, fuer den in
-# GAME_DESIGN 3d steht, dass der Test das Hinsehen nicht ersetzt -- er faengt
-# "abgeschrieben und groesser gezogen", nicht "sagt die falsche Funktion".
-EQ_BAIT_BEACON = [
-    # Halterung am Anker -- derselbe kurze Stumpf wie bei Blaster und Schild.
-    B((-3, 3), (-4, 4), (46, 54), "metal"),
-    # Gegengewicht nach hinten-unten: das Modul ist kopflastig, und man sieht
-    # ihm an, dass es getragen und nicht gehalten wird.
-    B((-10, -2.5), (-5.5, 5.5), (38.5, 46.5), "plate"),
-    B((-10.5, -3), (-6, 6), (46.5, 48), "light"),
-    B((-10.8, -10.2), (-3.5, 3.5), (40, 45), "accent"),
-    # Mast -- laeuft ueber jede Kopfhoehe im Bestand hinaus (61 bis 72).
-    L((0, 0), [(1.5, 50), (1.5, 80)], "metal", segments=10),
-    # Drei KREUZE aus flachen Streben statt Scheiben. Ein waagerechter Kreis
-    # projiziert unter dieser Kamera immer zur 2:1-Ellipse und liest sich als
-    # praller Koerper, nie als duenner Schirm -- drei davon uebereinander
-    # ergaben eine Pagode. Gekreuzte Streben behalten dagegen ihre Duenne,
-    # weil zwischen den Armen der Hintergrund steht.
-    B((-7.6, 7.6), (-1.1, 1.1), (56.5, 57.4), "plate"),
-    B((-1.1, 1.1), (-7.6, 7.6), (56.5, 57.4), "plate"),
-    B((-6.8, 6.8), (-0.5, 0.5), (57.4, 57.7), "accent"),
-    B((-0.5, 0.5), (-6.8, 6.8), (57.4, 57.7), "accent"),
-    B((-5.6, 5.6), (-1.0, 1.0), (67.0, 67.9), "plate"),
-    B((-1.0, 1.0), (-5.6, 5.6), (67.0, 67.9), "plate"),
-    B((-4.9, 4.9), (-0.5, 0.5), (67.9, 68.2), "accent"),
-    B((-0.5, 0.5), (-4.9, 4.9), (67.9, 68.2), "accent"),
-    B((-3.6, 3.6), (-0.9, 0.9), (76.0, 76.9), "plate"),
-    B((-0.9, 0.9), (-3.6, 3.6), (76.0, 76.9), "plate"),
-    # Signalspitze auf dem Mast, nicht auf dem obersten Schirm
-    L((0, 0), [(0, 83.4), (1.9, 81.4), (1.9, 79.8), (0, 79.2)], "glow", segments=12),
 ]
 
 
@@ -2242,53 +1949,6 @@ MAGE_CORE = [
     D(11.75, 0, 44, 2.9, "glow"),
     L((0, 44), [(4.6, 11.5), (4.6, 11.9)], "accent", axis="f", caps=False, segments=20),
     L((0, 44), [(3.3, 11.6), (3.3, 11.9)], "accent", axis="f", caps=False, segments=20),
-]
-
-EQ_RUNE_STAFF = [
-    L((0, 0), [(3.4, 41), (3.8, 47), (3.4, 50)], "metal", segments=12),   # Oberarm
-    L((1.0, 0), [(3.0, 31), (3.6, 40)], "plate", segments=12),            # Unterarm
-    L((1.0, 0), [(4.2, 29), (4.2, 31.6)], "dark", segments=12),           # Faust
-    # Der Stab laeuft VOR dem Arm nach oben. Nach vorn gerichtet wuerde er in
-    # der Iso-Ansicht mit Torso und Fahrgestell verschmelzen.
-    L((7.6, 0), [(1.1, 22), (1.1, 55)], "metal", segments=10),
-    L((7.6, 0), [(2.3, 33), (2.3, 34.4)], "accent", caps=False, segments=10),
-    L((7.6, 0), [(2.9, 54), (3.6, 56.2), (2.9, 58.4)], "plate", segments=12),
-    L((7.6, 0), [(0, 58.6), (2.2, 59.6), (3.0, 61.0), (2.2, 62.4), (0, 63.4)], "glow"),
-    L((7.6, 0), [(4.4, 60.4), (4.4, 61.6)], "accent", caps=False, segments=18),
-]
-
-EQ_ORBIT_FOCUS = [
-    L((0, 0), [(3.4, 41), (3.8, 47), (3.4, 50)], "metal", segments=12),
-    L((1.2, 0), [(3.2, 33), (3.8, 40)], "plate", segments=12),
-    L((1.2, 0), [(4.6, 30), (5.0, 32), (4.4, 33.6)], "dark", segments=12),
-    # Schwebender Fokusring vor der Hand. Geschlossenes Profil (erster Punkt
-    # == letzter) -> Mantel ohne Deckel, also ein echter Ring mit Loch.
-    L((0, 30.5), [(6.4, 6.5), (7.6, 7.6), (6.4, 8.7), (6.4, 6.5)],
-      "accent", axis="f", segments=18),
-    L((0, 30.5), [(0, 6.4), (1.9, 6.9), (2.6, 7.6), (1.9, 8.3), (0, 8.8)],
-      "glow", axis="f", segments=12),
-]
-
-
-# Hologramm-Boost (EQP-009) -- das Signatur-Gadget des Vireo. Ein Unterarm-
-# Projektor, der einen schwebenden Hologramm-PFEIL nach vorn wirft: an ihm
-# entlang blinkt der Scout ein Stueck weit (die Dash-Aktion). Die Silhouette ist
-# bewusst ein DREIECK (nach vorn zeigender Kegel) -- unverkennbar anders als der
-# Ring des Orbit-Fokus, das Rohr des Blasters oder die Platte des Deflektors, und
-# genau das verlangt die Lesbarkeitsregel (check_silhouettes).
-EQ_HOLO_BOOST = [
-    # -- Unterarm-Projektor: kompaktes Gehaeuse auf dem Handruecken ----------
-    L((0, 0), [(3.2, 41), (3.6, 46), (3.0, 49)], "metal", segments=12),
-    L((1.0, 0), [(2.6, 33), (3.4, 40)], "plate", segments=12),
-    # Emitterlinse, leicht nach vorn geneigt
-    D(4.4, 0, 45, 1.6, "glow"),
-    # -- Schwebender Hologramm-Pfeil vor der Hand ---------------------------
-    # Ein nach VORN zeigender Kegel: breite Basis hinten (Radius 5.2 bei f=4.5),
-    # Spitze vorn (Radius 0 bei f=12.5). Seitlich projiziert ergibt das ein
-    # Dreieck -- der Boost-Pfeil.
-    L((0, 47), [(5.2, 4.5), (0.0, 12.5)], "accent", axis="f", segments=16, caps=False),
-    # Innerer, hellerer Kegel -- gibt dem Hologramm Tiefe.
-    L((0, 47), [(2.8, 5.6), (0.0, 11.6)], "glow", axis="f", segments=12, caps=False),
 ]
 
 
@@ -2450,23 +2110,6 @@ def side_holder(z=61.0):
         B((-1.0, 1.0), (-5.0, -2.4), (z + 3.4, z + 3.8), "accent"),
     ]
 
-
-# Moerser (18. Nov. 2026): Verschlussblock mit Fase, Rohr mit Muendungskragen,
-# zwei Stuetzen, Munitionsgurt zum Halter -- statt eines nackten Zylinders.
-EQ_MORTAR = side_holder() + [
-    EX([(-5, 61.4), (3, 61.4), (4.2, 63), (3, 66.5), (-5, 66.5)], (-2.9, 2.9), "plate", bevel=0.45),
-    L((-1, 0), [(3.0, 66), (3.0, 79), (3.7, 80), (3.7, 83)], "metal", segments=14),   # Rohr
-    L((-1, 0), [(3.3, 70), (3.3, 71.2)], "accent", caps=False, segments=14),
-    L((-1, 0), [(3.3, 74), (3.3, 75.2)], "accent", caps=False, segments=14),
-    L((-1, 0), [(2.4, 83), (2.4, 83.5)], "glow", segments=12),                         # Muendung
-    OB((2.8, 2.6, 63), (0.6, 2.9, 73), 0.9, 0.9, "metal"),                             # Stuetzen
-    OB((2.8, -2.6, 63), (0.6, -2.9, 73), 0.9, 0.9, "metal"),
-    # Munitionsgurt vom Verschluss zum Halter
-    SW([(-5.2, -1.0, 64.5), (-7.2, -2.8, 63.6), (-6.4, -5.6, 62.6), (-3.2, -7.0, 62.6)],
-       [1.1] * 4, "dark", sides=4, flat=0.45, steps=5),
-    SW([(-5.3, -1.0, 64.5), (-7.3, -2.8, 63.6), (-6.5, -5.6, 62.6), (-3.3, -7.0, 62.6)],
-       [0.45] * 4, "glow", sides=6, steps=5),
-]
 
 # Schienen-Lanze als schweres Scharfschuetzengewehr (Spieler 18. Nov. 2026:
 # "sieht ueberhaupt nicht nach Sniper aus"): Schaft mit Wangenauflage,
@@ -2713,50 +2356,6 @@ def _head_hammer(h, k):
     ], (f + 6 * k, l, z + 20.5 * k)
 
 
-def _head_ram(h, k):
-    """Ramme an der Manschette: Kolben mit Hydraulik, breite Rammplatte --
-    stoesst nach vorn."""
-    f, l, z = h
-    return [
-        B((f, f + 8.4 * k), (l - 2.4 * k, l + 2.4 * k), (z - 2.6 * k, z + 2.6 * k), "metal"),
-        B((f, f + 6.4 * k), (l - 1.0 * k, l + 1.0 * k), (z + 2.6 * k, z + 4.4 * k), "dark"),
-        B((f, f + 6.4 * k), (l - 1.0 * k, l + 1.0 * k), (z - 4.4 * k, z - 2.6 * k), "dark"),
-        B((f + 1.4 * k, f + 2.4 * k), (l - 3.2 * k, l + 3.2 * k), (z - 3.4 * k, z + 3.4 * k), "light"),
-        EX([(l - 6 * k, z - 5 * k), (l - 4 * k, z - 7 * k), (l + 4 * k, z - 7 * k),
-            (l + 6 * k, z - 5 * k), (l + 6 * k, z + 5 * k), (l + 4 * k, z + 7 * k),
-            (l - 4 * k, z + 7 * k), (l - 6 * k, z + 5 * k)], (f + 8.4 * k, f + 11.4 * k),
-           "plate", bevel=0.6 * k, axis="f"),
-        # Hydraulikschlauch am Kolben
-        SW([(f + 0.6 * k, l + 2.4 * k, z + 0.5 * k), (f + 3 * k, l + 4.2 * k, z + 3.2 * k),
-            (f + 6.5 * k, l + 3.6 * k, z + 3.4 * k), (f + 8.4 * k, l + 2.8 * k, z + 1.8 * k)],
-           [0.7 * k] * 4, "dark", sides=8, steps=5),
-        B((f + 8.4 * k, f + 11.4 * k), (l - 6.3 * k, l + 6.3 * k), (z - 0.6 * k, z + 0.6 * k), "accent"),
-        B((f + 11.4 * k, f + 12.1 * k), (l - 5 * k, l + 5 * k), (z - 6 * k, z + 6 * k), "dark"),
-        B((f + 12.1 * k, f + 12.8 * k), (l - 1.6 * k, l + 1.6 * k), (z - 1.6 * k, z + 1.6 * k), "glow"),
-    ], (f + 12.8 * k, l, z)
-
-
-def _head_boomerang(h, k):
-    """Wurfbereit wie ein echter Bumerang -- ohne Griff: das Ende des einen
-    Fluegels steckt in der Faust, die Klinge steigt in einem Bogen zum Knick
-    und faellt nach vorn ab. Ein durchgehender gebogener Zug mit Rauten-
-    Querschnitt (Schneide ringsum), dazu eine Leuchtnut auf beiden Seiten
-    (Spieler 18. Nov. 2026)."""
-    f, l, z = h
-    path = [(f - 0.2 * k, l, z - 3.0 * k), (f + 0.4 * k, l, z + 6.0 * k),
-            (f + 3.0 * k, l, z + 13.5 * k), (f + 7.5 * k, l, z + 15.0 * k),
-            (f + 12.5 * k, l, z + 11.5 * k), (f + 16.0 * k, l, z + 6.5 * k)]
-    radii = [1.3 * k, 2.2 * k, 2.8 * k, 2.8 * k, 2.0 * k, 0.15 * k]
-    groove = [(pt[0], pt[1], pt[2]) for pt in path[1:5]]
-    return [
-        SW(path, radii, "blade", sides=4, flat=0.32, steps=5),
-        SW([(pt[0], l + 0.75 * k, pt[2]) for pt in groove], [0.35 * k] * 4, "glow",
-           sides=6, steps=4),
-        SW([(pt[0], l - 0.75 * k, pt[2]) for pt in groove], [0.35 * k] * 4, "glow",
-           sides=6, steps=4),
-    ], (f + 16.0 * k, l, z + 6.5 * k)
-
-
 def _head_staff(h, k):
     f, l, z = h
     return [
@@ -2774,26 +2373,6 @@ def _head_staff(h, k):
                    (2.2 * k, z + 26.2 * k), (0, z + 27.2 * k)], "glow"),
         L((f, l), [(4.9 * k, z + 23.8 * k), (4.9 * k, z + 24.9 * k)], "accent", caps=False, segments=18),
     ], (f, l, z + 24.4 * k)
-
-
-def _head_wrench(h, k):
-    f, l, z = h
-    return [
-        B((f - 1.2 * k, f + 1.2 * k), (l - 1.2 * k, l + 1.2 * k), (z - 9 * k, z + 14 * k), "plate"),
-        B((f - 1.7 * k, f + 1.7 * k), (l - 1.7 * k, l + 1.7 * k), (z - 11 * k, z - 9 * k), "dark"),
-        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z - 8 * k, z - 6.8 * k), "accent"),
-        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 3.2 * k, z + 4.4 * k), "accent"),
-        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 6.0 * k, z + 7.2 * k), "accent"),
-        # Maul als Profil der Vorderansicht: echte Schluesselform mit Oeffnung
-        EX([(l - 4.6 * k, z + 14 * k), (l + 4.6 * k, z + 14 * k), (l + 4.8 * k, z + 21 * k),
-            (l + 3.4 * k, z + 24.4 * k), (l + 1.7 * k, z + 24.4 * k), (l + 1.9 * k, z + 19.6 * k),
-            (l - 1.9 * k, z + 19.6 * k), (l - 1.7 * k, z + 24.4 * k), (l - 3.4 * k, z + 24.4 * k),
-            (l - 4.8 * k, z + 21 * k)], (f - 2.0 * k, f + 2.0 * k), "metal", bevel=0.5 * k, axis="f"),
-        B((f - 2.2 * k, f + 2.2 * k), (l - 4.75 * k, l + 4.75 * k), (z + 15.4 * k, z + 16.6 * k), "accent"),
-        B((f - 1.3 * k, f + 1.3 * k), (l - 1.3 * k, l + 1.3 * k), (z + 18 * k, z + 21 * k), "glow"),
-        D(f + 2.2 * k, l - 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
-        D(f + 2.2 * k, l + 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
-    ], (f, l, z + 21 * k)
 
 
 def _head_shield(h, k):
@@ -2834,6 +2413,38 @@ def lafette_blaster(neon=False):
     return s, (17.1, 0, z + 5.2)
 
 
+def _head_wrench(h, k):
+    """Repair-Kit (bis 27. Nov. 2026 E-Schraubenschluessel): Schluessel mit Maul."""
+    f, l, z = h
+    return [
+        B((f - 1.2 * k, f + 1.2 * k), (l - 1.2 * k, l + 1.2 * k), (z - 9 * k, z + 14 * k), "plate"),
+        B((f - 1.7 * k, f + 1.7 * k), (l - 1.7 * k, l + 1.7 * k), (z - 11 * k, z - 9 * k), "dark"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z - 8 * k, z - 6.8 * k), "accent"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 3.2 * k, z + 4.4 * k), "accent"),
+        B((f - 1.6 * k, f + 1.6 * k), (l - 1.6 * k, l + 1.6 * k), (z + 6.0 * k, z + 7.2 * k), "accent"),
+        # Maul als Profil der Vorderansicht: echte Schluesselform mit Oeffnung
+        EX([(l - 4.6 * k, z + 14 * k), (l + 4.6 * k, z + 14 * k), (l + 4.8 * k, z + 21 * k),
+            (l + 3.4 * k, z + 24.4 * k), (l + 1.7 * k, z + 24.4 * k), (l + 1.9 * k, z + 19.6 * k),
+            (l - 1.9 * k, z + 19.6 * k), (l - 1.7 * k, z + 24.4 * k), (l - 3.4 * k, z + 24.4 * k),
+            (l - 4.8 * k, z + 21 * k)], (f - 2.0 * k, f + 2.0 * k), "metal", bevel=0.5 * k, axis="f"),
+        B((f - 2.2 * k, f + 2.2 * k), (l - 4.75 * k, l + 4.75 * k), (z + 15.4 * k, z + 16.6 * k), "accent"),
+        B((f - 1.3 * k, f + 1.3 * k), (l - 1.3 * k, l + 1.3 * k), (z + 18 * k, z + 21 * k), "glow"),
+        D(f + 2.2 * k, l - 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
+        D(f + 2.2 * k, l + 3.3 * k, z + 23 * k, 0.9 * k, "glow"),
+    ], (f, l, z + 21 * k)
+
+
+def lafette_wrench():
+    """Repair-Kit auf der Lafette: ohne Griff, nur der Kopf mit dem Maul
+    nach oben auf einem kurzen Sockel."""
+    z = LAFETTE_Z
+    base = z + 5
+    head, point = _head_wrench((0, 0, base - 14), 1.0)
+    return side_holder(z) + [
+        B((-1.2, 1.2), (-1.2, 1.2), (z + 1, base), "plate"),
+    ] + head[5:], point
+
+
 def lafette_staff():
     """Runenstab auf der Lafette: ohne Griff, nur die Kugel in ihrer Fassung
     auf einem kurzen Sockel (Spieler 17. Nov. 2026)."""
@@ -2842,17 +2453,6 @@ def lafette_staff():
     head, point = _head_staff((0, 0, base - 18.6), 1.0)
     return side_holder(z) + [
         L((0, 0), [(1.6, z + 1), (1.6, base)], "metal", segments=10),
-    ] + head[5:], point
-
-
-def lafette_wrench():
-    """E-Schluessel auf der Lafette: ohne Griff, nur der Kopf mit dem Maul
-    nach oben auf einem kurzen Sockel."""
-    z = LAFETTE_Z
-    base = z + 5
-    head, point = _head_wrench((0, 0, base - 14), 1.0)
-    return side_holder(z) + [
-        B((-1.2, 1.2), (-1.2, 1.2), (z + 1, base), "plate"),
     ] + head[5:], point
 
 
@@ -2884,14 +2484,11 @@ def weapon_set(pose, head, lafette=None, **kw):
 
 
 W_PULSE = weapon_set("aim", _head_blaster, lafette=lafette_blaster())
-W_NEON = weapon_set("aim", _head_blaster, lafette=lafette_blaster(neon=True), neon=True)
 W_BLADE = weapon_set("hold", _head_blade)
-W_BOOMERANG = weapon_set("hold", _head_boomerang)
 W_SHIELD = weapon_set("guard", _head_shield)
 W_HAMMER = weapon_set("hold", _head_hammer)
-W_RAM = weapon_set("aim", _head_ram)
-W_WRENCH = weapon_set("hold", _head_wrench, lafette=lafette_wrench())
 W_STAFF = weapon_set("hold", _head_staff, lafette=lafette_staff())
+W_WRENCH = weapon_set("hold", _head_wrench, lafette=lafette_wrench())
 
 
 # ===========================================================================
@@ -2965,25 +2562,9 @@ SETS = [
                 "mount_class": "light", "category": "weapon",
             },
             {
-                # Neon-Variante (Neon City): gleiche Form, eigene Faehigkeit,
-                # Neon-Farben -- leuchtende Roehren als Markenzeichen. Als
-                # Variante darf sie die Silhouette des Blasters teilen.
-                "id": "eq_neon_blaster", "code": "EQP-011", "type": "equipment",
-                "name": "Neon-Blaster", "tags": ["weapon", "ranged", "neon"],
-                **W_NEON, "variant_of": "eq_pulse_blaster",
-                "palette": NEON_EQUIPMENT,
-                "mount_class": "light", "category": "weapon",
-            },
-            {
                 "id": "eq_plasma_blade", "code": "EQP-010", "type": "equipment",
                 "name": "Plasmaklinge", "tags": ["weapon", "melee"],
                 **W_BLADE,
-                "mount_class": "light", "category": "weapon",
-            },
-            {
-                "id": "eq_boomerang", "code": "EQP-013", "type": "equipment",
-                "name": "Klingenbumerang", "tags": ["weapon", "melee", "thrown"],
-                **W_BOOMERANG,
                 "mount_class": "light", "category": "weapon",
             },
             {
@@ -3000,7 +2581,7 @@ SETS = [
         "dir": "bot2",
         "id": "bot2",
         "name": "HX-Molok // Juggernaut",
-        "description": "Schwerer Rahmen. Drei Ausruestungsanker (inkl. Schulterpod).",
+        "description": "Schwerer Rahmen. Zwei Waffen.",
         "palette": JUGG_PALETTE,
         "parts": [
             {
@@ -3030,11 +2611,12 @@ SETS = [
                 # woran sich ein Schild abstuetzen koennte -- dort gehoert
                 # Sensorik und Support hin, nichts Schweres und nichts, was
                 # gehalten werden muss.
-                # Zwei Plaetze, beide bis mittel (8. Nov. 2026): schwer ist nur
-                # das Scharfschuetzengewehr des Strix.
+                # Gunship (KERNPLAN, gebaut 27. Nov. 2026): EIN Halter bis
+                # mittel; die Waffe erscheint gespiegelt am rechten Arm
+                # (``mirror``), mit vollen Werten und eigenem Takt.
                 "slot_rules": {
                     "equip_left": {"max_class": "medium"},
-                    "equip_right": {"max_class": "medium"},
+                    "equip_right": {"off": True, "mirror": "equip_left"},
                     "equip_shoulder": {"off": True},
                 },
             },
@@ -3061,20 +2643,6 @@ SETS = [
                 "name": "Hammer", "tags": ["weapon", "melee", "heavy"],
                 **W_HAMMER,
                 "mount_class": "medium", "category": "weapon",
-            },
-            {
-                "id": "eq_bulwark_ram", "code": "EQP-014", "type": "equipment",
-                "name": "Bollwerk-Ramme", "tags": ["weapon", "melee", "heavy"],
-                **W_RAM,
-                "mount_class": "medium", "category": "weapon",
-            },
-            {
-                # Frueher fest auf der Molok-Schulter ("slots"); seit es die
-                # Schulter als Halter nicht mehr gibt, ein Gadget wie die anderen.
-                "id": "eq_drone_pod", "code": "EQP-004", "type": "equipment",
-                "name": "E-Schraubenschlüssel",
-                "tags": ["support", "tool"], **W_WRENCH,
-                "mount_class": "light", "category": "support",
             },
         ],
     },
@@ -3129,6 +2697,12 @@ SETS = [
                 "name": "Runenstab", "tags": ["weapon", "arcane", "round"],
                 **W_STAFF,
                 "mount_class": "light", "category": "weapon",
+            },
+            {
+                "id": "eq_repair_kit", "code": "EQP-004", "type": "equipment",
+                "name": "Repair-Kit", "tags": ["weapon", "support", "tool"],
+                **W_WRENCH,
+                "mount_class": "medium", "category": "weapon",
             },
         ],
     },
@@ -3192,13 +2766,6 @@ SETS = [
                 # kommt sie damit ebenso wenig.
                 "mount_class": "heavy", "category": "weapon",
                 "anchors": {"mount": (0, 0, 61), "muzzle": (37.6, 0, 64.4)},
-            },
-            {
-                "id": "eq_mortar", "code": "EQP-015", "type": "equipment",
-                "name": "Mörser", "tags": ["weapon", "heavy", "artillery"],
-                "shapes": EQ_MORTAR,
-                "mount_class": "heavy", "category": "weapon",
-                "anchors": {"mount": (0, 0, 61), "muzzle": (-1, 0, 83.5)},
             },
         ],
     },
@@ -3727,8 +3294,6 @@ def check_silhouettes() -> None:
     for spec, part in all_parts():
         if part.get("variant_of"):
             continue    # Varianten teilen die Form ihrer Grundwaffe mit Absicht
-        if not part["shapes"]:
-            continue    # Platzhalter ohne Formen (Molok-Kopf sitzt im Rumpf)
         key = "equipment" if part["type"].startswith("equipment") else part["type"]
         by_type.setdefault(key, []).append(
             (f"{spec['id']}/{part['id']}", silhouette(part["shapes"])))

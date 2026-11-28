@@ -56,18 +56,6 @@ var push_tiles: int = 0
 ## fuer Angriffe; jede Waffe laedt fuer sich nach.
 var interval: float = 2.0
 
-## Wann eine Faehigkeit von selbst ausloest. Faehigkeiten werden nicht mehr
-## gezogen, sie kommen nach einer festen Regel:
-##
-##   attacks   jeder ``trigger_every``-te Angriff der Waffe ``trigger_weapon``
-##             IST die Faehigkeit (sie ersetzt diesen Angriff).
-##   time      alle ``trigger_every`` Sekunden, sobald ein Ziel in Reichweite ist.
-##   adjacent  wenn ein Gegner direkt danebensteht, hoechstens alle
-##             ``trigger_every`` Sekunden.
-## Schadensfaktor am SCHILD (Schildbrecher des Neon-Blasters: 2.0). Auf die
-## Integritaet wirkt er nicht.
-var shield_mult: float = 1.0
-
 ## Treffer je Ausloesen. Mehr als einer verteilt sich auf bis zu so viele
 ## Gegner in Reichweite, der Rest geht wieder aufs Ziel (Doppelschuss).
 var shots: int = 1
@@ -103,15 +91,18 @@ var heal: int = 0
 var shield_gain: int = 0
 var support: String = ""
 
+## Wann eine Faehigkeit von selbst ausloest. Faehigkeiten werden nicht mehr
+## gezogen, sie kommen nach einer festen Regel:
+##
+##   attacks   jeder ``trigger_every``-te Angriff der Waffe ``trigger_weapon``
+##             IST die Faehigkeit (sie ersetzt diesen Angriff).
+##   adjacent  wenn ein Gegner direkt danebensteht, hoechstens alle
+##             ``trigger_every`` Sekunden.
 var trigger_kind: String = ""
 var trigger_every: float = 0.0
 var trigger_weapon: StringName = &""
 
-## Modul Koedersender: die Faehigkeit lockt ihr Ziel so viele Sekunden auf
-## den Traeger. 0 = nicht.
-var taunt_seconds: float = 0.0
-
-## Module (MODULE_KONZEPT.md), als Kopie gesetzt (with_modules):
+## Module (MODULE_AMP_FUSION.md), als Kopie gesetzt (with_modules):
 ## Ueberspannung -- solange der Schild des Traegers steht, wird dieser Anteil
 ## des kinetischen Schadens zu Energie (ActionResolver.apply_damage).
 var kinetic_to_energy: float = 0.0
@@ -122,15 +113,6 @@ var bonus_vs_marked: float = 0.0
 var armor_to_damage: float = 0.0
 ## Phasenbruch (BIOS): +Anteil Schaden gegen Gegner ohne Schild.
 var bonus_vs_unshielded: float = 0.0
-
-## Neue Waffen (9. Nov. 2026): Zusatzschaden als Anteil der EIGENEN maximalen
-## Integritaet, ohne Power (Bollwerk-Ramme) ...
-var hp_scaling: float = 0.0
-## ... naeher als so viele Felder trifft die Waffe nicht (Moerser) ...
-var min_range: int = 0
-## ... und +Anteil Schaden, wenn der Traeger gerade gelaufen ist
-## (Klingenbumerang, Unit.MOVING_WINDOW).
-var moving_bonus: float = 0.0
 
 ## Faehigkeitsschaden als Anteil des Waffenschadens (8. Nov. 2026). power ist
 ## daraus schon berechnet; der Anteil bleibt fuer die Anzeige.
@@ -144,6 +126,13 @@ var charger: Dictionary = {}
 ## und Virusschaden (Anteil, an Panzerung und Schild-Faktoren vorbei).
 var lifesteal: float = 0.0
 var virus_fraction: float = 0.0
+## Repair-Kit (27. Nov. 2026): der Angriff speichert den angerichteten Schild-
+## und Integritaetsschaden beim Schuetzen (``stores_damage``); die Faehigkeit
+## (``release_store``, support "team") gibt jedem Teammitglied den Speicher mal
+## Effizienz als Schildgabe und Reparatur -- ``shield_gain``/``heal`` sind dabei
+## Prozent des Speichers (100 = alles), damit Module sie skalieren.
+var stores_damage: bool = false
+var release_store: bool = false
 
 
 static func from_meta(meta: Dictionary, owner_name: String = "",
@@ -163,7 +152,6 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.interval = float(meta.get("interval", 2.0))
 	action.gather = bool(meta.get("gather", false))
 	action.shots = maxi(1, int(meta.get("shots", 1)))
-	action.shield_mult = float(meta.get("shield_mult", 1.0))
 	action.delay = float(meta.get("delay", 0.0))
 	action.windup = float(meta.get("windup", 0.0))
 	action.salvo = maxi(1, int(meta.get("salvo", 1)))
@@ -172,9 +160,9 @@ static func from_meta(meta: Dictionary, owner_name: String = "",
 	action.support = str(meta.get("support", ""))
 	action.damage_pct = float(meta.get("damage_pct", 0.0))
 	action.base_action = StringName(str(meta.get("base_action", "")))
-	action.hp_scaling = float(meta.get("hp_scaling", 0.0))
-	action.min_range = int(meta.get("min_range", 0))
-	action.moving_bonus = float(meta.get("moving_bonus", 0.0))
+	action.lifesteal = float(meta.get("lifesteal", 0.0))
+	action.stores_damage = bool(meta.get("stores_damage", false))
+	action.release_store = bool(meta.get("release_store", false))
 	var status_meta = meta.get("status")
 	if status_meta is Dictionary:
 		action.status = status_meta
@@ -212,9 +200,8 @@ func with_charger(spec: Dictionary, is_ability: bool) -> ActionData:
 ## Die Aktion mit den Wirkungen der Module eines Halters (ModuleData).
 ## Ohne Wirkung die Aktion selbst, sonst eine Kopie.
 ##
-## Angriffstempo, Schaden, Reichweite, Zielsucher und Rammbock wirken nur
-## auf Angriffe; Takt, Wirkung (Verstaerker) und Locken nur auf
-## Faehigkeiten; Statusdauer und Ueberspannung auf beides.
+## Angriffstempo, Zielsucher, Rammbock und Lebensraub wirken nur auf
+## Angriffe; Heilverstaerker, Virus, Ueberspannung und Phasenbruch auf beides.
 func with_modules(fx: Dictionary) -> ActionData:
 	if fx.is_empty():
 		return self
@@ -223,40 +210,19 @@ func with_modules(fx: Dictionary) -> ActionData:
 		var speed := float(fx.get("attack_speed", 0.0))
 		if speed > 0.0:
 			out.interval = interval / (1.0 + speed)
-		var more := float(fx.get("attack_power", 0.0))
-		if more > 0.0 and power > 0:
-			out.power = int(round(float(power) * (1.0 + more)))
-		out.range_tiles += int(fx.get("range", 0))
 		out.bonus_vs_marked = float(fx.get("bonus_vs_marked", 0.0))
 		out.armor_to_damage = float(fx.get("armor_to_damage", 0.0))
-	else:
-		# Treffer-Takt: Taktchip zaehlt jeden Angriff mehr (Unit.takt_step),
-		# hier aendert sich nur der Zeit-Takt.
-		var faster := float(fx.get("takt_time", 0.0))
-		if trigger_kind == "time" and faster > 0.0:
-			out.trigger_every = trigger_every * maxf(0.2, 1.0 - faster)
-		# Koedersender: ein Exemplar 2 s, jedes weitere +1 s.
-		var taunt := float(fx.get("taunt", 0.0))
-		out.taunt_seconds = 1.0 + taunt if taunt > 0.0 else 0.0
-		# Verstaerker: Faehigkeit +Anteil Wirkung.
-		var stronger := float(fx.get("ability_power", 0.0))
-		if stronger > 0.0:
-			out.power = int(round(float(power) * (1.0 + stronger)))
-			out.heal = int(round(float(heal) * (1.0 + stronger)))
-			out.shield_gain = int(round(float(shield_gain) * (1.0 + stronger)))
 	# Heilverstaerker: Heilung und Schildgabe aller Aktionen der Waffe.
 	var support := float(fx.get("support_power", 0.0))
 	if support > 0.0:
 		out.heal = int(round(float(out.heal) * (1.0 + support)))
 		out.shield_gain = int(round(float(out.shield_gain) * (1.0 + support)))
 	if is_attack():
-		out.lifesteal = float(fx.get("lifesteal", 0.0))
+		# Lebensraub der Waffe selbst bleibt, die Fusion legt nicht drauf.
+		out.lifesteal = maxf(lifesteal, float(fx.get("lifesteal", 0.0)))
 	out.virus_fraction = float(fx.get("virus_fraction", 0.0))
 	out.kinetic_to_energy = float(fx.get("kinetic_to_energy", 0.0))
 	out.bonus_vs_unshielded = float(fx.get("bonus_vs_unshielded", 0.0))
-	var longer := float(fx.get("status_time", 0.0))
-	if longer > 0.0 and status.has("seconds"):
-		out.status["seconds"] = float(status["seconds"]) * (1.0 + longer)
 	return out
 
 
@@ -265,8 +231,6 @@ func trigger_text() -> String:
 	match trigger_kind:
 		"attacks":
 			return "jeder %d. Angriff" % int(trigger_every)
-		"time":
-			return "alle %s s" % _seconds(trigger_every)
 		"adjacent":
 			return "wenn ein Gegner direkt daneben steht (höchstens alle %s s)" \
 				% _seconds(trigger_every)
@@ -277,11 +241,6 @@ func trigger_text() -> String:
 func status_text() -> String:
 	if status.is_empty():
 		return ""
-	if str(status.get("id", "")) == "cable_fire":
-		var rule := Config.section("statuses").get("cable_fire", {}) as Dictionary
-		return "Kabelbrand: +%d Stapel je getroffenem Gegner (je Puls und Stapel %d kinetisch + %d Energie, höchstens %d Stapel je Puls)" % [
-			int(status.get("stacks", 1)), int(rule.get("kinetic", 5)),
-			int(rule.get("energy", 5)), int(rule.get("max_per_pulse", 10))]
 	var seconds := _seconds(float(status.get("seconds", 0.0)))
 	match str(status.get("id", "")):
 		"slow":
@@ -353,8 +312,6 @@ func description_lines() -> Array[String]:
 		lines.append("Stärke %d" % power)
 	if shots > 1:
 		lines.append("%d Treffer auf bis zu %d Gegner" % [shots, shots])
-	if shield_mult > 1.0:
-		lines.append("%d %% Schaden am Schild" % int(round(shield_mult * 100.0)))
 	if aoe_radius > 0:
 		lines.append("Fläche: Radius %d um das Ziel" % aoe_radius)
 	if gather:

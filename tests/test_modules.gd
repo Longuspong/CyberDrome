@@ -1,6 +1,6 @@
 extends RefCounted
 
-## Module und Rezepte (MODULE_KONZEPT.md): Katalog, Wirkung im Kampf, Lager.
+## Module und Fusionen (MODULE_AMP_FUSION.md): Katalog, Wirkung im Kampf, Lager.
 
 var t
 
@@ -182,10 +182,12 @@ func test_the_takt_chip_counts_each_attack_as_one_and_a_quarter() -> void:
 
 
 func test_the_mender_strengthens_heals_and_shield_gifts() -> void:
-	var pod := Unit.create(_with(_vireo(&"eq_drone_pod"), "equip_left", [&"mod_mender"]), &"V", true)
-	pod.init_realtime(0.0)
-	var field: ActionData = pod.mounts[0]["ability"]
-	var original: ActionData = PartDB.get_part(&"eq_drone_pod").actions[1]
+	var wall := _molok()
+	wall.slots["equip_left"] = &"eq_deflector"
+	var tank := Unit.create(_with(wall, "equip_left", [&"mod_mender"]), &"M", true)
+	tank.init_realtime(0.0)
+	var field: ActionData = tank.mounts.filter(func(m): return m["slot"] == "equip_right")[0]["ability"]
+	var original: ActionData = PartDB.get_part(&"eq_deflector").actions[1]
 	t.equal(field.shield_gain, int(round(original.shield_gain * 1.3)), "Schildgabe +30 %")
 
 
@@ -206,10 +208,10 @@ func test_virus_damage_ignores_armor() -> void:
 	var foe: Unit = battle.units[1]
 	foe.shield = 0
 	var plain := battle.resolver.resolve_damage(foe, 100, 0.0)["hp"] as int
-	var virus := battle.resolver.resolve_damage(foe, 100, 0.0, 1.0, false, 0.2)["hp"] as int
+	var virus := battle.resolver.resolve_damage(foe, 100, 0.0, false, 0.2)["hp"] as int
 	t.ok(virus > plain, "Virusanteil geht an der Panzerung vorbei (%d gegen %d)" % [virus, plain])
 	foe.shield = 50
-	var res := battle.resolver.resolve_damage(foe, 100, 0.0, 1.0, false, 1.0)
+	var res := battle.resolver.resolve_damage(foe, 100, 0.0, false, 1.0)
 	t.equal(int(res["shield_after"]), 0, "trifft zuerst den Schild, ohne Faktor")
 	t.equal(int(res["hp"]), 50, "der Rest geht in die Integrität")
 	battle.free()
@@ -381,13 +383,13 @@ func test_a_battle_with_every_module_runs_to_the_end() -> void:
 	for side_seed in [919, 920]:
 		var gun := _with(_vireo(), "equip_left", ids.slice(0, 3))
 		var blade := _with(_vireo(&"eq_plasma_blade"), "equip_left", ids.slice(3, 6))
-		var pod := _with(_vireo(&"eq_drone_pod"), "equip_left", ids.slice(6, 9))
+		var staff := _with(_vireo(&"eq_rune_staff"), "equip_left", ids.slice(6, 9))
 		var tank := _with(_molok(), "equip_left", ids.slice(9, 11))
 		tank.modules["equip_right"] = ids.slice(11, 13)
-		var foe_a := _with(_vireo(&"eq_neon_blaster"), "equip_left", ids.slice(13, 15) + [&"hyp_power"])
+		var foe_a := _with(_vireo(), "equip_left", ids.slice(13, 15) + [&"hyp_power"])
 		var foe_b := _with(_molok(), "equip_left", [&"hyp_armor", &"amp_tech"])
 		var battle := BattleManager.new()
-		battle.setup(side_seed, [gun, blade, pod, tank], [foe_a, foe_b, _vireo(), _molok()])
+		battle.setup(side_seed, [gun, blade, staff, tank], [foe_a, foe_b, _vireo(), _molok()])
 		var outcome := battle.run_to_end()
 		t.ok(outcome != BattleManager.Outcome.RUNNING, "der Kampf endet (%s)" % BattleManager.outcome_label(outcome))
 		battle.free()
@@ -626,7 +628,7 @@ func test_late_shops_sometimes_offer_a_recipe() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Matrix-BIOS (MODULE_KONZEPT.md 6)
+# Matrix-BIOS (MODULE_AMP_FUSION.md 6)
 # ---------------------------------------------------------------------------
 
 func test_the_bios_catalog() -> void:
@@ -686,7 +688,7 @@ func test_bios_offers_are_always_there() -> void:
 
 
 ## Seit 18. Nov. 2026: ein BIOS wertet ein Rezept in einer Waffe auf -- an
-## seinem Platz, beim Molok nur in einer der zwei Waffen. Kein Extraplatz.
+## seinem Platz. Kein Extraplatz, ein BIOS-Rezept je DROME.
 func test_a_recipe_bios_upgrades_a_recipe_in_its_weapon() -> void:
 	var run := _stop_run()
 	var drome := -1
@@ -694,22 +696,22 @@ func test_a_recipe_bios_upgrades_a_recipe_in_its_weapon() -> void:
 		if run.squad[i].body().id == &"jugg_body":
 			drome = i
 	var build: DromeBuild = run.squad[drome]
-	var left: String = build.equip_slots()[0]
-	var right: String = build.equip_slots()[1]
-	build.modules[right] = [&"amp_armor", &"mod_brand"]
+	var slot: String = build.equip_slots()[0]
+	build.modules[slot] = [&"amp_armor"]
 	run.bios_offers = [&"bios_hunt", &"bios_wrecker", &"bios_phase"]
 	t.ok(run.choose_bios(0), "gewaehlt")
 	t.equal(run.storage, [&"bios_hunt"], "liegt im Lager")
 	t.ok(run.bios_offers.is_empty(), "die anderen verfallen")
-	t.ok(not run.install_module(0, drome, left), "ein BIOS steckt nicht wie ein Modul")
-	t.ok(not run.install_bios(0, drome, left), "nicht in die Waffe ohne Brandmarke")
-	t.ok(run.install_bios(0, drome, right), "wertet die Brandmarke auf")
-	t.equal(build.modules[right], [&"amp_armor", &"mod_hunt"], "an ihrem Platz")
+	t.ok(not run.install_module(0, drome, slot), "ein BIOS steckt nicht wie ein Modul")
+	t.ok(not run.install_bios(0, drome, slot), "nicht in die Waffe ohne Brandmarke")
+	build.modules[slot] = [&"amp_armor", &"mod_brand"]
+	t.ok(run.install_bios(0, drome, slot), "wertet die Brandmarke auf")
+	t.equal(build.modules[slot], [&"amp_armor", &"mod_hunt"], "an ihrem Platz")
 	t.ok(run.storage.is_empty(), "das BIOS ist verbraucht")
-	t.equal(ModuleData.slots_for(build, right), 2, "kein Extraplatz")
-	build.modules[left] = [&"mod_brand"]
+	t.equal(ModuleData.slots_for(build, slot), 2, "kein Extraplatz")
+	build.modules[slot] = [&"mod_hunt", &"mod_brand"]
 	run.storage.append(&"bios_hunt")
-	t.ok(not run.install_bios(0, drome, left), "nur ein BIOS-Rezept je DROME")
+	t.ok(not run.install_bios(0, drome, slot), "nur ein BIOS-Rezept je DROME")
 
 
 # ---------------------------------------------------------------------------
@@ -868,72 +870,6 @@ func test_phase_break_hits_unshielded_foes_harder() -> void:
 	var plain := battle.resolver.resolve_damage(shielded, 20, 0.0)["hp"] as int
 	var hit := battle.resolver.apply_damage(bearer, bare, 20, attack)
 	t.ok(hit > plain, "ohne Schild mehr (%d gegen %d)" % [hit, plain])
-	battle.free()
-
-
-# ---------------------------------------------------------------------------
-# Neue Waffen (9. Nov. 2026)
-# ---------------------------------------------------------------------------
-
-func test_the_new_weapons_exist_with_their_classes() -> void:
-	for entry in [[&"eq_bulwark_ram", "medium"], [&"eq_mortar", "heavy"], [&"eq_boomerang", "light"]]:
-		var part := PartDB.get_part(entry[0])
-		t.ok(part != null, "%s ist geladen" % entry[0])
-		if part != null:
-			t.equal(part.mount_class, entry[1], "%s ist %s" % [part.display_name, entry[1]])
-			t.equal(part.actions.size(), 2, "%s: Angriff und Fähigkeit" % part.display_name)
-
-
-func test_the_bulwark_ram_scales_with_integrity() -> void:
-	var ram := DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_bulwark_ram"})
-	var unit := Unit.create(ram, &"M", true)
-	unit.init_realtime(0.0)
-	var slam: ActionData = unit.mounts[0]["ability"]
-	t.ok(slam.hp_scaling > 0.0, "der Rammstoß skaliert mit der Integrität")
-	t.equal(slam.push_tiles, 1, "und stößt zurück")
-	var plain := slam.copy()
-	plain.hp_scaling = 0.0
-	t.ok(unit.raw_damage(slam) >= unit.raw_damage(plain) + int(unit.stat("hp_max") * 0.08) - 1,
-		"+8 %% der max. Integrität (%d gegen %d)" % [unit.raw_damage(slam), unit.raw_damage(plain)])
-	unit.free()
-
-
-func test_the_mortar_cannot_hit_close_targets() -> void:
-	var strix := DromeBuild.create("Strix", {"body": &"strix_body", "head": &"strix_head",
-		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_mortar"})
-	var battle := _battle([strix], [_molok(), _molok()],
-		[Vector2i(10, 10), Vector2i(10, 9), Vector2i(10, 6)])
-	var mortar: Unit = battle.units[0]
-	var attack: ActionData = mortar.mounts[0]["attack"]
-	t.equal(battle.resolver.target_blocker(mortar, battle.units[1].tile, attack), "Zu nah", "direkt daneben nicht")
-	t.equal(battle.resolver.target_blocker(mortar, battle.units[2].tile, attack), "", "auf Abstand schon")
-	t.ok(attack.aoe_radius >= 1 and attack.delay > 0.0, "Fläche mit Verzögerung")
-	battle.free()
-
-
-func test_the_boomerang_hits_harder_on_the_move() -> void:
-	var unit := Unit.create(_vireo(&"eq_boomerang"), &"V", true)
-	unit.init_realtime(0.0)
-	var attack: ActionData = unit.mounts[0]["attack"]
-	t.equal(attack.shots, 2, "hin und zurück: zwei Treffer")
-	unit.still_time = 0.2
-	var moving := unit.raw_damage(attack)
-	unit.still_time = 5.0
-	var standing := unit.raw_damage(attack)
-	t.ok(moving > standing, "in Bewegung mehr (%d gegen %d)" % [moving, standing])
-	unit.free()
-
-
-func test_a_battle_with_the_new_weapons_runs_to_the_end() -> void:
-	var ram := DromeBuild.create("Molok", {"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core", "equip_left": &"eq_bulwark_ram"})
-	var strix := DromeBuild.create("Strix", {"body": &"strix_body", "head": &"strix_head",
-		"feet": &"strix_feet", "core": &"strix_core", "equip_center": &"eq_mortar"})
-	var battle := BattleManager.new()
-	battle.setup(4242, [ram, strix, _vireo(&"eq_boomerang")], [_molok(), _vireo(), _vireo()])
-	var outcome := battle.run_to_end()
-	t.ok(outcome != BattleManager.Outcome.RUNNING, "der Kampf endet (%s)" % BattleManager.outcome_label(outcome))
 	battle.free()
 
 

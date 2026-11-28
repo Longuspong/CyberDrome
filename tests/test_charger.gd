@@ -165,6 +165,6 @@ func test_the_guard_takes_no_element_load() -> void:
 	molok.stats["hp_max"] = 9999
 	molok.hp = 9999
 	var attack: ActionData = vireo.mounts[0]["attack"]
-	battle.resolver.apply_damage(vireo, molok, 10, attack, false, false, 0.0, false)
+	battle.resolver.apply_damage(vireo, molok, 10, attack, false, 0.0, false)
 	t.equal(molok.cable_fire_stacks(), 0, "ohne Anteil keine Belastung")
 	battle.free()

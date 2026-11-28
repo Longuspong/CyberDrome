@@ -180,14 +180,6 @@ func refresh_unit_depth(unit: Unit) -> void:
 	unit.z_index = IsoView.depth(unit.tile) * DEPTH_STRIDE + UNIT_DEPTH_OFFSET
 
 
-func refresh_all_depths(units: Array) -> void:
-	for unit in units:
-		if unit.is_alive():
-			refresh_unit_depth(unit)
-		else:
-			unit.visible = false
-
-
 # ---------------------------------------------------------------------------
 # Anzeige ueber den Einheiten
 # ---------------------------------------------------------------------------
@@ -211,12 +203,6 @@ func set_pixel_scale(camera_zoom: float) -> void:
 		particles.pixel_scale = factor
 	if _floor_rings != null:
 		_floor_rings.pixel_scale = factor
-
-
-## Echtzeit: eine Schussspur von ``from`` nach ``to`` (Weltkoordinaten der
-## Feldmitten), kurz und in Teamfarbe. Alter Weg ohne Stil (gerader Schuss).
-func show_shot(from: Vector2, to: Vector2, color: Color, heavy: bool = false) -> void:
-	_effects.add_attack(from, to, color, {"projectile": "bolt", "energy": 0.0, "heavy": heavy})
 
 
 ## Ein Angriff mit Stil (9. Nov. 2026, Wunsch des Spielers):
@@ -306,7 +292,6 @@ class UnitBadgePainter extends Node2D:
 
 	const COLOR_TRACK := Color(0.04, 0.05, 0.08, 0.9)
 	const COLOR_OUTLINE := Color(0.0, 0.0, 0.0, 0.9)
-	const COLOR_LURED := Color(1.0, 0.62, 0.15)
 	const COLOR_GHOST := Color(1.0, 0.95, 0.85)
 	const COLOR_DANGER := Color(1.0, 0.25, 0.2)
 	## Takt-Leiste unter dem Lebensbalken: wann kommt die Faehigkeit?
@@ -555,13 +540,6 @@ class UnitBadgePainter extends Node2D:
 		if level == "near":
 			_statuses(entry.get("statuses", []), left + width + 5.0 * s, top + height * 0.5, s)
 
-		# Gelockt (Molok-Praesenz, Koedersender): ein kleines Ausrufezeichen
-		# in Orange links neben dem Balken -- "der greift gerade den Locker an".
-		if entry.get("lured", false) and level != "far":
-			var at := Vector2(left - 7.0 * s, top + height * 0.5)
-			draw_circle(at, 5.0 * s, COLOR_OUTLINE)
-			_icon("lured", at, 5.0 * s, COLOR_LURED)
-
 	## Rechteck mit abgeschraegten Ecken oben rechts und unten links.
 	static func _chamfer(x: float, y: float, w: float, h: float, cut: float) -> PackedVector2Array:
 		cut = minf(cut, minf(w, h))
@@ -620,24 +598,17 @@ class UnitBadgePainter extends Node2D:
 				var glow := 1.0 if Accessibility.reduce_motion else 0.55 + 0.45 * sin(now * TAU * 2.5)
 				draw_rect(Rect2(Vector2(left - 2.5 * s, y - 2.5 * s), Vector2(width + 5.0 * s, h + 5.0 * s)),
 					Color(COLOR_TAKT_READY, 0.9 * glow), false, 1.5 * s)
-			if bar["kind"] == "hits":
-				var n: int = maxi(1, int(bar["segments"]))
-				var gap := TAKT_PIP_GAP * s
-				var piece := (width - gap * float(n - 1)) / float(n)
-				for i in n:
-					var rect := Rect2(Vector2(left + (piece + gap) * float(i), y), Vector2(piece, h))
-					draw_rect(rect.grow(s), COLOR_OUTLINE)
-					if ready or i < int(bar["filled"]):
-						draw_rect(rect, color)
-					else:
-						draw_rect(rect, COLOR_TRACK)
-						draw_rect(rect, Color(COLOR_TAKT, 0.45), false, 1.0 * s)
-			else:
-				draw_rect(Rect2(Vector2(left - s, y - s), Vector2(width + 2.0 * s, h + 2.0 * s)),
-					COLOR_OUTLINE)
-				draw_rect(Rect2(Vector2(left, y), Vector2(width, h)), COLOR_TRACK)
-				draw_rect(Rect2(Vector2(left, y), Vector2(width * float(bar["fill"]), h)),
-					color)
+			var n: int = maxi(1, int(bar["segments"]))
+			var gap := TAKT_PIP_GAP * s
+			var piece := (width - gap * float(n - 1)) / float(n)
+			for i in n:
+				var rect := Rect2(Vector2(left + (piece + gap) * float(i), y), Vector2(piece, h))
+				draw_rect(rect.grow(s), COLOR_OUTLINE)
+				if ready or i < int(bar["filled"]):
+					draw_rect(rect, color)
+				else:
+					draw_rect(rect, COLOR_TRACK)
+					draw_rect(rect, Color(COLOR_TAKT, 0.45), false, 1.0 * s)
 			y += h + TAKT_GAP * s
 
 

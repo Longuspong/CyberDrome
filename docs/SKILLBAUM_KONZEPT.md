@@ -68,6 +68,10 @@ Auf Level 5 stehen **3 Knoten** zur Wahl (Spieler 22. Nov. 2026):
 
 ### Passive Cyberspeed
 
+**Gebaut 25. Nov. 2026** (Grundform, `Unit.on_attack`, `config.json` -> `passives.cyberspeed`;
+ersetzt den Sprint `hit_rush`). Die Faehigkeit zaehlt als Angriff; laeuft die Dauer ab,
+fallen Stapel und Zaehler. Im Kampf: ein Sprint-Symbol je Stapel, Booster heller.
+
 * Jeder **3. Angriff** gibt Vireo **1 Stapel Cyberspeed**, höchstens **3 Stapel**.
 * **Dauer 3 s** (eigener Zeitgeber, nicht der globale Puls): jeder Angriff
   innerhalb der Dauer hält die Stapel am Leben und startet die Dauer neu.
@@ -75,7 +79,7 @@ Auf Level 5 stehen **3 Knoten** zur Wahl (Spieler 22. Nov. 2026):
   3. Angriff -> 2. Stapel usw. Bei vollen Stapeln wird nur die Dauer neu
   gestartet -- bei Dauerbeschuss bleiben alle Stapel.
 * Je Stapel **+10 % Angriffstempo** (wie der Amp) und **+10 % Lauftempo**.
-* Damit hält es mit jeder Waffe (Blaster 1,4 s, Bumerang 1,3 s < 3 s).
+* Damit hält es mit jeder Waffe (Blaster 1,4 s, Plasmaklinge 1,0 s < 3 s).
 * **Effizienz verlängert die Dauer** (wie bei allen Statuseffekten).
   Neon Vireo als Tech-Plänkler: Angriffstempo + Effizienz, die Schwächung der
   Plasmaklinge hält länger und schwächt stärker.
@@ -91,7 +95,7 @@ Werte -- dazu zählen auch die Werte der Passive, z. B.:
 | Keynode | Kosten | Wirkung |
 |---|---|---|
 | Überladung | 2 Stapel | 10 s lang **+3 Power** (fester Wert statt Prozent, damit es mit Power-Amps nicht aufschaukelt) |
-| Blink | 3 Stapel | Teleport hinter das am weitesten entfernte Ziel, aber nur so weit, dass es in Reichweite der Waffe bleibt (Blaster/Bumerang: ein Feld dazwischen) |
+| Blink | 3 Stapel | Teleport hinter das am weitesten entfernte Ziel, aber nur so weit, dass es in Reichweite der Waffe bleibt (Blaster/Klingeang: ein Feld dazwischen) |
 | Kettenschlag | alle Stapel, beim Einsatz der Fähigkeit | je Stapel 1 Sprung mit 10 % Schaden je Stapel: 1 Stapel = 1 weiteres Ziel mit 10 %, 2 = 2 Ziele mit 20 %, 3 = 3 Ziele mit 30 %, 4 = 4 Ziele mit 40 %. Bei zu wenigen Zielen springt sie aufs erste zurück. Reihenfolge: erst Stapel gewinnen, dann verbrauchen. |
 
 ### Vireo-Baum (Vorschlag 24. Nov. 2026, nicht entschieden)
@@ -146,7 +150,7 @@ Werte zum Vergleichen und Eintragen: `docs/spot/CyberDrome_Werkblatt_DROMEs_Waff
 
 * Kann nicht als Ziel gewählt werden; wer ihn im Visier hat, sucht sich ein
   neues Ziel.
-* Flächen (Vortex, Mörser) treffen ihn weiter -- so bleibt Gegenspiel.
+* Flächen (Vortex) treffen ihn weiter -- so bleibt Gegenspiel.
 * Der erste eigene Angriff beendet die Unsichtbarkeit vorzeitig und bekommt
   einen kleinen Bonus (Vorschlag: +30 % Schaden).
 * Dieselbe Regel gilt später für jeden (Bosse, Sentinels).
@@ -165,8 +169,8 @@ Obergrenze, Keynodes **dürfen** die Ressource verbrauchen (kein Muss, 24. Nov.)
 Der Fraktions-Twist ersetzt einen Strang (bei schwächerer Identität nur eine
 Keynode). Nicht jeder DROME braucht eine komplexe Ressource: der Molok steht
 ohnehin vorn (Locken läuft ins Leere), seine Passive soll ihn mehr aushalten
-lassen (Vorschlag „Standfest“ im Werkblatt). Molok, Nimbus und Strix bekommen
-neue, wirksamere Passiven nach diesem Muster (noch zu besprechen).
+lassen. Stand 27. Nov. 2026 (5e): Molok **Safe Haven**, Strix **Focuslense** gebaut,
+Nimbus offen (Supporter mit **Cleancode**).
 
 ## 5c. Anzeige von Effekten im Kampf (erster Gedanke des Spielers, noch zu besprechen)
 
@@ -215,6 +219,69 @@ neue, wirksamere Passiven nach diesem Muster (noch zu besprechen).
   besprechen): nur der **allererste** gewonnene Einsatz gibt sicher einen, danach 15 % je
   gewonnenem Einsatz, Caches 5 % je Wurf.
 
+## 5e. Werkblatt vom 27. Nov. 2026 (Spieler, übernommen)
+
+Aus `docs/spot/CyberDrome_Werkblatt_DROMEs_Waffen.xlsx`, Rückfragen im Chat geklärt.
+
+**Werte (gebaut):**
+
+| DROME | Speed | Schildpuls | Halter | Standardwaffe | Passive |
+|---|---|---|---|---|---|
+| Vireo | 8 (vorher 12) | 5 (7) | S | Puls-Blaster | Cyberspeed |
+| Molok | 6 (10) | 2 (3) | M, **Gunship** | Deflektor (vorher Hammer + Deflektor) | **Safe Haven** |
+| Strix (AA-DPS) | 3 (7) | 5 | X-F | Schienen-Lanze | **Focuslense** |
+| Neon Vireo (Gegner) | 8 (12) | 10 (7) | M-N (noch nicht gebaut, s. u.) | Plasmaklinge | Cyberspeed |
+| Neon Nimbus (Gegner, Skill-DPS) | 7 (12) | 5 (10) | M | Runenstab | Echo |
+
+Neon Nimbus hat jetzt Power 12 / Effizienz 12 wie der heutige Nimbus (vorher 14 / 7).
+
+**Gebaut:**
+
+* **Molok als Gunship** (Kernplan): ein Halter bis mittel; der rechte Arm spiegelt die Waffe
+  (`slot_rules` → `"mirror": "equip_left"`, `DromeBuild.mirror_source`). Im Kampf zwei
+  Halterungen mit vollen Werten, versetzt um ein halbes Intervall, je eigener Takt-Zähler; im
+  Bild wechseln die Arme. Module (2 Plätze) und Werte-Amps zählen einmal. Kampfwert zählt den
+  zweiten Arm mit (`POWER_SCALE` neu 1,064). Der Hammer liegt zum Start frei im Lager; alte
+  Spielstände geben eine Waffe am rechten Arm ans Lager zurück. Gegner-Moloks tragen den Hammer.
+* **Safe Haven** (Molok, vorher Arbeitsname Festung): unverändert +20 % auf Heilung,
+  Lebensraub, Regeneration, Schildladung und Schildgaben (`passives.safe_haven`).
+* **Focuslense** (Strix, ersetzt Anlegen samt Code): kinetischer Schaden +20 %, Energieschaden
+  −70 %; traf der letzte Schuss dasselbe Ziel, gilt es als **anvisiert** und nimmt vom Strix
+  +20 % (immer nur ein Ziel). `Unit.focuslense`, `passives.focuslense`.
+* **Echo** (Nimbus): Takt mal 1,5, ein halber Takt wird aufgerundet -- jeder 3. → jeder 5.,
+  jeder 4. → jeder 6. (vorher 3 → 4).
+* **Halter-Kürzel** sprachneutral: S leicht, M mittel, X schwer; dahinter -F nur Fernkampf,
+  -N nur Nahkampf (`SlotRules.holder_code`). Im Hangar unter dem Halter und auf der Waffenkarte.
+
+**Am Abend nachgezogen (Spieler 27. Nov. 2026, gebaut):**
+
+* **Repair-Kit** (`eq_repair_kit`, Halter M, Standardwaffe des Nimbus; Grafik vom alten
+  E-Schraubenschlüssel): kleiner Energieblitz, Reichweite 4, 9 Schaden je 1,2 s, halb Energie,
+  halb kinetisch. Was er am Schild der Gegner abzieht, speichert er als Schild, was er an
+  Integrität abzieht, als Integrität (`stores_damage`, `Unit.store_shield`/`store_hp`). Nach
+  5 Treffern (jeder 6. Angriff) die **Reparaturwelle**: jedes Teammitglied (auch der Träger)
+  bekommt Speicher × Effizienz als Schildgabe (bis Maximum + 50 %) und als Reparatur (bis
+  Maximum), danach ist der Speicher leer (`ActionResolver.release_store`). Safe Haven wirkt
+  mit, der Mender skaliert über `heal`/`shield_gain` (100 = 100 %). Der Runenstab liegt frei.
+  Das Echo des Nimbus lässt die Welle erst jeden 9. Angriff kommen, und das Echo findet den
+  Speicher leer -- erledigt sich mit Cleancode.
+* **Hammer:** kein Zusatzschaden aus der eigenen Integrität mehr (`hp_scaling` ganz entfernt);
+  der Betäubungsschlag heilt weiter um 100 % des Schadens.
+
+**Geklärt, noch nicht gebaut:**
+
+* **Nimbus als Supporter** -- Werte und Passive (Kernplan: wartet): Speed 8, Integrität 60, Schild 60,
+  Schildpuls 5, Rüstung 0, Power 12, Effizienz 12, Halter M, Waffe **Repair-Kit** (gebaut), Zielregel
+  „Teammates buffen und helfen, Helfen vor Schaden“. Passive **Cleancode**: wer von Nimbus
+  einen Buff, eine Heilung oder Schildgabe bekommt, erhält einen Stapel **Bug-Fix** (5 s,
+  max. 3, auch auf sich selbst): je Stapel +2 Rüstung und +2 **Shieldgate** (neu: Rüstung für
+  den Schild, kein Standardwert der DROMEs).
+* **Neon Nimbus** (Skill-DPS) Zielregel neu: „Most Damage“ -- das Ziel, bei dem Einzel- und
+  Flächenschaden zusammen am meisten ausrichten (heute: wo die meisten Gegner stehen).
+* **Neon Vireo** Halter M-N (mittel, nur Nahkampf): braucht Halterregeln je Variante, heute
+  gilt der Halter des Vireo-Chassis.
+* Strix-Rolle heißt im Blatt **AA-DPS** (Schaden über Auto-Angriffe), Nimbus **Skill-DPS**.
+
 ## 6. Offen (SPOT-Blatt Offene Punkte)
 
 1. Ressourcen: Sorten und Zahlen je DROME/Waffe nach 5d festlegen (Platzhaltercoins bleiben vorerst).
@@ -222,6 +289,6 @@ neue, wirksamere Passiven nach diesem Muster (noch zu besprechen).
    Knoten 1-4 sind Werte -- auch Werte der Passive (Stapelzahl, Gewinn-Takt).
 3. ~~Kosten fürs Umskillen~~ -- verwerten und neu bauen (24. Nov. 2026).
 4. Identitäten aller DROMEs und Waffen neu fassen; Twist je Fraktionsvariante.
-5. Passiven Molok, Nimbus, Strix nach 5b; Unsichtbar-Regel (5) bestätigen;
+5. ~~Passiven Molok, Strix~~ (27. Nov. 2026, 5e); Nimbus-Supporter (Cleancode); Unsichtbar-Regel (5) bestätigen;
    Anzeige der Effekte (5c) besprechen; Takt der Fähigkeiten beim Waffen-Rework.
 6. Bestehende Level (DROME 0-5, Waffe 0-10) in alten Spielständen umrechnen.

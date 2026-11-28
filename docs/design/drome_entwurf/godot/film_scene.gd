@@ -23,16 +23,11 @@ var _later: Array = []
 
 const SOURCES := {
 	"vortex": [&"mage_body", &"eq_rune_staff", &"act_rune_vortex"],
-	"barrage": [&"strix_body", &"eq_mortar", &"act_mortar_barrage"],
 	"lock": [&"strix_body", &"eq_rail_lance", &"act_rail_pierce"],
 	"stun": [&"jugg_body", &"eq_hammer", &"act_hammer_stun"],
-	"push": [&"jugg_body", &"eq_bulwark_ram", &"act_ram_slam"],
 	"slash": [&"scout_body", &"eq_plasma_blade", &"act_plasma_rend"],
-	"whirl": [&"scout_body", &"eq_boomerang", &"act_boomerang_whirl"],
 	"double": [&"scout_body", &"eq_pulse_blaster", &"act_pulse_double"],
-	"breaker": [&"scout_body", &"eq_neon_blaster", &"act_neon_breaker"],
 	"shield": [&"scout_body", &"eq_deflector", &"act_deflector_charge"],
-	"shield_ally": [&"jugg_body", &"eq_drone_pod", &"act_drone_guard"],
 }
 
 func _build(chassis: StringName, weapon: StringName) -> DromeBuild:

@@ -47,8 +47,44 @@ func test_before_a_slot_is_chosen_nothing_is_written() -> void:
 	t.equal(GameState.roster.entries.size(), 4, "trotzdem ein spielbarer Bestand")
 	GameState.save_roster()
 	for which in range(1, GameState.SLOT_COUNT + 1):
+		if which == GameState.TEST_SLOT:
+			continue
 		t.ok(not GameState.slot_exists(which), "Spielstand %d bleibt leer" % which)
 		t.ok(not GameState.slot_summary(which)["exists"], "und die Karte sagt es")
+	_end(before)
+
+
+func test_slot_three_is_the_test_stock_and_renews_with_each_version() -> void:
+	# Spieler 27. Nov. 2026: Platz 3 ist ein Testspielstand mit 1000 von allem,
+	# jeder Waffe einmal extra und jedem DROME; jede neue Version schreibt ihn neu.
+	var before := _begin()
+	t.equal(GameState.TEST_SLOT, 3, "Platz 3")
+	t.ok(GameState.slot_exists(3), "liegt schon beim Start bereit")
+	GameState.select_slot(3)
+	var roster := GameState.roster
+	t.equal(roster.entries.size(), 4, "jeder fertige DROME einmal")
+	for ware in FactorySim.wares():
+		t.equal(int(roster.materials.get(FactorySim.material_key(str(ware)), 0)), 1000,
+			"1000 %s" % ware)
+	for element in Charger.element_ids():
+		t.equal(int(roster.materials.get("phase:" + str(element), 0)), 1000, "1000 Phasen %s" % element)
+	t.equal(roster.blanks(), 1000, "1000 Charger-Rohlinge")
+	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
+		t.ok(roster.free_count(part.id) >= 1, "%s liegt frei im Lager" % part.id)
+		t.equal(roster.total_count(part.id), 2, "%s zweimal im Bestand" % part.id)
+	# Der Spieler baut etwas -- dieselbe Version laesst es stehen.
+	roster.materials["res:legierung"] = 5
+	GameState.save_roster()
+	t.ok(not GameState.refresh_test_slot(), "dieselbe Version schreibt nicht neu")
+	GameState.select_slot(3)
+	t.equal(int(GameState.roster.materials.get("res:legierung", 0)), 5, "der Stand bleibt")
+	# Eine neue Version (anderer Eintrag in der Meta-Datei) schreibt neu.
+	var meta := GameState._read_meta()
+	meta["test_build"] = "alte-version"
+	GameState._write_json(GameState.save_root + GameState.META_FILE, meta)
+	t.ok(GameState.refresh_test_slot(), "eine neue Version schreibt neu")
+	GameState.select_slot(3)
+	t.equal(int(GameState.roster.materials.get("res:legierung", 0)), 1000, "wieder 1000")
 	_end(before)
 
 
@@ -84,7 +120,7 @@ func test_three_slots_keep_their_own_hangar_run_and_progress() -> void:
 	t.equal(first["squad"], 3, "drei im Squad")
 	t.ok(str(first["run"]).begins_with("Neon City"), "laufender Lauf steht drauf (%s)" % first["run"])
 	t.ok(first["story_cleared"], "Neon City bezwungen")
-	t.ok(not GameState.slot_summary(3)["exists"], "Karte 3: leer")
+	t.ok(GameState.slot_summary(3)["exists"], "Karte 3: der Testspielstand")
 	_end(before)
 
 

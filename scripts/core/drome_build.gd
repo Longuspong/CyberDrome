@@ -4,7 +4,7 @@ extends RefCounted
 ## Ein zusammengebauter DROME: Slots -> Stats, Validierung, Kampfwert.
 ##
 ## Keine Godot-Knoten, keine UI. Diese Klasse muss ohne laufende Szene testbar
-## sein -- sie ist die Grundlage fuer Werkstatt, Gegner-Generator und KI
+## sein -- sie ist die Grundlage fuer Hangar, Gegner-Generator und KI
 ## gleichermassen, und ein Fehler hier faellt sonst erst im Kampf auf.
 ##
 ## Slotmodell des Repos (nicht die sechs festen Slots des Entwurfs):
@@ -33,7 +33,7 @@ var display_name: String = "DROME"
 ## slot -> part_id. Slots ohne Eintrag sind leer.
 var slots: Dictionary = {}
 
-## Optional: abweichende Palette je Slot, wie die Werkstatt sie exportiert.
+## Optional: abweichende Palette je Slot.
 var palette: Dictionary = {}
 
 ## Blickrichtung fuer die Darstellung
@@ -99,10 +99,41 @@ static func create(name: String, assignment: Dictionary) -> DromeBuild:
 # ---------------------------------------------------------------------------
 
 func part_in(slot: String) -> PartData:
+	var source := mirror_source(slot)
+	if source != "":
+		return part_in(source)
 	var part_id = slots.get(slot)
 	if part_id == null:
 		return null
 	return PartDB.get_part(part_id)
+
+
+## Gunship (Molok, 27. Nov. 2026): ein abgeschalteter Anker mit ``mirror``
+## zeigt die Waffe eines anderen Halters -- gleiches Teil, gleiche Module,
+## gleiches Level. Gibt den Halter zurueck, den er spiegelt, sonst "".
+func mirror_source(slot: String) -> String:
+	if not slot.begins_with("equip_"):
+		return ""
+	var chassis_id = slots.get("body")
+	if chassis_id == null:
+		return ""
+	var chassis := PartDB.get_part(chassis_id)
+	if chassis == null:
+		return ""
+	return str((chassis.slot_rules.get(slot, {}) as Dictionary).get("mirror", ""))
+
+
+## Die Spiegel-Anker dieses DROME: {anker: halter}. Leer ohne Gunship.
+func mirror_slots() -> Dictionary:
+	var out := {}
+	var chassis := body()
+	if chassis == null:
+		return out
+	for slot in chassis.slot_rules:
+		var source := str((chassis.slot_rules[slot] as Dictionary).get("mirror", ""))
+		if source != "":
+			out[str(slot)] = source
+	return out
 
 
 func body() -> PartData:
@@ -154,8 +185,6 @@ func equip_slots() -> Array[String]:
 ## ersten passenden ueberhaupt. Leerer String heisst: nirgendwo, dieses Chassis
 ## hat keinen Halter dafuer.
 ##
-## Dieselbe Reihenfolge wie in der SVG-Werkstatt (README: "angewaehlter Slot,
-## sonst erster freier"), damit ein Klick in beiden Werkstaetten dasselbe tut.
 ## Steht hier und nicht in der Oberflaeche, weil es eine Aussage ueber den
 ## Aufbau ist und nicht ueber die Bedienung -- und weil es sich hier ohne
 ## laufende Szene pruefen laesst.
@@ -254,7 +283,6 @@ func stats() -> Dictionary:
 		"spd": 0, "def": 0, "power": 0, "shield_pulse": 0, "module_slots": 0,
 		"shield": 0, "shield_regen": 0, "shield_bonus": 0.0, "shield_max": 0,
 		"hp_regen_pct": 0,
-		"lure_radius": 0,
 		"efficiency": 0,
 	}
 	for part in all_parts():
@@ -269,7 +297,6 @@ func stats() -> Dictionary:
 		total["shield_regen"] += part.shield_regen
 		total["shield_bonus"] += part.shield_bonus
 		total["hp_regen_pct"] += part.hp_regen_pct
-		total["lure_radius"] = maxi(int(total["lure_radius"]), part.lure_radius)
 
 	# Level: DROME-Werte des Chassis und Bonus-Werte der Waffen.
 	var chassis := body()
@@ -287,7 +314,6 @@ func stats() -> Dictionary:
 	if not modules.is_empty():
 		var fx := all_module_effects()
 		total["def"] += int(fx.get("def", 0))
-		total["shield"] += int(fx.get("shield", 0))
 		# Amps (20. Nov. 2026): Power und Effizienz fest, Integritaet und
 		# Schild in Prozent (MODULE_AMP_FUSION.md 2).
 		total["power"] += int(round(float(fx.get("power", 0))))
@@ -298,16 +324,11 @@ func stats() -> Dictionary:
 		total["thorns_melee"] = int(fx.get("thorns_melee", 0))
 		total["shield_delay"] = float(fx.get("shield_delay", 0.0))
 		total["retaliation"] = float(fx.get("retaliation", 0.0))
-		# Konter, die am Traeger haengen (nicht an einer Waffe): Splitterpanzer,
-		# Brandmarke, Entladung. Der Zusatztreffer der Stacheln nutzt den
-		# Doppellauf des Traegers.
-		total["thorns_true"] = bool(fx.get("thorns_true", false))
+		# Konter, die am Traeger haengen (nicht an einer Waffe): Brandmarke,
+		# Entladung.
 		total["mark_on_hit_taken"] = float(fx.get("mark", 0.0)) \
 			if bool(fx.get("mark_on_hit_taken", false)) else 0.0
 		total["shield_break_burst"] = int(fx.get("shield_break_burst", 0))
-		total["thorn_ricochet"] = float(fx.get("ricochet_chance", 0.0)) \
-			if bool(fx.get("thorns_true", false)) else 0.0
-		total["thorn_ricochet_share"] = float(fx.get("ricochet_share", 0.25))
 		# BIOS-Rezepte am Traeger: Berserker, Treibjagd.
 		total["retaliation_max"] = int(fx.get("retaliation_max", 3))
 		total["berserk"] = bool(fx.get("berserk", false))
@@ -346,48 +367,6 @@ static func _add_stats(total: Dictionary, bonus: Dictionary) -> void:
 func power_factor() -> float:
 	var points := int(stats().get("power", 0))
 	return 1.0 if points <= 0 else float(points) / 10.0
-
-
-## Was ein einzelnes Teil an den Stats aendern wuerde -- fuer die Delta-Anzeige
-## beim Hovern in der Werkstatt. Gibt nur die Felder zurueck, die sich
-## tatsaechlich unterscheiden.
-func preview_delta(slot: String, candidate_id: StringName) -> Dictionary:
-	var before := stats()
-	var probe := clone()
-	if candidate_id == &"":
-		probe.slots.erase(slot)
-	else:
-		probe.slots[slot] = candidate_id
-	# Ein Chassiswechsel kann Ausruestungsslots wegnehmen. Was nicht mehr
-	# passt, faellt ab -- sonst zeigte die Vorschau Werte fuer einen Aufbau,
-	# den man so gar nicht bauen kann.
-	probe._drop_invalid_equipment()
-	var after := probe.stats()
-
-	var delta := {}
-	for key in after:
-		if after[key] != before[key]:
-			delta[key] = {"before": before[key], "after": after[key]}
-	return delta
-
-
-func _drop_invalid_equipment() -> void:
-	var chassis := body()
-	if chassis == null:
-		for slot in slots.keys():
-			if str(slot).begins_with("equip_"):
-				slots.erase(slot)
-		return
-	var allowed := chassis.equip_slots()
-	for slot in slots.keys():
-		if not str(slot).begins_with("equip_"):
-			continue
-		if slot not in allowed:
-			slots.erase(slot)
-			continue
-		var part := part_in(slot)
-		if part != null and not chassis.accepts(part, slot):
-			slots.erase(slot)
 
 
 func clone() -> DromeBuild:
@@ -586,7 +565,7 @@ func _slot_label(slot: String) -> String:
 ## Was sie nicht kann: Zusammenspiel. Ein Molok ist allein wenig wert und
 ## macht einen Strix dahinter erst stark; der Wert eines Squads ist hier
 ## trotzdem die Summe seiner DROMEs.
-const POWER_SCALE := 0.979
+const POWER_SCALE := 0.922   # 27. Nov. 2026 neu geeicht (Repair-Kit am Nimbus, Hammer ohne Integritaetsschaden), Schnitt Standard = 100
 const POWER_WEIGHTS := {
 	"shield": 3.0,          # ein Punkt Schild gegen einen Punkt Integritaet
 	"support": 20.0,        # Reparatur/Schildgabe je Sekunde als Standhaftigkeit
@@ -594,7 +573,6 @@ const POWER_WEIGHTS := {
 	"stun": 15.0,           # Sekunden Betaeubung je Sekunde als Feuerkraft
 	"soft_control": 0.3,    # Verlangsamen/Wurzeln/Verwundbar gegen Betaeubung
 	"thorns": 6.0,          # Stacheln je Punkt
-	"moving": 0.5,          # Anteil der Zeit, in der der Bewegungsbonus gilt
 }
 
 
@@ -617,10 +595,13 @@ func power_parts() -> Dictionary:
 	var chassis := body()
 	var echo := chassis != null and chassis.passive == "echo" and not is_sentinel()
 	var slower := float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
+	var mirrors := {} if is_sentinel() else mirror_slots()
 	for slot in equip_slots():
 		var part := part_in(slot)
 		if part == null:
 			continue
+		# Gunship: jeder Spiegel-Arm feuert dieselbe Waffe noch einmal.
+		var arms := 1.0 + float(mirrors.values().count(slot))
 		var fx := module_effects(slot)
 		var level := weapon_level(slot)
 		var attack: ActionData = null
@@ -641,32 +622,36 @@ func power_parts() -> Dictionary:
 			var every := float(ability.trigger_every)
 			var times := 1.0
 			if echo:
-				every = round((every - 1.0) * slower) + 1.0
+				every = ceilf(every * slower - 0.001)
 				times = 2.0
 			every = maxf(1.0, every / maxf(1.0, float(fx.get("takt_count", 1.0))))
 			per_attack = ((every - 1.0) * hit + times * _expected_damage(ability, factor, total)) / every
 			var cycle := every * attack.interval
-			support += times * float(ability.heal + ability.shield_gain) / cycle
+			if ability.release_store:
+				# Repair-Kit: der Schaden der Angriffe dazwischen kommt mal Effizienz
+				# an jedes der drei Teammitglieder zurueck (das Echo findet den
+				# Speicher leer).
+				var eff := float(total.get("efficiency", 10)) / 10.0
+				var pct := float(ability.heal + ability.shield_gain) / 200.0
+				support += arms * (every - 1.0) * hit * eff * 3.0 * pct / cycle
+			else:
+				support += arms * times * float(ability.heal + ability.shield_gain) / cycle
 			var seconds := float(ability.status.get("seconds", 0.0))
 			match str(ability.status.get("id", "")):
 				"stun":
-					control += times * seconds / cycle
-				"slow", "vulnerable", "root":
-					control += float(weights["soft_control"]) * times * seconds / cycle
-		firepower += per_attack / attack.interval * float(maxi(1, attack.range_tiles))
-		support += float(weights["attack_heal"]) * float(attack.heal) / attack.interval
+					control += arms * times * seconds / cycle
+				"slow", "vulnerable":
+					control += float(weights["soft_control"]) * arms * times * seconds / cycle
+		firepower += arms * per_attack / attack.interval * float(maxi(1, attack.range_tiles))
+		support += arms * float(weights["attack_heal"]) * float(attack.heal) / attack.interval
 	firepower += control * float(weights["stun"]) + float(total.get("thorns", 0)) * float(weights["thorns"])
 	staying += support * float(weights["support"])
 	return {"staying": staying, "firepower": maxf(0.1, firepower)}
 
 
-## Erwarteter Schaden eines Ausloesens: Staerke mal Treffer mal Power, dazu
-## der Anteil der eigenen Integritaet (Bollwerk-Ramme) und der halbe
-## Bewegungsbonus (Klingenbumerang).
-func _expected_damage(action: ActionData, factor: float, total: Dictionary) -> float:
-	var damage := float(action.power * maxi(1, action.shots)) * factor \
-		+ action.hp_scaling * float(total["hp_max"])
-	return damage * (1.0 + float(POWER_WEIGHTS["moving"]) * action.moving_bonus)
+## Erwarteter Schaden eines Ausloesens: Staerke mal Treffer mal Power.
+func _expected_damage(action: ActionData, factor: float, _total: Dictionary) -> float:
+	return float(action.power * maxi(1, action.shots)) * factor
 
 
 static func squad_power(builds: Array) -> float:
@@ -677,7 +662,7 @@ static func squad_power(builds: Array) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Persistenz -- dasselbe Loadout-Format, das die SVG-Werkstatt exportiert
+# Persistenz -- das Loadout-Format (nur Teile-IDs, Werte werden neu gerechnet)
 # ---------------------------------------------------------------------------
 
 func to_loadout() -> Dictionary:

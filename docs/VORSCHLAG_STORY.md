@@ -122,7 +122,7 @@ man aus diesem Gebiet mitnimmt.
 | Fraktion | Neues Chassis | Rolle | Passive | Warum |
 |---|---|---|---|---|
 | Neon Ninja's | **Shinobi** | Jäger | *Hinterhalt:* der erste Treffer auf ein neues Ziel +50 % | Die geplante Jägerklasse (`NEUANFANG.md` 6f): jagt den Verwundbarsten. Der Ausgleich zum Strix. |
-| Solar Sentients | **Spore** | Rudel | *Teilung:* zerfällt beim Tod in zwei schwache Sporlinge | Der DROME, der sich aufteilt (steht schon in `MODULE_KONZEPT.md` 9). |
+| Solar Sentients | **Spore** | Rudel | *Teilung:* zerfällt beim Tod in zwei schwache Sporlinge | Der DROME, der sich aufteilt (Profil Rudel, `MODULE_AMP_FUSION.md` 6). |
 | Mega Mechas | **Bastion** | Geschütz | *Verankert:* läuft nicht, dafür +2 Reichweite und ein Schildwall für Nachbarn | Eine Festung braucht einen Turm. Antwort: flankieren, Mörser. |
 | Hipstar Hackers | **Hook** | Trickser | *Greifhaken:* jede Fähigkeit zieht ihr Ziel 2 Felder heran | Zerreißt die Aufstellung des Spielers – der einzige Gegner, der das kann. |
 
@@ -133,7 +133,7 @@ Antwort des Spielers: Wurzeln, robuste Hinterreihe, Fluchtpunkt-BIOS.
 ### Bosse
 
 Ein Boss ist ein Team mit **einem** besonderen DROME, der ein BIOS-Rezept
-trägt (`MODULE_KONZEPT.md`: Bosse tragen eins, droppen dauerhafte Beute).
+trägt (Entscheidung 9. Nov. 2026: Bosse tragen eins, droppen dauerhafte Beute).
 
 * **Oni** (Level 5): Molok mit Hammer + Ramme und *Berserker*. Lehrt: nicht
   alle in den Nahkampf schicken.

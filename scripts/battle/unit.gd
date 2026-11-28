@@ -3,7 +3,7 @@ extends Node2D
 
 ## Ein DROME im Kampf: Darstellung und Laufzeitwerte.
 ##
-## Zusammengesetzt wird er wie in der Werkstatt -- ein Sprite2D je Bauteil,
+## Ohne Arena (Tests, Bench) wird er als 2D-Bild zusammengesetzt -- ein Sprite2D je Bauteil,
 ## ``centered = false``, auf den Sockel des Chassis verschoben,
 ## Zeichenreihenfolge aus ``slot_z``. Beides rechnet DromeSprites.
 ##
@@ -75,21 +75,30 @@ var gadgets: Array = []
 ## Restzeit des laufenden Schritts. Solange > 0, laeuft der DROME und schiesst
 ## nicht; das Feld (``tile``) ist schon das Zielfeld.
 var step_left: float = 0.0
-## Bis zum naechsten Puls (Schild, Reparatur, Overtime ...).
+## Bis zum naechsten Puls (Reparatur, Kabelbrand, Virus ...).
 var pulse_left: float = 0.0
 ## Sekunden seit dem letzten Schaden, und der Bruchteil Schild, der beim
 ## Nachladen noch nicht ganz voll ist.
 var calm_time: float = 0.0
-## Passive "steady" (Strix, 8. Nov. 2026): Sekunden ohne Feldwechsel und ob
-## er gerade angelegt hat (+Schaden, +Reichweite).
-var still_time: float = 0.0
-var steady: bool = false
-var _still_tile: Vector2i = Vector2i(-9999, -9999)
+## Passive Focuslense (Strix, 27. Nov. 2026): das Ziel, das sein letzter
+## Schuss traf -- es gilt als anvisiert (immer nur eins).
+var focus_target: Unit = null
+## Der Halter, der gerade feuert (Gunship: welcher Arm). Nur fuer das Bild.
+var firing_slot: String = ""
+## Repair-Kit (27. Nov. 2026): gespeicherter Schild- und Integritaetsschaden,
+## den die Reparaturwelle an das Team zurueckgibt.
+var store_shield: int = 0
+var store_hp: int = 0
 ## Modul Raufbold (Vergeltung): eingesteckte Treffer, die den naechsten
 ## Angriff aufladen (max. 3, Berserker 5).
 var retaliation_stacks: int = 0
 ## Modul Entladung: Sekunden bis zur naechsten Entladung (tick_statuses).
 var burst_cooldown: float = 0.0
+## Cyberspeed (Vireo-Passive, 25. Nov. 2026): liegende Stapel, Angriffe seit
+## dem letzten Stapel und Restdauer (jeder Angriff startet sie neu).
+var cyberspeed_stacks: int = 0
+var cyberspeed_count: int = 0
+var cyberspeed_left: float = 0.0
 ## Kabelbrand (Statuseffekt mit Stapeln, 20. Nov. 2026): liegende Stapel,
 ## mit Bruchteil aus der Effizienz; wer zuletzt angesteckt hat.
 var cable_fire: float = 0.0
@@ -155,7 +164,7 @@ var _rig: Node2D
 
 ## Die gemeinsame 3D-Kampfszene (seit 18. Nov. 2026). Gesetzt, bevor die
 ## Einheit in den Baum kommt -- dann baut sie kein eigenes Bild, sondern ihr
-## Modell steht in der Arena. Ohne Arena (Tests, Werkstatt) wie bisher.
+## Modell steht in der Arena. Ohne Arena (Tests, Bench) als 2D-Bild.
 var arena: Arena3D = null
 
 ## Der Bodenring in Fraktionsfarbe, UNTER den Bauteilen (z_index -1).
@@ -211,9 +220,7 @@ func _ensure_chrome() -> void:
 # ---------------------------------------------------------------------------
 
 func _build_sprites() -> void:
-	# Zusammengesetzt wird ueber DromeSprites -- dieselbe Funktion, die auch
-	# die Werkstatt-Vorschau benutzt. Zwei Zusammenbauten waeren zwei
-	# Gelegenheiten, dass der Bot im Kampf anders aussieht als beim Bauen.
+	# Zusammengesetzt wird ueber DromeSprites (wie im Bench-Bildschirm).
 	_ensure_chrome()
 	if arena != null:
 		# Gemeinsame 3D-Szene: ein 2D-Bild aus der Zeit vor dem Einhaengen
@@ -352,12 +359,6 @@ func _spring_step(delta: float) -> void:
 		_spring_on = false
 
 
-## Gleitet die Figur gerade zu ihrem Feld (laeuft sie)? Die Logik-Sicht:
-## der Fuehrungspunkt ist unterwegs.
-func is_gliding() -> bool:
-	return _glide_total > 0.0
-
-
 ## Tempo und Beschleunigung der gezeichneten Figur (Bildpunkte je s bzw. s^2)
 ## -- fuer Neigung, Schrittlaenge und Blick in Laufrichtung (Arena3D).
 func visual_velocity() -> Vector2:
@@ -491,18 +492,11 @@ func play_attack(toward: Vector2i, action: ActionData = null, seconds: float = -
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-## Waffe hochhalten (Runenstab vor dem Vortex, 18. Nov. 2026). Nur in der
-## gemeinsamen 3D-Szene; ohne sie bleibt der DROME ruhig.
-func play_raise(action: ActionData, seconds: float) -> void:
+## Ein Wurf (Runenstab-Faehigkeit): hoch, Schwung, loslassen in der Mitte des
+## Schwungs.
+func play_throw(action: ActionData, seconds: float) -> void:
 	if arena != null:
-		arena.raise(self, action, seconds)
-
-
-## Ein Wurf (Runenstab-Faehigkeit, Bumerang): hoch, Schwung, loslassen in der
-## Mitte des Schwungs; ``hide`` Sekunden ist die Waffe danach nicht in der Hand.
-func play_throw(action: ActionData, seconds: float, hide: float = 0.0) -> void:
-	if arena != null:
-		arena.throw(self, action, seconds, hide)
+		arena.throw(self, action, seconds)
 
 
 ## Das Ziel zuckt und blendet kurz hell auf. Die Erschuetterung laeuft ueber
@@ -746,9 +740,9 @@ func init_realtime(pulse_offset: float) -> void:
 	target_blocked = 0.0
 	calm_time = 0.0
 	_recharge_carry = 0.0
-	still_time = 0.0
-	steady = false
-	_still_tile = Vector2i(-9999, -9999)
+	focus_target = null
+	store_shield = 0
+	store_hp = 0
 	if build == null:
 		return
 	for slot in build.equip_slots():
@@ -773,23 +767,13 @@ func init_realtime(pulse_offset: float) -> void:
 			if action.trigger_kind == "attacks" and attack != null:
 				continue
 			var gadget_action: ActionData = Leveling.level_action(action, part, level).with_modules(fx)
-			var first := float(gadget_action.trigger_every) * echo_slower() \
-				if gadget_action.trigger_kind == "time" else 0.0
-			gadgets.append({"part": part, "ability": gadget_action, "ready": first, "fx": fx})
-		# Module mit eigener Faehigkeit (Orbit-Fokus, Hologramm). Seit 9. Nov.
-		# 2026 zaehlen sie die Angriffe der Waffe in ihrem Halter ("extras"
-		# am Halter); nur Ereignisse (Hologramm: Gegner daneben) bleiben Gadgets.
-		var extras: Array = []
+			gadgets.append({"part": part, "ability": gadget_action, "ready": 0.0, "fx": fx})
+		# Module mit eigener Faehigkeit (Hologramm): ein Ereignis (Gegner
+		# daneben), kein Takt.
 		for module in build.active_modules(slot):
 			var granted := ModuleData.gadget_action(module.gadget)
 			if granted != null:
-				granted = granted.with_modules(fx)
-				if granted.trigger_kind == "attacks":
-					extras.append({"ability": granted, "count": 0.0})
-					continue
-				var first_ready := float(granted.trigger_every) * echo_slower() \
-					if granted.trigger_kind == "time" else 0.0
-				gadgets.append({"part": part, "ability": granted, "ready": first_ready, "fx": fx})
+				gadgets.append({"part": part, "ability": granted.with_modules(fx), "ready": 0.0, "fx": fx})
 		if attack == null:
 			continue
 		var ability: ActionData = null
@@ -800,19 +784,28 @@ func init_realtime(pulse_offset: float) -> void:
 		# Ein halbes Intervall Vorlauf: niemand schiesst im ersten Augenblick.
 		mounts.append({"slot": slot, "part": part, "attack": attack,
 			"ability": ability, "ready": attack.interval * 0.5, "count": 0,
-			"fx": fx, "shots": 0, "base_attack": attack, "base_ability": ability,
-			"extras": extras})
+			"fx": fx, "shots": 0})
+		# Gunship (Molok, 27. Nov. 2026): der Spiegel-Arm feuert dieselbe Waffe
+		# mit vollen Werten, versetzt um ein halbes Intervall, mit eigenem
+		# Takt-Zaehler. Sentinels haben keinen Gunship.
+		if build.is_sentinel():
+			continue
+		for twin in build.mirror_slots():
+			if str(build.mirror_slots()[twin]) == slot:
+				mounts.append({"slot": str(twin), "part": part, "attack": attack,
+					"ability": ability, "ready": attack.interval, "count": 0,
+					"fx": fx, "shots": 0})
 
 
 ## Der Takt einer Treffer-Faehigkeit an diesem DROME: der wievielte Angriff
-## sie ist. Mit der Passive Echo (Nimbus) laenger: die normalen Angriffe
-## dazwischen mal ``passives.echo.slower`` (gerundet) -- Blaster jeder 3. ->
-## jeder 4.
+## sie ist. Mit der Passive Echo (Nimbus) laenger: der Takt mal
+## ``passives.echo.slower``, ein halber Takt wird aufgerundet (Spieler
+## 27. Nov. 2026) -- Runenstab jeder 3. -> jeder 5., Lanze jeder 4. -> jeder 6.
 func takt_every(ability: ActionData) -> int:
 	var every := int(ability.trigger_every)
 	if ability.trigger_kind != "attacks" or passive() != "echo":
 		return every
-	return int(round(float(every - 1) * echo_slower())) + 1
+	return int(ceil(float(every) * echo_slower() - 0.001))
 
 
 ## Wie viel ein Angriff im Treffer-Takt zaehlt: 1, mit Taktchip 1,25
@@ -830,19 +823,12 @@ func takt_due(mount: Dictionary) -> bool:
 	return float(mount["count"]) + takt_step(mount) >= float(takt_every(ability)) - 0.001
 
 
-## Der Takt einer Zeit-Faehigkeit in Sekunden -- mit Echo ebenso laenger.
-func takt_seconds(ability: ActionData) -> float:
-	return float(ability.trigger_every) * echo_slower()
-
-
 ## Wann kommen die Faehigkeiten? Je Faehigkeit ein Eintrag fuer die Leiste
 ## unter dem Lebensbalken:
 ##   {"kind": "hits", "segments": N, "filled": k, "ready": bool}
 ##       Treffer-Takt: N Abschnitte, k gefuellt; ready = der naechste
 ##       Angriff ist die Faehigkeit (dann sind alle gefuellt).
-##   {"kind": "time", "fill": 0..1, "ready": bool}
-##       Zeit-Takt: fuellt sich in Schritten von ``step`` Sekunden.
-func takt_bars(step: float = 0.5) -> Array:
+func takt_bars() -> Array:
 	var out: Array = []
 	for mount in mounts:
 		var ability = mount.get("ability")
@@ -853,23 +839,6 @@ func takt_bars(step: float = 0.5) -> Array:
 		var ready := takt_due(mount)
 		out.append({"kind": "hits", "segments": every,
 			"filled": every if ready else mini(every - 1, int(count)), "ready": ready})
-	# Modul-Faehigkeiten nach Angriffen (Orbit-Fokus).
-	for mount in mounts:
-		for extra in mount.get("extras", []):
-			var each := takt_every(extra["ability"])
-			var have := int(float(extra["count"]))
-			out.append({"kind": "hits", "segments": each,
-				"filled": mini(each, have), "ready": have >= each - 1})
-	for gadget in gadgets:
-		var ability: ActionData = gadget["ability"]
-		if ability.trigger_kind != "time":
-			continue
-		var total := takt_seconds(ability)
-		var passed := clampf(total - float(gadget["ready"]), 0.0, total)
-		if step > 0.0:
-			passed = floorf(passed / step) * step
-		out.append({"kind": "time", "fill": passed / maxf(0.01, total),
-			"ready": float(gadget["ready"]) <= 0.0})
 	return out
 
 
@@ -881,41 +850,22 @@ func echo_slower() -> float:
 	return float((Config.section("passives").get("echo", {}) as Dictionary).get("slower", 1.5))
 
 
-## Passive "steady" (Strix): wer passives.steady.seconds lang das Feld nicht
-## wechselt, legt an -- mehr Schaden (raw_damage) und mehr Reichweite (die
-## Aktionen der Halter werden als Kopie verlaengert). Jeder Feldwechsel setzt
-## zurueck. Jeden Schritt vom BattleManager gerufen.
-func track_stillness(dt: float) -> void:
-	if tile != _still_tile:
-		_still_tile = tile
-		still_time = 0.0
-	else:
-		still_time += dt
-	var rule := steady_rule()
-	var needed := float(rule.get("seconds", 4.0))
-	var now := passive() == "steady" and still_time >= needed
-	if now == steady:
-		return
-	steady = now
-	if steady:
-		EventBus.log_line("%s legt an." % display_name)
-	var mult := float(rule.get("range_mult", 1.2))
-	for mount in mounts:
-		mount["attack"] = _steady_copy(mount["base_attack"], mult)
-		mount["ability"] = _steady_copy(mount.get("base_ability"), mult)
-
-
-func _steady_copy(action, mult: float):
-	if action == null or not steady:
-		return action
-	var out: ActionData = (action as ActionData).copy()
-	if out.range_tiles > 0:
-		out.range_tiles += maxi(1, int(round(float(out.range_tiles) * (mult - 1.0))))
-	return out
-
-
-static func steady_rule() -> Dictionary:
-	return Config.section("passives").get("steady", {}) as Dictionary
+## Passive Focuslense (Strix, 27. Nov. 2026): kinetischer Anteil mal
+## ``kinetic_mult``, Energie-Anteil mal ``energy_mult``; traf der letzte Schuss
+## dasselbe Ziel, kommt ``focus_mult`` dazu. Gibt {raw, energy_fraction} zurueck
+## und merkt sich das Ziel. Nur gegen Gegner (ActionResolver.apply_damage).
+func focuslense(target: Unit, raw: int, energy_fraction: float) -> Dictionary:
+	if passive() != "focuslense" or target == null or target.is_player == is_player:
+		return {"raw": raw, "energy_fraction": energy_fraction}
+	var rule := Config.section("passives").get("focuslense", {}) as Dictionary
+	var e := float(raw) * clampf(energy_fraction, 0.0, 1.0) * float(rule.get("energy_mult", 0.3))
+	var k := float(raw) * (1.0 - clampf(energy_fraction, 0.0, 1.0)) * float(rule.get("kinetic_mult", 1.2))
+	var total := e + k
+	if focus_target == target:
+		total *= float(rule.get("focus_mult", 1.2))
+	focus_target = target
+	return {"raw": maxi(1, int(round(total))),
+		"energy_fraction": e / (e + k) if e + k > 0.0 else 0.0}
 
 
 ## Die Passive des Chassis ("echo" ...). Leer = keine.
@@ -925,19 +875,9 @@ func passive() -> String:
 	return build.body().passive
 
 
-## Lockradius: Gegner so nah greifen diesen DROME an statt ihres Ziels.
-## Koedersender (lure_radius) oder Molok-Praesenz (passives.presence).
-func lure_radius() -> int:
-	var radius := int(stats.get("lure_radius", 0))
-	if passive() == "presence":
-		var p := Config.section("passives").get("presence", {}) as Dictionary
-		radius = maxi(radius, int(p.get("lure_radius", 2)))
-	return radius
-
-
 ## Faktor aufs Angriffstempo aus Statuseffekten.
 func attack_speed_mult() -> float:
-	var mult := 1.0
+	var mult := 1.0 + float(cyberspeed_stacks) * float(_cyberspeed().get("attack_speed", 0.1))
 	for status in statuses.values():
 		mult *= float(status.get("attack_speed_mult", 1.0))
 	return maxf(0.1, mult)
@@ -954,14 +894,6 @@ func ai_role() -> String:
 
 func is_sentinel() -> bool:
 	return build != null and build.is_sentinel()
-
-
-## Gewurzelt (Orbit-Fokus): greift an, laeuft aber nicht.
-func is_rooted() -> bool:
-	for status in statuses.values():
-		if status.get("rooted", false):
-			return true
-	return false
 
 
 ## Betaeubt (Hammer): handelt nicht, solange der Status laeuft.
@@ -985,6 +917,7 @@ func move_speed() -> float:
 	var section := Config.section("realtime")
 	var speed := maxf(float(section.get("move_min", 1.2)),
 		float(section.get("move_base", 1.0)) + float(spd()) * float(section.get("move_per_spd", 0.12)))
+	speed *= 1.0 + float(cyberspeed_stacks) * float(_cyberspeed().get("move", 0.1))
 	# Verlangsamung und Beschleunigung wirken als Faktor (move_mult).
 	for status in statuses.values():
 		speed *= float(status.get("move_mult", 1.0))
@@ -1029,11 +962,6 @@ func shield_max() -> int:
 	return maxi(0, stat("shield_max"))
 
 
-func shield_fraction() -> float:
-	var maximum := shield_max()
-	return 0.0 if maximum <= 0 else float(shield) / float(maximum)
-
-
 ## Schild-Nachfuellung nach dem SCHILDPULS (8. Nov. 2026): ein Wert S regelt
 ## beides -- die Ruhezeit ohne Schaden (base_delay - delay_per_point * S,
 ## mindestens min_delay) und die Ladung je Puls (gain_per_point * S je
@@ -1055,7 +983,7 @@ func recharge_shield(dt: float) -> int:
 		delay = minf(delay, quick)
 	if calm_time < delay:
 		return 0
-	var per_pulse := float(rule.get("gain_per_point", 2.0)) * pulse_points
+	var per_pulse := float(rule.get("gain_per_point", 2.0)) * pulse_points * care_mult()
 	_recharge_carry += per_pulse / maxf(0.1, float(rule.get("pulse", 3.0))) * dt
 	var gain := mini(int(_recharge_carry), maximum - shield)
 	_recharge_carry -= float(gain)
@@ -1075,28 +1003,15 @@ func power_factor() -> float:
 	return 1.0 if points <= 0 else float(points) / 10.0
 
 
-## So lange nach dem letzten Feldwechsel gilt ein DROME als "in Bewegung"
-## (Klingenbumerang, ActionData.moving_bonus).
-const MOVING_WINDOW := 1.0
-
-
 ## Rohschaden einer Aktion: ihr Schaden mal Power. Davor kommt nichts, danach
 ## Schild und Ruestung (ActionResolver.resolve_damage).
 func raw_damage(action: ActionData) -> int:
 	if action == null or action.power <= 0:
 		return 0
 	var raw := float(action.power) * power_factor()
-	if steady:
-		raw *= float(steady_rule().get("damage_mult", 1.2))
-	# Klingenbumerang: wer gerade gelaufen ist, wirft haerter.
-	if action.moving_bonus > 0.0 and still_time < MOVING_WINDOW:
-		raw *= 1.0 + action.moving_bonus
 	# Rammbock: ein Teil der eigenen Panzerung kommt dazu, ohne Power.
 	if action.armor_to_damage > 0.0:
 		raw += float(def()) * action.armor_to_damage
-	# Bollwerk-Ramme: ein Teil der eigenen maximalen Integritaet, ohne Power.
-	if action.hp_scaling > 0.0:
-		raw += float(stat("hp_max")) * action.hp_scaling
 	return maxi(1, int(round(raw)))
 
 
@@ -1118,7 +1033,7 @@ func regenerate_hp() -> int:
 	if pct <= 0 or hp <= 0:
 		return 0
 	var maximum := stat("hp_max")
-	var amount := int(floor(float(maximum) * float(pct) / 100.0))
+	var amount := int(floor(float(maximum) * float(pct) / 100.0 * care_mult()))
 	if amount <= 0:
 		return 0
 	var before := hp
@@ -1157,6 +1072,36 @@ static func _scale_strength(status: Dictionary, factor: float) -> void:
 		var rule := Config.section("statuses").get("efficiency", {}) as Dictionary
 		var cap := float(rule.get("slow_cap", 0.7))
 		status["move_mult"] = maxf(1.0 - cap, float(status["move_mult"]))
+
+
+## Cyberspeed (Vireo-Passive, Spieler 22. Nov. 2026, gebaut 25. Nov.): jeder
+## ``every``-te Angriff gibt einen Stapel (hoechstens ``max_stacks``), je
+## Stapel mehr Angriffs- und Lauftempo. Jeder Angriff startet die Dauer
+## ``seconds`` neu (mit der Effizienz gestreckt); laeuft sie ab, fallen alle
+## Stapel und der Zaehler. Die Faehigkeit zaehlt als Angriff.
+func on_attack() -> void:
+	if passive() != "cyberspeed" or not is_alive():
+		return
+	var rule := _cyberspeed()
+	cyberspeed_count += 1
+	if cyberspeed_count >= maxi(1, int(rule.get("every", 3))):
+		cyberspeed_count = 0
+		cyberspeed_stacks = mini(int(rule.get("max_stacks", 3)), cyberspeed_stacks + 1)
+	cyberspeed_left = float(rule.get("seconds", 3.0)) * efficiency_factor()
+
+
+## Safe Haven (Molok-Passive, 27. Nov. 2026): Faktor auf alles, was diesen DROME
+## heilt oder ihm Schild gibt -- Heilung, Lebensraub, Regeneration, Schildladung
+## und Schildgaben (``passives.safe_haven.care_mult``). Virusschaden gleicht sie
+## nicht aus.
+func care_mult() -> float:
+	if passive() != "safe_haven":
+		return 1.0
+	return float((Config.section("passives").get("safe_haven", {}) as Dictionary).get("care_mult", 1.2))
+
+
+static func _cyberspeed() -> Dictionary:
+	return Config.section("passives").get("cyberspeed", {}) as Dictionary
 
 
 ## Effizienz (20. Nov. 2026): versteckter Wert, Grundwert
@@ -1214,6 +1159,13 @@ func take_cable_fire(limit: int) -> int:
 func tick_statuses(dt: float) -> bool:
 	burst_cooldown = maxf(0.0, burst_cooldown - dt)
 	var changed := false
+	if cyberspeed_left > 0.0:
+		cyberspeed_left -= dt
+		if cyberspeed_left <= 0.0:
+			changed = cyberspeed_stacks > 0
+			cyberspeed_left = 0.0
+			cyberspeed_stacks = 0
+			cyberspeed_count = 0
 	for id in statuses.keys():
 		statuses[id]["seconds_left"] = float(statuses[id]["seconds_left"]) - dt
 		if float(statuses[id]["seconds_left"]) <= 0.0:
@@ -1229,6 +1181,9 @@ func status_names() -> Array[String]:
 		if id == &"vortex_hold":
 			continue
 		names.append(str(id))
+	# Cyberspeed: ein Sprint-Symbol je Stapel.
+	for i in cyberspeed_stacks:
+		names.append("rush")
 	if cable_fire_stacks() > 0:
 		names.append("cable_fire")
 	return names

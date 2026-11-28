@@ -129,10 +129,32 @@ func _process(_delta: float) -> bool:
 			if board_view.is_empty():
 				push_error("SMOKE: FactoryView fehlt im Reiter Linien")
 			else:
-				board_view[0].tapped("1,0")
-				board_view[0].tool = "sol"
-				board_view[0].tapped("1,1")
-				board_view[0].tapped("3,0")
+				# Bedienung ueber Plus + Modi (28. Nov. 2026): Bauen mit Vorschau und
+				# Bestaetigen, Kaufen und Setzen, Verschieben/Tauschen, Abreissen,
+				# Basis, gesperrte Felder, Ziehen aus der Leiste.
+				var fv = board_view[0]
+				fv._toggle_menu()
+				fv._choose_mode("build")
+				fv._choose_category("strom")
+				fv._arm("sol")
+				fv.tapped("1,1")
+				fv.tapped("1,1")
+				fv._arm("ofn")
+				fv.tapped("-1,1")
+				fv.tapped("-1,1")
+				fv.drop_type("0,1", "sol")
+				fv._choose_mode("move")
+				fv.tapped("1,1")
+				fv.tapped("1,2")
+				fv.move_to("1,0", "1,2")
+				fv._choose_mode("remove")
+				fv.tapped("1,2")
+				fv._toggle_menu()
+				fv.tapped("0,0")
+				fv.tapped("0,-1")
+				fv.tapped("3,0")
+				fv.tapped("3,0")
+				load("res://scripts/ui/info_popup.gd").close_all(fv)
 				board_view[0]._live_tick()
 			# Werkbank (24. Nov. 2026): DROMEs mit Bauplan-Baum und Ziel, dann Charger.
 			gs.roster.factory_sim().set_goal("drome:jugg_body")

@@ -59,11 +59,11 @@ func test_runestaff_vortex_is_a_gathering_area() -> void:
 
 ## Jede Faehigkeit der Waffen bekommt ihre Form (Leinwand "Faehigkeiten lesbar").
 func test_every_ability_has_a_form() -> void:
-	var expected := {&"act_rune_vortex": "vortex", &"act_mortar_barrage": "barrage",
-		&"act_rail_pierce": "lock", &"act_hammer_stun": "stun", &"act_ram_slam": "push",
-		&"act_plasma_rend": "slash", &"act_boomerang_whirl": "whirl",
-		&"act_pulse_double": "double", &"act_neon_breaker": "breaker",
-		&"act_deflector_charge": "shield", &"act_drone_guard": "shield"}
+	var expected := {&"act_rune_vortex": "vortex",
+		&"act_rail_pierce": "lock", &"act_hammer_stun": "stun",
+		&"act_plasma_rend": "slash",
+		&"act_pulse_double": "double",
+		&"act_deflector_charge": "shield", &"act_repair_release": "shield"}
 	var seen := {}
 	for part: PartData in PartDB.of_type(PartData.Type.EQUIPMENT):
 		for action in part.actions:
@@ -77,7 +77,7 @@ func test_every_ability_has_a_form() -> void:
 
 func test_every_form_runs_its_course() -> void:
 	var painter := AbilityPainter.new()
-	for kind in ["barrage", "lock", "stun", "push", "slash", "whirl", "double", "breaker", "shield"]:
+	for kind in ["lock", "stun", "slash", "double", "shield"]:
 		painter.add(kind, {"at": Vector2(100, 100), "color": Teams.color(false), "enemy": true,
 			"radius": 1, "delay": 0.8, "from": Vector2(0, 200), "dir": Vector2.RIGHT,
 			"targets": [Vector2(100, 100), Vector2(160, 90)]})

@@ -70,6 +70,7 @@ var _pinch_zoom := 1.0
 # UI
 var _ui: CanvasLayer
 var _status: Label
+var _virus_icon: Control
 var _clock: Label
 var _foes: Label
 var _where: Label
@@ -296,11 +297,14 @@ func _refresh_hud() -> void:
 	var until := battle.virus_in()
 	var color := Arcade.WHITE
 	_status.text = ""
+	_virus_icon.visible = false
 	if until <= 0.0:
-		_status.text = "VIRUS −%d %%" % int(round(float(Config.section("virus").get("pct_of_max", 0.1)) * 100.0))
+		_status.text = "−%d %%" % int(round(float(Config.section("virus").get("pct_of_max", 0.1)) * 100.0))
+		_virus_icon.visible = true
 		color = Arcade.MAGENTA
 	elif until <= _virus_warn():
-		_status.text = "VIRUS IN %d S" % int(ceil(until))
+		_status.text = "%d S" % int(ceil(until))
+		_virus_icon.visible = true
 		color = Arcade.MAGENTA
 	_clock.add_theme_color_override("font_color", color)
 	_status.add_theme_color_override("font_color", Arcade.MAGENTA)
@@ -318,7 +322,6 @@ func _refresh_badges() -> void:
 			"hp": unit.hp, "hp_max": unit.stat("hp_max"),
 			"shield": unit.shield, "shield_max": unit.shield_max(),
 			"is_player": unit.is_player,
-			"lured": battle.brain != null and battle.brain.lured_by(unit) != null,
 			"takt": unit.takt_bars(),
 			"id": unit.unit_id,
 			"statuses": unit.status_names(),
@@ -478,6 +481,7 @@ func _shake_camera(severity: float) -> void:
 func _on_battle_over(outcome: BattleManager.Outcome) -> void:
 	_over = true
 	view.show_unit_badges([])
+	_virus_icon.visible = false
 	# Nur das Ergebnis (25. Nov. 2026): "Sieg nach 19 s · Seed 7" passte nicht
 	# unter die Uhr und wurde links abgeschnitten; die Zeit steht schon darueber.
 	_status.text = BattleManager.outcome_label(outcome).to_upper()
@@ -571,17 +575,6 @@ func _frame_board(delta: float = 1.0) -> void:
 	# Die Mitte des freien Streifens liegt (oben - unten) / 2 unter der Bildmitte.
 	camera.position = Vector2(box.get_center().x, y - (edges.x - edges.y) * 0.5 / zoom)
 	_set_zoom(zoom)
-
-
-## Hoehe der Leisten oben bzw. unten (Bildschirm-Pixel): jede sichtbare Leiste
-## zaehlt zu der Haelfte, in der ihre Mitte liegt. Ohne Groesse (erstes Bild)
-## gelten Schaetzwerte.
-func _hud_top() -> float:
-	return _hud_edges().x
-
-
-func _hud_bottom() -> float:
-	return _hud_edges().y
 
 
 func _hud_edges() -> Vector2:
@@ -1018,10 +1011,18 @@ func _build_ui() -> void:
 	_clock = Arcade.label("00:00", 26, Arcade.WHITE, "display")
 	_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	clock_box.add_child(_clock)
+	# Virus als Symbol + Zahl (28. Nov. 2026) statt "VIRUS IN 30 S".
+	var status_row := HBoxContainer.new()
+	status_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	status_row.add_theme_constant_override("separation", 4)
+	clock_box.add_child(status_row)
+	_virus_icon = UiIcon.rect("virus", 14, Arcade.MAGENTA)
+	_virus_icon.visible = false
+	status_row.add_child(_virus_icon)
 	_status = Arcade.label("", 11, Arcade.MAGENTA, "bold", 0.16)
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status.clip_text = true
-	clock_box.add_child(_status)
+	status_row.add_child(_status)
 	var foes := VBoxContainer.new()
 	foes.add_theme_constant_override("separation", 0)
 	foes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1088,8 +1089,7 @@ func _build_ui() -> void:
 	hint_column.add_theme_constant_override("separation", 0)
 	hint_card.add_child(hint_column)
 	hint_column.add_child(Arcade.label("Ziehe deine DROMEs in Position", 15, Arcade.WHITE, "bold"))
-	var hint := UiKit.label("Nur innerhalb der markierten Zone – oder erst die Figur antippen, "
-		+ "dann das Feld. Danach kämpft dein Squad selbstständig.", 13, UiKit.MUTED)
+	var hint := UiKit.label("Oder erst die Figur antippen, dann das Feld.", 13, UiKit.MUTED)
 	hint_column.add_child(hint)
 	deploy.add_child(hint_card)
 	var start := UiKit.button("Los", true)
@@ -1201,16 +1201,14 @@ func _loot_card(run: RunState, won: bool) -> Control:
 		Arcade.CYAN if won else Arcade.MAGENTA, "bold", 0.2))
 	if not won:
 		column.add_child(Arcade.label("−1 LEBEN", 20, Arcade.MAGENTA, "display"))
-		column.add_child(UiKit.label("Der Einsatz geht mit %d Leben weiter." % run.lives
-			if run.lives > 0 else "Keine Leben mehr – der Einsatz ist vorbei.", 14, UiKit.MUTED))
+		if run.lives <= 0:
+			column.add_child(UiKit.label("Keine Leben mehr – der Einsatz ist vorbei.", 14, UiKit.MUTED))
 	for item in run.last_loot:
 		var kind := str(item.get("kind", ""))
 		if kind == "cache":
 			column.add_child(Arcade.label(RunState.cache_name(StringName(str(item.get("cache", "city"))))
 				.to_upper() + (" ×%d" % int(item.get("count", 1)) if int(item.get("count", 1)) > 1 else ""),
 				20, Arcade.WHITE, "display"))
-			column.add_child(UiKit.label("Geschlossen. Kommt zu deinen gesammelten Caches.", 14,
-				UiKit.MUTED))
 		else:
 			column.add_child(Arcade.label(str(item.get("title", "")).to_upper(), 18, Arcade.YELLOW,
 				"display"))
@@ -1349,7 +1347,7 @@ func _show_result(outcome: BattleManager.Outcome) -> void:
 		onward.grab_focus.call_deferred()
 		return
 
-	var back := UiKit.button("Zum Hangar", true)
+	var back := UiKit.button("Zu den DROMEs", true)
 	back.pressed.connect(func():
 		GameState.battle_seed = 0
 		Fader.go("res://scenes/hangar.tscn"))

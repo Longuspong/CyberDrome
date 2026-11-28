@@ -54,7 +54,6 @@
     "efficiency": 0,
     "module_slots": 0,
     "hp_regen_pct": 0,
-    "lure_radius": 0,
     "ai_role": "",
     "passive": "",
     "actions": [
@@ -70,7 +69,6 @@
         "energy_fraction": 0.0,
         "interval": 1.0,
         "trigger": null,
-        "shield_mult": 1.0,
         "shots": 1,
         "gather": false,
         "delay": 0.0,
@@ -80,9 +78,9 @@
         "support": "",
         "damage_pct": 0.0,
         "base_action": "",
-        "hp_scaling": 0.0,
-        "min_range": 0,
-        "moving_bonus": 0.0,
+        "lifesteal": 0.0,
+        "stores_damage": false,
+        "release_store": false,
         "windup": 0.0,
         "salvo": 1
       },
@@ -102,7 +100,6 @@
           "every": 3,
           "weapon": "act_plasma_slash"
         },
-        "shield_mult": 1.0,
         "shots": 1,
         "gather": false,
         "delay": 0.0,
@@ -116,9 +113,9 @@
         "support": "",
         "damage_pct": 1.5,
         "base_action": "act_plasma_slash",
-        "hp_scaling": 0.0,
-        "min_range": 0,
-        "moving_bonus": 0.0,
+        "lifesteal": 0.0,
+        "stores_damage": false,
+        "release_store": false,
         "windup": 0.3,
         "salvo": 1
       }

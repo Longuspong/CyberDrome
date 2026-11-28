@@ -74,16 +74,6 @@ func test_a_top_level_weapon_hits_seventy_percent_harder() -> void:
 	t.equal(Leveling.level_action(attack, part, 0), attack, "Level 0 ändert nichts")
 
 
-func test_the_neon_blaster_grows_only_in_energy() -> void:
-	var part := PartDB.get_part(&"eq_neon_blaster")
-	var attack: ActionData = part.actions[0]
-	var kinetic := attack.power * (1.0 - attack.energy_fraction)
-	var top := Leveling.level_action(attack, part, 10)
-	t.ok(abs(top.power * (1.0 - top.energy_fraction) - kinetic) < 0.6,
-		"der kinetische Anteil bleibt (%0.1f)" % (top.power * (1.0 - top.energy_fraction)))
-	t.ok(top.power > attack.power, "der Energieanteil wächst")
-
-
 func test_the_weapon_bonus_grows_to_its_own_end_value() -> void:
 	var build := _vireo()
 	var base: int = build.stats()["spd"]
@@ -102,7 +92,7 @@ func test_a_drome_level_raises_two_values_more_than_the_rest() -> void:
 	var after := vireo.stats()
 	t.equal(after["hp_max"] - before["hp_max"], 40, "Integrität ist Hauptwert: 80 -> 120 (+50 %)")
 	t.equal(after["shield_max"] - before["shield_max"], 25, "Schild ist Hauptwert: 50 -> 75")
-	t.equal(after["shield_pulse"], 8, "Schildpuls +20 %: 7 -> 8")
+	t.equal(after["shield_pulse"], 6, "Schildpuls +20 %: 5 -> 6")
 	t.equal(after["spd"], before["spd"], "Speed steigt nie")
 	t.equal(after["power"], before["power"], "Power steigt nie")
 	t.equal(after["module_slots"], 3, "Modulplätze bleiben 3 (seit 18. Nov. 2026)")

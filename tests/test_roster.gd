@@ -20,12 +20,12 @@ func test_starter_stock_matches_the_design() -> void:
 	var roster := _fresh()
 	# Vier Standard-Chassis = vier DROMEs.
 	t.equal(roster.entries.size(), 4, "vier Start-DROMEs")
-	# Vier Chassis + vier Kerne + sieben Ausruestungsteile (fuenf in den Kits:
-	# Blaster, Hammer + Deflektor, Runenstab, Lanze; zwei frei: Drohnen-Pod,
-	# Plasmaklinge) = 15 Instanzen. Die Gadgets sind seit 8. Nov. 2026 Module.
+	# Vier Chassis + vier Kerne + sieben Ausruestungsteile (vier in den Kits:
+	# Blaster, Deflektor, Repair-Kit, Lanze; frei: Plasmaklinge, Hammer,
+	# Runenstab) = 15.
 	t.equal(roster.all_instances().size(), 15, "15 Instanzen im Startbestand")
 	for part_id in [&"eq_pulse_blaster", &"eq_hammer", &"eq_plasma_blade",
-			&"eq_rune_staff", &"eq_rail_lance", &"eq_deflector", &"eq_drone_pod"]:
+			&"eq_rune_staff", &"eq_rail_lance", &"eq_deflector", &"eq_repair_kit"]:
 		t.equal(roster.total_count(part_id), 1,
 			"genau eine %s im Bestand" % part_id)
 	# Ein neuer Spielstand zieht mit jedem Standard-DROME einmal ins Gefecht.
@@ -54,21 +54,21 @@ func test_a_part_cannot_be_in_two_dromes_at_once() -> void:
 		seen[uid] = true
 
 	# Das freie Teil an einen DROME haengen -> es ist nicht mehr frei, und ein
-	# zweiter DROME bekommt kein zweites Exemplar desselben Teils. Frei liegen
-	# zum Start Drohnen-Pod und Plasmaklinge.
-	t.equal(roster.free_count(&"eq_drone_pod"), 1,
-		"der Drohnen-Pod liegt zunächst frei")
+	# zweiter DROME bekommt kein zweites Exemplar desselben Teils. Frei liegt
+	# zum Start die Plasmaklinge.
+	t.equal(roster.free_count(&"eq_plasma_blade"), 1,
+		"die Plasmaklinge liegt zunächst frei")
 	var molok: RosterEntry = roster.entries[1]
-	var molok_slot: String = roster.build_for(molok).equip_slots()[1]
-	t.ok(roster.assign(molok, molok_slot, &"eq_drone_pod"), "erste Zuweisung greift")
-	t.equal(roster.free_count(&"eq_drone_pod"), 0,
-		"danach ist kein Drohnen-Pod mehr frei")
+	var molok_slot: String = roster.build_for(molok).equip_slots()[0]
+	t.ok(roster.assign(molok, molok_slot, &"eq_plasma_blade"), "erste Zuweisung greift")
+	t.equal(roster.free_count(&"eq_plasma_blade"), 0,
+		"danach ist keine Plasmaklinge mehr frei")
 
 	var vireo: RosterEntry = roster.entries[0]
 	var vireo_slot: String = roster.build_for(vireo).equip_slots()[0]
-	t.ok(not roster.assign(vireo, vireo_slot, &"eq_drone_pod"),
+	t.ok(not roster.assign(vireo, vireo_slot, &"eq_plasma_blade"),
 		"ein zweiter DROME bekommt kein zweites Exemplar")
-	t.ok(roster.instance_part_id(str(vireo.assignments.get(vireo_slot, ""))) != &"eq_drone_pod",
+	t.ok(roster.instance_part_id(str(vireo.assignments.get(vireo_slot, ""))) != &"eq_plasma_blade",
 		"und der Slot bleibt leer statt still doppelt belegt")
 
 
@@ -124,7 +124,7 @@ func test_salvaging_a_drome_gives_ingredients_and_frees_the_weapons() -> void:
 	for slot in molok.assignments:
 		if str(slot).begins_with("equip_"):
 			weapons.append(str(molok.assignments[slot]))
-	var free_before := roster.free_count(&"eq_hammer")
+	var free_before := roster.free_count(&"eq_deflector")
 	var got := roster.salvage(molok)
 	# Molok: Brustharnisch (30 Platten + 90 Legierung) und Unterbau (18 + 60).
 	t.equal(int(got["wares"].get("platte", 0)), 48, "48 Panzerplatten")
@@ -134,7 +134,7 @@ func test_salvaging_a_drome_gives_ingredients_and_frees_the_weapons() -> void:
 	t.ok(roster.instance(chassis) == null, "sein Chassis auch")
 	for uid in weapons:
 		t.ok(roster.instance(uid) != null, "die Waffe %s bleibt" % uid)
-	t.equal(roster.free_count(&"eq_hammer"), free_before + 1, "und ist frei")
+	t.equal(roster.free_count(&"eq_deflector"), free_before + 1, "und ist frei")
 	var back := Roster.new()
 	t.ok(back.load_dict(roster.to_dict()), "Spielstand lädt")
 	t.equal(int(back.materials.get("res:platte", 0)), 48, "die Platten überstehen das Speichern")
@@ -227,32 +227,6 @@ func test_next_uid_does_not_collide_after_loading() -> void:
 	t.equal(restored.total_count(&"eq_deflector"), 2,
 		"die neue Instanz kommt hinzu, statt eine alte zu ersetzen")
 	t.ok(restored.instance(fresh_uid) != null, "und sie ist auffindbar")
-
-
-func test_migration_from_the_old_throwaway_squad() -> void:
-	# Der alte Wegwerf-Squad (v1) muss beim Umstieg erhalten bleiben.
-	var v1 := {
-		"squad_size": 2,
-		"squad": [
-			{
-				"name": "ALPHA",
-				"slots": {
-					"body": {"part_id": "scout_body"},
-					"head": {"part_id": "scout_head"},
-					"feet": {"part_id": "scout_feet"},
-					"core": {"part_id": "scout_core"},
-					"equip_left": {"part_id": "eq_pulse_blaster"},
-				},
-			},
-		],
-	}
-	var roster := Roster.new()
-	t.ok(roster.migrate_v1(v1), "der v1-Squad migriert")
-	t.equal(roster.entries.size(), 1, "der eine Bot wird ein Roster-Eintrag")
-	var build := roster.build_for(roster.entries[0])
-	t.equal(build.display_name, "ALPHA", "der Name kommt mit")
-	t.ok(build.validate().is_empty(), "und der DROME ist kampftauglich")
-	t.ok(roster.entries[0].in_squad, "migrierte DROMEs ziehen ins Gefecht")
 
 
 func test_a_new_game_starts_with_everything_once() -> void:

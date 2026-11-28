@@ -51,7 +51,7 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 
 ## Die EINZIGE Stelle, an der Schaden angewendet wird.
 ##
-## ``action`` traegt die Schadensart. Sie darf fehlen (Overtime).
+## ``action`` traegt die Schadensart. Sie darf fehlen (Virus, Stacheln).
 ##
 ## Charger (24. Nov. 2026): ``charge_share`` ist der Anteil eines Treffers,
 ## den dieser Schuss fuer die Elementarbelastung zaehlt (eine Salve aus drei
@@ -59,7 +59,7 @@ func _init(battle_grid: Grid, all_units: Array) -> void:
 ## Bonus der Faehigkeit (Belastung + Stapel) ist in diesem Einsatz an diesem
 ## Ziel schon angelegt.
 func apply_damage(source: Unit, target: Unit, raw: int,
-		action: ActionData = null, guarded: bool = true, pierce_shield: bool = false,
+		action: ActionData = null, pierce_shield: bool = false,
 		charge_share: float = 1.0, ability_bonus: bool = true) -> int:
 	# Zielsucher: Angriffe gegen markierte Gegner treffen haerter.
 	if action != null and action.bonus_vs_marked > 0.0 and is_marked(target):
@@ -67,27 +67,18 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	# Phasenbruch: gegen Gegner ohne Schild.
 	if action != null and action.bonus_vs_unshielded > 0.0 and target.shield <= 0:
 		raw = int(round(float(raw) * (1.0 + action.bonus_vs_unshielded)))
-	# Praesenz (Molok): ein Teil des Treffers geht auf den Beschuetzer.
-	if guarded and raw > 0:
-		var guard := _guard_for(target)
-		if guard != null:
-			var share := float((Config.section("passives").get("presence", {}) as Dictionary).get("guard_share", 0.3))
-			var taken := int(round(float(raw) * share))
-			if taken > 0:
-				raw -= taken
-				EventBus.log_line("%s fängt %d Schaden für %s ab."
-					% [guard.display_name, taken, target.display_name])
-				# Der Beschuetzer faengt Schaden ab, keine Elementarbelastung:
-				# sie sammelt sich nur am getroffenen Ziel.
-				apply_damage(source, guard, taken, action, false, false, 0.0, false)
 	var frac := action.energy_fraction if action != null else 0.0
 	# Ueberspannung: solange der eigene Schild steht, wird ein Teil des
 	# kinetischen Schadens zu Energie.
 	if action != null and action.kinetic_to_energy > 0.0 and source != null and source.shield > 0:
 		frac += (1.0 - frac) * clampf(action.kinetic_to_energy, 0.0, 1.0)
+	# Focuslense (Strix): kinetisch staerker, Energie schwaecher, anvisiertes Ziel +20 %.
+	if source != null:
+		var lens := source.focuslense(target, raw, frac)
+		raw = lens["raw"]
+		frac = lens["energy_fraction"]
 	var shield_before := target.shield
-	var res := resolve_damage(target, raw, frac,
-		action.shield_mult if action != null else 1.0, pierce_shield,
+	var res := resolve_damage(target, raw, frac, pierce_shield,
 		action.virus_fraction if action != null else 0.0)
 	target.shield = res["shield_after"]
 	var amount: int = res["hp"]
@@ -96,6 +87,11 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 	target.damage_taken += amount
 	if source != null:
 		source.damage_dealt += amount
+	# Repair-Kit: was der Schuss am Gegner anrichtet, wandert in den Speicher.
+	if action != null and action.stores_damage and source != null \
+			and source.is_player != target.is_player:
+		source.store_shield += maxi(0, shield_before - target.shield)
+		source.store_hp += amount
 
 	var dealt := (shield_before - target.shield) + amount
 	if dealt > 0:
@@ -123,13 +119,16 @@ func apply_damage(source: Unit, target: Unit, raw: int,
 		EventBus.log_line("%s trifft %s für %d Schaden."
 			% [who, target.display_name, amount])
 
-	_on_hit(source, dealt)
-	# Lebensraub (Fusion Attack + Integrity): der Treffer heilt den Schuetzen.
+	# Lebensraub (Fusion Attack + Integrity, Hammer-Betaeubungsschlag): der
+	# Treffer heilt den Schuetzen.
 	if action != null and action.lifesteal > 0.0 and source != null and source.is_alive() \
 			and dealt > 0 and source != target:
-		var heal := int(round(float(dealt) * action.lifesteal))
+		var heal := int(round(float(dealt) * action.lifesteal * source.care_mult()))
 		if heal > 0:
+			var before_hp := source.hp
 			source.hp = mini(int(source.stats.get("hp_max", source.hp)), source.hp + heal)
+			if source.hp > before_hp:
+				EventBus.unit_healed.emit(source, source.hp - before_hp, source)
 	if action != null and not action.charger.is_empty() and target.hp > 0 \
 			and source != null and source.is_player != target.is_player \
 			and (charge_share > 0.0 or ability_bonus):
@@ -173,16 +172,11 @@ func _thorns(source: Unit, target: Unit, action: ActionData) -> void:
 		spikes += int(target.stats.get("thorns_melee", 0))
 	if spikes <= 0:
 		return
-	var pierce := bool(target.stats.get("thorns_true", false))
-	apply_damage(target, source, spikes, null, false, pierce)
-	var chance := float(target.stats.get("thorn_ricochet", 0.0))
-	if pierce and chance > 0.0 and rng != null and source.is_alive() and rng.randf() < chance:
-		var extra := maxi(1, int(round(float(spikes) * float(target.stats.get("thorn_ricochet_share", 0.25)))))
-		apply_damage(target, source, extra, null, false, true)
+	apply_damage(target, source, spikes)
 
 
 # ---------------------------------------------------------------------------
-# Markierung und Entladung (Module, MODULE_KONZEPT.md)
+# Markierung und Entladung (Module, MODULE_AMP_FUSION.md)
 # ---------------------------------------------------------------------------
 
 ## Markiert ``foe`` (Peilsender, Brandmarke): nimmt ``rules.mark_damage_taken``
@@ -245,37 +239,9 @@ func _shield_broken(unit: Unit) -> void:
 			continue
 		if Grid.distance(unit.tile, foe.tile) > reach:
 			continue
-		apply_damage(unit, foe, burst, spark, false)
+		apply_damage(unit, foe, burst, spark)
 		if foe.is_alive():
 			foe.apply_status(&"stun", stun, {"id": "stun", "stunned": true}, unit)
-
-
-## Der naechste lebende Verbuendete mit Praesenz im Schutzradius -- nicht das
-## Ziel selbst.
-func _guard_for(target: Unit) -> Unit:
-	var radius := int((Config.section("passives").get("presence", {}) as Dictionary).get("guard_radius", 3))
-	var best: Unit = null
-	var best_gap := 1 << 30
-	for unit in units:
-		if unit == target or not unit.is_alive() or unit.is_player != target.is_player:
-			continue
-		if unit.passive() != "presence":
-			continue
-		var gap := Grid.distance(unit.tile, target.tile)
-		if gap <= radius and gap < best_gap:
-			best = unit
-			best_gap = gap
-	return best
-
-
-## Passiven, die an einem Treffer haengen. Vireo (hit_rush): kurz schneller.
-func _on_hit(source: Unit, dealt: int) -> void:
-	if source == null or dealt <= 0 or not source.is_alive():
-		return
-	if source.passive() == "hit_rush":
-		var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
-		var mods := {"move_mult": float(rush.get("move_mult", 1.4))}
-		source.apply_status(&"rush", float(rush.get("seconds", 2.0)), mods, source)
 
 
 ## Das Zwei-Verteidigungs-System (§11) als reine Rechnung -- was von ``raw`` auf
@@ -305,7 +271,7 @@ func _on_hit(source: Unit, dealt: int) -> void:
 ##
 ## Erst das Schild vollstaendig, dann die HP: das Schild wird immer zuerst leer.
 func resolve_damage(target: Unit, raw: int, energy_fraction: float,
-		shield_mult: float = 1.0, pierce_shield: bool = false, virus_fraction: float = 0.0) -> Dictionary:
+		pierce_shield: bool = false, virus_fraction: float = 0.0) -> Dictionary:
 	var section := Config.section("combat")
 	# Verwundbar (Plasmaklinge): der Statuseffekt vergroessert jeden Treffer.
 	raw = int(round(float(raw) * target.damage_taken_mult()))
@@ -331,8 +297,7 @@ func resolve_damage(target: Unit, raw: int, energy_fraction: float,
 		if amt <= 0:
 			continue
 		if shield > 0:
-			# shield_mult: Schildbrecher (Neon-Blaster) trifft den Schild doppelt.
-			var factor := float(portion["sf"]) * shield_mult
+			var factor := float(portion["sf"])
 			var eff := int(round(float(amt) * factor))
 			if eff <= shield:
 				shield -= eff
@@ -382,9 +347,8 @@ static func armor_multiplier(armor: float) -> float:
 
 
 ## Duenner Vorschau-Zugang: nur der HP-Schaden. Fuer alte Aufrufer und Tests.
-func mitigate(source: Unit, target: Unit, raw: int, energy_fraction: float = 0.0,
-		shield_mult: float = 1.0) -> int:
-	return resolve_damage(target, raw, energy_fraction, shield_mult)["hp"]
+func mitigate(source: Unit, target: Unit, raw: int, energy_fraction: float = 0.0) -> int:
+	return resolve_damage(target, raw, energy_fraction)["hp"]
 
 
 func _kill(unit: Unit) -> void:
@@ -415,8 +379,7 @@ func forget_unit(unit: Unit) -> void:
 func preview_damage(source: Unit, target: Unit, action: ActionData) -> int:
 	if action.power <= 0:
 		return 0
-	return mitigate(source, target, source.raw_damage(action), action.energy_fraction,
-		action.shield_mult)
+	return mitigate(source, target, source.raw_damage(action), action.energy_fraction)
 
 
 # ---------------------------------------------------------------------------
@@ -470,9 +433,6 @@ func target_blocker(source: Unit, tile: Vector2i, action: ActionData) -> String:
 		return "Weg blockiert"
 	if Grid.distance(source.tile, tile) > action.range_tiles:
 		return "Außer Reichweite"
-	# Moerser: zu nah kann er nicht feuern.
-	if action.min_range > 0 and Grid.distance(source.tile, tile) < action.min_range:
-		return "Zu nah"
 	if unit_at(tile) == null:
 		return "Kein Ziel"
 	return ""
@@ -521,6 +481,9 @@ func execute(source: Unit, tile: Vector2i, action: ActionData, thrown: bool = fa
 
 	# Unterstuetzung: auf einen Verbuendeten (oder sich selbst) gezielt heilt
 	# bzw. laedt sie, statt Schaden zu machen.
+	if action.release_store:
+		release_store(source, action)
+		return true
 	var aimed := unit_at(tile)
 	if aimed != null and aimed.is_player == source.is_player:
 		if action.heal <= 0 and action.shield_gain <= 0:
@@ -539,6 +502,39 @@ func execute(source: Unit, tile: Vector2i, action: ActionData, thrown: bool = fa
 		return true
 	_apply_area(source, tile, action)
 	return true
+
+
+## Reparaturwelle des Repair-Kits (27. Nov. 2026, Spieler): jedes lebende
+## Teammitglied (auch der Traeger) bekommt den gespeicherten Schildschaden mal
+## Effizienz als Schildgabe (bis Maximum + Ueberschild) und den gespeicherten
+## Integritaetsschaden mal Effizienz als Reparatur (bis zum Maximum). Danach
+## ist der Speicher leer. Gibt zurueck, wie viel insgesamt dazukam.
+func release_store(source: Unit, action: ActionData) -> int:
+	var eff := source.efficiency_factor()
+	var shield_base := float(source.store_shield) * eff * float(action.shield_gain) / 100.0
+	var hp_base := float(source.store_hp) * eff * float(action.heal) / 100.0
+	source.store_shield = 0
+	source.store_hp = 0
+	var total := 0
+	for ally: Unit in units:
+		if not ally.is_alive() or ally.is_player != source.is_player:
+			continue
+		var before_shield := ally.shield
+		var before_hp := ally.hp
+		var gain := int(round(shield_base * ally.care_mult()))
+		if gain > 0:
+			ally.shield = maxi(ally.shield, mini(shield_cap(ally), ally.shield + gain))
+		var repair := int(round(hp_base * ally.care_mult()))
+		if repair > 0:
+			ally.hp = mini(ally.stat("hp_max"), ally.hp + repair)
+		if ally.hp > before_hp:
+			EventBus.unit_healed.emit(ally, ally.hp - before_hp, source)
+		var got := (ally.hp - before_hp) + (ally.shield - before_shield)
+		if got > 0:
+			EventBus.log_line("%s: %s +%d Integrität, +%d Schild."
+				% [source.display_name, ally.display_name, ally.hp - before_hp, ally.shield - before_shield])
+		total += got
+	return total
 
 
 ## Wie viel eine Heilung oder Schildgabe bewirkt (9. Nov. 2026, Vorgabe des
@@ -570,7 +566,7 @@ func support(source: Unit, target: Unit, action: ActionData) -> int:
 	var charged := 0
 	var before_shield := target.shield
 	if action.heal > 0:
-		var amount := support_amount(source, target, action.heal)
+		var amount := int(round(float(support_amount(source, target, action.heal)) * target.care_mult()))
 		var before := target.hp
 		target.hp = mini(target.stat("hp_max"), target.hp + amount)
 		healed = target.hp - before
@@ -580,7 +576,7 @@ func support(source: Unit, target: Unit, action: ActionData) -> int:
 		if healed > 0:
 			EventBus.unit_healed.emit(target, healed, source)
 	if action.shield_gain > 0:
-		var gain := support_amount(source, target, action.shield_gain)
+		var gain := int(round(float(support_amount(source, target, action.shield_gain)) * target.care_mult()))
 		target.shield = maxi(target.shield, mini(shield_cap(target), target.shield + gain))
 	charged = target.shield - before_shield
 	if healed > 0 or charged > 0:
@@ -631,7 +627,7 @@ func _multi_shot(source: Unit, tile: Vector2i, action: ActionData) -> void:
 			var first: bool = not bonus_given.has(target)
 			if first:
 				bonus_given.append(target)
-			apply_damage(source, target, source.raw_damage(action), action, true, false, 1.0, first)
+			apply_damage(source, target, source.raw_damage(action), action, false, 1.0, first)
 
 
 ## Laesst verzoegerte Wirkungen ablaufen. Gibt zurueck, ob eine ausgeloest hat.
@@ -652,7 +648,7 @@ func advance(dt: float) -> bool:
 			# Ein Schuss einer Salve.
 			var hit: Unit = entry["target"]
 			if hit.is_alive() and source.is_alive():
-				apply_damage(source, hit, int(entry["damage"]), action, true, false,
+				apply_damage(source, hit, int(entry["damage"]), action, false,
 					float(entry.get("share", 1.0)), bool(entry.get("bonus", true)))
 			continue
 		EventBus.log_line("%s: %s schlägt ein." % [source.display_name, action.display_name])
@@ -733,9 +729,6 @@ func _element_stack(source: Unit, target: Unit, element: String, stacks: int) ->
 ## Effizienz des Ausloesers.
 func apply_action_status(source: Unit, target: Unit, action: ActionData) -> void:
 	var status := action.status
-	if str(status.get("id", "")) == "cable_fire":
-		target.add_cable_fire(float(status.get("stacks", 1)), source)
-		return
 	target.apply_status(StringName(str(status.get("id", "status"))),
 		float(status.get("seconds", 1.0)), status, source)
 
@@ -767,7 +760,7 @@ func burn_cable_fire(unit: Unit) -> int:
 	EventBus.log_line("%s: Kabelbrand, %d Stapel." % [unit.display_name, stacks])
 	var shield_before := unit.shield
 	var hp_before := unit.hp
-	apply_damage(source, unit, raw, burn, false)
+	apply_damage(source, unit, raw, burn)
 	return (shield_before - unit.shield) + (hp_before - unit.hp)
 
 

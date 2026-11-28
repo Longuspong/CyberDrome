@@ -34,9 +34,10 @@ func _stock(set_id: String) -> DromeBuild:
 
 
 func test_library_loaded() -> void:
-	# 8. Nov. 2026: Orbit-Fokus, Hologramm-Boost und Koedersender sind Module.
+	# 8. Nov. 2026: Orbit-Fokus und Hologramm-Boost sind Module.
 	# 9. Nov. 2026: Bollwerk-Ramme, Moerser, Klingenbumerang dazu.
-	t.equal(PartDB.parts.size(), 27, "27 Bauteile erwartet")
+	# 27. Nov. 2026: Repair-Kit (Nimbus) dazu.
+	t.equal(PartDB.parts.size(), 23, "23 Bauteile erwartet")
 	t.equal(PartDB.sets.size(), 4, "4 Bausätze erwartet")
 	for part in PartDB.parts.values():
 		# Seit 20. Nov. 2026 nur noch die Suedansicht als Symbol (Schritt C).
@@ -107,10 +108,10 @@ func test_weight_no_longer_slows_anyone_down() -> void:
 func test_the_dromes_carry_the_agreed_values() -> void:
 	# docs/IDENTITAETEN.md Abschnitt 5/6 (Vorgabe des Spielers, 8. Nov. 2026).
 	var expected := {
-		"bot1": {"spd": 12, "hp_max": 80, "shield_max": 50, "shield_pulse": 7, "def": 2, "power": 10, "module_slots": 3},
-		"bot2": {"spd": 10, "hp_max": 250, "shield_max": 50, "shield_pulse": 3, "def": 10, "power": 6, "module_slots": 2},
+		"bot1": {"spd": 8, "hp_max": 80, "shield_max": 50, "shield_pulse": 5, "def": 2, "power": 10, "module_slots": 3},
+		"bot2": {"spd": 6, "hp_max": 250, "shield_max": 50, "shield_pulse": 2, "def": 10, "power": 6, "module_slots": 2},
 		"bot3": {"spd": 12, "hp_max": 60, "shield_max": 60, "shield_pulse": 10, "def": 0, "power": 12, "module_slots": 3},
-		"bot4": {"spd": 7, "hp_max": 100, "shield_max": 30, "shield_pulse": 5, "def": 2, "power": 15, "module_slots": 3},
+		"bot4": {"spd": 3, "hp_max": 100, "shield_max": 30, "shield_pulse": 5, "def": 2, "power": 15, "module_slots": 3},
 	}
 	for set_id in expected:
 		var bare := DromeBuild.create(set_id, {})
@@ -135,27 +136,46 @@ func test_power_scales_the_damage_of_the_weapon() -> void:
 	strix.free()
 
 
-func test_the_molok_has_two_holders() -> void:
-	# Seit Nov. 2026: ein Platz je DROME, der Molok zwei -- seit 8. Nov.
-	# beide bis mittel (zwei Waffen gehen, schwer nicht).
+func test_the_molok_is_a_gunship() -> void:
+	# Gunship (KERNPLAN, gebaut 27. Nov. 2026): ein Halter bis mittel, die Waffe
+	# erscheint gespiegelt am rechten Arm.
 	var molok := DromeBuild.create("MOLOK", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_deflector"})
-	t.ok(molok.is_valid(), "Kanone und Deflektor sind baubar: %s"
-		% ", ".join(molok.validate()))
+		"equip_left": &"eq_hammer"})
+	t.ok(molok.is_valid(), "der Hammer ist baubar: %s" % ", ".join(molok.validate()))
+	t.equal(molok.equip_slots(), ["equip_left"] as Array[String], "ein Halter")
+	t.equal(molok.mirror_slots(), {"equip_right": "equip_left"}, "der rechte Arm spiegelt")
+	t.equal(molok.part_in("equip_right").id, &"eq_hammer", "und zeigt dieselbe Waffe")
+	t.equal(molok.equipment().size(), 1, "die Waffe zählt einmal")
 
-	var two_guns := molok.clone()
-	two_guns.slots["equip_right"] = &"eq_rune_staff"
-	t.ok(two_guns.is_valid(), "eine zweite Waffe rechts geht")
+	var second := molok.clone()
+	second.slots["equip_right"] = &"eq_deflector"
+	t.ok(not second.is_valid(), "eine zweite Waffe rechts geht nicht mehr")
+	t.equal(second.part_in("equip_right").id, &"eq_hammer", "der Spiegel gewinnt")
 	var lance := molok.clone()
-	lance.slots["equip_right"] = &"eq_rail_lance"
+	lance.slots["equip_left"] = &"eq_rail_lance"
 	t.ok(not lance.is_valid(), "das schwere Gewehr nicht")
 
 	var shoulder := molok.clone()
-	shoulder.slots["equip_shoulder"] = &"eq_drone_pod"
-	t.ok(not shoulder.is_valid(), "die Schulter ist kein Halter mehr")
-	t.equal(shoulder.equipment().size(), 2, "und was dort steckt, zählt nicht")
+	shoulder.slots["equip_shoulder"] = &"eq_pulse_blaster"
+	t.ok(not shoulder.is_valid(), "die Schulter ist kein Halter")
+	t.equal(shoulder.equipment().size(), 1, "und was dort steckt, zählt nicht")
+
+
+func test_the_gunship_fires_from_both_arms() -> void:
+	# Zwei Halterungen im Kampf: volle Werte, eigener Takt, versetzt.
+	var molok := Unit.create(DromeBuild.create("MOLOK", {
+		"body": &"jugg_body", "head": &"jugg_head",
+		"feet": &"jugg_feet", "core": &"jugg_core",
+		"equip_left": &"eq_hammer"}), &"m1", true)
+	molok.init_realtime(0.0)
+	t.equal(molok.mounts.size(), 2, "zwei Arme feuern")
+	t.equal(str(molok.mounts[1]["slot"]), "equip_right", "der zweite ist der rechte Arm")
+	t.equal(molok.mounts[0]["attack"], molok.mounts[1]["attack"], "mit derselben Waffe")
+	t.ok(float(molok.mounts[1]["ready"]) > float(molok.mounts[0]["ready"]), "versetzt")
+	molok.mounts[0]["count"] = 2
+	t.equal(float(molok.mounts[1]["count"]), 0.0, "jeder Arm zählt seinen Takt selbst")
 
 
 func test_apply_chassis_sets_the_whole_frame() -> void:
@@ -240,16 +260,16 @@ func test_the_frame_is_one_hull() -> void:
 func test_slot_rules_are_enforced() -> void:
 	var jugg := PartDB.get_part(&"jugg_body")
 	var cannon := PartDB.get_part(&"eq_hammer")
-	var pod := PartDB.get_part(&"eq_drone_pod")
+	var shield := PartDB.get_part(&"eq_deflector")
 	t.ok(jugg.accepts(cannon, "equip_left"), "der Hammer passt an den linken Arm")
-	t.ok(jugg.accepts(cannon, "equip_right"), "und an den rechten")
+	t.ok(not jugg.accepts(cannon, "equip_right"), "der rechte Arm ist kein Halter (Gunship)")
 	t.ok(not jugg.accepts(PartDB.get_part(&"eq_rail_lance"), "equip_left"), "schwer passt nicht")
-	t.ok(jugg.accepts(pod, "equip_right"), "der Drohnen-Pod passt rechts")
-	t.ok(not jugg.accepts(pod, "equip_shoulder"), "die Schulter ist reine Optik")
+	t.ok(jugg.accepts(shield, "equip_left"), "der Deflektor passt")
+	t.ok(not jugg.accepts(shield, "equip_shoulder"), "die Schulter ist reine Optik")
 
 	var scout := PartDB.get_part(&"scout_body")
 	t.ok(not scout.accepts(cannon, "equip_left"),
-		"ein Sprinter trägt keine Belagerungskanone")
+		"ein Vireo trägt keinen Hammer")
 	t.ok(not scout.accepts(PartDB.get_part(&"eq_deflector"), "equip_left"),
 		"und keinen Schild")
 
@@ -257,10 +277,8 @@ func test_slot_rules_are_enforced() -> void:
 ## Nahkampf bis 2 Felder, Fernkampf ab 3 (16. Nov. 2026) -- und die Lafette
 ## des Strix nimmt nur Fernkampf (docs/DROME_DESIGNREGELN.md).
 func test_reach_decides_melee_or_ranged() -> void:
-	t.equal(PartDB.get_part(&"eq_boomerang").reach_kind(), "melee", "Bumerang (2 Felder) ist Nahkampf")
 	t.equal(PartDB.get_part(&"eq_deflector").reach_kind(), "melee", "Deflektor ist Nahkampf")
 	t.equal(PartDB.get_part(&"eq_rune_staff").reach_kind(), "ranged", "Runenstab (3) ist Fernkampf")
-	t.equal(PartDB.get_part(&"eq_drone_pod").reach_kind(), "ranged", "E-Schraubenschlüssel ist Fernkampf")
 	t.equal(PartDB.get_part(&"eq_rail_lance").reach_kind(), "ranged", "Lanze ist Fernkampf")
 	for part in PartDB.of_type(PartData.Type.EQUIPMENT):
 		t.ok(part.tags.has("melee") != part.tags.has("ranged"),
@@ -275,34 +293,15 @@ func test_the_strix_mount_takes_only_ranged() -> void:
 	t.ok(strix.accepts(PartDB.get_part(&"eq_rail_lance"), "equip_center"), "Lanze passt")
 	t.ok(strix.accepts(PartDB.get_part(&"eq_rune_staff"), "equip_center"), "Runenstab passt")
 	t.ok(not strix.accepts(PartDB.get_part(&"eq_plasma_blade"), "equip_center"), "Plasmaklinge nicht")
-	t.ok(not strix.accepts(PartDB.get_part(&"eq_boomerang"), "equip_center"), "Bumerang (2 Felder) nicht")
 	t.equal(SlotRules.rejection(PartDB.get_part(&"eq_hammer"), strix.slot_rules["equip_center"], "heavy"),
 		"nur Fernkampf", "der Grund steht dabei")
 
 
 func test_equip_slots_come_from_anchors() -> void:
 	t.equal(PartDB.get_part(&"scout_body").equip_slots().size(), 1, "Vireo: 1 Platz")
-	t.equal(PartDB.get_part(&"jugg_body").equip_slots().size(), 2, "Molok: 2 Plätze")
+	t.equal(PartDB.get_part(&"jugg_body").equip_slots().size(), 1, "Molok: 1 Platz (Gunship)")
 	t.equal(PartDB.get_part(&"mage_body").equip_slots().size(), 1, "Nimbus: 1 Platz")
 	t.equal(PartDB.get_part(&"strix_body").equip_slots().size(), 1, "Strix: 1 Platz")
-
-
-func test_chassis_swap_drops_equipment_that_no_longer_fits() -> void:
-	# Molok mit Kanone -> auf den Vireo gewechselt. Der Vireo nimmt nur bis
-	# medium, die Kanone faellt ab. Die Vorschau muss das zeigen, sonst
-	# verspricht sie Werte fuer einen Aufbau, den es nicht geben kann.
-	var build := DromeBuild.create("WECHSEL", {
-		"body": &"jugg_body", "head": &"jugg_head",
-		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer",
-	})
-	var delta := build.preview_delta("body", &"scout_body")
-	t.ok(delta.has("hp_max"), "Chassiswechsel ändert die Werte")
-	var swapped := build.clone()
-	swapped.slots["body"] = &"scout_body"
-	swapped._drop_invalid_equipment()
-	t.ok(swapped.part_in("equip_left") == null,
-		"der mittlere Hammer passt nicht an den leichten Vireo und fällt ab")
 
 
 func test_power_score_is_100_for_the_average_starter() -> void:
@@ -428,8 +427,10 @@ func test_a_part_finds_its_own_slot() -> void:
 
 	# Ausruestung: angewaehlter Halter zuerst, wenn er sie nimmt.
 	var shield := PartDB.get_part(&"eq_deflector")
-	t.equal(build.slot_for(shield, "equip_right"), "equip_right",
+	t.equal(build.slot_for(shield, "equip_left"), "equip_left",
 		"der angewählte Halter gewinnt")
+	t.equal(build.slot_for(shield, "equip_right"), "equip_left",
+		"der Spiegel-Arm ist kein Halter")
 
 	# Schwer passt beim Molok nirgends hin (8. Nov. 2026).
 	var cannon := PartDB.get_part(&"eq_rail_lance")
@@ -452,12 +453,10 @@ func test_the_first_free_holder_wins_before_an_occupied_one() -> void:
 	var build := DromeBuild.create("HALBVOLL", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer",
 	})
 	var shield := PartDB.get_part(&"eq_deflector")
-	t.equal(build.slot_for(shield), "equip_right",
-		"der freie Halter wird vor dem belegten genommen")
-	build.slots["equip_right"] = shield.id
+	t.equal(build.slot_for(shield), "equip_left", "der freie Halter wird genommen")
+	build.slots["equip_left"] = &"eq_hammer"
 	t.equal(build.slot_for(shield), "equip_left",
 		"ist alles belegt, wird der erste passende ersetzt")
 
@@ -466,13 +465,13 @@ func test_the_first_free_holder_wins_before_an_occupied_one() -> void:
 # Keine Bau-Budgets: nur die strukturelle Untergrenze gilt
 # ---------------------------------------------------------------------------
 
-## Ein Molok mit beiden Plaetzen belegt -- frueher (mit drei) der Grenzfall,
+## Ein voll bestueckter Molok -- frueher (mit drei Plaetzen) der Grenzfall,
 ## an dem Traglast und Energie zugleich rissen.
 func _overloaded_molok() -> DromeBuild:
 	return DromeBuild.create("VOLLBESTÜCKT", {
 		"body": &"jugg_body", "head": &"jugg_head",
 		"feet": &"jugg_feet", "core": &"jugg_core",
-		"equip_left": &"eq_hammer", "equip_right": &"eq_drone_pod",
+		"equip_left": &"eq_hammer",
 	})
 
 

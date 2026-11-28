@@ -161,12 +161,12 @@ def num(x):
 
 
 PASSIVE_INFO = {
-    "hit_rush": ("Sprint", lambda p: f"Jeder Treffer gibt {num(p['seconds'])} s lang +{pct(p['move_mult'] - 1)} Lauftempo."),
-    "presence": ("Praesenz", lambda p: f"Gegner im Umkreis {p['lure_radius']} greifen ihn an statt ihres Ziels (Locken). "
-                 f"{pct(p['guard_share'])} des Schadens an Verbuendeten im Umkreis {p['guard_radius']} gehen auf ihn."),
-    "echo": ("Echo", lambda p: f"Jede Faehigkeit wirkt doppelt, dafuer ist ihr Takt {num(p['slower'])}-mal so lang."),
-    "steady": ("Anlegen", lambda p: f"Nach {num(p['seconds'])} s ohne Feldwechsel +{pct(p['damage_mult'] - 1)} Schaden "
-               f"und +{pct(p['range_mult'] - 1)} Reichweite (mind. +1 Feld)."),
+    "cyberspeed": ("Cyberspeed", lambda p: f"Jeder {p['every']}. Angriff gibt einen Stapel (hoechstens {p['max_stacks']}), "
+                   f"je Stapel +{pct(p['attack_speed'])} Angriffs- und Lauftempo; jeder Angriff haelt die Stapel {num(p['seconds'])} s."),
+    "safe_haven": ("Safe Haven", lambda p: f"Heilung, Regeneration und Schildgaben am Molok +{pct(p['care_mult'] - 1)}."),
+    "echo": ("Echo", lambda p: f"Jede Faehigkeit wirkt doppelt, dafuer ist ihr Takt {num(p['slower'])}-mal so lang (aufgerundet)."),
+    "focuslense": ("Focuslense", lambda p: f"+{pct(p['kinetic_mult'] - 1)} kinetischer und -{pct(1 - p['energy_mult'])} Energieschaden; "
+                   f"traf der letzte Schuss dasselbe Ziel (anvisiert), +{pct(p['focus_mult'] - 1)}."),
 }
 
 
@@ -191,28 +191,17 @@ def effect_text(key, val):
         "support_power": lambda v: f"Heilung und Schildgabe +{pct(v)}",
         "lifesteal": lambda v: f"Treffer heilen {pct(v)} des Schadens",
         "virus_fraction": lambda v: f"{pct(v)} des Schadens als Virusschaden",
-        "attack_power": lambda v: f"+{pct(v)} Schaden der Angriffe",
         "ricochet_chance": lambda v: f"{pct(v)} Chance auf Zusatztreffer",
         "ricochet_share": lambda v: f"Zusatztreffer mit {pct(v)} Schaden",
         "def": lambda v: f"+{num(v)} Ruestung",
-        "shield": lambda v: f"+{num(v)} Schild",
         "thorns": lambda v: f"Stacheln: {num(v)} Schaden an jedem Angreifer",
         "thorns_melee": lambda v: f"+{num(v)} Stacheln gegen Nahkampf",
-        "ability_power": lambda v: f"Faehigkeit +{pct(v)} Wirkung",
-        "status_time": lambda v: f"Statuseffekte {pct(v)} laenger",
-        "taunt": lambda v: f"Faehigkeit lockt ihr Ziel {num(1 + v)} s auf den Traeger",
         "mark": lambda v: f"Faehigkeit markiert ihr Ziel {num(v)} s (+{pct(r['mark_damage_taken'])} Schaden von allen)",
-        "field_shot_every": lambda v: f"jeder {v}. Angriff trifft dazu den schwaechsten anderen Gegner",
         "kinetic_to_energy": lambda v: f"solange der Schild steht: {pct(v)} des kinetischen Schadens wird Energie",
         "takt_count": lambda v: f"jeder Angriff zaehlt {num(v)} fuer den Takt",
         "bonus_vs_marked": lambda v: f"+{pct(v)} Schaden gegen markierte Ziele",
         "armor_to_damage": lambda v: f"Angriffe +{pct(v)} der eigenen Ruestung als Schaden",
         "retaliation": lambda v: f"Vergeltung: jeder Treffer am Traeger laedt den naechsten Angriff um {pct(v)} auf (max. 3x, Nahkampf doppelt)",
-        "post_ability_power": lambda v: f"nach der Faehigkeit: die naechsten {r['overload_attacks']} Angriffe +{pct(v)}",
-        "cleave": lambda v: f"jeder Angriff trifft alle anderen Gegner neben dem Traeger mit {pct(v)}",
-        "thorns_true": lambda v: "Stacheln gehen am Schild vorbei und koennen Zusatztreffer ausloesen",
-        "ability_fork": lambda v: f"Faehigkeit wiederholt sich auf einem zweiten Ziel (Rw {r['fork_range']}) mit {pct(v)}",
-        "chain_jumps": lambda v: f"Zusatztreffer springen bis zu {v}x weiter, bevorzugt auf markierte Gegner",
         "shield_delay": lambda v: f"Schild laedt schon nach {num(v)} s Ruhe",
         "ability_armor_aura": lambda v: f"Faehigkeit gibt allen DROMEs in Rw {r['aura_range']} fuer {num(r['aura_seconds'])} s +{num(v)} Ruestung",
         "shackle": lambda v: f"Faehigkeit zieht bis zu {v} Gegner (Rw 3) neben den Traeger und betaeubt sie 1 s",
@@ -220,14 +209,10 @@ def effect_text(key, val):
                                         f"{num(r['burst_stun'])} s betaeubt (hoechstens alle {num(r['burst_cooldown'])} s)",
         "decoy": lambda v: f"Hologramm-Sprung: wer daneben stand, ist {num(v)} s vom Koeder abgelenkt",
         "mark_on_hit_taken": lambda v: "jeder Gegner, der den Traeger trifft, wird markiert",
-        "root": lambda v: f"Ziel der Faehigkeit ist {num(v)} s gewurzelt (greift an, laeuft nicht)",
         "ready_after_ability": lambda v: "nach der Faehigkeit sofort wieder geladen",
-        "field_shot_marked": lambda v: "Feldschuss bevorzugt markierte Gegner",
-        "range": lambda v: f"+{num(v)} Reichweite",
         "retaliation_max": lambda v: f"Vergeltung bis zu {v} Ladungen",
         "berserk": lambda v: "volle Vergeltung trifft dazu alle Gegner daneben",
         "mark_hunt": lambda v: "stirbt ein markierter Gegner, springt die Markierung weiter",
-        "gravity": lambda v: "das Wurzeln trifft dazu den naechsten Gegner am Ziel (Rw 2)",
         "knockback_every": lambda v: f"jeder {v}. Angriff stoesst das Ziel 1 Feld zurueck",
         "bonus_vs_unshielded": lambda v: f"+{pct(v)} Schaden gegen Gegner ohne Schild",
     }
@@ -290,10 +275,6 @@ def ability_effect(a, attack):
         parts.append(f"{a['shots']} Schuesse")
     if a.get("targeting") == "aoe_around_target":
         parts.append(f"Flaeche Radius {a.get('aoe_radius', 0)}")
-    if a.get("hp_scaling"):
-        parts.append(f"+{pct(a['hp_scaling'])} der eigenen max. Integritaet (ohne Power)")
-    if a.get("shield_mult", 1.0) != 1.0:
-        parts.append(f"x{num(a['shield_mult'])} gegen Schild")
     if a.get("push_tiles", 0) > 0:
         parts.append(f"stoesst {a['push_tiles']} Feld zurueck")
     if a.get("push_tiles", 0) < 0:
@@ -317,10 +298,6 @@ def attack_extra(a):
     parts = []
     if a.get("heal"):
         parts.append(f"heilt Verbuendete um {a['heal']}")
-    if a.get("moving_bonus"):
-        parts.append(f"+{pct(a['moving_bonus'])} in Bewegung")
-    if a.get("min_range"):
-        parts.append(f"Mindestreichweite {a['min_range']}")
     if a.get("delay"):
         parts.append(f"Einschlag nach {num(a['delay'])} s")
     if a.get("targeting") == "aoe_around_target":
@@ -366,7 +343,6 @@ STATUS_FILL = {
 }
 INPUT_FILL = PatternFill("solid", fgColor="E3F4F8")  # Eingabefelder fuer den Spieler
 
-TABLES = []
 
 
 def sheet(wb, title):
@@ -424,7 +400,6 @@ RULE_LABELS = {
     "realtime.move_per_spd": "Lauftempo je Punkt Speed (Felder/s)",
     "realtime.move_min": "Lauftempo Untergrenze (Felder/s)",
     "realtime.pulse": "Sekunden je Puls",
-    "realtime.time_limit": "Zeitlimit eines Kampfes (s)",
     "realtime.kite_distance": "Fernkaempfer weichen aus, wenn ein Gegner so nah ist",
     "combat.physical_vs_shield": "Kinetisch am Schild",
     "combat.energy_vs_shield": "Energie am Schild",
@@ -434,18 +409,12 @@ RULE_LABELS = {
     "combat.shield_pulse.delay_per_point": "Schildpuls: Ruhezeit weniger je Punkt (s)",
     "combat.shield_pulse.min_delay": "Schildpuls: kleinste Ruhezeit (s)",
     "combat.shield_pulse.gain_per_point": "Schildpuls: Ladung je Punkt und Puls",
-    "overtime.start_seconds": "Overtime beginnt nach (s)",
-    "overtime.pct_per_cycle": "Overtime: Anteil der max. Integritaet je Puls (wachsend)",
     "run.rounds": "Kaempfe je Lauf",
     "run.lives": "Leben je Lauf",
     "run.training_rounds": "Trainingsrunden am Anfang",
     "run.storage_size": "Plaetze im Lager",
     "run.loss_credits": "Credits bei einer Niederlage",
     "run.region": "Gebiet des Laufs",
-    "squad_size": "Startgroesse des Squads im Lauf",
-    "squad_size_max": "Hoechstgroesse des Squads",
-    "grid_width": "Spielfeld Breite",
-    "grid_height": "Spielfeld Hoehe",
     "deployment.rows": "Aufstellung: Reihen",
     "deployment.columns": "Aufstellung: Breite",
     "deployment.inset": "Aufstellung: Abstand zum Rand",

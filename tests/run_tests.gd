@@ -20,7 +20,6 @@ const SUITES := [
 	"res://tests/test_ability_painter.gd",
 	"res://tests/test_grid.gd",
 	"res://tests/test_battle.gd",
-	"res://tests/test_workshop_handoff.gd",
 	"res://tests/test_roster.gd",
 	"res://tests/test_ui_pieces.gd",
 	"res://tests/test_glyphs.gd",

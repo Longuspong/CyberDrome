@@ -6,7 +6,7 @@ extends RefCounted
 var t
 
 
-func _vireo(weapon: StringName = &"eq_boomerang") -> DromeBuild:
+func _vireo(weapon: StringName = &"eq_pulse_blaster") -> DromeBuild:
 	return DromeBuild.create("Vireo", {"body": &"scout_body", "head": &"scout_head",
 		"feet": &"scout_feet", "core": &"scout_core", "equip_left": weapon})
 
@@ -57,28 +57,13 @@ func test_efficiency_stretches_the_duration() -> void:
 	battle.free()
 
 
-func test_the_vireo_sprint_uses_its_own_efficiency() -> void:
+func test_cyberspeed_lasts_longer_with_efficiency() -> void:
 	var battle := _battle()
 	var vireo: Unit = battle.units[0]
-	var molok: Unit = battle.units[1]
 	vireo.stats["efficiency"] = 15
-	battle.resolver.apply_damage(vireo, molok, 5, vireo.mounts[0]["attack"])
-	var rush := float((Config.section("passives").get("hit_rush", {}) as Dictionary).get("seconds", 2.0))
-	t.ok(vireo.statuses.has(&"rush"), "Treffer löst den Sprint aus")
-	t.ok(is_equal_approx(float(vireo.statuses[&"rush"]["seconds_left"]), rush * 1.5), "Sprint 50 % länger")
-	battle.free()
-
-
-func test_the_whirl_throw_sets_cable_fire() -> void:
-	var battle := _battle()
-	var vireo: Unit = battle.units[0]
-	var molok: Unit = battle.units[1]
-	var whirl: ActionData = vireo.mounts[0]["ability"]
-	t.equal(str(whirl.status.get("id", "")), "cable_fire", "Wirbelwurf trägt Kabelbrand")
-	battle.resolver.apply_action_status(vireo, molok, whirl)
-	t.equal(molok.cable_fire_stacks(), 1, "ein Stapel je getroffenem Gegner")
-	t.ok(molok.status_names().has("cable_fire"), "sichtbar als Zustand")
-	t.ok(whirl.status_text().begins_with("Kabelbrand"), "Klartext: %s" % whirl.status_text())
+	vireo.on_attack()
+	var seconds := float((Config.section("passives").get("cyberspeed", {}) as Dictionary).get("seconds", 3.0))
+	t.ok(is_equal_approx(vireo.cyberspeed_left, seconds * 1.5), "Cyberspeed hält 50 % länger")
 	battle.free()
 
 

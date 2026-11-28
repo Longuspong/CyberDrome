@@ -84,10 +84,6 @@ var shield_bonus: float = 0.0
 ## Der Drohnen-Pod traegt sie -- eine Passive statt einer aktiven Heilung.
 var hp_regen_pct: int = 0
 
-## Lockradius in Feldern: Gegner so nah greifen den Traeger an statt ihres
-## eigenen Ziels (Koedersender). Sichtbar ueber den Gelockten.
-var lure_radius: int = 0
-
 ## Nur body: wie die KI diesen DROME fuehrt (vanguard, skirmisher, sniper,
 ## controller -- siehe AIController). Leer = nach Waffenreichweite.
 var ai_role: String = ""
@@ -138,20 +134,13 @@ static func from_meta(meta: Dictionary) -> PartData:
 	part.shield_regen = stats.get("shield_regen", 0)
 	part.shield_bonus = float(stats.get("shield_bonus", 0.0))
 	part.hp_regen_pct = stats.get("hp_regen_pct", 0)
-	part.lure_radius = int(stats.get("lure_radius", 0))
 	part.ai_role = str(stats.get("ai_role", ""))
 	part.passive = str(stats.get("passive", ""))
 
-	# Ein Teil gewaehrt eine LISTE von Aktionen. ``action`` (Einzahl) bleibt als
-	# Altformat lesbar, damit ein aelterer Datensatz nicht stumm seine Aktion
-	# verliert.
+	# Ein Teil gewaehrt eine LISTE von Aktionen.
 	for action_meta in stats.get("actions", []):
 		part.actions.append(
 			ActionData.from_meta(action_meta, part.display_name, part.code))
-	var legacy = stats.get("action")
-	if legacy != null and part.actions.is_empty():
-		part.actions.append(
-			ActionData.from_meta(legacy, part.display_name, part.code))
 	return part
 
 
@@ -199,26 +188,6 @@ func view(direction: String) -> Dictionary:
 	return views.get(direction, views.get("south", {}))
 
 
-## Die Ansicht fuer ein bestimmtes Chassis: hat das Teil die Variante, die das
-## Chassis verlangt (``weapon_variant``), gelten deren Bild und Anker, sonst
-## die Grundform.
-func view_for(direction: String, variant: String) -> Dictionary:
-	var base := view(direction)
-	if variant == "":
-		return base
-	var all_variants: Dictionary = base.get("variants", {})
-	var v: Dictionary = all_variants.get(variant, {})
-	# "heavy_right" ohne eigene Fassung: die linke tut es auch.
-	if v.is_empty() and variant.ends_with("_right"):
-		v = all_variants.get(variant.trim_suffix("_right"), {})
-	if v.is_empty():
-		return base
-	var merged := base.duplicate()
-	for key in v:
-		merged[key] = v[key]
-	return merged
-
-
 ## Die Ausruestungsslots eines Chassis sind seine equip_*-Anker -- ausser
 ## denen, die ``slot_rules`` mit ``off`` abschaltet. Seit Nov. 2026 hat jeder
 ## DROME einen Platz, der Molok zwei; die uebrigen Anker sind reine Optik.
@@ -251,7 +220,7 @@ func reach_kind() -> String:
 
 
 ## Darf dieses Ausruestungsteil in diesen Slot dieses Chassis?
-## Spiegelt fits_rule() aus tools/build_sample_parts.py -- die Werkstatt prueft
+## Spiegelt fits_rule() aus tools/build_sample_parts.py -- der Hangar prueft
 ## das beim Bauen, aber ein Loadout kann von Hand entstehen oder aus einem
 ## aelteren Stand kommen. Die Regel muss deshalb auch hier gelten.
 func accepts(equipment: PartData, slot: String) -> bool:

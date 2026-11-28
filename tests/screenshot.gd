@@ -144,6 +144,27 @@ func _process(_delta: float) -> bool:
 				var opener = load("res://scripts/ui/cache_opener.gd").show_over(current_scene, bits[0])
 				if bits.size() > 1:
 					opener.call_deferred("_open")
+			# fabrik_bau=strom:sol:1,1 oeffnet Plus, Bauen, Kategorie, waehlt die Art
+			# und tippt das Feld (Vorschau); fabrik_modus=move|remove nur den Modus;
+			# fabriktipp=1,1 tippt ein Feld.
+			var views := current_scene.find_children("*", "FactoryView", true, false)
+			if not views.is_empty():
+				var fv = views[0]
+				if str(extra).begins_with("fabrik_bau="):
+					var bits := str(extra).substr(11).split(":")
+					fv._toggle_menu()
+					fv._choose_mode("build")
+					fv._choose_category(bits[0])
+					if bits.size() > 1:
+						fv._arm(bits[1])
+					if bits.size() > 2:
+						fv.tapped(bits[2])
+				if str(extra).begins_with("fabrik_modus="):
+					fv._toggle_menu()
+					if str(extra).substr(13) != "":
+						fv._choose_mode(str(extra).substr(13))
+				if str(extra).begins_with("fabriktipp="):
+					fv.tapped(str(extra).substr(11))
 			# kampf=los: im Kampfbildschirm die Aufstellung beenden, der Kampf laeuft.
 			if str(extra) == "kampf=los" and current_scene.has_method("_start_fight"):
 				current_scene.call("_start_fight")

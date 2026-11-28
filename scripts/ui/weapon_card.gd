@@ -66,7 +66,7 @@ static func fill(box: VBoxContainer, part: PartData, hint: Label, compare: PartD
 	right.add_theme_constant_override("separation", 4)
 	top.add_child(right)
 	right.add_child(Arcade.label(part.display_name.to_upper(), 22, Arcade.WHITE, "display"))
-	right.add_child(Arcade.label(SlotRules.class_label(part.mount_class).to_upper(), 12,
+	right.add_child(Arcade.label(SlotRules.class_code(part.mount_class), 12,
 		_class_color(part.mount_class), "bold", 0.16))
 
 	var attack: ActionData = null
@@ -272,11 +272,10 @@ static func attack_chips(action: ActionData) -> Array:
 
 
 ## Das Takt-Symbol einer Faehigkeit: Zahnrad mit "3." (jeder 3. Angriff),
-## Uhr mit "3 s", zwei Punkte fuer "Gegner daneben".
+## zwei Punkte fuer "Gegner daneben".
 static func takt_chip(ability: ActionData) -> Array:
 	match ability.trigger_kind:
 		"attacks": return ["hits", "%d." % int(ability.trigger_every)]
-		"time": return ["time", "%s s" % ActionData._seconds(ability.trigger_every)]
 		"adjacent": return ["adjacent", ""]
 	return []
 
@@ -286,8 +285,6 @@ static func short_text(action: ActionData) -> String:
 	var parts: Array[String] = []
 	if action.is_move():
 		parts.append("springt bis %d Felder geradeaus weg" % action.range_tiles)
-	if action.shield_mult > 1.0:
-		parts.append("%d %% Schaden am Schild" % int(round(action.shield_mult * 100.0)))
 	if action.shots > 1:
 		parts.append("trifft bis zu %d Gegner" % action.shots)
 	if action.gather:
@@ -296,6 +293,10 @@ static func short_text(action: ActionData) -> String:
 		parts.append("Schockwelle nach %s s" % ActionData._seconds(action.delay))
 	if not action.status.is_empty():
 		parts.append(action.status_text())
+	if action.release_store:
+		parts.append("ganzes Team: gespeicherter Schaden als Schild und Reparatur")
+	if action.lifesteal > 0.0:
+		parts.append("heilt um %d %% des Schadens" % int(round(action.lifesteal * 100.0)))
 	if action.push_tiles > 0:
 		parts.append("stößt %d Feld weg" % action.push_tiles)
 	elif action.push_tiles < 0:

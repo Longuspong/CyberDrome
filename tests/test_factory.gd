@@ -115,6 +115,34 @@ func test_buy_and_move() -> void:
 	t.ok(sim.buy_building("gen") != "", "Generator erst ab Tier 2")
 
 
+## Verschieben, Tauschen, Vorschau und Kauf mit Setzen (27. Nov. 2026).
+func test_move_swap_preview() -> void:
+	var lager := {}
+	var sim := _empty(lager)
+	t.equal(sim.place("1,-1", "sam"), "", "Sammler auf Schrott")
+	t.equal(sim.place("1,0", "smz"), "", "Schmelze daneben")
+	t.equal(sim.place("0,1", "rel"), "", "Relais")
+	t.equal(sim.place("-1,1", "lot"), "", "Löter")
+	var buffer := {"schrott": 4}
+	sim.building_at("1,0")["in"] = buffer
+	t.equal(sim.move("1,0", "1,1"), "", "Schmelze verschoben")
+	t.ok(sim.building_at("1,0").is_empty() and str(sim.building_at("1,1")["t"]) == "smz", "jetzt auf 1,1")
+	t.equal(int(sim.building_at("1,1")["in"].get("schrott", 0)), 4, "Puffer zieht mit")
+	t.equal(sim.move("0,1", "-1,1"), "", "Relais und Löter getauscht")
+	t.equal(str(sim.building_at("0,1")["t"]), "lot", "Löter jetzt auf 0,1")
+	t.ok(sim.move("1,-1", "1,1") != "", "Sammler nicht mit Schmelze tauschen")
+	t.ok(sim.move("1,1", "0,0") != "", "nicht auf die Basis")
+	var traces := sim.preview_traces("1,0", "smz")
+	t.ok(not traces.is_empty(), "Vorschau: Schmelze neben Sammler bekommt Schrott")
+	t.ok(sim.building_at("1,0").is_empty(), "Vorschau setzt nichts")
+	sim.state["owned"]["rec"] = 0
+	t.ok(sim.buy_and_place("1,0", "rec") != "", "ohne Legierung kein Kauf")
+	t.equal(sim.missing({"legierung": 12}), {"legierung": 12}, "fehlt 12 Legierung")
+	lager["res:legierung"] = 12
+	t.equal(sim.buy_and_place("1,0", "rec"), "", "gekauft und gesetzt")
+	t.equal(str(sim.building_at("1,0")["t"]), "rec", "Recycler steht")
+
+
 func test_tier_goal_only_factory_wares() -> void:
 	var goal: Dictionary = _sim().next_tier_goal()
 	for ware in goal.get("kosten", {}):

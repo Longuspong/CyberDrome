@@ -84,7 +84,8 @@
       "max_class": "medium"
     },
     "equip_right": {
-      "max_class": "medium"
+      "off": true,
+      "mirror": "equip_left"
     },
     "equip_shoulder": {
       "off": true
@@ -92,19 +93,18 @@
   },
   "stats": {
     "hp": 250,
-    "spd": 10,
+    "spd": 6,
     "def": 10,
     "shield": 50,
     "shield_regen": 0,
     "shield_bonus": 0.0,
-    "shield_pulse": 3,
+    "shield_pulse": 2,
     "power": 6,
     "efficiency": 14,
     "module_slots": 2,
     "hp_regen_pct": 0,
-    "lure_radius": 0,
     "ai_role": "vanguard",
-    "passive": "presence",
+    "passive": "safe_haven",
     "actions": []
   }
 }

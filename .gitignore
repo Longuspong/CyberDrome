@@ -1,11 +1,3 @@
-# Exportierte Bots -- Arbeitsergebnisse der Werkstatt, kein Quellmaterial.
-# Ein Build, der ins Spiel soll, wird bewusst mit -f hinzugefuegt.
-builds/*
-!builds/.gitkeep
-
-# Im Tool gespeicherte Farbpaletten (lokale Arbeitsstaende)
-palettes.json
-
 # Python
 __pycache__/
 *.py[cod]
@@ -19,6 +11,8 @@ venv/
 # Er enthaelt keine Geheimnisse -- ein Android-Keystore gehoerte NICHT hinein.
 build/
 .cache/
+# Versionskennung, schreibt tools/build_web.sh (Testspielstand Platz 3)
+data/build.json
 .vercel/
 
 # Editor / OS

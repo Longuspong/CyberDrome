@@ -35,20 +35,6 @@ func _ready() -> void:
 		_rain.append(Vector3(rng.randf(), rng.randf(), rng.randf_range(0.6, 1.0)))
 
 
-## Der Squad, der auf dem Podest steht (GameState.squad). Hoechstens drei (seit 16. Nov. 2026).
-func show_squad(builds: Array) -> void:
-	_squad = builds.slice(0, 4)
-	for rig in _rigs:
-		rig.queue_free()
-	_rigs.clear()
-	for build in _squad:
-		var rig := Node2D.new()
-		DromeSprites.assemble(rig, build, "south", 512)
-		add_child(rig)
-		_rigs.append(rig)
-	_layout()
-
-
 func _layout() -> void:
 	var count := _rigs.size()
 	if count == 0:

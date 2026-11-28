@@ -15,13 +15,12 @@ extends RefCounted
 ## Ein Satz je Teil: wozu ist es da? Fehlt ein Eintrag, entfaellt die Zeile.
 const ROLE := {
 	&"eq_pulse_blaster": "Leichte Allzweckwaffe auf mittlere Distanz. Halb Energieschaden – gut gegen Schilde.",
-	&"eq_deflector": "Ein Energieschild zum Umschnallen: mehr Schild, der sich jeden Puls (alle 3 s) wieder auflädt. Keine eigene Aktion.",
-	&"eq_drone_pod": "Reparaturdrohnen: jeden Puls (alle 3 s) kommt ein Teil der Integrität zurück.",
-	&"eq_rune_staff": "Nahkampfstab mit reinem Energieschaden. Trifft das Ziel und die vier geraden Nachbarfelder.",
+	&"eq_plasma_blade": "Nahkampfklinge des Vireo: schnelle Schnitte, das Aufschlitzen macht das Ziel verwundbar.",
+	&"eq_hammer": "Nahkampfwaffe des Molok: der Betäubungsschlag betäubt und heilt den Träger um den Schaden.",
+	&"eq_repair_kit": "Heilgerät des Nimbus: kleine Energieblitze speichern den angerichteten Schaden, die Reparaturwelle gibt ihn dem ganzen Team als Schild und Integrität zurück.",
+	&"eq_deflector": "Schild zum Umschnallen: stößt zu und lädt dem Träger Schild auf, auch über das Maximum.",
+	&"eq_rune_staff": "Energiestab auf mittlere Distanz. Der Vortex zieht Gegner zusammen und verlangsamt sie.",
 	&"eq_rail_lance": "Scharfschützenwaffe mit der größten Reichweite.",
-	&"eq_bulwark_ram": "Rammkolben für die Frontlinie: der Rammstoß wächst mit der eigenen Integrität und stößt zurück.",
-	&"eq_mortar": "Schwerer Schultermörser: Fläche aus der zweiten Reihe, trifft aber nicht auf kurze Distanz.",
-	&"eq_boomerang": "Wurfklinge für den Plänkler: trifft hin und zurück, wer läuft, wirft härter.",
 }
 
 ## Seit dem Echtzeit-Kampf zaehlen Bewegung (MOV) und Energie nicht mehr:
@@ -45,7 +44,7 @@ static func lines(part: PartData) -> Array:
 
 	var head: Array[String] = []
 	if part.type == PartData.Type.EQUIPMENT:
-		head.append(SlotRules.class_label(part.mount_class))
+		head.append("%s (%s)" % [SlotRules.class_code(part.mount_class), SlotRules.class_label(part.mount_class)])
 		head.append(SlotRules.category_label(part.category))
 	if not head.is_empty():
 		out.append([" · ".join(head), "detail"])
@@ -78,26 +77,24 @@ static func traits(part: PartData) -> Array[String]:
 	var out: Array[String] = []
 	if part.hp_regen_pct > 0:
 		out.append("Repariert jeden Puls (alle 3 s) %d %% der Integrität." % part.hp_regen_pct)
-	if part.lure_radius > 0:
-		out.append("Lockt: Gegner im Umkreis %d greifen den Träger an." % part.lure_radius)
 	match part.passive:
-		"hit_rush":
-			var rush := Config.section("passives").get("hit_rush", {}) as Dictionary
-			out.append("Sprint: jeder Treffer macht %s s lang %d %% schneller." % [
-				ActionData._seconds(float(rush.get("seconds", 2.0))),
-				int(round((float(rush.get("move_mult", 1.4)) - 1.0) * 100.0))])
-		"presence":
-			var p := Config.section("passives").get("presence", {}) as Dictionary
-			out.append("Präsenz: Gegner im Umkreis %d greifen ihn an; %d %% des Schadens an Verbündeten im Umkreis %d fängt er ab." % [
-				int(p.get("lure_radius", 2)), int(round(float(p.get("guard_share", 0.3)) * 100.0)),
-				int(p.get("guard_radius", 3))])
+		"cyberspeed":
+			var cs := Config.section("passives").get("cyberspeed", {}) as Dictionary
+			out.append("Cyberspeed: jeder %d. Angriff gibt einen Stapel (höchstens %d), je Stapel +%d %% Angriffs- und Lauftempo. Jeder Angriff hält die Stapel %s s." % [
+				int(cs.get("every", 3)), int(cs.get("max_stacks", 3)),
+				int(round(float(cs.get("attack_speed", 0.1)) * 100.0)),
+				ActionData._seconds(float(cs.get("seconds", 3.0)))])
+		"safe_haven":
+			var fo := Config.section("passives").get("safe_haven", {}) as Dictionary
+			out.append("Safe Haven: Heilung, Regeneration und Schildgaben am Molok +%d %%." % int(round((float(fo.get("care_mult", 1.2)) - 1.0) * 100.0)))
 		"echo":
-			out.append("Echo: jede Fähigkeit wirkt zweimal, ihr Takt ist dafür 50 % länger.")
-		"steady":
-			var st := Config.section("passives").get("steady", {}) as Dictionary
-			out.append("Anlegen: nach %s s ohne Bewegung +%d %% Schaden und Reichweite." % [
-				ActionData._seconds(float(st.get("seconds", 4.0))),
-				int(round((float(st.get("damage_mult", 1.2)) - 1.0) * 100.0))])
+			out.append("Echo: jede Fähigkeit wirkt zweimal, ihr Takt ist dafür 1,5-mal so lang (aufgerundet).")
+		"focuslense":
+			var fl := Config.section("passives").get("focuslense", {}) as Dictionary
+			out.append("Focuslense: +%d %% kinetischer, -%d %% Energieschaden; das anvisierte Ziel (vom letzten Schuss getroffen) nimmt +%d %%." % [
+				int(round((float(fl.get("kinetic_mult", 1.2)) - 1.0) * 100.0)),
+				int(round((1.0 - float(fl.get("energy_mult", 0.3))) * 100.0)),
+				int(round((float(fl.get("focus_mult", 1.2)) - 1.0) * 100.0))])
 	return out
 
 
@@ -132,8 +129,6 @@ static func action_lines(action: ActionData) -> Array[String]:
 			out.append("%d %% Energieschaden – gut gegen Schilde." % int(round(action.energy_fraction * 100.0)))
 		else:
 			out.append("Kinetischer Schaden – stark gegen Integrität, schwach gegen Schilde.")
-	if action.shield_mult > 1.0:
-		out.append("Schildbrecher: macht %d %% Schaden an Schilden." % int(round(action.shield_mult * 100.0)))
 	if action.shots > 1 and action.salvo > 1:
 		out.append("%d Salven zu je %d Schüssen (je 1/%d Schaden): erst aufs Ziel, dann auf den nächsten Gegner in Reichweite; ist nur einer da, alle auf ihn." % [action.shots, action.salvo, action.salvo])
 	elif action.shots > 1:
@@ -144,18 +139,18 @@ static func action_lines(action: ActionData) -> Array[String]:
 		out.append("Danach schlägt nach %s s eine Schockwelle zu." % ActionData._seconds(action.delay))
 	if not action.status.is_empty():
 		out.append("Getroffene: %s." % action.status_text())
-	if action.heal > 0:
+	if action.stores_damage:
+		out.append("Speichert den angerichteten Schild- und Integritätsschaden für die Reparaturwelle.")
+	if action.release_store:
+		out.append("Jedes Teammitglied bekommt den Speicher mal Effizienz zurück: Schildschaden als Schild (auch über das Maximum), Integritätsschaden als Reparatur. Danach ist der Speicher leer.")
+	elif action.heal > 0:
 		out.append("Repariert %d Integrität beim Verbündeten mit dem geringsten Anteil; ist niemand verletzt, schießt er auf Gegner." % action.heal)
-	if action.shield_gain > 0:
+	if action.shield_gain > 0 and not action.release_store:
 		var who := "dem Träger" if action.support == "self" \
 			else "dem am stärksten verletzten Verbündeten"
 		out.append("Gibt %s %d Schild (auch über das Maximum)." % [who, action.shield_gain])
-	if action.min_range > 0:
-		out.append("Trifft erst ab %d Feldern Abstand." % action.min_range)
-	if action.hp_scaling > 0.0:
-		out.append("Dazu %d %% der eigenen maximalen Integrität als Schaden." % int(round(action.hp_scaling * 100.0)))
-	if action.moving_bonus > 0.0:
-		out.append("+%d %% Schaden, wenn der Träger gerade gelaufen ist." % int(round(action.moving_bonus * 100.0)))
+	if action.lifesteal > 0.0:
+		out.append("Heilt den Träger um %d %% des Schadens." % int(round(action.lifesteal * 100.0)))
 	if action.push_tiles > 0:
 		out.append("Stößt das Ziel %d Feld(er) weg." % action.push_tiles)
 	elif action.push_tiles < 0:

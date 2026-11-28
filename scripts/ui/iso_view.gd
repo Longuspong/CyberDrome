@@ -8,7 +8,7 @@ extends RefCounted
 ## zweite Umrechnung anlegt, bekommt Bots, die neben ihrem Feld stehen, und
 ## einen Fehler, den man erst bei 400 Feldern als System erkennt.
 ##
-## Die Zahlen stammen aus der Werkstatt: ``tools/build_sample_parts.py``
+## Die Zahlen stammen aus dem Generator: ``tools/build_sample_parts.py``
 ## projiziert jedes Bauteil mit 1,35 Bildpunkten je Einheit in ein 128x128-
 ## Bild, die Feldmitte liegt dort auf (64, 96). Bis 17. Nov. 2026 war das
 ## Feld eine Bodenraute von 76 x 54 px (Quadrat 40 x 40, diagonal gesehen).
@@ -59,15 +59,6 @@ static func fit_sprite(sprite: Sprite2D) -> void:
 		return
 	var factor := float(SPRITE_SIZE) / float(texture.get_width())
 	sprite.scale = Vector2(factor, factor)
-
-
-## Setzt den Drehpunkt eines Sprites auf die Feldmitte. Nur fuer die Teile, die
-## sich drehen -- der Drift-Pfeil. ``offset`` zaehlt in Texturpixeln und muss
-## deshalb durch denselben Faktor, den fit_sprite() gesetzt hat.
-static func pivot_on_tile_center(sprite: Sprite2D) -> void:
-	var factor: float = sprite.scale.x if sprite.scale.x != 0.0 else 1.0
-	sprite.offset = -SPRITE_ORIGIN / factor
-	sprite.position += SPRITE_ORIGIN
 
 
 ## Feld -> Bildschirmposition der Feldmitte.

@@ -113,9 +113,9 @@ const MELEE_HIT_AT := 0.6
 const RAISE_ANGLE := -1.15
 const RAISE_UP := 0.35
 const RAISE_DOWN := 0.25
-## Wurf (Runenstab-Faehigkeit, Bumerang): hoch, halten, schneller Schwung
-## nach vorn-unten bis ueber die Ruhelage hinaus, zurueck. Die Kugel bzw. der
-## Bumerang loest sich in der Mitte des Schwungs (THROW_RELEASE, Anteil).
+## Wurf (Runenstab-Faehigkeit): hoch, halten, schneller Schwung nach
+## vorn-unten bis ueber die Ruhelage hinaus, zurueck. Die Kugel loest sich in
+## der Mitte des Schwungs (THROW_RELEASE, Anteil).
 const THROW_UP := 0.32
 const THROW_HOLD := 0.42
 const THROW_SWING := 0.58
@@ -413,17 +413,11 @@ func attack(unit: Unit, action: ActionData, seconds: float = -1.0) -> bool:
 	return true
 
 
-## Ein Wurf: hoch, halten, Schwung nach vorn-unten (``seconds`` insgesamt);
-## mit ``hide`` verschwindet die Waffe ab dem Loslassen fuer so viele
-## Sekunden (der Bumerang ist unterwegs).
-func throw(unit: Unit, action: ActionData, seconds: float, hide: float = 0.0) -> bool:
+## Ein Wurf: hoch, halten, Schwung nach vorn-unten (``seconds`` insgesamt).
+func throw(unit: Unit, action: ActionData, seconds: float) -> bool:
 	if not raise(unit, action, seconds):
 		return false
-	var attack: Dictionary = _anim[unit]["attack"]
-	attack["kind"] = "throw"
-	if hide > 0.0:
-		_anim[unit]["hidden"] = {"slot": attack["slot"], "from": seconds * THROW_RELEASE,
-			"to": seconds * THROW_RELEASE + hide, "t": 0.0}
+	_anim[unit]["attack"]["kind"] = "throw"
 	return true
 
 
@@ -442,6 +436,14 @@ func raise(unit: Unit, action: ActionData, seconds: float) -> bool:
 
 ## Der Waffenplatz, dessen Waffe die Aktion mitbringt (sonst der erste).
 static func _slot_for(unit: Unit, action: ActionData) -> String:
+	# Gunship (Molok): der Arm, der gerade feuert -- die Arme wechseln sich ab.
+	if action != null and unit.firing_slot != "" \
+			and unit.build.mirror_slots().has(unit.firing_slot):
+		var twin: PartData = unit.build.part_in(unit.firing_slot)
+		if twin != null:
+			for own in twin.actions:
+				if own.id == action.id:
+					return unit.firing_slot
 	var first := ""
 	for slot in unit.build.body().equip_slots():
 		var part: PartData = unit.build.part_in(slot)
@@ -565,16 +567,6 @@ func _animate(unit: Unit, node: Node3D, delta: float) -> void:
 			tr = _attack_pose(tr, kind, k, pivot)
 		block.transform = tr
 
-	# Geworfene Waffe (Bumerang): zwischen Loslassen und Fangen nicht in der Hand.
-	if state.has("hidden"):
-		var hidden: Dictionary = state["hidden"]
-		hidden["t"] = float(hidden["t"]) + delta
-		var thrown := turn.get_node_or_null(str(hidden["slot"])) as Node3D
-		var away: bool = float(hidden["t"]) >= float(hidden["from"]) and float(hidden["t"]) < float(hidden["to"])
-		if thrown != null:
-			thrown.visible = not away
-		if float(hidden["t"]) >= float(hidden["to"]):
-			state.erase("hidden")
 	# Muendungsblitz: an der Waffenspitze ein Lichtball, die Waffe leuchtet auf.
 	if slot != "" and kind == "ranged":
 		var weapon := turn.get_node_or_null(slot) as Node3D
@@ -914,8 +906,9 @@ func _clear_flash(state: Dictionary) -> void:
 	state.erase("flash")
 
 
-## Leuchtteile der Passiven: Vireo-Booster flackern (beim Laufen staerker),
-## Molok-Lockfeuer pulsiert, Nimbus-Kugel glimmt, Strix-Linsen blinzeln.
+## Leuchtteile der Passiven: Vireo-Booster flackern (beim Laufen staerker,
+## je Cyberspeed-Stapel heller),
+## Molok-Leitungen pulsieren, Nimbus-Kugel glimmt, Strix-Linsen blinzeln.
 ## Ueber die Materialkopien der Einheit (Farbstich je Flaeche).
 func _passive_glow(unit: Unit, turn: Node3D, state: Dictionary, t: float, calm: bool) -> void:
 	if calm:
@@ -930,7 +923,9 @@ func _passive_glow(unit: Unit, turn: Node3D, state: Dictionary, t: float, calm: 
 	match chassis:
 		"scout_body":
 			var strength := 1.0 if unit.visual_velocity().length() > WALK_MIN_SPEED else 0.45
-			factor = 1.0 + strength * (0.3 * sin(t * 23.0) + 0.2 * sin(t * 37.0 + 1.3))
+			# Cyberspeed: je Stapel leuchten die Booster heller.
+			factor = 1.0 + 0.25 * float(unit.cyberspeed_stacks) \
+				+ strength * (0.3 * sin(t * 23.0) + 0.2 * sin(t * 37.0 + 1.3))
 		"jugg_body":
 			factor = 1.0 + 0.35 * sin(t * 3.0)
 		"mage_body":

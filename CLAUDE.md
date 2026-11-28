@@ -3,6 +3,22 @@
 Godot 4.7 (GL Compatibility), GDScript. Ausfuehrliches Design in
 `docs/GAME_DESIGN.md`, Bedienung und Struktur in `README.md`.
 
+**Leitplan seit 25. Nov. 2026: `docs/KERNPLAN.md`** -- was zum Kern gehoert (Autobattler +
+Lauf, Molok/Vireo/Strix mit Passiven, Fusions und BIOS ueberarbeiten statt neu bauen), was
+in den Ideen-Branch wartet (Nimbus, Endlos, Story, Fraktionen, Android, Gegnerkurve), in
+kleinen Runden arbeiten, Fragmente verworfener Systeme im selben PR entfernen. Neue Ideen
+nicht auf main. Stand: Vireo-Passive **Cyberspeed** (25. Nov.), Molok-Passive **Safe Haven**
+(vorher Arbeitsname Festung) und Hammer mit Heilung (27. Nov.); Waffen auf eine Kernwaffe je DROME
+reduziert (27. Nov., Ramme/Schraubenschluessel/Bumerang/Neon-Blaster/Moerser entfernt).
+**Werkblatt vom 27. Nov. uebernommen** (`SKILLBAUM_KONZEPT.md` 5e): Molok als **Gunship**
+(ein Halter, Waffe an beiden Armen, `mirror` in `slot_rules`), Strix-Passive **Focuslense**,
+neue Tempo-/Schildpulswerte, Echo-Takt aufgerundet, Halter-Kuerzel S/M/X + -F/-N.
+Nimbus (Kernspieler) wird ein Supporter; der heutige Nimbus lebt als Neon Nimbus. Seit 27. Nov.
+abends: Nimbus traegt das **Repair-Kit** (speichert angerichteten Schaden, gibt ihn dem Team
+als Schild + Reparatur zurueck), Hammer ohne Integritaetsschaden; **Spielstand 3 ist ein
+Testspielstand** (1000 von allem, jede Waffe extra), den jede neue Version neu schreibt
+(`GameState.refresh_test_slot`, Versionskennung `data/build.json` aus `tools/build_web.sh`).
+
 **Ganz zuerst (seit 17. Nov. 2026, zuletzt 18. Nov. abends): `docs/UEBERGABE_3D.md`, Abschnitt „Stand 18. Nov.“** -- 3D-DROMEs, Leistungstest, Hexfeld und die vereinbarten naechsten Schritte (erledigt: gedrehter Quader, Neon/Kontur/Zerfallen in 3D, Hexfeld 9 x 17 in der Logik und im 2D-Kampfbild; Kampf als eine 3D-Szene `Arena3D` mit Grundbewegung und 3D-Boden `ArenaFloor3D` seit 18. Nov.; sichtbare Passiven, Muendungsblitz und 3D-Deko seit 18. Nov.; Beine im Wechsel, alle Faehigkeiten lesbar (`AbilityPainter`), Waffenfarben mit Glanzkante (`WEAPON_FINISH`), Generator-Bausteine BP/SW/EX und Redesign aller Chassis seit 18. Nov. -- `DROME_UMSETZUNG.md` 4g; Fraktions-Paletten fuer Gegner und Faehigkeiten mit Ausholzeit/Abfolge (`AbilityFx`, `ActionData.windup`) seit 18. Nov.; alle Faehigkeiten animiert; Echo nacheinander und Flaechen am Wurfort seit 18. Nov., Balance gemessen; offen: Story-Level).
 
 **Technik-Prüfung (20. Nov. 2026): `docs/TECHNIK_PRUEFUNG.md`** -- Godot bleibt;
@@ -12,21 +28,15 @@ entfernt + Generator schreibt nur Modell + Suedansicht-Symbol -- alles GEBAUT 20
 
 **Zuerst lesen: `docs/PROJEKTSTAND.md`** -- was gebaut, gemessen und
 entschieden ist, bekannte Schwaechen, offene Punkte und wie man im Browser
-als Handy testet. **Dann `docs/NEUANFANG.md`** -- der Neuentwurf des
-Spielprinzips, der gerade mit dem Spieler besprochen wird.
-**Fuer Module: `docs/MODULE_KONZEPT.md`** -- seit 9. Nov. 2026 die
-festgelegte Richtung (9 Grundmodule, 18 Rezepte, Matrix-BIOS, Profile =
-Fraktionen, Waffen fest im Lauf); Bauplan dort in Abschnitt 14.
-**Seit 20. Nov. 2026 gilt Module v3 (Amps) und ist GEBAUT** -- `MODULE_KONZEPT.md`
-ist fuer Grundmodule und Rezepte ueberholt.
-**Neue Richtung (20. Nov. 2026): `docs/MODULE_AMP_FUSION.md`** -- Amp (Grundmodul,
+als Handy testet. `docs/NEUANFANG.md` ist Hintergrund (Neuentwurf vom Nov. 2026,
+groesstenteils umgesetzt oder ueberholt; Kopf sagt, was noch gilt).
+**Module (seit 20. Nov. 2026 GEBAUT): `docs/MODULE_AMP_FUSION.md`** -- Amp (Grundmodul,
 ein Wert, Abwehr in Prozent), Fusion (zwei verschiedene Amps, kostenlos),
 Hyperfusion (zwei gleiche + Fusion Core, 1 je DROME, je Sorte 1x je Einsatz),
 BIOS darueber; Armor +3, Tech +2 **Effizienz** (versteckter Wert 10 = 100 %,
 Dauer/Stapel von Statuseffekten, nie Schaden). Gebaut seit 20. Nov.: Effizienz
 (`Unit.efficiency`, `apply_status(..., source)`) und **Kabelbrand** (Stapel, je
-Puls max. 10, `ActionResolver.burn_cable_fire`; Bumerang-Wirbelwurf als
-Ausloeser). **Seit 20. Nov. 2026 gebaut:** 6 Amps, 15 Fusionen (2 entschieden, 13
+Puls max. 10, `ActionResolver.burn_cable_fire`; Ausloeser: Feuer-Charger). **Seit 20. Nov. 2026 gebaut:** 6 Amps, 15 Fusionen (2 entschieden, 13
 Vorschlaege), 6 Hyperfusionen mit Fusion Core. **Offene Logik (Charger + Amps) steht in
 `docs/design/UEBERGABEN_DESIGN.md`, Abschnitt „Offene Logik nach dem Bau“** -- vor neuer
 Arbeit daran lesen.
@@ -71,21 +81,21 @@ Bilder ohne Web-Export: `xvfb-run ... tests/screenshot.gd -- <szene> <png> 90
 **DROME-Designregeln (16. Nov. 2026, abgesegnet; gebaut: Licht + Kontur je Teil,
 Koerperart, Nah/Fern-Tags, Strix-Lafette, Halter-Symbole, Strix als Eule):**
 `docs/DROME_DESIGNREGELN.md` -- Koerperarten (humanoid / Strix als Eule mit
-Lafette, nur Fernkampf), ein Waffenarm je Chassis (Molok zwei, nie
-gespiegelt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt
+Lafette, nur Fernkampf), ein Waffenarm je Chassis (Molok seit 27. Nov. 2026
+Gunship: eine Waffe, an beiden Armen gezeigt), Nahkampf bis 2 / Fernkampf ab 3 Felder, Posen (die Waffe bringt
 den Arm mit), sichtbare Passive, Kontur je Teil, Bewegung, lesbare
 Faehigkeiten, Fraktions-Paletten. Entwurfs-Skripte unter
 `docs/design/drome_entwurf/`. **Stand und Plan der Umsetzung (Haken):
 `docs/DROME_UMSETZUNG.md`** -- dort weitermachen (Chassis, Waffen-Posen und 4b Arme am Chassis gebaut -- zwei Haltungen halten/zielen, Manschette, Molok-Arme; **seit 17. Nov. 2026 echtes 3D**: Generator schreibt je Teil ein Modell `<id>.m3d`, `DromeModel` rendert den ganzen DROME per SubViewport mit Iso-Kamera; naechster Schritt: 5 Bewegung in 3D).
 
 **Module und BIOS (18. Nov. 2026, entschieden und gebaut):** Modulplaetze sind
-fest (3 je Waffe, Molok 2 + 2) -- kein Level und kein BIOS gibt Plaetze dazu.
+fest (3 je Waffe, Molok 2) -- kein Level und kein BIOS gibt Plaetze dazu.
 Kein Chassis-BIOS mehr. BIOS-Wahl fest nach jedem gewonnenen Elite-Kampf (bis
 3, eins je DROME), danach ein Lootcache; ein BIOS wertet ein Rezept in einer
 Waffe auf. Zwischenstopp: DROMEs als Zeilen, Module ueberall 52 px als
 Kartusche (`ModuleChip`). **Begriff (19. Nov.):** ein Rezept-Modul heisst im
 Spiel **Fusion** (mit BIOS: BIOS-Fusion), "Rezept" ist nur die Anleitung im
-Rezeptbuch; im Code bleibt `recipe`. Details `docs/PROJEKTSTAND.md`, `MODULE_KONZEPT.md` 6.
+Rezeptbuch; im Code bleibt `recipe`. Details `docs/PROJEKTSTAND.md`, `MODULE_AMP_FUSION.md` 6.
 
 **Englisch vorbereitet (19. Nov. 2026):** neue Anzeigetexte ueber `tr("Deutscher
 Text")` (statisch: `TranslationServer.translate`), Englisch in `i18n/texte.csv`
@@ -249,11 +259,11 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   Home (Mitte), DROMEs, Inventar (`UiKit.TABS`; Optionen am Zahnrad oben rechts).
   Ein Verb je Tab: Shop kaufen, Fabrik herstellen (Linien, Charger, DROMEs),
   Home spielen, DROMEs ausruesten/aufwerten (Liste -> DROME-Seite mit Uebersicht,
-  DROME, Waffe), Inventar lagern -- Details `docs/PROJEKTSTAND.md`. Aelterer Stand: Der Hangar
-  vereint Squad (Karussell, max. 3 seit 16. Nov. 2026) und Umbau (ein Ausruestungsplatz je
-  DROME, Molok zwei -- seit 6. Nov. 2026; Halter als Formen:
-  Dreieck leicht, Viereck mittel, Fuenfeck schwer, Kreis Kern; leicht passt
-  nach oben in groessere Halter, schwer nur in schwer).
+  DROME, Waffe), Inventar lagern -- Details `docs/PROJEKTSTAND.md`. Squad max. 3,
+  ein Ausruestungsplatz je DROME (Molok als Gunship ebenso); Halter als Formen: Dreieck leicht,
+  Viereck mittel, Fuenfeck schwer; leicht passt nach oben in groessere Halter,
+  schwer nur in schwer. Kuerzel im Text (seit 27. Nov. 2026, sprachneutral):
+  S/M/X, dahinter -F nur Fernkampf, -N nur Nahkampf (`SlotRules.holder_code`).
 * Spielfeld ist seit 17. Nov. 2026 ein **Hexfeld**, seit 18. Nov. 2026 **je
   Formation eine eigene Karte** (`config.json` -> `maps`, Formation -> `map`;
   Standard 9 x 15, dazu kurz 9 x 13, lang 9 x 21, Zwei Gassen, Bauch 11 x 17;
@@ -266,10 +276,9 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
   `Grid.neighbors`/`neighbor`/`direction_toward`/`line_direction`;
   Bildschirm nur ueber `IsoView`). Reichweiten 1:1 von Manhattan uebernommen.
   Blickrichtung im Kampf als Winkel `deg<grad>` (`DromeModel.facing_basis`).
-  Ohne Gelaende-Regeln und ohne Sichtlinie. Seit 7. Nov. 2026 gibt es
-  **Hindernisse**, die nur Laufwege sperren (Schuesse gehen darueber), an der
-  Mittelreihe gespiegelt je Seed, nie an den Zonen
-  (`MapGenerator.place_obstacles`, `config.json` -> `obstacles`).
+  Ohne Gelaende-Regeln und ohne Sichtlinie. Feste Bloecke der Kartenform
+  sperren nur Laufwege (Schuesse gehen darueber); zufaellige Hindernisse gibt
+  es seit 18. Nov. 2026 nicht mehr (`config.json` -> `obstacles` nur Optik).
   Aufgestellt wird in einem Streifen 3 x 7 am Rand, ohne Zutun nach
   Rolle gestaffelt und verteilt (seit 10. Nov. 2026). Die
   Arena zeichnet `ArenaPainter` (Boden, Rand, Deko, Licht je Region). Die
@@ -295,12 +304,11 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
    der Vortex zaehlt Angriffe; nur Ereignisse bleiben (Hologramm, wenn ein
    Gegner danebensteht). Der Orbit-Fokus wurzelt seitdem das Ziel einer
    Faehigkeit 2 s, statt zu ziehen. Steht als `trigger` an der Aktion.
-2. **Skill-Tiefe ueber Synergien -- ENTSCHIEDEN (6. Nov. 2026), nicht
-   gebaut.** Kerne entfallen als Gegenstand, die Synergie steckt in
-   **Waffen-Varianten** und **Modulen** (nur im Lauf, Rezepte, keine Stufen).
-   Alles im Halter heisst **Waffe** (Angriff + Faehigkeit), der Halter
-   regelt allein, was passt. Level von DROMEs (0-5) und Waffen (0-10)
-   bleiben nach dem Lauf. Alles in `docs/NEUANFANG.md` Abschnitt 6g.
+2. **Skill-Tiefe ueber Synergien -- ENTSCHIEDEN und gebaut.** Die Synergie
+   steckt in **Waffen** und **Modulen** (nur im Einsatz: Amps, Fusionen,
+   Hyperfusionen, BIOS -- `docs/MODULE_AMP_FUSION.md`). Alles im Halter heisst
+   **Waffe** (Angriff + Faehigkeit), der Halter regelt allein, was passt.
+   Level werden mit Fabrik-Waren gekauft (`docs/SKILLBAUM_KONZEPT.md`).
 3. **Eingreifen des Spielers -- offen, wird spaeter besprochen.** Fest steht:
    grundsaetzlich Autobattler, der Spieler **steuert keine DROMEs**. Er soll
    aber eingreifen koennen, vermutlich indem er einen Gegner als Ziel Nummer 1
@@ -308,104 +316,24 @@ python3 tools/build_spot.py                                   # SPOT-Tabelle neu
    2026 nicht mehr, Zielwahl nach Regel je Rolle). Der Spieler denkt das noch durch --
    nichts davon bauen, bevor es besprochen ist.
 4. **Waffen-Slots und Gewichtsklassen -- ENTSCHIEDEN.** Ein Platz je DROME,
-   Molok zwei (gebaut); leicht/mittel/schwer bleibt als Halterregel, keine
+   auch der Molok (Gunship seit 27. Nov. 2026, gebaut); leicht/mittel/schwer bleibt als Halterregel, keine
    Liste "wer darf was" (6g).
 
 Bis diese Punkte entschieden sind: keine groesseren Umbauten an
 Faehigkeiten, Slots oder Gewichten auf eigene Faust.
 
-## Todo fuer spaetere Sitzungen (Stand 10. Nov. 2026)
+## Todo fuer spaetere Sitzungen
 
-Je Punkt eine eigene Sitzung. Erst entscheiden (Spieler), dann bauen.
-Hintergrund und Vorschlaege: `docs/VORSCHLAG_STORY.md`.
+Erst entscheiden (Spieler), dann bauen. Was laut `docs/KERNPLAN.md` wartet
+(Story-Modus, Endlos-Modus, Fraktionen, Bosse, Gegnerkurve, Nimbus, Android),
+steht dort im Abschnitt „Was erst mal wartet“ -- nicht anfangen, bevor der
+Kernplan fertig ist.
 
-- [ ] **PRIO 1 (seit 24. Nov. 2026): Werkblatt ausfuellen** -- der Spieler traegt in
-      `docs/spot/CyberDrome_Werkblatt_DROMEs_Waffen.xlsx` die offenen Werte und
-      Anpassungen ein (hellblau: Passiven Molok/Nimbus/Strix, Skilltrees, Takt neu,
-      Schild X). Danach ins Spiel und in `SKILLBAUM_KONZEPT.md` uebernehmen.
+- [ ] **Werkblatt weiter ausfuellen** -- erste Runde am 27. Nov. 2026 uebernommen
+      (`SKILLBAUM_KONZEPT.md` 5e). Noch offen dort: Skilltrees, Takt neu, Nimbus-Supporter
+      (Repair-Kit, Cleancode, Shieldgate), Neon-Vireo-Halter M-N, Zielregel Neon Nimbus.
       Wenn der Spieler eine neue Sitzung beginnt, daran erinnern.
-- [x] ~~Aufhaenger~~ -- ersetzt durch `docs/STORY_LEITFADEN.md` (14. Nov.)
-- [ ] **Level-Struktur Story-Modus** bauen: zehn Level fuer Neon City,
-      Level 1 mit 2 und Level 2 mit 3 DROMEs als Training, ab Level 3 vier
-      gegen vier; je Level 3 Leben, Fortschritt bleibt (Abschnitt 2,
-      `NEUANFANG.md` 6h). Groesster offener Baustein, Teams sind da.
-- [x] ~~Wege zwischen den Reihen~~ -- Kampfkarte mit festen Pfaden, 14. Nov. 2026
-- [ ] **Erstes Fraktions-Chassis**, z. B. Shinobi (Jaeger) -- braucht ein
-      Bild aus der Werkstatt (Abschnitt 3).
-- [ ] **Hipstar Hackers = Trickser?** (Abschnitt 3)
-- [ ] **Bosse** am Ende der Story-Level (Oni, Shogun Kage; Abschnitt 3).
-- [ ] **Schwierigkeit** pruefen: Normal Runde 8 63 %, Elite 41 % ohne
-      Module -- so lassen oder Elite-Teams anziehen? (Abschnitt 5)
-- [x] ~~Aufstellung: erster Treffer zu spaet~~ -- Standardkarte 9 x 15
-      (4,4 s), Karten je Formation, 18. Nov. 2026
-- [x] ~~Umlaute in der Anzeige~~ -- gebaut 14. Nov. 2026
-- [ ] **Endlos-Modus** ausbauen: Sektoren je Fraktion, bessere Beute je
-      Sektor (Abschnitt 5; heute Platzhalter in `run.endless`).
 - [ ] Designpunkt 3 **Eingreifen des Spielers** (siehe oben) besprechen.
-
-## Naechste Schritte (Stand 10. November 2026)
-
-Zuletzt gebaut (PR #55, Details in `docs/PROJEKTSTAND.md` "Playtest-Runde"):
-Aufstellung am Rand, Kampfwert neu (Standhaftigkeit mal Feuerkraft, 80 %
-Vorhersage), handverlesene Gegnerteams mit Gegnertyp, Gegnerwahl ohne Wege
-(immer ein Leichter, dazu zwei Normale oder Normal + Elite), Endlos-Modus
-mit Chaos-Knoten, drei Spielstaende, Touch-Ziehen repariert, gemeinsames
-Theme. Danach (gleicher Tag): Umbau mit fester Ansicht, Halter in der
-DROME-Karte, nur einbaubare Teile, Vergleichsbalken in der Waffen-Karte;
-"Bester Aufbau" und Halter-Richtung entfernt. Als Naechstes: die Todo-Liste
-oben.
-
-Aelterer Stand (5. November 2026):
-
-0. **Neuentwurf umsetzen** (`docs/NEUANFANG.md`, Reihenfolge in Abschnitt 8).
-   Erledigt: KI-Grundlagen (Ziel halten, Rolle je Chassis, Fokus); Nimbus
-   (Runenstab Rw 3, Vortex nach Zeit, Passive Echo); ein Platz je DROME;
-   Vireo (Sprint, Doppelschuss, Plasmaklinge, Neon-Blaster); Neon-Leuchten
-   als Prototyp; Molok (Tank 200/10, Praesenz, Hammer); Aufstellung vor
-   dem Kampf per Ziehen (Zone 3 x 5); Zielregel je Rolle statt Aggro-Tabelle,
-   Locken (Molok, Koedersender). Strix bleibt wie er ist, Ausgleich spaeter
-   ueber eine Jaegerklasse. Naechstes: Zwischenstopp mit Modulen, Lager,
-   Laden, Credits (`docs/NEUANFANG.md` Abschnitt 7). Kopf und Antrieb bleiben
-   fest am Chassis -- ein DROME wird immer als Ganzes gestaltet.
-   Entschieden: 3 Modulplaetze je Waffe (Molok 2), Credits + Laden (Beute
-   gleich wichtig), Ausruestung bleibt nach dem Lauf; dazu Abschnitt 6g
-   (Begriffe, Module, Level, Gegnerstaerke nach Region, Karte wie bei FTL,
-   Chaos-Kampf statt Chaos-Modus, Nimbus-Passive neu). Reihenfolge: Abschnitt 8.
-   Gebaut (6. Nov.): das Aufraeumen nach 6g (Schild nur nach Ruhe, Kerne
-   ohne Werte, Kanone raus, Gegnerstaerke fest, Nimbus/Vortex neu), am
-   7. Nov. Echo sowie Deflektor und Drohnen-Pod als Waffen, dann der
-   Zwischenstopp (Lager, Credits, Ausruesten), Takt-Leiste im Kampf,
-   Waffen-Karte mit Symbolen und der entschlackte Hangar, dann Module und
-   Rezepte (`ModuleData`, `data/modules.json`; Module im Waffenhalter,
-   bleiben beim Waffentausch, verfallen nach dem Lauf), am 8. Nov. der
-   Laden (2 Grundmodule je Zwischenstopp fuer Credits, Mitleid fuer
-   angefangene Rezepte; Module nicht mehr als Beute) und die gewuerfelte
-   Beute ohne Auswahl (Credits oder Teil, DROME-Runden, Notstrom) und
-   Gegner mit Modulen (nach Runde und Stufe, passend zur Waffe). Am 9. Nov.
-   neuer Werte-Satz (Speed, Integritaet, Schild, Schildpuls, Ruestung,
-   Halter, Power, Modulplaetze; ATK und Gewicht weg), Identitaeten, Strix-
-   Passive Anlegen, Bonus-Wert je Waffe, Gadgets als Module und Level fuer
-   DROMEs/Waffen -- alles in `docs/IDENTITAETEN.md`. Als Naechstes laut
-   Spieler: die Waffen. Neu entschieden (7. Nov.): Story- und
-   Endlos-Modus, Lager nur fuer Module, Gegner staerker ueber Level/Waffen/
-   Module statt Faktor -- `docs/NEUANFANG.md` Abschnitt 6h. Module nach den
-   Gutachten entschieden (8. Nov.): Module nur im Laden, Beute zufaellig
-   (Credits oder Teile), Gegner tragen Module, Gebiete Neon City /
-   Parkanlage / Factory 5 / Dachterrassen -- `docs/NEUANFANG.md` 6i.
-   Neu (9. Nov.): das Modulsystem nach `docs/MODULE_KONZEPT.md`
-   (`NEUANFANG.md` 6j) -- wird jetzt Schritt fuer Schritt gebaut.
-   Die Punkte unten gehen darin auf.
-
-1. Echtzeit-Kampf im Spiel ausprobieren und nachjustieren (Intervalle in den
-   Teildaten, Tempo und Puls in `data/config.json` -> `realtime`). Seit dem
-   Vortex nach Zeit macht der Nimbus den meisten Schaden (11/s, 6g) -- bleibt
-   so, bis auch der Strix ausgeglichen wird. Die Ausloesevoraussetzung einer
-   Faehigkeit heisst **Takt**.
-2. ~~Kern als Synergie-Teil~~ -- entfaellt (6g). Skillbaeume spaeter.
-3. Eingreifen ueber Aggro-Platz 1 besprechen (Designpunkt 3) -- passt jetzt
-   gut: Gegner im laufenden Kampf antippen.
-4. Weitere Vorschlaege (Einfuehrung, Ziehen auf Halter, Bester Aufbau,
-   Speichern, Haptik) -- unbewertet.
 
 Playtest ohne Bildschirm: `godot --headless --path . --script
 res://tools/playtest/playtest.gd -- 30 5003` (Kaempfe, Seed mit Aktionslog).

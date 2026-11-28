@@ -99,7 +99,7 @@ var credits: int = 0
 var shop_offers: Array = []
 ## Wie oft im aktuellen Zwischenstopp neu gewuerfelt wurde (Preis steigt).
 var rerolls: int = 0
-## Ziel-Rezept (MODULE_KONZEPT.md 7): nur dessen fehlende Zutaten bekommen das
+## Ziel-Rezept (MODULE_AMP_FUSION.md 6): nur dessen fehlende Zutaten bekommen das
 ## volle Mitleid im Laden. Leer = keins, dann gilt das schwaechere Mitleid fuer
 ## alle angefangenen Rezepte.
 var target_recipe: StringName = &""
@@ -112,11 +112,11 @@ var storage: Array = []
 var hyper_made: Array = []
 
 ## Die Tasche (6h): Beute-Teile (Waffen) dieses Laufs. Waffen sind im Lauf
-## fest (MODULE_KONZEPT.md) -- die Teile werden nicht eingebaut, belegen keinen
+## fest (MODULE_AMP_FUSION.md 6) -- die Teile werden nicht eingebaut, belegen keinen
 ## Lagerplatz und gehen am Ende nach Hause.
 var bag: Array = []
 
-## Matrix-BIOS zur Wahl nach einem Elite-Sieg (MODULE_KONZEPT.md 6.2): BIOS-IDs,
+## Matrix-BIOS zur Wahl nach einem Elite-Sieg (MODULE_AMP_FUSION.md 6): BIOS-IDs,
 ## eines davon kommt ins Lager. Verfaellt beim Weitergehen.
 var bios_offers: Array = []
 ## Credit-Booster aus dem Chaos-Kampf (19. Nov. 2026): so viele Kaempfe
@@ -424,16 +424,6 @@ func battle_seed(index: int = -1) -> int:
 	if index < 0:
 		index = node
 	return absi(hash([run_seed, round, "knoten", index])) % 2000000000 + 1
-
-
-## Die Stufe eines Knotens dieser Runde (ohne Angabe: des gewaehlten).
-func node_tier(index: int = -1) -> int:
-	var nodes := row()
-	if index < 0:
-		index = node
-	if index < 0 or index >= nodes.size():
-		return tier
-	return int(nodes[index]["tier"])
 
 
 ## Wie viele Gegner: so viele, wie man mitgebracht hat, plus/minus der
@@ -1105,27 +1095,6 @@ func roll_loot(enemy_pool: Array) -> Array:
 	return out
 
 
-## Ein Teil als Beute: aus der Gegnerausruestung; Elite nur mittel/schwer,
-## ergaenzt aus dem ganzen Katalog. Leerer Gegnerpool: der ganze Katalog.
-func _loot_part(rng: RandomNumberGenerator, enemy_pool: Array) -> PartData:
-	var pool: Array = enemy_pool.duplicate()
-	if tier == Tier.ELITE:
-		pool = pool.filter(func(id): return _is_rare(PartDB.get_part(id)))
-		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-			if _is_rare(part) and not pool.has(part.id):
-				pool.append(part.id)
-	elif pool.is_empty():
-		for part in PartDB.of_type(PartData.Type.EQUIPMENT):
-			pool.append(part.id)
-	while not pool.is_empty():
-		var index := rng.randi() % pool.size()
-		var part := PartDB.get_part(pool[index])
-		if part != null:
-			return part
-		pool.remove_at(index)
-	return null
-
-
 ## Verteilt einen Beute-Eintrag und schreibt hinein, wo er gelandet ist:
 ## Teile in die Tasche (gehen am Ende nach Hause), ein DROME in den Squad
 ## (voll: nach Hause), Credits und Notstrom sofort.
@@ -1227,10 +1196,6 @@ static func cache_name(region: StringName) -> String:
 
 static func coin_name() -> String:
 	return str(loot_cfg().get("coin_name", "Platzhaltercoin"))
-
-
-static func _is_rare(part: PartData) -> bool:
-	return part != null and part.mount_class != "light"
 
 
 ## Ein neuer DROME kommt MIT einer passenden Waffe: ohne waere er im
@@ -1787,7 +1752,7 @@ static func has_hyper(build: DromeBuild) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Matrix-BIOS (MODULE_KONZEPT.md 6)
+# Matrix-BIOS (MODULE_AMP_FUSION.md 6)
 # ---------------------------------------------------------------------------
 
 ## Was der Lauf an Modulen hat, um ``item`` (Rezept-BIOS) zu verschmelzen:
@@ -1994,7 +1959,7 @@ static func shop_price(module: ModuleData) -> int:
 
 
 ## Wuerfelt die Angebote dieses Zwischenstopps: shop.offers Grundmodule,
-## keines doppelt. Unsichtbares Mitleid (6i, MODULE_KONZEPT.md 7): mit
+## keines doppelt. Unsichtbares Mitleid (6i, MODULE_AMP_FUSION.md 6): mit
 ## Ziel-Rezept zaehlen nur dessen fehlende Zutaten shop.recipe_weight-mal so
 ## viel, ohne Ziel jede Zutat, die einem angefangenen Rezept fehlt,
 ## shop.recipe_weight_open-mal. Ab shop.recipe_from_round ist mit

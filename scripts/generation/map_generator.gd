@@ -1,25 +1,11 @@
 class_name MapGenerator
 extends RefCounted
 
-## Erzeugt das Kampffeld: ein Gitter mit dem Boden der Region und ein paar
-## Hindernissen.
-##
-## Seit dem Umbau zum Autobattler (Nov. 2026) gibt es kein Gelaende mit
-## Sonderregeln mehr -- keine Stufen, Oelspuren oder Nebel. Seit 7. Nov. 2026
-## (Wunsch des Spielers) wieder Hindernisse: sie sperren nur Laufwege,
-## Schuesse gehen darueber. Verteilt werden sie punktsymmetrisch zur
-## Feldmitte, damit beide Seiten dieselben Bedingungen haben, und nie in oder
-## direkt an den Aufstellungszonen. Alles am Seed des Kampfes.
-
-## Die Formen eines Hindernisses: Ankerfeld plus Nachbarn in diesen
-## Hexrichtungen (Grid.AXIAL_DIRS) -- einzeln, kurze Mauer quer, kurze Mauer
-## schraeg, Dreieck.
-const SHAPES := [
-	[],
-	[0],
-	[5],
-	[0, 5],
-]
+## Erzeugt das Kampffeld: ein Gitter mit dem Boden der Region in der festen
+## Form der Karte (``maps``). Bloecke der Form sperren nur Laufwege, Schuesse
+## gehen darueber; alles an der Mittelreihe gespiegelt, damit beide Seiten
+## dieselben Bedingungen haben. Zufaellige Hindernisse gibt es seit
+## 18. Nov. 2026 nicht mehr (Wunsch des Spielers).
 
 
 ## Das Feld einer Karte (18. Nov. 2026, Wunsch des Spielers: die Karte
@@ -112,69 +98,6 @@ static func _shape_cell(shape: String, tile: Vector2i, w: int, h: int) -> String
 	return ""
 
 
-## Setzt die Hindernisse. Eigener Zufall aus ``seed_value`` -- der Zufall
-## des Kampfes (Region, Gegner) bleibt dadurch unberuehrt, und die Vorschau
-## im Lauf zeigt weiter denselben Kampf.
-##
-## Einstellungen in data/config.json -> "obstacles": wie viele Gruppen
-## (je Seite), Abstand zu den Zonen. Jede Gruppe wird an der Mittelreihe
-## gespiegelt (x, y) -> (x, h - 1 - y), so wie die Gegnerzone die
-## gespiegelte Spielerzone ist. Eine Gruppe, die das Feld zerteilen wuerde, faellt weg.
-static func place_obstacles(grid: Grid, seed_value: int) -> void:
-	# Die festen Bloecke der Kartenform (apply_shape) bleiben stehen.
-	var settings := Config.section("obstacles")
-	if not bool(settings.get("enabled", true)):
-		return
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_value ^ 0x0B57AC1E
-	var groups := rng.randi_range(int(settings.get("groups_min", 3)),
-		int(settings.get("groups_max", 5)))
-	var margin := int(settings.get("zone_margin", 1))
-	var kinds: Array = settings.get("kinds", {}).get(
-		grid.region.id if grid.region != null else "", ["block"])
-	if kinds.is_empty():
-		kinds = ["block"]
-
-	# Gesperrt fuer Hindernisse: beide Zonen samt Rand.
-	var keep_free := {}
-	var zones: Array[Vector2i] = deployment_zone(grid, true) + deployment_zone(grid, false)
-	for tile in grid.all_tiles():
-		for zone_tile in zones:
-			if Grid.distance(tile, zone_tile) <= margin:
-				keep_free[tile] = true
-				break
-
-	var placed := 0
-	var attempts := 0
-	while placed < groups and attempts < groups * 30:
-		attempts += 1
-		var shape: Array = SHAPES[rng.randi() % SHAPES.size()]
-		var anchor := Vector2i(rng.randi_range(1, grid.width - 2),
-			rng.randi_range(1, grid.height - 2))
-		var kind: String = str(kinds[rng.randi() % kinds.size()])
-		var tiles: Array[Vector2i] = []
-		var ok := true
-		var shape_tiles: Array[Vector2i] = [anchor]
-		for dir in shape:
-			shape_tiles.append(Grid.neighbor(anchor, dir))
-		for own in shape_tiles:
-			for tile in [own, mirror(grid, own)]:
-				if not grid.in_bounds(tile) or keep_free.has(tile) \
-						or grid.obstacles.has(tile) or _touches(grid, tile) \
-						or tile in tiles:
-					ok = false
-				tiles.append(tile)
-		if not ok:
-			continue
-		for tile in tiles:
-			grid.obstacles[tile] = kind
-		if not _connected(grid):
-			for tile in tiles:
-				grid.obstacles.erase(tile)
-			continue
-		placed += 1
-
-
 ## Das Gegenstueck eines Feldes, an der Mittelreihe gespiegelt -- auf dem
 ## flachen Hexfeld exakt, weil die ungeraden Spalten eine Reihe weniger haben
 ## (Grid.in_bounds).
@@ -182,17 +105,6 @@ static func mirror(grid: Grid, tile: Vector2i) -> Vector2i:
 	# Flache Sechsecke: ungerade Spalten liegen ein halbes Feld tiefer und
 	# haben eine Reihe weniger -- ihr Spiegelbild ist h - 2 - y.
 	return Vector2i(tile.x, grid.height - 1 - (tile.x & 1) - tile.y)
-
-
-## Ob ein Feld an ein schon gesetztes Hindernis grenzt -- Gruppen sollen
-## frei stehen, sonst wachsen Mauern zusammen.
-static func _touches(grid: Grid, tile: Vector2i) -> bool:
-	if grid.obstacles.has(tile):
-		return true
-	for next in Grid.neighbors(tile):
-		if grid.obstacles.has(next):
-			return true
-	return false
 
 
 ## Ob alle freien Felder zusammenhaengen (Schritte in sechs Richtungen).

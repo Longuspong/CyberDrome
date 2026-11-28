@@ -29,6 +29,84 @@ damit eine neue Sitzung nicht bei Null anfaengt. Was hier steht, ist
 | #29 | Touch-Bedienung, dann **Umbau auf Hochformat**: Entwurfsraum 450x800, `UiKit`, Tab-Leiste, Kamera folgt im Kampf, Pinch/Ziehen; `CLAUDE.md` angelegt |
 | #30 | **Hangar** statt Garage/Inventar/Werkstatt, **Halter-Formen**, Wisch-Scrollen, Schriftgroessen-Option nur fuer Text |
 
+### Repair-Kit, Hammer, Testspielstand (27. Nov. 2026 abends, Spieler)
+
+* **Repair-Kit** (Nimbus-Standardwaffe, `SKILLBAUM_KONZEPT.md` 5e): Angriff speichert den
+  angerichteten Schild-/Integritaetsschaden, die Reparaturwelle (jeder 6. Angriff) gibt jedem
+  Teammitglied Speicher x Effizienz als Schild und Reparatur. Werte selbst gewaehlt: 9 Schaden,
+  1,2 s, Reichweite 4, 50/50.
+* **Hammer** ohne Integritaetsschaden (`hp_scaling` entfernt). Kampfwert neu geeicht
+  (`POWER_SCALE` 0,922), die Welle zaehlt als gespeicherter Schaden x Effizienz x 3.
+* **Testspielstand Platz 3:** `Roster.seed_test_stock` (Startbestand + 1000 je Ware, Phase,
+  Rohling, Keynode, Fraktionskern, Spezialteil, DROME-Teil, Coins; jede Waffe einmal extra).
+  `GameState.refresh_test_slot` schreibt ihn beim Start neu, wenn die Versionskennung
+  (`data/build.json`, schreibt `tools/build_web.sh` aus dem Commit) sich geaendert hat.
+* Messung `run_bench -- 30` (Elite, mit/ohne Module): Runde 3 6/12 und 8/12, Runde 5 1/18
+  und 3/18, Runde 8 1/30 und 0/30 -- schwaecher als mit Runenstab (Vortex fehlt).
+
+### Werkblatt uebernommen: Gunship, Focuslense, neue Werte (27. Nov. 2026, Spieler)
+
+Details und Tabelle in `docs/SKILLBAUM_KONZEPT.md` 5e.
+
+* **Molok als Gunship:** ein Halter bis mittel, der rechte Arm spiegelt die Waffe
+  (`slot_rules` `mirror`, `DromeBuild.mirror_source`/`mirror_slots`); im Kampf zwei
+  Halterungen, versetzt, je eigener Takt (`Unit.init_realtime`), Arm im Bild nach
+  `Unit.firing_slot`. Standardwaffe Deflektor, Hammer frei im Lager, Gegner-Moloks mit
+  Hammer. Kampfwert zaehlt den zweiten Arm, `POWER_SCALE` 1,064.
+* **Passiven:** Molok heisst **Safe Haven** (`passives.safe_haven`), Strix **Focuslense**
+  statt Anlegen (`Unit.focuslense`, in `ActionResolver.apply_damage`), Echo-Takt
+  aufgerundet (jeder 3. -> 5.).
+* **Werte:** Speed Vireo 8, Molok 6, Strix 3; Schildpuls Vireo 5, Molok 2; Neon Vireo
+  8 / 10, Neon Nimbus 7 / 5 mit Power und Effizienz 12.
+* **Halter-Kuerzel** S/M/X, -F/-N (`SlotRules.holder_code`).
+* Noch nicht gebaut: Nimbus als Supporter (Repair-Kit, Cleancode, Shieldgate), Zielregel
+  „Most Damage“ fuer den Neon Nimbus, Halter M-N fuer den Neon Vireo.
+
+### Molok-Passive Festung, Hammer, Kernwaffen (27. Nov. 2026, Spieler)
+
+* **Passive Festung** (Arbeitsname): Heilung, Lebensraub, Regeneration, Schildladung und
+  Schildgaben am Molok +20 % (`Unit.care_mult`, `passives.fortress`).
+* **Hammer-Betaeubungsschlag:** +20 % der eigenen max. Integritaet als Schaden (`hp_scaling`),
+  heilt um 100 % des Schadens (neues Aktionsfeld `lifesteal`), kinetisch. Kampfwert neu
+  geeicht (`POWER_SCALE` 0,911), Standard-Squad wieder im Schnitt 100.
+* **Eine Kernwaffe je DROME:** entfernt mit Code, Daten, Grafik und Tests: Bollwerk-Ramme,
+  E-Schraubenschluessel (Drohnen-Pod), Klingenbumerang, Neon-Blaster, Moerser. Mit ihnen
+  gingen Bewegungsbonus, Mindestreichweite, Schildbrecher-Faktor, Kabelbrand als
+  Aktionsstatus (Kabelbrand bleibt ueber den Feuer-Charger) und die Formen Sperrfeuer,
+  Wirbel, Rammstoss, Schildbrecher. Support-Sentinels tragen jetzt den Deflektor, Solar-
+  und Hipstar-Sniper die Lanze, der Solar-Assault die Plasmaklinge. Alte Spielstaende laden
+  weiter (unbekannte Teile werden uebersprungen).
+* Die Heil-Unterstuetzung fuer Verbuendete (`support: "ally"`, Heilregel) bleibt im Code,
+  hat aber keine Waffe mehr -- fuer den spaeteren Heiler.
+
+### Kernplan, Cyberspeed, Aufraeumen (25./26. Nov. 2026, Spieler)
+
+Leitplan seit 25. Nov.: `docs/KERNPLAN.md`. Gebaut:
+
+* **Vireo-Passive Cyberspeed** ersetzt den Sprint: jeder 3. Angriff 1 Stapel
+  (max. 3), je Stapel +10 % Angriffs- und Lauftempo, jeder Angriff haelt die
+  Stapel 3 s (Effizienz streckt). `Unit.on_attack`, `config.json` ->
+  `passives.cyberspeed`. Anzeige: ein Sprint-Symbol je Stapel, Booster heller.
+  `run_bench -- 30` vorher/nachher praktisch gleich.
+* **Aufraeumen nach dem Kernplan** (ein Commit je Thema): Molok-Praesenz und
+  das ganze Locken (Lockradius, Spott-Effekt, Symbol "gelockt"); Werkstatt-
+  Export, `preview_delta`, Altformate der Spielstaende (v1-Squad, Einzeldateien
+  vor den drei Spielstaenden); 40 Funktionen ohne Aufrufer; alte Modul-Symbole,
+  `art/arena_city/`, `tab_hangar.svg`; Kern-Halter (Kreisform) und
+  Belagerungskanone im Code; zufaellige Hindernisse (`place_obstacles`) und
+  tote Config-Werte (`squad_size`, `grid_*`); alte Box-Modelle im Generator
+  (Ausgabe vorher/nachher byte-gleich); README, `parts/README.md`, `CLAUDE.md`.
+* Der **Molok hat vorerst keine Passive**; die neue steht im Kernplan als
+  Entwurf. Sein **Bunkerkopf** ist wieder ein eigenes Teil (steckte fuer die
+  2D-Zeichnung im Rumpf). Das Lockfeuer der Praesenz auf dem Ruecken ist weg,
+  die beiden Auspuffstapel daneben sind etwas dicker (27. Nov., Spieler).
+* **26. Nov., zweite Runde (Entscheidungen des Spielers):** 16 Modul-Effekte
+  ohne Modul entfernt (Gabelung, Kettensprung, Feldschuss, Wurzeln ...), der
+  Zeit-Takt samt Uhr-Leiste, `MODULE_KONZEPT.md`, `BRAINSTORMING_MODULE.md`,
+  `PLAYTEST_2026-11.md` geloescht (gueltige Regeln jetzt in
+  `MODULE_AMP_FUSION.md` 6), `GAME_DESIGN.md`, `NEUANFANG.md`,
+  `IDENTITAETEN.md` entruempelt.
+
 ### Bugfix-Runde Kampf (24. Nov. 2026, Meldung des Spielers)
 
 Gemeldet: Elementarladung nicht zu merken, Vortex zieht kaum und betaeubt nicht,
@@ -80,8 +158,22 @@ Selbst nachgespielt (Kampfbild per xvfb, Seeds 5003/7001/7002) und gemessen:
   Gebaeude kaufen, Abreissen (Besitz bleibt, Puffer ins Lager), Tier-2-Ziel, Lager mit
   Hochrechnung je Einsatz. Inventar zeigt "Ressourcen"; im Reiter Charger "Rohling herstellen"
   (Vorschlag 2 Legierung + 1 Plasma, `factory.json` -> `herstellen`).
+* **Bedienung mit Plus und Modi (28. Nov. 2026, Entwurf des Spielers; ersetzt das Baumenue vom
+  27. Nov.):** die Platine fuellt den Reiter (ohne Scrollen), unten rechts ein Plus. Es rollt nach
+  links Verschieben, Abreissen (roter Hammer) und Bauen aus. Bauen zeigt die Kategorien Foerdern,
+  Verarbeiten, Strom, Logistik; eine Kategorie schiebt ihre Gebaeude nach Tiers hoch (unten T1,
+  hoehere Tiers dunkel). Gebaeude antippen (nochmal = Details) oder aufs Feld ziehen, Feld tippen
+  = Vorschau mit kuenftigen Leiterbahnen: gruener Haken = aus dem Besitz, Einkaufswagen = kaufen
+  und setzen, rot mit Warenpunkt und Menge = was fehlt; nochmal tippen bestaetigt. Abreissen ohne
+  Rueckfrage. Verschieben per Ziehen oder antippen + Zielfeld; belegtes Ziel = tauschen, wenn
+  beide Arten dort passen (`FactorySim.move`, `fits`, `buy_and_place`, `preview_traces`).
+  Ohne Modus: Gebaeude = Details-Popup; der Netzanschluss heisst **Basis** und zeigt Strom, Lager
+  und "Basis aufruesten" = naechstes Tier. Gesperrte Felder: einmal tippen = Kauf-Vorschau,
+  nochmal = kaufen. Symbole sind Platzhalter aus `assets/ui_icons` (Grafik folgt mit Claude Design).
 * Tests `tests/test_factory.gd`, Smoke-Test bedient die Platine, Bild:
-  `tests/screenshot.gd -- res://scenes/resources.tscn <png> 60 factory=200`.
+  `tests/screenshot.gd -- res://scenes/resources.tscn <png> 60 factory=200` (dazu
+  `fabrik_bau=strom:sol:1,1` = Plus, Bauen, Kategorie, Art, Feld; `fabrik_modus=move|remove`;
+  `fabriktipp=0,0` tippt ein Feld).
 * Offen: Rezept-Raten/Takte fuers Spiel, Tier 3/4 ueber die Story, Baukerne raus (erst mit den
   DROME-Teilen), Anzeigetexte noch ohne `tr()`.
 
@@ -672,6 +764,10 @@ und Offene Punkte.
   entfernt.
 
 ### Arena und Hindernisse (7. Nov. 2026, Wunsch des Spielers)
+
+> Ueberholt: zufaellige Hindernisse gibt es seit 18. Nov. 2026 nicht mehr
+> (feste Kartenformen), der Code dazu ist seit 26. Nov. entfernt.
+
 * **Hindernisse** sperren nur Laufwege, Schuesse gehen darueber
   (`Grid.obstacles`, `can_stand_on`). 3-5 Gruppen (einzeln, kurze Mauer,
   Ecke), punktsymmetrisch zur Feldmitte, nie in oder direkt an den Zonen,
@@ -837,7 +933,11 @@ und Offene Punkte.
 * Entscheidungen nach den Gutachten (Laden statt Modul-Beute, Gegner-Module,
   Gebietsnamen): `NEUANFANG.md` Abschnitt 6i.
 
-### Neues Modulsystem und BIOS (9. Nov. 2026) -- `docs/MODULE_KONZEPT.md`
+### Neues Modulsystem und BIOS (9. Nov. 2026)
+
+> Ueberholt durch die Amps (20. Nov. 2026); was weiter gilt, steht in
+> `docs/MODULE_AMP_FUSION.md` Abschnitt 6.
+
 * **Module:** 9 Grundmodule (wirken auf jede Waffe) und 18 Rezepte aus genau
   zwei verschiedenen Zutaten, jedes Grundmodul in genau 4 Rezepten, keine
   Ketten. Feste Zahlen in `modules.json` -> `rules`. Nicht stapelnde Werte:
@@ -1101,7 +1201,7 @@ Spielstand). Vorschlaege zu Story, Fraktionen, Klassen und Anstieg stehen in
 * Jede Waffe gibt einen DROME-Wert als Bonus, Faehigkeitsschaden ist ein
   Anteil des Waffenschadens (`damage_pct`). Hammer und Schild mittel, schwer
   nur die Schienen-Lanze; Vireo nur leicht, Molok zwei Halter bis mittel.
-* Strix-Passive Anlegen (`steady`, `Unit.track_stillness`).
+* Strix-Passive Anlegen (`steady`, `Unit.track_stillness`) -- seit 27. Nov. 2026 ersetzt durch Focuslense.
 * Orbit-Fokus, Hologramm-Boost, Koedersender sind keine Ausruestung mehr,
   sondern Module (`gadget` in `modules.json`).
 * Level (`Leveling`): DROME 0-5, Waffe 0-10, gespeichert an `RosterEntry`
@@ -1263,44 +1363,12 @@ Nach dem Design-Canvas „CyberDrome Charger & Hangar“
 
 ## 4. Bekannte Schwaechen / Altlasten
 
-* Alle Tests gruen seit dem Aufraeumen (5. Nov. 2026). Die frueheren roten
-  Pruefungen waren Provokation (entfernt) und Tests aus der Zeit vor dem
-  Energieschild (repariert).
-* KI (5. Nov. 2026 umgebaut): Ziel wird gehalten (neu gewaehlt nur bei Tod,
-  > 2 s unerreichbar oder sicherem Abschuss), Verhalten haengt an der Rolle
-  des Chassis (`ai_role`: vanguard/skirmisher/sniper/controller), Fokus-Bonus
-  fuer Ziele der Verbuendeten. Zielwechsel 11,3 -> 5,5 je Minute. Offen: der
-  Nimbus faellt in ~80 % der Kaempfe zuerst (Runenstab Rw 1) -- seit dem
-  Runenstab-Umbau (6. Nov., Rw 3, Vortex, Zauberwirker) noch in 58 %.
-* Seit 6. Nov. 2026: ein Ausruestungsplatz je DROME (Molok zwei), Vireo mit
-  Sprint, Doppelschuss, Plasmaklinge und Neon-Blaster, Neon-Leuchten als
-  Prototyp. Details und Messung: `docs/NEUANFANG.md` Abschnitt 6c.
-* Ebenfalls 6. Nov.: Molok als Tank (200/10, Praesenz, Hammer mit
-  Betaeubung) und die Aufstellung vor dem Kampf per Ziehen (Zone 3 x 5).
-  Abschnitte 6d und 6e.
-* Ebenfalls 6. Nov.: Aggro-Tabelle raus, sichtbare Zielregel je Rolle und
-  Locken (Molok-Praesenz, Koedersender). Abschnitt 6f.
-* Ebenfalls 6. Nov., Aufraeumen nach `docs/NEUANFANG.md` 6g: Schild laedt
-  nur nach 4 s ohne Schaden (10 % je Sekunde), Ueberschuss am Schild richtig
-  gerechnet, Kerne ohne Werte (fest am Chassis, kein Kern-Halter), Kanone
-  entfernt, Gegnerstaerke nach fester Bezugsstaerke, Nimbus-Passive Echo
-  (seit 7. Nov.: Takt +50 %, Faehigkeit wirkt zweimal), Vortex alle 3 s mit Rw 5, Angriffe heissen "Angriff". Messung in 6g.
-  Am 7. Nov.: Deflektor (Stoss + Schildladung) und Drohnen-Pod (Heil-Angriff
-  + Schutzdrohne) sind Waffen mit Angriff und Faehigkeit.
-  Playtest kann jetzt auch Spiegelkaempfe (`... playtest.gd -- 200 0 spiegel`).
-* ~~Namensschilder/Balken schweben beim Herauszoomen und ueberlappen~~ --
-  behoben 7. Nov. 2026 (siehe "Lesbarkeit im Kampf").
-* ~~Module: Gegner tragen keine, der Kampfwert sieht nur DEF und Schild~~
-  -- Gegner tragen Module (8. Nov.), der Kampfwert rechnet sie mit
-  (10. Nov.). Die alten Teile
-  Koedersender (`eq_bait_beacon`), Hologramm-Boost und Orbit-Fokus sind
-  noch Ausruestung, obwohl sie laut 6g Module werden sollen.
-* ~~Spielstand-Auswahl vor dem Hauptmenue~~ -- gebaut 10. Nov. 2026 (drei
-  Spielstaende).
-* Die Anzeige schreibt ohne Umlaute ("Kaempfe", "waehlen"), obwohl die
-  Schrift sie kann -- offen (`VORSCHLAG_STORY.md` 6).
-* `docs/GAME_DESIGN.md` und Teile der `README.md` beschreiben noch die alte
-  Querformat-Werkstatt.
+Stand 26. Nov. 2026 (nach dem Aufraeumen):
+
+* **2D-Zusammenbau** (`DromeSprites`) lebt nur noch fuer Tests und den
+  Bench-Bildschirm; im Spiel zeichnet `Arena3D`.
+* Chronik-Dokumente (`NEUANFANG.md`, `IDENTITAETEN.md`, `GAME_DESIGN.md`)
+  sind entruempelt, aber Entwurfsstand; ihr Kopf sagt, was noch gilt.
 
 ## 5. Offen -- mit dem Spieler zu besprechen
 
@@ -1341,10 +1409,6 @@ Gebaut (Nov. 2026, auf Wunsch des Spielers):
   Reichweite, Wirkung, Schadensart und Einsatz.
 * **KI**: Fernkaempfer laufen nach dem Angriff nicht mehr in den Gegner,
   sondern suchen ein sichereres Feld in Reichweite (`_settle_step`).
-
-**Playtest und Vorschlaege zu Bewegung und Faehigkeiten:**
-`docs/PLAYTEST_2026-11.md` (mit `tools/playtest/playtest.gd`). Dort stehen die
-offenen Fragen an den Spieler.
 
 Weitere Vorschlaege aus der Sitzung (unbewertet):
 
